@@ -381,7 +381,8 @@ class Options_SettingParser extends SettingParser {
 
     private function print_one_option_view(PaperOption $io, SettingValues $sv, $ctr) {
         $disabled = $this->sfs->exists_disabled;
-        echo '<div id="sf/', $ctr, '/view" class="settings-xf-view fn2 ui js-foldup">';
+        echo '<div id="sf/', $ctr, '/view" class="settings-xf-viewbox fn2 ui js-foldup">',
+            '<div class="settings-xf-viewport"><div class="settings-xf-view">';
         if ($disabled) {
             $this->pt->msg_at($io->formid, "<0>This field is currently disabled", MessageSet::URGENT_NOTE);
         } else if (strcasecmp($this->sfs->exists_if, "all") !== 0
@@ -412,7 +413,7 @@ class Options_SettingParser extends SettingParser {
         $io->print_web_edit($this->pt, $ov, $ov);
         $io->set_editable_condition($ei);
         $io->override_exists_condition(null);
-        echo '</div>';
+        echo '</div></div></div>';
     }
 
     const MODE_LIVE = 0;

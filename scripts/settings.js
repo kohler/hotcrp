@@ -97,14 +97,6 @@ function settings_delete(elt, message) {
     return true;
 }
 
-function settings_field_check_overflow() {
-    let xfv = this.firstChild;
-    while (!hasClass(xfv, "settings-xf-view")) {
-        xfv = xfv.nextSibling;
-    }
-    toggleClass(xfv, "settings-xf-overflow", xfv.scrollHeight > xfv.clientHeight + 5);
-}
-
 function settings_field_unfold(evt) {
     if (evt.which.n !== 2) {
         return;
@@ -120,8 +112,6 @@ function settings_field_unfold(evt) {
         if (!evt.which.nofocus) {
             $(this).scrollIntoView();
         }
-    } else {
-        settings_field_check_overflow.call(this);
     }
 }
 
@@ -356,7 +346,7 @@ function add_dialog() {
     }
     function create(library) {
         samples = library.samples;
-        var hc = popup_skeleton({className: "modal-dialog-wide"}), i, e;
+        const hc = popup_skeleton({className: "modal-dialog-wide"});
         hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
         hc.push('<div class="grid-select grid-select-autosubmit" role="listbox"></div>');
@@ -364,18 +354,18 @@ function add_dialog() {
             '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         grid = $d[0].querySelector(".grid-select");
-        for (i = 0; i !== samples.length; ++i) {
-            e = $e("div", {"class": "settings-xf-view", role: "presentation"});
+        for (let i = 0; i !== samples.length; ++i) {
+            const e = $e("div", "settings-xf-view");
             e.innerHTML = samples[i].sf_view_html;
             grid.append($e("fieldset", {"class": "grid-option", "data-index": i, role: "option", tabindex: 0, "aria-selected": "false"},
-                $e("legend", null, samples[i].legend), e));
+                $e("legend", null, samples[i].legend),
+                $e("div", {"class": "settings-xf-viewport", role: "presentation"}, e)));
         }
         settings_disable_children(grid);
         grid_select_event.call(grid, 0);
         grid.addEventListener("keydown", grid_select_event);
         grid.addEventListener("click", grid_select_event);
         grid.addEventListener("dblclick", grid_select_event);
-        $(grid).children().each(settings_field_check_overflow);
         $d.find("form").on("submit", submit);
     }
     demand_load.submission_field_library().then(create);
@@ -487,7 +477,6 @@ $(document).on("hotcrpsettingssf", ".settings-sf", function () {
     $(edit).find(".uich").trigger("change");
     sf_initializing = false;
     removeClass(this, "hidden");
-    settings_field_check_overflow.call(this);
     sf_order();
 });
 
@@ -833,18 +822,18 @@ function rf_visibility_text(visibility) {
 }
 
 function rf_render_view(fld, example) {
-    var frag = document.createDocumentFragment(), labele, e, ve, t;
+    var xfv = $e("div", "settings-xf-view"), labele, e, ve, t;
 
     // header
     labele = $e("label", "revfn" + (fld.required ? " field-required" : ""),
         fld.name || (example ? "Field name" : "<unnamed>"));
-    frag.append((e = $e("h3", "rfehead", labele)));
+    xfv.append((e = $e("h3", "rfehead", labele)));
     if ((t = rf_visibility_text(fld.visibility))) {
         e.append($e("div", "field-visibility", t));
     }
 
     // feedback
-    frag.append((e = $e("ul", "feedback-list")));
+    xfv.append((e = $e("ul", "feedback-list")));
     if (fld.exists_if && /^round:[a-zA-Z][-_a-zA-Z0-9]*$/.test(fld.exists_if)) {
         e.append($e("li", "is-diagnostic format-inline is-warning-note", "Present on " + fld.exists_if.substring(6) + " reviews"));
     } else if (fld.exists_if) {
@@ -853,7 +842,7 @@ function rf_render_view(fld, example) {
 
     // description
     if (fld.description) {
-        frag.append((e = $e("div", "field-d")));
+        xfv.append((e = $e("div", "field-d")));
         e.innerHTML = fld.description;
     }
 
@@ -894,10 +883,10 @@ function rf_render_view(fld, example) {
         labele.insertBefore($e("span", "checkc", $e("input", {type: "checkbox", disabled: true})), labele.firstChild);
     }
     if (ve.firstChild) {
-        frag.append(ve);
+        xfv.append(ve);
     }
 
-    return frag;
+    return $e("div", "settings-xf-viewport", xfv);
 }
 
 function rf_move() {
@@ -1056,7 +1045,7 @@ function add_dialog() {
     function create(library) {
         samples = library.samples;
         rftypes = library.types;
-        var hc = popup_skeleton({className: "modal-dialog-wide"}), i;
+        const hc = popup_skeleton({className: "modal-dialog-wide"});
         hc.push('<h2>Add field</h2>');
         hc.push('<p>Choose a template for the new field.</p>');
         hc.push('<div class="grid-select grid-select-autosubmit" role="listbox"></div>');
@@ -1064,14 +1053,15 @@ function add_dialog() {
             '<button type="button" name="cancel">Cancel</button>']);
         $d = hc.show();
         grid = $d[0].querySelector(".grid-select");
-        for (i = 0; i !== samples.length; ++i) {
+        for (let i = 0; i !== samples.length; ++i) {
             if (!samples[i].parse_value) {
                 samples[i] = rf_make_sample(samples[i]);
             }
+            const xfvp = rf_render_view(samples[i], true);
+            xfvp.setAttribute("role", "presentation");
             grid.append($e("fieldset", {"class": "grid-option", "data-index": i, role: "option", tabindex: 0, "aria-selected": "false"},
                 $e("legend", null, samples[i].legend),
-                $e("div", {"class": "settings-xf-view", role: "presentation"},
-                    rf_render_view(samples[i], true))));
+                xfvp));
         }
         settings_disable_children(grid);
         grid_select_event.call(grid, 0);

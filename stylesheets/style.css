@@ -1796,56 +1796,51 @@ th.settings-simplehead {
 	margin-bottom: 1.5em;
 	transition: opacity 0.5s;
 }
-.settings-xf-view, .mail-preview-send, .mail-editor {
+.settings-xf-viewbox, .mail-preview-send, .mail-editor {
 	background-color: #f9fbfb;
 }
-.settings-xf-view:hover, .mail-preview-send:hover {
+.settings-xf-viewbox:hover, .mail-preview-send:hover {
 	background-color: #ecf2f4;
 }
 .settings-xf:hover, .mail-preview-send:hover {
 	border-color: #a5a5a5;
 }
-.settings-xf-view {
-	padding: 16px;
+.settings-xf-viewbox {
 	border-radius: 5px;
+	padding: 0 16px;
 }
-.settings-sf > .settings-xf-view {
+.settings-xf-viewport {
+	-webkit-mask-image: linear-gradient(to top, transparent 0, rgba(0, 0, 0, 0.25) 8px,
+		black 20px calc(100% - 16px), transparent calc(100% - 8px));
+	mask-image: linear-gradient(to top, transparent 0, rgba(0, 0, 0, 0.25) 8px,
+		black 20px calc(100% - 16px), transparent calc(100% - 8px));
+}
+.settings-xf-view {
+	padding-top: 16px;
+	padding-bottom: 16px;
+}
+.settings-sf > .settings-xf-viewbox {
 	overflow-y: hidden;
 }
-.settings-sf.settings-xf-disabled > .settings-xf-view {
+.settings-sf.settings-xf-disabled .settings-xf-viewport {
 	max-height: 10rem;
 }
-.settings-sf-final > .settings-xf-view {
+.settings-sf-final > .settings-xf-viewbox {
 	background-color: #effcf0;
 }
-.settings-sf-final > .settings-xf-view:hover {
+.settings-sf-final > .settings-xf-viewbox:hover {
 	background-color: #e8f5e9;
 }
-.settings-xf-disabled > .settings-xf-view {
+.settings-xf-disabled > .settings-xf-viewbox {
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cpath d='M0 0l-34 34l17 0l34 -34z' fill='%23f9fbfb' /%3E%3Cpath d='M34 0l-34 34l17 0l34 -34z' fill='%23f9fbfb' /%3E%3Cpath d='M17 0l-34 34l17 0l34 -34z' fill='%23f5f2f2' /%3E%3Cpath d='M51 0l-34 34l17 0l34 -34z' fill='%23f5f2f2' /%3E%3C/svg%3E");
 	background-color: #f5f2f2;
 }
-.settings-xf-disabled > .settings-xf-view:hover {
+.settings-xf-disabled > .settings-xf-viewbox:hover {
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cpath d='M0 0l-34 34l17 0l34 -34z' fill='%23ecf2f4' /%3E%3Cpath d='M34 0l-34 34l17 0l34 -34z' fill='%23ecf2f4' /%3E%3Cpath d='M17 0l-34 34l17 0l34 -34z' fill='%23e4e7e7' /%3E%3Cpath d='M51 0l-34 34l17 0l34 -34z' fill='%23e4e7e7' /%3E%3C/svg%3E");
-}
-.settings-xf-overflow::after {
-	content: "";
-	position: absolute;
-	z-index: 1;
-	bottom: 0;
-	left: 0;
-	pointer-events: none;
-	background-image: linear-gradient(to top, rgba(249,251,251,1), rgba(249,251,251,1) 0.5rem, rgba(249,251,251,0));
-	width: 100%;
-	height: 3em;
-	border-radius: 5px;
 }
 .settings-xf-edit {
 	padding: 20px 16px 16px;
 	border-radius: 5px;
-}
-.settings-xf-view h3 {
-	max-width: 768px;
 }
 .settings-draghandle {
 	position: absolute;
@@ -1893,49 +1888,58 @@ hr.dropmark {
 	overflow-y: auto;
 	row-gap: 0.25rem;
 	column-gap: 0.25rem;
-	margin: -0.5rem;
+	margin: -16px -8px -8px;
+	padding-bottom: 8px;
+	-webkit-mask-image: linear-gradient(to top, transparent 0,
+		black 16px calc(100% - 16px), transparent calc(100% - 8px));
+	mask-image: linear-gradient(to top, transparent 0,
+		black 16px calc(100% - 16px), transparent calc(100% - 8px));
 }
 .grid-option {
 	overflow-y: visible;
-	margin: 0.5rem;
+	margin: 8px;
 	background-color: #f9fbfb;
 	position: relative;
 }
 .grid-option:hover {
-	border-color: #a5a5a5;
+	border-color: #a1a1f2;
 	background-color: #ecf2f4;
 }
 .grid-option.active, .grid-option.active:hover {
 	background: inherit;
 }
 fieldset.grid-option {
-	padding: 5px 12px 10px;
+	border-width: 2px;
+	border-color: #b8b8e5;
+	padding: 0 12px;
 }
 fieldset.grid-option.active {
 	border-color: blue;
 	border-color: AccentColor;
-	border-radius: 4px;
-	border-width: 2px;
-	padding: 4px 11px 9px;
 }
 fieldset.grid-option.active > legend {
 	font-weight: bold;
 }
-.grid-option > .settings-xf-view {
-	background: none;
+.grid-option > .settings-xf-viewport {
+	margin-top: -12px;
 	opacity: 0.5;
-	padding: 0;
 	max-height: 50vh;
 	overflow-x: hidden;
 	overflow-y: auto;
 }
-.grid-option.active > .settings-xf-view {
+.grid-option.active > .settings-xf-viewport {
 	opacity: 1;
+}
+.settings-xf-view h3 {
+	max-width: 768px;
 }
 .settings-xf-view > .pfe {
 	margin-bottom: 0;
 }
-.settings-xf-view > .pfe.pf-separator, .settings-xf-view > .rfehead {
+.settings-xf-view > .pfe.pf-separator {
+	margin-top: 0.5rem;
+}
+.settings-xf-view > .rfehead {
 	margin-top: 0;
 }
 .settings-radio {

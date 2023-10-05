@@ -643,7 +643,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             '<div class="settings-draghandle ui-drag js-settings-drag" draggable="true" title="Drag to reorder fields">',
             Icons::ui_move_handle_horizontal(),
             '</div>',
-            '<div id="rf/$/view" class="settings-xf-view fn2 ui js-foldup"></div>',
+            '<div id="rf/$/view" class="settings-xf-viewbox fn2 ui js-foldup"></div>',
             '<fieldset id="rf/$/edit" class="fieldset-covert settings-xf-edit fx2">',
               '<div class="entryi mb-3" data-property="name"><div class="entry">',
                 '<input name="rf/$/name" id="rf/$/name" type="text" size="50" class="font-weight-bold want-focus want-delete-marker" placeholder="Field name">',
