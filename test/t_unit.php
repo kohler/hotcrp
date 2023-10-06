@@ -1284,4 +1284,15 @@ class Unit_Tester {
         xassert_eqq(friendly_boolean("1"), true);
         xassert_eqq(friendly_boolean("!#($!"), null);
     }
+
+    function test_merge_whitespace() {
+        xassert_eqq(Text::merge_whitespace("a", "b"), "ab");
+        xassert_eqq(Text::merge_whitespace("a ", "b"), "a b");
+        xassert_eqq(Text::merge_whitespace("a  ", " b"), "a  b");
+        xassert_eqq(Text::merge_whitespace("a\n", "b"), "a\nb");
+        xassert_eqq(Text::merge_whitespace("a\n", "   b"), "a\n   b");
+        xassert_eqq(Text::merge_whitespace("a\n\n", "\nb"), "a\n\nb");
+        xassert_eqq(Text::merge_whitespace("a\n", "\n\nb"), "a\n\nb");
+        xassert_eqq(Text::merge_whitespace("a\n", "\n   b"), "a\n   b");
+    }
 }

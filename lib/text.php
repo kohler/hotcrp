@@ -523,4 +523,56 @@ class Text {
         }
         return html_entity_decode(trim($x), ENT_QUOTES, "UTF-8");
     }
+
+    /** @param string $a
+     * @param string $b
+     * @return string */
+    static function merge_whitespace($a, $b) {
+        $al = strlen($a);
+        $bl = strlen($b);
+        $ap = $apx = $al;
+        $bp = $bpx = 0;
+        $bnewline = false;
+
+        while (true) {
+            // skip whitespace
+            while ($bp !== $bl && ($b[$bp] === " " || $b[$bp] === "\t")) {
+                ++$bp;
+            }
+            while ($ap !== 0 && ($a[$ap - 1] === " " || $a[$ap - 1] === "\t")) {
+                --$ap;
+            }
+
+            if ($bp !== $bl && ($b[$bp] === "\r" || $b[$bp] === "\n")) {
+                // consume trailing whitespace
+                if (!$bnewline) {
+                    $bpx = $bp;
+                    $bnewline = true;
+                }
+                // collapse blank lines
+                if ($ap !== 0 && ($a[$ap - 1] === "\r" || $a[$ap - 1] === "\n")) {
+                    if ($ap !== 1 && $a[$ap - 1] === "\n" && $a[$ap - 2] === "\r") {
+                        $ap -= 2;
+                    } else {
+                        $ap -= 1;
+                    }
+                    $apx = $ap;
+                    if ($bp + 1 !== $bl && $b[$bp] === "\r" && $b[$bp + 1] === "\n") {
+                        $bp += 2;
+                    } else {
+                        $bp += 1;
+                    }
+                    continue;
+                }
+            }
+
+            // consume trailing whitespace or collapse horizontal whitespace
+            if ($bnewline) {
+                $apx = $ap;
+            } else if ($ap < $apx && $bp > $bpx) {
+                $apx -= min($apx - $ap, $bp - $bpx);
+            }
+            return substr($a, 0, $apx) . substr($b, $bpx);
+        }
+    }
 }
