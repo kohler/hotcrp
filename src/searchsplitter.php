@@ -130,13 +130,15 @@ class SearchSplitter {
         $plast = "";
         $quote = 0;
         $startpos = $allow_empty ? -1 : $pos;
+        $endchars = $endchars ?? " \n\r\t\f\v";
         $len = strlen($str);
         while ($pos < $len) {
             $ch = $str[$pos];
             // stop when done
             if ($plast === ""
                 && !$quote
-                && ($endchars === null ? ctype_space($ch) : strpos($endchars, $ch) !== false)) {
+                && $endchars !== ""
+                && strpos($endchars, $ch) !== false) {
                 break;
             }
             // translate “” -> "

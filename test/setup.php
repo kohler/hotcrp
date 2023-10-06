@@ -1124,8 +1124,8 @@ class TestRunner {
             $arg = (new Getopt)->long(
                 "verbose,V be verbose",
                 "help,h !",
-                "reset-db,reset reset test database",
-                "no-reset-db,no-reset !",
+                "reset,reset reset test database",
+                "no-reset,no-reset-db do not reset test database",
                 "no-cdb no contact database",
                 "stop,s stop on first error"
             )->description("Usage: php test/" . basename($_SERVER["PHP_SELF"]) . " [-V] [CLASSNAME...]")
@@ -1143,9 +1143,9 @@ class TestRunner {
             Conf::$main->set_opt("contactdbDsn", null);
         }
 
-        if (isset($arg["reset-db"])) {
+        if (isset($arg["reset"])) {
             $reset = true;
-        } else if (isset($arg["no-reset-db"])) {
+        } else if (isset($arg["no-reset"])) {
             $reset = false;
         } else {
             $reset = null;
@@ -1190,7 +1190,7 @@ class TestRunner {
                 $class = new ReflectionClass($classname);
                 $ctor = $class->getConstructor();
                 if ($ctor && $ctor->getNumberOfParameters() === 1) {
-                    if ($need_reset) {
+                    if ($reset ?? $need_reset) {
                         self::reset_db($reset ?? false);
                         $need_reset = false;
                         $reset = null;

@@ -1046,6 +1046,25 @@ class Unit_Tester {
         xassert_eqq($mailer->expand("%OTHERNAME%", "to"), "");
         xassert_eqq($mailer->expand("%OTHERCONTACT%"), "noname@c.com\n");
         xassert_eqq($mailer->expand("%OTHERCONTACT%", "to"), "noname@c.com");
+
+        xassert_eqq($mailer->expand(" %IF(NULL)%A%ELSE%Y%ENDIF%"), " Y\n");
+        xassert_eqq($mailer->expand(" %IF(CONFLONGNAME)%A%ELSE%Y%ENDIF%"), " A\n");
+        xassert_eqq($mailer->expand(" {{IF(NULL)}}A{{ELSE}}Y{{ENDIF}}"), " Y\n");
+        xassert_eqq($mailer->expand(" {{IF(UNKNOWN)}}A{{ELSE}}Y{{ENDIF}}"), " {{IF(UNKNOWN)}}A{{ELSE}}Y{{ENDIF}}\n");
+        xassert_eqq($mailer->expand(" {{IF(UNKNOWN)}}A{{ELIF(NULL)}}Y{{ENDIF}}"), " {{IF(UNKNOWN)}}A{{ENDIF}}\n");
+        xassert_eqq($mailer->expand(" {{IF(CONFLONGNAME)}}A{{ELIF(UNKNOWN)}}Y{{ENDIF}}"), " A\n");
+        xassert_eqq($mailer->expand(" {{IF(UNKNOWN)}}A{{ELIF(CONFLONGNAME)}}Y{{ELIF(BOO)}}Z{{ENDIF}}"), " {{IF(UNKNOWN)}}A{{ELSE}}Y{{ENDIF}}\n");
+        xassert_eqq($mailer->expand(" {{IF(CONFLONGNAME)}}{{IF(UNKNOWN)}}A{{ELSE}}B{{ENDIF}}{{ELIF(UNKNOWN)}}Y{{ENDIF}}"), " {{IF(UNKNOWN)}}A{{ELSE}}B{{ENDIF}}\n");
+        xassert_eqq($mailer->expand(" {{IF(UNKNOWN)}}{{IF(CONFLONGNAME)}}A{{ELSE}}B{{ENDIF}}{{ELIF(UNKNOWN2)}}Y{{ENDIF}}"), " {{IF(UNKNOWN)}}A{{ELIF(UNKNOWN2)}}Y{{ENDIF}}\n");
+        xassert_eqq($mailer->expand(" {{IF(UNKNOWN)}} a {{ELIF(NULL)}} b {{ELIF(NULL)}} c {{ELSE}} d {{ENDIF}} "),
+            " {{IF(UNKNOWN)}} a {{ELSE}} d {{ENDIF}}\n");
+        xassert_eqq($mailer->expand(" {{IF(UNKNOWN)}} a {{ELIF(NULL)}} b {{ELIF(NULL)}} c {{ENDIF}} "),
+            " {{IF(UNKNOWN)}} a {{ENDIF}}\n");
+        xassert_eqq($mailer->expand(" {{IF(NULL)}}A{{ELIF(UNKNOWN)}}Y{{ENDIF}}"), " {{IF(UNKNOWN)}}Y{{ENDIF}}\n");
+        xassert_eqq($mailer->expand(" %IF(NULL)%A%ELIF(UNKNOWN)%Y%ENDIF%"), " %IF(UNKNOWN)%Y%ENDIF%\n");
+        xassert_eqq($mailer->expand(" %IF(NULL)%A%ELIF(UNKNOWN)%Y"), " %IF(UNKNOWN)%Y%ENDIF%\n");
+        xassert_eqq($mailer->expand("Hello\n%IF(CONFLONGNAME)%\nHello\n\n%ENDIF%\n\nGoodbye\n"),
+            "Hello\nHello\n\nGoodbye\n");
     }
 
     function test_collator() {

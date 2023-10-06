@@ -354,82 +354,182 @@ class Mailer {
     }
 
 
-    /** @param list<string> &$ifstack
-     * @param string $text */
-    private function _pushIf(&$ifstack, $text, $yes) {
-        if ($yes !== false && $yes !== true && $yes !== null) {
-            $yes = (bool) $yes;
-        }
-        if ($yes === true || $yes === null) {
-            array_push($ifstack, $yes);
-        } else {
-            array_push($ifstack, $text);
-        }
-    }
-
-    /** @param list<string> &$ifstack
-     * @param string &$text
-     * @return ?bool */
-    private function _popIf(&$ifstack, &$text) {
-        if (count($ifstack) == 0) {
+    /** @param string $s
+     * @param int $p
+     * @param int $len
+     * @return ?array{string,string} */
+    static function _check_conditional_at($s, $p, $len) {
+        $br = $s[$p] === "{";
+        $p += $br ? 2 : 1;
+        if (!preg_match('/\G(IF|ELIF|ELSE?IF|ELSE|ENDIF)/', $s, $m, 0, $p)) {
             return null;
-        } else if (($pop = array_pop($ifstack)) === true || $pop === null) {
-            return $pop;
-        } else {
-            $text = $pop;
-            return false;
         }
-    }
-
-    /** @param list<string> &$ifstack
-     * @param string &$text */
-    private function _handleIf(&$ifstack, &$text, $cond, $haselse) {
-        assert($cond || $haselse);
-        if ($haselse) {
-            $yes = $this->_popIf($ifstack, $text);
-            if ($yes !== null) {
-                $yes = !$yes;
+        $xp = $p + strlen($m[1]);
+        if ($xp === $len) {
+            return null;
+        }
+        if ($s[$xp] === "(") {
+            $yp = SearchSplitter::span_balanced_parens($s, $xp + 1) + 1;
+            if ($yp >= $len || $s[$yp - 1] !== ")") {
+                return null;
             }
         } else {
-            $yes = true;
+            $yp = $xp;
         }
-        if ($yes && $cond) {
-            $yes = $this->expandvar(substr($cond, 1, strlen($cond) - 2), true);
+        if (($xp === $yp) !== ($m[1] === "ELSE" || $m[1] === "ENDIF")) {
+            return null;
         }
-        $this->_pushIf($ifstack, $text, $yes);
-        return $yes;
+        if (($br ? $yp + 1 !== $len && $s[$yp] === "}" && $s[$yp + 1] === "}" : $s[$yp] === "%")
+            && ($xp === $yp) === ($m[1] === "ELSE" || $m[1] === "ENDIF")) {
+            return [$m[1], substr($s, $xp, $yp - $xp), $yp + ($br ? 2 : 1)];
+        } else {
+            return null;
+        }
     }
 
-
-    /** @param string $rest
+    /** @param string $ch
+     * @param string $kw
      * @return string */
-    private function _expand_conditionals($rest) {
-        $text = "";
+    static function _decorate_keyword($ch, $kw) {
+        return $ch === "%" ? "%{$kw}%" : "{{{$kw}}}";
+    }
+
+    /** @param string $s
+     * @return string */
+    private function _expand_conditionals($s) {
+        $p = 0;
+        $ip = 0;
+        $len = strlen($s);
+        // stack elements: [$rs, $state]
+        $rs = "";
+        $state = 4;
         $ifstack = [];
 
-        while (preg_match('/\A(.*?)(%(IF|ELIF|ELSE?IF|ELSE|ENDIF)((?:\(#?[-a-zA-Z0-9!@_:.\/]+(?:\([-a-zA-Z0-9!@_:.\/]*+\))*\))?)%)(.*)\z/s', $rest, $m)) {
-            $text .= $m[1];
-            $rest = $m[5];
+        // state bits: 1 - have included definite; 2 - have included unexpanded; 4 - including now
+        // 0: after {{IF(false)}}
+        // 1: after {{IF(true)}}...{{ELSE}}
+        // 2: after {{IF(???)}}...{{ELSEIF(false)}}
+        // 3: after {{IF(???)}}...{{ELSEIF(true)}}...{{ELSE}}
+        // 4: initial state
+        // 5: after {{IF(true)}} or {{IF(false)}}...{{ELSE}}
+        // 6: after {{IF(???)}}
+        // 7: after {{IF(???)}}...{{ELSEIF(true)}}
 
-            if ($m[3] === "IF" && $m[4] !== "") {
-                $yes = $this->_handleIf($ifstack, $text, $m[4], false);
-            } else if (($m[3] === "ELIF" || $m[3] === "ELSIF" || $m[3] === "ELSEIF")
-                       && $m[4] !== "") {
-                $yes = $this->_handleIf($ifstack, $text, $m[4], true);
-            } else if ($m[3] == "ELSE" && $m[4] === "") {
-                $yes = $this->_handleIf($ifstack, $text, false, true);
-            } else if ($m[3] == "ENDIF" && $m[4] === "") {
-                $yes = $this->_popIf($ifstack, $text);
+        while (true) {
+            // find next conditional indication
+            $ptp = strpos($s, "%", $p);
+            $brp = strpos($s, "{{", $p);
+            $np = min($ptp !== false ? $ptp : $len, $brp !== false ? $brp : $len);
+            if ($np !== $len) {
+                $x = self::_check_conditional_at($s, $np, $len);
+                if ($x === null
+                    || ($x[0] !== "IF" && empty($ifstack))) {
+                    $p = $np + 1;
+                    continue;
+                }
+                $p = $x[2];
             } else {
-                $yes = null;
+                $x = null;
+                $p = $np;
             }
 
-            if ($yes === null) {
-                $text .= $m[2];
+            // combine text
+            if ($state >= 6) {
+                $rs .= substr($s, $ip, $np - $ip);
+            } else if ($state >= 4) {
+                $rs = Text::merge_whitespace($rs, substr($s, $ip, $np - $ip));
+            }
+            $ip = $p;
+
+            // exit at end
+            if ($x === null) {
+                break;
+            }
+
+            // start or end conditional
+            if ($x[0] === "IF") {
+                $ifstack[] = [$rs, $state];
+                $rs = "";
+                $state = $state >= 4 ? 4 : 1;
+            } else if ($x[0] === "ENDIF") {
+                list($rs1, $state1) = array_pop($ifstack);
+                if ($state1 >= 6) {
+                    $rs1 .= $rs;
+                } else if ($state1 >= 4) {
+                    $rs1 = Text::merge_whitespace($rs1, $rs);
+                }
+                if (($state & 2) !== 0) {
+                    $rs1 .= substr($s, $np, $p - $np);
+                }
+                $rs = $rs1;
+                $state = $state1;
+                continue;
+            }
+
+            // process else
+            if ($x[0] === "ELSE") {
+                if (($state & 1) !== 0) {
+                    $state &= 3;
+                } else {
+                    if (($state & 2) !== 0) {
+                        $rs .= substr($s, $np, $p - $np);
+                    }
+                    $state |= 5;
+                }
+                continue;
+            }
+
+            // IF/ELSEIF
+            // evaluate condition
+            if (($state & 1) !== 0) {
+                $yes = false;
+            } else {
+                $yes = $this->expandvar(substr($x[1], 1, -1), true);
+                if ($yes !== null && !is_bool($yes)) {
+                    $yes = (bool) $yes;
+                }
+            }
+            // decide on next state based on condition
+            if ($yes === true) {
+                if (($state & 2) !== 0) {
+                    $rs .= self::_decorate_keyword($s[$np], "ELSE");
+                }
+                $state |= 5;
+            } else if ($yes === false) {
+                $state &= 3;
+            } else { // $yes === null
+                if ($x[0] !== "IF" && ($state & 2) === 0) {
+                    $rs = self::_decorate_keyword($s[$np], "IF{$x[1]}");
+                } else {
+                    $ip = $np;
+                }
+                $state |= 6;
             }
         }
 
-        return $text . $rest;
+        if (!empty($ifstack)) {
+            $this->warning_at(null, "<0>Incomplete {IF}");
+
+        }
+
+        while (!empty($ifstack)) {
+            list($rs1, $state1) = array_pop($ifstack);
+            if ($state >= 4) {
+                $rs1 .= $rs;
+            }
+            if (($state & 2) !== 0) {
+                $x = self::_decorate_keyword($rs[0], "ENDIF");
+                if (str_ends_with($rs1, "\n")) {
+                    $rs1 = substr($rs1, 0, -1) . $x . "\n";
+                } else {
+                    $rs1 .= $x;
+                }
+            }
+            $rs = $rs1;
+            $state = $state1;
+        }
+
+        return $rs;
     }
 
     /** @param string $line
@@ -479,8 +579,7 @@ class Mailer {
             $this->context = self::CONTEXT_BODY;
         }
 
-        // expand out %IF% and %ELSE% and %ENDIF%.  Need to do this first,
-        // or we get confused with wordwrapping.
+        // expand out conditionals first to avoid confusion with wordwrapping
         $text = $this->_expand_conditionals(cleannl($text));
 
         // separate text into lines
@@ -664,6 +763,11 @@ class Mailer {
     /** @return iterable<MessageItem> */
     function message_list() {
         return $this->_ms ? $this->_ms->message_list() : [];
+    }
+
+    /** @return string */
+    function full_feedback_text() {
+        return $this->_ms ? $this->_ms->full_feedback_text() : "";
     }
 
     /** @param ?string $field
