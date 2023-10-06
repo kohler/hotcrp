@@ -130,7 +130,7 @@ class SearchSplitter {
         $plast = "";
         $quote = 0;
         $startpos = $allow_empty ? -1 : $pos;
-        $endchars = $endchars ?? " \n\r\t\f\v";
+        $endchars = $endchars ?? " \n\r\t\x0B\x0C";
         $len = strlen($str);
         while ($pos < $len) {
             $ch = $str[$pos];
