@@ -207,9 +207,12 @@ class CommentInfo {
             $crow = new CommentInfo($prow);
             $crow->commentType = self::CT_RESPONSE;
             foreach ($prow->conf->response_rounds() as $rrd) {
-                $j = ["words" => $rrd->words];
-                if ($rrd->truncate) {
-                    $j["truncate"] = true;
+                $j = [
+                    "wordlimit" => $rrd->wordlimit,
+                    "words" => $rrd->wordlimit /* XXX compat */
+                ];
+                if ($rrd->hard_wordlimit >= $rrd->wordlimit) {
+                    $j["hard_wordlimit"] = $rrd->hard_wordlimit;
                 }
                 $crow->commentRound = $rrd->id;
                 if (Contact::$main_user->can_edit_response($prow, $crow)) {
@@ -693,16 +696,16 @@ class CommentInfo {
             $x .= " by {$p}";
         }
         $ctext = $this->commentOverflow ?? $this->comment;
-        if ($rrd && $rrd->words) {
+        if ($rrd && $rrd->wordlimit > 0) {
             $nwords = count_words($ctext);
             $x .= " (" . plural($nwords, "word") . ")";
-            if ($nwords > $rrd->words
+            if ($nwords > $rrd->wordlimit
                 && ($flags & ReviewForm::UNPARSE_TRUNCATE) !== 0) {
-                list($ctext, $overflow) = count_words_split($ctext, $rrd->words);
-                if ($rrd->truncate) {
+                list($ctext, $overflow) = count_words_split($ctext, $rrd->wordlimit);
+                if ($rrd->wordlimit === $rrd->hard_wordlimit) {
                     $ctext = rtrim($ctext) . "…\n- - - - - - - - - - - - - - Truncated for length - - - - - - - - - - - - - -\n";
                 } else {
-                    $ctext = rtrim($ctext) . "…\n- - - - - Truncated for length, full response available on website - - - - -\n";
+                    $ctext = rtrim($ctext) . "…\n- - - - - - - Truncated for length, more available on website - - - - - - -\n";
                 }
             }
         }

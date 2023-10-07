@@ -18,9 +18,9 @@ class ResponseRound {
     /** @var int */
     public $grace = 0;
     /** @var int */
-    public $words = 500;
-    /** @var bool */
-    public $truncate = false;
+    public $wordlimit = 500;
+    /** @var int */
+    public $hard_wordlimit = 0;
     /** @var ?string */
     public $condition;
     /** @var ?SearchTerm */
@@ -94,7 +94,7 @@ class ResponseRound {
             && !$fmt->has_override("resp_instrux_{$this->id}")) {
             $fmt->add_override("resp_instrux_{$this->id}", $this->instructions);
         }
-        $fa = new FmtArg("wordlimit", $this->words);
+        $fa = new FmtArg("wordlimit", $this->wordlimit);
         $m = $fmt->_ci("resp_instrux", "resp_instrux_{$this->id}", $fa);
         if ($m === "") {
             $m = $fmt->_ci("resp_instrux", "resp_instrux", $fa);

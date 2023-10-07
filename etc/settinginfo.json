@@ -465,9 +465,9 @@
         "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
     },
     {
-        "name_pattern": "response/$/truncate",
+        "name_pattern": "response/$/hard_wordlimit",
         "title": "/Hard word limit",
-        "type": "checkbox"
+        "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
     },
     {
         "name_pattern": "response/$/instructions",

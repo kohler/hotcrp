@@ -15,8 +15,8 @@ class Response_Setting {
     public $grace;
     /** @var ?int */
     public $wordlimit;
-    /** @var bool */
-    public $truncate = false;
+    /** @var ?int */
+    public $hard_wordlimit;
     /** @var string */
     public $condition = "all";
     /** @var string */
@@ -39,8 +39,8 @@ class Response_Setting {
         $rs->open = $rrd->open;
         $rs->done = $rrd->done;
         $rs->grace = $rrd->grace;
-        $rs->wordlimit = $rs->old_wordlimit = $rrd->words;
-        $rs->truncate = $rrd->truncate;
+        $rs->wordlimit = $rs->old_wordlimit = $rrd->wordlimit;
+        $rs->hard_wordlimit = $rrd->hard_wordlimit;
         $rs->condition = $rrd->condition ?? "all";
         $rs->instructions = $rrd->instructions ?? $rs->default_instructions($conf);
         return $rs;
@@ -71,11 +71,12 @@ class Response_Setting {
         if ($this->grace > 0) {
             $j->grace = $this->grace;
         }
-        if ($this->wordlimit !== 500) {
-            $j->words = $this->wordlimit ?? 0;
-        }
-        if ($this->truncate) {
-            $j->truncate = true;
+        $wl = $this->wordlimit ?? 0;
+        if (($this->hard_wordlimit ?? 0) > 0) {
+            $j->words = $wl <= 0 ? $this->hard_wordlimit : $wl;
+            $j->hard_wordlimit = $this->hard_wordlimit;
+        } else if ($wl !== 500) {
+            $j->words = $wl;
         }
         if (($this->condition ?? "") !== ""
             && $this->condition !== "all") {
@@ -318,10 +319,16 @@ class Response_SettingParser extends SettingParser {
     static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("response")) {
             foreach ($sv->conf->response_rounds() as $i => $rrd) {
+                $ctr = $i + 1;
+                if ($rrd->hard_wordlimit > 0
+                    && $rrd->wordlimit > $rrd->hard_wordlimit) {
+                    $sv->error_at("response/{$ctr}/wordlimit", "<0>Word limit cannot be larger than hard word limit");
+                    $sv->error_at("response/{$ctr}/hard_wordlimit", null);
+                }
                 if ($rrd->condition !== null) {
                     $s = new PaperSearch($sv->conf->root_user(), $rrd->condition);
                     foreach ($s->message_list() as $mi) {
-                        $sv->append_item_at("response/" . ($i + 1) . "/condition", $mi);
+                        $sv->append_item_at("response/{$ctr}/condition", $mi);
                     }
                 }
             }

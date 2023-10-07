@@ -6376,7 +6376,7 @@ function cmt_render_form(cj) {
     bnote = cmt_is_editable(cj) ? "" : '<div class="hint">(admin only)</div>';
     if (btnbox.length)
         hc.push('<div class="aabut"><div class="btnbox">' + btnbox.join("") + '</div></div>');
-    if (cj.response && resp_rounds[cj.response].words > 0)
+    if (cj.response && resp_rounds[cj.response].wordlimit > 0)
         hc.push('<div class="aabut"><div class="words"></div></div>');
     hc.push('<div class="aabr">', '</div>');
     hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
@@ -6546,8 +6546,9 @@ function cmt_start_edit(celt, cj) {
     }
 
     if (cj.response) {
-        if (resp_rounds[cj.response].words > 0)
-            make_update_words(celt, resp_rounds[cj.response].words);
+        if (resp_rounds[cj.response].wordlimit > 0) {
+            make_update_words(celt, resp_rounds[cj.response].wordlimit);
+        }
         var $ready = $(form.elements.ready).on("click", cmt_ready_change);
         cmt_ready_change.call($ready[0]);
     }
@@ -6925,42 +6926,38 @@ function cmt_render(cj, editing) {
 }
 
 function cmt_render_text(format, value, response, texte, chead) {
-    var wc, rrd = response && resp_rounds[response],
-        aftertexte = null, buttone;
-    if (rrd && rrd.words > 0) {
-        wc = count_words(value);
-        var wordse = null;
+    const rrd = response && resp_rounds[response];
+    let aftertexte = null;
+    if (rrd && rrd.wordlimit > 0) {
+        const wc = count_words(value);
         if (wc > 0 && chead) {
-            wordse = document.createElement("div");
-            wordse.className = "cmtthead words";
-            wordse.textContent = plural(wc, "word");
-            chead[0].appendChild(wordse);
+            chead[0].appendChild($e("div", "cmtthead words" + (wc > rrd.wordlimit ? " wordsover" : ""), plural(wc, "word")));
         }
-        if (wc > rrd.words) {
-            wordse && addClass(wordse, "wordsover");
-            wc = count_words_split(value, rrd.words);
-            if (rrd.truncate && !hotcrp.status.myperm.allow_administer) {
-                buttone = $e("button", "ui js-overlong-expand", "Truncated for length");
-                buttone.type = "button";
-                buttone.disabled = true;
-                aftertexte = $e("div", "overlong-expander", buttone);
-                value = wc[0].trimEnd() + "…";
-            } else {
-                buttone = $e("button", "ui js-overlong-expand", "Show full-length response");
-                buttone.type = "button";
-                buttone.ariaExpanded = "false";
-                var allowede = $e("div", "overlong-allowed"),
-                    dividere = $e("div", "overlong-divider",
-                        allowede,
-                        $e("div", "overlong-mark",
-                            $e("div", "overlong-expander", buttone))),
-                    contente = $e("div", "overlong-content");
-                addClass(texte, "has-overlong");
-                addClass(texte, "overlong-collapsed");
-                texte.prepend(dividere, contente);
-                texte = contente;
-                render_text.onto(allowede, format, wc[0]);
-            }
+        if ((rrd.hard_wordlimit || 0) > 0
+            && wc > rrd.hard_wordlimit
+            && !hotcrp.status.myperm.allow_administer) {
+            const wcx = count_words_split(value, rrd.hard_wordlimit);
+            value = wcx[0].trimEnd() + "…";
+            aftertexte = $e("div", "overlong-expander",
+                $e("button", {type: "button", "class": "ui js-overlong-expand", disabled: true}, "Truncated for length"));
+        }
+        if (wc > rrd.wordlimit
+            && ((rrd.hard_wordlimit || 0) <= 0
+                || rrd.wordlimit < rrd.hard_wordlimit
+                || hotcrp.status.myperm.allow_administer)) {
+            const wcx = count_words_split(value, rrd.wordlimit),
+                allowede = $e("div", "overlong-allowed"),
+                dividere = $e("div", "overlong-divider",
+                    allowede,
+                    $e("div", "overlong-mark",
+                        $e("div", "overlong-expander",
+                            $e("button", {type: "button", "class": "ui js-overlong-expand", "aria-expanded": "false"}, "Show more")))),
+                contente = $e("div", "overlong-content");
+            addClass(texte, "has-overlong");
+            addClass(texte, "overlong-collapsed");
+            texte.prepend(dividere, contente);
+            texte = contente;
+            render_text.onto(allowede, format, wcx[0]);
         }
     }
     render_text.onto(texte, format, value);
@@ -6969,7 +6966,7 @@ function cmt_render_text(format, value, response, texte, chead) {
 }
 
 function cmt_render_preview(evt, format, value, dest) {
-    var cj = cj_find(evt.target);
+    const cj = cj_find(evt.target);
     cmt_render_text(format, value, cj ? cj.response : 0, dest, null);
     return false;
 }

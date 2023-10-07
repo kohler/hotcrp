@@ -1746,8 +1746,9 @@ class Conf {
             $rrd->grace = $rrj->grace ?? 0;
             $rrd->open = $rrj->open
                 ?? ($rrd->done && $rrd->done + $rrd->grace >= self::$now ? 1 : 0);
-            $rrd->words = $rrj->words ?? 500;
-            $rrd->truncate = $rrj->truncate ?? false;
+            $rrd->wordlimit = $rrj->words ?? 500;
+            $rrd->hard_wordlimit = $rrj->hard_wordlimit
+                ?? ($rrj->truncate ?? false ? $rrd->wordlimit : 0);
             if (($rrj->condition ?? "") !== "") {
                 $rrd->condition = $rrj->condition;
             }
@@ -1773,7 +1774,7 @@ class Conf {
             $rrd->grace = $this->settings["resp_grace{$isuf}"] ?? 0;
             $rrd->open = $this->settings["resp_open{$isuf}"]
                 ?? ($rrd->done && $rrd->done + $rrd->grace >= self::$now ? 1 : 0);
-            $rrd->words = $this->settings["resp_words{$isuf}"] ?? 500;
+            $rrd->wordlimit = $this->settings["resp_words{$isuf}"] ?? 500;
             if (($condition = $this->settingTexts["resp_search{$isuf}"] ?? "") !== "") {
                 $rrd->condition = $condition;
             }
