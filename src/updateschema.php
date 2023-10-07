@@ -1072,6 +1072,25 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
     }
 
+    private function v281_update_response_rounds() {
+        $respv = $this->conf->setting("responses");
+        $jresp = json_decode($this->conf->setting_data("responses") ?? "[]");
+        $njresp = [];
+        foreach ($jresp ?? [] as $i => $rrj) {
+            if (isset($rrj->words)) {
+                $rrj->wl = $rrj->words;
+            }
+            if (isset($rrj->truncate)) {
+                $rrj->wl = $rrj->hwl = $rrj->wl ?? 500;
+            }
+            unset($rrj->words, $rrj->truncate);
+            $njresp[] = $rrj;
+        }
+        if (!empty($njresp)) {
+            $this->conf->save_setting("responses", $respv, json_encode_db($njresp));
+        }
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -2822,6 +2841,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 279) {
             $this->v280_filter_download_log();
             $conf->update_schema_version(280);
+        }
+        if ($conf->sversion === 280) {
+            $this->v281_update_response_rounds();
+            $conf->update_schema_version(281);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

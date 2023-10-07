@@ -341,7 +341,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 280) {
+        if ($this->sversion < 281) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -1722,17 +1722,13 @@ class Conf {
     /** @return list<ResponseRound> */
     function response_rounds() {
         if ($this->_resp_rounds === null) {
-            if ($this->sversion >= 257) {
-                $this->_resp_rounds = $this->_new_response_rounds();
-            } else {
-                $this->_resp_rounds = $this->_old_response_rounds();
-            }
+            $this->_resp_rounds = $this->_response_rounds();
         }
         return $this->_resp_rounds;
     }
 
     /** @return list<ResponseRound> */
-    private function _new_response_rounds() {
+    private function _response_rounds() {
         $rrds = [];
         $active = ($this->settings["resp_active"] ?? 0) > 0;
         $jresp = json_decode($this->settingTexts["responses"] ?? "[{}]");
@@ -1746,39 +1742,13 @@ class Conf {
             $rrd->grace = $rrj->grace ?? 0;
             $rrd->open = $rrj->open
                 ?? ($rrd->done && $rrd->done + $rrd->grace >= self::$now ? 1 : 0);
-            $rrd->wordlimit = $rrj->words ?? 500;
-            $rrd->hard_wordlimit = $rrj->hard_wordlimit
+            $rrd->wordlimit = $rrj->wl ?? $rrj->words ?? 500;
+            $rrd->hard_wordlimit = $rrj->hwl
                 ?? ($rrj->truncate ?? false ? $rrd->wordlimit : 0);
             if (($rrj->condition ?? "") !== "") {
                 $rrd->condition = $rrj->condition;
             }
             $rrd->instructions = $rrj->instructions ?? null;
-            $rrds[] = $rrd;
-        }
-        return $rrds;
-    }
-
-    /** @return list<ResponseRound> */
-    private function _old_response_rounds() {
-        $rrds = [];
-        $x = $this->settingTexts["resp_rounds"] ?? "1";
-        $active = ($this->settings["resp_active"] ?? 0) > 0;
-        foreach (explode(" ", $x) as $i => $rname) {
-            $rrd = new ResponseRound;
-            $rrd->id = $i + 1;
-            $rrd->unnamed = $rname === "1";
-            $rrd->name = $rname;
-            $isuf = $i ? "_{$i}" : "";
-            $rrd->active = $active;
-            $rrd->done = $this->settings["resp_done{$isuf}"] ?? 0;
-            $rrd->grace = $this->settings["resp_grace{$isuf}"] ?? 0;
-            $rrd->open = $this->settings["resp_open{$isuf}"]
-                ?? ($rrd->done && $rrd->done + $rrd->grace >= self::$now ? 1 : 0);
-            $rrd->wordlimit = $this->settings["resp_words{$isuf}"] ?? 500;
-            if (($condition = $this->settingTexts["resp_search{$isuf}"] ?? "") !== "") {
-                $rrd->condition = $condition;
-            }
-            $rrd->instructions = $this->settingTexts["msg.resp_instrux_{$i}"] ?? null;
             $rrds[] = $rrd;
         }
         return $rrds;

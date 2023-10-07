@@ -6376,7 +6376,7 @@ function cmt_render_form(cj) {
     bnote = cmt_is_editable(cj) ? "" : '<div class="hint">(admin only)</div>';
     if (btnbox.length)
         hc.push('<div class="aabut"><div class="btnbox">' + btnbox.join("") + '</div></div>');
-    if (cj.response && resp_rounds[cj.response].wordlimit > 0)
+    if (cj.response && resp_rounds[cj.response].wl > 0)
         hc.push('<div class="aabut"><div class="words"></div></div>');
     hc.push('<div class="aabr">', '</div>');
     hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
@@ -6546,8 +6546,8 @@ function cmt_start_edit(celt, cj) {
     }
 
     if (cj.response) {
-        if (resp_rounds[cj.response].wordlimit > 0) {
-            make_update_words(celt, resp_rounds[cj.response].wordlimit);
+        if (resp_rounds[cj.response].wl > 0) {
+            make_update_words(celt, resp_rounds[cj.response].wl);
         }
         var $ready = $(form.elements.ready).on("click", cmt_ready_change);
         cmt_ready_change.call($ready[0]);
@@ -6928,24 +6928,24 @@ function cmt_render(cj, editing) {
 function cmt_render_text(format, value, response, texte, chead) {
     const rrd = response && resp_rounds[response];
     let aftertexte = null;
-    if (rrd && rrd.wordlimit > 0) {
+    if (rrd && rrd.wl > 0) {
         const wc = count_words(value);
         if (wc > 0 && chead) {
-            chead[0].appendChild($e("div", "cmtthead words" + (wc > rrd.wordlimit ? " wordsover" : ""), plural(wc, "word")));
+            chead[0].appendChild($e("div", "cmtthead words" + (wc > rrd.wl ? " wordsover" : ""), plural(wc, "word")));
         }
-        if ((rrd.hard_wordlimit || 0) > 0
-            && wc > rrd.hard_wordlimit
+        if ((rrd.hwl || 0) > 0
+            && wc > rrd.hwl
             && !hotcrp.status.myperm.allow_administer) {
-            const wcx = count_words_split(value, rrd.hard_wordlimit);
+            const wcx = count_words_split(value, rrd.hwl);
             value = wcx[0].trimEnd() + "…";
             aftertexte = $e("div", "overlong-expander",
                 $e("button", {type: "button", "class": "ui js-overlong-expand", disabled: true}, "Truncated for length"));
         }
-        if (wc > rrd.wordlimit
-            && ((rrd.hard_wordlimit || 0) <= 0
-                || rrd.wordlimit < rrd.hard_wordlimit
+        if (wc > rrd.wl
+            && ((rrd.hwl || 0) <= 0
+                || rrd.wl < rrd.hwl
                 || hotcrp.status.myperm.allow_administer)) {
-            const wcx = count_words_split(value, rrd.wordlimit),
+            const wcx = count_words_split(value, rrd.wl),
                 allowede = $e("div", "overlong-allowed"),
                 dividere = $e("div", "overlong-divider",
                     allowede,

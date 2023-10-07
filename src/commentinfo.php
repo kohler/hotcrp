@@ -207,12 +207,9 @@ class CommentInfo {
             $crow = new CommentInfo($prow);
             $crow->commentType = self::CT_RESPONSE;
             foreach ($prow->conf->response_rounds() as $rrd) {
-                $j = [
-                    "wordlimit" => $rrd->wordlimit,
-                    "words" => $rrd->wordlimit /* XXX compat */
-                ];
+                $j = ["wl" => $rrd->wordlimit];
                 if ($rrd->hard_wordlimit >= $rrd->wordlimit) {
-                    $j["hard_wordlimit"] = $rrd->hard_wordlimit;
+                    $j["hwl"] = $rrd->hard_wordlimit;
                 }
                 $crow->commentRound = $rrd->id;
                 if (Contact::$main_user->can_edit_response($prow, $crow)) {

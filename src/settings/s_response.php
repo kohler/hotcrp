@@ -73,10 +73,10 @@ class Response_Setting {
         }
         $wl = $this->wordlimit ?? 0;
         if (($this->hard_wordlimit ?? 0) > 0) {
-            $j->words = $wl <= 0 ? $this->hard_wordlimit : $wl;
-            $j->hard_wordlimit = $this->hard_wordlimit;
+            $j->wl = $wl <= 0 ? $this->hard_wordlimit : $wl;
+            $j->hwl = $this->hard_wordlimit;
         } else if ($wl !== 500) {
-            $j->words = $wl;
+            $j->wl = $wl;
         }
         if (($this->condition ?? "") !== ""
             && $this->condition !== "all") {
