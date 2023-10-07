@@ -129,7 +129,7 @@ class Topic_SettingParser extends SettingParser {
             && (json_encode_db($this->topicj) !== $oldj || !empty($this->newtopics))) {
             // this will be replaced in store_value, but useful for message context:
             $sv->save("has_topics", !empty($this->topicj) || !empty($this->newtopics));
-            $sv->request_write_lock("TopicArea", "PaperTopic", "TopicInterest");
+            $sv->request_write_lock("TopicArea", "PaperTopic", "TopicInterest", "PaperOption");
             $sv->request_store_value($si);
         }
         return true;
@@ -168,6 +168,14 @@ class Topic_SettingParser extends SettingParser {
             $sv->conf->qe("delete from TopicArea where topicId?a", array_keys($oldm));
             $sv->conf->qe("delete from PaperTopic where topicId?a", array_keys($oldm));
             $sv->conf->qe("delete from TopicInterest where topicId?a", array_keys($oldm));
+            $deloid = [];
+            foreach ($sv->conf->options() as $o) {
+                if ($o->type === "topics")
+                    $deloid[] = $o->id;
+            }
+            if (!empty($deloid)) {
+                $sv->conf->qe("delete from PaperOption where optionId?a and value?a", $deloid, array_keys($oldm));
+            }
         }
         if (!empty($changet)) {
             foreach ($changet as $tn) {
