@@ -74,8 +74,10 @@ class UnicodeHelper {
         return $x;
     }
 
+    /** @param string $x
+     * @return array{string,list<int>} */
     static function deaccent_offsets($x) {
-        $offsetmap = [[0, 0]];
+        $offsetmap = [0, 0];
         if (preg_match_all("/[\xC0-\xFF]/", $x, $m, PREG_OFFSET_CAPTURE)) {
             if (self::$deaccent_map === null) {
                 self::make_deaccent_map();
@@ -89,7 +91,8 @@ class UnicodeHelper {
                 if (($di = self::$deaccent_map[$ch] ?? null) !== null) {
                     $out .= substr($x, $first, $i - $first) . self::deaccent_result($di);
                     $first = $i + $l;
-                    $offsetmap[] = [strlen($out), $first];
+                    $offsetmap[] = strlen($out);
+                    $offsetmap[] = $first;
                 }
             }
             $x = $out . substr($x, $first);
@@ -97,11 +100,15 @@ class UnicodeHelper {
         return [$x, $offsetmap];
     }
 
+    /** @param list<int> $offsetmap
+     * @param int $offset
+     * @return int */
     static function deaccent_translate_offset($offsetmap, $offset) {
-        for ($i = 1; $i < count($offsetmap) && $offsetmap[$i][0] <= $offset; ++$i) {
+        $n = count($offsetmap);
+        for ($i = 2; $i < $n && $offsetmap[$i] <= $offset; $i += 2) {
             /* do nothing */;
         }
-        return $offsetmap[$i - 1][1] + ($offset - $offsetmap[$i - 1][0]);
+        return $offsetmap[$i - 1] + ($offset - $offsetmap[$i - 2]);
     }
 
     /** @param string $str
