@@ -357,7 +357,7 @@ class Mailer {
     /** @param string $s
      * @param int $p
      * @param int $len
-     * @return ?array{string,string} */
+     * @return ?array{string,string,int} */
     static function _check_conditional_at($s, $p, $len) {
         $br = $s[$p] === "{";
         $p += $br ? 2 : 1;
@@ -508,8 +508,7 @@ class Mailer {
         }
 
         if (!empty($ifstack)) {
-            $this->warning_at(null, "<0>Incomplete {IF}");
-
+            $this->warning_at(null, "<0>Incomplete {{IF}}");
         }
 
         while (!empty($ifstack)) {

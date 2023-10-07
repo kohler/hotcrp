@@ -13,24 +13,6 @@ class Signin_Page {
     private $_ms;
 
     static private function bad_post_error(Contact $user, Qrequest $qreq, $action) {
-        $sid = $qreq->qsid() ?? "";
-        $msg = "{$user->conf->dbname}: ignoring unvalidated {$action}"
-            . ", sid=" . ($sid === "" ? ".empty" : $sid);
-        if ($qreq->email) {
-            $msg .= ", email=" . $qreq->email;
-        }
-        if ($qreq->password) {
-            $msg .= ", password";
-        }
-        if ($qreq->post) {
-            $msg .= ", post=" . $qreq->post;
-        }
-        if ($qreq->sessionreport) {
-            $msg .= ", sessionreport=" . $qreq->sessionreport;
-        }
-        if ($sid !== "" || $action !== "signin") {
-            error_log($msg);
-        }
         $qreq->open_session();
         if ($qreq->post_retry) {
             $user->conf->error_msg($user->conf->_i("session_failed_error"));
