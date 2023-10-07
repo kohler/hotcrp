@@ -6295,8 +6295,8 @@ function cmt_is_editable(cj, override) {
 }
 
 
-function cmt_render_form(hc, cj) {
-    var x, btnbox = [], cid = cj_cid(cj), bnote;
+function cmt_render_form(cj) {
+    var x, btnbox = [], cid = cj_cid(cj), bnote, hc = new HtmlCollector;
 
     hc.push('<form class="cmtform">', '</form>');
     if (cj.review_token) {
@@ -6386,7 +6386,7 @@ function cmt_render_form(hc, cj) {
     } else {
         hc.push('<div class="aabut"><button type="button" name="bsubmit" class="btn-primary">Save</button>' + bnote + "</div>");
     }
-    hc.pop_n(2);
+    return $(hc.render())[0];
 }
 
 function cmt_visibility_change() {
@@ -6563,27 +6563,25 @@ function cmt_start_edit(celt, cj) {
 }
 
 function cmt_render_attachment_input(ctr, doc) {
-    var hc = new HtmlCollector;
-    hc.push('<div class="has-document compact" data-dtype="-2" data-document-name="attachment:'.concat(ctr, '">'), '</div>');
-    hc.push('<div class="document-file">', '</div>');
-    cmt_render_attachment(hc, doc);
-    hc.pop();
-    hc.push('<div class="document-actions"><button type="button" class="link ui js-remove-document">Delete</button><input type="hidden" name="attachment:'.concat(ctr, '" value="', doc.docid, '"></div>'));
-    return hc.render();
+    return $e("div", {"class": "has-document compact", "data-dtype": "-2", "data-document-name": "attachment:" + ctr},
+        $e("div", "document-file", cmt_render_attachment(doc)),
+        $e("div", "document-actions",
+            $e("button", {type: "button", "class": "link ui js-remove-document"}, "Delete"),
+            hidden_input("attachment:" + ctr, doc.docid)));
 }
 
-function cmt_render_attachment(hc, doc) {
-    hc.push('<a href="' + escape_html(siteinfo.site_relative + doc.siteurl) + '" class="qo">', '</a>');
+function cmt_render_attachment(doc) {
+    const a = $e("a", {href: siteinfo.site_relative + doc.siteurl, "class": "qo"});
     if (doc.mimetype === "application/pdf") {
-        hc.push('<img src="' + siteinfo.assets + 'images/pdf.png" alt="[PDF]" class="sdlimg"> ');
+        a.append($e("img", {src: siteinfo.assets + "images/pdf.png", alt: "[PDF]", "class": "sdlimg"}));
     } else {
-        hc.push('<img src="' + siteinfo.assets + 'images/generic.png" alt="[Attachment]" class="sdlimg"> ');
+        a.append($e("img", {src: siteinfo.assets + "images/generic.png", alt: "[Attachment]", "class": "sdlimg"}));
     }
-    hc.push('<u class="x">' + escape_html(doc.unique_filename || doc.filename || "Attachment") + '</u>');
+    a.append(" ", $e("u", "x", doc.unique_filename || doc.filename || "Attachment"));
     if (doc.size != null) {
-        hc.push(' <span class="dlsize">(' + unparse_byte_size(doc.size) + ')</span>');
+        a.append(" ", $e("span", "dlsize", "(" + unparse_byte_size(doc.size) + ")"));
     }
-    hc.pop();
+    return a;
 }
 
 function cmt_beforeunload() {
@@ -6872,26 +6870,27 @@ function cmt_render(cj, editing) {
         hc.push(t);
     }
     hc.pop_collapse();
+    $(celt).append(hc.render());
 
     // text
-    hc.push('<div class="cmtmsg"></div>');
+    celt.append($e("div", "cmtmsg"));
     if (cj.response && cj.draft && cj.text) {
-        hc.push('<p class="feedback is-warning">Reviewers can’t see this draft response.</p>');
+        celt.append($e("p", "feedback is-warning", "Reviewers can’t see this draft response"));
     }
     if (editing) {
-        cmt_render_form(hc, cj);
+        celt.append(cmt_render_form(cj));
     } else {
-        hc.push('<div class="cmttext"></div>');
+        celt.append($e("div", "cmttext"));
         if (cj.docs && cj.docs.length) {
-            hc.push('<div class="cmtattachments">', '</div>');
-            for (i = 0; i !== cj.docs.length; ++i)
-                cmt_render_attachment(hc, cj.docs[i]);
-            hc.pop();
+            const ats = $e("div", "cmtattachments");
+            celt.append(ats);
+            for (i = 0; i !== cj.docs.length; ++i) {
+                ats.append(cmt_render_attachment(cj.docs[i]));
+            }
         }
     }
 
     // render
-    $(celt).append(hc.render());
     cmt_toggle_editing(celt, editing);
     if (cj.response) {
         t = cj_name(cj);
