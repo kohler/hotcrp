@@ -113,14 +113,14 @@ class Preference_AssignmentParser extends AssignmentParser {
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $pref = $req["preference"];
         if ($pref === null) {
-            return new AssignmentError("<0>Missing preference.");
+            return new AssignmentError("<0>Preference missing");
         }
         $ppref = self::parse($pref);
         if ($ppref === null) {
             if (preg_match('/([+-]?)\s*(\d+)\s*([xyz]?)/i', $pref, $m)) {
-                $msg = $state->conf->_("<0>‘%s’ isn’t a valid preference. Did you mean ‘%s’?", $pref, $m[1] . $m[2] . strtoupper($m[3]));
+                $msg = $state->conf->_("<0>Invalid preference ‘{}’. Did you mean ‘{}’?", $pref, $m[1] . $m[2] . strtoupper($m[3]));
             } else {
-                $msg = $state->conf->_("<0>‘%s’ isn’t a valid preference.", $pref);
+                $msg = $state->conf->_("<0>Invalid preference ‘{}’", $pref);
             }
             $state->user_error($msg);
             return false;
@@ -132,7 +132,8 @@ class Preference_AssignmentParser extends AssignmentParser {
         $exp = $req["expertise"];
         if ($exp && ($exp = trim($exp)) !== "") {
             if (($pexp = self::parse($exp)) === null || $pexp[0]) {
-                return new AssignmentError("<0>Invalid expertise ‘{$exp}’.");
+                $state->user_error($state->conf->_("<0>Invalid expertise ‘{}’", $exp));
+                return false;
             }
             $ppref[1] = $pexp[1];
         }

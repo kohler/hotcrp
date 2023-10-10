@@ -238,30 +238,30 @@ class Paper_Page {
                 $notes[] = $conf->_("<0>The final version has not yet been submitted.");
             }
             $notes[] = $this->time_note($this->conf->setting("final_soft") ?? 0,
-                "<5>You have until %s to make further changes.",
-                "<5>The deadline for submitting final versions was %s.");
+                "<5>You have until {} to make further changes.",
+                "<5>The deadline for submitting final versions was {}.");
         } else if ($new_prow->timeSubmitted > 0) {
             $note_status = MessageSet::SUCCESS;
             $notes[] = $conf->_("<0>The submission is ready for review.");
             if (!$sr->freeze) {
                 $notes[] = $this->time_note($sr->update,
-                    "<5>You have until %s to make further changes.", "");
+                    "<5>You have until {} to make further changes.", "");
             }
         } else {
             $note_status = MessageSet::URGENT_NOTE;
             if ($sr->freeze) {
                 $notes[] = $conf->_("<0>This submission has not yet been completed.");
             } else if (($missing = PaperTable::missing_required_fields($new_prow))) {
-                $notes[] = $conf->_("<5>This submission is not ready for review. Required fields %#s are missing.", PaperTable::field_title_links($missing, "missing_title"));
+                $notes[] = $conf->_("<5>This submission is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
             } else {
                 $first = $conf->_("<5>This submission is marked as not ready for review.");
                 $notes[] = "<5><strong>" . Ftext::unparse_as($first, 5) . "</strong>";
             }
             $notes[] = $this->time_note($sr->update,
-                "<5>You have until %s to make further changes.",
-                "<5>The deadline for updating submissions was %s.");
+                "<5>You have until {} to make further changes.",
+                "<5>The deadline for updating submissions was {}.");
             if (($msg = $this->time_note($sr->submit,
-                "<5>Submissions incomplete as of %s will not be considered.", "")) !== "") {
+                "<5>Submissions incomplete as of {} will not be considered.", "")) !== "") {
                 $notes[] = $msg;
             }
         }
@@ -273,9 +273,9 @@ class Paper_Page {
                 $this->ps->splice_msg($msgpos++, $conf->_("<0>No changes"), MessageSet::WARNING_NOTE);
             }
         } else if ($is_new) {
-            $this->ps->splice_msg($msgpos++, $conf->_("<0>Registered submission as #%d", $new_prow->paperId), MessageSet::SUCCESS);
+            $this->ps->splice_msg($msgpos++, $conf->_("<0>Registered submission as #{}", $new_prow->paperId), MessageSet::SUCCESS);
         } else {
-            $t = $action === "final" ? "<0>Updated final version (changed %#s)" : "<0>Updated submission (changed %#s)";
+            $t = $action === "final" ? "<0>Updated final version (changed {:list})" : "<0>Updated submission (changed {:list})";
             $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
             $this->ps->splice_msg($msgpos++, $conf->_($t, $chf), MessageSet::SUCCESS);
         }
@@ -313,7 +313,7 @@ class Paper_Page {
                 if (!$is_new) {
                     $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
                     if (!empty($chf)) {
-                        $options["change"] = $conf->_("%#s were changed.", $chf);
+                        $options["change"] = $conf->_("{:list} were changed.", $chf);
                     }
                 }
                 HotCRPMailer::send_contacts($template, $new_prow, $options);

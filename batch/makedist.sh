@@ -327,6 +327,7 @@ src/meetingtracker.php
 src/mentionparser.php
 src/mergecontacts.php
 src/multiconference.php
+src/notificationinfo.php
 src/options/o_abstract.php
 src/options/o_attachments.php
 src/options/o_authors.php

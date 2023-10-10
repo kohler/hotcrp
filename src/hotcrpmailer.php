@@ -612,7 +612,7 @@ class HotCRPMailer extends Mailer {
      * @param PaperInfo $row
      * @return bool */
     static function send_contacts($template, $row, $rest = []) {
-        $preps = $contacts = [];
+        $preps = $aunames = [];
         $rest["prow"] = $row;
         $rest["combination_type"] = 1;
         $rest["author_permission"] = true;
@@ -620,22 +620,20 @@ class HotCRPMailer extends Mailer {
             assert(empty($minic->review_tokens()));
             if (($p = self::prepare_to($minic, $template, $rest))) {
                 $preps[] = $p;
-                $contacts[] = $minic->name_h(NAME_EB);
+                $aunames[] = $minic->name_h(NAME_EB);
             }
         }
         self::send_combined_preparations($preps);
-        if (!empty($contacts) && ($user = $rest["confirm_message_for"] ?? null)) {
+        if (!empty($aunames) && ($user = $rest["confirm_message_for"] ?? null)) {
             '@phan-var-force Contact $user';
             if ($user->allow_view_authors($row)) {
-                $m = $row->conf->_("<5>Notified submission contacts %#s", array_map(function ($u) {
-                    return "<span class=\"nb\">{$u}</span>";
-                }, $contacts));
+                $m = $row->conf->_("<5>Notified submission contacts {:nblist}", $aunames);
             } else {
                 $m = $row->conf->_("<0>Notified submission contact(s)");
             }
             $row->conf->success_msg($m);
         }
-        return !empty($contacts);
+        return !empty($aunames);
     }
 
     /** @param PaperInfo $row */

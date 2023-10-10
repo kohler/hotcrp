@@ -319,7 +319,7 @@ class Profile_Page {
         }
 
         if (!empty($ustatus->unknown_topics)) {
-            $ms->warning_at(null, $this->conf->_("<0>Unknown topics ignored (%#s)", array_keys($ustatus->unknown_topics)));
+            $ms->warning_at(null, $this->conf->_("<0>Unknown topics ignored ({:list})", array_keys($ustatus->unknown_topics)));
         }
         $mpos = 0;
         if (!empty($success)) {

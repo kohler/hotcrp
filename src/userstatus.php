@@ -749,7 +749,7 @@ class UserStatus extends MessageSet {
             $this->warning_at("follow", "<0>Unknown follow types ignored (" . commajoin($cj->bad_follow) . ")");
         }
         if (isset($cj->bad_topics) && !empty($cj->bad_topics)) {
-            $this->warning_at("topics", $this->conf->_("<0>Unknown topics ignored (%#s)", $cj->bad_topics));
+            $this->warning_at("topics", $this->conf->_("<0>Unknown topics ignored ({:list})", $cj->bad_topics));
         }
     }
 

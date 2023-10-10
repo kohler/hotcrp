@@ -1930,7 +1930,7 @@ class PaperTable {
             $whyNot = $this->user->perm_edit_paper($this->prow);
             if (!$whyNot) {
                 if (($missing = PaperTable::missing_required_fields($this->prow))) {
-                    $first = $this->conf->_("<5>This submission is not ready for review. Required fields %#s are missing.", PaperTable::field_title_links($missing, "missing_title"));
+                    $first = $this->conf->_("<5>This submission is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
                     $first = Ftext::unparse_as($first, 5);
                 } else {
                     $first = $this->conf->_("<5>This submission is marked as not ready for review.");
@@ -2025,7 +2025,7 @@ class PaperTable {
                 return $this->edit_status->has_problem_at($o->formid);
             });
             if (!empty($fields)) {
-                $this->_main_message($this->conf->_c("paper_edit", "<5>Please check %s before completing the submission.", commajoin(self::field_title_links($fields, "edit_title"))), $this->edit_status->problem_status());
+                $this->_main_message($this->conf->_c("paper_edit", "<5>Please check {:list} before completing the submission.", self::field_title_links($fields, "edit_title")), $this->edit_status->problem_status());
             }
         }
     }

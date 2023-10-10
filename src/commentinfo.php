@@ -53,12 +53,8 @@ class CommentInfo {
     /** @var ?string */
     public $email;
 
-    /** @var ?array<int,string> */
-    public $saved_mentions;
-    /** @var ?bool */
-    public $saved_mentions_missing;
-    /** @var ?bool */
-    public $notified_authors;
+    /** @var ?list<NotificationInfo> */
+    public $notifications;
     /** @var ?list<MessageItem> */
     public $message_list;
 
@@ -789,9 +785,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
     /** @param array{docs?:list<DocumentInfo>,tags?:?string} $req
      * @return bool */
     function save_comment($req, Contact $acting_user) {
-        $this->saved_mentions = [];
-        $this->saved_mentions_missing = false;
-        $this->notified_authors = false;
+        $this->notifications = [];
 
         $user = $acting_user;
         if (!$user->contactId) {
@@ -902,7 +896,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 && $displayed) {
                 $qa .= ", timeDisplayed=" . Conf::$now;
             }
-            $q = "update PaperComment set timeModified=" . Conf::$now . $qa . ", commentType={$ctype}, comment=?, commentOverflow=?, commentTags=?, commentData=? where commentId=$this->commentId";
+            $q = "update PaperComment set timeModified=" . Conf::$now . $qa . ", commentType={$ctype}, comment=?, commentOverflow=?, commentTags=?, commentData=? where commentId={$this->commentId}";
             if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
             } else {
@@ -1029,47 +1023,24 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         }
 
         if ($this->timeNotified === $this->timeModified) {
-            if ($is_response && ($ctype & self::CT_DRAFT) !== 0) {
-                $tmpl = "@responsedraftnotify";
-            } else if ($is_response) {
-                $tmpl = "@responsenotify";
-            } else if (($ctype & self::CTVIS_MASK) === self::CTVIS_ADMINONLY) {
-                $tmpl = "@admincommentnotify";
-            } else {
-                $tmpl = "@commentnotify";
-            }
-            $info = [
-                "prow" => $this->prow,
-                "comment_row" => $this,
-                "combination_type" => 1
-            ];
-            $preps = [];
-            foreach ($this->followers() as $minic) {
-                if ($minic->contactId === $user->contactId
-                    || isset($this->saved_mentions[$minic->contactId])) {
-                    continue;
-                }
-                // prepare mail
-                $p = HotCRPMailer::prepare_to($minic, $tmpl, $info);
-                if (!$p) {
-                    continue;
-                }
-                if ($this->prow->has_author($minic)) {
-                    $this->notified_authors = true;
-                }
-                // Don't combine preparations unless you can see all submitted
-                // reviewer identities
-                // XXX maybe should not combine preparations at all?
-                if (!$this->prow->has_author($minic)
-                    && !$minic->can_view_review_identity($this->prow, null)) {
-                    $p->unique_preparation = true;
-                }
-                $preps[] = $p;
-            }
-            HotCRPMailer::send_combined_preparations($preps);
+            $this->notify($user);
         }
 
         return true;
+    }
+
+    /** @param Contact $user
+     * @param 1|2|4 $types
+     * @return NotificationInfo */
+    private function notification($user, $types) {
+        foreach ($this->notifications as $n) {
+            if ($n->user->contactId === $user->contactId) {
+                $n->types |= $types;
+                return $n;
+            }
+        }
+        $this->notifications[] = $n = new NotificationInfo($user, $types);
+        return $n;
     }
 
     /** @param Contact $user */
@@ -1092,27 +1063,22 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         // go over mentions, send email
         foreach ($desired_mentions as $mxm) {
             $mentionee = $this->conf->user_by_id($mxm[0], USER_SLICE);
-            if (!$mentionee
+            if (!$mentionee) {
+                continue;
+            }
+            $notification = $this->notification($mentionee, NotificationInfo::MENTION);
+            if ($notification->sent
                 || $mentionee->is_dormant()
                 || !$mentionee->can_view_comment($this->prow, $this)) {
                 continue;
             }
-            if (!isset($this->saved_mentions[$mxm[0]])) {
-                HotCRPMailer::send_to($mentionee, "@mentionnotify", [
-                    "prow" => $this->prow,
-                    "comment_row" => $this
-                ]);
-                $this->saved_mentions[$mxm[0]] = htmlspecialchars(substr($text, $mxm[1] + 1, $mxm[2] - $mxm[1] - 1));
+            HotCRPMailer::send_to($mentionee, "@mentionnotify", [
+                "prow" => $this->prow,
+                "comment_row" => $this
+            ]);
+            if (!$mxm[3]) {
+                $notification->user_html = htmlspecialchars(substr($text, $mxm[1] + 1, $mxm[2] - $mxm[1] - 1));
             }
-            if ($mxm[3]) {
-                $this->saved_mentions[$mxm[0]] = $user->reviewer_html_for($mentionee);
-            }
-        }
-
-        // mark if notifications are missing
-        foreach ($desired_mentions as $mxm) {
-            if (!isset($this->saved_mentions[$mxm[0]]))
-                $this->saved_mentions_missing = true;
         }
     }
 
@@ -1145,5 +1111,51 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             }
         }
         return $us;
+    }
+
+    /** @param ?Contact $user */
+    function notify($user) {
+        $ctype = $this->commentType;
+        $is_response = $this->is_response();
+        if ($is_response && ($ctype & self::CT_DRAFT) !== 0) {
+            $tmpl = "@responsedraftnotify";
+        } else if ($is_response) {
+            $tmpl = "@responsenotify";
+        } else if (($ctype & self::CTVIS_MASK) === self::CTVIS_ADMINONLY) {
+            $tmpl = "@admincommentnotify";
+        } else {
+            $tmpl = "@commentnotify";
+        }
+        $info = [
+            "prow" => $this->prow,
+            "comment_row" => $this,
+            "combination_type" => 1
+        ];
+        $preps = [];
+        foreach ($this->followers() as $minic) {
+            if ($user && $minic->contactId === $user->contactId) {
+                continue;
+            }
+            $is_author = $this->prow->has_author($minic);
+            $notification = $this->notification($minic, $is_author ? NotificationInfo::CONTACT : NotificationInfo::FOLLOW);
+            if ($notification->sent) {
+                continue;
+            }
+            // prepare mail
+            $p = HotCRPMailer::prepare_to($minic, $tmpl, $info);
+            if (!$p) {
+                continue;
+            }
+            // Don't combine preparations unless you can see all submitted
+            // reviewer identities
+            // XXX maybe should not combine preparations at all?
+            if (!$this->prow->has_author($minic)
+                && !$minic->can_view_review_identity($this->prow, null)) {
+                $p->unique_preparation = true;
+            }
+            $preps[] = $p;
+            $notification->sent = true;
+        }
+        HotCRPMailer::send_combined_preparations($preps);
     }
 }

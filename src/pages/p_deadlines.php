@@ -52,8 +52,8 @@ class Deadlines_Page {
                         self::dl1($conf, $dlr->done, "Response deadline",
                                   "You can submit responses to the reviews until this deadline.");
                     } else {
-                        self::dl1($conf, $dlr->done, "%s response deadline",
-                                  "You can submit %s responses to the reviews until this deadline.", $rname);
+                        self::dl1($conf, $dlr->done, "{} response deadline",
+                                  "You can submit {} responses to the reviews until this deadline.", $rname);
                     }
                 }
             }
@@ -107,17 +107,17 @@ class Deadlines_Page {
                     $dt = substr($dldesc, 0, 2);
                     $dv = (int) substr($dldesc, 2);
                     if ($dt === "PS") {
-                        self::dl1($conf, $dv, "%s review deadline",
-                                  "%s reviews are requested by this deadline.", $roundname);
+                        self::dl1($conf, $dv, "{} review deadline",
+                                  "{} reviews are requested by this deadline.", $roundname);
                     } else if ($dt === "PH") {
-                        self::dl1($conf, $dv, "%s review hard deadline",
-                                  "%s reviews must be submitted by this deadline.", $roundname);
+                        self::dl1($conf, $dv, "{} review hard deadline",
+                                  "{} reviews must be submitted by this deadline.", $roundname);
                     } else if ($dt === "ES") {
-                        self::dl1($conf, $dv, "%s external review deadline",
-                                  "%s reviews are requested by this deadline.", $roundname);
+                        self::dl1($conf, $dv, "{} external review deadline",
+                                  "{} reviews are requested by this deadline.", $roundname);
                     } else if ($dt === "EH") {
-                        self::dl1($conf, $dv, "%s external review hard deadline",
-                                  "%s reviews must be submitted by this deadline.", $roundname);
+                        self::dl1($conf, $dv, "{} external review hard deadline",
+                                  "{} reviews must be submitted by this deadline.", $roundname);
                     }
                 }
                 if ($dlroundunify) {

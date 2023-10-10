@@ -151,18 +151,32 @@ class Comment_API {
 
         // save success messages
         $this->ms->append_item(self::save_success_message($xcrow));
-        if ($xcrow->notified_authors
-            && !$this->prow->has_author($suser)) {
-            if ($this->user->allow_view_authors($this->prow)) {
-                $this->ms->success($this->conf->_("<0>Notified submission authors", count($this->prow->author_list())));
-            } else {
-                $this->ms->success($this->conf->_("<0>Notified submission author(s)"));
+
+        $aunames = $mentions = [];
+        $mentions_missing = false;
+        foreach ($xcrow->notifications ?? [] as $n) {
+            if (($n->types & NotificationInfo::CONTACT) !== 0 && $n->sent) {
+                $aunames[] = $n->user->name_h(NAME_EB);
+            }
+            if (($n->types & NotificationInfo::MENTION) !== 0) {
+                if ($n->sent) {
+                    $mentions[] = $n->user_html ?? $suser->reviewer_html_for($n->user);
+                } else {
+                    $mentions_missing = true;
+                }
             }
         }
-        if ($xcrow->saved_mentions) {
-            $this->ms->success($this->conf->_("<5>Notified mentioned users %#s", array_values($xcrow->saved_mentions)));
+        if ($aunames && !$this->prow->has_author($suser)) {
+            if ($this->user->allow_view_authors($this->prow)) {
+                $this->ms->success($this->conf->_("<5>Notified submission contacts {:nblist}", $aunames));
+            } else {
+                $this->ms->success($this->conf->_("<0>Notified submission contact(s)"));
+            }
         }
-        if ($xcrow->saved_mentions_missing) {
+        if ($mentions) {
+            $this->ms->success($this->conf->_("<5>Notified mentioned users {:nblist}", $mentions));
+        }
+        if ($mentions_missing) {
             $this->ms->msg_at(null, $this->conf->_("<0>Some users mentioned in the comment cannot see the comment yet, so they were not notified."), MessageSet::WARNING_NOTE);
         }
         return $xcrow;
