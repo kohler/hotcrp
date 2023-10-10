@@ -536,6 +536,9 @@ class Fmt {
         }
         $vformat = $fa->format;
         $cformat = $fctx->format;
+        if ($cformat === null && $pos !== 0) {
+            $cformat = Ftext::format($s);
+        }
         if ($m[3] === ":url") {
             $value = urlencode($value);
             $vformat = null;
@@ -545,6 +548,24 @@ class Fmt {
         } else if ($m[3] === ":list") {
             assert(is_array($value));
             $value = commajoin($value);
+        } else if ($m[3] === ":nblist") {
+            assert(is_array($value));
+            $value = array_values($value);
+            $n = count($value);
+            $xvalue = "";
+            for ($i = 0; $i !== $n; ++$i) {
+                $v = $value[$i];
+                if ($i < $n - 1 && $n > 2) {
+                    $v = $cformat === 5 ? "<span class=\"nb\">{$v},</span>" : "{$v},";
+                } else {
+                    $v = $cformat === 5 ? "<span class=\"nb\">{$v}</span>" : $v;
+                }
+                if ($i < $n - 1) {
+                    $v .= $i < $n - 2 ? " " : " and ";
+                }
+                $xvalue .= $v;
+            }
+            $value = $xvalue;
         } else if ($m[3] === ":numlist") {
             assert(is_array($value));
             $value = numrangejoin($value);
@@ -556,9 +577,7 @@ class Fmt {
             if ($vformat === null) {
                 list($vformat, $value) = Ftext::parse($value, 0);
             }
-            if ($pos !== 0) {
-                $cformat = $cformat ?? Ftext::format($s);
-            } else if ($cformat === null) {
+            if ($pos === 0 && $cformat === null) {
                 $value = "<{$vformat}>{$value}";
             }
         }

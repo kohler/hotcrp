@@ -116,4 +116,12 @@ class Fmt_Tester {
         xassert_eqq($ms->_("<5><a href=\"{0}\">{0:humanize_url}</a>", new FmtArg(0, "http://www.hello.com/", 0)), "<5><a href=\"http://www.hello.com/\">www.hello.com</a>");
         xassert_eqq($ms->_("<5><a href=\"{0}\">{0:humanize_url}</a>", new FmtArg(0, "https://www.hello.com/\"", 0)), "<5><a href=\"https://www.hello.com/&quot;\">www.hello.com/&quot;</a>");
     }
+
+    function test_nblist() {
+        $ms = new Fmt;
+        xassert_eqq($ms->_("<5>{:nblist}", ["a"]), "<5><span class=\"nb\">a</span>");
+        xassert_eqq($ms->_("<5>{:nblist}", ["a", "b c", "d"]), "<5><span class=\"nb\">a,</span> <span class=\"nb\">b c,</span> and <span class=\"nb\">d</span>");
+        xassert_eqq($ms->_("<0>{:nblist}", ["a", "b c", "d"]), "<0>a, b c, and d");
+        xassert_eqq($ms->_("<0>{:nblist}", ["a", "b c"]), "<0>a and b c");
+    }
 }
