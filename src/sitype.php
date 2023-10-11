@@ -429,6 +429,8 @@ class String_Sitype extends Sitype {
     private $long = false;
     /** @var bool */
     private $allow_int = false;
+    /** @var bool */
+    private $condition = false;
     /** @var ?string */
     private $example;
     function __construct($name, $subtype = null) {
@@ -440,6 +442,9 @@ class String_Sitype extends Sitype {
             $this->simple = $this->allow_int = true;
         } else if ($subtype === "search") {
             $this->simple = true;
+            $this->example = "search expression";
+        } else if ($subtype === "condition") {
+            $this->simple = $this->condition = true;
             $this->example = "search expression";
         } else if ($subtype === "formula") {
             $this->simple = true;
@@ -466,10 +471,22 @@ class String_Sitype extends Sitype {
             return $jv ?? "";
         } else if (is_int($jv) && $this->allow_int) {
             return "{$jv}";
+        } else if (is_bool($jv) && $this->condition) {
+            return $jv ? "ALL" : "NONE";
         } else {
             $sv->error_at($si, $this->allow_int ? "<0>String or number required" : "<0>String required");
             return null;
         }
+    }
+    function unparse_jsonv($v, Si $si, SettingValues $sv) {
+        if ($this->condition) {
+            if ($v === "ALL") {
+                return true;
+            } else if ($v === "NONE") {
+                return false;
+            }
+        }
+        return $v;
     }
     function nullable($v, Si $si, SettingValues $sv) {
         return $v === ""

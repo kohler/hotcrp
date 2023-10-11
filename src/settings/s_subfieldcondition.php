@@ -63,7 +63,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
             foreach ($opts as $ctrz => $f) {
                 $ctr = $ctrz + 1;
                 self::validate1($sv, "sf/{$ctr}/condition", $f, $f->exists_condition(), 1);
-                self::validate1($sv, "sf/{$ctr}/editcondition", $f, $f->editable_condition(), 1);
+                self::validate1($sv, "sf/{$ctr}/edit_condition", $f, $f->editable_condition(), 1);
             }
         }
     }
@@ -74,7 +74,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
         foreach ($opts as $f) {
             if (($ctr = $osp->option_id_to_ctr[$f->id] ?? null) !== null) {
                 self::validate1($sv, "sf/{$ctr}/condition", $f, $f->exists_condition(), 2);
-                self::validate1($sv, "sf/{$ctr}/editcondition", $f, $f->editable_condition(), 2);
+                self::validate1($sv, "sf/{$ctr}/edit_condition", $f, $f->editable_condition(), 2);
             }
         }
     }

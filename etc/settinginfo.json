@@ -278,15 +278,16 @@
     {
         "name_pattern": "sf/$/condition", "storage": "member.exists_if",
         "title": "/Presence condition",
-        "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
+        "type": "string", "subtype": "condition", "size": 30, "placeholder": "Search",
         "parse_order": 3
     },
     {
-        "name_pattern": "sf/$/editcondition", "storage": "member.editable_if",
+        "name_pattern": "sf/$/edit_condition", "storage": "member.editable_if",
         "title": "/Edit condition",
-        "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
+        "type": "string", "subtype": "condition", "size": 30, "placeholder": "Search",
         "parse_order": 3
     },
+    {   "name_pattern": "sf/$/editcondition", "alias_pattern": "rf/$/edit_condition"   },
     {
         "name_pattern": "sf/$/min",
         "title": "/Minimum value count",
@@ -709,7 +710,7 @@
     {
         "name_pattern": "rf/$/condition", "storage": "member.exists_if",
         "title": "/Presence condition",
-        "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
+        "type": "string", "subtype": "condition", "size": 30, "placeholder": "Search",
         "parser_class": "ReviewFieldCondition_SettingParser", "parse_order": 2
     },
     {   "name_pattern": "rf/$/exists_if", "alias_pattern": "rf/$/condition"   },
