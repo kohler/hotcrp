@@ -1676,7 +1676,7 @@ class Conf {
         }
         if ($add && !self::round_name_error($rname)) {
             $rtext = $this->setting_data("tag_rounds") ?? "";
-            $rtext = $rtext === "" ? $rname : "$rtext $rname";
+            $rtext = $rtext === "" ? $rname : "{$rtext} {$rname}";
             $this->save_setting("tag_rounds", 1, $rtext);
             $this->refresh_round_settings();
             return $this->round_number($rname, false);
@@ -1731,7 +1731,8 @@ class Conf {
     private function _response_rounds() {
         $rrds = [];
         $active = ($this->settings["resp_active"] ?? 0) > 0;
-        $jresp = json_decode($this->settingTexts["responses"] ?? "[{}]");
+        $resptext = $this->settingTexts["responses"] ?? null;
+        $jresp = $resptext ? json_decode($resptext) : null;
         foreach ($jresp ?? [(object) []] as $i => $rrj) {
             $rrd = new ResponseRound;
             $rrd->id = $i + 1;
@@ -3153,7 +3154,8 @@ class Conf {
             if (strcasecmp($t, $sr->tag) === 0)
                 return $sr;
         }
-        if (in_array(strtolower($t), ["unnamed", "undefined", "default", "none"])) {
+        if (strcasecmp($t, "unnamed") === 0
+            || strcasecmp($t, "none") === 0) {
             return $this->unnamed_submission_round();
         }
         return null;

@@ -746,8 +746,10 @@ class PaperInfo {
         $prow->_author_user = $user;
         $prow->_comment_skeleton_array = $prow->_comment_array = [];
         $prow->_row_set->add_paper($prow);
-        if ($stag && ($sr = $user->conf->submission_round_by_tag($stag))) {
-            $prow->paperTags = " {$stag}#0";
+        if ($stag
+            && ($sr = $user->conf->submission_round_by_tag($stag))
+            && !$sr->unnamed) {
+            $prow->paperTags = " {$sr->tag}#0";
             $prow->_submission_round = $sr;
         }
         $prow->set_is_new(true);
