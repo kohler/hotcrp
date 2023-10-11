@@ -552,7 +552,7 @@
         "name": "review_proposal", "storage": "extrev_chairreq",
         "title": "PC proposals for external reviewers",
         "type": "radio",
-        "values": [-1, 0, 1, 2], "default_value": 0, "initial_value": "approval_required_potential_conflict",
+        "values": [-1, 0, 1, 2], "default_value": 0, "initial_value": 2,
         "json_values": ["no", "yes", "approval_required", "approval_required_potential_conflict"]
     },
     {
