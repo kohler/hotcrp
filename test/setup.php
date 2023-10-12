@@ -911,7 +911,7 @@ function sorted_conflicts(PaperInfo $prow, $flags) {
         if (($cu->conflictType >= CONFLICT_AUTHOR
              ? ($flags & TESTSC_CONTACTS) !== 0
              : ($flags & TESTSC_CONFLICTS) !== 0)
-            && ($cu->user->disablement === 0 || ($flags & TESTSC_DISABLED) !== 0))
+            && (!$cu->user->is_dormant() || ($flags & TESTSC_DISABLED) !== 0))
             $c[] = $cu->user->email;
     }
     sort($c);

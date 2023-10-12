@@ -113,12 +113,11 @@ class User_API {
             $ustatus = new UserStatus($viewer);
             $ustatus->set_user($user);
             if ($ustatus->save_user((object) ["disabled" => $disabled], $user)) {
-                $d = $user->disablement;
                 return new JsonResult([
                     "ok" => true,
                     "u" => $user->email,
-                    "disabled" => ($d & ~Contact::DISABLEMENT_PLACEHOLDER) !== 0,
-                    "placeholder" => ($d & Contact::DISABLEMENT_PLACEHOLDER) !== 0
+                    "disabled" => $user->is_disabled(),
+                    "placeholder" => $user->is_placeholder()
                 ]);
             } else {
                 return new JsonResult(["ok" => false, "u" => $user->email]);
@@ -134,11 +133,10 @@ class User_API {
         if ($user->activate_placeholder_prop(false)) {
             $user->save_prop();
         }
-        if ($user->disablement === 0) {
+        if (!$user->is_dormant()) {
             $user->send_mail("@accountinfo");
             return new JsonResult(["ok" => true, "u" => $user->email]);
-        }
-        if ($user->disablement === Contact::DISABLEMENT_PLACEHOLDER) {
+        } else if ($user->is_placeholder() && !$user->is_disabled()) {
             $msg = "<0>This user has not yet activated their account";
         } else {
             $msg = "<0>User disabled";

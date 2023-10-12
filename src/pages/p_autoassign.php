@@ -411,7 +411,7 @@ class Autoassign_Page {
         $tagsjson = [];
         foreach ($conf->pc_members() as $pc) {
             $tagsjson[$pc->contactId] = strtolower($pc->viewable_tags($this->user))
-                . ($pc->disablement ? "" : " enabled#0");
+                . ($pc->is_dormant() ? "" : " enabled#0");
         }
         Ht::stash_script("var hotcrp_pc_tags=" . json_encode($tagsjson) . ";");
         foreach ($conf->viewable_user_tags($this->user) as $pctag) {

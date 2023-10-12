@@ -236,7 +236,7 @@ class Completion_API {
                 if ($viewid
                     && $rrow->contactId !== $user->contactId
                     && ($cvis >= CommentInfo::CTVIS_REVIEWER || $rrow->reviewType >= REVIEW_PC)
-                    && !$rrow->reviewer()->disablement) {
+                    && !$rrow->reviewer()->is_dormant()) {
                     $rlist[] = $rrow->reviewer();
                 }
             }
@@ -249,7 +249,7 @@ class Completion_API {
                 $pclist = $user->conf->enabled_pc_members();
             } else {
                 foreach ($user->conf->pc_members() as $p) {
-                    if ($p->disablement === 0
+                    if (!$p->is_dormant()
                         && $p->can_pc_view_paper_track($prow))
                         $pclist[] = $p;
                 }
