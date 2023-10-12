@@ -3839,22 +3839,17 @@ class Contact implements JsonSerializable {
      * @param PaperContactInfo $rights
      * @return -1|0|1|3|4 */
     private function seerev_setting(PaperInfo $prow, $rbase, $rights) {
-        if ($rights->view_conflict_type) {
+        if ($rights->view_conflict_type
+            || (!$rights->allow_pc && !$rights->reviewType)
+            || !$this->conf->check_reviewer_tracks($prow, $this, Track::VIEWREV)) {
             return -1;
         }
         $round = $rbase ? $rbase->reviewRound : "max";
-        if ($rights->allow_pc) {
-            if ($this->conf->check_tracks($prow, $this, Track::VIEWREV)) {
-                $s = $this->conf->round_setting("viewrev", $round) ?? 0;
-                if ($s > 0 && !$this->conf->check_tracks($prow, $this, Track::VIEWALLREV)) {
-                    $s = 0;
-                }
-                return $s;
-            }
-        } else if ($rights->reviewType > 0) {
-            return $this->conf->round_setting("viewrev_ext", $round) ?? 0;
+        $s = $this->conf->round_setting($rights->allow_pc ? "viewrev" : "viewrev_ext", $round) ?? 0;
+        if ($s > 0 && !$this->conf->check_reviewer_tracks($prow, $this, Track::VIEWALLREV)) {
+            $s = 0;
         }
-        return -1;
+        return $s;
     }
 
     const CAN_VIEW_REVIEW_NO_ADMINISTER = 1;
@@ -3962,15 +3957,12 @@ class Contact implements JsonSerializable {
      * @param PaperContactInfo $rights
      * @return -1|0|1 */
     private function seerevid_setting(PaperInfo $prow, $rbase, $rights) {
-        $round = $rbase ? $rbase->reviewRound : "max";
-        if ($rights->allow_pc) {
-            if ($this->conf->check_tracks($prow, $this, Track::VIEWREVID)) {
-                return $this->conf->round_setting("viewrevid", $round) ?? 0;
-            }
-        } else if ($rights->reviewType > 0) {
-            return $this->conf->round_setting("viewrevid_ext", $round) ?? 0;
+        if ((!$rights->allow_pc && !$rights->reviewType)
+            || !$this->conf->check_reviewer_tracks($prow, $this, Track::VIEWREVID)) {
+            return -1;
         }
-        return -1;
+        $round = $rbase ? $rbase->reviewRound : "max";
+        return $this->conf->round_setting($rights->allow_pc ? "viewrevid" : "viewrevid_ext", $round) ?? 0;
     }
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase

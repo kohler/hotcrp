@@ -1398,6 +1398,25 @@ class Conf {
 
     /** @param int $ttype
      * @return bool */
+    function check_reviewer_tracks(PaperInfo $prow, Contact $user, $ttype) {
+        $unmatched = true;
+        if ($this->_tracks !== null) {
+            foreach ($this->_tracks as $tr) {
+                if ($tr->is_default ? $unmatched : $prow->has_tag($tr->ltag)) {
+                    $unmatched = false;
+                    if ($user->isPC
+                        ? $user->has_permission($tr->perm[$ttype])
+                        : $tr->perm[$ttype] !== "+none") {
+                        return true;
+                    }
+                }
+            }
+        }
+        return $unmatched;
+    }
+
+    /** @param int $ttype
+     * @return bool */
     function check_required_tracks(PaperInfo $prow, Contact $user, $ttype) {
         if (($this->_track_sensitivity & (1 << $ttype)) !== 0) {
             $unmatched = true;
