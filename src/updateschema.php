@@ -1160,7 +1160,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         $old_conf_g = Conf::$main;
         Conf::$main = $conf;
 
-        error_log($conf->dbname . ": updating schema from version " . $conf->sversion);
+        if (!$conf->opt("__quietUpdateSchema")) {
+            error_log($conf->dbname . ": updating schema from version " . $conf->sversion);
+        }
 
         // change `options` into an array, not an associative array
         // (must do this early because PaperOptionList depends on that format)
