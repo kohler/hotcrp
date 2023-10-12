@@ -69,7 +69,7 @@ class Review_Assignable extends Assignable {
         $rrow->contactId = $this->cid;
         $rrow->reviewType = $this->_rtype;
         $rrow->reviewId = $reviewId;
-        $rrow->reviewRound = $this->_round ? (int) $conf->round_number($this->_round, false) : 0;
+        $rrow->reviewRound = $this->_round ? (int) $conf->round_number($this->_round) : 0;
         $rrow->requestedBy = $this->_requested_by;
         return $rrow;
     }
@@ -335,8 +335,12 @@ class Review_Assigner extends Assigner {
         return $t;
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
-        $x = ["pid" => $this->pid, "action" => ReviewInfo::unparse_assigner_action($this->rtype),
-              "email" => $this->contact->email, "name" => $this->contact->name()];
+        $x = [
+            "pid" => $this->pid,
+            "action" => ReviewInfo::unparse_assigner_action($this->rtype),
+            "email" => $this->contact->email,
+            "name" => $this->contact->name()
+        ];
         if (($round = $this->item["_round"])) {
             $x["round"] = $round;
         }
@@ -345,8 +349,16 @@ class Review_Assigner extends Assigner {
         }
         $acsv->add($x);
         if ($this->unsubmit) {
-            $acsv->add(["action" => "unsubmitreview", "pid" => $this->pid,
-                        "email" => $this->contact->email, "name" => $this->contact->name()]);
+            $x = [
+                "pid" => $this->pid,
+                "action" => "unsubmitreview",
+                "email" => $this->contact->email,
+                "name" => $this->contact->name()
+            ];
+            if ($round) {
+                $x["round"] = $round;
+            }
+            $acsv->add($x);
         }
     }
     function account(AssignmentSet $aset, AssignmentCountSet $deltarev) {
@@ -369,7 +381,7 @@ class Review_Assigner extends Assigner {
         $extra = ["no_autosearch" => true];
         $round = $this->item->post("_round");
         if ($round !== null && $this->rtype) {
-            $extra["round_number"] = (int) $aset->conf->round_number($round, true);
+            $extra["round_number"] = (int) $aset->conf->round_number($round);
         }
         if ($this->contact->is_anonymous_user()
             && (!$this->item->existed() || !$this->item["_rtype"])) {

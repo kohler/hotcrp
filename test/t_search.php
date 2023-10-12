@@ -72,11 +72,11 @@ class Search_Tester {
     function test_review_term_to_round_mask() {
         $rl = $this->conf->round_list();
         xassert_eqq($rl[0], "");
-        xassert_eqq($this->conf->round_number("unnamed", false), 0);
+        xassert_eqq($this->conf->round_number("unnamed"), 0);
         xassert_eqq($rl[1], "R1");
-        xassert_eqq($this->conf->round_number("R1", false), 1);
+        xassert_eqq($this->conf->round_number("R1"), 1);
         xassert_eqq($rl[2], "R2");
-        xassert_eqq($this->conf->round_number("R2", false), 2);
+        xassert_eqq($this->conf->round_number("R2"), 2);
         xassert_eqq($rl[3], "R3");
 
         $u = $this->conf->root_user();

@@ -353,7 +353,7 @@ class HotCRPMailer extends Mailer {
         $round = null;
         if ($args || isset($uf->match_data)) {
             $rname = trim(isset($uf->match_data) ? $uf->match_data[1] : $args);
-            $round = $this->conf->round_number($rname, false);
+            $round = $this->conf->round_number($rname);
             if ($round === null) {
                 return $isbool ? false : null;
             }

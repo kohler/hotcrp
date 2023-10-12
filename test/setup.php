@@ -993,12 +993,13 @@ class TestRunner {
         $timer = new ProfileTimer;
         MailChecker::clear();
 
-        // Initialize from an empty database.
+        // Initialize from an empty database
         self::reset_schema($conf->dblink, SiteLoader::find("src/schema.sql"), $rebuild);
         $timer->mark("schema");
 
-        // No setup phase.
+        // No setup phase; initial review rounds
         $conf->qe_raw("delete from Settings where name='setupPhase'");
+        $conf->qe("insert into Settings (name, value, data) values (?, ?, ?) ?U on duplicate key update data=?U(data)", "tag_rounds", 1, "R1 R2 R3");
         self::reset_options(true);
         $timer->mark("settings");
 

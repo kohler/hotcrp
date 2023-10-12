@@ -92,15 +92,14 @@ class Review_API {
             return JsonResult::make_permission_error();
         } else if (!$rrow) {
             return JsonResult::make_error(404, "<0>Review not found");
-        } else {
-            $rname = trim((string) $qreq->round);
-            $round = $user->conf->sanitize_round_name($rname);
-            if ($round === false) {
-                return ["ok" => false, "error" => Conf::round_name_error($rname)];
-            }
-            $rnum = (int) $user->conf->round_number($round, true);
-            $user->conf->qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rrow->reviewId);
-            return ["ok" => true];
         }
+        $rname_in = trim((string) $qreq->round);
+        if (($rname = $user->conf->sanitize_round_name($rname_in)) === false) {
+            return JsonResult::make_error(400, "<0>" . Conf::round_name_error($rname_in));
+        } else if (($rnum = $user->conf->round_number($rname)) === null) {
+            return JsonResult::make_error(400, "<0>Review round not found");
+        }
+        $user->conf->qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rrow->reviewId);
+        return ["ok" => true];
     }
 }

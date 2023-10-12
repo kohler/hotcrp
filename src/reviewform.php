@@ -1264,7 +1264,7 @@ class ReviewValues extends MessageSet {
         if (!$rrow) {
             $extra = [];
             if (isset($this->req["round"])) {
-                $extra["round_number"] = (int) $this->conf->round_number($this->req["round"], false);
+                $extra["round_number"] = (int) $this->conf->round_number($this->req["round"]);
             }
             if (($whyNot = $user->perm_create_review($prow, $reviewer, $extra["round_number"] ?? null))) {
                 if ($user !== $reviewer) {

@@ -905,7 +905,7 @@ class Settings_Tester {
         xassert(!$sv->execute());
         xassert_str_contains(strtolower($sv->full_feedback_text()), "must come before");
 
-        xassert_eqq($sv->conf->round_number("Butt", false), 1);
+        xassert_eqq($sv->conf->round_number("Butt"), 1);
         $sv->conf->save_refresh_setting("pcrev_hard_1", $tn - 10);
         $sv = SettingValues::make_request($this->u_chair, [
             "has_review" => 1,

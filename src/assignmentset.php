@@ -975,9 +975,12 @@ class ReviewAssigner_Data {
             $this->error_ftext = "<0>" . Conf::round_name_error($rarg0);
         }
         if ((string) $rarg1 !== ""
-            && $this->newtype != 0
-            && ($this->newround = $state->conf->sanitize_round_name($rarg1)) === false) {
-            $this->error_ftext = "<0>" . Conf::round_name_error($rarg1);
+            && $this->newtype != 0) {
+            if (($this->newround = $state->conf->sanitize_round_name($rarg1)) === false) {
+                $this->error_ftext = "<0>" . Conf::round_name_error($rarg1);
+            } else if ($state->conf->round_number($this->newround) === null) {
+                $this->error_ftext = "<0>Review round ‘{$this->newround}’ not found";
+            }
         }
         if ($rarg0 !== "" && $rarg1 !== null) {
             $this->explicitround = (string) $req["round"] !== "";

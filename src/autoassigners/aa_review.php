@@ -94,7 +94,7 @@ class Review_Autoassigner extends Autoassigner {
         if ($this->load === self::LOAD_ROUND) {
             $rname = $this->assignment_column("round")
                 ?? $this->conf->assignment_round_option($this->rtype === REVIEW_EXTERNAL);
-            $round = $this->conf->round_number($rname, false);
+            $round = $this->conf->round_number($rname);
             if ($round !== null) {
                 $q .= " and reviewRound={$round}";
             } else {

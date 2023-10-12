@@ -11,7 +11,7 @@ class RequestReview_API {
         $round = null;
         if ((string) $qreq->round !== ""
             && ($rname = $user->conf->sanitize_round_name($qreq->round)) !== false) {
-            $round = (int) $user->conf->round_number($rname, false);
+            $round = (int) $user->conf->round_number($rname);
         }
 
         if (($whyNot = $user->perm_request_review($prow, $round, true))) {

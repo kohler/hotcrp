@@ -849,7 +849,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $user_external = Contact::make_keyed($conf, ["email" => "external@_.com", "name" => "External Reviewer"])->store();
         assert(!!$user_external);
         $this->u_mgbaker->assign_review(17, $user_external->contactId, REVIEW_EXTERNAL,
-            ["round_number" => $conf->round_number("R2", false)]);
+            ["round_number" => $conf->round_number("R2")]);
         xassert(!$user_external->can_view_review($paper17, $rrow17m));
         xassert(!$user_external->can_view_review_identity($paper17, $rrow17m));
         xassert(!$this->u_mjh->can_view_review($paper17, $rrow17m));
@@ -875,9 +875,9 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         MailChecker::check_db("test06-17lixia");
         $rrow17h = fresh_review($paper17, $this->u_lixia);
         $rrow17x = fresh_review($paper17, $user_external);
-        xassert_eqq($rrow17m->reviewRound, $conf->round_number("R2", false));
-        xassert_eqq($rrow17h->reviewRound, $conf->round_number("R1", false));
-        xassert_eqq($rrow17x->reviewRound, $conf->round_number("R2", false));
+        xassert_eqq($rrow17m->reviewRound, $conf->round_number("R2"));
+        xassert_eqq($rrow17h->reviewRound, $conf->round_number("R1"));
+        xassert_eqq($rrow17x->reviewRound, $conf->round_number("R2"));
         Contact::update_rights();
 
         xassert($this->u_mgbaker->can_view_review($paper17, $rrow17m));
@@ -899,14 +899,6 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($user_external->can_view_review_identity($paper17, $rrow17h));
         xassert($user_external->can_view_review_identity($paper17, $rrow17x));
 
-        // check round_number(..., true) works
-        xassert_eqq($conf->setting_data("tag_rounds"), "R1 R2 R3");
-        xassert_eqq($conf->round_number("R1", false), 1);
-        xassert_eqq($conf->round_number("R1", true), 1);
-        xassert_eqq($conf->round_number("R5", false), null);
-        xassert_eqq($conf->round_number("R5", true), 4);
-        xassert_eqq($conf->setting_data("tag_rounds"), "R1 R2 R3 R5");
-
         // check the settings page works for round tags
         xassert_eqq($conf->assignment_round(false), 0);
         xassert_eqq($conf->assignment_round(true), 0);
@@ -927,7 +919,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($sv->execute());
         xassert_eqq($conf->assignment_round(false), 3);
         xassert_eqq($conf->assignment_round(true), 0);
-        xassert_eqq($conf->setting_data("tag_rounds"), "R1 R2 R3 R5");
+        xassert_eqq($conf->setting_data("tag_rounds"), "R1 R2 R3");
         xassert_eqq($conf->setting_data("rev_roundtag"), "R3");
         xassert_eqq($conf->setting_data("extrev_roundtag"), "unnamed");
         $sv = SettingValues::make_request($this->u_chair, [

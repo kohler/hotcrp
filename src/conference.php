@@ -1672,32 +1672,25 @@ class Conf {
     /** @param bool $external
      * @return int */
     function assignment_round($external) {
-        return $this->round_number($this->assignment_round_option($external), false);
+        return $this->round_number($this->assignment_round_option($external)) ?? 0;
     }
 
     /** @param string $rname
-     * @param bool $add
      * @return ?int */
-    function round_number($rname, $add) {
-        if (!$rname
-            || strcasecmp($rname, "none") === 0
-            || strcasecmp($rname, "unnamed") === 0) {
+    function round_number($rname) {
+        if (!$rname) {
             return 0;
         }
         for ($i = 1; $i != count($this->rounds); ++$i) {
-            if (!strcasecmp($this->rounds[$i], $rname)) {
+            if (strcasecmp($this->rounds[$i], $rname) === 0) {
                 return $i;
             }
         }
-        if ($add && !self::round_name_error($rname)) {
-            $rtext = $this->setting_data("tag_rounds") ?? "";
-            $rtext = $rtext === "" ? $rname : "{$rtext} {$rname}";
-            $this->save_setting("tag_rounds", 1, $rtext);
-            $this->refresh_round_settings();
-            return $this->round_number($rname, false);
-        } else {
-            return null;
+        if (strcasecmp($rname, "none") === 0
+            || strcasecmp($rname, "unnamed") === 0) {
+            return 0;
         }
+        return null;
     }
 
     /** @return array<string,string> */

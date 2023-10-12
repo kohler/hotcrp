@@ -12,7 +12,7 @@ class ReviewRequestSearchMatcher extends ContactCountMatcher {
     }
 
     function apply_round($word, Conf $conf) {
-        if (($round = $conf->round_number($word, false)) !== null) {
+        if (($round = $conf->round_number($word)) !== null) {
             $this->round[] = $round;
             return true;
         } else {

@@ -74,7 +74,7 @@ class Review_SettingParser extends SettingParser {
         } else if ($si->name === "review_default_round_index") {
             $sv->set_oldv($si, 0);
             $t = $sv->conf->setting_data("rev_roundtag") ?? "";
-            if (($round = $sv->conf->round_number($t, false)) !== null
+            if (($round = $sv->conf->round_number($t)) !== null
                 && ($ctr = $sv->search_oblist("review", "id", $round + 1))) {
                 $sv->set_oldv($si, $ctr);
             }
@@ -85,7 +85,7 @@ class Review_SettingParser extends SettingParser {
             $sv->set_oldv($si, 0);
             $t = $sv->conf->setting_data("extrev_roundtag") ?? null;
             if ($t !== null
-                && ($round = $sv->conf->round_number($t, false)) !== null
+                && ($round = $sv->conf->round_number($t)) !== null
                 && ($ctr = $sv->search_oblist("review", "id", $round + 1))) {
                 $sv->set_oldv($si, $ctr);
             }
