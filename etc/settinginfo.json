@@ -519,7 +519,7 @@
         "title": "External reviewers can view reviews",
         "type": "radio",
         "values": [0, 1], "default_value": 0, "initial_value": 1,
-        "json_values": ["no", "yes"],
+        "json_values": ["never", "after_review"],
         "parser_class": "Review_SettingParser"
     },
     {
@@ -531,8 +531,8 @@
         "name": "review_visibility_pc", "storage": "pc_seeallrev",
         "title": "PC can see all review contents",
         "type": "radio",
-        "values": [0, 1, 3, 4], "default_value": 0,
-        "json_values": ["assignment_complete", "all", "assignment_not_incomplete", "all_assignments_complete"]
+        "values": [-1, 0, 1, 3, 4], "default_value": 0,
+        "json_values": ["never", "after_review", "always", "assignment_not_incomplete", "all_assignments_complete"]
     },
     {
         "name": "review_identity_visibility_external", "storage": "extrev_seerevid",

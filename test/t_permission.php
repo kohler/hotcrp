@@ -842,6 +842,50 @@ class Permission_Tester {
         MailChecker::check_db("test01-comment11");
     }
 
+    function test_pc_seeallrev_none() {
+        $paper2 = $this->u_chair->checked_paper_by_id(2);
+        $u_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
+        $u_pdru = $this->conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
+        $u_ext = $this->conf->checked_user_by_email("external@_.com");
+
+        $r2chair = $paper2->review_by_user($this->u_chair);
+        $r2jon = $paper2->review_by_user($u_jon);
+        $r2pdru = $paper2->review_by_user($u_pdru);
+        $r2ext = $paper2->review_by_user($u_ext);
+
+        xassert($this->u_chair->can_view_review($paper2, $r2chair));
+        xassert($u_jon->can_view_review($paper2, $r2chair));
+        xassert($u_pdru->can_view_review($paper2, $r2chair));
+        xassert($this->u_mgbaker->can_view_review($paper2, $r2chair));
+        xassert($u_ext->can_view_review($paper2, $r2chair));
+
+        $this->conf->save_refresh_setting("pc_seeallrev", -1);
+        Contact::update_rights();
+
+        xassert($this->u_chair->can_view_review($paper2, $r2chair));
+        xassert(!$u_jon->can_view_review($paper2, $r2chair));
+        xassert(!$u_pdru->can_view_review($paper2, $r2chair));
+        xassert(!$this->u_mgbaker->can_view_review($paper2, $r2chair));
+
+        xassert($this->u_chair->can_view_review($paper2, $r2jon));
+        xassert($u_jon->can_view_review($paper2, $r2jon));
+        xassert(!$u_pdru->can_view_review($paper2, $r2jon));
+        xassert(!$this->u_mgbaker->can_view_review($paper2, $r2jon));
+
+        xassert($this->u_chair->can_view_review($paper2, $r2pdru));
+        xassert(!$u_jon->can_view_review($paper2, $r2pdru));
+        xassert($u_pdru->can_view_review($paper2, $r2pdru));
+        xassert(!$this->u_mgbaker->can_view_review($paper2, $r2pdru));
+
+        xassert($this->u_chair->can_view_review($paper2, $r2ext));
+        xassert(!$u_jon->can_view_review($paper2, $r2ext));
+        xassert(!$u_pdru->can_view_review($paper2, $r2ext));
+        xassert(!$this->u_mgbaker->can_view_review($paper2, $r2ext));
+
+        $this->conf->save_refresh_setting("pc_seeallrev", 0);
+        Contact::update_rights();
+    }
+
     function test_assign_review_retype() {
         assert_search_papers($this->u_chair, "re:mgbaker", "1 2 13 17");
         assert_search_papers($this->u_chair, "re:sec:mgbaker", "2");
