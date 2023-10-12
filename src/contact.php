@@ -3846,7 +3846,9 @@ class Contact implements JsonSerializable {
         }
         $round = $rbase ? $rbase->reviewRound : "max";
         $s = $this->conf->round_setting($rights->allow_pc ? "viewrev" : "viewrev_ext", $round) ?? 0;
-        if ($s > 0 && !$this->conf->check_reviewer_tracks($prow, $this, Track::VIEWALLREV)) {
+        if ($s > 0
+            && !$rights->reviewType
+            && !$this->conf->check_reviewer_tracks($prow, $this, Track::VIEWALLREV)) {
             $s = 0;
         }
         return $s;
