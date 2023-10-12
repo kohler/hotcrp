@@ -1141,6 +1141,21 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         $conf->save_setting("__extrev_seerev_v282", 1);
     }
 
+    private function v283_ensure_rev_roundtag() {
+        $t1 = $this->conf->setting_data("rev_roundtag") ?? "";
+        $t2 = $this->conf->setting_data("extrev_roundtag") ?? "";
+        $tl = $tlx = trim($this->conf->setting_data("tag_rounds") ?? "");
+        if ($t1 !== "" && strcasecmp($t1, "unnamed") !== 0 && stripos(" {$tlx} ", $t1) === false) {
+            $tlx = $tlx === "" ? $t1 : "{$tlx} {$t1}";
+        }
+        if ($t2 !== "" && strcasecmp($t2, "unnamed") !== 0 && stripos(" {$tlx} ", $t2) === false) {
+            $tlx = $tlx === "" ? $t2 : "{$tlx} {$t2}";
+        }
+        if ($tlx !== $tl) {
+            $this->conf->save_setting("tag_rounds", 1, $tlx);
+        }
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -1242,7 +1257,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
 
         // update extrev_seerev => view_rev_ext
-        if ($conf->sversion <= 282
+        if ($conf->sversion <= 281
             && !$conf->setting("__extrev_seerev_v282")) {
             $this->v282_update_viewrev();
         }
@@ -2907,6 +2922,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 281) {
             $conf->save_setting("__extrev_seerev_v282", null);
             $conf->update_schema_version(282);
+        }
+        if ($conf->sversion === 282) {
+            $this->v283_ensure_rev_roundtag();
+            $conf->update_schema_version(283);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
