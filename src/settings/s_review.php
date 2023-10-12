@@ -214,8 +214,10 @@ class Review_SettingParser extends SettingParser {
         if ($sv->conf->check_track_sensitivity(Track::VIEWREVID)) {
             $hint = '<p class="settings-ag f-h">' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
         }
-        $sv->print_radio_table("review_identity_visibility_pc", [0 => "Yes",
-                1 => "Only after completing a review for the same submission"],
+        $sv->print_radio_table("review_identity_visibility_pc", [
+                Conf::VIEWREV_ALWAYS => "Yes",
+                Conf::VIEWREV_AFTERREVIEW => "Only after completing a review for the same submission"
+            ],
             'Can PC members see <strong class="has-comment-visibility-anonymous is-identity">reviewer names and comments</strong> except for conflicts?',
             ["after" => $hint]);
 
@@ -233,10 +235,10 @@ class Review_SettingParser extends SettingParser {
         }
         echo '<hr class="form-sep">';
         $sv->print_radio_table("review_visibility_pc", [
-                Conf::PCSEEREV_YES => "Yes",
-                Conf::PCSEEREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
-                Conf::PCSEEREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
-                Conf::PCSEEREV_IFCOMPLETE => "Only after completing a review for the same submission"
+                Conf::VIEWREV_ALWAYS => "Yes",
+                Conf::VIEWREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
+                Conf::VIEWREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
+                Conf::VIEWREV_AFTERREVIEW => "Only after completing a review for the same submission"
             ], 'Can PC members see <strong class="has-comment-visibility-anonymous is-contents">review contents</strong> except for conflicts?',
             ["after" => $hint]);
 
@@ -255,16 +257,16 @@ class Review_SettingParser extends SettingParser {
 
     static function print_extrev_view(SettingValues $sv) {
         $sv->print_radio_table("review_identity_visibility_external", [
-                2 => "Yes",
-                1 => "Only after completing their review",
-                0 => "No"
+                Conf::VIEWREV_ALWAYS => "Yes",
+                Conf::VIEWREV_AFTERREVIEW => "Yes, after completing their review",
+                Conf::VIEWREV_NEVER => "No"
             ], 'Can external reviewers see <strong class="has-comment-visibility-anonymous is-identity">reviewer names and comments</strong> for their assigned submissions?');
 
         echo '<hr class="form-sep">';
         $sv->print_radio_table("review_visibility_external", [
-                1 => "Yes",
-                0 => "No"
-            ], 'Can external reviewers see <strong class="has-comment-visibility-anonymous is-contents-external">review contents and eventual decisions</strong> for their assigned submissions, after completing their review?');
+                Conf::VIEWREV_AFTERREVIEW => "Yes, after completing their review",
+                Conf::VIEWREV_NEVER => "No"
+            ], 'Can external reviewers see <strong class="has-comment-visibility-anonymous is-contents-external">review contents and eventual decisions</strong> for their assigned submissions?');
     }
     static function print_extrev_editdelegate(SettingValues $sv) {
         echo '<div id="foldreview_proposal_editable" class="form-g has-fold',
@@ -349,8 +351,8 @@ class Review_SettingParser extends SettingParser {
             return true;
         } else if ($si->name === "review_visibility_external") {
             if (($n = $sv->reqstr($si->name)) === "blind") {
-                $sv->save($si, 1);
-                $sv->save("review_identity_visibility_external", 0);
+                $sv->save($si, Conf::VIEWREV_AFTERREVIEW);
+                $sv->save("review_identity_visibility_external", Conf::VIEWREV_NEVER);
             }
             return false;
         } else if ($si->name2 === "/name") {
@@ -564,10 +566,12 @@ class Review_SettingParser extends SettingParser {
             $sv->warning_at(null, "<5>" . $sv->setting_link("Authors can see reviews and comments", "review_visibility_author") . " although it is before a " . $sv->setting_link("review deadline", $dn) . ". This is sometimes unintentional.");
         }
 
-        if (($sv->has_interest("review_blind") || $sv->has_interest("review_visibility_external"))
+        if (($sv->has_interest("review_blind")
+             || $sv->has_interest("review_identity_visibility_external"))
             && $sv->oldv("review_blind") == Conf::BLIND_NEVER
-            && $sv->oldv("review_visibility_external") == 1) {
-            $sv->warning_at("review_visibility_external", "<5>" . $sv->setting_link("Reviews aren’t anonymous", "review_blind") . ", so external reviewers can see reviewer names and comments despite " . $sv->setting_link("your settings", "review_visibility_external") . ".");
+            && $sv->oldv("review_visibility_external") != Conf::VIEWREV_NEVER
+            && $sv->oldv("review_identity_visibility_external") == Conf::VIEWREV_NEVER) {
+            $sv->warning_at("review_identity_visibility_external", "<5>" . $sv->setting_link("Reviews aren’t anonymous", "review_blind") . ", so external reviewers can see reviewer names and comments despite " . $sv->setting_link("your settings", "review_identity_visibility_external") . ".");
         }
 
         if ($sv->has_interest("mailbody_requestreview")

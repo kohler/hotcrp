@@ -853,18 +853,18 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert(!$user_external->can_view_review($paper17, $rrow17m));
         xassert(!$user_external->can_view_review_identity($paper17, $rrow17m));
         xassert(!$this->u_mjh->can_view_review($paper17, $rrow17m));
-        $conf->save_setting("extrev_seerev", null);
-        $conf->save_setting("extrev_seerevid", null);
+        $conf->save_setting("viewrev_ext", -1);
+        $conf->save_setting("viewrevid_ext", -1);
         save_review(17, $user_external, [
             "ovemer" => 2, "revexp" => 1, "papsum" => "Hi", "comaut" => "Bye", "ready" => true
         ]);
         MailChecker::check_db("test06-17external");
         xassert(!$user_external->can_view_review($paper17, $rrow17m));
         xassert(!$user_external->can_view_review_identity($paper17, $rrow17m));
-        $conf->save_setting("extrev_seerev", 1);
+        $conf->save_setting("viewrev_ext", null);
         xassert($user_external->can_view_review($paper17, $rrow17m));
         xassert(!$user_external->can_view_review_identity($paper17, $rrow17m));
-        $conf->save_setting("extrev_seerevid", 1);
+        $conf->save_setting("viewrevid_ext", null);
         xassert($user_external->can_view_review($paper17, $rrow17m));
         xassert($user_external->can_view_review_identity($paper17, $rrow17m));
 
@@ -947,7 +947,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($conf->setting_data("rev_roundtag"), null);
         xassert_eqq($conf->setting_data("extrev_roundtag"), null);
 
-        $this->save_round_settings(["R1" => ["extrev_seerev" => 0, "extrev_seerevid" => 0]]);
+        $this->save_round_settings(["R1" => ["viewrev_ext" => -1, "viewrevid_ext" => -1]]);
         Contact::update_rights();
 
         xassert($this->u_mgbaker->can_view_review($paper17, $rrow17m));
@@ -972,7 +972,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert_search_papers($this->u_lixia, "re:mgbaker", "1 13 17");
 
         // Extrev cannot view R1; PC cannot view R2
-        $this->save_round_settings(["R1" => ["extrev_seerev" => 0, "extrev_seerevid" => 0], "R2" => ["pc_seeallrev" => -1]]);
+        $this->save_round_settings(["R1" => ["viewrev_ext" => -1, "viewrevid_ext" => -1], "R2" => ["viewrev" => -1]]);
         Contact::update_rights();
 
         xassert($this->u_mgbaker->can_view_review($paper17, $rrow17m));
@@ -997,7 +997,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         assert_search_papers($this->u_lixia, "re:mgbaker", "1 13 17");
 
         // Extrev cannot view R1; PC cannot view R2 identity
-        $this->save_round_settings(["R1" => ["extrev_seerev" => 0, "extrev_seerevid" => 0], "R2" => ["pc_seeblindrev" => -1]]);
+        $this->save_round_settings(["R1" => ["viewrev_ext" => -1, "viewrevid_ext" => -1], "R2" => ["viewrevid" => -1]]);
         Contact::update_rights();
 
         xassert($this->u_mgbaker->can_view_review($paper17, $rrow17m));
@@ -1187,8 +1187,8 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
     function test_new_external_reviewer() {
         // new external reviewer does not get combined email
-        $this->conf->save_refresh_setting("extrev_seerev", 1);
-        $this->conf->save_refresh_setting("extrev_seerevid", null);
+        $this->conf->save_refresh_setting("viewrev_ext", null);
+        $this->conf->save_refresh_setting("viewrevid_ext", -1);
         $this->conf->save_refresh_setting("pcrev_editdelegate", 2);
         Contact::update_rights();
         MailChecker::clear();

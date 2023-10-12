@@ -248,10 +248,11 @@ class Conf {
     const AUSEEREV_YES = 2;
     const AUSEEREV_SEARCH = 3;
 
-    const PCSEEREV_IFCOMPLETE = 0;
-    const PCSEEREV_YES = 1;
-    const PCSEEREV_UNLESSINCOMPLETE = 3;
-    const PCSEEREV_UNLESSANYINCOMPLETE = 4;
+    const VIEWREV_NEVER = -1;
+    const VIEWREV_AFTERREVIEW = 0;
+    const VIEWREV_ALWAYS = 1;
+    const VIEWREV_UNLESSINCOMPLETE = 3;
+    const VIEWREV_UNLESSANYINCOMPLETE = 4;
 
     static public $review_deadlines = ["pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard"];
 
@@ -341,7 +342,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 281) {
+        if ($this->sversion < 282) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -374,10 +375,6 @@ class Conf {
         $this->settings["pcrev_any"] = $this->settings["pcrev_any"] ?? 0;
         $this->settings["sub_blind"] = $this->settings["sub_blind"] ?? self::BLIND_ALWAYS;
         $this->settings["rev_blind"] = $this->settings["rev_blind"] ?? self::BLIND_ALWAYS;
-        if (($this->settings["pc_seeallrev"] ?? null) === 2) {
-            $this->settings["pc_seeblindrev"] = 1;
-            $this->settings["pc_seeallrev"] = self::PCSEEREV_YES;
-        }
 
         // rounds
         $this->refresh_round_settings();
@@ -494,11 +491,11 @@ class Conf {
     /** @param int $sr1
      * @param int $sr2
      * @return -1|0|1 */
-    static private function pcseerev_compare($sr1, $sr2) {
+    static private function viewrev_compare($sr1, $sr2) {
         if ($sr1 == $sr2) {
             return 0;
-        } else if ($sr1 == self::PCSEEREV_YES || $sr2 == self::PCSEEREV_YES) {
-            return $sr1 == self::PCSEEREV_YES ? 1 : -1;
+        } else if ($sr1 == self::VIEWREV_ALWAYS || $sr2 == self::VIEWREV_ALWAYS) {
+            return $sr1 == self::VIEWREV_ALWAYS ? 1 : -1;
         } else {
             return $sr1 > $sr2 ? 1 : -1;
         }
@@ -517,15 +514,14 @@ class Conf {
             $this->_round_settings = json_decode($this->settingTexts["round_settings"]);
             $max_rs = [];
             foreach ($this->_round_settings as $rs) {
-                if ($rs
-                    && isset($rs->pc_seeallrev)
-                    && self::pcseerev_compare($rs->pc_seeallrev, $max_rs["pc_seeallrev"] ?? 0) > 0) {
-                    $max_rs["pc_seeallrev"] = $rs->pc_seeallrev;
+                if (!$rs) {
+                    continue;
                 }
-                if ($rs
-                    && isset($rs->extrev_seerev)
-                    && $rs->extrev_seerev > ($max_rs["extrev_seerev"] ?? 0)) {
-                    $max_rs["extrev_seerev"] = $rs->extrev_seerev;
+                foreach (["viewrev", "viewrev_ext", "viewrevid", "viewrevid_ext"] as $k) {
+                    if (isset($rs->$k)
+                        && self::viewrev_compare($rs->$k, $max_rs[$k] ?? -1) > 0) {
+                        $max_rs[$k] = $rs->$k;
+                    }
                 }
             }
             $this->_round_settings["max"] = (object) $max_rs;
@@ -3247,7 +3243,7 @@ class Conf {
      * @return bool */
     function time_some_reviewer_view_authors($pc) {
         return $this->submission_blindness() !== self::BLIND_ALWAYS
-            || (($pc || $this->setting("extrev_seerev") > 0)
+            || (($pc || ($this->setting("viewrev_ext") ?? 0) >= 0)
                 && $this->has_any_accepted()
                 && $this->time_some_author_view_decision()
                 && !$this->setting("seedec_hideau"));
@@ -3280,9 +3276,9 @@ class Conf {
     }
     /** @return bool */
     function time_some_external_reviewer_view_comment() {
-        return ($this->settings["extrev_seerev"] ?? 0) > 0
+        return ($this->settings["viewrev_ext"] ?? 0) >= 0
             && (($this->settings["cmt_revid"] ?? 0) > 0
-                || ($this->settings["extrev_seerevid"] ?? 0) > 0);
+                || ($this->settings["viewrevid_ext"] ?? 0) >= 0);
     }
 
     /** @return bool */

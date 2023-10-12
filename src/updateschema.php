@@ -1091,6 +1091,56 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
     }
 
+    private function v282_update_viewrev() {
+        $conf = $this->conf;
+
+        $sv = $conf->setting("extrev_seerev") ?? 0;
+        $conf->save_setting("viewrev_ext", $sv <= 0 ? -1 : null);
+        $conf->save_setting("extrev_seerev", null);
+
+        $sv = $conf->setting("extrev_seerevid") ?? 0;
+        $conf->save_setting("viewrevid_ext", $sv <= 0 ? -1 : ($sv === 1 ? null : 1));
+        $conf->save_setting("extrev_seerevid", null);
+
+        $sv = $conf->setting("pc_seeblindrev") ?? 0;
+        $conf->save_setting("viewrevid", $sv <= 0 ? 1 : null);
+        $conf->save_setting("pc_seeblindrev", null);
+
+        $sv = $conf->setting("pc_seeallrev") ?? 0;
+        if ($sv === 2) {
+            $conf->save_setting("viewrevid", null);
+            $sv = 1;
+        }
+        $conf->save_setting("viewrev", $sv === 0 ? null : $sv);
+        $conf->save_setting("pc_seeallrev", null);
+
+        if (($t = $conf->setting_data("round_settings"))
+            && ($j = json_decode($t))
+            && is_array($j)) {
+            foreach ($j as $x) {
+                if (is_object($x)) {
+                    if (isset($x->pc_seeallrev)) {
+                        $x->viewrev = $x->pc_seeallrev;
+                    }
+                    if (isset($x->pc_seeblindrev)) {
+                        $x->viewrevid = $x->pc_seeblindrev <= 0 ? 1 : 0;
+                    }
+                    if (isset($x->extrev_seerev)) {
+                        $x->viewrev_ext = $x->extrev_seerev <= 0 ? -1 : 0;
+                    }
+                    if (isset($x->extrev_seerevid)) {
+                        $sv = $x->extrev_seerevid;
+                        $x->viewrevid_ext = $sv <= 0 ? -1 : ($sv === 1 ? 0 : 1);
+                    }
+                    unset($x->pc_seeallrev, $x->pc_seeblindrev, $x->extrev_seerev, $x->extrev_seerevid);
+                }
+            }
+            $conf->save_setting("round_settings", 1, json_encode_db($j));
+        }
+
+        $conf->save_setting("__extrev_seerev_v282", 1);
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -1187,6 +1237,12 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         // update saved searches
         if ($conf->sversion <= 276) {
             $this->v277_update_named_searches();
+        }
+
+        // update extrev_seerev => view_rev_ext
+        if ($conf->sversion <= 282
+            && !$conf->setting("__extrev_seerev_v282")) {
+            $this->v282_update_viewrev();
         }
 
         if ($conf->sversion === 6
@@ -2845,6 +2901,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 280) {
             $this->v281_update_response_rounds();
             $conf->update_schema_version(281);
+        }
+        if ($conf->sversion === 281) {
+            $conf->save_setting("__extrev_seerev_v282", null);
+            $conf->update_schema_version(282);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

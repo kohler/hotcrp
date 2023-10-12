@@ -37,7 +37,7 @@ class Users_Page {
             $this->limits["pcadmin"] = ["label" => "PC and system administrators", "exclude" => true];
         }
         if ($viewer->is_manager()
-            || ($viewer->isPC && $this->conf->setting("pc_seeallrev"))) {
+            || ($viewer->isPC && $this->conf->setting("viewrev") > 0)) {
             $this->limits["re"] = "All reviewers";
             $this->limits["ext"] = "External reviewers";
             $this->limits["extsub"] = "External reviewers who completed a review";

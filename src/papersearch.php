@@ -1170,7 +1170,8 @@ class PaperSearch extends MessageSet {
     // QUERY EVALUATION makes it precise.
 
     static function unusable_ratings(Contact $user) {
-        if ($user->privChair || $user->conf->setting("pc_seeallrev")) {
+        if ($user->privChair
+            || $user->conf->setting("viewrev") === Conf::VIEWREV_ALWAYS) {
             return [];
         }
         // This query should return those reviewIds whose ratings

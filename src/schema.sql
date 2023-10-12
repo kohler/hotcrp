@@ -621,14 +621,13 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 281, null),   -- schema version
+  ('allowPaperOption', 282, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators
   ('tag_chair', 1, 'accept pcpaper reject'),  -- default read-only tags
   ('pcrev_any', 1, null),            -- PC members can review any paper
-  ('extrev_seerev', 1, null),        -- external reviewers can see reviews
-  ('extrev_seerevid', 1, null),      -- external reviewers can see review identities
+  ('viewrevid', 1, null),            -- PC members can see anonymous reviewer IDs
   ('extrev_chairreq', 2, null),      -- administrators must approve potentially-conflicted reviewers
   ('pcrev_soft', 0, null);           -- soft review deadline is explicit 0
 

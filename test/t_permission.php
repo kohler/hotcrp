@@ -263,7 +263,7 @@ class Permission_Tester {
 
         // make reviewer identity anonymous until review completion
         $this->conf->save_refresh_setting("rev_open", 1);
-        $this->conf->save_refresh_setting("pc_seeblindrev", 1);
+        $this->conf->save_refresh_setting("viewrevid", 0);
         $this->conf->refresh_settings();
         assert_search_papers($user_mgbaker, "re:varghese", "");
 
@@ -307,7 +307,7 @@ class Permission_Tester {
         xassert_eqq($this->conf->_au_seerev, null);
 
         // check comment/review visibility when reviews are incomplete
-        $this->conf->save_refresh_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSINCOMPLETE);
+        $this->conf->save_refresh_setting("viewrev", Conf::VIEWREV_UNLESSINCOMPLETE);
         Contact::update_rights();
         $review1 = fresh_review($paper1, $user_mgbaker);
         xassert(!$user_wilma->has_review());
@@ -338,7 +338,7 @@ class Permission_Tester {
         xassert($user_marina->can_view_review($paper1, $review1));
         xassert($user_marina->can_view_review($paper1, $review2));
 
-        $this->conf->save_refresh_setting("pc_seeallrev", Conf::PCSEEREV_UNLESSANYINCOMPLETE);
+        $this->conf->save_refresh_setting("viewrev", Conf::VIEWREV_UNLESSANYINCOMPLETE);
         Contact::update_rights();
         xassert($user_wilma->can_view_review($paper1, $review1));
         xassert($user_wilma->can_view_review($paper1, $review2));
@@ -711,7 +711,7 @@ class Permission_Tester {
     }
 
     function test_comment_notification() {
-        $this->conf->save_refresh_setting("pc_seeblindrev", null);
+        $this->conf->save_refresh_setting("viewrevid", 1);
         Contact::update_rights();
 
         $paper2 = $this->u_chair->checked_paper_by_id(2);
@@ -724,7 +724,7 @@ class Permission_Tester {
         assert_search_papers($this->u_chair, "has:author-comment", "1 18");
 
         // if cannot see comment identity, then do not combine mails
-        $this->conf->save_refresh_setting("pc_seeblindrev", 1);
+        $this->conf->save_refresh_setting("viewrevid", null);
         $this->conf->save_refresh_setting("cmt_revid", 1);
         Contact::update_rights();
 
@@ -732,7 +732,7 @@ class Permission_Tester {
         $comment4x->save_comment(["text" => "my identity should be hidden", "visibility" => "p", "topic" => "paper", "blind" => false], $this->u_mgbaker);
         MailChecker::check_db("test01-comment2-noid");
 
-        $this->conf->save_refresh_setting("pc_seeblindrev", null);
+        $this->conf->save_refresh_setting("viewrevid", 1);
         $this->conf->save_refresh_setting("cmt_revid", null);
         Contact::update_rights();
 
@@ -752,12 +752,12 @@ class Permission_Tester {
         $this->conf->qe("delete from PaperWatch where paperId=2 and contactId=?", $this->u_chair->contactId);
     }
 
-    function test_pc_seeallrev() {
+    function test_viewrev() {
         $paper2 = $this->u_chair->checked_paper_by_id(2);
         $user_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
         $user_pdruschel = $this->conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
 
-        $this->conf->save_refresh_setting("pc_seeallrev", Conf::PCSEEREV_IFCOMPLETE);
+        $this->conf->save_refresh_setting("viewrev", Conf::VIEWREV_AFTERREVIEW);
         Contact::update_rights();
 
         $review2a = fresh_review($paper2, $user_jon);
@@ -842,7 +842,7 @@ class Permission_Tester {
         MailChecker::check_db("test01-comment11");
     }
 
-    function test_pc_seeallrev_none() {
+    function test_viewrev_none() {
         $paper2 = $this->u_chair->checked_paper_by_id(2);
         $u_jon = $this->conf->checked_user_by_email("jon@cs.ucl.ac.uk"); // pc, red
         $u_pdru = $this->conf->checked_user_by_email("pdruschel@cs.rice.edu"); // pc
@@ -859,7 +859,7 @@ class Permission_Tester {
         xassert($this->u_mgbaker->can_view_review($paper2, $r2chair));
         xassert($u_ext->can_view_review($paper2, $r2chair));
 
-        $this->conf->save_refresh_setting("pc_seeallrev", -1);
+        $this->conf->save_refresh_setting("viewrev", -1);
         Contact::update_rights();
 
         xassert($this->u_chair->can_view_review($paper2, $r2chair));
@@ -882,7 +882,7 @@ class Permission_Tester {
         xassert(!$u_pdru->can_view_review($paper2, $r2ext));
         xassert(!$this->u_mgbaker->can_view_review($paper2, $r2ext));
 
-        $this->conf->save_refresh_setting("pc_seeallrev", 0);
+        $this->conf->save_refresh_setting("viewrev", null);
         Contact::update_rights();
     }
 
@@ -1221,8 +1221,8 @@ class Permission_Tester {
         // tracks and view-paper permissions
         self::run_assignment($this->u_chair, "paper,tag\nall,-green\n3 9 13 17,green\n", true);
         $this->conf->save_refresh_setting("tracks", 1, "{\"green\":{\"view\":\"-red\"},\"_\":{\"view\":\"+red\"}}");
-        $this->conf->save_refresh_setting("pc_seeallrev", 1);
-        $this->conf->save_refresh_setting("pc_seeblindrev", null);
+        $this->conf->save_refresh_setting("viewrev", 1);
+        $this->conf->save_refresh_setting("viewrevid", 1);
         xassert($user_jon->has_tag("red"));
         xassert(!$this->u_marina->has_tag("red"));
 

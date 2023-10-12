@@ -46,7 +46,7 @@ class PaperStatus_Tester {
         $conf->save_setting("sub_sub", Conf::$now + 100);
         $conf->save_setting("opt.contentHashMethod", 1, "sha1");
         $conf->save_setting("rev_open", 1);
-        $conf->save_setting("pc_seeallrev", null);
+        $conf->save_setting("viewrev", null);
         $conf->refresh_settings();
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
         $this->u_estrin = $conf->checked_user_by_email("estrin@usc.edu"); // pc

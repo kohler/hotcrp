@@ -2927,7 +2927,7 @@ class Contact implements JsonSerializable {
             // check decision visibility
             $sdr = $ci->allow_pc_broad
                 || ($ci->review_status > PaperContactInfo::RS_UNSUBMITTED
-                    && $this->conf->setting("extrev_seerev") > 0);
+                    && ($this->conf->setting("viewrev_ext") ?? 0) >= 0);
             $ci->can_view_decision = $ci->can_administer
                 || (($sdr || $ci->act_author_view)
                     && $prow->can_author_view_decision())
@@ -3845,15 +3845,14 @@ class Contact implements JsonSerializable {
         $round = $rbase ? $rbase->reviewRound : "max";
         if ($rights->allow_pc) {
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREV)) {
-                $s = $this->conf->round_setting("pc_seeallrev", $round) ?? 0;
+                $s = $this->conf->round_setting("viewrev", $round) ?? 0;
                 if ($s > 0 && !$this->conf->check_tracks($prow, $this, Track::VIEWALLREV)) {
                     $s = 0;
                 }
                 return $s;
             }
         } else if ($rights->reviewType > 0) {
-            $s = $this->conf->round_setting("extrev_seerev", $round) ?? 0;
-            return $s > 0 ? 0 : -1;
+            return $this->conf->round_setting("viewrev_ext", $round) ?? 0;
         }
         return -1;
     }
@@ -3903,11 +3902,11 @@ class Contact implements JsonSerializable {
             return false;
         }
         return $rights->review_status > PaperContactInfo::RS_UNSUBMITTED
-            || ($seerev === Conf::PCSEEREV_UNLESSANYINCOMPLETE
+            || ($seerev === Conf::VIEWREV_UNLESSANYINCOMPLETE
                 && !$this->has_outstanding_review())
-            || ($seerev === Conf::PCSEEREV_UNLESSINCOMPLETE
+            || ($seerev === Conf::VIEWREV_UNLESSINCOMPLETE
                 && $rights->review_status === 0)
-            || $seerev === Conf::PCSEEREV_YES;
+            || $seerev === Conf::VIEWREV_ALWAYS;
     }
 
     /** @param ?ReviewInfo $rrow
@@ -3941,7 +3940,7 @@ class Contact implements JsonSerializable {
         } else if (!$rrowSubmitted) {
             $whyNot["reviewNotSubmitted"] = true;
         } else if ($rights->allow_pc
-                   && $this->seerev_setting($prow, $rrow, $rights) == Conf::PCSEEREV_UNLESSANYINCOMPLETE
+                   && $this->seerev_setting($prow, $rrow, $rights) == Conf::VIEWREV_UNLESSANYINCOMPLETE
                    && $this->has_outstanding_review()) {
             $whyNot["reviewsOutstanding"] = true;
         } else if (!$this->conf->time_review_open()) {
@@ -3966,20 +3965,10 @@ class Contact implements JsonSerializable {
         $round = $rbase ? $rbase->reviewRound : "max";
         if ($rights->allow_pc) {
             if ($this->conf->check_tracks($prow, $this, Track::VIEWREVID)) {
-                $s = $this->conf->round_setting("pc_seeblindrev", $round) ?? 0;
-                if ($s > 0) {
-                    return 0;
-                } else if ($s === 0) {
-                    return Conf::PCSEEREV_YES;
-                }
+                return $this->conf->round_setting("viewrevid", $round) ?? 0;
             }
         } else if ($rights->reviewType > 0) {
-            $s = $this->conf->round_setting("extrev_seerevid", $round) ?? 0;
-            if ($s > 1) {
-                return Conf::PCSEEREV_YES;
-            } else if ($s > 0) {
-                return 0;
-            }
+            return $this->conf->round_setting("viewrevid_ext", $round) ?? 0;
         }
         return -1;
     }
@@ -4004,7 +3993,7 @@ class Contact implements JsonSerializable {
             return true;
         }
         $seerevid_setting = $this->seerevid_setting($prow, $rbase, $rights);
-        return $seerevid_setting === Conf::PCSEEREV_YES
+        return $seerevid_setting === Conf::VIEWREV_ALWAYS
             || ($seerevid_setting === 0
                 && $rights->review_status > PaperContactInfo::RS_UNSUBMITTED);
     }
@@ -4389,7 +4378,7 @@ class Contact implements JsonSerializable {
             || $override_self
             || $rrow->contactId != $this->contactId
             || $this->can_administer($prow)
-            || $this->conf->setting("pc_seeallrev")
+            || $this->conf->setting("viewrev") === Conf::VIEWREV_ALWAYS
             || $rrow->has_multiple_ratings()) {
             return true;
         }
@@ -4748,10 +4737,11 @@ class Contact implements JsonSerializable {
         } else if ($this->conf->time_some_author_view_decision()) {
             return $this->isPC
                 || $this->is_author()
-                || ($this->is_reviewer() && $this->conf->setting("extrev_seerev") > 0);
+                || ($this->is_reviewer()
+                    && ($this->conf->setting("viewrev_ext") ?? 0) >= 0);
         } else if ($this->is_reviewer()) {
             return $this->conf->setting("seedec") > 0
-                && $this->conf->setting("extrev_seerev") > 0;
+                && ($this->conf->setting("viewrev_ext") ?? 0) >= 0;
         } else {
             return false;
         }

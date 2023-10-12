@@ -53,8 +53,8 @@ class DecisionVisibility_SettingParser extends SettingParser {
 
     static function print_reviewer(SettingValues $sv) {
         $extrev_view = $sv->vstr("review_visibility_external");
-        $Rtext = $extrev_view ? "Reviewers" : "PC reviewers";
-        $rtext = $extrev_view ? "reviewers" : "PC reviewers";
+        $Rtext = $extrev_view != Conf::VIEWREV_NEVER ? "Reviewers" : "PC reviewers";
+        $rtext = $extrev_view != Conf::VIEWREV_NEVER ? "reviewers" : "PC reviewers";
         $accept_auview = $sv->vstr("accepted_author_visibility")
             && $sv->vstr("author_visibility") != Conf::BLIND_NEVER;
 

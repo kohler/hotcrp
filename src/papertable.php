@@ -2508,7 +2508,7 @@ class PaperTable {
         $cflttype = $user->view_conflict_type($prow);
         $allow_actas = $user->privChair && $user->allow_administer($prow);
         $hideUnviewable = ($cflttype > 0 && !$this->admin)
-            || (!$user->act_pc($prow) && ($conf->setting("extrev_seerev") ?? 0) <= 0);
+            || (!$user->act_pc($prow) && ($conf->setting("viewrev_ext") ?? 0) < 0);
         $show_ratings = $user->can_view_review_ratings($prow);
         $want_scores = !in_array($this->mode, ["assign", "edit", "re"]);
         $want_requested_by = false;
