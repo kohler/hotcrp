@@ -911,9 +911,9 @@ class Null_AssignmentParser extends UserlessAssignmentParser {
 }
 
 class ReviewAssigner_Data {
-    /** @var ?string */
+    /** @var ?int */
     public $oldround;
-    /** @var ?string */
+    /** @var ?int */
     public $newround;
     /** @var bool */
     public $explicitround = false;
@@ -925,6 +925,7 @@ class ReviewAssigner_Data {
     public $creator = true;
     /** @var ?string */
     public $error_ftext;
+
     /** @return array{?string,?string,bool} */
     static function separate($key, $req, $state, $rtype) {
         $a0 = $a1 = trim((string) $req[$key]);
@@ -971,16 +972,13 @@ class ReviewAssigner_Data {
         list($rarg0, $rarg1, $rmatch) = self::separate("round", $req, $state, $this->newtype);
         if ((string) $rarg0 !== ""
             && $rmatch
-            && ($this->oldround = $state->conf->sanitize_round_name($rarg0)) === false) {
-            $this->error_ftext = "<0>" . Conf::round_name_error($rarg0);
+            && ($this->oldround = $state->conf->round_number($rarg0)) === null) {
+            $this->error_ftext = "<0>Review round ‘{$rarg0}’ not found";
         }
         if ((string) $rarg1 !== ""
-            && $this->newtype != 0) {
-            if (($this->newround = $state->conf->sanitize_round_name($rarg1)) === false) {
-                $this->error_ftext = "<0>" . Conf::round_name_error($rarg1);
-            } else if ($state->conf->round_number($this->newround) === null) {
-                $this->error_ftext = "<0>Review round ‘{$this->newround}’ not found";
-            }
+            && $this->newtype != 0
+            && ($this->newround = $state->conf->round_number($rarg1)) === null) {
+            $this->error_ftext = "<0>Review round ‘{$rarg1}’ not found";
         }
         if ($rarg0 !== "" && $rarg1 !== null) {
             $this->explicitround = (string) $req["round"] !== "";

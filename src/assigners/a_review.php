@@ -7,7 +7,7 @@ class Review_Assignable extends Assignable {
     public $cid;
     /** @var ?int */
     public $_rtype;
-    /** @var ?string */
+    /** @var ?int */
     public $_round;
     /** @var ?int */
     public $_rmodified;
@@ -24,7 +24,7 @@ class Review_Assignable extends Assignable {
     /** @param ?int $pid
      * @param ?int $cid
      * @param ?int $rtype
-     * @param ?string $round */
+     * @param ?int $round */
     function __construct($pid, $cid, $rtype = null, $round = null) {
         $this->type = "review";
         $this->pid = $pid;
@@ -69,7 +69,7 @@ class Review_Assignable extends Assignable {
         $rrow->contactId = $this->cid;
         $rrow->reviewType = $this->_rtype;
         $rrow->reviewId = $reviewId;
-        $rrow->reviewRound = $this->_round ? (int) $conf->round_number($this->_round) : 0;
+        $rrow->reviewRound = $this->_round ?? 0;
         $rrow->requestedBy = $this->_requested_by;
         return $rrow;
     }
@@ -94,8 +94,7 @@ class Review_AssignmentParser extends AssignmentParser {
         if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make")) {
             $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewModified, reviewSubmitted, timeApprovalRequested, requestedBy from PaperReview where paperId?a", $state->paper_ids());
             while (($row = $result->fetch_row())) {
-                $round = $state->conf->round_name((int) $row[3]);
-                $ra = new Review_Assignable((int) $row[0], (int) $row[1], (int) $row[2], $round);
+                $ra = new Review_Assignable((int) $row[0], (int) $row[1], (int) $row[2], (int) $row[3]);
                 $ra->set_rmodified($row[4] > 1 ? 1 : 0);
                 $ra->set_rsubmitted($row[5] > 0 ? 1 : 0);
                 $ra->set_rnondraft($row[5] > 0 || $row[6] != 0 ? 1 : 0);
@@ -296,7 +295,7 @@ class Review_Assigner extends Assigner {
                                !$this->item->get($before, "_rsubmitted"));
         if (($round = $this->item->get($before, "_round"))) {
             $t .= '<span class="revround" title="Review round">'
-                . htmlspecialchars($round) . '</span>';
+                . htmlspecialchars($aset->conf->round_name($round)) . '</span>';
         }
         return $t . unparse_preference_span($aset->prow($this->pid)->preference($this->cid, true));
     }
@@ -321,13 +320,13 @@ class Review_Assigner extends Assigner {
         }
         if ($this->item->differs("_round")) {
             if (($round = $this->item->pre("_round"))) {
-                $t .= '<span class="revround" title="Review round"><del>' . htmlspecialchars($round) . '</del></span>';
+                $t .= '<span class="revround" title="Review round"><del>' . htmlspecialchars($aset->conf->round_name($round)) . '</del></span>';
             }
             if (($round = $this->item->post("_round"))) {
-                $t .= '<span class="revround" title="Review round"><ins>' . htmlspecialchars($round) . '</ins></span>';
+                $t .= '<span class="revround" title="Review round"><ins>' . htmlspecialchars($aset->conf->round_name($round)) . '</ins></span>';
             }
         } else if (($round = $this->item["_round"])) {
-            $t .= '<span class="revround" title="Review round">' . htmlspecialchars($round) . '</span>';
+            $t .= '<span class="revround" title="Review round">' . htmlspecialchars($aset->conf->round_name($round)) . '</span>';
         }
         if (!$this->item->existed()) {
             $t .= unparse_preference_span($aset->prow($this->pid)->preference($this->cid, true));
@@ -341,8 +340,8 @@ class Review_Assigner extends Assigner {
             "email" => $this->contact->email,
             "name" => $this->contact->name()
         ];
-        if (($round = $this->item["_round"])) {
-            $x["round"] = $round;
+        if (($round = $this->item["_round"]) !== null) {
+            $x["round"] = $aset->conf->round_name($round);
         }
         if ($this->token) {
             $x["review_token"] = encode_token($this->token);
@@ -381,7 +380,7 @@ class Review_Assigner extends Assigner {
         $extra = ["no_autosearch" => true];
         $round = $this->item->post("_round");
         if ($round !== null && $this->rtype) {
-            $extra["round_number"] = (int) $aset->conf->round_number($round);
+            $extra["round_number"] = $round;
         }
         if ($this->contact->is_anonymous_user()
             && (!$this->item->existed() || !$this->item["_rtype"])) {
