@@ -491,7 +491,7 @@ class Conf {
     /** @param int $sr1
      * @param int $sr2
      * @return -1|0|1 */
-    static private function viewrev_compare($sr1, $sr2) {
+    static function viewrev_compare($sr1, $sr2) {
         if ($sr1 == $sr2) {
             return 0;
         } else if ($sr1 == self::VIEWREV_ALWAYS || $sr2 == self::VIEWREV_ALWAYS) {

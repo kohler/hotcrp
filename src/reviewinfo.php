@@ -682,7 +682,7 @@ class ReviewInfo implements JsonSerializable {
      * @return bool */
     function prop_changed($prop = null) {
         return $this->_diff
-            && $this->_diff->view_score > VIEWSCORE_EMPTY
+            && !$this->_diff->is_empty()
             && (!$prop || array_key_exists($prop, $this->_diff->_old_prop));
     }
 

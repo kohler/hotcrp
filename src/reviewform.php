@@ -1412,7 +1412,7 @@ class ReviewValues extends MessageSet {
                 $tmpl = "@reviewupdate";
             }
             $always_combine = false;
-            $diff_view_score = $diffinfo->view_score;
+            $diff_view_score = $diffinfo->view_score();
         } else if ($newstatus < ReviewInfo::RS_COMPLETED
                    && $newstatus >= ReviewInfo::RS_DELIVERED
                    && ($diffinfo->fields() || $newstatus !== $oldstatus)
@@ -1631,7 +1631,7 @@ class ReviewValues extends MessageSet {
         if (!$rrow->reviewId || $rrow->prop_changed()) {
             $rrow->set_prop("reviewViewScore", $view_score);
             // XXX distinction between VIEWSCORE_AUTHOR/VIEWSCORE_AUTHORDEC?
-            if ($diffinfo->view_score >= $author_view_score) {
+            if ($diffinfo->view_score() >= $author_view_score) {
                 // Author can see modification.
                 $rrow->set_prop("reviewAuthorModified", $now);
             } else if (!$rrow->reviewAuthorModified
@@ -1643,7 +1643,7 @@ class ReviewValues extends MessageSet {
             }
             // do not notify on updates within 3 hours, except fresh submits
             if ($newstatus >= ReviewInfo::RS_COMPLETED
-                && $diffinfo->view_score > VIEWSCORE_REVIEWERONLY
+                && $diffinfo->view_score() > VIEWSCORE_REVIEWERONLY
                 && !$this->no_notify) {
                 if (!$rrow->reviewNotified
                     || $rrow->reviewNotified < $notification_bound
@@ -1653,7 +1653,7 @@ class ReviewValues extends MessageSet {
                 }
                 if ((!$rrow->reviewAuthorNotified
                      || $rrow->reviewAuthorNotified < $notification_bound)
-                    && $diffinfo->view_score >= $author_view_score
+                    && $diffinfo->view_score() >= $author_view_score
                     && $prow->can_author_view_submitted_review()) {
                     $rrow->set_prop("reviewAuthorNotified", $now);
                     $diffinfo->notify_author = true;
@@ -1666,11 +1666,11 @@ class ReviewValues extends MessageSet {
         $locked = $newordinal = false;
         if ((!$rrow->reviewId
              && $newsubmit
-             && $diffinfo->view_score >= VIEWSCORE_AUTHORDEC)
+             && $diffinfo->view_score() >= VIEWSCORE_AUTHORDEC)
             || ($rrow->reviewId
                 && !$rrow->reviewOrdinal
                 && ($newsubmit || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED)
-                && ($diffinfo->view_score >= VIEWSCORE_AUTHORDEC
+                && ($diffinfo->view_score() >= VIEWSCORE_AUTHORDEC
                     || $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC))) {
             $result = $this->conf->qe_raw("lock tables PaperReview write");
             if (Dbl::is_error($result)) {

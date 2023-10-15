@@ -10,8 +10,10 @@ class ReviewDiffInfo {
     public $_old_prop = [];
     /** @var list<ReviewField> */
     private $_fields = [];
+    /** @var ?int */
+    private $_view_score;
     /** @var int */
-    public $view_score = VIEWSCORE_EMPTY;
+    private $_x_view_score = VIEWSCORE_EMPTY;
     /** @var bool */
     public $notify = false;
     /** @var bool */
@@ -25,18 +27,37 @@ class ReviewDiffInfo {
         $this->rrow = $rrow;
     }
 
+    /** @return bool */
+    function is_empty() {
+        return empty($this->_fields) && $this->_x_view_score === VIEWSCORE_EMPTY;
+    }
+
+    /** @return int */
+    function view_score() {
+        if ($this->_view_score === null) {
+            $this->_view_score = $this->_x_view_score;
+            foreach ($this->_fields as $f) {
+                $vs = $f->view_score;
+                if ($vs > $this->_view_score) {
+                    if (!$f->test_exists($this->rrow)) {
+                        $vs = min($vs, VIEWSCORE_REVIEWERONLY);
+                    }
+                    $this->_view_score = max($this->_view_score, $vs);
+                }
+            }
+        }
+        return $this->_view_score;
+    }
+
     /** @param ReviewField $f */
     function mark_field($f) {
         $this->_fields[] = $f;
-        $view_score = $f->test_exists($this->rrow) ? $f->view_score : VIEWSCORE_REVIEWERONLY;
-        $this->mark_view_score($view_score);
+        $this->_view_score = null;
     }
 
     /** @param int $view_score */
     function mark_view_score($view_score) {
-        if ($this->view_score < $view_score) {
-            $this->view_score = $view_score;
-        }
+        $this->_x_view_score = max($this->_x_view_score, $view_score);
     }
 
     /** @return list<ReviewField> */
