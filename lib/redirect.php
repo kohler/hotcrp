@@ -81,11 +81,6 @@ function ensure_session() {
     Qrequest::$main_request->open_session();
 }
 
-/** @deprecated */
-function post_value($allow_empty = false) {
-    return Qrequest::$main_request->post_value($allow_empty);
-}
-
 function unlink_session() {
     if (($sn = session_name()) && isset($_COOKIE[$sn])) {
         $params = session_get_cookie_params();

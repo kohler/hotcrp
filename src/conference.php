@@ -4327,7 +4327,7 @@ class Conf {
             "suffix" => $nav->php_suffix,
             "assets" => $this->_assets_url,
             "cookie_params" => "",
-            "postvalue" => $qreq->post_value(true),
+            "postvalue" => $qreq->maybe_post_value(),
         ];
         $userinfo = [];
         if (($x = $this->opt("sessionDomain"))) {

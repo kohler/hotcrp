@@ -749,18 +749,22 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
     }
 
-    /** @param bool $allow_empty
-     * @return string */
-    function post_value($allow_empty = false) {
-        $sid = $this->_qsession->sid;
-        if ($sid === null && !$allow_empty) {
+    /** @return string */
+    function post_value() {
+        if ($this->_qsession->sid === null) {
             $this->_qsession->open();
-            $sid = $this->_qsession->sid;
         }
-        if ($sid === null || $sid === "") {
+        return $this->maybe_post_value();
+    }
+
+    /** @return string */
+    function maybe_post_value() {
+        $sid = $this->_qsession->sid ?? "";
+        if ($sid !== "") {
+            return urlencode(substr($sid, strlen($sid) > 16 ? 8 : 0, 12));
+        } else {
             return ".empty";
         }
-        return urlencode(substr($sid, strlen($sid) > 16 ? 8 : 0, 12));
     }
 }
 
