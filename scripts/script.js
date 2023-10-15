@@ -10892,7 +10892,7 @@ function transfer_form_values($dst, $src, names) {
 
 // login UI
 handle_ui.on("js-signin", function (evt) {
-    var form = this, signin = document.getElementById("signin_signin");
+    var form = this, signin = document.getElementById("k-signin");
     signin && (signin.disabled = true);
     evt.preventDefault();
     $.get(hoturl("api/session"), function () { form.submit() });

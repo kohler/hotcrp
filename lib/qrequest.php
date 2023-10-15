@@ -626,7 +626,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 
     /** @param string|list<string> $title
      * @param string $id
-     * @param array{paperId?:int|string,body_class?:string,action_bar?:string,title_div?:string,subtitle?:string,save_messages?:bool} $extra */
+     * @param array{paperId?:int|string,body_class?:string,action_bar?:string,title_div?:string,subtitle?:string,save_messages?:bool,hide_title?:bool} $extra */
     function print_header($title, $id, $extra = []) {
         if (!$this->_conf->_header_printed) {
             $this->_conf->print_head_tag($this, $title, $extra);
