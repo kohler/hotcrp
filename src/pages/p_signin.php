@@ -455,7 +455,7 @@ class Signin_Page {
         // exit on cancel
         if ($qreq->cancel) {
             $info = ["ok" => false];
-            foreach ($cs->members("reset/request") as $gj) {
+            foreach ($cs->members("resetpassword/request") as $gj) {
                 $info = $cs->call_function($gj, $gj->reset_function, $info, $gj);
             }
             $conf->redirect();
