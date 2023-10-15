@@ -301,7 +301,7 @@ class Signin_Page {
         } else {
             $conf->success_msg("<0>Sent mail to {$user->email}. When you receive that mail, follow the link to reset your password.");
             if ($prep->reset_capability) {
-                $conf->log_for($user, null, "Password link sent " . substr($prep->reset_capability, 0, 8) . "...");
+                $conf->log_for($user, null, "Password link sent " . substr($prep->reset_capability, 0, 12) . "...");
             }
         }
         return $prep;
@@ -558,7 +558,7 @@ class Signin_Page {
         // actually reset password
         $accthere = $this->_reset_user->ensure_account_here();
         $accthere->change_password($info["newpassword"]);
-        $accthere->log_activity("Password reset via " . substr($this->_reset_tokstr, 0, 8) . "...");
+        $accthere->log_activity("Password reset via " . substr($this->_reset_tokstr, 0, 12) . "...");
         $user->conf->success_msg("<0>Password changed. Use the new password to sign in below.");
         $this->_reset_token->delete();
         $qreq->set_csession("password_reset", (object) [
