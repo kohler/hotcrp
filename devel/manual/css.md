@@ -45,7 +45,7 @@ Generic values
         * `#p-body`
     * `#p-footer`
 * `id^=i-` is for icons
-* `id^=f-` is for forms (this should be phased out)
+* `id^=f-` is for forms
 * `id^=h-` is for header elements
     * `#h-site`
     * `#h-page`
