@@ -63,10 +63,11 @@ class Login_Tester {
         $qreq->set_req("resetcap", $prep->reset_capability);
         $qreq->set_req("password", "newuserpassword!");
         $qreq->set_req("password2", "newuserpassword!");
-        $signinp = new Signin_Page;
         $result = null;
         try {
-            $signinp->reset_request($user, $qreq);
+            $cs = $this->conf->page_components($user, $qreq);
+            $signinp = $cs->callable("Signin_Page");
+            $signinp->reset_request($user, $qreq, $cs);
         } catch (Redirection $redir) {
             $result = $redir;
         }
@@ -137,10 +138,11 @@ class Login_Tester {
         $qreq->set_req("resetcap", $prep->reset_capability);
         $qreq->set_req("password", "newuserpassword!");
         $qreq->set_req("password2", "newuserpassword!");
-        $signinp = new Signin_Page;
         $result = null;
         try {
-            $signinp->reset_request($user, $qreq);
+            $cs = $this->conf->page_components($user, $qreq);
+            $signinp = $cs->callable("Signin_Page");
+            $signinp->reset_request($user, $qreq, $cs);
         } catch (Redirection $redir) {
             $result = $redir;
         }
@@ -190,10 +192,11 @@ class Login_Tester {
         $qreq->set_req("resetcap", $prep->reset_capability);
         $qreq->set_req("password", "newuserpassword!");
         $qreq->set_req("password2", "newuserpassword!");
-        $signinp = new Signin_Page;
         $result = null;
         try {
-            $signinp->reset_request($user, $qreq);
+            $cs = $this->conf->page_components($user, $qreq);
+            $signinp = $cs->callable("Signin_Page");
+            $signinp->reset_request($user, $qreq, $cs);
         } catch (Redirection $redir) {
             $result = $redir;
         }

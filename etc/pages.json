@@ -186,6 +186,14 @@
         "name": "resetpassword/request", "order": 100,
         "request_function": "*Signin_Page::reset_request"
     },
+    {
+        "name": "resetpassword/request/basic", "order": 100,
+        "signin_function": "*Signin_Page::reset_request_basic"
+    },
+    {
+        "name": "resetpassword/request/success", "order": 100000,
+        "signin_function": "*Signin_Page::reset_request_success"
+    },
     [   "resetpassword/head", 1000, "Signin_Page::print_reset_head"   ],
     [   "resetpassword/body", 3000, "*Signin_Page::print_reset_body"   ],
     [   "resetpassword/form/title", 1, "Signin_Page::print_reset_form_title"   ],

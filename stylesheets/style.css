@@ -240,7 +240,7 @@ body.paper {
 	background: linear-gradient(to right, #e2e9ec, #e2e9ec 15.5rem, white 15.5rem, white);
 }
 body.body-signin {
-	background: #e8dcdd;
+	background: #e0d9da;
 }
 body.body-error {
 	background: #dfd0d3;
@@ -325,6 +325,10 @@ h3, h4 {
 }
 h1.paptitle {
 	padding: 6px 24px;
+}
+h1.signin {
+	margin-bottom: 1rem;
+	font-weight: bold;
 }
 .pnum-sp {
 	padding-right: 0.4em;
