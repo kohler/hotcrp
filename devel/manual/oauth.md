@@ -52,10 +52,13 @@ the provided parameters via an HTTP `POST` request with
 returned JWT and uses its included `email` to authenticate the user.
 
 Many steps in this process might go wrong. HotCRP uses its own code to
-validate the JWT; this might break. Report problems to maintainers.
+validate the JWT; this might break. HotCRP does not support encrypted tokens.
+Report problems to maintainers.
 
-HotCRP does not currently cryptographically validate the returned token’s
-signature.
+HotCRP does not currently validate that the returned token was
+cryptographically signed by a public key corresponding to the provider. That
+is, it trusts that the TLS connection to the provider is secure, and does not
+access the provider’s JSON Web Key Set.
 
 ## Disabling other authentication sources
 
