@@ -7,6 +7,8 @@ class OAuthInstance {
     public $authtype;
     /** @var ?string */
     public $title;
+    /** @var ?string */
+    public $scope;
     /** @var string */
     public $client_id;
     /** @var string */
@@ -40,12 +42,13 @@ class OAuthInstance {
             return null;
         }
         $instance = new OAuthInstance($authtype);
+        $instance->title = $authdata->title ?? null;
+        $instance->scope = $authdata->scope ?? null;
         $instance->client_id = $authdata->client_id ?? null;
         $instance->client_secret = $authdata->client_secret ?? null;
         $instance->auth_uri = $authdata->auth_uri ?? null;
         $instance->token_uri = $authdata->token_uri ?? null;
         $instance->redirect_uri = $authdata->redirect_uri ?? $conf->hoturl("oauth", null, Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
-        $instance->title = $authdata->title ?? null;
         $instance->load_function = $authdata->load_function ?? null;
         $instance->require = $authdata->require ?? null;
         foreach (["client_id", "client_secret", "auth_uri", "token_uri", "redirect_uri", "title"] as $k) {
@@ -85,8 +88,8 @@ class OAuth_Page {
             if ($tok->create()) {
                 $params = "client_id=" . urlencode($authi->client_id)
                     . "&response_type=code"
-                    . "&scope=openid%20email%20profile"
-                    . "&redirect_uri=" . urlencode($authi->redirect_uri)
+                    . "&scope=" . rawurlencode($authi->scope ?? "openid email profile")
+                    . "&redirect_uri=" . rawurlencode($authi->redirect_uri)
                     . "&state=" . $tok->salt;
                 throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
             } else {
