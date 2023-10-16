@@ -235,6 +235,7 @@ class Contact implements JsonSerializable {
         "affiliation" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_UPDATE | self::PROP_IMPORT,
         "phone" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT,
         "country" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT,
+        "orcid" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT,
         "password" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_NOUPDATECDB,
         "passwordTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_NOUPDATECDB,
         "passwordUseTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_NOUPDATECDB,
@@ -324,6 +325,7 @@ class Contact implements JsonSerializable {
             list($u->firstName, $u->lastName, $unused) = Text::split_name($args["name"]);
         }
         $u->affiliation = simplify_whitespace($args["affiliation"] ?? "");
+        $u->orcid = trim($args["orcid"] ?? "");
         $u->disablement = $args["disablement"] ?? 0;
         $u->disabled = $u->disablement & self::DISABLEMENT_DB;
         $u->set_roles_properties();

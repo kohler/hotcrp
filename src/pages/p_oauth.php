@@ -182,6 +182,9 @@ class OAuth_Page {
         if (isset($jid->name) && is_string($jid->name)) {
             $reg["name"] = $jid->name;
         }
+        if (isset($jid->orcid) && is_string($jid->orcid)) {
+            $reg["orcid"] = $jid->orcid;
+        }
         $info = LoginHelper::check_external_login(Contact::make_keyed($this->conf, $reg));
         if (!$info["ok"]) {
             LoginHelper::login_error($this->conf, $jid->email, $info, null);
