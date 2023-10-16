@@ -166,7 +166,7 @@ class OAuth_Page {
 
         if (isset($authi->load_function)
             && Conf::xt_resolve_require($authi)
-            && ($m = call_user_func($authi->load_function, $this, $authi, $jid, $response)) {
+            && ($m = call_user_func($authi->load_function, $this, $authi, $response, $jid))) {
             return $m;
         }
 
