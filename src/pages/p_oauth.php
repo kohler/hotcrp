@@ -18,6 +18,10 @@ class OAuthInstance {
     /** @var string */
     public $token_uri;
 
+    function __construct($authtype) {
+        $this->authtype = $authtype;
+    }
+
     /** @param Conf $conf
      * @param ?string $authtype
      * @return ?OAuthInstance */
@@ -32,15 +36,16 @@ class OAuthInstance {
         if (!($authdata = $authinfo[$authtype] ?? null)) {
             return null;
         }
-        $instance = new OAuthInstance;
-        foreach (["client_id", "client_secret", "auth_uri", "redirect_uri", "token_uri"] as $k) {
-            if (!isset($authdata->$k) || !is_string($authdata->$k)) {
+        $instance = new OAuthInstance($authtype);
+        $instance->client_id = $authdata->client_id ?? null;
+        $instance->client_secret = $authdata->client_secret ?? null;
+        $instance->auth_uri = $authdata->auth_uri ?? null;
+        $instance->token_uri = $authdata->token_uri ?? null;
+        $instance->redirect_uri = $authdata->redirect_uri ?? $conf->hoturl("oauth", null, Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
+        $instance->title = $authdata->title ?? null;
+        foreach (["client_id", "client_secret", "auth_uri", "token_uri", "redirect_uri", "title"] as $k) {
+            if (!is_string($instance->$k) && ($k !== "title" || $instance->$k !== null))
                 return null;
-            }
-            $instance->$k = $authdata->$k;
-        }
-        if (isset($authdata->title) && is_string($authdata->title)) {
-            $instance->title = $authdata->title;
         }
         return $instance;
     }
@@ -124,14 +129,15 @@ class OAuth_Page {
         $nonce = base48_encode(random_bytes(10));
         curl_setopt($curlh, CURLOPT_URL, $authi->token_uri);
         curl_setopt($curlh, CURLOPT_POST, true);
-        curl_setopt($curlh, CURLOPT_POSTFIELDS, [
+        curl_setopt($curlh, CURLOPT_HTTPHEADER, ["Content-Type: application/x-www-form-urlencoded"]);
+        curl_setopt($curlh, CURLOPT_POSTFIELDS, http_build_query([
             "code" => $this->qreq->code,
             "client_id" => $authi->client_id,
             "client_secret" => $authi->client_secret,
             "redirect_uri" => $authi->redirect_uri,
             "grant_type" => "authorization_code",
             "nonce" => $nonce
-        ]);
+        ], "", "&"));
         curl_setopt($curlh, CURLOPT_RETURNTRANSFER, true);
         $txt = curl_exec($curlh);
         curl_close($curlh);
