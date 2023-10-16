@@ -30,14 +30,16 @@
         "request_function": "Home_Page::profile_redirect_request"
     },
     {
-        "name": "home/admin", "order": 900, "allow_if": "chair",
-        "allow_request_if": ["getpost", "req.clearbug || req.clearnewpcrev"],
-        "request_function": "AdminHome_Page::check_admin",
+        "name": "home/admin_request", "order": 900,
+        "allow_if": "chair && getpost && (req.clearbug || req.clearnewpcrev)",
+        "request_function": "AdminHome_Page::check_admin"
+    },
+    {
+        "name": "home/admin", "order": 901, "allow_if": "chair",
         "print_function": "AdminHome_Page::print"
     },
     {
-        "name": "home/reviewtokenreport",
-        "allow_request_if": "req.reviewtokenreport",
+        "name": "home/reviewtokenreport", "allow_if": "req.reviewtokenreport",
         "request_function": "Home_Page::reviewtokenreport_request"
     },
 
@@ -118,8 +120,7 @@
 
     {   "name": "newaccount", "allow_disabled": true   },
     {
-        "name": "newaccount/request", "order": 100,
-        "allow_request_if": "anypost",
+        "name": "newaccount/request", "order": 100, "allow_if": "anypost",
         "request_function": "*Signin_Page::create_request"
     },
     [   "newaccount/head", 1000, "Signin_Page::print_newaccount_head"   ],
@@ -132,8 +133,7 @@
 
     {   "name": "signin", "allow_disabled": true   },
     {
-        "name": "signin/request", "order": 100,
-        "allow_request_if": "anypost",
+        "name": "signin/request", "order": 100, "allow_if": "anypost",
         "request_function": "*Signin_Page::signin_request"
     },
     {
@@ -157,8 +157,7 @@
 
     {   "name": "signout", "allow_disabled": true   },
     {
-        "name": "signout/request", "order": 100,
-        "allow_request_if": "anypost",
+        "name": "signout/request", "order": 100, "allow_if": "anypost",
         "request_function": "Signin_Page::signout_request"
     },
     [   "signout/content", 1000, "Signin_Page::print_signout"   ],
@@ -166,8 +165,7 @@
 
     {   "name": "forgotpassword", "allow_disabled": true   },
     {
-        "name": "forgotpassword/request", "order": 100,
-        "allow_request_if": "anypost",
+        "name": "forgotpassword/request", "order": 100, "allow_if": "anypost",
         "request_function": "*Signin_Page::forgot_request"
     },
     [   "forgotpassword/head", 1000, "Signin_Page::print_forgot_head"   ],

@@ -63,8 +63,6 @@ class XtParams {
             return !$user || $user->is_reviewer();
         } else if ($s === "view_review") {
             return !$user || $user->can_view_some_review();
-        } else if ($s === "lead" || $s === "shepherd") {
-            return $this->conf->has_any_lead_or_shepherd();
         } else if ($s === "!empty") {
             return !$user || !$user->is_empty();
         } else if ($s === "empty") {

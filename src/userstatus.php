@@ -1761,8 +1761,9 @@ John Adams,john@earbox.org,UC Berkeley,pc
     function request_group($name) {
         $cs = $this->cs();
         foreach ($cs->members($name, "request_function") as $gj) {
-            if ($cs->allowed($gj->allow_request_if ?? null, $gj)) {
-                $cs->call_function($gj, $gj->request_function, $gj);
+            assert(!isset($gj->allow_request_if));
+            if ($cs->call_function($gj, $gj->request_function, $gj) === false) {
+                break;
             }
         }
     }

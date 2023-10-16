@@ -105,6 +105,8 @@ returned. The merge process works as follows.
     still be used to check selected conference properties, as in
     `"allow_if":"conf.external_login"`.
 
+    `allow_if` syntax is described below.
+
 4. The highest-priority remaining component, if any, is the result of the
    merge process.
 
@@ -137,3 +139,29 @@ the **group** defined by everything up to the last slash; for instance,
 components `a/b`, `a/c`, and `a/b/c` are members of groups `a`, `a`, and
 `a/b`, respectively. If present, the component’s `group` property overrides
 the group value derived from the component name.
+
+## Allowance conditions
+
+A component `allow_if` property should be `true`, `false`, or a string
+describing a condition. Examples include:
+
+* `admin`: The viewer is a system administrator
+* `manager`: The viewer is a manager (system administrator, track
+  administrator, or paper administrator)
+* `pc`: The viewer is on the PC or a system administrator
+* `author`: The viewer is an author
+* `reviewer`: The viewer is on the PC, a system administrator, or an assigned
+  reviewer
+* `view_review`: The viewer may be allowed to see a review
+* `empty`: The viewer is empty (has not signed in and has not provided any
+  review tokens or other capabilities)
+* `email`: The viewer has signed in
+* `disabled`: The viewer is disabled
+* `opt.XXX`: Conference option `$Opt[XXX]` is truthy
+* `setting.XXX`: Conference setting `XXX` is truthy
+
+Some component types define additional conditions.
+
+It is also possible to combine multiple conditions using parentheses, `!`
+(negation), `&&`, and `||`. For instance, the condition `author || reviewer`
+is true for both authors and reviewers.

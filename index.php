@@ -9,29 +9,16 @@ require_once("lib/navigation.php");
  * @param object $pagej
  * @param ComponentSet $pc */
 function handle_request_components($user, $qreq, $pagej, $pc) {
-    $pc->add_xt_checker([$qreq, "xt_allow"]);
-    $reqgj = [];
-    $nfound = 0;
-    $not_allowed = false;
-    if (isset($pagej->request_function)) {
-        ++$nfound;
-        if ($pc->allowed($gj->allow_request_if ?? null, $gj)) {
-            $reqgj[] = $gj;
-        }
+    if (isset($pagej->request_function)
+        && $pc->call_function($pagej, $pagej->request_function, $pagej) === false) {
+        return;
     }
     foreach ($pc->members($pagej->group, "request_function") as $gj) {
-        ++$nfound;
-        if ($pc->allowed($gj->allow_request_if ?? null, $gj)) {
-            $reqgj[] = $gj;
+        if (isset($gj->allow_request_if)) { /* XXX backward compat */
+            error_log("Warning: allow_request_if is deprecated");
+            if (!$pc->allowed($gj->allow_request_if, $gj))
+                continue;
         }
-    }
-    if ($nfound > 0
-        && $nfound < count($reqgj)
-        && $qreq->is_post()
-        && !$qreq->valid_token()) {
-        $user->conf->error_msg($user->conf->_i("badpost"));
-    }
-    foreach ($reqgj as $gj) {
         if ($pc->call_function($gj, $gj->request_function, $gj) === false) {
             break;
         }

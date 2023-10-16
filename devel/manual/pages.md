@@ -49,10 +49,9 @@ form, HotCRP calls the named function statically. In the second form (with
 `Contact, Qrequest, ComponentSet`) and then calls the relevant `FUNCTIONNAME`
 on that object. All calls with the same `*CLASSNAME` will use the same object.
 
-A component’s `request_function` may be blocked by the `allow_request_if` as
-well as the `allow_if` property. For instance, `"allow_request_if":
-"req.clearbug"` allows the `request_function` only if the request has a
-`clearbug` parameter.
+A component’s `request_function` may be blocked by the `allow_if` property.
+For instance, `"allow_if": "req.clearbug"` allows the `request_function` only
+if the request has a `clearbug` parameter.
 
 If a `request_function` explicitly returns `false` (as opposed to `null`, or
 by simply falling off the end), then HotCRP quits calling `request_function`s
@@ -92,6 +91,20 @@ same as an with the corresponding properties:
     "name": NAME, "order": ORDER, "print_function": PRINT_FUNCTION [, "priority": PRIORITY]
 }
 ```
+
+## Allowance conditions
+
+In addition to the global `allow_if` conditions, such as `"admin"`, page
+components support conditions relating to the current request.
+
+* `post`: The current request is a POST with a valid CSRF token
+* `anypost`: The current request is a POST, whether or not it has a valid CSRF
+  token
+* `getpost`: The current request is a GET, POST, or HEAD with a valid CSRF
+  token
+* `get`, `head`: The current request has the specified method
+* `req.XXX`: The current request defines the `XXX` parameter to some value,
+  possibly the empty string
 
 
 [components]: ./components.md

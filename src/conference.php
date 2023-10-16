@@ -5600,6 +5600,7 @@ class Conf {
             || $pc->arg(1) !== $qreq) {
             $pc = new ComponentSet($viewer, ["etc/pages.json"], $this->opt("pages"));
             $pc->set_context_args($viewer, $qreq, $pc);
+            $pc->add_xt_checker([$qreq, "xt_allow"]);
             $this->_page_components = $pc;
         }
         return $pc;
