@@ -91,7 +91,6 @@ class OAuth_Page {
                     . "&scope=" . rawurlencode($authi->scope ?? "openid email profile")
                     . "&redirect_uri=" . rawurlencode($authi->redirect_uri)
                     . "&state=" . $tok->salt;
-error_log(hoturl_add_raw($authi->auth_uri, $params));
                 throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
             } else {
                 $this->conf->error_msg("<0>Authentication attempt failed");
@@ -139,6 +138,7 @@ error_log(hoturl_add_raw($authi->auth_uri, $params));
         curl_setopt($curlh, CURLOPT_URL, $authi->token_uri);
         curl_setopt($curlh, CURLOPT_POST, true);
         curl_setopt($curlh, CURLOPT_HTTPHEADER, ["Content-Type: application/x-www-form-urlencoded"]);
+        curl_setopt($curlh, CURLOPT_TIMEOUT, 15);
         curl_setopt($curlh, CURLOPT_POSTFIELDS, http_build_query([
             "code" => $this->qreq->code,
             "client_id" => $authi->client_id,
@@ -149,18 +149,20 @@ error_log(hoturl_add_raw($authi->auth_uri, $params));
         ], "", "&"));
         curl_setopt($curlh, CURLOPT_RETURNTRANSFER, true);
         $txt = curl_exec($curlh);
+        $errno = curl_errno($curlh);
+        $status = curl_getinfo($curlh, CURLINFO_RESPONSE_CODE);
         curl_close($curlh);
-error_log($authi->token_uri);
 
         // check response
-        if (!$txt) {
-            return MessageItem::error("<0>{$authtitle} authentication request failed");
-        } else if (!($response = json_decode($txt))
-                   || !is_object($response)) {
-            return MessageItem::error("<0>{$authtitle} authentication response was incorrectly formatted");
-        } else if (!isset($response->id_token)
-                   || !is_string($response->id_token)) {
-            return MessageItem::error("<0>{$authtitle} authentication response doesn’t confirm your identity");
+        $response = $txt ? json_decode($txt) : null;
+        if (!$response
+            || !is_object($response)
+            || !is_string($response->id_token ?? null)) {
+            if ($errno !== 0 || $status < 200 || $status > 299) {
+                return MessageItem::error("<0>{$authtitle} authentication returned an error");
+            } else {
+                return MessageItem::error("<0>{$authtitle} authentication returned an incorrectly formatted response");
+            }
         }
 
         // parse returned JSON web token

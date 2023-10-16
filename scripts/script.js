@@ -11995,7 +11995,7 @@ handle_ui.on("js-delete-review", function () {
 
 handle_ui.on("js-approve-review", function (evt) {
     var self = this, hc = popup_skeleton({near: evt.sidebarTarget || self});
-    hc.push('<div class="btngrid">', '</div>');
+    hc.push('<div class="grid-btn-explanation">', '</div>');
     var subreviewClass = "";
     if (hasClass(self, "can-adopt")) {
         hc.push('<button type="button" name="adoptsubmit" class="btn-primary big">Adopt and submit</button><p>Submit a copy of this review under your name. You can make changes afterwards.</p>');

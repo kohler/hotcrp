@@ -1638,7 +1638,7 @@ topics. We use this information to help match papers to reviewers.</p>',
             return;
         }
         $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
-        echo '<div class="btngrid"><div class="d-flex mf mf-absolute">';
+        echo '<div class="grid-btn-explanation"><div class="d-flex mf mf-absolute">';
 
         if ($us->user->disablement === Contact::DISABLEMENT_PLACEHOLDER) {
             $disabled = !$us->conf->allow_user_activate_other();
