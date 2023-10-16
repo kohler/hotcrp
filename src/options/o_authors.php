@@ -283,6 +283,10 @@ class Authors_PaperOption extends PaperOption {
         echo "</template></div></div>\n\n";
     }
 
+    function field_fmt_context() {
+        return [new FmtArg("max", $this->max_count)];
+    }
+
     function render(FieldRender $fr, PaperValue $ov) {
         if ($fr->want(FieldRender::CFPAGE)) {
             $fr->table->render_authors($fr, $this);

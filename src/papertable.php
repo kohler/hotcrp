@@ -717,7 +717,7 @@ class PaperTable {
             if ($dtype === DTYPE_FINAL) {
                 $dhtml = $this->conf->option_by_id($dtype)->title_html();
             } else {
-                $dhtml = $o->title_html($this->prow->timeSubmitted == 0);
+                $dhtml = $o->title_html(new FmtArg("draft", $this->prow->timeSubmitted == 0));
             }
             $s = $doc->link_html("<span class=\"pavfn\">{$dhtml}</span>", DocumentInfo::L_REQUIREFORMAT);
             $fr->value .= "<p class=\"pgsm\">{$s}{$stamps}</p>";
@@ -997,7 +997,7 @@ class PaperTable {
         $vas = $this->user->view_authors_state($this->prow);
         if ($vas === 0) {
             $fr->value = '<div class="pg">'
-                . $this->papt("authors", $o->title_html(0))
+                . $this->papt("authors", $o->title_html())
                 . '<div class="pavb"><i>Hidden</i></div>'
                 . "</div>\n\n";
             return;
@@ -1007,7 +1007,7 @@ class PaperTable {
         list($aulist, $contacts) = $this->_analyze_authors();
 
         // "author" or "authors"?
-        $auname = $o->title_html(count($aulist));
+        $auname = $o->title_html(new FmtArg("count", count($aulist)));
         if ($vas === 1) {
             $auname .= " <span class=\"n\">(deanonymized)</span>";
         } else if ($this->user->act_author_view($this->prow)) {
@@ -1035,7 +1035,7 @@ class PaperTable {
             $fr->value .= '<button type="button" class="q ui js-aufoldup" title="Toggle author display" aria-expanded="' . ($this->foldmap[8] ? "false" : "true") . '">';
         }
         if ($vas === 1) {
-            $fr->value .= '<span class="fn8">' . $o->title_html(0) . '</span><span class="fx8">';
+            $fr->value .= '<span class="fn8">' . $o->title_html() . '</span><span class="fx8">';
         }
         if ($this->allow_folds) {
             $fr->value .= expander(null, 9);
@@ -1094,7 +1094,7 @@ class PaperTable {
                 || $this->prow->timeSubmitted <= 0)) {
             $contacts_option = $this->conf->option_by_id(PaperOption::CONTACTSID);
             $fr->value .= '<div class="pg fx9' . ($vas > 1 ? "" : " fx8") . '">'
-                . $this->papt("contacts", $contacts_option->title_html(count($contacts)))
+                . $this->papt("contacts", $contacts_option->title_html(new FmtArg("count", $contacts)))
                 . '<div class="pavb">'
                 . $this->authorData($contacts, "col", $this->user)
                 . "</div></div>\n\n";

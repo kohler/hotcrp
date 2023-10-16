@@ -34,10 +34,8 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     }
 
 
-    /** @param FieldRender $fr */
-    function render_default_description($fr) {
-        $this->conf->fmt()->render_ci($fr, "field_description/edit", $this->formid,
-            new FmtArg("min", $this->min_count), new FmtArg("max", $this->max_count));
+    function field_fmt_context() {
+        return [new FmtArg("min", $this->min_count), new FmtArg("max", $this->max_count)];
     }
 
 
@@ -244,7 +242,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
                 $ts[] = "{$t}\">{$x}</li>";
                 $lenclass = TopicSet::max_topici_lenclass($lenclass, $tname);
             }
-            $fr->title = $this->title(count($ts));
+            $fr->title = $this->title(new FmtArg("count", count($ts)));
             $fr->set_html("<ul class=\"topict topict-{$lenclass}\">" . join("", $ts) . '</ul>');
             $fr->value_long = true;
         }
