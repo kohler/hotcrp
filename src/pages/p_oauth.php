@@ -91,6 +91,7 @@ class OAuth_Page {
                     . "&scope=" . rawurlencode($authi->scope ?? "openid email profile")
                     . "&redirect_uri=" . rawurlencode($authi->redirect_uri)
                     . "&state=" . $tok->salt;
+error_log(hoturl_add_raw($authi->auth_uri, $params));
                 throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
             } else {
                 $this->conf->error_msg("<0>Authentication attempt failed");
@@ -149,6 +150,7 @@ class OAuth_Page {
         curl_setopt($curlh, CURLOPT_RETURNTRANSFER, true);
         $txt = curl_exec($curlh);
         curl_close($curlh);
+error_log($authi->token_uri);
 
         // check response
         if (!$txt) {
@@ -173,6 +175,7 @@ class OAuth_Page {
             return $m;
         }
 
+        error_log("XXX " . json_encode($jid));
         if (!isset($jid->email) || !is_string($jid->email)) {
             return [
                 MessageItem::error("<0>The {$authtitle} authenticator didn’t provide your email"),
@@ -213,6 +216,7 @@ class OAuth_Page {
     }
 
     static function go(Contact $user, Qrequest $qreq) {
+error_log($_SERVER["REQUEST_URI"] . "\n");
         $oap = new OAuth_Page($user, $qreq);
         if (isset($qreq->state)) {
             $mi = $oap->response();
