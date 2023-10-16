@@ -152,6 +152,7 @@
     [   "signin/form/password", 30, "*Signin_Page::print_signin_form_password"   ],
     [   "signin/form/actions", 100, "Signin_Page::print_signin_form_actions"   ],
     [   "signin/form/create", 150, "Signin_Page::print_signin_form_create"   ],
+    [   "signin/form/oauth", 1000, "Signin_Page::print_signin_form_oauth"   ],
 
 
     {   "name": "signout", "allow_disabled": true   },

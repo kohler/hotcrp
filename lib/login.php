@@ -85,44 +85,48 @@ class LoginHelper {
 
     /** @return array{ok:true,user:Contact}|array{ok:false} */
     static function login_info(Conf $conf, Qrequest $qreq) {
-        assert(!$conf->external_login());
         assert($qreq->valid_post());
 
-        $info = self::user_lookup($conf, $qreq);
-        if ($info["ok"]) {
-            $info = $info["user"]->check_password_info(trim((string) $qreq->password));
-        }
-        return $info;
-    }
-
-    /** @return array{ok:true,user:Contact}|array{ok:false,disabled?:true,email?:true} */
-    static function external_login_info(Conf $conf, Qrequest $qreq) {
-        assert($conf->external_login());
-
-        $info = self::user_lookup($conf, $qreq);
-        if (!$info["ok"]) {
-            return $info;
-        }
-        $user = $info["user"];
-
-        // do LDAP login before validation, since we might create an account
+        // LDAP login precedes validation (to set $qreq components)
         if ($conf->opt("ldapLogin")) {
             $info = LdapLogin::ldap_login_info($conf, $qreq);
-            if (!$info["ok"]) {
-                return $info;
+        } else {
+            $info = ["ok" => true];
+        }
+
+        // look up user
+        if ($info["ok"]) {
+            $info = self::user_lookup($conf, $qreq);
+        }
+
+        // check password or connect to external login service
+        if ($info["ok"]) {
+            $user = $info["user"];
+            if ($conf->external_login()) {
+                $info = self::check_external_login($user);
+            } else {
+                $info = $user->check_password_info(trim((string) $qreq->password));
             }
         }
 
-        // auto-create account if external login
-        if (!$user->contactId
-            && !$user->store(Contact::SAVE_ANY_EMAIL)) {
-            return ["ok" => false, "internal" => true, "email" => true];
-        }
+        return $info;
+    }
 
-        // if user disabled, then fail
-        if ($user->is_disabled()
-            || (($cdbuser = $user->cdb_user()) && $cdbuser->is_disabled())) {
+    /** @param Contact $user
+     * @return array{ok:true,user:Contact}|array{ok:false,disabled?:true,email?:true} */
+    static function check_external_login($user) {
+        $cdbuser = $user->cdb_user();
+        if ($cdbuser && $cdbuser->is_disabled()) {
             return ["ok" => false, "disabled" => true, "email" => true];
+        }
+        if (!$user->contactId) {
+            $user->store(Contact::SAVE_ANY_EMAIL | Contact::SAVE_SELF_REGISTER);
+        }
+        if ($user->is_disabled()) {
+            return ["ok" => false, "disabled" => true, "email" => true];
+        } else if (!$user->contactId
+                   || ($user->is_dormant() && !$user->conf->allow_user_self_register())) {
+            return ["ok" => false, "unset" => true, "email" => true];
         } else {
             return ["ok" => true, "user" => $user];
         }
@@ -300,8 +304,9 @@ class LoginHelper {
 
         // disabled users get mail saying they're disabled
         if ($user->is_disabled()
-            || (!$user->contactId && !$conf->allow_user_self_register())
-            || ($cdbu && $cdbu->is_disabled())) {
+            || ($cdbu && $cdbu->is_disabled())
+            || ((!$user->contactId || $user->is_dormant())
+                && !$conf->allow_user_self_register())) {
             $template = "@resetdisabled";
         } else {
             $template = "@resetpassword";
@@ -334,7 +339,7 @@ class LoginHelper {
 
     /** @param ?string $email
      * @param array $info
-     * @param MessageSet $ms
+     * @param ?MessageSet $ms
      * @return void */
     static function login_error(Conf $conf, $email, $info, $ms) {
         $email = trim($email ?? "");
@@ -346,8 +351,6 @@ class LoginHelper {
             $e = $conf->opt("ldapLogin") ? "<0>Enter your username" : "<0>Enter your email address";
         } else if (isset($info["invalidemail"])) {
             $e = "<0>Enter a valid email address";
-        } else if (isset($info["nocreate"])) {
-            $e = "<0>Users can’t self-register for this site";
         } else if (isset($info["noreset"])) {
             $e = "<0>Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.";
         } else if (isset($info["nologin"])) {
@@ -356,7 +359,7 @@ class LoginHelper {
             $e = "<0>User {$email} already has an account on this site";
             $args[] = new FmtArg("context", "account_exists");
         } else if (isset($info["unset"])) {
-            $e = "<0>User {$email} does not have an account";
+            $e = "<0>User {$email} does not have an account here";
             $args[] = new FmtArg("context", "no_account");
             if ($conf->allow_user_self_register() && $email !== "") {
                 $args[] = new FmtArg("newaccount", $conf->hoturl_raw("newaccount", ["email" => $email]));
@@ -386,9 +389,13 @@ class LoginHelper {
             $args[] = new FmtArg("context", "bad_password");
         }
         $e = $conf->_i("signin_error", new FmtArg("message", $e), ...$args);
-        $ms->error_at(isset($info["email"]) ? "email" : "password", $e);
-        if (isset($info["password"])) {
-            $ms->error_at("password");
+        if ($ms) {
+            $ms->error_at(isset($info["email"]) ? "email" : "password", $e);
+            if (isset($info["password"])) {
+                $ms->error_at("password");
+            }
+        } else {
+            $conf->error_msg($e);
         }
     }
 }

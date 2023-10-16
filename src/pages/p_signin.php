@@ -80,8 +80,6 @@ class Signin_Page {
     static function signin_request_basic(Contact $user, Qrequest $qreq, $cs, $info) {
         if (!$info["ok"]) {
             return $info;
-        } else if ($user->conf->external_login()) {
-            return LoginHelper::external_login_info($user->conf, $qreq);
         } else {
             return LoginHelper::login_info($user->conf, $qreq);
         }
@@ -181,9 +179,9 @@ class Signin_Page {
             $links = [];
             foreach ($su as $i => $email) {
                 $usuf = count($su) > 1 ? "u/{$i}/" : "";
-                $links[] = '<a href="' . htmlspecialchars($nav->base_path_relative . $usuf) . '">' . htmlspecialchars($email) . '</a>';
+                $links[] = '<a href="' . htmlspecialchars($nav->base_path . $usuf) . '">' . htmlspecialchars($email) . '</a>';
             }
-            echo '<p class="is-warning"><span class="warning-mark"></span> ', $user->conf->_("You are already signed in as %s. Use this form to add another account to this browser session.", commajoin($links)), '</p>';
+            echo '<p class="is-warning"><span class="warning-mark"></span> ', $user->conf->_("You are already signed in as {:list} on this browser.", $links), '</p>';
         }
         if (($t = $user->conf->_("Sign in to submit or review papers.")) !== "") {
             echo '<p class="mb-5">', $t, '</p>';
@@ -245,6 +243,22 @@ class Signin_Page {
             echo '<p class="mt-3 mb-0 hint fx">New to the site? <a href="',
                 $user->conf->hoturl("newaccount"),
                 '" class="uic js-href-add-email">Create an account</a></p>';
+        }
+    }
+
+    static function print_signin_form_oauth(Contact $user) {
+        $conf = $user->conf;
+        if (!$conf->opt("oAuthTypes")) {
+            return;
+        }
+        $buttons = [];
+        foreach ($conf->oauth_types() as $authdata) {
+            if ($authdata->button_html) {
+                $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl("oauth", ["authtype" => $authdata->name]), "formmethod" => "post", "class" => "mt-2 flex-grow-1"]);
+            }
+        }
+        if (!empty($buttons)) {
+            echo '<div class="mt-4 d-flex">', join("", $buttons), '</div>';
         }
     }
 

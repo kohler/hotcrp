@@ -10892,7 +10892,9 @@ function transfer_form_values($dst, $src, names) {
 
 // login UI
 handle_ui.on("js-signin", function (evt) {
-    if (form_submitter(this, evt) !== "cancel") {
+    const oevt = (evt && evt.originalEvent) || evt, submitter = oevt.submitter;
+    if (!submitter
+        || (submitter.name !== "cancel" && !submitter.formMethod)) {
         const form = this, signin = document.getElementById("k-signin");
         signin && (signin.disabled = true);
         evt.preventDefault();

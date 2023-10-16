@@ -1616,6 +1616,7 @@ class Contact implements JsonSerializable {
 
 
     const SAVE_ANY_EMAIL = 1;
+    const SAVE_SELF_REGISTER = 2;
 
     function change_email($email) {
         assert($this->has_account_here());
@@ -2051,6 +2052,12 @@ class Contact implements JsonSerializable {
             $this->unslice_using($u, true);
             $this->set_roles_properties();
             return $this;
+        }
+
+        // maybe refuse to create a user
+        if (($flags & self::SAVE_SELF_REGISTER) !== 0
+            && !$this->conf->allow_user_self_register()) {
+            return null;
         }
 
         // from here on, previous account did not exist

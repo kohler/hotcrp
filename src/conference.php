@@ -195,6 +195,8 @@ class Conf {
     private $_token_factories;
     /** @var ?array<int,object> */
     private $_token_types;
+    /** @var ?array<string,object> */
+    private $_oauth_types;
     private $_hook_map;
     private $_hook_factories;
     /** @var ?array<string,FileFilter> */
@@ -1854,6 +1856,14 @@ class Conf {
     function allow_user_activate_other() {
         $dnu = $this->opt("disableNewUsers");
         return !$dnu || $dnu === true || $dnu === "self";
+    }
+
+    /** @return array<string,object> */
+    function oauth_types() {
+        if ($this->_oauth_types === null) {
+            $this->_oauth_types = $this->_xtbuild_resolve([], "oAuthTypes");
+        }
+        return $this->_oauth_types;
     }
 
 
@@ -5057,6 +5067,20 @@ class Conf {
         $this->_xtbuild_map = $this->_xtbuild_factories = null;
         return $a;
     }
+    /** @param list<string> $defaults
+     * @param ?string $optname
+     * @return array<string,object> */
+    private function _xtbuild_resolve($defaults, $optname) {
+        list($x, $unused) = $this->_xtbuild($defaults, $optname);
+        $a = [];
+        $xtp = new XtParams($this, null);
+        foreach (array_keys($x) as $name) {
+            if (($uf = $xtp->search_name($x, $name)))
+                $a[$name] = $uf;
+        }
+        uasort($a, "Conf::xt_order_compare");
+        return $a;
+    }
 
     private function make_search_keyword_map() {
         list($this->_search_keyword_base, $this->_search_keyword_factories) =
@@ -5100,15 +5124,7 @@ class Conf {
     /** @return array<string,object> */
     function autoassigner_map() {
         if ($this->_autoassigners === null) {
-            list($aatypes, $unused) =
-                $this->_xtbuild(["etc/autoassigners.json"], "autoassigners");
-            $this->_autoassigners = [];
-            $xtp = new XtParams($this, null);
-            foreach (array_keys($aatypes) as $name) {
-                if (($uf = $xtp->search_name($aatypes, $name)))
-                    $this->_autoassigners[$name] = $uf;
-            }
-            uasort($this->_autoassigners, "Conf::xt_order_compare");
+            $this->_autoassigners = $this->_xtbuild_resolve(["etc/autoassigners.json"], "autoassigners");
         }
         return $this->_autoassigners;
     }
@@ -5285,15 +5301,7 @@ class Conf {
     function option_type_map() {
         if ($this->_option_type_map === null) {
             require_once("paperoption.php");
-            list($otypes, $unused) =
-                $this->_xtbuild(["etc/optiontypes.json"], "optionTypes");
-            $xtp = new XtParams($this, null);
-            $this->_option_type_map = [];
-            foreach (array_keys($otypes) as $name) {
-                if (($uf = $xtp->search_name($otypes, $name)))
-                    $this->_option_type_map[$name] = $uf;
-            }
-            uasort($this->_option_type_map, "Conf::xt_order_compare");
+            $this->_option_type_map = $this->_xtbuild_resolve(["etc/optiontypes.json"], "optionTypes");
         }
         return $this->_option_type_map;
     }
@@ -5310,15 +5318,7 @@ class Conf {
     /** @return array<string,object> */
     function review_field_type_map() {
         if ($this->_rfield_type_map === null) {
-            list($rftypes, $unused) =
-                $this->_xtbuild(["etc/reviewfieldtypes.json"], "reviewFieldTypes");
-            $this->_rfield_type_map = [];
-            $xtp = new XtParams($this, null);
-            foreach (array_keys($rftypes) as $name) {
-                if (($uf = $xtp->search_name($rftypes, $name)))
-                    $this->_rfield_type_map[$name] = $uf;
-            }
-            uasort($this->_rfield_type_map, "Conf::xt_order_compare");
+            $this->_rfield_type_map = $this->_xtbuild_resolve(["etc/reviewfieldtypes.json"], "reviewFieldTypes");
         }
         return $this->_rfield_type_map;
     }

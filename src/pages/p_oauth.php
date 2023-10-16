@@ -22,19 +22,25 @@ class OAuthInstance {
      * @param ?string $authtype
      * @return ?OAuthInstance */
     static function find($conf, $authtype) {
+        $authinfo = $conf->oauth_types();
+        if (empty($authinfo)) {
+            return null;
+        }
+        if ($authtype === null) {
+            $authtype = (array_keys($authinfo))[0];
+        }
+        if (!($authdata = $authinfo[$authtype] ?? null)) {
+            return null;
+        }
         $instance = new OAuthInstance;
-        $instance->authtype = $authtype ?? $conf->opt("defaultOauthType") ?? "";
-        $authinfo = $conf->opt("oAuthTypes") ?? [];
-        $authdata = $authinfo[$instance->authtype] ?? [];
         foreach (["client_id", "client_secret", "auth_uri", "redirect_uri", "token_uri"] as $k) {
-            if (isset($authdata[$k]) && is_string($authdata[$k])) {
-                $instance->$k = $authdata[$k];
-            } else {
+            if (!isset($authdata->$k) || !is_string($authdata->$k)) {
                 return null;
             }
+            $instance->$k = $authdata->$k;
         }
-        if (isset($authdata["title"]) && is_string($authdata["title"])) {
-            $instance->title = $authdata["title"];
+        if (isset($authdata->title) && is_string($authdata->title)) {
+            $instance->title = $authdata->title;
         }
         return $instance;
     }
@@ -77,7 +83,7 @@ class OAuth_Page {
                 $this->conf->error_msg("<0>Authentication attempt failed");
             }
         } else if ($this->qreq->authtype) {
-            $this->conf->error_msg("<0>‘{$this->qreq->authtype}’ OAuth authentication is not supported on this site");
+            $this->conf->error_msg("<0>{$this->qreq->authtype} authentication is not supported on this site");
         } else {
             $this->conf->error_msg("<0>OAuth authentication is not supported on this site");
         }
@@ -85,85 +91,100 @@ class OAuth_Page {
 
     function response() {
         $state = $this->qreq->state;
-        if (!isset($state) || !isset($this->qreq->code)) {
+        if (!isset($state)) {
             return MessageItem::error("<0>OAuth authentication response parameters required");
         } else if (!($tok = TokenInfo::find($state, $this->conf, !!$this->conf->contactdb()))) {
-            return MessageItem::error("<0>OAuth authentication request ‘{$state}’ not found or expired");
+            return MessageItem::error("<0>Authentication request not found or expired");
         } else if (!$tok->is_active()) {
-            return MessageItem::error("<0>OAuth authentication request ‘{$state}’ expired");
+            return MessageItem::error("<0>Authentication request expired");
         } else if ($tok->timeUsed) {
-            return MessageItem::error("<0>OAuth authentication request ‘{$state}’ reused");
+            return MessageItem::error("<0>Authentication request reused");
         } else if ($tok->capabilityType !== TokenInfo::OAUTHSIGNIN
                    || !($jdata = json_decode($tok->data ?? "0"))) {
-            return MessageItem::error("<0>Invalid OAuth authentication request ‘{$state}’, internal error");
+            return MessageItem::error("<0>Invalid authentication request ‘{$state}’, internal error");
         } else if (($jdata->session ?? "<NO SESSION>") !== $this->qreq->qsid()) {
-            return MessageItem::error("<0>OAuth authentication request ‘{$state}’ was for a different session");
+            return MessageItem::error("<0>Authentication request ‘{$state}’ was for a different session");
+        } else if (!isset($this->qreq->code)) {
+            return MessageItem::error("<0>Authentication failed");
         } else if (($authi = OAuthInstance::find($this->conf, $jdata->authtype ?? null))) {
-            $authtitle = $authi->title ?? $authi->authtype;
-            $tok->delete();
-            $curlh = curl_init();
-            $nonce = base48_encode(random_bytes(10));
-            curl_setopt($curlh, CURLOPT_URL, $authi->token_uri);
-            curl_setopt($curlh, CURLOPT_POST, true);
-            curl_setopt($curlh, CURLOPT_POSTFIELDS, [
-                "code" => $this->qreq->code,
-                "client_id" => $authi->client_id,
-                "client_secret" => $authi->client_secret,
-                "redirect_uri" => $authi->redirect_uri,
-                "grant_type" => "authorization_code",
-                "nonce" => $nonce
-            ]);
-            curl_setopt($curlh, CURLOPT_RETURNTRANSFER, true);
-            $txt = curl_exec($curlh);
-            curl_close($curlh);
-
-            if (!$txt) {
-                return MessageItem::error("<0>{$authtitle} authentication request failed");
-            } else if (!($response = json_decode($txt))
-                       || !is_object($response)) {
-                return MessageItem::error("<0>{$authtitle} authentication response was incorrectly formatted");
-            } else if (!isset($response->id_token)
-                       || !is_string($response->id_token)) {
-                return MessageItem::error("<0>{$authtitle} authentication response doesn’t confirm your identity");
-            }
-
-            $jwt = new JWTParser;
-            if (!($jid = $jwt->validate($response->id_token))) {
-                return MessageItem::error("<0>The identity portion of the {$authtitle} authentication response doesn’t validate");
-            } else if (!isset($jid->email)
-                       || !is_string($jid->email)) {
-                return [
-                    MessageItem::error("<0>The {$authtitle} authenticator didn’t provide your email"),
-                    new MessageItem(null, "<0>HotCRP requires your email to sign you in.", MessageSet::INFORM)
-                ];
-            } else if (isset($jid->email_verified)
-                       && $jid->email_verified === false) {
-                return [
-                    MessageItem::error("<0>The {$authtitle} authenticator hasn’t verified your email"),
-                    new MessageItem(null, "<0>HotCRP requires a verified email to sign you in.", MessageSet::INFORM)
-                ];
-            }
-
-            $reg = ["email" => $jid->email];
-            if (isset($jid->given_name) && is_string($jid->given_name)) {
-                $reg["firstName"] = $jid->given_name;
-            }
-            if (isset($jid->family_name) && is_string($jid->family_name)) {
-                $reg["lastName"] = $jid->family_name;
-            }
-            if (isset($jid->name) && is_string($jid->name)) {
-                $reg["name"] = $jid->name;
-            }
-            $user = Contact::make_keyed($this->conf, $reg)->store(0, $this->viewer);
-            if (!$user) {
-                return MessageItem::error("<0>Error creating your account");
-            }
-
-            $user->conf->feedback_msg(new MessageItem(null, "<0>Login successful", MessageSet::SUCCESS));
-            LoginHelper::change_session_users($this->qreq, [$user->email => 1]);
-            throw new Redirection(hoturl_add_raw($jdata->site_uri, "i=" . urlencode($user->email)));
+            return $this->instance_response($authi, $tok, $jdata);
         } else {
             $this->conf->error_msg("<0>OAuth authentication internal error");
+        }
+    }
+
+    /** @param OAuthInstance $authi
+     * @param TokenInfo $tok
+     * @param object $jdata */
+    private function instance_response($authi, $tok, $jdata) {
+        // make authentication request
+        $authtitle = $authi->title ?? $authi->authtype;
+        $tok->delete();
+        $curlh = curl_init();
+        $nonce = base48_encode(random_bytes(10));
+        curl_setopt($curlh, CURLOPT_URL, $authi->token_uri);
+        curl_setopt($curlh, CURLOPT_POST, true);
+        curl_setopt($curlh, CURLOPT_POSTFIELDS, [
+            "code" => $this->qreq->code,
+            "client_id" => $authi->client_id,
+            "client_secret" => $authi->client_secret,
+            "redirect_uri" => $authi->redirect_uri,
+            "grant_type" => "authorization_code",
+            "nonce" => $nonce
+        ]);
+        curl_setopt($curlh, CURLOPT_RETURNTRANSFER, true);
+        $txt = curl_exec($curlh);
+        curl_close($curlh);
+
+        // check response
+        if (!$txt) {
+            return MessageItem::error("<0>{$authtitle} authentication request failed");
+        } else if (!($response = json_decode($txt))
+                   || !is_object($response)) {
+            return MessageItem::error("<0>{$authtitle} authentication response was incorrectly formatted");
+        } else if (!isset($response->id_token)
+                   || !is_string($response->id_token)) {
+            return MessageItem::error("<0>{$authtitle} authentication response doesn’t confirm your identity");
+        }
+
+        // parse returned JSON web token
+        $jwt = new JWTParser;
+        if (!($jid = $jwt->validate($response->id_token))) {
+            return MessageItem::error("<0>The identity portion of the {$authtitle} authentication response doesn’t validate");
+        } else if (!isset($jid->email)
+                   || !is_string($jid->email)) {
+            return [
+                MessageItem::error("<0>The {$authtitle} authenticator didn’t provide your email"),
+                new MessageItem(null, "<0>HotCRP requires your email to sign you in.", MessageSet::INFORM)
+            ];
+        } else if (isset($jid->email_verified)
+                   && $jid->email_verified === false) {
+            return [
+                MessageItem::error("<0>The {$authtitle} authenticator hasn’t verified your email"),
+                new MessageItem(null, "<0>HotCRP requires a verified email to sign you in.", MessageSet::INFORM)
+            ];
+        }
+
+        // log user in
+        $reg = ["email" => $jid->email];
+        if (isset($jid->given_name) && is_string($jid->given_name)) {
+            $reg["firstName"] = $jid->given_name;
+        }
+        if (isset($jid->family_name) && is_string($jid->family_name)) {
+            $reg["lastName"] = $jid->family_name;
+        }
+        if (isset($jid->name) && is_string($jid->name)) {
+            $reg["name"] = $jid->name;
+        }
+        $info = LoginHelper::check_external_login(Contact::make_keyed($this->conf, $reg));
+        if (!$info["ok"]) {
+            LoginHelper::login_error($this->conf, $jid->email, $info, null);
+            throw new Redirection($jdata->site_url);
+        } else {
+            $user = $info["user"];
+            $this->conf->feedback_msg(new MessageItem(null, "<0>Signed in", MessageSet::SUCCESS));
+            LoginHelper::change_session_users($this->qreq, [$user->email => 1]);
+            throw new Redirection(hoturl_add_raw($jdata->site_uri, "i=" . urlencode($user->email)));
         }
     }
 
@@ -173,6 +194,7 @@ class OAuth_Page {
             $mi = $oap->response();
             if ($mi) {
                 $user->conf->feedback_msg($mi);
+                throw new Redirection($user->conf->hoturl("signin"));
             }
         } else {
             $oap->start();
