@@ -42,12 +42,12 @@ authentication providers. Each `oAuthTypes` component should define:
 
 HotCRP’s page component `"signin/form/oauth"` renders a button for each
 defined provider. Clicking on that button redirects to
-`SITEURL/oauth?authtype=NAME`. That page initiates an OAuth 2 implicit
-authentication flow by choosing a random token, recording it, and redirecting
-the user to the specified `auth_uri` with appropriate parameters. When the
-user completes their authentication request, the provider redirects back to
-HotCRP via the `redirect_uri`. HotCRP contacts the provider’s `token_uri` with
-the provided parameters via an HTTP `POST` request with
+`SITEURL/oauth?authtype=NAME`. That page initiates an OAuth 2 authorization
+code flow by choosing a random token, recording it, and redirecting the user
+to the specified `auth_uri` with appropriate parameters. When the user
+completes their authentication request, the provider redirects back to HotCRP
+via the `redirect_uri`. HotCRP contacts the provider’s `token_uri` with the
+provided parameters via an HTTP `POST` request with
 `application/x-www-form-urlencoded` content. HotCRP then validates the
 returned JWT and uses its included `email` to authenticate the user.
 
