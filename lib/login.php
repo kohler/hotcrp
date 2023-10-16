@@ -101,6 +101,7 @@ class LoginHelper {
 
         // check password or connect to external login service
         if ($info["ok"]) {
+            /** @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset */
             $user = $info["user"];
             if ($conf->external_login()) {
                 $info = self::check_external_login($user);
