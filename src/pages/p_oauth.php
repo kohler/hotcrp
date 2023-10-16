@@ -177,7 +177,6 @@ class OAuth_Page {
             return $m;
         }
 
-        error_log("XXX " . json_encode($jid));
         if (!isset($jid->email) || !is_string($jid->email)) {
             return [
                 MessageItem::error("<0>The {$authtitle} authenticator didn’t provide your email"),
@@ -218,7 +217,6 @@ class OAuth_Page {
     }
 
     static function go(Contact $user, Qrequest $qreq) {
-error_log($_SERVER["REQUEST_URI"] . "\n");
         $oap = new OAuth_Page($user, $qreq);
         if (isset($qreq->state)) {
             $mi = $oap->response();

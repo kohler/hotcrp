@@ -206,7 +206,7 @@ class SiteLoader {
             }
             if (empty($matches) && $includepath === null) {
                 global $Opt;
-                $includepath = $Opt["includePath"] ?? $Opt["includepath"] ?? [];
+                $includepath = $Opt["includePath"] ?? $Opt["includepath"] /* XXX */ ?? [];
             }
             if (empty($matches) && !empty($includepath)) {
                 if ($f2 !== null) {

@@ -183,7 +183,7 @@ class Signin_Page {
             }
             echo '<p class="is-warning"><span class="warning-mark"></span> ', $user->conf->_("You are already signed in as {:list} on this browser.", $links), '</p>';
         }
-        if (($t = $user->conf->_("Sign in to submit or review papers.")) !== "") {
+        if (($t = $user->conf->_("Sign in to submit or review papers.", new FmtArg("accounts", $su))) !== "") {
             echo '<p class="mb-5">', $t, '</p>';
         }
     }

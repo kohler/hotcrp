@@ -103,11 +103,13 @@ function expand_json_includes_callback($includelist, $callback, $parser = null) 
         }
         $expandable = null;
         if (is_string($v)) {
-            if ($v[0] === "@") {
+            $vl = strlen($v);
+            $vc = $v[0];
+            if ($vc === "@") {
                 $expandable = substr($v, 1);
-            } else if ($v[0] !== "{"
-                       && ($v[0] !== "[" || !str_ends_with(rtrim($v), "]"))
-                       && !ctype_space($v[0])
+            } else if ($vc !== "{"
+                       && ($vc !== "[" || ($v[$vl-1] !== "]" && !ctype_space($v[$vl-1])))
+                       && !ctype_space($vc)
                        && strpos($v, "::") === false) {
                 $expandable = $v;
             }
