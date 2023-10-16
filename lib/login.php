@@ -88,8 +88,10 @@ class LoginHelper {
         assert($qreq->valid_post());
 
         // LDAP login precedes validation (to set $qreq components)
-        if ($conf->opt("ldapLogin")) {
+        if (($lt = $conf->login_type()) === "ldap") {
             $info = LdapLogin::ldap_login_info($conf, $qreq);
+        } else if ($lt === "none" || $lt === "oauth") {
+            $info = ["ok" => false, "nologin" => true];
         } else {
             $info = ["ok" => true];
         }
@@ -103,7 +105,7 @@ class LoginHelper {
         if ($info["ok"]) {
             /** @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset */
             $user = $info["user"];
-            if ($conf->external_login()) {
+            if ($lt) {
                 $info = self::check_external_login($user);
             } else {
                 $info = $user->check_password_info(trim((string) $qreq->password));
@@ -239,7 +241,7 @@ class LoginHelper {
 
     /** @return array{ok:true,user:Contact}|array{ok:false,email?:true} */
     static function new_account_info(Conf $conf, Qrequest $qreq) {
-        assert($conf->allow_user_self_register());
+        assert(!$conf->external_login() && $conf->allow_user_self_register());
         assert($qreq->valid_post());
 
         $info = self::user_lookup($conf, $qreq);
@@ -325,7 +327,7 @@ class LoginHelper {
             $qsess->commit();
         }
         if ($explicit) {
-            if ($user->conf->opt("httpAuthLogin")) {
+            if ($user->conf->login_type() === "htauth") {
                 $qsess->open_new_sid();
                 $qsess->set("reauth", true);
             } else {
@@ -349,7 +351,7 @@ class LoginHelper {
         if (isset($info["ldap"]) && isset($info["ldap_detail"])) {
             $e = $info["ldap_detail"];
         } else if (isset($info["noemail"])) {
-            $e = $conf->opt("ldapLogin") ? "<0>Enter your username" : "<0>Enter your email address";
+            $e = $conf->login_type() ? "<0>Enter your username" : "<0>Enter your email address";
         } else if (isset($info["invalidemail"])) {
             $e = "<0>Enter a valid email address";
         } else if (isset($info["noreset"])) {
@@ -362,7 +364,9 @@ class LoginHelper {
         } else if (isset($info["unset"])) {
             $e = "<0>User {$email} does not have an account here";
             $args[] = new FmtArg("context", "no_account");
-            if ($conf->allow_user_self_register() && $email !== "") {
+            if (!$conf->login_type()
+                && $conf->allow_user_self_register()
+                && $email !== "") {
                 $args[] = new FmtArg("newaccount", $conf->hoturl_raw("newaccount", ["email" => $email]));
             }
         } else if (isset($info["disabled"])) {
@@ -376,6 +380,8 @@ class LoginHelper {
             $e = "<0>Automatic login links have been disabled for security. Use this form to sign in.";
         } else if (isset($info["internal"])) {
             $e = "<0>Internal error";
+        } else if (isset($info["nologin"])) {
+            $e = "<0>Direct signin is not allowed on this site";
         } else {
             $e = "<0>Incorrect password";
         }

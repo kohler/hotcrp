@@ -55,7 +55,9 @@ class Signin_Page {
                 $info = $cs->call_function($gj, $gj->signin_function, $info, $gj);
             }
             $conf->redirect();
-        } else if ($conf->opt("httpAuthLogin")) {
+        } else if (($lt = $conf->login_type()) === "none" || $lt === "oauth") {
+            // do nothing
+        } else if ($lt === "htauth") {
             LoginHelper::check_http_auth($user, $qreq);
         } else if (!$qreq->valid_post()) {
             self::bad_post_error($user, $qreq, "signin");
@@ -189,15 +191,17 @@ class Signin_Page {
     }
 
     function print_signin_form_email(Contact $user, Qrequest $qreq) {
-        $is_external_login = $user->conf->external_login();
+        if (($lt = $user->conf->login_type()) === "none" || $lt === "oauth") {
+            return;
+        }
         $email = $qreq->email ?? "";
         echo '<div class="', $this->control_class("email", "f-i fx"), '">',
-            Ht::label($is_external_login ? "Username" : "Email", "k-email"),
+            Ht::label($lt ? "Username" : "Email", "k-email"),
             $this->feedback_html_at("email"),
             Ht::entry("email", $email, [
                 "size" => 36, "id" => "k-email", "class" => "fullw",
                 "autocomplete" => "username", "tabindex" => 1,
-                "type" => !$is_external_login && !str_ends_with($email, "@_.com") ? "email" : "text",
+                "type" => !$lt && !str_ends_with($email, "@_.com") ? "email" : "text",
                 "autofocus" => $this->problem_status_at("email")
                     || $email === ""
                     || (!$this->problem_status_at("password") && !$qreq->csession("password_reset"))
@@ -205,9 +209,11 @@ class Signin_Page {
     }
 
     function print_signin_form_password(Contact $user, Qrequest $qreq) {
-        $is_external_login = $user->conf->external_login();
+        if (($lt = $user->conf->login_type()) === "none" || $lt === "oauth") {
+            return;
+        }
         echo '<div class="', $this->control_class("password", "f-i fx"), '">';
-        if (!$is_external_login) {
+        if (!$lt) {
             echo '<div class="float-right"><a href="',
                 $user->conf->hoturl("forgotpassword"),
                 '" class="n ulh small uic js-href-add-email">Forgot your password?</a></div>';
@@ -230,6 +236,9 @@ class Signin_Page {
 
     /** @param ComponentSet $cs */
     static function print_signin_form_actions(Contact $user, Qrequest $qreq, $cs) {
+        if (($lt = $user->conf->login_type()) === "none" || $lt === "oauth") {
+            return;
+        }
         echo '<div class="popup-actions">',
             Ht::submit("", "Sign in", ["id" => "k-signin", "class" => "btn-success", "tabindex" => 1]);
         if ($cs->root !== "home") {
@@ -239,7 +248,7 @@ class Signin_Page {
     }
 
     static function print_signin_form_create(Contact $user) {
-        if ($user->conf->allow_user_self_register()) {
+        if (!$user->conf->login_type() && $user->conf->allow_user_self_register()) {
             echo '<p class="mt-3 mb-0 hint fx">New to the site? <a href="',
                 $user->conf->hoturl("newaccount"),
                 '" class="uic js-href-add-email">Create an account</a></p>';
@@ -344,12 +353,13 @@ class Signin_Page {
         $conf = $user->conf;
         if ($qreq->cancel) {
             $conf->redirect();
-        } else if (!$user->conf->allow_user_self_register()) {
+        } else if ($conf->login_type()
+                   || !$conf->allow_user_self_register()) {
             // do nothing
         } else if ($qreq->valid_post()) {
-            $info = LoginHelper::new_account_info($user->conf, $qreq);
+            $info = LoginHelper::new_account_info($conf, $qreq);
             if ($info["ok"]) {
-                $prep = $this->mail_user($user->conf, $info);
+                $prep = $this->mail_user($conf, $info);
                 if ($prep
                     && $prep->reset_capability
                     && isset($info["firstuser"])) {
@@ -359,7 +369,7 @@ class Signin_Page {
                     $conf->redirect_hoturl("signin");
                 }
             } else {
-                LoginHelper::login_error($user->conf, $qreq->email, $info, $this->ms());
+                LoginHelper::login_error($conf, $qreq->email, $info, $this->ms());
             }
         } else {
             self::bad_post_error($user, $qreq, "newaccount");
@@ -427,7 +437,7 @@ class Signin_Page {
     static function print_forgot_head(Contact $user, Qrequest $qreq, $cs) {
         $qreq->print_header("Forgot password", "resetpassword", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
         $cs->push_print_cleanup("__footer");
-        if ($user->conf->external_login()) {
+        if ($user->conf->login_type()) {
             return $cs->print("forgotpassword/__externallogin");
         }
     }
@@ -462,7 +472,7 @@ class Signin_Page {
     // Password reset
     function reset_request(Contact $user, Qrequest $qreq, $cs) {
         $conf = $user->conf;
-        if ($conf->external_login()) {
+        if ($conf->login_type()) {
             return;
         }
 
@@ -586,7 +596,7 @@ class Signin_Page {
     static function print_reset_head(Contact $user, Qrequest $qreq, $cs) {
         $qreq->print_header("Reset password", "resetpassword", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
         $cs->push_print_cleanup("__footer");
-        if ($user->conf->external_login()) {
+        if ($user->conf->login_type()) {
             return $cs->print("forgotpassword/__externallogin");
         }
     }

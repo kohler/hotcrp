@@ -1838,14 +1838,29 @@ class Conf {
     }
 
 
+    /** @return null|'ldap'|'htauth'|'none'|'oauth' */
+    function login_type() {
+        if (!array_key_exists("loginType", $this->opt)) {
+            if ($this->opt["ldapLogin"] ?? false) {
+                $this->opt["loginType"] = "ldap";
+            } else if ($this->opt["httpAuthLogin"] ?? false) {
+                $this->opt["loginType"] = "htauth";
+            } else {
+                $this->opt["loginType"] = null;
+            }
+        }
+        return $this->opt["loginType"];
+    }
+
     /** @return bool */
     function external_login() {
-        return ($this->opt["ldapLogin"] ?? false) || ($this->opt["httpAuthLogin"] ?? false);
+        $lt = $this->login_type();
+        return $lt === "ldap" || $lt === "htauth";
     }
 
     /** @return bool */
     function allow_user_self_register() {
-        if ($this->external_login() || $this->disable_non_pc) {
+        if ($this->disable_non_pc) {
             return false;
         }
         $dnu = $this->opt("disableNewUsers");

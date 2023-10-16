@@ -205,11 +205,11 @@ class Mailer {
     }
 
     static function kw_internallogin($args, $isbool, $m) {
-        return $isbool ? !$m->conf->external_login() : "";
+        return $isbool ? !$m->conf->login_type() : "";
     }
 
     static function kw_externallogin($args, $isbool, $m) {
-        return $isbool ? $m->conf->external_login() : "";
+        return $isbool ? $m->conf->login_type() : "";
     }
 
     static function kw_adminupdate($args, $isbool, $m) {
@@ -251,11 +251,11 @@ class Mailer {
 
     function kw_login($args, $isbool, $uf) {
         if (!$this->recipient) {
-            return $this->conf->external_login() ? false : null;
+            return $this->conf->login_type() ? false : null;
         }
 
         $loginparts = "";
-        if (!$this->conf->opt("httpAuthLogin")) {
+        if (($lt = $this->conf->login_type()) === null || $lt === "ldap") {
             $loginparts = "email=" . urlencode($this->recipient->email);
         }
         if ($uf->name === "LOGINURL") {
@@ -268,7 +268,7 @@ class Mailer {
     }
 
     function kw_needpassword($args, $isbool, $uf) {
-        if ($this->conf->external_login() || $this->censor) {
+        if ($this->conf->login_type() || $this->censor) {
             return false;
         } else if ($this->recipient) {
             return $this->recipient->password_unset();
@@ -279,7 +279,7 @@ class Mailer {
 
     function kw_passwordlink($args, $isbool, $uf) {
         if (!$this->recipient) {
-            return $this->conf->external_login() ? false : null;
+            return $this->conf->login_type() ? false : null;
         } else if ($this->censor === self::CENSOR_ALL) {
             return null;
         }
@@ -797,7 +797,7 @@ class Mailer {
      * @return string */
     function handle_unexpanded_keyword($kw, $xref) {
         if (preg_match('/\A(?:RESET|)PASSWORDLINK/', $kw)) {
-            if ($this->conf->external_login()) {
+            if ($this->conf->login_type()) {
                 return "<0>This site does not use password links";
             } else if ($this->censor === self::CENSOR_ALL) {
                 return "<0>Password links cannot appear in mails with Cc or Bcc";
