@@ -6,20 +6,29 @@ require_once("lib/navigation.php");
 
 /** @param Contact $user
  * @param Qrequest $qreq
- * @param string $group
+ * @param object $pagej
  * @param ComponentSet $pc */
-function handle_request_components($user, $qreq, $group, $pc) {
+function handle_request_components($user, $qreq, $pagej, $pc) {
     $pc->add_xt_checker([$qreq, "xt_allow"]);
     $reqgj = [];
+    $nfound = 0;
     $not_allowed = false;
-    foreach ($pc->members($group, "request_function") as $gj) {
+    if (isset($pagej->request_function)) {
+        ++$nfound;
         if ($pc->allowed($gj->allow_request_if ?? null, $gj)) {
             $reqgj[] = $gj;
-        } else {
-            $not_allowed = true;
         }
     }
-    if ($not_allowed && $qreq->is_post() && !$qreq->valid_token()) {
+    foreach ($pc->members($pagej->group, "request_function") as $gj) {
+        ++$nfound;
+        if ($pc->allowed($gj->allow_request_if ?? null, $gj)) {
+            $reqgj[] = $gj;
+        }
+    }
+    if ($nfound > 0
+        && $nfound < count($reqgj)
+        && $qreq->is_post()
+        && !$qreq->valid_token()) {
         $user->conf->error_msg($user->conf->_i("badpost"));
     }
     foreach ($reqgj as $gj) {
@@ -46,7 +55,7 @@ function handle_request($nav) {
             Multiconference::fail($qreq, 403, ["link" => true], $user->conf->_i("account_disabled"));
         } else {
             $pc->set_root($pagej->group);
-            handle_request_components($user, $qreq, $pagej->group, $pc);
+            handle_request_components($user, $qreq, $pagej, $pc);
             $pc->print_group($pagej->group, true);
         }
     } catch (Redirection $redir) {

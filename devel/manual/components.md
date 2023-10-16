@@ -11,27 +11,27 @@ The components for each feature are defined by a JSON configuration file in
 `etc/`, and then modified by JSON objects and files listed in an `$Opt`
 setting.
 
-| Feature                                   | Default configuration file    | `$Opt` setting            | Match? | User `allow_if`? |
-| ----------------------------------------- | ----------------------------- | ------------------------- | ------ | ----------- |
-| Request handling and page rendering       | `etc/pages.json`              | `$Opt["pages"]`           |        |   ✓    |
-| API endpoints                             | `etc/apifunctions.json`       | `$Opt["apiFunctions"]`    |        |   ✓    |
-| Formula functions                         | `etc/formulafunctions.json`   | `$Opt["formulaFunctions"]` |       |   ✓    |
-| Submission field types                    | `etc/optiontypes.json`        | `$Opt["optionTypes"]`     |        |        |
-| Sample submission fields       | `etc/submissionfieldlibrary.json` | `$Opt["submissionFieldLibraries"]` |      |        |
-| Assignment types for bulk assignment      | `etc/assignmentparsers.json`  | `$Opt["assignmentParsers"]` |      |   ✓    |
-| Autoassigners                             | `etc/autoassigners.json`      | `$Opt["autoassigners"]`   |        |   ✓    |
-| Help topics                               | `etc/helptopics.json`         | `$Opt["helpTopics"]`      |        |   ✓    |
-| Search actions                            | `etc/listactions.json`        | `$Opt["listActions"]`     |        |   ✓    |
-| Mail keywords                             | `etc/mailkeywords.json`       | `$Opt["mailKeywords"]`    |   ✓    |   ✓    |
-| Mail templates                            | `etc/mailtemplates.json`      | `$Opt["mailTemplates"]`   |        |   ✓    |
-| Search columns                            | `etc/papercolumns.json`       | `$Opt["paperColumns"]`    |   ✓    |   ✓    |
-| Profile page topics                       | `etc/profilegroups.json`      | `$Opt["profileGroups"]`   |        |   ✓    |
-| Sample review fields                      | `etc/reviewfieldlibrary.json` | `$Opt["reviewFieldLibraries"]` |   |   ✓    |
-| Review field types                        | `etc/reviewfieldtypes.json`   | `$Opt["reviewFieldTypes"]` |       |        |
-| Search keywords                           | `etc/searchkeywords.json`     | `$Opt["searchKeywords"]`  |   ✓    |   ✓    |
-| Setting topics and rendering              | `etc/settinggroups.json`      | `$Opt["settingGroups"]`   |        |   ✓    |
-| Settings                                  | `etc/settinginfo.json`        | `$Opt["settingInfo"]`     |        |   ✓    |
-| OAuth/OpenID authentication types         | None                          | `$Opt["oAuthTypes"]`      |        |        |
+| Feature                                | Default configuration file    | `$Opt` setting            | Match? | User `allow_if`? | Nested? |
+|:---------------------------------------|:------------------------------|:--------------------------|---|---|---|
+| [Request handling and page rendering](./pages.md) | `etc/pages.json`   | `$Opt["pages"]`           |   | ✓ | ✓ |
+| API endpoints                          | `etc/apifunctions.json`       | `$Opt["apiFunctions"]`    |   | ✓ |   |
+| Formula functions                      | `etc/formulafunctions.json`   | `$Opt["formulaFunctions"]` |  | ✓ |   |
+| Submission field types                 | `etc/optiontypes.json`        | `$Opt["optionTypes"]`     |   |   |   |
+| Sample submission fields       | `etc/submissionfieldlibrary.json` | `$Opt["submissionFieldLibraries"]` |   |   |   |
+| Assignment types for bulk assignment   | `etc/assignmentparsers.json`  | `$Opt["assignmentParsers"]` |   | ✓ |   |
+| Autoassigners                          | `etc/autoassigners.json`      | `$Opt["autoassigners"]`   |   | ✓ |   |
+| Help topics                            | `etc/helptopics.json`         | `$Opt["helpTopics"]`      |   | ✓ | ✓ |
+| Search actions                         | `etc/listactions.json`        | `$Opt["listActions"]`     |   | ✓ |   |
+| Mail keywords                          | `etc/mailkeywords.json`       | `$Opt["mailKeywords"]`    | ✓ | ✓ |   |
+| Mail templates                         | `etc/mailtemplates.json`      | `$Opt["mailTemplates"]`   |   | ✓ |   |
+| Search columns                         | `etc/papercolumns.json`       | `$Opt["paperColumns"]`    | ✓ | ✓ |   |
+| Profile page topics                    | `etc/profilegroups.json`      | `$Opt["profileGroups"]`   |   | ✓ | ✓ |
+| Sample review fields                   | `etc/reviewfieldlibrary.json` | `$Opt["reviewFieldLibraries"]` |   | ✓ |   |
+| Review field types                     | `etc/reviewfieldtypes.json`   | `$Opt["reviewFieldTypes"]` |  |   |   |
+| Search keywords                        | `etc/searchkeywords.json`     | `$Opt["searchKeywords"]`  | ✓ | ✓ |   |
+| Setting topics and rendering           | `etc/settinggroups.json`      | `$Opt["settingGroups"]`   |   | ✓ | ✓ |
+| Settings                               | `etc/settinginfo.json`        | `$Opt["settingInfo"]`     |   | ✓ |   |
+| OAuth/OpenID authentication types      | None                          | `$Opt["oAuthTypes"]`      |   |   |   |
 
 ## Component construction
 
@@ -107,3 +107,33 @@ returned. The merge process works as follows.
 
 4. The highest-priority remaining component, if any, is the result of the
    merge process.
+
+## Listing components
+
+In some cases, such as rendering pages, HotCRP needs to list all components,
+or all components that match a given prefix. This list is usually produced by
+ordering the relevant components according to their `order` properties.
+`order` defaults to 0; ties are broken by the `name` property and and/or by
+source order.
+
+## Aliases
+
+When a component fragment has an `alias` property, HotCRP replaces that
+fragment by the result of looking up the component named `alias`. This can be
+useful to provide synonyms; for example, the search keyword component fragment
+`{"name": "administrator", "alias": "admin"}` allows users to search for
+`administrator:` as an alias for `admin:`. Aliasing may be preferred to
+copying a component definition because changes in the source component are
+automatically incorporated in the alias.
+
+An alias may point to another alias, but HotCRP will only follow alias chains
+to a limited depth before giving up.
+
+## Nested components
+
+Certain component types, such as pages and help topics, support nesting. A
+name may contain one or more slashes. The component is considered a member of
+the **group** defined by everything up to the last slash; for instance,
+components `a/b`, `a/c`, and `a/b/c` are members of groups `a`, `a`, and
+`a/b`, respectively. If present, the component’s `group` property overrides
+the group value derived from the component name.
