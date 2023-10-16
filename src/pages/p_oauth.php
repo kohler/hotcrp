@@ -4,7 +4,7 @@
 
 class OAuthInstance {
     /** @var string */
-    public $authtype;
+    public $name;
     /** @var ?string */
     public $title;
     /** @var ?string */
@@ -20,28 +20,28 @@ class OAuthInstance {
     /** @var string */
     public $token_uri;
     /** @var ?string */
-    public $load_function;
+    public $token_function;
     public $require;
 
-    function __construct($authtype) {
-        $this->authtype = $authtype;
+    function __construct($name) {
+        $this->name = $name;
     }
 
     /** @param Conf $conf
-     * @param ?string $authtype
+     * @param ?string $name
      * @return ?OAuthInstance */
-    static function find($conf, $authtype) {
+    static function find($conf, $name) {
         $authinfo = $conf->oauth_types();
         if (empty($authinfo)) {
             return null;
         }
-        if ($authtype === null) {
-            $authtype = (array_keys($authinfo))[0];
+        if ($name === null) {
+            $name = (array_keys($authinfo))[0];
         }
-        if (!($authdata = $authinfo[$authtype] ?? null)) {
+        if (!($authdata = $authinfo[$name] ?? null)) {
             return null;
         }
-        $instance = new OAuthInstance($authtype);
+        $instance = new OAuthInstance($name);
         $instance->title = $authdata->title ?? null;
         $instance->scope = $authdata->scope ?? null;
         $instance->client_id = $authdata->client_id ?? null;
@@ -49,7 +49,7 @@ class OAuthInstance {
         $instance->auth_uri = $authdata->auth_uri ?? null;
         $instance->token_uri = $authdata->token_uri ?? null;
         $instance->redirect_uri = $authdata->redirect_uri ?? $conf->hoturl("oauth", null, Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
-        $instance->load_function = $authdata->load_function ?? null;
+        $instance->token_function = $authdata->token_function ?? null;
         $instance->require = $authdata->require ?? null;
         foreach (["client_id", "client_secret", "auth_uri", "token_uri", "redirect_uri", "title"] as $k) {
             if (!is_string($instance->$k) && ($k !== "title" || $instance->$k !== null))
@@ -81,7 +81,7 @@ class OAuth_Page {
                 ->set_expires_after(60)
                 ->set_token_pattern("hcoa[20]");
             $tok->data = json_encode_db([
-                "authtype" => $authi->authtype,
+                "authtype" => $authi->name,
                 "session" => $this->qreq->qsid(),
                 "site_uri" => $this->conf->opt("paperSite")
             ]);
@@ -131,7 +131,7 @@ class OAuth_Page {
      * @param object $jdata */
     private function instance_response($authi, $tok, $jdata) {
         // make authentication request
-        $authtitle = $authi->title ?? $authi->authtype;
+        $authtitle = $authi->title ?? $authi->name;
         $tok->delete();
         $curlh = curl_init();
         $nonce = base48_encode(random_bytes(10));
@@ -171,9 +171,9 @@ class OAuth_Page {
             return MessageItem::error("<0>The identity portion of the {$authtitle} authentication response doesn’t validate");
         }
 
-        if (isset($authi->load_function)
+        if (isset($authi->token_function)
             && Conf::xt_resolve_require($authi)
-            && ($m = call_user_func($authi->load_function, $this, $authi, $response, $jid))) {
+            && ($m = call_user_func($authi->token_function, $this, $authi, $response, $jid))) {
             return $m;
         }
 
