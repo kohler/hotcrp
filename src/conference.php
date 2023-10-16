@@ -5078,7 +5078,7 @@ class Conf {
             if (($uf = $xtp->search_name($x, $name)))
                 $a[$name] = $uf;
         }
-        uasort($a, "Conf::xt_order_compare");
+        uasort($a, "Conf::xt_pure_order_compare");
         return $a;
     }
 
