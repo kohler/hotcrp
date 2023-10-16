@@ -17,6 +17,9 @@ class OAuthInstance {
     public $redirect_uri;
     /** @var string */
     public $token_uri;
+    /** @var ?string */
+    public $load_function;
+    public $require;
 
     function __construct($authtype) {
         $this->authtype = $authtype;
@@ -43,6 +46,8 @@ class OAuthInstance {
         $instance->token_uri = $authdata->token_uri ?? null;
         $instance->redirect_uri = $authdata->redirect_uri ?? $conf->hoturl("oauth", null, Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
         $instance->title = $authdata->title ?? null;
+        $instance->load_function = $authdata->load_function ?? null;
+        $instance->require = $authdata->require ?? null;
         foreach (["client_id", "client_secret", "auth_uri", "token_uri", "redirect_uri", "title"] as $k) {
             if (!is_string($instance->$k) && ($k !== "title" || $instance->$k !== null))
                 return null;
@@ -157,8 +162,15 @@ class OAuth_Page {
         $jwt = new JWTParser;
         if (!($jid = $jwt->validate($response->id_token))) {
             return MessageItem::error("<0>The identity portion of the {$authtitle} authentication response doesn’t validate");
-        } else if (!isset($jid->email)
-                   || !is_string($jid->email)) {
+        }
+
+        if (isset($authi->load_function)
+            && Conf::xt_resolve_require($authi)
+            && ($m = call_user_func($authi->load_function, $this, $authi, $jid, $response)) {
+            return $m;
+        }
+
+        if (!isset($jid->email) || !is_string($jid->email)) {
             return [
                 MessageItem::error("<0>The {$authtitle} authenticator didn’t provide your email"),
                 new MessageItem(null, "<0>HotCRP requires your email to sign you in.", MessageSet::INFORM)
