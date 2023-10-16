@@ -200,7 +200,7 @@ class JWTParser extends MessageSet {
         if (!$this->has_alg($jose->alg ?? null)) {
             $this->error_at(null, "<0>Unknown algorithm");
             return null;
-        } else if (($jose->typ ?? null) !== "JWT") {
+        } else if (isset($jose->typ) && ($jose->typ ?? null) !== "JWT") {
             $suffix = isset($jose->typ) && is_string($jose->typ) ? " ‘{$jose->typ}’" : "";
             $this->error_at(null, "<0>Unexpected message type{$suffix}");
             return null;
