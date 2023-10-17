@@ -105,7 +105,7 @@ class OAuth_Page {
                     . "&redirect_uri=" . rawurlencode($authi->redirect_uri)
                     . "&state=" . $tok->salt
                     . "&nonce=" . $nonce;
-                $this->qreq->set_httponly_cookie("oauth-{$nonce}", "1", 600);
+                $this->qreq->set_httponly_cookie("oauth-{$nonce}", "1", Conf::$now + 600);
                 throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
             } else {
                 $this->conf->error_msg("<0>Authentication attempt failed");
@@ -134,7 +134,7 @@ class OAuth_Page {
 
         if (isset($tokdata->nonce)) {
             $noncematch = isset($_COOKIE["oauth-{$tokdata->nonce}"]);
-            $this->qreq->set_httponly_cookie("oauth-{$tokdata->nonce}", "", 0);
+            $this->qreq->set_httponly_cookie("oauth-{$tokdata->nonce}", "", Conf::$now - 86400);
         } else {
             $noncematch = true;
         }
