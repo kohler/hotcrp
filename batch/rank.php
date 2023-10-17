@@ -36,8 +36,7 @@ class Rank_Batch {
     /** @var int */
     public $ballot_idx = -1;
 
-    /** @param array<string,mixed> $arg
-     * @param ?Getopt $getopt */
+    /** @param array<string,mixed> $arg */
     function __construct($arg) {
         if (isset($arg["m"])) {
             if (in_array($arg["m"], PaperRank::method_list())) {
@@ -106,7 +105,7 @@ class Rank_Batch {
         }
     }
 
-    /** @return array{list<?string>,list<array{int,int,int|float}>} */
+    /** @return array{list<string>,list<array{int,int,int|float}>} */
     private function read_ranks() {
         $csv = new CsvParser($this->in);
         $row = $csv->next_row();
@@ -131,7 +130,7 @@ class Rank_Batch {
         }
 
         $ranklist = $umap = $imap = [];
-        $ilist = [null];
+        $ilist = [""];
         $nu = $ni = 1;
 
         while ($row) {
@@ -156,7 +155,7 @@ class Rank_Batch {
         return [$ilist, $ranklist];
     }
 
-    /** @return array{list<?string>,list<array{int,int,int|float}>} */
+    /** @return array{list<string>,list<array{int,int,int|float}>} */
     private function read_ballot() {
         $csv = new CsvParser($this->in);
         $row = $csv->next_row();
@@ -173,7 +172,7 @@ class Rank_Batch {
         }
 
         $ranklist = $imap = [];
-        $ilist = [null];
+        $ilist = [""];
         $nu = $ni = 1;
 
         while ($row) {
@@ -242,6 +241,7 @@ class Rank_Batch {
         if ($this->header) {
             $csvg->add_row([$this->item_key, $this->rank_key]);
         }
+        /** @phan-suppress-next-line PhanTypeMismatchArgument */
         $csvg->append($rr);
         $csvg->flush();
         return 0;
