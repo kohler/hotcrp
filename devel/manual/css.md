@@ -1,5 +1,8 @@
 # HotCRP CSS
 
+This page documents aspects of HotCRP styles not obvious from the style file
+itself.
+
 ## `z-index`
 
 Page-level stacking contexts
@@ -57,5 +60,5 @@ Generic values
     * `#n-prev`
     * `#n-search`
     * `#n-list`
-* `id^=k-` is for programmatically assigned IDs, generally of inputs, e.g.,
-  elements that need IDs for reference by `label`
+* `id^=k-` is for inputs and for programmatically assigned IDs, e.g., elements
+  that need IDs for reference by `label`

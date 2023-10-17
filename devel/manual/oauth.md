@@ -49,7 +49,7 @@ authentication providers. Each `oAuthTypes` component should define:
 ## Authentication flow
 
 HotCRP’s page component `"signin/form/oauth"` renders a button for each
-defined provider. Clicking on that button redirects to
+defined OAuth provider. Clicking on that button redirects to
 `SITEURL/oauth?authtype=NAME&post=CSRFTOKEN`. That page initiates an OAuth 2
 authorization code flow by choosing a random token, recording it, and
 redirecting the user to the specified `auth_uri` with appropriate parameters.
@@ -57,7 +57,7 @@ When the user completes their authentication request, the provider redirects
 back to HotCRP via the `redirect_uri`. HotCRP contacts the provider’s
 `token_uri` with the provided parameters via an HTTP `POST` request with
 `application/x-www-form-urlencoded` content. HotCRP then validates the
-returned JWT and uses its included `email` to authenticate the user.
+returned JWT and uses its `email` to authenticate the user.
 
 Many steps in this process might go wrong. HotCRP uses its own code to
 validate the JWT; this might break. HotCRP does not support encrypted tokens.

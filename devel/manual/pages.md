@@ -72,7 +72,7 @@ To print a component, HotCRP checks for:
 2. Otherwise, an `html_content` property. If present, this is copied to the output.
 
 3. In either case, if the component has a `print_members` property, HotCRP
-   next prints the members of that group.
+   next prints the members of the group with the component’s name.
 
 A `print_function` may cancel further rendering by returning explicit `false`,
 or by throwing a `Redirection` or `PageCompletion` exception.
