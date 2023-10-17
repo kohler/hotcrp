@@ -15,9 +15,9 @@ authentication providers. Each `oAuthTypes` component should define:
   be used in error messages. Defaults to `name`.
 
 * `issuer`: (Optional) The issuer ID of the authentication provider. This is
-  the value the provider sends as its `iss` claim in OAuth responses; if
-  provided, HotCRP will require that ID tokens contain an `iss` claim that
-  exactly matches this value. You can look it up the issuer for a provider by
+  the value the provider sends as its `iss` claim in OAuth responses. If
+  provided, HotCRP requires that ID tokens contain an `iss` claim that exactly
+  matches this value. You can look it up the issuer for a provider by
   accessing an OpenID configuration file, such as
   https://accounts.google.com/.well-known/openid-configuration. Example:
   `"https://accounts.google.com"`
@@ -45,6 +45,23 @@ authentication providers. Each `oAuthTypes` component should define:
   Google"`
 
 * `disabled`: (Optional) If true, HotCRP disables this provider.
+
+## Example configuration for Google authentication
+
+```
+$Opt["oAuthTypes"][] = '{
+    "name": "Google",
+    "issuer": "https://accounts.google.com",
+    "auth_uri": "https://accounts.google.com/o/oauth2/v2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "client_id": "123456789-nnnnnnnnnnnnnnnnnnnnnnnnn.apps.googleusercontent.com",
+    "client_secret": "GOCSPX-nnnnnnnnnnnnnnnnnnnnnnnn",
+    "button_html": "Sign in with Google"
+}';
+```
+
+You’ll get the client ID and client secret from Google when you register your
+application.
 
 ## Authentication flow
 
