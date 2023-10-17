@@ -91,17 +91,21 @@ class OAuth_Page {
             $tok->set_contactdb(!!$this->conf->contactdb())
                 ->set_expires_after(60)
                 ->set_token_pattern("hcoa[20]");
+            $nonce = base48_encode(random_bytes(8));
             $tok->data = json_encode_db([
                 "authtype" => $authi->name,
                 "session" => $this->qreq->qsid(),
-                "site_uri" => $this->conf->opt("paperSite")
+                "site_uri" => $this->conf->opt("paperSite"),
+                "nonce" => $nonce
             ]);
             if ($tok->create()) {
                 $params = "client_id=" . urlencode($authi->client_id)
                     . "&response_type=code"
                     . "&scope=" . rawurlencode($authi->scope ?? "openid email profile")
                     . "&redirect_uri=" . rawurlencode($authi->redirect_uri)
-                    . "&state=" . $tok->salt;
+                    . "&state=" . $tok->salt
+                    . "&nonce=" . $nonce;
+                $this->qreq->set_httponly_cookie("oauth-{$nonce}", "1", 600);
                 throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
             } else {
                 $this->conf->error_msg("<0>Authentication attempt failed");
@@ -124,14 +128,24 @@ class OAuth_Page {
         } else if ($tok->timeUsed) {
             return MessageItem::error("<0>Authentication request reused");
         } else if ($tok->capabilityType !== TokenInfo::OAUTHSIGNIN
-                   || !($jdata = json_decode($tok->data ?? "0"))) {
+                   || !($tokdata = json_decode($tok->data ?? "0"))) {
             return MessageItem::error("<0>Invalid authentication request ‘{$state}’, internal error");
-        } else if (($jdata->session ?? "<NO SESSION>") !== $this->qreq->qsid()) {
+        }
+
+        if (isset($tokdata->nonce)) {
+            $noncematch = isset($_COOKIE["oauth-{$tokdata->nonce}"]);
+            $this->qreq->set_httponly_cookie("oauth-{$tokdata->nonce}", "", 0);
+        } else {
+            $noncematch = true;
+        }
+
+        if (($tokdata->session ?? "<NO SESSION>") !== $this->qreq->qsid()
+            || !$noncematch) {
             return MessageItem::error("<0>Authentication request ‘{$state}’ was for a different session");
         } else if (!isset($this->qreq->code)) {
             return MessageItem::error("<0>Authentication failed");
-        } else if (($authi = OAuthInstance::find($this->conf, $jdata->authtype ?? null))) {
-            return $this->instance_response($authi, $tok, $jdata);
+        } else if (($authi = OAuthInstance::find($this->conf, $tokdata->authtype ?? null))) {
+            return $this->instance_response($authi, $tok, $tokdata);
         } else {
             $this->conf->error_msg("<0>OAuth authentication internal error");
         }
@@ -139,13 +153,12 @@ class OAuth_Page {
 
     /** @param OAuthInstance $authi
      * @param TokenInfo $tok
-     * @param object $jdata */
-    private function instance_response($authi, $tok, $jdata) {
+     * @param object $tokdata */
+    private function instance_response($authi, $tok, $tokdata) {
         // make authentication request
         $authtitle = $authi->title ?? $authi->name;
         $tok->delete();
         $curlh = curl_init();
-        $authi->nonce = base48_encode(random_bytes(10));
         curl_setopt($curlh, CURLOPT_URL, $authi->token_uri);
         curl_setopt($curlh, CURLOPT_POST, true);
         curl_setopt($curlh, CURLOPT_HTTPHEADER, ["Content-Type: application/x-www-form-urlencoded"]);
@@ -155,8 +168,7 @@ class OAuth_Page {
             "client_id" => $authi->client_id,
             "client_secret" => $authi->client_secret,
             "redirect_uri" => $authi->redirect_uri,
-            "grant_type" => "authorization_code",
-            "nonce" => $authi->nonce
+            "grant_type" => "authorization_code"
         ], "", "&"));
         curl_setopt($curlh, CURLOPT_RETURNTRANSFER, true);
         $txt = curl_exec($curlh);
@@ -178,6 +190,7 @@ class OAuth_Page {
 
         // parse returned JSON web token
         $jwt = new JWTParser;
+        $authi->nonce = $tokdata->nonce ?? null;
         if (!($jid = $jwt->validate($response->id_token))
             || !$jwt->validate_id_token($jid, $authi)) {
             return MessageItem::error("<0>Invalid {$authtitle} authentication response (code {$jwt->errcode})");
@@ -219,12 +232,12 @@ class OAuth_Page {
         $info = LoginHelper::check_external_login(Contact::make_keyed($this->conf, $reg));
         if (!$info["ok"]) {
             LoginHelper::login_error($this->conf, $jid->email, $info, null);
-            throw new Redirection($jdata->site_url);
+            throw new Redirection($tokdata->site_url);
         } else {
             $user = $info["user"];
             $this->conf->feedback_msg(new MessageItem(null, "<0>Signed in", MessageSet::SUCCESS));
             LoginHelper::change_session_users($this->qreq, [$user->email => 1]);
-            throw new Redirection(hoturl_add_raw($jdata->site_uri, "i=" . urlencode($user->email)));
+            throw new Redirection(hoturl_add_raw($tokdata->site_uri, "i=" . urlencode($user->email)));
         }
     }
 

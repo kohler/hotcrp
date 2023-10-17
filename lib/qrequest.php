@@ -603,22 +603,34 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 
     /** @param string $name
      * @param string $value
-     * @param int $expires_at */
-    function set_cookie($name, $value, $expires_at) {
-        $secure = $this->_conf->opt("sessionSecure") ?? false;
-        $samesite = $this->_conf->opt("sessionSameSite") ?? "Lax";
-        $opt = [
-            "expires" => $expires_at,
-            "path" => $this->_navigation->base_path,
-            "domain" => $this->_conf->opt("sessionDomain") ?? "",
-            "secure" => $secure
-        ];
-        if ($samesite && ($secure || $samesite !== "None")) {
-            $opt["samesite"] = $samesite;
+     * @param array $opt */
+    function set_cookie_opt($name, $value, $opt) {
+        $opt["path"] = $opt["path"] ?? $this->_navigation->base_path;
+        $opt["domain"] = $opt["domain"] ?? $this->_conf->opt("sessionDomain") ?? "";
+        $opt["secure"] = $opt["secure"] ?? $this->_conf->opt("sessionSecure") ?? false;
+        if (!isset($opt["samesite"])) {
+            $samesite = $this->_conf->opt("sessionSameSite") ?? "Lax";
+            if ($samesite && ($opt["secure"] || $samesite !== "None")) {
+                $opt["samesite"] = $samesite;
+            }
         }
         if (!hotcrp_setcookie($name, $value, $opt)) {
             error_log(debug_string_backtrace());
         }
+    }
+
+    /** @param string $name
+     * @param string $value
+     * @param int $expires_at */
+    function set_cookie($name, $value, $expires_at) {
+        $this->set_cookie_opt($name, $value, ["expires" => $expires_at]);
+    }
+
+    /** @param string $name
+     * @param string $value
+     * @param int $expires_at */
+    function set_httponly_cookie($name, $value, $expires_at) {
+        $this->set_cookie_opt($name, $value, ["expires" => $expires_at, "httponly" => true]);
     }
 
 
