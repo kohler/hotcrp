@@ -13,6 +13,8 @@ class OAuthInstance {
     public $client_id;
     /** @var string */
     public $client_secret;
+    /** @var ?string */
+    public $issuer;
     /** @var string */
     public $auth_uri;
     /** @var string */
@@ -21,6 +23,10 @@ class OAuthInstance {
     public $token_uri;
     /** @var ?string */
     public $token_function;
+
+    /** @var ?string */
+    public $nonce;
+
     public $require;
 
     function __construct($name) {
@@ -43,6 +49,7 @@ class OAuthInstance {
         }
         $instance = new OAuthInstance($name);
         $instance->title = $authdata->title ?? null;
+        $instance->issuer = $authdata->issuer ?? null;
         $instance->scope = $authdata->scope ?? null;
         $instance->client_id = $authdata->client_id ?? null;
         $instance->client_secret = $authdata->client_secret ?? null;
@@ -51,8 +58,12 @@ class OAuthInstance {
         $instance->redirect_uri = $authdata->redirect_uri ?? $conf->hoturl("oauth", null, Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
         $instance->token_function = $authdata->token_function ?? null;
         $instance->require = $authdata->require ?? null;
-        foreach (["client_id", "client_secret", "auth_uri", "token_uri", "redirect_uri", "title"] as $k) {
-            if (!is_string($instance->$k) && ($k !== "title" || $instance->$k !== null))
+        foreach (["title", "issuer", "scope"] as $k) {
+            if ($instance->$k !== null && !is_string($instance->$k))
+                return null;
+        }
+        foreach (["client_id", "client_secret", "auth_uri", "token_uri", "redirect_uri"] as $k) {
+            if (!is_string($instance->$k))
                 return null;
         }
         return $instance;
@@ -134,7 +145,7 @@ class OAuth_Page {
         $authtitle = $authi->title ?? $authi->name;
         $tok->delete();
         $curlh = curl_init();
-        $nonce = base48_encode(random_bytes(10));
+        $authi->nonce = base48_encode(random_bytes(10));
         curl_setopt($curlh, CURLOPT_URL, $authi->token_uri);
         curl_setopt($curlh, CURLOPT_POST, true);
         curl_setopt($curlh, CURLOPT_HTTPHEADER, ["Content-Type: application/x-www-form-urlencoded"]);
@@ -145,7 +156,7 @@ class OAuth_Page {
             "client_secret" => $authi->client_secret,
             "redirect_uri" => $authi->redirect_uri,
             "grant_type" => "authorization_code",
-            "nonce" => $nonce
+            "nonce" => $authi->nonce
         ], "", "&"));
         curl_setopt($curlh, CURLOPT_RETURNTRANSFER, true);
         $txt = curl_exec($curlh);
@@ -167,8 +178,9 @@ class OAuth_Page {
 
         // parse returned JSON web token
         $jwt = new JWTParser;
-        if (!($jid = $jwt->validate($response->id_token))) {
-            return MessageItem::error("<0>The identity portion of the {$authtitle} authentication response doesn’t validate");
+        if (!($jid = $jwt->validate($response->id_token))
+            || !$jwt->validate_id_token($jid, $authi)) {
+            return MessageItem::error("<0>Invalid {$authtitle} authentication response (code {$jwt->errcode})");
         }
 
         if (isset($authi->token_function)

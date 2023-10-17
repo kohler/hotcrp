@@ -44,7 +44,6 @@ class S3Client {
         $this->s3_secret = $opt["secret"];
         $this->s3_bucket = $opt["bucket"];
         $this->s3_region = $opt["region"] ?? "us-east-1";
-        $this->fixed_time = $opt["fixed_time"] ?? null;
         $this->setting_cache = $opt["setting_cache"] ?? null;
         $this->setting_cache_prefix = $opt["setting_cache_prefix"] ?? "__s3";
     }
@@ -59,6 +58,13 @@ class S3Client {
         $s3 = new S3Client($opt);
         self::$instances[] = $s3;
         return $s3;
+    }
+
+    /** @param ?int $t
+     * @return $this */
+    function set_fixed_time($t) {
+        $this->fixed_time = $t;
+        return $this;
     }
 
     /** @return bool */
@@ -108,7 +114,7 @@ class S3Client {
      * @param array<string,string> $hdr
      * @return array{headers:list<string>,signature:string} */
     function signature($method, $url, $hdr) {
-        $current_time = $this->fixed_time ? : time();
+        $current_time = $this->fixed_time ?? time();
 
         preg_match('/\Ahttps?:\/\/([^\/?]*)([^?]*)(?:[?]?)(.*)\z/', $url, $m);
         $host = $m[1];
@@ -208,7 +214,7 @@ class S3Client {
      * @return array{string,list<string>} */
     function signed_headers($skey, $method, $args) {
         $url = "https://{$this->s3_bucket}.s3.amazonaws.com/{$skey}";
-        $hdr = ["Date" => gmdate("D, d M Y H:i:s", $this->fixed_time ? : time()) . " GMT"];
+        $hdr = ["Date" => gmdate("D, d M Y H:i:s", $this->fixed_time ?? time()) . " GMT"];
         foreach ($args as $key => $value) {
             if ($key === "user_data") {
                 foreach ($value as $xkey => $xvalue) {

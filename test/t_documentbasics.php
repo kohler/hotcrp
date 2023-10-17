@@ -15,9 +15,9 @@ class DocumentBasics_Tester {
         $s3d = new S3Client([
             "key" => "AKIAIOSFODNN7EXAMPLE",
             "secret" => "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-            "bucket" => null,
-            "fixed_time" => gmmktime(0, 0, 0, 5, 24, 2013)
+            "bucket" => null
         ]);
+        $s3d->set_fixed_time(gmmktime(0, 0, 0, 5, 24, 2013));
         Conf::set_current_time(gmmktime(0, 0, 0, 5, 24, 2013));
 
         $sig = $s3d->signature("GET",

@@ -9,6 +9,11 @@ class JWTParser extends MessageSet {
     public $payload;
     /** @var ?string */
     public $verify_key;
+    /** @var int */
+    public $errcode = 0;
+    /** @var ?int */
+    private $fixed_time;
+
     /** @var bool */
     static private $has_openssl;
     /** @var ?array<string,bool> */
@@ -28,6 +33,13 @@ class JWTParser extends MessageSet {
     function __construct() {
         parent::__construct();
         self::$has_openssl = self::$has_openssl ?? function_exists("openssl_verify");
+    }
+
+    /** @param ?int $t
+     * @return $this */
+    function set_fixed_time($t) {
+        $this->fixed_time = $t;
+        return $this;
     }
 
     /** @param int $t
@@ -109,23 +121,39 @@ class JWTParser extends MessageSet {
         return self::der_encode_tlv(6, $s);
     }
 
+    /** @param int $errcode
+     * @param string $msg
+     * @return null */
+    private function null_error($errcode, $msg) {
+        $this->errcode = $errcode;
+        $this->error_at(null, $msg);
+        return null;
+    }
+
+    /** @param int $errcode
+     * @param string $msg
+     * @return false */
+    private function false_error($errcode, $msg) {
+        $this->errcode = $errcode;
+        $this->error_at(null, $msg);
+        return false;
+    }
+
     /** @return ?string */
     function jwk_to_pem($jwk) {
+        $this->errcode = 0;
         if (!is_object($jwk) || !isset($jwk->kty)) {
-            $this->error_at(null, "<0>Input not in JWK format");
-            return null;
+            return $this->null_error(1001, "<0>Input not in JWK format");
         } else if ($jwk->kty !== "RSA") {
             $suffix = is_string($jwk->kty) ? " ‘{$jwk->kty}’" : "";
-            $this->error_at(null, "<0>JWK type{$suffix} not understood");
-            return null;
+            return $this->null_error(1002, "<0>JWK type{$suffix} not understood");
         } else if (!isset($jwk->e)
                    || !is_string($jwk->e)
                    || !is_base64url_string($jwk->e)
                    || !isset($jwk->n)
                    || !is_string($jwk->n)
                    || !is_base64url_string($jwk->n)) {
-            $this->error_at(null, "<0>JWK key parameters incorrect");
-            return null;
+            return $this->null_error(1003, "<0>JWK key parameters incorrect");
         } else {
             $algseq = "\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01\x05\x00";
             $nenc = self::der_encode_positive_int_string(base64url_decode($jwk->n));
@@ -182,62 +210,116 @@ class JWTParser extends MessageSet {
     /** @param string $s
      * @return ?object */
     function validate($s) {
+        $this->errcode = 0;
         $this->jose = $this->payload = null;
         if ($s === null || $s === "") {
-            $this->error_at(null, "<0>Message required");
-            return null;
+            return $this->null_error(1101, "<0>Message required");
         } else if (!preg_match('/\A([-_A-Za-z0-9]*)\.([-_A-Za-z0-9.]+)\z/', $s, $m)) {
-            $this->error_at(null, "<0>Message format error");
-            return null;
+            return $this->null_error(1102, "<0>Message format error");
         }
 
         $jose = json_decode(base64url_decode($m[1]));
         if (!$jose || !is_object($jose)) {
-            $this->error_at(null, "<0>Message header syntax error");
-            return null;
+            return $this->null_error(1103, "<0>Message header syntax error");
         }
         $this->jose = $jose;
         if (!$this->has_alg($jose->alg ?? null)) {
-            $this->error_at(null, "<0>Unknown algorithm");
-            return null;
+            return $this->null_error(1104, "<0>Unknown algorithm");
         } else if (isset($jose->typ) && ($jose->typ ?? null) !== "JWT") {
             $suffix = isset($jose->typ) && is_string($jose->typ) ? " ‘{$jose->typ}’" : "";
-            $this->error_at(null, "<0>Unexpected message type{$suffix}");
-            return null;
+            return $this->null_error(1105, "<0>Unexpected message type{$suffix}");
         } else if (($jose->cty ?? null) === "JWT") {
-            $this->error_at(null, "<0>Nested messages not supported");
-            return null;
+            return $this->null_error(1106, "<0>Nested messages not supported");
         } else if (isset($jose->crit)) {
-            $this->error_at(null, "<0>Critical message extensions not supported");
-            return null;
+            return $this->null_error(1107, "<0>Critical message extensions not supported");
         }
 
         $dot = strpos($m[2], ".");
         if ($dot === false && $jose->alg !== "none") {
-            $this->error_at(null, "<0>Message signature missing");
-            return null;
+            return $this->null_error(1108, "<0>Message signature missing");
         }
         $dot = $dot === false ? strlen($m[2]) : $dot;
         $payload = json_decode(base64url_decode(substr($m[2], 0, $dot)));
         if (!$payload || !is_object($payload)) {
-            $this->error_at(null, "<0>Message payload syntax error");
-            return null;
+            return $this->null_error(1109, "<0>Message payload syntax error");
         }
         $this->payload = $payload;
 
         if ($dot !== strlen($m[2]) && strpos($m[2], ".", $dot + 1) !== false) {
-            $this->error_at(null, "<0>Message may be encrypted");
-            return null;
+            return $this->null_error(1110, "<0>Message may be encrypted");
         }
 
         if ($this->verify_key
             && !$this->verify(substr($s, 0, strlen($m[1]) + 1 + $dot), $jose->alg,
                               base64url_decode(substr($m[2], $dot + 1)))) {
-            $this->error_at(null, "<0>Message signature invalid");
-            return null;
+            return $this->null_error(1111, "<0>Message signature invalid");
         }
 
         return $this->payload;
+    }
+
+    /** @param object $payload
+     * @param OAuthInstance $authi
+     * @param 0|1|2 $level
+     * @return bool */
+    function validate_id_token($payload, $authi, $level = 1) {
+        // check issuer claim
+        if (!isset($payload->iss) || !is_string($payload->iss)) {
+            return $this->false_error(1201, "<0>`iss` claim missing or invalid");
+        } else if ($authi->issuer !== null && $authi->issuer !== $payload->iss) {
+            return $this->false_error(1202, "<0>`iss` claim does not match expected issuer");
+        }
+
+        // check audience claim
+        if (!isset($payload->aud) || (!is_string($payload->aud) && !is_array($payload->aud))) {
+            return $this->false_error(1203, "<0>`aud` claim missing or invalid");
+        } else if (is_array($payload->aud)
+                   ? !in_array($authi->client_id, $payload->aud)
+                   : $authi->client_id !== $payload->aud) {
+            return $this->false_error(1204, "<0>`aud` claim does not match client ID");
+        }
+
+        // check authorized-party claim
+        if ($level >= 1) {
+            if (isset($payload->azt)) {
+                if (!is_string($payload->azt)) {
+                    return $this->false_error(1206, "<0>`azt` claim invalid");
+                } else if ($authi->client_id !== $payload->azt) {
+                    return $this->false_error(1207, "<0>`azt` claim does not match client ID");
+                }
+            } else if (is_array($payload->aud) && !isset($payload->azt)) {
+                return $this->false_error(1205, "<0>`azt` claim missing");
+            }
+        }
+
+        // XXX check algorithm claim
+
+        // check expiration time
+        $now = $this->fixed_time ?? Conf::$now;
+        if (!isset($payload->exp) || !is_int($payload->exp)) {
+            return $this->false_error(1208, "<0>`exp` claim missing or invalid");
+        } else if ($now >= $payload->exp) {
+            return $this->false_error(1209, "<0>ID token expired");
+        }
+
+        // check `iat` claims
+        if ($level >= 2) {
+            if (!isset($payload->iat) || !is_int($payload->iat)) {
+                return $this->false_error(1210, "<0>`iat` claim missing or invalid");
+            } else if ($payload->iat > $now + 60) {
+                return $this->false_error(1211, "<0>ID token claims to have been issued in the future");
+            } else if ($payload->iat < $now - 3600) {
+                return $this->false_error(1212, "<0>ID token issued too long ago");
+            }
+        }
+
+        // check nonce
+        if (isset($authi->nonce)
+            && (!isset($payload->nonce) || $payload->nonce !== $authi->nonce)) {
+            return $this->false_error(1213, "<0>ID token nonce mismatch");
+        }
+
+        return true;
     }
 
     /** @param object $payload
