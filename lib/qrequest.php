@@ -518,7 +518,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         } else if ($e === "head") {
             return $this->_method === "HEAD";
         } else if (str_starts_with($e, "req.")) {
-            return $this->has(substr($w, 4));
+            return $this->has(substr($e, 4));
         } else {
             return null;
         }
