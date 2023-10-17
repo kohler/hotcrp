@@ -224,10 +224,12 @@ class OAuth_Page {
                 $user->conf->feedback_msg($mi);
                 throw new Redirection($user->conf->hoturl("signin"));
             }
-        } else {
+        } else if ($qreq->valid_post()) {
             $oap->start();
+        } else {
+            $user->conf->error_msg("<0>Missing CSRF token");
         }
-        $qreq->print_header("Authentication", "oauth", ["action_bar" => ""]);
+        $qreq->print_header("Authentication", "oauth", ["action_bar" => "", "body_class" => "body-error"]);
         $qreq->print_footer();
     }
 }
