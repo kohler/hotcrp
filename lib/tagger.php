@@ -1458,9 +1458,9 @@ class Tagger {
             && preg_match('{\A' . TAG_REGEX . '\z}', $tag);
     }
 
-    /** @param bool $sequential */
-    static function value_increment($sequential) {
-        return $sequential ? 1 : self::$value_increment_map[mt_rand(0, 9)];
+    /** @param bool $gapless */
+    static function value_increment($gapless) {
+        return $gapless ? 1 : self::$value_increment_map[mt_rand(0, 9)];
     }
 
 

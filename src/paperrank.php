@@ -1,36 +1,32 @@
 <?php
 // paperrank.php -- HotCRP helper functions for dealing with ranks
-// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2023 Eddie Kohler; see LICENSE.
 
 class PaperRank {
-    /** @var Conf */
-    private $conf;
-    /** @var string */
-    private $tag;
-    /** @var string */
-    private $dest_tag;
-    /** @var bool */
-    private $sequential;
     /** @var list<int> */
     private $papersel;
     /** @var array<int,int> */
     private $papershuffle;
+    /** @var bool */
+    private $gapless = false;
     /** @var array<int,list<array{int,int}>> */
     private $userrank = [];
 
+    /** @var int */
+    private $starttime;
     /** @var array<int,int> */
     private $rank = [];
     /** @var int */
     private $currank = 0;
 
+    /** @var ?Qrequest */
+    private $qreq;
     /** @var bool */
     private $info_printed = false;
     /** @var ?string */
     private $header_title;
     /** @var ?string */
     private $header_id;
-    /** @var int */
-    private $starttime;
 
     /** @var array<int,array<int,int>> */
     private $pref;
@@ -43,80 +39,101 @@ class PaperRank {
     /** @var int */
     private $deletedpref;
 
-    /** @param string $source_tag
-     * @param string $dest_tag
-     * @param list<int> $papersel
-     * @param bool $sequential
-     * @param ?string $header_title
-     * @param ?string $header_id */
-    function __construct(Conf $conf, $source_tag, $dest_tag, $papersel, $sequential,
-                         $header_title = null, $header_id = null) {
-        $this->conf = $conf;
-        $this->dest_tag = $dest_tag;
-        $this->sequential = $sequential;
+    /** @param list<int> $papersel */
+    function __construct($papersel) {
         $this->papersel = $papersel;
-        $this->header_title = $header_title;
-        $this->header_id = $header_id;
-        $this->starttime = time();
 
         // generate random order for paper comparisons
-        if (count($papersel)) {
+        if (!empty($papersel)) {
             $range = range(0, count($papersel) - 1);
             shuffle($range);
             $this->papershuffle = array_combine($papersel, $range);
         } else {
-            $this->papershuffle = array();
+            $this->papershuffle = [];
         }
-
-        // load current ranks: $userrank maps user => [rank, paper]
-        $x = sqlq(Dbl::escape_like($source_tag));
-        $result = $this->conf->qe_raw("select paperId, tag, tagIndex from PaperTag where tag like '%~{$x}' and paperId in (" . join(",", $papersel) . ")");
-        $len = strlen($source_tag) + 1;
-        while (($row = $result->fetch_row())) {
-            if ($row[1] !== "~") {
-                $l = (int) substr($row[1], 0, strlen($row[1]) - $len);
-                $this->userrank[$l][] = [(int) $row[2], (int) $row[0]];
-            }
-        }
-        Dbl::free($result);
-
-        // sort $userrank[$user] by descending rank order
-        foreach ($this->userrank as &$ranks) {
-            usort($ranks, [$this, "_comparUserrank"]);
-        }
-        unset($ranks);
     }
 
-    /** @param array{int,int} $a
-     * @param array{int,int} $b
-     * @return int */
-    function _comparUserrank($a, $b) {
-        if ($a[0] != $b[0]) {
-            return $a[0] < $b[0] ? -1 : 1;
-        } else if ($a[1] != $b[1]) {
-            return $this->papershuffle[$a[1]] < $this->papershuffle[$b[1]] ? -1 : 1;
-        } else {
-            return 0;
+    /** @param string $tag
+     * @return $this */
+    function load_user_tag_ranks(Conf $conf, $tag) {
+        $result = $conf->qe("select paperId, tag, tagIndex from PaperTag where tag like '%~?ls' and paperId?a", $tag, $this->papersel);
+        $tp = strlen($tag) + 1;
+        while (($row = $result->fetch_row())) {
+            if ($row[1][0] !== "~") {
+                $this->userrank[intval($row[1])][] = [(int) $row[2], (int) $row[0]];
+            }
+        }
+        $result->close();
+        return $this;
+    }
+
+    /** @param int $user
+     * @param int $pid
+     * @param int|float $rank
+     * @return $this */
+    function add_rank($user, $pid, $rank) {
+        if (isset($this->papershuffle[$pid])) {
+            $this->userrank[$user][] = [$rank, $pid];
+        }
+        return $this;
+    }
+
+    /** @param bool $gapless
+     * @return $this */
+    function set_gapless($gapless) {
+        $this->gapless = $gapless;
+        return $this;
+    }
+
+    /** @param string $title
+     * @param string $id
+     * @return $this */
+    function set_printable_header(Qrequest $qreq, $title, $id) {
+        assert(!$this->qreq);
+        $this->qreq = $qreq;
+        $this->header_title = $title;
+        $this->header_id = $id;
+        return $this;
+    }
+
+    private function _initialize_run() {
+        $this->starttime = time();
+        $this->rank = [];
+        $this->currank = 0;
+        foreach ($this->userrank as &$ranks) {
+            usort($ranks, function ($a, $b) {
+                if ($a[0] != $b[0]) {
+                    return $a[0] < $b[0] ? -1 : 1;
+                } else if ($a[1] != $b[1]) {
+                    return $this->papershuffle[$a[1]] < $this->papershuffle[$b[1]] ? -1 : 1;
+                } else {
+                    return 0;
+                }
+            });
         }
     }
 
     /** @return int */
     private function _nextRank() {
-        $this->currank += Tagger::value_increment($this->sequential);
+        $this->currank += Tagger::value_increment($this->gapless);
         return $this->currank;
     }
 
-    private function _info() {
+    private function _progress() {
+        if (!$this->qreq) {
+            return;
+        }
         $n = count($this->rank);
         if (!$this->info_printed
-            && (!count($this->papersel) || $n >= count($this->papersel)
+            && (empty($this->papersel)
+                || $n >= count($this->papersel)
                 || time() - $this->starttime <= 4)) {
             return;
         }
         $pct = round($n / count($this->papersel) * 100);
         if (!$this->info_printed) {
             if ($this->header_title) {
-                Qrequest::$main_request->print_header($this->header_title, $this->header_id);
+                $this->qreq->print_header($this->header_title, $this->header_id);
             }
             echo '<div id="foldrankcalculation" class="foldc"><div class="fn info">Calculating ranks; this can take a while.  <span id="rankpercentage">', $pct, '</span>% of ranks assigned<span id="rankdeletedpref"></span>.</div></div>';
             $this->info_printed = true;
@@ -143,7 +160,8 @@ class PaperRank {
         return 0;
     }
 
-    function irv() {
+    function run_irv() {
+        $this->_initialize_run();
         if (!count($this->papersel)) {
             return;
         }
@@ -204,7 +222,8 @@ class PaperRank {
 
 
     // global rank calculation by conversion of ranks to range values
-    function rangevote() {
+    function run_range() {
+        $this->_initialize_run();
         // calculate $minuserrank, $maxuserrank
         $minuserrank = $maxuserrank = array();
         foreach ($this->userrank as $user => &$ranks) {
@@ -243,7 +262,8 @@ class PaperRank {
 
 
     // global rank calculation by range values (1-99)
-    function rawrangevote() {
+    function run_range_raw() {
+        $this->_initialize_run();
         foreach ($this->userrank as &$ranks) {
             foreach ($ranks as &$rr) {
                 if ($rr[0] >= 1)
@@ -254,8 +274,8 @@ class PaperRank {
         unset($ranks);
 
         // map ranks to ranges
-        $paperrange = array_fill(0, count($this->papersel), 0);
-        $paperrangecount = array_fill(0, count($this->papersel), 0);
+        $paperrange = array_combine($this->papersel, array_fill(0, count($this->papersel), 0));
+        $paperrangecount = array_combine($this->papersel, array_fill(0, count($this->papersel), 0));
         foreach ($this->userrank as &$ranks) {
             foreach ($ranks as $rr) {
                 $paperrange[$rr[1]] += $rr[0];
@@ -278,9 +298,10 @@ class PaperRank {
 
     // global rank calculation by computing the stationary distribution of a
     // random walk
-    function randwalk() {
+    function run_random_walk() {
+        $this->_initialize_run();
         $paperCount = count($this->papersel);
-        if (!count($this->papersel)) {
+        if ($paperCount === 0) {
             return;
         }
 
@@ -485,10 +506,7 @@ class PaperRank {
         $nonschwartz = array_keys($nonschwartz);
         //error_log("SCH " . join(",", $schwartz) . " (" . join(",",$papersel) . ")");
         //echo "<p>Schwartz calc ", (microtime(true) - $t0), "</p>"; flush();
-        assert(count($schwartz) != 0);
-        if (count($schwartz) == 0) {
-            exit;
-        }
+        assert(!empty($schwartz));
     }
 
     private function _comparWeakness($a, $b) {
@@ -549,9 +567,11 @@ class PaperRank {
         list($papersel, $defeat) = array_pop($stack);
 
         // base case: only one paper
-        if (count($papersel) == 1) {
-            $this->rank[$papersel[0]] = $this->_nextRank();
-            $this->_info();
+        if (count($papersel) === 1) {
+            if ($this->anypref[$papersel[0]] !== 0) {
+                $this->rank[$papersel[0]] = $this->_nextRank();
+            }
+            $this->_progress();
             return;
         }
 
@@ -578,13 +598,14 @@ class PaperRank {
 
         if (count($weakness) == 0) {
             // if no defeats, end with a tie
-            $grouprank = 0;
+            $grouprank = null;
             foreach ($schwartz as $p1) {
-                $nextrank = $this->_nextRank();
-                $grouprank = ($grouprank ? $grouprank : $nextrank);
-                $this->rank[$p1] = $grouprank;
+                if ($this->anypref[$p1] !== 0) {
+                    $nextrank = $this->_nextRank();
+                    $this->rank[$p1] = $grouprank = $grouprank ?? $nextrank;
+                }
             }
-            $this->_info();
+            $this->_progress();
 
         } else {
             // remove the preferences corresponding to the weakest defeat
@@ -612,7 +633,8 @@ class PaperRank {
     }
 
     // global rank calculation by the Schulze method
-    function schulze() {
+    function run_schulze() {
+        $this->_initialize_run();
         $this->_calculatePrefs();
 
         // run Schulze
@@ -620,7 +642,7 @@ class PaperRank {
         $stack = [[$this->papersel, $defeat]];
         while (count($stack)) {
             $this->_schulzeStep($stack);
-            $this->_info();
+            $this->_progress();
             set_time_limit(30);
         }
 
@@ -631,10 +653,10 @@ class PaperRank {
             $norank = $norank * 10 + 9;
         }
         foreach ($this->papersel as $p) {
-            if ($this->anypref[$p] == 0)
+            if ($this->anypref[$p] === 0)
                 $this->rank[$p] = $norank;
         }
-        $this->_info();
+        $this->_progress();
     }
 
 
@@ -696,9 +718,9 @@ class PaperRank {
     private function _civsrpStep(&$papersel, &$defeat) {
         //error_log("SET " . join(",", $papersel));
         // base case: only one paper
-        if (count($papersel) == 1) {
+        if (count($papersel) === 1) {
             $this->rank[$papersel[0]] = $this->_nextRank();
-            $this->_info();
+            $this->_progress();
             return;
         }
 
@@ -728,7 +750,7 @@ class PaperRank {
             }
             $this->rank[$pa[0]] = $grouprank;
         }
-        $this->_info();
+        $this->_progress();
 
         // recurse on the non-Schwartz set
         if (count($nonschwartz) != 0) {
@@ -737,8 +759,9 @@ class PaperRank {
         }
     }
 
-    function civsrp() {
+    function run_civs_ranked_pairs() {
         // calculate preferences
+        $this->_initialize_run();
         $this->_calculatePrefs();
 
         // create and sort preference pairs
@@ -785,37 +808,57 @@ class PaperRank {
             if ($this->anypref[$p] == 0)
                 $this->rank[$p] = $norank;
         }
-        $this->_info();
+        $this->_progress();
     }
 
 
-    static function methods() {
-        return array("schulze" => "Schulze method",
-                     "irv" => "Instant-runoff voting",
-                     "range" => "Range voting",
-                     "civs" => "CIVS Ranked Pairs",
-                     "randwalk" => "Random walk");
+    /** @return array<string,string> */
+    static function default_method_selector() {
+        return [
+            "schulze" => "Schulze method",
+            "irv" => "Instant-runoff voting",
+            "range" => "Range voting",
+            "civsrp" => "CIVS Ranked Pairs",
+            "randomwalk" => "Random walk"
+        ];
+    }
+
+    /** @return list<string> */
+    static function method_list() {
+        return ["schulze", "civsrp", "irv", "range", "rawrange", "randomwalk"];
     }
 
     function run($m = null) {
-        $mmap = array("schulze" => "schulze", "irv" => "irv",
-                      "range" => "rangevote", "rawrange" => "rawrangevote",
-                      "civs" => "civsrp", "randwalk" => "randwalk");
-        if (!$m || !isset($mmap[$m])) {
-            $m = key($mmap);
+        if ($m === "randwalk" || $m === "randomwalk") {
+            $this->run_random_walk();
+        } else if ($m === "civs" || $m === "civsrp") {
+            $this->run_civs_ranked_pairs();
+        } else if ($m === "rawrange") {
+            $this->run_range_raw();
+        } else if ($m === "range") {
+            $this->run_range();
+        } else if ($m === "irv") {
+            $this->run_irv();
+        } else {
+            $this->run_schulze();
         }
-        $m = $mmap[$m];
-        $this->$m();
+    }
+
+
+    /** @return array<int,int> */
+    function rank_map() {
+        return $this->rank;
     }
 
 
     // save calculated ranks
-    /** @return string */
-    function unparse_assignment() {
-        $t = CsvGenerator::quote($this->dest_tag);
-        $a = ["paper,action,tag,index\nall,cleartag,$t\n"];
+    /** @param string $tag
+     * @return string */
+    function unparse_tag_assignment($tag) {
+        $t = CsvGenerator::quote($tag);
+        $a = ["paper,action,tag,index\nall,cleartag,{$t}\n"];
         foreach ($this->rank as $p => $rank) {
-            $a[] = "$p,tag,$t,$rank\n";
+            $a[] = "{$p},tag,{$t},{$rank}\n";
         }
         return join("", $a);
     }
