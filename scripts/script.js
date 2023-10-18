@@ -5086,15 +5086,15 @@ function row_fill(row, i, defaults, changes) {
 }
 
 function is_row_interesting(row) {
-    var ipts = row.querySelectorAll("input, select, textarea"), e;
-    for (e of ipts) {
+    const ipts = row.querySelectorAll("input, select, textarea");
+    for (let e of ipts) {
         if (e.name
             && ((e.value !== ""
                  && e.value !== e.getAttribute("placeholder"))
                 || input_default_value(e) !== ""))
             return true;
     }
-    return false;
+    return row.clientHeight <= 0 || hasClass(row, "dropmark");
 }
 
 function row_add(group, before, button) {
@@ -5134,21 +5134,19 @@ function row_order_drag_confirm(group, defaults) {
 }
 
 function row_order_count(group) {
-    var nr = 0, row;
-    for (row = group.firstElementChild; row; row = row.nextElementSibling) {
-        if (row.clientHeight > 0)
+    let nr = 0;
+    for (let row = group.firstElementChild; row; row = row.nextElementSibling) {
+        if (row.clientHeight > 0 && !hasClass(row, "dropmark")) {
             ++nr;
+        }
     }
     return nr;
 }
 
 function row_order_autogrow(group, defaults) {
-    var min_rows = Math.max(+group.getAttribute("data-min-rows") || 0, 0),
-        max_rows = +group.getAttribute("data-max-rows") || 0,
-        nr, row, prev_row;
-    for (row = group.firstElementChild, nr = 0;
-         row; row = row.nextElementSibling, ++nr) {
-    }
+    const min_rows = Math.max(+group.getAttribute("data-min-rows") || 0, 0),
+        max_rows = +group.getAttribute("data-max-rows") || 0;
+    let nr = row_order_count(group), row;
     while (nr < min_rows && (row = row_add(group))) {
         row_fill(row, nr, defaults);
         ++nr;
@@ -5162,8 +5160,8 @@ function row_order_autogrow(group, defaults) {
                 ++nr;
             }
         } else {
-            while (nr > min_rows && nr > 1) {
-                prev_row = row.previousElementSibling;
+            while (nr > min_rows && nr > 1 && !hasClass(row, "row-order-inserted")) {
+                let prev_row = row.previousElementSibling;
                 if (is_row_interesting(prev_row)) {
                     break;
                 }
@@ -5179,6 +5177,13 @@ function row_order_autogrow(group, defaults) {
     }
 }
 
+function row_order_allow_remove(group) {
+    const min_rows = Math.max(+group.getAttribute("data-min-rows") || 0, 0);
+    return min_rows === 0
+        || hasClass(group, "row-order-autogrow")
+        || row_order_count(group) > min_rows;
+}
+
 handle_ui.on("dragstart.row-order-draghandle", function (evt) {
     var row = this.closest(".draggable");
     hotcrp.drag_block_reorder(this, row, function (draggable, group, changed) {
@@ -5186,8 +5191,8 @@ handle_ui.on("dragstart.row-order-draghandle", function (evt) {
     }).start(evt);
 });
 hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
-    var details = this.closest("details"), menu,
-        row = this.closest(".draggable"), group = row.parentElement;
+    const row = this.closest(".draggable"), group = row.parentElement;
+    let details = this.closest("details"), menu;
     if (details) {
         menu = details.lastElementChild.firstChild;
         menu.replaceChildren();
@@ -5209,14 +5214,13 @@ hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
     menu.append(buttonli("link ui row-order-dragmenu move-up", {disabled: !row.previousElementSibling}, "Move up"));
     menu.append(buttonli("link ui row-order-dragmenu move-down", {disabled: !row.nextElementSibling}, "Move down"));
     if (group.hasAttribute("data-row-template")) {
-        var max_rows = +group.getAttribute("data-max-rows") || 0;
-        if (max_rows <= 0 || group.children.length < max_rows) {
+        const max_rows = +group.getAttribute("data-max-rows") || 0;
+        if (max_rows <= 0 || row_order_count(count) < max_rows) {
             menu.append(buttonli("link ui row-order-dragmenu insert-above", {}, "Insert row above"));
             menu.append(buttonli("link ui row-order-dragmenu insert-below", {}, "Insert row below"));
         }
     }
-    var min_rows = Math.max(+group.getAttribute("data-min-rows") || 0, 0);
-    menu.append(buttonli("link ui row-order-dragmenu remove", {disabled: min_rows > 0 && row_order_count(group) <= min_rows}, "Remove"));
+    menu.append(buttonli("link ui row-order-dragmenu remove", {disabled: !row_order_allow_remove(group)}, "Remove"));
 });
 handle_ui.on("row-order-dragmenu", function () {
     hotcrp.dropmenu.close(this);
@@ -5226,12 +5230,12 @@ handle_ui.on("row-order-dragmenu", function () {
         sib.before(row);
     } else if (hasClass(this, "move-down") && (sib = row.nextElementSibling)) {
         sib.after(row);
-    } else if (hasClass(this, "remove")) {
+    } else if (hasClass(this, "remove") && row_order_allow_remove(group)) {
         row.remove();
     } else if (hasClass(this, "insert-above")) {
-        row_add(group, row);
+        addClass(row_add(group, row), "row-order-inserted");
     } else if (hasClass(this, "insert-below")) {
-        row_add(group, row.nextElementSibling);
+        addClass(row_add(group, row.nextElementSibling), "row-order-inserted");
     }
     row_order_drag_confirm(group, defaults);
 });
