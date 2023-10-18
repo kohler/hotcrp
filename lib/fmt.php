@@ -34,7 +34,7 @@ class FmtItem {
     /** @var ?string */
     public $context;
     /** @var string */
-    public $otext;
+    public $out;
     /** @var ?list<string> */
     public $require;
     /** @var float */
@@ -242,18 +242,14 @@ class Fmt {
             if (isset($m->context) && is_string($m->context)) {
                 $im->context = $m->context;
             }
-            if (isset($m->id) && is_string($m->id)) {
-                $itext = $m->id;
-            } else if (isset($m->itext) && is_string($m->itext)) {
-                $itext = $m->itext;
+            if (isset($m->id) /* XXX */) {
+                $in = $m->id;
+                $im->out = $m->otext ?? $m->itext ?? null;
             } else {
-                return false;
+                $in = $m->in ?? $m->itext /* XXX */ ?? null;
+                $im->out = $m->out ?? $m->otext /* XXX */ ?? $in;
             }
-            if (isset($m->otext) && is_string($m->otext)) {
-                $im->otext = $m->otext;
-            } else if (isset($m->itext) && is_string($m->itext)) {
-                $im->otext = $m->itext;
-            } else {
+            if (!is_string($in) || !is_string($im->out)) {
                 return false;
             }
             if (isset($m->priority) && (is_float($m->priority) || is_int($m->priority))) {
@@ -268,7 +264,7 @@ class Fmt {
             if (isset($m->template) && is_bool($m->template)) {
                 $im->template = $m->template;
             }
-            $this->_addj_finish($itext, $im);
+            $this->_addj_finish($in, $im);
             return true;
         }
     }
@@ -294,25 +290,25 @@ class Fmt {
         }
         if ($n === 3) {
             $im->context = $m[0];
-            $itext = $m[1];
-            $im->otext = $m[2];
+            $in = $m[1];
+            $im->out = $m[2];
         } else {
-            $itext = $m[0];
-            $im->otext = $m[1];
+            $in = $m[0];
+            $im->out = $m[1];
         }
-        $this->_addj_finish($itext, $im);
+        $this->_addj_finish($in, $im);
         return true;
     }
 
-    /** @param string $itext
+    /** @param string $in
      * @param FmtItem $im */
-    private function _addj_finish($itext, $im) {
+    private function _addj_finish($in, $im) {
         if ($this->_context_prefix) {
             $im->context = $this->_context_prefix . ($im->context ? "/" . $im->context : "");
         }
         $im->priority = $im->priority ?? $this->_default_priority;
-        $im->next = $this->ims[$itext] ?? null;
-        $this->ims[$itext] = $im;
+        $im->next = $this->ims[$in] ?? null;
+        $this->ims[$in] = $im;
     }
 
     /** @param array{string,string}|array{string,string,int}|object|array<string,mixed> $m */
@@ -328,25 +324,25 @@ class Fmt {
         }
     }
 
-    /** @param string $id
-     * @param string $otext
+    /** @param string $in
+     * @param string $out
      * @param null|float|int $priority */
-    function define_template($id, $otext, $priority = null) {
-        $this->_addj_object((object) ["id" => $id, "otext" => $otext, "priority" => $priority, "template" => true]);
+    function define_template($in, $out, $priority = null) {
+        $this->_addj_object((object) ["in" => $in, "out" => $out, "priority" => $priority, "template" => true]);
     }
 
-    /** @param string $id
+    /** @param string $in
      * @return bool */
-    function has_override($id) {
-        $im = $this->ims[$id] ?? null;
+    function has_override($in) {
+        $im = $this->ims[$in] ?? null;
         return $im && $im->priority === self::PRIO_OVERRIDE;
     }
 
-    /** @param string $id
-     * @param string $otext */
-    function add_override($id, $otext) {
-        $im = $this->ims[$id] ?? null;
-        return $this->addj(["id" => $id, "otext" => $otext, "priority" => self::PRIO_OVERRIDE, "no_conversions" => true, "template" => $im && $im->template]);
+    /** @param string $in
+     * @param string $out */
+    function add_override($in, $out) {
+        $im = $this->ims[$in] ?? null;
+        return $this->addj(["in" => $in, "out" => $out, "priority" => self::PRIO_OVERRIDE, "no_conversions" => true, "template" => $im && $im->template]);
     }
 
     function remove_overrides() {
@@ -380,17 +376,17 @@ class Fmt {
     }
 
     /** @param ?string $context
-     * @param string $itext
+     * @param string $in
      * @param list<mixed> $args
      * @param ?float $priobound
      * @return ?FmtItem */
-    private function find($context, $itext, $args, $priobound) {
+    private function find($context, $in, $args, $priobound) {
         $match = null;
         $matchnreq = $matchctxlen = 0;
         if ($context === "") {
             $context = null;
         }
-        for ($im = $this->ims[$itext] ?? null; $im; $im = $im->next) {
+        for ($im = $this->ims[$in] ?? null; $im; $im = $im->next) {
             $ctxlen = $nreq = 0;
             if ($context !== null && $im->context !== null) {
                 if ($context === $im->context) {
@@ -461,7 +457,7 @@ class Fmt {
                 return [$pos + strlen($m[0]), $fa->resolve_as($fctx->format)];
             } else if (($imt = $this->find($fctx->context, strtolower($m[1]), [$m[1]], null))
                        && $imt->template) {
-                return [$pos + strlen($m[0]), $this->expand($imt->otext, $fctx->args, null, null)];
+                return [$pos + strlen($m[0]), $this->expand($imt->out, $fctx->args, null, null)];
             }
         }
 
@@ -522,8 +518,8 @@ class Fmt {
         if (!$fa
             && ($imt = $this->find($fctx->context, strtolower($m[1]), [$m[1]], null))
             && $imt->template) {
-            list($fmt, $otext) = Ftext::parse($this->expand($imt->otext, $fctx->args, null, null));
-            $fa = new FmtArg("", $otext, $fmt);
+            list($fmt, $out) = Ftext::parse($this->expand($imt->out, $fctx->args, null, null));
+            $fa = new FmtArg("", $out, $fmt);
         }
         if (!$fa) {
             return [$pos + 1, $s];
@@ -547,6 +543,14 @@ class Fmt {
             $vformat = null;
         } else if ($m[3] === ":list") {
             assert(is_array($value));
+            $value = commajoin($value);
+        } else if ($m[3] === ":lcrestlist") {
+            assert(is_array($value));
+            for ($i = 1; $i < count($value); ++$i) {
+                if (is_string($value[$i])) {
+                    $value[$i] = strtolower($value[$i]);
+                }
+            }
             $value = commajoin($value);
         } else if ($m[3] === ":nblist") {
             assert(is_array($value));
@@ -648,70 +652,60 @@ class Fmt {
         }
     }
 
-    /** @param string $itext
+    /** @param string $in
      * @return string */
-    function _($itext, ...$args) {
-        if (($im = $this->find(null, $itext, $args, null))) {
-            $itext = $im->otext;
+    function _($in, ...$args) {
+        if (($im = $this->find(null, $in, $args, null))) {
+            $in = $im->out;
         }
-        return $this->expand($itext, $args, null, $im);
+        return $this->expand($in, $args, null, $im);
     }
 
     /** @param string $context
-     * @param string $itext
+     * @param string $in
      * @return string */
-    function _c($context, $itext, ...$args) {
-        if (($im = $this->find($context, $itext, $args, null))) {
-            $itext = $im->otext;
+    function _c($context, $in, ...$args) {
+        if (($im = $this->find($context, $in, $args, null))) {
+            $in = $im->out;
         }
-        return $this->expand($itext, $args, $context, $im);
+        return $this->expand($in, $args, $context, $im);
     }
 
     /** @param string $id
-     * @return string */
+     * @return ?string */
     function _i($id, ...$args) {
-        $itext = "";
-        if (($im = $this->find(null, $id, $args, null))) {
-            $itext = $im->otext;
-        }
-        return $this->expand($itext, $args, $id, $im);
+        $im = $this->find(null, $id, $args, null);
+        return $im ? $this->expand($im->out, $args, $id, $im) : null;
     }
 
     /** @param string $context
      * @param string $id
-     * @return string */
+     * @return ?string */
     function _ci($context, $id, ...$args) {
-        $itext = "";
-        if (($im = $this->find($context, $id, $args, null))) {
-            $itext = $im->otext;
-        }
+        $im = $this->find($context, $id, $args, null);
         $cid = (string) $context === "" ? $id : "{$context}/{$id}";
-        return $this->expand($itext, $args, $cid, $im);
+        return $im ? $this->expand($im->out, $args, $cid, $im) : null;
     }
 
     /** @param FieldRender $fr
      * @param string $context
      * @param string $id */
     function render_ci($fr, $context, $id, ...$args) {
-        $itext = "";
         if (($im = $this->find($context, $id, $args, null))) {
-            list($fmt, $itext) = Ftext::parse($im->otext);
+            list($fmt, $out) = Ftext::parse($im->out);
             if ($fmt !== null) {
                 $fr->value_format = $fmt;
             }
+            $cid = (string) $context === "" ? $id : "{$context}/{$id}";
+            $fr->value = $this->expand($out, $args, $cid, $im, $fr->value_format);
         }
-        $cid = (string) $context === "" ? $id : "{$context}/{$id}";
-        $fr->value = $this->expand($itext, $args, $cid, $im, $fr->value_format);
     }
 
     /** @param string $id
-     * @return string */
+     * @return ?string */
     function default_itext($id, ...$args) {
-        $itext = "";
-        if (($im = $this->find(null, $id, $args, self::PRIO_OVERRIDE))) {
-            $itext = $im->otext;
-        }
-        return $itext;
+        $im = $this->find(null, $id, $args, self::PRIO_OVERRIDE);
+        return $im ? $im->out : null;
     }
 
     /** @param string $text

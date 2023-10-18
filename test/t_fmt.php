@@ -15,9 +15,9 @@ class Fmt_Tester {
         $ms->add(["fart", "fart example A", ["{0}=bob"]]);
         $ms->add(["fart", "fart example B", ["{0}^=bob"]]);
         $ms->add(["fart", "fart example C"]);
-        $ms->add(["id" => "fox-saying", "itext" => "What the fox said"]);
-        $ms->add(["id" => "fox-saying", "itext" => "What the {fox} said", "require" => ["{fox}"]]);
-        $ms->add(["itext" => "butt", "otext" => "%1\$s", "context" => "test103", "template" => true]);
+        $ms->add(["in" => "fox-saying", "out" => "What the fox said"]);
+        $ms->add(["in" => "fox-saying", "out" => "What the {fox} said", "require" => ["{fox}"]]);
+        $ms->add(["in" => "butt", "out" => "%1\$s", "template" => true]);
         $ms->add_override("test103", "%BUTT% %% %s %BU%%MAN%%BUTT%");
         xassert_eqq($ms->_("Hello"), "Bonjour");
         xassert_eqq($ms->_("%d friend", 1), "1 ami");
@@ -35,10 +35,10 @@ class Fmt_Tester {
         xassert_eqq($ms->_i("fox-saying", new FmtArg("fox", "Animal")), "What the Animal said");
         xassert_eqq($ms->_i("test103", "Ass"), "Ass %% %s %BU%%MAN%Ass");
 
-        $ms->add(["itext" => "butt", "otext" => "normal butt"]);
-        $ms->add(["itext" => "butt", "otext" => "fat butt", "require" => ["$1[fat]"]]);
-        $ms->add(["itext" => "butt", "otext" => "two butts", "require" => ["$1[count]>1"], "priority" => 1]);
-        $ms->add(["itext" => "butt", "otext" => "three butts", "require" => ["$1[count]>2"], "priority" => 2]);
+        $ms->add(["in" => "butt", "out" => "normal butt"]);
+        $ms->add(["in" => "butt", "out" => "fat butt", "require" => ["$1[fat]"]]);
+        $ms->add(["in" => "butt", "out" => "two butts", "require" => ["$1[count]>1"], "priority" => 1]);
+        $ms->add(["in" => "butt", "out" => "three butts", "require" => ["$1[count]>2"], "priority" => 2]);
         xassert_eqq($ms->_("butt"), "normal butt");
         xassert_eqq($ms->_("butt", []), "normal butt");
         xassert_eqq($ms->_("butt", ["thin" => true]), "normal butt");

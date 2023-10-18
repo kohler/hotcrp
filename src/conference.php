@@ -5016,28 +5016,28 @@ class Conf {
         return $this->_fmt;
     }
 
-    /** @param string $itext
+    /** @param string $in
      * @return string */
-    function _($itext, ...$args) {
-        return $this->fmt()->_($itext, ...$args);
+    function _($in, ...$args) {
+        return $this->fmt()->_($in, ...$args);
     }
 
     /** @param string $context
-     * @param string $itext
+     * @param string $in
      * @return string */
-    function _c($context, $itext, ...$args) {
-        return $this->fmt()->_c($context, $itext, ...$args);
+    function _c($context, $in, ...$args) {
+        return $this->fmt()->_c($context, $in, ...$args);
     }
 
     /** @param string $id
-     * @return string */
+     * @return ?string */
     function _i($id, ...$args) {
         return $this->fmt()->_i($id, ...$args);
     }
 
     /** @param string $context
      * @param string $id
-     * @return string */
+     * @return ?string */
     function _ci($context, $id, ...$args) {
         return $this->fmt()->_ci($context, $id, ...$args);
     }

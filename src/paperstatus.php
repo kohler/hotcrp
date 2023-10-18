@@ -95,8 +95,8 @@ class PaperStatus extends MessageSet {
         return $this->user;
     }
 
-    function _($itext, ...$args) {
-        return $this->conf->_($itext, ...$args);
+    function _($in, ...$args) {
+        return $this->conf->_($in, ...$args);
     }
 
 
