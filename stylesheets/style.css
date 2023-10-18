@@ -1863,6 +1863,7 @@ th.settings-simplehead {
 .settings-xf-edit {
 	padding: 20px 16px 16px;
 	border-radius: 5px;
+	background-color: #fdffff;
 }
 .settings-draghandle {
 	position: absolute;
@@ -1876,6 +1877,7 @@ th.settings-simplehead {
 	cursor: move;
 	opacity: 0.25;
 	padding: 0 1em;
+	z-index: 1;
 }
 #settings-sform > hr.dropmark, #settings-rform > hr.dropmark {
 	max-width: 800px;
