@@ -48,8 +48,9 @@ class XtParams {
 
     /** @param string $s
      * @param ?object $xt
+     * @param bool $simple
      * @return bool */
-    function check_string($s, $xt) {
+    function check_string($s, $xt, $simple = false) {
         $user = $this->user;
         if ($s === "chair" || $s === "admin") {
             return !$user || $user->privChair;
@@ -77,7 +78,7 @@ class XtParams {
             return true;
         } else if ($s === "deny" || $s === "false") {
             return false;
-        } else if (strcspn($s, " !&|()") !== strlen($s)) {
+        } else if (!$simple && strcspn($s, " !&|()") !== strlen($s)) {
             $e = $this->check_complex_string($s, $xt);
             if ($e === null) {
                 throw new UnexpectedValueException("xt_check syntax error in `{$s}`");
@@ -87,9 +88,13 @@ class XtParams {
             Conf::xt_resolve_require($xt);
             return call_user_func($s, $xt, $this);
         } else if (str_starts_with($s, "opt.")) {
-            return !!$this->conf->opt(substr($s, 4));
+            list($x, $compar, $compval) = self::split_comparison($s);
+            $v = $this->conf->opt(substr($x, 4));
+            return self::resolve_comparison($v, $compar, $compval);
         } else if (str_starts_with($s, "setting.")) {
-            return !!$this->conf->setting(substr($s, 8));
+            list($x, $compar, $compval) = self::split_comparison($s);
+            $v = $this->conf->opt(substr($x, 8));
+            return self::resolve_comparison($v, $compar, $compval);
         } else if (str_starts_with($s, "conf.")) {
             $f = substr($s, 5);
             return !!$this->conf->$f();
@@ -109,9 +114,44 @@ class XtParams {
     }
 
     /** @param string $s
+     * @return array{string,string,string} */
+    static private function split_comparison($s) {
+        $len = strlen($s);
+        $p = strcspn($s, "!=<>");
+        if ($p === $len) {
+            return [$s, "", ""];
+        }
+        $op = $s[$p];
+        if ($p + 1 !== $len && $s[$p+1] === "=") {
+            $op .= "=";
+        }
+        return [substr($s, 0, $p), $op, substr($s, $p + strlen($op))];
+    }
+
+    /** @param mixed $v
+     * @param string $compar
+     * @param string $compval
+     * @return bool */
+    static private function resolve_comparison($v, $compar, $compval) {
+        if ($compar === "") {
+            return !!$v;
+        } else if (!is_scalar($v)) {
+            return false;
+        } else if (is_numeric($v) && is_numeric($compval)) {
+            return CountMatcher::compare((float) $v, $compar, (float) $compval);
+        } else if ($compar === "!=") {
+            return $v !== $compval;
+        } else if ($compar === "=" || $compar === "==") {
+            return $v === $compval;
+        } else {
+            return false;
+        }
+    }
+
+    /** @param string $s
      * @param object $xt
      * @return ?bool */
-    function check_complex_string($s, $xt) {
+    private function check_complex_string($s, $xt) {
         $stk = [];
         $p = 0;
         $l = strlen($s);
@@ -152,8 +192,8 @@ class XtParams {
                 if ($e !== null) {
                     return null;
                 }
-                $wl = strcspn($s, " !&|()", $p);
-                $e = $eval && $this->check_string(substr($s, $p, $wl), $xt);
+                $wl = strcspn($s, " &|()", $p);
+                $e = $eval && $this->check_string(substr($s, $p, $wl), $xt, true);
                 $p += $wl;
             }
         }
@@ -167,7 +207,7 @@ class XtParams {
      * @param bool $e
      * @param int $prec
      * @return bool */
-    static function check_complex_resolve_stack(&$stk, $e, $prec) {
+    static private function check_complex_resolve_stack(&$stk, $e, $prec) {
         $n = count($stk) - 1;
         while ($n >= 0 && $stk[$n][0] >= $prec) {
             $se = array_pop($stk);
@@ -186,7 +226,7 @@ class XtParams {
 
     /** @param list<array{int,?bool,bool}> $stk
      * @return bool */
-    static function check_complex_want_eval($stk) {
+    static private function check_complex_want_eval($stk) {
         $n = count($stk);
         $se = $n ? $stk[$n - 1] : null;
         return !$se || ($se[2] && ($se[0] !== 1 || !$se[1]) && ($se[0] !== 2 || $se[1]));
