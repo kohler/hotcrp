@@ -165,7 +165,7 @@ class Settings_Page {
             if (isset($gj->title)) {
                 echo '<dt><strong><a href="', $this->conf->hoturl("settings", "group={$gj->name}"), '">',
                     $gj->title, '</a></strong></dt><dd>',
-                    Ftext::unparse_as($gj->description ?? "", 5), "</dd>\n";
+                    Ftext::as(5, $gj->description ?? ""), "</dd>\n";
             }
         }
         echo "</dl>\n";

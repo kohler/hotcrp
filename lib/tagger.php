@@ -1512,14 +1512,6 @@ class Tagger {
         }
     }
 
-    /** @param bool $verbose
-     * @return ?string
-     * @deprecated */
-    function error_html($verbose = false) {
-        $s = $this->error_ftext($verbose);
-        return $s !== null ? Ftext::unparse_as($s, 5) : null;
-    }
-
     /** @return int */
     function error_code() {
         return $this->errcode;

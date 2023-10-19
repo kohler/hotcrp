@@ -61,14 +61,14 @@ class TagRankParser {
                     $tag = $t;
                     $curIndex = 0;
                 } else {
-                    $settings[] = [null, null, $landmark, "Bad tag: " . Ftext::unparse_as($tagger->error_ftext(), 0), null];
+                    $settings[] = [null, null, $landmark, "Bad tag: " . Ftext::as(0, $tagger->error_ftext()), null];
                 }
             } else if ($pid === "tag") {
                 if (($t = $tagger->check($idxs, Tagger::NOVALUE))) {
                     $tag = $t;
                     $curIndex = 0;
                 } else {
-                    $settings[] = [null, null, $landmark, "Bad tag: " . Ftext::unparse_as($tagger->error_ftext(), 0), null];
+                    $settings[] = [null, null, $landmark, "Bad tag: " . Ftext::as(0, $tagger->error_ftext()), null];
                 }
             } else {
                 if ($idxs === "X" || $idxs === "x" || $idxs === "clear") {

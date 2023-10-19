@@ -2988,7 +2988,7 @@ class Conf {
             $t = preg_replace($this->opt["dateFormatSimplifier"], "", $t);
         }
         if ($type !== "obscure" && ($z = $this->_unparse_timezone($timestamp))) {
-            $t .= " $z";
+            $t .= " {$z}";
         }
         return $t;
     }
@@ -4993,27 +4993,33 @@ class Conf {
     /** @return Fmt */
     function fmt() {
         if (!$this->_fmt) {
-            $this->_fmt = new Fmt;
+            $this->_fmt = new Fmt($this);
             $this->_fmt->add_requirement_resolver([$this, "resolve_fmt_requirement"]);
             $m = ["?etc/msgs.json"];
             if (($lang = $this->opt("lang"))) {
-                $m[] = "?etc/msgs.$lang.json";
+                $m[] = "?etc/msgs.{$lang}.json";
             }
             $this->_fmt->set_default_priority(-1.0);
             expand_json_includes_callback($m, [$this->_fmt, "addj"]);
-            $this->_fmt->clear_default_priority();
+            $this->_fmt->set_default_priority(0.0);
             if (($mlist = $this->opt("messageOverrides"))) {
                 expand_json_includes_callback($mlist, [$this->_fmt, "addj"]);
             }
-            $this->_fmt->define_template("site", "<0>" . $this->opt["paperSite"]);
+            $this->_fmt->define("site", FmtItem::make_template("<0>" . $this->opt["paperSite"], FmtItem::EXPAND_NONE));
         }
         if ($this->_fmt_override_names !== null) {
             foreach ($this->_fmt_override_names as $id) {
-                $this->_fmt->add_override(substr($id, 4), $this->settingTexts[$id]);
+                $this->_fmt->define_override(substr($id, 4), $this->settingTexts[$id]);
             }
             $this->_fmt_override_names = null;
         }
         return $this->_fmt;
+    }
+
+    /** @param string $out
+     * @return string */
+    function _x($out, ...$args) {
+        return $this->fmt()->_x($out, ...$args);
     }
 
     /** @param string $in

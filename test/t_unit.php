@@ -1200,7 +1200,7 @@ class Unit_Tester {
     function test_ftext() {
         xassert_eqq(Ftext::parse("< 0><hello"), [null, "< 0><hello"]);
         xassert_eqq(Ftext::parse("<0><hello"), [0, "<hello"]);
-        xassert_eqq(Ftext::unparse_as("<0><hello>", 5), "&lt;hello&gt;");
+        xassert_eqq(Ftext::as(5, "<0><hello>"), "&lt;hello&gt;");
         xassert_eqq(Ftext::concat("<0><hello>", "<5>?"), "<5>&lt;hello&gt;?");
         xassert_eqq(Ftext::concat("<hello>", "?"), "<hello>?");
         xassert_eqq(Ftext::concat("<0><hello>", "?"), "<0><hello>?");

@@ -418,23 +418,13 @@ class ComponentSet {
         if ((string) $hashid !== "") {
             echo ' id="', htmlspecialchars($hashid), '"';
         }
-        echo '>';
-        if (str_starts_with($ftext, "<") && Ftext::is_ftext($ftext)) {
-            echo Ftext::unparse_as($ftext, 5);
-        } else {
-            echo htmlspecialchars($ftext);
-        }
-        echo "</h3>\n";
+        echo '>', Ftext::as(5, $ftext, 0), "</h3>\n";
     }
 
     /** @param string $ftext
      * @return ?string */
     static function title_hashid($ftext) {
-        $ftext = strtolower($ftext);
-        if (str_starts_with($ftext, "<") && Ftext::is_ftext($ftext)) {
-            $ftext = Ftext::unparse_as($ftext, 0);
-        }
-        $hashid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9:.]+/', "-", $ftext);
+        $hashid = preg_replace('/\A[^A-Za-z]+|[^A-Za-z0-9:.]+/', "-", Ftext::as(0, strtolower($ftext)));
         if (str_starts_with($hashid, "-")) {
             $hashid = substr($hashid, 1);
         }

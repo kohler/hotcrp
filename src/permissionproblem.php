@@ -332,7 +332,7 @@ class PermissionProblem extends Exception
         }
         $tt = "";
         foreach ($ms as $m) {
-            $t = Ftext::unparse_as($m, $format);
+            $t = Ftext::as($format, $m);
             if ($tt !== "") {
                 if (preg_match('/\/(?:p|div|ul|ol)>\s*\z/i', $tt)) {
                     // nothing

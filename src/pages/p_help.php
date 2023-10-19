@@ -10,7 +10,7 @@ class Help_Page {
             if ($ht->name !== "list" && isset($ht->title)) {
                 echo '<dt><strong><a href="', $hth->conf->hoturl("help", "t=$ht->name"), '">',
                     $ht->title, '</a></strong></dt><dd>',
-                    Ftext::unparse_as($ht->description ?? "", 5), "</dd>\n";
+                    Ftext::as(5, $ht->description ?? ""), "</dd>\n";
             }
         }
         echo "</dl>\n";

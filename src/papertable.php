@@ -1931,10 +1931,10 @@ class PaperTable {
             if (!$whyNot) {
                 if (($missing = PaperTable::missing_required_fields($this->prow))) {
                     $first = $this->conf->_("<5>This submission is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
-                    $first = Ftext::unparse_as($first, 5);
+                    $first = Ftext::as(5, $first);
                 } else {
                     $first = $this->conf->_("<5>This submission is marked as not ready for review.");
-                    $first = "<strong>" . Ftext::unparse_as($first, 5) . "</strong>";
+                    $first = "<strong>" . Ftext::as(5, $first) . "</strong>";
                 }
                 if ($sr->update > 0) {
                     $rest = $this->conf->_("Submissions incomplete as of %s will not be considered.", $this->conf->unparse_time_long($sr->update));

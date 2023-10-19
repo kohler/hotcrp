@@ -6,14 +6,14 @@ class Keywords_HelpTopic {
     /** @param list<SearchExample> $exs */
     static function print_search_examples(HelpRenderer $hth, $exs) {
         while (($ex = array_shift($exs))) {
-            $desc = Ftext::unparse_as($hth->conf->_($ex->description, ...$ex->all_arguments()), 5);
+            $desc = Ftext::as(5, $hth->conf->_($ex->description, ...$ex->all_arguments()));
             $qs = [];
             foreach (SearchExample::remove_category($exs, $ex) as $oex) {
                 if (!$oex->primary_only)
                     $qs[] = preg_replace('/\{(\w+)\}/', '<i>$1</i>', htmlspecialchars($oex->q));
             }
             foreach ($ex->hints ?? [] as $h) {
-                $desc .= '<div class="hint">' . Ftext::unparse_as($hth->conf->_($h, ...$ex->all_arguments()), 5) . '</div>';
+                $desc .= '<div class="hint">' . Ftext::as(5, $hth->conf->_($h, ...$ex->all_arguments())) . '</div>';
             }
             if ($qs) {
                 $desc .= '<div class="hint">Also ' . join(", ", $qs) . '</div>';

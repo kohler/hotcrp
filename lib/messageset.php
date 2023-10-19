@@ -30,7 +30,7 @@ class MessageItem implements JsonSerializable {
     /** @param int $format
      * @return string */
     function message_as($format) {
-        return Ftext::unparse_as($this->message, $format);
+        return Ftext::as($format, $this->message);
     }
 
     /** @param array{field?:?string,message?:string,status?:int,problem_status?:int} $updates

@@ -92,7 +92,7 @@ class ResponseRound {
         $fmt = $conf->fmt();
         if ($this->instructions !== null
             && !$fmt->has_override("resp_instrux_{$this->id}")) {
-            $fmt->add_override("resp_instrux_{$this->id}", $this->instructions);
+            $fmt->define_override("resp_instrux_{$this->id}", $this->instructions);
         }
         $wl = new FmtArg("wordlimit", $this->wordlimit);
         return $fmt->_i("resp_instrux_{$this->id}", $wl)

@@ -67,11 +67,22 @@ class Ftext {
     }
 
     /** @param string $s
-     * @param int $from_format
-     * @param int $to_format
-     * @return string */
+     * @param ?int $from_format
+     * @param ?int $to_format
+     * @return string
+     * @deprecated */
     static function convert($s, $from_format, $to_format) {
-        if ($from_format === 5 && $to_format !== 5) {
+        return self::convert_to($to_format, $from_format, $s);
+    }
+
+    /** @param ?int $to_format
+     * @param ?int $from_format
+     * @param string $s
+     * @return string */
+    static function convert_to($to_format, $from_format, $s) {
+        if (($from_format ?? $to_format) === ($to_format ?? $from_format)) {
+            return $s;
+        } else if ($from_format === 5 && $to_format !== 5) {
             // XXX <p>, <ul>, <ol>
             return html_entity_decode(preg_replace_callback('/<\s*(\/?)\s*(a|b|i|u|strong|em|code|samp|pre|tt|span|br)(?=[>\s])(?:[^>"\']|"[^"]*+"|\'[^\']*+\')*+>/i',
                 function ($m) {
@@ -100,11 +111,25 @@ class Ftext {
     }
 
     /** @param string $ftext
-     * @param int $want_format
-     * @return string */
+     * @param ?int $want_format
+     * @return string
+     * @deprecated */
     static function unparse_as($ftext, $want_format) {
-        list($format, $s) = self::parse($ftext);
-        return $format === null ? $s : self::convert($s, $format, $want_format);
+        return self::as($want_format, $ftext);
+    }
+
+    /** @param ?int $to_format
+     * @param string $ftext
+     * @param ?int $default_format
+     * @return string */
+    static function as($to_format, $ftext, $default_format = null) {
+        if ($to_format !== null) {
+            list($format, $s) = self::parse($ftext, $default_format);
+            if ($format !== null) {
+                return self::convert_to($to_format, $format, $s);
+            }
+        }
+        return $ftext;
     }
 
     /** @param string ...$ftexts
@@ -133,16 +158,23 @@ class Ftext {
         }
     }
 
+    /** @deprecated */
+    static function join($separator, $ftexts) {
+        return self::join_nonempty($separator, $ftexts);
+    }
+
     /** @param string $separator
      * @param iterable<string> $ftexts
      * @return string */
-    static function join($separator, $ftexts) {
+    static function join_nonempty($separator, $ftexts) {
         $nftexts = [];
         foreach ($ftexts as $ftext) {
-            if (!empty($nftexts)) {
-                $nftexts[] = $separator;
+            if ($ftext !== "") {
+                if (!empty($nftexts)) {
+                    $nftexts[] = $separator;
+                }
+                $nftexts[] = $ftext;
             }
-            $nftexts[] = $ftext;
         }
         return self::concat(...$nftexts);
     }

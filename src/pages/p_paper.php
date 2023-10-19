@@ -147,7 +147,7 @@ class Paper_Page {
             $msg = $this->conf->_($msg, $this->conf->unparse_time_with_local_span($t));
         }
         if ($msg !== "" && $t < Conf::$now) {
-            $msg = "<5><strong>" . Ftext::unparse_as($msg, 5) . "</strong>";
+            $msg = "<5><strong>" . Ftext::as(5, $msg) . "</strong>";
         }
         return $msg;
     }
@@ -255,7 +255,7 @@ class Paper_Page {
                 $notes[] = $conf->_("<5>This submission is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
             } else {
                 $first = $conf->_("<5>This submission is marked as not ready for review.");
-                $notes[] = "<5><strong>" . Ftext::unparse_as($first, 5) . "</strong>";
+                $notes[] = "<5><strong>" . Ftext::as(5, $first) . "</strong>";
             }
             $notes[] = $this->time_note($sr->update,
                 "<5>You have until {} to make further changes.",
@@ -288,9 +288,9 @@ class Paper_Page {
         } else if ($this->ps->has_problem() && !$sr->freeze) {
             $this->ps->splice_msg($msgpos++, $conf->_("<0>Please check these issues before completing the submission."), MessageSet::WARNING_NOTE);
         }
-        $notes = array_filter($notes, function ($n) { return $n !== ""; });
-        if (!empty($notes)) {
-            $this->ps->splice_msg(-1, Ftext::join(" ", $notes), $note_status);
+        $notes_ftext = Ftext::join_nonempty(" ", $notes);
+        if ($notes_ftext !== "") {
+            $this->ps->splice_msg(-1, $notes_ftext, $note_status);
         }
         $conf->feedback_msg($this->ps->decorated_message_list());
 
@@ -307,8 +307,8 @@ class Paper_Page {
                         $options["reason"] = $this->qreq["status:notify_reason"];
                     }
                 }
-                if (!empty($notes)) {
-                    $options["notes"] = Ftext::unparse_as(Ftext::join(" ", $notes), 0) . "\n\n";
+                if ($notes_ftext !== "") {
+                    $options["notes"] = Ftext::as(0, $notes_ftext) . "\n\n";
                 }
                 if (!$is_new) {
                     $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());

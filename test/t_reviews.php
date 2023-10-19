@@ -1213,7 +1213,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         // check clickthrough
         assert($emptyuser->can_clickthrough("review", $paper17));
         $this->conf->set_opt("clickthrough_review", 1);
-        $this->conf->fmt()->add_override("clickthrough_review", "fart");
+        $this->conf->fmt()->define_override("clickthrough_review", "fart");
         assert(!$emptyuser->can_clickthrough("review", $paper17));
         assert(!$user_external2->can_clickthrough("review", $paper17));
         xassert_eqq($user_external2->reviewer_capability_user(17), null);

@@ -5,20 +5,20 @@
 class Fmt_Tester {
     function test_1() {
         $ms = new Fmt;
-        $ms->add("Hello", "Bonjour");
-        $ms->add(["%d friend", "%d amis", ["$1 ≠ 1"]]);
-        $ms->add("%d friend", "%d ami");
-        $ms->add("ax", "a");
-        $ms->add("ax", "b");
-        $ms->add("bx", "a", 2);
-        $ms->add("bx", "b");
-        $ms->add(["fart", "fart example A", ["{0}=bob"]]);
-        $ms->add(["fart", "fart example B", ["{0}^=bob"]]);
-        $ms->add(["fart", "fart example C"]);
-        $ms->add(["in" => "fox-saying", "out" => "What the fox said"]);
-        $ms->add(["in" => "fox-saying", "out" => "What the {fox} said", "require" => ["{fox}"]]);
-        $ms->add(["in" => "butt", "out" => "%1\$s", "template" => true]);
-        $ms->add_override("test103", "%BUTT% %% %s %BU%%MAN%%BUTT%");
+        $ms->addj(["Hello", "Bonjour"]);
+        $ms->addj(["%d friend", "%d amis", ["$1 ≠ 1"]]);
+        $ms->addj(["%d friend", "%d ami"]);
+        $ms->addj(["ax", "a"]);
+        $ms->addj(["ax", "b"]);
+        $ms->addj(["bx", "a", 2]);
+        $ms->addj(["bx", "b"]);
+        $ms->addj(["fart", "fart example A", ["{0}=bob"]]);
+        $ms->addj(["fart", "fart example B", ["{0}^=bob"]]);
+        $ms->addj(["fart", "fart example C"]);
+        $ms->addj(["in" => "fox-saying", "out" => "What the fox said"]);
+        $ms->addj(["in" => "fox-saying", "out" => "What the {fox} said", "require" => ["{fox}"]]);
+        $ms->addj(["in" => "butt", "out" => "%1\$s", "template" => true]);
+        $ms->define_override("test103", "%BUTT% %% %s %BU%%MAN%%BUTT%");
         xassert_eqq($ms->_("Hello"), "Bonjour");
         xassert_eqq($ms->_("%d friend", 1), "1 ami");
         xassert_eqq($ms->_("%d friend", 0), "0 amis");
@@ -35,10 +35,10 @@ class Fmt_Tester {
         xassert_eqq($ms->_i("fox-saying", new FmtArg("fox", "Animal")), "What the Animal said");
         xassert_eqq($ms->_i("test103", "Ass"), "Ass %% %s %BU%%MAN%Ass");
 
-        $ms->add(["in" => "butt", "out" => "normal butt"]);
-        $ms->add(["in" => "butt", "out" => "fat butt", "require" => ["$1[fat]"]]);
-        $ms->add(["in" => "butt", "out" => "two butts", "require" => ["$1[count]>1"], "priority" => 1]);
-        $ms->add(["in" => "butt", "out" => "three butts", "require" => ["$1[count]>2"], "priority" => 2]);
+        $ms->addj(["in" => "butt", "out" => "normal butt"]);
+        $ms->addj(["in" => "butt", "out" => "fat butt", "require" => ["$1[fat]"]]);
+        $ms->addj(["in" => "butt", "out" => "two butts", "require" => ["$1[count]>1"], "priority" => 1]);
+        $ms->addj(["in" => "butt", "out" => "three butts", "require" => ["$1[count]>2"], "priority" => 2]);
         xassert_eqq($ms->_("butt"), "normal butt");
         xassert_eqq($ms->_("butt", []), "normal butt");
         xassert_eqq($ms->_("butt", ["thin" => true]), "normal butt");
@@ -52,10 +52,10 @@ class Fmt_Tester {
 
     function test_contexts() {
         $ms = new Fmt;
-        $ms->add("Hello", "Hello");
-        $ms->add(["hello", "Hello", "Hello1"]);
-        $ms->add(["hello/yes", "Hello", "Hello2"]);
-        $ms->add(["hellop", "Hello", "Hellop", 2]);
+        $ms->addj(["Hello", "Hello"]);
+        $ms->addj(["hello", "Hello", "Hello1"]);
+        $ms->addj(["hello/yes", "Hello", "Hello2"]);
+        $ms->addj(["hellop", "Hello", "Hellop", 2]);
         xassert_eqq($ms->_c(null, "Hello"), "Hello");
         xassert_eqq($ms->_c("hello", "Hello"), "Hello1");
         xassert_eqq($ms->_c("hello/no", "Hello"), "Hello1");
@@ -67,9 +67,9 @@ class Fmt_Tester {
 
     function test_braces() {
         $ms = new Fmt;
-        $ms->add("Hello", "Bonjour");
-        $ms->add(["{} friend", "{} amis", ["$1 ≠ 1"]]);
-        $ms->add("{} friend", "{} ami");
+        $ms->addj(["Hello", "Bonjour"]);
+        $ms->addj(["{} friend", "{} amis", ["$1 ≠ 1"]]);
+        $ms->addj(["{} friend", "{} ami"]);
         xassert_eqq($ms->_("Hello"), "Bonjour");
         xassert_eqq($ms->_("{} friend", 1), "1 ami");
         xassert_eqq($ms->_("{} friend", 0), "0 amis");
@@ -82,6 +82,8 @@ class Fmt_Tester {
         xassert_eqq($ms->_("{0[foo]:html} friend", ["foo" => "&"]), "&amp; friend");
         xassert_eqq($ms->_("{0[foo]:url} friend", ["foo" => "&"]), "%26 friend");
         xassert_eqq($ms->_("{0[foo]:list} friend", ["foo" => ["a", "b"]]), "a and b friend");
+        xassert_eqq($ms->_("{0[foo]", ["foo" => "a"]), "{0[foo]");
+        xassert_eqq($ms->_("{ hello {{", ["foo" => "a"]), "{ hello {");
     }
 
     function test_ftext() {
@@ -123,5 +125,35 @@ class Fmt_Tester {
         xassert_eqq($ms->_("<5>{:nblist}", ["a", "b c", "d"]), "<5><span class=\"nb\">a,</span> <span class=\"nb\">b c,</span> and <span class=\"nb\">d</span>");
         xassert_eqq($ms->_("<0>{:nblist}", ["a", "b c", "d"]), "<0>a, b c, and d");
         xassert_eqq($ms->_("<0>{:nblist}", ["a", "b c"]), "<0>a and b c");
+    }
+
+    function test_template_expand() {
+        $ms = new Fmt;
+        $ms->define("x", FmtItem::make_template("Xexp"));
+        $ms->define("a", FmtItem::make_template("<0>{{}} {0} {x}", FmtItem::EXPAND_ALL));
+        $ms->define("b", FmtItem::make_template("<0>{{}} {0} {x}", FmtItem::EXPAND_NONE));
+        $ms->define("c", FmtItem::make_template("<0>{{}} {0} {x}", FmtItem::EXPAND_TEMPLATE));
+        xassert_eqq($ms->_("{a}", "Arg"), "{} Arg Xexp");
+        xassert_eqq($ms->_("{b}", "Arg"), "{{}} {0} {x}");
+        xassert_eqq($ms->_("{c}", "Arg"), "{{}} {0} Xexp");
+    }
+
+    function test_members() {
+        $ms = new Fmt;
+        $jl = json_decode('[
+    {"in": "Hello", "m": ["Hello", ["Bonjour", ["{lang}=fr"]], ["Hola", ["{lang}=es"]]]},
+    {"in": "Hello!", "expand": "none", "m": ["Hello!{x}", ["Bonjour", ["{lang}=fr"]], ["Hola", ["{lang}=es"]]]},
+    {"in": "Hello!!", "expand": "template", "m": ["Hello!{x}", ["Bonjour", ["{lang}=fr"]], ["Hola", ["{lang}=es"]]]},
+    {"in": "x", "out": "HI", "template": true}
+]');
+        foreach ($jl as $j) {
+            $ms->addj($j);
+        }
+        xassert_eqq($ms->_("Hello", new FmtArg("lang", "en")), "Hello");
+        xassert_eqq($ms->_("Hello!", new FmtArg("lang", "en")), "Hello!{x}");
+        xassert_eqq($ms->_("Hello!!", new FmtArg("lang", "en")), "Hello!HI");
+        xassert_eqq($ms->_("Hello", new FmtArg("lang", "fr")), "Bonjour");
+        xassert_eqq($ms->_("Hello!", new FmtArg("lang", "fr")), "Bonjour");
+        xassert_eqq($ms->_("Hello!!", new FmtArg("lang", "fr")), "Bonjour");
     }
 }
