@@ -360,10 +360,10 @@ class LoginHelper {
             $e = "<0>User {$email} is not allowed to sign in to this site";
         } else if (isset($info["userexists"])) {
             $e = "<0>User {$email} already has an account on this site";
-            $args[] = new FmtArg("context", "account_exists");
+            $args[] = new FmtArg("problem", "account_exists");
         } else if (isset($info["unset"])) {
             $e = "<0>User {$email} does not have an account here";
-            $args[] = new FmtArg("context", "no_account");
+            $args[] = new FmtArg("problem", "no_account");
             if (!$conf->login_type()
                 && $conf->allow_user_self_register()
                 && $email !== "") {
@@ -373,7 +373,7 @@ class LoginHelper {
             $e = $conf->_i("account_disabled");
         } else if (isset($info["reset"])) {
             $e = "<0>Your password has expired";
-            $args[] = new FmtArg("context", "password_expired");
+            $args[] = new FmtArg("problem", "password_expired");
         } else if (isset($info["nopw"])) {
             $e = "<0>Enter your password";
         } else if (isset($info["nopost"])) {
@@ -392,8 +392,8 @@ class LoginHelper {
                 $args[] = new FmtArg("forgotpassword", $conf->hoturl_raw("forgotpassword", ["email" => $email]), 0);
             }
         }
-        if (isset($info["invalid"]) && !Fmt::find_arg($args, "context")) {
-            $args[] = new FmtArg("context", "bad_password");
+        if (isset($info["invalid"]) && !Fmt::find_arg($args, "problem")) {
+            $args[] = new FmtArg("problem", "bad_password");
         }
         $e = $conf->_i("signin_error", new FmtArg("message", $e), ...$args);
         if ($ms) {

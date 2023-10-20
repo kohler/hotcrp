@@ -1,33 +1,38 @@
 [
-    ["average %1$s score %2$s", "%1$s score %2$s", ["$3=1"]],
+    ["average {0} score {1}", "{0} score {1}", ["{2}=1"]],
 
-    ["You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a> with %4$#As.", "You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a>.", ["!$5"]],
-    ["You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a> with %4$#As.", "You have submitted <a href=\"%3$s\">%2$d review</a>.", ["!$5", "$1=1", "$2=1"]],
-    ["You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a> with %4$#As.", "You have submitted <a href=\"%3$s\">%2$d review</a> with %4$#As.", ["$1=1", "$2=1"]],
-    ["You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a> with %4$#As.", "You have submitted <a href=\"%3$s\">%2$d reviews</a>.", ["!$5", "$1=$2"]],
-    ["You have submitted %1$d of <a href=\"%3$s\">%2$d reviews</a> with %4$#As.", "You have submitted <a href=\"%3$s\">%2$d reviews</a> with %4$#As.", ["$1=$2"]],
+    {
+        "in": "You have submitted {n} of <a href=\"{url}\">{na} reviews</a> with {scores:list}.",
+        "m": [
+            ["You have submitted {n} of <a href=\"{url}\">{na} reviews</a>.", ["!#{scores}"]],
+            ["You have submitted <a href=\"{url}\">{na} review</a>.", ["!#{scores}", "{n}=1", "{na}=1"]],
+            ["You have submitted <a href=\"{url}\">{na} review</a> with {scores:list}.", ["{n}=1", "{na}=1"]],
+            ["You have submitted <a href=\"{url}\">{na} reviews</a>.", ["!#{scores}", "{n}={na}"]],
+            ["You have submitted <a href=\"{url}\">{na} reviews</a> with {scores:list}.", ["{n}={na}"]]
+        ]
+    },
+    {
+        "in": "The average PC member has submitted {n:.1f} reviews with {scores:list}.",
+        "m": [
+            ["The average PC member has submitted {n:.1f} reviews.", ["!#{scores}"]],
+            ["The average PC member has submitted {n:.1f} review with {scores:list}.", ["{n}=1"]],
+            ["The average PC member has submitted {n:.1f} review.", ["{n}=1", "!#{scores}"]]
+        ]
+    },
 
-    ["The average PC member has submitted %1$.1f reviews with %2$#As.", "The average PC member has submitted %1$.1f reviews.", ["!$3"]],
-    ["The average PC member has submitted %1$.1f reviews with %2$#As.", "The average PC member has submitted %1$.1f review with %2$#As.", ["$1=1"]],
-    ["The average PC member has submitted %1$.1f reviews with %2$#As.", "The average PC member has submitted %1$.1f review.", ["$1=1", "!$3"]],
+    ["<0>A submission may have at most {max} authors", "<0>A submission may have at most one author", ["{max}=1"]],
 
-    ["<0>Each submission must have at least one author", "<0>Each submission must have an author", ["$1=1"]],
-    ["<0>A submission may have at most {0} authors", "<0>A submission may have at most one author", ["$1=1"]],
+    ["{} papers accepted out of {} submitted.", "{} paper accepted out of {} submitted.", ["{0}=1"]],
+    ["{} review deadline", "Review deadline", ["!{0}"]],
+    ["{} reviews are requested by this deadline.", "Reviews are requested by this deadline.", ["!{0}"]],
+    ["{} review hard deadline", "Review hard deadline", ["!{0}"]],
+    ["{} reviews must be submitted by this deadline.", "Reviews must be submitted by this deadline.", ["!{0}"]],
+    ["{} external review deadline", "External review deadline", ["!{0}"]],
+    ["{} external review hard deadline", "External review hard deadline", ["!{0}"]],
 
-    ["You can’t register submission #%d yet.", "You can’t register submissions yet.", ["$1<0"]],
-    ["You can’t register submission #%d until %s.", "You can’t register submissions until %2$s.", ["$1<0"]],
-
-    ["%d papers accepted out of %d submitted.", "%d paper accepted out of %d submitted.", ["$1=1"]],
-    ["{} review deadline", "Review deadline", ["!$1"]],
-    ["{} reviews are requested by this deadline.", "Reviews are requested by this deadline.", ["!$1"]],
-    ["{} review hard deadline", "Review hard deadline", ["!$1"]],
-    ["{} reviews must be submitted by this deadline.", "Reviews must be submitted by this deadline.", ["!$1"]],
-    ["{} external review deadline", "External review deadline", ["!$1"]],
-    ["{} external review hard deadline", "External review hard deadline", ["!$1"]],
-
-    ["<0>Updated submission (changed {:list})", "<0>Updated submission", ["#$1=0"]],
-    ["<0>Updated final version (changed {:list})", "<0>Updated final version", ["#$1=0"]],
-    ["{:list} were changed.", "The {:list} field was changed.", ["#$1=1"]],
+    ["<0>Updated submission (changed {:list})", "<0>Updated submission", ["#{0}=0"]],
+    ["<0>Updated final version (changed {:list})", "<0>Updated final version", ["#{0}=0"]],
+    ["{:list} were changed.", "The {:list} field was changed.", ["#{0}=1"]],
     ["<0>At least {min} selections required", "<0>Exactly one selection required", ["{min}=1", "{max}=1"]],
     ["<0>At most {max} selections allowed", "<0>Exactly one selection required", ["{min}=1", "{max}=1"]],
     ["<0>At least {min} selections required", "<0>At least one selection required", ["{min}=1"]],
@@ -36,8 +41,8 @@
     ["<0>Options {:list} not found", "<0>Topics {:list} not found", ["{type}=topics"]],
     ["<0>Options {:list} not found", "<0>Option ‘{:list}’ not found", ["#{0}=1"]],
     ["<0>Ignoring unknown fields {:list}", "<0>Ignoring unknown field {:list}", ["#{0}=1"]],
-    ["<5>Notified mentioned users {:nblist}", "<5>Notified mentioned user {:nblist}", ["#$1=1"]],
-    ["<5>Notified submission contacts {:nblist}", "<5>Notified submission contact {:nblist}", ["#$1=1"]],
+    ["<5>Notified mentioned users {:nblist}", "<5>Notified mentioned user {:nblist}", ["#{0}=1"]],
+    ["<5>Notified submission contacts {:nblist}", "<5>Notified submission contact {:nblist}", ["#{0}=1"]],
 
     ["field", "title", "Title"],
     ["field", "submission", "Submission"],
@@ -65,7 +70,7 @@
     ["field", "collaborators", "Collaborators"],
     ["field", "collaborators", "Other conflicts", ["setting.sub_pcconf"]],
 
-    ["field_group", "topics", "%2$s"],
+    ["field_group", "topics", "{1}"],
 
     ["field_description/edit", "authors", "<0>List the authors, including email addresses and affiliations."],
     ["field_description/edit", "authors", "<0>List the authors, including email addresses and affiliations. Submission is anonymous, so reviewers will not see author information.", ["setting.sub_blind=2"]],
@@ -86,41 +91,38 @@
     ["field_description/edit", "collaborators", "<5><p>List other people and institutions with which the authors have conflicts of interest. We use this information when assigning external reviews. Collaborators declared on the authors’ HotCRP profiles need not be repeated here.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>"],
     ["field_description/edit", "collaborators", "<5><p>List people and institutions with which the authors have conflicts of interest. {conflictdef} Be sure to include conflicted PC members. We use this information when assigning PC and external reviews. Collaborators declared on the authors’ HotCRP profiles need not be repeated here.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>", ["!setting.sub_pcconf"]],
 
-    ["paper_edit", "<5>Please check {:list} before completing your submission.", "<5>Please check the issues highlighted below before completing your submission.", ["!#$1"]],
-    ["<5>This submission is not ready for review. Required fields {:list} are missing.", "<5>This submission is not ready for review. Required field {:list} is missing.", ["#$1=1"]],
+    ["paper_edit", "<5>Please check {:list} before completing the submission.", "<5>Please check the issues highlighted below before completing the submission.", ["!#{0}"]],
+    ["<5>This submission is not ready for review. Required fields {:list} are missing.", "<5>This submission is not ready for review. Required field {:list} is missing.", ["#{0}=1"]],
 
-    ["You’ll be able to see %d other reviews once you complete your own.", "You’ll be able to see %d other review once you complete your own.", ["$1=1"]],
-    ["You’ll be able to see %d other reviews once yours is approved.", "You’ll be able to see %d other review once yours is approved.", ["$1=1"]],
+    ["<5>Submitted reviews {:list}", "<5>Submitted review {:list}", ["#{0}=1"]],
+    ["<5>Submitted reviews {:list}", "<5>Review submitted", ["{single}"]],
+    ["<5>Updated reviews {:list}", "<5>Updated review {:list}", ["#{0}=1"]],
+    ["<5>Updated reviews {:list}", "<5>Review updated", ["{single}"]],
+    ["<5>Approved reviews {:list}", "<5>Approved review {:list}", ["#{0}=1"]],
+    ["<5>Approved reviews {:list}", "<5>Review approved", ["{single}"]],
+    ["<5>Submitted reviews for approval {:list}", "<5>Submitted review for approval {:list}", ["#{0}=1"]],
+    ["<5>Submitted reviews for approval {:list}", "<5>Review submitted for approval", ["{single}"]],
+    ["<5>Saved draft reviews for submissions {:list}", "<5>Saved draft review for submission {:list}", ["#{0}=1"]],
+    ["<5>Saved draft reviews for submissions {:list}", "<5>Draft review saved", ["{single}"]],
+    ["<5>Saved draft reviews for submissions {:list}", "<5>Review saved. The review will not be visible to others until it is approved.", ["{single}=approvable"]],
+    ["<5>Authors were notified about updated reviews {:list}", "<5>Authors were notified about updated review {:list}", ["#{0}=1"]],
+    ["<5>Authors were notified about updated reviews {:list}", "<5>Authors were notified", ["{single}"]],
+    ["<5>No changes to reviews {:list}", "<5>No changes to review {:list}", ["#{0}=1"]],
+    ["<5>No changes to reviews {:list}", "<5>No changes", ["{single}"]],
+    ["<5>No changes to reviews {:list}", "<5>No changes to draft review", ["{single}=draft"]],
+    ["<5>No changes to reviews {:list}", "<5>No changes. The review will not be visible to others until it is approved.", ["{single}=approvable"]],
+    ["<5>Ignored blank reviews for {:list}", "<5>Ignored blank review for {:list}", ["#{0}=1"]],
+    ["<5>Ignored blank reviews for {:list}", "<5>Blank review form ignored", ["{single}"]],
 
-    ["<5>Submitted reviews {:list}", "<5>Submitted review {:list}", ["#$1=1"]],
-    ["<5>Submitted reviews {:list}", "<5>Review submitted", ["$2"]],
-    ["<5>Updated reviews {:list}", "<5>Updated review {:list}", ["#$1=1"]],
-    ["<5>Updated reviews {:list}", "<5>Review updated", ["$2"]],
-    ["<5>Approved reviews {:list}", "<5>Approved review {:list}", ["#$1=1"]],
-    ["<5>Approved reviews {:list}", "<5>Review approved", ["$2"]],
-    ["<5>Submitted reviews for approval {:list}", "<5>Submitted review for approval {:list}", ["#$1=1"]],
-    ["<5>Submitted reviews for approval {:list}", "<5>Review submitted for approval", ["$2"]],
-    ["<5>Saved draft reviews for submissions {:list}", "<5>Saved draft review for submission {:list}", ["#$1=1"]],
-    ["<5>Saved draft reviews for submissions {:list}", "<5>Draft review saved", ["$2"]],
-    ["<5>Saved draft reviews for submissions {:list}", "<5>Review saved. The review will not be visible to others until it is approved.", ["$2=3"]],
-    ["<5>Authors were notified about updated reviews {:list}", "<5>Authors were notified about updated review {:list}", ["#$1=1"]],
-    ["<5>Authors were notified about updated reviews {:list}", "<5>Authors were notified", ["$2"]],
-    ["<5>No changes to reviews {:list}", "<5>No changes to review {:list}", ["#$1=1"]],
-    ["<5>No changes to reviews {:list}", "<5>No changes", ["$2"]],
-    ["<5>No changes to reviews {:list}", "<5>No changes to draft review", ["$2=2"]],
-    ["<5>No changes to reviews {:list}", "<5>No changes. The review will not be visible to others until it is approved.", ["$2=3"]],
-    ["<5>Ignored blank reviews for {:list}", "<5>Ignored blank review for {:list}", ["#$1=1"]],
-    ["<5>Ignored blank reviews for {:list}", "<5>Blank review form ignored", ["$2"]],
+    ["<0>Submissions {:numlist} are totally hidden when viewing the site as another user.", "<0>Submission {:numlist} is totally hidden when viewing the site as another user.", ["#{0}=1"]],
 
-    ["<0>Submissions {:numlist} are totally hidden when viewing the site as another user.", "<0>Submission {:numlist} is totally hidden when viewing the site as another user.", ["#$1=1"]],
-
-    ["<0>Disabled accounts %#s", "<0>Disabled account %#s", ["#$1=1"]],
-    ["<0>Enabled accounts %#s", "<0>Enabled account %#s", ["#$1=1"]],
-    ["<0>Activated accounts and sent mail to %#s", "<0>Activated account and sent mail to %#s", ["#$1=1"]],
-    ["<0>Skipped disabled accounts %#s", "<0>Skipped disabled account %#s", ["#$1=1"]],
-    ["<5>Saved accounts %#s", "<5>Saved account %#s", ["#$1=1"]],
-    ["<5>Activated accounts with email notification %#s", "<5>Activated account with email notification %#s", ["#$1=1"]],
-    ["<5>No changes to accounts %#s", "<5>No changes to account %#s", ["#$1=1"]],
+    ["<0>Disabled accounts {:list}", "<0>Disabled account {:list}", ["#{0}=1"]],
+    ["<0>Enabled accounts {:list}", "<0>Enabled account {:list}", ["#{0}=1"]],
+    ["<0>Activated accounts and sent mail to {:list}", "<0>Activated account and sent mail to {:list}", ["#{0}=1"]],
+    ["<0>Skipped disabled accounts {:list}", "<0>Skipped disabled account {:list}", ["#{0}=1"]],
+    ["<5>Saved accounts {:list}", "<5>Saved account {:list}", ["#{0}=1"]],
+    ["<5>Activated accounts and sent mail to {:list}", "<5>Activated account and sent mail to {:list}", ["#{0}=1"]],
+    ["<5>No changes to accounts {:list}", "<5>No changes to account {:list}", ["#{0}=1"]],
 
     ["permission_error", "<0>Permission error"],
     ["permission_error", "<0>You aren’t allowed to view submission #{pid}", ["{action}=paper:view"]],
@@ -141,54 +143,66 @@
     ["signin_required", "<0>You must sign in to access this page", ["!{url}"]],
     ["signin_required", "<5><a href=\"{url}\">Sign in to your HotCRP account</a> to make changes", ["{action}=paper:edit"]],
 
-    ["etime", "<0>Action not available", "<0>Authors can’t view reviews for submission #{pid} now", ["{deadline}=au_seerev"]],
-    ["etime", "<0>Action not available", "<0>The site is not open for reviewing", ["{deadline}=rev_open"]],
-    ["etime", "<0>Action not available", "<0>The site is not open for submissions", ["{deadline}=sub_open"]],
-    ["etime", "<0>Action not available", "<0>The site is not open for responses", ["{deadline}^=response"]],
-    ["etime", "<0>Action not available until {2}", "<0>The site will open for reviewing at {time}", ["{deadline}=rev_open"]],
-    ["etime", "<0>Action not available until {2}", "<5>The site will open for reviewing at {timespan}", ["{deadline}=rev_open", "{fmt}=5"]],
-    ["etime", "<0>Action not available until {2}", "<0>The site will open for submissions at {time}", ["{deadline}=sub_open"]],
-    ["etime", "<0>Action not available until {2}", "<5>The site will open for submissions at {timespan}", ["{deadline}=sub_open", "{fmt}=5"]],
-    ["etime", "<0>Deadline passed", "<0>The deadline for registering submissions has passed. The deadline was {time}.", ["{deadline}^=sub_reg"]],
-    ["etime", "<0>Deadline passed", "<5>The <a href=\"{deadlineurl}\">deadline</a> for registering submissions has passed. The deadline was {timespan}", ["{deadline}^=sub_reg", "{fmt}=5"]],
-    ["etime", "<0>Deadline passed", "<0>The submission update deadline has passed. The deadline was {time}", ["{deadline}^=sub_update"]],
-    ["etime", "<0>Deadline passed", "<5>The <a href=\"{deadlineurl}\">submission update deadline</a> has passed. The deadline was {timespan}", ["{deadline}^=sub_update", "{fmt}=5"]],
-    ["etime", "<0>Deadline passed", "<0>The submission deadline has passed. The deadline was {time}", ["{deadline}^=sub_sub"]],
-    ["etime", "<0>Deadline passed", "<5>The <a href=\"{deadlineurl}\">submission deadline</a> has passed. The deadline was {timespan}", ["{deadline}^=sub_sub", "{fmt}=5"]],
-    ["etime", "<0>Deadline passed", "<0>The deadline for this external review has passed", ["{deadline}^=extrev_hard"]],
-    ["etime", "<0>Deadline passed", "<0>The deadline for this review has passed", ["{deadline}^=pcrev_hard"]],
-    ["etime", "<0>Deadline passed", "<0>The deadline for requesting reviews has passed", ["{deadline}^=extrev_chairreq"]],
-    ["etime", "<0>Deadline passed", "<0>The deadline to update final versions has passed", ["{deadline}^=final_done"]],
-    ["etime", "<0>Deadline passed", "<0>The deadline for editing this response has passed. The deadline was {time}", ["{deadline}^=response"]],
-    ["etime", "<0>Deadline passed", "<5>The deadline for editing this response has passed. The deadline was {timespan}", ["{deadline}^=response", "{fmt}=5"]],
-    ["etime", "<0>Deadline passed", "<0>The deadline to perform this action has passed"],
+    {
+        "context": "deadline_error", "in": "<0>Action not available", "m": [
+            ["<0>Authors can’t view reviews for submission #{pid} now", ["{deadline}=au_seerev"]],
+            ["<0>The site is not open for reviewing", ["{deadline}=rev_open"]],
+            ["<0>The site is not open for submissions", ["{deadline}=sub_open"]],
+            ["<0>The site is not open for responses", ["{deadline}^=response"]]
+        ]
+    },
+    {
+        "context": "deadline_error", "in": "<0>Action not available yet", "m": [
+            ["<0>The site will open for reviewing at {time:time}", ["{deadline}=rev_open"]],
+            ["<5>The site will open for reviewing at {time:expandedtime}", ["{deadline}=rev_open", "{fmt}=5"]],
+            ["<0>The site will open for submissions at {time:time}", ["{deadline}=sub_open"]],
+            ["<5>The site will open for submissions at {time:expandedtime}", ["{deadline}=sub_open", "{fmt}=5"]]
+        ]
+    },
+    {
+        "context": "deadline_error", "in": "<0>Deadline passed", "m": [
+            ["<0>The deadline for registering submissions has passed. The deadline was {time:time}.", ["{deadline}^=sub_reg"]],
+            ["<5>The <a href=\"{deadlineurl}\">deadline</a> for registering submissions has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_reg", "{fmt}=5"]],
+            ["<0>The submission update deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_update"]],
+            ["<5>The <a href=\"{deadlineurl}\">submission update deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_update", "{fmt}=5"]],
+            ["<0>The submission deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_sub"]],
+            ["<5>The <a href=\"{deadlineurl}\">submission deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_sub", "{fmt}=5"]],
+            ["<0>The deadline for this external review has passed", ["{deadline}^=extrev_hard"]],
+            ["<0>The deadline for this review has passed", ["{deadline}^=pcrev_hard"]],
+            ["<0>The deadline for requesting reviews has passed", ["{deadline}^=extrev_chairreq"]],
+            ["<0>The deadline to update final versions has passed", ["{deadline}^=final_done"]],
+            ["<0>The deadline for editing this response has passed. The deadline was {time:time}", ["{deadline}^=response"]],
+            ["<5>The deadline for editing this response has passed. The deadline was {time:expandedtime}", ["{deadline}^=response", "{fmt}=5"]],
+            ["<0>The deadline to perform this action has passed"]
+        ]
+    },
 
-    ["mail", "Authors", "Author", ["$1=1"]],
+    ["mail", "Authors", "Author", ["{0}=1"]],
 
     ["resp_instrux", "The authors’ response should address reviewer concerns and correct misunderstandings. Make it short and to the point; the conference deadline has passed."],
     ["resp_instrux", "The authors’ response should address reviewer concerns and correct misunderstandings. Make it short and to the point; the conference deadline has passed. Try to stay within {wordlimit} words.", ["{wordlimit}>0"]],
 
-    {"id": "conflictdef", "itext": "This includes past advisors and students, people with the same affiliation, and any recent (~2 years) coauthors and collaborators.", "template": true},
+    {"in": "conflictdef", "out": "This includes past advisors and students, people with the same affiliation, and any recent (~2 years) coauthors and collaborators.", "template": true},
 
-    {"id": "finalsubmit", "itext": "Congratulations! The paper has been accepted. Update the paper’s final version here. {deadline} You may also edit paper contacts, allowing others to view reviews and make changes."},
+    {"in": "finalsubmit", "out": "Congratulations! The paper has been accepted. Update the paper’s final version here. {deadline} You may also edit paper contacts, allowing others to view reviews and make changes."},
 
-    {"id": "revprefdescription", "itext": "<5><p>A review preference is a small integer that indicates how much you want to review a submission. Positive numbers mean you want to review, negative numbers mean you don’t, and −100 means you think you have a conflict. −20 to 20 is a typical range for real preferences; multiple submissions can have the same preference. The automatic assignment algorithm attempts to assign reviews in descending preference order. Different users’ preference values are not compared and need not use the same scale.</p>\n\n<p>Select a column heading to sort by that column. Enter preferences in the text boxes or on the paper pages. You may also upload preferences from a text file; see the “Download” and “Upload” links below the paper list.</p>"},
-    {"id": "revprefdescription", "itext": "<5><p>A review preference is a small integer that indicates how much you want to review a submission. Positive numbers mean you want to review, negative numbers mean you don’t, and −100 means you think you have a conflict. −20 to 20 is a typical range for real preferences; multiple submissions can have the same preference. The automatic assignment algorithm attempts to assign reviews in descending preference order, using topic scores to break ties. Different users’ preference values are not compared and need not use the same scale.</p>\n\n<p>The list shows all submissions and their topics (<span class=\"topic4\">high interest topics</span>, <span class=\"topic-2\">low interest topics</span>). “Topic score” summarizes your interest in the submission’s topics. Select a column heading to sort by that column. Enter preferences in the text boxes or on the paper pages. You may also upload preferences from a text file; see the “Download” and “Upload” links below the paper list.</p>", "require": ["$1"]},
+    {"in": "revprefdescription", "out": "<5><p>A review preference is a small integer that indicates how much you want to review a submission. Positive numbers mean you want to review, negative numbers mean you don’t, and −100 means you think you have a conflict. −20 to 20 is a typical range for real preferences; multiple submissions can have the same preference. The automatic assignment algorithm attempts to assign reviews in descending preference order. Different users’ preference values are not compared and need not use the same scale.</p>\n\n<p>Select a column heading to sort by that column. Enter preferences in the text boxes or on the paper pages. You may also upload preferences from a text file; see the “Download” and “Upload” links below the paper list.</p>"},
+    {"in": "revprefdescription", "out": "<5><p>A review preference is a small integer that indicates how much you want to review a submission. Positive numbers mean you want to review, negative numbers mean you don’t, and −100 means you think you have a conflict. −20 to 20 is a typical range for real preferences; multiple submissions can have the same preference. The automatic assignment algorithm attempts to assign reviews in descending preference order, using topic scores to break ties. Different users’ preference values are not compared and need not use the same scale.</p>\n\n<p>The list shows all submissions and their topics (<span class=\"topic4\">high interest topics</span>, <span class=\"topic-2\">low interest topics</span>). “Topic score” summarizes your interest in the submission’s topics. Select a column heading to sort by that column. Enter preferences in the text boxes or on the paper pages. You may also upload preferences from a text file; see the “Download” and “Upload” links below the paper list.</p>", "require": ["{topics}"]},
 
     ["external_review_request_description", "External reviewers may view their assigned papers. Before requesting an external review, you should generally check whether they are interested."],
     ["external_review_request_description", "External reviewers may view their assigned papers, including other reviews and the eventual decision. Before requesting an external review, you should generally check whether they are interested.", ["setting.viewrev_ext>=0"]],
     ["external_review_request_description", "External reviewers may view their assigned papers, including other reviews and reviewer identities and the eventual decision. Before requesting an external review, you should generally check whether they are interested.", ["setting.viewrev_ext>=0", "setting.viewrevid_ext>=0"]],
 
-    ["(%d more permissions have default values)", "(%d more permission has default value)", ["$1=1"]],
+    ["({} more permissions have default values)", "({} more permission has default value)", ["{0}=1"]],
 
     ["badpost", "<0>Your browser session has changed since you last used this tab. Please try again."],
     ["session_failed_error", "<0>You appear to have disabled cookies in your browser. This site requires cookies to function."],
 
     ["account_disabled", "<0>Your account on this site has been disabled by a site administrator"],
     ["signin_error", "{message:ftext}"],
-    ["signin_error", "<5>User {email} does not currently have an account. Double-check the email address, or <a href=\"{newaccount}\">create the account</a> if you’d like.", ["{context}=no_account", "{newaccount}"]],
-    ["signin_error", "<5>{message:ftext}. Use <a href=\"{forgotpassword}\">“Forgot your password?”</a> to reset it.", ["{context}=password_expired", "{forgotpassword}"]],
-    ["signin_error", "<5>{message:ftext}. If that’s your account, <a href=\"{signin}\">sign in</a> using your password.", ["{context}=account_exists", "{signin}"]],
-    ["signin_error", "<5>{message:ftext}. If that’s your account, <a href=\"{signin}\">sign in</a> using your password, or <a href=\"{forgotpassword}\">reset your password</a> if you have forgotten it.", ["{context}=account_exists", "{forgotpassword}"]],
-    {"id": "signin_error", "otext": "<5>{message:ftext}. Enter your password or <a href=\"{forgotpassword}\">reset your password</a> if you have forgotten it.", "require": ["{context}=bad_password", "{forgotpassword}"], "priority": 1}
+    ["signin_error", "<5>User {email} does not currently have an account. Double-check the email address, or <a href=\"{newaccount}\">create the account</a> if you’d like.", ["{problem}=no_account", "{newaccount}"]],
+    ["signin_error", "<5>{message:ftext}. Use <a href=\"{forgotpassword}\">“Forgot your password?”</a> to reset it.", ["{problem}=password_expired", "{forgotpassword}"]],
+    ["signin_error", "<5>{message:ftext}. If that’s your account, <a href=\"{signin}\">sign in</a> using your password.", ["{problem}=account_exists", "{signin}"]],
+    ["signin_error", "<5>{message:ftext}. If that’s your account, <a href=\"{signin}\">sign in</a> using your password, or <a href=\"{forgotpassword}\">reset your password</a> if you have forgotten it.", ["{problem}=account_exists", "{forgotpassword}"]],
+    ["signin_error", "<5>{message:ftext}. Enter your password or <a href=\"{forgotpassword}\">reset your password</a> if you have forgotten it.", ["{problem}=bad_password", "{forgotpassword}"], 1]
 ]

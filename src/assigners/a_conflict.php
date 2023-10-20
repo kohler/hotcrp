@@ -160,7 +160,7 @@ class Conflict_Assigner extends Assigner {
                     ++$ncontacts;
             }
             if ($ncontacts === 0) {
-                throw new AssignmentError("<0>Each submission must have at least one contact.");
+                throw new AssignmentError("<0>Each submission must have at least one contact");
             }
         }
         return new Conflict_Assigner($item, $state);

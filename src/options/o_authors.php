@@ -40,7 +40,7 @@ class Authors_PaperOption extends PaperOption {
             $ov->msg_at("authors:1", null, MessageSet::ERROR);
         }
         if ($this->max_count > 0 && $nreal > $this->max_count) {
-            $ov->estop($this->conf->_("<0>A submission may have at most {0} authors", $this->max_count));
+            $ov->estop($this->conf->_("<0>A submission may have at most {max} authors", new FmtArg("max", $this->max_count)));
         }
 
         $msg1 = $msg2 = false;

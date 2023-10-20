@@ -166,7 +166,7 @@ class Home_Page {
         assert($user->conf->time_all_author_view_decision());
         if ($user->conf->time_all_author_view_decision()) {
             list($n, $nyes) = $user->conf->count_submitted_accepted();
-            echo '<li>', $user->conf->_("%d papers accepted out of %d submitted.", $nyes, $n), '</li>';
+            echo '<li>', $user->conf->_("{} papers accepted out of {} submitted.", $nyes, $n), '</li>';
         }
     }
 
@@ -269,7 +269,7 @@ class Home_Page {
                 $q .= ", " . $rf->main_storage;
                 $scores[] = [];
             }
-            $result = $user->conf->qe("$q from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0)");
+            $result = $user->conf->qe("{$q} from PaperReview join Paper using (paperId) where (" . join(" or ", $where) . ") and (reviewSubmitted is not null or timeSubmitted>0)");
             while (($row = $result->fetch_row())) {
                 if ($row[1] || $row[3] < 0) {
                     $this->_r_num_submitted += 1;
@@ -303,7 +303,7 @@ class Home_Page {
                 $q .= ", group_concat(coalesce({$rf->main_storage},'')) {$rf->short_id}Scores";
                 $scores[] = [];
             }
-            $result = Dbl::qe_raw("$q from ContactInfo left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)
+            $result = Dbl::qe_raw("{$q} from ContactInfo left join PaperReview on (PaperReview.contactId=ContactInfo.contactId and PaperReview.reviewSubmitted is not null)
                 where roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0 group by ContactInfo.contactId");
             while (($row = $result->fetch_row())) {
                 ++$npc;
@@ -329,23 +329,24 @@ class Home_Page {
             $score_texts = [];
             foreach ($this->default_review_fields() as $i => $rf) {
                 if ($this->_rf_means[$i] !== null) {
-                    $score_texts[] = $conf->_("average %1\$s score %2\$s", $rf->name_html, $rf->unparse_computed($this->_rf_means[$i], "%.2f"), $this->_r_num_submitted);
+                    $score_texts[] = $conf->_("average {0} score {1}", $rf->name_html, $rf->unparse_computed($this->_rf_means[$i], "%.2f"), $this->_r_num_submitted);
                 }
             }
-            echo $conf->_("You have submitted %1\$d of <a href=\"%3\$s\">%2\$d reviews</a> with %4\$#As.",
-                $this->_r_num_submitted, $this->_r_num_needs_submit,
-                $conf->hoturl("search", "q=&amp;t=r"), $score_texts, count($score_texts)),
+            echo $conf->_("You have submitted {n} of <a href=\"{url}\">{na} reviews</a> with {scores:list}.",
+                new FmtArg("n", $this->_r_num_submitted), new FmtArg("na", $this->_r_num_needs_submit),
+                new FmtArg("url", $conf->hoturl_raw("search", "q=&t=r"), 0),
+                new FmtArg("scores", $score_texts)),
                 "<br>\n";
         }
         if (($user->isPC || $user->privChair) && $npc) {
             $score_texts = [];
             foreach ($this->default_review_fields() as $i => $rf) {
                 if ($pc_rf_means[$i] !== null) {
-                    $score_texts[] = $conf->_("average %1\$s score %2\$s", $rf->name_html, $rf->unparse_computed($pc_rf_means[$i], "%.2f"), null);
+                    $score_texts[] = $conf->_("average {0} score {1}", $rf->name_html, $rf->unparse_computed($pc_rf_means[$i], "%.2f"), null);
                 }
             }
-            echo $conf->_("The average PC member has submitted %1\$.1f reviews with %2\$#As.",
-                $sumpc_submit / $npc, $score_texts, count($score_texts));
+            echo $conf->_("The average PC member has submitted {n:.1f} reviews with {scores:list}.",
+                new FmtArg("n", $sumpc_submit / $npc), new FmtArg("scores", $score_texts));
             if ($user->isPC || $user->privChair) {
                 echo "&nbsp; <small class=\"nw\">(<a href=\"", $conf->hoturl("users", "t=pc"), "\">details</a><span class=\"barsep\">·</span><a href=\"", $conf->hoturl("graph", "group=procrastination"), "\">graphs</a>)</small>";
             }

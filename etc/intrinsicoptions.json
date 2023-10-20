@@ -9,7 +9,7 @@
         "configurable": true, "properties": ["name", "description", "edit_condition", "editable_if"]
     },
     {
-        "name": "Paper", "id": 0,
+        "name": "Submission", "id": 0,
         "type": "submission",
         "json_key": "submission",
         "form_order": 1001, "required": "submit",
@@ -48,7 +48,7 @@
         "configurable": true, "properties": ["name", "description", "edit_condition", "editable_if", "max"]
     },
     {
-        "name": "Submission anonymity", "id": -1002,
+        "name": "Anonymous submission", "id": -1002,
         "type": "nonblind", "include_empty": true,
         "json_key": "nonblind",
         "form_order": 3002,

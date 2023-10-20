@@ -220,23 +220,23 @@ class Users_Page {
         if ($modifyfn === "disableaccount") {
             $j = UserActions::disable($this->viewer, $this->papersel);
             if ($j->disabled_users ?? false) {
-                $ms->success($this->conf->_("<0>Disabled accounts %#s", $j->disabled_users));
+                $ms->success($this->conf->_("<0>Disabled accounts {:list}", $j->disabled_users));
             }
         } else if ($modifyfn === "enableaccount") {
             $j = UserActions::enable($this->viewer, $this->papersel);
             if ($j->enabled_users ?? false) {
-                $ms->success($this->conf->_("<0>Enabled accounts %#s", $j->enabled_users));
+                $ms->success($this->conf->_("<0>Enabled accounts {:list}", $j->enabled_users));
             }
             if ($j->activated_users ?? false) {
-                $ms->success($this->conf->_("<0>Activated accounts and sent mail to %#s", $j->activated_users));
+                $ms->success($this->conf->_("<0>Activated accounts and sent mail to {:list}", $j->activated_users));
             }
         } else if ($modifyfn === "sendaccount") {
             $j = UserActions::send_account_info($this->viewer, $this->papersel);
             if ($j->mailed_users ?? false) {
-                $ms->success($this->conf->_("<0>Sent account information mail to %#s", $j->mailed_users));
+                $ms->success($this->conf->_("<0>Sent account information mail to {:list}", $j->mailed_users));
             }
             if ($j->skipped_users ?? false) {
-                $ms->msg_at(null, $this->conf->_("<0>Skipped disabled accounts %#s", $j->skipped_users), MessageSet::WARNING_NOTE);
+                $ms->msg_at(null, $this->conf->_("<0>Skipped disabled accounts {:list}", $j->skipped_users), MessageSet::WARNING_NOTE);
             }
         } else {
             return false;

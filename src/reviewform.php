@@ -1820,7 +1820,8 @@ class ReviewValues extends MessageSet {
 
     /** @param int $status
      * @param string $fmt
-     * @param list<string> $info */
+     * @param list<string> $info
+     * @param null|'draft'|'approvable' */
     private function _confirm_message($status, $fmt, $info, $single = null) {
         $pids = [];
         foreach ($info as &$x) {
@@ -1831,10 +1832,10 @@ class ReviewValues extends MessageSet {
             }
         }
         unset($x);
-        if ($single === null) {
-            $single = $this->text === null;
+        if ($single === null && $this->text === null) {
+            $single = "yes";
         }
-        $t = $this->conf->_($fmt, $info, $single);
+        $t = $this->conf->_($fmt, $info, new FmtArg("single", $single));
         assert(str_starts_with($t, "<5>"));
         if (count($pids) > 1) {
             $pids = join("+", $pids);
@@ -1843,11 +1844,14 @@ class ReviewValues extends MessageSet {
         $this->msg_at(null, $t, $status);
     }
 
+    /** @return null|'approvable'|'draft' */
     private function _single_approval_state() {
         if ($this->text !== null || $this->single_approval < 0) {
             return null;
+        } else if ($this->single_approval > 0) {
+            return "approvable";
         } else {
-            return $this->single_approval == 0 ? 2 : 3;
+            return "draft";
         }
     }
 

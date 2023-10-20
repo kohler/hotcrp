@@ -247,24 +247,19 @@ class PermissionProblem extends Exception
             } else if ($start <= 0 || $start == $end) {
                 $dl = $odn;
             } else if (Conf::$now < $start) {
-                $m = "<0>Action not available until {time}";
+                $m = "<0>Action not available yet";
                 $dl = $odn;
                 $time = $start;
             } else if ($end > 0 && Conf::$now > $end) {
                 $m = "<0>Deadline passed";
                 $time = $end;
             }
-            $args = [
-                new FmtArg("fmt", $format),
-                new FmtArg("pid", $paperId),
-                new FmtArg("deadline", $dl),
-                new FmtArg("deadlineurl", $this->conf->hoturl_raw("deadlines"), 0)
-            ];
-            if ($time) {
-                $args[] = new FmtArg("time", $this->conf->unparse_time($time), 0);
-                $args[] = new FmtArg("timespan", $this->conf->unparse_time_with_local_span($time), 5);
-            }
-            $ms[] = $this->conf->_c("etime", $m, ...$args);
+            $ms[] = $this->conf->_c("deadline_error", $m,
+                    new FmtArg("time", $time),
+                    new FmtArg("pid", $paperId),
+                    new FmtArg("deadline", $dl),
+                    new FmtArg("deadlineurl", $this->conf->hoturl_raw("deadlines"), 0),
+                    new FmtArg("fmt", $format));
         }
         if ($this->_a["override"] ?? false) {
             $ms[] = $this->conf->_("<0>“Override deadlines” can override this restriction.");

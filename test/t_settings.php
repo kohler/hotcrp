@@ -1488,6 +1488,8 @@ class Settings_Tester {
     }
 
     function test_title_properties() {
+        xassert_eqq($this->conf->setting_data("ioptions"), null);
+
         $sv = new SettingValues($this->u_chair);
         $sv->add_json_string('{"sf":[{"id":"title","name":"Not Title"}]}');
         xassert($sv->execute());
@@ -1517,8 +1519,16 @@ class Settings_Tester {
         xassert_eqq($opt->name, "Not Title");
         xassert_eqq($opt->required, PaperOption::REQ_REGISTER);
 
-        $this->conf->qe("delete from Settings where name='ioptions'");
-        $this->conf->load_settings();
+        // returning to default title
+        $sv = new SettingValues($this->u_chair);
+        $sv->add_json_string('{"sf":[{"id":"title","name":"Title"}]}');
+        xassert($sv->execute());
+        xassert_eqq($sv->full_feedback_text(), "");
+
+        $opt = $this->conf->option_by_id(PaperOption::TITLEID);
+        xassert_eqq($opt->name, "Title");
+        xassert_eqq($opt->required, PaperOption::REQ_REGISTER);
+        xassert_eqq($this->conf->setting_data("ioptions"), null);
     }
 
     function test_cannot_delete_intrinsic() {
