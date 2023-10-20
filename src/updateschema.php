@@ -2927,6 +2927,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $this->v283_ensure_rev_roundtag();
             $conf->update_schema_version(283);
         }
+        if ($conf->sversion === 283
+            && $conf->ql_ok("delete from Settings where name like 'msg.resp\\_instrux%'")) {
+            $conf->update_schema_version(284);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
