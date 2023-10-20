@@ -787,13 +787,17 @@ class Options_SettingParser extends SettingParser {
      * @param PaperOption $oopt
      * @param PaperOption $nopt
      * @param Sf_Setting $isfs
+     * @param object $isfsj
      * @return list<mixed> */
-    private function _intrinsic_member_defaults($sv, $mname, $oopt, $nopt, $isfs) {
+    private function _intrinsic_member_defaults($sv, $mname, $oopt, $nopt, $isfs, $isfsj) {
         // check other defaults for description and title, which can change
         // based on conditions (e.g. required or not, min/max)
+        assert($oopt->formid === $nopt->formid);
         $odefault = [];
         if ($mname === "name") {
-            return [$oopt->default_edit_title(), $nopt->default_edit_title()];
+            $t1 = $this->conf->_i("sf_{$oopt->formid}", ...$oopt->edit_field_fmt_context());
+            $t2 = $this->conf->_i("sf_{$oopt->formid}", ...$nopt->edit_field_fmt_context());
+            return [$t1 ?? $isfsj->name, $t2 ?? $isfsj->name];
         } else if ($mname === "description") {
             $fr = new FieldRender(FieldRender::CFHTML);
             $oopt->render_default_description($fr);
@@ -835,7 +839,7 @@ class Options_SettingParser extends SettingParser {
             }
             // check other defaults for description and title, which can change
             // based on conditions (e.g. required or not, min/max)
-            $odefault = $this->_intrinsic_member_defaults($sv, $mname, $oopt, $nopt, $isfs);
+            $odefault = $this->_intrinsic_member_defaults($sv, $mname, $oopt, $nopt, $isfs, $isfsj);
             //$is_in_array = in_array($sfs->$mname, $odefault, true); error_log(($is_in_array ? "=" : "≠") . " {$sfs->id} {$mname} " . json_encode($odefault) . " " . json_encode($sfs->$mname));
             if (in_array($sfs->$mname, $odefault, true)) {
                 continue;

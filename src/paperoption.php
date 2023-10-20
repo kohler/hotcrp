@@ -137,10 +137,7 @@ class PaperOption implements JsonSerializable {
         $this->conf = $conf;
         $this->id = (int) $oid;
         $this->name = $args->name ?? "";
-        $this->title = $args->title ?? null;
-        if ($this->title === null && $this->name !== "" && $this->id > 0) {
-            $this->title = $this->name;
-        }
+        $this->title = $args->title ?? ($this->id > 0 ? $this->name : null);
         $this->type = $args->type ?? null;
         if ($this->type === "selector") { /* XXX backward compat */
             $this->type = "dropdown";
@@ -316,14 +313,18 @@ class PaperOption implements JsonSerializable {
     function field_fmt_context() {
         return [];
     }
+    /** @param ?PaperInfo $prow
+     * @return list<FmtArg> */
+    final function edit_field_fmt_context($prow = null) {
+        $req = $this->required > 0 && (!$prow || $this->test_required($prow));
+        return [new FmtArg("edit", true), new FmtArg("required", $req), ...$this->field_fmt_context()];
+    }
     /** @param FmtArg ...$context
      * @return string */
     function title(...$context) {
-        if ($this->title) {
-            return $this->title;
-        } else {
-            return $this->conf->_ci("field", $this->formid, ...$context, ...$this->field_fmt_context());
-        }
+        return $this->title
+            ?? $this->conf->_i("sf_{$this->formid}", ...$context, ...$this->field_fmt_context())
+            ?? $this->name;
     }
     /** @param FmtArg ...$context
      * @return string */
@@ -332,22 +333,19 @@ class PaperOption implements JsonSerializable {
     }
     /** @return string */
     function plural_title() {
-        return $this->title ?? $this->conf->_ci("field/plural", $this->formid, ...$this->field_fmt_context());
+        return $this->title(new FmtArg("plural", true));
     }
     /** @param ?PaperInfo $prow
      * @return string */
     function edit_title($prow = null) {
-        return $this->title ?? $this->default_edit_title($prow);
-    }
-    /** @param ?PaperInfo $prow
-     * @return string */
-    function default_edit_title($prow = null) {
-        $req = $this->required > 0 && (!$prow || $this->test_required($prow));
-        return $this->conf->_ci("field/edit", $this->formid, new FmtArg("required", $req), ...$this->field_fmt_context());
+        // see also Options_SettingParser::_intrinsic_member_defaults
+        return $this->title
+            ?? $this->conf->_i("sf_{$this->formid}", ...$this->edit_field_fmt_context($prow))
+            ?? $this->name;
     }
     /** @return string */
     function missing_title() {
-        return $this->title ?? $this->conf->_ci("field/missing", $this->formid, ...$this->field_fmt_context());
+        return $this->title(new FmtArg("edit", true), new FmtArg("missing", true));
     }
 
     /** @param FieldRender $fr */
@@ -363,7 +361,7 @@ class PaperOption implements JsonSerializable {
     }
     /** @param FieldRender $fr */
     function render_default_description($fr) {
-        $this->conf->fmt()->render_ci($fr, "field_description/edit", $this->formid, ...$this->field_fmt_context());
+        $this->conf->fmt()->render_ci($fr, null, "sfdescription_{$this->formid}", ...$this->field_fmt_context());
     }
 
     /** @return AbbreviationMatcher */

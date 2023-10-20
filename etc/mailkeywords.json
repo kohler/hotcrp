@@ -3,7 +3,6 @@
     {"name": "OPT", "function": "*kw_opt", "global": true},
     {"name": "URLENC", "function": "Mailer::kw_urlenc", "global": true},
     {"name": "PHP", "function": "Mailer::kw_php", "global": true},
-    {"name": "_", "function": "*kw_ims_expand_authors", "global": true},
 
     {"name": "CONFNAME", "function": "*kw_confnames", "global": true},
     {"name": "CONFSHORTNAME", "function": "*kw_confnames", "global": true},

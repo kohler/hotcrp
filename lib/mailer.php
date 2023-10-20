@@ -148,15 +148,6 @@ class Mailer {
         }
     }
 
-    static function kw_ims_expand($args, $isbool, $mx) {
-        preg_match('/\A\s*(.*?)\s*(?:|,\s*(\d+)\s*)\z/', $args, $m);
-        $t = $mx->conf->_c("mail", $m[1]);
-        if ($m[2] && strlen($t) < (int) $m[2]) {
-            $t = str_repeat(" ", (int) $m[2] - strlen($t)) . $t;
-        }
-        return $t;
-    }
-
     function kw_confnames($args, $isbool, $uf) {
         if ($uf->name === "CONFNAME") {
             return $this->conf->full_name();

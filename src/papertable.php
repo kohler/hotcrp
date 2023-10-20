@@ -725,8 +725,8 @@ class PaperTable {
                 && $this->prow->paperStorageId > 1
                 && $this->prow->paperStorageId !== $doc->paperStorageId
                 && ($doc = $this->prow->document(DTYPE_SUBMISSION))) {
-                $dname = $this->conf->_c("field", "Submission version");
-                $s = $doc->link_html(htmlspecialchars($dname), DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE);
+                $dname = $this->conf->option_by_id(DTYPE_SUBMISSION)->title_html(new FmtArg("version", "submission"));
+                $s = $doc->link_html($dname, DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE);
                 $fr->value .= "<p class=\"pgsm small\">{$s}</p>";
             }
         }
@@ -1136,31 +1136,28 @@ class PaperTable {
      * @param int $vos
      * @return string */
     private function _group_name_html($rgroup, $vos) {
+        $t1 = $t2 = $t3 = null;
         $group_names = [];
-        $group_flags = 0;
         foreach ($rgroup as $r) {
             if ($r->view_state >= $vos) {
-                $group_names[] = $r->option->title();
+                $title = $r->option->title();
+                $group_names[] = $title;
                 if ($r->option->id === -1005) {
-                    $group_flags |= 1;
+                    $t1 = $title;
                 } else if ($r->option->has_document()) {
-                    $group_flags |= 2;
+                    $t2 = "Attachments";
                 } else {
-                    $group_flags |= 4;
+                    $t3 = "Options";
                 }
             }
         }
         $group_types = [];
-        if ($group_flags & 1) {
-            $group_types[] = "Topics";
-        }
-        if ($group_flags & 2) {
-            $group_types[] = "Attachments";
-        }
-        if ($group_flags & 4) {
-            $group_types[] = "Options";
-        }
-        return htmlspecialchars($this->conf->_c("field_group", $rgroup[0]->option->page_group, commajoin($group_names), commajoin($group_types)));
+        $t1 !== null && ($group_types[] = $t1);
+        $t2 !== null && ($group_types[] = $t2);
+        $t3 !== null && ($group_types[] = $t3);
+        return Ftext::as(5, $this->conf->_i("sfgroup",
+            new FmtArg("group", $rgroup[0]->option->page_group),
+            new FmtArg("sf", $group_names), new FmtArg("types", $group_types)));
     }
 
     private function _print_pre_status_feedback() {

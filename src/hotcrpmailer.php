@@ -407,16 +407,15 @@ class HotCRPMailer extends Mailer {
             $t[] = $au->name(NAME_P|NAME_A);
         }
         if ($this->line_prefix !== ""
-            && preg_match('/\A([\s*]*)Author(|s|\(s\))(:\s*)\z/', $this->line_prefix, $m)) {
-            $m2rep = count($t) === 1 ? "" : "s";
-            if ($m[1] !== "" && ctype_space($m[1])) {
-                if ($m2rep === "s" && $m[2] === "") {
-                    $m[1] = substr($m[1], 1);
-                } else if (strlen($m2rep) !== strlen($m[2])) {
-                    $m[1] .= str_repeat(" ", strlen($m[2]) - strlen($m2rep));
-                }
+            && preg_match('/\A([ *]*)(Author(?:|s|\(s\)))(:\s*)\z/', $this->line_prefix, $m)) {
+            $auo = $this->conf->option_by_id(PaperOption::AUTHORSID);
+            $ti = $auo->title(new FmtArg("count", count($t)));
+            if ($m[1] !== ""
+                && ctype_space($m[1])
+                && ($delta = strlen($ti) - strlen($m[2])) !== 0) {
+                $m[1] = str_repeat(" ", max(strlen($m[1]) - $delta, 0));
             }
-            $this->line_prefix = "{$m[1]}Author{$m2rep}{$m[3]}";
+            $this->line_prefix = "{$m[1]}{$ti}{$m[3]}";
         }
         return join(";\n", $t);
     }
@@ -531,25 +530,6 @@ class HotCRPMailer extends Mailer {
         } else {
             return null;
         }
-    }
-
-    function kw_ims_expand_authors($args, $isbool) {
-        preg_match('/\A\s*(.*?)\s*(?:|,\s*(\d+)\s*)\z/', $args, $m);
-        if ($m[1] === "Authors") {
-            $nau = 0;
-            if ($this->row
-                && ($this->permuser->is_root_user()
-                    || $this->permuser->can_view_authors($this->row))) {
-                $nau = count($this->row->author_list());
-            }
-            $t = $this->conf->_c("mail", $m[1], $nau);
-        } else {
-            $t = $this->conf->_c("mail", $m[1]);
-        }
-        if (($n = (int) ($m[2] ?? 0)) && strlen($t) < $n) {
-            $t = str_repeat(" ", $n - strlen($t)) . $t;
-        }
-        return $t;
     }
 
 
