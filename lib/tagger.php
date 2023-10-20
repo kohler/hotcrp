@@ -674,6 +674,15 @@ class TagMap {
         if (($ti->flags & TagInfo::TF_AUTOMATIC) !== 0) {
             $this->automatic_entries = null;
         }
+        if (($ti->flags & TagInfo::TF_STYLE) !== 0) {
+            $this->color_re = null;
+        }
+        if (($ti->flags & TagInfo::TF_BADGE) !== 0) {
+            $this->badge_re = null;
+        }
+        if (($ti->flags & TagInfo::TF_EMOJI) !== 0) {
+            $this->emoji_re = null;
+        }
     }
     /** @param string $tag
      * @param int $flags */
@@ -876,9 +885,9 @@ class TagMap {
             }
             $any = false;
             if (($this->flags & TagInfo::TF_STYLE) !== 0) {
-                foreach ($this->storage as $k => $t) {
-                    if (!empty($t->styles))
-                        $rex[] = $t->tag_regex();
+                foreach ($this->setting_storage as $ti) {
+                    if (!empty($ti->styles))
+                        $rex[] = $ti->tag_regex();
                 }
             }
             $this->color_re = join("|", $rex) . "))(?=\\z|[# ])}i";
