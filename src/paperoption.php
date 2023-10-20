@@ -317,7 +317,7 @@ class PaperOption implements JsonSerializable {
      * @return list<FmtArg> */
     final function edit_field_fmt_context($prow = null) {
         $req = $this->required > 0 && (!$prow || $this->test_required($prow));
-        return [new FmtArg("edit", true), new FmtArg("required", $req), ...$this->field_fmt_context()];
+        return make_array(new FmtArg("edit", true), new FmtArg("required", $req), ...$this->field_fmt_context());
     }
     /** @param FmtArg ...$context
      * @return string */

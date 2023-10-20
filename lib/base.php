@@ -52,6 +52,12 @@ function is_string_list($x) {
     }
 }
 
+/** @return list */
+function make_array(...$x) {
+    // This works around a syntax error in PHP 7
+    return $x;
+}
+
 
 // string helpers
 

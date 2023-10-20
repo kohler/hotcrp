@@ -15,7 +15,10 @@ class Deadlines_Page {
         $this->user = $user;
     }
 
-    /** @param Conf $conf */
+    /** @param int $time
+     * @param string $phrase
+     * @param string $description
+     * @param FmtArg ...$args */
     private function dl1($time, $phrase, $description, ...$args) {
         $title = Ftext::as(5, $this->conf->_($phrase, new FmtArg("time", $time), ...$args));
         $desc = Ftext::as(5, $this->conf->_($description, new FmtArg("time", $time), ...$args));

@@ -1821,7 +1821,7 @@ class ReviewValues extends MessageSet {
     /** @param int $status
      * @param string $fmt
      * @param list<string> $info
-     * @param null|'draft'|'approvable' */
+     * @param null|'draft'|'approvable' $single */
     private function _confirm_message($status, $fmt, $info, $single = null) {
         $pids = [];
         foreach ($info as &$x) {

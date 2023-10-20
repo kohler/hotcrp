@@ -277,18 +277,13 @@ class Options_SettingParser extends SettingParser {
         $sv->print_control_group("sf/{$this->ctr}/type", "Type", $content, ["horizontal" => true]);
     }
 
-    static private function make_array(...$x) {
-        // This works around a syntax error in PHP 7.0/7.1
-        return $x;
-    }
-
     function print_values(SettingValues $sv) {
         $sv->print_textarea_group("sf/{$this->ctr}/values_text", "Choices", [
             "horizontal" => true,
             "class" => "w-entry-text need-tooltip",
             "data-tooltip-info" => "settings-sf",
             "data-tooltip-type" => "focus",
-            "feedback_items" => self::make_array(
+            "feedback_items" => make_array(
                 ...$sv->message_list_at("sf/{$this->ctr}/values_text"),
                 ...$sv->message_list_at("sf/{$this->ctr}/values"),
                 ...$sv->message_list_at_prefix("sf/{$this->ctr}/values/")
