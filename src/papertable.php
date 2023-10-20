@@ -173,12 +173,12 @@ class PaperTable {
             if (($pid = $qreq->paperId) && ctype_digit($pid)) {
                 $title = "#{$pid}";
             } else {
-                $title = $conf->_c("paper_title", "Submission");
+                $title = Ftext::as(5, $conf->_c("paper_edit", "<0>Submission"));
             }
             $t .= '">' . $title;
         } else if (!$prow->paperId) {
             $sr = $prow->submission_round();
-            $title = $conf->_c("paper_title", "New {$sr->title1}submission");
+            $title = Ftext::as(5, $conf->_c("paper_edit", "<0>New {sclass} submission", new FmtArg("sclass", $sr->tag, 0)));
             $t .= '">' . $title;
         } else {
             $paperTable->initialize_list();
@@ -1887,21 +1887,23 @@ class PaperTable {
     private function _edit_message_new_paper() {
         $sr = $this->prow->submission_round();
         if ($this->admin || $sr->time_register(true)) {
-            $t = [$this->conf->_("Enter information about your submission.")];
-            if ($sr->register > 0 && $sr->update > 0 && $sr->register < $sr->update) {
-                $t[] = $this->conf->_("Submissions must be registered by %s and completed by %s.", $this->conf->unparse_time_long($sr->register), $this->conf->unparse_time_long($sr->update));
+            $mt = [
+                $this->conf->_("<5>Enter information about your submission."),
+                $this->conf->_("<5>Submissions must be registered by {register:time} and completed by {submit:time}.", new FmtArg("register", $sr->register), new FmtArg("submit", $sr->update))
+            ];
+            if ($sr->register > 0 && ($sr->update <= 0 || $sr->register < $sr->update)) {
                 $popt = $this->conf->option_by_id(DTYPE_SUBMISSION);
                 if ($popt->test_exists($this->prow)
-                    && !$popt->test_required($this->prow)) {
-                    $t[] = $this->conf->_("PDF upload is not required to register.");
+                    && $popt->required !== PaperOption::REQ_REGISTER) {
+                    $mt[] = $this->conf->_("<5>{sf_submission} is not required to register.", new FmtArg("sf_submission", $popt->missing_title(), 0));
                 }
-            } else if ($sr->update > 0) {
-                $t[] = $this->conf->_("Submissions must be completed by %s.", $this->conf->unparse_time_long($sr->update));
             }
-            $this->_main_message("<5>" . join(" ", $t), 0);
+            if (($mtx = Ftext::join_nonempty(" ", $mt)) !== "") {
+                $this->_main_message($mtx, 0);
+            }
             if (($v = $this->conf->_i("submit"))) {
                 if (!Ftext::is_ftext($v)) {
-                    $v = "<5>$v";
+                    $v = "<5>{$v}";
                 }
                 $this->_main_message($v, 0);
             }
@@ -1933,12 +1935,8 @@ class PaperTable {
                     $first = $this->conf->_("<5>This submission is marked as not ready for review.");
                     $first = "<strong>" . Ftext::as(5, $first) . "</strong>";
                 }
-                if ($sr->update > 0) {
-                    $rest = $this->conf->_("Submissions incomplete as of %s will not be considered.", $this->conf->unparse_time_long($sr->update));
-                } else {
-                    $rest = $this->conf->_("Incomplete submissions will not be considered.");
-                }
-                $this->_main_message("<5>{$first} {$rest}", MessageSet::URGENT_NOTE);
+                $rest = Ftext::as(5, $this->conf->_("<0>Incomplete submissions will not be considered.", new FmtArg("deadline", $sr->update)));
+                $this->_main_message(Ftext::join_nonempty(" ", [$first, $rest]), MessageSet::URGENT_NOTE);
             } else if (isset($whyNot["frozen"])
                        && $this->user->can_finalize_paper($this->prow)) {
                 $this->_main_message('<5>This submission is not ready for review. Although you cannot make further changes, the current version can be still be submitted for review.' . $this->deadline_is($sr->submit) . $this->_deadline_override_message(), 1);
@@ -2349,14 +2347,10 @@ class PaperTable {
     private function _print_editable_body() {
         $this->_print_editable_form();
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
-        echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">';
-        if ($this->prow->paperId) {
-            echo "Edit submission";
-        } else {
-            $sr = $this->prow->submission_round();
-            echo "New ", $sr->title1, "submission";
-        }
-        echo '</span></h2></div>';
+        $sr = $this->prow->submission_round();
+        echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">',
+            Ftext::as(5, $this->conf->_c("paper_edit", $this->prow->paperId ? "<0>Edit {sclass} submission" : "<0>New {sclass} submission", new FmtArg("sclass", $sr->tag))),
+            '</span></h2></div>';
 
         $this->edit_fields = array_values(array_filter(
             $this->prow->form_fields(),
@@ -2402,7 +2396,7 @@ class PaperTable {
             htmlspecialchars($this->conf->short_name), '</span> ';
         if ($this->prow->paperId <= 0) {
             $sr = $this->prow->submission_round();
-            echo "new {$sr->title1}submission";
+            echo Ftext::as(5, $this->conf->_c("paper_edit", "<0>new {sclass} submission", new FmtArg("sclass", $sr->tag, 0)));
         } else if ($this->mode !== "re") {
             echo "#", $this->prow->paperId;
         } else if ($this->editrrow && $this->editrrow->reviewOrdinal) {
@@ -2759,8 +2753,9 @@ class PaperTable {
         if ($this->mode !== "edit"
             && $prow->has_author($this->user)
             && !$this->user->can_administer($prow)) {
+            $es = Ftext::as(5, $this->conf->_c("paper_edit", "<0>Edit submission"));
             $t[] = '<a href="' . $prow->hoturl(["m" => "edit"]) . '" class="noul revlink">'
-                . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>Edit submission</strong></u></a>";
+                . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>{$es}</strong></u></a>";
         }
 
         // edit review

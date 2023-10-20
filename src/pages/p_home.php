@@ -533,7 +533,7 @@ class Home_Page {
                 "p" => "new", "sclass" => $sr->unnamed ? null : $sr->tag
             ]);
             $actions = [[
-                "<a class=\"btn\" href=\"{$url}\">New {$sr->title1}submission</a>",
+                "<a class=\"btn\" href=\"{$url}\">" . Ftext::as(5, $conf->_c("paper_edit", "<0>New {sclass} submission", new FmtArg("sclass", $sr->tag))) . "</a>",
                 $sr->time_register(true) ? "" : "(admin only)"
             ]];
             if ($dltx !== "") {
@@ -589,7 +589,7 @@ class Home_Page {
         }
 
         echo '<div class="homegrp" id="homeau">',
-            $this->print_h2_home($user->is_author() ? "Your Submissions" : "Submissions");
+            $this->print_h2_home(Ftext::as(5, $conf->_c("home", $user->is_author() ? "<0>Your Submissions" : "<0>Submissions")));
 
         if (!empty($srlist)) {
             if (!$user->has_email()) {
