@@ -2046,8 +2046,8 @@ handle_ui.on("js-range-click", function (evt) {
         key = event_key(evt);
     }
     if (rangeclick_state.__clicking__
-        || (evt.type === "updaterange" && rangeclick_state["__update__" + kind])
-        || (evt.type === "keydown" && key !== "ArrowDown" && key !== "ArrowUp"))
+        || (evt.type === "keydown" && key !== "ArrowDown" && key !== "ArrowUp")
+        || (evt.type === "updaterange" && rangeclick_state["__update_" + kind] === evt.detail))
         return;
 
     // find checkboxes and groups of this type
@@ -2137,7 +2137,7 @@ handle_ui.on("js-range-click", function (evt) {
         delete rangeclick_state.__clicking__;
         prevent_immediate_focusout(this);
     } else if (evt.type === "updaterange") {
-        rangeclick_state["__updated__" + kind] = true;
+        rangeclick_state["__update_" + kind] = evt.detail;
     }
 
     // update groups
@@ -2169,8 +2169,9 @@ handle_ui.on("js-range-click", function (evt) {
 });
 
 $(function () {
+    const time = now_msec();
     $(".is-range-group").each(function () {
-        handle_ui.trigger.call(this, "js-range-click", new Event("updaterange"));
+        handle_ui.trigger.call(this, "js-range-click", new CustomEvent("updaterange", {detail: time}));
     });
 });
 
@@ -12235,7 +12236,11 @@ handle_ui.on("js-edit-namedsearches", function () {
 });
 
 handle_ui.on("js-select-all", function () {
-    $(this).closest(".pltable").find("input.js-selector").prop("checked", true);
+    const tbl = this.closest(".pltable"), time = now_msec();
+    $(tbl).find("input.js-selector").prop("checked", true);
+    $(tbl).find(".is-range-group").each(function () {
+        handle_ui.trigger.call(this, "js-range-click", new CustomEvent("updaterange", {detail: time}));
+    });
 });
 
 
