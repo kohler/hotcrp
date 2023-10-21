@@ -142,15 +142,25 @@ class Deadlines_Page {
             }
         }
 
-        if (!empty($this->dl)) {
-            usort($this->dl, function ($a, $b) {
-                return $a[0] <=> $b[0] ? : $a[1] <=> $b[1];
-            });
-            echo "<dl>\n";
-            foreach ($this->dl as $dlx) {
-                echo $dlx[2], "\n";
+        usort($this->dl, function ($a, $b) {
+            return $a[0] <=> $b[0] ? : $a[1] <=> $b[1];
+        });
+        $old = $new = [];
+        foreach ($this->dl as $x) {
+            if ($x[0] >= Conf::$now) {
+                $new[] = $x[2];
+            } else {
+                $old[] = $x[2];
             }
-            echo "</dl>\n";
+        }
+
+        if (!empty($new)) {
+            echo '<h3>', Ftext::as(5, $this->conf->_c("deadlines", "Upcoming")),
+                "</h3><dl>", join("\n", $new), "</dl>\n";
+        }
+        if (!empty($old)) {
+            echo '<h3>', Ftext::as(5, $this->conf->_c("deadlines", "Past")),
+                "</h3><dl>", join("\n", $old), "</dl>\n";
         }
         $qreq->print_footer();
     }
