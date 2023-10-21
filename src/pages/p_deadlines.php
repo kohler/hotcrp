@@ -160,7 +160,7 @@ class Deadlines_Page {
         }
         if (!empty($old)) {
             echo '<h3>', Ftext::as(5, $this->conf->_c("deadlines", "Past")),
-                "</h3><dl>", join("\n", $old), "</dl>\n";
+                "</h3><dl>", join("\n", array_reverse($old)), "</dl>\n";
         }
         $qreq->print_footer();
     }
