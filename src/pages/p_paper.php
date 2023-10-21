@@ -74,7 +74,7 @@ class Paper_Page {
 
     function handle_withdraw() {
         if (($whynot = $this->user->perm_withdraw_paper($this->prow))) {
-            $this->conf->error_msg("<5>" . $whynot->unparse_html() . " The submission has not been withdrawn.");
+            $this->conf->error_msg("<5>" . $whynot->unparse_html() . " The {$this->conf->snouns[0]} has not been withdrawn.");
             return;
         }
 
@@ -113,11 +113,11 @@ class Paper_Page {
 
     function handle_delete() {
         if ($this->prow->paperId <= 0) {
-            $this->conf->success_msg("<0>Submission deleted");
+            $this->conf->success_msg("<0>{$this->conf->snouns[2]} deleted");
         } else if (!$this->user->can_administer($this->prow)) {
             $this->conf->feedback_msg(
-                MessageItem::error("<0>Only program chairs can permanently delete a submission"),
-                MessageItem::inform("<0>Authors can withdraw submissions.")
+                MessageItem::error("<0>Only program chairs can permanently delete a {$this->conf->snouns[0]}"),
+                MessageItem::inform("<0>Authors can withdraw {$this->conf->snouns[1]}.")
             );
         } else {
             // mail first, before contact info goes away
@@ -128,7 +128,7 @@ class Paper_Page {
                 ]);
             }
             if ($this->prow->delete_from_database($this->user)) {
-                $this->conf->success_msg("<0>Submission #{$this->prow->paperId} deleted");
+                $this->conf->success_msg("<0>{$this->conf->snouns[2]} #{$this->prow->paperId} deleted");
             }
             $this->error_exit();
         }
@@ -196,7 +196,7 @@ class Paper_Page {
 
         $new_prow = $conf->paper_by_id($this->ps->paperId, $this->user, ["topics" => true, "options" => true]);
         if (!$new_prow) {
-            $this->ps->prepend_msg("<0>Submission not saved; please correct these errors and try again", MessageSet::ERROR);
+            $this->ps->prepend_msg("<0>{$this->conf->snouns[2]} not saved; please correct these errors and try again", MessageSet::ERROR);
             $conf->feedback_msg($this->ps->decorated_message_list());
             return;
         }
@@ -242,7 +242,7 @@ class Paper_Page {
                 "<5>The deadline for submitting final versions was {}.");
         } else if ($new_prow->timeSubmitted > 0) {
             $note_status = MessageSet::SUCCESS;
-            $notes[] = $conf->_("<0>The submission is ready for review.");
+            $notes[] = $conf->_("<0>The {$this->conf->snouns[0]} is ready for review.");
             if (!$sr->freeze) {
                 $notes[] = $this->time_note($sr->update,
                     "<5>You have until {} to make further changes.", "");
@@ -250,18 +250,18 @@ class Paper_Page {
         } else {
             $note_status = MessageSet::URGENT_NOTE;
             if ($sr->freeze) {
-                $notes[] = $conf->_("<0>This submission has not yet been completed.");
+                $notes[] = $conf->_("<0>This {$this->conf->snouns[0]} has not yet been completed.");
             } else if (($missing = PaperTable::missing_required_fields($new_prow))) {
-                $notes[] = $conf->_("<5>This submission is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
+                $notes[] = $conf->_("<5>This {$this->conf->snouns[0]} is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
             } else {
-                $first = $conf->_("<5>This submission is marked as not ready for review.");
+                $first = $conf->_("<5>This {$this->conf->snouns[0]} is marked as not ready for review.");
                 $notes[] = "<5><strong>" . Ftext::as(5, $first) . "</strong>";
             }
             $notes[] = $this->time_note($sr->update,
                 "<5>You have until {} to make further changes.",
-                "<5>The deadline for updating submissions was {}.");
+                "<5>The deadline for updating {$this->conf->snouns[1]} was {}.");
             if (($msg = $this->time_note($sr->submit,
-                "<5>Submissions incomplete as of {} will not be considered.", "")) !== "") {
+                "<5>{$this->conf->snouns[3]} incomplete as of {} will not be considered.", "")) !== "") {
                 $notes[] = $msg;
             }
         }
@@ -273,9 +273,9 @@ class Paper_Page {
                 $this->ps->splice_msg($msgpos++, $conf->_("<0>No changes"), MessageSet::WARNING_NOTE);
             }
         } else if ($is_new) {
-            $this->ps->splice_msg($msgpos++, $conf->_("<0>Registered submission as #{}", $new_prow->paperId), MessageSet::SUCCESS);
+            $this->ps->splice_msg($msgpos++, $conf->_("<0>Registered {$this->conf->snouns[0]} as #{}", $new_prow->paperId), MessageSet::SUCCESS);
         } else {
-            $t = $action === "final" ? "<0>Updated final version (changed {:list})" : "<0>Updated submission (changed {:list})";
+            $t = $action === "final" ? "<0>Updated final version (changed {:list})" : "<0>Updated {$this->conf->snouns[0]} (changed {:list})";
             $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
             $this->ps->splice_msg($msgpos++, $conf->_($t, $chf), MessageSet::SUCCESS);
         }
@@ -286,7 +286,7 @@ class Paper_Page {
                 $this->ps->splice_msg($msgpos++, $conf->_("<0>Please correct these issues and save again."), MessageSet::URGENT_NOTE);
             }
         } else if ($this->ps->has_problem() && !$sr->freeze) {
-            $this->ps->splice_msg($msgpos++, $conf->_("<0>Please check these issues before completing the submission."), MessageSet::WARNING_NOTE);
+            $this->ps->splice_msg($msgpos++, $conf->_("<0>Please check these issues before completing the {$this->conf->snouns[0]}."), MessageSet::WARNING_NOTE);
         }
         $notes_ftext = Ftext::join_nonempty(" ", $notes);
         if ($notes_ftext !== "") {
@@ -397,9 +397,9 @@ class Paper_Page {
     private function print_capability_user_message($capuid) {
         if (($u = $this->conf->user_by_id($capuid, USER_SLICE))) {
             if ($this->user->has_email()) {
-                $m = "<0>You’re accessing this submission using a special link for reviewer {$u->email}. (You are signed in as {$this->user->email}.)";
+                $m = "<0>You’re accessing this {$this->conf->snouns[0]} using a special link for reviewer {$u->email}. (You are signed in as {$this->user->email}.)";
             } else {
-                $m = "<5>You’re accessing this submission using a special link for reviewer {$u->email}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null]), ["class" => "nw"]);
+                $m = "<5>You’re accessing this {$this->conf->snouns[0]} using a special link for reviewer {$u->email}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null]), ["class" => "nw"]);
             }
             $this->pt()->add_pre_status_feedback(new MessageItem(null, $m, MessageSet::WARNING_NOTE));
         }
