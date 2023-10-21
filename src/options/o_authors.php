@@ -7,6 +7,7 @@ class Authors_PaperOption extends PaperOption {
     private $max_count;
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
+        $this->max_count = $args->max ?? 0;
     }
     function author_list(PaperValue $ov) {
         return PaperInfo::parse_author_list($ov->data() ?? "");
