@@ -1930,12 +1930,11 @@ class PaperTable {
             if (!$whyNot) {
                 if (($missing = PaperTable::missing_required_fields($this->prow))) {
                     $first = $this->conf->_("<5>This submission is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
-                    $first = Ftext::as(5, $first);
                 } else {
                     $first = $this->conf->_("<5>This submission is marked as not ready for review.");
-                    $first = "<strong>" . Ftext::as(5, $first) . "</strong>";
+                    $first = "<5><strong>" . Ftext::as(5, $first) . "</strong>";
                 }
-                $rest = Ftext::as(5, $this->conf->_("<0>Incomplete submissions will not be considered.", new FmtArg("deadline", $sr->update)));
+                $rest = $this->conf->_c("paper_edit", "<0>Incomplete submissions will not be considered.", new FmtArg("deadline", $sr->update));
                 $this->_main_message(Ftext::join_nonempty(" ", [$first, $rest]), MessageSet::URGENT_NOTE);
             } else if (isset($whyNot["frozen"])
                        && $this->user->can_finalize_paper($this->prow)) {
