@@ -173,12 +173,12 @@ class PaperTable {
             if (($pid = $qreq->paperId) && ctype_digit($pid)) {
                 $title = "#{$pid}";
             } else {
-                $title = Ftext::as(5, $conf->_c("paper_edit", "<0>Submission"));
+                $title = Ftext::as(5, $conf->_c("paper_edit", "<0>{$conf->snouns[2]}"));
             }
             $t .= '">' . $title;
         } else if (!$prow->paperId) {
             $sr = $prow->submission_round();
-            $title = Ftext::as(5, $conf->_c("paper_edit", "<0>New {sclass} submission", new FmtArg("sclass", $sr->tag, 0)));
+            $title = Ftext::as(5, $conf->_c("paper_edit", "<0>New {sclass} {$conf->snouns[0]}", new FmtArg("sclass", $sr->tag, 0)));
             $t .= '">' . $title;
         } else {
             $paperTable->initialize_list();
@@ -812,24 +812,24 @@ class PaperTable {
                 "data-urgent" => Conf::$now <= $sr->submit
             ]),
             '</span><strong>',
-            $this->conf->_("The submission is {$complete}"),
+            $this->conf->_("The {$this->conf->snouns[0]} is {$complete}"),
             '</strong></label>';
 
         // script.js depends on the HTML here
         $updatem = $submitm = $requiredm = $freezem = "";
         if (Conf::$now <= $sr->update) {
             $dlhtml = $this->conf->unparse_time_with_local_span($sr->update);
-            $updatem = "You can update this submission until {$dlhtml}.";
+            $updatem = "You can update this {$this->conf->snouns[0]} until {$dlhtml}.";
         }
         if (Conf::$now <= $sr->submit) {
             $sdlhtml = $sr->update === $sr->submit ? "then" : $this->conf->unparse_time_with_local_span($sr->submit);
-            $submitm = "Submissions not marked {$complete} by {$sdlhtml} will not be evaluated.";
+            $submitm = "{$this->conf->snouns[2]} not marked {$complete} by {$sdlhtml} will not be evaluated.";
         }
         if ($sr->freeze) {
-            $freezem = "Completed submissions are frozen and cannot be changed further.";
+            $freezem = "Completed {$this->conf->snouns[1]} are frozen and cannot be changed further.";
         }
         if ($autoready) {
-            $requiredm = "You must fill out all required fields before marking the submission {$complete}.";
+            $requiredm = "You must fill out all required fields before marking the {$this->conf->snouns[0]} {$complete}.";
             echo '<p class="feedback ',
                 $updatem || $submitm ? "is-urgent-note" : "is-note",
                 ' if-unready-required',
@@ -1597,7 +1597,7 @@ class PaperTable {
                     join("</li><li>", MessageSet::feedback_html_items($treport->message_list)), "</li></ul>";
             }
             if ($is_sitewide) {
-                echo '<p class="feedback is-warning">You have a conflict with this submission, so you can only edit its ', Ht::link("site-wide tags", $this->conf->hoturl("settings", "group=tags#tag_sitewide")), '.';
+                echo "<p class=\"feedback is-warning\">You have a conflict with this {$this->conf->snouns[0]}, so you can only edit its ", Ht::link("site-wide tags", $this->conf->hoturl("settings", "group=tags#tag_sitewide")), '.';
                 if ($this->user->allow_administer($this->prow)) {
                     echo ' ', Ht::link("Override your conflict", $this->conf->selfurl($this->qreq, ["forceShow" => 1])), ' to view and edit all tags.';
                 }
@@ -1877,9 +1877,9 @@ class PaperTable {
 
     private function _edit_message_new_paper_deadline(SubmissionRound $sr) {
         if ($sr->open <= 0 || $sr->open > Conf::$now) {
-            $msg = "<5>The site is not open for submissions." . $this->_deadline_override_message();
+            $msg = "<5>The site is not open for {$this->conf->snouns[1]}." . $this->_deadline_override_message();
         } else {
-            $msg = '<5>The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.' . $this->deadline_is($sr->register) . $this->_deadline_override_message();
+            $msg = '<5>The <a href="' . $this->conf->hoturl("deadlines") . "\">deadline</a> for registering {$this->conf->snouns[1]} has passed." . $this->deadline_is($sr->register) . $this->_deadline_override_message();
         }
         $this->_main_message($msg, $this->admin ? 1 : 2);
     }
@@ -1888,8 +1888,8 @@ class PaperTable {
         $sr = $this->prow->submission_round();
         if ($this->admin || $sr->time_register(true)) {
             $mt = [
-                $this->conf->_("<5>Enter information about your submission."),
-                $this->conf->_("<5>Submissions must be registered by {register:time} and completed by {submit:time}.", new FmtArg("register", $sr->register), new FmtArg("submit", $sr->update))
+                $this->conf->_("<5>Enter information about your {$this->conf->snouns[0]}."),
+                $this->conf->_("<5>{$this->conf->snouns[3]} must be registered by {register:time} and completed by {submit:time}.", new FmtArg("register", $sr->register), new FmtArg("submit", $sr->update))
             ];
             if ($sr->register > 0 && ($sr->update <= 0 || $sr->register < $sr->update)) {
                 $popt = $this->conf->option_by_id(DTYPE_SUBMISSION);
@@ -1918,35 +1918,35 @@ class PaperTable {
         $sr = $this->prow->submission_round();
         $viewable_decision = $this->prow->viewable_decision($this->user);
         if ($viewable_decision->sign < 0) {
-            $this->_main_message("<5>This submission was not accepted." . $this->_forceShow_message(), 1);
+            $this->_main_message("<5>This {$this->conf->snouns[0]} was not accepted." . $this->_forceShow_message(), 1);
         } else if ($this->prow->timeWithdrawn > 0) {
             if ($this->user->can_revive_paper($this->prow)) {
-                $this->_main_message("<5>This submission has been withdrawn, but you can still revive it." . $this->deadline_is($sr->update), 1);
+                $this->_main_message("<5>This {$this->conf->snouns[0]} has been withdrawn, but you can still revive it." . $this->deadline_is($sr->update), 1);
             } else {
-                $this->_main_message("<5>This submission has been withdrawn." . $this->_forceShow_message(), 1);
+                $this->_main_message("<5>This {$this->conf->snouns[0]} has been withdrawn." . $this->_forceShow_message(), 1);
             }
         } else if ($this->prow->timeSubmitted <= 0) {
             $whyNot = $this->user->perm_edit_paper($this->prow);
             if (!$whyNot) {
                 if (($missing = PaperTable::missing_required_fields($this->prow))) {
-                    $first = $this->conf->_("<5>This submission is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
+                    $first = $this->conf->_("<5>This {$this->conf->snouns[0]} is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
                 } else {
-                    $first = $this->conf->_("<5>This submission is marked as not ready for review.");
+                    $first = $this->conf->_("<5>This {$this->conf->snouns[0]} is marked as not ready for review.");
                     $first = "<5><strong>" . Ftext::as(5, $first) . "</strong>";
                 }
-                $rest = $this->conf->_c("paper_edit", "<0>Incomplete submissions will not be considered.", new FmtArg("deadline", $sr->update));
+                $rest = $this->conf->_c("paper_edit", "<0>Incomplete {$this->conf->snouns[1]} will not be considered.", new FmtArg("deadline", $sr->update));
                 $this->_main_message(Ftext::join_nonempty(" ", [$first, $rest]), MessageSet::URGENT_NOTE);
             } else if (isset($whyNot["frozen"])
                        && $this->user->can_finalize_paper($this->prow)) {
-                $this->_main_message('<5>This submission is not ready for review. Although you cannot make further changes, the current version can be still be submitted for review.' . $this->deadline_is($sr->submit) . $this->_deadline_override_message(), 1);
+                $this->_main_message("<5>This {$this->conf->snouns[0]} is not ready for review. Although you cannot make further changes, the current version can be still be submitted for review." . $this->deadline_is($sr->submit) . $this->_deadline_override_message(), 1);
             } else if (isset($whyNot["deadline"])) {
                 if ($this->conf->time_between(null, $sr->submit, $sr->grace) > 0) {
                     $this->_main_message('<5>The site is not open for updates at the moment.' . $this->_deadline_override_message(), 1);
                 } else {
-                    $this->_main_message('<5>The <a href="' . $this->conf->hoturl("deadlines") . '">submission deadline</a> has passed and this submission will not be reviewed.' . $this->deadline_is($sr->submit) . $this->_deadline_override_message(), 1);
+                    $this->_main_message("<5>The <a href=\"" . $this->conf->hoturl("deadlines") . "\">submission deadline</a> has passed and this {$this->conf->snouns[0]} will not be reviewed." . $this->deadline_is($sr->submit) . $this->_deadline_override_message(), 1);
                 }
             } else {
-                $this->_main_message('<5>This submission is not ready for review and can’t be changed further. It will not be reviewed.' . $this->_deadline_override_message(), MessageSet::URGENT_NOTE);
+                $this->_main_message("<5>This {$this->conf->snouns[0]} is not ready for review and can’t be changed further. It will not be reviewed." . $this->_deadline_override_message(), MessageSet::URGENT_NOTE);
             }
         } else if ($this->conf->allow_final_versions()
                    && $viewable_decision->sign > 0) {
@@ -1960,13 +1960,13 @@ class PaperTable {
         } else if ($this->user->can_edit_paper($this->prow)) {
             if ($this->mode === "edit"
                 && (!$this->edit_status || !$this->edit_status->has_error())) {
-                $this->_main_message('<5>This submission is ready for review. You do not need to take further action, but you can still make changes if you wish.' . $this->deadline_is($sr->update, "submission deadline"), MessageSet::SUCCESS);
+                $this->_main_message("<5>This {$this->conf->snouns[0]} is ready for review. You do not need to take further action, but you can still make changes if you wish." . $this->deadline_is($sr->update, "submission deadline"), MessageSet::SUCCESS);
             }
         } else if ($this->mode === "edit") {
             if ($this->user->can_withdraw_paper($this->prow, true)) {
-                $t = "<5>This submission is under review and can’t be changed, but you can change its contacts or withdraw it from consideration.";
+                $t = "<5>This {$this->conf->snouns[0]} is under review and can’t be changed, but you can change its contacts or withdraw it from consideration.";
             } else {
-                $t = "<5>This submission is under review and can’t be changed or withdrawn, but you can change its contacts.";
+                $t = "<5>This {$this->conf->snouns[0]} is under review and can’t be changed or withdrawn, but you can change its contacts.";
             }
             $this->_main_message($t . $this->_deadline_override_message(), MessageSet::MARKED_NOTE);
         }
@@ -2002,9 +2002,9 @@ class PaperTable {
         } else if ($this->conf->allow_final_versions()
                    && $this->prow->outcome_sign > 0
                    && !$this->prow->can_author_view_decision()) {
-            $this->_main_message("<5>The submission has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.", 1);
+            $this->_main_message("<5>The {$this->conf->snouns[0]} has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.", 1);
         } else {
-            $this->_main_message("<5>You aren’t a contact for this submission, but as an administrator you can still make changes.", MessageSet::MARKED_NOTE);
+            $this->_main_message("<5>You aren’t a contact for this {$this->conf->snouns[0]}, but as an administrator you can still make changes.", MessageSet::MARKED_NOTE);
         }
         if ($this->user->can_edit_paper($this->prow)
             && ($v = $this->conf->_i("submit"))) {
@@ -2019,7 +2019,7 @@ class PaperTable {
                 return $this->edit_status->has_problem_at($o->formid);
             });
             if (!empty($fields)) {
-                $this->_main_message($this->conf->_c("paper_edit", "<5>Please check {:list} before completing the submission.", self::field_title_links($fields, "edit_title")), $this->edit_status->problem_status());
+                $this->_main_message($this->conf->_c("paper_edit", "<5>Please check {:list} before completing the {$this->conf->snouns[0]}.", self::field_title_links($fields, "edit_title")), $this->edit_status->problem_status());
             }
         }
     }
@@ -2058,9 +2058,9 @@ class PaperTable {
         if ($this->prow->timeWithdrawn > 0) {
             $revivable = $this->prow->submission_round()->time_submit(true);
             if ($revivable) {
-                return [Ht::submit("revive", "Revive submission", ["class" => "btn-primary"])];
+                return [Ht::submit("revive", "Revive {$this->conf->snouns[0]}", ["class" => "btn-primary"])];
             } else if ($this->admin) {
-                return [[Ht::button("Revive submission", ["class" => "ui js-override-deadlines", "data-override-text" => 'The <a href="' . $this->conf->hoturl("deadlines") . '">deadline</a> for reviving withdrawn submissions has passed. Are you sure you want to override it?', "data-override-submit" => "revive"]), "(admin only)"]];
+                return [[Ht::button("Revive {$this->conf->snouns[0]}", ["class" => "ui js-override-deadlines", "data-override-text" => 'The <a href="' . $this->conf->hoturl("deadlines") . "\">deadline</a> for reviving withdrawn {$this->conf->snouns[1]} has passed. Are you sure you want to override it?", "data-override-submit" => "revive"]), "(admin only)"]];
             } else {
                 return [];
             }
@@ -2348,7 +2348,7 @@ class PaperTable {
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
         $sr = $this->prow->submission_round();
         echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">',
-            Ftext::as(5, $this->conf->_c("paper_edit", $this->prow->paperId ? "<0>Edit {sclass} submission" : "<0>New {sclass} submission", new FmtArg("sclass", $sr->tag))),
+            Ftext::as(5, $this->conf->_c("paper_edit", $this->prow->paperId ? "<0>Edit {sclass} {$this->conf->snouns[0]}" : "<0>New {sclass} {$this->conf->snouns[0]}", new FmtArg("sclass", $sr->tag))),
             '</span></h2></div>';
 
         $this->edit_fields = array_values(array_filter(
@@ -2395,7 +2395,7 @@ class PaperTable {
             htmlspecialchars($this->conf->short_name), '</span> ';
         if ($this->prow->paperId <= 0) {
             $sr = $this->prow->submission_round();
-            echo Ftext::as(5, $this->conf->_c("paper_edit", "<0>new {sclass} submission", new FmtArg("sclass", $sr->tag, 0)));
+            echo Ftext::as(5, $this->conf->_c("paper_edit", "<0>new {sclass} {$this->conf->snouns[0]}", new FmtArg("sclass", $sr->tag, 0)));
         } else if ($this->mode !== "re") {
             echo "#", $this->prow->paperId;
         } else if ($this->editrrow && $this->editrrow->reviewOrdinal) {
@@ -2416,7 +2416,7 @@ class PaperTable {
                     ? $this->conf->hoturl("paper", ["p" => $this->prow->paperId, "forceShow" => null])
                     : $this->conf->selfurl($this->qreq, ["forceShow" => null]);
                 echo '<div class="pcard notecard override-conflict on"><p class="sd">',
-                    '🔓 You are using administrator privilege to override your conflict with this submission. ',
+                    "🔓 You are using administrator privilege to override your conflict with this {$this->conf->snouns[0]}. ",
                     '<a class="noul ibw" href="', $unprivurl, '"><u>Unprivileged view</u></a>',
                     '</p></div>';
             }
@@ -2465,7 +2465,7 @@ class PaperTable {
             && $this->user->act_author_view($this->prow)
             && !$this->user->contactId) {
             echo '<div class="pcard notecard"><p class="sd">',
-                "To edit this submission, <a href=\"", $this->conf->hoturl("signin"), "\">sign in using your email and password</a>.",
+                "To edit this {$this->conf->snouns[0]}, <a href=\"", $this->conf->hoturl("signin"), "\">sign in using your email and password</a>.",
                 '</p></div>';
         }
 
@@ -2752,7 +2752,7 @@ class PaperTable {
         if ($this->mode !== "edit"
             && $prow->has_author($this->user)
             && !$this->user->can_administer($prow)) {
-            $es = Ftext::as(5, $this->conf->_c("paper_edit", "<0>Edit submission"));
+            $es = Ftext::as(5, $this->conf->_c("paper_edit", "<0>Edit {$this->conf->snouns[0]}"));
             $t[] = '<a href="' . $prow->hoturl(["m" => "edit"]) . '" class="noul revlink">'
                 . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>{$es}</strong></u></a>";
         }
@@ -2818,18 +2818,18 @@ class PaperTable {
 
         // override conflict
         if ($this->user->privChair && !$this->allow_admin) {
-            $t[] = '<span class="revlink">You can’t override your conflict because this submission has an administrator.</span>';
+            $t[] = "<span class=\"revlink\">You can’t override your conflict because this {$this->conf->snouns[0]} has an administrator.</span>";
         }
 
         $aut = "";
         if ($prow->has_author($this->user)) {
             if ($prow->author_by_email($this->user->email)) {
-                $aut = $this->conf->_('You are an <span class="author">author</span> of this submission.');
+                $aut = $this->conf->_("You are an <span class=\"author\">author</span> of this {$this->conf->snouns[0]}.");
             } else {
-                $aut = $this->conf->_('You are a <span class="author">contact</span> for this submission.');
+                $aut = $this->conf->_("You are a <span class=\"author\">contact</span> for this {$this->conf->snouns[0]}.");
             }
         } else if ($prow->has_conflict($this->user)) {
-            $aut = $this->conf->_('You have a <span class="conflict">conflict</span> with this submission.');
+            $aut = $this->conf->_("You have a <span class=\"conflict\">conflict</span> with this {$this->conf->snouns[0]}.");
         }
         return $pret
             . ($aut ? "<p class=\"sd\">{$aut}</p>" : "")
@@ -2865,7 +2865,7 @@ class PaperTable {
     function paptabEndWithReviewsAndComments() {
         if ($this->prow->managerContactId === $this->user->contactXid
             && !$this->user->privChair) {
-            $this->_paptabSepContaining("You are this submission’s administrator.");
+            $this->_paptabSepContaining("You are this {$this->conf->snouns[0]}’s administrator.");
         }
 
         // text format link
@@ -2984,7 +2984,7 @@ class PaperTable {
         $m = [];
         if ($this->all_rrows
             && ($whyNot = $this->user->perm_view_review($this->prow, null))) {
-            $m[] = "<p class=\"sd\">You can’t see the reviews for this submission. " . $whyNot->unparse_html() . "</p>";
+            $m[] = "<p class=\"sd\">You can’t see the reviews for this {$this->conf->snouns[0]}. " . $whyNot->unparse_html() . "</p>";
         }
         if (!$this->conf->time_review_open()
             && $this->prow->review_type($this->user)) {

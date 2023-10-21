@@ -63,6 +63,8 @@ class Conf {
     public $any_response_open;
     /** @var bool */
     public $sort_by_last;
+    /** @var array{string,string,string,string} */
+    public $snouns;
     /** @var ?string */
     private $_site_locks;
     /** @var PaperOptionList */
@@ -589,6 +591,15 @@ class Conf {
         $this->short_name = $this->opt["shortName"];
         $this->long_name = $this->opt["longName"];
 
+        // set submission nouns
+        if (isset($this->opt["submissionNouns"])
+            && is_string_list($this->opt["submissionNouns"])
+            && count($this->opt["submissionNouns"]) === 4) {
+            $this->snouns = $this->opt["submissionNouns"];
+        } else {
+            $this->snouns = ["submission", "submissions", "Submission", "Submissions"];
+        }
+
         // expand ${confid}, ${confshortname}
         foreach (["sessionName", "downloadPrefix", "conferenceSite",
                   "paperSite", "defaultPaperSite", "contactName",
@@ -603,10 +614,9 @@ class Conf {
         $this->download_prefix = $this->opt["downloadPrefix"];
 
         foreach (["emailFrom", "emailSender", "emailCc", "emailReplyTo"] as $k) {
-            if (isset($this->opt[$k])
-                && is_string($this->opt[$k])
-                && strpos($this->opt[$k], "\$") !== false) {
-                $this->opt[$k] = preg_replace('/\$\{confid\}|\$confid\b/', $confid, $this->opt[$k]);
+            if (is_string(($s = $this->opt[$k] ?? null))
+                && strpos($s, "\$") !== false) {
+                $this->opt[$k] = preg_replace('/\$\{confid\}|\$confid\b/', $confid, $s);
                 if (strpos($this->opt[$k], "confshortname") !== false) {
                     $v = rfc2822_words_quote($this->short_name);
                     if ($v[0] === "\"" && strpos($this->opt[$k], "\"") !== false) {
@@ -4353,6 +4363,7 @@ class Conf {
             "assets" => $this->_assets_url,
             "cookie_params" => "",
             "postvalue" => $qreq->maybe_post_value(),
+            "snouns" => $this->snouns
         ];
         $userinfo = [];
         if (($x = $this->opt("sessionDomain"))) {

@@ -48,7 +48,7 @@ class Home_Page {
             } else {
                 $result = $user->conf->qe("select reviewToken, paperId from PaperReview where reviewToken?a order by paperId", $user->review_tokens());
                 while (($row = $result->fetch_row())) {
-                    $ml[] = MessageItem::success("<5>Review token ‘" . htmlspecialchars(encode_token((int) $row[0])) . "’ lets you review " . Ht::link("submission #{$row[1]}", $user->conf->hoturl("paper", "p={$row[1]}")));
+                    $ml[] = MessageItem::success("<5>Review token ‘" . htmlspecialchars(encode_token((int) $row[0])) . "’ lets you review " . Ht::link("{$user->conf->snouns[0]} #{$row[1]}", $user->conf->hoturl("paper", "p={$row[1]}")));
                 }
             }
             $user->conf->feedback_msg($ml);
@@ -533,7 +533,7 @@ class Home_Page {
                 "p" => "new", "sclass" => $sr->unnamed ? null : $sr->tag
             ]);
             $actions = [[
-                "<a class=\"btn\" href=\"{$url}\">" . Ftext::as(5, $conf->_c("paper_edit", "<0>New {sclass} submission", new FmtArg("sclass", $sr->tag))) . "</a>",
+                "<a class=\"btn\" href=\"{$url}\">" . Ftext::as(5, $conf->_c("paper_edit", "<0>New {sclass} {$conf->snouns[0]}", new FmtArg("sclass", $sr->tag))) . "</a>",
                 $sr->time_register(true) ? "" : "(admin only)"
             ]];
             if ($dltx !== "") {
@@ -550,9 +550,9 @@ class Home_Page {
             // Be careful not to refer to a future deadline; perhaps an admin
             // just turned off submissions.
             if (!$sr->submit || $sr->submit + $sr->grace > Conf::$now) {
-                $deadlines[] = "The site is not open for {$sr->title1}submissions at the moment.";
+                $deadlines[] = "The site is not open for {$sr->title1}{$this->conf->snouns[1]} at the moment.";
             } else {
-                $deadlines[] = 'The <a href="' . $this->conf->hoturl("deadlines") . "\">{$sr->title1}submission deadline</a> has passed.";
+                $deadlines[] = 'The <a href="' . $this->conf->hoturl("deadlines") . "\">{$sr->title1}{$this->conf->snouns[0]} deadline</a> has passed.";
             }
         } else if (!$sr->time_update(true)) {
             $deadlines[] = 'The <a href="' . $this->conf->hoturl("deadlines") . "\">{$sr->title1}update deadline</a> has passed, but you can still submit.";
@@ -588,13 +588,17 @@ class Home_Page {
             return;
         }
 
-        echo '<div class="homegrp" id="homeau">',
-            $this->print_h2_home(Ftext::as(5, $conf->_c("home", $user->is_author() ? "<0>Your Submissions" : "<0>Submissions")));
+        if ($user->is_author()) {
+            $t = $conf->_c("home", "<0>Your {$conf->snouns[3]}");
+        } else {
+            $t = $conf->_c("home", "<0>{$conf->snouns[3]}");
+        }
+        echo '<div class="homegrp" id="homeau">', $this->print_h2_home(Ftext::as(5, $t));
 
         if (!empty($srlist)) {
             if (!$user->has_email()) {
-                echo '<p>', Ht::link("Sign in", $conf->hoturl("signin")),
-                    ' to manage submissions.</p>';
+                echo "<p>", Ht::link("Sign in", $conf->hoturl("signin")),
+                    " to manage {$conf->snouns[1]}.</p>";
             }
             usort($srlist, "SubmissionRound::compare");
             foreach ($srlist as $sr) {
@@ -628,9 +632,9 @@ class Home_Page {
         }
         if (empty($srlist) && empty($deadlines)) {
             if ($any_open) {
-                $deadlines[] = 'The <a href="' . $conf->hoturl("deadlines") . '">deadline</a> for registering submissions has passed.';
+                $deadlines[] = "The <a href=\"" . $conf->hoturl("deadlines") . "\">deadline</a> for registering {$conf->snouns[1]} has passed.";
             } else {
-                $deadlines[] = "The site is not open for submissions at the moment.";
+                $deadlines[] = "The site is not open for {$conf->snouns[1]} at the moment.";
             }
         }
         // NB only has("accepted") if author can see an accepted paper

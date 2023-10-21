@@ -3788,6 +3788,7 @@ function trevent_comet(prev_eventid, start_at) {
 
 // deadline loading
 function load(dlx, prev_eventid, is_initial) {
+    siteinfo.snouns = siteinfo.snouns || ["submission", "submissions", "Submission", "Submissions"];
     if (dl && dl.tracker_recent && dlx)
         dlx.tracker_recent = dl.tracker_recent;
     if (dlx)
@@ -6338,7 +6339,7 @@ function cmt_render_form(cj) {
         }
         hc.push('<span class="visibility-topic"><span class="d-inline-block ml-2 mr-2">about</span>');
         hc.push('<span class="select"><select id="' + cid + '-topic" name="topic">', '</select></span></span>');
-        hc.push('<option value="paper">submission</option>');
+        hc.push('<option value="paper">' + siteinfo.snouns[0] + '</option>');
         hc.push_pop('<option value="rev" selected>reviews</option>');
         hc.push('<p class="visibility-hint f-h text-break-line"></p>');
         if (!cj.by_author && hotcrp.status.rev.blind && hotcrp.status.rev.blind !== true) {
@@ -8832,7 +8833,7 @@ function tablelist_postreorder(tbl) {
                         else if (hasClass(sub, "pl"))
                             ++np;
                     }
-                var np_html = plural(np, "submission");
+                var np_html = siteinfo.snouns[np == 1 ? 0 : 1];
                 var $np = $(cur).find(".plheading-count");
                 if ($np.html() !== np_html)
                     $np.html(np_html);
@@ -11135,7 +11136,7 @@ handle_ui.on("js-remove-document", function () {
 handle_ui.on("js-withdraw", function () {
     var f = this.form,
         hc = popup_skeleton({near: this, action: f});
-    hc.push('<p>Are you sure you want to withdraw this submission from consideration and/or publication?');
+    hc.push('<p>Are you sure you want to withdraw this ' + siteinfo.snouns[0] + ' from consideration and/or publication?');
     if (!this.hasAttribute("data-revivable"))
         hc.push(' Only administrators can undo this step.');
     hc.push('</p>');
@@ -11153,7 +11154,7 @@ handle_ui.on("js-withdraw", function () {
 handle_ui.on("js-delete-paper", function () {
     var f = this.form,
         hc = popup_skeleton({near: this, action: f});
-    hc.push('<p>Be careful: This will permanently delete all information about this submission from the database and <strong>cannot be undone</strong>.</p>');
+    hc.push('<p>Be careful: This will permanently delete all information about this ' + siteinfo.snouns[0] + ' from the database and <strong>cannot be undone</strong>.</p>');
     hc.push_actions(['<button type="submit" name="delete" value="1" class="btn-danger">Delete</button>',
         '<button type="button" name="cancel">Cancel</button>']);
     var $d = hc.show();
@@ -11863,7 +11864,7 @@ handle_ui.on("js-users-selection", function () {
 
 handle_ui.on("js-cannot-delete-user", function () {
     var hc = popup_skeleton({near: this});
-    hc.push('<p><strong>This account cannot be deleted</strong> because they are the sole contact for ' + $(this).data("soleAuthor") + '. To delete the account, first remove those submissions from the database or give them more contacts.</p>');
+    hc.push('<p><strong>This account cannot be deleted</strong> because they are the sole contact for ' + $(this).data("soleAuthor") + '. To delete the account, first remove those ' + siteinfo.snouns[1] + ' from the database or give them more contacts.</p>');
     hc.push_actions(['<button type="button" name="cancel">Cancel</button>']);
     hc.show();
 });
@@ -12291,7 +12292,7 @@ function handle_list_submit_bulkwarn(table, chkval, bgform, evt) {
         ]);
         var $d = hc.show(false), m = table.getAttribute("data-bulkwarn-ftext");
         if (m === null || m === "") {
-            m = "<5><p>Some program committees discourage reviewers from downloading submissions in bulk. Are you sure you want to continue?</p>";
+            m = "<5><p>Some program committees discourage reviewers from downloading " + siteinfo.snouns[1] + " in bulk. Are you sure you want to continue?</p>";
         }
         render_text.onto($d.find(".container")[0], "f", m);
         $d.on("closedialog", function () {
