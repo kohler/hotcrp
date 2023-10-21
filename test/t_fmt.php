@@ -156,4 +156,17 @@ class Fmt_Tester {
         xassert_eqq($ms->_("Hello!", new FmtArg("lang", "fr")), "Bonjour");
         xassert_eqq($ms->_("Hello!!", new FmtArg("lang", "fr")), "Bonjour");
     }
+
+    function test_example() {
+        $ms = new Fmt;
+        $jl = json_decode('[{"in": "Hello", "out": "Hello, {name:list}", "require": ["{name}"]},
+    {"in": "Hello", "out": "Hello, all", "require": ["#{name}>2"]}]');
+        foreach ($jl as $j) {
+            $ms->addj($j);
+        }
+        xassert_eqq($ms->_("Hello"), "Hello");
+        xassert_eqq($ms->_("Hello", new FmtArg("name", ["Bob"])), "Hello, Bob");
+        xassert_eqq($ms->_("Hello", new FmtArg("name", ["Bob", "Jane"])), "Hello, Bob and Jane");
+        xassert_eqq($ms->_("Hello", new FmtArg("name", ["Bob", "Jane", "Fred"])), "Hello, all");
+    }
 }

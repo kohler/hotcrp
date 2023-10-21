@@ -90,7 +90,10 @@ class PCConflicts_PaperOption extends PaperOption {
             }
         }
         if (!empty($pcs)) {
-            $ov->warning($this->conf->_("<5>You may have missed conflicts of interest with {:list}. Please verify that all conflicts are correctly marked.", $pcs) . $this->conf->_(" Hover over “possible conflict” labels for more information."));
+            $ov->warning(Ftext::join_nonempty(" ", [
+                $this->conf->_("<5>You may have missed conflicts of interest with {:list}. Please verify that all conflicts are correctly marked.", $pcs),
+                $this->conf->_("<5>Hover over “possible conflict” labels for more information.")
+            ]));
         }
     }
     private function _warn_changes(PaperValue $ov) {

@@ -173,12 +173,12 @@ class PaperTable {
             if (($pid = $qreq->paperId) && ctype_digit($pid)) {
                 $title = "#{$pid}";
             } else {
-                $title = Ftext::as(5, $conf->_c("paper_edit", "<0>{$conf->snouns[2]}"));
+                $title = $conf->_c5("paper_edit", "<0>Submission");
             }
             $t .= '">' . $title;
         } else if (!$prow->paperId) {
             $sr = $prow->submission_round();
-            $title = Ftext::as(5, $conf->_c("paper_edit", "<0>New {sclass} {$conf->snouns[0]}", new FmtArg("sclass", $sr->tag, 0)));
+            $title = $conf->_c5("paper_edit", "<0>New {sclass} {submission}", new FmtArg("sclass", $sr->tag, 0));
             $t .= '">' . $title;
         } else {
             $paperTable->initialize_list();
@@ -767,17 +767,6 @@ class PaperTable {
         return !empty($this->_autoready);
     }
 
-    /** @param string ...$m
-     * @return string */
-    static function mjoin(...$m) {
-        $t = "";
-        foreach ($m as $s) {
-            if ($s !== null && $s !== "")
-                $t .= $t === "" ? $s : " {$s}";
-        }
-        return $t;
-    }
-
     private function print_editable_complete() {
         if ($this->prow->timeModified > 0) {
             echo Ht::hidden("status:previous_version", $this->prow->timeModified);
@@ -812,39 +801,39 @@ class PaperTable {
                 "data-urgent" => Conf::$now <= $sr->submit
             ]),
             '</span><strong>',
-            $this->conf->_("The {$this->conf->snouns[0]} is {$complete}"),
+            $this->conf->_5("<5>The {submission} is {$complete}"),
             '</strong></label>';
 
         // script.js depends on the HTML here
         $updatem = $submitm = $requiredm = $freezem = "";
         if (Conf::$now <= $sr->update) {
             $dlhtml = $this->conf->unparse_time_with_local_span($sr->update);
-            $updatem = "You can update this {$this->conf->snouns[0]} until {$dlhtml}.";
+            $updatem = $this->conf->_c("paper_edit", "<5>You can update this {submission} until {:expandedtime}.", $sr->update);
         }
         if (Conf::$now <= $sr->submit) {
-            $sdlhtml = $sr->update === $sr->submit ? "then" : $this->conf->unparse_time_with_local_span($sr->submit);
-            $submitm = "{$this->conf->snouns[2]} not marked {$complete} by {$sdlhtml} will not be evaluated.";
+            $submitm = $this->conf->_c("paper_edit", "<5>{Submissions} not marked {$complete} by {:expandedtime} will not be evaluated.", $sr->submit, $sr->update);
         }
         if ($sr->freeze) {
-            $freezem = "Completed {$this->conf->snouns[1]} are frozen and cannot be changed further.";
+            $freezem = $this->conf->_c("paper_edit", "<5>Completed {submissions} are frozen and cannot be changed further.");
         }
         if ($autoready) {
-            $requiredm = "You must fill out all required fields before marking the {$this->conf->snouns[0]} {$complete}.";
+            $requiredm = $this->conf->_c("paper_edit", "<5>You must fill out all required fields before marking the {submission} {$complete}.");
             echo '<p class="feedback ',
                 $updatem || $submitm ? "is-urgent-note" : "is-note",
                 ' if-unready-required',
                 $ready_open ? " hidden" : "", '">',
-                self::mjoin($updatem, $submitm, $freezem, $requiredm), '</p>';
+                Ftext::as(5, Ftext::join_nonempty(" ", [$updatem, $submitm, $freezem, $requiredm])),
+                '</p>';
         }
         if ($submitm) {
             echo '<p class="feedback is-urgent-note if-unready',
                 $ready_open ? "" : " hidden", '">',
-                self::mjoin($updatem, $submitm, $freezem), '</p>';
+                Ftext::as(5, Ftext::join_nonempty(" ", [$updatem, $submitm, $freezem])), '</p>';
         }
         if ($updatem || $freezem) {
             echo '<p class="feedback is-note if-ready',
                 $checked ? "" : " hidden", '">',
-                self::mjoin($updatem, $submitm, $freezem), '</p>';
+                Ftext::as(5, Ftext::join_nonempty(" ", [$updatem, $submitm, $freezem])), '</p>';
         }
 
         echo Ht::hidden("has_status:submit", 1), "</div>\n";
@@ -1233,7 +1222,7 @@ class PaperTable {
             if ($refusals && $refusals[0]->refusedReviewId) {
                 $this->_print_decline_reason($capu, $refusals[0]);
             } else if ($capuid) {
-                echo '<div class="msg msg-warning demargin remargin-left remargin-right"><p>You have declined to complete a review. Thank you for informing us.</p></div>';
+                echo "<div class=\"msg msg-warning demargin remargin-left remargin-right\"><p>Your review for this {$this->conf->snouns[0]} is currently inaccessible.</p></div>";
             }
         }
 
@@ -1888,8 +1877,8 @@ class PaperTable {
         $sr = $this->prow->submission_round();
         if ($this->admin || $sr->time_register(true)) {
             $mt = [
-                $this->conf->_("<5>Enter information about your {$this->conf->snouns[0]}."),
-                $this->conf->_("<5>{$this->conf->snouns[3]} must be registered by {register:time} and completed by {submit:time}.", new FmtArg("register", $sr->register), new FmtArg("submit", $sr->update))
+                $this->conf->_("<5>Enter information about your {submission}."),
+                $this->conf->_("<5>{Submissions} must be registered by {register:time} and completed by {submit:time}.", new FmtArg("register", $sr->register), new FmtArg("submit", $sr->update))
             ];
             if ($sr->register > 0 && ($sr->update <= 0 || $sr->register < $sr->update)) {
                 $popt = $this->conf->option_by_id(DTYPE_SUBMISSION);
@@ -1929,12 +1918,11 @@ class PaperTable {
             $whyNot = $this->user->perm_edit_paper($this->prow);
             if (!$whyNot) {
                 if (($missing = PaperTable::missing_required_fields($this->prow))) {
-                    $first = $this->conf->_("<5>This {$this->conf->snouns[0]} is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
+                    $first = $this->conf->_("<5>This {submission} is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
                 } else {
-                    $first = $this->conf->_("<5>This {$this->conf->snouns[0]} is marked as not ready for review.");
-                    $first = "<5><strong>" . Ftext::as(5, $first) . "</strong>";
+                    $first = "<5><strong>" . $this->conf->_5("<5>This {submission} is marked as not ready for review.") . "</strong>";
                 }
-                $rest = $this->conf->_c("paper_edit", "<0>Incomplete {$this->conf->snouns[1]} will not be considered.", new FmtArg("deadline", $sr->update));
+                $rest = $this->conf->_c("paper_edit", "<0>Incomplete {submissions} will not be considered.", new FmtArg("deadline", $sr->update));
                 $this->_main_message(Ftext::join_nonempty(" ", [$first, $rest]), MessageSet::URGENT_NOTE);
             } else if (isset($whyNot["frozen"])
                        && $this->user->can_finalize_paper($this->prow)) {
@@ -2019,7 +2007,7 @@ class PaperTable {
                 return $this->edit_status->has_problem_at($o->formid);
             });
             if (!empty($fields)) {
-                $this->_main_message($this->conf->_c("paper_edit", "<5>Please check {:list} before completing the {$this->conf->snouns[0]}.", self::field_title_links($fields, "edit_title")), $this->edit_status->problem_status());
+                $this->_main_message($this->conf->_c("paper_edit", "<5>Please check {:list} before completing the {submission}.", self::field_title_links($fields, "edit_title")), $this->edit_status->problem_status());
             }
         }
     }
@@ -2348,7 +2336,7 @@ class PaperTable {
         $overrides = $this->user->add_overrides(Contact::OVERRIDE_EDIT_CONDITIONS);
         $sr = $this->prow->submission_round();
         echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">',
-            Ftext::as(5, $this->conf->_c("paper_edit", $this->prow->paperId ? "<0>Edit {sclass} {$this->conf->snouns[0]}" : "<0>New {sclass} {$this->conf->snouns[0]}", new FmtArg("sclass", $sr->tag))),
+            $this->conf->_c5("paper_edit", $this->prow->paperId ? "<0>Edit {sclass} {submission}" : "<0>New {sclass} {submission}", new FmtArg("sclass", $sr->tag)),
             '</span></h2></div>';
 
         $this->edit_fields = array_values(array_filter(
@@ -2395,7 +2383,7 @@ class PaperTable {
             htmlspecialchars($this->conf->short_name), '</span> ';
         if ($this->prow->paperId <= 0) {
             $sr = $this->prow->submission_round();
-            echo Ftext::as(5, $this->conf->_c("paper_edit", "<0>new {sclass} {$this->conf->snouns[0]}", new FmtArg("sclass", $sr->tag, 0)));
+            echo $this->conf->_c5("paper_edit", "<0>new {sclass} {submission}", new FmtArg("sclass", $sr->tag, 0));
         } else if ($this->mode !== "re") {
             echo "#", $this->prow->paperId;
         } else if ($this->editrrow && $this->editrrow->reviewOrdinal) {
@@ -2752,7 +2740,7 @@ class PaperTable {
         if ($this->mode !== "edit"
             && $prow->has_author($this->user)
             && !$this->user->can_administer($prow)) {
-            $es = Ftext::as(5, $this->conf->_c("paper_edit", "<0>Edit {$this->conf->snouns[0]}"));
+            $es = $this->conf->_c5("paper_edit", "<0>Edit {submission}");
             $t[] = '<a href="' . $prow->hoturl(["m" => "edit"]) . '" class="noul revlink">'
                 . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>{$es}</strong></u></a>";
         }
@@ -2824,12 +2812,12 @@ class PaperTable {
         $aut = "";
         if ($prow->has_author($this->user)) {
             if ($prow->author_by_email($this->user->email)) {
-                $aut = $this->conf->_("You are an <span class=\"author\">author</span> of this {$this->conf->snouns[0]}.");
+                $aut = $this->conf->_5("<5>You are an <span class=\"author\">author</span> of this {submission}.");
             } else {
-                $aut = $this->conf->_("You are a <span class=\"author\">contact</span> for this {$this->conf->snouns[0]}.");
+                $aut = $this->conf->_5("<5>You are a <span class=\"author\">contact</span> for this {submission}.");
             }
         } else if ($prow->has_conflict($this->user)) {
-            $aut = $this->conf->_("You have a <span class=\"conflict\">conflict</span> with this {$this->conf->snouns[0]}.");
+            $aut = $this->conf->_5("<5>You have a <span class=\"conflict\">conflict</span> with this {submission}.");
         }
         return $pret
             . ($aut ? "<p class=\"sd\">{$aut}</p>" : "")

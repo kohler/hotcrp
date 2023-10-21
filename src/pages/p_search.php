@@ -255,7 +255,7 @@ class Search_Page {
 
         if (!empty($this->user->hidden_papers)
             && $this->user->is_actas_user()) {
-            $this->pl->message_set()->warning_at(null, $this->conf->_("<0>Submissions {:numlist} are totally hidden when viewing the site as another user.", array_map(function ($n) { return "#{$n}"; }, array_keys($this->user->hidden_papers))));
+            $this->pl->message_set()->warning_at(null, $this->conf->_("<0>{Submissions} {:numlist} are totally hidden when viewing the site as another user.", array_map(function ($n) { return "#{$n}"; }, array_keys($this->user->hidden_papers))));
         }
         if ($search->has_message()) {
             echo '<div class="msgs-wide">',
@@ -446,7 +446,7 @@ class Search_Page {
         // paper group
         if (!PaperSearch::viewable_limits($user, $qreq->t)) {
             $qreq->print_header("Search", "search");
-            $conf->error_msg("<0>You aren’t allowed to search submissions");
+            $conf->error_msg($conf->_("<0>You aren’t allowed to search {submissions}"));
             $qreq->print_footer();
             exit;
         }

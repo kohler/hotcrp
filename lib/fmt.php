@@ -681,10 +681,10 @@ class Fmt {
         } else if (ctype_digit($m[1])) {
             $fa = self::find_arg($fctx->args, intval($m[1]));
         } else {
-            $fa = self::find_arg($fctx->args, strtolower($m[1]));
+            $fa = self::find_arg($fctx->args, $m[1]);
         }
         if (!$fa
-            && ($imt = $this->find($fctx->context, strtolower($m[1]), [], null))
+            && ($imt = $this->find($fctx->context, $m[1], [], null))
             && $imt->template) {
             list($fmt, $out) = Ftext::parse($this->expand($fctx->context, $imt->out, $fctx->args, $imt->expand, $fctx->format));
             $fa = new FmtArg("", $out, $fmt);

@@ -607,9 +607,9 @@ class HotCRPMailer extends Mailer {
         if (!empty($aunames) && ($user = $rest["confirm_message_for"] ?? null)) {
             '@phan-var-force Contact $user';
             if ($user->allow_view_authors($row)) {
-                $m = $row->conf->_("<5>Notified submission contacts {:nblist}", $aunames);
+                $m = $row->conf->_("<5>Notified {submission} contacts {:nblist}", $aunames);
             } else {
-                $m = $row->conf->_("<0>Notified submission contact(s)");
+                $m = $row->conf->_("<0>Notified {submission} contact(s)");
             }
             $row->conf->success_msg($m);
         }

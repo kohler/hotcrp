@@ -516,15 +516,14 @@ class Home_Page {
 
     private function print_new_submission(Contact $user, SubmissionRound $sr) {
         $conf = $user->conf;
-        $isreg = $sr->register >= Conf::$now && $sr->register < $sr->submit;
-        $dlt = $isreg ? $sr->register : $sr->submit;
-        if ($dlt > 0) {
-            $dltype = $isreg ? "Registration" : "Submission";
-            if (!$sr->unnamed) {
-                $dltype = strtolower($dltype);
-            }
-            $dlspan = $conf->unparse_time_with_local_span($dlt);
-            $dltx = "<em class=\"deadline\">{$sr->title1}{$dltype} deadline: {$dlspan}</em>";
+        if ($sr->register >= Conf::$now && $sr->register < $sr->submit) {
+            $dname = $conf->_5("<5>{sclass} registration deadline", new FmtArg("sclass", $sr->tag, 0));
+            $dtime = $conf->unparse_time_with_local_span($sr->register);
+            $dltx = "<em class=\"deadline\">{$dname}: {$dtime}</em>";
+        } else if ($sr->submit > 0) {
+            $dname = $conf->_5("<5>{sclass} deadline", new FmtArg("sclass", $sr->tag, 0));
+            $dtime = $conf->unparse_time_with_local_span($sr->submit);
+            $dltx = "<em class=\"deadline\">{$dname}: {$dtime}</em>";
         } else {
             $dltx = "";
         }
@@ -533,7 +532,7 @@ class Home_Page {
                 "p" => "new", "sclass" => $sr->unnamed ? null : $sr->tag
             ]);
             $actions = [[
-                "<a class=\"btn\" href=\"{$url}\">" . Ftext::as(5, $conf->_c("paper_edit", "<0>New {sclass} {$conf->snouns[0]}", new FmtArg("sclass", $sr->tag))) . "</a>",
+                "<a class=\"btn\" href=\"{$url}\">" . $conf->_c5("paper_edit", "<0>New {sclass} {submission}", new FmtArg("sclass", $sr->tag)) . "</a>",
                 $sr->time_register(true) ? "" : "(admin only)"
             ]];
             if ($dltx !== "") {
@@ -589,9 +588,9 @@ class Home_Page {
         }
 
         if ($user->is_author()) {
-            $t = $conf->_c("home", "<0>Your {$conf->snouns[3]}");
+            $t = $conf->_c("home", "<0>Your {Submissions}");
         } else {
-            $t = $conf->_c("home", "<0>{$conf->snouns[3]}");
+            $t = $conf->_c("home", "<0>{Submissions}");
         }
         echo '<div class="homegrp" id="homeau">', $this->print_h2_home(Ftext::as(5, $t));
 

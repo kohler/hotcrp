@@ -1,4 +1,9 @@
 [
+    {"in": "submission", "out": "submission", "template": true},
+    {"in": "submissions", "out": "submissions", "template": true},
+    {"in": "Submission", "out": "Submission", "template": true},
+    {"in": "Submissions", "out": "Submissions", "template": true},
+
     ["average {0} score {1}", "{0} score {1}", ["{2}=1"]],
 
     {
@@ -20,16 +25,17 @@
         ]
     },
 
-    ["<0>A submission may have at most {max} authors", "<0>A submission may have at most one author", ["{max}=1"]],
+    ["<0>A {submission} may have at most {max} authors", "<0>A {submission} may have at most one author", ["{max}=1"]],
 
     ["{} papers accepted out of {} submitted.", "{} paper accepted out of {} submitted.", ["{0}=1"]],
 
     ["<5>{sclass} registration deadline", "<5>Registration deadline", ["!{sclass}"]],
-    ["<5>You can register new {sclass} submissions until this deadline.", "<5>You can register new submissions until this deadline.", ["!{sclass}"]],
+    ["<5>You can register new {sclass} {submissions} until this deadline.", "<5>You can register new {submissions} until this deadline.", ["!{sclass}"]],
     ["<5>{sclass} update deadline", "<5>Update deadline", ["!{sclass}"]],
-    ["<5>You can update {sclass} submissions and upload new versions until this deadline.", "<5>You can update submissions and upload new versions until this deadline.", ["!{sclass}"]],
+    ["<5>You can update {sclass} {submissions} and upload new versions until this deadline.", "<5>You can update {submissions} and upload new versions until this deadline.", ["!{sclass}"]],
     ["<5>{sclass} submission deadline", "<5>Submission deadline", ["!{sclass}"]],
-    ["<5>{sclass} submissions must be ready by this deadline to be reviewed.", "<5>Submissions must be ready by this deadline to be reviewed.", ["!{sclass}"]],
+    ["<5>{sclass} deadline", "<5>Deadline", ["!{sclass}"]],
+    ["<5>{sclass} {submissions} must be ready by this deadline to be reviewed.", "<5>{Submissions} must be ready by this deadline to be reviewed.", ["!{sclass}"]],
     ["<5>{respround} response deadline", "<5>Response deadline", ["!{respround}"]],
     ["<5>You can submit {respround} responses to the reviews until this deadline.", "<5>You can submit responses to the reviews until this deadline.", ["!{respround}"]],
     ["<5>{round} review deadline", "<5>Review deadline", ["!{round}"]],
@@ -39,7 +45,7 @@
     ["<5>{round} external review deadline", "<5>External review deadline", ["!{round}"]],
     ["<5>{round} external review hard deadline", "<5>External review hard deadline", ["!{round}"]],
 
-    ["<0>Updated submission (changed {:list})", "<0>Updated submission", ["#{0}=0"]],
+    ["<0>Updated {submission} (changed {:list})", "<0>Updated {submission}", ["#{0}=0"]],
     ["<0>Updated final version (changed {:list})", "<0>Updated final version", ["#{0}=0"]],
     ["{:list} were changed.", "The {:list} field was changed.", ["#{0}=1"]],
     ["<0>At least {min} selections required", "<0>Exactly one selection required", ["{min}=1", "{max}=1"]],
@@ -51,7 +57,7 @@
     ["<0>Options {:list} not found", "<0>Option ‘{:list}’ not found", ["#{0}=1"]],
     ["<0>Ignoring unknown fields {:list}", "<0>Ignoring unknown field {:list}", ["#{0}=1"]],
     ["<5>Notified mentioned users {:nblist}", "<5>Notified mentioned user {:nblist}", ["#{0}=1"]],
-    ["<5>Notified submission contacts {:nblist}", "<5>Notified submission contact {:nblist}", ["#{0}=1"]],
+    ["<5>Notified {submission} contacts {:nblist}", "<5>Notified {submission} contact {:nblist}", ["#{0}=1"]],
 
     ["sf_submission", "Draft submission", ["{draft}"]],
     ["sf_submission", "Submission", ["{edit}"]],
@@ -81,29 +87,37 @@
             ["<0>Reviewers will see author information only after submitting a review.", ["{max}=1", "setting.sub_blind=3"]]
         ]
     },
-    ["sfdescription_contacts", "<0>These users can view and edit the submission. All listed authors with site accounts are contacts. You can add contacts who aren’t in the author list or create accounts for authors who haven’t yet signed in."],
+    ["sfdescription_contacts", "<0>These users can view and edit the {submission}. All listed authors with site accounts are contacts. You can add contacts who aren’t in the author list or create accounts for authors who haven’t yet signed in."],
     ["sfdescription_nonblind", "<0>Check this to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"],
     {
         "in": "sfdescription_topics", "m": [
-            ["<0>Select any topics that apply to your submission."],
-            ["<0>Select between {min} and {max} topics that apply to your submission.", ["{min}>0", "{max}>0"]],
-            ["<0>Select exactly one topic that applies to your submission.", ["{min}=1", "{max}=1"]],
-            ["<0>Select at least {min} topics that apply to your submission.", ["{min}>0", "!{max}"]],
-            ["<0>Select at least one topic that applies to your submission.", ["{min}=1", "!{max}"]],
-            ["<0>Select at most {max} topics that apply to your submission.", ["!{min}", "{max}>0"]],
-            ["<0>Select at most one topic that applies to your submission.", ["!{min}", "{max}=1"]]
+            ["<0>Select any topics that apply to your {submission}."],
+            ["<0>Select between {min} and {max} topics that apply to your {submission}.", ["{min}>0", "{max}>0"]],
+            ["<0>Select exactly one topic that applies to your {submission}.", ["{min}=1", "{max}=1"]],
+            ["<0>Select at least {min} topics that apply to your {submission}.", ["{min}>0", "!{max}"]],
+            ["<0>Select at least one topic that applies to your {submission}.", ["{min}=1", "!{max}"]],
+            ["<0>Select at most {max} topics that apply to your {submission}.", ["!{min}", "{max}>0"]],
+            ["<0>Select at most one topic that applies to your {submission}.", ["!{min}", "{max}=1"]]
         ]
     },
-    ["sfdescription_pc_conflicts", "<5>Select the PC members who have conflicts of interest with this submission. {conflictdef}"],
+    ["sfdescription_pc_conflicts", "<5>Select the PC members who have conflicts of interest with this {submission}. {conflictdef}"],
     ["sfdescription_collaborators", "<5><p>List other people and institutions with which the authors have conflicts of interest. We use this information when assigning external reviews. Collaborators declared on the authors’ HotCRP profiles need not be repeated here.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>"],
     ["sfdescription_collaborators", "<5><p>List people and institutions with which the authors have conflicts of interest. {conflictdef} Be sure to include conflicted PC members. We use this information when assigning PC and external reviews. Collaborators declared on the authors’ HotCRP profiles need not be repeated here.</p><p><strong>Enter one conflict per line.</strong> Use parentheses for affiliations and institutions. Examples: “Jelena Markovic (EPFL)”, “All (University of Southern California)”.</p>", ["!setting.sub_pcconf"]],
 
-    ["paper_edit", "<0>New {sclass} submission", "<0>New submission", ["{sclass}="]],
-    ["paper_edit", "<0>new {sclass} submission", "<0>new submission", ["{sclass}="]],
-    ["paper_edit", "<0>Edit {sclass} submission", "<0>Edit submission", ["{sclass}="]],
-    ["paper_edit", "<0>Incomplete submissions will not be considered.", "<0>Submissions incomplete as of {deadline:time} will not be considered.", ["{deadline}>0"]],
-    ["paper_edit", "<5>Please check {:list} before completing the submission.", "<5>Please check the issues highlighted below before completing the submission.", ["!#{0}"]],
-    ["<5>This submission is not ready for review. Required fields {:list} are missing.", "<5>This submission is not ready for review. Required field {:list} is missing.", ["#{0}=1"]],
+    ["paper_edit", "<0>New {sclass} {submission}", "<0>New {submission}", ["{sclass}="]],
+    ["paper_edit", "<0>new {sclass} {submission}", "<0>new {submission}", ["{sclass}="]],
+    ["paper_edit", "<0>Edit {sclass} {submission}", "<0>Edit {submission}", ["{sclass}="]],
+    ["paper_edit", "<0>Incomplete {submissions} will not be considered.", "<0>{Submissions} incomplete as of {deadline:time} will not be considered.", ["{deadline}>0"]],
+    ["paper_edit", "<5>{Submissions} not marked ready for review by {:expandedtime} will not be evaluated.", "<5>{Submissions} not marked ready for review by then will not be evaluated.", ["{0}={1}"]],
+    ["paper_edit", "<5>Please check {:list} before completing the {submission}.", "<5>Please check the issues highlighted below before completing the {submission}.", ["!#{0}"]],
+    ["<5>This {submission} is not ready for review. Required fields {:list} are missing.", "<5>This {submission} is not ready for review. Required field {:list} is missing.", ["#{0}=1"]],
+
+    {
+        "in": "<0>You’re accessing this {submission} using a special link for reviewer {reviewer}", "m": [
+            ["<0>You’re accessing this {submission} using a special link for reviewer {reviewer}. (You are signed in as {self}.)", ["{self}"]],
+            ["<5>You’re accessing this {submission} using a special link for reviewer {reviewer}. <a href=\"{signinurl}\" class=\"nw\">Sign in to the site</a>", ["!{self}", "{signinurl}"]]
+        ]
+    },
 
     ["<5>Submitted reviews {:list}", "<5>Submitted review {:list}", ["#{0}=1"]],
     ["<5>Submitted reviews {:list}", "<5>Review submitted", ["{single}"]],
@@ -125,7 +139,7 @@
     ["<5>Ignored blank reviews for {:list}", "<5>Ignored blank review for {:list}", ["#{0}=1"]],
     ["<5>Ignored blank reviews for {:list}", "<5>Blank review form ignored", ["{single}"]],
 
-    ["<0>Submissions {:numlist} are totally hidden when viewing the site as another user.", "<0>Submission {:numlist} is totally hidden when viewing the site as another user.", ["#{0}=1"]],
+    ["<0>{Submissions} {:numlist} are totally hidden when viewing the site as another user.", "<0>{Submission} {:numlist} is totally hidden when viewing the site as another user.", ["#{0}=1"]],
 
     ["<0>Disabled accounts {:list}", "<0>Disabled account {:list}", ["#{0}=1"]],
     ["<0>Enabled accounts {:list}", "<0>Enabled account {:list}", ["#{0}=1"]],
@@ -136,29 +150,29 @@
     ["<5>No changes to accounts {:list}", "<5>No changes to account {:list}", ["#{0}=1"]],
 
     ["permission_error", "<0>Permission error"],
-    ["permission_error", "<0>You aren’t allowed to view submission #{pid}", ["{action}=paper:view"]],
-    ["permission_error", "<0>You aren’t allowed to view submission #{pid}’s documents", ["{action}=document:view"]],
-    ["permission_error", "<0>You aren’t allowed to view reviews for submission #{pid}", ["{action}=review:view"]],
-    ["permission_error", "<0>You aren’t allowed to withdraw submission #{pid}", ["{action}=paper:withdraw"]],
-    ["permission_error", "<0>You aren’t allowed to request reviews for submission #{pid}", ["{action}=review:request"]],
-    ["permission_error", "<0>You aren’t allowed to review submission #{pid}", ["{action}=review:edit"]],
-    ["permission_error", "<0>You aren’t allowed to comment on submission #{pid}", ["{action}=comment:edit"]],
-    ["permission_error", "<0>You aren’t allowed to respond to the reviews for submission #{pid}", ["{action}=response:edit"]],
-    ["permission_error", "<0>You aren’t allowed to edit the contacts of submission #{pid}", ["{action}=contact:edit"]],
-    ["permission_error", "<0>You aren’t allowed to change tags for submission #{pid}", ["{action}=tag:edit"]],
-    ["permission_error", "<0>You aren’t allowed to view the {field} field for submission #{pid}", ["{action}=field:view"]],
+    ["permission_error", "<0>You aren’t allowed to view {submission} #{pid}", ["{action}=paper:view"]],
+    ["permission_error", "<0>You aren’t allowed to view {submission} #{pid}’s documents", ["{action}=document:view"]],
+    ["permission_error", "<0>You aren’t allowed to view reviews for {submission} #{pid}", ["{action}=review:view"]],
+    ["permission_error", "<0>You aren’t allowed to withdraw {submission} #{pid}", ["{action}=paper:withdraw"]],
+    ["permission_error", "<0>You aren’t allowed to request reviews for {submission} #{pid}", ["{action}=review:request"]],
+    ["permission_error", "<0>You aren’t allowed to review {submission} #{pid}", ["{action}=review:edit"]],
+    ["permission_error", "<0>You aren’t allowed to comment on {submission} #{pid}", ["{action}=comment:edit"]],
+    ["permission_error", "<0>You aren’t allowed to respond to the reviews for {submission} #{pid}", ["{action}=response:edit"]],
+    ["permission_error", "<0>You aren’t allowed to edit the contacts of {submission} #{pid}", ["{action}=contact:edit"]],
+    ["permission_error", "<0>You aren’t allowed to change tags for {submission} #{pid}", ["{action}=tag:edit"]],
+    ["permission_error", "<0>You aren’t allowed to view the {field} field for {submission} #{pid}", ["{action}=field:view"]],
     ["permission_error", "<0>You aren’t allowed to view the {field} field", ["{action}=field:view", "!{pid}"]],
 
     ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> to access this page"],
-    ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> in order to start a new submission.", ["{action}=paper:start"]],
+    ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> in order to start a new {submission}.", ["{action}=paper:start"]],
     ["signin_required", "<0>You must sign in to access this page", ["!{url}"]],
     ["signin_required", "<5><a href=\"{url}\">Sign in to your HotCRP account</a> to make changes", ["{action}=paper:edit"]],
 
     {
         "context": "deadline_error", "in": "<0>Action not available", "m": [
-            ["<0>Authors can’t view reviews for submission #{pid} now", ["{deadline}=au_seerev"]],
+            ["<0>Authors can’t view reviews for {submission} #{pid} now", ["{deadline}=au_seerev"]],
             ["<0>The site is not open for reviewing", ["{deadline}=rev_open"]],
-            ["<0>The site is not open for submissions", ["{deadline}=sub_open"]],
+            ["<0>The site is not open for {submissions}", ["{deadline}=sub_open"]],
             ["<0>The site is not open for responses", ["{deadline}^=response"]]
         ]
     },
@@ -166,18 +180,18 @@
         "context": "deadline_error", "in": "<0>Action not available yet", "m": [
             ["<0>The site will open for reviewing at {time:time}", ["{deadline}=rev_open"]],
             ["<5>The site will open for reviewing at {time:expandedtime}", ["{deadline}=rev_open", "{fmt}=5"]],
-            ["<0>The site will open for submissions at {time:time}", ["{deadline}=sub_open"]],
-            ["<5>The site will open for submissions at {time:expandedtime}", ["{deadline}=sub_open", "{fmt}=5"]]
+            ["<0>The site will open for {submissions} at {time:time}", ["{deadline}=sub_open"]],
+            ["<5>The site will open for {submissions} at {time:expandedtime}", ["{deadline}=sub_open", "{fmt}=5"]]
         ]
     },
     {
         "context": "deadline_error", "in": "<0>Deadline passed", "m": [
-            ["<0>The deadline for registering submissions has passed. The deadline was {time:time}.", ["{deadline}^=sub_reg"]],
-            ["<5>The <a href=\"{deadlineurl}\">deadline</a> for registering submissions has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_reg", "{fmt}=5"]],
-            ["<0>The submission update deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_update"]],
-            ["<5>The <a href=\"{deadlineurl}\">submission update deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_update", "{fmt}=5"]],
-            ["<0>The submission deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_sub"]],
-            ["<5>The <a href=\"{deadlineurl}\">submission deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_sub", "{fmt}=5"]],
+            ["<0>The deadline for registering {submissions} has passed. The deadline was {time:time}.", ["{deadline}^=sub_reg"]],
+            ["<5>The <a href=\"{deadlineurl}\">deadline</a> for registering {submissions} has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_reg", "{fmt}=5"]],
+            ["<0>The {submission} update deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_update"]],
+            ["<5>The <a href=\"{deadlineurl}\">{submission} update deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_update", "{fmt}=5"]],
+            ["<0>The {submission} deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_sub"]],
+            ["<5>The <a href=\"{deadlineurl}\">{submission} deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_sub", "{fmt}=5"]],
             ["<0>The deadline for this external review has passed", ["{deadline}^=extrev_hard"]],
             ["<0>The deadline for this review has passed", ["{deadline}^=pcrev_hard"]],
             ["<0>The deadline for requesting reviews has passed", ["{deadline}^=extrev_chairreq"]],
@@ -187,8 +201,6 @@
             ["<0>The deadline to perform this action has passed"]
         ]
     },
-
-    ["mail", "Authors", "Author", ["{0}=1"]],
 
     ["resp_instrux", "The authors’ response should address reviewer concerns and correct misunderstandings. Make it short and to the point; the conference deadline has passed."],
     ["resp_instrux", "The authors’ response should address reviewer concerns and correct misunderstandings. Make it short and to the point; the conference deadline has passed. Try to stay within {wordlimit} words.", ["{wordlimit}>0"]],

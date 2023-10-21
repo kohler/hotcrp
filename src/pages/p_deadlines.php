@@ -50,15 +50,15 @@ class Deadlines_Page {
             if ($sr->register > 0
                 && ($sr->update <= 0 || $sr->register < $sr->update)) {
                 $this->dl1($sr->register, "<5>{sclass} registration deadline",
-                           "<5>You can register new {sclass} submissions until this deadline.", $srarg);
+                           "<5>You can register new {sclass} {submissions} until this deadline.", $srarg);
             }
             if ($sr->update > 0 && $sr->update != $sr->submit) {
                 $this->dl1($sr->update, "<5>{sclass} update deadline",
-                           "<5>You can update {sclass} submissions and upload new versions until this deadline.", $srarg);
+                           "<5>You can update {sclass} {submissions} and upload new versions until this deadline.", $srarg);
             }
             if ($sr->submit) {
                 $this->dl1($sr->submit, "<5>{sclass} submission deadline",
-                           "<5>{sclass} submissions must be ready by this deadline to be reviewed.", $srarg);
+                           "<5>{sclass} {submissions} must be ready by this deadline to be reviewed.", $srarg);
             }
         }
 

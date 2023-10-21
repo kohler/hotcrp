@@ -168,9 +168,9 @@ class Comment_API {
         }
         if ($aunames && !$this->prow->has_author($suser)) {
             if ($this->user->allow_view_authors($this->prow)) {
-                $this->ms->success($this->conf->_("<5>Notified submission contacts {:nblist}", $aunames));
+                $this->ms->success($this->conf->_("<5>Notified {submission} contacts {:nblist}", $aunames));
             } else {
-                $this->ms->success($this->conf->_("<0>Notified submission contact(s)"));
+                $this->ms->success($this->conf->_("<0>Notified {submission} contact(s)"));
             }
         }
         if ($mentions) {

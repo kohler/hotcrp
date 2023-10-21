@@ -5059,6 +5059,25 @@ class Conf {
         return $this->fmt()->_ci($context, $id, ...$args);
     }
 
+    /** @param string $in
+     * @return string */
+    function _5($in, ...$args) {
+        return Ftext::as(5, $this->fmt()->_($in, ...$args));
+    }
+
+    /** @param string $context
+     * @param string $in
+     * @return string */
+    function _c5($context, $in, ...$args) {
+        return Ftext::as(5, $this->fmt()->_c($context, $in, ...$args));
+    }
+
+    /** @param string $id
+     * @return ?string */
+    function _i5($id, ...$args) {
+        return Ftext::as(5, $this->fmt()->_i($id, ...$args));
+    }
+
     /** @param string $s
      * @return false|array{true,mixed} */
     function resolve_fmt_requirement($s) {
