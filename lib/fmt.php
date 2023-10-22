@@ -288,6 +288,8 @@ class Fmt {
     private $_default_in;
     /** @var FmtItem */
     private $_default_item;
+    /** @var ?list */
+    private $_sources;
 
     const PRIO_OVERRIDE = 1000.0;
 
@@ -370,38 +372,42 @@ class Fmt {
     /** @param list $m */
     private function _addj_list($m) {
         $im = clone $this->_default_item;
-        $i = count($m) - 1;
-        $prio = $req = null;
-        while ($i >= 0 && !is_string($m[$i])) {
-            if ((is_int($m[$i]) || is_float($m[$i])) && $prio === null) {
-                $im->priority = $prio = (float) $m[$i];
-            } else if (is_array($m[$i]) && $req === null) {
-                $im->add_require(($req = $m[$i]));
-            } else {
-                return false;
-            }
-            --$i;
-        }
-        if ($i >= 0) {
-            $im->out = $m[$i];
-            --$i;
+        if ($this->_default_in !== null) {
+            $context = "";
+            $in = $this->_default_in;
         } else {
-            return false;
+            $context = $in = null;
         }
-        if (($in = $this->_default_in) === null) {
-            if ($i >= 0 && is_string($m[$i])) {
-                $in = $m[$i];
-                --$i;
+        $out = $prio = $req = null;
+        foreach ($m as $e) {
+            if (is_string($e)) {
+                if ($out !== null) {
+                    if ($context !== null) {
+                        return false;
+                    } else if ($in !== null) {
+                        $im->add_context(($context = $in));
+                    }
+                    $in = $out;
+                }
+                $out = $e;
+            } else if (is_int($e) || is_float($e)) {
+                if ($prio !== null) {
+                    return false;
+                }
+                $im->priority = $prio = (float) $e;
+            } else if (is_array($e)) {
+                if ($req !== null) {
+                    return false;
+                }
+                $im->add_require(($req = $e));
             } else {
                 return false;
             }
         }
-        if ($i >= 0 && is_string($m[$i])) {
-            $im->add_context($m[$i]);
-            --$i;
-        }
-        if ($i < 0) {
-            $this->define($in, $im);
+        $out = $out ?? $in;
+        if ($out !== null) {
+            $im->out = $out;
+            $this->define($in ?? $out, $im);
             return true;
         } else {
             return false;
@@ -480,11 +486,57 @@ class Fmt {
     }
 
     /** @param ?string $context
+     * @param string $in */
+    private function _record_source($context, $in) {
+        $lm = caller_landmark(2, '/\AFmt::|::_[ci]?5?\z/');
+        if ($lm && preg_match('/\A(.*?):(\d+)/', $lm, $m)) {
+            $file = $m[1];
+            if (str_starts_with($file, SiteLoader::$root . "/")) {
+                $file = substr($file, strlen(SiteLoader::$root) + 1);
+            }
+            $line = (int) $m[2];
+        } else {
+            $file = "";
+            $line = 0;
+        }
+        $this->_sources[] = [$context ?? "", $in, $file, $line, 1, Conf::$now];
+        if (count($this->_sources) % 512 === 0) {
+            $this->record_sources(true);
+        }
+    }
+
+    /** @param null|bool|float $limit */
+    function record_sources($limit) {
+        if (is_bool($limit)) {
+            $limit = $limit ? 1.0 : 0.0;
+        } else if (!is_float($limit)) {
+            $limit = (float) $limit;
+        }
+        $cdb = $this->conf ? $this->conf->contactdb() : null;
+        if ($cdb && !empty($this->_sources)) {
+            Dbl::qe($cdb, "insert into MessageSources (context, `in`, file, line, count, timestamp) values ?v ?U on duplicate key update file=?U(file), line=?U(line), count=count+1, timestamp=?U(timestamp)", $this->_sources);
+            $this->_sources = [];
+        }
+        if ($cdb && ($limit >= 1 || ($limit > 0 && mt_rand() < $limit * (mt_getrandmax() + 1)))) {
+            if ($this->_sources === null) {
+                register_shutdown_function([$this, "record_sources"], false);
+                $this->_sources = [];
+            }
+        } else {
+            $this->_sources = null;
+        }
+    }
+
+    /** @param ?string $context
      * @param string $in
      * @param list<mixed> $args
      * @param ?float $priobound
+     * @param 0|1|2 $source
      * @return ?FmtItem */
-    private function find($context, $in, $args, $priobound) {
+    private function find($context, $in, $args, $priobound, $source) {
+        if ($this->_sources !== null && $source !== 2) {
+            $this->_record_source($context, $in);
+        }
         $match = null;
         $matchnreq = $matchctxlen = 0;
         $ctxlen = strlen($context ?? "");
@@ -623,7 +675,7 @@ class Fmt {
         if (preg_match('/%((?!\d)\w+)%/A', $s, $m, 0, $pos)) {
             if (($fa = self::find_arg($fctx->args, strtolower($m[1])))) {
                 return [$pos + strlen($m[0]), $fa->convert_to($fctx->format)];
-            } else if (($imt = $this->find($fctx->context, strtolower($m[1]), [], null))
+            } else if (($imt = $this->find($fctx->context, strtolower($m[1]), [], null, 2))
                        && $imt->template) {
                 return [$pos + strlen($m[0]), $this->expand($fctx->context, $imt->out, $fctx->args, $imt->expand, $fctx->format)];
             }
@@ -684,7 +736,7 @@ class Fmt {
             $fa = self::find_arg($fctx->args, $m[1]);
         }
         if (!$fa
-            && ($imt = $this->find($fctx->context, $m[1], [], null))
+            && ($imt = $this->find($fctx->context, $m[1], [], null, 2))
             && $imt->template) {
             list($fmt, $out) = Ftext::parse($this->expand($fctx->context, $imt->out, $fctx->args, $imt->expand, $fctx->format));
             $fa = new FmtArg("", $out, $fmt);
@@ -797,7 +849,7 @@ class Fmt {
     /** @param string $in
      * @return string */
     function _($in, ...$args) {
-        if (($im = $this->find(null, $in, $args, null))) {
+        if (($im = $this->find(null, $in, $args, null, 0))) {
             $in = $im->out;
         }
         return $this->expand(null, $in, $args, $im ? $im->expand : 0);
@@ -807,7 +859,7 @@ class Fmt {
      * @param string $in
      * @return string */
     function _c($context, $in, ...$args) {
-        if (($im = $this->find($context, $in, $args, null))) {
+        if (($im = $this->find($context, $in, $args, null, 0))) {
             $in = $im->out;
         }
         return $this->expand($context, $in, $args, $im ? $im->expand : 0);
@@ -816,7 +868,7 @@ class Fmt {
     /** @param string $id
      * @return ?string */
     function _i($id, ...$args) {
-        $im = $this->find(null, $id, $args, null);
+        $im = $this->find(null, $id, $args, null, 1);
         return $im ? $this->expand(null, $im->out, $args, $im->expand) : null;
     }
 
@@ -824,7 +876,7 @@ class Fmt {
      * @param string $id
      * @return ?string */
     function _ci($context, $id, ...$args) {
-        $im = $this->find($context, $id, $args, null);
+        $im = $this->find($context, $id, $args, null, 1);
         return $im ? $this->expand($context, $im->out, $args, $im->expand) : null;
     }
 
@@ -832,7 +884,7 @@ class Fmt {
      * @param ?string $context
      * @param string $id */
     function render_ci($fr, $context, $id, ...$args) {
-        if (($im = $this->find($context, $id, $args, null))) {
+        if (($im = $this->find($context, $id, $args, null, 1))) {
             $s = $this->expand($context, $im->out, $args, $im->expand, $fr->value_format);
             list($fr->value_format, $fr->value) = Ftext::parse($s, $fr->value_format);
         }
@@ -840,8 +892,8 @@ class Fmt {
 
     /** @param string $id
      * @return ?string */
-    function default_itext($id, ...$args) {
-        $im = $this->find(null, $id, $args, self::PRIO_OVERRIDE);
+    function default_translation($id, ...$args) {
+        $im = $this->find(null, $id, $args, self::PRIO_OVERRIDE, 1);
         return $im ? $im->out : null;
     }
 

@@ -1039,7 +1039,7 @@ class Settings_Tester {
         assert_search_papers($this->u_chair, "has:Buttresponse", "");
 
         // response instructions & defaults
-        $definstrux = $this->conf->fmt()->default_itext("resp_instrux");
+        $definstrux = $this->conf->fmt()->default_translation("resp_instrux");
         xassert_eqq($rrds[0]->instructions, null);
         xassert_eqq($rrds[0]->instructions($this->conf), $definstrux);
         xassert_eqq($rrds[1]->instructions, null);

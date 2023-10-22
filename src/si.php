@@ -580,7 +580,7 @@ class Si {
             return $v;
         } else if (($this->storage_type & self::SI_DATA) !== 0) {
             if (str_starts_with($this->storage ?? "", "msg.")) {
-                return $sv->conf->fmt()->default_itext(substr($this->storage_name(), 4)) ?? "";
+                return $sv->conf->fmt()->default_translation(substr($this->storage_name(), 4)) ?? "";
             } else {
                 return $this->default_value ?? "";
             }

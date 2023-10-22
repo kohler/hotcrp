@@ -28,7 +28,7 @@ class Response_Setting {
 
     /** @return string */
     function default_instructions(Conf $conf) {
-        return $conf->fmt()->default_itext("resp_instrux", new FmtArg("wordlimit", $this->old_wordlimit));
+        return $conf->fmt()->default_translation("resp_instrux", new FmtArg("wordlimit", $this->old_wordlimit));
     }
 
     /** @return Response_Setting */
@@ -117,7 +117,7 @@ class Response_SettingParser extends SettingParser {
     function default_value(Si $si, SettingValues $sv) {
         if ($si->name0 === "response/" && $si->name2 === "/instructions") {
             $n = $sv->oldv("response/{$si->name1}/wordlimit");
-            return $sv->conf->fmt()->default_itext("resp_instrux", new FmtArg("wordlimit", $n));
+            return $sv->conf->fmt()->default_translation("resp_instrux", new FmtArg("wordlimit", $n));
         } else {
             return null;
         }

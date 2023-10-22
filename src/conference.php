@@ -5017,6 +5017,9 @@ class Conf {
                 expand_json_includes_callback($mlist, [$this->_fmt, "addj"]);
             }
             $this->_fmt->define("site", FmtItem::make_template("<0>" . $this->opt["paperSite"], FmtItem::EXPAND_NONE));
+            if (($n = $this->opt["messageRecordSources"] ?? null)) {
+                $this->_fmt->record_sources($n);
+            }
         }
         if ($this->_fmt_override_names !== null) {
             foreach ($this->_fmt_override_names as $id) {
