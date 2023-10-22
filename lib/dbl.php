@@ -899,7 +899,7 @@ class Dbl {
             $limit = (float) $limit;
         }
         if ($limit <= 0
-            || ($limit < 1 && mt_rand() < $limit * mt_getrandmax())) {
+            || ($limit < 1 && mt_rand() >= $limit * (mt_getrandmax() + 1))) {
             self::$query_log = false;
         } else if (self::$query_log === false) {
             register_shutdown_function("Dbl::shutdown");
