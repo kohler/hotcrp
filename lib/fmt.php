@@ -62,15 +62,15 @@ class FmtItem {
     }
 
     /** @param string $context
+     * @param Fmt $fmt
      * @return $this */
-    function add_context($context) {
-        if (($context ?? "") === "") {
-            /* skip */
-        } else if ($this->context !== null) {
-            $this->context = "{$this->context}/{$context}";
-        } else {
-            $this->context = $context;
+    function set_context($context, $fmt) {
+        if ($fmt->_check > 0
+            && $this->context !== null
+            && !self::context_starts_with($context, $this->context)) {
+            error_log("nested translation has unexpected context `{$context}`");
         }
+        $this->context = ($context !== "" ? $context : null);
         return $this;
     }
 
@@ -86,56 +86,59 @@ class FmtItem {
     }
 
 
+    /** @param ?string $c1
+     * @param ?string $c2
+     * @return bool */
+    static function context_starts_with($c1, $c2) {
+        $l1 = strlen($c1 ?? "");
+        $l2 = strlen($c2 ?? "");
+        return $l1 >= $l2
+            && ($l2 === 0
+                || (str_starts_with($c1, $c2)
+                    && ($l1 === $l2 || $c1[$l2] === "/")));
+    }
+
     /** @param list<string> $args
      * @return int|false */
     function check_require(Fmt $ms, $args) {
         if (!$this->require) {
             return 0;
         }
-        $nreq = 0;
-        $compval = null;
-        '@phan-var-force ?string $compval';
         foreach ($this->require as $req) {
+            $ok = false;
             if (preg_match('/\A\s*(!*)\s*(\S+?)\s*(\z|[=!<>]=?|≠|≤|≥|!?\^=)\s*(\S*)\s*\z/', $req, $m)
                 && ($m[1] === "" || ($m[3] === "" && $m[4] === ""))
-                && ($m[3] === "") === ($m[4] === "")) {
-                if (!$ms->test_requirement($m[2], $args, $val)) {
-                    return false;
-                }
+                && ($m[3] === "") === ($m[4] === "")
+                && $ms->test_requirement($m[2], $args, $val)) {
                 $compar = $m[3];
-                $compval = $m[4];
-                if ($m[4] !== ""
-                    && ($m[4][0] === "\$" || $m[4][0] === "{")
-                    && !$ms->test_requirement($m[4], $args, $compval)) {
+                $cv = $compval = $m[4];
+                if ($cv !== ""
+                    && ($cv[0] === "\$" /* XXX */ || $cv[0] === "{" || str_starts_with($cv, "#{"))
+                    && !$ms->test_requirement($cv, $args, $compval)) {
                     return false;
                 }
                 if ($compar === "") {
                     $bval = (bool) $val && $val !== "0";
-                    $weight = $bval === (strlen($m[1]) % 2 === 0) ? 1 : 0;
+                    $ok = $bval === (strlen($m[1]) % 2 === 0);
                 } else if (!is_scalar($val)) {
-                    $weight = 0;
+                    // skip
                 } else if ($compar === "^=") {
-                    $weight = str_starts_with($val, $compval) ? 0.9 : 0;
+                    $ok = str_starts_with($val, $compval);
                 } else if ($compar === "!^=") {
-                    $weight = !str_starts_with($val, $compval) ? 0.9 : 0;
+                    $ok = !str_starts_with($val, $compval);
                 } else if (is_numeric($compval)) {
-                    $weight = CountMatcher::compare((float) $val, $compar, (float) $compval) ? 1 : 0;
+                    $ok = CountMatcher::compare((float) $val, $compar, (float) $compval);
                 } else if ($compar === "=" || $compar === "==") {
-                    $weight = (string) $val === (string) $compval ? 1 : 0;
+                    $ok = (string) $val === (string) $compval;
                 } else if ($compar === "!=" || $compar === "≠") {
-                    $weight = (string) $val === (string) $compval ? 0 : 1;
-                } else {
-                    $weight = 0;
+                    $ok = (string) $val !== (string) $compval;
                 }
-                if ($weight === 0) {
-                    return false;
-                }
-                $nreq += $weight;
-            } else {
+            }
+            if (!$ok) {
                 return false;
             }
         }
-        return $nreq;
+        return count($this->require);
     }
 }
 
@@ -251,7 +254,7 @@ class FmtContext {
         if ($fspec === ":url") {
             return [null, urlencode((string) $value)];
         } else if ($fspec === ":html") { // unneeded if FmtArg has correct format
-            return [null, htmlspecialchars((string) $value)];
+            return [null, htmlspecialchars((string) $value, ENT_QUOTES)];
         } else if ($fspec === ":humanize_url") {
             if (preg_match('/\Ahttps?:\/\/([^\[\]:\/?#\s]*)([\/?#]\S*|)\z/i', (string) $value, $mm)) {
                 $value = $mm[1] . ($mm[2] === "/" ? "" : $mm[2]);
@@ -283,7 +286,9 @@ class Fmt {
     /** @var array<string,FmtItem> */
     private $ims = [];
     /** @var list<callable(string):(false|array{true,mixed})> */
-    private $require_resolvers = [];
+    private $_require_resolvers = [];
+    /** @var int */
+    public $_check = 0;
     /** @var ?string */
     private $_default_in;
     /** @var FmtItem */
@@ -314,7 +319,7 @@ class Fmt {
     private function _addj_object($m) {
         $im = clone $this->_default_item;
         if (isset($m->context) && is_string($m->context) && $m->context !== "") {
-            $im->add_context($m->context);
+            $im->set_context($m->context, $this);
         }
         if (isset($m->priority) && (is_float($m->priority) || is_int($m->priority))) {
             $im->priority = (float) $m->priority;
@@ -385,7 +390,7 @@ class Fmt {
                     if ($context !== null) {
                         return false;
                     } else if ($in !== null) {
-                        $im->add_context(($context = $in));
+                        $im->set_context(($context = $in), $this);
                     }
                     $in = $out;
                 }
@@ -439,6 +444,11 @@ class Fmt {
         } else {
             $im = $out;
         }
+        if ($this->_check > 0
+            && $im->template
+            && !preg_match('/\A[A-Za-z_]\w+\z/', $in)) {
+            error_log("bad template name {$in}");
+        }
         $im->next = $this->ims[$in] ?? null;
         $this->ims[$in] = $im;
         return $this;
@@ -482,7 +492,7 @@ class Fmt {
 
     /** @param callable(string):(false|array{true,mixed}) $function */
     function add_requirement_resolver($function) {
-        $this->require_resolvers[] = $function;
+        $this->_require_resolvers[] = $function;
     }
 
     /** @param ?string $context
@@ -550,9 +560,7 @@ class Fmt {
             // check context match
             $ctxpfx = strlen($im->context ?? "");
             if ($ctxpfx > $ctxlen
-                || ($ctxpfx > 0
-                    && (strncmp($context, $im->context, $ctxpfx) !== 0
-                        || ($ctxpfx < $ctxlen && $context[$ctxpfx] !== "/")))
+                || ($ctxpfx > 0 && !FmtItem::context_starts_with($context, $im->context))
                 || ($match && $im->priority == $match->priority && $ctxpfx < $matchctxlen)) {
                 continue;
             }
@@ -595,7 +603,7 @@ class Fmt {
 
     /** @param string $s */
     private function resolve_requirement($s) {
-        foreach ($this->require_resolvers as $fn) {
+        foreach ($this->_require_resolvers as $fn) {
             if (($v = call_user_func($fn, $s)))
                 return $v[1];
         }

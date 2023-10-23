@@ -104,7 +104,7 @@ class Ftext {
                     }
                 }, $s), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, "UTF-8");
         } else if ($from_format !== 5 && $to_format === 5) {
-            return htmlspecialchars($s);
+            return htmlspecialchars($s, ENT_QUOTES);
         } else {
             return $s;
         }
@@ -146,7 +146,7 @@ class Ftext {
         $ts = [];
         foreach ($parses as $parse) {
             if ($parse[0] !== 5 && $format === 5) {
-                $ts[] = htmlspecialchars($parse[1]);
+                $ts[] = htmlspecialchars($parse[1], ENT_QUOTES);
             } else {
                 $ts[] = $parse[1];
             }

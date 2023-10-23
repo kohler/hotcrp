@@ -12,7 +12,7 @@ class Fmt_Tester {
         $ms->addj(["ax", "b"]);
         $ms->addj(["bx", "a", 2]);
         $ms->addj(["bx", "b"]);
-        $ms->addj(["fart", "fart example A", ["{0}=bob"]]);
+        $ms->addj(["fart", "fart example A", ["{0}=bob", "{0}=bob"]]);
         $ms->addj(["fart", "fart example B", ["{0}^=bob"]]);
         $ms->addj(["fart", "fart example C"]);
         $ms->addj(["in" => "fox-saying", "out" => "What the fox said"]);
@@ -168,5 +168,18 @@ class Fmt_Tester {
         xassert_eqq($ms->_("Hello", new FmtArg("name", ["Bob"])), "Hello, Bob");
         xassert_eqq($ms->_("Hello", new FmtArg("name", ["Bob", "Jane"])), "Hello, Bob and Jane");
         xassert_eqq($ms->_("Hello", new FmtArg("name", ["Bob", "Jane", "Fred"])), "Hello, all");
+    }
+
+    function test_context_starts_with() {
+        xassert(FmtItem::context_starts_with(null, null));
+        xassert(FmtItem::context_starts_with("", null));
+        xassert(FmtItem::context_starts_with(null, ""));
+        xassert(!FmtItem::context_starts_with(null, "a"));
+        xassert(FmtItem::context_starts_with("a", null));
+        xassert(FmtItem::context_starts_with("a", "a"));
+        xassert(!FmtItem::context_starts_with("a", "ab"));
+        xassert(FmtItem::context_starts_with("a/b", "a"));
+        xassert(!FmtItem::context_starts_with("a/b", "ab"));
+        xassert(!FmtItem::context_starts_with("a", "a/b"));
     }
 }

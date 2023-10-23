@@ -23,6 +23,8 @@ class Conf {
     public $opt;
     /** @var array<string,mixed> */
     public $opt_override;
+    /** @var string */
+    public $lang = "en";
     /** @var ?int */
     private $_opt_timestamp;
 
@@ -590,6 +592,7 @@ class Conf {
         }
         $this->short_name = $this->opt["shortName"];
         $this->long_name = $this->opt["longName"];
+        $this->lang = $this->opt["lang"] ?? "en";
 
         // set submission nouns
         if (isset($this->opt["submissionNouns"])
@@ -4258,7 +4261,7 @@ class Conf {
                 $qreq->set_cookie($k, "", Conf::$now - 86400);
         }
 
-        echo "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n",
+        echo "<!DOCTYPE html>\n<html lang=\"{$this->lang}\">\n<head>\n",
             "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n";
 
         // gather stylesheets
@@ -5007,8 +5010,8 @@ class Conf {
             $this->_fmt = new Fmt($this);
             $this->_fmt->add_requirement_resolver([$this, "resolve_fmt_requirement"]);
             $m = ["?etc/msgs.json"];
-            if (($lang = $this->opt("lang"))) {
-                $m[] = "?etc/msgs.{$lang}.json";
+            if ($this->lang !== "en") {
+                $m[] = "?etc/msgs.{$this->lang}.json";
             }
             $this->_fmt->set_default_priority(-1.0);
             expand_json_includes_callback($m, [$this->_fmt, "addj"]);
@@ -5088,6 +5091,8 @@ class Conf {
             return [true, $this->setting(substr($s, 8))];
         } else if (str_starts_with($s, "opt.")) {
             return [true, $this->opt(substr($s, 4))];
+        } else if ($s === "lang") {
+            return [true, $this->lang];
         } else {
             return false;
         }
