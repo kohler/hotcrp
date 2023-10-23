@@ -108,6 +108,11 @@ class Fmt_Tester {
         xassert_eqq($ms->_("{a:html}", new FmtArg("a", "&", 0)), "&amp;");
         xassert_eqq($ms->_("<5>{a}", new FmtArg("a", "&", 0)), "<5>&amp;");
         xassert_eqq($ms->_("<5>{a:html}", new FmtArg("a", "&", 0)), "<5>&amp;");
+
+        $ms->define_template("company1", "<0>Fortnum & Mason");
+        $ms->define_template("company2", "<5>Sanford &amp; Sons");
+        xassert_eqq($ms->_("<0>{company1} and {company2}"), "<0>Fortnum & Mason and Sanford & Sons");
+        xassert_eqq($ms->_("<5>{company1} and {company2}"), "<5>Fortnum &amp; Mason and Sanford &amp; Sons");
     }
 
     function test_humanize_url() {

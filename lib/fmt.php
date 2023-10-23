@@ -455,6 +455,17 @@ class Fmt {
     }
 
     /** @param string $in
+     * @param string $out
+     * @return $this */
+    function define_template($in, $out) {
+        $im = clone $this->_default_item;
+        $im->out = $out;
+        $im->template = true;
+        $this->define($in, $im);
+        return $this;
+    }
+
+    /** @param string $in
      * @return bool */
     function has_override($in) {
         $im = $this->ims[$in] ?? null;
