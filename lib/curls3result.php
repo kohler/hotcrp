@@ -19,6 +19,8 @@ class CurlS3Result extends S3Result {
     private $_fsize;
     /** @var int */
     private $_xsize = 0;
+    /** @var ?int */
+    private $_timeout;
     /** @var int */
     public $runindex = 0;
     /** @var list */
@@ -58,8 +60,15 @@ class CurlS3Result extends S3Result {
 
     /** @param int $xsize
      * @return $this */
-    function set_expected_size($xsize) {
+    function set_timeout_size($xsize) {
         $this->_xsize = max($xsize, 0);
+        return $this;
+    }
+
+    /** @param ?int $to
+     * @return $this */
+    function set_timeout($to) {
+        $this->_timeout = $to;
         return $this;
     }
 
@@ -76,7 +85,8 @@ class CurlS3Result extends S3Result {
         if ($this->curlh === null) {
             $this->curlh = curl_init();
             curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 3);
-            curl_setopt($this->curlh, CURLOPT_TIMEOUT, 6 + ($this->_fsize >> 19) + ($this->_xsize >> 26));
+            curl_setopt($this->curlh, CURLOPT_TIMEOUT,
+                $this->_timeout ?? (6 + ($this->_fsize >> 19) + ($this->_xsize >> 26)));
             $this->_hstream = fopen("php://memory", "w+b");
             curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->_hstream);
             $this->_dstream = $this->_dstream ?? fopen("php://temp/maxmemory:20971520", "w+b");
@@ -89,7 +99,8 @@ class CurlS3Result extends S3Result {
                 $tf = 2;
             }
             curl_setopt($this->curlh, CURLOPT_CONNECTTIMEOUT, 6 * $tf);
-            curl_setopt($this->curlh, CURLOPT_TIMEOUT, 15 * $tf + ($this->_xsize >> 26));
+            curl_setopt($this->curlh, CURLOPT_TIMEOUT,
+                $this->_timeout ?? (15 * $tf + ($this->_xsize >> 26)));
             rewind($this->_hstream);
             ftruncate($this->_hstream, 0);
             rewind($this->_dstream);

@@ -736,7 +736,7 @@ class DocumentInfo implements JsonSerializable {
             $stream = $dspath ? self::fopen_docstore($dspath) : null;
             $s3l = $s3->start_curl_get($s3k)
                 ->set_response_body_stream($stream)
-                ->set_expected_size($this->size(self::SIZE_NO_CONTENT));
+                ->set_timeout_size($this->size(self::SIZE_NO_CONTENT));
             $s3l->run();
             return $this->handle_load_s3_curl($s3l, $stream ? $dspath : null);
         } else {
@@ -1085,7 +1085,7 @@ class DocumentInfo implements JsonSerializable {
                     $stream = $dspath ? self::fopen_docstore($dspath) : null;
                     $s3l = $s3->start_curl_get($s3k)
                         ->set_response_body_stream($stream)
-                        ->set_expected_size($doc->size());
+                        ->set_timeout_size($doc->size());
                     $adocs[] = [$doc, $s3l, 0, $stream ? $dspath : null];
                 }
             }

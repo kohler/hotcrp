@@ -180,6 +180,11 @@ class BackupDB_Batch {
         } else {
             $input_mode = "none";
         }
+        if ($this->subcommand === self::S3_GET
+            && $output === null
+            && posix_isatty(STDOUT)) {
+            $output = ".";
+        }
         if ($output !== null) {
             $output_mode = $output === "-" ? "stdout" : "file";
         } else if ($this->subcommand === self::RESTORE || $this->subcommand === self::S3_RESTORE) {
@@ -225,14 +230,15 @@ class BackupDB_Batch {
 
         // Set output stream
         if ($output_mode === "file") {
-            $outx = str_starts_with($output, "/") ? $output : "./{$output}";
-            if ($input_mode === "s3" && is_dir($outx)) {
-                $outx .= str_ends_with($outx, "/") ? "" : "/";
-                $outx .= substr($this->_s3_backup_key, strrpos($this->_s3_backup_key, "/") + 1);
+            if ($input_mode === "s3" && is_dir($output)) {
+                $output .= str_ends_with($output, "/") ? "" : "/";
+                $output .= substr($this->_s3_backup_key, strrpos($this->_s3_backup_key, "/") + 1);
                 if (!$this->compress) {
-                    $outx = preg_replace('/(?:\.gz|\.bz2|\.z)\z/', "", $outx);
+                    $output = preg_replace('/(?:\.gz|\.bz2|\.z)\z/', "", $output);
                 }
+                fwrite(STDERR, "Writing {$output}\n");
             }
+            $outx = str_starts_with($output, "/") ? $output : "./{$output}";
             if ($this->compress) {
                 $this->out = @gzopen($outx, "wb9");
             } else {
@@ -365,7 +371,8 @@ class BackupDB_Batch {
         register_shutdown_function("unlink", $fn);
         $this->in = fopen($fn, "w+b");
         $s3l = $this->s3_client()->start_curl_get($this->_s3_backup_key)
-            ->set_response_body_stream($this->in);
+            ->set_response_body_stream($this->in)
+            ->set_timeout(60);
         if ($this->verbose) {
             fwrite(STDERR, "Reading {$this->_s3_backup_key}\n");
         }
