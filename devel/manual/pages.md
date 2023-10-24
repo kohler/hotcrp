@@ -84,7 +84,7 @@ all request parsing as part of the first `print_function` for a page.
 
 Page components may be defined using an array shorthand. The notation `[NAME,
 ORDER, PRINT_FUNCTION]` or `[NAME, ORDER, PRINT_FUNCTION, PRIORITY]` is the
-same as an with the corresponding properties:
+same as an object with the corresponding properties:
 
 ```
 {
