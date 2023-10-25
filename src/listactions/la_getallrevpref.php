@@ -31,20 +31,23 @@ class GetAllRevpref_ListAction extends ListAction {
             }
             $ctypes = $prow->conflict_types();
             foreach ($pcm as $uid => $p) {
-                $pref = $prow->preference($p);
+                $pf = $prow->preference($p);
                 $ctype = $ctypes[$uid] ?? 0;
                 $is_cflt = Conflict::is_conflicted($ctype);
                 $ts = $prow->topic_interest_score($p);
-                if ($pref[0] === 0 && $pref[1] === null && $ts === 0 && !$is_cflt) {
+                if ($pf->preference === 0
+                    && $pf->expertise === null
+                    && $ts === 0
+                    && !$is_cflt) {
                     continue;
                 }
                 $l = [
                     $prow->paperId, $prow->title,
                     $p->firstName, $p->lastName, $p->email,
-                    $is_cflt ? "conflict" : "", $pref[0] ? : ""
+                    $is_cflt ? "conflict" : "", $pf->preference ? : ""
                 ];
                 if ($has_expertise) {
-                    $l[] = unparse_expertise($pref[1]);
+                    $l[] = unparse_expertise($pf->expertise);
                 }
                 if ($has_interest) {
                     $l[] = $ts ? : "";

@@ -638,7 +638,10 @@ abstract class Autoassigner extends MessageSet {
             // process conflicts and preferences
             foreach ($this->acs as $ac) {
                 $a = $this->ainfo[$ac->cid][$pid];
-                list($a->pref, $a->exp, $a->topicscore) = $row->preference($ac->user, true);
+                $pf = $row->preference($ac->user);
+                $a->pref = $pf->preference;
+                $a->exp = $pf->expertise;
+                $a->topicscore = $row->topic_interest_score($ac->user);
                 if ($a->eass < self::ENOASSIGN
                     && ($row->has_conflict($ac->user)
                         || !$ac->user->can_accept_review_assignment($row))) {

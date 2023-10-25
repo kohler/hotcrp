@@ -32,14 +32,14 @@ class Preference_API {
             $prow->load_preferences();
         }
 
-        $pref = $prow->preference($u, true);
-        $value = unparse_preference($pref);
-        $jr = new JsonResult(["ok" => true, "value" => $value === "0" ? "" : $value, "pref" => $pref[0]]);
-        if ($pref[1] !== null) {
-            $jr->content["prefexp"] = unparse_expertise($pref[1]);
+        $pf = $prow->preference($u);
+        $value = $pf->unparse();
+        $jr = new JsonResult(["ok" => true, "value" => $value === "0" ? "" : $value, "pref" => $pf->preference]);
+        if ($pf->expertise !== null) {
+            $jr->content["prefexp"] = unparse_expertise($pf->expertise);
         }
         if ($user->conf->has_topics()) {
-            $jr->content["topic_score"] = $pref[2];
+            $jr->content["topic_score"] = $prow->topic_interest_score($u);
         }
         if ($qreq->method() === "POST" && $prow->timeWithdrawn > 0) {
             foreach ($prow->make_whynot(["withdrawn" => 1])->message_list(null, 1) as $mi) {

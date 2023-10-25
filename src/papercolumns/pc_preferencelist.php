@@ -41,12 +41,11 @@ class PreferenceList_PaperColumn extends PaperColumn {
         $ts = [];
         if ($this->topics || $row->preferences()) {
             foreach ($row->conf->pc_members() as $pcid => $pc) {
-                if (($pref = $row->preference($pcid, $this->topics))) {
-                    if ($pref[0] !== 0 || $pref[1] !== null) {
-                        $ts[] = $pcid . "P" . $pref[0] . ($pref[1] !== null ? unparse_expertise($pref[1]) : "");
-                    } else if ($this->topics && $pref[2]) {
-                        $ts[] = $pcid . "T" . $pref[2];
-                    }
+                $pf = $row->preference($pc);
+                if ($pf->exists()) {
+                    $ts[] = "{$pcid}P{$pf->preference}" . unparse_expertise($pf->expertise);
+                } else if ($this->topics && ($tv = $row->topic_interest_score($pc))) {
+                    $ts[] = "{$pcid}T{$tv}";
                 }
             }
         }

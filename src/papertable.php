@@ -1642,7 +1642,7 @@ class PaperTable {
         $this->_papstripBegin("revpref");
         echo $this->papt("revpref", "Review preference", ["type" => "ps"]),
             "<form class=\"ui\">";
-        $rp = unparse_preference($this->prow->preference($this->user));
+        $rp = $this->prow->preference($this->user)->unparse();
         $rp = ($rp == "0" ? "" : $rp);
         echo "<input id=\"revprefform_d\" type=\"text\" name=\"revpref", $this->prow->paperId,
             "\" size=\"4\" value=\"{$rp}\" class=\"revpref want-focus want-select\">",

@@ -64,7 +64,7 @@ class ConflictAssign_Page {
                     return $all && Conflict::is_conflicted($ct);
                 } else {
                     return !Conflict::is_conflicted($ct)
-                        && ($row->preference($user)[0] <= -100
+                        && ($row->preference($user)->preference <= -100
                             || $row->potential_conflict($user));
                 }
             };

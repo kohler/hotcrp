@@ -2,6 +2,52 @@
 // paperinfo.php -- HotCRP paper objects
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
+class PaperReviewPreference {
+    /** @var int
+     * @readonly */
+    public $preference;
+    /** @var ?int
+     * @readonly */
+    public $expertise;
+
+    /** @param int $preference
+     * @param ?int $expertise */
+    function __construct($preference = 0, $expertise = null) {
+        $this->preference = $preference;
+        $this->expertise = $expertise;
+    }
+
+    /** @return bool */
+    function exists() {
+        return $this->preference !== 0 || $this->expertise !== null;
+    }
+
+    /** @return string */
+    function unparse() {
+        return ($this->preference ?? "0") . unparse_expertise($this->expertise);
+    }
+
+    /** @param ?int $tv
+     * @return string */
+    function unparse_span($tv = null) {
+        $t = "P" . unparse_number_pm_html($this->preference) . unparse_expertise($this->expertise);
+        if ($tv !== null) {
+            $t .= " T" . unparse_number_pm_html($tv);
+        }
+        if ($this->preference === 0 && ($tv ?? 0) === 0) {
+            $sign = 0;
+        } else {
+            $sign = ($this->preference ? : $tv ?? 0) > 0 ? 1 : -1;
+        }
+        return "<span class=\"asspref{$sign}\">{$t}</span>";
+    }
+
+    /** @return array{int,?int} */
+    function as_list() {
+        return [$this->preference, $this->expertise];
+    }
+}
+
 class PaperContactInfo {
     /** @var int
      * @readonly */
@@ -539,11 +585,11 @@ class PaperInfo {
     private $_ctype_list;
     /** @var ?list<AuthorMatcher> */
     private $_collaborator_array;
-    /** @var ?array<int,array{int,?int}> */
+    /** @var ?array<int,PaperReviewPreference> */
     private $_prefs_array;
     /** @var ?int */
     private $_pref1_cid;
-    /** @var ?array{int,?int} */
+    /** @var ?PaperReviewPreference */
     private $_pref1;
     /** @var ?int */
     private $_desirability;
@@ -693,7 +739,7 @@ class PaperInfo {
         }
         if ($this->myReviewerPreference !== null) {
             $re = $this->myReviewerExpertise;
-            $this->_pref1 = [(int) $this->myReviewerPreference, $re === null ? $re : (int) $re];
+            $this->_pref1 = new PaperReviewPreference((int) $this->myReviewerPreference, $re === null ? $re : (int) $re);
             $this->_pref1_cid = $user->contactId;
         }
         if ($this->watch !== null) {
@@ -2071,7 +2117,7 @@ class PaperInfo {
         Dbl::free($result);
     }
 
-    /** @return array<int,array{int,?int}> */
+    /** @return array<int,PaperReviewPreference> */
     function preferences() {
         if ($this->allReviewerPreference === null) {
             $this->load_preferences();
@@ -2082,7 +2128,7 @@ class PaperInfo {
                 $p = preg_split('/[ ,]/', $this->allReviewerPreference);
                 for ($i = 0; $i + 2 < count($p); $i += 3) {
                     if ($p[$i+1] !== "0" || $p[$i+2] !== ".")
-                        $x[(int) $p[$i]] = [(int) $p[$i+1], $p[$i+2] === "." ? null : (int) $p[$i+2]];
+                        $x[(int) $p[$i]] = new PaperReviewPreference((int) $p[$i+1], $p[$i+2] === "." ? null : (int) $p[$i+2]);
                 }
             }
             $this->_prefs_array = $x;
@@ -2091,8 +2137,8 @@ class PaperInfo {
     }
 
     /** @param int|Contact $contact
-     * @return array{int,?int,?int} */
-    function preference($contact, $include_topic_score = false) {
+     * @return PaperReviewPreference */
+    function preference($contact) {
         $cid = is_int($contact) ? $contact : $contact->contactId;
         if ($this->_pref1_cid === null
             && $this->_prefs_array === null
@@ -2104,31 +2150,25 @@ class PaperInfo {
             $result = $this->conf->qe("select paperId, preference, expertise from PaperReviewPreference where paperId?a and contactId=?", $this->_row_set->paper_ids(), $cid);
             while ($result && ($row = $result->fetch_row())) {
                 $prow = $this->_row_set->get((int) $row[0]);
-                $prow->_pref1 = [(int) $row[1], $row[2] === null ? null : (int) $row[2]];
+                $prow->_pref1 = new PaperReviewPreference((int) $row[1], $row[2] === null ? null : (int) $row[2]);
             }
             Dbl::free($result);
         }
-        if ($this->_pref1_cid === $cid) {
-            $pref = $this->_pref1 ?? [0, null];
-        } else {
-            $pref = ($this->preferences())[$cid] ?? [0, null];
-        }
-        if ($include_topic_score) {
-            $pref[] = $this->topic_interest_score($contact);
-        }
-        return $pref;
+        $pf = $this->_pref1_cid === $cid ? $this->_pref1 : ($this->preferences())[$cid] ?? null;
+        return $pf ?? new PaperReviewPreference(0, null);
     }
 
-    /** @return array<int,array{int,?int}> */
+    /** @return array<int,PaperReviewPreference> */
     function viewable_preferences(Contact $viewer, $aggregate = false) {
         if ($viewer->can_view_preference($this, $aggregate)) {
             return $this->preferences();
         } else if ($viewer->isPC) {
             $pref = $this->preference($viewer);
-            return $pref[0] || $pref[1] ? [$viewer->contactId => $pref] : [];
-        } else {
-            return [];
+            if ($pref->preference !== 0 || $pref->expertise !== null) {
+                return [$viewer->contactId => $pref];
+            }
         }
+        return [];
     }
 
     /** @return int */
@@ -2136,9 +2176,9 @@ class PaperInfo {
         if ($this->_desirability === null) {
             $this->_desirability = 0;
             foreach ($this->preferences() as $pf) {
-                if ($pf[0] > 0) {
+                if ($pf->preference > 0) {
                     $this->_desirability += 1;
-                } else if ($pf[0] > -100 && $pf[0] < 0) {
+                } else if ($pf->preference > -100 && $pf->preference < 0) {
                     $this->_desirability -= 1;
                 }
             }

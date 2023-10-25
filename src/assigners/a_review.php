@@ -286,6 +286,13 @@ class Review_Assigner extends Assigner {
     function unparse_description() {
         return "review";
     }
+    /** @return string */
+    private function unparse_preference_span(AssignmentSet $aset) {
+        $prow = $aset->prow($this->pid);
+        $pf = $prow->preference($this->cid);
+        $tv = $pf->preference ? null : $prow->topic_interest_score($this->cid);
+        return $pf->exists() || $tv ? " " . $pf->unparse_span($tv) : "";
+    }
     private function unparse_item(AssignmentSet $aset, $before) {
         if (!$this->item->get($before, "_rtype")) {
             return "";
@@ -297,7 +304,7 @@ class Review_Assigner extends Assigner {
             $t .= '<span class="revround" title="Review round">'
                 . htmlspecialchars($aset->conf->round_name($round)) . '</span>';
         }
-        return $t . unparse_preference_span($aset->prow($this->pid)->preference($this->cid, true));
+        return $t . $this->unparse_preference_span($aset);
     }
     private function icon($before) {
         return review_type_icon($this->item->get($before, "_rtype"),
@@ -329,7 +336,7 @@ class Review_Assigner extends Assigner {
             $t .= '<span class="revround" title="Review round">' . htmlspecialchars($aset->conf->round_name($round)) . '</span>';
         }
         if (!$this->item->existed()) {
-            $t .= unparse_preference_span($aset->prow($this->pid)->preference($this->cid, true));
+            $t .= $this->unparse_preference_span($aset);
         }
         return $t;
     }

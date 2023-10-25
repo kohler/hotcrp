@@ -60,7 +60,7 @@ class Preference_PaperColumn extends PaperColumn {
         }
         $this->prefix =  "";
         if ($this->as_row) {
-            $this->prefix = $this->viewer->reviewer_html_for($this->user);
+            $this->prefix = $this->viewer->reviewer_html_for($this->user) . " ";
         }
         return true;
     }
@@ -71,7 +71,7 @@ class Preference_PaperColumn extends PaperColumn {
                 : !$this->viewer->can_view_preference($row))) {
             return [-PHP_INT_MAX, null];
         } else {
-            $pv = $row->preference($this->user);
+            $pv = $row->preference($this->user)->as_list();
             if ($pv[0] === 0 && $pv[1] === null) {
                 if (!$this->viewer->can_edit_preference_for($this->user, $row)) {
                     $pv[0] = -PHP_INT_MAX;
@@ -129,29 +129,29 @@ class Preference_PaperColumn extends PaperColumn {
         return $this->not_me && !$this->viewer->allow_view_preference($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $pv = $row->preference($this->user);
-        $pv_exists = $pv[0] !== 0 || $pv[1] !== null;
+        $pf = $row->preference($this->user);
+        $pf_exists = $pf->exists();
         $editable = $this->editable && $this->viewer->can_edit_preference_for($this->user, $row, true);
         $has_conflict = $row->has_conflict($this->user);
 
         // compute HTML
         $t = "";
         if ($this->as_row) {
-            if ($pv_exists) {
-                $t = $this->prefix . unparse_preference_span($pv, true);
+            if ($pf_exists) {
+                $t = $this->prefix . " " . $pf->unparse_span();
             }
         } else if ($editable) {
             $iname = "revpref" . $row->paperId;
             if ($this->not_me) {
                 $iname .= "u" . $this->user->contactId;
             }
-            $pvt = $pv_exists ? unparse_preference($pv) : "";
-            $t = "<input name=\"{$iname}\" class=\"uikd uich revpref\" value=\"{$pvt}\" type=\"text\" size=\"4\" tabindex=\"2\" placeholder=\"0\">";
+            $pft = $pf_exists ? $pf->unparse() : "";
+            $t = "<input name=\"{$iname}\" class=\"uikd uich revpref\" value=\"{$pft}\" type=\"text\" size=\"4\" tabindex=\"2\" placeholder=\"0\">";
             if ($has_conflict && $this->show_conflict) {
                 $t .= " " . review_type_icon(-1);
             }
-        } else if (!$has_conflict || $pv_exists) {
-            $t = str_replace("-", "−" /* U+2212 */, unparse_preference($pv));
+        } else if (!$has_conflict || $pf_exists) {
+            $t = str_replace("-", "−" /* U+2212 */, $pf->unparse());
         } else if ($this->show_conflict) {
             $t = review_type_icon(-1);
         }
@@ -166,13 +166,13 @@ class Preference_PaperColumn extends PaperColumn {
             if (!$this->override_statistics) {
                 $this->override_statistics = clone $this->statistics;
             }
-            if ($pv_exists) {
-                $this->override_statistics->add($pv[0]);
+            if ($pf_exists) {
+                $this->override_statistics->add($pf->preference);
             }
-        } else if ($pv_exists) {
-            $this->statistics->add($pv[0]);
+        } else if ($pf_exists) {
+            $this->statistics->add($pf->preference);
             if ($this->override_statistics) {
-                $this->override_statistics->add($pv[0]);
+                $this->override_statistics->add($pf->preference);
             }
         }
 
@@ -180,7 +180,7 @@ class Preference_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         if (!$this->not_me || $this->viewer->can_view_preference($row)) {
-            return unparse_preference($row->preference($this->user));
+            return $row->preference($this->user)->unparse();
         } else {
             return "";
         }

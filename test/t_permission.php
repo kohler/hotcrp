@@ -1058,10 +1058,10 @@ class Permission_Tester {
 
         $paper1 = $this->conf->checked_paper_by_id(1);
         $paper1->load_preferences();
-        xassert_eqq($paper1->preference($this->u_marina), [12, null]);
+        xassert_eqq($paper1->preference($this->u_marina)->as_list(), [12, null]);
         xassert_assign($this->u_marina, "paper,pref\n1,13\n");
         $paper1->load_preferences();
-        xassert_eqq($paper1->preference($this->u_marina), [13, null]);
+        xassert_eqq($paper1->preference($this->u_marina)->as_list(), [13, null]);
     }
 
     function test_assign_clear_administrator() {
@@ -1511,10 +1511,10 @@ class Permission_Tester {
 
         // assignment synonyms
         $user_varghese = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu"); // pc
-        xassert_eqq($paper16->preference($user_varghese), [0, null]);
+        xassert_eqq($paper16->preference($user_varghese)->as_list(), [0, null]);
         xassert_assign($user_varghese, "ID,Title,Preference\n16,Potential Benefits of Delta Encoding and Data Compression for HTTP,1X\n");
         $paper16->load_preferences();
-        xassert_eqq($paper16->preference($user_varghese), [1, 1]);
+        xassert_eqq($paper16->preference($user_varghese)->as_list(), [1, 1]);
 
         xassert_eq($paper16->leadContactId, 0);
         xassert_assign($this->u_chair, "paperID,lead\n16,varghese\n", true);

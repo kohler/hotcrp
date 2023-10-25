@@ -69,7 +69,7 @@ class Revpref_ListAction extends ListAction {
             if ($not_me) {
                 $item["email"] = $reviewer->email;
             }
-            $item["preference"] = unparse_preference($prow->preference($reviewer));
+            $item["preference"] = $prow->preference($reviewer)->unparse();
             if ($prow->has_conflict($reviewer)) {
                 $item["notes"] = "conflict";
                 $fields["notes"] = true;

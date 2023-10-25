@@ -156,46 +156,46 @@ class Preference_Assigner extends Assigner {
     function unparse_description() {
         return "preference";
     }
-    /** @return ?array{int,?int} */
+    /** @return ?PaperReviewPreference */
     private function preference_data($before) {
-        $p = [$this->item->get($before, "_pref"),
-              $this->item->get($before, "_exp")];
-        if ($p[1] === "N") {
-            $p[1] = null;
+        $pref = $this->item->get($before, "_pref");
+        $exp = $this->item->get($before, "_exp");
+        if ($exp === "N") {
+            $exp = null;
         }
-        return $p[0] || $p[1] !== null ? $p : null;
+        return $pref || $exp !== null ? new PaperReviewPreference($pref, $exp) : null;
     }
     function unparse_display(AssignmentSet $aset) {
         if (!$this->cid) {
             return "remove all preferences";
         }
         $t = $aset->user->reviewer_html_for($this->contact);
-        if (($p = $this->preference_data(true))) {
-            $t .= " <del>" . unparse_preference_span($p, true) . "</del>";
+        if (($pf = $this->preference_data(true))) {
+            $t .= " <del>" . $pf->unparse_span() . "</del>";
         }
-        if (($p = $this->preference_data(false))) {
-            $t .= " <ins>" . unparse_preference_span($p, true) . "</ins>";
+        if (($pf = $this->preference_data(false))) {
+            $t .= " <ins>" . $pf->unparse_span() . "</ins>";
         }
         return $t;
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
-        $p = $this->preference_data(false);
-        $pref = $p ? unparse_preference($p) : "none";
+        $pf = $this->preference_data(false);
         $acsv->add([
             "pid" => $this->pid, "action" => "preference",
             "email" => $this->contact->email, "name" => $this->contact->name(),
-            "preference" => $pref
+            "preference" => $pf ? $pf->unparse() : "none"
         ]);
     }
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperReviewPreference"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        if (($p = $this->preference_data(false))) {
+        if (($pf = $this->preference_data(false))) {
             $aset->stage_qe("insert into PaperReviewPreference
                 set paperId=?, contactId=?, preference=?, expertise=?
                 on duplicate key update preference=?, expertise=?",
-                    $this->pid, $this->cid, $p[0], $p[1], $p[0], $p[1]);
+                    $this->pid, $this->cid, $pf->preference, $pf->expertise,
+                    $pf->preference, $pf->expertise);
         } else {
             $aset->stage_qe("delete from PaperReviewPreference where paperId=? and contactId=?", $this->pid, $this->cid);
         }

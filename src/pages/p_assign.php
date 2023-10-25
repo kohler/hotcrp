@@ -453,7 +453,11 @@ class Assign_Page {
                 $rrow ? $rrow->round_h() : "";
         }
         if ($revtype >= 0) {
-            echo unparse_preference_span($this->prow->preference($pc, true));
+            $pf = $this->prow->preference($pc);
+            $tv = $pf->preference ? null : $this->prow->topic_interest_score($pc);
+            if ($pf->exists() || $tv) {
+                echo " ", $pf->unparse_span($tv);
+            }
         }
         echo '</div>'; // .pctbname
         if ($potconf) {

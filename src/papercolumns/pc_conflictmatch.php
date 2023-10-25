@@ -34,11 +34,11 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         return !$pl->user->allow_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $pref = $row->preference($this->contact);
+        $pf = $row->preference($this->contact);
         $potconf = $row->potential_conflict_html($this->contact, true);
-        if ($pref[0] <= -100) {
+        if ($pf->preference <= -100) {
             $potconf = $potconf ?? new PaperInfoPotentialConflictHTML;
-            $potconf->messages[] = ["<em>reviewer preference</em> " . unparse_preference($pref)];
+            $potconf->messages[] = ["<em>reviewer preference</em> " . $pf->unparse()];
         }
         $this->nonempty = !$row->has_author($this->contact) || $potconf;
         if (!$potconf || empty($potconf->messages)) {

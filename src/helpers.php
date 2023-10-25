@@ -546,7 +546,8 @@ function unparse_expertise($expertise) {
 }
 
 /** @param array{int,?int} $preference
- * @return string */
+ * @return string
+ * @deprecated */
 function unparse_preference($preference) {
     assert(is_array($preference)); // XXX remove
     $pv = $preference[0];
@@ -555,33 +556,6 @@ function unparse_preference($preference) {
         $pv = "0";
     }
     return $pv . unparse_expertise($ev);
-}
-
-/** @param array{int,?int} $preference
- * @return string */
-function unparse_preference_span($preference, $always = false) {
-    assert(is_array($preference)); // XXX remove
-    $pv = (int) $preference[0];
-    $ev = $preference[1];
-    $tv = (int) ($preference[2] ?? null);
-    if ($pv > 0 || (!$pv && $tv > 0)) {
-        $type = 1;
-    } else if ($pv < 0 || $tv < 0) {
-        $type = -1;
-    } else {
-        $type = 0;
-    }
-    $t = "";
-    if ($pv || $ev !== null || $always) {
-        $t .= "P" . unparse_number_pm_html($pv) . unparse_expertise($ev);
-    }
-    if ($tv && !$pv) {
-        $t .= ($t ? " " : "") . "T" . unparse_number_pm_html($tv);
-    }
-    if ($t !== "") {
-        $t = " <span class=\"asspref$type\">$t</span>";
-    }
-    return $t;
 }
 
 /** @param int $revtype

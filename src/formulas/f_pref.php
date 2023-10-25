@@ -38,11 +38,13 @@ class Pref_Fexpr extends Fexpr {
             return "null";
         }
         $state->queryOptions["allReviewerPreference"] = true;
-        $e = "((" . $state->_add_preferences() . "[" . $state->loop_cid(true) . "] ?? [])"
-            . "[" . ($this->is_expertise ? 1 : 0) . "] ?? null)";
+        $pref = $state->_add_preferences();
+        $cid = $state->loop_cid(!$this->cids);
+        $condition = "isset({$pref}[{$cid}])";
         if ($this->cids) {
-            $e = "(in_array(" . $state->loop_cid() . ", [" . join(",", $this->cids) . "]) ? {$e} : null)";
+            $condition .= " && in_array({$cid}, [" . join(",", $this->cids) . "])";
         }
-        return $e;
+        $property = $this->is_expertise ? "expertise" : "preference";
+        return "({$condition} ? {$pref}[{$cid}]->{$property} : null)";
     }
 }
