@@ -7,6 +7,7 @@ class Collator {
     const NON_IGNORABLE = 20;
     const SHIFTED = 21;
     const DEFAULT_VALUE = -1;
+    const STRENGTH = 5;
     const NUMERIC_COLLATION = 7;
     const ON = 17;
     const PRIMARY = 0;
@@ -18,6 +19,7 @@ class Collator {
     }
     /** @param int $strength */
     function setStrength($strength) {
+        $this->setAttribute(self::STRENGTH, $strength); // which does nothing
     }
     /** @param int $name
      * @param int $value */
