@@ -28,12 +28,15 @@ class Autoassign_Batch {
     public $quiet;
     /** @var bool */
     public $dry_run;
+    /** @var bool */
+    public $profile;
 
     function __construct(Contact $user, $arg) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->quiet = isset($arg["quiet"]);
         $this->dry_run = isset($arg["dry-run"]);
+        $this->profile = isset($arg["profile"]);
         if (!isset($arg["a"])) {
             throw new CommandLineException("An autoassigner must be specified with `-a`.\nValid choices are " . join(", ", array_keys($this->conf->autoassigner_map())));
         } else if (!($gj = $this->conf->autoassigner($arg["a"]))) {
@@ -118,6 +121,10 @@ class Autoassign_Batch {
 
         $aa->run();
 
+        if ($this->profile) {
+            fwrite(STDERR, json_encode($aa->profile) . "\n");
+        }
+
         if (!$aa->has_assignment()) {
             if ($this->quiet) {
                 // do nothing
@@ -164,6 +171,7 @@ class Autoassign_Batch {
             "u[],user[] =USER Include users matching USER (`-USER` excludes).",
             "c:,count: {n} =N Set `count` parameter to N.",
             "t:,type: =TYPE Set `type`/`rtype` parameter to TYPE.",
+            "profile Print profile to standard error.",
             "quiet Don’t warn on empty assignment.",
             "help,h !"
         )->description("Run a HotCRP autoassigner.

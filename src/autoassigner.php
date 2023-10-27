@@ -908,6 +908,7 @@ abstract class Autoassigner extends MessageSet {
         if ($m->mincost_start_at) {
             $this->profile["mincost"] = $m->mincost_end_at - $m->mincost_start_at;
         }
+        $this->profile["memory"] = memory_get_usage();
         $this->mcmf = null;
         $this->profile["traverse"] = microtime(true) - $time;
         return $nassigned;
