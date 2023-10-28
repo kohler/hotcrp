@@ -40,7 +40,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
             if ($qe instanceof Tag_SearchTerm) {
                 foreach ($qe->tsm->tag_patterns() as $tag) {
                     if (strpos($tag, "*") === false
-                        && !$sv->conf->tags()->is_chair($tag)) {
+                        && !$sv->conf->tags()->is_readonly($tag)) {
                         $sv->warning_at($name, "<5>PC members can change the tag ‘" . htmlspecialchars($tag) . "’. Tags referenced in visibility conditions should usually be " . $sv->setting_link("read-only", "tag_readonly") . ".");
                         $sv->warning_at("tag_readonly");
                         $parent_setting && $sv->msg_at($parent_setting, "", 1);
