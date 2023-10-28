@@ -25,10 +25,8 @@ class MinCostMaxFlow_Node {
     public $price = 0;
     /** @var int */
     public $n_outgoing_admissible = 0;
-    /** @var ?MinCostMaxFlow_Edge */
-    public $e1;
-    /** @var ?MinCostMaxFlow_Edge */
-    public $epos;
+    /** @var list<MinCostMaxFlow_Edge> */
+    public $e = [];
     /** @param string $name */
     function __construct($name, $klass) {
         $this->name = $name;
@@ -37,7 +35,7 @@ class MinCostMaxFlow_Node {
     /** @param int|float $expected
      * @return void */
     function check_excess($expected) {
-        for ($e = $this->e1; $e; $e = $e->next($this)) {
+        foreach ($this->e as $e) {
             $expected += $e->flow_to($this);
         }
         if ($expected != $this->excess) {
@@ -48,7 +46,7 @@ class MinCostMaxFlow_Node {
     /** @return int */
     function count_outgoing_price_admissible() {
         $n = 0;
-        for ($e = $this->e1; $e; $e = $e->next($this)) {
+        foreach ($this->e as $e) {
             if ($e->is_price_admissible_from($this))
                 ++$n;
         }
@@ -61,7 +59,7 @@ class MinCostMaxFlow_Node {
         $this->price = $p;
 
         // adjust n_outgoing_admissible counts
-        for ($e = $this->e1; $e; $e = $e->next($this)) {
+        foreach ($this->e as $e) {
             $rc = $e->cost + $e->src->price - $e->dst->price;
             if ($e->src === $this) {
                 $old_rc = $e->cost + $old_price - $e->dst->price;
@@ -91,10 +89,6 @@ class MinCostMaxFlow_Edge {
     public $cost;
     /** @var int|float */
     public $flow = 0;
-    /** @var ?MinCostMaxFlow_Edge */
-    public $next_src;
-    /** @var ?MinCostMaxFlow_Edge */
-    public $next_dst;
     /** @param MinCostMaxFlow_Node $src
      * @param MinCostMaxFlow_Node $dst
      * @param int|float $cap
@@ -106,11 +100,6 @@ class MinCostMaxFlow_Edge {
         $this->cap = $cap;
         $this->mincap = $mincap;
         $this->cost = $cost;
-    }
-    /** @param MinCostMaxFlow_Node $v
-     * @return ?MinCostMaxFlow_Edge */
-    function next($v) {
-        return $v === $this->src ? $this->next_src : $this->next_dst;
     }
     /** @param MinCostMaxFlow_Node $v
      * @return MinCostMaxFlow_Node */
@@ -333,7 +322,7 @@ class MinCostMaxFlow {
         if ($v->klass === $klass) {
             $a[] = $v;
         } else if ($v !== $this->sink) {
-            for ($e = $v->e1; $e; $e = $e->next($v)) {
+            foreach ($v->e as $e) {
                 if ($e->src === $v
                     && $e->flow > 0
                     && $e->dst->npos === 0)
@@ -359,7 +348,7 @@ class MinCostMaxFlow {
         if ($v->klass === $klass) {
             $a[] = $v;
         } else if ($v !== $this->source) {
-            for ($e = $v->e1; $e; $e = $e->next($v)) {
+            foreach ($v->e as $e) {
                 if ($e->dst === $v
                     && $e->flow > 0
                     && $e->src->npos === 0)
@@ -390,7 +379,7 @@ class MinCostMaxFlow {
     private function topological_sort_visit($v, $klass, &$a) {
         if ($v !== $this->sink && $v->npos === 0) {
             $v->npos = 1;
-            for ($e = $v->e1; $e; $e = $e->next($v)) {
+            foreach ($v->e as $e) {
                 if ($e->src === $v && $e->flow > 0 && $e->dst->npos === 0)
                     $this->topological_sort_visit($e->dst, $klass, $a);
             }
@@ -422,16 +411,14 @@ class MinCostMaxFlow {
 
     private function initialize_edges() {
         foreach ($this->v as $v) {
-            $v->e1 = null;
+            $v->e = [];
         }
         // all sources must come before all destinations
         foreach ($this->e as $e) {
-            $e->next_dst = $e->dst->e1;
-            $e->dst->e1 = $e;
+            $e->src->e[] = $e;
         }
         foreach ($this->e as $e) {
-            $e->next_src = $e->src->e1;
-            $e->src->e1 = $e;
+            $e->dst->e[] = $e;
         }
         $this->has_edges = true;
     }
@@ -445,7 +432,7 @@ class MinCostMaxFlow {
     private static function pushrelabel_bfs_setdistance($qtail, $v, $dist) {
         if ($v->distance !== $dist) {
             $v->distance = $dist;
-            $v->epos = $v->e1;
+            $v->npos = 0;
         }
         $v->xlink = null;
         $qtail->xlink = $v;
@@ -461,7 +448,7 @@ class MinCostMaxFlow {
         $qhead->xlink = null;
         while ($qhead) {
             $d = $qhead->distance + 1;
-            for ($e = $qhead->e1; $e; $e = $e->next($qhead)) {
+            foreach ($qhead->e as $e) {
                 if ($e->residual_cap_to($qhead) > 0
                     && $e->other($qhead)->xlink === $this->sink)
                     $qtail = self::pushrelabel_bfs_setdistance($qtail, $e->other($qhead), $d);
@@ -482,28 +469,30 @@ class MinCostMaxFlow {
     /** @param MinCostMaxFlow_Node $v */
     private function pushrelabel_relabel($v) {
         $d = INF;
-        for ($e = $v->e1; $e; $e = $e->next($v)) {
+        foreach ($v->e as $e) {
             if ($e->residual_cap_from($v) > 0)
                 $d = min($d, $e->other($v)->distance + 1);
         }
         //fwrite(STDERR, "relabel {$v->name}@{$v->distance}->{$d}\n");
         $v->distance = $d;
-        $v->epos = $v->e1;
+        $v->npos = 0;
     }
 
     /** @param MinCostMaxFlow_Node $v */
     private function pushrelabel_discharge($v) {
+        $ne = count($v->e);
         $relabeled = false;
         while ($v->excess > 0 && $v->distance < INF) {
-            if (($e = $v->epos)) {
+            if ($v->npos === $ne) {
+                $this->pushrelabel_relabel($v);
+                $relabeled = true;
+            } else {
+                $e = $v->e[$v->npos];
                 if ($e->is_distance_admissible_from($v)) {
                     $this->pushrelabel_push_from($e, $v);
                 } else {
-                    $v->epos = $v->epos->next($v);
+                    ++$v->npos;
                 }
-            } else {
-                $this->pushrelabel_relabel($v);
-                $relabeled = true;
             }
         }
         return $relabeled;
@@ -515,7 +504,7 @@ class MinCostMaxFlow {
         // initialize preflow
         foreach ($this->v as $v) {
             $v->distance = count($this->v);
-            $v->epos = $v->e1;
+            $v->npos = 0;
         }
         $this->pushrelabel_make_distance();
         foreach ($this->e as $e) {
@@ -627,8 +616,8 @@ class MinCostMaxFlow {
     private function cspushrelabel_relabel($v) {
         // calculate new price
         $p = -INF;
-        $eex = null;
-        for ($e = $v->e1; $e; $e = $e->next($v)) {
+        $ex = 0;
+        foreach ($v->e as $epos => $e) {
             if ($e->src === $v && $e->flow < $e->cap) {
                 $px = $e->dst->price - $e->cost;
             } else if ($e->dst === $v && $e->flow > $e->mincap) {
@@ -638,12 +627,12 @@ class MinCostMaxFlow {
             }
             if ($px > $p) {
                 $p = $px;
-                $eex = $e;
+                $ex = $epos;
             }
         }
         assert($p != -INF || $v->excess == 0);
         if ($p > -INF) {
-            $v->epos = $eex;
+            $v->npos = $ex;
         } else {
             $p = $v->price;
         }
@@ -655,15 +644,16 @@ class MinCostMaxFlow {
 
     /** @param MinCostMaxFlow_Node $v */
     private function cspushrelabel_discharge($v) {
+        $ne = count($v->e);
         while ($v->excess > 0) {
-            if (!$v->epos || !$v->n_outgoing_admissible) {
+            if ($v->npos === $ne || !$v->n_outgoing_admissible) {
                 $this->cspushrelabel_relabel($v);
             } else {
-                $e = $v->epos;
+                $e = $v->e[$v->npos];
                 if ($e->is_price_admissible_from($v)) {
                     $this->cspushrelabel_push_from($e, $v);
                 } else {
-                    $v->epos = $e->next($v);
+                    ++$v->npos;
                 }
             }
         }
@@ -697,7 +687,7 @@ class MinCostMaxFlow {
             if ($v->distance !== $bi) {
                 continue;
             }
-            for ($e = $v->e1; $e; $e = $e->next($v)) {
+            foreach ($v->e as $e) {
                 if ($e->residual_cap_to($v)
                     && ($dst = $e->other($v))
                     && $bi < $dst->distance) {
@@ -746,28 +736,20 @@ class MinCostMaxFlow {
         if (max(abs($this->mincost), $this->maxcost) >= $fixbound) {
             $ndropped = 0;
             foreach ($this->v as $v) {
-                $eprev = null;
-                $e = $v->e1;
-                while ($e) {
-                    $enext = $e->next($v);
+                for ($i = 0; $i < count($v->e); ) {
+                    $e = $v->e[$i];
                     if (abs($e->reduced_cost(false)) >= $fixbound) {
                         if ($e->is_price_admissible_from($v)) {
                             --$v->n_outgoing_admissible;
                         }
-                        if ($eprev === null) {
-                            $v->e1 = $enext;
-                        } else if ($v === $eprev->src) {
-                            $eprev->next_src = $enext;
-                        } else {
-                            $eprev->next_dst = $enext;
-                        }
-                        $v->epos = $v->e1; // keep epos in bounds
+                        $v->e[$i] = $v->e[count($v->e) - 1];
+                        array_pop($v->e);
+                        $v->npos = 0; // keep npos in bounds
                         $this->has_edges = false;
                         ++$ndropped;
                     } else {
-                        $eprev = $e;
+                        ++$i;
                     }
-                    $e = $enext;
                 }
             }
             $this->debug && $ndropped && fwrite(STDERR, "dropedge $ndropped\n");
@@ -784,7 +766,7 @@ class MinCostMaxFlow {
         // saturate negative-cost arcs
         foreach ($this->v as $v) {
             if ($v->n_outgoing_admissible) {
-                for ($e = $v->e1; $e; $e = $e->next($v)) {
+                foreach ($v->e as $e) {
                     if ($e->is_price_admissible_from($v)) {
                         $delta = ($e->src === $v ? $e->cap : $e->mincap) - $e->flow;
                         $e->update_flow($delta);
@@ -797,7 +779,7 @@ class MinCostMaxFlow {
         // initialize lists and neighbor position
         $lhead = $this->ltail = null;
         foreach ($this->v as $v) {
-            $v->epos = $v->e1;
+            $v->npos = 0;
             if ($v->excess > 0) {
                 $this->ltail ? ($this->ltail->link = $v) : ($lhead = $v);
                 $v->link = null;
@@ -930,11 +912,10 @@ class MinCostMaxFlow {
         if ($this->hasrun) {
             foreach ($this->v as $v) {
                 $v->distance = $v->excess = $v->price = 0;
-                $v->e1 = $v->epos = null;
+                $v->e = [];
             }
             foreach ($this->e as $e) {
                 $e->flow = 0;
-                $e->next_src = $e->next_dst = null;
             }
             $this->maxflow = null;
             $this->maxflow_start_at = $this->maxflow_end_at = null;
@@ -948,7 +929,7 @@ class MinCostMaxFlow {
         // break circular references
         foreach ($this->v as $v) {
             $v->link = $v->xlink = null;
-            $v->e1 = $v->epos = null;
+            $v->e = [];
         }
         $this->v = [];
         $this->e = [];
@@ -1065,7 +1046,7 @@ class MinCostMaxFlow {
             if ($e->flow) {
                 // is this flow ambiguous?
                 $n = 0;
-                for ($ee = $e->src->e1; $ee; $ee = $ee->next($e->src)) {
+                foreach ($e->src->e as $ee) {
                     if ($ee->dst === $e->dst)
                         ++$n;
                 }
@@ -1145,7 +1126,7 @@ class MinCostMaxFlow {
                 $src = $this->dimacs_node($vnames, intval($m[1]));
                 $dst = $this->dimacs_node($vnames, intval($m[2]));
                 $found = false;
-                for ($e = $src->e1; $e; $e = $e->next($src)) {
+                foreach ($src->e as $e) {
                     if ($e->dst === $dst
                         && ($next_cap === null || $e->cap === $next_cap)
                         && ($next_cost === null || $e->cost === $next_cost)) {
