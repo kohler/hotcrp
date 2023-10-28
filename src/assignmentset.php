@@ -22,6 +22,12 @@ class Assignable {
         }
         return true;
     }
+
+    /** @param Assignable $q
+     * @return bool */
+    function equals($q) {
+        return $this->match($q);
+    }
 }
 
 class AssignmentItem implements ArrayAccess, JsonSerializable {
@@ -91,7 +97,7 @@ class AssignmentItem implements ArrayAccess, JsonSerializable {
         return $this->after
             && ($this->deleted
                 ? $this->existed
-                : !$this->existed || !$this->after->match($this->before));
+                : !$this->existed || !$this->after->equals($this->before));
     }
     /** @param bool $pre
      * @param string $offset */

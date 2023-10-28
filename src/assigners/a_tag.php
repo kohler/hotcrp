@@ -26,7 +26,7 @@ class Tag_Assignable extends Assignable {
     }
     /** @return self */
     function fresh() {
-        return new Tag_Assignable($this->pid, $this->ltag);
+        return new Tag_Assignable($this->pid, $this->ltag, $this->_tag);
     }
     /** @param Assignable $q
      * @return bool */
@@ -34,6 +34,14 @@ class Tag_Assignable extends Assignable {
         '@phan-var-force Tag_Assignable $q';
         return ($q->pid ?? $this->pid) === $this->pid
             && ($q->ltag ?? $this->ltag) === $this->ltag
+            && ($q->_index ?? $this->_index) === $this->_index;
+    }
+    /** @param Assignable $q
+     * @return bool */
+    function equals($q) {
+        '@phan-var-force Tag_Assignable $q';
+        return ($q->pid ?? $this->pid) === $this->pid
+            && ($q->_tag ?? $this->_tag) === $this->_tag
             && ($q->_index ?? $this->_index) === $this->_index;
     }
     static function load(AssignmentState $state) {
@@ -402,10 +410,16 @@ class Tag_Assigner extends Assigner {
     /** @var null|int|float
      * @readonly */
     public $index;
+    /** @var bool
+     * @readonly */
+    public $case_only;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
         $this->tag = $item["_tag"];
         $this->index = $item->post("_index");
+        $this->case_only = $item->existed()
+            && !$item->deleted()
+            && $item->before->match($item->after);
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
         $prow = $state->prow($item["pid"]);
@@ -461,7 +475,7 @@ class Tag_Assigner extends Assigner {
         if ($this->index === null) {
             $aset->stage_qe("delete from PaperTag where paperId=? and tag=?", $this->pid, $this->tag);
         } else {
-            $aset->stage_qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tagIndex=?", $this->pid, $this->tag, $this->index, $this->index);
+            $aset->stage_qe("insert into PaperTag set paperId=?, tag=?, tagIndex=? on duplicate key update tag=?, tagIndex=?", $this->pid, $this->tag, $this->index, $this->tag, $this->index);
         }
         if ($this->index !== null
             && str_ends_with($this->tag, ':')) {
@@ -469,10 +483,12 @@ class Tag_Assigner extends Assigner {
                 $aset->conf->save_refresh_setting("has_colontag", 1);
             });
         }
-        if ($aset->conf->tags()->is_track($this->tag)) {
-            $aset->register_update_rights();
+        if (!$this->case_only) {
+            if ($aset->conf->tags()->is_track($this->tag)) {
+                $aset->register_update_rights();
+            }
+            $aset->user->log_activity("Tag " . ($this->index === null ? "-" : "+") . "#{$this->tag}" . ($this->index ? "#{$this->index}" : ""), $this->pid);
         }
-        $aset->user->log_activity("Tag " . ($this->index === null ? "-" : "+") . "#{$this->tag}" . ($this->index ? "#{$this->index}" : ""), $this->pid);
         $aset->register_notify_tracker($this->pid);
     }
 }
