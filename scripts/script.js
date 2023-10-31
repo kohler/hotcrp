@@ -11644,13 +11644,13 @@ function prepare_autoready_condition(f) {
         condition = JSON.parse(f.getAttribute("data-autoready-condition"));
     }
     function chf() {
-        var was, iscond, e, readychecked;
-        iscond = !condition || hotcrp.evaluate_edit_condition(condition, f);
+        const iscond = !condition || hotcrp.evaluate_edit_condition(condition, f);
         readye.disabled = !iscond;
         if (iscond && readye.hasAttribute("data-autoready")) {
             readye.checked = true;
             readye.removeAttribute("data-autoready");
         }
+        let readychecked, e;
         if (readye.type === "checkbox") {
             readychecked = readye.checked;
         } else {
@@ -11668,12 +11668,12 @@ function prepare_autoready_condition(f) {
                 toggleClass(e, "hidden", !iscond || !readychecked);
             }
         }
-        var t;
+        let t;
         if (f.hasAttribute("data-contacts-only")) {
             t = "Save contacts";
         } else if (!iscond || !readychecked) {
             t = "Save draft";
-        } else if (was) {
+        } else if (this.getAttribute("data-submitted")) {
             t = "Save and resubmit";
         } else {
             t = "Save and submit";
