@@ -95,6 +95,8 @@ class PaperStatus extends MessageSet {
         return $this->user;
     }
 
+    /** @param string $in
+     * @return string */
     function _($in, ...$args) {
         return $this->conf->_($in, ...$args);
     }
@@ -565,10 +567,7 @@ class PaperStatus extends MessageSet {
             return;
         }
         // return if no change
-        $v1 = $ov->value_list();
-        $d1 = $ov->data_list();
-        $oldv = $this->prow->base_option($ov->option);
-        if ($v1 === $oldv->value_list() && $d1 === $oldv->data_list()) {
+        if ($ov->equals($this->prow->base_option($ov->option))) {
             return;
         }
         // option may know how to save itself
@@ -576,11 +575,12 @@ class PaperStatus extends MessageSet {
             return;
         }
         // otherwise, save option normal way
-        $oid = $ov->option_id();
         $this->change_at($ov->option);
+        $oid = $ov->option_id();
         $this->_option_delid[] = $oid;
-        for ($i = 0; $i < count($v1); ++$i) {
-            $qv0 = [-1, $oid, $v1[$i], null, null];
+        $d1 = $ov->data_list();
+        foreach ($ov->value_list() as $i => $v) {
+            $qv0 = [-1, $oid, $v, null, null];
             if ($d1[$i] !== null) {
                 $qv0[strlen($d1[$i]) < 32768 ? 3 : 4] = $d1[$i];
             }

@@ -123,6 +123,14 @@ class PaperValue implements JsonSerializable {
     function data_by_index($index) {
         return ($this->data_list())[$index] ?? null;
     }
+
+    /** @param PaperValue $x
+     * @return bool */
+    function equals($x) {
+        return $this->value_list() === $x->value_list()
+            && $this->data_list() === $x->data_list();
+    }
+
     /** @param bool $full
      * @return DocumentInfoSet */
     function document_set($full = false) {
