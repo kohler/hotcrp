@@ -505,7 +505,7 @@ Ready\n";
         echo '">',
             Ht::form($reviewPostLink, [
                 "id" => "f-review",
-                "class" => "need-unload-protection need-differs",
+                "class" => "need-unload-protection need-diff-check",
                 "data-differs-toggle" => "review-alert"
             ]),
             Ht::hidden_default_submit("default", "");

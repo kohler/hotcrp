@@ -2277,7 +2277,7 @@ class PaperTable {
         }
         $form_js = [
             "id" => "f-paper",
-            "class" => "need-unload-protection need-differs ui-submit js-submit-paper",
+            "class" => "need-unload-protection need-diff-check ui-submit js-submit-paper",
             "data-differs-toggle" => "paper-alert"
         ];
         if ($this->need_autoready()) {

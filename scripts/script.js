@@ -11673,12 +11673,14 @@ function prepare_autoready_condition(f) {
             t = "Save contacts";
         } else if (!iscond || !readychecked) {
             t = "Save draft";
-        } else if (this.getAttribute("data-submitted")) {
+        } else if (f.hasAttribute("data-submitted")) {
             t = "Save and resubmit";
         } else {
             t = "Save and submit";
         }
-        $("button.btn-savepaper").text(t);
+        $("button.btn-savepaper").each(function () {
+            this.firstChild.data = t;
+        });
     }
     if (condition) {
         $(f).on("change", chf); // jQuery required because we `trigger` later
