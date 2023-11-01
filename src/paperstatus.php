@@ -312,7 +312,8 @@ class PaperStatus extends MessageSet {
             $xstatus->draft = $xstatus->draft ?? !$xstatus->submitted;
             $xstatus->submitted = $xstatus->submitted ?? !$xstatus->draft;
         }
-        foreach (["submitted_at", "withdrawn_at", "final_submitted_at"] as $k) {
+        foreach (["submitted_at", "withdrawn_at", "final_submitted_at",
+                  "if_unmodified_since"] as $k) {
             $v = $istatus->$k ?? null;
             if (is_numeric($v)) {
                 $v = (float) $v;
@@ -818,13 +819,19 @@ class PaperStatus extends MessageSet {
     }
 
     /** @return bool */
-    private function has_conflict_diff() {
+    private function check_conflict_diff() {
+        $changes = 0;
         foreach ($this->_conflict_values ?? [] as $cv) {
-            if ($cv[0] !== self::new_conflict_value($cv)) {
-                return true;
-            }
+            $ncv = self::new_conflict_value($cv);
+            $changes |= $cv[0] ^ $ncv;
         }
-        return false;
+        if (($changes & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) !== 0) {
+            $this->change_at($this->conf->option_by_id(PaperOption::CONTACTSID));
+        }
+        if (($changes & CONFLICT_PCMASK) !== 0) {
+            $this->change_at($this->conf->option_by_id(PaperOption::PCCONFID));
+        }
+        return ($changes & (CONFLICT_PCMASK | CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) !== 0;
     }
 
     private function _check_contacts_last($pj) {
@@ -848,28 +855,18 @@ class PaperStatus extends MessageSet {
         }
 
         // exit if no change
-        if (!$this->has_conflict_diff()) {
+        if (!$this->check_conflict_diff()) {
             return;
         }
 
         // save diffs if change
         $this->_conflict_ins = $this->_author_change_cids = [];
-        $pcc_changed = false;
         foreach ($this->_conflict_values as $uid => $cv) {
             $ncv = self::new_conflict_value($cv);
-            if (($cv[0] ^ $ncv) & CONFLICT_PCMASK) {
-                $pcc_changed = true;
-            }
             if (($cv[0] ^ $ncv) & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) {
                 $this->_author_change_cids[] = $uid;
             }
             $this->_conflict_ins[] = [$uid, $cv[1], $cv[2]];
-        }
-        if (!empty($this->_author_change_cids)) {
-            $this->change_at($this->conf->option_by_id(PaperOption::CONTACTSID));
-        }
-        if ($pcc_changed) {
-            $this->change_at($this->conf->option_by_id(PaperOption::PCCONFID));
         }
     }
 
@@ -907,17 +904,22 @@ class PaperStatus extends MessageSet {
         }
 
         // Status
+        $pjs = $pj->status = (object) [];
         $updatecontacts = $action === "updatecontacts";
         if ($action === "submit"
             || ($action === "update" && $qreq["status:submit"])) {
-            $pj->submitted = true;
-            $pj->draft = false;
+            $pjs->submitted = true;
+            $pjs->draft = false;
         } else if ($action === "final") {
-            $pj->final_submitted = $pj->submitted = true;
-            $pj->draft = false;
+            $pjs->final_submitted = $pjs->submitted = true;
+            $pjs->draft = false;
         } else if (!$updatecontacts && $qreq["has_status:submit"]) {
-            $pj->submitted = false;
-            $pj->draft = true;
+            $pjs->submitted = false;
+            $pjs->draft = true;
+        }
+        if (($s = $qreq["status:if_unmodified_since"]) !== null) {
+            $s = is_string($s) && ctype_digit($s) ? intval($s) : $s;
+            $pjs->if_unmodified_since = $s;
         }
 
         // Fields
@@ -1014,9 +1016,6 @@ class PaperStatus extends MessageSet {
         $this->_prepare_status($pj);
         $this->_prepare_decision($pj);
         $this->_prepare_final_status($pj);
-        if ($this->problem_status() >= MessageSet::ESTOP) {
-            return false;
-        }
 
         // correct blindness setting
         if ($this->conf->submission_blindness() !== Conf::BLIND_OPTIONAL) {
@@ -1025,6 +1024,18 @@ class PaperStatus extends MessageSet {
                 $this->prow->set_prop("blind", $want_blind ? 1 : 0);
                 $this->change_at($this->conf->option_by_id(PaperOption::ANONYMITYID));
             }
+        }
+
+        // don't save if transaction required
+        if (isset($pj->status->if_unmodified_since)
+            && $pj->status->if_unmodified_since < $this->prow->timeModified) {
+            $this->estop_at("status:if_unmodified_since", $this->_("<5><strong>Edit conflict</strong>: You were editing an old version of the {submission}, so your changes have not been saved."));
+        }
+
+        // don't save if not allowed
+        if ($this->problem_status() >= MessageSet::ESTOP) {
+            $this->check_conflict_diff(); // to ensure diffs are ok
+            return false;
         }
 
         // don't save if creating a mostly-empty paper
@@ -1293,7 +1304,8 @@ class PaperStatus extends MessageSet {
         $this->_save_status = self::SAVE_STATUS_SAVED;
 
         if ($this->will_insert() || $this->prow->prop_changed()) {
-            $this->prow->set_prop("timeModified", Conf::$now);
+            $modified_at = max(Conf::$now, $this->prow->timeModified + 1);
+            $this->prow->set_prop("timeModified", $modified_at);
             if ($this->prow->prop_changed("paperStorageId")
                 || $this->prow->prop_changed("finalPaperStorageId")) {
                 $this->_update_joindoc();
@@ -1416,6 +1428,43 @@ class PaperStatus extends MessageSet {
         } else {
             return false;
         }
+    }
+
+    /** @param 'update'|'final' $action
+     * @return list<PaperOption> */
+    function strip_unchanged_fields_qreq(Qrequest $qreq, PaperInfo $prow, $action) {
+        $fcs = (new FieldChangeSet)->mark_unchanged($qreq["status:unchanged"])
+            ->mark_changed($qreq["status:changed"])
+            ->mark_synonym("pc_conflicts", "pcconf"); /* XXX special case */
+        $fl = [];
+        foreach ($prow->form_fields() as $o) {
+            if ($o->is_final() && $action !== "final") {
+                continue;
+            }
+            // if option appears completely unchanged from save time, reset
+            $chs = $fcs->test($o->formid);
+            if ($chs === FieldChangeSet::UNCHANGED) {
+                unset($qreq["has_{$o->formid}"], $qreq[$o->formid]);
+                $fl[] = $o;
+            } else if (($chs & FieldChangeSet::UNCHANGED) !== 0) {
+                $o->strip_unchanged_qreq($prow, $qreq, $fcs);
+            }
+        }
+        return $fl;
+    }
+
+    /** @param 'update'|'final' $action
+     * @return list<PaperOption> */
+    function changed_fields_qreq(Qrequest $qreq, PaperInfo $prow, $action) {
+        $fl = [];
+        foreach ($prow->form_fields() as $o) {
+            if ($this->has_change_at($o)
+                && (isset($qreq["has_{$o->formid}"]) || isset($qreq[$o->formid]))
+                && (!$o->is_final() || $action === "final")) {
+                $fl[] = $o;
+            }
+        }
+        return $fl;
     }
 
     /** @return int */

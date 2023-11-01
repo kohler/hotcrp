@@ -1968,6 +1968,12 @@ $(function () {
     });
 });
 
+handle_ui.on("js-ignore-unload-protection", function (evt) {
+    if (event_key.is_default_a(evt)) {
+        $("form").addClass("submitting");
+    }
+});
+
 var focus_at = (function () {
 var ever_focused;
 return function (felt) {
@@ -11605,11 +11611,11 @@ handle_ui.on("submit.js-submit-paper", function (evt) {
     this.elements["status:unchanged"] && this.elements["status:unchanged"].remove();
     this.elements["status:changed"] && this.elements["status:changed"].remove();
     if (is_submit) {
-        var unch = [], ch = [], i, e, type, name;
-        for (i = 0; i !== this.elements.length; ++i) {
-            e = this.elements[i];
-            type = e.type;
-            name = type ? e.name : e[0].name;
+        const unch = [], ch = [];
+        for (let i = 0; i !== this.elements.length; ++i) {
+            const e = this.elements[i],
+                type = e.type,
+                name = type ? e.name : e[0].name;
             if (name
                 && !name.startsWith("has_")
                 && (!type
@@ -11619,7 +11625,7 @@ handle_ui.on("submit.js-submit-paper", function (evt) {
                 (input_differs(e) ? ch : unch).push(name);
             }
         }
-        e = hidden_input("status:unchanged", unch.join(" "));
+        let e = hidden_input("status:unchanged", unch.join(" "));
         e.className = "ignore-diff";
         this.appendChild(e);
         e = hidden_input("status:changed", ch.join(" "));
@@ -11707,6 +11713,16 @@ hotcrp.load_editable_paper = function () {
     if (f.querySelector(".has-edit-condition")) {
         run_all_edit_conditions();
         $(f).on("fieldchange", schedule_all_edit_conditions);
+    }
+    if (hasClass(f, "need-highlight-differences")) {
+        removeClass(f, "need-highlight-differences");
+        for (let i = 0; i !== f.elements.length; ++i) {
+            const e = f.elements[i];
+            if ((!e.type || e.type !== "hidden")
+                && input_differs(e)) {
+                addClass(e, "has-vchange");
+            }
+        }
     }
 };
 

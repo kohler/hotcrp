@@ -768,9 +768,7 @@ class PaperTable {
     }
 
     private function print_editable_complete() {
-        if ($this->prow->timeModified > 0) {
-            echo Ht::hidden("status:previous_version", $this->prow->timeModified);
-        }
+        echo Ht::hidden("status:if_unmodified_since", $this->prow->timeModified);
         if ($this->allow_edit_final) {
             echo Ht::hidden("status:submit", 1);
             return;
@@ -2297,6 +2295,9 @@ class PaperTable {
         }
         if ($this->useRequest) {
             $form_js["class"] .= " differs";
+            if ($this->problem_status_at("status:if_unmodified_since")) {
+                $form_js["class"] .= " need-highlight-differences";
+            }
         }
         echo Ht::form($this->conf->hoturl("=paper", $form_url), $form_js);
         Ht::stash_script('$(hotcrp.load_editable_paper)');

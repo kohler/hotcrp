@@ -152,6 +152,21 @@ class Paper_Page {
         return $msg;
     }
 
+    /** @param 'update'|'final' $action */
+    private function handle_if_unmodified_since($action) {
+        $stripfields = $this->ps->strip_unchanged_fields_qreq($this->qreq, $this->prow, $action);
+        $fields = $this->ps->changed_fields_qreq($this->qreq, $this->prow, $action);
+        if (empty($fields) && $this->prow->paperId) {
+            $this->conf->redirect_self($this->qreq, ["p" => $this->prow->paperId, "m" => "edit"]);
+        } else {
+            $this->ps->inform_at("status:if_unmodified_since",
+                $this->conf->_("<5>Your unsaved changes to {:list} are highlighted. Check them and save again, or <a href=\"{url}\" class=\"uic js-ignore-unload-protection\">discard your edits</a>.",
+                    PaperTable::field_title_links($fields, "edit_title"),
+                    new FmtArg("url", $this->prow->hoturl(["m" => "edit"], Conf::HOTURL_RAW), 0)));
+        }
+    }
+
+    /** @param 'update'|'final' $action */
     function handle_update($action) {
         $conf = $this->conf;
         // XXX lock tables
@@ -167,7 +182,11 @@ class Paper_Page {
                 // XXX save uploaded files
                 $this->ps->prepend_msg("<5><strong>Your uploaded files were ignored.</strong>", 2);
             }
-            $this->ps->prepend_msg("<0>Changes not saved; please correct these errors and try again.", 2);
+            if ($this->ps->has_error_at("status:if_unmodified_since")) {
+                $this->handle_if_unmodified_since($action);
+            } else {
+                $this->ps->prepend_msg("<0>Changes not saved; please correct these errors and try again.", 2);
+            }
             $conf->feedback_msg($this->ps->decorated_message_list());
             return;
         }

@@ -886,6 +886,10 @@ class PaperOption implements JsonSerializable {
         return true;
     }
 
+    /** @param FieldChangeSet $fcs */
+    function strip_unchanged_qreq(PaperInfo $prow, Qrequest $qreq, $fcs) {
+    }
+
     /** @param list<DocumentInfo|int> $docids */
     function save_document_links($docids, PaperInfo $prow) {
         $qv = [];

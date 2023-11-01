@@ -161,6 +161,18 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         return $ov;
     }
 
+    /** @param FieldChangeSet $fcs */
+    function strip_unchanged_qreq(PaperInfo $prow, Qrequest $qreq, $fcs) {
+        if ($this->max_count !== 1) {
+            $basev = $prow->base_option($this);
+            foreach ($this->topic_set() as $tid => $tname) {
+                if ($fcs->test("{$this->formid}:{$tid}") === FieldChangeSet::UNCHANGED) {
+                    $qreq["{$this->formid}:{$tid}"] = in_array($tid, $basev->value_list()) ? "1" : "";
+                }
+            }
+        }
+    }
+
     private function render_checkbox($tid, $checked, $arg) {
         if ($this->max_count === 1) {
             return Ht::radio($this->formid, $tid, $checked, $arg);

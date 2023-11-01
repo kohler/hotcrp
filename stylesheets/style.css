@@ -2474,6 +2474,9 @@ select.has-warning {
 .tooltip .is-warning-note {
 	color: inherit;
 }
+.has-vchange {
+	outline: 3px solid #ffff00;
+}
 
 .msg-context, .msg-inform {
 	margin-left: 2rem;

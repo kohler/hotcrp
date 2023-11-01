@@ -318,6 +318,14 @@ class PCConflicts_PaperOption extends PaperOption {
 
         echo "</ul></div></div>\n\n";
     }
+    /** @param FieldChangeSet $fcs */
+    function strip_unchanged_qreq(PaperInfo $prow, Qrequest $qreq, $fcs) {
+        foreach ($prow->conf->pc_members() as $cid => $pc) {
+            if ($fcs->test("pcconf:{$cid}") === FieldChangeSet::UNCHANGED) {
+                unset($qreq["has_pcconf:{$cid}"], $qreq["pcconf:{$cid}"]);
+            }
+        }
+    }
     function render(FieldRender $fr, PaperValue $ov) {
         if (!$this->test_visible($ov->prow)) {
             return;

@@ -1453,6 +1453,60 @@ Phil Porras.");
         xassert_eqq($prow->option($o2)->data(), "Feck");
     }
 
+    function test_if_unmodified_since() {
+        $p2 = $this->conf->checked_paper_by_id(2);
+        $p2au = $this->conf->checked_user_by_email("micke@cdt.luth.se");
+        $p2_title = $p2->title();
+        $p2_abstract = $p2->abstract();
+        $p2_modified_at = $p2->timeModified;
+
+        $ps = new PaperStatus($p2au);
+        $x = $ps->save_paper_web(new Qrequest("POST", [
+            "status:submit" => 1,
+            "title" => "{$p2_title}?",
+            "abstract" => $p2_abstract,
+            "status:if_unmodified_since" => $p2_modified_at
+        ]), $p2, "submit");
+        xassert_eqq($x, 2);
+
+        $p2b = $this->conf->checked_paper_by_id(2);
+        xassert_eqq($p2b->title, "{$p2_title}?");
+        xassert_eqq($p2b->abstract, $p2_abstract);
+        xassert_neqq($p2b->timeModified, $p2_modified_at);
+
+        $ps = new PaperStatus($p2au);
+        $qreq = new Qrequest("POST", [
+            "status:submit" => 1,
+            "title" => "{$p2_title}??",
+            "abstract" => "{$p2_abstract}??",
+            "status:if_unmodified_since" => $p2_modified_at
+        ]);
+        $x = $ps->save_paper_web($qreq, $p2b, "submit");
+        xassert_eqq($x, false);
+        xassert($ps->has_error_at("status:if_unmodified_since"));
+        $fl = $ps->changed_fields_qreq($qreq, $p2b, "submit");
+        xassert_eqq(count($fl), 2);
+        xassert_eqq($fl[0]->formid, "title");
+        xassert_eqq($fl[1]->formid, "abstract");
+
+        $ps = new PaperStatus($p2au);
+        $qreq = new Qrequest("POST", [
+            "status:submit" => 1,
+            "title" => "{$p2_title}??",
+            "abstract" => "{$p2_abstract}??",
+            "status:if_unmodified_since" => $p2_modified_at,
+            "status:changed" => "title",
+            "status:unchanged" => "abstract"
+        ]);
+        $x = $ps->save_paper_web($qreq, $p2b, "submit");
+        xassert_eqq($x, false);
+        xassert($ps->has_error_at("status:if_unmodified_since"));
+        $ps->strip_unchanged_fields_qreq($qreq, $p2b, "submit");
+        $fl = $ps->changed_fields_qreq($qreq, $p2b, "submit");
+        xassert_eqq(count($fl), 1);
+        xassert_eqq($fl[0]->formid, "title");
+    }
+
     function test_invariants_last() {
         ConfInvariants::test_all($this->conf);
     }
