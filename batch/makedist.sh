@@ -257,6 +257,7 @@ src/documentinfo.php
 src/documentinfoset.php
 src/documenthashmatcher.php
 src/documentrequest.php
+src/fieldchangeset.php
 src/fieldrender.php
 src/filefilter.php
 src/formatspec.php
