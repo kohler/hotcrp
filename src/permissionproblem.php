@@ -155,7 +155,7 @@ class PermissionProblem extends Exception
         }
         if (isset($this->_a["invalidId"])) {
             $id = $this->_a["invalidId"];
-            $idname = $id === "paper" ? "submission" : $id;
+            $idname = $id === "paper" ? "{submission}" : $id;
             if (isset($this->_a["{$id}Id"])) {
                 $ms[] = $this->conf->_("<0>Invalid {$idname} ID ‘{}’", $this->_a["{$id}Id"]);
             } else {
@@ -164,7 +164,7 @@ class PermissionProblem extends Exception
         }
         if (isset($this->_a["missingId"])) {
             $id = $this->_a["missingId"];
-            $idname = $id === "paper" ? "submission" : $id;
+            $idname = $id === "paper" ? "{submission}" : $id;
             $ms[] = $this->conf->_("<0>Missing {$idname} ID");
         }
         if (isset($this->_a["invalidSclass"])) {
@@ -174,19 +174,19 @@ class PermissionProblem extends Exception
             $ms[] = $this->conf->_("<0>Action locked");
         }
         if ($this->_a["noPaper"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} does not exist", $paperId);
+            $ms[] = $this->conf->_("<0>{Submission} #{} does not exist", $paperId);
         }
         if (isset($this->_a["dbError"])) {
             $ms[] = $this->_a["dbError"];
         }
         if ($this->_a["administer"] ?? false) {
-            $ms[] = $this->conf->_("<0>You can’t administer submission #{}", $paperId);
+            $ms[] = $this->conf->_("<0>You can’t administer {submission} #{}", $paperId);
         }
         if (isset($this->_a["permission"])) {
             $ms[] = $this->conf->_i("permission_error", new FmtArg("action", $this->_a["permission"]), ...$args);
         }
         if ($this->_a["optionNonexistent"] ?? false) {
-            $ms[] = $this->conf->_("<0>The {field} field is not present on submission #{pid}", ...$args);
+            $ms[] = $this->conf->_("<0>The {field} field is not present on {submission} #{pid}", ...$args);
         }
         if (isset($this->_a["documentNotFound"])) {
             $ms[] = $this->conf->_("<0>Document ‘{}’ not found", $this->_a["documentNotFound"]);
@@ -196,22 +196,22 @@ class PermissionProblem extends Exception
             $ms[] = $this->conf->_i("signin_required", new FmtArg("url", $url, 0), new FmtArg("action", $this->_a["signin"]));
         }
         if ($this->_a["withdrawn"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} has been withdrawn", $paperId);
+            $ms[] = $this->conf->_("<0>{Submission} #{} has been withdrawn", $paperId);
         }
         if ($this->_a["notWithdrawn"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} is not withdrawn", $paperId);
+            $ms[] = $this->conf->_("<0>{Submission} #{} is not withdrawn", $paperId);
         }
         if ($this->_a["notSubmitted"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} is only a draft", $paperId);
+            $ms[] = $this->conf->_("<0>{Submission} #{} is only a draft", $paperId);
         }
         if ($this->_a["reviewsSeen"] ?? false) {
-            $ms[] = $this->conf->_("<0>You can’t withdraw a submission after seeing its reviews", $paperId);
+            $ms[] = $this->conf->_("<0>You can’t withdraw {submission} #{} after seeing its reviews", $paperId);
         }
         if ($this->_a["decided"] ?? false) {
-            $ms[] = $this->conf->_("<0>The review process for submission #{} has completed", $paperId);
+            $ms[] = $this->conf->_("<0>The review process for {submission} #{} has completed", $paperId);
         }
         if ($this->_a["frozen"] ?? false) {
-            $ms[] = $this->conf->_("<0>Submission #{} can no longer be edited", $paperId);
+            $ms[] = $this->conf->_("<0>{Submission} #{} can no longer be edited", $paperId);
         }
         if ($this->_a["notUploaded"] ?? false) {
             $ms[] = $this->conf->_("<0>A PDF upload is required to submit");
@@ -223,7 +223,7 @@ class PermissionProblem extends Exception
             $ms[] = $this->conf->_("<0>Your own review for #{} is not complete, so you can’t view other people’s reviews", $paperId);
         }
         if ($this->_a["responseNonexistent"] ?? false) {
-            $ms[] = $this->conf->_("<0>That response is not allowed on submission #{}", $paperId);
+            $ms[] = $this->conf->_("<0>That response is not allowed on {submission} #{}", $paperId);
         }
         if ($this->_a["responseNotReady"] ?? false) {
             $ms[] = $this->conf->_("<0>The authors’ response is not yet ready for reviewers to view");
@@ -235,7 +235,7 @@ class PermissionProblem extends Exception
             }
         }
         if ($this->_a["reviewNotAssigned"] ?? false) {
-            $ms[] = $this->conf->_("<0>You are not assigned to review submission #{}", $paperId);
+            $ms[] = $this->conf->_("<0>You are not assigned to review {submission} #{}", $paperId);
         }
         if (isset($this->_a["deadline"])) {
             list($odn, $start, $edn, $end) = $this->deadline_info();
@@ -274,7 +274,7 @@ class PermissionProblem extends Exception
             $ms[] = $this->conf->_("<0>You have a conflict with #{}", $paperId);
         }
         if ($this->_a["nonPC"] ?? false) {
-            $ms[] = $this->conf->_("<0>You aren’t a member of the PC for submission #{}", $paperId);
+            $ms[] = $this->conf->_("<0>You aren’t a member of the PC for {submission} #{}", $paperId);
         }
         if ($this->_a["externalReviewer"] ?? false) {
             $ms[] = $this->conf->_("<0>External reviewers cannot view other reviews");
@@ -323,7 +323,7 @@ class PermissionProblem extends Exception
         if (!empty($ms)
             && ($this->_a["listViewable"] ?? false)
             && $format === 5) {
-            $ms[] = $this->conf->_("<5><a href=\"{searchurl}\">List the submissions you can view</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", "q="), 0));
+            $ms[] = $this->conf->_("<5><a href=\"{searchurl}\">List the {submissions} you can view</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", "q="), 0));
         }
         $tt = "";
         foreach ($ms as $m) {
