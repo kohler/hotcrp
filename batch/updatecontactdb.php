@@ -66,6 +66,10 @@ class UpdateContactdb_Batch {
             $qf[] = "url=?";
             $qv[] = $this->conf->opt("paperSite");
         }
+        if ($this->conf->opt("conferenceSite") !== $this->confrow->conferenceSite) {
+            $qf[] = "conferenceSite=?";
+            $qv[] = $this->conf->opt("conferenceSite");
+        }
         $email = $this->conf->opt_override["emailReplyTo"] ?? $this->conf->opt("emailReplyTo");
         if ($email && $email !== $this->confrow->requester_email) {
             $qf[] = "requester_email=?";
