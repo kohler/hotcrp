@@ -131,8 +131,9 @@ class PaperStatus extends MessageSet {
     function decorated_message_list() {
         $ms = [];
         foreach ($this->message_list() as $mi) {
-            if (str_ends_with($mi->field ?? "", ":context")
-                || $mi->status === MessageSet::INFORM) {
+            if (($mi->field ?? "") !== ""
+                && (str_ends_with($mi->field, ":context") || $mi->status === MessageSet::INFORM)
+                && !str_starts_with($mi->field, "status:")) {
                 // do not report in decorated list
             } else if ($mi->field
                        && $mi->message !== ""
@@ -948,7 +949,7 @@ class PaperStatus extends MessageSet {
         }
 
         if (($pj->error ?? null) || ($pj->error_html ?? null)) {
-            $this->error_at("error", $this->_("<0>Refusing to save submission with error"));
+            $this->error_at("error", $this->_("<0>Refusing to save {submission} with error"));
             return false;
         }
 
@@ -1032,7 +1033,7 @@ class PaperStatus extends MessageSet {
             && (!$this->prow->authorInformation
                 || $this->prow->authorInformation === (new Author($this->user))->unparse_tabbed())
             && empty($this->_option_ins)) {
-            $this->error_at(null, "<0>Empty submission. Please fill out the submission fields and try again");
+            $this->error_at(null, $this->_("<0>Empty {submission}. Please fill out the fields and try again"));
             return false;
         }
 
@@ -1133,7 +1134,7 @@ class PaperStatus extends MessageSet {
             $this->conf->qe("unlock tables");
         }
         if ($result->is_error() || !$result->insert_id) {
-            $this->error_at(null, $this->_("<0>Could not create submission"));
+            $this->error_at(null, $this->_("<0>Could not create {submission}"));
             return false;
         }
         $this->paperId = (int) $result->insert_id;
@@ -1158,11 +1159,11 @@ class PaperStatus extends MessageSet {
         $qv[] = $this->_desired_pid;
         $result = $this->conf->qe_apply("update Paper set " . join(", ", $qf) . " where paperId=?", $qv);
         if ($result->is_error()) {
-            $this->error_at(null, $this->_("<0>Could not update submission"));
+            $this->error_at(null, $this->_("<0>Could not update {submission}"));
             return false;
         } else if ($result->affected_rows === 0
                    && !$this->conf->fetch_ivalue("select exists(select * from Paper where paperId=?) from dual", $this->_desired_pid)) {
-            $this->error_at(null, $this->_("<0>Submission #{} has been deleted", $this->_desired_pid));
+            $this->error_at(null, $this->_("<0>{Submission} #{} has been deleted", $this->_desired_pid));
             return false;
         }
         $this->paperId = $this->_desired_pid;
@@ -1406,7 +1407,7 @@ class PaperStatus extends MessageSet {
     }
 
     /** @param ?PaperInfo $prow
-     * @param string $action
+     * @param 'submit'|'update'|'final'|'updatecontacts' $action
      * @return int|false */
     function save_paper_web(Qrequest $qreq, $prow, $action) {
         if ($this->prepare_save_paper_web($qreq, $prow, $action)) {

@@ -626,6 +626,10 @@ label.checki {
 	margin-top: 2.25em !important;
 	margin-top: 2.25rem !important;
 }
+.mt-6 {
+	margin-top: 3.25em !important;
+	margin-top: 3.25rem !important;
+}
 .mt-7 {
 	margin-top: 5em !important;
 	margin-top: 5rem !important;
@@ -2455,7 +2459,7 @@ textarea.has-warning,
 select.has-warning {
 	border: 1px solid #855c04;
 }
-.is-confirm, .is-success {
+.is-success {
 	color: #006600;
 }
 .is-note {

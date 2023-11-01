@@ -5217,7 +5217,7 @@ hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
     menu.append(buttonli("link ui row-order-dragmenu move-down", {disabled: !row.nextElementSibling}, "Move down"));
     if (group.hasAttribute("data-row-template")) {
         const max_rows = +group.getAttribute("data-max-rows") || 0;
-        if (max_rows <= 0 || row_order_count(count) < max_rows) {
+        if (max_rows <= 0 || row_order_count(group) < max_rows) {
             menu.append(buttonli("link ui row-order-dragmenu insert-above", {}, "Insert row above"));
             menu.append(buttonli("link ui row-order-dragmenu insert-below", {}, "Insert row below"));
         }

@@ -2003,11 +2003,16 @@ class PaperTable {
         }
         if ($this->edit_status->has_problem()
             && ($this->edit_status->has_problem_at("contacts") || $this->editable)) {
-            $fields = array_filter($this->edit_fields ?? [], function ($o) {
-                return $this->edit_status->has_problem_at($o->formid);
-            });
+            $fields = [];
+            $maxps = 0;
+            foreach ($this->edit_fields as $o) {
+                if (($ps = $this->edit_status->problem_status_at($o->formid)) > 0) {
+                    $fields[] = $o;
+                    $maxps = max($maxps, $ps);
+                }
+            }
             if (!empty($fields)) {
-                $this->_main_message($this->conf->_c("paper_edit", "<5>Please check {:list} before completing the {submission}.", self::field_title_links($fields, "edit_title")), $this->edit_status->problem_status());
+                $this->_main_message($this->conf->_c("paper_edit", "<5>Please check {:list} before completing the {submission}.", self::field_title_links($fields, "edit_title")), $maxps);
             }
         }
     }
@@ -2411,7 +2416,7 @@ class PaperTable {
         }
 
         echo '<div class="pcard papcard">';
-        $this->conf->report_saved_messages();
+        $saved_status = $this->conf->report_saved_messages();
         if ($this->editable && !$this->user->can_clickthrough("submit")) {
             echo '<div id="foldpaper js-clickthrough-container">',
                 '<div class="js-clickthrough-terms">',
@@ -2422,7 +2427,7 @@ class PaperTable {
             $this->_print_editable_body();
             echo '</div></div>';
         } else if ($this->editable || $this->prow->paperId <= 0) {
-            echo '<div id="foldpaper">';
+            echo '<div id="foldpaper"', $saved_status ? ' class="mt-6"' : '', '>';
             $this->_print_editable_body();
             echo '</div>';
         } else {

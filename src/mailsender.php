@@ -259,7 +259,7 @@ class MailSender {
                 '<div id="mailwarnings"></div>',
                 '<div class="fx">',
                   '<div class="msg msg-confirm">',
-                    '<p class="feedback is-confirm">',
+                    '<p class="feedback is-success">',
                       'Sent to:&nbsp;', $this->recip->unparse(),
                       '<span id="mailinfo"></span>',
                     '</p>',
