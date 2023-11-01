@@ -152,10 +152,9 @@ class Paper_Page {
         return $msg;
     }
 
-    /** @param 'update'|'final' $action */
-    private function handle_if_unmodified_since($action) {
-        $stripfields = $this->ps->strip_unchanged_fields_qreq($this->qreq, $this->prow, $action);
-        $fields = $this->ps->changed_fields_qreq($this->qreq, $this->prow, $action);
+    private function handle_if_unmodified_since() {
+        $stripfields = $this->ps->strip_unchanged_fields_qreq($this->qreq, $this->prow);
+        $fields = $this->ps->changed_fields_qreq($this->qreq, $this->prow);
         if (empty($fields) && $this->prow->paperId) {
             $this->conf->redirect_self($this->qreq, ["p" => $this->prow->paperId, "m" => "edit"]);
         } else {
@@ -166,16 +165,17 @@ class Paper_Page {
         }
     }
 
-    /** @param 'update'|'final' $action */
-    function handle_update($action) {
+    function handle_update() {
         $conf = $this->conf;
         // XXX lock tables
         $is_new = $this->prow->paperId <= 0;
         $was_submitted = $this->prow->timeSubmitted > 0;
+        $is_final = $this->prow->phase() === PaperInfo::PHASE_FINAL
+            && $this->qreq["status:phase"] === "final";
         $this->useRequest = true;
 
         $this->ps = new PaperStatus($this->user);
-        $prepared = $this->ps->prepare_save_paper_web($this->qreq, $this->prow, $action);
+        $prepared = $this->ps->prepare_save_paper_web($this->qreq, $this->prow);
 
         if (!$prepared) {
             if ($is_new && $this->qreq->has_files()) {
@@ -183,7 +183,7 @@ class Paper_Page {
                 $this->ps->prepend_msg("<5><strong>Your uploaded files were ignored.</strong>", 2);
             }
             if ($this->ps->has_error_at("status:if_unmodified_since")) {
-                $this->handle_if_unmodified_since($action);
+                $this->handle_if_unmodified_since();
             } else {
                 $this->ps->prepend_msg("<0>Changes not saved; please correct these errors and try again.", 2);
             }
@@ -192,14 +192,14 @@ class Paper_Page {
         }
 
         // check deadlines
-        // NB At this point, PaperStatus also checks deadlines.
+        // NB PaperStatus also checks deadlines now; this is likely redundant.
         if ($is_new) {
             // we know that can_start_paper implies can_finalize_paper
             $whynot = $this->user->perm_start_paper($this->prow);
         } else {
             $whynot = $this->user->perm_edit_paper($this->prow);
             if ($whynot
-                && $action === "update"
+                && !$is_final
                 && !count(array_diff($this->ps->changed_keys(), ["contacts", "status"]))) {
                 $whynot = $this->user->perm_finalize_paper($this->prow);
             }
@@ -234,7 +234,7 @@ class Paper_Page {
         $sr = $new_prow->submission_round();
 
         // confirmation message
-        if ($action === "final") {
+        if ($is_final) {
             $template = "@submitfinalpaper";
         } else if ($newsubmit) {
             $template = "@submitpaper";
@@ -252,7 +252,7 @@ class Paper_Page {
         $note_status = MessageSet::PLAIN;
         if ($this->ps->has_error()) {
             // only print save error message; to do otherwise is confusing
-        } else if ($action == "final") {
+        } else if ($is_final) {
             if ($new_prow->timeFinalSubmitted <= 0) {
                 $notes[] = $conf->_("<0>The final version has not yet been submitted.");
             }
@@ -294,9 +294,8 @@ class Paper_Page {
         } else if ($is_new) {
             $this->ps->splice_msg($msgpos++, $conf->_("<0>Registered {submission} as #{}", $new_prow->paperId), MessageSet::SUCCESS);
         } else {
-            $t = $action === "final" ? "<0>Updated final version (changed {:list})" : "<0>Updated {submission} (changed {:list})";
             $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
-            $this->ps->splice_msg($msgpos++, $conf->_($t, $chf), MessageSet::SUCCESS);
+            $this->ps->splice_msg($msgpos++, $conf->_("<0>Updated {submission} (changed {:list})", $chf, new FmtArg("phase", $is_final ? "final" : "review")), MessageSet::SUCCESS);
         }
         if ($this->ps->has_error()) {
             if (!$this->ps->has_change()) {
@@ -339,7 +338,7 @@ class Paper_Page {
             }
 
             // other mail confirmations
-            if ($action === "final" && $new_prow->timeFinalSubmitted > 0) {
+            if ($is_final && $new_prow->timeFinalSubmitted > 0) {
                 $followers = $new_prow->final_update_followers();
                 $template = "@finalsubmitnotify";
             } else if ($is_new || $newsubmit) {
@@ -372,7 +371,8 @@ class Paper_Page {
         }
 
         $this->ps = new PaperStatus($this->user);
-        if (!$this->ps->prepare_save_paper_web($this->qreq, $this->prow, "updatecontacts")) {
+        $this->qreq["status:phase"] = "contacts";
+        if (!$this->ps->prepare_save_paper_web($this->qreq, $this->prow)) {
             $conf->feedback_msg($this->ps);
             return;
         }
@@ -538,7 +538,10 @@ class Paper_Page {
         if ($qreq->cancel) {
             $pp->handle_cancel();
         } else if ($qreq->update && $qreq->valid_post()) {
-            $pp->handle_update($qreq->submitfinal ? "final" : "update");
+            if (!isset($qreq["status:phase"])) {
+                $qreq["status:phase"] = $qreq->submitfinal ? "final" : "review"; /* XXX backward compat */
+            }
+            $pp->handle_update();
         } else if ($qreq->updatecontacts && $qreq->valid_post()) {
             $pp->handle_updatecontacts();
         } else if ($qreq->withdraw && $qreq->valid_post()) {

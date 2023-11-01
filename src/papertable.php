@@ -768,7 +768,8 @@ class PaperTable {
     }
 
     private function print_editable_complete() {
-        echo Ht::hidden("status:if_unmodified_since", $this->prow->timeModified);
+        echo Ht::hidden("status:phase", $this->allow_edit_final ? "final" : "review"),
+            Ht::hidden("status:if_unmodified_since", $this->prow->timeModified);
         if ($this->allow_edit_final) {
             echo Ht::hidden("status:submit", 1);
             return;
@@ -2124,9 +2125,6 @@ class PaperTable {
                 "Email authors, including:</label> ",
                 Ht::entry("status:notify_reason", $v, ["size" => 30, "placeholder" => "Optional explanation", "class" => "ignore-diff js-autosubmit", "aria-label" => "Explanation for update"]),
                 "</div>";
-        }
-        if ($this->mode === "edit" && $this->allow_edit_final) {
-            echo Ht::hidden("submitfinal", 1);
         }
 
         $buttons = $this->_collect_actions();

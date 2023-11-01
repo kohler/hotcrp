@@ -889,9 +889,8 @@ class PaperStatus extends MessageSet {
     }
 
     /** @param ?PaperInfo $prow
-     * @param 'submit'|'update'|'final'|'updatecontacts' $action
      * @return bool */
-    function prepare_save_paper_web(Qrequest $qreq, $prow, $action) {
+    function prepare_save_paper_web(Qrequest $qreq, $prow) {
         $this->_reset($prow ?? PaperInfo::make_new($this->user, $qreq->sclass));
         $pj = (object) [];
 
@@ -905,15 +904,17 @@ class PaperStatus extends MessageSet {
 
         // Status
         $pjs = $pj->status = (object) [];
-        $updatecontacts = $action === "updatecontacts";
-        if ($action === "submit"
-            || ($action === "update" && $qreq["status:submit"])) {
-            $pjs->submitted = true;
-            $pjs->draft = false;
-        } else if ($action === "final") {
+        $phase = $qreq["status:phase"];
+        if ($phase === "contacts") {
+            // do not change submitted/draft state
+        } else if ($phase === "final") {
+            $pjs->phase = "final";
             $pjs->final_submitted = $pjs->submitted = true;
             $pjs->draft = false;
-        } else if (!$updatecontacts && $qreq["has_status:submit"]) {
+        } else if ($qreq["status:submit"]) {
+            $pjs->submitted = true;
+            $pjs->draft = false;
+        } else if ($qreq["has_status:submit"]) {
             $pjs->submitted = false;
             $pjs->draft = true;
         }
@@ -925,8 +926,8 @@ class PaperStatus extends MessageSet {
         // Fields
         foreach ($this->prow->form_fields() as $o) {
             if (($qreq["has_{$o->formid}"] || isset($qreq[$o->formid]))
-                && (!$o->is_final() || $action === "final")
-                && (!$updatecontacts || $o->id === PaperOption::CONTACTSID)) {
+                && (!$o->is_final() || $phase === "final")
+                && ($o->id === PaperOption::CONTACTSID || $phase !== "contacts")) {
                 // XXX test_editable
                 $pj->{$o->json_key()} = $o->parse_qreq($this->prow, $qreq);
             }
@@ -1419,10 +1420,9 @@ class PaperStatus extends MessageSet {
     }
 
     /** @param ?PaperInfo $prow
-     * @param 'submit'|'update'|'final'|'updatecontacts' $action
      * @return int|false */
-    function save_paper_web(Qrequest $qreq, $prow, $action) {
-        if ($this->prepare_save_paper_web($qreq, $prow, $action)) {
+    function save_paper_web(Qrequest $qreq, $prow) {
+        if ($this->prepare_save_paper_web($qreq, $prow)) {
             $this->execute_save();
             return $this->paperId;
         } else {
@@ -1430,15 +1430,14 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    /** @param 'update'|'final' $action
-     * @return list<PaperOption> */
-    function strip_unchanged_fields_qreq(Qrequest $qreq, PaperInfo $prow, $action) {
+    /** @return list<PaperOption> */
+    function strip_unchanged_fields_qreq(Qrequest $qreq, PaperInfo $prow) {
         $fcs = (new FieldChangeSet)->mark_unchanged($qreq["status:unchanged"])
             ->mark_changed($qreq["status:changed"])
             ->mark_synonym("pc_conflicts", "pcconf"); /* XXX special case */
         $fl = [];
         foreach ($prow->form_fields() as $o) {
-            if ($o->is_final() && $action !== "final") {
+            if ($o->is_final() && $qreq["status:phase"] !== "final") {
                 continue;
             }
             // if option appears completely unchanged from save time, reset
@@ -1453,14 +1452,13 @@ class PaperStatus extends MessageSet {
         return $fl;
     }
 
-    /** @param 'update'|'final' $action
-     * @return list<PaperOption> */
-    function changed_fields_qreq(Qrequest $qreq, PaperInfo $prow, $action) {
+    /** @return list<PaperOption> */
+    function changed_fields_qreq(Qrequest $qreq, PaperInfo $prow) {
         $fl = [];
         foreach ($prow->form_fields() as $o) {
             if ($this->has_change_at($o)
                 && (isset($qreq["has_{$o->formid}"]) || isset($qreq[$o->formid]))
-                && (!$o->is_final() || $action === "final")) {
+                && (!$o->is_final() || $qreq["status:phase"] === "final")) {
                 $fl[] = $o;
             }
         }
