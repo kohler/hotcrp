@@ -20,7 +20,7 @@ class Collaborators_PaperOption extends PaperOption {
         return $ov->value ? $ov->data() : null;
     }
     function value_check(PaperValue $ov, Contact $user) {
-        if (!$this->value_present($ov)
+        if (!$ov->value /* because "None" should cause no error */
             && !$ov->prow->allow_absent()
             && ($ov->prow->outcome_sign <= 0 || !$user->can_view_decision($ov->prow))) {
             $ov->warning($this->conf->_("<0>Enter the authors’ external conflicts of interest"));
