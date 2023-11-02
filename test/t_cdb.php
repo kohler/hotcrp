@@ -732,7 +732,7 @@ class Cdb_Tester {
             "authors:3:affiliation" => "Brandeis University",
             "authors:3:email" => "xuen@brandeis.edu",
             "abstract" => "Inferring implicit discourse relations in natural language text is the most difficult subtask in discourse parsing. Many neural network models have been proposed to tackle this problem."
-        ]), $p, "update");
+        ]), $p);
         xassert_gt($pid, 0);
         xassert($u->has_account_here());
 
@@ -778,7 +778,7 @@ class Cdb_Tester {
             "contacts:2:email" => "newuser2@_.com",
             "contacts:2:active" => 1,
             "abstract" => "Inferring implicit discourse relations in natural language text is the most difficult subtask in discourse parsing. Many neural network models have been proposed to tackle this problem."
-        ]), $p, "update");
+        ]), $p);
         xassert_gt($pid, 0);
         xassert($u->has_account_here());
 
@@ -811,7 +811,7 @@ class Cdb_Tester {
             "contacts:1:email" => "belling@_.com",
             "contacts:1:active" => 1,
             "abstract" => "Inferring implicit discourse relations in natural language text is the most difficult subtask in discourse parsing. Many neural network models have been proposed to tackle this problem."
-        ]), $p, "update");
+        ]), $p);
         xassert_gt($pid, 0);
 
         $u = $this->conf->fresh_cdb_user_by_email("belling@_.com");

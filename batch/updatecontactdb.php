@@ -1,6 +1,6 @@
 <?php
 // updatecontactdb.php -- HotCRP maintenance script
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -25,7 +25,11 @@ class UpdateContactdb_Batch {
     /** @var bool */
     public $authors;
     /** @var bool */
+    public $metadata;
+    /** @var bool */
     public $verbose;
+    /** @var ?\mysqli */
+    private $_cdb;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
@@ -34,8 +38,9 @@ class UpdateContactdb_Batch {
         $this->users = isset($arg["users"]);
         $this->collaborators = isset($arg["collaborators"]);
         $this->authors = isset($arg["authors"]);
+        $this->metadata = isset($arg["metadata"]);
         $this->verbose = isset($arg["V"]);
-        if (!$this->papers && !$this->users && !$this->collaborators && !$this->authors) {
+        if (!$this->papers && !$this->users && !$this->collaborators && !$this->authors && !$this->metadata) {
             $this->papers = $this->users = true;
         }
     }
@@ -97,16 +102,16 @@ class UpdateContactdb_Batch {
 
     /** @return \mysqli */
     private function cdb() {
-        $cdb = $this->try_cdb();
-        if (!$cdb) {
+        $this->_cdb = $this->_cdb ?? $this->try_cdb();
+        if (!$this->_cdb) {
             throw new ErrorException("Conference has no contactdb");
         }
-        return $cdb;
+        return $this->_cdb;
     }
 
-    /** @param \mysqli $cdb */
-    private function run_users($cdb) {
+    private function run_users() {
         // read current cdb roles
+        $cdb = $this->cdb();
         $result = Dbl::ql($cdb, "select contactDbId from Roles where confid=?", $this->cdb_confid);
         $ecdbids = [];
         while (($row = $result->fetch_row())) {
@@ -157,13 +162,12 @@ class UpdateContactdb_Batch {
         }
     }
 
-    /** @param \mysqli $cdb */
-    private function run_collaborators($cdb) {
+    private function run_collaborators() {
         $result = Dbl::ql($this->conf->dblink, "select email, collaborators, updateTime, lastLogin from ContactInfo where collaborators is not null and collaborators!=''");
         while (($row = $result->fetch_row())) {
             $time = (int) $row[2] ? : (int) $row[3];
             if ($time > 0) {
-                Dbl::ql($cdb, "update ContactInfo set collaborators=?, updateTime=? where email=? and (collaborators is null or collaborators='' or updateTime<?)", $row[1], $time, $row[0], $time);
+                Dbl::ql($this->cdb(), "update ContactInfo set collaborators=?, updateTime=? where email=? and (collaborators is null or collaborators='' or updateTime<?)", $row[1], $time, $row[0], $time);
             }
         }
         Dbl::free($result);
@@ -214,8 +218,8 @@ class UpdateContactdb_Batch {
     }
 
 
-    /** @param \mysqli $cdb */
-    private function run_papers($cdb) {
+    private function run_papers() {
+        $cdb = $this->cdb();
         $result = Dbl::qe($cdb, "select * from ConferencePapers where confid=?", $this->cdb_confid);
         $epapers = [];
         while (($erow = $result->fetch_object())) {
@@ -269,21 +273,20 @@ class UpdateContactdb_Batch {
 
     /** @return int */
     function run() {
-        $cdb = null;
+        if ($this->metadata) {
+            $this->cdb();
+        }
         if ($this->authors) {
             $this->run_authors();
         }
         if ($this->users) {
-            $cdb = $cdb ?? $this->cdb();
-            $this->run_users($cdb);
+            $this->run_users();
         }
         if ($this->collaborators) {
-            $cdb = $cdb ?? $this->cdb();
-            $this->run_collaborators($cdb);
+            $this->run_collaborators();
         }
         if ($this->papers) {
-            $cdb = $cdb ?? $this->cdb();
-            $this->run_papers($cdb);
+            $this->run_papers();
         }
         return 0;
     }
@@ -299,6 +302,7 @@ class UpdateContactdb_Batch {
             "users,u",
             "collaborators",
             "authors",
+            "metadata",
             "V,verbose"
         )->description("Update HotCRP contactdb for a conference.
 Usage: php batch/updatecontactdb.php [-n CONFID | --config CONFIG] [--papers] [--users] [--collaborators] [--authors]")
