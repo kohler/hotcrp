@@ -7,6 +7,14 @@ class MentionParser {
      * @param array<Contact|Author> ...$user_lists
      * @return \Generator<array{Contact|Author,int,int}> */
     static function parse($s, ...$user_lists) {
+        // filter out empty user lists
+        $ulists = [];
+        foreach ($user_lists as $ulist) {
+            if (!empty($ulist)) {
+                $ulists[] = $ulist;
+            }
+        }
+
         $pos = 0;
         $len = strlen($s);
         $isascii = $collator = $strength = null;
@@ -31,7 +39,7 @@ class MentionParser {
 
             // check emails
             if (($email = validate_email_at($s, $pos + 1))) {
-                foreach ($user_lists as $ulist) {
+                foreach ($ulists as $ulist) {
                     foreach ($ulist as $u) {
                         if (strcasecmp($u->email, $email) === 0
                             && self::mention_ends_at($s, $pos + 1 + strlen($email))) {
@@ -55,7 +63,7 @@ class MentionParser {
 
             // Match the first word
             $uset = [];
-            foreach ($user_lists as $listindex => $ulist) {
+            foreach ($ulists as $listindex => $ulist) {
                 foreach ($ulist as $u) {
                     if ($u->firstName === "" && $u->lastName === "") {
                         continue;
@@ -80,7 +88,7 @@ class MentionParser {
             $pos2 = $pos + 1 + strlen($m[0]);
             $best_ux = $best_pos2 = $best_endpos = null;
             while (count($uset) > 1 && self::word_at($s, $pos2, $isascii, $m)) {
-                if (count($user_lists) > 1) {
+                if (count($ulists) > 1) {
                     usort($uset, function ($a, $b) {
                         return $a[4] <=> $b[4];
                     });

@@ -203,12 +203,15 @@ class Completion_API {
         return ["ok" => true, "searchcompletion" => self::search_completions($user, "")];
     }
 
+    const MENTION_PARSE = 0;
+    const MENTION_COMPLETION = 1;
+
     /** @param Contact $user
      * @param ?PaperInfo $prow
      * @param int $cvis
-     * @param bool $include_all
+     * @param 0|1 $reason
      * @return list<list<Contact|Author>> */
-    static function mention_lists($user, $prow, $cvis, $include_all = false) {
+    static function mention_lists($user, $prow, $cvis, $reason) {
         $alist = $rlist = $pclist = [];
 
         if ($prow
@@ -245,7 +248,9 @@ class Completion_API {
         }
 
         if ($user->can_view_pc()) {
-            if (!$prow || !$user->conf->check_track_view_sensitivity()) {
+            if (!$prow
+                || $reason === self::MENTION_PARSE
+                || !$user->conf->check_track_view_sensitivity()) {
                 $pclist = $user->conf->enabled_pc_members();
             } else {
                 foreach ($user->conf->pc_members() as $p) {
@@ -256,24 +261,14 @@ class Completion_API {
             }
         }
 
-        $lists = [];
-        if ($include_all || !empty($alist)) {
-            $lists[] = $alist;
-        }
-        if ($include_all || !empty($rlist)) {
-            $lists[] = $rlist;
-        }
-        if ($include_all || !empty($pclist)) {
-            $lists[] = $pclist;
-        }
-        return $lists;
+        return [$alist, $rlist, $pclist];
     }
 
     /** @param Qrequest $qreq
      * @param ?PaperInfo $prow */
     static function mentioncompletion_api(Contact $user, $qreq, $prow) {
         $comp = [];
-        $mlists = self::mention_lists($user, $prow, CommentInfo::CTVIS_AUTHOR, true);
+        $mlists = self::mention_lists($user, $prow, CommentInfo::CTVIS_AUTHOR, self::MENTION_COMPLETION);
         $aunames = [];
         foreach ($mlists as $i => $mlist) {
             $skey = $i === 2 ? "sm1" : "s";

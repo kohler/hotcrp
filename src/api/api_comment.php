@@ -161,7 +161,7 @@ class Comment_API {
             if (($n->types & NotificationInfo::MENTION) !== 0) {
                 if ($n->sent) {
                     $mentions[] = $n->user_html ?? $suser->reviewer_html_for($n->user);
-                } else {
+                } else if ($xcrow->timeNotified === $xcrow->timeModified) {
                     $mentions_missing = true;
                 }
             }
@@ -177,7 +177,7 @@ class Comment_API {
             $this->ms->success($this->conf->_("<5>Notified mentioned users {:nblist}", $mentions));
         }
         if ($mentions_missing) {
-            $this->ms->msg_at(null, $this->conf->_("<0>Some users mentioned in the comment cannot see the comment yet, so they were not notified."), MessageSet::WARNING_NOTE);
+            $this->ms->msg_at(null, $this->conf->_("<0>Some mentioned users cannot currently see this comment, so they were not notified."), MessageSet::WARNING_NOTE);
         }
         return $xcrow;
     }

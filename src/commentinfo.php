@@ -1048,7 +1048,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         // enumerate desired mentions and save them
         $desired_mentions = [];
         $text = $this->commentOverflow ?? $this->comment;
-        foreach (MentionParser::parse($text, ...Completion_API::mention_lists($user, $this->prow, $this->commentType & self::CTVIS_MASK)) as $mpx) {
+        foreach (MentionParser::parse($text, ...Completion_API::mention_lists($user, $this->prow, $this->commentType & self::CTVIS_MASK, Completion_API::MENTION_PARSE)) as $mpx) {
             $named = $mpx[0] instanceof Contact || $mpx[0]->status !== Author::STATUS_ANONYMOUS_REVIEWER;
             $desired_mentions[] = [$mpx[0]->contactId, $mpx[1], $mpx[2], $named];
             $this->conf->prefetch_user_by_id($mpx[0]->contactId);

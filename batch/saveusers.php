@@ -1,6 +1,6 @@
 <?php
 // saveusers.php -- HotCRP command-line user modification script
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -137,10 +137,10 @@ class SaveUsers_Batch {
             "config: !",
             "help,h !",
             "user:,u: =EMAIL Create or modify user EMAIL.",
-            "roles:,r: Set roles (`-u` only).",
-            "user-name:,uname: Set user name (`-u` only).",
-            "disable Disable user (`-u` only).",
-            "enable Enable user (`-u` only).",
+            "roles:,r: Set roles for `-u` user.",
+            "user-name:,uname: Set name for `-u` user.",
+            "disable Disable `-u` user.",
+            "enable Enable `-u` user.",
             "expression[],expr[],e[] =JSON Create or modify users specified in JSON.",
             "no-notify,no-email Do not send email notifications.",
             "notify !",
