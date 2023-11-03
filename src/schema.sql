@@ -76,6 +76,7 @@ CREATE TABLE `ContactInfo` (
   `disabled` tinyint(1) NOT NULL DEFAULT 0,
   `primaryContactId` int(11) NOT NULL DEFAULT 0,
   `contactTags` varbinary(4096) DEFAULT NULL,
+  `cflags` int(11) NOT NULL DEFAULT 0,
   `orcid` varbinary(64) DEFAULT NULL,
   `phone` varbinary(64) DEFAULT NULL,
   `country` varbinary(256) DEFAULT NULL,
@@ -621,7 +622,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 284, null),   -- schema version
+  ('allowPaperOption', 285, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

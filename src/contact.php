@@ -43,10 +43,9 @@ class Contact implements JsonSerializable {
     public $roles = 0;
     /** @var int */
     public $role_mask = self::ROLE_DBMASK;
-    /** @var int */
+    /** @var int
+     * @deprecated */
     private $disabled = 0;
-    /** @var int */
-    public $disablement = 0;
     /** @var ?int */
     public $primaryContactId;
     /** @var ?string */
@@ -209,17 +208,18 @@ class Contact implements JsonSerializable {
     const DISABLEMENT_USER = 1;
     /** @deprecated */
     const DISABLEMENT_PLACEHOLDER = 2;
-        // NB some code depends on PLACEHOLDER being highest bit in DB
-    const DISABLEMENT_DB = 3;
     /** @deprecated */
     const DISABLEMENT_ROLE = 4;
     /** @deprecated */
     const DISABLEMENT_DELETED = 8;
 
-    const CFLAG_UDISABLED = 1;
-    const CFLAG_PLACEHOLDER = 2;
-    const CFLAG_ROLEDISABLED = 4;
-    const CFLAG_DELETED = 8;
+    const CFLAG_UDISABLED = 0x1;
+    const CFLAG_PLACEHOLDER = 0x2;
+    const CFLAG_ROLEDISABLED = 0x4;
+    const CFLAG_DELETED = 0x8;
+
+    const CFLAG_DISABLEMENT = 0xF;
+    const CFLAG_DBMASK = ~0xC;
 
     const PROP_LOCAL = 0x01;
     const PROP_CDB = 0x02;
@@ -257,6 +257,7 @@ class Contact implements JsonSerializable {
         "cdbRoles" => self::PROP_LOCAL | self::PROP_INT,
         "disabled" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE | self::PROP_NOUPDATECDB,
         "contactTags" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SLICE,
+        "cflags" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE | self::PROP_NOUPDATECDB | self::PROP_SPECIAL,
         "address" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRINGLIST | self::PROP_SIMPLIFY | self::PROP_UPDATE,
         "city" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE,
         "state" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE,
@@ -291,6 +292,8 @@ class Contact implements JsonSerializable {
     static function make_placeholder(Conf $conf) {
         $u = new Contact($conf);
         $u->contactXid = self::$next_xid--;
+        $u->cflags = self::CFLAG_PLACEHOLDER;
+        /** @phan-suppress-next-line PhanDeprecatedProperty */
         $u->disabled = self::CFLAG_PLACEHOLDER;
         $u->set_roles_properties();
         return $u;
@@ -303,7 +306,7 @@ class Contact implements JsonSerializable {
         $u->contactId = $contactId;
         $u->contactXid = $contactId > 0 ? $contactId : self::$next_xid--;
         $u->email = "<deleted>";
-        $u->disablement = self::CFLAG_DELETED;
+        $u->cflags = self::CFLAG_DELETED;
         $u->set_roles_properties();
         return $u;
     }
@@ -335,8 +338,9 @@ class Contact implements JsonSerializable {
         }
         $u->affiliation = simplify_whitespace($args["affiliation"] ?? "");
         $u->orcid = trim($args["orcid"] ?? "");
-        $u->disablement = $args["disablement"] ?? 0;
-        $u->disabled = $u->disablement & self::DISABLEMENT_DB;
+        $u->cflags = $args["disablement"] ?? 0;
+        /** @phan-suppress-next-line PhanDeprecatedProperty */
+        $u->disabled = $u->cflags & self::CFLAG_DBMASK;
         $u->set_roles_properties();
         return $u;
     }
@@ -385,8 +389,9 @@ class Contact implements JsonSerializable {
         // handle slice properties
         $this->role_mask = (int) ($this->role_mask ?? self::ROLE_DBMASK);
         $this->roles = (int) $this->roles;
+        $this->cflags = (int) $this->cflags;
+        /** @phan-suppress-next-line PhanDeprecatedProperty */
         $this->disabled = (int) $this->disabled;
-        $this->disablement = (int) $this->disablement;
         if (isset($this->primaryContactId)) {
             $this->primaryContactId = (int) $this->primaryContactId;
         }
@@ -416,8 +421,11 @@ class Contact implements JsonSerializable {
     private function set_roles_properties() {
         $this->isPC = ($this->roles & self::ROLE_PCLIKE) !== 0;
         $this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0;
-        $this->disablement = $this->conf->disablement_for($this->disabled, $this->roles)
-            | ($this->disablement & self::CFLAG_DELETED);
+        if ($this->isPC || !$this->conf->disable_non_pc) {
+            $this->cflags &= ~self::CFLAG_ROLEDISABLED;
+        } else {
+            $this->cflags |= self::CFLAG_ROLEDISABLED;
+        }
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
@@ -963,10 +971,12 @@ class Contact implements JsonSerializable {
             $cdbux->set_prop("passwordTime", $this->passwordTime);
             $cdbux->set_prop("passwordUseTime", $this->passwordUseTime);
         }
-        if ($this->disablement === 0) {
-            $cdbux->set_prop("disabled", $cdbux->disabled & ~Contact::CFLAG_PLACEHOLDER);
+        if (($this->cflags & self::CFLAG_DISABLEMENT) === 0) {
+            $cdbux->set_prop("cflags", $cdbux->cflags & ~Contact::CFLAG_PLACEHOLDER);
+            $cdbux->set_prop("disabled", $cdbux->cflags & Contact::CFLAG_DISABLEMENT & Contact::CFLAG_DBMASK);
         } else if (!$cdbur) {
-            $cdbux->set_prop("disabled", Contact::CFLAG_PLACEHOLDER);
+            $cdbux->set_prop("cflags", $cdbux->cflags | Contact::CFLAG_PLACEHOLDER);
+            $cdbux->set_prop("disabled", $cdbux->cflags & Contact::CFLAG_DISABLEMENT & Contact::CFLAG_DBMASK);
         }
         if (!empty($cdbux->_mod_undo)) {
             assert($cdbux->cdb_confid !== 0);
@@ -1009,33 +1019,33 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function is_disabled() {
-        return ($this->disablement & ~self::CFLAG_PLACEHOLDER) !== 0;
+        return ($this->cflags & self::CFLAG_DISABLEMENT & ~self::CFLAG_PLACEHOLDER) !== 0;
     }
 
     /** @return bool */
     function is_dormant() {
-        return $this->disablement !== 0;
+        return ($this->cflags & self::CFLAG_DISABLEMENT) !== 0;
     }
 
     /** @return bool */
     function is_explicitly_disabled() {
-        return ($this->disablement & self::CFLAG_UDISABLED) !== 0;
+        return ($this->cflags & self::CFLAG_UDISABLED) !== 0;
     }
 
     /** @return bool */
     function is_placeholder() {
-        return ($this->disablement & self::CFLAG_PLACEHOLDER) !== 0;
+        return ($this->cflags & self::CFLAG_PLACEHOLDER) !== 0;
     }
 
     /** @return bool */
     function contactdb_disabled() {
         $cdbu = $this->cdb_user();
-        return $cdbu && ($cdbu->disablement & ~self::CFLAG_PLACEHOLDER) !== 0;
+        return $cdbu && ($cdbu->cflags & self::CFLAG_DISABLEMENT & ~self::CFLAG_PLACEHOLDER) !== 0;
     }
 
     /** @return int */
     function disabled_flags() {
-        return $this->disablement;
+        return $this->cflags & self::CFLAG_DISABLEMENT;
     }
 
     /** @return int */
@@ -1346,7 +1356,7 @@ class Contact implements JsonSerializable {
     const CTFLAG_ROLES = 1;
     const CTFLAG_DISABLED = 2;
 
-    /** @param Contact|ReviewInfo|Author $x
+    /** @param Contact|Author $x
      * @param 0|1|2|3 $ctags
      * @return string */
     static function all_contact_tags_for($x, $ctags) {
@@ -1356,7 +1366,7 @@ class Contact implements JsonSerializable {
             $tags = " pc#0{$tags}";
         }
         if (($ctags & self::CTFLAG_DISABLED) !== 0
-            && $x->disablement !== 0) {
+            && $x->disabled_flags() !== 0) {
             $tags = "{$tags} dim#0";
         }
         return $tags;
@@ -1708,6 +1718,8 @@ class Contact implements JsonSerializable {
             if ($prop === "roles") {
                 $mask = $this->cdb_confid === 0 ? self::ROLE_DBMASK : self::ROLE_CDBMASK;
                 return $this->roles & $mask;
+            } else if ($prop === "cflags") {
+                return $this->cflags & self::CFLAG_DBMASK;
             } else {
                 assert(false);
                 return null;
@@ -1730,7 +1742,7 @@ class Contact implements JsonSerializable {
     function gprop($prop) {
         $shape = self::$props[$prop] ?? 0;
         if ($shape === 0) {
-            throw new Exception("bad prop $prop");
+            throw new Exception("bad prop {$prop}");
         }
         $value = $this->prop1($prop, $shape);
         if ($value === null || ($value === "" && ($shape & self::PROP_NULL) !== 0)) {
@@ -1753,7 +1765,7 @@ class Contact implements JsonSerializable {
         // validate argument
         $shape = self::$props[$prop] ?? 0;
         if ($shape === 0) {
-            throw new Exception("bad prop $prop");
+            throw new Exception("bad prop {$prop}");
         }
         if (($value !== null || ($shape & self::PROP_NULL) === 0)
             && ((($shape & self::PROP_INT) !== 0 && !is_int($value))
@@ -1769,7 +1781,7 @@ class Contact implements JsonSerializable {
         // on `$ifempty`, update only empty properties and placeholder users
         $old = $this->prop1($prop, $shape);
         if ($ifempty
-            && (($this->disabled & self::CFLAG_PLACEHOLDER) === 0
+            && (($this->cflags & self::CFLAG_PLACEHOLDER) === 0
                 || $value === null
                 || $value === "")) {
             if ($old !== null && $old !== "") {
@@ -1816,7 +1828,7 @@ class Contact implements JsonSerializable {
             && in_array($prop, ["firstName", "lastName", "email", "affiliation"])) {
             $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
         }
-        if ($prop === "disabled") {
+        if ($prop === "cflags") {
             $this->set_roles_properties();
         }
     }
@@ -1855,9 +1867,10 @@ class Contact implements JsonSerializable {
     /** @param bool $always
      * @return bool */
     function activate_placeholder_prop($always) {
-        if (($this->disabled & self::CFLAG_PLACEHOLDER) !== 0
+        if (($this->cflags & self::CFLAG_PLACEHOLDER) !== 0
             && ($always || $this->conf->allow_user_activate_other())) {
-            $this->set_prop("disabled", $this->disabled & ~self::CFLAG_PLACEHOLDER);
+            $this->set_prop("cflags", $this->cflags & ~self::CFLAG_PLACEHOLDER);
+            $this->set_prop("disabled", $this->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK);
             return true;
         } else {
             return false;
@@ -1997,22 +2010,26 @@ class Contact implements JsonSerializable {
 
         // disablement import is special
         // source is disabled local user, creating cdb user: cdb is placeholder
-        if ($src->disablement !== 0
+        $sdflags = $src->cflags & self::CFLAG_DISABLEMENT;
+        if ($sdflags !== 0
             && $this->cdb_confid !== 0
             && $this->contactDbId === 0) {
-            $this->set_prop("disabled", $this->disabled | self::CFLAG_PLACEHOLDER);
+            $this->set_prop("cflags", $this->cflags | self::CFLAG_PLACEHOLDER);
+            $this->set_prop("disabled", $this->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK);
         }
         // source is non-disabled local user: this is not placeholder
         if ($src->cdb_confid === 0
-            && $src->disablement === 0
-            && ($this->disabled & self::CFLAG_PLACEHOLDER) !== 0) {
-            $this->set_prop("disabled", $this->disabled & ~self::CFLAG_PLACEHOLDER);
+            && $sdflags === 0
+            && ($this->cflags & self::CFLAG_PLACEHOLDER) !== 0) {
+            $this->set_prop("cflags", $this->cflags & ~self::CFLAG_PLACEHOLDER);
+            $this->set_prop("disabled", $this->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK);
         }
         // source is globally disabled: this local user is disabled
-        if (($src->disabled & self::CFLAG_UDISABLED) !== 0
+        if (($sdflags & self::CFLAG_UDISABLED) !== 0
             && $src->cdb_confid !== 0
             && $this->cdb_confid === 0) {
-            $this->set_prop("disabled", $this->disabled | self::CFLAG_UDISABLED);
+            $this->set_prop("cflags", $this->cflags | self::CFLAG_UDISABLED);
+            $this->set_prop("disabled", $this->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK);
         }
     }
 
@@ -2078,7 +2095,7 @@ class Contact implements JsonSerializable {
 
         // from here on, previous account did not exist
         // override registration with current or cdb data
-        $this->_mod_undo = ["disabled" => 0];
+        $this->_mod_undo = ["disabled" => 0, "cflags" => 0];
         foreach (self::importable_props() as $prop => $shape) {
             $this->_mod_undo[$prop] = ($shape & self::PROP_NULL) !== 0 ? null : "";
         }
@@ -2103,9 +2120,12 @@ class Contact implements JsonSerializable {
             }
 
             // log creation (except for placeholder accounts)
-            if ($this->disabled !== self::CFLAG_PLACEHOLDER) {
-                $type = $this->disabled !== 0 ? ", disabled" : "";
-                $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, "Account created" . $type);
+            if (($this->cflags & self::CFLAG_PLACEHOLDER) === 0) {
+                $msg = "Account created";
+                if (($this->cflags & self::CFLAG_DISABLEMENT & ~self::CFLAG_ROLEDISABLED) !== 0) {
+                    $msg .= ", disabled";
+                }
+                $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, $msg);
             }
         } else {
             // maybe failed because concurrent create (unlikely)

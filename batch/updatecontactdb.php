@@ -120,7 +120,7 @@ class UpdateContactdb_Batch {
         $result->close();
 
         // read current db roles
-        $result = Dbl::ql($this->conf->dblink, "select ContactInfo.contactId, email, firstName, lastName, unaccentedName, disabled,
+        $result = Dbl::ql($this->conf->dblink, "select ContactInfo.contactId, email, firstName, lastName, affiliation, cflags,
             (ContactInfo.roles
              | if(exists (select * from PaperConflict where contactId=ContactInfo.contactId and conflictType>=" . CONFLICT_AUTHOR . ")," . Contact::ROLE_AUTHOR . ",0)
              | if(exists (select * from PaperReview where contactId=ContactInfo.contactId)," . Contact::ROLE_REVIEWER . ",0)) roles,

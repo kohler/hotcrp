@@ -348,7 +348,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 284) {
+        if ($this->sversion < 285) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -1949,7 +1949,7 @@ class Conf {
      * @return string */
     function user_query_fields($slice = Contact::SLICE_MINIMAL, $prefix = "") {
         if (($slice & Contact::SLICEBIT_REST) !== 0) {
-            $f = "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}roles, {$prefix}disabled, {$prefix}primaryContactId, {$prefix}contactTags";
+            $f = "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}roles, {$prefix}disabled, {$prefix}primaryContactId, {$prefix}contactTags, {$prefix}cflags";
             if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
                 $f .= ", {$prefix}collaborators";
             }
@@ -1971,7 +1971,7 @@ class Conf {
     /** @param string $prefix
      * @return string */
     function deleted_user_query_fields($prefix = "") {
-        return "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, 0 roles, " . Contact::CFLAG_DELETED . " disabled, 0 primaryContactId, '' contactTags, 0 _slice";
+        return "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, 0 roles, " . Contact::CFLAG_DELETED . " disabled, 0 primaryContactId, '' contactTags, " . Contact::CFLAG_DELETED . " cflags, 0 _slice";
     }
 
     /** @param int $slice

@@ -20,7 +20,7 @@ class Author {
     /** @var int */
     public $roles = 0;
     /** @var int */
-    public $disablement = 0;
+    private $disablement = 0;
     /** @var ?int */
     public $conflictType;
     /** @var ?int */

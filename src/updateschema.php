@@ -2931,6 +2931,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("delete from Settings where name like 'msg.resp\\_instrux%'")) {
             $conf->update_schema_version(284);
         }
+        if ($conf->sversion === 284
+            && $conf->ql_ok("alter table ContactInfo add `cflags` int(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("update ContactInfo set cflags=disabled")) {
+            $conf->update_schema_version(285);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

@@ -1012,20 +1012,21 @@ class UserStatus extends MessageSet {
         }
 
         // Disabled
-        $disablement = $user->disabled_flags() & Contact::DISABLEMENT_DB;
+        $cflags = $user->cflags;
         if (isset($cj->disabled)) {
             if ($cj->disabled) {
-                $disablement |= Contact::CFLAG_UDISABLED;
+                $cflags |= Contact::CFLAG_UDISABLED;
             } else {
-                $disablement &= ~Contact::CFLAG_UDISABLED;
+                $cflags &= ~Contact::CFLAG_UDISABLED;
             }
         }
-        if ($disablement === Contact::CFLAG_PLACEHOLDER
+        if (($cflags & Contact::CFLAG_DISABLEMENT) === Contact::CFLAG_PLACEHOLDER
             && ($us->viewer->is_root_user()
                 || $us->conf->allow_user_activate_other())) {
-            $disablement &= ~Contact::CFLAG_PLACEHOLDER;
+            $cflags &= ~Contact::CFLAG_PLACEHOLDER;
         }
-        $user->set_prop("disabled", $disablement);
+        $user->set_prop("disabled", $cflags & Contact::CFLAG_DISABLEMENT);
+        $user->set_prop("cflags", $cflags);
         if ($user->prop_changed("disabled") && isset($cj->disabled)) {
             $us->diffs[$cj->disabled ? "disabled" : "enabled"] = true;
         }
@@ -1654,7 +1655,7 @@ topics. We use this information to help match papers to reviewers.</p>',
                 $klass = "flex-grow-1 disabled";
                 $p = "<p class=\"pt-1 mb-0 feedback is-warning\">This account is disabled on all sites.</p>";
                 $disabled = true;
-            } else if (($disablement & ~Contact::DISABLEMENT_DB) !== 0) {
+            } else if (($disablement & Contact::CFLAG_ROLEDISABLED) !== 0) {
                 $klass = "flex-grow-1 disabled";
                 $p = "<p class=\"pt-1 mb-0 feedback is-warning\">Conference settings prevent this account from being enabled.</p>";
                 $disabled = true;

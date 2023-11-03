@@ -21,7 +21,8 @@ class User_API {
             - Contact::SLICEBIT_COUNTRY - Contact::SLICEBIT_ORCID;
         if ($user->privChair || $user->can_view_pc()) {
             $roles = $user->is_manager() ? "" : " and roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
-            $result = $user->conf->qe("select " . $user->conf->user_query_fields($slice) . " from ContactInfo where email>=? and email<? and not disabled{$roles} order by email asc limit 2", $email, $email . "~");
+            $result = $user->conf->qe("select " . $user->conf->user_query_fields($slice) . " from ContactInfo where email>=? and email<? and (cflags&?)=0{$roles} order by email asc limit 2",
+                $email, "{$email}~", Contact::CFLAG_DISABLEMENT);
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;
             }
@@ -36,7 +37,8 @@ class User_API {
                 $db = $user->conf->dblink;
                 $fields = $user->conf->user_query_fields($slice);
             }
-            $result = Dbl::qe($db, "select {$fields} from ContactInfo where email>=? and email<? and not disabled order by email asc limit 2", $email, $email . "~");
+            $result = Dbl::qe($db, "select {$fields} from ContactInfo where email>=? and email<? and (cflags&?)=0 order by email asc limit 2",
+                $email, "{$email}~", Contact::CFLAG_DISABLEMENT);
             $users = [];
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;
@@ -46,7 +48,7 @@ class User_API {
 
         if (empty($users)
             && strcasecmp($user->email, $email) >= 0
-            && strcasecmp($user->email, $email . "~") < 0) {
+            && strcasecmp($user->email, "{$email}~") < 0) {
             $users[] = $user;
         }
 

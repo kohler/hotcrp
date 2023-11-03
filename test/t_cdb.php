@@ -839,8 +839,8 @@ class Cdb_Tester {
         $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='kitcat@_.com'") ?? -1;
         xassert_eqq($d & ~Contact::CFLAG_PLACEHOLDER, 0);
 
-        Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@_.com', affiliation='University of Connecticut', password='', disabled=1");
-        Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@_.com', affiliation='University of Connecticut', password=' unset', disabled=2");
+        Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@_.com', affiliation='University of Connecticut', password='', disabled=1, cflags=1");
+        Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@_.com', affiliation='University of Connecticut', password=' unset', disabled=2, cflags=2");
         $u = $this->conf->fresh_user_by_email("marthatanner@_.com");
         xassert_eqq($u->disabled_flags() & ~Contact::CFLAG_PLACEHOLDER, Contact::CFLAG_ROLEDISABLED | Contact::CFLAG_UDISABLED);
         $u->update_cdb();
