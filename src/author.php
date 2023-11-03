@@ -103,7 +103,7 @@ class Author {
         $au = new Author($u);
         $au->contactId = $u->contactId;
         $au->roles = $u->roles;
-        $au->disablement = $u->disablement;
+        $au->disablement = $u->disabled_flags();
         return $au;
     }
 
@@ -290,6 +290,11 @@ class Author {
     /** @return bool */
     function is_nonauthor() {
         return $this->status === self::STATUS_NONAUTHOR;
+    }
+
+    /** @return int */
+    function disabled_flags() {
+        return $this->disablement;
     }
 
     /** @param Author|Contact $x

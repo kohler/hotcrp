@@ -1608,7 +1608,8 @@ class Permission_Tester {
     function test_make_anonymous_user_nologin() {
         xassert(!maybe_user("anonymous10"));
         $u = Contact::make_keyed($this->conf, [
-            "email" => "anonymous10", "disablement" => Contact::DISABLEMENT_USER
+            "email" => "anonymous10",
+            "disablement" => Contact::DISABLEMENT_USER
         ])->store(Contact::SAVE_ANY_EMAIL);
         xassert($u->contactId > 0);
         xassert_eqq($this->conf->fetch_value("select password from ContactInfo where email='anonymous10'"), " nologin");
@@ -1636,7 +1637,7 @@ class Permission_Tester {
         // registering email of an author grants author privilege
         $u = maybe_user("thalerd@eecs.umich.edu");
         xassert(!!$u);
-        xassert_eqq($u->disablement, Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
         $u = Contact::make_email($this->conf, "thalerd@eecs.umich.edu")->store();
         assert($u !== null);
         xassert($u->contactId > 0);
@@ -1644,13 +1645,13 @@ class Permission_Tester {
         xassert_eqq($u->firstName, "David");
         xassert_eqq($u->lastName, "Thaler");
         xassert_eqq($u->affiliation, "University of Michigan");
-        xassert_eqq($u->disablement, 0);
+        xassert_eqq($u->disabled_flags(), 0);
         xassert($this->conf->checked_paper_by_id(27)->has_author($u));
 
         // registration-time name overrides author name
         $u = maybe_user("schwartz@ctr.columbia.edu");
         xassert(!!$u);
-        xassert_eqq($u->disablement, Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
         $u = Contact::make_keyed($this->conf, ["email" => "schwartz@ctr.columbia.edu", "first" => "cengiz!", "last" => "SCHwarTZ", "affiliation" => "Coyumbia"])->store();
         assert($u !== null);
         xassert($u->contactId > 0);
@@ -1658,7 +1659,7 @@ class Permission_Tester {
         xassert_eqq($u->firstName, "cengiz!");
         xassert_eqq($u->lastName, "SCHwarTZ");
         xassert_eqq($u->affiliation, "Coyumbia");
-        xassert_eqq($u->disablement, 0);
+        xassert_eqq($u->disabled_flags(), 0);
         xassert($this->conf->checked_paper_by_id(26)->has_author($u));
     }
 
@@ -1874,7 +1875,7 @@ class Permission_Tester {
 
     function test_withdraw_notification() {
         $u = $this->conf->checked_user_by_email("anja@research.att.com");
-        xassert_eqq($u->disablement, 0);
+        xassert_eqq($u->disabled_flags(), 0);
         MailChecker::clear();
         xassert_assign($this->u_chair, "paper,action,reason\n16,withdraw,Suckola\n");
         MailChecker::check_db("withdraw-16-admin-notify");

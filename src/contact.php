@@ -1025,6 +1025,11 @@ class Contact implements JsonSerializable {
     }
 
     /** @return int */
+    function disabled_flags() {
+        return $this->disablement;
+    }
+
+    /** @return int */
     function session_index() {
         return $this->_activated > 0 ? $this->_activated >> 8 : -1;
     }

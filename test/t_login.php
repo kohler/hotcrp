@@ -123,11 +123,11 @@ class Login_Tester {
         // but user is still a placeholder
         $u = $this->conf->checked_user_by_email($email);
         xassert(!!$u);
-        xassert_eqq($u->disablement, Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
         if ($this->cdb) {
             $u = $this->conf->checked_cdb_user_by_email($email);
             xassert(!!$u);
-            xassert_eqq($u->disablement, Contact::DISABLEMENT_PLACEHOLDER);
+            xassert_eqq($u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
         }
 
         $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
@@ -152,11 +152,11 @@ class Login_Tester {
         // user is no longer a placeholder
         $u = $this->conf->checked_user_by_email($email);
         xassert(!!$u);
-        xassert_eqq($u->disablement, 0);
+        xassert_eqq($u->disabled_flags(), 0);
         if ($this->cdb) {
             $u = $this->conf->checked_cdb_user_by_email($email);
             xassert(!!$u);
-            xassert_eqq($u->disablement, 0);
+            xassert_eqq($u->disabled_flags(), 0);
         }
     }
 

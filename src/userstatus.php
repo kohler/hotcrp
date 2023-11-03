@@ -899,7 +899,7 @@ class UserStatus extends MessageSet {
         if (!$user) {
             return null;
         }
-        $old_disablement = $user->disablement;
+        $old_disablement = $user->disabled_flags();
 
         // initialize
         assert(!isset($cj->email) || strcasecmp($cj->email, $user->email) === 0);
@@ -932,7 +932,7 @@ class UserStatus extends MessageSet {
             $user->cdb_user();
         }
         if ($roles !== $old_roles
-            || ($user->disablement !== 0) !== ($old_disablement !== 0)) {
+            || ($user->disabled_flags() !== 0) !== ($old_disablement !== 0)) {
             $user->update_cdb();
         }
 
@@ -952,7 +952,7 @@ class UserStatus extends MessageSet {
         }
 
         // Notify of new accounts or new PC-ness
-        if ($this->notify && $user->disablement === 0) {
+        if ($this->notify && $user->disabled_flags() === 0) {
             $eff_old_roles = $old_disablement !== 0 ? 0 : $old_roles;
             if (!$old_activity_at
                 || (($eff_old_roles & Contact::ROLE_PCLIKE) === 0
@@ -1012,7 +1012,7 @@ class UserStatus extends MessageSet {
         }
 
         // Disabled
-        $disablement = $user->disablement & Contact::DISABLEMENT_DB;
+        $disablement = $user->disabled_flags() & Contact::DISABLEMENT_DB;
         if (isset($cj->disabled)) {
             if ($cj->disabled) {
                 $disablement |= Contact::DISABLEMENT_USER;
@@ -1640,16 +1640,16 @@ topics. We use this information to help match papers to reviewers.</p>',
         $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
         echo '<div class="grid-btn-explanation"><div class="d-flex mf mf-absolute">';
 
-        if ($us->user->disablement === Contact::DISABLEMENT_PLACEHOLDER) {
+        if ($us->user->disabled_flags() === Contact::DISABLEMENT_PLACEHOLDER) {
             $disabled = !$us->conf->allow_user_activate_other();
         } else {
-            $disabled = $us->user->disablement !== 0;
+            $disabled = $us->user->disabled_flags() !== 0;
         }
         echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $disabled]), '</div><p></p>';
 
         if (!$us->is_auth_user()) {
             echo '<div class="d-flex mf mf-absolute">';
-            $disablement = $us->user->disablement & ~Contact::DISABLEMENT_PLACEHOLDER;
+            $disablement = $us->user->disabled_flags() & ~Contact::DISABLEMENT_PLACEHOLDER;
             if ($us->user->contactdb_disabled()) {
                 $klass = "flex-grow-1 disabled";
                 $p = "<p class=\"pt-1 mb-0 feedback is-warning\">This account is disabled on all sites.</p>";
