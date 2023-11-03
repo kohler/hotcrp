@@ -892,7 +892,7 @@ class UserStatus extends MessageSet {
         $this->check_invariants($cj);
         $actor = $this->viewer->is_root_user() ? null : $this->viewer;
         if (!$old_user) {
-            $create_cj = array_merge((array) $cj, ["disablement" => Contact::DISABLEMENT_PLACEHOLDER]);
+            $create_cj = array_merge((array) $cj, ["disablement" => Contact::CFLAG_PLACEHOLDER]);
             $user = Contact::make_keyed($this->conf, $create_cj)->store(0, $actor);
             $cj->email = $user->email; // adopt contactdb’s email capitalization
         }
@@ -1015,15 +1015,15 @@ class UserStatus extends MessageSet {
         $disablement = $user->disabled_flags() & Contact::DISABLEMENT_DB;
         if (isset($cj->disabled)) {
             if ($cj->disabled) {
-                $disablement |= Contact::DISABLEMENT_USER;
+                $disablement |= Contact::CFLAG_UDISABLED;
             } else {
-                $disablement &= ~Contact::DISABLEMENT_USER;
+                $disablement &= ~Contact::CFLAG_UDISABLED;
             }
         }
-        if ($disablement === Contact::DISABLEMENT_PLACEHOLDER
+        if ($disablement === Contact::CFLAG_PLACEHOLDER
             && ($us->viewer->is_root_user()
                 || $us->conf->allow_user_activate_other())) {
-            $disablement &= ~Contact::DISABLEMENT_PLACEHOLDER;
+            $disablement &= ~Contact::CFLAG_PLACEHOLDER;
         }
         $user->set_prop("disabled", $disablement);
         if ($user->prop_changed("disabled") && isset($cj->disabled)) {
@@ -1640,7 +1640,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
         echo '<div class="grid-btn-explanation"><div class="d-flex mf mf-absolute">';
 
-        if ($us->user->disabled_flags() === Contact::DISABLEMENT_PLACEHOLDER) {
+        if ($us->user->disabled_flags() === Contact::CFLAG_PLACEHOLDER) {
             $disabled = !$us->conf->allow_user_activate_other();
         } else {
             $disabled = $us->user->disabled_flags() !== 0;
@@ -1649,7 +1649,7 @@ topics. We use this information to help match papers to reviewers.</p>',
 
         if (!$us->is_auth_user()) {
             echo '<div class="d-flex mf mf-absolute">';
-            $disablement = $us->user->disabled_flags() & ~Contact::DISABLEMENT_PLACEHOLDER;
+            $disablement = $us->user->disabled_flags() & ~Contact::CFLAG_PLACEHOLDER;
             if ($us->user->contactdb_disabled()) {
                 $klass = "flex-grow-1 disabled";
                 $p = "<p class=\"pt-1 mb-0 feedback is-warning\">This account is disabled on all sites.</p>";

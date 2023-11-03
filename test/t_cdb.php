@@ -455,14 +455,14 @@ class Cdb_Tester {
         xassert(!!$u);
         xassert_eqq($u->firstName, "Cengiz");
         xassert_eqq($u->lastName, "Alaettinoğlu");
-        xassert_eqq($u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
         $ldb_cid = $u->contactId;
 
         $u = $this->conf->cdb_user_by_email("cengiz@isi.edu");
         xassert(!!$u);
         xassert_eqq($u->firstName, "Cengiz");
         xassert_eqq($u->lastName, "Alaettinoğlu");
-        xassert_eqq($u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
         $cdb_cid = $u->contactId;
 
         // remove localdb user and cdb user's roles
@@ -550,11 +550,11 @@ class Cdb_Tester {
     function test_cdb_roles_2() {
         // authorship is encoded in placeholder
         $acct = $this->conf->fresh_user_by_email("pavlin@isi.edu");
-        xassert_eqq($acct->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($acct->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
         xassert($acct->is_author());
         xassert_eqq($acct->cdb_roles(), Contact::ROLE_AUTHOR);
         $acct = $this->conf->fresh_cdb_user_by_email("pavlin@isi.edu");
-        xassert_eqq($acct->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($acct->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
         xassert_eqq($acct->roles, Contact::ROLE_AUTHOR);
 
         // saving without disablement wakes up cdb
@@ -568,7 +568,7 @@ class Cdb_Tester {
         // saving a user with a role does both role and authorship
         $email = "lam@cs.utexas.edu";
         $acct = $this->conf->fresh_user_by_email($email);
-        xassert_eqq($acct->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($acct->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
 
         $acct = $this->us1->save_user((object) ["email" => $email, "roles" => "sysadmin"]);
         xassert(!!$acct);
@@ -586,34 +586,34 @@ class Cdb_Tester {
         Contact::make_keyed($this->conf, [
             "email" => "scapegoat@harvard.edu",
             "firstName" => "Shane",
-            "disablement" => Contact::DISABLEMENT_PLACEHOLDER
+            "disablement" => Contact::CFLAG_PLACEHOLDER
         ])->store();
 
         $u = $this->conf->checked_user_by_email("scapegoat@harvard.edu");
         xassert_eqq($u->firstName, "Shane");
         xassert_eqq($u->lastName, "");
-        xassert_eqq($u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
         $cdb_u = $u->cdb_user();
         xassert_eqq($cdb_u->firstName, "Shane");
         xassert_eqq($cdb_u->lastName, "");
-        xassert_eqq($cdb_u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($cdb_u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
 
         // creating another placeholder will override properties
         Contact::make_keyed($this->conf, [
             "email" => "scapegoat@harvard.edu",
             "firstName" => "Shapely",
             "lastName" => "Montréal",
-            "disablement" => Contact::DISABLEMENT_PLACEHOLDER
+            "disablement" => Contact::CFLAG_PLACEHOLDER
         ])->store();
 
         $u = $this->conf->checked_user_by_email("scapegoat@harvard.edu");
         xassert_eqq($u->firstName, "Shapely");
         xassert_eqq($u->lastName, "Montréal");
-        xassert_eqq($u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
         $cdb_u = $u->cdb_user();
         xassert_eqq($cdb_u->firstName, "Shapely");
         xassert_eqq($cdb_u->lastName, "Montréal");
-        xassert_eqq($cdb_u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($cdb_u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
         xassert_eqq($cdb_u->prop("password"), " unset");
 
         // enable user
@@ -637,7 +637,7 @@ class Cdb_Tester {
             "email" => "scapegoat@harvard.edu",
             "firstName" => "Stickly",
             "lastName" => "Milquetoast",
-            "disablement" => Contact::DISABLEMENT_PLACEHOLDER
+            "disablement" => Contact::CFLAG_PLACEHOLDER
         ])->store();
 
         $u = $this->conf->checked_user_by_email("scapegoat@harvard.edu");
@@ -679,7 +679,7 @@ class Cdb_Tester {
 
         $u = $this->conf->fresh_user_by_email("nonsense@_.com");
         xassert(!!$u);
-        xassert_eqq($u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
         xassert_eqq($u->email, "NONSENSE@_.com");
         xassert_eqq($u->firstName, "Nonsense");
         xassert_eqq($u->lastName, "Person");
@@ -691,12 +691,12 @@ class Cdb_Tester {
 
         $u = $this->conf->fresh_cdb_user_by_email("nonsense@_.com");
         xassert(!!$u);
-        xassert_eqq($u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
         xassert_eqq($u->email, "NONSENSE@_.com");
         xassert_eqq($u->firstName, "Nonsense");
         xassert_eqq($u->lastName, "Person");
         xassert_eqq($u->affiliation, "Nonsense University");
-        xassert_eqq($u->disabled_flags(), Contact::DISABLEMENT_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
@@ -815,11 +815,11 @@ class Cdb_Tester {
         xassert_gt($pid, 0);
 
         $u = $this->conf->fresh_cdb_user_by_email("belling@_.com");
-        xassert_eqq($u->disabled_flags() & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_ROLE);
+        xassert_eqq($u->disabled_flags() & ~Contact::CFLAG_PLACEHOLDER, Contact::CFLAG_ROLEDISABLED);
         $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='belling@_.com'") ?? -1;
-        xassert_eqq($d & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_USER);
+        xassert_eqq($d & ~Contact::CFLAG_PLACEHOLDER, Contact::CFLAG_UDISABLED);
         $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='belling@_.com'") ?? -1;
-        xassert_eqq($d & ~Contact::DISABLEMENT_PLACEHOLDER, 0);
+        xassert_eqq($d & ~Contact::CFLAG_PLACEHOLDER, 0);
 
         $u = $this->conf->fresh_cdb_user_by_email("kitcat@_.com");
         xassert(!$u);
@@ -829,25 +829,25 @@ class Cdb_Tester {
             "lastName" => "Cat",
             "email" => "kitcat@_.com",
             "affiliation" => "Fart University",
-            "disablement" => Contact::DISABLEMENT_USER
+            "disablement" => Contact::CFLAG_UDISABLED
         ])->store();
-        xassert_eqq($u->disabled_flags() & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_USER | Contact::DISABLEMENT_ROLE);
+        xassert_eqq($u->disabled_flags() & ~Contact::CFLAG_PLACEHOLDER, Contact::CFLAG_UDISABLED | Contact::CFLAG_ROLEDISABLED);
         $uu = $u->cdb_user();
-        xassert_eqq($uu->disabled_flags() & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_ROLE);
+        xassert_eqq($uu->disabled_flags() & ~Contact::CFLAG_PLACEHOLDER, Contact::CFLAG_ROLEDISABLED);
         $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='kitcat@_.com'") ?? -1;
-        xassert_eqq($d & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_USER);
+        xassert_eqq($d & ~Contact::CFLAG_PLACEHOLDER, Contact::CFLAG_UDISABLED);
         $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='kitcat@_.com'") ?? -1;
-        xassert_eqq($d & ~Contact::DISABLEMENT_PLACEHOLDER, 0);
+        xassert_eqq($d & ~Contact::CFLAG_PLACEHOLDER, 0);
 
         Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@_.com', affiliation='University of Connecticut', password='', disabled=1");
         Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@_.com', affiliation='University of Connecticut', password=' unset', disabled=2");
         $u = $this->conf->fresh_user_by_email("marthatanner@_.com");
-        xassert_eqq($u->disabled_flags() & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_ROLE | Contact::DISABLEMENT_USER);
+        xassert_eqq($u->disabled_flags() & ~Contact::CFLAG_PLACEHOLDER, Contact::CFLAG_ROLEDISABLED | Contact::CFLAG_UDISABLED);
         $u->update_cdb();
         $uu = $this->conf->fresh_cdb_user_by_email("marthatanner@_.com");
-        xassert_eqq($uu->disabled_flags() & ~Contact::DISABLEMENT_PLACEHOLDER, Contact::DISABLEMENT_ROLE);
+        xassert_eqq($uu->disabled_flags() & ~Contact::CFLAG_PLACEHOLDER, Contact::CFLAG_ROLEDISABLED);
         $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='marthatanner@_.com'") ?? -1;
-        xassert_eqq($d & ~Contact::DISABLEMENT_PLACEHOLDER, 0);
+        xassert_eqq($d & ~Contact::CFLAG_PLACEHOLDER, 0);
 
         $this->conf->set_opt("disableNonPC", null);
         $this->conf->refresh_options();

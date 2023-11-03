@@ -1936,7 +1936,7 @@ class Conf {
      * @return int */
     function disablement_for($disabled, $roles) {
         if ($this->disable_non_pc && ($roles & Contact::ROLE_PCLIKE) === 0) {
-            $disabled |= Contact::DISABLEMENT_ROLE;
+            $disabled |= Contact::CFLAG_ROLEDISABLED;
         }
         return $disabled;
     }
@@ -1971,7 +1971,7 @@ class Conf {
     /** @param string $prefix
      * @return string */
     function deleted_user_query_fields($prefix = "") {
-        return "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, 0 roles, " . Contact::DISABLEMENT_DELETED . " disabled, 0 primaryContactId, '' contactTags, 0 _slice";
+        return "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, 0 roles, " . Contact::CFLAG_DELETED . " disabled, 0 primaryContactId, '' contactTags, 0 _slice";
     }
 
     /** @param int $slice

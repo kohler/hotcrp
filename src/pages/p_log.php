@@ -353,7 +353,7 @@ class Log_Page {
         if (($pc = $this->conf->pc_member_by_id($user->contactId))) {
             $user = $pc;
         }
-        if ($user->disabled_flags() & Contact::DISABLEMENT_DELETED) {
+        if ($user->disabled_flags() & Contact::CFLAG_DELETED) {
             $t = '<del>' . $user->name_h(NAME_E) . '</del>';
         } else {
             $t = $user->name_h(NAME_P);
@@ -403,7 +403,7 @@ class Log_Page {
                 && (!isset($user->roles) || !($user->roles & Contact::ROLE_PCLIKE))) {
                 $all_pc = false;
             }
-            if ($user->disabled_flags() & Contact::DISABLEMENT_DELETED) {
+            if ($user->disabled_flags() & Contact::CFLAG_DELETED) {
                 if ($user->email) {
                     $t = '<del>' . $user->name_h(NAME_E) . '</del>';
                 } else {

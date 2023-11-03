@@ -292,6 +292,11 @@ class Author {
         return $this->status === self::STATUS_NONAUTHOR;
     }
 
+    /** @return bool */
+    function is_placeholder() {
+        return ($this->disablement & Contact::CFLAG_PLACEHOLDER) !== 0;
+    }
+
     /** @return int */
     function disabled_flags() {
         return $this->disablement;
