@@ -64,9 +64,6 @@ class Scorechart_Page {
     static function fail($status, $text, $cacheable) {
         header("HTTP/1.0 {$status}");
         header("Content-Type: text/plain; charset=utf-8");
-        if (!Filer::skip_content_length_header()) {
-            header("Content-Length: " . (strlen($text) + 2));
-        }
         if ($cacheable) {
             self::cacheable_headers();
         }
