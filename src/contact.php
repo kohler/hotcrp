@@ -1713,20 +1713,20 @@ class Contact implements JsonSerializable {
         if ($this->_slice !== 0 && ($shape & self::PROP_SLICE) === 0) {
             $this->unslice();
         }
-        if (($shape & self::PROP_DATA) !== 0) {
-            return $this->data($prop);
-        } else if (($shape & self::PROP_SPECIAL) !== 0) {
-            if ($prop === "roles") {
-                $mask = $this->cdb_confid === 0 ? self::ROLE_DBMASK : self::ROLE_CDBMASK;
-                return $this->roles & $mask;
-            } else if ($prop === "cflags") {
-                return $this->cflags & self::CFLAG_DBMASK;
-            } else {
-                assert(false);
-                return null;
-            }
+        return ($shape & self::PROP_DATA) === 0 ? $this->$prop : $this->data($prop);
+    }
+
+    /** @param string $prop
+     * @param mixed $value
+     * @return mixed */
+    private function clean_prop_value($prop, $value) {
+        if ($prop === "roles") {
+            return $value & ($this->cdb_confid === 0 ? self::ROLE_DBMASK : self::ROLE_CDBMASK);
+        } else if ($prop === "cflags") {
+            return $value & self::CFLAG_DBMASK;
         } else {
-            return $this->$prop;
+            assert(false);
+            return $value;
         }
     }
 
@@ -1807,17 +1807,27 @@ class Contact implements JsonSerializable {
         if (($shape & self::PROP_DATA) !== 0) {
             $this->set_data($prop, $value);
         } else {
-            if (!array_key_exists($prop, $this->_mod_undo ?? [])) {
-                $this->_mod_undo[$prop] = $old;
+            $this->_mod_undo = $this->_mod_undo ?? [];
+            $has_old = array_key_exists($prop, $this->_mod_undo);
+            $oldv = $has_old ? $this->_mod_undo[$prop] : $old;
+            $newv = $value;
+            if (($shape & self::PROP_SPECIAL) !== 0) {
+                $oldv = $this->clean_prop_value($prop, $oldv);
+                $newv = $this->clean_prop_value($prop, $newv);
             }
-            $this->$prop = $value;
-            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
-            if ($this->_mod_undo[$prop] === $value
-                && ($value !== null
-                    || ($this->cdb_confid !== 0 ? $this->contactDbId > 0 : $this->contactId > 0))) {
-                unset($this->_mod_undo[$prop]);
+            if ($oldv !== $newv
+                || ($newv === null
+                    && ($this->cdb_confid !== 0 ? $this->contactDbId <= 0 : $this->contactId <= 0))) {
+                if (!$has_old) {
+                    $this->_mod_undo[$prop] = $old;
+                }
+            } else {
+                if ($has_old) {
+                    unset($this->_mod_undo[$prop]);
+                }
                 $shape &= ~self::PROP_UPDATE;
             }
+            $this->$prop = $value;
         }
         if (($shape & self::PROP_UPDATE) !== 0) {
             if (!array_key_exists("updateTime", $this->_mod_undo)) {
@@ -1903,6 +1913,9 @@ class Contact implements JsonSerializable {
                     || ($this->$idk <= 0 && ($shape & self::PROP_NULL) === 0))) {
                 $qf[] = "{$prop}=?";
                 $value = $this->prop1($prop, $shape);
+                if (($shape & self::PROP_SPECIAL) !== 0) {
+                    $value = $this->clean_prop_value($prop, $value);
+                }
                 if ($value === false || $value === true) {
                     $qv[] = (int) $value;
                 } else if ($value === null && ($shape & self::PROP_NULL) === 0) {
