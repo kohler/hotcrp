@@ -1481,7 +1481,7 @@ function score_ticks(rf) {
         rewrite: function () {
             this.selectAll("g.tick text").each(function () {
                 var d = d3.select(this), value = +d.text();
-                d.attr("fill", rf.rgb(value));
+                d.attr("fill", rf.color(value));
                 if (!rf.default_numeric && value)
                     d.text(rf.unparse_symbol(value, split));
             });

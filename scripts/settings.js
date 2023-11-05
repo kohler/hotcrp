@@ -723,12 +723,16 @@ function rf_color() {
     }
     for (i = 1; i <= scheme.max && c; ++i) {
         if (c.children.length < i)
-            $(c).append('<svg width="0.5em" height="0.75em" viewBox="0 0 1 1"><path d="M0 0h1v1h-1z" fill="currentColor" /></svg>');
+            $(c).append('<svg width="0.75em" height="0.75em" viewBox="0 0 1 1"><path d="M0 0h1v1h-1z" fill="currentColor" /></svg>');
         c.children[i - 1].setAttribute("class", scheme.className(i));
     }
     while (c && i <= c.children.length) {
         c.removeChild(c.lastChild);
     }
+    /*c.append($e("br"), $e("span", {
+        "class": "d-inline-block",
+        "style": "width:" + (0.75 * scheme.max) + "em;height:1em;background:linear-gradient(in oklch to right, " + scheme.color(1) + " 0% " + (50 / scheme.max) + "%, " + scheme.color(scheme.max) + " " + (100 - 50 / scheme.max) + "% 100%)"
+    }));*/
 }
 
 handle_ui.on("change.rf-scheme", rf_color);

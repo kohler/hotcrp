@@ -6010,8 +6010,8 @@ DiscreteValues_ReviewField.prototype.parse_value = function (txt) {
     return si >= 0 ? this.value_info(si + 1) : null;
 };
 
-DiscreteValues_ReviewField.prototype.rgb = function (val) {
-    return this.scheme_info.rgb(val);
+DiscreteValues_ReviewField.prototype.color = function (val) {
+    return this.scheme_info.color(val);
 };
 
 DiscreteValues_ReviewField.prototype.className = function (val) {
@@ -6100,8 +6100,8 @@ Checkbox_ReviewField.prototype.parse_value = function (txt) {
     return null;
 };
 
-Checkbox_ReviewField.prototype.rgb = function (val) {
-    return this.scheme_info.rgb(val ? 2 : 1);
+Checkbox_ReviewField.prototype.color = function (val) {
+    return this.scheme_info.color(val ? 2 : 1);
 };
 
 Checkbox_ReviewField.prototype.className = function (val) {
@@ -12720,7 +12720,7 @@ return function (n, scheme, flip) {
         categorical: (sci[0] & 2) !== 0,
         max: sci[1],
         rgb_array: rgb_array,
-        rgb: function (val) {
+        color: function (val) {
             var x = rgb_array(val);
             return sprintf("#%02x%02x%02x", x[0], x[1], x[2]);
         },
