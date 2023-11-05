@@ -1,6 +1,6 @@
 <?php
 // useractions.php -- HotCRP helpers for user actions
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
 
 class UserActions {
     /** @param Conf $conf
@@ -52,8 +52,7 @@ class UserActions {
             $j->message_list[] = new MessageItem(null, "<0>No changes (those accounts were already enabled)", MessageSet::WARNING_NOTE);
         } else {
             $conf->qe("update ContactInfo set disabled=0, cflags=(cflags&~?) where contactId?a and (cflags&?)!=0",
-                Contact::CFLAG_UDISABLED, array_keys($users),
-                Contact::CFLAG_UDISABLED);
+                Contact::CFLAG_UDISABLED, array_keys($users), Contact::CFLAG_UDISABLED);
             $conf->delay_logs();
             foreach ($users as $u) {
                 $conf->log_for($user, $u, "Account enabled");

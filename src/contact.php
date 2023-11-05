@@ -217,8 +217,9 @@ class Contact implements JsonSerializable {
     const CFLAG_PLACEHOLDER = 0x2;
     const CFLAG_ROLEDISABLED = 0x4;
     const CFLAG_DELETED = 0x8;
+    const CFLAG_GDISABLED = 0x10;
 
-    const CFLAG_DISABLEMENT = 0xF;
+    const CFLAG_DISABLEMENT = 0x1F;
     const CFLAG_DBMASK = ~0xC;
 
     const PROP_LOCAL = 0x01;
