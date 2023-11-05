@@ -81,7 +81,8 @@ class LabColor implements JsonSerializable {
 
     /** @return string */
     function hashcolor() {
-        return sprintf("#%02X%02X%02X", ...$this->rgb());
+        $rgb = $this->rgb();
+        return sprintf("#%02X%02X%02X", round($rgb[0]), round($rgb[1]), round($rgb[2]));
     }
 
     /** @return HclColor */
@@ -99,7 +100,7 @@ class LabColor implements JsonSerializable {
     /** @param float $lx
      * @return float */
     static function lrgb2rgb($lx) {
-        return 255 * ($lx <= 0.0031308 ? $lx * 12.92 : 1.055 * pow($lx, 1 / 2.4) - 0.055);
+        return 255 * ($lx <= 0.0031308 ? max($lx, 0) * 12.92 : 1.055 * pow($lx, 1 / 2.4) - 0.055);
     }
 
     /** @param float $t

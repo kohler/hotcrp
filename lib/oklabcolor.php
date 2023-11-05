@@ -77,7 +77,8 @@ class OklabColor implements JsonSerializable {
 
     /** @return string */
     function hashcolor() {
-        return sprintf("#%02X%02X%02X", ...$this->rgb());
+        $rgb = $this->rgb();
+        return sprintf("#%02X%02X%02X", round($rgb[0]), round($rgb[1]), round($rgb[2]));
     }
 
     /** @return OklchColor */

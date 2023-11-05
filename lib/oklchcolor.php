@@ -51,16 +51,14 @@ class OklchColor implements JsonSerializable {
 
     /** @param float $f
      * @param OklchColor $end
+     * @param null|float|'shorter'|'longer'|'increasing'|'decreasing' $hue_method
      * @return OklchColor */
-    function interpolate($f, $end) {
-        $d = $end->okh - $this->okh;
-        if ($d && $d === $d) {
-            if ($d > 180 || $d < -180) {
-                $d -= 360 * round($d / 360);
-            }
-            $h = $this->okh + $f * $d;
+    function interpolate($f, $end, $hue_method = null) {
+        if (is_nan($this->okh)) {
+            $h = $end->okh;
         } else {
-            $h = is_nan($this->okh) ? $end->okh : $this->okh;
+            $dh = is_float($hue_method) ? $hue_method : HclColor::hue_interpolate($this->okh, $end->okh, $hue_method);
+            $h = $this->okh + $dh * $f;
         }
 
         $d = $end->okc - $this->okc;
