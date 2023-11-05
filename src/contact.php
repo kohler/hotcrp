@@ -341,7 +341,7 @@ class Contact implements JsonSerializable {
         $u->orcid = trim($args["orcid"] ?? "");
         $u->cflags = $args["disablement"] ?? 0;
         /** @phan-suppress-next-line PhanDeprecatedProperty */
-        $u->disabled = $u->cflags & self::CFLAG_DBMASK;
+        $u->disabled = $u->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK;
         $u->set_roles_properties();
         return $u;
     }
@@ -1865,17 +1865,16 @@ class Contact implements JsonSerializable {
         return $prop ? array_key_exists($prop, $this->_mod_undo ?? []) : !empty($this->_mod_undo);
     }
 
-    /** @param bool $always
+    /** @param bool $confirm
      * @return bool */
-    function activate_placeholder_prop($always) {
-        if (($this->cflags & self::CFLAG_PLACEHOLDER) !== 0
-            && ($always || $this->conf->allow_user_activate_other())) {
+    function activate_placeholder_prop($confirm) {
+        $changed = false;
+        if (($this->cflags & self::CFLAG_PLACEHOLDER) !== 0) {
             $this->set_prop("cflags", $this->cflags & ~self::CFLAG_PLACEHOLDER);
             $this->set_prop("disabled", $this->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK);
-            return true;
-        } else {
-            return false;
+            $changed = true;
         }
+        return $changed;
     }
 
     /** @return bool */
@@ -2026,10 +2025,10 @@ class Contact implements JsonSerializable {
             $this->set_prop("disabled", $this->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK);
         }
         // source is globally disabled: this local user is disabled
-        if (($sdflags & self::CFLAG_UDISABLED) !== 0
+        if (($sdflags & self::CFLAG_GDISABLED) !== 0
             && $src->cdb_confid !== 0
             && $this->cdb_confid === 0) {
-            $this->set_prop("cflags", $this->cflags | self::CFLAG_UDISABLED);
+            $this->set_prop("cflags", $this->cflags | self::CFLAG_GDISABLED);
             $this->set_prop("disabled", $this->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK);
         }
     }
@@ -2388,6 +2387,7 @@ class Contact implements JsonSerializable {
         return $x["ok"];
     }
 
+    /** @param string $new */
     function change_password($new) {
         assert(!$this->conf->external_login());
         assert($new !== null);
@@ -2407,19 +2407,18 @@ class Contact implements JsonSerializable {
             $saveu->set_prop("password", $hash);
             $saveu->set_prop("passwordTime", Conf::$now);
             $saveu->set_prop("passwordUseTime", $use_time);
-            $saveu->activate_placeholder_prop(true);
+            $saveu->activate_placeholder_prop(false);
             $saveu->save_prop();
         }
-
-        if ($saveu === $cdbu && $this->contactId && (string) $this->password !== "") {
-            $this->set_prop("password", "");
-            $this->set_prop("passwordTime", Conf::$now);
-            $this->set_prop("passwordUseTime", $use_time);
+        if ($saveu !== $this && $this->contactId) {
+            if ((string) $this->password !== "") {
+                $this->set_prop("password", "");
+                $this->set_prop("passwordTime", Conf::$now);
+                $this->set_prop("passwordUseTime", $use_time);
+            }
+            $this->activate_placeholder_prop(false);
+            $this->save_prop();
         }
-        $this->activate_placeholder_prop(true);
-        $this->save_prop();
-
-        return true;
     }
 
 

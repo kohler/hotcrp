@@ -1873,17 +1873,7 @@ class Conf {
 
     /** @return bool */
     function allow_user_self_register() {
-        if ($this->disable_non_pc) {
-            return false;
-        }
-        $dnu = $this->opt("disableNewUsers");
-        return !$dnu || $dnu === "other";
-    }
-
-    /** @return bool */
-    function allow_user_activate_other() {
-        $dnu = $this->opt("disableNewUsers");
-        return !$dnu || $dnu === true || $dnu === "self";
+        return !$this->disable_non_pc && !$this->opt("disableNewUsers");
     }
 
     /** @return array<string,object> */

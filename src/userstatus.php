@@ -1020,9 +1020,7 @@ class UserStatus extends MessageSet {
                 $cflags &= ~Contact::CFLAG_UDISABLED;
             }
         }
-        if (($cflags & Contact::CFLAG_DISABLEMENT) === Contact::CFLAG_PLACEHOLDER
-            && ($us->viewer->is_root_user()
-                || $us->conf->allow_user_activate_other())) {
+        if (($cflags & Contact::CFLAG_DISABLEMENT) === Contact::CFLAG_PLACEHOLDER) {
             $cflags &= ~Contact::CFLAG_PLACEHOLDER;
         }
         $user->set_prop("disabled", $cflags & Contact::CFLAG_DISABLEMENT);
@@ -1641,12 +1639,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
         echo '<div class="grid-btn-explanation"><div class="d-flex mf mf-absolute">';
 
-        if ($us->user->disabled_flags() === Contact::CFLAG_PLACEHOLDER) {
-            $disabled = !$us->conf->allow_user_activate_other();
-        } else {
-            $disabled = $us->user->disabled_flags() !== 0;
-        }
-        echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $disabled]), '</div><p></p>';
+        echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $us->user->is_disabled()]), '</div><p></p>';
 
         if (!$us->is_auth_user()) {
             echo '<div class="d-flex mf mf-absolute">';
