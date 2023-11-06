@@ -1,6 +1,6 @@
 <?php
 // t_login.php -- HotCRP tests
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Login_Tester {
     /** @var Conf
@@ -94,6 +94,7 @@ class Login_Tester {
             $user->ensure_account_here();
             xassert_neqq($user->contactId, 0);
             xassert_eqq($user->contactDbId, 0);
+            xassert(!$user->is_unconfirmed());
         }
     }
 
@@ -103,6 +104,8 @@ class Login_Tester {
             "email" => $email,
             "disablement" => Contact::CFLAG_PLACEHOLDER
         ])->store();
+        $user = $this->conf->user_by_email($email);
+        xassert($user->is_unconfirmed());
 
         $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
 
@@ -124,6 +127,7 @@ class Login_Tester {
         $u = $this->conf->checked_user_by_email($email);
         xassert(!!$u);
         xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
+        xassert($u->is_unconfirmed());
         if ($this->cdb) {
             $u = $this->conf->checked_cdb_user_by_email($email);
             xassert(!!$u);
@@ -149,14 +153,36 @@ class Login_Tester {
         xassert(!!$result);
         xassert(user($email)->check_password("newuserpassword!"));
 
-        // user is no longer a placeholder
+        // user is no longer a placeholder, but unconfirmed
         $u = $this->conf->checked_user_by_email($email);
         xassert(!!$u);
         xassert_eqq($u->disabled_flags(), 0);
+        xassert($u->is_unconfirmed());
         if ($this->cdb) {
             $u = $this->conf->checked_cdb_user_by_email($email);
             xassert(!!$u);
             xassert_eqq($u->disabled_flags(), 0);
+            xassert($u->is_unconfirmed());
+        }
+
+        // logging in confirms user
+        $user = Contact::make($this->conf);
+        $qreq = TestRunner::make_qreq($user, "signin?email={$email}&password=newuserpassword!", "POST");
+        $result = null;
+        try {
+            $cs = $this->conf->page_components($user, $qreq);
+            $signinp = $cs->callable("Signin_Page");
+            $signinp->signin_request($user, $qreq, $cs);
+        } catch (Redirection $redir) {
+            $result = $redir;
+        }
+        xassert(!!$result);
+        xassert_str_contains($result->url, "postlogin");
+        $u = $this->conf->fresh_user_by_email($email);
+        xassert(!$u->is_unconfirmed());
+        if ($this->cdb) {
+            $u = $this->conf->checked_cdb_user_by_email($email);
+            xassert(!$u->is_unconfirmed());
         }
     }
 

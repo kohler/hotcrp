@@ -2936,6 +2936,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("update ContactInfo set cflags=disabled")) {
             $conf->update_schema_version(285);
         }
+        if ($conf->sversion === 285
+            && $conf->ql_ok("update ContactInfo set cflags=34 where cflags=2")) {
+            $conf->update_schema_version(286);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
