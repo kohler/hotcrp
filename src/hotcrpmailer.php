@@ -17,7 +17,7 @@ class HotCRPMailPreparation extends MailPreparation {
     public $censored_preparation; // used in mail tool
 
     /** @param Conf $conf
-     * @param Contact|Author $recipient */
+     * @param ?Contact $recipient */
     function __construct($conf, $recipient) {
         parent::__construct($conf, $recipient);
     }

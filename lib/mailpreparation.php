@@ -33,7 +33,7 @@ class MailPreparation implements JsonSerializable {
     public $finalized = false;
 
     /** @param Conf $conf
-     * @param Contact|Author $recipient */
+     * @param ?Contact $recipient */
     function __construct($conf, $recipient) {
         $this->conf = $conf;
         if ($recipient) {
@@ -190,7 +190,6 @@ class MailPreparation implements JsonSerializable {
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        $j = [];
         $h = ["headers"];
         if (!isset($this->headers["to"])) {
             $h[] = "to";
@@ -198,6 +197,7 @@ class MailPreparation implements JsonSerializable {
         if (!isset($this->headers["subject"])) {
             $h[] = "subject";
         }
+        $j = [];
         foreach (array_merge($h, ["body", "sensitive", "errors", "unique_preparation", "reset_capability", "landmark"]) as $k) {
             if (!empty($this->$k))
                 $j[$k] = $this->$k;

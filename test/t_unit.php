@@ -987,8 +987,8 @@ class Unit_Tester {
     }
 
     function test_sensitive_mail_preparation() {
-        $prep1 = new MailPreparation($this->conf, Author::make_email("ass@butt.com"));
-        $prep2 = new MailPreparation($this->conf, Author::make_email("ass@example.edu"));
+        $prep1 = new MailPreparation($this->conf, Contact::make_email($this->conf, "ass@butt.com"));
+        $prep2 = new MailPreparation($this->conf, Contact::make_email($this->conf, "ass@example.edu"));
         $prep1->sensitive = $prep2->sensitive = true;
         xassert(!$this->conf->opt("sendEmail") && $this->conf->opt("debugShowSensitiveEmail"));
         $this->conf->set_opt("sendEmail", true);
