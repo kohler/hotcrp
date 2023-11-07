@@ -30,9 +30,9 @@ class UserStatus extends MessageSet {
     /** @var bool */
     public $no_deprivilege_self = false;
     /** @var bool */
-    public $no_nonempty_profile = false;
+    public $update_profile_if_empty = false;
     /** @var bool */
-    public $no_nonempty_pc = false;
+    public $update_pc_if_empty = false;
     /** @var bool */
     public $no_create = false;
     /** @var bool */
@@ -103,10 +103,12 @@ class UserStatus extends MessageSet {
         parent::__construct();
         $this->set_want_ftext(true, 5);
     }
+
     function clear() {
         $this->clear_messages();
         $this->unknown_topics = null;
     }
+
     function set_user(Contact $user) {
         if ($user !== $this->user) {
             $this->user = $user;
@@ -124,25 +126,24 @@ class UserStatus extends MessageSet {
     function is_new_user() {
         return !$this->user->email;
     }
+
     /** Test if the edited user is the authenticated user.
      * @return bool */
     function is_auth_user() {
         return $this->is_auth_user;
     }
+
     /** Test if the edited user is the authenticated user and same as the viewer.
      * @return bool */
     function is_auth_self() {
         return $this->is_auth_user && !$this->viewer->is_actas_user();
     }
+
     /** @return ?Contact */
     function cdb_user() {
         return $this->user->cdb_user();
     }
-    /** @return ?Contact
-     * @deprecated */
-    function contactdb_user() {
-        return $this->cdb_user();
-    }
+
     /** @return ?Contact */
     function actor() {
         return $this->viewer->is_root_user() ? null : $this->viewer;
@@ -186,13 +187,23 @@ class UserStatus extends MessageSet {
     }
 
     /** @return bool */
+    function update_if_empty(Contact $user) {
+        // CDB user profiles belong to their owners
+        if ($user->is_cdb_user()
+            && (strcasecmp($user->email, $this->viewer->email) !== 0
+                || $this->viewer->is_actas_user())) {
+            return true;
+        } else if (($this->jval->user_override ?? null) !== null) {
+            return !$this->jval->user_override;
+        } else {
+            return $this->update_profile_if_empty;
+        }
+    }
+
+    /** @return bool
+     * @deprecated */
     function only_update_empty(Contact $user) {
-        // XXX want way in script to modify all
-        return $this->no_nonempty_profile
-            || ($user->is_cdb_user()
-                && (strcasecmp($user->email, $this->viewer->email) !== 0
-                    || $this->viewer->is_actas_user()
-                    || $this->viewer->is_root_user()));
+        return $this->update_if_empty($user);
     }
 
     /** @param int $cid
@@ -917,7 +928,8 @@ class UserStatus extends MessageSet {
         }
 
         // Roles
-        if ($this->no_nonempty_pc && ($old_roles & Contact::ROLE_PCLIKE) !== 0) {
+        if ($this->update_pc_if_empty
+            && ($old_roles & Contact::ROLE_PCLIKE) !== 0) {
             $roles = ($roles & ~Contact::ROLE_PCLIKE) | ($old_roles & Contact::ROLE_PCLIKE);
         }
         if ($roles !== $old_roles) {
@@ -997,18 +1009,9 @@ class UserStatus extends MessageSet {
         $cj = $us->jval;
 
         // Profile properties
-        $us->set_profile_prop($user, $us->only_update_empty($user));
+        $us->set_profile_prop($user, $us->update_if_empty($user));
         if (($cdbu = $user->cdb_user())) {
-            $us->set_profile_prop($cdbu, $us->only_update_empty($cdbu));
-        }
-
-        // Collaborators special case: set locally, even if no_noempty_profile
-        if (isset($cj->collaborators)
-            && !$user->prop_changed("collaborators")) {
-            $user->set_prop("collaborators", $cj->collaborators);
-            if ($user->prop_changed("collaborators")) {
-                $us->diffs["collaborators"] = true;
-            }
+            $us->set_profile_prop($cdbu, $us->update_if_empty($cdbu));
         }
 
         // Disabled
@@ -1031,7 +1034,7 @@ class UserStatus extends MessageSet {
 
         // Follow
         if (isset($cj->follow)
-            && (!$us->no_nonempty_pc || $user->defaultWatch === Contact::WATCH_REVIEW)) {
+            && (!$us->update_pc_if_empty || $user->defaultWatch === Contact::WATCH_REVIEW)) {
             $w = 0;
             $wmask = ($cj->follow->partial ?? false ? 0 : 0xFFFFFFFF);
             foreach (self::$watch_keywords as $k => $bit) {
@@ -1050,7 +1053,7 @@ class UserStatus extends MessageSet {
         // Tags
         if ((isset($cj->tags) || isset($cj->add_tags) || isset($cj->remove_tags))
             && $us->viewer->privChair
-            && (!$us->no_nonempty_pc || $user->contactTags === null)) {
+            && (!$us->update_pc_if_empty || $user->contactTags === null)) {
             if (isset($cj->tags)) {
                 $user->set_prop("contactTags", null);
             }
@@ -1115,7 +1118,7 @@ class UserStatus extends MessageSet {
             return;
         }
         $ti = $us->created ? [] : $us->user->topic_interest_map();
-        if ($us->no_nonempty_pc && !empty($ti)) {
+        if ($us->update_pc_if_empty && !empty($ti)) {
             return;
         }
         $tv = [];
@@ -1308,6 +1311,12 @@ class UserStatus extends MessageSet {
             }
         }
 
+        // user override
+        $override = trim($line["user_override"] ?? "");
+        if ($override !== "") {
+            $cj->user_override = friendly_boolean($override); /* OK if null */
+        }
+
         // topics
         if ($us->conf->has_topics()) {
             $topics = [];
@@ -1322,7 +1331,8 @@ class UserStatus extends MessageSet {
                 }
             }
             if (!empty($topics)) {
-                if (strcasecmp(trim($line["topic_override"] ?? ""), "no") === 0) {
+                $override = trim($line["topic_override"] ?? "");
+                if ($override !== "" && friendly_boolean($override) === false) {
                     $cj->default_topics = (object) $topics;
                 } else {
                     $cj->change_topics = (object) $topics;
@@ -1683,16 +1693,19 @@ topics. We use this information to help match papers to reviewers.</p>',
     static function print_bulk_entry(UserStatus $us) {
         echo Ht::textarea("bulkentry", $us->qreq->bulkentry, [
             "rows" => 1, "cols" => 80,
-            "placeholder" => "Enter users one per line",
+            "placeholder" => "Enter one user per line",
             "class" => "want-focus need-autogrow",
             "spellcheck" => "false"
         ]);
-        echo '<div class="g"><strong>OR</strong>  ',
+        echo '<div class="g"><strong class="pr-1">OR</strong> ',
             '<input type="file" name="bulk" size="30"></div>';
     }
 
     static function print_bulk_actions(UserStatus $us) {
-        echo '<div class="aab aabig">',
+        echo '<label class="checki mt-5"><span class="checkc">',
+            Ht::checkbox("bulkoverride", 1, isset($us->qreq->bulkoverride)),
+            '</span>Override existing names, affiliations, and collaborators</label>',
+            '<div class="aab aabig mt-3">',
             '<div class="aabut">', Ht::submit("savebulk", "Save accounts", ["class" => "btn-primary"]), '</div>',
             '</div>';
     }

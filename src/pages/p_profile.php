@@ -72,7 +72,7 @@ class Profile_Page {
         if (isset($this->qreq->profile_contactid)
             && $this->qreq->profile_contactid !== (string) $user->contactId) {
             if (isset($this->qreq->save) || isset($this->qreq->savebulk)) {
-                $this->conf->error_msg("<0>Changes not saved; your session has changed since you last reloaded this tab");
+                $this->conf->error_msg("<0>Changes not saved; your session has changed since you last loaded this tab");
             }
             $this->conf->redirect_self($this->qreq, ["u" => $u]);
         }
@@ -284,7 +284,7 @@ class Profile_Page {
 
         $ustatus = new UserStatus($this->viewer);
         $ustatus->no_deprivilege_self = true;
-        $ustatus->no_nonempty_profile = true;
+        $ustatus->update_profile_if_empty = !$this->qreq->bulkoverride;
         $ustatus->add_csv_synonyms($csv);
 
         while (($line = $csv->next_row())) {
@@ -348,8 +348,8 @@ class Profile_Page {
         $this->ustatus->jval = (object) ["id" => $this->user->has_account_here() ? $this->user->contactId : "new"];
         $this->ustatus->no_deprivilege_self = true;
         if ($this->page_type !== 0) {
-            $this->ustatus->no_nonempty_profile = true;
-            $this->ustatus->no_nonempty_pc = true;
+            $this->ustatus->update_profile_if_empty = true;
+            $this->ustatus->update_pc_if_empty = true;
             $this->ustatus->notify = true;
         }
 

@@ -81,14 +81,15 @@
     {   "name": "__bulk/help/f/name", "order": -90, "description_html": "Name"   },
     {   "name": "__bulk/help/f/first", "order": -85, "description_html": "First name (given name)"   },
     {   "name": "__bulk/help/f/last", "order": -84, "description_html": "Last name (family name)"   },
-    {   "name": "__bulk/help/f/affiliation", "order": -81, "description_html": "Affiliation"   },
-    {   "name": "__bulk/help/f/roles", "order": -80, "description_html": "User roles: “<code>pc</code>”, “<code>chair</code>”, “<code>sysadmin</code>”, “<code>none</code>”"   },
+    {   "name": "__bulk/help/f/affiliation", "order": -83, "description_html": "Affiliation"   },
+    {   "name": "__bulk/help/f/collaborators", "order": -82, "description_html": "Collaborators"   },
+    {   "name": "__bulk/help/f/user_override", "order": -81, "description_html": "If “<code>yes</code>”, then override existing user profile information (name, affiliation, collaborators)"   },
+    {   "name": "__bulk/help/f/roles", "order": -80, "description_html": "Roles: “<code>pc</code>”, “<code>chair</code>”, “<code>sysadmin</code>”, “<code>none</code>”"   },
     {   "name": "__bulk/help/f/tags", "order": -70, "description_html": "PC tags (space-separated)"   },
     {   "name": "__bulk/help/f/add_tags", "order": -65, "description_html": "PC tags to add"   },
     {   "name": "__bulk/help/f/remove_tags", "order": -65, "description_html": "PC tags to remove"   },
-    {   "name": "__bulk/help/f/collaborators", "description_html": "Collaborators"   },
     {   "name": "__bulk/help/f/follow", "description_html": "Event notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”, “<code>none</code>”"   },
-    {   "name": "__bulk/help/f/notify", "description_html": "Notify new accounts (default <code>yes</code>)"   },
     {   "name": "__bulk/help/f/topics", "field": "topic:<TOPICNAME>", "description_html": "Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)", "allow_if": "conf.has_topics", "order": 1   },
-    {   "name": "__bulk/help/f/topic_override", "field": "topic_override", "description_html": "If “<code>no</code>”, then do not overwrite existing topic interests", "allow_if": "conf.has_topics", "order": 1.2   }
+    {   "name": "__bulk/help/f/topic_override", "field": "topic_override", "description_html": "If “<code>no</code>”, then do not overwrite existing topic interests", "allow_if": "conf.has_topics", "order": 1.2   },
+    {   "name": "__bulk/help/f/notify", "description_html": "Notify new accounts (default <code>yes</code>)", "order": 100   }
 ]
