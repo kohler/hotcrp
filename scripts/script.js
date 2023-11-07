@@ -2004,7 +2004,7 @@ function focus_within(elt, subfocus_selector, always) {
         $wf = [];
         $(elt).find("a, input, select, textarea, button").each(function () {
             if ((this.tagName === "A" || !this.disabled)
-                && (!subfocus_selector || this.matches(subfocus_selector))) {
+                && (!subfocus_selector || $(this).is(subfocus_selector))) {
                 $wf.push(this);
                 return false;
             }
