@@ -1,7 +1,7 @@
 [
     {   "name": "main", "title": "Profile", "order": 100,
         "unparse_json_function": "UserStatus::unparse_json_main",
-        "request_function": "UserStatus::request_main",
+        "request_function": "UserStatus::parse_qreq_main",
         "parse_csv_function": "UserStatus::parse_csv_main",
         "save_early_function": "UserStatus::save_main"
     },
@@ -38,12 +38,12 @@
 
     {   "name": "security", "title": "Security", "order": 200,
         "allow_if": "profile_security",
-        "request_function": "Security_UserInfo::request",
+        "request_function": "Security_UserInfo::parse_qreq",
         "save_members": true   },
     [   "security/currentpassword", 10, "Security_UserInfo::print_current_password"   ],
     {   "name": "security/newpassword", "order": 100,
         "print_function": "*Security_UserInfo::print_new_password",
-        "request_function": "*Security_UserInfo::request_new_password",
+        "request_function": "*Security_UserInfo::parse_qreq_new_password",
         "save_function": "Security_UserInfo::save_new_password"   },
     [   "security/actions", 1000000, "UserStatus::print_actions"   ],
 
@@ -59,7 +59,7 @@
     {   "name": "developer", "title": "Developer settings", "short_title": "Developer",
         "order": 2000,
         "allow_if": "profile_security",
-        "request_function": "Developer_UserInfo::request",
+        "request_function": "Developer_UserInfo::parse_qreq",
         "save_members": true   },
     {   "name": "developer/tokens", "title": "API tokens", "order": 10,
         "print_function": "*Developer_UserInfo::print_bearer_tokens"   },

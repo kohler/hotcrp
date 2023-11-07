@@ -6,7 +6,7 @@ class Security_UserInfo {
     /** @var ?array{string,string} */
     private $_req_passwords;
 
-    static function request(UserStatus $us) {
+    static function parse_qreq(UserStatus $us) {
         if ($us->allow_security()) {
             if (trim($us->qreq->oldpassword ?? "") !== "") {
                 $us->has_req_security();
@@ -57,7 +57,7 @@ class Security_UserInfo {
         }
     }
 
-    function request_new_password(UserStatus $us) {
+    function parse_qreq_new_password(UserStatus $us) {
         $pw = trim($us->qreq->upassword ?? "");
         $pw2 = trim($us->qreq->upassword2 ?? "");
         $this->_req_passwords = [$us->qreq->upassword ?? "", $us->qreq->upassword2 ?? ""];

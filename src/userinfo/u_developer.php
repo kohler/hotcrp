@@ -8,7 +8,7 @@ class Developer_UserInfo {
     /** @var list<array{int,bool,string}> */
     private $_delete_tokens = [];
 
-    static function request(UserStatus $us) {
+    static function parse_qreq(UserStatus $us) {
         if ($us->allow_security()) {
             $us->request_group("developer");
         }

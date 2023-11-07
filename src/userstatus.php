@@ -939,9 +939,13 @@ class UserStatus extends MessageSet {
 
         // Contact DB (must precede password)
         if ($cdb_user && $cdb_user->prop_changed()) {
-            $cdb_user->save_prop();
-            $user->invalidate_cdb_user();
-            $user->cdb_user();
+            if ($this->jval->update_global ?? true) {
+                $cdb_user->save_prop();
+                $user->invalidate_cdb_user();
+                $user->cdb_user();
+            } else {
+                $cdb_user->abort_prop();
+            }
         }
         if ($roles !== $old_roles
             || ($user->disabled_flags() !== 0) !== ($old_disablement !== 0)) {
@@ -1148,7 +1152,7 @@ class UserStatus extends MessageSet {
     }
 
 
-    static function request_main(UserStatus $us) {
+    static function parse_qreq_main(UserStatus $us) {
         $qreq = $us->qreq;
         $cj = $us->jval;
 
@@ -1165,6 +1169,11 @@ class UserStatus extends MessageSet {
             } else {
                 $cj->email = $us->user->email;
             }
+        }
+
+        // whether to update global profile
+        if (friendly_boolean($qreq->update_global ?? !$qreq->has_update_global) === false) {
+            $cj->update_global = false;
         }
 
         // normal fields
@@ -1381,16 +1390,14 @@ class UserStatus extends MessageSet {
         return "none";
     }
 
+    /** @param string $key
+     * @return string */
     function global_profile_difference($key) {
-        if ($this->is_auth_self()
+        if (($this->is_auth_self() || $this->viewer->privChair)
             && ($cdbu = $this->cdb_user())) {
             $cdbprop = $cdbu->prop($key) ?? "";
             if (($this->user->prop($key) ?? "") !== $cdbprop) {
-                if ($cdbprop !== "") {
-                    return '<div class="f-h">Global profile has “' . htmlspecialchars($cdbprop) . '”</div>';
-                } else {
-                    return '<div class="f-h">Empty in global profile</div>';
-                }
+                return '<p class="feedback is-warning-note mt-1 mb-0">' . $this->conf->_5("<0>“{}” in global profile", $cdbprop, new FmtArg("field", $key, 0)) . '</p>';
             }
         }
         return "";
@@ -1551,7 +1558,8 @@ class UserStatus extends MessageSet {
             $us->control_class("collaborators", "need-autogrow w-text"),
             "\" data-default-value=\"", htmlspecialchars($us->user->collaborators()), "\">",
             htmlspecialchars($us->qreq->collaborators ?? $us->user->collaborators()),
-            "</textarea>\n";
+            "</textarea>",
+            $us->global_profile_difference("collaborators");
     }
 
     static function print_topics(UserStatus $us) {
@@ -1678,14 +1686,23 @@ topics. We use this information to help match papers to reviewers.</p>',
     }
 
     static function print_actions(UserStatus $us) {
-        $buttons = [Ht::submit("save", $us->is_new_user() ? "Create account" : "Save changes", ["class" => "btn-primary"]),
-            Ht::submit("cancel", "Cancel", ["formnovalidate" => true])];
-        if ($us->is_auth_self()
-            && $us->cs()->root === "main") {
+        $us->cs()->print_end_section();
+        $klass = "mt-7";
+        $buttons = [
+            Ht::submit("save", $us->is_new_user() ? "Create account" : "Save changes", ["class" => "btn-primary"]),
+            Ht::submit("cancel", "Cancel", ["formnovalidate" => true])
+        ];
+        if ($us->is_auth_self() && $us->cs()->root === "main") {
+            if ($us->cdb_user()) {
+                echo '<label class="checki mt-7"><span class="checkc">',
+                    Ht::hidden("has_update_global", 1),
+                    Ht::checkbox("update_global", 1, !$us->qreq->has_updateglobal || $us->qreq->updateglobal, ["class" => "ignore-diff"]),
+                    '</span>Update global profile</label>';
+                $klass = "mt-3";
+            }
             array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
         }
-        $us->cs()->print_end_section();
-        echo Ht::actions($buttons, ["class" => "aab aabig mt-7"]);
+        echo Ht::actions($buttons, ["class" => "aab aabig {$klass}"]);
     }
 
 
@@ -1703,7 +1720,7 @@ topics. We use this information to help match papers to reviewers.</p>',
 
     static function print_bulk_actions(UserStatus $us) {
         echo '<label class="checki mt-5"><span class="checkc">',
-            Ht::checkbox("bulkoverride", 1, isset($us->qreq->bulkoverride)),
+            Ht::checkbox("bulkoverride", 1, isset($us->qreq->bulkoverride), ["class" => "ignore-diff"]),
             '</span>Override existing names, affiliations, and collaborators</label>',
             '<div class="aab aabig mt-3">',
             '<div class="aabut">', Ht::submit("savebulk", "Save accounts", ["class" => "btn-primary"]), '</div>',
