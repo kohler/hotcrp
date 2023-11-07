@@ -65,7 +65,7 @@ class ChangeEmail_Page {
             }
             if (Contact::session_index_by_email($qreq, $capcontent->oldemail) >= 0) {
                 LoginHelper::change_session_users($qreq, [
-                    $capcontent->oldemail => -1, $newemail => 1
+                    $capcontent->oldemail => -1, $newemail => Conf::$now
                 ]);
             }
             $conf->redirect_hoturl("profile");

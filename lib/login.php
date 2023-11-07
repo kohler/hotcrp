@@ -147,7 +147,7 @@ class LoginHelper {
 
         // store authentication
         $qreq->qsession()->open_new_sid();
-        self::change_session_users($qreq, [$xuser->email => 1]);
+        self::change_session_users($qreq, [$xuser->email => Conf::$now]);
 
         // activate
         $user = $xuser->activate($qreq, false);
@@ -172,10 +172,11 @@ class LoginHelper {
     }
 
     /** @param Qrequest $qreq
-     * @param array<string,1|-1> $uinstr */
+     * @param array<string,int> $uinstr */
     static function change_session_users($qreq, $uinstr) {
         $us = Contact::session_users($qreq);
         $any_deleted = false;
+        $uts = $qreq->gsession("uts") ?? [];
         foreach ($uinstr as $e => $delta) {
             for ($i = 0; $i !== count($us); ++$i) {
                 if (strcasecmp($us[$i], $e) === 0)
@@ -183,9 +184,16 @@ class LoginHelper {
             }
             if ($delta < 0 && $i !== count($us)) {
                 array_splice($us, $i, 1);
+                if (count($uts) > $i) {
+                    array_splice($uts, $i, 1);
+                }
                 $any_deleted = true;
             } else if ($delta > 0 && $i === count($us)) {
                 $us[] = $e;
+                while (count($uts) < $i) {
+                    $uts[] = 0;
+                }
+                $uts[] = $delta;
             }
         }
         if (count($us) > 1) {
@@ -197,6 +205,11 @@ class LoginHelper {
             $qreq->unset_gsession("u");
         } else if ($qreq->gsession("u") !== $us[0]) {
             $qreq->set_gsession("u", $us[0]);
+        }
+        if (empty($uts)) {
+            $qreq->unset_gsession($uts);
+        } else {
+            $qreq->set_gsession("uts", $uts);
         }
         if ($any_deleted) {
             $qreq->unset_gsession("uchoice");
