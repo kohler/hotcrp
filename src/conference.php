@@ -4670,7 +4670,7 @@ class Conf {
         $this->_header_printed = true;
         echo "<div id=\"h-messages\" class=\"msgs-wide\">\n";
         if (($x = $this->opt("maintenance"))) {
-            echo Ht::msg(is_string($x) ? $x : "<strong>The site is down for maintenance.</strong> Please check back later.", 2);
+            echo Ht::msg(is_string($x) ? $x : "<strong>This site is down for maintenance.</strong> Please check back later.", 2);
         }
         if ($this->_save_msgs && !($extra["save_messages"] ?? false)) {
             $this->report_saved_messages();

@@ -1,5 +1,5 @@
 <?php
-// fakenames.php -- HotCRP maintenance script
+// t_dmpgitstress.php -- test HotCRP diff_match_patch on Git histories
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 use dmp\diff_match_patch as diff_match_patch;
