@@ -64,6 +64,7 @@ MYCREATEDB_USER=""
 DBNAME=""
 DBUSER=""
 DBPASS=""
+DBHOST=""
 PASSWORD=""
 distoptions_file=distoptions.php
 options_file=
@@ -130,8 +131,10 @@ while [ $# -gt 0 ]; do
         setup_phase="grep -v 'setupPhase'";;
     -V|--verb|--verbo|--verbos|--verbose)
         verbose=true;;
-    --host=*|--host)
-        FLAGS="$FLAGS '$1'"; has_host=true;;
+    --host=*)
+        DBHOST="`echo "$1" | sed 's/^[^=]*=//'`"; FLAGS="$FLAGS '$1'"; has_host=true;;
+    --host)
+        DBHOST="$2"; FLAGS="$FLAGS --host '$2'"; has_host=true; shift;;
     --grant-host=*)
         add_granthost "`echo "$1" | sed 's/^[^=]*=//'`";;
     --grant-host)
@@ -490,6 +493,7 @@ global $Opt;'
 \$Opt["dbUser"] = "$DBUSER";
 \$Opt["dbPassword"] = "`php_dbpass`";
 __EOF__
+    test -n "$DBHOST" && echo '$Opt["dbHost"] = "'"$DBHOST"'";'
     test -z "$minimal_options" && awk 'BEGIN { p = 0 }
 /^\$Opt\[.db/ { p = 1; next }
 { if (p) print }' < "${ETCDIR}${distoptions_file}"
@@ -529,6 +533,8 @@ elif [ -r "${ETCDIR}${distoptions_file}" -o -n "$minimal_options" ]; then
     fi
     chmod o-rwx "$expected_options"
     current_options="$expected_options"
+    $qecho
+    $qecho "* Done!"
 else
     $qecho
     $qecho "* Not creating $expected_options."
@@ -539,7 +545,7 @@ if test -n "$current_options"; then
     # warn about unreadable options file
     group="`ls -l "$current_options" | awk '{print $4}'`"
 
-    httpd_user="`ps axho user,comm | grep -E 'httpd|apache' | uniq | grep -v root | awk 'END {if ($1) print $1}'`"
+    httpd_user="`ps axho user,comm | grep -E 'httpd|apache|nginx' | uniq | grep -v root | awk 'END {if ($1) print $1}'`"
 
     if test -z "$httpd_user"; then
         echo
