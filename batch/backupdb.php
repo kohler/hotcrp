@@ -298,8 +298,13 @@ class BackupDB_Batch {
             $s3b = $Opt["s3_bucket"] ?? null;
             $s3c = $Opt["s3_secret"] ?? null;
             $s3k = $Opt["s3_key"] ?? null;
+            if (!is_string($s3b) || !is_string($s3c) || !is_string($s3k)) {
+                $this->verbose && fwrite(STDERR, "S3 options `s3_bucket`, `s3_secret`, `s3_key` are all required\n");
+                return null;
+            }
             $s3bp = $Opt["s3_backup_pattern"] ?? null;
-            if (!is_string($s3b) || !is_string($s3c) || !is_string($s3k) || !is_string($s3bp)) {
+            if (!is_string($s3bp)) {
+                $this->verbose && fwrite(STDERR, "S3 option `s3_backup_pattern` required for S3 backup\n");
                 return null;
             }
             $this->_s3_client = new S3Client([
