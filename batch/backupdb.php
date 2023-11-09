@@ -686,8 +686,7 @@ class BackupDB_Batch {
                            $this->_s3_confid ?? $this->confid,
                            time());
         if ($this->compress) {
-            fclose($this->out);
-            $this->out = @fopen($this->_s3_tmp, "rb");
+            rewind($this->out);
         }
         $ok = $this->s3_client()->put_file($bpk, $this->out, $this->compress ? "application/gzip" : "application/sql");
         if (!$ok) {
