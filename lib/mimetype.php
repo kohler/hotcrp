@@ -34,6 +34,7 @@ class Mimetype {
     /** @var int */
     public $flags;
 
+    /** @var associative-array<string,Mimetype> */
     private static $tmap = [];
 
     /** @var array<string,array{0:string,1:?string,2:int,3?:string,4?:string,5?:string}> */
@@ -53,8 +54,12 @@ class Mimetype {
         self::GIF_TYPE =>     [".gif", "GIF", self::FLAG_INLINE | self::FLAG_REQUIRE_SNIFF]
     ];
 
-    private static $mime_types = null;
-    private static $finfo = null;
+    /** @var bool */
+    private static $mime_types_loaded = false;
+    /** @var ?int */
+    private static $max_extension_length;
+    /** @var ?\finfo */
+    private static $finfo;
 
     /** @param string $mimetype
      * @param string $extension
@@ -66,6 +71,48 @@ class Mimetype {
         $this->extension = $extension;
         $this->description = $description;
         $this->flags = $flags;
+    }
+
+    static function load_mime_types() {
+        if (!self::$mime_types_loaded) {
+            self::$mime_types_loaded = true;
+            $t = (string) @file_get_contents(SiteLoader::find("lib/mime.types"));
+            preg_match_all('/^(|#!!\s+)([-a-z0-9]+\/\S+)[ \t]*(.*)/m', $t, $ms, PREG_SET_ORDER);
+            foreach ($ms as $mm) {
+                if (isset(self::$tmap[$mm[2]])) {
+                    continue;
+                }
+                if ($mm[1] === "") {
+                    $exts = [""];
+                    if ($mm[3]) {
+                        $exts = array_map(function ($x) { return ".{$x}"; },
+                                          preg_split('/\s+/', $mm[3]));
+                    }
+                    $mt = new Mimetype($mm[2], $exts[0]);
+                    self::$tmap[$mt->mimetype] = $mt;
+                    foreach ($exts as $ext) {
+                        if ($ext && !isset(self::$tmap[$ext]))
+                            self::$tmap[$ext] = $mt;
+                    }
+                } else if (($mt = self::$tmap[trim($mm[3]) ? : self::BIN_TYPE]) ?? null) {
+                    self::$tmap[$mm[2]] = $mt;
+                }
+            }
+        }
+    }
+
+    /** @return int */
+    static function max_extension_length() {
+        if (self::$max_extension_length === null) {
+            self::$mime_types_loaded || self::load_mime_types();
+            $n = 0;
+            foreach (self::$tmap as $x => $mt) {
+                if (str_starts_with($x, "."))
+                    $n = max($n, strlen($x));
+            }
+            self::$max_extension_length = $n;
+        }
+        return self::$max_extension_length;
     }
 
     /** @param string|Mimetype $type
@@ -97,34 +144,7 @@ class Mimetype {
                 return self::$tmap[$type];
             }
         }
-        if (self::$mime_types === null) {
-            self::$mime_types = true;
-            $t = (string) @file_get_contents(SiteLoader::find("lib/mime.types"));
-            preg_match_all('/^(|#!!\s+)([-a-z0-9]+\/\S+)[ \t]*(.*)/m', $t, $ms, PREG_SET_ORDER);
-            foreach ($ms as $mm) {
-                if (isset(self::$tmap[$mm[2]])) {
-                    continue;
-                }
-                if ($mm[1] === "") {
-                    $exts = [""];
-                    if ($mm[3]) {
-                        $exts = array_map(function ($x) { return ".$x"; },
-                                          preg_split('/\s+/', $mm[3]));
-                    }
-                    $m = new Mimetype($mm[2], $exts[0]);
-                    self::$tmap[$m->mimetype] = $m;
-                    foreach ($exts as $ext) {
-                        if ($ext && !isset(self::$tmap[$ext]))
-                            self::$tmap[$ext] = $m;
-                    }
-                } else {
-                    $m = self::$tmap[trim($mm[3]) ? : self::BIN_TYPE] ?? null;
-                    if ($m) {
-                        self::$tmap[$mm[2]] = $m;
-                    }
-                }
-            }
-        }
+        self::$mime_types_loaded || self::load_mime_types();
         return self::$tmap[$type] ?? null;
     }
 

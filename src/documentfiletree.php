@@ -28,6 +28,8 @@ class DocumentFileTree implements JsonSerializable {
 
     /** @var array<string,DocumentFileTreeDir> */
     private $_dirinfo = [];
+    /** @var string */
+    private $_extension_regex;
 
     /** @param string $dp
      * @param int $treeid */
@@ -41,11 +43,11 @@ class DocumentFileTree implements JsonSerializable {
                     if (count($this->_components) % 2 == 0) {
                         $this->_components[] = "";
                     }
-                    $this->_components[] = "/$fdir";
+                    $this->_components[] = "/{$fdir}";
                 } else if (count($this->_components) % 2 == 0) {
-                    $this->_components[] = "/$fdir";
+                    $this->_components[] = "/{$fdir}";
                 } else {
-                    $this->_components[count($this->_components) - 1] .= "/$fdir";
+                    $this->_components[count($this->_components) - 1] .= "/{$fdir}";
                 }
             }
         }
@@ -74,9 +76,9 @@ class DocumentFileTree implements JsonSerializable {
         $n = 0;
         $isdir = $pos + 1 < $this->_n;
         foreach (is_dir($dir) ? scandir($dir, SCANDIR_SORT_NONE) : [] as $x) {
-            $x = "/$x";
+            $x = "/{$x}";
             if ($x !== "/." && $x !== "/.." && preg_match($preg, $x)) {
-                $c = $isdir ? $this->populate_dirinfo("$dir$x", $pos + 1) : 1;
+                $c = $isdir ? $this->populate_dirinfo("{$dir}{$x}", $pos + 1) : 1;
                 if ($c) {
                     $di[] = $n;
                     $di[] = $x;
@@ -129,12 +131,22 @@ class DocumentFileTree implements JsonSerializable {
                     }
                     $build .= $xext;
                     $text = substr($text, strlen($xext));
-                } else if (preg_match('/\A(\.(?:avi|bib|bin|bmp|bz2|csv|docx?|gif|gz|html|jpg|json|md|mov|mp4|mpeg|pdf|png|pptx?|ps|rtf|smil|svgz?|tar|tex|tiff|txt|webm|xlsx?|xz|zip))/', $text, $m)) {
-                    $xext = $m[1];
-                    $build .= $m[1];
-                    $text = substr($text, strlen($m[1]));
-                } else {
+                } else if (!str_starts_with($text, ".")) {
                     $xext = "";
+                } else {
+                    $n = $text === "" ? strlen($text) : min(Mimetype::max_extension_length(), strlen($text));
+                    $mt = Mimetype::lookup(substr($text, 0, $n));
+                    while (!$mt && $text !== "" && $n > 2) {
+                        --$n;
+                        $mt = Mimetype::lookup(substr($text, 0, $n));
+                    }
+                    if ($mt) {
+                        $xext = substr($text, 0, $n);
+                        $build .= $xext;
+                        $text = substr($text, $n);
+                    } else {
+                        $xext = "";
+                    }
                 }
             } else if ($fn === "w") {
                 preg_match('/\A([^%\/]*)(.*)\z/', $match, $mm);
