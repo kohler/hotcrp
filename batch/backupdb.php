@@ -34,6 +34,10 @@ class BackupDB_Batch {
     public $in;
     /** @var resource */
     public $out = STDOUT;
+    /** @var ?DeflateContext */
+    private $_deflate;
+    /** @var ?string */
+    private $_deflatebuf;
     /** @var ?string */
     private $_s3_tmp;
     /** @var ?\mysqli */
@@ -62,6 +66,8 @@ class BackupDB_Batch {
     private $_buf = "";
     /** @var ?HashContext */
     private $_hash;
+    /** @var bool */
+    private $_complete = false;
     /** @var list<string> */
     private $_check_table = [];
     /** @var bool */
@@ -246,32 +252,28 @@ class BackupDB_Batch {
             }
         } else if ($output_mode === "stdout") {
             if ($this->compress) {
-                $this->out = @fopen("compress.zlib://php://stdout", "wb");
-                stream_context_set_option($this->out, "compress.zlib", "level", 9);
-            } else {
-                $this->out = STDOUT;
+                $this->prepare_deflate();
             }
+            $this->out = STDOUT;
         } else if ($output_mode === "s3") {
             if (!$this->compress && str_ends_with($this->_s3_backup_pattern, ".gz")) {
                 $this->compress = true;
             }
             if ($this->compress) {
-                if (($fn = tempnam("/tmp", "hcbu")) === false) {
-                    $this->throw_error("Cannot create temporary file");
-                }
-                register_shutdown_function("unlink", $fn);
-                $this->out = @fopen("compress.zlib://{$fn}", "wb");
-                stream_context_set_option($this->out, "compress.zlib", "level", 9);
-                $this->_s3_tmp = $fn;
-            } else {
-                $this->out = fopen("php://temp", "w+b");
+                $this->prepare_deflate();
             }
+            $this->out = fopen("php://temp", "w+b");
         }
         if ($this->out === false) {
             throw error_get_last_as_exception("{$input}: ");
         } else if ($this->out !== null) {
             stream_set_write_buffer($this->out, 0);
         }
+    }
+
+    private function prepare_deflate() {
+        $this->_deflate = deflate_init(ZLIB_ENCODING_GZIP, ["level" => 9]);
+        $this->_deflatebuf = "";
     }
 
     /** @param string $msg
@@ -472,15 +474,46 @@ class BackupDB_Batch {
     }
 
     private function fflush() {
-        if (strlen($this->_buf) > 0) {
-            if ($this->_hash) {
-                hash_update($this->_hash, $this->_buf);
+        assert(!$this->_complete);
+        $s = $this->_buf;
+        $this->_buf = "";
+        if (strlen($s) === 0) {
+            return;
+        }
+        if ($this->_hash) {
+            hash_update($this->_hash, $s);
+        }
+        if ($this->_deflate) {
+            $s = deflate_add($this->_deflate, $s, ZLIB_NO_FLUSH);
+            if ($s === "" || $s === false) {
+                return;
             }
-            if (@fwrite($this->out, $this->_buf) === false) {
+            $this->_deflatebuf .= $s;
+            if (strlen($this->_deflatebuf) < self::BUFSZ) {
+                return;
+            }
+            $s = $this->_deflatebuf;
+            $this->_deflatebuf = "";
+        }
+        if (@fwrite($this->out, $s) !== strlen($s)) {
+            $this->throw_error((error_get_last())["message"]);
+        }
+    }
+
+    private function fcomplete() {
+        $this->fflush();
+        if ($this->_deflate) {
+            $s = deflate_add($this->_deflate, "", ZLIB_FINISH);
+            if ($s === false) {
+                $s = "";
+            }
+            $this->_deflatebuf .= $s;
+            if (@fwrite($this->out, $this->_deflatebuf) !== strlen($this->_deflatebuf)) {
                 $this->throw_error((error_get_last())["message"]);
             }
-            $this->_buf = "";
+            $this->_deflatebuf = "";
         }
+        $this->_complete = true;
     }
 
     /** @param string $s */
@@ -608,7 +641,6 @@ class BackupDB_Batch {
             $s = $this->process_line($s . $line, $line);
         }
         $this->process_line($s, "\n");
-        $this->fflush();
     }
 
     /** @param string $cmd
@@ -635,6 +667,7 @@ class BackupDB_Batch {
         Dbl::qx($this->dblink(), "insert into Settings set name='__schema_lock', value=1 on duplicate key update value=value");
 
         $this->transfer();
+        $this->fcomplete();
 
         return proc_close($proc);
     }
@@ -721,7 +754,7 @@ class BackupDB_Batch {
         } else if (!$this->_hotcrp_comment) {
             $this->fwrite("\n--\n-- Force HotCRP to invalidate server caches\n--\nINSERT INTO `Settings` (`name`,`value`,`data`) VALUES\n('frombackup',UNIX_TIMESTAMP(),NULL)\nON DUPLICATE KEY UPDATE value=greatest(value,UNIX_TIMESTAMP());\n");
         }
-        $this->fflush();
+        $this->fcomplete();
 
         if ($this->_hash) {
             fwrite(STDOUT, hash_final($this->_hash) . "\n");
