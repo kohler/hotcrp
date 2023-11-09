@@ -3,6 +3,7 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Mimetype {
+    // NB types listed here must also be present in `lib/mime.types`
     const TXT_TYPE = "text/plain";
     const BIN_TYPE = "application/octet-stream";
     const PDF_TYPE = "application/pdf";
@@ -37,8 +38,9 @@ class Mimetype {
     /** @var associative-array<string,Mimetype> */
     private static $tmap = [];
 
-    /** @var array<string,array{0:string,1:?string,2:int,3?:string,4?:string,5?:string}> */
-    private static $tinfo = [
+    /** @var array<string,array{0:string,1:?string,2:int,3?:string,4?:string,5?:string}>
+     * @readonly */
+    public static $tinfo = [
         self::TXT_TYPE =>     [".txt", "text", self::FLAG_INLINE | self::FLAG_COMPRESSIBLE | self::FLAG_TEXTUAL],
         self::PDF_TYPE =>     [".pdf", "PDF", self::FLAG_INLINE | self::FLAG_REQUIRE_SNIFF],
         self::PS_TYPE =>      [".ps", "PostScript", self::FLAG_COMPRESSIBLE],
@@ -73,30 +75,49 @@ class Mimetype {
         $this->flags = $flags;
     }
 
-    static function load_mime_types() {
-        if (!self::$mime_types_loaded) {
+    /** @param 0|1|2 $type */
+    static function load_mime_types($type = 0) {
+        if ($type === 2) {
+            self::$tmap = [];
+            self::$mime_types_loaded = false;
+        } else if (empty(self::$tmap)) {
+            foreach (self::$tinfo as $xtype => $data) {
+                $mt = new Mimetype($xtype, $data[0], $data[1], $data[2]);
+                self::$tmap[$xtype] = self::$tmap[$mt->extension] = $mt;
+                for ($i = 3; $i < count($data); ++$i) {
+                    self::$tmap[$data[$i]] = $mt;
+                }
+            }
+        }
+        if (!self::$mime_types_loaded && $type !== 1) {
             self::$mime_types_loaded = true;
             $t = (string) @file_get_contents(SiteLoader::find("lib/mime.types"));
-            preg_match_all('/^(|#!!\s+)([-a-z0-9]+\/\S+)[ \t]*(.*)/m', $t, $ms, PREG_SET_ORDER);
-            foreach ($ms as $mm) {
-                if (isset(self::$tmap[$mm[2]])) {
-                    continue;
-                }
-                if ($mm[1] === "") {
-                    $exts = [""];
-                    if ($mm[3]) {
-                        $exts = array_map(function ($x) { return ".{$x}"; },
-                                          preg_split('/\s+/', $mm[3]));
+            $t = preg_replace('/[ \t]+/', " ", $t);
+            foreach (explode("\n", $t) as $l) {
+                $a = explode(" ", trim($l));
+                if ($a[0] === "#!!" && count($a) >= 2) {
+                    if (!isset(self::$tmap[$a[1]])) {
+                        self::$tmap[$a[1]] = self::$tmap[$a[2] ?? self::BIN_TYPE];
                     }
-                    $mt = new Mimetype($mm[2], $exts[0]);
-                    self::$tmap[$mt->mimetype] = $mt;
-                    foreach ($exts as $ext) {
-                        if ($ext && !isset(self::$tmap[$ext]))
-                            self::$tmap[$ext] = $mt;
+                } else if (strpos($a[0], "/") !== false && $a[0][0] !== "#") {
+                    $x = $a[1] ?? "";
+                    $mt = new Mimetype($a[0], $x !== "" ? ".{$x}" : "");
+                    if (!isset(self::$tmap[$a[0]])) {
+                        self::$tmap[$a[0]] = $mt;
                     }
-                } else if (($mt = self::$tmap[trim($mm[3]) ? : self::BIN_TYPE]) ?? null) {
-                    self::$tmap[$mm[2]] = $mt;
+                    for ($i = 1; $i !== count($a); ++$i) {
+                        $x = $a[$i];
+                        if ($x !== "" && !isset(self::$tmap[".{$x}"]))
+                            self::$tmap[".{$x}"] = $mt;
+                    }
                 }
+            }
+        }
+        if ($type === 2) {
+            foreach (self::$tinfo as $xtype => $data) {
+                $mt = self::$tmap[$xtype];
+                $mt->description = $data[1];
+                $mt->flags = $data[2];
             }
         }
     }
@@ -124,15 +145,7 @@ class Mimetype {
         if (is_object($type)) {
             return $type;
         }
-        if (empty(self::$tmap)) {
-            foreach (self::$tinfo as $xtype => $data) {
-                $m = new Mimetype($xtype, $data[0], $data[1], $data[2]);
-                self::$tmap[$xtype] = self::$tmap[$m->extension] = $m;
-                for ($i = 3; $i < count($data); ++$i) {
-                    self::$tmap[$data[$i]] = $m;
-                }
-            }
-        }
+        self::$tmap || self::load_mime_types(1);
         if (array_key_exists($type, self::$tmap)) {
             return self::$tmap[$type];
         }

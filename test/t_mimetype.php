@@ -39,6 +39,21 @@ class Mimetype_Tester {
         xassert_eqq($ci["height"] ?? null, 85);
     }
 
+    function test_builtins_match() {
+        Mimetype::load_mime_types(2);
+        foreach (Mimetype::$tinfo as $tname => $tdata) {
+            $mt = Mimetype::lookup($tname);
+            xassert_eqq($mt->mimetype, $tname);
+            xassert_eqq($mt->extension, $tdata[0]);
+            $mt = Mimetype::lookup($tdata[0]);
+            xassert_eqq($mt->mimetype, $tname);
+            for ($i = 3; $i < count($tdata); ++$i) {
+                $mt = Mimetype::lookup($tdata[$i]);
+                xassert_eqq($mt->mimetype, $tname);
+            }
+        }
+    }
+
     function xxx_test_mp4() {
         foreach (glob("/Users/kohler/Downloads/sigcomm23-10_minute_presentation_video/*.mp4") as $f) {
             $mt = ISOVideoMimetype::make_file($f)->set_verbose(true);
