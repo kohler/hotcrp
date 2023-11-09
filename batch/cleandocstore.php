@@ -30,6 +30,8 @@ class CleanDocstore_Batch {
     public $dry_run;
     /** @var bool */
     public $keep_temp;
+    /** @var int */
+    public $cutoff;
     /** @var DocumentHashMatcher */
     public $hash_matcher;
     /** @var list<?DocumentFileTree> */
@@ -47,6 +49,7 @@ class CleanDocstore_Batch {
         $this->verbose = isset($arg["verbose"]);
         $this->dry_run = isset($arg["dry-run"]);
         $this->keep_temp = isset($arg["keep-temp"]);
+        $this->cutoff = isset($arg["all"]) ? Conf::$now + 86400 : Conf::$now - 86400;
         $this->hash_matcher = new DocumentHashMatcher($arg["match"] ?? null);
     }
 
@@ -64,7 +67,7 @@ class CleanDocstore_Batch {
                 $fm = $ftree->random_match();
                 if ($fm->is_complete()
                     && (($fm->treeid & 1) === 0
-                        || max($fm->atime(), $fm->mtime()) < Conf::$now - 86400)) {
+                        || max($fm->atime(), $fm->mtime()) < $this->cutoff)) {
                     ++$n;
                     $fmatches[] = $fm;
                 } else {
@@ -223,6 +226,7 @@ class CleanDocstore_Batch {
             "dry-run,d Do not remove files",
             "max-usage:,u: {f} =FRAC Clean until usage is below FRAC",
             "min-usage:,U: {f} =FRAC Do not clean if usage is below FRAC",
+            "all Clean all files, including files recently modified",
             "quiet,silent,q",
             "keep-temp",
             "docstore"
