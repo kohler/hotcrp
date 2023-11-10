@@ -109,7 +109,7 @@ Usage: php batch/s3transfer.php [--active] [--kill] [-m MATCH]")
          ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
-        if (!$conf->setting_data("s3_bucket")) {
+        if (!$conf->s3_client()) {
             throw new ErrorException("S3 is not configured for this conference");
         }
         return new S3Transfer_Batch($conf, $arg);

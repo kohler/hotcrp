@@ -140,7 +140,7 @@ Usage: php batch/s3verifyall.php [-n CONFID | --config CONFIG] [-c COUNT] [-m MA
          ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
-        if (!$conf->setting_data("s3_bucket")) {
+        if (!$conf->s3_client()) {
             throw new ErrorException("S3 is not configured for this conference");
         }
         return new S3VerifyAll_Batch($conf, $arg);
