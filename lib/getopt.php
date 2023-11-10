@@ -237,27 +237,27 @@ class Getopt {
             } else {
                 $help = $po->help ?? "";
             }
-            if (!isset($od[$maint])) {
-                if ($help !== ""
-                    && $help[0] === "="
-                    && preg_match('/\A=([A-Z]\S*)\s*/', $help, $m)) {
-                    $argname = $m[1];
-                    $help = substr($help, strlen($m[0]));
-                } else {
-                    $argname = "ARG";
-                }
-                if ($help === "!"
-                    || ($subtype && !str_starts_with($help, "!{$subtype}"))
-                    || (!$subtype && str_starts_with($help, "!"))) {
+            if ($help !== ""
+                && $help[0] === "="
+                && preg_match('/\A=([A-Z]\S*)\s*/', $help, $m)) {
+                $argname = $m[1];
+                $help = substr($help, strlen($m[0]));
+            } else {
+                $argname = "ARG";
+            }
+            if ($help === "!"
+                || ($subtype && !str_starts_with($help, "!{$subtype}"))
+                || (!$subtype && str_starts_with($help, "!"))) {
+                continue;
+            }
+            if ($subtype) {
+                $help = substr($help, strlen($subtype) + 1);
+                if ($help !== "" && !str_starts_with($help, " ")) {
                     continue;
                 }
-                if ($subtype) {
-                    $help = substr($help, strlen($subtype) + 1);
-                    if ($help !== "" && !str_starts_with($help, " ")) {
-                        continue;
-                    }
-                    $help = ltrim($help);
-                }
+                $help = ltrim($help);
+            }
+            if (!isset($od[$maint])) {
                 if ($po->arg === self::ARG || $po->arg === self::MARG) {
                     $arg = " {$argname}";
                 } else if ($po->arg === self::MARG2) {
