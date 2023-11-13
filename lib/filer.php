@@ -475,7 +475,7 @@ class Filer {
             if (!is_readable($path)) {
                 // clean up old files saved w/o extension
                 $g = self::_expand_docstore($pattern, $doc, false);
-                if ($path && $g !== $path && is_readable($g)) {
+                if ($g && $g !== $path && is_readable($g)) {
                     if (!@rename($g, $path)) {
                         $path = $g;
                     }
@@ -533,7 +533,7 @@ class Filer {
         }
         // Ensure an .htaccess file exists, even if someone else made the
         // filestore directory
-        $htaccess = "$parent/.htaccess";
+        $htaccess = "{$parent}/.htaccess";
         if (!is_file($htaccess)
             && @file_put_contents($htaccess, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder deny,allow\nDeny from all\n</IfModule>\n") === false) {
             @unlink($htaccess);
@@ -546,7 +546,7 @@ class Filer {
     static function docstore_tmpdir(Conf $conf = null) {
         $conf = $conf ?? Conf::$main;
         if (($prefix = self::docstore_fixed_prefix($conf->docstore()))) {
-            $tmpdir = $prefix . "tmp/";
+            $tmpdir = "{$prefix}tmp/";
             '@phan-var non-empty-string $tmpdir';
             if (self::prepare_docstore($prefix, $tmpdir)) {
                 return $tmpdir;
@@ -555,6 +555,9 @@ class Filer {
         return null;
     }
 
+    /** @param string $pattern
+     * @param bool $extension
+     * @return ?string */
     static private function _expand_docstore($pattern, DocumentInfo $doc, $extension) {
         $x = "";
         $hash = false;
@@ -570,7 +573,7 @@ class Filer {
             } else {
                 if ($hash === false
                     && ($hash = $doc->text_hash()) === false) {
-                    return false;
+                    return null;
                 }
                 if ($fn === "h" && $fwidth === "") {
                     $x .= $hash;
@@ -600,6 +603,9 @@ class Filer {
         return $x . $pattern;
     }
 
+    /** @param string $fdir
+     * @param string $fpath
+     * @return ?string */
     static private function _make_fpath_parents($fdir, $fpath) {
         $lastslash = strrpos($fpath, "/");
         $container = substr($fpath, 0, $lastslash);
@@ -610,10 +616,12 @@ class Filer {
             if (strlen($container) < strlen($fdir)
                 || !($parent = self::_make_fpath_parents($fdir, $container))
                 || !@mkdir($container, 0770)) {
-                return false;
+                error_log("Cannot initialize docstore directory {$container}");
+                return null;
             } else if (!@chmod($container, 02770 & fileperms($parent))) {
                 @rmdir($container);
-                return false;
+                error_log("Cannot set permissions on docstore directory {$container}");
+                return null;
             }
         }
         return $container;
