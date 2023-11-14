@@ -100,6 +100,9 @@ class DocumentBasics_Tester {
         $this->conf->save_refresh_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
         xassert_eqq(Filer::docstore_path($doc), "/foo/bar/sha2-66a/sha2-66a04/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18");
         xassert_eqq($doc->s3_key(), "doc/66a/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.txt");
+
+        $this->conf->save_setting("opt.docstore", null);
+        $this->conf->save_refresh_setting("opt.docstoreSubdir", null);
     }
 
     function test_create_s3() {

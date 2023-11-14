@@ -287,7 +287,9 @@ class Upload_API {
             $this->_update_hashctx($offset, substr($data, $pos, $nbytes));
             $this->modify_capd(function ($d) use ($offset, $nbytes) {
                 $d->ranges = Upload_API::add_range($d->ranges, $offset, $offset + $nbytes);
-                if ($this->_hashctx && $d->hashpos === $offset) {
+                if ($this->_hashctx
+                    && $d->hashpos === $offset
+                    && PHP_VERSION_ID >= 80000) {
                     $d->hashctx = base64_encode(serialize($this->_hashctx));
                     $d->crc32ctx = base64_encode(serialize($this->_crc32ctx));
                     $d->hashpos = $this->_hashpos;
