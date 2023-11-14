@@ -5255,6 +5255,7 @@ handle_ui.on("row-order-append", function () {
     }
     row = row_add(group, null, this);
     row_fill(row, nr);
+    focus_within(row);
 });
 
 $(function () {

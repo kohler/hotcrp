@@ -4169,6 +4169,9 @@ h3.pavfn, h3.psfn {
 	font-size: 1.17em;
 	color: #d41743;
 }
+.papcard > .msg + #foldpaper {
+	margin-top: 3rem;
+}
 
 /* reviews */
 .revcard {

@@ -48,15 +48,13 @@ class PaperTable {
     /** @var bool */
     private $allreviewslink;
 
-    /** @var bool
+    /** @var 0|1|2
      * @readonly */
-    public $editable = false;
+    private $edit_mode = 0;
     /** @var bool */
     private $useRequest;
     /** @var ?PaperStatus */
     private $edit_status;
-    /** @var list<PaperOption> */
-    private $edit_fields;
     /** @var bool */
     public $settings_mode = false;
 
@@ -334,14 +332,20 @@ class PaperTable {
         return $list;
     }
 
-    /** @param bool $editable
-     * @param bool $useRequest
+    /** @param bool $useRequest
      * @suppress PhanAccessReadOnlyProperty */
-    function set_edit_status(PaperStatus $status, $editable, $useRequest) {
+    function set_edit_status(PaperStatus $status, $useRequest) {
         assert($this->mode === "edit" && !$this->edit_status);
-        $this->editable = $editable;
-        $this->useRequest = $useRequest;
         $this->edit_status = $status;
+        if ($this->user->can_edit_paper($this->prow)) {
+            $this->edit_mode = 2;
+        } else if ($this->prow->has_author($this->user)
+                   && $this->prow->paperId > 0) {
+            $this->edit_mode = 1;
+        } else {
+            $this->edit_mode = 0;
+        }
+        $this->useRequest = $useRequest;
     }
 
     function set_review_values(ReviewValues $rvalues = null) {
@@ -368,7 +372,7 @@ class PaperTable {
         $require_folds = $this->mode === "re" || $this->mode === "assign";
         $this->allow_folds = $require_folds
             || ($this->mode === "p" && $this->can_view_reviews && !empty($this->all_rrows))
-            || ($this->mode === "edit" && !$this->editable);
+            || ($this->mode === "edit" && $this->edit_mode === 0);
 
         // 4="t": topics, 6="b": abstract, 7: [JavaScript abstract expansion],
         // 8="a": blind authors, 9="p": full authors
@@ -527,7 +531,8 @@ class PaperTable {
         }
         echo '</h3>';
         $this->print_field_description($opt);
-        if (!$input || ($this->admin && !$opt->test_editable($this->prow))) {
+        if ((!$input && $this->edit_mode === 2)
+            || ($this->admin && !$opt->test_editable($this->prow))) {
             echo MessageSet::feedback_html([MessageItem::marked_note($input ? "<0>Only administrators can edit this field." : "<0>This field is not currently editable.")]);
         }
         if ($input) {
@@ -689,7 +694,7 @@ class PaperTable {
 
     /** @param PaperOption $o */
     function render_submission(FieldRender $fr, $o) {
-        assert(!$this->editable && $o->id == 0);
+        assert($this->edit_mode === 0 && $o->id === 0);
         $fr->title = false;
         $fr->value = "";
         $fr->value_format = 5;
@@ -1077,7 +1082,7 @@ class PaperTable {
 
         // contacts
         if (!empty($contacts)
-            && ($this->editable
+            && ($this->edit_mode > 0
                 || $this->mode !== "edit"
                 || $this->prow->timeSubmitted <= 0)) {
             $contacts_option = $this->conf->option_by_id(PaperOption::CONTACTSID);
@@ -1456,7 +1461,7 @@ class PaperTable {
     }
 
     private function _print_ps_pc_conflicts() {
-        assert(!$this->editable && $this->prow->paperId);
+        assert($this->edit_mode === 0 && $this->prow->paperId);
         $pcconf = [];
         $this->conf->pc_members(); // to ensure pc_index is set
         foreach ($this->prow->conflict_list() as $cu) {
@@ -1951,9 +1956,9 @@ class PaperTable {
             }
         } else if ($this->mode === "edit") {
             if ($this->user->can_withdraw_paper($this->prow, true)) {
-                $t = "<5>This {$this->conf->snouns[0]} is under review and can’t be changed, but you can change its contacts or withdraw it from consideration.";
+                $t = "<5>This {$this->conf->snouns[0]} is under review and can’t be changed, but you can <a href=\"#contacts\">change its contacts</a> or withdraw it from consideration.";
             } else {
-                $t = "<5>This {$this->conf->snouns[0]} is under review and can’t be changed or withdrawn, but you can change its contacts.";
+                $t = "<5>This {$this->conf->snouns[0]} is under review and can’t be changed or withdrawn, but you can <a href=\"#contacts\">change its contacts</a>.";
             }
             $this->_main_message($t . $this->_deadline_override_message(), MessageSet::MARKED_NOTE);
         }
@@ -2001,11 +2006,12 @@ class PaperTable {
             $this->_main_message($v, 0);
         }
         if ($this->edit_status->has_problem()
-            && ($this->edit_status->has_problem_at("contacts") || $this->editable)) {
+            && $this->edit_mode > 1) {
             $fields = [];
             $maxps = 0;
-            foreach ($this->edit_fields as $o) {
-                if (($ps = $this->edit_status->problem_status_at($o->formid)) > 0) {
+            foreach ($this->prow->form_fields() as $o) {
+                if ($this->user->can_edit_option($this->prow, $o)
+                    && ($ps = $this->edit_status->problem_status_at($o->formid)) > 0) {
                     $fields[] = $o;
                     $maxps = max($maxps, $ps);
                 }
@@ -2023,8 +2029,8 @@ class PaperTable {
             $this->_edit_message_existing_paper();
         }
         if ($include_required && !$this->quit) {
-            foreach ($this->edit_fields as $e) {
-                if ($e->required) {
+            foreach ($this->prow->form_fields() as $o) {
+                if ($o->required) {
                     $this->_main_message('<5><span class="field-required-explanation">* Required</span>', 0);
                     break;
                 }
@@ -2156,10 +2162,10 @@ class PaperTable {
             }
         }
         $this->papstripWatch();
-        if ($this->user->can_view_conflicts($this->prow) && !$this->editable) {
+        if ($this->user->can_view_conflicts($this->prow) && $this->edit_mode === 0) {
             $this->_print_ps_pc_conflicts();
         }
-        if ($this->user->allow_view_authors($this->prow) && !$this->editable) {
+        if ($this->user->allow_view_authors($this->prow) && $this->edit_mode === 0) {
             $this->_print_ps_collaborators();
         }
         if ($this->user->can_set_decision($this->prow)) {
@@ -2288,7 +2294,7 @@ class PaperTable {
         if ($this->prow->timeSubmitted > 0) {
             $form_js["data-submitted"] = $this->prow->timeSubmitted;
         }
-        if ($this->prow->paperId && !$this->editable) {
+        if ($this->prow->paperId && $this->edit_mode === 1) {
             $form_js["data-contacts-only"] = 1;
         }
         if ($this->useRequest) {
@@ -2308,7 +2314,8 @@ class PaperTable {
                 continue;
             }
             $ov = $this->prow->force_option($o);
-            if (!$this->user->can_edit_option($this->prow, $o)) {
+            if (!$this->user->can_edit_option($this->prow, $o)
+                || ($o->id !== PaperOption::CONTACTSID && $this->edit_mode === 1)) {
                 $fr->clear();
                 $o->render($fr, $ov);
                 if ($fr->value === "") {
@@ -2342,13 +2349,6 @@ class PaperTable {
         echo '<div class="pedcard-head"><h2><span class="pedcard-header-name">',
             $this->conf->_c5("paper_edit", $this->prow->paperId ? "<0>Edit {sclass} {submission}" : "<0>New {sclass} {submission}", new FmtArg("sclass", $sr->tag)),
             '</span></h2></div>';
-
-        $this->edit_fields = array_values(array_filter(
-            $this->prow->form_fields(),
-            function ($o) {
-                return $this->user->can_edit_option($this->prow, $o);
-            }
-        ));
 
         $this->_print_pre_status_feedback();
         $this->_print_edit_messages(true);
@@ -2416,7 +2416,7 @@ class PaperTable {
 
         echo '<div class="pcard papcard">';
         $saved_status = $this->conf->report_saved_messages();
-        if ($this->editable && !$this->user->can_clickthrough("submit")) {
+        if ($this->edit_mode === 2 && !$this->user->can_clickthrough("submit")) {
             echo '<div id="foldpaper js-clickthrough-container">',
                 '<div class="js-clickthrough-terms">',
                 '<h2>Submission terms</h2>',
@@ -2425,8 +2425,8 @@ class PaperTable {
             echo '</div><div class="need-clickthrough-show hidden">';
             $this->_print_editable_body();
             echo '</div></div>';
-        } else if ($this->editable || $this->prow->paperId <= 0) {
-            echo '<div id="foldpaper"', $saved_status ? ' class="mt-6"' : '', '>';
+        } else if ($this->edit_mode > 0 || $this->prow->paperId <= 0) {
+            echo '<div id="foldpaper">';
             $this->_print_editable_body();
             echo '</div>';
         } else {
@@ -2434,25 +2434,7 @@ class PaperTable {
         }
         echo '</div>';
 
-        if (!$this->editable && $this->mode === "edit" && $this->prow->paperId > 0) {
-            echo '<div class="pcard papcard">',
-                '<div class="pedcard-head"><h2><span class="pedcard-header-name">Edit Contacts</span></h2></div>';
-            $this->_print_edit_messages(false);
-            $this->_print_editable_form();
-            $o = $this->conf->option_by_id(PaperOption::CONTACTSID);
-            assert($o instanceof Contacts_PaperOption);
-            $ov = $reqov = $this->prow->force_option($o);
-            if ($this->useRequest
-                && $this->qreq["has_{$o->formid}"]
-                && ($x = $o->parse_qreq($this->prow, $this->qreq))) {
-                $reqov = $x;
-            }
-            $o->print_web_edit($this, $ov, $reqov);
-            $this->print_actions();
-            echo '</form></div>';
-        }
-
-        if (!$this->editable
+        if ($this->edit_mode === 0
             && $this->mode !== "edit"
             && $this->user->act_author_view($this->prow)
             && !$this->user->contactId) {
@@ -2971,7 +2953,7 @@ class PaperTable {
     }
 
     function paptabEndWithReviewMessage() {
-        assert(!$this->editable);
+        assert($this->edit_mode === 0);
 
         $m = [];
         if ($this->all_rrows

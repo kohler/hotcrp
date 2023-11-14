@@ -127,8 +127,9 @@ class PaperStatus extends MessageSet {
         return $this->error_at($key, "<0>Validation error [{$key}]");
     }
 
-    /** @return list<MessageItem> */
-    function decorated_message_list() {
+    /** @param ?list<int> $oids
+     * @return list<MessageItem> */
+    function decorated_message_list($oids = null) {
         $ms = [];
         foreach ($this->message_list() as $mi) {
             if (($mi->field ?? "") !== ""
@@ -138,8 +139,10 @@ class PaperStatus extends MessageSet {
             } else if ($mi->field
                        && $mi->message !== ""
                        && ($o = $this->conf->options()->option_by_field_key($mi->field))) {
-                $link = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
-                $ms[] = $mi->with(["message" => "<5>{$link}: " . $mi->message_as(5)]);
+                if ($oids === null || in_array($o->id, $oids)) {
+                    $link = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
+                    $ms[] = $mi->with(["message" => "<5>{$link}: " . $mi->message_as(5)]);
+                }
             } else {
                 $ms[] = $mi;
             }

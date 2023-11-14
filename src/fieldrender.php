@@ -156,18 +156,18 @@ class FieldRender {
         } else if ($this->value_format === 0) {
             if ($this->value_long) {
                 $html = Ht::format0($this->value);
-                $divclass = $divclass ? "format0 " . $divclass : "format0";
+                $divclass = $divclass ? "format0 {$divclass}" : "format0";
             } else {
                 $html = htmlspecialchars($this->value);
             }
         } else {
             $html = htmlspecialchars($this->value);
-            $divclass = $divclass ? "need-format " . $divclass : "need-format";
-            $rest = ' data-format="' . $this->value_format . '"';
+            $divclass = $divclass ? "need-format {$divclass}" : "need-format";
+            $rest = " data-format=\"{$this->value_format}\"";
         }
         if ($divclass || $rest) {
-            $html = '<div' . ($divclass ? ' class="' . $divclass . '"' : "")
-                . $rest . '>' . $html . '</div>';
+            $divclass = $divclass ? " class=\"{$divclass}\"" : "";
+            $html = "<div{$divclass}{$rest}>{$html}</div>";
         }
         return $html;
     }

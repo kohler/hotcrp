@@ -33,7 +33,7 @@ class Nonblind_PaperOption extends PaperOption {
         }
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        if ($pt->editable !== "f") {
+        if ($ov->prow->phase() !== PaperInfo::PHASE_FINAL) {
             $cb = Ht::checkbox("blind", 1, !$reqov->value, [
                 "id" => false,
                 "data-default-checked" => !$ov->value

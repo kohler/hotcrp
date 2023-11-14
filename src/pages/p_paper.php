@@ -358,6 +358,7 @@ class Paper_Page {
         if (!$this->ps->has_error() || ($is_new && $new_prow)) {
             $conf->redirect_self($this->qreq, ["p" => $new_prow->paperId, "m" => "edit"]);
         }
+        $this->useRequest = false;
     }
 
     function handle_updatecontacts() {
@@ -373,23 +374,24 @@ class Paper_Page {
         $this->ps = new PaperStatus($this->user);
         $this->qreq["status:phase"] = "contacts";
         if (!$this->ps->prepare_save_paper_web($this->qreq, $this->prow)) {
-            $conf->feedback_msg($this->ps);
+            $conf->feedback_msg($this->ps->decorated_message_list([PaperOption::CONTACTSID]));
             return;
         }
 
         if (!$this->ps->has_change()) {
             $this->ps->prepend_msg($conf->_("<0>No changes", $this->prow->paperId), MessageSet::WARNING_NOTE);
             $this->ps->warning_at(null, "");
-            $conf->feedback_msg($this->ps);
+            $conf->feedback_msg($this->ps->decorated_message_list([PaperOption::CONTACTSID]));
         } else if ($this->ps->execute_save()) {
             $this->ps->prepend_msg($conf->_("<0>Updated contacts", $this->prow->paperId), MessageSet::SUCCESS);
-            $conf->feedback_msg($this->ps);
+            $conf->feedback_msg($this->ps->decorated_message_list([PaperOption::CONTACTSID]));
             $this->ps->log_save_activity();
         }
 
         if (!$this->ps->has_error()) {
             $conf->redirect_self($this->qreq);
         }
+        $this->useRequest = false;
     }
 
     private function prepare_edit_mode() {
@@ -408,8 +410,7 @@ class Paper_Page {
             $this->prow->set_allow_absent(false);
         }
 
-        $editable = $this->user->can_edit_paper($this->prow);
-        $this->pt->set_edit_status($this->ps, $editable, $editable && $this->useRequest);
+        $this->pt->set_edit_status($this->ps, $this->useRequest);
     }
 
     /** @param int $capuid */
