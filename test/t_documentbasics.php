@@ -103,6 +103,7 @@ class DocumentBasics_Tester {
 
         $this->conf->save_setting("opt.docstore", null);
         $this->conf->save_refresh_setting("opt.docstoreSubdir", null);
+        xassert_eqq($this->conf->docstore(), null);
     }
 
     function test_create_s3() {

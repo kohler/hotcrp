@@ -790,10 +790,12 @@ class Conf {
         }
         if ($change && str_starts_with($name, "opt.")) {
             $oname = substr($name, 4);
+            if (!array_key_exists($oname, $this->opt_override)) {
+                $this->opt_override[$oname] = $this->opt[$oname] ?? null;
+            }
             if ($value === null && $data === null) {
                 $this->opt[$oname] = $this->opt_override[$oname] ?? null;
             } else {
-                $this->opt_override[$oname] = $this->opt[$oname] ?? null;
                 $this->opt[$oname] = $data === null ? $value : $data;
             }
         }
