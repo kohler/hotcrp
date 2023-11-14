@@ -814,13 +814,13 @@ class DocumentInfo implements JsonSerializable {
                 || ($this->s3_upgrade_extension($s3, $s3k) && $s3->head($s3k)));
     }
 
-    /** @return ?bool */
-    function store_s3() {
-        if (!($s3 = $this->conf->s3_client())
-            || !($s3k = $this->s3_key())) {
-            return null;
-        }
-        $meta = ["conf" => $this->conf->dbname, "pid" => $this->paperId, "dtype" => $this->documentType];
+    /** @return array<string,string> */
+    function s3_user_data() {
+        $meta = [
+            "conf" => $this->conf->dbname,
+            "pid" => $this->paperId,
+            "dtype" => $this->documentType
+        ];
         if ($this->filterType) {
             $meta["filtertype"] = $this->filterType;
             if ($this->sourceHash != "") {
@@ -836,11 +836,23 @@ class DocumentInfo implements JsonSerializable {
         if (($this->height ?? -1) >= 0) {
             $meta["height"] = $this->height;
         }
-        $user_data = ["hotcrp" => json_encode_db($meta)];
+        return ["hotcrp" => json_encode_db($meta)];
+    }
 
-        if ($s3->head_size($s3k) === $this->size()
-            || (($path = $this->available_content_file())
-                && $s3->put_file($s3k, $path, $this->mimetype, $user_data))) {
+    /** @return ?bool */
+    function store_s3() {
+        if (!($s3 = $this->conf->s3_client())
+            || !($s3k = $this->s3_key())) {
+            return null;
+        }
+
+        if ($s3->head_size($s3k) === $this->size()) {
+            return true;
+        }
+
+        $user_data = $this->s3_user_data();
+        if (($path = $this->available_content_file())
+            && $s3->put_file($s3k, $path, $this->mimetype, $user_data)) {
             return true;
         }
 
@@ -994,7 +1006,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @param int $prefix_len
      * @return string|false */
-    function content_prefix($prefix_len = 4096) {
+    function content_prefix($prefix_len) {
         if (!$this->ensure_content()) {
             return false;
         } else if ($this->content !== null) {
@@ -1039,7 +1051,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return string */
     function content_mimetype() {
-        return Mimetype::content_type($this->content_prefix(), $this->mimetype);
+        return Mimetype::content_type($this->content_prefix(4096), $this->mimetype);
     }
 
 

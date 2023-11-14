@@ -330,10 +330,10 @@ function clean_tempdirs() {
     $now = time();
     while (($fname = readdir($dirh)) !== false) {
         if (preg_match('/\Ahotcrptmp\d+\z/', $fname)
-            && is_dir("$dir/$fname")
-            && ($mtime = @filemtime("$dir/$fname")) !== false
+            && is_dir("{$dir}/{$fname}")
+            && ($mtime = @filemtime("{$dir}/{$fname}")) !== false
             && $mtime < $now - 1800)
-            rm_rf_tempdir("$dir/$fname");
+            rm_rf_tempdir("{$dir}/{$fname}");
     }
     closedir($dirh);
 }

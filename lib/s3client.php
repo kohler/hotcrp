@@ -9,14 +9,18 @@ class S3Client {
         "content-encoding" => true, "expires" => true
     ];
 
-    /** @var string */
-    private $s3_bucket;
-    /** @var string */
-    private $s3_key;
-    /** @var string */
-    private $s3_secret;
-    /** @var string */
-    private $s3_region;
+    /** @var string
+     * @readonly */
+    public $s3_bucket;
+    /** @var string
+     * @readonly */
+    public $s3_key;
+    /** @var string
+     * @readonly */
+    public $s3_secret;
+    /** @var string
+     * @readonly */
+    public $s3_region;
     /** @var ?Conf */
     private $setting_cache;
     /** @var string */
@@ -38,6 +42,18 @@ class S3Client {
     static private $instances = [];
     /** @var bool */
     static public $verbose = false;
+
+    /** @var array<string,string>
+     * @readonly */
+    static public $content_headers = [
+        "content" => false,
+        "content_file" => false,
+        "content_type" => "Content-Type",
+        "content_encoding" => "Content-Encoding",
+        "content_disposition" => "Content-Disposition"
+    ];
+
+    const CONFIRM_DELETE_BUCKET = 1203498141;
 
     function __construct($opt = []) {
         $this->s3_key = $opt["key"];
@@ -129,9 +145,9 @@ class S3Client {
                 if (($pos = strpos($x, "=")) !== false) {
                     $k = substr($x, 0, $pos);
                     $v = rawurlencode(urldecode(substr($x, $pos + 1)));
-                    $a[$k] = "$k=$v";
+                    $a[$k] = "{$k}={$v}";
                 } else {
-                    $a[$x] = "$x=";
+                    $a[$x] = "{$x}=";
                 }
             }
             ksort($a);
@@ -141,9 +157,7 @@ class S3Client {
         $chdr = ["Host" => $host];
         foreach ($hdr as $k => $v) {
             if (strcasecmp($k, "host") !== 0
-                && $k !== "content"
-                && $k !== "content_file"
-                && $k !== "content_type") {
+                && !isset(self::$content_headers[$k])) {
                 $v = trim($v);
                 $chdr[$k] = $v;
             }
@@ -199,8 +213,10 @@ class S3Client {
         foreach ($chdr as $k => $v) {
             $hdrarr[] = "{$k}: {$v}";
         }
-        if (isset($hdr["content_type"])) {
-            $hdrarr[] = "Content-Type: " . $hdr["content_type"];
+        foreach (self::$content_headers as $k => $v) {
+            if ($v && isset($hdr[$k])) {
+                $hdrarr[] = "{$v}: {$hdr[$k]}";
+            }
         }
         $hdrarr[] = "Authorization: AWS4-HMAC-SHA256 Credential="
             . "{$this->s3_key}/{$scope},SignedHeaders=" . substr($chk, 1)
@@ -213,7 +229,8 @@ class S3Client {
      * @param array<string,string|array<string,string>> $args
      * @return array{string,list<string>} */
     function signed_headers($skey, $method, $args) {
-        $url = "https://{$this->s3_bucket}.s3.amazonaws.com/{$skey}";
+        $sep = str_starts_with($skey, "/") ? "" : "/";
+        $url = "https://{$this->s3_bucket}.s3.{$this->s3_region}.amazonaws.com{$sep}{$skey}";
         $hdr = ["Date" => gmdate("D, d M Y H:i:s", $this->fixed_time ?? time()) . " GMT"];
         foreach ($args as $key => $value) {
             if ($key === "user_data") {
@@ -244,6 +261,16 @@ class S3Client {
         return new $klass($this, $skey, $method, $args, $finisher);
     }
 
+    /** @return S3Result<bool> */
+    function start_create_bucket() {
+        return $this->start("/", "PUT", ["content" => ""]);
+    }
+
+    /** @return S3Result<bool> */
+    function start_delete_bucket() {
+        return $this->start("/", "DELETE", []);
+    }
+
     /** @return int */
     static function finish_head_size(S3Result $s3r) {
         if ($s3r->status === 200
@@ -252,6 +279,28 @@ class S3Client {
         } else {
             return -1;
         }
+    }
+
+    /** @return bool */
+    static function verbose_success_finisher(S3Result $s3r) {
+        error_log($s3r->status . " " . json_encode($s3r->response_headers) . "\n" . $s3r->response_body());
+        return S3Result::success_finisher($s3r);
+    }
+
+    /** @param array<string,mixed> $args
+     * @param array<string,mixed> $user_data
+     * @return array<string,mixed> */
+    static function assign_user_data($args, $user_data) {
+        foreach (self::$content_headers as $k => $v) {
+            if (isset($user_data[$k])) {
+                $args[$k] = $user_data[$k];
+                unset($user_data[$k]);
+            }
+        }
+        if (!empty($user_data)) {
+            $args["user_data"] = $user_data;
+        }
+        return $args;
     }
 
     /** @param string $skey
@@ -299,9 +348,8 @@ class S3Client {
      * @param array<string,string> $user_data
      * @return S3Result<bool> */
     function start_put($skey, $content, $content_type, $user_data = []) {
-        return $this->start($skey, "PUT", ["content" => $content,
-                                           "content_type" => $content_type,
-                                           "user_data" => $user_data]);
+        $args = ["content" => $content, "content_type" => $content_type];
+        return $this->start($skey, "PUT", self::assign_user_data($args, $user_data));
     }
 
     /** @param string $skey
@@ -310,22 +358,35 @@ class S3Client {
      * @param array<string,string> $user_data
      * @return S3Result<bool> */
     function start_put_file($skey, $content_file, $content_type, $user_data = []) {
-        return $this->start($skey, "PUT", ["content_file" => $content_file,
-                                           "content_type" => $content_type,
-                                           "user_data" => $user_data]);
+        $args = ["content_file" => $content_file, "content_type" => $content_type];
+        return $this->start($skey, "PUT", self::assign_user_data($args, $user_data));
     }
 
     /** @param string $src_skey
      * @param string $dst_skey
+     * @param ?array{content_type:string} $user_data
      * @return S3Result<bool> */
-    function start_copy($src_skey, $dst_skey) {
-        return $this->start($dst_skey, "PUT", ["x-amz-copy-source" => "/{$this->s3_bucket}/{$src_skey}"]);
+    function start_copy($src_skey, $dst_skey, $user_data = null) {
+        $args = ["x-amz-copy-source" => "/{$this->s3_bucket}/{$src_skey}"];
+        if ($user_data !== null) {
+            $args["x-amz-metadata-directive"] = "REPLACE";
+            $args = self::assign_user_data($args, $user_data);
+        }
+        return $this->start($dst_skey, "PUT", $args);
     }
 
     /** @param string $skey
      * @return S3Result<bool> */
     function start_delete($skey) {
         return $this->start($skey, "DELETE", []);
+    }
+
+    /** @param string $content
+     * @return S3Result<bool> */
+    function start_delete_many($content) {
+        return $this->start("/?delete", "POST", ["content" => $content,
+                                                 "content_type" => "application/xml",
+                                                 "Content-MD5" => base64_encode(md5($content, true))]);
     }
 
     /** @param string $prefix
@@ -354,7 +415,8 @@ class S3Client {
      * @param array<string,string> $user_data
      * @return S3Result<string|false> */
     function start_multipart_create($skey, $content_type, $user_data = []) {
-        return $this->start("{$skey}?uploads", "POST", ["content_type" => $content_type, "user_data" => $user_data], "S3Client::finish_multipart_create");
+        $args = ["content_type" => $content_type];
+        return $this->start("{$skey}?uploads", "POST", self::assign_user_data($args, $user_data), "S3Client::finish_multipart_create");
     }
 
     /** @param string $skey
@@ -365,12 +427,24 @@ class S3Client {
         $content = '<?xml version="1.0" encoding="UTF-8"?>
 <CompleteMultipartUpload xmlns="http://s3.amazonaws.com/doc/2006-03-01/">';
         foreach ($etags as $i => $etag) {
-            $content .= "\n  <Part><ETag>$etag</ETag><PartNumber>" . ($i + 1) . "</PartNumber></Part>";
+            $content .= "\n  <Part><ETag>{$etag}</ETag><PartNumber>" . ($i + 1) . "</PartNumber></Part>";
         }
         $content .= "\n</CompleteMultipartUpload>\n";
-        return $this->start("{$skey}?uploadId=$uploadid", "POST", ["content" => $content, "content_type" => "application/xml"]);
+        return $this->start("{$skey}?uploadId={$uploadid}", "POST", ["content" => $content, "content_type" => "application/xml"]);
     }
 
+
+    /** @return bool */
+    function create_bucket() {
+        return $this->start_create_bucket()->finish();
+    }
+
+    /** @param int $confirm
+     * @return bool */
+    function delete_bucket($confirm) {
+        return $confirm === self::CONFIRM_DELETE_BUCKET
+            && $this->start_delete_bucket()->finish();
+    }
 
     /** @param string $skey
      * @return bool */
@@ -394,7 +468,7 @@ class S3Client {
      * @param string $accel */
     function get_accel_redirect($skey, $accel) {
         list($url, $hdr) = $this->signed_headers($skey, "GET", []);
-        header("X-Accel-Redirect: $accel$url");
+        header("X-Accel-Redirect: {$accel}{$url}");
         foreach ($hdr as $h) {
             header($h);
         }
@@ -424,11 +498,30 @@ class S3Client {
         return $this->start_delete($skey)->finish();
     }
 
+    /** @param list<string> $skeys
+     * @return bool */
+    function delete_many($skeys) {
+        $i = 0;
+        while ($i < count($skeys)) {
+            $j = min(1000, count($skeys) - $i);
+            $l = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Delete xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">\n"];
+            for (; $i < $j; ++$i) {
+                $l[] = "<Object><Key>" . htmlspecialchars($skeys[$i]) . "</Key></Object>\n";
+            }
+            $l[] = "</Delete>\n";
+            if (!$this->start_delete_many(join("", $l))->finish()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** @param string $src_skey
      * @param string $dst_skey
+     * @param ?array{content_type:string} $user_data
      * @return bool */
-    function copy($src_skey, $dst_skey) {
-        return $this->start_copy($src_skey, $dst_skey)->finish();
+    function copy($src_skey, $dst_skey, $user_data = null) {
+        return $this->start_copy($src_skey, $dst_skey, $user_data)->finish();
     }
 
     /** @param string $prefix
@@ -436,6 +529,50 @@ class S3Client {
      * @return ?string */
     function ls($prefix, $args = []) {
         return $this->start_ls($prefix, $args)->finish();
+    }
+
+    /** @param string $prefix
+     * @param array{start-after?:int|string,max-keys?:int,continuation-token?:void} $args
+     * @return Generator<SimpleXMLElement> */
+    function ls_all($prefix, $args = []) {
+        $max_keys = $args["max_keys"] ?? -1;
+        $xml = null;
+        $xmlpos = 0;
+        while ($max_keys !== 0) {
+            if ($xml && $xmlpos < count($xml->Contents ?? [])) {
+                yield $xml->Contents[$xmlpos];
+                ++$xmlpos;
+                $max_keys = max($max_keys - 1, -1);
+                continue;
+            }
+            if ($xml && !isset($args["continuation_token"])) {
+                break;
+            }
+            $args["max_keys"] = $max_keys < 0 ? 600 : min(600, $max_keys);
+            $content = $this->ls($prefix, $args);
+            $xml = new SimpleXMLElement($content);
+            $xmlpos = 0;
+            if (empty($xml->Contents)
+                && (!isset($xml->KeyCount) || (string) $xml->KeyCount !== "0")) {
+                throw new Exception("Bad response from S3 List Objects");
+            }
+            if (isset($xml->IsTruncated) && (string) $xml->IsTruncated === "true") {
+                $args["continuation_token"] = (string) $xml->NextContinuationToken;
+            } else {
+                unset($args["continuation_token"]);
+            }
+        }
+    }
+
+    /** @param string $prefix
+     * @param array{start-after?:int|string,max-keys?:int,continuation-token?:void} $args
+     * @return Generator<string> */
+    function ls_all_keys($prefix, $args = []) {
+        foreach ($this->ls_all($prefix, $args) as $content) {
+            if (isset($content->Key)) {
+                yield (string) $content->Key;
+            }
+        }
     }
 
     /** @param string $skey

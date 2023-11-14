@@ -6,9 +6,13 @@ class DocumentBasics_Tester {
     /** @var Conf
      * @readonly */
     public $conf;
+    /** @var ?S3Client
+     * @readonly */
+    public $s3c;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
+        $this->s3c = S3_Tester::make_s3_client($conf, "DocumentBasics");
     }
 
     function test_s3_signature() {
@@ -96,5 +100,33 @@ class DocumentBasics_Tester {
         $this->conf->save_refresh_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
         xassert_eqq(Filer::docstore_path($doc), "/foo/bar/sha2-66a/sha2-66a04/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18");
         xassert_eqq($doc->s3_key(), "doc/66a/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.txt");
+    }
+
+    function test_create_s3() {
+        if (!$this->s3c) {
+            return;
+        }
+        $x = $this->s3c->create_bucket();
+        xassert_eqq($x, true);
+
+        $x = $this->s3c->put("hello.txt", file_get_contents(SiteLoader::$root . "/README.md"), "text/plain");
+        xassert_eqq($x, true);
+
+        $x = $this->s3c->put("hello1.txt", file_get_contents(SiteLoader::$root . "/README.md"), "text/plain");
+        xassert_eqq($x, true);
+
+        xassert_eqq(iterator_to_array($this->s3c->ls_all_keys("h")), ["hello.txt", "hello1.txt"]);
+    }
+
+    function test_cleanup_s3() {
+        if (!$this->s3c) {
+            return;
+        }
+        if ($this->conf->opt("testS3Bucket")) {
+            $this->s3c->delete_many(["hello.txt", "hello1.txt"]);
+        } else {
+            $this->s3c->delete_many(iterator_to_array($this->s3c->ls_all_keys("")));
+            $this->s3c->delete_bucket(S3Client::CONFIRM_DELETE_BUCKET);
+        }
     }
 }

@@ -138,6 +138,13 @@ class StreamS3Result extends S3Result {
                 @ini_set("memory_limit", (string) ((int) $content_len));
             }
         }
+        if ((int) S3Client::$verbose > 1) {
+            $l = ["{$this->method} {$this->url} -> ...\n"];
+            foreach ($hdr as $x => $y) {
+                $l[] = "  {$x}: {$y}\n";
+            }
+            error_log(join("", $l));
+        }
         return ["header" => $hdr, "content" => $content,
                 "protocol_version" => 1.1, "ignore_errors" => true,
                 "method" => $this->method];
@@ -181,7 +188,7 @@ class StreamS3Result extends S3Result {
                 break;
             }
             if (S3Client::$retry_timeout_allowance <= 0 || $i >= 5) {
-                trigger_error("S3 error: $this->method $this->skey: failed", E_USER_WARNING);
+                trigger_error("S3 error: {$this->method} {$this->skey}: failed", E_USER_WARNING);
                 $this->status = 598;
                 break;
             }

@@ -390,7 +390,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @return $this */
     function set_file_content($name, $content, $filename = null, $mimetype = null) {
         $this->_files[$name] = new QrequestFile([
-            "name" => $filename ?? "__set_file_content.$name",
+            "name" => $filename ?? "__set_file_content.{$name}",
             "type" => $mimetype,
             "size" => strlen($content),
             "content" => $content

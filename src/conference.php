@@ -385,17 +385,6 @@ class Conf {
         // rounds
         $this->refresh_round_settings();
 
-        // S3 settings
-        if (($this->opt["dbNoPapers"] ?? null)
-            && !($this->opt["docstore"] ?? null)
-            && !($this->opt["filestore"] ?? null)
-            && !($this->settingTexts["s3_bucket"] ?? null)) {
-            unset($this->opt["dbNoPapers"]);
-        }
-        if ($this->_s3_client) {
-            $this->_s3_client = $this->_refresh_s3_client();
-        }
-
         // tracks settings
         $this->_tracks = $this->_track_tags = null;
         $this->_track_sensitivity = 0;
@@ -658,7 +647,7 @@ class Conf {
             unset($this->opt["passwordHashMethod"]);
         }
 
-        // set docstore
+        // docstore
         $docstore = $this->opt["docstore"] ?? null;
         $dpath = "";
         $dpsubdir = $this->opt["docstoreSubdir"] ?? null;
@@ -688,6 +677,16 @@ class Conf {
             $this->_docstore = $dpath;
         } else {
             $this->_docstore = null;
+        }
+
+        // S3 settings and dbNoPapers
+        if (($this->opt["dbNoPapers"] ?? null)
+            && !$this->_docstore
+            && !($this->opt["s3_bucket"] ?? null)) {
+            unset($this->opt["dbNoPapers"]);
+        }
+        if ($this->_s3_client !== false) {
+            $this->_s3_client = $this->_refresh_s3_client();
         }
 
         // defaultFormat
@@ -1045,9 +1044,9 @@ class Conf {
 
     /** @return ?S3Client */
     private function _refresh_s3_client() {
-        if (!($k = $this->settingTexts["s3_key"] ?? $this->opt["s3_key"] ?? null)
-            || !($s = $this->settingTexts["s3_secret"] ?? $this->opt["s3_secret"] ?? null)
-            || !($b = $this->settingTexts["s3_bucket"] ?? $this->opt["s3_bucket"] ?? null)) {
+        if (!($k = $this->opt["s3_key"] ?? null)
+            || !($s = $this->opt["s3_secret"] ?? null)
+            || !($b = $this->opt["s3_bucket"] ?? null)) {
             return null;
         } else if ($this->_s3_client
                    && $this->_s3_client->check_key_secret_bucket($k, $s, $b)) {
@@ -1055,7 +1054,7 @@ class Conf {
         } else {
             return S3Client::make([
                 "key" => $k, "secret" => $s, "bucket" => $b,
-                "region" => $this->setting_data("s3_region"),
+                "region" => $this->opt["s3_region"] ?? null,
                 "setting_cache" => $this, "setting_cache_prefix" => "__s3"
             ]);
         }

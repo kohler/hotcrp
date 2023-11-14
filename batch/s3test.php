@@ -45,7 +45,7 @@ class S3Test_Batch {
                 $error = error_get_last();
                 $fn = ($fn === "-" ? "<stdin>" : $fn);
                 if (!$this->quiet) {
-                    fwrite(STDERR, "$fn: " . $error["message"] . "\n");
+                    fwrite(STDERR, "{$fn}: " . $error["message"] . "\n");
                 }
                 $status = 2;
             } else {
@@ -60,11 +60,11 @@ class S3Test_Batch {
                 $s3fn = $doc->s3_key();
                 if (!$s3doc->head($s3fn)) {
                     if (!$this->quiet) {
-                        fwrite(STDOUT, "$fn: $s3fn not found\n");
+                        fwrite(STDOUT, "{$fn}: {$s3fn} not found\n");
                     }
                     $status = 1;
                 } else if ($this->verbose) {
-                    fwrite(STDOUT, "$fn: $s3fn OK\n");
+                    fwrite(STDOUT, "{$fn}: {$s3fn} OK\n");
                 }
             }
         }
