@@ -1378,7 +1378,7 @@ class PaperList {
      * @param int $ianno */
     function user_compare($uid1, $uid2, $ianno) {
         if ($uid1 <= 0 || $uid2 <= 0) {
-            return ($uid1 > 0) <=> ($uid2 > 0);
+            return ($uid2 > 0) <=> ($uid1 > 0);
         }
         $u1 = $this->conf->user_by_id($uid1, USER_SLICE);
         $u2 = $this->conf->user_by_id($uid2, USER_SLICE);
