@@ -1377,8 +1377,11 @@ class PaperList {
      * @param int $uid2
      * @param int $ianno */
     function user_compare($uid1, $uid2, $ianno) {
-        $u1 = $uid1 > 0 ? $this->conf->user_by_id($uid1, USER_SLICE) : null;
-        $u2 = $uid2 > 0 ? $this->conf->user_by_id($uid2, USER_SLICE) : null;
+        if ($uid1 <= 0 || $uid2 <= 0) {
+            return ($uid1 > 0) <=> ($uid2 > 0);
+        }
+        $u1 = $this->conf->user_by_id($uid1, USER_SLICE);
+        $u2 = $this->conf->user_by_id($uid2, USER_SLICE);
         if ($u1 && $u2 && $u1 !== $u2) {
             $as = Contact::get_sorter($u1, $ianno);
             $bs = Contact::get_sorter($u2, $ianno);
