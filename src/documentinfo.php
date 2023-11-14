@@ -224,7 +224,7 @@ class DocumentInfo implements JsonSerializable {
         if ($token
             && ($toki = TokenInfo::find($token, $conf))
             && $toki->is_active()
-            && $toki->capabilityType !== TokenInfo::UPLOAD) {
+            && $toki->capabilityType === TokenInfo::UPLOAD) {
             return self::make_token($conf, $toki, null, $paperId, $documentType);
         } else {
             return null;
@@ -278,7 +278,7 @@ class DocumentInfo implements JsonSerializable {
     static function has_request_for(Qrequest $qreq, $name) {
         return $qreq["{$name}:upload"]
             || $qreq->has_file("{$name}:file")
-            || $qreq->has_file($name);
+            || $qreq->has_file($name) /* XXX obsolete */;
     }
 
     /** @param string $name
@@ -289,7 +289,7 @@ class DocumentInfo implements JsonSerializable {
                                  $documentType, Conf $conf) {
         if (($fu = $qreq["{$name}:upload"])) {
             return self::make_capability($conf, $fu, $paperId, $documentType);
-        } if (($fi = $qreq->file("{$name}:file") ?? $qreq->file($name))) {
+        } if (($fi = $qreq->file("{$name}:file") ?? $qreq->file($name) /* XXX obsolete */)) {
             return self::make_uploaded_file($fi, $paperId, $documentType, $conf);
         } else {
             return null;

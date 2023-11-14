@@ -11051,7 +11051,9 @@ handle_ui.on("js-add-attachment", function () {
     ee.appendChild(doce);
     // this hidden_input cannot be in the document-uploader: the uploader
     // might be removed later, but we need to hold the place
-    f.appendChild(hidden_input(name, "new", {"class": "ignore-diff"}));
+    if (!f.elements[name]) {
+        f.appendChild(hidden_input(name, "new", {"class": "ignore-diff"}));
+    }
     filee.click();
 });
 
@@ -11244,8 +11246,7 @@ handle_ui.on("document-uploader", function (event) {
                 fn = that.name.replace(/:file$/, "");
             e.className = "is-success";
             e.textContent = "NEW ";
-            that.after(hidden_input(fn + ":upload", token, {"data-default-value": "", "class": "document-upload-helper"}),
-                hidden_input(fn, "new"), e, file.name);
+            that.after(hidden_input(fn + ":upload", token, {"data-default-value": "", "class": "document-upload-helper"}), e, file.name);
         }
     }
 

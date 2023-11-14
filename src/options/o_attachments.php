@@ -232,12 +232,12 @@ class Attachments_PaperOption extends PaperOption {
             new SearchExample(
                 $this, $this->search_keyword() . ":{comparator}",
                 "<0>submission has three or more {title} attachments",
-                new FmtArg("comparator", ">2")
+                new FmtArg("comparator", ">2", 0)
             ),
             new SearchExample(
                 $this, $this->search_keyword() . ":\"{filename}\"",
                 "<0>submission has {title} attachment matching ‘{filename}’",
-                new FmtArg("filename", "*.gif")
+                new FmtArg("filename", "*.gif", 0)
             )
         ];
     }
