@@ -11099,6 +11099,162 @@ handle_ui.on("document-uploader", function () {
     }
 });
 
+handle_ui.on("document-uploader", function (event) {
+    var that = this,
+        file = (that.files || [])[0],
+        doce = that.closest(".has-document"),
+        blob_limit,
+        escape_html = window.escape_html;
+
+    if (that.hotcrpUploader) {
+        that.hotcrpUploader.cancel();
+    }
+
+    function find_first_attr(name, elements, defval) {
+        for (var i = 0; i !== elements.length; ++i) {
+            if (elements[i].hasAttribute(name))
+                return +elements[i].getAttribute(name);
+        }
+        return defval;
+    }
+
+    function remove_feedback() {
+        while (that.nextSibling) {
+            that.nextSibling.remove();
+        }
+        if (doce.lastChild.nodeName === "DIV" && hasClass(doce.lastChild, "msg")) {
+            doce.lastChild.remove();
+        }
+    }
+
+    function check(event) {
+        var form = that.form,
+            upload_limit = find_first_attr("data-upload-limit", [doce, form, document.body], Infinity),
+            max_size = find_first_attr("data-document-max-size", [doce, form, document.body], upload_limit);
+        blob_limit = Math.min(find_first_attr("data-blob-limit", [form, document.body], 5 << 20), upload_limit);
+        if (file && max_size > 0 && file.size > max_size) {
+            alert("File too big.");
+            that.value = "";
+            handle_ui.stopImmediatePropagation ? handle_ui.stopImmediatePropagation(event) : event.stopImmediatePropagation();
+            return false;
+        } else {
+            return file
+                && window.FormData
+                && file.size >= Math.min(0.45 * upload_limit, 4 << 20);
+        }
+    }
+    if (!check(event)) {
+        remove_feedback();
+        return;
+    }
+
+    function cancel() {
+        if (that.hotcrpUploader !== self) {
+            return false;
+        }
+        remove_feedback();
+        removeClass(that, "hidden");
+        removeClass(that, "prevent-submit");
+        delete that.hotcrpUploader;
+        cancelled = true;
+        $(that).off("hotcrp-change-document", cancel);
+        return true;
+    }
+    var self = {cancel: cancel},
+        token = false, cancelled = false, size = file.size,
+        pos = 0, uploading = 0, sprogress0 = 0, sprogress1 = size,
+        progresselt = $e("progress", {"class": "mr-2", max: size + sprogress1, value: "0"}),
+        starttime = (new Date).getTime();
+    that.hotcrpUploader = self;
+    that.after(progresselt, $e("span", null, "Uploading" + (file.name ? " " + escape_html(file.name) : "") + "…"));
+
+    function upload_progress(evt) {
+        var p = pos - uploading;
+        if (evt.lengthComputable) {
+            p += uploading * (evt.loaded / evt.total);
+        }
+        progresselt.value = p + sprogress0;
+    }
+    function progress() {
+        progresselt.value = pos + sprogress0;
+        progresselt.max = size + sprogress1;
+    }
+
+    function ajax(r) {
+        if (!r.ok) {
+            if (cancel() && r.message_list) {
+                doce.appendChild(render_message_list(r.message_list));
+            }
+            return;
+        }
+        if (r.ranges && r.ranges.length === 2) {
+            pos = r.ranges[1];
+        }
+        if (r.token) {
+            token = r.token;
+        }
+        if (r.server_progress_max) {
+            sprogress0 = r.server_progress_loaded;
+            sprogress1 = r.server_progress_max;
+            progress();
+        }
+        var args = {p: siteinfo.paperid};
+        if (token)
+            args.token = token;
+        else {
+            args.dtype = doce.getAttribute("data-dtype");
+            args.start = 1;
+        }
+        if (cancelled) {
+            if (token) {
+                args.cancel = 1;
+                $.ajax(hoturl("=api/upload", args), {method: "POST"});
+            }
+        } else if (!r.hash) {
+            var fd = new FormData, myxhr;
+            fd.append("size", size);
+            fd.append("mimetype", file.type);
+            fd.append("filename", file.name);
+            var endpos = Math.min(size, pos + blob_limit);
+            uploading = endpos - pos;
+            if (uploading !== 0) {
+                args.offset = pos;
+                fd.append("blob", file.slice(pos, endpos), "blob");
+            }
+            if (endpos === size)
+                args.finish = 1;
+            pos = endpos;
+            $.ajax(hoturl("=api/upload", args), {
+                method: "POST", data: fd, processData: false,
+                contentType: false, success: ajax, timeout: 300000,
+                xhr: function () {
+                    myxhr = new window.XMLHttpRequest();
+                    myxhr.upload.addEventListener("progress", upload_progress);
+                    myxhr.addEventListener("load", progress);
+                    return myxhr;
+                }
+            });
+            myxhr.upload.addEventListener("progress", upload_progress);
+        } else {
+            that.disabled = true;
+            while (that.nextSibling)
+                that.parentElement.removeChild(that.nextSibling);
+            removeClass(that, "prevent-submit");
+            var e = document.createElement("span"),
+                fn = that.name.replace(/:file$/, "");
+            e.className = "is-success";
+            e.textContent = "NEW ";
+            that.after(hidden_input(fn + ":upload", token, {"data-default-value": "", "class": "document-upload-helper"}),
+                hidden_input(fn, "new"), e, file.name);
+        }
+    }
+
+    addClass(that, "hidden");
+    addClass(that, "prevent-submit");
+    $(that).on("hotcrp-change-document", cancel);
+    ajax({ok: true});
+});
+
 handle_ui.on("js-cancel-document", function () {
     var doce = this.closest(".has-document"),
         $doc = $(doce), $actions = $doc.find(".document-actions"),

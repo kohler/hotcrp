@@ -218,6 +218,10 @@
         "function": "MeetingTracker::trackerstatus_api"
     },
     {
+        "name": "upload", "post": true,
+        "function": "Upload_API::run"
+    },
+    {
         "name": "user", "get": true,
         "function": "User_API::user",
         "parameters": ["email"]

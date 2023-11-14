@@ -8,5 +8,6 @@ TestRunner::run(
     "Reviews_Tester",
     "Comments_Tester",
     "UserAPI_Tester",
+    "UploadAPI_Tester",
     "Mailer_Tester"
 );

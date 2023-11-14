@@ -29,5 +29,8 @@
     {
         "match": "hckk_?([a-zA-Z0-9]+)",
         "apply_function": "MeetingTracker::apply_kiosk_capability"
+    },
+    {
+        "type": 3, "cleanup_function": "Upload_API::cleanup"
     }
 ]

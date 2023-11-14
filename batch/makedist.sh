@@ -208,6 +208,7 @@ src/api/api_session.php
 src/api/api_settings.php
 src/api/api_taganno.php
 src/api/api_tags.php
+src/api/api_upload.php
 src/api/api_user.php
 src/apihelpers.php
 src/assigners/a_conflict.php

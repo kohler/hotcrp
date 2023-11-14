@@ -220,30 +220,46 @@ class DocumentInfo implements JsonSerializable {
      * @param int $paperId
      * @param int $documentType
      * @return ?DocumentInfo */
-    static function make_capability($token, $paperId, $documentType, Conf $conf) {
-        if (!$token
-            || !($cap = TokenInfo::find($token, $conf))
-            || !$cap->is_active()
-            || $cap->capabilityType !== TokenInfo::UPLOAD) {
+    static function make_capability(Conf $conf, $token, $paperId, $documentType) {
+        if ($token
+            && ($toki = TokenInfo::find($token, $conf))
+            && $toki->is_active()
+            && $toki->capabilityType !== TokenInfo::UPLOAD) {
+            return self::make_token($conf, $toki, null, $paperId, $documentType);
+        } else {
             return null;
         }
-        $capd = json_decode($cap->data);
-        if (!$capd->hash) {
+    }
+
+    /** @param ?string $content_file
+     * @param ?int $paperId
+     * @param ?int $documentType
+     * @return ?DocumentInfo */
+    static function make_token(Conf $conf, TokenInfo $toki, $content_file = null,
+                               $paperId = null, $documentType = null) {
+        assert($toki->capabilityType === TokenInfo::UPLOAD);
+        $tokd = json_decode($toki->data);
+        if (!$tokd->hash) {
             return null;
         }
         $args = [
-            "paperId" => $paperId,
-            "documentType" => $documentType,
+            "paperId" => $paperId ?? $toki->paperId,
+            "documentType" => $documentType ?? $tokd->dtype,
             "timestamp" => time(),
-            "mimetype" => $capd->mimetype ?? null,
-            "filename" => self::sanitize_filename($capd->filename),
-            "size" => $capd->size,
-            "hash" => $capd->hash,
-            "crc32" => $capd->crc32 ?? null
+            "mimetype" => $tokd->mimetype ?? null,
+            "filename" => self::sanitize_filename($tokd->filename),
+            "size" => $tokd->size,
+            "hash" => $tokd->hash,
+            "crc32" => $tokd->crc32 ?? null
         ];
+        if ($content_file !== null) {
+            $args["content_file"] = $content_file;
+        }
         $doc = new DocumentInfo($args, $conf);
-        $doc->analyze_content();
-        $doc->_prefer_s3 = !!($capd->s3_status ?? false);
+        if ($doc->content_available() || $doc->load_docstore()) {
+            $doc->analyze_content();
+        }
+        $doc->_prefer_s3 = !!($tokd->s3_status ?? false);
         return $doc;
     }
 
@@ -272,7 +288,7 @@ class DocumentInfo implements JsonSerializable {
     static function make_request(Qrequest $qreq, $name, $paperId,
                                  $documentType, Conf $conf) {
         if (($fu = $qreq["{$name}:upload"])) {
-            return self::make_capability($fu, $paperId, $documentType, $conf);
+            return self::make_capability($conf, $fu, $paperId, $documentType);
         } if (($fi = $qreq->file("{$name}:file") ?? $qreq->file($name))) {
             return self::make_uploaded_file($fi, $paperId, $documentType, $conf);
         } else {
