@@ -2318,7 +2318,7 @@ class PaperTable {
                 || ($o->id !== PaperOption::CONTACTSID && $this->edit_mode === 1)) {
                 $fr->clear();
                 $o->render($fr, $ov);
-                if ($fr->value === "") {
+                if ($fr->is_empty()) {
                     continue;
                 }
                 if ($o->type === "checkbox") {
