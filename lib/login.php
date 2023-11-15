@@ -207,7 +207,7 @@ class LoginHelper {
             $qreq->set_gsession("u", $us[0]);
         }
         if (empty($uts)) {
-            $qreq->unset_gsession($uts);
+            $qreq->unset_gsession("uts");
         } else {
             $qreq->set_gsession("uts", $uts);
         }
