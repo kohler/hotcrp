@@ -24,7 +24,7 @@ class SaveUsers_Batch {
     function __construct(Contact $user, $arg) {
         $this->conf = $user->conf;
         $this->ustatus = new UserStatus($user);
-        $this->ustatus->notify = isset($arg["notify"]) || !isset($arg["no-notify"]);
+        $this->ustatus->notify = isset($arg["notify"]) && !isset($arg["no-notify"]);
         $this->ustatus->no_create = isset($arg["no-create"]);
         $this->ustatus->no_modify = isset($arg["no-modify"]);
 
@@ -142,8 +142,8 @@ class SaveUsers_Batch {
             "disable Disable `-u` user.",
             "enable Enable `-u` user.",
             "expression[],expr[],e[] =JSON Create or modify users specified in JSON.",
-            "no-notify,no-email Do not send email notifications.",
-            "notify !",
+            "notify,N Send email notifications (default is no notifications).",
+            "no-notify,no-email !",
             "no-modify,create-only Only create new users, do not modify existing.",
             "no-create,modify-only Only modify existing users, do not create new."
         )->helpopt("help")
@@ -157,7 +157,7 @@ Usage: php batch/saveusers.php [OPTION]... [JSONFILE | CSVFILE]
 
         if ((!empty($arg["_"]) || isset($arg["expression"]))
             && isset($arg["user"])) {
-            throw new CommandLineException("`-u` and `-e/FILE` are mutually exclusive", $go);
+            throw new CommandLineException("`-u` and `-e`/`FILE` are mutually exclusive", $go);
         } else if ((isset($arg["roles"]) || isset($arg["user-name"]) || isset($arg["disable"]) || isset($arg["enable"]))
                    && !isset($arg["user"])) {
             throw new CommandLineException("`-u` required for those options", $go);
