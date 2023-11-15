@@ -44,7 +44,8 @@ class Search_Page {
     private function checkbox_item($column, $type, $title, $options = []) {
         $options["class"] = "uich js-plinfo";
         $x = '<label class="checki"><span class="checkc">'
-            . Ht::checkbox("show$type", 1, $this->pl->viewing($type), $options)
+            . Ht::hidden("has_show{$type}", 1)
+            . Ht::checkbox("show{$type}", 1, $this->pl->viewing($type), $options)
             . '</span>' . $title . '</label>';
         $this->item($column, $x);
     }
@@ -413,6 +414,33 @@ class Search_Page {
         $qreq->print_footer();
     }
 
+    static function redisplay(Contact $user, Qrequest $qreq) {
+        // change session based on request
+        Session_API::parse_view($qreq, "pl", $qreq);
+        // redirect, including differences between search and request
+        // create PaperList
+        if (isset($qreq->q)) {
+            $search = new PaperSearch($user, $qreq);
+        } else {
+            $search = new PaperSearch($user, ["t" => $qreq->t, "q" => "NONE"]);
+        }
+        $pl = new PaperList("pl", $search, ["sort" => true], $qreq);
+        $pl->apply_view_report_default();
+        $pl->apply_view_session($qreq);
+        $pl->apply_view_qreq($qreq);
+        $param = ["#" => "view"];
+        foreach ($pl->unparse_view(PaperList::VIEWORIGIN_SEARCH, false) as $vx) {
+            error_log($vx);
+            if (str_starts_with($vx, "sort:score[")) {
+                $param["scoresort"] = substr($vx, 11, -1);
+            } else if (strpos($vx, "[") === false) {
+                $name = substr($vx, 5);
+                $show = str_starts_with($vx, "show:") ? 1 : 0;
+                $param[$name === "force" ? "forceShow" : "show{$name}"] = $show;
+            }
+        }
+        $user->conf->redirect_self($qreq, $param);
+    }
 
     /** @param Contact $user
      * @param Qrequest $qreq */
@@ -470,25 +498,7 @@ class Search_Page {
 
         // request and session parsing
         if ($qreq->redisplay) {
-            $viewlist = [];
-            foreach ($qreq as $k => $v) {
-                if ($v && substr($k, 0, 4) === "show") {
-                    $viewlist[] = "show:" . substr($k, 0, 4);
-                }
-            }
-            if ($qreq->scoresort
-                && ($ss = ScoreInfo::parse_score_sort($qreq->scoresort))) {
-                $viewlist[] = "sort:[score {$ss}]";
-            }
-            Session_API::parse_view($qreq, "pl", join(" ", $viewlist));
-        }
-        if ($qreq->redisplay) {
-            if (isset($qreq->forceShow) && !$qreq->forceShow && $qreq->showforce) {
-                $forceShow = 0;
-            } else {
-                $forceShow = $qreq->forceShow || $qreq->showforce ? 1 : null;
-            }
-            $conf->redirect_self($qreq, ["#" => "view", "forceShow" => $forceShow]);
+            self::redisplay($user, $qreq);
         }
 
         // display

@@ -631,7 +631,7 @@ function xassert_int_list_eqq($actual, $expected) {
  * @return array<int,array> */
 function search_json($user, $query, $cols = "id", $allow_warnings = false) {
     $pl = new PaperList("empty", new PaperSearch($user, $query));
-    $pl->parse_view($cols);
+    $pl->parse_view($cols, PaperList::VIEWORIGIN_MAX);
     if ($pl->search->has_problem() && !$allow_warnings) {
         error_log(assert_location() . ": Search reports warnings: " . $pl->search->full_feedback_text());
     }
@@ -644,7 +644,7 @@ function search_json($user, $query, $cols = "id", $allow_warnings = false) {
  * @return string */
 function search_text_col($user, $query, $col = "id") {
     $pl = new PaperList("empty", new PaperSearch($user, $query));
-    $pl->parse_view($col);
+    $pl->parse_view($col, PaperList::VIEWORIGIN_MAX);
     $tj = $pl->text_json();
     $colx = ($pl->vcolumns())[0]->name;
     $x = [];

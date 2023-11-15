@@ -70,9 +70,9 @@ class Search_API {
         $search = new PaperSearch($user, $qreq);
         $pl = new PaperList("empty", $search);
         if (isset($qreq->aufull)) {
-            $pl->set_view("aufull", (bool) $qreq->aufull);
+            $pl->set_view("aufull", (bool) $qreq->aufull, PaperList::VIEWORIGIN_SESSION);
         }
-        $pl->parse_view($qreq->f, null);
+        $pl->parse_view($qreq->f, PaperList::VIEWORIGIN_MAX);
         $response = $pl->table_html_json();
 
         $j = [
@@ -98,7 +98,7 @@ class Search_API {
         }
         $search = new PaperSearch($user, $qreq);
         $pl = new PaperList("empty", $search);
-        $pl->parse_view($qreq->f, null);
+        $pl->parse_view($qreq->f, PaperList::VIEWORIGIN_MAX);
         $response = $pl->text_json();
         return [
             "ok" => !empty($response),

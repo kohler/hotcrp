@@ -239,15 +239,20 @@ class PaperList {
     /** @var int */
     private $_view_order_next = 1;
 
-    const VIEWORIGIN_MASK = 15;
     const VIEWORIGIN_NONE = -1;
     const VIEWORIGIN_REPORT = 0;
     const VIEWORIGIN_DEFAULT_DISPLAY = 1;
     const VIEWORIGIN_SESSION = 2;
-    const VIEWORIGIN_REQUEST = 3;
-    const VIEWORIGIN_EXPLICIT = 4;
-    const VIEW_REPORTSHOW = 16;
-    const VIEW_SHOW = 32;
+    const VIEWORIGIN_SEARCH = 3;
+    const VIEWORIGIN_REQUEST = 4;
+    const VIEWORIGIN_MAX = 5;
+    const VIEW_ORIGINMASK = 15;
+    const VIEW_ORIGINSHIFT = 4;
+    const VIEW_SHOW = 0x10000;
+    // bits 0-3: maximum known origin
+    // bit 4 + 2o: set iff origin `o` defined a view
+    // bit 5 + 2o: set iff origin `o` wanted show
+    // bit 16: whether to show according to maximum known origin
 
     /** @var ?string */
     private $_table_id;
@@ -281,6 +286,8 @@ class PaperList {
 
     /** @var list<PaperColumn> */
     private $_sortcol = [];
+    /** @var list<int> */
+    private $_sort_origin = [];
     /** @var int */
     private $_sortcol_fixed = 0;
     /** @var ?string */
@@ -344,7 +351,7 @@ class PaperList {
         $this->_rowset = $args["rowset"] ?? null;
 
         if (in_array($qreq->linkto, ["paper", "assign", "paperedit", "finishreview"])) {
-            $this->set_view("linkto", true, null, [$qreq->linkto]);
+            $this->set_view("linkto", true, self::VIEWORIGIN_REQUEST, [$qreq->linkto]);
         }
 
         $this->tagger = new Tagger($this->user);
@@ -364,16 +371,16 @@ class PaperList {
             if (is_string($sortarg)) {
                 $st = trim($sortarg);
             } else if ($sortarg === true) {
-                $st = trim($qreq->sort ?? "");
                 if (isset($qreq->scoresort)
                     && ($ss = ScoreInfo::parse_score_sort($qreq->scoresort))) {
-                    $this->parse_view("sort:[score {$ss}]");
+                    $this->parse_view("sort:score[{$ss}]", self::VIEWORIGIN_REQUEST);
                 }
+                $st = trim($qreq->sort ?? "");
             } else {
                 $st = "";
             }
             if ($st !== "") {
-                $this->parse_view("sort:[{$st}]");
+                $this->parse_view("sort:[{$st}]", self::VIEWORIGIN_REQUEST);
             }
         }
 
@@ -384,12 +391,12 @@ class PaperList {
         $qe = $this->search->main_term();
         foreach (PaperSearch::view_generator($qe->view_anno()) as $sve) {
             if (($show_action = $sve->show_action())) {
-                $this->set_view($sve->keyword, $show_action, null, $sve->decorations);
+                $this->set_view($sve->keyword, $show_action, self::VIEWORIGIN_SEARCH, $sve->decorations);
             }
         }
 
         if ($qreq->forceShow !== null) {
-            $this->set_view("force", !!$qreq->forceShow);
+            $this->set_view("force", !!$qreq->forceShow, self::VIEWORIGIN_REQUEST);
         }
         if ($qreq->selectall && !isset($this->_view_decorations["sel"])) {
             $this->_view_decorations["sel"] = ["selected"];
@@ -553,14 +560,22 @@ class PaperList {
     }
 
     /** @param string $k
-     * @return int */
+     * @return 0|1|2|3|4|5 */
     function view_origin($k) {
         $k = self::$view_synonym[$k] ?? $k;
-        return ($this->_viewf[$k] ?? 0) & self::VIEWORIGIN_MASK;
+        return ($this->_viewf[$k] ?? 0) & self::VIEW_ORIGINMASK;
+    }
+
+    /** @param string $k
+     * @return bool */
+    function want_column_errors($k) {
+        $origin = $this->view_origin($k);
+        return $origin === self::VIEWORIGIN_SEARCH
+            || $origin === self::VIEWORIGIN_MAX;
     }
 
 
-    /** @param int $origin */
+    /** @param 0|1|2|3|4|5 $origin */
     private function _set_view_hide_all($origin) {
         $views = array_keys($this->_viewf);
         foreach ($views as $k) {
@@ -573,13 +588,24 @@ class PaperList {
         $this->_view_order_next = 1;
     }
 
+    /** @param PaperColumn $col
+     * @param 0|1|2|3|4|5 $origin */
+    private function _append_sortcol($col, $origin) {
+        $i = count($this->_sortcol);
+        while ($i > 0 && $this->_sort_origin[$i - 1] < $origin) {
+            --$i;
+        }
+        array_splice($this->_sortcol, $i, 0, [$col]);
+        array_splice($this->_sort_origin, $i, 0, [$origin]);
+    }
+
     /** @param string $k
      * @param 'show'|'hide'|'edit'|bool $v
-     * @param ?int $origin
+     * @param 0|1|2|3|4|5 $origin
      * @param ?list<string> $decorations */
-    function set_view($k, $v, $origin = null, $decorations = null) {
-        $origin = $origin ?? self::VIEWORIGIN_EXPLICIT;
-        assert($origin >= self::VIEWORIGIN_REPORT && $origin <= self::VIEWORIGIN_EXPLICIT);
+    function set_view($k, $v, $origin, $decorations = null) {
+        $origin = $origin ?? self::VIEWORIGIN_MAX;
+        assert($origin >= self::VIEWORIGIN_REPORT && $origin <= self::VIEWORIGIN_MAX);
         if ($v === "show" || $v === "hide") {
             $v = $v === "show";
         }
@@ -615,14 +641,13 @@ class PaperList {
 
         $flags = &$this->_viewf[$k];
         $flags = $flags ?? 0;
-        if ($origin === self::VIEWORIGIN_REPORT) {
-            $flags = ($flags & ~self::VIEW_REPORTSHOW) | ($v ? self::VIEW_REPORTSHOW : 0);
-        }
-        if (($flags & self::VIEWORIGIN_MASK) > $origin
+        $originbit = self::VIEW_ORIGINSHIFT + 2 * $origin;
+        $flags = ($flags & ~(2 << $originbit)) | (($v ? 3 : 2) << $originbit);
+        if (($flags & self::VIEW_ORIGINMASK) > $origin
             || ($v && $this->_view_hide_all > $origin)) {
             return;
         }
-        $flags = ($flags & self::VIEW_REPORTSHOW)
+        $flags = ($flags & ~(self::VIEW_ORIGINMASK | self::VIEW_SHOW))
             | $origin
             | ($v ? self::VIEW_SHOW : 0);
         if ($v === "edit") {
@@ -644,7 +669,7 @@ class PaperList {
                 $this->_paper_linkto = $decorations[0];
             }
         } else if (($k === "aufull" || $k === "anonau")
-                   && $origin >= self::VIEWORIGIN_EXPLICIT
+                   && $origin >= self::VIEWORIGIN_SEARCH
                    && $v
                    && $this->view_origin("authors") < $origin) {
             $this->set_view("authors", true, $origin, null);
@@ -654,7 +679,7 @@ class PaperList {
 
 
     /** @param string $k
-     * @param ?int $origin
+     * @param 0|1|2|3|4|5 $origin
      * @param ?list<string> $decorations
      * @param ?list<int> $sort_subset
      * @param ?int $pos1
@@ -663,13 +688,12 @@ class PaperList {
                                  $sort_subset, $pos1, $pos2) {
         // `sort:score` is a special case.
         if ($k === "score") {
-            $origin = $origin ?? self::VIEWORIGIN_EXPLICIT;
             $flags = &$this->_viewf[$k];
             $flags = $flags ?? 0;
-            if (($flags & self::VIEWORIGIN_MASK) <= $origin
+            if (($flags & self::VIEW_ORIGINMASK) <= $origin
                 && !empty($decorations)
                 && ($x = ScoreInfo::parse_score_sort($decorations[0])) !== null) {
-                $flags = ($flags & ~self::VIEWORIGIN_MASK) | $origin;
+                $flags = ($flags & ~self::VIEW_ORIGINMASK) | $origin;
                 $this->_score_sort = $x;
             }
             return;
@@ -685,7 +709,7 @@ class PaperList {
             if ($col->prepare($this, PaperColumn::PREP_SORT)
                 && $col->sort) {
                 $col->sort_subset = $sort_subset;
-                $this->_sortcol[] = $col;
+                $this->_append_sortcol($col, $origin);
             } else {
                 $mi = $this->search->warning("<0>‘{$k}’ cannot be sorted");
             }
@@ -710,8 +734,8 @@ class PaperList {
     }
 
     /** @param ?string $str
-     * @param ?int $origin */
-    function parse_view($str, $origin = null) {
+     * @param 0|1|2|3|4|5 $origin */
+    function parse_view($str, $origin) {
         $groups = SearchSplitter::split_balanced_parens($str ?? "");
         foreach (PaperSearch::view_generator($groups) as $sve) {
             if (($show_action = $sve->show_action())) {
@@ -733,13 +757,13 @@ class PaperList {
         return "";
     }
 
-    /** @param ?int $origin */
-    function apply_view_report_default($origin = null) {
+    /** @param 0|1|2|3|4|5 $origin */
+    function apply_view_report_default($origin = self::VIEWORIGIN_DEFAULT_DISPLAY) {
         $s = null;
         if ($this->_report_id === "pl" || $this->_report_id === "pf") {
             $s = $this->conf->setting_data("{$this->_report_id}display_default");
         }
-        $this->parse_view($s ?? $this->unparse_baseline_view(), $origin ?? self::VIEWORIGIN_DEFAULT_DISPLAY);
+        $this->parse_view($s ?? $this->unparse_baseline_view(), $origin);
     }
 
     function apply_view_session(Qrequest $qreq) {
@@ -750,40 +774,64 @@ class PaperList {
     }
 
     function apply_view_qreq(Qrequest $qreq) {
+        $x = [];
         foreach ($qreq as $k => $v) {
-            if (str_starts_with($k, "show") && $v) {
-                $name = substr($k, 4);
-                $this->set_view($name, true, self::VIEWORIGIN_REQUEST, $this->_view_decorations[$name] ?? null);
+            if (str_starts_with($k, "show")) {
+                $x[substr($k, 4)] = !!$v;
+            } else if (str_starts_with($k, "has_show")) {
+                $x[substr($k, 8)] = $x[substr($k, 8)] ?? false;
             } else if ($k === "forceShow") {
-                $this->set_view("force", !!$v, self::VIEWORIGIN_REQUEST);
+                $x["force"] = !!$v;
             }
+        }
+        foreach ($x as $name => $show) {
+            $this->set_view($name, $show, self::VIEWORIGIN_REQUEST, $this->_view_decorations[$name] ?? null);
         }
     }
 
-    /** @param bool $report_diff
+    /** @param int $v
+     * @param 0|1|2|3|4|5 $origin
+     * @return bool */
+    static private function view_showing_at($v, $origin) {
+        assert($origin >= self::VIEWORIGIN_NONE && $origin <= self::VIEWORIGIN_MAX);
+        if ($origin < 0) {
+            return false;
+        } else if ($origin >= self::VIEWORIGIN_MAX) {
+            return ($v & self::VIEW_SHOW) !== 0;
+        } else {
+            $originmask = 1 << (self::VIEW_ORIGINSHIFT + 2 * $origin);
+            while ($origin >= 0 && ($v & $originmask) === 0) {
+                --$origin;
+                $originmask >>= 2;
+            }
+            return $origin >= 0 && ($v & ($originmask << 1)) !== 0;
+        }
+    }
+
+    /** @param -1|0|1|2|3|4|5 $base_origin
+     * @param bool $include_sort
      * @return list<string> */
-    function unparse_view($report_diff = false) {
-        // views
+    function unparse_view($base_origin = self::VIEWORIGIN_NONE, $include_sort = true) {
+        // show/hide
         $res = [];
         $nextpos = 1000000;
         foreach ($this->_viewf as $name => $v) {
-            if ($report_diff
-                ? ($v >= self::VIEW_SHOW) !== (($v & self::VIEW_REPORTSHOW) !== 0)
-                : $v >= self::VIEW_SHOW) {
-                $pos = self::$view_fake[$name] ?? null;
-                if ($pos === null) {
-                    $fs = $this->conf->paper_columns($name, $this->xtp);
-                    if (count($fs) && isset($fs[0]->order)) {
-                        $pos = $fs[0]->order;
-                        $name = $fs[0]->name;
-                    } else {
-                        $pos = $nextpos++;
-                    }
-                }
-                $key = "{$pos} {$name}";
-                $kw = $v >= self::VIEW_SHOW ? "show" : "hide";
-                $res[$key] = PaperSearch::unparse_view($kw, $name, $this->_view_decorations[$name] ?? null);
+            if (($v >= self::VIEW_SHOW) === self::view_showing_at($v, $base_origin)) {
+                continue;
             }
+            $pos = self::$view_fake[$name] ?? null;
+            if ($pos === null) {
+                $fs = $this->conf->paper_columns($name, $this->xtp);
+                if (count($fs) && isset($fs[0]->order)) {
+                    $pos = $fs[0]->order;
+                    $name = $fs[0]->name;
+                } else {
+                    $pos = $nextpos++;
+                }
+            }
+            $key = "{$pos} {$name}";
+            $kw = $v >= self::VIEW_SHOW ? "show" : "hide";
+            $res[$key] = PaperSearch::unparse_view($kw, $name, $this->_view_decorations[$name] ?? null);
         }
         if (((($this->_viewf["anonau"] ?? 0) >= self::VIEW_SHOW && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
              || ($this->_viewf["aufull"] ?? 0) >= self::VIEW_SHOW)
@@ -794,17 +842,24 @@ class PaperList {
         $res = array_values($res);
 
         // sorters
-        foreach ($this->sorters() as $s) {
-            $res[] = PaperSearch::unparse_view("sort", $s->name, $s->decorations());
-            if ($s->name === "id") {
-                break;
+        if ($include_sort) {
+            foreach ($this->sorters() as $i => $s) {
+                if ($this->_sort_origin[$i] <= $base_origin) {
+                    break;
+                }
+                $res[] = PaperSearch::unparse_view("sort", $s->name, $s->decorations());
+                if ($s->name === "id") {
+                    break;
+                }
+            }
+            while (!empty($res) && $res[count($res) - 1] === "sort:id") {
+                array_pop($res);
             }
         }
-        while (!empty($res) && $res[count($res) - 1] === "sort:id") {
-            array_pop($res);
-        }
+
+        // score sort
         if ($this->_score_sort
-            && (!$report_diff || $this->_score_sort !== self::default_score_sort($this->conf))) {
+            && ($base_origin < 0 || $this->_score_sort !== self::default_score_sort($this->conf))) {
             $res[] = PaperSearch::unparse_view("sort", "score", [$this->_score_sort]);
         }
 
@@ -858,11 +913,11 @@ class PaperList {
     }
 
     /** @param ?list<int> $sort_subset */
-    private function _add_view_sorters(SearchTerm $qe, $sort_subset) {
+    private function _add_search_sorters(SearchTerm $qe, $sort_subset) {
         $nsortcol = count($this->_sortcol);
         foreach (PaperSearch::view_generator($qe->view_anno()) as $sve) {
             if ($sve->sort_action()) {
-                $this->_add_sorter($sve->keyword, null, $sve->decorations, $sort_subset, $sve->pos1, $sve->pos2);
+                $this->_add_sorter($sve->keyword, PaperList::VIEWORIGIN_SEARCH, $sve->decorations, $sort_subset, $sve->pos1, $sve->pos2);
             }
         }
         if (count($this->_sortcol) === $nsortcol
@@ -870,7 +925,7 @@ class PaperList {
             && $dspc->prepare($this, PaperColumn::PREP_SORT)) {
             assert($dspc->sort > 0);
             $dspc->sort_subset = $sort_subset;
-            $this->_sortcol[] = $dspc;
+            $this->_append_sortcol($dspc, PaperList::VIEWORIGIN_SEARCH);
         }
     }
 
@@ -882,13 +937,14 @@ class PaperList {
             // apply sorters from search terms
             if (($thenqe = $this->search->then_term())) {
                 foreach ($thenqe->subset_terms() as $chrange) {
-                    $this->_add_view_sorters($chrange[0], $chrange[1]);
+                    $this->_add_search_sorters($chrange[0], $chrange[1]);
                 }
             }
-            $this->_add_view_sorters($this->search->main_term(), null);
+            $this->_add_search_sorters($this->search->main_term(), null);
             // final default sorter
             if (empty($this->_sortcol)) {
-                $this->_sortcol[] = ($this->ensure_columns_by_name("id"))[0];
+                $idcol = ($this->ensure_columns_by_name("id"))[0];
+                $this->_append_sortcol($idcol, self::VIEWORIGIN_REPORT);
             }
             // default editable tag
             $this->_sort_etag = "";
@@ -1165,28 +1221,29 @@ class PaperList {
 
     /** @param string|MessageItem $message */
     function column_error($message) {
-        if (($name = $this->_finding_column)
-            && $this->view_origin($name) >= self::VIEWORIGIN_EXPLICIT) {
-            if (is_string($message)) {
-                $mi = new MessageItem($name, $message, MessageSet::WARNING);
-            } else {
-                $mi = $message;
-            }
-            if (($pos = $this->search->main_term()->view_anno_pos($name))
-                && ($mi->status !== MessageSet::INFORM || empty($this->_finding_column_errors))) {
-                if ($mi->pos1 !== null) {
-                    $mi->pos1 += $pos[1];
-                    $mi->pos2 += $pos[1];
-                } else {
-                    $mi->pos1 = $pos[0];
-                    $mi->pos2 = $pos[2];
-                }
-                $mi->context = $this->search->q;
-            } else {
-                $mi->pos1 = $mi->pos2 = null;
-            }
-            $this->_finding_column_errors[] = $mi;
+        if (!($name = $this->_finding_column)
+            || !$this->want_column_errors($name)) {
+            return;
         }
+        if (is_string($message)) {
+            $mi = new MessageItem($name, $message, MessageSet::WARNING);
+        } else {
+            $mi = $message;
+        }
+        if (($pos = $this->search->main_term()->view_anno_pos($name))
+            && ($mi->status !== MessageSet::INFORM || empty($this->_finding_column_errors))) {
+            if ($mi->pos1 !== null) {
+                $mi->pos1 += $pos[1];
+                $mi->pos2 += $pos[1];
+            } else {
+                $mi->pos1 = $pos[0];
+                $mi->pos2 = $pos[2];
+            }
+            $mi->context = $this->search->q;
+        } else {
+            $mi->pos1 = $mi->pos2 = null;
+        }
+        $this->_finding_column_errors[] = $mi;
     }
 
     /** @param string $name
@@ -1205,7 +1262,7 @@ class PaperList {
                 }
             }
             if (empty($this->_columns_by_name[$name])
-                && $this->view_origin($name) >= self::VIEWORIGIN_EXPLICIT) {
+                && $this->want_column_errors($name)) {
                 if (empty($this->_finding_column_errors)) {
                     $this->column_error("<0>Field ‘{$name}’ not found");
                 }

@@ -90,17 +90,18 @@ class Session_API {
     }
 
     /** @param string $report
-     * @param string $view */
+     * @param string|Qrequest $view */
     static function parse_view(Qrequest $qreq, $report, $view) {
         $search = new PaperSearch($qreq->user(), "NONE");
         $pl = new PaperList($report, $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default(PaperList::VIEWORIGIN_REPORT);
         $pl->apply_view_session($qreq);
-        $pl->parse_view($view);
-        $vd = array_filter($pl->unparse_view(true), function ($x) {
-            return !str_starts_with($x, "sort:")
-                || str_starts_with($x, "sort:score[");
-        });
+        if ($view instanceof Qrequest) {
+            $pl->apply_view_qreq($view);
+        } else {
+            $pl->parse_view($view, PaperList::VIEWORIGIN_MAX);
+        }
+        $vd = $pl->unparse_view(PaperList::VIEWORIGIN_REPORT, false);
         if (!empty($vd)) {
             $qreq->set_csession("{$report}display", join(" ", $vd));
         } else {
