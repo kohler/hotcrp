@@ -574,6 +574,24 @@ class PaperList {
             || $origin === self::VIEWORIGIN_MAX;
     }
 
+    /** @param int $v
+     * @param 0|1|2|3|4|5 $origin
+     * @return bool */
+    static private function view_showing_at($v, $origin) {
+        assert($origin >= self::VIEWORIGIN_NONE && $origin <= self::VIEWORIGIN_MAX);
+        if ($origin < 0) {
+            return false;
+        } else if ($origin >= self::VIEWORIGIN_MAX) {
+            return ($v & self::VIEW_SHOW) !== 0;
+        } else {
+            $originmask = 1 << (self::VIEW_ORIGINSHIFT + 2 * $origin);
+            while ($origin >= 0 && ($v & $originmask) === 0) {
+                --$origin;
+                $originmask >>= 2;
+            }
+            return $origin >= 0 && ($v & ($originmask << 1)) !== 0;
+        }
+    }
 
     /** @param 0|1|2|3|4|5 $origin */
     private function _set_view_hide_all($origin) {
@@ -586,17 +604,6 @@ class PaperList {
         $this->_view_hide_all = $origin;
         $this->_view_order = [];
         $this->_view_order_next = 1;
-    }
-
-    /** @param PaperColumn $col
-     * @param 0|1|2|3|4|5 $origin */
-    private function _append_sortcol($col, $origin) {
-        $i = count($this->_sortcol);
-        while ($i > 0 && $this->_sort_origin[$i - 1] < $origin) {
-            --$i;
-        }
-        array_splice($this->_sortcol, $i, 0, [$col]);
-        array_splice($this->_sort_origin, $i, 0, [$origin]);
     }
 
     /** @param string $k
@@ -642,7 +649,7 @@ class PaperList {
         $flags = &$this->_viewf[$k];
         $flags = $flags ?? 0;
         $originbit = self::VIEW_ORIGINSHIFT + 2 * $origin;
-        $flags = ($flags & ~(2 << $originbit)) | (($v ? 3 : 2) << $originbit);
+        $flags = ($flags & ~(2 << $originbit)) | (($v ? 3 : 1) << $originbit);
         if (($flags & self::VIEW_ORIGINMASK) > $origin
             || ($v && $this->_view_hide_all > $origin)) {
             return;
@@ -677,6 +684,16 @@ class PaperList {
     }
 
 
+    /** @param PaperColumn $col
+     * @param 0|1|2|3|4|5 $origin */
+    private function _append_sortcol($col, $origin) {
+        $i = count($this->_sortcol);
+        while ($i > 0 && $this->_sort_origin[$i - 1] < $origin) {
+            --$i;
+        }
+        array_splice($this->_sortcol, $i, 0, [$col]);
+        array_splice($this->_sort_origin, $i, 0, [$origin]);
+    }
 
     /** @param string $k
      * @param 0|1|2|3|4|5 $origin
@@ -786,25 +803,6 @@ class PaperList {
         }
         foreach ($x as $name => $show) {
             $this->set_view($name, $show, self::VIEWORIGIN_REQUEST, $this->_view_decorations[$name] ?? null);
-        }
-    }
-
-    /** @param int $v
-     * @param 0|1|2|3|4|5 $origin
-     * @return bool */
-    static private function view_showing_at($v, $origin) {
-        assert($origin >= self::VIEWORIGIN_NONE && $origin <= self::VIEWORIGIN_MAX);
-        if ($origin < 0) {
-            return false;
-        } else if ($origin >= self::VIEWORIGIN_MAX) {
-            return ($v & self::VIEW_SHOW) !== 0;
-        } else {
-            $originmask = 1 << (self::VIEW_ORIGINSHIFT + 2 * $origin);
-            while ($origin >= 0 && ($v & $originmask) === 0) {
-                --$origin;
-                $originmask >>= 2;
-            }
-            return $origin >= 0 && ($v & ($originmask << 1)) !== 0;
         }
     }
 
