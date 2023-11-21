@@ -2789,7 +2789,7 @@ class PaperInfo {
             Dbl::free($result);
             $this->ensure_full_review_name();
         }
-        if ($this->_full_review_key === "r$id") {
+        if ($this->_full_review_key === "r{$id}") {
             return $this->_full_review[0] ?? null;
         }
         $this->ensure_full_reviews();
@@ -2804,7 +2804,7 @@ class PaperInfo {
             && ($this->_flags & self::REVIEW_HAS_FULL) === 0) {
             foreach ($this->_row_set as $prow) {
                 $prow->_full_review = [];
-                $prow->_full_review_key = "u$cid";
+                $prow->_full_review_key = "u{$cid}";
             }
             $result = $this->conf->qe("select PaperReview.*, " . $this->conf->rating_signature_query() . " ratingSignature from PaperReview where paperId?a and contactId=? order by paperId, reviewId", $this->_row_set->paper_ids(), $cid);
             while (($rrow = ReviewInfo::fetch($result, $this->_row_set, $this->conf))) {
@@ -2813,7 +2813,7 @@ class PaperInfo {
             Dbl::free($result);
             $this->ensure_full_review_name();
         }
-        if ($this->_full_review_key === "u$cid") {
+        if ($this->_full_review_key === "u{$cid}") {
             return $this->_full_review;
         }
         $this->ensure_full_reviews();
@@ -2824,14 +2824,14 @@ class PaperInfo {
     function full_review_by_ordinal($ordinal) {
         if ($this->_full_review_key === null
             && ($this->_flags & self::REVIEW_HAS_FULL) === 0) {
-            $this->_full_review_key = "o$ordinal";
+            $this->_full_review_key = "o{$ordinal}";
             $result = $this->conf->qe("select PaperReview.*, " . $this->conf->rating_signature_query() . " ratingSignature from PaperReview where paperId=? and reviewOrdinal=?", $this->paperId, $ordinal);
             $rrow = ReviewInfo::fetch($result, $this, $this->conf);
             $this->_full_review = $rrow ? [$rrow] : [];
             Dbl::free($result);
             $this->ensure_full_review_name();
         }
-        if ($this->_full_review_key === "o$ordinal") {
+        if ($this->_full_review_key === "o{$ordinal}") {
             return $this->_full_review[0] ?? null;
         }
         $this->ensure_full_reviews();
@@ -2924,6 +2924,11 @@ class PaperInfo {
         foreach ($row_set as $prow) {
             foreach ($prow->all_reviews() as $rrow) {
                 $this->conf->prefetch_user_by_id($rrow->contactId);
+            }
+            if (($cmts = $prow->_comment_array ?? $prow->_comment_skeleton_array)) {
+                foreach ($cmts as $crow) {
+                    $this->conf->prefetch_user_by_id($crow->contactId);
+                }
             }
         }
         foreach ($row_set as $prow) {
@@ -3189,17 +3194,9 @@ class PaperInfo {
     }
 
 
-    static function fetch_comment_query() {
-        return "select PaperComment.*, firstName, lastName, affiliation, email
-            from PaperComment
-            left join ContactInfo on (ContactInfo.contactId=PaperComment.contactId)";
-    }
-
     /** @return list<CommentInfo> */
     function fetch_comments($extra_where = null) {
-        $result = $this->conf->qe(self::fetch_comment_query()
-            . " where paperId={$this->paperId}" . ($extra_where ? " and $extra_where" : "")
-            . " order by paperId, commentId");
+        $result = $this->conf->qe("select * from PaperComment where paperId={$this->paperId}" . ($extra_where ? " and {$extra_where}" : "") . " order by paperId, commentId");
         $comments = [];
         while (($c = CommentInfo::fetch($result, $this, $this->conf))) {
             $comments[] = $c;
@@ -3212,14 +3209,19 @@ class PaperInfo {
         foreach ($this->_row_set as $prow) {
             $prow->_comment_array = [];
         }
-        $result = $this->conf->qe(self::fetch_comment_query()
-            . " where paperId?a order by paperId, commentId", $this->_row_set->paper_ids());
+        $result = $this->conf->qe("select * from PaperComment where paperId?a order by paperId, commentId", $this->_row_set->paper_ids());
         while (($c = CommentInfo::fetch($result, null, $this->conf))) {
             $prow = $this->_row_set->checked_paper_by_id($c->paperId);
             $c->set_prow($prow);
             $prow->_comment_array[] = $c;
         }
         Dbl::free($result);
+    }
+
+    function ensure_comments() {
+        if ($this->_comment_array === null) {
+            $this->load_comments();
+        }
     }
 
     /** @return list<CommentInfo> */

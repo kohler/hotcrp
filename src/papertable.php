@@ -3059,6 +3059,12 @@ class PaperTable {
     }
 
 
+    function resolve_comments() {
+        // should be called before resolve_review to minimize DB transactions for users
+        $this->crows = $this->prow->all_comments();
+        $this->mycrows = $this->prow->viewable_comments($this->user, true);
+    }
+
     /** @param bool $want_review
      * @suppress PhanAccessReadOnlyProperty */
     function resolve_review($want_review) {
@@ -3152,11 +3158,6 @@ class PaperTable {
                 || $this->prow->submission_round()->time_submit(true))) {
             $this->mode = "edit";
         }
-    }
-
-    function resolve_comments() {
-        $this->crows = $this->prow->all_comments();
-        $this->mycrows = $this->prow->viewable_comments($this->user, true);
     }
 
     /** @return list<ReviewInfo> */

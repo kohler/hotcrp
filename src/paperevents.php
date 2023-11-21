@@ -1,6 +1,6 @@
 <?php
 // paperevents.php -- HotCRP paper events
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class PaperEvent {
     /** @var PaperInfo */
@@ -71,10 +71,10 @@ class PaperEvents {
             $qv[] = $this->prows->paper_ids();
         }
         if (is_array($pos)) {
-            $where[] = "($key<? or ($key=? and (paperId>? or (paperId=? and contactId>?))))";
+            $where[] = "({$key}<? or ({$key}=? and (paperId>? or (paperId=? and contactId>?))))";
             array_push($qv, $pos[0], $pos[0], $pos[1], $pos[1], $pos[2]);
         } else {
-            $where[] = "$key<?";
+            $where[] = "{$key}<?";
             $qv[] = $pos;
         }
         return [$where, $qv];
@@ -124,7 +124,7 @@ class PaperEvents {
 
     private function more_comments() {
         list($where, $qv) = $this->initial_wheres($this->cposition, "timeModified");
-        $q = "select * from PaperComment where " . join(" and ", $where) . " order by timeModified desc, paperId asc, contactId asc limit $this->limit";
+        $q = "select * from PaperComment where " . join(" and ", $where) . " order by timeModified desc, paperId asc, contactId asc limit {$this->limit}";
 
         $last = null;
         $result = $this->conf->qe_apply($q, $qv);

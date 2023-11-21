@@ -334,8 +334,8 @@ class Review_Page {
 
     function print() {
         $pt = $this->pt();
-        $pt->resolve_review(!!$this->rrow);
         $pt->resolve_comments();
+        $pt->resolve_review(!!$this->rrow);
 
         // mode
         if ($this->rv) {

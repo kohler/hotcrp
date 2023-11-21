@@ -44,19 +44,12 @@ class CommentInfo {
     /** @var ?object */
     private $_jdata;
 
-    /** @var ?string */
-    public $firstName;
-    /** @var ?string */
-    public $lastName;
-    /** @var ?string */
-    public $affiliation;
-    /** @var ?string */
-    public $email;
-
     /** @var ?list<NotificationInfo> */
     public $notifications;
     /** @var ?list<MessageItem> */
     public $message_list;
+    /** @var ?Contact */
+    private $_commenter;
 
     const CT_DRAFT = 0x01;
     const CT_BLIND = 0x02;
@@ -324,6 +317,16 @@ class CommentInfo {
         $this->commentData = $s === "{}" ? null : $s;
     }
 
+    /** @return Contact */
+    function commenter() {
+        if ($this->_commenter === null) {
+            $this->prow && $this->prow->ensure_reviewer_names();
+            $this->_commenter = $this->conf->user_by_id($this->contactId, USER_SLICE)
+                ?? Contact::make_deleted($this->conf, $this->contactId);
+        }
+        return $this->_commenter;
+    }
+
 
     /** @return ?string */
     function unparse_response_text() {
@@ -421,7 +424,7 @@ class CommentInfo {
     /** @return string */
     function unparse_commenter_html(Contact $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
-            $n = Text::nameo_h($this, NAME_P|NAME_I);
+            $n = Text::nameo_h($this->commenter(), NAME_P|NAME_I);
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ?? "anonymous";
         }
@@ -611,17 +614,15 @@ class CommentInfo {
             || ($viewer->allow_administer($this->prow)
                 && $viewer->call_with_overrides(Contact::OVERRIDE_CONFLICT, "can_view_comment_identity", $this->prow, $this));
         if ($idable || $idable_override) {
+            $cuser = $this->commenter();
             if (($this->commentType & self::CT_BYAUTHOR_MASK) === 0
-                && $viewer->can_view_user_tags()
-                && ($cuser = $this->conf->pc_member_by_id($this->contactId))) {
+                && $viewer->can_view_user_tags()) {
                 $cj->author = $viewer->reviewer_html_for($cuser);
-                $email = $cuser->email;
             } else {
-                $cj->author = Text::nameo($this, NAME_P);
-                $email = $this->email;
+                $cj->author = Text::nameo_h($cuser, NAME_P);
             }
-            if (!Contact::is_anonymous_email($email)) {
-                $cj->author_email = $email;
+            if (!$cuser->is_anonymous_user()) {
+                $cj->author_email = $cuser->email;
             } else if ($viewer->review_tokens()
                        && ($rrows = $this->prow->reviews_by_user(-1, $viewer->review_tokens()))) {
                 $cj->review_token = encode_token($rrows[0]->reviewToken);
@@ -973,7 +974,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
 
         // reload contents
         if ($text !== false) {
-            if (($cobject = $this->conf->fetch_first_object(PaperInfo::fetch_comment_query() . " where paperId={$this->prow->paperId} and commentId={$cmtid}"))) {
+            if (($cobject = $this->conf->fetch_first_object("select * from PaperComment where paperId={$this->prow->paperId} and commentId={$cmtid}"))) {
                 foreach (get_object_vars($cobject) as $k => $v) {
                     $this->$k = $v;
                 }

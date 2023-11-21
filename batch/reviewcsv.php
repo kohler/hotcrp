@@ -173,7 +173,7 @@ class ReviewCSV_Batch {
      * @param CommentInfo $crow */
     function add_comment($prow, $crow, $x) {
         $x["review"] = $crow->unparse_html_id();
-        $x["email"] = $crow->email;
+        $x["email"] = $crow->commenter()->email;
         if (($rrd = $crow->response_round())) {
             $x["round"] = $rrd->unnamed ? "" : $rrd->name;
         }
@@ -254,6 +254,7 @@ class ReviewCSV_Batch {
         $pset = $this->conf->paper_set(["paperId" => $search->paper_ids()]);
         foreach ($search->sorted_paper_ids() as $pid) {
             $prow = $pset->get($pid);
+            $this->comments && $prow->ensure_comments();
             $prow->ensure_full_reviews();
             $prow->ensure_reviewer_names();
             $px = [

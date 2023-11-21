@@ -427,12 +427,12 @@ class Paper_Page {
     function print() {
         // correct modes
         $pt = $this->pt();
+        $pt->resolve_comments();
         if ($pt->can_view_reviews()
             || $pt->mode === "re"
             || ($this->prow->paperId > 0 && $this->user->can_edit_some_review($this->prow))) {
             $pt->resolve_review(false);
         }
-        $pt->resolve_comments();
         if ($pt->mode === "edit") {
             $this->prepare_edit_mode();
         }
