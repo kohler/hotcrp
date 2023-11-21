@@ -4007,7 +4007,7 @@ class Conf {
                 "PaperConflict.conflictType>=" . CONFLICT_AUTHOR,
                 "PaperReview.reviewType>0",
                 "exists (select * from PaperComment where paperId=Paper.paperId and contactId={$cxid})",
-                "(PaperWatch.watch&" . Contact::WATCH_REVIEW . ")!=0"
+                "exists (select * from PaperWatch where paperId=Paper.paperId and contactId={$cxid} and (watch&" . Contact::WATCH_REVIEW . ")!=0)"
             ];
             if ($this->has_any_lead_or_shepherd()) {
                 $owhere[] = "leadContactId={$cxid}";

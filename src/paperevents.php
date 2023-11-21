@@ -36,12 +36,15 @@ class PaperEvents {
     /** @var PaperInfoSet */
     private $prows;
 
+    /** @var int */
     private $limit;
+    /** @var null|false|float|array{int|float,int|float,int|float} */
     private $rposition;
     /** @var list<ReviewInfo> */
     private $rrows = [];
     /** @var ?PaperEvent */
     private $cur_rrow;
+    /** @var null|false|float|array{int|float,int|float,int|float} */
     private $cposition;
     /** @var list<CommentInfo> */
     private $crows = [];
@@ -83,7 +86,7 @@ class PaperEvents {
     private function more_reviews() {
         list($where, $qv) = $this->initial_wheres($this->rposition, "reviewModified");
         $where[] = "reviewSubmitted>0";
-        $q = "select * from PaperReview where " . join(" and ", $where) . " order by reviewModified desc, paperId asc, contactId asc limit $this->limit";
+        $q = "select * from PaperReview where " . join(" and ", $where) . " order by reviewModified desc, paperId asc, contactId asc limit {$this->limit}";
 
         $last = null;
         $result = $this->conf->qe_apply($q, $qv);
@@ -195,6 +198,8 @@ class PaperEvents {
         }
     }
 
+    /** @param int $limit
+     * @return list<PaperEvent> */
     function events($starting, $limit) {
         $this->rrows = $this->crows = [];
         $this->cur_rrow = $this->cur_crow = null;
