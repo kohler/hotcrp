@@ -2896,7 +2896,7 @@ class Conf {
                 $this->opt["timestampFormat"] = $this->opt["dateFormat"];
             }
             if (!isset($this->opt["dateFormatSimplifier"])) {
-                $this->opt["dateFormatSimplifier"] = ($this->opt["time24hour"] ?? false) ? "/:00(?!:)/" : "/:00(?::00|)(?= ?[ap]m)/";
+                $this->opt["dateFormatSimplifier"] = ($this->opt["time24hour"] ?? false) ? "/:00(?!:)/" : "/:00(?::00|)(?= ?[AaPp][Mm])/";
             }
             $this->_date_format_initialized = true;
         }

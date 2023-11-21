@@ -589,35 +589,47 @@ class Unit_Tester {
     }
 
     function test_obscure_time() {
-        $t = $this->conf->parse_time("1 Sep 2010 00:00:01");
+        $t = $this->conf->parse_time("Sep 1, 2010 00:00:01");
         $t0 = $this->conf->obscure_time($t);
-        xassert_eqq($this->conf->unparse_time_obscure($t0), "1 Sep 2010");
-        xassert_eqq($this->conf->unparse_time($t0), "1 Sep 2010 12pm EDT");
+        xassert_eqq($this->conf->unparse_time_obscure($t0), "Sep 1, 2010");
+        xassert_eqq($this->conf->unparse_time($t0), "Sep 1, 2010, 12 PM EDT");
 
-        $t = $this->conf->parse_time("1 Sep 2010 23:59:59");
+        $t = $this->conf->parse_time("Sep 1, 2010 23:59:59");
         $t0 = $this->conf->obscure_time($t);
-        xassert_eqq($this->conf->unparse_time_obscure($t0), "1 Sep 2010");
-        xassert_eqq($this->conf->unparse_time($t0), "1 Sep 2010 12pm EDT");
+        xassert_eqq($this->conf->unparse_time_obscure($t0), "Sep 1, 2010");
+        xassert_eqq($this->conf->unparse_time($t0), "Sep 1, 2010, 12 PM EDT");
     }
 
     function test_timezones() {
         $t = $this->conf->parse_time("29 May 2018 11:00:00 EDT");
         xassert_eqq($t, 1527606000);
-        $t = $this->conf->parse_time("29 May 2018 03:00:00 AoE");
+        $t = $this->conf->parse_time("May 29, 2018 11:00:00 EDT");
+        xassert_eqq($t, 1527606000);
+        $t = $this->conf->parse_time("May 29, 2018 03:00:00 AoE");
         xassert_eqq($t, 1527606000);
         $this->conf->set_opt("timezone", "Etc/GMT+12");
         $this->conf->refresh_options();
         $this->conf->refresh_globals();
-        $t = $this->conf->parse_time("29 May 2018 03:00:00");
+        $t = $this->conf->parse_time("May 29, 2018 03:00:00");
         xassert_eqq($t, 1527606000);
         $t = $this->conf->unparse_time(1527606000);
-        xassert_eqq($t, "29 May 2018 3am AoE");
-        $t = $this->conf->parse_time("29 May 2018 23:59:59 AoE");
+        xassert_eqq($t, "May 29, 2018, 3 AM AoE");
+        $t = $this->conf->parse_time("May 29, 2018, 23:59:59 AoE");
+        xassert_eqq($t, 1527681599);
+        $t = $this->conf->parse_time("May 29, 2018 AoE");
         xassert_eqq($t, 1527681599);
         $t = $this->conf->parse_time("29 May 2018 AoE");
         xassert_eqq($t, 1527681599);
+        $t = $this->conf->parse_time("May 29, 2018 12 AM AoE");
+        xassert_eqq($t, 1527595200);
+        $t = $this->conf->parse_time("May 29, 2018 12am AoE");
+        xassert_eqq($t, 1527595200);
+        $t = $this->conf->parse_time("29 May 2018 12 AM AoE");
+        xassert_eqq($t, 1527595200);
         $t = $this->conf->parse_time("29 May 2018 12am AoE");
         xassert_eqq($t, 1527595200);
+        $t = $this->conf->parse_time("May 29 AoE", 1527606000);
+        xassert_eqq($t, 1527681599);
         $t = $this->conf->parse_time("29 May AoE", 1527606000);
         xassert_eqq($t, 1527681599);
     }
