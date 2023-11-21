@@ -6963,7 +6963,7 @@ function cmt_render(cj, editing) {
 
     let idte = hdre;
     if (cj.response) {
-        if ((idte = chead.querySelector("cmtthead"))) {
+        if ((idte = chead.querySelector(".cmtthead"))) {
             idte.replaceChildren();
         } else {
             idte = $e("div", "cmtthead");
@@ -7010,14 +7010,9 @@ function cmt_render(cj, editing) {
             cmt_render_text(cj.format, cj.text || "", cj.response,
                             celt.querySelector(".cmttext"), chead);
         } else if (cj.response) {
-            t = '<p class="feedback is-warning">';
-            if (cj.word_count)
-                t += cj.word_count + "-word draft";
-            else
-                t += "Draft";
-            t += " " + (cj.response == "1" ? "" : cj.response + " ") +
-                "response not shown</p>";
-            $(celt).find(".cmttext").html(t);
+            const t = (cj.word_count ? cj.word_count + "-word draft " : "Draft ") +
+                (cj.response == "1" ? "" : cj.response + " ");
+            celt.querySelector(".cmttext").replaceChildren($e("p", "feedback is-warning", t + "response not shown"));
         }
         (cj.response ? $(chead).parent() : $(celt)).find(".cmteditor").click(edit_this);
     }
@@ -7125,7 +7120,7 @@ function add_new_comment_button(cj, cid) {
 function add_new_comment(cj, cid) {
     var article = $e("article", "pcard cmtcard cmtid".concat(cj.editable ? " editable" : "", cj.response ? " response" : " comment"));
     article.id = cid;
-    if (cj.response && cj.text !== false) {
+    if (cj.response) {
         article.appendChild($e("header", "cmtcard-head",
             $e("h2", "", $e("span", "cmtcard-header-name", cj_name(cj)))));
     }
