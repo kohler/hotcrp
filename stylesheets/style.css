@@ -4235,7 +4235,6 @@ a:hover .t-editor,
 }
 .revname, .revtime {
 	display: inline-block;
-	padding-right: 1.5em;
 }
 .rve {
 	margin-top: 16px;
@@ -4593,9 +4592,8 @@ a:hover .cmtnum,
 	-webkit-text-decoration-line: underline;
 	text-decoration-line: underline;
 }
-.cmtname, .cmttime, .cmttags, .cmtvis {
+.cmtname, .cmttime, .cmttags, .cmtvis, .cmtwords {
 	display: inline-block;
-	padding-right: 1.25em;
 }
 .cmtnum span.cmtnumat {
 	opacity: 0.5;

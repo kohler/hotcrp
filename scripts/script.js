@@ -818,11 +818,11 @@ var strftime = (function () {
         else if (is24)
             return strftime("%H:%M:%S", d);
         else if (alt && d.getSeconds())
-            return strftime("%#l:%M:%S%P", d);
+            return strftime("%#l:%M:%S %p", d);
         else if (alt && d.getMinutes())
-            return strftime("%#l:%M%P", d);
+            return strftime("%#l:%M %p", d);
         else if (alt)
-            return strftime("%#l%P", d);
+            return strftime("%#l %p", d);
         else
             return strftime("%I:%M:%S %p", d);
     }
@@ -844,7 +844,7 @@ var strftime = (function () {
         I: function (d) { return pad(d.getHours() % 12 || 12, "0", 2); },
         l: function (d, alt) { return pad(d.getHours() % 12 || 12, alt & 1 ? "" : " ", 2); },
         M: function (d, alt) { return pad(alt & 2 ? d.getUTCMinutes() : d.getMinutes(), "0", 2); },
-        X: function (d) { return strftime("%#e %b %Y %#q", d); },
+        X: function (d) { return strftime("%b %#e, %Y %#q", d); },
         p: function (d) { return d.getHours() < 12 ? "AM" : "PM"; },
         P: function (d) { return d.getHours() < 12 ? "am" : "pm"; },
         q: function (d, alt) { return unparse_q(d, alt, strftime.is24); },
@@ -898,7 +898,7 @@ function unparse_time_relative(t, now, format) {
     var d = Math.abs(now - t), unit = 0;
     if (d >= 5227200) { // 60.5d
         if (!(format & 1))
-            return strftime((format & 8 ? "on " : "") + "%#e %b %Y", t);
+            return strftime((format & 8 ? "on " : "") + "%b %#e, %Y", t);
         unit = 5;
     } else if (d >= 259200) // 3d
         unit = 4;
@@ -3873,19 +3873,25 @@ hotcrp.tracker_show_elapsed = tracker_show_elapsed;
 
 hotcrp.onload = (function ($) {
     function append_span(e, fmt, d) {
-        var span = document.createElement("span");
-        span.textContent = strftime(fmt, d);
-        span.className = "usertime";
-        e.append(" ", span);
+        e.append(" ", $e("span", "usertime", strftime(fmt, d)));
     }
     function show_usertimes() {
         $(".need-usertime").each(function () {
-            var d = new Date(+this.getAttribute("data-time") * 1000), m;
-            if ((m = this.textContent.match(/(\d+) (\S+) (\d{4})/))) {
-                if (+m[3] !== d.getFullYear())
-                    append_span(this, " (%#e %b %Y %#q your time)", d);
+            const ts = this.getAttribute(this.hasAttribute("data-ts") ? "data-ts" : "data-time"), /* XXX */
+                d = new Date(+ts * 1000), t = this.textContent;
+            let m;
+            if ((m = t.match(/(\d+) \w+ (\d{4})/))) {
+                if (+m[2] !== d.getFullYear())
+                    append_span(this, " (%b %#e, %Y, %#q your time)", d);
                 else if (+m[1] !== d.getDate())
-                    append_span(this, " (%#e %b %#q your time)", d);
+                    append_span(this, " (%b %#e %#q your time)", d);
+                else
+                    append_span(this, " (%#q your time)", d);
+            } else if ((m = t.match(/\w+ (\d+), (\d{4})/))) {
+                if (+m[2] !== d.getFullYear())
+                    append_span(this, " (%b %#e, %Y, %#q your time)", d);
+                else if (+m[1] !== d.getDate())
+                    append_span(this, " (%b %#e %#q your time)", d);
                 else
                     append_span(this, " (%#q your time)", d);
             } else if ((m = this.textContent.match(/(\d{4}-\d+-\d+)/))) {
@@ -5473,6 +5479,93 @@ $(function () {
 });
 
 
+// times
+(function ($) {
+var update_to, updatets, scheduled_updatets = null;
+
+function check_time_point(e, ts, tsdate, nowts, nowdate) {
+    if (ts <= nowts - 950400) { // 11 days
+        if (e.hasAttribute("data-ts-text")) {
+            e.textContent = e.getAttribute("data-ts-text");
+            e.removeAttribute("data-ts-text");
+        }
+        const nowy = nowdate.getFullYear(), tsy = tsdate.getFullYear();
+        if (nowy === tsy
+            || (nowy === tsy + 1 && nowdate.getMonth() <= tsdate.getMonth())) {
+            const sfx = ", " + tsy, ttext = e.textContent;
+            if (ttext.endsWith(sfx)) {
+                e.textContent = ttext.substr(0, ttext.length - sfx.length);
+            }
+        }
+        return;
+    }
+    if (!e.hasAttribute("data-ts-text")) {
+        e.setAttribute("data-ts-text", e.textContent);
+    }
+    let uts, ttext;
+    if (ts <= nowts - 86400) {
+        const d = Math.floor((nowts - ts) / 86400);
+        ttext = d + "d";
+        uts = ts + (d + 1) * 86400;
+    } else if (ts <= nowts - 3600) {
+        const h = Math.floor((nowts - ts) / 3600);
+        ttext = h + "h";
+        uts = ts + (h + 1) * 3600;
+    } else if (ts <= nowts - 60) {
+        const m = Math.floor((nowts - ts) / 60);
+        ttext = m + "m";
+        uts = ts + (m + 1) * 60;
+    } else {
+        ttext = "just now";
+        uts = ts + 60;
+    }
+    if (ttext !== e.textContent) {
+        e.textContent = ttext;
+    }
+    e.setAttribute("data-ts-update", uts);
+    if (uts > nowts && (updatets === null || uts < updatets)) {
+        updatets = uts;
+    }
+}
+
+function update_time_points() {
+    const nowdate = new Date, nowts = nowdate.getTime() / 1000;
+    scheduled_updatets = updatets = update_to = null;
+    for (let e of document.querySelectorAll("time[data-ts-update]")) {
+        const uts = +e.getAttribute("data-ts-update");
+        if (uts <= nowts) {
+            const ts = +e.getAttribute("data-ts"), tsdate = new Date(ts);
+            check_time_point(e, ts, tsdate, nowts, nowdate);
+        } else if (updatets === null || uts < updatets) {
+            updatets = uts;
+        }
+    }
+    if (updatets) {
+        scheduled_updatets = updatets;
+        update_to = setTimeout(update_time_points, (updatets - nowts) * 1000);
+    }
+}
+
+hotcrp.make_time_point = function (ts, ttext, className) {
+    const tsdate = new Date(ts * 1000), nowdate = new Date, nowts = nowdate.getTime() / 1000,
+        e = $e("time", {
+            "class": className, datetime: tsdate.toISOString(),
+            "data-ts": ts,
+            title: strftime("%b %#e, %Y " + (strftime.is24 ? "%H:%M" : "%#l:%M %p"), tsdate)
+        }, ttext);
+    updatets = null;
+    check_time_point(e, ts, tsdate, nowts, nowdate);
+    if (updatets && (scheduled_updatets === null || updatets < scheduled_updatets)) {
+        scheduled_updatets && clearTimeout(update_to);
+        scheduled_updatets = updatets;
+        update_to = setTimeout(update_time_points, (updatets - nowts) * 1000);
+    }
+    return e;
+};
+
+})(jQuery);
+
+
 // reviews
 handle_ui.on("js-review-tokens", function () {
     var $d, hc = popup_skeleton();
@@ -5783,6 +5876,7 @@ function append_review_id(rrow, eheader) {
             rth = $e("div", "revthead");
             eheader.appendChild(rth);
         }
+        rth.firstChild && rth.append($e("span", "barsep", "·"));
         rth.append(e);
     }
     function add_ad(s) {
@@ -5804,19 +5898,11 @@ function append_review_id(rrow, eheader) {
         ad && ad.append(" ");
         add_ad(review_types.make_icon(rrow.rtype, xc));
         if (rrow.round) {
-            e = document.createElement("span");
-            e.className = "revround";
-            e.title = "Review round";
-            e.append(rrow.round);
-            ad.append(e);
+            ad.append($e("span", {"class": "revround", title: "Review round"}, rrow.round));
         }
     }
     if (rrow.modified_at) {
-        e = document.createElement("time");
-        e.className = "revtime";
-        e.dateTime = (new Date(rrow.modified_at * 1000)).toISOString();
-        e.append(rrow.modified_at_text);
-        add_rth(e);
+        add_rth(hotcrp.make_time_point(rrow.modified_at, rrow.modified_at_text, "revtime"));
     }
 }
 
@@ -6245,6 +6331,9 @@ function cmt_identity_time(frag, cj, editing) {
             $e("a", {href: "#" + cj_cid(cj), "class": "q"},
                 $e("span", "cmtnumat", "@"), $e("span", "cmtnumnum", cj.ordinal))));
     }
+    function append_dot() {
+        frag.firstChild && frag.append($e("span", "barsep", "·"));
+    }
     if (cj.author && cj.author_hidden) {
         const aue = $e("span", {"class": "fx9", title: cj.author_email});
         aue.innerHTML = cj.author + " (deanonymized)";
@@ -6274,19 +6363,24 @@ function cmt_identity_time(frag, cj, editing) {
         frag.appendChild($e("address", {"class": "cmtname", itemprop: "author"}, cj.author_pseudonym));
     }
     if (cj.modified_at) {
-        frag.appendChild($e("time", {"class": "cmttime", datetime: (new Date(cj.modified_at * 1000)).toISOString()}, cj.modified_at_text));
+        append_dot();
+        frag.append(hotcrp.make_time_point(cj.modified_at, cj.modified_at_text, "cmttime"));
     }
     if (!cj.response && !editing) {
+        const v = vismap[cj.visibility];
+        if (v) {
+            append_dot();
+            frag.appendChild($e("div", "cmtvis", v));
+        }
         if (cj.tags) {
             const tage = $e("div", "cmttags");
             for (let t of cj.tags) {
                 tage.firstChild && tage.append(" ");
                 tage.appendChild($e("a", {href: hoturl("search", {q: "cmt:#" + unparse_tag(t, true)}), "class": "q"}, "#" + unparse_tag(t)));
             }
+            append_dot();
             frag.appendChild(tage);
         }
-        const v = vismap[cj.visibility];
-        v && frag.appendChild($e("div", "cmtvis", "(" + v + ")"));
     }
 }
 
@@ -6807,7 +6901,7 @@ function cmt_submit(evt) {
 }
 
 function cmt_render(cj, editing) {
-    var t, $chead, i,
+    var t, chead, i,
         cid = cj_cid(cj), celt = $$(cid);
 
     // clear current comment
@@ -6828,8 +6922,7 @@ function cmt_render(cj, editing) {
         return;
     }
     if (cj.response) {
-        $chead = $(celt.closest(".cmtcard")).find(".cmtcard-head");
-        $chead.find(".cmtinfo").remove();
+        chead = celt.closest(".cmtcard").querySelector(".cmtcard-head");
     }
 
     // opener
@@ -6850,8 +6943,8 @@ function cmt_render(cj, editing) {
     }
 
     // header
-    if (cj.editable && !editing && cj.response) {
-        const h2 = $chead[0].querySelector("h2");
+    if (cj.response && cj.editable && !editing) {
+        const h2 = chead.querySelector("h2");
         if (!h2.querySelector("button")) {
             const button = $e("button", {type: "button", "class": "qo ui cmteditor"});
             while (h2.firstChild) {
@@ -6870,11 +6963,11 @@ function cmt_render(cj, editing) {
 
     let idte = hdre;
     if (cj.response) {
-        if ((idte = $chead[0].querySelector("cmtthead"))) {
+        if ((idte = chead.querySelector("cmtthead"))) {
             idte.replaceChildren();
         } else {
             idte = $e("div", "cmtthead");
-            $chead[0].appendChild(idte);
+            chead.appendChild(idte);
         }
     }
     cmt_identity_time(idte, cj, editing);
@@ -6902,7 +6995,7 @@ function cmt_render(cj, editing) {
     cmt_toggle_editing(celt, editing);
     if (cj.response) {
         t = cj_name(cj);
-        var $chead_name = $chead.find(".cmtcard-header-name");
+        var $chead_name = $(chead).find(".cmtcard-header-name");
         if ($chead_name.html() !== t) {
             $chead_name.html(t);
             navsidebar.redisplay(cid);
@@ -6915,7 +7008,7 @@ function cmt_render(cj, editing) {
     } else {
         if (cj.text !== false) {
             cmt_render_text(cj.format, cj.text || "", cj.response,
-                            $(celt).find(".cmttext")[0], $chead);
+                            celt.querySelector(".cmttext"), chead);
         } else if (cj.response) {
             t = '<p class="feedback is-warning">';
             if (cj.word_count)
@@ -6926,7 +7019,7 @@ function cmt_render(cj, editing) {
                 "response not shown</p>";
             $(celt).find(".cmttext").html(t);
         }
-        (cj.response ? $chead.parent() : $(celt)).find(".cmteditor").click(edit_this);
+        (cj.response ? $(chead).parent() : $(celt)).find(".cmteditor").click(edit_this);
     }
 
     return $(celt);
@@ -6938,7 +7031,13 @@ function cmt_render_text(format, value, response, texte, chead) {
     if (rrd && rrd.wl > 0) {
         const wc = count_words(value);
         if (wc > 0 && chead) {
-            chead[0].appendChild($e("div", "cmtthead words" + (wc > rrd.wl ? " wordsover" : ""), plural(wc, "word")));
+            let cth = chead.querySelector(".cmtthead");
+            if (!cth) {
+                cth = $e("div", "cmtthead");
+                chead.appendChild(cth);
+            }
+            cth.firstChild && cth.append($e("span", "barsep", "·"));
+            cth.append($e("div", "cmtwords words" + (wc > rrd.wl ? " wordsover" : ""), plural(wc, "word")));
         }
         if ((rrd.hwl || 0) > 0
             && wc > rrd.hwl
@@ -13347,6 +13446,7 @@ Object.assign(window.hotcrp, {
     // load_editable_review
     // load_paper_sidebar
     // make_review_field
+    // make_time_point
     // onload
     paper_edit_conditions: function () {}, // XXX
     popup_skeleton: popup_skeleton,

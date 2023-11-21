@@ -2884,13 +2884,13 @@ class Conf {
                 $this->opt["dateFormatLong"] = $this->opt["dateFormat"];
             }
             if (!isset($this->opt["dateFormat"])) {
-                $this->opt["dateFormat"] = ($this->opt["time24hour"] ?? false) ? "j M Y H:i:s" : "j M Y g:i:sa";
+                $this->opt["dateFormat"] = ($this->opt["time24hour"] ?? false) ? "M j, Y, H:i:s" : "M j, Y, g:i:s A";
             }
             if (!isset($this->opt["dateFormatLong"])) {
                 $this->opt["dateFormatLong"] = "l " . $this->opt["dateFormat"];
             }
             if (!isset($this->opt["dateFormatObscure"])) {
-                $this->opt["dateFormatObscure"] = "j M Y";
+                $this->opt["dateFormatObscure"] = "M j, Y";
             }
             if (!isset($this->opt["timestampFormat"])) {
                 $this->opt["timestampFormat"] = $this->opt["dateFormat"];
@@ -3013,7 +3013,7 @@ class Conf {
         if ($timestamp > 0) {
             $offset = 0;
             if (($zone = $this->timezone())) {
-                $offset = $zone->getOffset(new DateTime("@$timestamp"));
+                $offset = $zone->getOffset(new DateTime("@{$timestamp}"));
             }
             $timestamp += 43200 - ($timestamp + $offset) % 86400;
         }
@@ -3031,7 +3031,7 @@ class Conf {
      * @return string */
     function unparse_time_with_local_span($timestamp, $suffix = "") {
         $s = $this->_unparse_time($timestamp, "long");
-        return "<span class=\"need-usertime\" data-time=\"{$timestamp}\">{$s}{$suffix}</span>";
+        return "<span class=\"need-usertime\" data-ts=\"{$timestamp}\">{$s}{$suffix}</span>";
     }
 
     /** @param int $timestamp
@@ -3049,7 +3049,7 @@ class Conf {
     /** @param int $timestamp
      * @return string */
     function unparse_time_point($timestamp) {
-        return $this->_date_format("j M Y", $timestamp);
+        return $this->_date_format("M j, Y", $timestamp);
     }
 
     /** @param int $timestamp
