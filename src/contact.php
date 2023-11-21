@@ -143,7 +143,7 @@ class Contact implements JsonSerializable {
     const ROLE_VIEW_SOME_REVIEW_ID = 0x20000;
 
     const ROLE_DBMASK = 0x000F;
-    const ROLE_CDBMASK = 0x003F;
+    const ROLE_CDBMASK = 0x003F; // DBMASK | AUTHOR | REVIEWER
 
     /** @var bool */
     public $isPC = false;
@@ -2237,7 +2237,7 @@ class Contact implements JsonSerializable {
             $key = $this->conf->setting_data("passwordHmacKey.$keyid");
         }
         if (!$key) {
-            error_log("missing passwordHmacKey.$keyid, using default");
+            error_log("missing passwordHmacKey.{$keyid}, using default");
             $key = "NdHHynw6JwtfSZyG3NYPTSpgPFG8UN8NeXp4tduTk2JhnSVy";
         }
         return $key;
@@ -2541,7 +2541,13 @@ class Contact implements JsonSerializable {
         }
     }
 
-    private function load_author_reviewer_status() {
+    /** @param int $wantmask */
+    private function check_author_reviewer_status($wantmask) {
+        if ($this->_rights_version === self::$rights_version
+            && ($this->role_mask & $wantmask) === $wantmask) {
+            return;
+        }
+        $this->check_rights_version();
         $rmask = self::ROLE_AUTHOR | self::ROLE_REVIEWER | self::ROLE_REQUESTER;
         $this->roles &= ~$rmask;
         $this->_session_roles &= ~$rmask;
@@ -2611,10 +2617,7 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function is_author() {
-        $this->check_rights_version();
-        if (($this->role_mask & self::ROLE_AUTHOR) === 0) {
-            $this->load_author_reviewer_status();
-        }
+        $this->check_author_reviewer_status(self::ROLE_AUTHOR);
         return ($this->_session_roles & self::ROLE_AUTHOR) !== 0;
     }
 
@@ -2629,19 +2632,13 @@ class Contact implements JsonSerializable {
 
     /** @return associative-array<int,int> */
     function conflict_types() {
-        $this->check_rights_version();
-        if ($this->_conflict_types === null) {
-            $this->load_author_reviewer_status();
-        }
+        $this->check_author_reviewer_status($this->_conflict_types === null ? -1 : 0);
         return $this->_conflict_types;
     }
 
     /** @return bool */
     function has_review() {
-        $this->check_rights_version();
-        if (($this->role_mask & self::ROLE_REVIEWER) === 0) {
-            $this->load_author_reviewer_status();
-        }
+        $this->check_author_reviewer_status(self::ROLE_REVIEWER);
         return ($this->_session_roles & self::ROLE_REVIEWER) !== 0;
     }
 
@@ -2668,9 +2665,7 @@ class Contact implements JsonSerializable {
         if ($this->is_disabled()) {
             return 0;
         } else {
-            if (($this->role_mask & self::ROLE_CDBMASK) !== self::ROLE_CDBMASK) {
-                $this->load_author_reviewer_status();
-            }
+            $this->check_author_reviewer_status(self::ROLE_CDBMASK);
             return $this->roles & self::ROLE_CDBMASK;
         }
     }
@@ -2690,10 +2685,7 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function is_requester() {
-        $this->check_rights_version();
-        if (($this->role_mask & self::ROLE_REQUESTER) === 0) {
-            $this->load_author_reviewer_status();
-        }
+        $this->check_author_reviewer_status(self::ROLE_REQUESTER);
         return ($this->_session_roles & self::ROLE_REQUESTER) !== 0;
     }
 

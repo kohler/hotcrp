@@ -222,7 +222,7 @@ class PaperRequest {
             }
             return PaperInfo::make_new($user, $qreq->sclass);
         } else {
-            $options = ["topics" => true, "options" => true];
+            $options = ["topics" => true, "options" => true, "allConflictType" => true, "myWatch" => true];
             if ($user->privChair
                 || ($user->isPC && $user->conf->timePCReviewPreferences())) {
                 $options["reviewerPreference"] = true;

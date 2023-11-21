@@ -3063,6 +3063,7 @@ class PaperTable {
         // should be called before resolve_review to minimize DB transactions for users
         $this->crows = $this->prow->all_comments();
         $this->mycrows = $this->prow->viewable_comments($this->user, true);
+        $this->prow->_row_set->prefetch_conflict_users();
     }
 
     /** @param bool $want_review

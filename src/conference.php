@@ -2091,10 +2091,11 @@ class Conf {
         }
     }
 
-    private function _refresh_user_cache() {
+    /** @param bool $require_pc */
+    private function _refresh_user_cache($require_pc) {
         $this->_ensure_user_cache();
         $reqids = $reqemails = [];
-        foreach ($this->_user_cache_missing as $req) {
+        foreach ($this->_user_cache_missing ?? [] as $req) {
             $req = self::clean_user_cache_request($req);
             if (is_int($req)) {
                 if (!array_key_exists($req, $this->_user_cache)) {
@@ -2119,6 +2120,10 @@ class Conf {
             $qf[] = "email?a";
             $qv[] = $reqemails;
         }
+        $require_pc = $require_pc || ($this->_pc_set === null && !$this->opt("largePC"));
+        if ($require_pc) {
+            $qf[] = "(roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0)";
+        }
         if (empty($qf)) {
             return;
         }
@@ -2128,6 +2133,9 @@ class Conf {
             if ($this->_user_email_cache !== null) {
                 $this->_user_email_cache[strtolower($u->email)] = $u;
             }
+        }
+        if ($require_pc) {
+            $this->_postprocess_pc_set();
         }
     }
 
@@ -2145,7 +2153,7 @@ class Conf {
         }
         if (!array_key_exists($id, $this->_user_cache ?? [])) {
             $this->_user_cache_missing[] = $id;
-            $this->_refresh_user_cache();
+            $this->_refresh_user_cache(false);
         }
         $u = $this->_user_cache[$id] ?? null;
         if ($u && $sliced !== 1 && $u->_slice !== 0) {
@@ -2171,7 +2179,7 @@ class Conf {
         $lemail = strtolower($email);
         if (!array_key_exists($lemail, $this->_user_email_cache)) {
             $this->_user_cache_missing[] = $lemail;
-            $this->_refresh_user_cache();
+            $this->_refresh_user_cache(false);
         }
         $u = $this->_user_email_cache[$lemail] ?? null;
         if ($u && $sliced !== 1 && $u->_slice !== 0) {
@@ -2312,12 +2320,19 @@ class Conf {
 
     /** @return ContactSet */
     function pc_set() {
-        if ($this->_pc_set !== null) {
-            return $this->_pc_set;
+        if ($this->_pc_set === null) {
+            $this->_refresh_user_cache(true);
         }
+        return $this->_pc_set;
+    }
 
-        $result = $this->qe("select " . $this->user_query_fields($this->_slice) . " from ContactInfo where roles!=0 and (roles&" . Contact::ROLE_PCLIKE . ")!=0");
-        $this->_pc_set = ContactSet::make_result($result, $this);
+    private function _postprocess_pc_set() {
+        $this->_pc_set = new ContactSet;
+        foreach ($this->_user_cache as $u) {
+            if (($u->roles & Contact::ROLE_PCLIKE) !== 0) {
+                $this->_pc_set->add_user($u, true);
+            }
+        }
 
         // analyze set for ambiguous names, disablement
         $this->_pc_members_all_enabled = true;
@@ -2356,20 +2371,12 @@ class Conf {
         $this->_pc_members_cache = [];
         $next_pc_index = 0;
         foreach ($this->_pc_set as $u) {
-            if ($u->roles & Contact::ROLE_PC) {
+            if (($u->roles & Contact::ROLE_PC) !== 0) {
                 $u->pc_index = $next_pc_index;
                 ++$next_pc_index;
                 $this->_pc_members_cache[$u->contactId] = $u;
             }
-            if ($this->_user_cache !== null) {
-                $this->_user_cache[$u->contactId] = $u;
-            }
-            if ($this->_user_email_cache !== null) {
-                $this->_user_email_cache[strtolower($u->email)] = $u;
-            }
         }
-
-        return $this->_pc_set;
     }
 
     /** @return array<int,Contact> */
@@ -3953,9 +3960,8 @@ class Conf {
             $cols[] = "coalesce((select group_concat(contactId, ' ', conflictType) from PaperConflict force index (paperId) where PaperConflict.paperId=Paper.paperId), '') allConflictType";
         }
 
-        if (($options["watch"] ?? false) && $cxid > 0) {
-            $joins[] = "left join PaperWatch on (PaperWatch.paperId=Paper.paperId and PaperWatch.contactId={$cxid})";
-            $cols[] = "PaperWatch.watch";
+        if (($options["myWatch"] ?? false) && $cxid > 0) {
+            $cols[] = "coalesce((select watch from PaperWatch force index (primary) where PaperWatch.paperId=Paper.paperId and PaperWatch.contactId={$cxid}), 0) watch";
         }
 
         // conditions

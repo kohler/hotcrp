@@ -23,15 +23,18 @@ class ContactSet implements IteratorAggregate, Countable {
         $set->add_result($result, $conf);
         return $set;
     }
-    function add_user(Contact $u) {
+    /** @param bool $claim */
+    function add_user(Contact $u, $claim = false) {
         $this->urows[] = $this->by_uid[$u->contactXid] = $u;
+        if ($claim) {
+            $u->_row_set = $this;
+        }
     }
     /** @param Dbl_Result $result
      * @param Conf $conf */
     function add_result($result, $conf) {
         while (($u = Contact::fetch($result, $conf))) {
-            $this->urows[] = $this->by_uid[$u->contactXid] = $u;
-            $u->_row_set = $this;
+            $this->add_user($u, true);
         }
         Dbl::free($result);
     }

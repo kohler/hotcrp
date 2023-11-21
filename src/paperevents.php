@@ -60,7 +60,7 @@ class PaperEvents {
         } else {
             // Papers (perhaps limited to those being watched) whose reviews
             // are viewable.
-            $this->prows = $user->paper_set(["watch" => true, "myWatching" => true]);
+            $this->prows = $user->paper_set(["myWatching" => true, "myWatch" => true]);
         }
     }
 
@@ -173,7 +173,7 @@ class PaperEvents {
                 $need[$crow->paperId] = true;
         }
         if (!empty($need)) {
-            $this->prows->add_result($this->conf->paper_result(["paperId" => array_keys($need), "watch" => true], $this->user), $this->user);
+            $this->prows->add_result($this->conf->paper_result(["paperId" => array_keys($need), "myWatch" => true], $this->user), $this->user);
         }
     }
 
