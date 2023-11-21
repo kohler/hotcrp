@@ -4166,7 +4166,9 @@ function $e(tag, attr) {
         }
     }
     for (i = 2; i < arguments.length; ++i) {
-        e.append(arguments[i]);
+        if (arguments[i] != null) {
+            e.append(arguments[i]);
+        }
     }
     return e;
 }
@@ -6243,31 +6245,37 @@ function cj_name(cj) {
     }
 }
 
-function cmt_identity_time(cj, editing) {
-    var t = [], x, i;
+function cmt_identity_time(frag, cj, editing) {
     if (cj.response || cj.is_new) {
     } else if (cj.editable) {
-        t.push('<div class="cmtnumid"><a href="#' + cj_cid(cj) +
-               '" class="qo ui hover-child cmteditor">');
+        const ae = $e("a", {href: "#" + cj_cid(cj), "class": "qo ui hover-child cmteditor"});
         if (cj.ordinal) {
-            t.push('<div class="cmtnum"><span class="cmtnumat">@</span><span class="cmtnumnum">' +
-               cj.ordinal + '</span></div> ');
+            ae.append($e("div", "cmtnum", $e("span", "cmtnumat", "@"),
+                $e("span", "cmtnumnum", cj.ordinal)), " ");
         } else {
-            t.push('Edit ');
+            ae.append("Edit ");
         }
-        t.push('<span class="t-editor">✎</span></a></div>');
+        ae.append($e("span", "t-editor", "✎"));
+        frag.appendChild($e("div", "cmtnumid", ae));
     } else if (cj.ordinal) {
-        t.push('<div class="cmtnumid cmtnum"><a class="q" href="#' + cj_cid(cj)
-               + '"><span class="cmtnumat">@</span><span class="cmtnumnum">'
-               + cj.ordinal + '</span></a></div>');
+        frag.appendChild($e("div", "cmtnumid cmtnum",
+            $e("a", {href: "#" + cj_cid(cj), "class": "q"},
+                $e("span", "cmtnumat", "@"), $e("span", "cmtnumnum", cj.ordinal))));
     }
     if (cj.author && cj.author_hidden) {
-        t.push('<address class="has-fold cmtname fold9c" itemprop="author"><span class="fx9' +
-               (cj.author_email ? '" title="' + cj.author_email : '') +
-               '">' + cj.author + ' </span><button type="button" class="q ui js-foldup" data-fold-target="9" title="Toggle author"><span class="fn9"><span class="expander"><svg class="licon" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="M1 1L15 8L1 15z" /></svg></span>' +
-               (cj.author_pseudonym || "<i>Hidden</i>") + '</span><span class="fx9">(deanonymized)</span></button></address>');
+        const aue = $e("span", {"class": "fx9", title: cj.author_email});
+        aue.innerHTML = cj.author + " (deanonymized)";
+        const ane = $e("span", "fn9");
+        if (cj.author_pseudonym) {
+            ane.append("+ ", cj.author_pseudonym, " (", $e("i", null, "hidden"), ")");
+        } else {
+            ane.append("+ ", $e("i", null, "Hidden"));
+        }
+        frag.appendChild($e("address", {"class": "has-fold cmtname fold9c", itemprop: "author"},
+            $e("button", {type: "button", "class": "q ui js-foldup", "data-fold-target": 9, "title": "Toggle author"},
+                ane, aue)));
     } else if (cj.author) {
-        x = cj.author;
+        let x = cj.author;
         if (cj.author_pseudonym && cj.author_pseudonymous) {
             x = cj.author_pseudonym.concat(" [", x, "]");
         } else if (cj.author_pseudonym) {
@@ -6275,27 +6283,28 @@ function cmt_identity_time(cj, editing) {
         } else if (cj.author_pseudonymous) {
             x = "[".concat(cj.author, "]");
         }
-        t.push('<address class="cmtname' +
-               (cj.author_email ? '" title="' + cj.author_email : "") +
-               '" itemprop="author">' + x + '</address>');
+        const aue = $e("address", {"class": "cmtname", itemprop: "author", title: cj.author_email});
+        aue.innerHTML = x;
+        frag.appendChild(aue);
     } else if (cj.author_pseudonym
                && (!cj.response || cj.author_pseudonym !== "Author")) {
-        t.push('<address class="cmtname" itemprop="author">' + cj.author_pseudonym + '</address>');
+        frag.appendChild($e("address", {"class": "cmtname", itemprop: "author"}, cj.author_pseudonym));
     }
     if (cj.modified_at) {
-        t.push('<time class="cmttime" datetime="' + (new Date(cj.modified_at * 1000)).toISOString() + '">' + cj.modified_at_text + '</time>');
+        frag.appendChild($e("time", {"class": "cmttime", datetime: (new Date(cj.modified_at * 1000)).toISOString()}, cj.modified_at_text));
     }
-    if (!cj.response && !editing && cj.tags) {
-        x = [];
-        for (i in cj.tags) {
-            x.push('<a class="q" href="' + hoturl_html("search", {q: "cmt:#" + unparse_tag(cj.tags[i], true)}) + '">#' + unparse_tag(cj.tags[i]) + '</a>');
+    if (!cj.response && !editing) {
+        if (cj.tags) {
+            const tage = $e("div", "cmttags");
+            for (let t of cj.tags) {
+                tage.firstChild && tage.append(" ");
+                tage.appendChild($e("a", {href: hoturl("search", {q: "cmt:#" + unparse_tag(t, true)}), "class": "q"}, "#" + unparse_tag(t)));
+            }
+            frag.appendChild(tage);
         }
-        t.push('<div class="cmttags">' + x.join(" ") + '</div>');
+        const v = vismap[cj.visibility];
+        v && frag.appendChild($e("div", "cmtvis", "(" + v + ")"));
     }
-    if (!cj.response && !editing && (i = vismap[cj.visibility])) {
-        t.push('<div class="cmtvis">(' + i + ')</div>');
-    }
-    return t.join("");
 }
 
 function cmt_is_editable(cj, override) {
@@ -6418,14 +6427,11 @@ function cmt_visibility_change() {
         vis.firstChild.textContent = "Future author discussion";
     }
     if (hint) {
-        var m = [], elt;
+        var m = [];
         if (vis.value === "au" && !form.elements.by_author) {
             if (would_auvis) {
                 m.length && m.push("\n");
-                elt = document.createElement("span");
-                elt.className = "is-diagnostic is-warning";
-                elt.textContent = "Authors will be notified immediately.";
-                m.push(elt);
+                m.push($e("span", "is-diagnostic is-warning", "Authors will be notified immediately."));
             } else {
                 m.length && m.push("\n");
                 m.push('Authors cannot currently view reviews or comments about reviews.');
@@ -6439,10 +6445,7 @@ function cmt_visibility_change() {
             m.push('The comment will be hidden from authors and external reviewers.');
         } else if (vis.value === "rev" && hotcrp.status.myperm.default_comment_visibility === "pc") {
             m.length && m.push("\n");
-            elt = document.createElement("span");
-            elt.className = "is-diagnostic is-warning";
-            elt.textContent = "External reviewers cannot view comments at this time.";
-            m.push(elt);
+            m.push($e("span", "is-diagnostic is-warning", "External reviewers cannot view comments at this time."));
         }
         if (is_paper) {
             m.length && m.push("\n");
@@ -6821,7 +6824,7 @@ function cmt_submit(evt) {
 }
 
 function cmt_render(cj, editing) {
-    var hc = new HtmlCollector, t, chead, i,
+    var t, $chead, i,
         cid = cj_cid(cj), celt = $$(cid);
 
     // clear current comment
@@ -6842,49 +6845,57 @@ function cmt_render(cj, editing) {
         return;
     }
     if (cj.response) {
-        chead = $(celt.closest(".cmtcard")).find(".cmtcard-head");
-        chead.find(".cmtinfo").remove();
+        $chead = $(celt.closest(".cmtcard")).find(".cmtcard-head");
+        $chead.find(".cmtinfo").remove();
     }
 
     // opener
-    t = [];
-    if (cj.visibility && !cj.response) {
-        t.push("cmt" + cj.visibility + "vis");
-    }
-    if (cj.color_classes) {
-        ensure_pattern(cj.color_classes);
-        t.push("cmtcolor " + cj.color_classes);
-    }
-    if (t.length && !editing) {
-        hc.push('<div class="' + t.join(" ") + '">', '</div>');
+    let cctre = celt;
+    if (!editing) {
+        const ks = [];
+        if (cj.visibility && !cj.response) {
+            ks.push("cmt" + cj.visibility + "vis");
+        }
+        if (cj.color_classes) {
+            ensure_pattern(cj.color_classes);
+            ks.push("cmtcolor " + cj.color_classes);
+        }
+        if (ks.length) {
+            cctre = $e("div", ks.join(" "));
+            celt.appendChild(cctre);
+        }
     }
 
     // header
-    t = cj.is_new ? '>' : ' id="cid' + cj.cid + '">';
-    if (cj.editable) {
-        hc.push('<header class="cmtt ui js-click-child"' + t, '</header>');
-    } else {
-        hc.push('<header class="cmtt"' + t, '</header>');
-    }
-    if (cj.is_new && !cj.response) {
-        hc.push('<h2><span class="cmtcard-header-name">Add comment</span></h2>');
-    } else if (editing && !cj.response) {
-        hc.push('<h2><span class="cmtcard-header-name">Edit comment</span></h2>');
-    } else if (cj.editable && !editing && cj.response) {
-        var $h2 = $(chead).find("h2");
-        if (!$h2.find("button").length) {
-            $h2.html('<button type="button" class="qo ui cmteditor">' + $h2.html() + ' <span class="t-editor">✎</span></button>');
+    if (cj.editable && !editing && cj.response) {
+        const h2 = $chead[0].querySelector("h2");
+        if (!h2.querySelector("button")) {
+            const button = $e("button", {type: "button", "class": "qo ui cmteditor"});
+            while (h2.firstChild) {
+                button.appendChild(h2.firstChild);
+            }
+            button.append(" ", $e("span", "t-editor", "✎"));
+            h2.appendChild(button);
         }
     }
-    t = cmt_identity_time(cj, editing);
-    if (cj.response) {
-        chead.find(".cmtthead").remove();
-        chead.append('<div class="cmtthead">' + t + '</div>');
-    } else {
-        hc.push(t);
+
+    const hdre = $e("header", cj.editable ? "cmtt ui js-click-child" : "cmtt");
+    cj.is_new || (hdre.id = cj.cid);
+    if (!cj.response && editing) {
+        hdre.appendChild($e("h2", null, $e("span", "cmtcard-header-name", cj.is_new ? "Add comment" : "Edit comment")));
     }
-    hc.pop_collapse();
-    $(celt).append(hc.render());
+
+    let idte = hdre;
+    if (cj.response) {
+        if ((idte = $chead[0].querySelector("cmtthead"))) {
+            idte.replaceChildren();
+        } else {
+            idte = $e("div", "cmtthead");
+            $chead[0].appendChild(idte);
+        }
+    }
+    cmt_identity_time(idte, cj, editing);
+    cctre.appendChild(hdre);
 
     // text
     celt.append($e("div", "cmtmsg"));
@@ -6908,7 +6919,7 @@ function cmt_render(cj, editing) {
     cmt_toggle_editing(celt, editing);
     if (cj.response) {
         t = cj_name(cj);
-        var $chead_name = chead.find(".cmtcard-header-name");
+        var $chead_name = $chead.find(".cmtcard-header-name");
         if ($chead_name.html() !== t) {
             $chead_name.html(t);
             navsidebar.redisplay(cid);
@@ -6921,7 +6932,7 @@ function cmt_render(cj, editing) {
     } else {
         if (cj.text !== false) {
             cmt_render_text(cj.format, cj.text || "", cj.response,
-                            $(celt).find(".cmttext")[0], chead);
+                            $(celt).find(".cmttext")[0], $chead);
         } else if (cj.response) {
             t = '<p class="feedback is-warning">';
             if (cj.word_count)
@@ -6932,7 +6943,7 @@ function cmt_render(cj, editing) {
                 "response not shown</p>";
             $(celt).find(".cmttext").html(t);
         }
-        (cj.response ? chead.parent() : $(celt)).find(".cmteditor").click(edit_this);
+        (cj.response ? $chead.parent() : $(celt)).find(".cmteditor").click(edit_this);
     }
 
     return $(celt);
@@ -11166,8 +11177,7 @@ handle_ui.on("document-uploader", function (event) {
     var self = {cancel: cancel},
         token = false, cancelled = false, size = file.size,
         pos = 0, uploading = 0, sprogress0 = 0, sprogress1 = size,
-        progresselt = $e("progress", {"class": "mr-2", max: size + sprogress1, value: "0"}),
-        starttime = (new Date).getTime();
+        progresselt = $e("progress", {"class": "mr-2", max: size + sprogress1, value: "0"});
     that.hotcrpUploader = self;
     that.after(progresselt, $e("span", null, "Uploading" + (file.name ? " " + escape_html(file.name) : "") + "…"));
 
