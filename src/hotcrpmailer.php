@@ -108,8 +108,8 @@ class HotCRPMailer extends Mailer {
         if (!$this->contacts["reviewer"]) {
             if ($this->rrow) {
                 $this->contacts["reviewer"] = $this->rrow->reviewer();
-            } else if ($this->comment_row && $this->comment_row->email !== null) {
-                $this->contacts["reviewer"] = new Author($this->comment_row);
+            } else if ($this->comment_row) {
+                $this->contacts["reviewer"] = $this->comment_row->commenter();
             }
         }
         // Do not put passwords in email that is cc'd elsewhere

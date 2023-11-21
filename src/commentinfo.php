@@ -438,7 +438,7 @@ class CommentInfo {
     /** @return string */
     function unparse_commenter_text(Contact $viewer) {
         if ($viewer->can_view_comment_identity($this->prow, $this)) {
-            $n = Text::nameo($this, NAME_P|NAME_I);
+            $n = Text::nameo($this->commenter(), NAME_P|NAME_I);
         } else {
             $n = $this->unparse_commenter_pseudonym($viewer) ?? "anonymous";
         }
@@ -675,7 +675,7 @@ class CommentInfo {
         }
         $p = $this->unparse_commenter_pseudonym($contact);
         if ($contact->can_view_comment_identity($this->prow, $this)) {
-            $n = Text::nameo($this, NAME_EB);
+            $n = Text::nameo($this->commenter(), NAME_EB);
             $np = $this->commenter_may_be_pseudonymous();
             if ($p && $np) {
                 $x .= " by {$p} [{$n}]";
