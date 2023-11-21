@@ -2763,18 +2763,6 @@ HtmlCollector.prototype.pop_push = function (open, close) {
     this.pop();
     return this.push(open, close);
 };
-HtmlCollector.prototype.pop_collapse = function (pos) {
-    if (pos == null)
-        pos = this.open.length ? this.open.length - 1 : 0;
-    while (this.open.length > pos) {
-        if (this.html !== "")
-            this.html = this.open[this.open.length - 1] + this.html +
-                this.close[this.open.length - 1];
-        this.open.pop();
-        this.close.pop();
-    }
-    return this;
-};
 HtmlCollector.prototype.render = function () {
     this.pop(0);
     return this.html;
@@ -5792,17 +5780,14 @@ function append_review_id(rrow, eheader) {
     var rth = null, ad = null, e, xc;
     function add_rth(e) {
         if (!rth) {
-            rth = document.createElement("div")
-            rth.className = "revthead";
+            rth = $e("div", "revthead");
             eheader.appendChild(rth);
         }
         rth.append(e);
     }
     function add_ad(s) {
         if (!ad) {
-            ad = document.createElement("address");
-            ad.className = "revname";
-            ad.setAttribute("itemprop", "author");
+            ad = $e("address", {"class": "revname", itemprop: "author"});
             add_rth(ad);
         }
         ad.append(s);
@@ -5810,10 +5795,8 @@ function append_review_id(rrow, eheader) {
     if (rrow.review_token) {
         add_ad("Review token " + rrow.review_token);
     } else if (rrow.reviewer) {
-        e = document.createElement("span");
+        add_ad((e = $e("span", {title: rrow.reviewer_email})));
         e.innerHTML = rrow.blind ? "[" + rrow.reviewer + "]" : rrow.reviewer;
-        rrow.reviewer_email && (e.title = rrow.reviewer_email);
-        add_ad(e);
     }
     if (rrow.rtype) {
         xc = (rrow.submitted || rrow.approved ? "" : " rtinc") +
@@ -6895,20 +6878,20 @@ function cmt_render(cj, editing) {
         }
     }
     cmt_identity_time(idte, cj, editing);
-    cctre.appendChild(hdre);
+    hdre.firstChild && cctre.appendChild(hdre);
 
     // text
-    celt.append($e("div", "cmtmsg"));
+    cctre.append($e("div", "cmtmsg"));
     if (cj.response && cj.draft && cj.text) {
-        celt.append($e("p", "feedback is-warning", "Reviewers can’t see this draft response"));
+        cctre.append($e("p", "feedback is-warning", "Reviewers can’t see this draft response"));
     }
     if (editing) {
-        celt.append(cmt_render_form(cj));
+        cctre.append(cmt_render_form(cj));
     } else {
-        celt.append($e("div", "cmttext"));
+        cctre.append($e("div", "cmttext"));
         if (cj.docs && cj.docs.length) {
             const ats = $e("div", "cmtattachments");
-            celt.append(ats);
+            cctre.append(ats);
             for (i = 0; i !== cj.docs.length; ++i) {
                 ats.append(cmt_render_attachment(cj.docs[i]));
             }
