@@ -46,14 +46,13 @@ class TagReport_PaperColumn extends PaperColumn {
             if ($this->viewtype != 1) {
                 $n .= " (" . $m[2][$i] . ")";
             }
-            $a[intval($m[1][$i])] = $n;
+            $a[intval($m[1][$i])] = "<li>{$n}</li>";
         }
         if (empty($a)) {
             return "";
-        } else {
-            $pl->user->ksort_cid_array($a);
-            return '<span class="nb">' . join(',</span> <span class="nb">', $a) . '</span>';
         }
+        $pl->user->ksort_cid_array($a);
+        return "<ul class=\"comma\">" . join("", $a) . "</ul>";
     }
 
     static private function column_json($xfj, $tag) {

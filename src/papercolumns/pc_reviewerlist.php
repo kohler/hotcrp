@@ -74,15 +74,13 @@ class ReviewerList_PaperColumn extends PaperColumn {
                     $tv = $this->topics ? $prow->topic_interest_score($xrow->contactId) : null;
                     $t .= " " . $pf->unparse_span($tv);
                 }
-                $k = $this->hlterm && $this->hlterm->test($prow, $xrow) ? " highlightmark taghh" : "";
-                $x[] = "<span class=\"nb{$k}\">{$t}";
+                if ($this->hlterm && $this->hlterm->test($prow, $xrow)) {
+                    $t = "<span class=\"highlightmark taghh\">{$t}</span>";
+                }
+                $x[] = "<li>{$t}</li>";
             }
         }
-        if ($x) {
-            return join(',</span> ', $x) . '</span>';
-        } else {
-            return "";
-        }
+        return $x ? "<ul class=\"comma\">" . join("", $x) . "</ul>" : "";
     }
     function text(PaperList $pl, PaperInfo $prow) {
         $x = [];
