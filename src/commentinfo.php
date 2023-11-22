@@ -571,7 +571,7 @@ class CommentInfo {
         }
         if (($this->commentType & self::CT_DRAFT) !== 0) {
             $cj->draft = true;
-            if (!$viewer->is_author($this->prow)) {
+            if (!$this->prow->has_author($viewer)) {
                 $cj->folded = true;
             }
         }
