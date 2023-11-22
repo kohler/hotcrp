@@ -3251,7 +3251,7 @@ td.pl_formula, td.plrd {
 	margin-bottom: 4px;
 }
 .pl_longtext {
-	columns: 23rem 3;
+	columns: 22rem 3;
 	column-gap: 18px;
 }
 .pl_longtext > p:last-child, .pl_shorttext > p:last-child {
