@@ -6687,7 +6687,7 @@ function cmt_focus(e) {
 }
 
 function cmt_edit_observer(entries) {
-    var i, e, want, have;
+    let i, e, want, have;
     for (i = 0; i !== entries.length; ++i) {
         e = entries[i];
         if (e.isIntersecting) {
@@ -6696,10 +6696,11 @@ function cmt_edit_observer(entries) {
             e.target.removeAttribute("data-intersecting");
         }
     }
+    const focus = document.activeElement && document.activeElement.closest(".cmtcard");
     for (i = 0; i !== editing_list.length; ++i) {
         e = editing_list[i];
         want = have = hasClass(e, "popout");
-        if (i !== editing_list.length - 1
+        if ((focus ? focus !== e : i !== editing_list.length - 1)
             || !e.previousSibling
             || e.previousSibling.hasAttribute("data-intersecting")) {
             want = false;
