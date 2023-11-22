@@ -4167,6 +4167,7 @@ h3.pavfn, h3.psfn {
 }
 .papcard h2, .notecard h2 {
 	font-size: 1.17em;
+	font-size: 1.17rem;
 	color: #d41743;
 }
 .papcard > .msg + #foldpaper {
@@ -4178,6 +4179,9 @@ h3.pavfn, h3.psfn {
 	border-top: 5px solid #fad5d5;
 	margin-bottom: 48px;
 	position: relative;
+}
+.revcard.fold20c {
+	margin-bottom: 2.25rem;
 }
 .pedcard-head {
 	margin-top: 16px;
@@ -4206,6 +4210,7 @@ h3.pavfn, h3.psfn {
 }
 .pedcard-head h2, .revcard-head h2, h2.revcard-head {
 	font-size: 1.17em;
+	font-size: 1.17rem;
 	color: #d41743;
 }
 .pedcard-header-name, .revcard-header-name {
@@ -4421,6 +4426,9 @@ a:hover .t-editor,
 	background: #fcfcfb;
 	padding-bottom: 3rem;
 }
+.cmtcard.response.fold20c {
+	padding-bottom: 1.25rem;
+}
 .cmtcard.response:last-child {
 	border-bottom: 5px solid #ffddc1;
 }
@@ -4432,9 +4440,6 @@ a:hover .t-editor,
 	padding-top: 0;
 	margin-top: -0.5rem;
 }
-.cmtcard-head {
-	margin-top: 0.75rem;
-}
 .cmtcard.comment.is-editing, .cmtcard.is-editing + .cmtcard.comment {
 	border-top: 5px solid #e6e1cf !important;
 	padding-top: 1.25rem !important;
@@ -4445,20 +4450,16 @@ a:hover .t-editor,
 }
 .cmtcard h2 {
 	display: inline-block;
+	margin-top: 0.75rem;
 	margin-right: 1.5rem;
 	margin-bottom: 0.5rem;
 	font-size: 1.17em;
+	font-size: 1.17rem;
 	color: #c77634;
 }
 .cmtcard-header-name {
 	display: inline-block;
 	border-bottom: 5px solid #c07333;
-}
-.cmtcard-head .cmtfn {
-	font-size: smaller;
-}
-.cmtfn > .barsep {
-	color: #eadeb7;
 }
 .cmtadminvis, .cmtcolor {
 	margin: -2px -8px;
@@ -4486,14 +4487,6 @@ a:hover .t-editor,
 	font-size: smaller;
 	margin-bottom: 0.5rem;
 	color: #777777;
-}
-.cmtt::after {
-	content: " ";
-	clear: both;
-	display: table;
-}
-.cmtt .float-right {
-	padding-left: 0.5em;
 }
 .pavb, .revtext, .cmttext, .cmtattachments {
 	word-wrap: break-word;
@@ -4564,9 +4557,13 @@ a:hover .t-editor,
 .overlong-collapsed > .overlong-divider > .overlong-mark {
 	flex-grow: 1;
 	padding-left: 12px;
+	z-index: 2;
 	background: #fcfcfb;
 	background: linear-gradient(to bottom, rgba(252,252,251,0), rgba(252,252,251,0.8) 20% 85%, rgba(252,252,251,1) 100%);
-	z-index: 2;
+}
+.comment .overlong-collapsed > .overlong-divider > .overlong-mark {
+	background: #f8f8f6;
+	background: linear-gradient(to bottom, rgba(248,248,246,0), rgba(248,248,246,0.8) 20% 85%, rgba(248,248,246,1) 100%);
 }
 .overlong-expander {
 	padding-top: 12px;

@@ -5836,17 +5836,11 @@ function revrating_key(evt) {
 }
 
 function make_review_h2(rrow, rlink, rdesc) {
-    var h2 = document.createElement("h2"),
-        ma = document.createElement("a"),
-        rd = document.createElement("span"), ed;
+    let h2 = $e("h2"), ma, rd = $e("span"), ed;
     if (rrow.folded) {
-        ma.className = "qo ui js-foldup";
-        ma.setAttribute("href", "");
-        ma.setAttribute("data-fold-target", 20);
-        ma.appendChild(make_expander_element(20));
+        ma = $e("button", {type: "button", "class": "qo ui js-foldup", "data-fold-target": 20}, make_expander_element(20));
     } else {
-        ma.className = "qo";
-        ma.setAttribute("href", hoturl("review", rlink));
+        ma = $e("a", {href: hoturl("review", rlink), "class": "qo"});
     }
     rd.className = "revcard-header-name";
     rd.append(rdesc);
@@ -5854,17 +5848,12 @@ function make_review_h2(rrow, rlink, rdesc) {
     h2.append(ma);
     if (rrow.editable) {
         if (rrow.folded) {
-            ma = document.createElement("a");
-            ma.className = "qo";
-            ma.setAttribute("href", hoturl("review", rlink));
+            ma = $e("a", {href: hoturl("review", rlink), "class": "qo"});
             h2.append(" ", ma);
         } else {
             ma.append(" ");
         }
-        ed = document.createElement("span");
-        ed.className = "t-editor";
-        ed.append("✎");
-        ma.append(ed);
+        ma.append($e("span", "t-editor", "✎"));
     }
     return h2;
 }
@@ -5930,26 +5919,18 @@ hotcrp.add_review = function (rrow) {
     $(".pcontainer")[0].appendChild(earticle);
 
     // header
-    eheader = document.createElement("header");
-    eheader.className = "revcard-head";
-    eheader.appendChild(make_review_h2(rrow, rlink, rdesc));
+    eheader = $e("header", "revcard-head", make_review_h2(rrow, rlink, rdesc));
     append_review_id(rrow, eheader);
-    e = document.createElement("hr");
-    e.className = "c";
-    eheader.appendChild(e);
+    eheader.appendChild($e("hr", "c"));
     earticle.appendChild(eheader);
 
     // messages
     if (rrow.message_list) {
-        e = document.createElement("div");
-        e.className = "revcard-feedback fx20";
-        e.appendChild(render_feedback_list(rrow.message_list));
-        earticle.appendChild(e);
+        earticle.appendChild($e("div", "revcard-feedback fx20", render_feedback_list(rrow.message_list)));
     }
 
     // body
-    e = document.createElement("div");
-    e.className = "revcard-render fx20";
+    e = $e("div", "revcard-render fx20");
     earticle.appendChild(e);
     render_review_body_in(rrow, e);
 
@@ -11167,10 +11148,7 @@ handle_ui.on("js-replace-document", function () {
         $(u).trigger("hotcrp-change-document");
     }
     if (!actions.querySelector(".js-cancel-document")) {
-        var cancel = $e("button", "link ui js-cancel-document hidden");
-        cancel.type = "button";
-        cancel.textContent = "Cancel";
-        actions.appendChild(cancel);
+        actions.append($e("button", {type: "button", "class": "link ui js-cancel-document hidden"}, "Cancel"));
     }
     u.click();
 });
