@@ -17,8 +17,8 @@ Getting help
 ------------
 
 To learn more about configuring and using HotCRP, first check the extensive
-online help once you set it up. TO learn about advanced configuration,
-internals, and development, check the [HotCRP development
+online help once you set it up. To learn about advanced configuration,
+software internals, and developing extensions, check the [HotCRP development
 manual](./devel/manual/index.md) in `devel/manual`.
 
 

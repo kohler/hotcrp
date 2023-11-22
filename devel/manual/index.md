@@ -1,8 +1,8 @@
 # HotCRP development and configuration
 
-Welcome to the HotCRP development and configuration manual. We hope this will
-help people develop HotCRP extensions or configure aspects of HotCRP
-inaccessible through the settings UI.
+This is the HotCRP development and configuration manual. Its intended audience
+is people who are developing HotCRP extensions, working with its code, or
+configuring features inaccessible through the public settings UI.
 
 ## Basics
 
