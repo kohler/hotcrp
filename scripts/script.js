@@ -5480,7 +5480,7 @@ $(function () {
 
 
 // times
-(function ($) {
+(function () {
 var update_to, updatets, scheduled_updatets = null;
 
 function check_time_point(e, ts, tsdate, nowts, nowdate) {
@@ -5836,7 +5836,7 @@ function revrating_key(evt) {
 }
 
 function make_review_h2(rrow, rlink, rdesc) {
-    let h2 = $e("h2"), ma, rd = $e("span"), ed;
+    let h2 = $e("h2"), ma, rd = $e("span");
     if (rrow.folded) {
         ma = $e("button", {type: "button", "class": "qo ui js-foldup", "data-fold-target": 20}, make_expander_element(20));
     } else {
@@ -6295,8 +6295,21 @@ function cj_name(cj) {
     }
 }
 
+function cmt_header_dotsep(hdre) {
+    if (hdre.lastChild
+        && hdre.lastChild.nodeName !== "H2"
+        && !hasClass(hdre.lastChild, "cmtnumid")) {
+        hdre.append($e("span", "barsep", "·"));
+    }
+}
+
 function cmt_identity_time(frag, cj, editing) {
-    if (cj.response || cj.is_new) {
+    if (cj.response) {
+        if (cj.text === false) {
+            frag.appendChild($e("div", "cmtnumid cmtnum", cj_name(cj)));
+        }
+    } else if (cj.is_new) {
+        // no identity
     } else if (cj.editable) {
         const ae = $e("a", {href: "#" + cj_cid(cj), "class": "qo ui hover-child cmteditor"});
         if (cj.ordinal) {
@@ -6311,9 +6324,6 @@ function cmt_identity_time(frag, cj, editing) {
         frag.appendChild($e("div", "cmtnumid cmtnum",
             $e("a", {href: "#" + cj_cid(cj), "class": "q"},
                 $e("span", "cmtnumat", "@"), $e("span", "cmtnumnum", cj.ordinal))));
-    }
-    function append_dot() {
-        frag.firstChild && frag.append($e("span", "barsep", "·"));
     }
     if (cj.author && cj.author_hidden) {
         const aue = $e("span", {"class": "fx9", title: cj.author_email});
@@ -6340,17 +6350,17 @@ function cmt_identity_time(frag, cj, editing) {
         aue.innerHTML = x;
         frag.appendChild(aue);
     } else if (cj.author_pseudonym
-               && (!cj.response || cj.author_pseudonym !== "Author")) {
+               && (!cj.response || cj.text === false || cj.author_pseudonym !== "Author")) {
         frag.appendChild($e("address", {"class": "cmtname", itemprop: "author"}, cj.author_pseudonym));
     }
     if (cj.modified_at) {
-        append_dot();
+        cmt_header_dotsep(frag);
         frag.append(hotcrp.make_time_point(cj.modified_at, cj.modified_at_text, "cmttime"));
     }
     if (!cj.response && !editing) {
         const v = vismap[cj.visibility];
         if (v) {
-            append_dot();
+            cmt_header_dotsep(frag);
             frag.appendChild($e("div", "cmtvis", v));
         }
         if (cj.tags) {
@@ -6359,7 +6369,7 @@ function cmt_identity_time(frag, cj, editing) {
                 tage.firstChild && tage.append(" ");
                 tage.appendChild($e("a", {href: hoturl("search", {q: "cmt:#" + unparse_tag(t, true)}), "class": "q"}, "#" + unparse_tag(t)));
             }
-            append_dot();
+            cmt_header_dotsep(frag);
             frag.appendChild(tage);
         }
     }
@@ -6866,6 +6876,7 @@ function cmt_button_click(evt) {
         evt.preventDefault();
         cmt_save(this, "submit");
     } else if (this.name === "cancel") {
+        cj.folded && fold(this.closest(".cmtcard"), true, 20);
         cmt_render(cj, false);
     } else if (this.name === "delete") {
         override_deadlines.call(this, function () {
@@ -6883,32 +6894,26 @@ function cmt_submit(evt) {
 }
 
 function cmt_render(cj, editing) {
-    var t, chead, i,
-        cid = cj_cid(cj), celt = $$(cid);
+    let i, cid = cj_cid(cj), article = $$(cid), existed = !!article.firstChild;
 
     // clear current comment
-    if (document.activeElement && celt.contains(document.activeElement)) {
+    if (document.activeElement && article.contains(document.activeElement)) {
         document.activeElement.blur();
     }
-    $(celt).find("textarea, input[type=text]").unautogrow();
-    while (celt.lastChild && !hasClass(celt.lastChild, "cmtcard-head")) {
-        celt.removeChild(celt.lastChild);
-    }
+    $(article).find("textarea, input[type=text]").unautogrow();
+    article.replaceChildren();
 
     if (cj.is_new && !editing) {
-        cmt_toggle_editing(celt, false);
-        var ide = celt.closest(".cmtid");
+        cmt_toggle_editing(article, false);
+        var ide = article.closest(".cmtid");
         navsidebar.remove(ide);
         $("#k-comment-actions a[href='#" + ide.id + "']").closest(".aabut").removeClass("hidden");
         $(ide).remove();
         return;
     }
-    if (cj.response) {
-        chead = celt.closest(".cmtcard").querySelector(".cmtcard-head");
-    }
 
     // opener
-    let cctre = celt;
+    let cctre = article;
     if (!editing) {
         const ks = [];
         if (cj.visibility && !cj.response) {
@@ -6920,52 +6925,48 @@ function cmt_render(cj, editing) {
         }
         if (ks.length) {
             cctre = $e("div", ks.join(" "));
-            celt.appendChild(cctre);
+            article.appendChild(cctre);
         }
     }
 
     // header
-    if (cj.response && cj.editable && !editing) {
-        const h2 = chead.querySelector("h2");
-        if (!h2.querySelector("button")) {
-            const button = $e("button", {type: "button", "class": "qo ui cmteditor"});
-            while (h2.firstChild) {
-                button.appendChild(h2.firstChild);
-            }
-            button.append(" ", $e("span", "t-editor", "✎"));
-            h2.appendChild(button);
-        }
-    }
-
     const hdre = $e("header", cj.editable ? "cmtt ui js-click-child" : "cmtt");
     cj.is_new || (hdre.id = cj.cid);
-    if (!cj.response && editing) {
-        hdre.appendChild($e("h2", null, $e("span", "cmtcard-header-name", cj.is_new ? "Add comment" : "Edit comment")));
-    }
-
-    let idte = hdre;
-    if (cj.response) {
-        if ((idte = chead.querySelector(".cmtthead"))) {
-            idte.replaceChildren();
-        } else {
-            idte = $e("div", "cmtthead");
-            chead.appendChild(idte);
+    if (cj.response && cj.text !== false) {
+        const h2 = $e("h2");
+        let cnc = h2;
+        if (cj.folded && !editing) {
+            cnc = $e("button", {type: "button", "class": "qo ui js-foldup", "data-fold-target": 20}, make_expander_element(20));
+        } else if (cj.editable && !editing) {
+            cnc = $e("button", {type: "button", "class": "qo ui cmteditor"});
         }
+        h2 === cnc || h2.append(cnc);
+        cnc.append($e("span", "cmtcard-header-name", cj_name(cj)));
+        if (cj.editable && !editing) {
+            if (cj.folded) {
+                cnc = $e("button", {type: "button", "class": "qo ui cmteditor"});
+                h2.append(" ", cnc);
+            }
+            cnc.append(" ", $e("span", "t-editor", "✎"));
+        }
+        hdre.append(h2);
+    } else if (editing) {
+        hdre.append($e("h2", null, $e("span", "cmtcard-header-name", cj.is_new ? "Add comment" : "Edit comment")));
     }
-    cmt_identity_time(idte, cj, editing);
+    cmt_identity_time(hdre, cj, editing);
     hdre.firstChild && cctre.appendChild(hdre);
 
     // text
-    cctre.append($e("div", "cmtmsg"));
+    cctre.append($e("div", "cmtmsg fx20"));
     if (cj.response && cj.draft && cj.text) {
-        cctre.append($e("p", "feedback is-warning", "Reviewers can’t see this draft response"));
+        cctre.append($e("p", "feedback is-warning fx20", "Reviewers can’t see this draft response"));
     }
     if (editing) {
         cctre.append(cmt_render_form(cj));
     } else {
-        cctre.append($e("div", "cmttext"));
+        cctre.append($e("div", "cmttext fx20"));
         if (cj.docs && cj.docs.length) {
-            const ats = $e("div", "cmtattachments");
+            const ats = $e("div", "cmtattachments fx20");
             cctre.append(ats);
             for (i = 0; i !== cj.docs.length; ++i) {
                 ats.append(cmt_render_attachment(cj.docs[i]));
@@ -6974,46 +6975,44 @@ function cmt_render(cj, editing) {
     }
 
     // render
-    cmt_toggle_editing(celt, editing);
-    if (cj.response) {
-        t = cj_name(cj);
-        var $chead_name = $(chead).find(".cmtcard-header-name");
-        if ($chead_name.html() !== t) {
-            $chead_name.html(t);
-            navsidebar.redisplay(cid);
-        }
+    cmt_toggle_editing(article, editing);
+
+    // draft responses <-> real responses
+    if (cj.response && hasClass(article, "response") !== (cj.text !== false)) {
+        toggleClass(article, "comment", cj.text === false);
+        toggleClass(article, "response", cj.text !== false);
+    }
+    if (cj.response && hasClass(article, "draft") !== !!cj.draft) {
+        toggleClass(article, "draft", !!cj.draft);
+        existed && navsidebar.redisplay(cid);
     }
 
     // fill body
     if (editing) {
-        cmt_start_edit(celt, cj);
+        cmt_start_edit(article, cj);
     } else {
         if (cj.text !== false) {
             cmt_render_text(cj.format, cj.text || "", cj.response,
-                            celt.querySelector(".cmttext"), chead);
+                            article.querySelector(".cmttext"), article);
         } else if (cj.response) {
             const t = (cj.word_count ? cj.word_count + "-word draft " : "Draft ") +
                 (cj.response == "1" ? "" : cj.response + " ");
-            celt.querySelector(".cmttext").replaceChildren($e("p", "feedback is-warning", t + "response not shown"));
+            article.querySelector(".cmttext").replaceChildren($e("p", "feedback is-warning", t + "response not shown"));
         }
-        (cj.response ? $(chead).parent() : $(celt)).find(".cmteditor").click(edit_this);
+        $(article).find(".cmteditor").click(edit_this);
     }
 
-    return $(celt);
+    return $(article);
 }
 
-function cmt_render_text(format, value, response, texte, chead) {
+function cmt_render_text(format, value, response, texte, article) {
     const rrd = response && resp_rounds[response];
     let aftertexte = null;
     if (rrd && rrd.wl > 0) {
         const wc = count_words(value);
-        if (wc > 0 && chead) {
-            let cth = chead.querySelector(".cmtthead");
-            if (!cth) {
-                cth = $e("div", "cmtthead");
-                chead.appendChild(cth);
-            }
-            cth.firstChild && cth.append($e("span", "barsep", "·"));
+        if (wc > 0 && article) {
+            let cth = article.querySelector("header");
+            cmt_header_dotsep(cth);
             cth.append($e("div", "cmtwords words" + (wc > rrd.wl ? " wordsover" : ""), plural(wc, "word")));
         }
         if ((rrd.hwl || 0) > 0
@@ -7065,6 +7064,10 @@ function add_comment(cj, editing) {
         && hotcrp.status.myperm.is_author) {
         editing = 2;
     }
+    if (cj.folded
+        && cj.text === false) {
+        cj.folded = false;
+    }
     if (celt) {
         cmt_render(cj, editing);
     } else if (cj.is_new && !editing) {
@@ -7100,13 +7103,9 @@ function add_new_comment_button(cj, cid) {
 }
 
 function add_new_comment(cj, cid) {
-    var article = $e("article", "pcard cmtcard cmtid".concat(cj.editable ? " editable" : "", cj.response ? " response" : " comment"));
-    article.id = cid;
-    if (cj.response) {
-        article.appendChild($e("header", "cmtcard-head",
-            $e("h2", "", $e("span", "cmtcard-header-name", cj_name(cj)))));
-    }
-    document.querySelector(".pcontainer").insertBefore(article, $$("k-comment-actions"));
+    document.querySelector(".pcontainer").insertBefore($e("article", {
+        id: cid, "class": "pcard cmtcard cmtid comment need-anchor-unfold has-fold ".concat(cj.folded ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
+    }), $$("k-comment-actions"));
 }
 
 function cmt_sidebar_content(item) {
@@ -7167,6 +7166,7 @@ hotcrp.edit_comment = function (cj) {
     if (!elt && /\beditcomment\b/.test(window.location.search)) {
         return;
     }
+    fold(elt, false, 20);
     if (!elt.querySelector("form")) {
         cmt_render(cj, true);
     }

@@ -571,6 +571,9 @@ class CommentInfo {
         }
         if (($this->commentType & self::CT_DRAFT) !== 0) {
             $cj->draft = true;
+            if (!$viewer->is_author($this->prow)) {
+                $cj->folded = true;
+            }
         }
         if (($this->commentType & self::CT_RESPONSE) !== 0) {
             $cj->response = $rrd->name;
