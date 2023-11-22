@@ -47,7 +47,7 @@ class Shepherd_PaperColumn extends PaperColumn {
         return !self::cid($pl, $row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $pl->user_content($row->shepherdContactId);
+        return $pl->user_content($row->shepherdContactId, $row);
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $pl->user_text($row->shepherdContactId);

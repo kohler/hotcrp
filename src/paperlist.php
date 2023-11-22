@@ -1415,10 +1415,18 @@ class PaperList {
     }
 
     /** @param int $uid
+     * @param ?PaperInfo $prow
      * @return string */
-    function user_content($uid) {
+    function user_content($uid, $prow = null) {
         $u = $uid > 0 ? $this->conf->user_by_id($uid, USER_SLICE) : null;
-        return $u ? $this->user->reviewer_html_for($u) : "";
+        if (!$u) {
+            return "";
+        }
+        $h = $this->user->reviewer_html_for($u);
+        if ($prow && ($rrow = $prow->review_by_user($u))) {
+            $h .= " " . $this->make_review_analysis($rrow, $prow)->icon_html(false);
+        }
+        return $h;
     }
 
     /** @param int $uid

@@ -35,7 +35,7 @@ class Administrator_PaperColumn extends PaperColumn {
         return !self::cid($pl, $row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $pl->user_content($row->managerContactId);
+        return $pl->user_content($row->managerContactId, $row);
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $pl->user_text($row->managerContactId);

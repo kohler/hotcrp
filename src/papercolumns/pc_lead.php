@@ -37,7 +37,7 @@ class Lead_PaperColumn extends PaperColumn {
         return !self::cid($pl, $row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $pl->user_content($row->leadContactId);
+        return $pl->user_content($row->leadContactId, $row);
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $pl->user_text($row->leadContactId);
