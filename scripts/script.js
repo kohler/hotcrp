@@ -10125,7 +10125,7 @@ function render_allpref() {
             t.push([m[2] === "P" ? pref : 0, pref, t.length, pcs[m[1]], m[2]]);
         }
         if (t.length === 0) {
-            pctr.closest("div").replaceChildren();
+            pctr.closest(".ple, .pl").replaceChildren();
             return;
         }
         t.sort(function (a, b) {
@@ -10148,9 +10148,8 @@ function render_allpref() {
             ul.append($e("li", null, usere(u[3]), " ", e));
         }
         pctr.parentElement.replaceChild(ul, pctr);
-        removeClass(pctr, "need-allpref");
     }, function () {
-        pctr.closest("div").replaceChildren();
+        pctr.closest(".ple, .pl").replaceChildren();
     });
 }
 
@@ -10182,46 +10181,69 @@ function render_assignment_selector() {
     this.appendChild(sel);
 }
 
-function set(f, elt, text) {
-    var m;
-    if (!elt)
-        /* skip */;
-    else if (text == null || text === "")
-        elt.replaceChildren();
-    else {
-        if (elt.className == "")
-            elt.className = "fx" + f.foldnum;
-        if (f.title && (f.as_row || text == "Loading")) {
-            if (text.charAt(0) == "<" && (m = /^((?:<(?:div|p|ul|ol|li)[^>]*>)+)([\s\S]*)$/.exec(text)))
-                text = m[1] + '<em class="plx">' + f.title + ':</em> ' + m[2];
-            else
-                text = '<em class="plx">' + f.title + ':</em> ' + text;
+function add_tokens() {
+    let x = "";
+    for (let c of arguments) {
+        if (c == null || c === "") {
+            continue;
         }
+        x = x === "" ? c : x.concat(" ", c);
+    }
+    return x;
+}
+
+function set_pidfield(f, elt, text, classes) {
+    if (!elt) {
+        return;
+    }
+    if (text == null || text === "") {
+        elt.className = add_tokens(f.as_row ? "ple" : "pl", "fx" + f.foldnum);
+        elt.replaceChildren();
+        return;
+    }
+    if (f.as_row) {
+        elt.className = add_tokens("ple", f.className || "pl_" + f.name, "fx" + f.foldnum, classes);
+        if (!elt.firstChild) {
+            elt.append($e("em", "plet", f.title ? f.title + ":" : null), $e("div", "pled"));
+        }
+        elt = elt.lastChild;
+    } else if (classes) {
+        const div = $e("div", classes);
+        elt.replaceChildren(div);
+        elt = div;
+    }
+    if (typeof text === "string") {
         elt.innerHTML = text;
+    } else {
+        elt.replaceChildren(text);
     }
 }
 
 handle_ui.on("js-plinfo-edittags", function () {
-    var div = this.closest("div.pl_tags"), ta,
-        prow = prownear(div), pid = +prow.getAttribute("data-pid");
+    const pidfe = this.closest(".pl_tags"),
+        plistui = make_plist.call(tablelist(pidfe)),
+        prow = prownear(pidfe), pid = +prow.getAttribute("data-pid");
+    let ta = null;
     function start(rv) {
         if (!rv.ok || !rv.pid || rv.pid != pid)
             return;
-        $(div).html('<div class="d-inline-flex"><em class="plx mr-2"><label for="tags ' + rv.pid + '">Tags</label>:</em>'
-            + '<div class="mf mf-text w-text"><textarea name="tags ' + rv.pid + '" cols="120" rows="1" class="want-focus need-suggest tags w-text" style="vertical-align:-0.5rem" data-tooltip-anchor="v" id="tags ' + rv.pid + '" spellcheck="false"></textarea></div>'
-            + '<button type="button" name="tagsave ' + rv.pid + '" class="btn-primary ml-2">Save</button>'
-            + '<button type="button" name="tagcancel ' + rv.pid + '" class="ml-2">Cancel</button></div>');
-        ta = $(div).find("textarea")[0];
+        const elt = $e("div", "d-inline-flex",
+            $e("div", "mf mf-text w-text",
+                $e("textarea", {name: "tags " + rv.pid, cols: 120, rows: 1, "class": "want-focus need-suggest tags w-text", style: "vertical-align:-0.5rem", "data-tooltip-anchor": "v", "id": "tags " + rv.pid, "spellcheck": "false"})),
+            $e("button", {type: "button", name: "tagsave " + rv.pid, "class": "btn-primary ml-2"}, "Save"),
+            $e("button", {type: "button", name: "tagcancel " + rv.pid, "class": "ml-2"}, "Cancel"));
+        set_pidfield(plistui.fields.tags, pidfe, elt);
+        ta = pidfe.querySelector("textarea");
         hotcrp.suggest.call(ta);
         $(ta).val(rv.tags_edit_text).autogrow()
             .on("keydown", make_onkey("Enter", do_submit))
             .on("keydown", make_onkey("Escape", do_cancel));
-        $(div).find("button[name^=tagsave]").click(do_submit);
-        $(div).find("button[name^=tagcancel]").click(do_cancel);
-        focus_within(div);
+        $(pidfe).find("button[name^=tagsave]").click(do_submit);
+        $(pidfe).find("button[name^=tagcancel]").click(do_cancel);
+        focus_within(pidfe);
     }
     function do_submit() {
-        var tbl = tablelist(div);
+        var tbl = tablelist(pidfe);
         $.post(hoturl("=api/tags", {p: pid, forceShow: 1}),
             {tags: $(ta).val(), search: tbl ? tablelist_search(tbl) : null},
             function (rv) {
@@ -10231,11 +10253,11 @@ handle_ui.on("js-plinfo-edittags", function () {
     }
     function do_cancel() {
         var focused = document.activeElement
-            && document.activeElement.closest("div.pl_tags") === div;
+            && document.activeElement.closest(".pl_tags") === pidfe;
         $(ta).trigger("hide");
-        render_row_tags(div);
+        render_row_tags(pidfe);
         if (focused)
-            focus_within(div.closest("tr"));
+            focus_within(pidfe.closest("tr"));
     }
     $.post(hoturl("=api/tags", {p: pid, forceShow: 1}), start); // XXX should be GET
 });
@@ -10278,29 +10300,29 @@ function render_tagset(plistui, tagstr, editable) {
         t.push(["none"]);
     }
     h = document.createDocumentFragment();
-    h.append($e("em", "plx", "Tags:"));
     for (i = 0; i !== t.length; ++i) {
         h.append(" ", t[i][0]);
     }
     return h;
 }
 
-function render_row_tags(div) {
-    var plistui = make_plist.call(tablelist(div)),
-        ptr = prownear(div), editable = ptr.hasAttribute("data-tags-editable"),
-        t = render_tagset(plistui, ptr.getAttribute("data-tags"), editable);
+function render_row_tags(pidfe) {
+    let plistui = make_plist.call(tablelist(pidfe)),
+        ptr = prownear(pidfe), editable = ptr.hasAttribute("data-tags-editable"),
+        t = render_tagset(plistui, ptr.getAttribute("data-tags"), editable), ct = true;
     if (t && ptr.hasAttribute("data-tags-conflicted")) {
         t = $e("span", "fx5", t);
-        var ct = render_tagset(plistui, ptr.getAttribute("data-tags-conflicted"), editable);
-        ct && t.prepend($e("span", "fn5", ct));
+        if ((ct = render_tagset(plistui, ptr.getAttribute("data-tags-conflicted"), editable))) {
+            t.prepend($e("span", "fn5", ct));
+        }
     }
     if (t && ptr.getAttribute("data-tags-editable") != null) {
         t.append(" ", $e("span", "hoveronly",
             $e("span", "barsep", "·"), " ",
             $e("button", {type: "button", "class": "link ui js-plinfo-edittags"}, "Edit")));
     }
-    $(div).find("textarea").unautogrow();
-    t ? div.replaceChildren(t) : div.replaceChildren();
+    $(pidfe).find("textarea").unautogrow();
+    set_pidfield(plistui.fields.tags, pidfe, t, t && !ct ? "fx5" : null);
 }
 
 function make_tag_column_callback(plistui, f) {
@@ -10339,7 +10361,7 @@ hotcrp.render_list = function () {
     $(".need-allpref").each(render_allpref);
     $(".need-assignment-selector").each(render_assignment_selector);
     $(".need-tags").each(function () {
-        render_row_tags(this.parentNode);
+        render_row_tags(this.closest(".pl_tags"));
     });
     $(".pltable-draggable").each(paperlist_tag_ui.prepare_draggable);
     render_text.on_page();
@@ -10409,16 +10431,18 @@ function make_callback(plistui, dofold, type) {
             if (tr.nodeName === "TR"
                 && tr.hasAttribute("data-pid")
                 && hasClass(tr, "pl")) {
-                var p = +tr.getAttribute("data-pid");
-                if (values.attr && p in values.attr) {
-                    for (var k in values.attr[p])
-                        tr.setAttribute(k, values.attr[p][k]);
+                let p = +tr.getAttribute("data-pid"),
+                    data = values.data[p],
+                    attr = values.attr && values.attr[p],
+                    classes = values.classes && values.classes[p];
+                if (attr) {
+                    for (let k in attr) {
+                        tr.setAttribute(k, attr[k]);
+                    }
                 }
-                if (p in values.data) {
-                    var elt = plistui.pidfield(p, f, index);
-                    if (!elt)
-                        log_jserror("bad pidfield " + JSON.stringify([p, f.name, index]));
-                    set(f, elt, values.data[p][htmlk]);
+                if (data) {
+                    let e = plistui.pidfield(p, f, index);
+                    set_pidfield(f, e, data[htmlk], classes && classes[htmlk]);
                 }
                 ++n;
             }

@@ -21,8 +21,6 @@ class PaperListTableRender {
     public $titlecol = -1;
     /** @var int */
     public $selector_col = -1;
-    /** @var int */
-    public $skipcallout = 0;
 
     /** @var int */
     public $colorindex = 0;
@@ -35,7 +33,6 @@ class PaperListTableRender {
 
     /** @param list<PaperColumn> $vcolumns */
     function __construct($vcolumns) {
-        $incallout = true;
         foreach ($vcolumns as $fdef) {
             if (!$fdef->has_content || $fdef->as_row) {
                 continue;
@@ -46,11 +43,6 @@ class PaperListTableRender {
                 $this->selector_col = $this->ncol;
             }
             ++$this->ncol;
-            if ($fdef->order === null || $fdef->order >= 100) {
-                $incallout = false;
-            } else if ($incallout) {
-                ++$this->skipcallout;
-            }
         }
     }
     /** @param string $error
@@ -312,6 +304,8 @@ class PaperList {
     public $row_tags;
     /** @var string */
     public $row_tags_override;
+    /** @var ?string */
+    public $column_class;
     /** @var bool */
     public $need_render;
     /** @var bool */
@@ -1508,25 +1502,26 @@ class PaperList {
         } else if (!$this->row_overridable) {
             $override = 0;
         }
+        $this->column_class = null;
         $content = "";
+        $content2 = null;
         if ($override <= 0) {
             if (!$fdef->content_empty($this, $row)) {
                 $this->overriding = 0;
                 $content = $fdef->content($this, $row);
             }
         } else if ($override === PaperColumn::OVERRIDE_BOTH) {
-            $content1 = $content2 = "";
             if (!$fdef->content_empty($this, $row)) {
                 $this->overriding = 1;
-                $content1 = $fdef->content($this, $row);
+                $content = $fdef->content($this, $row);
             }
             $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
+            $content2 = "";
             if (!$fdef->content_empty($this, $row)) {
                 $this->overriding = 2;
                 $content2 = $fdef->content($this, $row);
             }
             $this->user->set_overrides($overrides);
-            $content = $this->wrap_conflict($content1, $content2, $fdef->as_row ? "div" : "span");
         } else if ($override === PaperColumn::OVERRIDE_FORCE) {
             $overrides = $this->user->add_overrides(Contact::OVERRIDE_CONFLICT);
             if (!$fdef->content_empty($this, $row)) {
@@ -1545,9 +1540,17 @@ class PaperList {
                     if ($override === PaperColumn::OVERRIDE_IFEMPTY_LINK) {
                         $content = '<em>Hidden for conflict</em> · <button type="button" class="link ui js-override-conflict">Override</button>';
                     }
-                    $content = $this->wrap_conflict($content, $fdef->content($this, $row), $fdef->as_row ? "div" : "span");
+                    $content2 = $fdef->content($this, $row);
                 }
                 $this->user->set_overrides($overrides);
+            }
+        }
+        if ($content2 !== null && $content !== $content2) {
+            if ($content === "") {
+                $this->column_class = Ht::add_tokens($this->column_class, "fx5");
+                $content = $content2;
+            } else {
+                $content = $this->wrap_conflict($content, $content2, $fdef->as_row ? "div" : "span");
             }
         }
         return $content;
@@ -1573,19 +1576,6 @@ class PaperList {
         $this->mark_has("tags", $this->row_tags !== "" || $this->row_tags_override !== "");
     }
 
-    static private function _prepend_row_header($content, $ch) {
-        $ch = '<em class="plx">' . $ch . ':</em> ';
-        if (str_starts_with($content, '<div class="fn5"')) {
-            return preg_replace_callback('/(<div class="f[nx]5">)/', function ($m) use ($ch) {
-                return $m[1] . $ch;
-            }, $content);
-        } else if (preg_match('/\A((?:<(?:div|p|ul|ol|li).*?>)*)([\s\S]*)\z/', $content, $m)) {
-            return $m[1] . $ch . $m[2];
-        } else {
-            return $ch . $content;
-        }
-    }
-
     /** @param PaperListTableRender $rstate
      * @return string */
     private function _row_html($rstate, PaperInfo $row) {
@@ -1603,12 +1593,16 @@ class PaperList {
                 continue;
             }
             $content = $this->_column_html($fdef, $row);
-            $fclass = $fdef->fold ? " fx{$fdef->fold}" : "";
             if ($content !== "") {
-                $tm[] = "<td class=\"pl{$fclass} {$fdef->className}\">{$content}</td>";
+                $k = Ht::add_tokens("pl", $fdef->className, $fdef->fold ? "fx{$fdef->fold}" : null);
+                if ($this->column_class !== null) {
+                    $content = "<div class=\"{$this->column_class}\">{$content}</div>";
+                }
+                $tm[] = "<td class=\"{$k}\">{$content}</td>";
                 $fdef->has_content = true;
             } else {
-                $tm[] = "<td class=\"pl{$fclass}\"></td>";
+                $k = $fdef->fold ? "pl fx{$fdef->fold}" : "pl";
+                $tm[] = "<td class=\"{$k}\"></td>";
             }
         }
 
@@ -1619,17 +1613,16 @@ class PaperList {
                 continue;
             }
             $content = $this->_column_html($fdef, $row);
-            if ($content !== ""
-                && ($ch = $fdef->header($this, false))) {
-                if ($content[0] === "<") {
-                    $content = self::_prepend_row_header($content, $ch);
-                } else {
-                    $content = "<em class=\"plx\">{$ch}:</em> {$content}";
-                }
+            if ($content !== "") {
+                $ch = $fdef->header($this, false);
+                $chx = $ch ? "{$ch}:" : "";
+                $k = Ht::add_tokens("ple", $fdef->className, $fdef->fold ? "fx{$fdef->fold}" : null, $this->column_class);
+                $tt[] = "<div class=\"{$k}\"><em class=\"plet\">{$chx}</em><div class=\"pled\">{$content}</div></div>";
+                $fdef->has_content = true;
+            } else {
+                $k = Ht::add_tokens("ple", $fdef->className, $fdef->fold ? "fx{$fdef->fold}" : null);
+                $tt[] = "<div class=\"{$k}\"></div>";
             }
-            $fclass = $fdef->fold ? " fx{$fdef->fold}" : "";
-            $tt[] = "<div class=\"{$fdef->className}{$fclass}\">{$content}</div>";
-            $fdef->has_content = $fdef->has_content || $content !== "";
         }
 
         // tags
@@ -1701,12 +1694,7 @@ class PaperList {
 
         // NB if plx row exists, it immediately follows the pl row w/o space
         if ($want_plx) {
-            $t .= "<tr class=\"plx {$trclass}\" data-pid=\"{$row->paperId}\">";
-            if ($rstate->skipcallout > 0) {
-                $t .= "<td colspan=\"{$rstate->skipcallout}\"></td>";
-            }
-            $nc = $rstate->ncol - $rstate->skipcallout;
-            $t .= "<td class=\"plx\" colspan=\"{$nc}\">" . join("", $tt) . "</td></tr>";
+            $t .= "<tr class=\"plx {$trclass}\" data-pid=\"{$row->paperId}\"><td class=\"plx\" colspan=\"{$rstate->ncol}\">" . join("", $tt) . "</td></tr>";
         }
 
         return $t . "\n";
@@ -2339,20 +2327,20 @@ class PaperList {
         $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
 
         // output field data
-        $data = $attr = [];
+        $data = $attr = $classes = [];
         foreach ($this->rowset() as $row) {
             $this->_row_setup($row);
             $p = ["id" => $row->paperId];
             foreach ($this->_vcolumns as $fdef) {
                 if (($content = $this->_column_html($fdef, $row)) !== "") {
                     $p[$fdef->name] = $content;
+                    if ($this->column_class !== null) {
+                        $classes[$row->paperId][$fdef->name] = $this->column_class;
+                    }
                 }
             }
             $data[$row->paperId] = $p;
             foreach ($this->row_attr as $k => $v) {
-                if (!isset($attr[$row->paperId])) {
-                    $attr[$row->paperId] = [];
-                }
                 $attr[$row->paperId][$k] = $v;
             }
         }
@@ -2380,6 +2368,9 @@ class PaperList {
 
         // output
         $result = ["fields" => $fields, "data" => $data];
+        if (!empty($classes)) {
+            $result["classes"] = $classes;
+        }
         if (!empty($attr)) {
             $result["attr"] = $attr;
         }

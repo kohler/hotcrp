@@ -351,9 +351,10 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
             $n = $this->unparse_name_html($tid);
             if ($interests !== null) {
                 $i = $interests[$tid] ?? 0;
-                $n = "<span class=\"topic{$i}\">{$n}</span>";
+                $out[] = "<li class=\"topic{$i}\">{$n}</li>";
+            } else {
+                $out[] = "<li>{$n}</li>";
             }
-            $out[] = "<li>{$n}</li>";
         }
         return "<ul class=\"semi\">" . join("", $out) . "</ul>";
     }

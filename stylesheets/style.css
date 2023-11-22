@@ -47,10 +47,10 @@ select, button {
 	color: #bcbcbc;
 }
 
-.auaff, em.plx, .asspref0 {
+.auaff, .plet, em.plx, .asspref0 {
 	color: #555555;
 }
-.dark .auaff, .dark em.plx, .dark .asspref0 {
+.dark .auaff, .dark .plet, .dark em.plx, .dark .asspref0 {
 	color: #bcbcbc;
 }
 
@@ -3143,11 +3143,28 @@ tr.plx {
 	font-size: 85%;
 	line-height: 1.35;
 }
+.ple {
+	display: flex;
+	align-items: baseline;
+	margin-left: 1.5rem;
+}
+.plet {
+	font-size: inherit;
+	font-weight: normal;
+	font-style: italic;
+	padding-right: 0.5em;
+	flex: 0 0 auto;
+	min-width: 9.5rem;
+	text-align: right;
+}
 em.plx {
 	font-size: inherit;
 	font-weight: normal;
 	font-style: italic;
 	padding-right: 0.25em;
+}
+.pled {
+	flex: 1 1 auto;
 }
 
 /* paper list tables */

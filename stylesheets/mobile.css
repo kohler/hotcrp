@@ -32,6 +32,12 @@ body.paper {
 .paperinfo-c {
 	padding-right: 0;
 }
+.ple {
+	margin-left: 0;
+}
+.plet {
+	min-width: 7rem;
+}
 }
 
 @media screen and (max-width: 768px) {
@@ -205,6 +211,9 @@ table.pltable {
 td.pl.pl_title, td.pl.pl_text {
 	min-width: 20rem;
 }
+.plet {
+	min-width: 6rem;
+}
 .reinfotable {
 	font-size: smaller;
 	margin-top: -0.25em;
@@ -243,5 +252,8 @@ td.pl.pl_title, td.pl.pl_text {
 .revcard-render {
 	display: block;
 	margin-bottom: 0;
+}
+.plet {
+	min-width: 5rem;
 }
 }

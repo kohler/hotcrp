@@ -522,7 +522,7 @@ class Authors_PaperColumn extends PaperColumn {
         }
         if ($pl->conf->submission_blindness() !== Conf::BLIND_NEVER
             && !$pl->user->can_view_authors($row)) {
-            $t = "<div class=\"fx2\">{$t}</div>";
+            $pl->column_class = Ht::add_tokens($pl->column_class, "fx2");
         }
         return $t;
     }
