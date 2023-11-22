@@ -1150,7 +1150,7 @@ class PaperInfo {
 
     /** @return int */
     function abstract_format() {
-        return $this->format_of($this->abstract(), true);
+        return $this->format_of($this->abstract());
     }
 
     function edit_format() {

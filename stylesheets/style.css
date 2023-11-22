@@ -3143,6 +3143,7 @@ tr.plx {
 	display: flex;
 	align-items: baseline;
 	margin-left: 1.5rem;
+	margin-right: 0.5rem;
 }
 .plet {
 	font-size: inherit;

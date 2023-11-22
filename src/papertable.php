@@ -863,7 +863,7 @@ class PaperTable {
             . $this->papt("abstract", $o->title_html(), $extra)
             . '<div class="pavb abstract';
         if (!$match && ($format = $this->prow->format_of($html))) {
-            $fr->value .= ' need-format" data-format="' . $format . '">' . $html;
+            $fr->value .= " need-format\" data-format=\"{$format}\">{$html}";
         } else {
             $fr->value .= ' format0">' . Ht::format0_html($html);
         }
