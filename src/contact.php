@@ -1993,37 +1993,35 @@ class Contact implements JsonSerializable {
 
     /** @param int $new_roles
      * @param ?Contact $actor
-     * @return bool */
-    function save_roles($new_roles, $actor) {
+     * @param bool $skip_log
+     * @return int */
+    function save_roles($new_roles, $actor, $skip_log = false) {
         assert(($new_roles & self::ROLE_DBMASK) === $new_roles);
         $old_roles = $this->roles & self::ROLE_DBMASK;
-        // ensure there's at least one system administrator
-        if (!($new_roles & self::ROLE_ADMIN)
-            && ($old_roles & self::ROLE_ADMIN)
-            && !$this->conf->fetch_ivalue("select contactId from ContactInfo where roles!=0 and (roles&" . self::ROLE_ADMIN . ")!=0 and contactId!=" . $this->contactId . " limit 1")) {
-            $new_roles |= self::ROLE_ADMIN;
-        }
-        // log role change
-        foreach ([self::ROLE_PC => "pc", self::ROLE_ADMIN => "sysadmin", self::ROLE_CHAIR => "chair"]
-                 as $role => $type) {
-            if (($new_roles & $role) && !($old_roles & $role)) {
-                $this->conf->log_for($actor ? : $this, $this, "Added as {$type}");
-            } else if (!($new_roles & $role) && ($old_roles & $role)) {
-                $this->conf->log_for($actor ? : $this, $this, "Removed as {$type}");
-            }
+        if (($old_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0
+            && ($new_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) === 0) {
+            // ensure there's at least one chair or system administrator
+            $result = $this->conf->qe("update ContactInfo set roles=? where contactId=? and exists (select * from ContactInfo where roles!=0 and (roles&?)!=0 and contactId!=?)",
+                $new_roles, $this->contactId,
+                self::ROLE_ADMIN | self::ROLE_CHAIR, $this->contactId);
+        } else {
+            $result = $this->conf->qe("update ContactInfo set roles=? where contactId=?",
+                $new_roles, $this->contactId);
         }
         // save the roles bits
-        if ($old_roles !== $new_roles) {
-            $this->conf->qe("update ContactInfo set roles={$new_roles} where contactId={$this->contactId}");
+        if ($result->affected_rows > 0) {
+            if (!$skip_log) {
+                $this->conf->log_for($actor ?? $this, $this, "Account edited: roles [" . UserStatus::unparse_roles_diff($old_roles, $new_roles) . "]");
+            }
             $this->roles = $new_roles;
             $this->_session_roles = (($this->_session_roles ?? 0) & ~self::ROLE_DBMASK) | $new_roles;
             $this->set_roles_properties();
             $this->conf->invalidate_caches(["pc" => true]);
             $this->conf->invalidate_user($this, true);
             $this->update_cdb_roles();
-            return true;
+            return $new_roles;
         } else {
-            return false;
+            return $old_roles;
         }
     }
 

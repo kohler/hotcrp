@@ -53,13 +53,15 @@ class UserStatus extends MessageSet {
     public $created;
     /** @var bool */
     public $notified;
-    /** @var associative-array<string,true> */
+    /** @var associative-array<string,true|string> */
     public $diffs = [];
 
     /** @var ?ComponentSet */
     private $_cs;
 
-    public static $watch_keywords = [
+    /** @var array<string,int>
+     * @readonly */
+    static public $watch_keywords = [
         "register" => Contact::WATCH_PAPER_REGISTER_ALL,
         "submit" => Contact::WATCH_PAPER_NEWSUBMIT_ALL,
         "latewithdraw" => Contact::WATCH_LATE_WITHDRAWAL_ALL,
@@ -82,6 +84,8 @@ class UserStatus extends MessageSet {
         "uemail" => "email"
     ];
 
+    /** @var array<string,-2|1|0|1|2>
+     * @readonly */
     static public $topic_interest_name_map = [
         "low" => -2, "lo" => -2,
         "medium-low" => -1, "medium_low" => -1, "mediumlow" => -1, "mlow" => -1,
@@ -90,6 +94,14 @@ class UserStatus extends MessageSet {
         "medium-high" => 1, "medium_high" => 1, "mediumhigh" => 1, "mhigh" => 1,
         "medium-hi" => 1, "medium_hi" => 1, "mediumhi" => 1, "mhi" => 1,
         "high" => 2, "hi" => 2
+    ];
+
+    /** @var array<int,string>
+     * @readonly */
+    static public $role_map = [
+        Contact::ROLE_PC => "pc",
+        Contact::ROLE_CHAIR => "chair",
+        Contact::ROLE_ADMIN => "sysadmin"
     ];
 
     function __construct(Contact $viewer) {
@@ -271,7 +283,8 @@ class UserStatus extends MessageSet {
         }
     }
 
-    /** @return ?list<string> */
+    /** @param int $roles
+     * @return ?list<string> */
     static function unparse_roles_json($roles) {
         if ($roles) {
             $rj = [];
@@ -288,6 +301,19 @@ class UserStatus extends MessageSet {
         } else {
             return null;
         }
+    }
+
+    /** @param int $old_roles
+     * @param int $new_roles
+     * @return string */
+    static function unparse_roles_diff($old_roles, $new_roles) {
+        $t = [];
+        foreach (self::$role_map as $bit => $name) {
+            if ((($old_roles ^ $new_roles) & $bit) !== 0) {
+                $t[] = (($old_roles & $bit) !== 0 ? "-" : "+") . $name;
+            }
+        }
+        return join(" ", $t);
     }
 
     static function unparse_json_main(UserStatus $us) {
@@ -913,6 +939,9 @@ class UserStatus extends MessageSet {
         $old_disablement = $user->disabled_flags();
 
         // initialize
+        if (isset($cj->email) && strcasecmp($cj->email, $user->email) !== 0) {
+            error_log(debug_string_backtrace());
+        }
         assert(!isset($cj->email) || strcasecmp($cj->email, $user->email) === 0);
         $this->created = !$old_user;
         $this->set_user($user);
@@ -932,9 +961,9 @@ class UserStatus extends MessageSet {
             && ($old_roles & Contact::ROLE_PCLIKE) !== 0) {
             $roles = ($roles & ~Contact::ROLE_PCLIKE) | ($old_roles & Contact::ROLE_PCLIKE);
         }
-        if ($roles !== $old_roles) {
-            $user->save_roles($roles, $actor);
-            $this->diffs["roles"] = true;
+        if ($roles !== $old_roles
+            && ($roles = $user->save_roles($roles, $actor, true)) !== $old_roles) {
+            $this->diffs["roles"] = self::unparse_roles_diff($old_roles, $roles);
         }
 
         // Contact DB (must precede password)
@@ -962,7 +991,11 @@ class UserStatus extends MessageSet {
             $user->mark_activity();
         }
         if (!empty($this->diffs)) {
-            $user->conf->log_for($this->viewer, $user, "Account edited: " . join(", ", array_keys($this->diffs)));
+            $t = [];
+            foreach ($this->diffs as $k => $v) {
+                $t[] = is_string($v) && $v !== "" ? "{$k} [{$v}]" : $k;
+            }
+            $user->conf->log_for($this->viewer, $user, "Account edited: " . join(", ", $t));
         } else if ($this->created) {
             $this->diffs["create"] = true;
         }
