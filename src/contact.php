@@ -1691,35 +1691,40 @@ class Contact implements JsonSerializable {
     static function email_authored_papers(Conf $conf, $email, $reg) {
         $aupapers = [];
         $result = $conf->q("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t?ls\t%'"), $email);
-        while (($row = PaperInfo::fetch($result, null, $conf))) {
-            foreach ($row->author_list() as $au) {
-                if (strcasecmp($au->email, $email) == 0) {
-                    $aupapers[] = $row->paperId;
-                    if ($reg
-                        && ($au->firstName !== "" || $au->lastName !== "")
-                        && ($reg->firstName ?? "") === ""
-                        && ($reg->lastName ?? "") === "") {
-                        $reg->firstName = $au->firstName;
-                        $reg->lastName = $au->lastName;
-                    }
-                    if ($reg
-                        && $au->affiliation !== ""
-                        && ($reg->affiliation ?? "") === "") {
-                        $reg->affiliation = $au->affiliation;
-                    }
+        while (($row = $result->fetch_row())) {
+            foreach (PaperInfo::parse_author_list($row[1]) as $au) {
+                if (strcasecmp($au->email, $email) !== 0) {
+                    continue;
+                }
+                $aupapers[] = (int) $row[0];
+                if ($reg
+                    && ($au->firstName !== "" || $au->lastName !== "")
+                    && ($reg->firstName ?? "") === ""
+                    && ($reg->lastName ?? "") === "") {
+                    $reg->firstName = $au->firstName;
+                    $reg->lastName = $au->lastName;
+                }
+                if ($reg
+                    && $au->affiliation !== ""
+                    && ($reg->affiliation ?? "") === "") {
+                    $reg->affiliation = $au->affiliation;
                 }
             }
         }
+        Dbl::free($result);
         return $aupapers;
     }
 
     /** @param list<int> $aupapers */
     private function save_authored_papers($aupapers) {
-        if (!empty($aupapers) && $this->contactId) {
-            $this->conf->ql("insert into PaperConflict (paperId, contactId, conflictType) values ?v on duplicate key update conflictType=(conflictType|" . CONFLICT_AUTHOR . ")", array_map(function ($pid) {
-                return [$pid, $this->contactId, CONFLICT_AUTHOR];
-            }, $aupapers));
+        if (empty($aupapers) || $this->contactId <= 0) {
+            return;
         }
+        $ps = [];
+        foreach ($aupapers as $pid) {
+            $ps[] = [$pid, $this->contactId, CONFLICT_AUTHOR];
+        }
+        $this->conf->ql("insert into PaperConflict (paperId, contactId, conflictType) values ?v on duplicate key update conflictType=(conflictType|" . CONFLICT_AUTHOR . ")", $ps);
     }
 
 
