@@ -5,7 +5,6 @@
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
     date_default_timezone_set("GMT");
-    exit(BackupDB_Batch::make_args($argv)->run());
 }
 
 class BackupDB_Batch {
@@ -16,20 +15,60 @@ class BackupDB_Batch {
     /** @var 0|1|2|3|4|5
      * @readonly */
     public $subcommand = 0;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $verbose;
     /** @var bool */
     public $compress;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $schema;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $skip_ephemeral;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $tablespaces;
-    /** @var bool */
+    /** @var int
+     * @readonly */
+    public $count;
+    /** @var bool
+     * @readonly */
     private $pc_only;
-    /** @var list<string> */
+    /** @var list<string>
+     * @readonly */
     private $my_opts = [];
+    /** @var list<string>
+     * @readonly */
+    private $_check_table = [];
+    /** @var ?string
+     * @readonly */
+    private $_hash_algorithm;
+    /** @var ?string
+     * @readonly */
+    private $_s3_dbname;
+    /** @var ?string
+     * @readonly */
+    private $_s3_confid;
+    /** @var ?int
+     * @readonly */
+    private $_before;
+    /** @var ?int
+     * @readonly */
+    private $_after;
+    /** @var 'stdin'|'file'|'database'|'s3'|'none'
+     * @readonly */
+    private $_input_mode;
+    /** @var string
+     * @readonly */
+    private $_input;
+    /** @var 'stdout'|'file'|'database'|'s3'|'none'
+     * @readonly */
+    private $_output_mode;
+    /** @var string
+     * @readonly */
+    private $_output;
+
     /** @var ?resource */
     public $in;
     /** @var resource */
@@ -40,16 +79,20 @@ class BackupDB_Batch {
     private $_deflatebuf;
     /** @var ?string */
     private $_s3_tmp;
-    /** @var ?\mysqli */
-    private $_dblink;
     /** @var bool */
     private $_has_dblink = false;
+    /** @var ?\mysqli */
+    private $_dblink;
     /** @var ?resource */
     private $_pwtmp;
     /** @var ?string */
     private $_pwfile;
+    /** @var ?S3Client */
+    private $_s3_client;
     /** @var int */
     private $_mode;
+    /** @var list<string> */
+    private $_checked_tables;
     /** @var ?string */
     private $_inserting;
     /** @var bool */
@@ -61,33 +104,25 @@ class BackupDB_Batch {
     /** @var string */
     private $_separator;
     /** @var int */
-    private $_maybe_ephemeral = 0;
+    private $_maybe_ephemeral;
     /** @var string */
-    private $_buf = "";
+    private $_buf;
     /** @var ?HashContext */
     private $_hash;
     /** @var bool */
-    private $_complete = false;
-    /** @var list<string> */
-    private $_check_table = [];
+    private $_complete;
     /** @var bool */
-    private $_hotcrp_comment = false;
+    private $_hotcrp_comment;
     /** @var ?int */
     private $_check_sversion;
-    /** @var ?S3Client */
-    private $_s3_client;
-    /** @var ?string */
-    private $_s3_dbname;
-    /** @var ?string */
-    private $_s3_confid;
     /** @var ?string */
     private $_s3_backup_key;
     /** @var ?string */
     private $_s3_backup_pattern;
+    /** @var ?list<string> */
+    private $_s3_list;
     /** @var ?int */
-    private $_before;
-    /** @var ?int */
-    private $_after;
+    private $_s3_listpos;
 
     const BACKUP = 0;
     const RESTORE = 1; // see code in constructor
@@ -96,6 +131,7 @@ class BackupDB_Batch {
     const S3_PUT = 4;
     const S3_RESTORE = 5;
     const BUFSZ = 16384;
+
 
     /** @param array<string,mixed> $arg
      * @param ?Getopt $getopt */
@@ -109,6 +145,7 @@ class BackupDB_Batch {
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
         $this->tablespaces = isset($arg["tablespaces"]);
         $this->pc_only = isset($arg["pc"]);
+        $this->count = $arg["count"] ?? 1;
 
         foreach ($arg["-"] ?? [] as $arg) {
             if (str_starts_with($arg, "--s3-")) {
@@ -120,10 +157,13 @@ class BackupDB_Batch {
             $this->my_opts[] = "--skip-comments";
         }
         if (isset($arg["output-sha256"])) {
+            $this->_hash_algorithm = "sha256";
             $this->_hash = hash_init("sha256");
         } else if (isset($arg["output-sha1"])) {
+            $this->_hash_algorithm = "sha1";
             $this->_hash = hash_init("sha1");
         } else if (isset($arg["output-md5"])) {
+            $this->_hash_algorithm = "md5";
             $this->_hash = hash_init("md5");
         }
         $this->_check_table = $arg["check-table"] ?? [];
@@ -151,6 +191,11 @@ class BackupDB_Batch {
         }
         if ($this->subcommand >= self::S3_LIST && !$this->s3_client()) {
             $this->throw_error("S3 not configured or not available");
+        }
+        if ($this->count !== 1 && $this->subcommand !== self::S3_GET) {
+            $this->throw_error("`--count` requires `--s3-get`");
+        } else if ($this->count <= 0) {
+            $this->throw_error("Bad `--count`");
         }
 
         // Check input and output arguments
@@ -186,6 +231,7 @@ class BackupDB_Batch {
         } else {
             $input_mode = "none";
         }
+
         if ($this->subcommand === self::S3_GET
             && $output === null
             && posix_isatty(STDOUT)) {
@@ -202,6 +248,7 @@ class BackupDB_Batch {
         } else {
             $output_mode = "none";
         }
+
         if ($input_mode !== "database" && $this->pc_only) {
             $this->throw_error("`--pc` works only when reading from a database");
         }
@@ -215,60 +262,18 @@ class BackupDB_Batch {
                 $this->throw_error("Hash output incompatible with other standard output use");
             }
         }
-
-        // Set input stream
-        if ($input_mode === "file") {
-            $this->in = @gzopen($input, "rb");
-        } else if ($input_mode === "stdin") {
-            $this->in = @fopen("compress.zlib://php://stdin", "rb");
-        } else if ($input_mode === "s3") {
-            $this->set_s3_input();
-        } else if ($input_mode === "database") {
-            $svlk = $this->sversion_lockstate();
-            if ($svlk[0] === 0 || $svlk[1]) {
-                $this->throw_error("Schema is locked");
+        if ($output_mode === "file" && is_dir($output)) {
+            if ($this->subcommand !== self::S3_GET) {
+                $this->throw_error("Refusing to output to directory");
             }
-            $this->_check_sversion = $svlk[0];
-        }
-        if ($this->in === false) {
-            throw error_get_last_as_exception("{$input}: ");
+        } else if ($this->count > 1) {
+            $this->throw_error("`--count` requires directory output");
         }
 
-        // Set output stream
-        if ($output_mode === "file") {
-            if ($input_mode === "s3" && is_dir($output)) {
-                $output .= str_ends_with($output, "/") ? "" : "/";
-                $output .= substr($this->_s3_backup_key, strrpos($this->_s3_backup_key, "/") + 1);
-                if (!$this->compress) {
-                    $output = preg_replace('/(?:\.gz|\.bz2|\.z)\z/', "", $output);
-                }
-                fwrite(STDERR, "Writing {$output}\n");
-            }
-            $outx = str_starts_with($output, "/") ? $output : "./{$output}";
-            if ($this->compress) {
-                $this->out = @gzopen($outx, "wb9");
-            } else {
-                $this->out = @fopen($outx, "wb");
-            }
-        } else if ($output_mode === "stdout") {
-            if ($this->compress) {
-                $this->prepare_deflate();
-            }
-            $this->out = STDOUT;
-        } else if ($output_mode === "s3") {
-            if (!$this->compress && str_ends_with($this->_s3_backup_pattern, ".gz")) {
-                $this->compress = true;
-            }
-            if ($this->compress) {
-                $this->prepare_deflate();
-            }
-            $this->out = fopen("php://temp", "w+b");
-        }
-        if ($this->out === false) {
-            throw error_get_last_as_exception("{$input}: ");
-        } else if ($this->out !== null) {
-            stream_set_write_buffer($this->out, 0);
-        }
+        $this->_input_mode = $input_mode;
+        $this->_input = $input;
+        $this->_output_mode = $output_mode;
+        $this->_output = $output;
     }
 
     private function prepare_deflate() {
@@ -279,7 +284,7 @@ class BackupDB_Batch {
     /** @param string $msg
      * @return never */
     function throw_error($msg) {
-        throw new CommandLineException("{$this->connp->name}: $msg");
+        throw new CommandLineException("{$this->connp->name}: {$msg}");
     }
 
     /** @return ?\mysqli */
@@ -316,8 +321,12 @@ class BackupDB_Batch {
         return $this->_s3_client;
     }
 
-    /** @return array<int,string> */
-    private function s3_list($max = -1) {
+    /** @return list<string> */
+    private function s3_list() {
+        if ($this->_s3_list !== null) {
+            return $this->_s3_list;
+        }
+
         $bp = new BackupPattern($this->_s3_backup_pattern);
         $pfx = $bp->expand($this->_s3_dbname ?? $this->connp->name, $this->_s3_confid ?? $this->confid);
         $s3 = $this->s3_client();
@@ -337,15 +346,18 @@ class BackupDB_Batch {
         }
 
         krsort($ans);
-        return $ans;
+        $this->_s3_list = array_values($ans);
+        return $this->_s3_list;
     }
 
     function set_s3_input() {
-        $keys = array_values($this->s3_list(1));
-        if (empty($keys)) {
-            $this->throw_error("No matching backup found");
+        $keys = $this->s3_list();
+        $this->_s3_listpos = $this->_s3_listpos ?? 0;
+        if ($this->_s3_listpos >= count($keys)) {
+            throw new BackupDB_NoS3Exception("No matching backups");
         }
-        $this->_s3_backup_key = $keys[0];
+        $this->_s3_backup_key = $keys[$this->_s3_listpos];
+        ++$this->_s3_listpos;
         if (($fn = tempnam("/tmp", "hcbu")) === false) {
             $this->throw_error("Cannot create temporary file");
         }
@@ -538,9 +550,9 @@ class BackupDB_Batch {
             $this->_fields = [];
             $this->_creating = true;
             $this->_maybe_ephemeral = 0;
-            for ($ctpos = 0; $ctpos !== count($this->_check_table); ) {
-                if (strcasecmp($this->_created, $this->_check_table[$ctpos]) === 0) {
-                    array_splice($this->_check_table, $ctpos, 1);
+            for ($ctpos = 0; $ctpos !== count($this->_checked_tables); ) {
+                if (strcasecmp($this->_created, $this->_checked_tables[$ctpos]) === 0) {
+                    array_splice($this->_checked_tables, $ctpos, 1);
                 } else {
                     ++$ctpos;
                 }
@@ -697,8 +709,82 @@ class BackupDB_Batch {
         $this->run_mysqldump_transfer("--where='{$where}'", "TopicInterest");
     }
 
+    private function open_streams() {
+        // Set input stream
+        if ($this->_input_mode === "file") {
+            $this->in = @gzopen($this->_input, "rb");
+        } else if ($this->_input_mode === "stdin") {
+            $this->in = @fopen("compress.zlib://php://stdin", "rb");
+        } else if ($this->_input_mode === "s3") {
+            $this->set_s3_input();
+        } else if ($this->_input_mode === "database") {
+            $svlk = $this->sversion_lockstate();
+            if ($svlk[0] === 0 || $svlk[1]) {
+                $this->throw_error("Schema is locked");
+            }
+            $this->_check_sversion = $svlk[0];
+        }
+        if ($this->in === false) {
+            throw error_get_last_as_exception("{$this->_input}: ");
+        }
+
+        // Set output stream
+        $output = $this->_output;
+        if ($this->_output_mode === "file") {
+            if (is_dir($output)) {
+                $output .= str_ends_with($output, "/") ? "" : "/";
+                $output .= substr($this->_s3_backup_key, strrpos($this->_s3_backup_key, "/") + 1);
+                if (!$this->compress) {
+                    $output = preg_replace('/(?:\.gz|\.bz2|\.z|\.Z)\z/', "", $output);
+                }
+                fwrite(STDERR, "{$output}\n");
+            }
+            $outx = str_starts_with($output, "/") ? $output : "./{$output}";
+            if ($this->compress) {
+                $this->out = @gzopen($outx, "wb9");
+            } else {
+                $this->out = @fopen($outx, "wb");
+            }
+        } else if ($this->_output_mode === "stdout") {
+            if ($this->compress) {
+                $this->prepare_deflate();
+            }
+            $this->out = STDOUT;
+        } else if ($this->_output_mode === "s3") {
+            if (!$this->compress && str_ends_with($this->_s3_backup_pattern, ".gz")) {
+                $this->compress = true;
+            }
+            if ($this->compress) {
+                $this->prepare_deflate();
+            }
+            $this->out = fopen("php://temp", "w+b");
+        }
+        if ($this->out === false) {
+            throw error_get_last_as_exception("{$output}: ");
+        } else if ($this->out !== null) {
+            stream_set_write_buffer($this->out, 0);
+        }
+    }
+
+    private function initialize_transfer() {
+        $this->_mode = 0;
+        $this->_inserting = null;
+        $this->_creating = false;
+        $this->_created = null;
+        $this->_fields = null;
+        $this->_separator = "";
+        $this->_maybe_ephemeral = 0;
+        $this->_buf = "";
+        if ($this->_hash_algorithm) {
+            $this->_hash = hash_init($this->_hash_algorithm);
+        }
+        $this->_complete = false;
+        $this->_hotcrp_comment = false;
+        $this->_checked_tables = $this->_check_table;
+    }
+
     /** @return int */
-    function run() {
+    private function run_streams() {
         if ($this->subcommand === self::RESTORE
             || $this->subcommand === self::S3_RESTORE) {
             return $this->run_restore();
@@ -714,8 +800,8 @@ class BackupDB_Batch {
             $this->run_mysqldump_transfer("", "");
         }
 
-        if (!empty($this->_check_table)) {
-            fwrite(STDERR,  $this->connp->name . " backup: table(s) " . join(", ", $this->_check_table) . " not found\n");
+        if (!empty($this->_checked_tables)) {
+            fwrite(STDERR,  $this->connp->name . " backup: table(s) " . join(", ", $this->_checked_tables) . " not found\n");
             exit(1);
         }
         if ($this->_check_sversion) {
@@ -739,6 +825,25 @@ class BackupDB_Batch {
         }
         if ($this->subcommand === self::S3_PUT) {
             $this->s3_put();
+        }
+        return 0;
+    }
+
+    /** @return int */
+    function run() {
+        for ($i = 0; $i !== $this->count; ++$i) {
+            try {
+                $this->open_streams();
+            } catch (BackupDB_NoS3Exception $b) {
+                if ($this->_s3_listpos === 0) {
+                    throw $b;
+                }
+                break;
+            }
+            $this->initialize_transfer();
+            if (($r = $this->run_streams()) !== 0) {
+                return $r;
+            }
         }
         return 0;
     }
@@ -771,6 +876,7 @@ class BackupDB_Batch {
             "s3-confid:,s3-name: =CONFID !s3 Set confid component of S3 path",
             "before: =DATE !s3 Include S3 backups before DATE",
             "after: =DATE !s3 Include S3 backups after DATE",
+            "count: {n} =N !s3 Fetch N backups (--s3-get only)",
             "V,verbose Be verbose",
             "help::,h:: Print help"
         )->description("Back up HotCRP database or restore from backup.
@@ -785,4 +891,17 @@ Usage: php batch/backupdb.php [-c FILE | -n CONFID] [OPTS...] [-z] -o DUMP
         initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
         return new BackupDB_Batch(Dbl::parse_connection_params($Opt), $arg, $getopt);
     }
+}
+
+class BackupDB_NoS3Exception extends CommandLineException {
+    /** @param string $message
+     * @param ?Getopt $getopt
+     * @param ?int $exit_status */
+    function __construct($message, $getopt = null, $exit_status = null) {
+        parent::__construct($message, $getopt, $exit_status);
+    }
+}
+
+if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
+    exit(BackupDB_Batch::make_args($argv)->run());
 }

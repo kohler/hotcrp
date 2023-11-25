@@ -9,6 +9,7 @@ class SiteLoader {
         "AssignmentParser" => "src/assignmentset.php",
         "AutoassignerCosts" => "src/autoassigner.php",
         "Collator" => "lib/collatorshim.php",
+        "CommandLineException" => "lib/getopt.php",
         "CsvGenerator" => "lib/csv.php",
         "CsvParser" => "lib/csv.php",
         "Discrete_ReviewField" => "src/reviewfield.php",
