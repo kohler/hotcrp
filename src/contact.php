@@ -128,7 +128,7 @@ class Contact implements JsonSerializable {
     private $_name_for_map = [];
 
     // Roles
-    const ROLE_PC = 0x0001;
+    const ROLE_PC = 0x0001; // value matters
     const ROLE_ADMIN = 0x0002;
     const ROLE_CHAIR = 0x0004;
     const ROLE_PCLIKE = 0x000F;
@@ -2001,9 +2001,11 @@ class Contact implements JsonSerializable {
         if (($old_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0
             && ($new_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) === 0) {
             // ensure there's at least one chair or system administrator
-            $result = $this->conf->qe("update ContactInfo set roles=? where contactId=? and exists (select * from ContactInfo where roles!=0 and (roles&?)!=0 and contactId!=?)",
-                $new_roles, $this->contactId,
-                self::ROLE_ADMIN | self::ROLE_CHAIR, $this->contactId);
+            // (MySQL 5.5 requires this syntax, not a subselect)
+            $result = $this->conf->qe("update ContactInfo c, (select contactId from ContactInfo where roles>? and (roles&?)!=0 and contactId!=? limit 1) d
+                set c.roles=? where c.contactId=? and d.contactId is not null",
+                self::ROLE_PC, self::ROLE_ADMIN | self::ROLE_CHAIR, $this->contactId,
+                $new_roles, $this->contactId);
         } else {
             $result = $this->conf->qe("update ContactInfo set roles=? where contactId=?",
                 $new_roles, $this->contactId);
