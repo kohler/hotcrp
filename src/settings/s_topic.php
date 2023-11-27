@@ -56,7 +56,7 @@ class Topic_SettingParser extends SettingParser {
         echo "</p>\n", Ht::hidden("has_topic", 1);
 
         if (($topic_counters = $sv->oblist_keys("topic"))) {
-            echo '<div class="mg has-copy-topics"><table><thead><tr><th style="text-align:left">';
+            echo '<div class="mb-3 has-copy-topics"><table><thead><tr><th style="text-align:left">';
             if (!empty($interests)) {
                 echo '<span class="float-right n"># PC interests: </span>';
             }
@@ -82,7 +82,7 @@ class Topic_SettingParser extends SettingParser {
                 "</div>\n";
         }
 
-        echo '<div class="mg"><label for="new_topics"><strong>New topics</strong></label> (enter one per line)<br>',
+        echo '<div class="mb-3"><label for="new_topics"><strong>New topics</strong></label> (enter one per line)<br>',
             $sv->feedback_at("new_topics"),
             Ht::textarea("new_topics", $sv->use_req() ? $sv->reqstr("new_topics") : "", ["cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("new_topics") ? "has-error " : "") . "need-autogrow", "id" => "new_topics"]), "</div>";
     }

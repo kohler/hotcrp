@@ -103,7 +103,7 @@ class Decision_SettingParser extends SettingParser {
         if ($sv->editable("decision")) {
             echo '<template id="settings-new-decision-type" class="hidden">';
             self::print_decrow($sv, '$', $decs_pcount);
-            echo '</template><div class="mg">',
+            echo '</template><div class="mt-3">',
                 Ht::button("Add decision type", ["class" => "ui js-settings-decision-add"]),
                 '</div>';
         }

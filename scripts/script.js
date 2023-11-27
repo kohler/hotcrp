@@ -13383,7 +13383,7 @@ $(function () {
         return p.join(">");
     }
     var err = [], elt = [];
-    $(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea,button.btn-link,button.btn-qlink,button.btn-qolink,.btn-xlink,.btn-disabled,a.btn[href='']").each(function () {
+    $(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea,button.btn-link,button.btn-qlink,button.btn-qolink,.btn-xlink,.btn-disabled,a.btn[href=''],.p,.mg").each(function () {
         err.push(locator(this));
         elt.push(this);
     });

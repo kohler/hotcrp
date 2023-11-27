@@ -120,15 +120,6 @@ table, tr, td, th {
 table {
 	line-height: inherit;
 }
-.p {
-	margin-bottom: 1em;
-}
-.p-sqz {
-	margin-bottom: 1em;
-}
-.p-sqz + .p-sqz {
-	margin-top: -0.5em;
-}
 tr, select {
 	vertical-align: baseline;
 }
@@ -835,11 +826,11 @@ label.checki {
 	margin-top: 1em;
 	margin-bottom: 2em;
 }
-.mg { /* medium gap */
-	margin: 1em 0;
+.p-sqz {
+	margin-bottom: 1em;
 }
-td.mg {
-	padding-top: 1em;
+.p-sqz + .p-sqz {
+	margin-top: -0.5em;
 }
 .g { /* small gap */
 	margin: 0.65em 0;

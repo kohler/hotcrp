@@ -237,7 +237,7 @@ class Track_SettingParser extends SettingParser {
         $this->ctr = $ctr;
         $this->nfolded = 0;
         $trx = $sv->oldv("track/{$ctr}");
-        echo '<div id="track/', $ctr, '" class="mg has-fold ',
+        echo '<div id="track/', $ctr, '" class="has-fold ',
             $trx->is_new ? "fold3o" : "fold3c", '">',
             Ht::hidden("track/{$ctr}/id", $trx->tag,
                 ["data-default-value" => $trx->is_new ? "" : null]),
