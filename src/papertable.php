@@ -2284,6 +2284,7 @@ class PaperTable {
         }
         $form_js = [
             "id" => "f-paper",
+            "name" => base64_encode(random_bytes(8)), // prevent FF from incorrectly autofilling on reload
             "class" => "need-unload-protection need-diff-check ui-submit js-submit-paper",
             "data-differs-toggle" => "paper-alert"
         ];
