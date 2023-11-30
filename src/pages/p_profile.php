@@ -659,9 +659,10 @@ class Profile_Page {
 
         echo '</ul>';
 
-        if ($this->page_type === 0) {
+        if ($this->page_type === 0 || $this->page_type === 1) {
+            $t = $this->page_type === 0 ? "Save changes" : "Create account";
             echo '<div class="leftmenu-if-left if-differs mt-5">',
-                Ht::submit("save", "Save changes", ["class" => "btn-primary"]), '</div>';
+                Ht::submit("save", $t, ["class" => "btn-primary"]), '</div>';
         }
 
         echo '</nav></div>',

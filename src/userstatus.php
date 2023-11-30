@@ -1551,10 +1551,11 @@ class UserStatus extends MessageSet {
             && in_array($us->qreq->pctype, ["chair", "pc", "none"])) {
             $pcrole = $us->qreq->pctype;
         }
+        $diffclass = $us->user->email ? "" : " ignore-diff";
         foreach (["chair" => "PC chair", "pc" => "PC member",
                   "none" => "Not on the PC"] as $k => $v) {
             echo '<label class="checki"><span class="checkc">',
-                Ht::radio("pctype", $k, $pcrole === $k, ["class" => "uich js-profile-role", "data-default-checked" => $cpcrole === $k]),
+                Ht::radio("pctype", $k, $pcrole === $k, ["class" => "uich js-profile-role" . $diffclass, "data-default-checked" => $cpcrole === $k]),
                 '</span>', $v, "</label>\n";
         }
         Ht::stash_script('$(function(){$(".js-profile-role").first().trigger("change")})');
@@ -1565,7 +1566,7 @@ class UserStatus extends MessageSet {
             $is_ass = isset($us->qreq->ass);
         }
         echo '<div class="checki"><label><span class="checkc">',
-            Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass, "class" => "uich js-profile-role"]),
+            Ht::checkbox("ass", 1, $is_ass, ["data-default-checked" => $cis_ass, "class" => "uich js-profile-role" . $diffclass]),
             '</span>Sysadmin</label>',
             '<p class="f-h">Sysadmins and PC chairs have full control over all site operations. Sysadmins need not be members of the PC. There’s always at least one administrator (sysadmin or chair).</p></div></td></tr></table>', "\n";
     }
