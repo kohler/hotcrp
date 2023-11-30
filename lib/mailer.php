@@ -35,6 +35,7 @@ class Mailer {
     protected $adminupdate = false;
     /** @var ?string */
     protected $notes;
+    /** @var ?string */
     public $capability_token;
     /** @var bool */
     protected $sensitive;
@@ -48,11 +49,13 @@ class Mailer {
 
     /** @var array<string,true> */
     private $_unexpanded = [];
+    /** @var list<string> */
     protected $_errors_reported = [];
     /** @var ?MessageSet */
     private $_ms;
 
-    /** @param ?Contact $recipient */
+    /** @param ?Contact $recipient
+     * @param array{width?:int,censor?:0|1|2,reason?:string,change?:string,adminupdate?:bool,notes?:string,capability_token?:string,sensitive?:bool} $settings */
     function __construct(Conf $conf, $recipient = null, $settings = []) {
         $this->conf = $conf;
         $this->eol = $conf->opt("postfixEOL") ?? "\r\n";
@@ -60,7 +63,8 @@ class Mailer {
         $this->reset($recipient, $settings);
     }
 
-    /** @param ?Contact $recipient */
+    /** @param ?Contact $recipient
+     * @param array{width?:int,censor?:0|1|2,reason?:string,change?:string,adminupdate?:bool,notes?:string,capability_token?:string,sensitive?:bool} $settings */
     function reset($recipient = null, $settings = []) {
         $this->recipient = $recipient;
         $this->width = $settings["width"] ?? 72;

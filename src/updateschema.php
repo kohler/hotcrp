@@ -319,7 +319,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
      * @param string $column
      * @return ?int */
     private function check_column_exists($table, $column) {
-        return Dbl::fetch_ivalue($this->conf->dblink, "select exists (select * from information_schema.columns where table_schema=database() and `table_name`='$table' and `column_name`='$column') from dual");
+        return Dbl::fetch_ivalue($this->conf->dblink, "select exists (select * from information_schema.columns where table_schema=database() and `table_name`='{$table}' and `column_name`='{$column}') from dual");
     }
 
     private function v154_mimetype_extensions() {
