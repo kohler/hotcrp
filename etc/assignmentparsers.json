@@ -128,13 +128,13 @@
         "name": "contact", "parser_class": "Conflict_AssignmentParser",
         "remove": false, "iscontact": true,
         "parameters": ["user"],
-        "description": "Add contact author relationship"
+        "description": "Add to contact authors"
     },
     {
         "name": "clearcontact", "parser_class": "Conflict_AssignmentParser",
         "remove": true, "iscontact": true,
         "parameters": ["user"], "group": "contact",
-        "description": "Clear contact author relationship"
+        "description": "Remove from contact authors"
     },
     {   "name": "nocontact", "alias": "clearcontact"   },
     {

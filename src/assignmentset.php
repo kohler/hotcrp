@@ -1367,20 +1367,28 @@ class AssignmentSet {
 
     /** @param CsvParser $csv */
     private function install_csv_header($csv) {
+        $had_header = !!$csv->header();
+        $def_action = $this->astate->defaults["action"] ?? null;
+
         if (!$csv->header()) {
             if (!($req = $csv->next_list())) {
-                $this->error_near($csv->lineno(), "<0>Empty file");
+                $this->msg_near(null, "<0>Empty file", 2);
                 return false;
             }
-            if (!self::is_csv_header($req)) {
+            if (self::is_csv_header($req)) {
+                // found header
+            } else if (!$def_action) {
+                $this->msg_near(null, "<0>CSV header required", 2);
+                $this->msg_near(null, "<5>CSV assignment files must define ‘<code>action</code>’ and ‘<code>paper</code>’ columns. Add a CSV header line to tell me what the columns mean.", MessageSet::INFORM);
+                return false;
+            } else {
                 $csv->unshift($req);
-                if (count($req) === 3
-                    && (!$req[2] || strpos($req[2], "@") !== false)) {
-                    $req = ["paper", "name", "email"];
-                } else if (count($req) == 2) {
-                    $req = ["paper", "user"];
+                if ($def_action === "settag") {
+                    $req = ["paper", "tag"];
+                } else if ($def_action === "preference") {
+                    $req = ["paper", "user", "preference"];
                 } else {
-                    $req = ["paper", "action", "user", "round"];
+                    $req = ["paper", "user"];
                 }
             }
             $csv->set_header($req);
@@ -1405,7 +1413,7 @@ class AssignmentSet {
         }
 
         $has_action = $csv->has_column("action");
-        if (!$has_action && !isset($this->astate->defaults["action"])) {
+        if (!$has_action && $def_action === null) {
             $defaults = [];
             if ($csv->has_column("tag")) {
                 $defaults[] = "tag";
@@ -1423,25 +1431,21 @@ class AssignmentSet {
                 $defaults[] = "decision";
             }
             if (count($defaults) == 1) {
-                $this->astate->defaults["action"] = $defaults[0];
+                $def_action = $this->astate->defaults["action"] = $defaults[0];
                 if (in_array($defaults[0], ["lead", "shepherd", "manager"])) {
                     $csv->add_synonym("user", $defaults[0]);
                 }
             }
         }
 
-        if (!$has_action && !($this->astate->defaults["action"] ?? null)) {
-            $this->error_near($csv->lineno(), "<0>“action” column required");
+        if ((!$has_action && !$def_action)
+            || !$csv->has_column("paper")) {
+            $this->msg_near(null, "<0>CSV must define “action” and “paper” columns", 2);
             return false;
-        } else if (!$csv->has_column("paper")) {
-            $this->msg_near(null, "<0>“paper” column required", 2);
-            return false;
-        } else {
-            if (!isset($this->astate->defaults["action"])) {
-                $this->astate->defaults["action"] = "<missing>";
-            }
-            return true;
         }
+
+        $this->astate->defaults["action"] = $def_action ?? "<missing>";
+        return true;
     }
 
     /** @param string $coldesc

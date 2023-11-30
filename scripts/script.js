@@ -4680,6 +4680,13 @@ handle_ui.on("js-assignment-autosave", function () {
 });
 })($);
 
+handle_ui.on("js-bulkassign-action", function () {
+    foldup.call(this, null, {open: this.value === "review"});
+    foldup.call(this, null, {open: /^(?:primary|secondary|(?:optional|meta)?review)$/.test(this.value), n:2});
+    let selopt = this.selectedOptions[0] || this.options[0];
+    $("#k-bulkassign-entry").attr("placeholder", selopt.getAttribute("data-csv-header"));
+});
+
 (function () {
 var email_info = [], email_info_at = 0;
 
