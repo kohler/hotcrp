@@ -45,11 +45,13 @@ class SearchConfig_API {
         $pl->apply_view_report_default();
         $pl->apply_view_session($qreq);
         $vr = $pl->unparse_view(PaperList::VIEWORIGIN_REPORT, true);
+        $vrx = $pl->unparse_view(PaperList::VIEWORIGIN_DEFAULT_DISPLAY, true);
 
         return new JsonResult([
             "ok" => true, "report" => $report,
             "display_current" => join(" ", $vr),
-            "display_default" => join(" ", $vd)
+            "display_default" => join(" ", $vd),
+            "display_difference" => join(" ", $vrx)
         ]);
     }
 

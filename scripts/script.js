@@ -12416,47 +12416,69 @@ handle_ui.on("js-edit-view-options", function () {
         $d = hc.show();
         $d.on("submit", "form", submit);
     }
-    $.ajax(hoturl("=api/viewoptions", {q: $("#f-search input[name=q]").val()}), {
-        success: function (data) {
-            if (data.ok)
-                create(data.display_default, data.display_current);
-        }
+    $.get(hoturl("=api/viewoptions", {q: $$("f-search").getAttribute("data-lquery")}), function (data) {
+        if (data.ok)
+            create(data.display_default, data.display_current);
     });
 });
 
 handle_ui.on("js-edit-namedsearches", function () {
     var $d, count = 0;
-    function push1(hc, f) {
+    function render1(f) {
         ++count;
-        hc.push('<div class="editsearches-search" data-search-number="' + count + '">', '</div>');
-        hc.push('<div class="entryi"><label for="k-named_search/' + count + '/name">Name</label><div class="entry nw">', '</div></div>');
+        const nentry = $e("div", "entry nw"), qentry = $e("div", "entry");
         if (f.editable) {
-            hc.push('<input type="text" id="k-named_search/' + count + '/name" class="editsearches-name need-autogrow" name="named_search/' + count + '/name" size="30" value="' + escape_html(f.name) + '" placeholder="Search name">');
-            hc.push('<button type="button" class="ui closebtn delete-link need-tooltip" aria-label="Delete search">x</button>');
-        } else
-            hc.push(escape_html(f.name));
-        hc.pop();
-        hc.push('<div class="entryi"><label for="k-named_search/' + count + '/q">Search</label><div class="entry">', '</div></div>');
-        if (f.editable)
-            hc.push('<textarea class="editsearches-query need-autogrow w-99" id="k-named_search/' + count + '/q" name="named_search/' + count + '/q" rows="1" cols="64" placeholder="(All)">' + escape_html(f.q) + '</textarea>');
-        else
-            hc.push(escape_html(f.q));
-        hc.push('<input type="hidden" name="named_search/' + count + '/id" value="' + (f.id || f.name) + '">');
-        hc.pop();
-        if (f.error_html) {
-            hc.push('<div class="entryi"><label class="is-error">Error</label><div class="entry">' + f.error_html + '</div></div>');
+            nentry.append($e("input", {
+                    id: "k-named_search/" + count + "/name",
+                    type: "text", name: "named_search/" + count + "/name",
+                    "class": "editsearches-name need-autogrow",
+                    size: 30, value: f.name, placeholder: "Name of search"
+                }), $e("button", {
+                    type: "button", "class": "ui closebtn delete-link need-tooltip",
+                    "aria-label": "Delete search"
+                }, svge_use_licon("trash")));
+            qentry.append($e("textarea", {
+                    id: "k-named_search/" + count + "/q",
+                    "name": "named_search/" + count + "/q",
+                    "class": "editsearches-query need-autogrow w-99",
+                    rows: 1, cols: 64, placeholder: "(All)"
+                }, f.q))
+        } else {
+            nentry.append(f.name);
+            qentry.append(f.q);
         }
-        hc.pop();
+        const div = $e("div", {"class": "editsearches-search", "data-search-number": count},
+            $e("div", "entryi",
+                $e("label", {"for": "k-named_search/" + count + "/name"}, "Name"),
+                nentry),
+            $e("div", "entryi",
+                $e("label", {"for": "k-named_search/" + count + "/q"}, "Search"),
+                qentry),
+            hidden_input("named_search/" + count + "/id", f.id || f.name));
+        if (f.error_html) {
+            const e = $e("div", "entry");
+            e.innerHTML = f.error_html;
+            div.append($e("div", "entryi", $e("label", "is-error", "Error"), e));
+        }
+        return div;
     }
     function click() {
         if (this.name === "add") {
-            var hc = new HtmlCollector,
-                q = document.getElementById("f-search");
-            push1(hc, {name: "", q: q ? q.getAttribute("data-lquery") : "", editable: true, id: "new"});
-            var $f = $(hc.render()).appendTo($d.find(".editsearches")).awaken();
-            $f[0].setAttribute("data-search-new", "");
-            focus_at($f.find(".editsearches-name"));
-            $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
+            const q = $$("f-search");
+            $.get(hoturl("=api/viewoptions", {q: q ? q.getAttribute("data-lquery") : ""}), function (data) {
+                const a = [];
+                if (q && q.getAttribute("data-lquery")) {
+                    a.push(q.getAttribute("data-lquery"));
+                }
+                if (data && data.ok && data.display_difference) {
+                    a.push(data.display_difference);
+                }
+                const div = render1({name: "", q: a.join(" "), editable: true, id: "new"});
+                $(div).appendTo($d.find(".editsearches")).awaken();
+                div.setAttribute("data-search-new", "");
+                focus_at($(div).find(".editsearches-name"));
+                $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
+            });
         } else if (hasClass(this, "delete-link")) {
             ondelete.call(this);
         }
@@ -12484,13 +12506,15 @@ handle_ui.on("js-edit-namedsearches", function () {
         var hc = popup_skeleton({className: "modal-dialog-w40", form_class: "need-diff-check"}), i;
         hc.push('<h2>Named searches</h2>');
         hc.push('<p>Invoke a named search with “ss:NAME”. Named searches are shared with the PC.</p>');
-        hc.push('<div class="editsearches">', '</div>');
-        for (i in data.searches || []) {
-            push1(hc, data.searches[i]);
-        }
-        hc.pop_push('<button type="button" name="add">Add named search</button>');
+        hc.push('<div class="editsearches"></div>');
+        hc.push('<button type="button" name="add">Add named search</button>');
         hc.push_actions(['<button type="submit" name="savesearches" value="1" class="btn-primary">Save</button>', '<button type="button" name="cancel">Cancel</button>']);
-        $d = hc.show();
+        $d = hc.show(false);
+        const ns = $d.find(".editsearches")[0];
+        for (i in data.searches || []) {
+            ns.append(render1(data.searches[i]));
+        }
+        hc.show();
         $d.on("click", "button", click);
         $d.on("submit", "form", submit);
         $d.show_errors(data);

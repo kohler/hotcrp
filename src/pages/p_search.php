@@ -204,7 +204,8 @@ class Search_Page {
         if ($any) {
             echo '</div>';
         }
-        echo '<p class="mt-1 mb-0 text-end"><button class="small ui js-edit-namedsearches" type="button">Edit saved searches</button></p></div>';
+        Icons::stash_defs("trash");
+        echo '<p class="mt-1 mb-0 text-end"><button class="small ui js-edit-namedsearches" type="button">Edit named searches</button></p></div>';
         return true;
     }
 
