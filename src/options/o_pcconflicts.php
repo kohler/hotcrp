@@ -243,47 +243,37 @@ class PCConflicts_PaperOption extends PaperOption {
         foreach ($pcm as $id => $p) {
             $pct = $ctmaps[0][$p->contactId] ?? 0;
             $ct = $ctmaps[1][$p->contactId] ?? 0;
+
+            $name = $pt->user->reviewer_html_for($p);
             $potconf = null;
             if ($ov->prow->paperId && $pct < CONFLICT_AUTHOR) {
                 $potconf = $ov->prow->potential_conflict_html($p, $pct <= 0);
             }
 
-            $label = $pt->user->reviewer_html_for($p);
-            if ($p->affiliation) {
-                $label .= '<span class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</span>';
-            }
-
-            echo '<li class="ctelt"><div class="ctelti';
-            if (!$this->selectors) {
-                echo ' checki';
-            }
-            echo ' clearfix';
-            if (Conflict::is_conflicted($pct)) {
-                echo ' tag-bold';
-            }
+            echo '<li class="ctelt"><div class="ctelti clearfix',
+                $this->selectors ? "" : " checki",
+                Conflict::is_conflicted($pct) ? " tag-bold" : "";
             if ($potconf) {
                 echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($potconf));
             }
-            echo '"><label>';
+            echo '">';
 
             $js = ["id" => "pcconf:{$id}"];
             $hidden = "";
             if (Conflict::is_author($pct)
                 || (!$admin && Conflict::is_pinned($pct))) {
                 if ($this->selectors) {
-                    echo '<span class="pcconf-editselector"><strong>';
                     if (Conflict::is_author($pct)) {
-                        echo "Author";
+                        $confx = "<strong>Author</strong>";
                     } else if (Conflict::is_conflicted($pct)) {
-                        echo "Conflict"; // XXX conflict type?
+                        $confx = "<strong>Conflict</strong>"; // XXX conflict type?
                     } else {
-                        echo "No conflict";
+                        $confx = "<strong>No conflict</strong>";
                     }
-                    echo '</strong></span>';
                 } else {
-                    echo '<span class="checkc">', Ht::checkbox(null, 1, Conflict::is_conflicted($pct), ["disabled" => true]), '</span>';
+                    $confx = Ht::checkbox(null, 1, Conflict::is_conflicted($pct), ["disabled" => true]);
                 }
-                echo Ht::hidden("pcconf:{$id}", $pct, ["class" => "conflict-entry", "disabled" => true]);
+                $hidden = Ht::hidden("pcconf:{$id}", $pct, ["class" => "conflict-entry", "disabled" => true]);
             } else if ($this->selectors) {
                 $xctypes = $ctypes;
                 if (!isset($xctypes[$ct])) {
@@ -291,25 +281,29 @@ class PCConflicts_PaperOption extends PaperOption {
                 }
                 $js["class"] = "conflict-entry";
                 $js["data-default-value"] = $pct;
-                echo '<span class="pcconf-editselector">',
-                    Ht::select("pcconf:{$id}", $xctypes, $ct, $js),
-                    '</span>';
+                $confx = Ht::select("pcconf:{$id}", $xctypes, $ct, $js);
             } else {
                 $js["data-default-checked"] = Conflict::is_conflicted($pct);
                 $js["data-range-type"] = "pcconf";
                 $js["class"] = "uic js-range-click conflict-entry";
                 $checked = Conflict::is_conflicted($ct);
-                echo '<span class="checkc">',
-                    Ht::checkbox("pcconf:{$id}", $checked ? $ct : Conflict::GENERAL, $checked, $js),
-                    '</span>';
+                $confx = Ht::checkbox("pcconf:{$id}", $checked ? $ct : Conflict::GENERAL, $checked, $js);
                 $hidden = Ht::hidden("has_pcconf:{$id}", 1);
             }
 
-            echo $label, "</label>", $hidden;
+            if ($this->selectors) {
+                echo "<label for=\"pcconf:{$id}\">", $name, "</label>",
+                    '<span class="pcconf-editselector">', $confx, '</span>';
+            } else {
+                echo "<label><span class=\"checkc\">", $confx, "</span>", $name, "</label>";
+            }
+            if ($p->affiliation) {
+                echo '<span class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</span>';
+            }
             if ($potconf) {
                 echo $potconf->announce;
             }
-            echo "</div></li>";
+            echo $hidden, "</div></li>";
         }
 
         if (empty($pcm)) { // only in settings mode
