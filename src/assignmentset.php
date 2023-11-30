@@ -505,12 +505,6 @@ class AssignmentState extends MessageSet {
     function warning($msg) {
         $this->msg_near($this->landmark, $msg, 1);
     }
-    /** @param null|int|string $landmark
-     * @param string $msg
-     * @return void */
-    function warning_near($landmark, $msg) {
-        $this->msg_near($landmark, $msg, 1);
-    }
     /** @param string $msg
      * @return void */
     function error($msg) {
@@ -633,7 +627,7 @@ class AssignerContacts {
         }
         $result = $this->conf->qe("select " . $this->user_query_fields() . " from ContactInfo where contactId=?", $cid);
         $u = Contact::fetch($result, $this->conf)
-            ?? Contact::make_keyed($this->conf, ["email" => "unknown contact $cid", "contactId" => $cid]);
+            ?? Contact::make_keyed($this->conf, ["email" => "unknown contact {$cid}", "contactId" => $cid]);
         Dbl::free($result);
         return $this->store($u);
     }
@@ -1170,20 +1164,15 @@ class AssignmentSet {
     }
     /** @param null|int|string $landmark
      * @param string $msg
-     * @return void */
-    function error_near($landmark, $msg) {
-        $this->astate->msg_near($landmark, $msg, 2);
+     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
+     * @return MessageItem */
+    function msg_near($landmark, $msg, $status) {
+        return $this->astate->msg_near($landmark, $msg, $status);
     }
     /** @param string $msg
      * @return void */
     function error($msg) {
         $this->astate->msg_near($this->astate->landmark(), $msg, 2);
-    }
-    /** @param null|false|int|string $landmark
-     * @param string $msg
-     * @return void */
-    function warning_near($landmark, $msg) {
-        $this->astate->msg_near($landmark, $msg, 1);
     }
     /** @param string $msg
      * @return void */
@@ -1445,7 +1434,7 @@ class AssignmentSet {
             $this->error_near($csv->lineno(), "<0>“action” column required");
             return false;
         } else if (!$csv->has_column("paper")) {
-            $this->error_near($csv->lineno(), "<0>“paper” column required");
+            $this->msg_near(null, "<0>“paper” column required", 2);
             return false;
         } else {
             if (!isset($this->astate->defaults["action"])) {

@@ -157,14 +157,16 @@ class BulkAssign_Page {
         echo "<section class=\"mt-7\">
 <h3><a class=\"ulh\" href=\"", $this->conf->hoturl("help", ["t" => "bulkassign"]), "\">Instructions</a></h3>
 
-<p class=\"w-text\">Upload a CSV (comma-separated value file) to prepare an assignment; HotCRP
-will display the consequences of the requested assignment for confirmation and
-approval. The <code>action</code> field determines the assignment to be
-performed. Supported actions include:</p>";
+<p class=\"w-text\">Upload a CSV (comma-separated value) to prepare an
+assignment. The first line of the CSV should be a header defining the meaning
+of each column; the mandatory <code>action</code> column determines the kind of
+assignment to be peformed. HotCRP will display the consequences of the
+requested assignment for confirmation and approval. Supported actions
+include:</p>";
 
         BulkAssign_HelpTopic::print_actions($this->user);
 
-        echo "<p class=\"w-text\">For example, this file clears existing R1 review assignments for papers
+        echo "<p class=\"w-text mt-3\">For example, this file clears existing R1 review assignments for papers
 tagged #redo, then assigns two primary reviews for submission #1 and one
 secondary review for submission #2:</p>
 
