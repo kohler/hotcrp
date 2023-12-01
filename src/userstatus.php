@@ -1744,7 +1744,7 @@ topics. We use this information to help match papers to reviewers.</p>',
     static function print_bulk_entry(UserStatus $us) {
         echo Ht::textarea("bulkentry", $us->qreq->bulkentry, [
             "rows" => 1, "cols" => 80,
-            "placeholder" => "Enter one user per line",
+            "placeholder" => "Enter CSV user data with header",
             "class" => "want-focus need-autogrow",
             "spellcheck" => "false"
         ]);

@@ -12461,7 +12461,7 @@ handle_ui.on("js-edit-namedsearches", function () {
                     "class": "editsearches-name need-autogrow",
                     size: 30, value: f.name, placeholder: "Name of search"
                 }), $e("button", {
-                    type: "button", "class": "ui closebtn delete-link need-tooltip",
+                    type: "button", "class": "ui delete-link ml-2 need-tooltip",
                     "aria-label": "Delete search"
                 }, svge_use_licon("trash")));
             qentry.append($e("textarea", {

@@ -265,14 +265,14 @@ Assignment methods:
             '<input type="file" name="file" accept="text/plain,text/csv" size="30"></div>';
 
         $limits = PaperSearch::viewable_limits($this->user);
-        echo '<p class="mt-5"><label>Paper collection: ',
+        echo '<p class="mt-5 mb-2"><label>Paper collection: ',
             PaperSearch::limit_selector($this->conf, $limits, in_array("all", $limits) ? "all" : PaperSearch::default_limit($this->user, $limits), ["class" => "ml-1"]),
             '</label></p>';
 
         echo '<div id="foldoptions" class="mb-5 foldc fold2c fold3c">',
             '<label>Action: ',
             Ht::select("default_action", [
-                ["value" => "guess", "label" => "All", "data-csv-header" => "Enter CSV assignments with header"],
+                ["value" => "guess", "label" => "Any", "data-csv-header" => "Enter CSV assignments with header"],
                 ["value" => "primary", "label" => "Assign primary reviews", "data-csv-header" => "paper,user"],
                 ["value" => "secondary", "label" => "Assign secondary reviews", "data-csv-header" => "paper,user"],
                 ["value" => "optionalreview", "label" => "Assign optional PC reviews", "data-csv-header" => "paper,user"],
