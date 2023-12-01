@@ -45,7 +45,7 @@ HotCRP will leave the existing assignment alone.</p>";
 can be a paper number, like “1”, or a search, like
 “re:jhala #good”. Instead of a <code>user</code> parameter, you can
 supply <code>email</code>, <code>name</code>,
-<code>first name</code>, and/or <code>last name</code>. <code>tag</code>
+<code>first_name</code>, and/or <code>last_name</code>. <code>tag</code>
 fields can contain a tag value, using “tag#value” syntax, or the value
 can be supplied separately.</p>';
 
@@ -115,8 +115,8 @@ less than 10:</p>
 #p#&lt;10,cleartag,p</pre>
 
 <p>To add to a tag order, use action <code>nexttag</code>; to add to a gapless
-tag order, use <code>seqnexttag</code>. For example, this file creates a
-tag order in tag #p:</p>
+tag order, use <code>seqnexttag</code>. For example, this file creates a tag
+order #p that lists papers 4, 3, 2, 9, 10, and 6, in that order:</p>
 
 <pre class=\"sample\">paper,action,tag
 all,cleartag,p
@@ -183,7 +183,7 @@ a conflict type, such as “advisor” or “institutional”.</p>";
             }
         }
         if (!empty($apx)) {
-            echo '<table class="p table-striped"><thead>',
+            echo '<table class="table-striped mb-p"><thead>',
                 '<tr><th class="pll"><code>action</code></th><th class="pll">Parameter columns</th><th class="pll">Description</th></tr></thead>',
                 '<tbody>', join('', $apx), '</tbody></table>';
         }

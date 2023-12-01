@@ -1787,7 +1787,7 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
         if (!empty($rows)) {
             echo '<p>Supported CSV fields include:</p>',
-                '<table class="p table-striped"><thead>',
+                '<table class="table-striped mb-p"><thead>',
                 '<tr><th class="pll">Field</th><th class="pll">Description</th></tr></thead>',
                 '<tbody>', join('', $rows), '</tbody></table>';
         }
