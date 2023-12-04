@@ -1636,25 +1636,26 @@ class Contact implements JsonSerializable {
 
         if ($this->is_signed_in()) {
             Multiconference::fail($qreq, 403, ["link" => true], "<0>Page inaccessible");
-        } else {
-            $x = [];
-            if (($path = $qreq->path())) {
-                $x["__PATH__"] = preg_replace('/^\/+/', "", $path);
-            }
-            $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
-            if ($qreq->valid_post()) {
-                // Preserve post values across session expiration.
-                $qreq->open_session();
-                $qreq->set_gsession("login_bounce", [$this->conf->session_key, $url, $qreq->page(), $_POST, Conf::$now + 120]);
-                $this->conf->feedback_msg([
-                    MessageItem::error($this->conf->_i("signin_required", new FmtArg("action", $qreq->page()))),
-                    MessageItem::inform("<0>Your changes were not saved. After signing in, you may try to submit them again")
-                ]);
-                $this->conf->redirect();
-            } else {
-                Multiconference::fail($qreq, 403, $this->conf->_i("signin_required", new FmtArg("action", $qreq->page()), new FmtArg("url", $this->conf->hoturl_raw("signin", ["redirect" => $url]), 0)));
-            }
         }
+
+        $x = [];
+        if (($path = $qreq->path())) {
+            $x["__PATH__"] = preg_replace('/^\/+/', "", $path);
+        }
+        $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
+
+        if (!$qreq->valid_post()) {
+            Multiconference::fail($qreq, 403, $this->conf->_i("signin_required", new FmtArg("action", $qreq->page()), new FmtArg("url", $this->conf->hoturl_raw("signin", ["redirect" => $url]), 0)));
+        }
+
+        // Preserve post values across session expiration.
+        $qreq->open_session();
+        $qreq->set_gsession("login_bounce", [$this->conf->session_key, $url, $qreq->page(), $_POST, Conf::$now + 120]);
+        $this->conf->feedback_msg([
+            MessageItem::error($this->conf->_i("signin_required", new FmtArg("action", $qreq->page()))),
+            MessageItem::inform("<0>Your changes were not saved. After signing in, you may try to submit them again")
+        ]);
+        $this->conf->redirect();
     }
 
 
