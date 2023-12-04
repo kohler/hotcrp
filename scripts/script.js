@@ -499,7 +499,7 @@ $.ajaxPrefilter(function (options) {
         if (!rjson.message_list)
             rjson.message_list = [{message: jqxhr_error_ftext(jqxhr, status, errormsg), status: 2}];
         for (i = 0; i !== success.length; ++i)
-            success[i](rjson, jqxhr, status);
+            success[i](rjson, status, jqxhr);
     }
     var success = options.success || [], error = options.error;
     if (!$.isArray(success))
@@ -3016,7 +3016,9 @@ handle_ui.on("js-mark-submit", function () {
 // initialization
 (function ($) {
 var dl, dlname, dltime, redisplay_timeout,
-    reload_outstanding = 0, reload_nerrors = 0, reload_count = 0;
+    reload_outstanding = 0, reload_nerrors = 0, reload_count = 0,
+    reload_token_max = 250, reload_token_rate = 500,
+    reload_tokens = reload_token_max, reload_refill_at = 0, reload_refill_timeout = null;
 
 // deadline display
 function checkdl(now, endtime, ingrace) {
@@ -3337,7 +3339,7 @@ function tracker_refresh() {
         }
         if (ts[2])
             param.tracker_start_at = ts[2];
-        streload(param, ts[3] ? {"hotlist-info": ts[3]} : {});
+        streload_track(param, ts[3] ? {"hotlist-info": ts[3]} : {});
         tracker_refresher = tracker_refresher || setInterval(tracker_refresh, 25000);
         wstorage.site(true, "hotcrp-tracking", ts);
     } else if (tracker_refresher) {
@@ -3561,7 +3563,7 @@ handle_ui.on("js-tracker-stop", function (evt) {
     if (e && e.hasAttribute("data-trackerid"))
         $.post(hoturl("=api/trackerconfig"),
             {"tr1-id": e.getAttribute("data-trackerid"), "tr1-stop": 1},
-            function () { streload(); });
+            streload);
 });
 
 
@@ -3615,19 +3617,20 @@ function trlog() {
 
 function trevent_store(new_eventid, prev_eventid, expiry, why) {
     var tre = trevent(), now = now_sec(), x,
-        match = why === "unload" || why === "cdone" || why === "cfail";
+        must_match = why === "unload" || why === "cdone" || why === "cfail";
+    // Do nothing and return false, which means do not try comet
+    // server, if (1) the desired request is already out of date, or
+    // (2) a different tab has registered a state that's either a
+    // long poll or that expires later than the desired request would
     if ((tre.eventid > new_eventid
          && tre.eventid !== prev_eventid
          && tre.expiry > now)
         || (tre.eventid === new_eventid
-            && tre.expiry > expiry
-            && tre.uuid !== my_uuid)
-        || (tre.eventid === new_eventid
-            && tre.why === "cstart"
-            && (!match || tre.uuid !== my_uuid))) {
+            && tre.uuid !== my_uuid
+            && (tre.expiry > expiry || tre.why === "cstart"))) {
         return false;
     }
-    if (!match || tre.uuid === my_uuid) {
+    if (!must_match || tre.uuid === my_uuid) {
         x = {eventid: new_eventid, expiry: expiry, why: why, uuid: my_uuid};
         trevent(x);
         //trlog(x);
@@ -3670,33 +3673,31 @@ function trevent_react() {
     trexpire = null;
     var tre = trevent(), now = now_sec();
 
-    // no information or out-of-date information: reload now
+    // known-out-of-date or absent status: reload ASAP
     if (!dl || (dl.tracker_eventid || 0) !== tre.eventid) {
         streload();
         return;
     }
 
-    // expires in future: reload then
-    if (tre.expiry > now
-        && (!dl.tracker_site || tre.long || now < comet_stop_until)) {
-        trexpire = setTimeout(trevent_react, (tre.expiry - now) * 1000);
-        return;
-    }
+    // otherwise, cache eventid equals status eventid, but might need
+    // to refresh comet connection
 
-    // at this point, we have supposedly up-to-date events + expired cache
-
-    // no comet: reload now
-    if (!dl.tracker_site) {
-        // reserve next 0.5sec in local storage, but don’t reschedule µtask
-        ++trmicrotask;
-        trevent_store(dl.tracker_eventid || 0, tre.eventid, now + 0.5, "reserve");
-        --trmicrotask;
-        streload();
+    // if no comet, reload once cache expires
+    if (!dl.tracker_site || now < comet_stop_until) {
+        if (tre.expiry > now) {
+            trexpire = setTimeout(trevent_react, (tre.expiry - now) * 1000);
+        } else {
+            // reserve next 0.5sec in local storage, then reload
+            ++trmicrotask; // prevent recursive trevent_react scheduling
+            trevent_store(dl.tracker_eventid || 0, tre.eventid, now + 0.5, "reserve");
+            --trmicrotask;
+            streload();
+        }
         return;
     }
 
     // comet active or quiescent: don’t reload
-    if (comet_outstanding || now < comet_stop_until || !dl.tracker_recent)
+    if (comet_outstanding || !dl.tracker_recent)
         return;
 
     // localStorage is inherently racy -- no locking or compare-and-swap --
@@ -3736,7 +3737,7 @@ function trevent_comet(prev_eventid, start_at) {
         var done_at = now_sec();
         comet_outstanding = 0;
         clearTimeout(reserve_to);
-        if (status == "success" && xhr.status == 200 && data && data.ok) {
+        if (status === "success" && xhr.status === 200 && data && data.ok) {
             // successful status
             comet_nerrors = comet_stop_until = 0;
             ++comet_nsuccess;
@@ -3773,7 +3774,6 @@ function trevent_comet(prev_eventid, start_at) {
         param += "&uuid=" + my_uuid;
 
     // make request
-    //console.log(start_at + ": poll " + JSON.stringify(trevent()));
     xhr = $.ajax(hoturl_add(dl.tracker_site + "poll", param), {
         method: "GET", timeout: timeout + 2000, cache: false,
         success: success, complete: complete
@@ -3835,9 +3835,7 @@ function load(dlx, prev_eventid, is_initial) {
     }
 }
 
-function streload(trackparam, trackdata) {
-    if (!trackparam && reload_outstanding > 0)
-        return;
+function streload_track(trackparam, trackdata) {
     ++reload_outstanding;
     ++reload_count;
     var prev_eventid = trevent().eventid;
@@ -3859,6 +3857,28 @@ function streload(trackparam, trackdata) {
         $.ajax(hoturl("api/status", siteinfo.paperid ? {p: siteinfo.paperid} : {}), {
             method: "GET", timeout: 30000, success: success
         });
+    }
+}
+
+function streload() {
+    if (reload_outstanding > 0)
+        return;
+    // token bucket rate limiter: at most one call to back end every 500ms on average
+    clearTimeout(reload_refill_timeout);
+    reload_refill_timeout = null;
+    let now = now_msec();
+    if (reload_refill_at === 0) {
+        reload_refill_at = now + reload_token_rate;
+    } else if (reload_refill_at < now) {
+        const add_tokens = Math.min(reload_token_max - reload_tokens, Math.ceil((now - reload_refill_at) / reload_token_rate));
+        reload_tokens += add_tokens;
+        reload_refill_at = reload_tokens === reload_token_max ? now + reload_token_rate : reload_refill_at + add_tokens * reload_token_rate;
+    }
+    if (reload_tokens > 0) {
+        --reload_tokens;
+        streload_track(null, null);
+    } else {
+        setTimeout(streload, reload_refill_at - now);
     }
 }
 
