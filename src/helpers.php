@@ -452,7 +452,7 @@ function pluralize($s) {
  * @return string */
 function plural($n, $singular, $plural = null) {
     $z = is_array($n) ? count($n) : $n;
-    return "$z " . plural_word($z, $singular, $plural);
+    return "{$z} " . plural_word($z, $singular, $plural);
 }
 
 /** @param int $n
