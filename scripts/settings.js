@@ -2610,7 +2610,7 @@ function make_json_validate() {
         }
         if (editRange[0] < c.beforeRange[0]) {
             c.beforeLines.splice(0, 0, ...maince.slice(editRange[0], c.beforeRange[0]));
-            c.beforeRange[0] = editRange[1];
+            c.beforeRange[0] = editRange[0];
         }
         if (c.afterRange[1] < editRange[1]) {
             c.beforeLines.splice(c.beforeLines.length, 0, ...maince.slice(c.afterRange[1], editRange[1]));
