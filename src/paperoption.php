@@ -93,6 +93,8 @@ class PaperOption implements JsonSerializable {
     const DISP_RIGHT = 3;
     const DISP_REST = 4;
     const DISP_NONE = 5;
+    /** @var list<string>
+     * @readonly */
     static private $display_map = ["title", "top", "left", "right", "rest", "none"];
     /** @var list<int>
      * @readonly */
@@ -109,6 +111,7 @@ class PaperOption implements JsonSerializable {
     const VIS_ADMIN = 4;       // visible only to admins
     static private $visibility_map = ["all", "nonblind", "conflict", "review", "admin"];
 
+    /** @var array<string,class-string> */
     static private $callback_map = [
         "separator" => "+Separator_PaperOption",
         "checkbox" => "+Checkbox_PaperOption",

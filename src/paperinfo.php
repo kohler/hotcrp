@@ -59,6 +59,8 @@ class PaperContactInfo {
     public $conflictType = 0;
     /** @var int */
     public $reviewType = 0;
+    /** @var bool */
+    public $self_assigned = false;
     /** @var int */
     public $reviewSubmitted = 0;
     /** @var int */
@@ -167,11 +169,19 @@ class PaperContactInfo {
     /** @param int $rt
      * @param int $rs
      * @param int $rns
-     * @param int $rround */
-    private function mark_review_type($rt, $rs, $rns, $rround) {
+     * @param int $rround
+     * @param int $reqby */
+    private function mark_review_type($rt, $rs, $rns, $rround, $reqby) {
+        if ($rt !== REVIEW_PC || $reqby !== $this->contactId) {
+            $this->self_assigned = false;
+        } else if ($this->reviewType === 0) {
+            $this->self_assigned = true;
+        }
+
         $this->reviewType = max($rt, $this->reviewType);
         $this->reviewSubmitted = max($rs, $this->reviewSubmitted);
         $this->reviewRound = $rround;
+
         if ($rt > 0) {
             if ($rs > 0 || $rns == 0) {
                 $this->review_status = PaperContactInfo::RS_SUBMITTED;
@@ -182,16 +192,17 @@ class PaperContactInfo {
     }
 
     function mark_review(ReviewInfo $rrow) {
-        $this->mark_review_type($rrow->reviewType, (int) $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->reviewRound);
+        $this->mark_review_type($rrow->reviewType, (int) $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->reviewRound, $rrow->requestedBy);
     }
 
     /** @param ?string $sig */
     private function mark_my_review_permissions($sig) {
-        if ((string) $sig !== "") {
-            foreach (explode(",", $sig) as $r) {
-                list($rt, $rs, $rns, $rround) = explode(" ", $r);
-                $this->mark_review_type((int) $rt, (int) $rs, (int) $rns, (int) $rround);
-            }
+        if ((string) $sig === "") {
+            return;
+        }
+        foreach (explode(",", $sig) as $r) {
+            list($rt, $rs, $rns, $rround, $reqby) = explode(" ", $r);
+            $this->mark_review_type((int) $rt, (int) $rs, (int) $rns, (int) $rround, (int) $reqby);
         }
     }
 
@@ -236,7 +247,7 @@ class PaperContactInfo {
         }
         // two queries is marginally faster than one union query
         $mresult = Dbl::multi_qe($prow->conf->dblink, "select paperId, contactId, conflictType from PaperConflict where paperId?a and contactId?a;
-            select paperId, contactId, null, reviewType, reviewSubmitted, reviewNeedsSubmit, reviewRound from PaperReview where paperId?a and {$prwhere}",
+            select paperId, contactId, null, reviewType, reviewSubmitted, reviewNeedsSubmit, reviewRound, requestedBy from PaperReview where paperId?a and {$prwhere}",
             $row_set->paper_ids(), array_keys($user_set),
             $row_set->paper_ids(), array_keys($user_set), ...$qv);
         while (($result = $mresult->next())) {
@@ -246,7 +257,7 @@ class PaperContactInfo {
                 if ($x[2] !== null) {
                     $ci->mark_conflict((int) $x[2]);
                 } else {
-                    $ci->mark_review_type((int) $x[3], (int) $x[4], (int) $x[5], (int) $x[6]);
+                    $ci->mark_review_type((int) $x[3], (int) $x[4], (int) $x[5], (int) $x[6], (int) $x[7]);
                 }
             }
             $result->close();
@@ -817,7 +828,7 @@ class PaperInfo {
         $prow->outcome = 1;
         $prow->outcome_sign = 1;
         $prow->conflictType = "0";
-        $prow->myReviewPermissions = "{$rtype} 1 0 0";
+        $prow->myReviewPermissions = "{$rtype} 1 0 0 -1";
         $prow->_row_set->add_paper($prow);
         $prow->incorporate_user($user);
         return $prow;
@@ -832,7 +843,7 @@ class PaperInfo {
     /** @param string $prefix
      * @return string */
     static function my_review_permissions_sql($prefix = "") {
-        return "group_concat({$prefix}reviewType, ' ', coalesce({$prefix}reviewSubmitted,0), ' ', reviewNeedsSubmit, ' ', reviewRound)";
+        return "group_concat({$prefix}reviewType, ' ', coalesce({$prefix}reviewSubmitted,0), ' ', {$prefix}reviewNeedsSubmit, ' ', {$prefix}reviewRound, ' ', {$prefix}requestedBy)";
     }
 
     /** @return PermissionProblem */
@@ -3246,8 +3257,9 @@ class PaperInfo {
     function viewable_comments(Contact $user, $textless = false) {
         $crows = [];
         foreach ($this->all_comments() as $crow) {
-            if ($user->can_view_comment($this, $crow, $textless))
+            if ($user->can_view_comment($this, $crow, $textless)) {
                 $crows[] = $crow;
+            }
         }
         return $crows;
     }

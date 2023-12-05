@@ -259,6 +259,7 @@ class Conf {
     const VIEWREV_ALWAYS = 1;
     const VIEWREV_UNLESSINCOMPLETE = 3;
     const VIEWREV_UNLESSANYINCOMPLETE = 4;
+    const VIEWREV_IFASSIGNED = 5;
 
     static public $review_deadlines = ["pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard"];
 

@@ -4068,8 +4068,11 @@ class Contact implements JsonSerializable {
         }
         $seerevid_setting = $this->seerevid_setting($prow, $rbase, $rights);
         return $seerevid_setting === Conf::VIEWREV_ALWAYS
-            || ($seerevid_setting === 0
-                && $rights->review_status > PaperContactInfo::RS_UNSUBMITTED);
+            || ($seerevid_setting >= 0
+                && $rights->review_status > PaperContactInfo::RS_UNSUBMITTED)
+            || ($seerevid_setting === Conf::VIEWREV_IFASSIGNED
+                && $rights->reviewType > 0
+                && !$rights->self_assigned);
     }
 
     /** @return bool */

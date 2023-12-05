@@ -216,6 +216,7 @@ class Review_SettingParser extends SettingParser {
         }
         $sv->print_radio_table("review_identity_visibility_pc", [
                 Conf::VIEWREV_ALWAYS => "Yes",
+                Conf::VIEWREV_IFASSIGNED => "Only if assigned a review for the same submission",
                 Conf::VIEWREV_AFTERREVIEW => "Only after completing a review for the same submission"
             ],
             'Can PC members see <strong class="has-comment-visibility-anonymous is-identity">reviewer names and comments</strong> except for conflicts?',

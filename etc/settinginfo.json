@@ -545,8 +545,8 @@
         "name": "review_identity_visibility_pc", "storage": "viewrevid",
         "title": "PC can see anonymous reviewers’ identities",
         "type": "radio",
-        "values": [-1, 0, 1], "default_value": 0, "initial_value": 1,
-        "json_values": ["never", "after_review", "always"]
+        "values": [-1, 0, 5, 1], "default_value": 0, "initial_value": 1,
+        "json_values": ["never", "after_review", "if_assigned", "always"]
     },
     {
         "name": "review_proposal", "storage": "extrev_chairreq",

@@ -2873,7 +2873,7 @@ class PaperTable {
      * @return ?CommentInfo */
     private function response_by_id($respround) {
         foreach ($this->mycrows as $cr) {
-            if (($cr->commentType & CommentInfo::CT_RESPONSE)
+            if (($cr->commentType & CommentInfo::CT_RESPONSE) !== 0
                 && $cr->commentRound == $respround)
                 return $cr;
         }
