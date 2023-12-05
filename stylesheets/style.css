@@ -1794,9 +1794,12 @@ th.settings-simplehead {
 	font-size: smaller;
 	padding-right: 1em;
 }
-.settings-itemheading {
+.settings-radio > .label {
 	max-width: 800px;
 	margin-bottom: 0.35em;
+}
+.settings-radioitem + .settings-radiohint {
+	margin-top: 0.35rem;
 }
 .settings-ap {
 	margin-top: 0.35em;
@@ -2402,7 +2405,6 @@ td.padls, th.padls, div.padls {
 .has-error > .f-c,
 .has-error > label,
 .has-error > .label,
-.has-error > .settings-itemheading,
 label.has-error,
 h2.has-error,
 h3.has-error,
@@ -2427,7 +2429,6 @@ select.has-error {
 .has-warning > .f-c,
 .has-warning > label,
 .has-warning > .label,
-.has-warning > .settings-itemheading,
 label.has-warning,
 h2.has-warning,
 h3.has-warning,

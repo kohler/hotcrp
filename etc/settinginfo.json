@@ -23,9 +23,15 @@
         "type": "checkbox"
     },
     {
+        "name": "comment_visibility_reviewer", "storage": "cmt_revid",
+        "title": "Comment visibility to reviewers",
+        "type": "radio", "values": [0, 1], "default_value": 0,
+        "json_values": ["if_reviewers_visible", "yes"]
+    },
+    {
         "name": "comment_visibility_anonymous", "storage": "cmt_revid",
         "title": "Anonymous PC discussion",
-        "type": "checkbox", "initial_value": 1
+        "type": "checkbox", "initial_value": 1, "json": "in"
     },
 
     {

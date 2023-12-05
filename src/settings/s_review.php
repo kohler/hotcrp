@@ -202,7 +202,7 @@ class Review_SettingParser extends SettingParser {
 
     static function print_pc(SettingValues $sv) {
         echo '<div class="form-g has-fold foldo">';
-        $sv->print_checkbox("review_self_assign", "PC members can review any submission", ["class" => "uich js-foldup"]);
+        $sv->print_checkbox("review_self_assign", "PC members can self-assign reviews", ["class" => "uich js-foldup"]);
         if ($sv->conf->setting("pcrev_any")
             && $sv->conf->check_track_sensitivity(Track::UNASSREV)) {
             echo '<p class="f-h fx">', $sv->setting_group_link("Current track settings", "tracks"), ' may restrict self-assigned reviews.</p>';
@@ -212,14 +212,14 @@ class Review_SettingParser extends SettingParser {
 
         $hint = "";
         if ($sv->conf->check_track_sensitivity(Track::VIEWREVID)) {
-            $hint = '<p class="settings-ag f-h">' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
+            $hint = '<p class="settings-radiohint f-h">' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
         }
         $sv->print_radio_table("review_identity_visibility_pc", [
                 Conf::VIEWREV_ALWAYS => "Yes",
                 Conf::VIEWREV_IFASSIGNED => "Only if assigned a review for the same submission",
                 Conf::VIEWREV_AFTERREVIEW => "Only after completing a review for the same submission"
             ],
-            'Can PC members see <strong class="has-comment-visibility-anonymous is-identity">reviewer names and comments</strong> except for conflicts?',
+            'Can non-conflicted PC members see <strong>reviewer names</strong>?',
             ["after" => $hint]);
 
 
@@ -232,7 +232,7 @@ class Review_SettingParser extends SettingParser {
             $hint .= ' ' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict review visibility.';
         }
         if ($hint !== "") {
-            $hint = '<p class="settings-ag f-h">' . ltrim($hint) . '</p>';
+            $hint = '<p class="settings-radiohint f-h">' . ltrim($hint) . '</p>';
         }
         echo '<hr class="form-sep">';
         $sv->print_radio_table("review_visibility_pc", [
@@ -240,19 +240,19 @@ class Review_SettingParser extends SettingParser {
                 Conf::VIEWREV_UNLESSINCOMPLETE => "Yes, unless they haven’t completed an assigned review for the same submission",
                 Conf::VIEWREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
                 Conf::VIEWREV_AFTERREVIEW => "Only after completing a review for the same submission"
-            ], 'Can PC members see <strong class="has-comment-visibility-anonymous is-contents">review contents</strong> except for conflicts?',
+            ], 'Can non-conflicted PC members see <strong>review contents</strong>?',
             ["after" => $hint]);
+
+        echo '<hr class="form-sep">';
+        $sv->print_radio_table("comment_visibility_reviewer", [
+                1 => "Yes",
+                0 => ["label" => "Only when they can see reviewer names", "hint" => '<p class="settings-ap f-hx fx">Responses and other author-visible comments are always visible to reviewers.</p>']
+            ], 'Can reviewers see <strong>comments</strong>?',
+            ["item_class" => "uich js-foldup",
+             "fold_values" => [0]]);
 
         echo '<hr class="form-nearby form-sep">';
         $sv->print_checkbox("review_visibility_lead", "Discussion leads can always see submitted reviews and reviewer names");
-
-
-        echo '<hr class="form-sep">';
-        $sv->print_checkbox("comment_visibility_anonymous", "Allow anonymous reviewer discussion", [
-            "class" => "uich js-settings-comment-visibility-anonymous",
-            "hint_class" => "has-comment-visibility-anonymous if-anonymous hidden",
-            "hint" => "Commenter names will be hidden when reviews are anonymous."
-        ]);
     }
 
 
@@ -261,13 +261,13 @@ class Review_SettingParser extends SettingParser {
                 Conf::VIEWREV_ALWAYS => "Yes",
                 Conf::VIEWREV_AFTERREVIEW => "Yes, after completing their review",
                 Conf::VIEWREV_NEVER => "No"
-            ], 'Can external reviewers see <strong class="has-comment-visibility-anonymous is-identity">reviewer names and comments</strong> for their assigned submissions?');
+            ], 'Can external reviewers see <strong>reviewer names</strong> for their assigned submissions?');
 
         echo '<hr class="form-sep">';
         $sv->print_radio_table("review_visibility_external", [
                 Conf::VIEWREV_AFTERREVIEW => "Yes, after completing their review",
                 Conf::VIEWREV_NEVER => "No"
-            ], 'Can external reviewers see <strong class="has-comment-visibility-anonymous is-contents-external">review contents and eventual decisions</strong> for their assigned submissions?');
+            ], 'Can external reviewers see <strong>review contents</strong> for their assigned submissions?');
     }
     static function print_extrev_editdelegate(SettingValues $sv) {
         echo '<div id="foldreview_proposal_editable" class="form-g has-fold',

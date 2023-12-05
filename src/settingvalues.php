@@ -1751,7 +1751,7 @@ class SettingValues extends MessageSet {
 
         $this->print_group_open($name, "settings-radio", $rest + ["group_id" => $name]);
         if ($heading) {
-            echo '<div class="settings-itemheading">', $heading, '</div>';
+            echo '<div class="label">', $heading, '</div>';
         }
         foreach ($varr as $k => $item) {
             if (is_string($item)) {
