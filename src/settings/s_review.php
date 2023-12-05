@@ -224,15 +224,9 @@ class Review_SettingParser extends SettingParser {
 
 
         $hint = "";
-        if ($sv->conf->has_any_metareviews()) {
-            $hint .= ' Metareviewers can always see associated reviews and reviewer names.';
-        }
         if ($sv->conf->check_track_sensitivity(Track::VIEWREV)
             || $sv->conf->check_track_sensitivity(Track::VIEWALLREV)) {
-            $hint .= ' ' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict review visibility.';
-        }
-        if ($hint !== "") {
-            $hint = '<p class="settings-radiohint f-h">' . ltrim($hint) . '</p>';
+            $hint = '<p class="settings-radiohint f-h">' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict review visibility.</p>';
         }
         echo '<hr class="form-sep">';
         $sv->print_radio_table("review_visibility_pc", [
@@ -251,8 +245,13 @@ class Review_SettingParser extends SettingParser {
             ["item_class" => "uich js-foldup",
              "fold_values" => [0]]);
 
-        echo '<hr class="form-nearby form-sep">';
-        $sv->print_checkbox("review_visibility_lead", "Discussion leads can always see submitted reviews and reviewer names");
+        echo '<hr class="form-sep"><div class="settings-radio">',
+            '<div class="label">Who can <strong>always</strong> see reviewer names and review contents for their assigned papers?</div>',
+            '<div class="settings-radioitem checki"><span class="checkc">✓</span>Metareviewers</div>',
+            '<div class="settings-radioitem checki"><label><span class="checkc">',
+            $sv->print_checkbox_only("review_visibility_lead"),
+            '</span>Discussion leads</label></div>',
+            '</div>';
     }
 
 
