@@ -45,7 +45,7 @@ class Lead_AssignmentParser extends AssignmentParser {
             if ($state->user->privChair) {
                 return true;
             } else {
-                return new AssignmentError("<0>Only chairs and sysadmins can change paper administrators.");
+                return new AssignmentError("<0>Only chairs and sysadmins can change paper administrators");
             }
         } else {
             return $state->user->can_administer($prow);
@@ -81,7 +81,7 @@ class Lead_AssignmentParser extends AssignmentParser {
         } else {
             $uname = $contact->name(NAME_E);
             $verb = $this->key === "manager" ? "administer" : $this->key;
-            return new AssignmentError("<0>{$uname} can’t $verb #{$prow->paperId}.");
+            return new AssignmentError("<0>{$uname} can’t $verb #{$prow->paperId}");
         }
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {

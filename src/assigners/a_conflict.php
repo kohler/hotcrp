@@ -122,7 +122,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
                 $ct = $state->conf->conflict_set()->parse_assignment($text, $old_ct_na);
             }
             if ($ct === false || Conflict::is_author($ct)) {
-                return new AssignmentError("Bad conflict type “{$text}”.");
+                return new AssignmentError("<0>Conflict type ‘{$text}’ not found");
             }
             if (!$admin) {
                 $ct = Conflict::set_pinned($ct, false);

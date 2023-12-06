@@ -730,6 +730,8 @@ class AssignmentError extends Exception {
     function __construct($message) {
         if ($message instanceof PermissionProblem) {
             $message = "<5>" . $message->unparse_html();
+        } else if ($message !== "" && !Ftext::is_ftext($message)) {
+            error_log("not ftext {$message}: " . debug_string_backtrace());
         }
         parent::__construct($message);
     }

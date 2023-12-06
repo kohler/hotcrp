@@ -431,7 +431,7 @@ class Tag_Assigner extends Assigner {
                 if ($whyNot["otherTwiddleTag"] ?? null) {
                     return null;
                 }
-                throw new AssignmentError("<5>" . $whyNot->unparse_html());
+                throw new AssignmentError($whyNot);
             }
         }
         return new Tag_Assigner($item, $state);

@@ -85,7 +85,7 @@ class Follow_AssignmentParser extends AssignmentParser {
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $fs = $this->follow_state($req, $state);
         if ($fs[0] === false) {
-            return new AssignmentError("Bad follow type.");
+            return new AssignmentError("<0>Follow type not found");
         }
         $res = $state->remove(new Follow_Assignable($prow->paperId, $contact->contactId));
         $watch = ($res ? $res[0]->_watch & ~(Contact::WATCH_REVIEW | Contact::WATCH_REVIEW_EXPLICIT) : 0) | $fs[0];
