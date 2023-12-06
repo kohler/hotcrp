@@ -275,7 +275,7 @@ class Multiconference {
         if (defined("HOTCRP_TESTHARNESS") || $ex instanceof Error) {
             $s = $ex->getFile() . ":" . $ex->getLine() . ": " . $s;
         }
-        if (strpos($s, ":") === false) {
+        if ($s !== "" && strpos($s, ":") === false) {
             $script = $argv[0] ?? "";
             if (($slash = strrpos($script, "/")) !== false) {
                 if (($slash === 5 && str_starts_with($script, "batch"))
@@ -288,12 +288,23 @@ class Multiconference {
                 $s = "{$script}: {$s}";
             }
         }
-        if (substr($s, -1) !== "\n") {
+        if ($s !== "" && substr($s, -1) !== "\n") {
             $s = "{$s}\n";
         }
         if (property_exists($ex, "getopt")
-            && $ex->getopt instanceof Getopt) {
+            && $ex->getopt instanceof Getopt
+            && $ex->exitStatus !== 0) {
             $s .= $ex->getopt->short_usage();
+        }
+        if (property_exists($ex, "context")
+            && is_array($ex->context)) {
+            foreach ($ex->context as $c) {
+                $i = 0;
+                while ($i !== strlen($c) && $c[$i] === " ") {
+                    ++$i;
+                }
+                $s .= prefix_word_wrap(str_repeat(" ", $i + 2), trim($c), 2);
+            }
         }
         if (defined("HOTCRP_TESTHARNESS") || $ex instanceof Error) {
             $s .= debug_string_backtrace($ex) . "\n";

@@ -949,4 +949,40 @@ abstract class Autoassigner extends MessageSet {
 
 
     abstract function run();
+
+
+
+    /** @param string $help
+     * @return ?object */
+    static function expand_parameter_help($help) {
+        if (!preg_match('/\A(\??)(\S+)\s*(|\{\S*\})\s*(|[^{].*)\z/', $help, $m)) {
+            return null;
+        }
+        if ($m[4] === "") {
+            if ($m[2] === "count") {
+                $m[3] = $m[3] ? : "{n}";
+                $m[4] = "Number of assignments";
+            } else if ($m[2] === "rtype") {
+                $m[4] = "Review type";
+            } else if ($m[2] === "method") {
+                $m[4] = "Assignment method (default, random, stupid) [default]";
+            } else if ($m[2] === "balance") {
+                $m[4] = "Load-balancing method (all, new) [all]";
+            } else if ($m[2] === "max_load") {
+                $m[3] = $m[3] ? : "{n}";
+                $m[4] = "Maximum load per PC";
+            } else if ($m[2] === "max_load_tag") {
+                $m[3] = $m[3] ? : "{tag}";
+                $m[4] = "PC tag defining maximum load per PC";
+            } else if ($m[2] === "round") {
+                $m[4] = "Review round";
+            }
+        }
+        if ($m[3] === "") {
+            $argname = strtoupper($m[2]);
+        } else {
+            $argname = strtoupper(substr($m[3], 1, -1));
+        }
+        return (object) ["required" => $m[1] === "", "name" => $m[2], "argname" => $argname, "description" => $m[4]];
+    }
 }

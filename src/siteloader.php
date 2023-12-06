@@ -235,13 +235,28 @@ class SiteLoader {
         }
     }
 
-    /** @param ?string $file */
-    static function read_main_options($file = null) {
+    /** @param ?string $file
+     * @param ?string $confid */
+    static function read_main_options($file, $confid) {
+        global $Opt;
+        $Opt = $Opt ?? [];
         $file = $file ?? (defined("HOTCRP_OPTIONS") ? HOTCRP_OPTIONS : "conf/options.php");
         if (!str_starts_with($file, "/")) {
             $file = self::$root . "/{$file}";
         }
         self::read_options_file($file);
+        if ($Opt["multiconference"] ?? null) {
+            Multiconference::init($confid);
+        } else if ($confid !== null) {
+            if (!isset($Opt["confid"])) {
+                $Opt["confid"] = $confid;
+            } else if ($Opt["confid"] !== $confid) {
+                $Opt["missing"][] = "__invalid__";
+            }
+        }
+        if (empty($Opt["missing"]) && !empty($Opt["include"])) {
+            self::read_included_options();
+        }
     }
 
     /** @param ?string $root */

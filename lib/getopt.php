@@ -9,6 +9,8 @@ class Getopt {
     private $subcommand;
     /** @var ?string */
     private $helpopt;
+    /** @var ?callable(?array<string,mixed>,Getopt):string */
+    private $helpcallback;
     /** @var ?string */
     private $description;
     /** @var bool */
@@ -128,6 +130,13 @@ class Getopt {
         return $this;
     }
 
+    /** @param ?callable(?array<string,mixed>,Getopt):?string $helpcallback
+     * @return $this */
+    function helpcallback($helpcallback) {
+        $this->helpcallback = $helpcallback;
+        return $this;
+    }
+
     /** @param ?bool $otheropt
      * @return $this */
     function otheropt($otheropt) {
@@ -187,7 +196,7 @@ class Getopt {
     /** @param string $opt
      * @param string $help
      * @return string */
-    static private function format_help_line($opt, $help) {
+    static function format_help_line($opt, $help) {
         if ($help === "") {
             $sep = "";
         } else if (strlen($opt) <= 24) {
@@ -198,9 +207,17 @@ class Getopt {
         return "{$opt}{$sep}{$help}\n";
     }
 
-    /** @param null|false|string $subtype
+    /** @param null|string|array<string,mixed> $arg
      * @return string */
-    function help($subtype = null) {
+    function help($arg = null) {
+        if (is_string($arg)) {
+            $subtype = $arg;
+            $arg = null;
+        } else if (is_array($arg)) {
+            $subtype = $arg[$this->helpopt] ?? null;
+        } else {
+            $subtype = null;
+        }
         $s = [];
         if ($this->description) {
             $s[] = $this->description;
@@ -293,6 +310,10 @@ class Getopt {
             $s[] = "\n";
         } else {
             $s[] = "There are no {$subtype} options.\n\n";
+        }
+        if ($this->helpcallback
+            && ($t = call_user_func($this->helpcallback, $arg, $this) ?? "") !== "") {
+            $s[] = rtrim($t) . "\n\n";
         }
         return join("", $s);
     }
@@ -472,12 +493,12 @@ class Getopt {
 
             $active_po = $pot === self::MARG2 ? $po : null;
         }
+        $res["_"] = $rest;
         if ($this->helpopt !== null
             && (isset($res[$this->helpopt]) || ($res["_subcommand"] ?? null) === "{help}")) {
-            fwrite(STDOUT, $this->help($res[$this->helpopt] ?? false));
+            fwrite(STDOUT, $this->help($res));
             exit(0);
         }
-        $res["_"] = $rest;
         if ($this->maxarg !== null && count($rest) > $this->maxarg) {
             throw new CommandLineException("Too many arguments", $this);
         } else if ($this->minarg !== null && count($rest) < $this->minarg) {
@@ -536,6 +557,8 @@ class CommandLineException extends Exception {
     public $getopt;
     /** @var int */
     public $exitStatus;
+    /** @var ?list<string> */
+    public $context;
     /** @var int */
     static public $default_exit_status = 1;
     /** @param string $message
@@ -545,5 +568,17 @@ class CommandLineException extends Exception {
         parent::__construct($message);
         $this->getopt = $getopt;
         $this->exitStatus = $exit_status ?? self::$default_exit_status;
+    }
+    /** @param int $exit_status
+     * @return $this */
+    function exit_status($exit_status) {
+        $this->exit_status = $exit_status;
+        return $this;
+    }
+    /** @param string ...$context
+     * @return $this */
+    function add_context(...$context) {
+        $this->context = array_merge($this->context ?? [], $context);
+        return $this;
     }
 }

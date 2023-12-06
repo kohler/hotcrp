@@ -263,16 +263,17 @@ class Conf {
 
     static public $review_deadlines = ["pcrev_soft", "pcrev_hard", "extrev_soft", "extrev_hard"];
 
-    /** @param array<string,mixed> $options
+    /** @param ?array<string,mixed> $options
      * @param bool $connect */
     function __construct($options, $connect) {
+        global $Opt;
+        $this->opt = $options ?? $Opt;
         // unpack dsn, connect to database, load current settings
-        if (($cp = Dbl::parse_connection_params($options))) {
+        if (($cp = Dbl::parse_connection_params($this->opt))) {
             $this->dblink = $connect ? $cp->connect() : null;
             $this->dbname = $cp->name;
             $this->session_key = "@{$this->dbname}";
         }
-        $this->opt = $options;
         $this->opt["confid"] = $this->opt["confid"] ?? $this->dbname;
         $this->_paper_opts = new PaperOptionList($this);
         $this->unspecified_decision = new DecisionInfo(0, "Unspecified");

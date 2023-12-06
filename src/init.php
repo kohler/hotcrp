@@ -160,29 +160,16 @@ function initialize_conf($config_file = null, $confid = null) {
     global $Opt;
     $Opt = $Opt ?? [];
     if (!($Opt["loaded"] ?? null)) {
-        SiteLoader::read_main_options($config_file);
-        if ($Opt["multiconference"] ?? null) {
-            Multiconference::init($confid);
-        } else if ($confid !== null) {
-            if (!isset($Opt["confid"])) {
-                $Opt["confid"] = $confid;
-            } else if ($Opt["confid"] !== $confid) {
-                $Opt["missing"][] = "__invalid__";
-            }
-        }
-        if (empty($Opt["missing"]) && !empty($Opt["include"])) {
-            SiteLoader::read_included_options();
-        }
+        SiteLoader::read_main_options($config_file, $confid);
     }
     if (!empty($Opt["missing"])) {
         Multiconference::fail_bad_options();
     }
 
+    // set global options
     if (!empty($Opt["dbLogQueries"])) {
         Dbl::log_queries($Opt["dbLogQueries"], $Opt["dbLogQueryFile"] ?? null);
     }
-
-    // allow lots of memory
     if (!($Opt["memoryLimit"] ?? null) && ini_get_bytes("memory_limit") < (128 << 20)) {
         $Opt["memoryLimit"] = "128M";
     }

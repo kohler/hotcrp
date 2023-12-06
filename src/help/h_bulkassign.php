@@ -157,8 +157,8 @@ a conflict type, such as “advisor” or “institutional”.</p>";
             $t .= $n . '</td><td class="pad"><code>paper</code>';
             foreach ($uf->parameters ?? [] as $param) {
                 $t .= ', ';
-                if ($param[0] === "[") {
-                    $t .= '[<code>' . substr($param, 1, -1) . '</code>]';
+                if ($param[0] === "?") {
+                    $t .= '[<code>' . substr($param, 1) . '</code>]';
                 } else {
                     $t .= '<code>' . $param . '</code>';
                 }

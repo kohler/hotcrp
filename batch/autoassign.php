@@ -29,18 +29,35 @@ class Autoassign_Batch {
     /** @var bool */
     public $dry_run;
     /** @var bool */
+    public $help_param;
+    /** @var bool */
     public $profile;
 
-    function __construct(Contact $user, $arg) {
+    /** @return list<string> */
+    static function autoassigner_names(Conf $conf) {
+        $aas = array_keys($conf->autoassigner_map());
+        sort($aas, SORT_NATURAL | SORT_FLAG_CASE);
+        return $aas;
+    }
+
+    function __construct(Contact $user, $arg, Getopt $getopt) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->quiet = isset($arg["quiet"]);
         $this->dry_run = isset($arg["dry-run"]);
+        $this->help_param = isset($arg["help-param"]);
         $this->profile = isset($arg["profile"]);
-        if (!isset($arg["a"])) {
-            throw new CommandLineException("An autoassigner must be specified with `-a`.\nValid choices are " . join(", ", array_keys($this->conf->autoassigner_map())));
-        } else if (!($gj = $this->conf->autoassigner($arg["a"]))) {
-            throw new CommandLineException("No such autoassigner `{$arg["a"]}`");
+        if (!isset($arg["a"]) && !empty($arg["_"])) {
+            $arg["a"] = array_shift($arg["_"]);
+        }
+        $aaname = $arg["a"] ?? "";
+        if ($aaname === "help") {
+            fwrite(STDOUT, $getopt->help($arg));
+            throw new CommandLineException("", $getopt, 0);
+        }
+        $gj = $aaname !== "" ? $this->conf->autoassigner($aaname) : null;
+        if (!$gj) {
+            throw (new CommandLineException($aaname === "" ? "Autoassigner not specified" : "Autoassigner `{$aaname}` not found"))->add_context("Valid choices are " . join(", ", self::autoassigner_names($this->conf)) . ".");
         } else if (!is_string($gj->function)) {
             throw new CommandLineException("Invalid autoassigner `{$arg["a"]}`");
         }
@@ -93,6 +110,19 @@ class Autoassign_Batch {
 
     /** @return int */
     function run() {
+        if ($this->help_param) {
+            $s = ["{$this->gj->name} parameters:\n"];
+            foreach ($this->gj->parameters ?? [] as $p) {
+                if (($px = Autoassigner::expand_parameter_help($p))) {
+                    $arg = "  {$px->name}={$px->argname}" . ($px->required ? " *" : "");
+                    $s[] = Getopt::format_help_line($arg, $px->description);
+                }
+            }
+            $s[] = "\n";
+            fwrite(STDOUT, join("", $s));
+            return 0;
+        }
+
         $srch = new PaperSearch($this->user, ["q" => $this->q, "t" => $this->t]);
         if ($srch->has_problem()) {
             fwrite(STDERR, $srch->full_feedback_text());
@@ -159,29 +189,36 @@ class Autoassign_Batch {
         return 0;
     }
 
+    static function helpcallback($arg, $getopt) {
+        SiteLoader::read_main_options($arg["config"] ?? null, $arg["name"] ?? null);
+        return prefix_word_wrap("  ", "Autoassigners are " . join(", ", self::autoassigner_names(new Conf(null, false))) . ".", 2);
+    }
+
     /** @return Autoassign_Batch */
     static function make_args($argv) {
-        $arg = (new Getopt)->long(
+        $getopt = (new Getopt)->long(
             "name:,n: !",
             "config: !",
             "dry-run,d Do not perform assignment; output CSV instead.",
-            "a:,autoassigner: =AA Use autoassigner AA.",
-            "q:,search: =QUERY Use papers matching QUERY.",
-            "all Search all papers (default is to search submitted papers).",
-            "u[],user[] =USER Include users matching USER (`-USER` excludes).",
+            "a:,autoassigner: =AA !",
+            "q:,search: =QUERY Use papers matching QUERY [all].",
+            "all Include all papers (default is submitted papers).",
+            "u[],user[] =USER Include users matching USER (`-u -USER` excludes).",
             "c:,count: {n} =N Set `count` parameter to N.",
             "t:,type: =TYPE Set `type`/`rtype` parameter to TYPE.",
+            "help-param Print parameters for AUTOASSIGNER.",
             "profile Print profile to standard error.",
             "quiet Don’t warn on empty assignment.",
             "help,h !"
         )->description("Run a HotCRP autoassigner.
-Usage: php batch/autoassign.php [--dry-run] -a AA [PARAM=VALUE]...")
+Usage: php batch/autoassign.php [--dry-run] AUTOASSIGNER [PARAM=VALUE]...")
          ->helpopt("help")
-         ->interleave(true)
-         ->parse($argv);
+         ->helpcallback("Autoassign_Batch::helpcallback")
+         ->interleave(true);
+        $arg = $getopt->parse($argv);
         // XXX bad pairs?
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
-        return new Autoassign_Batch($conf->root_user(), $arg);
+        return new Autoassign_Batch($conf->root_user(), $arg, $getopt);
     }
 }
