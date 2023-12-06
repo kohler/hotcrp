@@ -38,7 +38,7 @@ case insensitive, so “#TAG” and “#tAg” are considered identical.</p>";
         echo $hth->subhead("Find tags", "find");
         echo "<p>A paper’s tags are shown like this on the paper page:</p>
 
-<div class=\"pcard-left p c\" style=\"position:static;margin-bottom:1rem\">
+<div class=\"pcard-left c\" style=\"position:static;margin-bottom:1rem\">
 <div class=\"pspcard\"><div class=\"psc has-fold foldc\"><div class=\"pst ui js-foldup\">",
     '<span class="psfn"><button type="button" class="q ui js-foldup">',
     expander(null, 0), "Tags</button></span></div><div class=\"psv\">",
@@ -53,7 +53,7 @@ case insensitive, so “#TAG” and “#tAg” are considered identical.</p>";
 
 <p>To find all papers with tag “#discuss”:</p>
 
-<div class=\"p\">", $hth->search_form("#discuss"), "</div>
+<div class=\"mb-p\">", $hth->search_form("#discuss"), "</div>
 
 <p>You can also search with “", $hth->search_link("show:tags"), "” to see each
 paper’s tags, or “", $hth->search_link("show:#tagname"), "” to see a particular tag
