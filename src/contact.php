@@ -4719,7 +4719,7 @@ class Contact implements JsonSerializable {
 
     /** @param ?CommentInfo $crow
      * @return bool */
-    function can_view_comment_text(PaperInfo $prow, $crow) {
+    function can_view_comment_contents(PaperInfo $prow, $crow) {
         // assume can_view_comment is true
         if (!$crow
             || ($crow->commentType & (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT)) !== (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT)) {

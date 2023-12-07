@@ -190,7 +190,7 @@ class ReviewCSV_Batch {
         $x["status"] = $rs;
         $x["field"] = "comment";
         $x["format"] = $crow->commentFormat ?? $prow->conf->default_format;
-        $x["data"] = $crow->commentOverflow ? : $crow->comment;
+        $x["data"] = $crow->contents();
         $this->add_row($x);
     }
 

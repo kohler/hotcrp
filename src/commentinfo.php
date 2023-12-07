@@ -301,6 +301,9 @@ class CommentInfo {
     /** @param ?string $key
      * @return mixed */
     function data($key = null) {
+        if ($this->commentData === null) {
+            return null;
+        }
         $this->make_data();
         return $key === null ? $this->_jdata : ($this->_jdata->$key ?? null);
     }
@@ -397,7 +400,7 @@ class CommentInfo {
             return "Shepherd";
         } else if (($rrow = $this->prow->review_by_user($this->contactId))
                    && $rrow->reviewOrdinal
-                   && $viewer->can_view_review($this->prow, $rrow)) {
+                   && $viewer->can_view_review_assignment($this->prow, $rrow)) {
             return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
         } else if (($this->commentType & self::CT_BYSHEPHERD) !== 0) {
             return "Shepherd";
@@ -517,6 +520,33 @@ class CommentInfo {
     /** @return list<int> */
     function attachment_ids() {
         return $this->attachments()->document_ids();
+    }
+
+    /** @param ?Contact $viewer
+     * @param bool $censor_mentions
+     * @param ?int $censor_mentions_after
+     * @return string */
+    function contents($viewer = null, $censor_mentions = false, $censor_mentions_after = null) {
+        $t = $this->commentOverflow ?? $this->comment ?? "";
+        if ($t === ""
+            || !$censor_mentions
+            || !($mx = $this->data("mentions"))
+            || !is_array($mx)) {
+            return $t;
+        }
+        $delta = 0;
+        foreach ($mx as $m) {
+            if (is_array($m)
+                && count($m) >= 4
+                && $m[3]
+                && (!$viewer || $m[0] !== $viewer->contactId)
+                && ($censor_mentions_after === null || $m[1] + $delta < $censor_mentions_after)) {
+                $r = $this->prow->unparse_pseudonym($viewer, $m[0]) ?? "Anonymous";
+                $t = substr_replace($t, "@{$r}", $m[1] + $delta, $m[2] - $m[1]);
+                $delta += strlen($r) - ($m[2] - $m[1] - 1);
+            }
+        }
+        return $t;
     }
 
     /** @param bool $editable
@@ -651,17 +681,15 @@ class CommentInfo {
             $cj->modified_at_text = $this->conf->unparse_time_point($cj->modified_at);
         }
 
-        // text
-        if ($viewer->can_view_comment_text($this->prow, $this)) {
-            $cj->text = $this->commentOverflow ?? $this->comment;
+        // contents
+        if ($viewer->can_view_comment_contents($this->prow, $this)) {
+            $cj->text = $this->contents($viewer, !$idable);
+            if ($this->has_attachments()) {
+                $cj->docs = $this->attachments_json();
+            }
         } else {
             $cj->text = false;
             $cj->word_count = count_words($this->commentOverflow ?? $this->comment);
-        }
-
-        // attachments
-        if ($cj->text !== false && $this->has_attachments()) {
-            $cj->docs = $this->attachments_json(isset($cj->editable));
         }
 
         return $cj;
@@ -669,15 +697,16 @@ class CommentInfo {
 
     /** @param int $flags
      * @return string */
-    function unparse_text(Contact $contact, $flags = 0) {
+    function unparse_text(Contact $viewer, $flags = 0) {
         if (($rrd = $this->response_round())) {
             $x = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
         } else {
             $ordinal = $this->unparse_ordinal();
             $x = "Comment" . ($ordinal ? " @{$ordinal}" : "");
         }
-        $p = $this->unparse_commenter_pseudonym($contact);
-        if ($contact->can_view_comment_identity($this->prow, $this)) {
+        $p = $this->unparse_commenter_pseudonym($viewer);
+        $idable = $viewer->can_view_comment_identity($this->prow, $this);
+        if ($idable) {
             $n = Text::nameo($this->commenter(), NAME_EB);
             $np = $this->commenter_may_be_pseudonymous();
             if ($p && $np) {
@@ -692,7 +721,7 @@ class CommentInfo {
         } else if ($p && ($p !== "Author" || ($this->commentType & self::CT_RESPONSE) !== 0)) {
             $x .= " by {$p}";
         }
-        $ctext = $this->commentOverflow ?? $this->comment;
+        $ctext = $this->contents($viewer, !$idable);
         if ($rrd && $rrd->wordlimit > 0) {
             $nwords = count_words($ctext);
             $x .= " (" . plural($nwords, "word") . ")";
@@ -712,8 +741,8 @@ class CommentInfo {
             $prow = $this->prow;
             $x .= prefix_word_wrap("* ", "Paper: #{$prow->paperId} {$prow->title}", 2, null, $flowed);
         }
-        if (($tags = $this->viewable_nonresponse_tags($contact))) {
-            $tagger = new Tagger($contact);
+        if (($tags = $this->viewable_nonresponse_tags($viewer))) {
+            $tagger = new Tagger($viewer);
             $x .= prefix_word_wrap("* ", $tagger->unparse_hashed($tags), 2, null, $flowed);
         }
         if (($flags & ReviewForm::UNPARSE_NO_TITLE) === 0 || $tags) {
@@ -723,7 +752,7 @@ class CommentInfo {
     }
 
     /** @return string */
-    function unparse_flow_entry(Contact $contact) {
+    function unparse_flow_entry(Contact $viewer) {
         // See also ReviewForm::reviewFlowEntry
         $a = '<a href="' . $this->conf->hoturl("paper", "p=$this->paperId#" . $this->unparse_html_id()) . '"';
         $t = '<tr class="pl"><td class="pl_eventicon">' . $a . ">"
@@ -734,18 +763,18 @@ class CommentInfo {
             . $a . ' class="ptitle">'
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->prow->title, 80))
             . "</a>";
-        $idable = $contact->can_view_comment_identity($this->prow, $this);
-        if ($idable || $contact->can_view_comment_time($this->prow, $this)) {
+        $idable = $viewer->can_view_comment_identity($this->prow, $this);
+        if ($idable || $viewer->can_view_comment_time($this->prow, $this)) {
             $time = $this->conf->unparse_time($this->timeModified);
         } else {
             $time = $this->conf->unparse_time_obscure($this->conf->obscure_time($this->timeModified));
         }
         $t .= ' <span class="barsep">·</span> ' . $time;
         if ($idable) {
-            $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . $contact->reviewer_html_for($this->contactId);
+            $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . $viewer->reviewer_html_for($this->contactId);
         }
-        return $t . "</small><br />"
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->commentOverflow ?? $this->comment, 300))
+        return $t . "</small><br>"
+            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->contents($viewer, !$idable, 300), 300))
             . "</td></tr>";
     }
 

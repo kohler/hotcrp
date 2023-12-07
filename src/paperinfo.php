@@ -1605,6 +1605,30 @@ class PaperInfo {
         return empty($as) ? $cas : $as;
     }
 
+    /** @param ?Contact $viewer
+     * @param int $cid
+     * @return ?string */
+    function unparse_pseudonym($viewer, $cid) {
+        if ($this->has_author($cid)) {
+            return "Author";
+        } else if ($cid > 0 && $this->managerContactId === $cid) {
+            return "Administrator";
+        }
+        $rrow = $this->review_by_user($cid);
+        if ($rrow
+            && $rrow->reviewOrdinal
+            && (!$viewer || $viewer->can_view_review_assignment($this, $rrow))) {
+            return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
+        } else if (($p = $this->conf->pc_member_by_id($cid))
+                   && $p->allow_administer($this)) {
+            return "Administrator";
+        } else if ($rrow) {
+            return "Reviewer";
+        } else {
+            return null;
+        }
+    }
+
 
     /** @param 'title'|'abstract'|'authorInformation'|'collaborators' $field
      * @return ?string */
