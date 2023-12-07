@@ -9,7 +9,7 @@ class Getopt {
     private $subcommand;
     /** @var ?string */
     private $helpopt;
-    /** @var ?callable(?array<string,mixed>,Getopt):string */
+    /** @var ?callable(?array<string,mixed>,Getopt):(?string) */
     private $helpcallback;
     /** @var ?string */
     private $description;
@@ -130,7 +130,7 @@ class Getopt {
         return $this;
     }
 
-    /** @param ?callable(?array<string,mixed>,Getopt):?string $helpcallback
+    /** @param ?callable(?array<string,mixed>,Getopt):(?string) $helpcallback
      * @return $this */
     function helpcallback($helpcallback) {
         $this->helpcallback = $helpcallback;
@@ -572,7 +572,7 @@ class CommandLineException extends Exception {
     /** @param int $exit_status
      * @return $this */
     function exit_status($exit_status) {
-        $this->exit_status = $exit_status;
+        $this->exitStatus = $exit_status;
         return $this;
     }
     /** @param string ...$context
