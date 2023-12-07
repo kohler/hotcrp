@@ -239,7 +239,7 @@ class Review_SettingParser extends SettingParser {
 
         echo '<hr class="form-sep">';
         $sv->print_radio_table("comment_visibility_reviewer", [
-                1 => "Yes",
+                1 => ["label" => "Yes", "hint" => '<p class="settings-ap f-hx fn">Commenters will be pseudonymized (e.g., as “Reviewer A”) when reviewer names are hidden. Note that comment <em>contents</em> cannot be pseudonymized reliably.</p>'],
                 0 => ["label" => "Only when they can see reviewer names", "hint" => '<p class="settings-ap f-hx fx">Responses and other author-visible comments are always visible to reviewers.</p>']
             ], 'Can reviewers see <strong>comments</strong>?',
             ["item_class" => "uich js-foldup",
