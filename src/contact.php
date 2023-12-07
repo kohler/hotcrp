@@ -2328,14 +2328,19 @@ class Contact implements JsonSerializable {
         }
 
         // users with unset passwords cannot log in
-        // This logic should correspond closely with Contact::password_unset().
+        // This logic should match Contact::password_unset().
         if (((!$cdb_older || !$local_ok)
              && str_starts_with($cdb_password, " unset"))
             || ($cdb_password === ""
                 && str_starts_with($this->password, " unset"))
             || ($cdb_password === ""
                 && (string) $this->password === "")) {
-            return ["ok" => false, "email" => true, "unset" => true];
+            if (($this->contactId > 0 && !$this->is_dormant())
+                || ($cdbu && !$cdbu->is_dormant())) {
+                return ["ok" => false, "email" => true, "unset" => true, "can_reset" => $this->can_reset_password()];
+            } else {
+                return ["ok" => false, "email" => true, "noaccount" => true];
+            }
         }
 
         // deny if no match
@@ -2368,7 +2373,7 @@ class Contact implements JsonSerializable {
 
         // disabled users cannot log in
         // (NB all `anonymous` users should be disabled)
-        if (($this->contactId && $this->is_disabled())
+        if (($this->contactId > 0 && $this->is_disabled())
             || ($cdbu && $cdbu->is_disabled())) {
             return ["ok" => false, "email" => true, "disabled" => true];
         }

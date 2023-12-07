@@ -74,6 +74,7 @@ class Signin_Page {
             } else if (($code = self::check_password_as_reset_code($user, $qreq))) {
                 $conf->redirect_hoturl("resetpassword", ["__PATH__" => $code]);
             } else {
+                $info["allow_redirect"] = true;
                 LoginHelper::login_error($conf, $qreq->email, $info, $this->ms());
             }
         }

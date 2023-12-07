@@ -226,7 +226,9 @@
 
     ["account_disabled", "<0>Your account on this site has been disabled by a site administrator"],
     ["signin_error", "{message:ftext}"],
-    ["signin_error", "<5>User {email} does not currently have an account. Double-check the email address, or <a href=\"{newaccount}\">create the account</a> if you’d like.", ["{problem}=no_account", "{newaccount}"]],
+    ["signin_error", "<5>User {email} does not currently have an account. Check the email address, or <a href=\"{newaccount}\">create that account</a> if you’d like.", ["{problem}=no_account", "{newaccount}"]],
+    ["signin_error", "<5>{message:ftext}. Use this form to create one.", ["{problem}=no_password", "{forgotpassword}", "{allow_redirect}"]],
+    ["signin_error", "<5>{message:ftext}. Use <a href=\"{forgotpassword}\">“Forgot your password?”</a> to create one.", ["{problem}=no_password", "{forgotpassword}"]],
     ["signin_error", "<5>{message:ftext}. Use <a href=\"{forgotpassword}\">“Forgot your password?”</a> to reset it.", ["{problem}=password_expired", "{forgotpassword}"]],
     ["signin_error", "<5>{message:ftext}. If that’s your account, <a href=\"{signin}\">sign in</a> using your password.", ["{problem}=account_exists", "{signin}"]],
     ["signin_error", "<5>{message:ftext}. If that’s your account, <a href=\"{signin}\">sign in</a> using your password, or <a href=\"{forgotpassword}\">reset your password</a> if you have forgotten it.", ["{problem}=account_exists", "{forgotpassword}"]],

@@ -77,10 +77,11 @@ class LoginHelper {
                 $qreq[$k] = rawurldecode($qreq[$k]);
             }
         }
-        return ["ok" => true, "user" => $conf->user_by_email($qreq->email)
-            ?? Contact::make_keyed($conf, $qreq->subset_as_array(
-                "firstName", "first", "lastName", "last", "name", "email", "affiliation"
-            ))];
+        if (!($u = $conf->user_by_email($qreq->email))) {
+            $keys = $qreq->subset_as_array("firstName", "first", "lastName", "last", "name", "email", "affiliation");
+            $u = Contact::make_keyed($conf, $keys);
+        }
+        return ["ok" => true, "user" => $u];
     }
 
     /** @return array{ok:true,user:Contact}|array{ok:false} */
@@ -129,7 +130,7 @@ class LoginHelper {
             return ["ok" => false, "disabled" => true, "email" => true];
         } else if (!$user->contactId
                    || ($user->is_dormant() && !$user->conf->allow_user_self_register())) {
-            return ["ok" => false, "unset" => true, "email" => true];
+            return ["ok" => false, "email" => true, "noaccount" => true];
         } else {
             return ["ok" => true, "user" => $user];
         }
@@ -359,8 +360,10 @@ class LoginHelper {
      * @return void */
     static function login_error(Conf $conf, $email, $info, $ms) {
         $email = trim($email ?? "");
-        $args = [];
+        $problem = isset($info["invalid"]) ? "bad_password" : null;
         $e = "";
+        $args = [];
+
         if (isset($info["ldap"]) && isset($info["ldap_detail"])) {
             $e = $info["ldap_detail"];
         } else if (isset($info["noemail"])) {
@@ -371,22 +374,25 @@ class LoginHelper {
             $e = "<0>Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.";
         } else if (isset($info["nologin"])) {
             $e = "<0>User {$email} is not allowed to sign in to this site";
-        } else if (isset($info["userexists"])) {
-            $e = "<0>User {$email} already has an account on this site";
-            $args[] = new FmtArg("problem", "account_exists");
-        } else if (isset($info["unset"])) {
+        } else if (isset($info["noaccount"])) {
             $e = "<0>User {$email} does not have an account here";
-            $args[] = new FmtArg("problem", "no_account");
+            $problem = "no_account";
             if (!$conf->login_type()
                 && $conf->allow_user_self_register()
                 && $email !== "") {
                 $args[] = new FmtArg("newaccount", $conf->hoturl_raw("newaccount", ["email" => $email]));
             }
+        } else if (isset($info["unset"])) {
+            $e = "<0>User {$email} has not set a password yet";
+            $problem = "no_password";
+        } else if (isset($info["userexists"])) {
+            $e = "<0>User {$email} already has an account on this site";
+            $problem = "account_exists";
         } else if (isset($info["disabled"])) {
             $e = $conf->_i("account_disabled");
         } else if (isset($info["reset"])) {
             $e = "<0>Your password has expired";
-            $args[] = new FmtArg("problem", "password_expired");
+            $problem = "password_expired";
         } else if (isset($info["nopw"])) {
             $e = "<0>Enter your password";
         } else if (isset($info["nopost"])) {
@@ -398,6 +404,7 @@ class LoginHelper {
         } else {
             $e = "<0>Incorrect password";
         }
+
         if ($email !== "") {
             $args[] = new FmtArg("email", $email, 0);
             $args[] = new FmtArg("signin", $conf->hoturl_raw("signin", ["email" => $email]), 0);
@@ -405,17 +412,28 @@ class LoginHelper {
                 $args[] = new FmtArg("forgotpassword", $conf->hoturl_raw("forgotpassword", ["email" => $email]), 0);
             }
         }
-        if (isset($info["invalid"]) && !Fmt::find_arg($args, "problem")) {
-            $args[] = new FmtArg("problem", "bad_password");
+        if ($problem) {
+            $args[] = new FmtArg("problem", $problem);
         }
-        $e = $conf->_i("signin_error", new FmtArg("message", $e), ...$args);
+        if ($info["allow_redirect"] ?? false) {
+            $args[] = new FmtArg("allow_redirect", true);
+        }
+
+        $msg = $conf->_i("signin_error", new FmtArg("message", $e), ...$args);
+
+        if (($info["allow_redirect"] ?? false)
+            && ($urlarg = Fmt::find_arg($args, "forgotpassword"))) {
+            $conf->error_msg($msg);
+            $conf->redirect($urlarg->value);
+        }
+
         if ($ms) {
-            $ms->error_at(isset($info["email"]) ? "email" : "password", $e);
+            $ms->error_at(isset($info["email"]) ? "email" : "password", $msg);
             if (isset($info["password"])) {
                 $ms->error_at("password");
             }
         } else {
-            $conf->error_msg($e);
+            $conf->error_msg($msg);
         }
     }
 }
