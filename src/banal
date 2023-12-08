@@ -144,7 +144,7 @@ sub pt2pdf ($) {
 }
 
 sub rpdf ($) {
-    return int($_[0] * $p2h_scale + 0.5);
+    return int($_[0] * $p2h_scale * 8 + 0.5) / 8;
 }
 
 sub rpdffont ($) {
@@ -156,9 +156,6 @@ my $banal_min_nchars = 800;
 
 # fudge factor when judging text regions (in inches).
 $banal_text_fudge = 0.05;
-
-# policy to use to estimate leading
-my $banal_leading_policy;
 
 # round margins and text blocks to this number of points
 my $grid = 4;
@@ -257,7 +254,7 @@ sub calc_page_leading ($\@$) {
     my ($page, $texts, $bodyfontsize) = @_;
     my ($minlead) = in2pdf(1/16);
 
-    my (%leads);
+    my (%leads, %rleads);
     my ($colpos) = $page->{colpos};
     for (my $col = 0; $col < @$colpos; $col += 2) {
         my ($x) = POSIX::floor(0.8 * $colpos->[$col] + 0.2 * $colpos->[$col + 1]);
@@ -275,12 +272,21 @@ sub calc_page_leading ($\@$) {
             if ($lead >= $minlead) {
                 $leads{$lead} = 0 if !exists $leads{$lead};
                 $leads{$lead} += 1;
+                $lead = int($lead + 0.5);
+                $rleads{$lead} = 0 if !exists $rleads{$lead};
+                $rleads{$lead} += 1;
             }
         }
     }
     $leads{0} = 1 if !%leads;
+    $rleads{0} = 1 if !%rleads;
 
     my ($lead) = modevalkey(\%leads);
+    my ($rlead) = modevalkey(\%rleads);
+    if ($rleads{$rlead} > $leads{$lead} * 1.75) {
+        $lead = $rlead;
+    }
+
     $page->{lead_pt} = int (pdf2pt($lead) * 10 + 0.5) / 10;
 }
 
@@ -337,7 +343,7 @@ sub calc_xmap_mode_columns ($) {
 
     my (@columns);
     for (my $i = 0; $i < $ncols2; $i += 2) {
-        my ($l1, $r1) = ($modes[$i], $modes[$i + 1]);
+        my ($l1, $r1) = ($modes[$i] + 0, $modes[$i + 1] + 0);
         my ($overlap) = min(in2pdf(0.75), $r1 - $l1 - in2pdf(1/8));
         my ($l, $r, $n) = ($l1, $r1, 0);
 
@@ -345,10 +351,10 @@ sub calc_xmap_mode_columns ($) {
             if (@$z == $ncols2) {
                 my ($l2, $r2) = ($z->[$i], $z->[$i + 1]);
                 if (min($r1, $r2) - max($l1, $l2) >= $overlap) {
-                    $l = min $l, $l2 if exists($colpos[$i]->{$l2})
-                                        && $colpos[$i]->{$l2} > 3;
-                    $r = max $r, $r2 if exists($colpos[$i + 1]->{$r2})
-                                        && $colpos[$i + 1]->{$r2} > 3;
+                    $l = min($l, $l2 + 0) if exists($colpos[$i]->{$l2})
+                                             && $colpos[$i]->{$l2} > 3;
+                    $r = max($r, $r2 + 0) if exists($colpos[$i + 1]->{$r2})
+                                             && $colpos[$i + 1]->{$r2} > 3;
                     ++$n;
                 }
             }
@@ -514,7 +520,7 @@ sub line_combine {
 sub heading_number ($) {
     my ($t) = @_;
     if ($t =~ /\A(\d+)((?:\.\d+)*)/) {
-        (+$1, +$1, $1 . $2, 1);
+        ($1 + 0, $1 + 0, $1 . $2, 1);
     } elsif ($t =~ /\A(X*)(I+|IV|VI*|IX|)((?:\.\d+)*)/ && ($1 || $2)) {
         my ($n) = length($1) * 10;
         if ($2 eq "IX") {
@@ -746,9 +752,9 @@ sub version_compare ($$) {
                 }
             }
             return -100;
-        } elsif ($al ? $a[$i] lt $b[$i] : +$a[$i] < +$b[$i]) {
+        } elsif ($al ? $a[$i] lt $b[$i] : $a[$i] + 0 < $b[$i] + 0) {
             return -1;
-        } elsif ($al ? $a[$i] gt $b[$i] : +$a[$i] > +$b[$i]) {
+        } elsif ($al ? $a[$i] gt $b[$i] : $a[$i] + 0 > $b[$i] + 0) {
             return 1;
         }
     }
@@ -1126,7 +1132,7 @@ sub parse_p2h_fonts ($$) {
 
         last unless ($line =~ /<fontspec id=\"(\d+)\" size=\"(-?\d+(?:\.\d*)?)\" family=\"([^\"]+)\" color=\"([^\"]+)\"(?: opacity=\"([^\"]+)\"|)/);
         my ($idnum, $xsize, $family, $color, $opacity) =
-            ($1, $2, $3, $4, defined($5) && $5 ne "" ? +$5 : 1.0);
+            ($1 + 0, $2 + 0, $3, $4, defined($5) && $5 ne "" ? $5 + 0 : 1.0);
 
         if ($color eq "#000000" && $opacity >= 1) {
             $skip = 0;
@@ -1147,7 +1153,7 @@ sub parse_p2h_fonts ($$) {
         }
 
         $font = {
-            id => $idnum, size => rpdffont(+$xsize), family => $family,
+            id => $idnum, size => rpdffont($xsize), family => $family,
             color => $color, opacity => $opacity, skip => $skip
         };
         $fontid = "$family//$xsize//$color//$opacity";
@@ -1217,28 +1223,42 @@ sub xmap_close_gaps ($) {
     my ($t) = 0;
     foreach my $z (@{$nxmap->{rows}}) {
         push @$z, @{$xmap->{rows}->[$t]};
+
+        # Close gaps that are overlapped by either the previous line or the next,
+        # and gaps that are small relative to an adjoining column on this line.
+
         my ($pz) = $t == 0 ? [] : $xmap->{rows}->[$t - 1];
         my ($pi) = 0;
         my ($nz) = $t == @{$xmap->{rows}} - 1 ? [] : $xmap->{rows}->[$t + 1];
         my ($ni) = 0;
 
-        for (my $i = 0; $i < @$z - 2; ) {
-            while ($pi < @$pz && $pz->[$pi + 1] < $z->[$i + 2]) {
+        ++$t;
+        next if @$z == 0;
+
+        my ($ll) = $z->[0];
+        my ($lr) = $z->[1];
+        my ($i) = 2;
+        while ($i < @$z) {
+            my ($rl) = $z->[$i];
+            my ($rr) = $z->[$i + 1];
+            while ($pi < @$pz && $pz->[$pi + 1] < $rl) {
                 $pi += 2;
             }
-            while ($ni < @$nz && $nz->[$ni + 1] < $z->[$i + 2]) {
+            while ($ni < @$nz && $nz->[$ni + 1] < $rl) {
                 $ni += 2;
             }
-            if (($pi < @$pz || $ni < @$nz)
-                && ($pi == @$pz || $pz->[$pi] < $z->[$i + 1])
-                && ($ni == @$nz || $nz->[$ni] < $z->[$i + 1])) {
-                splice(@$z, $i + 1, 2);
+            if ((($pi < @$pz || $ni < @$nz)
+                 && ($pi == @$pz || $pz->[$pi] < $lr)
+                 && ($ni == @$nz || $nz->[$ni] < $lr))
+                || ($rl - $rr) * 2.5 > min($lr - $ll, $rr - $rl)) {
+                splice(@$z, $i - 1, 2);
+                $lr = $rr;
             } else {
                 $i += 2;
+                $ll = $rl;
+                $lr = $rr;
             }
         }
-
-        $t += 1;
     }
     $nxmap;
 }
@@ -1394,7 +1414,7 @@ sub parse_p2h_text ($$$) {
 
         my ($top) = rpdf($1);
         my ($left) = rpdf($2);
-        my ($inheight) = +$4;
+        my ($inheight) = $4 + 0;
         my ($bottom) = $top + rpdf($inheight);
         my ($right) = $left + rpdf($3);
         my ($fontspec) = $page->{doc}->{fonts}->{$5};
@@ -1787,16 +1807,6 @@ sub banal_config_p2h ($) {
     if (!exists $banal_param{noroundcoord}) {
         $banal_param{noroundcoord} = $major >= 0.68;
     }
-
-    # use a default policy according to the zoom level we can use
-    # at low zoom, interpolate
-    if ($banal_param{zoom} >= 10 || $banal_param{noroundcoord}) {
-        $banal_leading_policy = 'mode';
-    } else {
-        $banal_leading_policy = 'interpolate';
-    }
-
-    print "leading policy: $banal_leading_policy\n" if ($debug_leading);
 
     if (!exists $banal_param{fontsizefix}) {
         $banal_param{fontsizefix} = $major == 0.40;
