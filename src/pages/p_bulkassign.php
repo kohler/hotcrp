@@ -188,7 +188,7 @@ secondary review for submission #2:</p>
         // redirect if save cancelled
         if (isset($qreq->saveassignment)
             && isset($qreq->cancel)) {
-            unset($qreq->saveassignment);
+            unset($qreq->saveassignment, $qreq->p, $qreq->pap);
             $conf->redirect_self($qreq); // should not return
             return;
         }
@@ -199,6 +199,7 @@ secondary review for submission #2:</p>
             && isset($qreq->data)
             && $qreq->assignment_size_estimate < 1000
             && $this->complete_assignment(null)) {
+            unset($qreq->saveassignment, $qreq->p, $qreq->pap);
             $conf->redirect_self($qreq);
             return;
         }
