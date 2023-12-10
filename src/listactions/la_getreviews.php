@@ -3,11 +3,15 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class GetReviews_ListAction extends GetReviewBase_ListAction {
+    /** @var bool */
     private $include_paper;
+    /** @var bool */
+    private $submitted;
     function __construct($conf, $fj) {
         parent::__construct(false, $fj->zip);
         $this->include_paper = $fj->abstract;
         $this->author_view = $fj->author_view;
+        $this->submitted = $fj->submitted;
     }
     function allow(Contact $user, Qrequest $qreq) {
         return $user->can_view_some_review();
@@ -34,10 +38,11 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
             if ($this->author_view && $user->allow_administer($prow)) {
                 $viewer->add_overrides(Contact::OVERRIDE_AU_SEEREV);
             }
-            foreach ($prow->viewable_submitted_reviews_and_comments($user) as $rc) {
+            foreach ($prow->viewable_reviews_and_comments($user) as $rc) {
                 if ($viewer === $user
                     || (isset($rc->reviewId)
                         ? $viewer->can_view_review($prow, $rc)
+                          && (!$this->submitted || $rc->reviewSubmitted)
                         : $viewer->can_view_comment($prow, $rc))) {
                     $rctext .= PaperInfo::review_or_comment_text_separator($last_rc, $rc);
                     if (isset($rc->reviewId)) {

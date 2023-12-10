@@ -76,7 +76,7 @@
         "order": 30050,
         "allow_if": "view_review",
         "function": "+GetReviews_ListAction",
-        "zip": false, "abstract": true, "author_view": false
+        "zip": false, "abstract": true, "author_view": false, "submitted": true
     },
     {
         "name": "get/rev", "get": true,
@@ -84,7 +84,7 @@
         "order": 30100,
         "allow_if": "view_review",
         "function": "+GetReviews_ListAction",
-        "zip": false, "abstract": false, "author_view": false
+        "zip": false, "abstract": false, "author_view": false, "submitted": true
     },
     {
         "name": "get/revz", "get": true,
@@ -92,7 +92,23 @@
         "order": 30105,
         "allow_if": "view_review",
         "function": "+GetReviews_ListAction",
-        "zip": true, "abstract": false, "author_view": false
+        "zip": true, "abstract": false, "author_view": false, "submitted": true
+    },
+    {
+        "name": "get/revdraft", "get": true,
+        "title": "Reviews/Reviews (text, include drafts)",
+        "order": 30150,
+        "allow_if": "view_review && admin",
+        "function": "+GetReviews_ListAction",
+        "zip": false, "abstract": false, "author_view": false, "submitted": false
+    },
+    {
+        "name": "get/revdraftz", "get": true,
+        "title": "Reviews/Reviews (zip, include drafts)",
+        "order": 30151,
+        "allow_if": "view_review && admin",
+        "function": "+GetReviews_ListAction",
+        "zip": true, "abstract": false, "author_view": false, "submitted": false
     },
     {
         "name": "get/revau", "get": true,
@@ -100,7 +116,7 @@
         "order": 30200,
         "allow_if": "view_review && admin",
         "function": "+GetReviews_ListAction",
-        "zip": false, "abstract": false, "author_view": true
+        "zip": false, "abstract": false, "author_view": true, "submitted": true
     },
     {
         "name": "get/revauz", "get": true,
@@ -108,7 +124,7 @@
         "order": 30205,
         "allow_if": "view_review && admin",
         "function": "+GetReviews_ListAction",
-        "zip": true, "abstract": false, "author_view": true
+        "zip": true, "abstract": false, "author_view": true, "submitted": true
     },
     {
         "name": "get/revcsv", "get": true,
