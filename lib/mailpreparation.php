@@ -12,9 +12,11 @@ class MailPreparation implements JsonSerializable {
     /** @var string */
     public $preparation_owner = "";
     /** @var list<string> */
-    public $to = [];
+    private $to = [];
+    /** @var list<string> */
+    private $to_email = [];
     /** @var list<int> */
-    public $contactIds = [];
+    private $contactIds = [];
     /** @var bool */
     private $_valid_recipient = true;
     /** @var bool */
@@ -37,7 +39,8 @@ class MailPreparation implements JsonSerializable {
     function __construct($conf, $recipient) {
         $this->conf = $conf;
         if ($recipient) {
-            $email = ($recipient->preferredEmail ?? null) ? : $recipient->email;
+            $email = $recipient->preferredEmail ? : $recipient->email;
+            $this->to_email[] = $email;
             $this->to[] = Text::name($recipient->firstName, $recipient->lastName, $email, NAME_MAILQUOTE|NAME_E);
             $this->_valid_recipient = self::valid_email($email);
             if ($recipient->contactId) {
@@ -54,6 +57,16 @@ class MailPreparation implements JsonSerializable {
                 || !preg_match('/\G(?:_.*|example\.(?:com|net|org))\z/i', $email, $m, 0, $at + 1));
     }
 
+    /** @return list<string> */
+    function recipients() {
+        return $this->to;
+    }
+
+    /** @return list<int> */
+    function recipient_uids() {
+        return $this->contactIds;
+    }
+
     /** @param MailPreparation $p
      * @return bool */
     function can_merge($p) {
@@ -68,11 +81,23 @@ class MailPreparation implements JsonSerializable {
             && empty($p->errors);
     }
 
+    /** @param Contact $u
+     * @return bool */
+    function has_recipient($u) {
+        if ($u->contactId) {
+            return in_array($u->contactId, $this->contactIds);
+        } else if (($e = $u->preferredEmail ? : $u->email)) {
+            return in_array($e, $this->to_email);
+        } else {
+            return false;
+        }
+    }
+
     /** @param MailPreparation $p
      * @return bool */
-    function contains_all_recipients($p) {
-        foreach ($p->to as $dest) {
-            if (!in_array($dest, $this->to))
+    function has_all_recipients($p) {
+        foreach ($p->to_email as $e) {
+            if (!in_array($e, $this->to_email))
                 return false;
         }
         return true;
@@ -80,9 +105,11 @@ class MailPreparation implements JsonSerializable {
 
     /** @param MailPreparation $p */
     function merge($p) {
-        foreach ($p->to as $dest) {
-            if (!in_array($dest, $this->to))
-                $this->to[] = $dest;
+        for ($i = 0; $i !== count($p->to); ++$i) {
+            if (!in_array($p->to_email[$i], $this->to_email)) {
+                $this->to[] = $p->to[$i];
+                $this->to_email[] = $p->to_email[$i];
+            }
         }
         foreach ($p->contactIds as $cid) {
             if (!in_array($cid, $this->contactIds))

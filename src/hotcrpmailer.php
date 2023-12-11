@@ -26,20 +26,20 @@ class HotCRPMailPreparation extends MailPreparation {
     function can_merge($p) {
         return parent::can_merge($p)
             && $p instanceof HotCRPMailPreparation
-            && $this->combination_type == $p->combination_type
-            && (($this->combination_type == 2
+            && $this->combination_type === $p->combination_type
+            && (($this->combination_type === 2
                  && !$this->paper_expansions
                  && !$p->paper_expansions)
                 || ($this->author_recipient === $p->author_recipient
                     && $this->combination_type != 0
                     && $this->paperId === $p->paperId)
                 || ($this->author_recipient === $p->author_recipient
-                    && $this->to === $p->to));
+                    && $this->recipients() === $p->recipients()));
     }
     function finalize() {
         parent::finalize();
         if (preg_match('/\ADear (author|reviewer)(?:|s|\(s\))(?=[,;!.\s])/', $this->body, $m)) {
-            $pl = count($this->to) === 1 ? "" : "s";
+            $pl = count($this->recipients()) === 1 ? "" : "s";
             $this->body = "Dear {$m[1]}{$pl}" . substr($this->body, strlen($m[0]));
         }
     }

@@ -41,8 +41,8 @@ class MailSender {
     private $mcount = 0;
     /** @var int */
     private $skipcount = 0;
+    /** @var array<int,true> */
     private $mrecipients = [];
-    private $prep_recipients = [];
     /** @var int */
     private $cbcount = 0;
 
@@ -358,7 +358,7 @@ class MailSender {
         // mails from different papers, unless those mails are to the same
         // person.
         $mail_differs = !$prep->can_merge($last_prep);
-        if (!$mail_differs && !$prep->contains_all_recipients($last_prep)) {
+        if (!$mail_differs && !$prep->has_all_recipients($last_prep)) {
             $this->groupable = true;
         }
 
@@ -375,7 +375,7 @@ class MailSender {
         if (!$prep->fake
             && ($must_include
                 || !$recipient
-                || !in_array($recipient->contactId, $last_prep->contactIds))) {
+                || !$last_prep->has_recipient($recipient))) {
             if ($last_prep !== $prep) {
                 $last_prep->merge($prep);
             }
@@ -388,7 +388,7 @@ class MailSender {
     /** @param HotCRPMailPreparation $prep
      * @return string */
     static private function prep_key($prep) {
-        return "c" . join("_", $prep->contactIds) . "p" . $prep->paperId;
+        return "c" . join("_", $prep->recipient_uids()) . "p" . $prep->paperId;
     }
 
     /** @param HotCRPMailPreparation $prep */
@@ -401,7 +401,6 @@ class MailSender {
         $show_prep = $prep;
         if ($prep->censored_preparation) {
             $show_prep = $prep->censored_preparation;
-            $show_prep->to = $prep->to;
             $show_prep->finalize();
         }
 
@@ -418,7 +417,7 @@ class MailSender {
         foreach (["To", "cc", "bcc", "reply-to", "Subject"] as $k) {
             if ($k == "To") {
                 $vh = [];
-                foreach ($show_prep->to as $to) {
+                foreach ($prep->recipients() as $to) {
                     $vh[] = htmlspecialchars(MimeText::decode_header($to));
                 }
                 $vh = '<span class="nw">' . join(',</span> <span class="nw">', $vh) . '</span>';
@@ -457,7 +456,7 @@ class MailSender {
         }
 
         ++$this->mcount;
-        foreach ($prep->contactIds as $cid) {
+        foreach ($prep->recipient_uids() as $cid) {
             $this->mrecipients[$cid] = true;
             if ($this->sending) {
                 // Log format matters
