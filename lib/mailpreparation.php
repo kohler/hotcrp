@@ -147,15 +147,10 @@ class MailPreparation implements JsonSerializable {
         }
 
         $headers = $this->headers;
-        $sent = false;
 
         // create valid To: header
-        $to = $this->to;
-        if (is_array($to)) {
-            $to = join(", ", $to);
-        }
         $eol = $this->conf->opt("postfixEOL") ?? "\r\n";
-        $to = (new MimeText($eol))->encode_email_header("To: ", $to);
+        $to = (new MimeText($eol))->encode_email_header("To: ", join(", ", $this->to));
         $headers["to"] = $to . $eol;
         $headers["content-transfer-encoding"] = "Content-Transfer-Encoding: quoted-printable" . $eol;
         // XXX following assumes body is text
@@ -183,14 +178,13 @@ class MailPreparation implements JsonSerializable {
             fwrite($f, $htext . $eol . $qpe_body);
             $status = pclose($f);
             if (pcntl_wifexitedwith($status, 0)) {
-                $sent = true;
-            } else {
-                $this->conf->set_opt("internalMailer", false);
-                error_log("Mail " . $headers["to"] . " failed to send, falling back (status $status)");
+                return true;
             }
+            $this->conf->set_opt("internalMailer", false);
+            error_log("Mail " . $headers["to"] . " failed to send, falling back (status $status)");
         }
 
-        if (!$sent && $this->can_send_external()) {
+        if ($this->can_send_external()) {
             if (strpos($to, $eol) === false) {
                 unset($headers["to"]);
                 $to = substr($to, 4); // skip "To: "
@@ -199,10 +193,10 @@ class MailPreparation implements JsonSerializable {
             }
             unset($headers["subject"]);
             $htext = substr(join("", $headers), 0, -2);
-            $sent = mail($to, $this->subject, $qpe_body, $htext, $extra);
-        } else if (!$sent
-                   && !$this->conf->opt("sendEmail")
-                   && !Contact::is_anonymous_email($to)) {
+            return mail($to, $this->subject, $qpe_body, $htext, $extra);
+        }
+
+        if (!$this->conf->opt("sendEmail") && !Contact::is_anonymous_email($to)) {
             unset($headers["mime-version"], $headers["content-type"], $headers["content-transfer-encoding"]);
             $text = join("", $headers) . $eol . $this->body;
             if (PHP_SAPI !== "cli") {
@@ -212,7 +206,7 @@ class MailPreparation implements JsonSerializable {
             }
         }
 
-        return $sent;
+        return false;
     }
 
     #[\ReturnTypeWillChange]
