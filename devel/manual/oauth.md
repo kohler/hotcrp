@@ -93,6 +93,6 @@ use its own password storage or allow attempts to sign in other than through
 OAuth.
 
 
-[OAuth]: https://en.wikipedia.org/wiki/OAuth]
+[OAuth]: https://en.wikipedia.org/wiki/OAuth
 [OpenID Connect]: https://en.wikipedia.org/wiki/OpenID
 [components]: ./components.md
