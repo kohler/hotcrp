@@ -225,6 +225,25 @@ class Profile_Page {
     }
 
 
+    /** @return \Generator<MessageItem> */
+    private function decorated_message_list(MessageSet $msx, UserStatus $us = null) {
+        $ms = new MessageSet(MessageSet::IGNORE_DUPS_FIELD);
+        foreach ($msx->message_list() as $mi) {
+            if ($us
+                && $mi->field
+                && ($l = $us->field_label($mi->field))
+                && $ms->message_index($mi) === false
+                && $mi->status !== MessageSet::INFORM) {
+                $mi = clone $mi;
+                $mi->message = "<5><a href=\"#{$mi->field}\">{$l}</a>: " . $mi->message_as(5);
+            }
+            $ms->append_item($mi);
+        }
+        foreach ($ms->message_list() as $mi) {
+            yield $mi;
+        }
+    }
+
     /** @param string $text
      * @param string $filename */
     private function save_bulk($text, $filename) {
@@ -335,7 +354,7 @@ class Profile_Page {
         } else if (!$ms->has_message()) {
             $ms->splice_item($mpos++, new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE));
         }
-        $this->conf->feedback_msg($ms->deduplicate(MessageSet::DEDUP_NO_FIELD));
+        $this->conf->feedback_msg($this->decorated_message_list($ms));
         return !$ms->has_error();
     }
 
@@ -387,7 +406,7 @@ class Profile_Page {
                 $this->ustatus->splice_msg($pos++, "<0>Changes saved{$diffs}", MessageSet::SUCCESS);
             }
         }
-        $this->conf->feedback_msg($this->ustatus->deduplicate(MessageSet::DEDUP_NO_FIELD));
+        $this->conf->feedback_msg($this->decorated_message_list($this->ustatus, $this->ustatus));
 
         // exit on error
         if ($this->ustatus->has_error()) {
@@ -705,7 +724,7 @@ class Profile_Page {
 
         if (($this->conf->report_saved_messages() < 1 || !$use_req)
             && $this->ustatus->has_message()) {
-            $this->conf->feedback_msg($this->ustatus->deduplicate(MessageSet::DEDUP_NO_FIELD));
+            $this->conf->feedback_msg($this->decorated_message_list($this->ustatus, $this->ustatus));
         }
 
         if ($this->page_type === 2) {

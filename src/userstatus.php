@@ -1286,6 +1286,24 @@ class UserStatus extends MessageSet {
         }
     }
 
+    /** @param string $k
+     * @return ?string */
+    function field_label($k) {
+        if ($k === "firstName" || $k === "lastName") {
+            return "Name";
+        } else if ($k === "email" || $k === "uemail") {
+            return "Email";
+        } else if ($k === "affiliation") {
+            return "Affiliation";
+        } else if ($k === "collaborators") {
+            return "Collaborators";
+        } else if ($k === "topics") {
+            return "Topics";
+        } else {
+            return null;
+        }
+    }
+
 
     /** @return bool */
     function has_req_security() {

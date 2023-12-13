@@ -178,9 +178,11 @@ class MessageSet {
 
     const IGNORE_MSGS = 1;
     const IGNORE_DUPS = 2;
-    const WANT_FTEXT = 4;
-    const DEFAULT_FTEXT_TEXT = 8;
-    const DEFAULT_FTEXT_HTML = 16;
+    const IGNORE_DUPS_FIELD = 6;
+    const IGNORE_DUPS_FIELD_FLAG = 4;
+    const WANT_FTEXT = 8;
+    const DEFAULT_FTEXT_TEXT = 16;
+    const DEFAULT_FTEXT_HTML = 32;
 
     // These numbers are stored in databases (e.g., PaperStorage.infoJson.cfmsg)
     // and should be changed only with great care.
@@ -199,7 +201,9 @@ class MessageSet {
     /** @deprecated */
     const NOTE = -1;
 
-    function __construct() {
+    /** @param 0|1|2|3|6|7 $flags */
+    function __construct($flags = 0) {
+        $this->_ms_flags = $flags;
     }
 
     function clear_messages() {
@@ -223,10 +227,11 @@ class MessageSet {
         $this->change_ms_flags(self::IGNORE_MSGS, $x ? self::IGNORE_MSGS : 0);
         return $oim;
     }
-    /** @param bool $x
+    /** @param bool|0|2|6 $x
      * @return $this */
     function set_ignore_duplicates($x) {
-        $this->change_ms_flags(self::IGNORE_DUPS, $x ? self::IGNORE_DUPS : 0);
+        $f = is_bool($x) ? ($x ? self::IGNORE_DUPS : 0) : $x;
+        $this->change_ms_flags(self::IGNORE_DUPS | self::IGNORE_DUPS_FIELD_FLAG, $f);
         return $this;
     }
     /** @param bool $x
@@ -253,16 +258,21 @@ class MessageSet {
 
     /** @param MessageItem $mi
      * @return int|false */
-    private function message_index($mi) {
-        if ($this->problem_status >= $mi->status
-            && ($mi->field === null
-                || ($this->errf[$mi->field] ?? -5) >= $mi->status)) {
-            foreach ($this->msgs as $i => $m) {
-                if ($m->field === $mi->field
-                    && $m->message === $mi->message
-                    && $m->status === $mi->status)
-                    return $i;
-            }
+    function message_index($mi) {
+        if ($this->problem_status < $mi->status) {
+            return false;
+        }
+        $ignore_field = ($this->_ms_flags & self::IGNORE_DUPS_FIELD_FLAG) !== 0;
+        if ($mi->field !== null
+            && !$ignore_field
+            && ($this->errf[$mi->field] ?? -5) < $mi->status) {
+            return false;
+        }
+        foreach ($this->msgs as $i => $m) {
+            if ($m->status === $mi->status
+                && ($ignore_field || $m->field === $mi->field)
+                && $m->message === $mi->message)
+                return $i;
         }
         return false;
     }
@@ -324,7 +334,8 @@ class MessageSet {
         }
     }
 
-    /** @param MessageSet $ms */
+    /** @param MessageSet $ms
+     * @return $this */
     function append_set($ms) {
         if (!($this->_ms_flags & self::IGNORE_MSGS)) {
             foreach ($ms->msgs as $mi) {
@@ -334,6 +345,7 @@ class MessageSet {
                 $this->errf[$field] = max($this->errf[$field] ?? 0, $status);
             }
         }
+        return $this;
     }
 
     /** @param ?string $field
@@ -647,24 +659,6 @@ class MessageSet {
                 yield $mi;
             }
         }
-    }
-
-
-    const DEDUP_NORMAL = 0;
-    const DEDUP_NO_FIELD = 1;
-
-    /** @param 0|1 $type
-     * @return MessageSet */
-    function deduplicate($type = 0) {
-        $ms = (new MessageSet)->set_ignore_duplicates(true);
-        foreach ($this->msgs as $mi) {
-            if ($type === 0 || $mi->field === null) {
-                $ms->append_item($mi);
-            } else {
-                $ms->append_item($mi->with_field(null));
-            }
-        }
-        return $ms;
     }
 
 
