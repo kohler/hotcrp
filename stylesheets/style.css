@@ -3864,7 +3864,7 @@ a.badge-white:hover {
 
 /* bubbles */
 .bubble {
-	position: fixed;
+	position: absolute;
 	visibility: hidden;
 	left: 0;
 	top: 0;
@@ -3879,6 +3879,7 @@ a.badge-white:hover {
 	margin: 4px 0;
 }
 .bubble.prowdrag {
+	position: fixed;
 	background-color: #222233;
 	border-width: 0;
 	color: white;
@@ -3913,6 +3914,7 @@ a.badge-white:hover {
 	margin: 5px;
 }
 .bubble.tooltip, .bubble.graphtip {
+	position: fixed;
 	font-size: 75%;
 	line-height: 1.35;
 }
