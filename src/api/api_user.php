@@ -135,15 +135,13 @@ class User_API {
         if ($user->activate_placeholder_prop(false)) {
             $user->save_prop();
         }
-        if (!$user->is_dormant()) {
-            $user->send_mail("@accountinfo");
-            return new JsonResult(["ok" => true, "u" => $user->email]);
-        } else if ($user->is_placeholder() && !$user->is_disabled()) {
-            $msg = "<0>This user has not yet activated their account";
+        $prep = $user->prepare_mail("@accountinfo");
+        if ($prep->send()) {
+            $jr = new JsonResult(200);
         } else {
-            $msg = "<0>User disabled";
+            $jr = new JsonResult(400);
+            $jr->content["message_list"] = $prep->message_list();
         }
-        $jr = JsonResult::make_error(400, $msg);
         $jr->content["u"] = $user->email;
         return $jr;
     }

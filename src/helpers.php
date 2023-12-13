@@ -94,6 +94,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     function __construct($a1, $a2 = null) {
         if (is_int($a1)) {
             $this->status = $a1;
+            $a2 = $a2 ?? ($this->status <= 299);
         } else {
             $a2 = $a1;
         }

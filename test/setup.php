@@ -51,13 +51,12 @@ class MailChecker {
             self::$preps[] = $prep;
             if (self::$print) {
                 fwrite(STDOUT, "********\n"
-                       . "To: " . $prep->recipient_text() . "\n"
+                       . "To: " . join(", ", $prep->recipient_texts()) . "\n"
                        . "Subject: " . str_replace("\r", "", $prep->subject) . "\n"
                        . ($prep->landmark ? "X-Landmark: {$prep->landmark}\n" : "") . "\n"
                        . $prep->body);
             }
         }
-        return false;
     }
 
     static function check0() {
@@ -135,7 +134,7 @@ class MailChecker {
     static function check_match($mdb) {
         $haves = [];
         foreach (self::$preps as $prep) {
-            $haves[] = "To: " . $prep->recipient_text() . "\n"
+            $haves[] = "To: " . join(", ", $prep->recipient_texts()) . "\n"
                 . "Subject: " . str_replace("\r", "", $prep->subject)
                 . "\n\n" . $prep->body;
         }

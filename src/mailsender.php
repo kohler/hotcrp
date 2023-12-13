@@ -419,7 +419,7 @@ class MailSender {
                 $vh = [];
                 foreach ($prep->recipients() as $u) {
                     $t = htmlspecialchars(MailPreparation::recipient_address($u));
-                    if ($u->can_receive_mail($prep->override_placeholder())) {
+                    if ($u->can_receive_mail($prep->self_requested())) {
                         $vh[] = $t;
                     } else {
                         $vh[] = "<del>{$t}</del>";
@@ -535,7 +535,7 @@ class MailSender {
             $mailer->reset($contact, $rest);
             $prep = $mailer->prepare($template, $rest);
 
-            foreach ($prep->errors as $mi) {
+            foreach ($prep->message_list() as $mi) {
                 $this->recip->append_item($mi);
                 if (!$has_decoration) {
                     $this->recip->msg_at($mi->field, "<0>Put names in \"double quotes\" and email addresses in <angle brackets>, and separate destinations with commas.", MessageSet::INFORM);
@@ -543,7 +543,7 @@ class MailSender {
                 }
             }
 
-            if (!$prep->errors && $this->process_prep($prep, $last_prep, $contact)) {
+            if (!$prep->has_error() && $this->process_prep($prep, $last_prep, $contact)) {
                 if ((!$this->user->privChair || $this->conf->opt("chairHidePasswords"))
                     && !$last_prep->censored_preparation
                     && $rest["censor"] === Mailer::CENSOR_NONE) {

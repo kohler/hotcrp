@@ -24,7 +24,7 @@ class Login_Tester {
     }
 
     function test_setup() {
-        $removables = ["newuser@_.com", "scapegoat2@baa.com", "firstchair@_.com"];
+        $removables = ["newuser@hotcrp.com", "scapegoat2@baa.com", "firstchair@hotcrp.com"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         if ($this->cdb !== null) {
             Dbl::qe($this->cdb, "delete from ContactInfo where email?a", $removables);
@@ -32,7 +32,7 @@ class Login_Tester {
     }
 
     function test_login() {
-        $email = "newuser@_.com";
+        $email = "newuser@hotcrp.com";
         $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
 
         $user = Contact::make($this->conf);
@@ -187,7 +187,7 @@ class Login_Tester {
     }
 
     function test_login_first_user() {
-        $email = "firstchair@_.com";
+        $email = "firstchair@hotcrp.com";
         $this->conf->save_setting("setupPhase", 1);
         $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
 

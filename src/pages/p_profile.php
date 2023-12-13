@@ -366,8 +366,7 @@ class Profile_Page {
         } else if ($this->ustatus->created && $this->ustatus->notified) {
             $this->ustatus->prepend_msg("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created and notified", MessageSet::SUCCESS);
         } else if ($this->ustatus->created) {
-            $this->ustatus->prepend_msg("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created", MessageSet::SUCCESS);
-            $this->ustatus->splice_msg(1, "<0>The user was not notified by email.", MessageSet::INFORM);
+            $this->ustatus->prepend_msg("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created, but not notified", MessageSet::SUCCESS);
         } else {
             $pos = 0;
             if ($this->page_type !== 0) {

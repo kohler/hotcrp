@@ -14,13 +14,15 @@ class MailPreparation implements JsonSerializable {
     /** @var list<Contact> */
     private $recip = [];
     /** @var bool */
-    private $_override_placeholder = false;
+    private $_self_requested = false;
     /** @var bool */
     public $sensitive = false;
     /** @var array<string,string> */
     public $headers = [];
+    /** @var int */
+    private $problem_status = 0;
     /** @var list<MessageItem> */
-    public $errors = [];
+    private $errors = [];
     /** @var bool */
     public $unique_preparation = false;
     /** @var ?string */
@@ -29,6 +31,8 @@ class MailPreparation implements JsonSerializable {
     public $landmark;
     /** @var bool */
     public $finalized = false;
+    /** @var bool */
+    private $sent = false;
 
     /** @param Conf $conf
      * @param ?Contact $recipient */
@@ -40,15 +44,38 @@ class MailPreparation implements JsonSerializable {
     }
 
     /** @return bool */
-    function override_placeholder() {
-        return $this->_override_placeholder;
+    function self_requested() {
+        return $this->_self_requested;
     }
 
     /** @param bool $x
      * @return $this */
-    function set_override_placeholder($x) {
-        $this->_override_placeholder = $x;
+    function set_self_requested($x) {
+        $this->_self_requested = $x;
         return $this;
+    }
+
+    /** @return int */
+    function problem_status() {
+        return $this->problem_status;
+    }
+
+    /** @return bool */
+    function has_error() {
+        return $this->problem_status > 1;
+    }
+
+    /** @param MessageItem $mi
+     * @return MessageItem */
+    function append_item($mi) {
+        $this->errors[] = $mi;
+        $this->problem_status = max($this->problem_status, $mi->status);
+        return $mi;
+    }
+
+    /** @return list<MessageItem> */
+    function message_list() {
+        return $this->errors;
     }
 
     /** @param Contact $u
@@ -102,14 +129,9 @@ class MailPreparation implements JsonSerializable {
         return true;
     }
 
-    /** @return string */
-    function recipient_text() {
-        $t = [];
-        foreach ($this->recip as $ru) {
-            $e = $ru->preferredEmail ? : $ru->email;
-            $t[] = Text::name($ru->firstName, $ru->lastName, $e, NAME_MAILQUOTE | NAME_E);
-        }
-        return join(", ", $t);
+    /** @return list<string> */
+    function recipient_texts() {
+        return array_map("MailPreparation::recipient_address", $this->recip);
     }
 
     /** @return list<int> */
@@ -129,8 +151,8 @@ class MailPreparation implements JsonSerializable {
             && !$p->unique_preparation
             && $this->subject === $p->subject
             && $this->body === $p->body
-            && ($this->headers["cc"] ?? null) == ($p->headers["cc"] ?? null)
-            && ($this->headers["reply-to"] ?? null) == ($p->headers["reply-to"] ?? null)
+            && ($this->headers["cc"] ?? null) === ($p->headers["cc"] ?? null)
+            && ($this->headers["reply-to"] ?? null) === ($p->headers["reply-to"] ?? null)
             && $this->preparation_owner === $p->preparation_owner
             && empty($this->errors)
             && empty($p->errors);
@@ -148,6 +170,7 @@ class MailPreparation implements JsonSerializable {
 
     /** @return bool */
     function can_send() {
+        // see also MailPreparation::send()
         return (empty($this->errors)
                 && (!$this->sensitive || $this->conf->opt("sendEmail")))
             || $this->conf->opt("debugShowSensitiveEmail");
@@ -159,7 +182,13 @@ class MailPreparation implements JsonSerializable {
     }
 
     /** @return bool */
+    function sent() {
+        return $this->sent;
+    }
+
+    /** @return bool */
     function send() {
+        assert(!$this->sent);
         if (!$this->finalized) {
             $this->finalize();
         }
@@ -169,15 +198,33 @@ class MailPreparation implements JsonSerializable {
         $headers = $this->headers;
 
         // enumerate valid recipients
-        $vto = [];
+        $vto = $ml = [];
         foreach ($this->recip as $ru) {
-            if ($ru->can_receive_mail($this->_override_placeholder))
+            if ($ru->can_receive_mail($this->_self_requested)) {
                 $vto[] = self::recipient_address($ru);
+            } else if ($ru->is_disabled()) {
+                $ml[] = MessageItem::error("<0>User {$ru->email} is disabled");
+            } else if ($ru->is_dormant() && !$this->_self_requested) {
+                $ml[] = MessageItem::error("<0>User {$ru->email} has not activated their account");
+            } else if ($ru->is_unconfirmed() && $this->conf->opt("sendEmailUnconfirmed") === false) {
+                $ml[] = MessageItem::error("<0>This site only sends mail to users who have previously signed in");
+            } else {
+                $ml[] = MessageItem::error("<0>User {$ru->email} cannot receive email at this time");
+            }
         }
         if (empty($vto)) {
+            if (empty($ml)) {
+                $ml[] = MessageItem::error("<0>No valid recipients");
+            }
+            foreach ($ml as $mi) {
+                $this->append_item($mi);
+            }
             return false;
         }
-        $can_send = empty($this->errors) && $this->conf->opt("sendEmail");
+
+        // can we send? (subset of self::can_send())
+        $sendEmail = $this->conf->opt("sendEmail");
+        $sendable = empty($this->errors) && $sendEmail;
 
         // create valid To: header
         $eol = $this->conf->opt("postfixEOL") ?? "\r\n";
@@ -201,7 +248,9 @@ class MailPreparation implements JsonSerializable {
             $headers["dkim-signature"] = $dkim->signature($headers, $qpe_body, $eol);
         }
 
-        if ($can_send
+        // actually send
+        // first try internal mailer
+        if ($sendable
             && ($this->conf->opt("internalMailer") ?? strncasecmp(PHP_OS, "WIN", 3) != 0)
             && ($sendmail = ini_get("sendmail_path"))) {
             $htext = join("", $headers);
@@ -209,13 +258,14 @@ class MailPreparation implements JsonSerializable {
             fwrite($f, $htext . $eol . $qpe_body);
             $status = pclose($f);
             if (pcntl_wifexitedwith($status, 0)) {
-                return true;
+                return ($this->sent = true);
             }
             $this->conf->set_opt("internalMailer", false);
             error_log("Mail " . $headers["to"] . " failed to send, falling back (status {$status})");
         }
 
-        if ($can_send) {
+        // then try `mail` function
+        if ($sendable) {
             if (strpos($to, $eol) === false) {
                 unset($headers["to"]);
                 $to = substr($to, 4); // skip "To: "
@@ -224,10 +274,11 @@ class MailPreparation implements JsonSerializable {
             }
             unset($headers["subject"]);
             $htext = substr(join("", $headers), 0, -2);
-            return mail($to, $this->subject, $qpe_body, $htext, $extra);
+            return ($this->sent = mail($to, $this->subject, $qpe_body, $htext, $extra));
         }
 
-        if (!$this->conf->opt("sendEmail")) {
+        // print email if debugging (and pretend email was successfully sent)
+        if (!$sendEmail && $this->can_send()) {
             unset($headers["mime-version"], $headers["content-type"], $headers["content-transfer-encoding"]);
             $text = join("", $headers) . $eol . $this->body;
             if (PHP_SAPI !== "cli") {
@@ -235,6 +286,7 @@ class MailPreparation implements JsonSerializable {
             } else if (!$this->conf->opt("disablePrintEmail")) {
                 fwrite(STDERR, "========================================\n" . str_replace("\r\n", "\n", $text) .  "========================================\n");
             }
+            return ($this->sent = true);
         }
 
         return false;
@@ -247,11 +299,7 @@ class MailPreparation implements JsonSerializable {
             $j["headers"] = $this->headers;
         }
         if (!isset($this->headers["to"]) && !empty($this->recip)) {
-            $to = [];
-            foreach ($this->recip as $ru) {
-                $to[] = self::recipient_address($ru);
-            }
-            $j["to"] = $to;
+            $j["to"] = join(", ", $this->recipient_texts());
         }
         if (!isset($this->headers["subject"]) && !empty($this->subject)) {
             $j["subject"] = $this->subject;

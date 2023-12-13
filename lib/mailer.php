@@ -709,7 +709,7 @@ class Mailer {
                 } else {
                     $mimetext->mi->field = $lcfield;
                     $mimetext->mi->landmark = "{$field} field";
-                    $prep->errors[] = $mimetext->mi;
+                    $prep->append_item($mimetext->mi);
                     $logmsg = "{$lcfield}: {$text}";
                     if (!in_array($logmsg, $this->_errors_reported)) {
                         error_log("mailer error on {$logmsg}");
@@ -722,8 +722,8 @@ class Mailer {
         $prep->headers["content-type"] = "Content-Type: text/plain; charset=utf-8"
             . ($this->flowed ? "; format=flowed" : "") . $this->eol;
         $prep->sensitive = $this->sensitive;
-        if (!empty($prep->errors) && !($rest["no_error_quit"] ?? false)) {
-            $this->conf->feedback_msg($prep->errors);
+        if ($prep->has_error() && !($rest["no_error_quit"] ?? false)) {
+            $this->conf->feedback_msg($prep->message_list());
         }
     }
 

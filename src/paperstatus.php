@@ -1270,7 +1270,7 @@ class PaperStatus extends MessageSet {
                     && !$u->activity_at
                     && !$u->isPC
                     && !$u->is_dormant()) {
-                    $u->send_mail("@newaccount.paper", $rest);
+                    $u->prepare_mail("@newaccount.paper", $rest)->send();
                 }
             }
         }

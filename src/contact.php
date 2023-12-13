@@ -1066,10 +1066,16 @@ class Contact implements JsonSerializable {
         return ($this->cflags & self::CFLAG_UNCONFIRMED) !== 0;
     }
 
-    /** @param bool $override_placeholder
+    /** @param bool $self_requested
      * @return bool */
-    function can_receive_mail($override_placeholder = false) {
-        $disabled = self::CFLAG_DISABLEMENT & ~($override_placeholder ? self::CFLAG_PLACEHOLDER : 0);
+    function can_receive_mail($self_requested = false) {
+        $disabled = self::CFLAG_DISABLEMENT;
+        if ($self_requested) {
+            $disabled &= ~self::CFLAG_PLACEHOLDER;
+        } else if (($this->cflags & self::CFLAG_UNCONFIRMED) !== 0
+                   && $this->conf->opt("sendEmailUnconfirmed") === false) {
+            $disabled |= self::CFLAG_UNCONFIRMED;
+        }
         $e = $this->preferredEmail ? : $this->email;
         return ($this->cflags & $disabled) === 0
             && ($at = strpos($e, "@")) !== false
@@ -2485,19 +2491,9 @@ class Contact implements JsonSerializable {
     }
 
 
-    /** @return ?HotCRPMailPreparation */
-    function send_mail($template, $rest = []) {
-        $mailer = new HotCRPMailer($this->conf, $this, $rest);
-        $prep = $mailer->prepare($template, $rest);
-        if ($prep->can_send()) {
-            $prep->send();
-            return $prep;
-        } else {
-            if (!($rest["quiet"] ?? false)) {
-                $this->conf->error_msg("<0>Mail cannot be sent to {$this->email} at this time");
-            }
-            return null;
-        }
+    /** @return HotCRPMailPreparation */
+    function prepare_mail($template, $rest = []) {
+        return (new HotCRPMailer($this->conf, $this, $rest))->prepare($template, $rest);
     }
 
 

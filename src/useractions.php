@@ -60,10 +60,11 @@ class UserActions {
             }
             foreach ($users as $u) {
                 if ($u->isPC && !$u->activity_at) {
-                    if ($u->send_mail("@newaccount.pc", ["quiet" => true])) {
+                    $prep = $u->prepare_mail("@newaccount.pc");
+                    if ($prep->send()) {
                         $j->activated_users[] = $u->name(NAME_E);
                     } else {
-                        $j->message_list[] = new MessageItem(null, "<0>Mail cannot be sent to {$u->email} now", MessageSet::WARNING);
+                        array_push($j->message_list, ...$prep->message_list());
                     }
                 }
             }
@@ -81,10 +82,13 @@ class UserActions {
         foreach ($users as $u) {
             if ($u->is_disabled()) {
                 $j->skipped_users[] = $u->name(NAME_E);
-            } else if ($u->send_mail("@accountinfo", ["quiet" => true])) {
-                $j->sent_users[] = $u->name(NAME_E);
             } else {
-                $j->message_list[] = new MessageItem(null, "<0>Mail cannot be sent to {$u->email} now", MessageSet::WARNING);
+                $prep = $u->prepare_mail("@accountinfo");
+                if ($prep->send()) {
+                    $j->sent_users[] = $u->name(NAME_E);
+                } else {
+                    array_push($j->message_list, ...$prep->message_list());
+                }
             }
         }
         return $j;

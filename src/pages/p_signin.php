@@ -309,13 +309,14 @@ class Signin_Page {
 
     // newaccount
     /** @param array $info
-     * @return ?HotCRPMailPreparation */
+     * @return HotCRPMailPreparation */
     function mail_user(Conf $conf, $info) {
         $user = $info["user"];
-        $prep = $user->send_mail($info["mailtemplate"], $info["mailrest"] ?? null);
-        if (!$prep)  {
+        $prep = $user->prepare_mail($info["mailtemplate"], $info["mailrest"] ?? null);
+        $prep->set_self_requested(true);
+        if (!$prep->send()) {
             if ($conf->opt("sendEmail")) {
-                $conf->error_msg("<0>The email address you provided seems invalid. Please try again.");
+                $conf->feedback_msg(...$prep->message_list());
                 $this->ms()->error_at("email");
             } else {
                 $conf->error_msg("<0>The system cannot send email at this time. You’ll need help from the site administrator to sign in.");
@@ -361,7 +362,7 @@ class Signin_Page {
             $info = LoginHelper::new_account_info($conf, $qreq);
             if ($info["ok"]) {
                 $prep = $this->mail_user($conf, $info);
-                if ($prep
+                if ($prep->sent()
                     && $prep->reset_capability
                     && isset($info["firstuser"])) {
                     $conf->success_msg("<0>As the first user, you have been assigned system administrator privilege. Use this screen to set a password. All later users will have to sign in normally.");
