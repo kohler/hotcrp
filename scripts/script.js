@@ -8897,7 +8897,9 @@ function tablelist_reorder(tbl, pids, groups, remove_all) {
     while (pid_index < pids.length || grp_index < groups.length) {
         // handle headings
         if (grp_index < groups.length && groups[grp_index].pos == pid_index) {
-            tagannorow_add(tbl, tbody, cur, groups[grp_index]);
+            if (grp_index > 0 || !groups[grp_index].blank) {
+                tagannorow_add(tbl, tbody, cur, groups[grp_index]);
+            }
             ++grp_index;
         } else {
             var npid = pids[pid_index];
@@ -8921,32 +8923,36 @@ function tablelist_reorder(tbl, pids, groups, remove_all) {
 }
 
 function tablelist_postreorder(tbl) {
-    for (var cur = tbl.tBodies[0].firstChild, e = 1, n = 0; cur; cur = cur.nextSibling)
-        if (cur.nodeName == "TR") {
-            if (hasClass(cur, "pl")) {
-                e = 1 - e;
-                ++n;
-                $(cur.firstChild).find(".pl_rownum").text(n + ". ");
-            }
-            if (hasClass(cur, "plheading")) {
-                e = 1;
-                var np = 0;
-                for (var sub = cur.nextSibling; sub; sub = sub.nextSibling)
-                    if (sub.nodeName == "TR") {
-                        if (hasClass(sub, "plheading"))
-                            break;
-                        else if (hasClass(sub, "pl"))
-                            ++np;
-                    }
-                var np_html = siteinfo.snouns[np == 1 ? 0 : 1];
-                var $np = $(cur).find(".plheading-count");
-                if ($np.html() !== np_html)
-                    $np.html(np_html);
-            } else if (hasClass(cur, e ? "k0" : "k1")) {
-                toggleClass(cur, "k0", e === 0);
-                toggleClass(cur, "k1", e === 1);
+    let e = true, n = 0, nh = 0, lasthead = null;
+    function change_heading(head) {
+        const counte = lasthead ? lasthead.querySelector(".plheading-count") : null;
+        if (counte) {
+            const txt = nh + " " + siteinfo.snouns[nh === 1 ? 0 : 1];
+            if (counte.textContent !== txt) {
+                counte.textContent = txt;
             }
         }
+        e = true;
+        nh = 0;
+        lasthead = head;
+    }
+    for (let cur = tbl.tBodies[0].firstChild; cur; cur = cur.nextSibling) {
+        if (cur.nodeName !== "TR") {
+            continue;
+        } else if (hasClass(cur, "plheading")) {
+            change_heading(cur);
+        } else if (hasClass(cur, "pl")) {
+            e = !e;
+            ++n;
+            ++nh;
+            $(cur.firstChild).find(".pl_rownum").text(n + ". ");
+        }
+        if (hasClass(cur, e ? "k0" : "k1")) {
+            toggleClass(cur, "k0", !e);
+            toggleClass(cur, "k1", e);
+        }
+    }
+    lasthead && change_heading(null);
     tbl.setAttribute("data-reordered", "");
 }
 
