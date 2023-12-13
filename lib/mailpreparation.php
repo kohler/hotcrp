@@ -11,14 +11,10 @@ class MailPreparation implements JsonSerializable {
     public $body = "";
     /** @var string */
     public $preparation_owner = "";
-    /** @var list<string> */
-    private $to = [];
-    /** @var list<string> */
-    private $to_email = [];
-    /** @var list<int> */
-    private $contactIds = [];
+    /** @var list<Contact> */
+    private $recip = [];
     /** @var bool */
-    private $_valid_recipient = true;
+    private $_override_placeholder = false;
     /** @var bool */
     public $sensitive = false;
     /** @var array<string,string> */
@@ -39,32 +35,91 @@ class MailPreparation implements JsonSerializable {
     function __construct($conf, $recipient) {
         $this->conf = $conf;
         if ($recipient) {
-            $email = $recipient->preferredEmail ? : $recipient->email;
-            $this->to_email[] = $email;
-            $this->to[] = Text::name($recipient->firstName, $recipient->lastName, $email, NAME_MAILQUOTE|NAME_E);
-            $this->_valid_recipient = self::valid_email($email);
-            if ($recipient->contactId) {
-                $this->contactIds[] = $recipient->contactId;
-            }
+            $this->add_recipient($recipient);
         }
     }
 
-    /** @param string $email
-     * @return bool */
-    static function valid_email($email) {
-        return ($at = strpos($email, "@")) !== false
-            && ((($ch = $email[$at + 1]) !== "_" && $ch !== "e" && $ch !== "E")
-                || !preg_match('/\G(?:_.*|example\.(?:com|net|org))\z/i', $email, $m, 0, $at + 1));
+    /** @return bool */
+    function override_placeholder() {
+        return $this->_override_placeholder;
     }
 
-    /** @return list<string> */
+    /** @param bool $x
+     * @return $this */
+    function set_override_placeholder($x) {
+        $this->_override_placeholder = $x;
+        return $this;
+    }
+
+    /** @param Contact $u
+     * @return string */
+    static function recipient_address($u) {
+        $e = $u->preferredEmail ? : $u->email;
+        return Text::name($u->firstName, $u->lastName, $e, NAME_MAILQUOTE | NAME_E);
+    }
+
+    /** @return list<Contact> */
     function recipients() {
-        return $this->to;
+        return $this->recip;
+    }
+
+    /** @return $this */
+    function add_recipient(Contact $recip) {
+        $this->recip[] = $recip;
+        return $this;
+    }
+
+    /** @param Contact $u
+     * @return bool */
+    function has_recipient($u) {
+        foreach ($this->recip as $ru) {
+            if (strcasecmp($ru->email, $u->email) === 0)
+                return true;
+        }
+        return false;
+    }
+
+    /** @param MailPreparation $p
+     * @return bool */
+    function has_all_recipients($p) {
+        foreach ($p->recip as $ru) {
+            if (!$this->has_recipient($ru))
+                return false;
+        }
+        return true;
+    }
+
+    /** @param MailPreparation $p
+     * @return bool */
+    function has_same_recipients($p) {
+        if (count($p->recip) !== count($this->recip)) {
+            return false;
+        }
+        foreach ($p->recip as $i => $ru) {
+            if (strcasecmp($ru->email, $this->recip[$i]->email) !== 0)
+                return false;
+        }
+        return true;
+    }
+
+    /** @return string */
+    function recipient_text() {
+        $t = [];
+        foreach ($this->recip as $ru) {
+            $e = $ru->preferredEmail ? : $ru->email;
+            $t[] = Text::name($ru->firstName, $ru->lastName, $e, NAME_MAILQUOTE | NAME_E);
+        }
+        return join(", ", $t);
     }
 
     /** @return list<int> */
     function recipient_uids() {
-        return $this->contactIds;
+        $uids = [];
+        foreach ($this->recip as $ru) {
+            if ($ru->conf === $this->conf && $ru->contactId)
+                $uids[] = $ru->contactId;
+        }
+        return $uids;
     }
 
     /** @param MailPreparation $p
@@ -81,54 +136,20 @@ class MailPreparation implements JsonSerializable {
             && empty($p->errors);
     }
 
-    /** @param Contact $u
-     * @return bool */
-    function has_recipient($u) {
-        if ($u->contactId) {
-            return in_array($u->contactId, $this->contactIds);
-        } else if (($e = $u->preferredEmail ? : $u->email)) {
-            return in_array($e, $this->to_email);
-        } else {
-            return false;
-        }
-    }
-
     /** @param MailPreparation $p
-     * @return bool */
-    function has_all_recipients($p) {
-        foreach ($p->to_email as $e) {
-            if (!in_array($e, $this->to_email))
-                return false;
-        }
-        return true;
-    }
-
-    /** @param MailPreparation $p */
+     * @return $this */
     function merge($p) {
-        for ($i = 0; $i !== count($p->to); ++$i) {
-            if (!in_array($p->to_email[$i], $this->to_email)) {
-                $this->to[] = $p->to[$i];
-                $this->to_email[] = $p->to_email[$i];
-            }
+        foreach ($p->recip as $ru) {
+            if (!$this->has_recipient($ru))
+                $this->add_recipient($ru);
         }
-        foreach ($p->contactIds as $cid) {
-            if (!in_array($cid, $this->contactIds))
-                $this->contactIds[] = $cid;
-        }
-        $this->_valid_recipient = $this->_valid_recipient && $p->_valid_recipient;
-    }
-
-    /** @return bool */
-    function can_send_external() {
-        return $this->conf->opt("sendEmail")
-            && empty($this->errors)
-            && $this->_valid_recipient;
+        return $this;
     }
 
     /** @return bool */
     function can_send() {
-        return $this->can_send_external()
-            || (empty($this->errors) && !$this->sensitive)
+        return (empty($this->errors)
+                && (!$this->sensitive || $this->conf->opt("sendEmail")))
             || $this->conf->opt("debugShowSensitiveEmail");
     }
 
@@ -145,12 +166,22 @@ class MailPreparation implements JsonSerializable {
         if ($this->conf->call_hooks("send_mail", null, $this) === false) {
             return false;
         }
-
         $headers = $this->headers;
+
+        // enumerate valid recipients
+        $vto = [];
+        foreach ($this->recip as $ru) {
+            if ($ru->can_receive_mail($this->_override_placeholder))
+                $vto[] = self::recipient_address($ru);
+        }
+        if (empty($vto)) {
+            return false;
+        }
+        $can_send = empty($this->errors) && $this->conf->opt("sendEmail");
 
         // create valid To: header
         $eol = $this->conf->opt("postfixEOL") ?? "\r\n";
-        $to = (new MimeText($eol))->encode_email_header("To: ", join(", ", $this->to));
+        $to = (new MimeText($eol))->encode_email_header("To: ", join(", ", $vto));
         $headers["to"] = $to . $eol;
         $headers["content-transfer-encoding"] = "Content-Transfer-Encoding: quoted-printable" . $eol;
         // XXX following assumes body is text
@@ -170,7 +201,7 @@ class MailPreparation implements JsonSerializable {
             $headers["dkim-signature"] = $dkim->signature($headers, $qpe_body, $eol);
         }
 
-        if ($this->can_send_external()
+        if ($can_send
             && ($this->conf->opt("internalMailer") ?? strncasecmp(PHP_OS, "WIN", 3) != 0)
             && ($sendmail = ini_get("sendmail_path"))) {
             $htext = join("", $headers);
@@ -181,10 +212,10 @@ class MailPreparation implements JsonSerializable {
                 return true;
             }
             $this->conf->set_opt("internalMailer", false);
-            error_log("Mail " . $headers["to"] . " failed to send, falling back (status $status)");
+            error_log("Mail " . $headers["to"] . " failed to send, falling back (status {$status})");
         }
 
-        if ($this->can_send_external()) {
+        if ($can_send) {
             if (strpos($to, $eol) === false) {
                 unset($headers["to"]);
                 $to = substr($to, 4); // skip "To: "
@@ -196,7 +227,7 @@ class MailPreparation implements JsonSerializable {
             return mail($to, $this->subject, $qpe_body, $htext, $extra);
         }
 
-        if (!$this->conf->opt("sendEmail") && !Contact::is_anonymous_email($to)) {
+        if (!$this->conf->opt("sendEmail")) {
             unset($headers["mime-version"], $headers["content-type"], $headers["content-transfer-encoding"]);
             $text = join("", $headers) . $eol . $this->body;
             if (PHP_SAPI !== "cli") {
@@ -211,15 +242,22 @@ class MailPreparation implements JsonSerializable {
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        $h = ["headers"];
-        if (!isset($this->headers["to"])) {
-            $h[] = "to";
+        $j = [];
+        if (!empty($this->headers)) {
+            $j["headers"] = $this->headers;
         }
-        if (!isset($this->headers["subject"])) {
-            $h[] = "subject";
+        if (!isset($this->headers["to"]) && !empty($this->recip)) {
+            $to = [];
+            foreach ($this->recip as $ru) {
+                $to[] = self::recipient_address($ru);
+            }
+            $j["to"] = $to;
+        }
+        if (!isset($this->headers["subject"]) && !empty($this->subject)) {
+            $j["subject"] = $this->subject;
         }
         $j = [];
-        foreach (array_merge($h, ["body", "sensitive", "errors", "unique_preparation", "reset_capability", "landmark"]) as $k) {
+        foreach (["body", "sensitive", "errors", "unique_preparation", "reset_capability", "landmark"] as $k) {
             if (!empty($this->$k))
                 $j[$k] = $this->$k;
         }

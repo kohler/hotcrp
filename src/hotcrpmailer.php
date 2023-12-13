@@ -34,7 +34,7 @@ class HotCRPMailPreparation extends MailPreparation {
                     && $this->combination_type != 0
                     && $this->paperId === $p->paperId)
                 || ($this->author_recipient === $p->author_recipient
-                    && $this->recipients() === $p->recipients()));
+                    && $this->has_same_recipients($p)));
     }
     function finalize() {
         parent::finalize();
@@ -569,13 +569,13 @@ class HotCRPMailer extends Mailer {
     /** @param Contact $recipient
      * @return ?HotCRPMailPreparation */
     static function prepare_to($recipient, $template, $rest = []) {
-        $answer = null;
-        if (!$recipient->is_dormant()) {
-            $old_overrides = $recipient->remove_overrides(Contact::OVERRIDE_CONFLICT);
-            $mailer = new HotCRPMailer($recipient->conf, $recipient, $rest);
-            $answer = $mailer->prepare($template, $rest);
-            $recipient->set_overrides($old_overrides);
+        if ($recipient->is_dormant()) {
+            return null;
         }
+        $old_overrides = $recipient->remove_overrides(Contact::OVERRIDE_CONFLICT);
+        $mailer = new HotCRPMailer($recipient->conf, $recipient, $rest);
+        $answer = $mailer->prepare($template, $rest);
+        $recipient->set_overrides($old_overrides);
         return $answer;
     }
 

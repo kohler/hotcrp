@@ -417,8 +417,13 @@ class MailSender {
         foreach (["To", "cc", "bcc", "reply-to", "Subject"] as $k) {
             if ($k == "To") {
                 $vh = [];
-                foreach ($prep->recipients() as $to) {
-                    $vh[] = htmlspecialchars(MimeText::decode_header($to));
+                foreach ($prep->recipients() as $u) {
+                    $t = htmlspecialchars(MailPreparation::recipient_address($u));
+                    if ($u->can_receive_mail($prep->override_placeholder())) {
+                        $vh[] = $t;
+                    } else {
+                        $vh[] = "<del>{$t}</del>";
+                    }
                 }
                 $vh = '<span class="nw">' . join(',</span> <span class="nw">', $vh) . '</span>';
             } else if ($k == "Subject") {

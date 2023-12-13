@@ -51,7 +51,7 @@ class MailChecker {
             self::$preps[] = $prep;
             if (self::$print) {
                 fwrite(STDOUT, "********\n"
-                       . "To: " . join(", ", $prep->recipients()) . "\n"
+                       . "To: " . $prep->recipient_text() . "\n"
                        . "Subject: " . str_replace("\r", "", $prep->subject) . "\n"
                        . ($prep->landmark ? "X-Landmark: {$prep->landmark}\n" : "") . "\n"
                        . $prep->body);
@@ -135,7 +135,7 @@ class MailChecker {
     static function check_match($mdb) {
         $haves = [];
         foreach (self::$preps as $prep) {
-            $haves[] = "To: " . join(", ", $prep->recipients()) . "\n"
+            $haves[] = "To: " . $prep->recipient_text() . "\n"
                 . "Subject: " . str_replace("\r", "", $prep->subject)
                 . "\n\n" . $prep->body;
         }

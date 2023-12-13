@@ -1006,9 +1006,9 @@ class UserStatus extends MessageSet {
             if (!$old_activity_at
                 || (($eff_old_roles & Contact::ROLE_PCLIKE) === 0
                     && ($roles & Contact::ROLE_PCLIKE) !== 0)) {
-                if ($roles & Contact::ROLE_PC) {
+                if (($roles & Contact::ROLE_PC) !== 0) {
                     $user->send_mail("@newaccount.pc");
-                } else if ($roles & Contact::ROLE_ADMIN) {
+                } else if (($roles & Contact::ROLE_ADMIN) !== 0) {
                     $user->send_mail("@newaccount.admin");
                 } else {
                     $user->send_mail("@newaccount.other");

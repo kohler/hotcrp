@@ -1024,7 +1024,8 @@ class Contact implements JsonSerializable {
         return $this->contactId <= 0 && !$this->email && !$this->_capabilities;
     }
 
-    /** @return bool */
+    /** @param string $email
+     * @return bool */
     function owns_email($email) {
         return (string) $email !== "" && strcasecmp($email, $this->email) === 0;
     }
@@ -1063,6 +1064,18 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function is_unconfirmed() {
         return ($this->cflags & self::CFLAG_UNCONFIRMED) !== 0;
+    }
+
+    /** @param bool $override_placeholder
+     * @return bool */
+    function can_receive_mail($override_placeholder = false) {
+        $disabled = self::CFLAG_DISABLEMENT & ~($override_placeholder ? self::CFLAG_PLACEHOLDER : 0);
+        $e = $this->preferredEmail ? : $this->email;
+        return ($this->cflags & $disabled) === 0
+            && ($at = strpos($e, "@")) !== false
+            && ($ch = $e[$at + 1]) !== "_"
+            && (($ch !== "e" && $ch !== "E")
+                || !preg_match('/\Gexample\.(?:com|net|org)\z/i', $e, $m, 0, $at + 1));
     }
 
     /** @return int */

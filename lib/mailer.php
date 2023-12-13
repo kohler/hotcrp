@@ -685,7 +685,7 @@ class Mailer {
         $mail = $this->expand_all($template);
         $this->preparation = null;
 
-        $mail["to"] = ($prep->recipients())[0];
+        $mail["to"] = MailPreparation::recipient_address(($prep->recipients())[0]);
         $subject = $mimetext->encode_header("Subject: ", $mail["subject"]);
         $prep->subject = substr($subject, 9);
         $prep->body = $mail["body"];
