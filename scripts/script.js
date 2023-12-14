@@ -8376,30 +8376,41 @@ var Hotlist;
 (function ($) {
 var cookie_set_at;
 function update_digest(info) {
-    var add = typeof info === "string" ? 1 : 0,
+    var add, search,
         digests = wstorage.site_json(false, "list_digests") || [],
         found = -1, now = now_msec();
+    if (typeof info === "number") {
+        add = 0;
+        search = info;
+    } else {
+        add = 1;
+        search = info.ids;
+    }
     for (var i = 0; i < digests.length; ++i) {
         var digest = digests[i];
-        if (digest[add] === info)
+        if (digest[add] === search) {
             found = i;
-        else if (digest[2] < now - 30000) {
+        } else if (digest[2] < now - 30000) {
             digests.splice(i, 1);
             --i;
-        } else if (now <= digest[0])
+        } else if (now <= digest[0]) {
             now = digest[0] + 1;
+        }
     }
-    if (found >= 0)
+    if (found >= 0) {
         digests[found][2] = now;
-    else if (add) {
-        digests.push([now, info, now]);
+    } else if (add) {
+        digests.push([now, search, now, info.sorted_ids || null]);
         found = digests.length - 1;
     }
     wstorage.site(false, "list_digests", digests);
-    if (found >= 0)
-        return digests[found][1 - add];
-    else
+    if (found < 0) {
         return false;
+    } else if (add) {
+        return digests[found][0];
+    } else {
+        return {ids: digests[found][1], sorted_ids: digests[found][3] || null};
+    }
 }
 Hotlist = function (s) {
     this.str = s || "";
@@ -8418,14 +8429,17 @@ Hotlist.prototype.ids = function () {
     return this.obj && this.obj.ids ? decode_session_list_ids(this.obj.ids) : null;
 };
 Hotlist.prototype.resolve = function () {
-    var ids;
+    var obj;
     if (this.obj
         && !this.obj.ids
         && this.obj.digest
         && /^listdigest[0-9]+$/.test(this.obj.digest)
-        && (ids = update_digest(+this.obj.digest.substring(10)))) {
+        && (obj = update_digest(+this.obj.digest.substring(10)))) {
         delete this.obj.digest;
-        this.obj.ids = ids;
+        this.obj.ids = obj.ids;
+        if (obj.sorted_ids) {
+            this.obj.sorted_ids = obj.sorted_ids;
+        }
         this.str = JSON.stringify(this.obj);
     }
     return this;
@@ -8437,7 +8451,7 @@ Hotlist.prototype.cookie_at = function (pid) {
         && this.obj
         && this.obj.ids
         && wstorage()
-        && (digest = update_digest(this.obj.ids))) {
+        && (digest = update_digest(this.obj))) {
         var x = Object.assign({digest: "listdigest" + digest}, this.obj);
         delete x.ids;
         delete x.sorted_ids;

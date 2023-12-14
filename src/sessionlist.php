@@ -369,6 +369,8 @@ class SessionList {
         if ($this->digest !== null) {
             $j["digest"] = $this->digest;
         }
+        // The JS digest mechanism must remove all potentially-long components
+        // of the sessionlist object, currently `ids` and `sorted_ids`.
         if ($this->ids !== null) {
             $j["ids"] = self::encode_ids($this->ids);
             if (strlen($j["ids"]) > 160) {
