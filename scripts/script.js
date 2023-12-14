@@ -1086,41 +1086,87 @@ function make_link_callback(elt) {
 
 
 // localStorage
-var wstorage = function () { return false; };
-try {
-    if (window.localStorage && window.JSON)
-        wstorage = function (is_session, key, value) {
-            try {
-                var s = is_session ? window.sessionStorage : window.localStorage;
-                if (typeof key === "undefined")
-                    return !!s;
-                else if (typeof value === "undefined")
-                    return s.getItem(key);
-                else if (value === null)
-                    return s.removeItem(key);
-                else if (typeof value === "object")
-                    return s.setItem(key, JSON.stringify(value));
-                else
-                    return s.setItem(key, value);
-            } catch (err) {
-                return false;
+hotcrp.wstorage = (function () {
+let needgc = true, ws = function () { return false; };
+function site_key(key) {
+    return siteinfo.base + key;
+}
+function pjson(x) {
+    try {
+        return x ? JSON.parse(x) : false;
+    } catch (err) {
+        return false;
+    }
+}
+function wsgc(s) {
+    needgc = false;
+    if (s.length < 10) {
+        return;
+    }
+    const pfx = siteinfo.base || "", gck = pfx + "hotcrp-gc",
+        now = now_sec();
+    if (+(s.getItem(gck) || 0) > now) {
+        return;
+    }
+    let remk = [];
+    for (let i = 0; i < s.length; ++i) {
+        const k = s.key(i);
+        if (k === pfx + "hotcrp-trevent") {
+            remk.push(k);
+        } else if (k.startsWith(pfx + "hotcrp-trevent:")) {
+            let x = pjson(s.getItem(k));
+            if (!x || typeof x !== "object" || !x.expiry || x.expiry < now - 432000) {
+                remk.push(k);
             }
-        };
+        }
+    }
+    for (const x of remk) {
+        s.removeItem(x);
+    }
+    if (s.length >= 10) {
+        s.setItem(gck, Math.floor(now) + 86400);
+    } else {
+        s.removeItem(gck);
+    }
+}
+function realws(is_session, key, value) {
+    try {
+        var s = is_session ? window.sessionStorage : window.localStorage;
+        if (!s) {
+            return false;
+        }
+        needgc && !is_session && wsgc(s);
+        if (typeof value === "undefined") {
+            return s.getItem(key);
+        } else if (value === null) {
+            return s.removeItem(key);
+        } else if (typeof value === "object") {
+            return s.setItem(key, JSON.stringify(value));
+        } else {
+            return s.setItem(key, value);
+        }
+    } catch (err) {
+        return false;
+    }
+}
+try {
+    if (window.localStorage && window.JSON) {
+        ws = realws;
+    }
 } catch (err) {
 }
-wstorage.json = function (is_session, key) {
-    var x = wstorage(is_session, key);
-    return x ? JSON.parse(x) : false;
+ws.site_key = site_key;
+ws.site = function (is_session, key, value) {
+    return ws(is_session, site_key(key), value);
 };
-wstorage.site_key = function (key) {
-    return siteinfo.base + key;
+ws.json = function (is_session, key) {
+    return pjson(ws(is_session, key));
 };
-wstorage.site = function (is_session, key, value) {
-    return wstorage(is_session, wstorage.site_key(key), value);
+ws.site_json = function (is_session, key) {
+    return pjson(ws(is_session, site_key(key)));
 };
-wstorage.site_json = function (is_session, key) {
-    return wstorage.json(is_session, wstorage.site_key(key));
-};
+return ws;
+})();
 
 
 // dragging
@@ -3018,7 +3064,8 @@ handle_ui.on("js-mark-submit", function () {
 var dl, dlname, dltime, redisplay_timeout,
     reload_outstanding = 0, reload_nerrors = 0, reload_count = 0,
     reload_token_max = 250, reload_token_rate = 500,
-    reload_tokens = reload_token_max, reload_refill_at = 0, reload_refill_timeout = null;
+    reload_tokens = reload_token_max, reload_refill_at = 0, reload_refill_timeout = null,
+    wstor = hotcrp.wstorage;
 
 // deadline display
 function checkdl(now, endtime, ingrace) {
@@ -3133,13 +3180,13 @@ function tracker_find(trackerid) {
 }
 
 function tracker_status() {
-    var ts = wstorage.site_json(true, "hotcrp-tracking"), tr;
+    var ts = wstor.site_json(true, "hotcrp-tracking"), tr;
     if (ts && (tr = tracker_find(ts[1]))) {
         dl.tracker_here = ts[1];
         tr.tracker_here = true;
         if (!ts[2] && tr.start_at) {
             ts[2] = tr.start_at;
-            wstorage.site(true, "hotcrp-tracking", ts);
+            wstor.site(true, "hotcrp-tracking", ts);
         }
     }
 }
@@ -3202,7 +3249,7 @@ function tracker_paper_columns(tr, idx, wwidth) {
 
 function tracker_html(tr) {
     var t;
-    if (wstorage.site(true, "hotcrp-tracking-hide-" + tr.trackerid))
+    if (wstor.site(true, "hotcrp-tracking-hide-" + tr.trackerid))
         return "";
     t = '<div class="has-tracker tracker-holder';
     if (tr.papers && tr.papers[tr.paper_offset].pid == siteinfo.paperid)
@@ -3266,7 +3313,7 @@ function display_tracker() {
 
     // tracker display management
     if (!dl.tracker) {
-        wstorage.site(true, "hotcrp-tracking", null);
+        wstor.site(true, "hotcrp-tracking", null);
     }
     if (!dl.tracker
         || (dl.tracker.ts && dl.tracker.ts.length === 0)
@@ -3331,7 +3378,7 @@ function display_tracker() {
 
 function tracker_refresh() {
     if (dl.tracker_here) {
-        var ts = wstorage.site_json(true, "hotcrp-tracking"),
+        var ts = wstor.site_json(true, "hotcrp-tracking"),
             param = {track: ts[1]};
         if (siteinfo.paperid) {
             param.track += " " + siteinfo.paperid;
@@ -3341,7 +3388,7 @@ function tracker_refresh() {
             param.tracker_start_at = ts[2];
         streload_track(param, ts[3] ? {"hotlist-info": ts[3]} : {});
         tracker_refresher = tracker_refresher || setInterval(tracker_refresh, 25000);
-        wstorage.site(true, "hotcrp-tracking", ts);
+        wstor.site(true, "hotcrp-tracking", ts);
     } else if (tracker_refresher) {
         clearInterval(tracker_refresher);
         tracker_refresher = null;
@@ -3409,7 +3456,7 @@ handle_ui.on("js-tracker", function (evt) {
         }
         if (tr.start_at) {
             hc.push('<div class="entryi"><label></label><div class="entry">', '</div></div>');
-            hc.push('<label><input name="tr' + trno + '-hide" value="1" type="checkbox"' + (wstorage.site(true, "hotcrp-tracking-hide-" + tr.trackerid) ? " checked" : "") + '> Hide on this tab</label>');
+            hc.push('<label><input name="tr' + trno + '-hide" value="1" type="checkbox"' + (wstor.site(true, "hotcrp-tracking-hide-" + tr.trackerid) ? " checked" : "") + '> Hide on this tab</label>');
             hc.push('<label class="padl"><input name="tr' + trno + '-stop" value="1" type="checkbox"> Stop</label>');
             hc.pop();
         }
@@ -3428,7 +3475,7 @@ handle_ui.on("js-tracker", function (evt) {
     function new_tracker() {
         var tr = {
             is_new: true, trackerid: "new",
-            visibility: wstorage.site(false, "hotcrp-tracking-visibility"),
+            visibility: wstor.site(false, "hotcrp-tracking-visibility"),
             hide_conflicts: true,
             listinfo: document.body.getAttribute("data-hotlist")
         }, $myg = $(this).closest("div.lg"), hc = new HtmlCollector;
@@ -3444,13 +3491,13 @@ handle_ui.on("js-tracker", function (evt) {
             if (data.ok) {
                 $d && $d.close();
                 if (data.new_trackerid) {
-                    wstorage.site(true, "hotcrp-tracking", [null, +data.new_trackerid, null, document.body.getAttribute("data-hotlist") || null]);
+                    wstor.site(true, "hotcrp-tracking", [null, +data.new_trackerid, null, document.body.getAttribute("data-hotlist") || null]);
                     if ("new" in hiding)
                         hiding[data.new_trackerid] = hiding["new"];
                 }
                 for (var i in hiding)
                     if (i !== "new")
-                        wstorage.site(true, "hotcrp-tracking-hide-" + i, hiding[i] ? 1 : null);
+                        wstor.site(true, "hotcrp-tracking-hide-" + i, hiding[i] ? 1 : null);
                 tracker_configured = true;
                 streload();
             } else {
@@ -3545,7 +3592,7 @@ handle_ui.on("js-tracker", function (evt) {
         start();
     } else {
         $.post(hoturl("=api/trackerconfig"),
-               {"tr1-id": "new", "tr1-listinfo": document.body.getAttribute("data-hotlist"), "tr1-p": siteinfo.paperid, "tr1-vis": wstorage.site(false, "hotcrp-tracking-visibility")},
+               {"tr1-id": "new", "tr1-listinfo": document.body.getAttribute("data-hotlist"), "tr1-p": siteinfo.paperid, "tr1-vis": wstor.site(false, "hotcrp-tracking-visibility")},
                make_submit_success({}, "new"));
     }
 });
@@ -3553,7 +3600,7 @@ handle_ui.on("js-tracker", function (evt) {
 function tracker_configure_success() {
     if (dl.tracker_here) {
         var visibility = tracker_find(dl.tracker_here).visibility || null;
-        wstorage.site(false, "hotcrp-tracking-visibility", visibility);
+        wstor.site(false, "hotcrp-tracking-visibility", visibility);
     }
     tracker_configured = false;
 }
@@ -3576,18 +3623,18 @@ var trevent, trevent$;
 function trevent_key() {
     var u = siteinfo && siteinfo.user,
         e = (u && u.email) || (u && u.tracker_kiosk ? "kiosk" : "none");
-    return wstorage.site_key("hotcrp-trevent:" + e);
+    return wstor.site_key("hotcrp-trevent:" + e);
 }
-if (wstorage()) {
+if (wstor()) {
     trevent = function (store) {
         if (store === undefined) {
-            var x = wstorage.json(false, trevent_key());
+            var x = wstor.json(false, trevent_key());
             if (!x || typeof x !== "object" || typeof x.eventid !== "number")
                 x = {eventid: 0};
             return x;
         } else {
             trevent$ = store;
-            wstorage(false, trevent_key(), store);
+            wstor(false, trevent_key(), store);
         }
     };
 } else {
@@ -3792,7 +3839,7 @@ function load(dlx, prev_eventid, is_initial) {
     dl.perm = dl.perm || {};
     dl.myperm = dl.perm[siteinfo.paperid] || {};
     dl.rev = dl.rev || {};
-    if (is_initial && wstorage())
+    if (is_initial && wstor())
         trevent_initialize_wstorage();
     if (dl.tracker_recent)
         tracker_status();
@@ -3955,7 +4002,7 @@ function fold_storage() {
             smap = {};
             smap[n] = sn;
         }
-        sn = wstorage.json(true, "fold") || wstorage.json(false, "fold") || {};
+        sn = hotcrp.wstorage.json(true, "fold") || hotcrp.wstorage.json(false, "fold") || {};
         for (k in smap) {
             if (sn[smap[k]]) {
                 foldup.call(this, null, {open: true, n: +k});
@@ -4011,12 +4058,13 @@ function fold(elt, dofold, foldnum) {
 
         // check for session
         if ((s = fold_session_for.call(elt, foldnum, "storage"))) {
-            var sj = wstorage.json(true, "fold") || {};
+            const wstor = hotcrp.wstorage;
+            let sj = wstor.json(true, "fold") || {};
             wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
-            wstorage(true, "fold", $.isEmptyObject(sj) ? null : sj);
-            sj = wstorage.json(false, "fold") || {};
+            wstor(true, "fold", $.isEmptyObject(sj) ? null : sj);
+            sj = wstor(false, "fold") || {};
             wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
-            wstorage(false, "fold", $.isEmptyObject(sj) ? null : sj);
+            wstor(false, "fold", $.isEmptyObject(sj) ? null : sj);
         } else if ((s = fold_session_for.call(elt, foldnum, "session"))) {
             $.post(hoturl("=api/session", {v: s[0] + (wasopen ? "=1" : "=0")}));
         }
@@ -8377,7 +8425,7 @@ var Hotlist;
 var cookie_set_at;
 function update_digest(info) {
     var add, search,
-        digests = wstorage.site_json(false, "list_digests") || [],
+        digests = hotcrp.wstorage.site_json(false, "list_digests") || [],
         found = -1, now = now_msec();
     if (typeof info === "number") {
         add = 0;
@@ -8403,7 +8451,7 @@ function update_digest(info) {
         digests.push([now, search, now, info.sorted_ids || null]);
         found = digests.length - 1;
     }
-    wstorage.site(false, "list_digests", digests);
+    hotcrp.wstorage.site(false, "list_digests", digests);
     if (found < 0) {
         return false;
     } else if (add) {
@@ -8450,7 +8498,7 @@ Hotlist.prototype.cookie_at = function (pid) {
     if (this.str.length > 1500
         && this.obj
         && this.obj.ids
-        && wstorage()
+        && hotcrp.wstorage()
         && (digest = update_digest(this.obj))) {
         var x = Object.assign({digest: "listdigest" + digest}, this.obj);
         delete x.ids;
@@ -8681,7 +8729,7 @@ var blurred_at = 0;
 hotcrp.add_preference_ajax = function (selector, on_unload) {
     var $e = $(selector);
     if ($e.is("input")) {
-        var rpf = wstorage.site(true, "revpref_focus");
+        var rpf = hotcrp.wstorage.site(true, "revpref_focus");
         if (rpf && now_msec() - rpf < 3000)
             focus_at($e[0]);
         $e = $e.parent();
@@ -8723,7 +8771,7 @@ function rp_change() {
 function rp_unload() {
     if ((blurred_at && now_msec() - blurred_at < 1000)
         || $(":focus").is("input.revpref"))
-        wstorage.site(true, "revpref_focus", blurred_at || now_msec());
+        hotcrp.wstorage.site(true, "revpref_focus", blurred_at || now_msec());
 }
 
 handle_ui.on("revpref", function (evt) {
@@ -9958,10 +10006,10 @@ function check_version(url, versionstr) {
             jQuery.get(siteinfo.site_relative + "checkupdates.php",
                        {data: JSON.stringify(json)}, updateverifycb);
         else if (json && json.status)
-            wstorage.site(false, "hotcrp_version_check", {at: now_msec(), version: versionstr});
+            hotcrp.wstorage.site(false, "hotcrp_version_check", {at: now_msec(), version: versionstr});
     }
     try {
-        if ((x = wstorage.site_json(false, "hotcrp_version_check"))
+        if ((x = hotcrp.wstorage.site_json(false, "hotcrp_version_check"))
             && x.at >= now_msec() - 600000 /* 10 minutes */
             && x.version == versionstr)
             return;
@@ -13534,4 +13582,5 @@ Object.assign(window.hotcrp, {
     // tracker_show_elapsed
     // update_tag_decoration
     usere: usere
+    // wstorage
 });

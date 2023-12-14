@@ -133,7 +133,7 @@ function settings_field_order(parentid) {
     var i = 0, curorder, defaultorder, orde, n, e,
         form = document.getElementById("f-settings"),
         c = document.getElementById(parentid),
-        moveup = null, movedown = null;
+        movedown = null;
     for (n = c.firstChild; n; n = n.nextSibling) {
         orde = form.elements[n.id + "/order"];
         if (hasClass(n, "deleted")) {
