@@ -8440,6 +8440,7 @@ Hotlist.prototype.cookie_at = function (pid) {
         && (digest = update_digest(this.obj.ids))) {
         var x = Object.assign({digest: "listdigest" + digest}, this.obj);
         delete x.ids;
+        delete x.sorted_ids;
         if (pid
             && (ids = this.ids())
             && (pos = $.inArray(pid, ids)) >= 0) {
