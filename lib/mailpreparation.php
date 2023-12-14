@@ -29,7 +29,8 @@ class MailPreparation implements JsonSerializable {
     public $reset_capability;
     /** @var ?string */
     public $landmark;
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $finalized = false;
     /** @var bool */
     private $sent = false;
@@ -92,6 +93,7 @@ class MailPreparation implements JsonSerializable {
 
     /** @return $this */
     function add_recipient(Contact $recip) {
+        assert(!$this->finalized);
         $this->recip[] = $recip;
         return $this;
     }
@@ -161,6 +163,7 @@ class MailPreparation implements JsonSerializable {
     /** @param MailPreparation $p
      * @return $this */
     function merge($p) {
+        assert(!$this->finalized);
         foreach ($p->recip as $ru) {
             if (!$this->has_recipient($ru))
                 $this->add_recipient($ru);
@@ -176,6 +179,7 @@ class MailPreparation implements JsonSerializable {
             || $this->conf->opt("debugShowSensitiveEmail");
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     function finalize() {
         assert(!$this->finalized);
         $this->finalized = true;
