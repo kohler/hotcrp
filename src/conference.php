@@ -3407,6 +3407,7 @@ class Conf {
     const HOTURL_SITE_RELATIVE = 8;
     const HOTURL_SERVERREL = 16;
     const HOTURL_NO_DEFAULTS = 32;
+    const HOTURL_REDIRECTABLE = 64;
 
     /** @param string $page
      * @param null|string|array $params
@@ -3641,6 +3642,13 @@ class Conf {
      * @param int $flags
      * @return string */
     private function qrequrl($qreq, $param, $flags) {
+        if (($flags & self::HOTURL_REDIRECTABLE) !== 0
+            && ($url = $this->qreq_redirect_url($qreq))) {
+            if (($flags & self::HOTURL_RAW) === 0) {
+                $url = htmlspecialchars($url);
+            }
+            return $url;
+        }
         $x = [];
         foreach ($qreq as $k => $v) {
             $ak = self::$selfurl_safe[$k] ?? false;
@@ -3673,7 +3681,8 @@ class Conf {
     /** @param Qrequest $qreq
      * @param ?array $param
      * @param int $flags
-     * @return string */
+     * @return string
+     * @deprecated */
     function site_referrer_url(Qrequest $qreq, $param = null, $flags = 0) {
         if (($r = $qreq->referrer()) && ($rf = parse_url($r))) {
             $sup = $qreq->navigation()->siteurl_path();
@@ -3758,7 +3767,8 @@ class Conf {
     }
 
     /** @param string $siteurl
-     * @return string */
+     * @return string
+     * @deprecated */
     function make_absolute_site($siteurl) {
         $nav = Navigation::get();
         if (str_starts_with($siteurl, "u/")) {

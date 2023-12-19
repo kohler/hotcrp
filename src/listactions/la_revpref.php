@@ -115,7 +115,7 @@ class Revpref_ListAction extends ListAction {
                 $aset->prepend_msg("<0>Preference changes saved", MessageSet::SUCCESS);
             }
             $user->conf->feedback_msg($aset->message_list());
-            return new Redirection($user->conf->site_referrer_url($qreq));
+            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
         } else {
             $user->conf->feedback_msg($aset->message_list());
         }
@@ -148,7 +148,7 @@ class Revpref_ListAction extends ListAction {
         $reviewer_arg = $user->contactId === $reviewer->contactId ? null : $reviewer->email;
         $conf = $user->conf;
         if ($qreq->cancel) {
-            return new Redirection($conf->site_referrer_url($qreq));
+            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
         } else if ($qreq->file) {
             $csv = self::preference_file_csv($qreq->file, $qreq->filename);
         } else if ($qreq->has_file("fileupload")) {
@@ -172,10 +172,10 @@ class Revpref_ListAction extends ListAction {
                 $aset->prepend_msg("<0>No changes", MessageSet::WARNING_NOTE);
             }
             $conf->feedback_msg($aset->message_list());
-            return new Redirection($conf->site_referrer_url($qreq));
+            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
         } else if ($this->name === "applyuploadpref" || $this->name === "uploadpref") {
             $aset->execute(true);
-            return new Redirection($conf->site_referrer_url($qreq));
+            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
         } else {
             $qreq->print_header("Review preferences", "revpref");
             $conf->feedback_msg($aset->message_list());
