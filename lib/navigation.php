@@ -17,8 +17,8 @@ class NavigationState {
     /** @var string */
     public $base_path_relative; // "/BASEPATH/", "../"+, or ""
     /** @var string */
-    public $site_path;          // "/SITEPATH/"; always ends in /; suffix of $base_path;
-                                // may end in `/u/NNN/`
+    public $site_path;          // "/SITEPATH/"; always ends in /; has
+                                // $base_path as prefix; may end in `/u/NNN/`
     /** @var string */
     public $site_path_relative; // "/SITEPATH/", "../"+, or ""
     /** @var string */
@@ -488,7 +488,7 @@ class NavigationState {
         return $path;
     }
 
-    /** @param string $url
+    /** @param ?string $url
      * @param string $ref
      * @return ?string */
     function make_absolute_under($url, $ref) {
@@ -504,6 +504,10 @@ class NavigationState {
         // as the resolved `$ref`, and the path component of `$ref` (with
         // slash termination) is its prefix. Query and fragment components
         // of `$ref` are ignored.
+
+        if ($url === null) {
+            return null;
+        }
 
         $rp = parse_url($ref);
         assert($rp !== false);

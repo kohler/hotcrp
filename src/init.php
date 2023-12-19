@@ -210,7 +210,7 @@ function initialize_user_redirect($qreq, $uindex, $nusers, $cookie) {
             $page = "{$page}u/{$uindex}/";
         }
         if ($nav->page !== "index" || $nav->path !== "") {
-            $page = "{$page}{$nav->page}{$nav->php_suffix}{$nav->path}";
+            $page = "{$page}{$nav->raw_page}{$nav->path}";
         }
         $page .= $nav->query;
         if ($cookie) {

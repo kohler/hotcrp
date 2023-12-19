@@ -67,9 +67,9 @@ class API_Page {
         if ($uf
             && ($uf->redirect ?? false)
             && $qreq->redirect
-            && preg_match('/\A(?:[a-z][-a-z0-9+.]*:|\/)./i', $qreq->redirect)) {
+            && ($url = $conf->qreq_redirect_url($qreq))) {
             $conf->feedback_msg(self::export_messages($jr));
-            $conf->redirect($conf->make_absolute_site($qreq->redirect));
+            $conf->redirect($url);
         }
         return $jr;
     }

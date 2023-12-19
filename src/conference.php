@@ -3768,6 +3768,17 @@ class Conf {
         }
     }
 
+    /** @param Qrequest $qreq
+     * @return ?string */
+    function qreq_redirect_url($qreq) {
+        if (($r = $qreq->redirect ?? "") !== "" && $r !== "1") {
+            $nav = $qreq->navigation();
+            return $nav->make_absolute_under($r, $nav->siteurl);
+        } else {
+            return null;
+        }
+    }
+
 
     /** @param string $basename
      * @param int $flags

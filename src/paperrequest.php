@@ -182,7 +182,7 @@ class PaperRequest {
         $susers = Contact::session_users($qreq);
         if (count($susers) > 1
             && !$user->is_actas_user()
-            && self::other_user_redirectable()) {
+            && self::other_user_redirectable($qreq->navigation())) {
             foreach ($susers as $email) {
                 $user->conf->prefetch_user_by_email($email);
             }
@@ -191,15 +191,16 @@ class PaperRequest {
                     && ($u = $user->conf->user_by_email($email, USER_SLICE))
                     && self::check_prow($prow, $u, $qreq)) {
                     $nav = $qreq->navigation();
-                    throw new Redirection($user->conf->make_absolute_site("u/{$i}/{$nav->raw_page}{$nav->path}{$nav->query}"));
+                    throw new Redirection("{$nav->server}{$nav->base_path}u/{$i}/{$nav->raw_page}{$nav->path}{$nav->query}");
                 }
             }
         }
     }
 
-    /** @return bool */
-    static private function other_user_redirectable() {
-        $page = Navigation::self();
+    /** @param Navigation $nav
+     * @return bool */
+    static private function other_user_redirectable($nav) {
+        $page = $nav->self();
         foreach ($_COOKIE as $k => $v) {
             if (str_starts_with($k, "hc-uredirect-") && $v === $page)
                 return true;
