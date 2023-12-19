@@ -4,7 +4,6 @@
 
 class ContactList {
     const FIELD_SELECTOR = 1000;
-    const FIELD_SELECTOR_ON = 1001;
 
     const FIELD_NAME = 1;
     const FIELD_EMAIL = 2;
@@ -80,6 +79,10 @@ class ContactList {
     private $_limit_cids;
     /** @var array<int,array> */
     private $_sort_data;
+    /** @var ?SearchSelection */
+    private $_selection;
+    /** @var bool */
+    private $_select_all = false;
 
     function __construct(Contact $user, $sortable = true, $qreq = null) {
         $this->conf = $user->conf;
@@ -111,6 +114,13 @@ class ContactList {
                 $this->sortField = $fs[3];
             }
         }
+
+        if ($this->qreq->has_a("pap")) {
+            $this->_selection = SearchSelection::make($this->qreq);
+        }
+        if ($this->qreq->selectall) {
+            $this->_select_all = true;
+        }
     }
 
     /** @param int|string $fieldId
@@ -120,9 +130,6 @@ class ContactList {
         case self::FIELD_SELECTOR:
         case "sel":
             return ["sel", 1, 0, self::FIELD_SELECTOR, "sel"];
-        case self::FIELD_SELECTOR_ON:
-        case "selon":
-            return ["sel", 1, 0, self::FIELD_SELECTOR, "selon"];
         case self::FIELD_NAME:
         case "name":
             return ["name", 1, 1, self::FIELD_NAME, "name"];
@@ -201,7 +208,7 @@ class ContactList {
             && $fieldId !== self::FIELD_AFFILIATION
             && $fieldId !== self::FIELD_AFFILIATION_ROW) {
             return false;
-        } else if (in_array($fieldId, [self::FIELD_NAME, self::FIELD_SELECTOR, self::FIELD_SELECTOR_ON, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT], true)) {
+        } else if (in_array($fieldId, [self::FIELD_NAME, self::FIELD_SELECTOR, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT], true)) {
             return true;
         }
         switch ($fieldId) {
@@ -749,11 +756,11 @@ class ContactList {
                 return $this->conf->unparse_time_obscure($row->activity_at);
             }
         case self::FIELD_SELECTOR:
-        case self::FIELD_SELECTOR_ON:
             $this->any->sel = true;
             $c = "";
-            if ($fieldId == self::FIELD_SELECTOR_ON) {
-                $c = ' checked="checked"';
+            if ($this->_select_all
+                || ($this->_selection && $this->_selection->is_selected($row->contactId))) {
+                $c = ' checked';
             }
             return '<input type="checkbox" class="uic js-range-click js-selector" name="pap[]" value="' . $row->contactId . '" tabindex="1"' . $c . ' />';
         case self::FIELD_HIGHTOPICS:
