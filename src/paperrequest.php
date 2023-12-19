@@ -197,7 +197,7 @@ class PaperRequest {
         }
     }
 
-    /** @param Navigation $nav
+    /** @param NavigationState $nav
      * @return bool */
     static private function other_user_redirectable($nav) {
         $page = $nav->self();
