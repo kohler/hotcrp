@@ -205,7 +205,6 @@ class Signin_Page {
                 "type" => !$lt && !str_ends_with($email, "@_.com") ? "email" : "text",
                 "autofocus" => $this->problem_status_at("email")
                     || $email === ""
-                    || (!$this->problem_status_at("password") && !$qreq->csession("password_reset"))
             ]), '</div>';
     }
 
@@ -227,8 +226,7 @@ class Signin_Page {
                 "size" => 36, "id" => "k-password", "class" => "fullw",
                 "autocomplete" => "current-password", "tabindex" => 1,
                 "autofocus" => !$this->problem_status_at("email")
-                    && $qreq->email
-                    && ($this->problem_status_at("password") || $password_reset)
+                    && ($qreq->email ?? "") !== ""
             ]), '</div>';
         if ($password_reset) {
             echo Ht::unstash_script("\$(function(){\$(\"#k-password\").val(" . json_encode_browser($password_reset->password) . ")})");
