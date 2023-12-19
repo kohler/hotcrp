@@ -4523,7 +4523,7 @@ class Conf {
                 if ($actas_email !== null && strcasecmp($email, $actas_email) === 0) {
                     $actas_email = null;
                 }
-                if (strcasecmp($email, $base_email) !== 0) {
+                if ($email !== "" && strcasecmp($email, $base_email) !== 0) {
                     echo '<li class="has-link">', Ht::link("Switch to " . htmlspecialchars($email), "{$nav->base_path_relative}u/{$i}/{$sfx}"), '</li>';
                 }
             }

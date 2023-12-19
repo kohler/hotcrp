@@ -315,6 +315,9 @@ class Review_Page {
                         . Ht::form("", ["class" => "has-fold foldo"])
                         . '<div class="aab mt-2 fx">';
                     foreach ($this->user->session_users($this->qreq) as $e) {
+                        if ($e === "") {
+                            continue;
+                        }
                         $url = $this->conf->hoturl("=api/claimreview", ["p" => $this->prow->paperId, "r" => $this->rrow->reviewId, "email" => $e, "smsg" => 1]);
                         $m .= '<div class="aabut">'
                             . Ht::submit("Reassign to " . htmlspecialchars($e), [

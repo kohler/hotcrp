@@ -181,8 +181,10 @@ class Signin_Page {
             $nav = $qreq->navigation();
             $links = [];
             foreach ($su as $i => $email) {
-                $usuf = count($su) > 1 ? "u/{$i}/" : "";
-                $links[] = '<a href="' . htmlspecialchars($nav->base_path . $usuf) . '">' . htmlspecialchars($email) . '</a>';
+                if ($email !== "") {
+                    $usuf = count($su) > 1 ? "u/{$i}/" : "";
+                    $links[] = '<a href="' . htmlspecialchars($nav->base_path . $usuf) . '">' . htmlspecialchars($email) . '</a>';
+                }
             }
             echo '<p class="is-warning"><span class="warning-mark"></span> ', $user->conf->_("You are already signed in as {:list} on this browser.", $links), '</p>';
         }

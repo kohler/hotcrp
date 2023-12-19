@@ -330,27 +330,30 @@ function initialize_request($kwarg = null) {
     }
     $qreq->qsession()->maybe_open();
 
-    // determine user
-    $trueemail = $qreq->gsession("u");
-    $userset = $qreq->gsession("us") ?? ($trueemail ? [$trueemail] : []);
-    '@phan-var list<string> $userset';
-    $usercount = count($userset);
-    $reqemail = $_GET["i"] ?? null;
-
+    // determine desired account
+    $us = Contact::session_users($qreq);
+    $nus = count($us);
     $uindex = 0;
-    if ($nav->shifted_path === "") {
-        if ($reqemail !== null) {
-            while ($uindex !== $usercount
-                   && strcasecmp($userset[$uindex], $reqemail) !== 0) {
+    $reqemail = $_GET["i"] ?? "";
+
+    if (str_starts_with($nav->shifted_path, "u/")) {
+        // use explicit account index
+        $uindex = (int) substr($nav->shifted_path, 2);
+    } else if ($nus > 1) {
+        // no explicit account index, but a choice among accounts
+        if ($reqemail !== "") {
+            while ($uindex !== $nus
+                   && strcasecmp($us[$uindex], $reqemail) !== 0) {
                 ++$uindex;
             }
         } else if (($sinfo = $qreq->qsession()->get2("uchoice", $conf->session_key))
-                   && $sinfo[1] + 5184000 /* 60 days */ > Conf::$now) {
+                   && $sinfo[1] + 5184000 /* 60 days */ > Conf::$now
+                   && $sinfo[0] < $nus
+                   && $us[$sinfo[0]] !== "") {
             $uindex = $sinfo[0];
             initialize_user_preferred_uindex($qreq, $uindex);
         }
-        if ($uindex < $usercount
-            && ($usercount > 1 || $reqemail !== null)
+        if ($uindex < $nus
             && $nav->page !== "api"
             && ($qreq->method() === "GET" || $qreq->method() === "HEAD")) {
             // redirect to `/u` version
@@ -358,26 +361,32 @@ function initialize_request($kwarg = null) {
             if (str_starts_with($nav->query, "&")) {
                 $nav->query = "?" . substr($nav->query, 1);
             }
-            initialize_user_redirect($qreq, $uindex, count($userset), !isset($_GET["i"]));
+            initialize_user_redirect($qreq, $uindex, count($us), !isset($_GET["i"]));
         }
-    } else if (str_starts_with($nav->shifted_path, "u/")) {
-        $uindex = $usercount === 0 ? -1 : (int) substr($nav->shifted_path, 2);
-    }
-    if ($uindex >= 0 && $uindex < $usercount) {
-        $trueemail = $userset[$uindex];
-    } else if ($uindex !== 0) {
-        initialize_user_redirect($qreq, 0, $usercount, false);
     }
 
-    if ($reqemail !== null
-        && $trueemail
-        && strcasecmp($reqemail, $trueemail) !== 0) {
-        $conf->error_msg("<5>You are signed in as " . htmlspecialchars($trueemail) . ", not " . htmlspecialchars($reqemail) . ". <a href=\"" . $conf->hoturl("signin", ["email" => $reqemail]) . "\">Sign in</a>");
+    $uemail = $us[$uindex] ?? "";
+
+    // maybe redirect if bogus account index
+    if ($uemail === "" && ($uindex !== 0 || $nus !== 0)) {
+        $auindex = 0;
+        while ($auindex !== $nus && $us[$auindex] === "") {
+            ++$auindex;
+        }
+        initialize_user_redirect($qreq, $auindex, $nus, false);
     }
 
-    // potentially mark preferred user index for this conference
+    // warn if requested different account
+    if ($reqemail !== ""
+        && $uemail !== ""
+        && strcasecmp($reqemail, $uemail) !== 0) {
+        $conf->error_msg("<5>You are signed in as " . htmlspecialchars($uemail) . ", not " . htmlspecialchars($reqemail) . ". <a href=\"" . $conf->hoturl("signin", ["email" => $reqemail]) . "\">Add account</a>");
+    }
+
+    // potentially mark preferred account index for this conference
     // (garbage collect after 60 days)
-    if ($usercount > 1
+    if ($nus > 1
+        && $uemail !== ""
         && ($referrer = $_SERVER["HTTP_REFERER"] ?? null) !== null
         && str_starts_with($referrer, $nav->server . $nav->base_path)
         && str_ends_with($referrer, $nav->raw_page . $nav->path . $nav->query)) {
@@ -385,16 +394,13 @@ function initialize_request($kwarg = null) {
     }
 
     // look up and activate user
-    $muser = $trueemail ? $conf->fresh_user_by_email($trueemail) : null;
-    if (!$muser) {
-        $muser = Contact::make_email($conf, $trueemail);
-    }
-    $muser = $muser->activate($qreq, true, $uindex);
+    $muser = ($conf->fresh_user_by_email($uemail)
+              ?? Contact::make_email($conf, $uemail))->activate($qreq, true, $uindex);
     Contact::set_main_user($muser);
     $qreq->set_user($muser);
 
     // author view capability documents should not be indexed
-    if (!$muser->email
+    if ($muser->email === ""
         && $muser->has_author_view_capability()
         && !$conf->opt("allowIndexPapers")) {
         header("X-Robots-Tag: noindex, noarchive");
