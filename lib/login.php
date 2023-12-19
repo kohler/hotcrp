@@ -422,6 +422,7 @@ class LoginHelper {
         $msg = $conf->_i("signin_error", new FmtArg("message", $e), ...$args);
 
         if (($info["allow_redirect"] ?? false)
+            && $problem !== "bad_password"
             && ($urlarg = Fmt::find_arg($args, "forgotpassword"))) {
             $conf->error_msg($msg);
             $conf->redirect($urlarg->value);
