@@ -4062,7 +4062,7 @@ function fold(elt, dofold, foldnum) {
             let sj = wstor.json(true, "fold") || {};
             wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
             wstor(true, "fold", $.isEmptyObject(sj) ? null : sj);
-            sj = wstor(false, "fold") || {};
+            sj = wstor.json(false, "fold") || {};
             wasopen === !s[1] ? delete sj[s[0]] : sj[s[0]] = wasopen ? 0 : 1;
             wstor(false, "fold", $.isEmptyObject(sj) ? null : sj);
         } else if ((s = fold_session_for.call(elt, foldnum, "session"))) {
