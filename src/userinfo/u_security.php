@@ -18,7 +18,7 @@ class Security_UserInfo {
     function __construct(UserStatus $us) {
         $this->us = $us;
         $this->_approved = $us->allow_security()
-            && UpdateSession::usec_query($us->qreq, 0, 1, Conf::$now - 300);
+            && UpdateSession::usec_query($us->qreq, $us->viewer->email, 0, 1, Conf::$now - 300);
     }
 
     function parse_qreq(UserStatus $us) {
@@ -32,8 +32,8 @@ class Security_UserInfo {
             }
         } else {
             $info = $us->viewer->check_password_info($pw);
+            UpdateSession::usec_add_list($us->qreq, $us->viewer->email, $info["usec"] ?? [], 1);
             $this->_approved = $info["ok"];
-            UpdateSession::usec_add($us->qreq, 0, 1, $this->_approved);
             if (!$this->_approved) {
                 $this->_approval_errors[] = MessageItem::error_at("oldpassword", "<0>Incorrect current password");
             }

@@ -83,17 +83,18 @@ class Signin_Page {
     static function signin_request_basic(Contact $user, Qrequest $qreq, $cs, $info) {
         if (!$info["ok"]) {
             return $info;
-        } else {
-            return LoginHelper::login_info($user->conf, $qreq);
         }
+        return LoginHelper::login_info($user->conf, $qreq);
     }
 
     static function signin_request_success(Contact $user, Qrequest $qreq, $cs, $info)  {
         if (!$info["ok"]) {
+            if (!empty($info["usec"])) {
+                UpdateSession::usec_add_list($qreq, $qreq->email, $info["usec"], 0);
+            }
             return $info;
-        } else {
-            return LoginHelper::login_complete($info, $qreq);
         }
+        return LoginHelper::login_complete($info, $qreq);
     }
 
     /** @param string $token

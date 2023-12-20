@@ -119,63 +119,63 @@ class UpdateSession {
         return $add ? $ui : -1;
     }
 
-    /** @param 0|1|2 $type
-     * @param 0|1 $reason
-     * @param int $bound
-     * @return ?bool */
-    static function usec_query(Qrequest $qreq, $type, $reason, $bound = 0) {
-        if (($uindex = $qreq->user()->session_index()) >= 0) {
-            return self::usec_query_uindex($qreq, $uindex, $type, $reason, $bound);
-        } else {
-            return null;
-        }
-    }
-
-    /** @param int $uindex
+    /** @param string $email
      * @param 0|1|2 $type
      * @param 0|1 $reason
      * @param int $bound
-     * @return ?bool */
-    static function usec_query_uindex(Qrequest $qreq, $uindex, $type, $reason, $bound = 0) {
+     * @return bool */
+    static function usec_query(Qrequest $qreq, $email, $type, $reason, $bound = 0) {
+        $uindex = Contact::session_index_by_email($qreq, $email);
         $usec = $qreq->gsession("usec") ?? [];
-        $success = $bound > 0 ? null : false;
+        $success = false;
         foreach ($qreq->gsession("usec") ?? [] as $e) {
-            if (($e["u"] ?? 0) === $uindex
+            if ((isset($e["e"])
+                 ? strcasecmp($e["e"], $email) === 0
+                 : ($e["u"] ?? 0) === $uindex)
                 && ($e["t"] ?? 0) === $type
                 && ($e["r"] ?? 0) === $reason
                 && $e["a"] >= $bound) {
                 $success = !($e["x"] ?? false);
-            } else if ($success === null
-                       && $e["a"] >= $bound) {
-                $success = false;
             }
         }
         return $success;
     }
 
-    /** @param 0|1|2 $type
-     * @param 0|1 $reason
-     * @param bool $success */
-    static function usec_add(Qrequest $qreq, $type, $reason, $success) {
-        if (($uindex = $qreq->user()->session_index()) >= 0) {
-            self::usec_add_uindex($qreq, $uindex, $type, $reason, $success);
-        }
-    }
-
     /** @param int $uindex
      * @param 0|1|2 $type
      * @param 0|1 $reason
+     * @param int $bound
+     * @return ?bool
+     * @deprecated */
+    static function usec_query_uindex(Qrequest $qreq, $uindex, $type, $reason, $bound = 0) {
+        return false;
+    }
+
+    /** @param string $email
+     * @param 0|1|2 $type
+     * @param 0|1 $reason
      * @param bool $success */
-    static function usec_add_uindex(Qrequest $qreq, $uindex, $type, $reason, $success) {
+    static function usec_add(Qrequest $qreq, $email, $type, $reason, $success) {
+        $uindex = Contact::session_index_by_email($qreq, $email);
         $old_usec = $qreq->gsession("usec") ?? [];
         $nold_usec = count($old_usec);
 
         $usec = [];
         foreach ($old_usec as $i => $e) {
+            if ($uindex >= 0
+                && isset($e["e"])
+                && strcasecmp($e["e"], $email) === 0) {
+                unset($e["e"]);
+                if ($uindex > 0) {
+                    $e["u"] = $uindex;
+                }
+            }
             if ((($e["r"] ?? 0) === 1
                  && $e["a"] < Conf::$now - 86400)
                 || ($success
-                    && ($e["u"] ?? 0) === $uindex
+                    && (isset($e["e"])
+                        ? strcasecmp($e["e"], $email) === 0
+                        : ($e["u"] ?? 0) === $uindex)
                     && ($e["t"] ?? 0) === $type
                     && ($e["r"] ?? 0) === $reason)
                 || ($nold_usec > 150
@@ -187,7 +187,9 @@ class UpdateSession {
         }
 
         $x = [];
-        if ($uindex !== 0) {
+        if ($uindex < 0) {
+            $x["e"] = $email;
+        } else if ($uindex > 0) {
             $x["u"] = $uindex;
         }
         if ($type !== 0) {
@@ -202,5 +204,14 @@ class UpdateSession {
         $x["a"] = Conf::$now;
         $usec[] = $x;
         $qreq->set_gsession("usec", $usec);
+    }
+
+    /** @param string $email
+     * @param list<array{0|1|2,bool}> $useclist
+     * @param 0|1 $reason */
+    static function usec_add_list(Qrequest $qreq, $email, $useclist, $reason) {
+        foreach ($useclist as $elt) {
+            self::usec_add($qreq, $email, $elt[0], $reason, $elt[1]);
+        }
     }
 }

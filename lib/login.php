@@ -148,10 +148,8 @@ class LoginHelper {
 
         // store authentication
         $qreq->qsession()->open_new_sid();
-        $uindex = UpdateSession::user_change($qreq, $xuser->email, true);
-        foreach ($info["usec"] ?? [] as $type) {
-            UpdateSession::usec_add_uindex($qreq, $uindex, $type, 0, true);
-        }
+        UpdateSession::user_change($qreq, $xuser->email, true);
+        UpdateSession::usec_add_list($qreq, $xuser->email, $info["usec"] ?? [], 0);
 
         // activate
         $user = $xuser->activate($qreq, false);
@@ -173,14 +171,6 @@ class LoginHelper {
             $info["firstuser"] = true;
         }
         return $info;
-    }
-
-    /** @param Qrequest $qreq
-     * @param string $email
-     * @param int $instr
-     * @deprecated */
-    static function change_session_user($qreq, $email, $instr) {
-        UpdateSession::user_change($qreq, $email, $instr > 0);
     }
 
     /** @return bool */

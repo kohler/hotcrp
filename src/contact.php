@@ -2365,7 +2365,7 @@ class Contact implements JsonSerializable {
         // deny if no match
         if (!$cdb_ok && !$local_ok) {
             $x = [
-                "ok" => false, "invalid" => true, "usec" => [0],
+                "ok" => false, "invalid" => true, "usec" => [[0, false]],
                 "can_reset" => $this->can_reset_password()
             ];
             // report information about passwords
@@ -2446,7 +2446,7 @@ class Contact implements JsonSerializable {
             }
         }
 
-        return ["ok" => true, "user" => $this, "usec" => [0]];
+        return ["ok" => true, "user" => $this, "usec" => [[0, true]]];
     }
 
     /** @param string $input
