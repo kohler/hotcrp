@@ -85,7 +85,6 @@ class Qsession {
         // maybe update session format
         if (empty($this->all())) {
             $this->set("v", 2);
-            $this->set("testsession", [$_SERVER["REMOTE_ADDR"], caller_landmark()]);
         } else {
             if (($this->get("v") ?? 0) < 2) {
                 UpdateSession::run($this);

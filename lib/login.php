@@ -192,7 +192,6 @@ class LoginHelper {
             ]);
             return;
         }
-        $qreq->unset_gsession("testsession");
 
         // Go places
         if ($qreq->redirect

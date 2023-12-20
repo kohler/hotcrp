@@ -141,16 +141,6 @@ class UpdateSession {
         return $success;
     }
 
-    /** @param int $uindex
-     * @param 0|1|2 $type
-     * @param 0|1 $reason
-     * @param int $bound
-     * @return ?bool
-     * @deprecated */
-    static function usec_query_uindex(Qrequest $qreq, $uindex, $type, $reason, $bound = 0) {
-        return false;
-    }
-
     /** @param string $email
      * @param 0|1|2 $type
      * @param 0|1 $reason
