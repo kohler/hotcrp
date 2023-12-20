@@ -1,24 +1,86 @@
 <?php
 // u_security.php -- HotCRP Profile > Security
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
 
 class Security_UserInfo {
+    /** @var UserStatus
+     * @readonly */
+    public $us;
+    /** @var bool */
+    private $_approved = false;
+    /** @var bool */
+    private $_complained = false;
+    /** @var ?list<MessageItem> */
+    private $_approval_errors;
     /** @var ?array{string,string} */
     private $_req_passwords;
 
-    static function parse_qreq(UserStatus $us) {
-        if ($us->allow_security()) {
-            if (trim($us->qreq->oldpassword ?? "") !== "") {
-                $us->has_req_security();
+    function __construct(UserStatus $us) {
+        $this->us = $us;
+        $this->_approved = $us->allow_security()
+            && UpdateSession::usec_query($us->qreq, 0, 1, Conf::$now - 300);
+    }
+
+    function parse_qreq(UserStatus $us) {
+        if (!$us->allow_security()) {
+            return;
+        }
+        $pw = trim($us->qreq->oldpassword ?? "");
+        if ($pw === "") {
+            if (!$this->_approved) {
+                $this->_approval_errors[] = MessageItem::error_at("oldpassword", "<0>Current password required");
             }
-            $us->request_group("security");
+        } else {
+            $info = $us->viewer->check_password_info($pw);
+            $this->_approved = $info["ok"];
+            UpdateSession::usec_add($us->qreq, 0, 1, $this->_approved);
+            if (!$this->_approved) {
+                $this->_approval_errors[] = MessageItem::error_at("oldpassword", "<0>Incorrect current password");
+            }
+        }
+        $us->request_group("security");
+    }
+
+    /** @return bool */
+    function allow_security_changes() {
+        if (!$this->_approved && !$this->_complained) {
+            $this->_approval_errors[] = new MessageItem("oldpassword", "<0>Changes to security settings were ignored.", MessageSet::INFORM);
+            $this->us->append_list($this->_approval_errors);
+        }
+        return $this->_approved;
+    }
+
+    function parse_qreq_new_password(UserStatus $us) {
+        $pw = trim($us->qreq->upassword ?? "");
+        $pw2 = trim($us->qreq->upassword2 ?? "");
+        $this->_req_passwords = [$us->qreq->upassword ?? "", $us->qreq->upassword2 ?? ""];
+        if (($pw === "" && $pw2 === "")
+            || !$this->allow_security_changes()
+            || !$us->viewer->can_change_password($us->user)) {
+            return;
+        }
+        if ($pw !== $pw2) {
+            $us->error_at("password", "<0>Passwords do not match");
+            $us->error_at("upassword2");
+        } else if (strlen($pw) <= 5) {
+            $us->error_at("password", "<0>Password too short");
+        } else if (!Contact::valid_password($pw)) {
+            $us->error_at("password", "<0>Invalid new password");
+        } else {
+            $us->jval->new_password = $pw;
         }
     }
 
-
-    static function print_current_password(UserStatus $us) {
+    function print_current_password(UserStatus $us) {
+        if ($this->_approved) {
+            return;
+        }
         $original_ignore_msgs = $us->swap_ignore_messages(false);
-        $us->msg_at("oldpassword", "<0>Enter your current password to make changes to security settings", MessageSet::WARNING_NOTE);
+        if ($us->is_auth_self()) {
+            $us->msg_at("oldpassword", "<0>Enter your current password to make changes to security settings", MessageSet::WARNING_NOTE);
+        } else {
+            $us->msg_at("oldpassword", "<0>Enter your current password to make changes to other users’ security settings", MessageSet::WARNING_NOTE);
+        }
         $us->swap_ignore_messages($original_ignore_msgs);
         echo '<div class="', $us->control_class("oldpassword", "f-i w-text"), '">',
             '<label for="oldpassword">',
@@ -30,52 +92,31 @@ class Security_UserInfo {
             '</div>';
     }
 
-
     function print_new_password(UserStatus $us) {
-        if ($us->viewer->can_change_password($us->user)) {
-            $us->print_start_section("Change password");
-            $pws = $this->_req_passwords ?? ["", ""];
-            $open = $pws[0] !== "" || $pws[1] !== ""
-                || $us->has_problem_at("upassword") || $us->has_problem_at("upassword2");
-            echo '<div class="has-fold foldc ui-fold js-fold-focus">';
-            if (!$open) {
-                echo '<div class="fn">',
-                    Ht::button("Change password", ["class" => "ui js-foldup need-profile-current-password", "disabled" => true]),
-                    '</div><div class="fx">';
-            }
-            echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
-                '<label for="upassword">New password</label>',
-                $us->feedback_html_at("password"),
-                $us->feedback_html_at("upassword"),
-                Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password want-focus"]),
-                '</div>',
-                '<div class="', $us->control_class("upassword2", "f-i w-text"), '">',
-                '<label for="upassword2">Repeat new password</label>',
-                $us->feedback_html_at("upassword2"),
-                Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => true, "class" => "need-profile-current-password"]),
-                '</div>', $open ? '' : '</div>', '</div>';
+        if (!$us->viewer->can_change_password($us->user)) {
+            return;
         }
-    }
-
-    function parse_qreq_new_password(UserStatus $us) {
-        $pw = trim($us->qreq->upassword ?? "");
-        $pw2 = trim($us->qreq->upassword2 ?? "");
-        $this->_req_passwords = [$us->qreq->upassword ?? "", $us->qreq->upassword2 ?? ""];
-        if ($pw === "" && $pw2 === "") {
-            // do nothing
-        } else if ($us->has_req_security()
-                   && $us->viewer->can_change_password($us->user)) {
-            if ($pw !== $pw2) {
-                $us->error_at("password", "<0>Passwords do not match");
-                $us->error_at("upassword2");
-            } else if (strlen($pw) <= 5) {
-                $us->error_at("password", "<0>Password too short");
-            } else if (!Contact::valid_password($pw)) {
-                $us->error_at("password", "<0>Invalid new password");
-            } else {
-                $us->jval->new_password = $pw;
-            }
+        $us->print_start_section("Change password");
+        $pws = $this->_req_passwords ?? ["", ""];
+        $open = $pws[0] !== "" || $pws[1] !== ""
+            || $us->has_problem_at("upassword") || $us->has_problem_at("upassword2");
+        echo '<div class="has-fold foldc ui-fold js-fold-focus">';
+        if (!$open) {
+            echo '<div class="fn">',
+                Ht::button("Change password", ["class" => "ui js-foldup need-profile-current-password", "disabled" => !$this->_approved]),
+                '</div><div class="fx">';
         }
+        echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
+            '<label for="upassword">New password</label>',
+            $us->feedback_html_at("password"),
+            $us->feedback_html_at("upassword"),
+            Ht::password("upassword", $pws[0], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => !$this->_approved, "class" => "need-profile-current-password want-focus"]),
+            '</div>',
+            '<div class="', $us->control_class("upassword2", "f-i w-text"), '">',
+            '<label for="upassword2">Repeat new password</label>',
+            $us->feedback_html_at("upassword2"),
+            Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => !$this->_approved, "class" => "need-profile-current-password"]),
+            '</div>', $open ? '' : '</div>', '</div>';
     }
 
     static function save_new_password(UserStatus $us) {

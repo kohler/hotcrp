@@ -236,7 +236,8 @@ class OAuth_Page {
         } else {
             $user = $info["user"];
             $this->conf->feedback_msg(new MessageItem(null, "<0>Signed in", MessageSet::SUCCESS));
-            LoginHelper::change_session_user($this->qreq, $user->email, Conf::$now);
+            $uindex = UpdateSession::user_change($this->qreq, $user->email, true);
+            UpdateSession::usec_add_uindex($this->qreq, $uindex, 1, 0, true);
             throw new Redirection(hoturl_add_raw($tokdata->site_uri, "i=" . urlencode($user->email)));
         }
     }

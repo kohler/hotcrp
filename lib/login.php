@@ -148,7 +148,10 @@ class LoginHelper {
 
         // store authentication
         $qreq->qsession()->open_new_sid();
-        self::change_session_user($qreq, $xuser->email, Conf::$now);
+        $uindex = UpdateSession::user_change($qreq, $xuser->email, true);
+        foreach ($info["usec"] ?? [] as $type) {
+            UpdateSession::usec_add_uindex($qreq, $uindex, $type, 0, true);
+        }
 
         // activate
         $user = $xuser->activate($qreq, false);
@@ -174,42 +177,10 @@ class LoginHelper {
 
     /** @param Qrequest $qreq
      * @param string $email
-     * @param int $instr */
+     * @param int $instr
+     * @deprecated */
     static function change_session_user($qreq, $email, $instr) {
-        $us = Contact::session_users($qreq);
-        $empty = null;
-        $i = 0;
-        while ($i !== count($us)) {
-            if ($us[$i] === "") {
-                $empty = $empty ?? $i;
-            } else if (strcasecmp($us[$i], $email) === 0) {
-                break;
-            }
-            ++$i;
-        }
-        if ($instr > 0) {
-            $found = $i !== count($us) ? $i : ($empty ?? $i);
-            $us[$found] = $email;
-        } else if ($i !== count($us)) {
-            $us[$i] = "";
-        }
-        while (!empty($us) && $us[count($us) - 1] === "") {
-            array_pop($us);
-        }
-        if (count($us) > 1) {
-            $qreq->set_gsession("us", $us);
-        } else {
-            $qreq->unset_gsession("us");
-        }
-        if (empty($us)) {
-            $qreq->unset_gsession("u");
-        } else {
-            $i = 0;
-            while ($us[$i] === "") {
-                ++$i;
-            }
-            $qreq->set_gsession("u", $us[$i]);
-        }
+        UpdateSession::user_change($qreq, $email, $instr > 0);
     }
 
     /** @return bool */
