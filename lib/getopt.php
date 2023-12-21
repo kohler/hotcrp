@@ -71,7 +71,7 @@ class Getopt {
                 continue;
             }
             // Format of a `long` string:
-            // "option[,option,option] ['{'ARGTYPE'}'] ['='ARGNAME] HELPSTRING"
+            // "option[,option,option] ['{'ARGTYPE'}'] ['='ARGNAME] [!SUBCOMMAND] HELPSTRING"
             // Each `option` can be followed by:
             // * `:` - single mandatory argument
             // * `::` - single optional argument
@@ -207,6 +207,28 @@ class Getopt {
         return "{$opt}{$sep}{$help}\n";
     }
 
+    /** @param string $matcher
+     * @param string $subtype
+     * @return bool */
+    static function subtype_matches($matcher, $subtype) {
+        $p = 0;
+        $len = strlen($matcher);
+        while ($p < $len) {
+            if (($comma = strpos($matcher, ",", $p)) === false) {
+                $comma = $len;
+            }
+            if (($negated = $p < $comma && $matcher[$p] === "!")) {
+                ++$p;
+            }
+            $word = substr($matcher, $p, $comma - $p);
+            if (fnmatch($word, $subtype) === !$negated) {
+                return true;
+            }
+            $p = $comma + 1;
+        }
+        return false;
+    }
+
     /** @param null|string|array<string,mixed> $arg
      * @return string */
     function help($arg = null) {
@@ -214,9 +236,14 @@ class Getopt {
             $subtype = $arg;
             $arg = null;
         } else if (is_array($arg)) {
-            $subtype = $arg[$this->helpopt] ?? null;
+            $subtype = $arg[$this->helpopt] ?? false;
         } else {
-            $subtype = null;
+            $subtype = false;
+        }
+        if (($subtype === false || $subtype === "")
+            && !empty($this->subcommand)
+            && isset($arg["_subcommand"])) {
+            $subtype = $arg["_subcommand"];
         }
         $s = [];
         if ($this->description) {
@@ -227,7 +254,8 @@ class Getopt {
                 $s[] = "\n";
             }
         }
-        if (!empty($this->subcommand)) {
+        if (!empty($this->subcommand)
+            && !isset($arg["_subcommand"])) {
             $s[] = "Subcommands:\n";
             foreach ($this->subcommand as $sc) {
                 if (($space = strpos($sc, " ")) !== false) {
@@ -240,7 +268,10 @@ class Getopt {
                     $comma = $space;
                 }
                 $on = substr($sc, 0, $comma);
-                $s[] = self::format_help_line("  {$on}", ltrim(substr($sc, $space)));
+                $desc = ltrim(substr($sc, $space));
+                if ($desc !== "!") {
+                    $s[] = self::format_help_line("  {$on}", $desc);
+                }
             }
             $s[] = "\n";
         }
@@ -262,17 +293,18 @@ class Getopt {
             } else {
                 $argname = "ARG";
             }
-            if ($help === "!"
-                || ($subtype && !str_starts_with($help, "!{$subtype}"))
-                || (!$subtype && str_starts_with($help, "!"))) {
+            if ($help === "!") {
                 continue;
-            }
-            if ($subtype) {
-                $help = substr($help, strlen($subtype) + 1);
-                if ($help !== "" && !str_starts_with($help, " ")) {
+            } else if (str_starts_with($help, "!")) {
+                if (!$subtype
+                    || ($space = strpos($help, " ")) === false
+                    || !self::subtype_matches(substr($help, 1, $space - 1), $subtype)) {
                     continue;
                 }
-                $help = ltrim($help);
+                $help = ltrim(substr($help, $space + 1));
+                $prio = 0;
+            } else {
+                $prio = 1;
             }
             if (!isset($od[$maint])) {
                 if ($po->arg === self::ARG || $po->arg === self::MARG) {
@@ -284,7 +316,7 @@ class Getopt {
                 } else {
                     $arg = "";
                 }
-                $od[$maint] = [null, null, $arg, $help];
+                $od[$maint] = [null, null, $arg, $help, $prio];
             }
             if ($help !== "" && $od[$maint][3] === "") {
                 $od[$maint][3] = $help;
@@ -295,21 +327,24 @@ class Getopt {
                 $od[$maint][1] = "--{$t}";
             }
         }
-        if (!empty($od)) {
-            $s[] = $subtype ? "{$subtype} options:\n" : "Options:\n";
-            foreach ($od as $tx) {
-                '@phan-var array{?string,?string,string,string} $tx';
-                if ($tx[0] !== null && $tx[1] !== null) {
-                    $oax = "  {$tx[0]}, {$tx[1]}{$tx[2]}";
-                } else {
-                    $oa = $tx[0] ?? $tx[1];
-                    $oax = "  {$oa}{$tx[2]}";
-                }
-                $s[] = self::format_help_line($oax, $tx[3]);
+        $sbp = [[], []];
+        foreach ($od as $tx) {
+            '@phan-var array{?string,?string,string,string,0|1} $tx';
+            if ($tx[0] !== null && $tx[1] !== null) {
+                $oax = "  {$tx[0]}, {$tx[1]}{$tx[2]}";
+            } else {
+                $oa = $tx[0] ?? $tx[1];
+                $oax = "  {$oa}{$tx[2]}";
             }
+            $sbp[$tx[4]][] = self::format_help_line($oax, $tx[3]);
+        }
+        foreach ($sbp as $prio => $sl) {
+            if (empty($sl)) {
+                continue;
+            }
+            $s[] = $prio ? ($subtype ? "Global options:\n" : "Options:\n") : "{$subtype} options:\n";
+            array_push($s, ...$sl);
             $s[] = "\n";
-        } else {
-            $s[] = "There are no {$subtype} options.\n\n";
         }
         if ($this->helpcallback
             && ($t = call_user_func($this->helpcallback, $arg, $this) ?? "") !== "") {
