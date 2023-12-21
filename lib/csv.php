@@ -1137,7 +1137,7 @@ class CsvGenerator {
     function export_headers() {
         assert(($this->flags & self::FLAG_HTTP_HEADERS) === 0);
         $this->flags |= self::FLAG_HTTP_HEADERS;
-        $inline = $this->inline ?? Mimetype::disposition_inline($this->is_csv() ? "text/csv" : "text/plain");
+        $inline = $this->inline ?? !$this->is_csv();
         $filename = $this->filename;
         if (!$filename) {
             $filename = "data" . $this->extension();
