@@ -220,8 +220,8 @@ class Contact implements JsonSerializable {
     const CFLAG_GDISABLED = 0x10;
     const CFLAG_UNCONFIRMED = 0x20;
 
-    const CFLAG_DISABLEMENT = 0x1F;
-    const CFLAG_DBMASK = ~0xC;
+    const CFMASK_DISABLEMENT = 0x1F;
+    const CFMASK_DB = ~0xC;
 
     const PROP_LOCAL = 0x01;
     const PROP_CDB = 0x02;
@@ -345,7 +345,7 @@ class Contact implements JsonSerializable {
         $u->orcid = trim($args["orcid"] ?? "");
         $u->cflags = ($args["disablement"] ?? 0) | self::CFLAG_UNCONFIRMED;
         /** @phan-suppress-next-line PhanDeprecatedProperty */
-        $u->disabled = $u->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK;
+        $u->disabled = $u->cflags & self::CFMASK_DISABLEMENT & self::CFMASK_DB;
         $u->set_roles_properties();
         return $u;
     }
@@ -980,12 +980,12 @@ class Contact implements JsonSerializable {
             $cdbux->set_prop("passwordTime", $this->passwordTime);
             $cdbux->set_prop("passwordUseTime", $this->passwordUseTime);
         }
-        if (($this->cflags & self::CFLAG_DISABLEMENT) === 0) {
+        if (($this->cflags & self::CFMASK_DISABLEMENT) === 0) {
             $cdbux->set_prop("cflags", $cdbux->cflags & ~Contact::CFLAG_PLACEHOLDER);
-            $cdbux->set_prop("disabled", $cdbux->cflags & Contact::CFLAG_DISABLEMENT & Contact::CFLAG_DBMASK);
+            $cdbux->set_prop("disabled", $cdbux->cflags & Contact::CFMASK_DISABLEMENT & Contact::CFMASK_DB);
         } else if (!$cdbur) {
             $cdbux->set_prop("cflags", $cdbux->cflags | Contact::CFLAG_PLACEHOLDER);
-            $cdbux->set_prop("disabled", $cdbux->cflags & Contact::CFLAG_DISABLEMENT & Contact::CFLAG_DBMASK);
+            $cdbux->set_prop("disabled", $cdbux->cflags & Contact::CFMASK_DISABLEMENT & Contact::CFMASK_DB);
         }
         if (($this->cflags & self::CFLAG_UNCONFIRMED) === 0) {
             $cdbux->set_prop("cflags", $cdbux->cflags & ~Contact::CFLAG_UNCONFIRMED);
@@ -1032,12 +1032,12 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function is_disabled() {
-        return ($this->cflags & self::CFLAG_DISABLEMENT & ~self::CFLAG_PLACEHOLDER) !== 0;
+        return ($this->cflags & self::CFMASK_DISABLEMENT & ~self::CFLAG_PLACEHOLDER) !== 0;
     }
 
     /** @return bool */
     function is_dormant() {
-        return ($this->cflags & self::CFLAG_DISABLEMENT) !== 0;
+        return ($this->cflags & self::CFMASK_DISABLEMENT) !== 0;
     }
 
     /** @return bool */
@@ -1053,12 +1053,12 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function contactdb_disabled() {
         $cdbu = $this->cdb_user();
-        return $cdbu && ($cdbu->cflags & self::CFLAG_DISABLEMENT & ~self::CFLAG_PLACEHOLDER) !== 0;
+        return $cdbu && ($cdbu->cflags & self::CFMASK_DISABLEMENT & ~self::CFLAG_PLACEHOLDER) !== 0;
     }
 
     /** @return int */
     function disabled_flags() {
-        return $this->cflags & self::CFLAG_DISABLEMENT;
+        return $this->cflags & self::CFMASK_DISABLEMENT;
     }
 
     /** @return bool */
@@ -1069,7 +1069,7 @@ class Contact implements JsonSerializable {
     /** @param bool $self_requested
      * @return bool */
     function can_receive_mail($self_requested = false) {
-        $disabled = self::CFLAG_DISABLEMENT;
+        $disabled = self::CFMASK_DISABLEMENT;
         if ($self_requested) {
             $disabled &= ~self::CFLAG_PLACEHOLDER;
         } else if (($this->cflags & self::CFLAG_UNCONFIRMED) !== 0
@@ -1764,7 +1764,7 @@ class Contact implements JsonSerializable {
         if ($prop === "roles") {
             return $value & ($this->cdb_confid === 0 ? self::ROLE_DBMASK : self::ROLE_CDBMASK);
         } else if ($prop === "cflags") {
-            return $value & self::CFLAG_DBMASK;
+            return $value & self::CFMASK_DB;
         } else {
             assert(false);
             return $value;
@@ -1922,7 +1922,7 @@ class Contact implements JsonSerializable {
         $changed = false;
         if (($this->cflags & self::CFLAG_PLACEHOLDER) !== 0) {
             $this->set_prop("cflags", $this->cflags & ~self::CFLAG_PLACEHOLDER);
-            $this->set_prop("disabled", $this->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK);
+            $this->set_prop("disabled", $this->cflags & self::CFMASK_DISABLEMENT & self::CFMASK_DB);
             $changed = true;
         }
         if (($this->cflags & self::CFLAG_UNCONFIRMED) !== 0 && $confirm) {
@@ -2068,26 +2068,26 @@ class Contact implements JsonSerializable {
 
         // disablement import is special
         // source is disabled local user, creating cdb user: cdb is placeholder
-        $sdflags = $src->cflags & self::CFLAG_DISABLEMENT;
+        $sdflags = $src->cflags & self::CFMASK_DISABLEMENT;
         if ($sdflags !== 0
             && $this->cdb_confid !== 0
             && $this->contactDbId === 0) {
             $this->set_prop("cflags", $this->cflags | self::CFLAG_PLACEHOLDER);
-            $this->set_prop("disabled", $this->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK);
+            $this->set_prop("disabled", $this->cflags & self::CFMASK_DISABLEMENT & self::CFMASK_DB);
         }
         // source is non-disabled local user: this is not placeholder
         if ($src->cdb_confid === 0
             && $sdflags === 0
             && ($this->cflags & self::CFLAG_PLACEHOLDER) !== 0) {
             $this->set_prop("cflags", $this->cflags & ~self::CFLAG_PLACEHOLDER);
-            $this->set_prop("disabled", $this->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK);
+            $this->set_prop("disabled", $this->cflags & self::CFMASK_DISABLEMENT & self::CFMASK_DB);
         }
         // source is globally disabled: this local user is disabled
         if (($sdflags & self::CFLAG_GDISABLED) !== 0
             && $src->cdb_confid !== 0
             && $this->cdb_confid === 0) {
             $this->set_prop("cflags", $this->cflags | self::CFLAG_GDISABLED);
-            $this->set_prop("disabled", $this->cflags & self::CFLAG_DISABLEMENT & self::CFLAG_DBMASK);
+            $this->set_prop("disabled", $this->cflags & self::CFMASK_DISABLEMENT & self::CFMASK_DB);
         }
 
         // unconfirmed import is special
@@ -2186,7 +2186,7 @@ class Contact implements JsonSerializable {
             // log creation (except for placeholder accounts)
             if (($this->cflags & self::CFLAG_PLACEHOLDER) === 0) {
                 $msg = "Account created";
-                if (($this->cflags & self::CFLAG_DISABLEMENT & ~self::CFLAG_ROLEDISABLED) !== 0) {
+                if (($this->cflags & self::CFMASK_DISABLEMENT & ~self::CFLAG_ROLEDISABLED) !== 0) {
                     $msg .= ", disabled";
                 }
                 $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, $msg);

@@ -447,17 +447,17 @@ class ConfInvariants {
             }
 
             // disabled has only expected bits
-            if (($u->disabled & Contact::CFLAG_DISABLEMENT & ~Contact::CFLAG_DBMASK) !== 0) {
+            if (($u->disabled & Contact::CFMASK_DISABLEMENT & ~Contact::CFMASK_DB) !== 0) {
                 $this->invariant_error("user_disabled", sprintf("user {$u->email}/{$u->contactId} bad disabled %x", $u->disabled));
             }
 
             // cflags has only expected bits
-            if (($u->cflags & ~Contact::CFLAG_DBMASK) !== 0) {
+            if (($u->cflags & ~Contact::CFMASK_DB) !== 0) {
                 $this->invariant_error("user_cflags", sprintf("user {$u->email}/{$u->contactId} bad cflags %x", $u->cflags));
             }
 
             // cflags reflects disabled
-            if ($u->disabled !== ($u->cflags & Contact::CFLAG_DISABLEMENT)) {
+            if ($u->disabled !== ($u->cflags & Contact::CFMASK_DISABLEMENT)) {
                 $this->invariant_error("user_cflags_disabled", sprintf("user {$u->email}/{$u->contactId} disabled %x unreflected in cflags %x", $u->disabled, $u->cflags));
             }
 
