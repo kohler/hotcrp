@@ -5644,8 +5644,8 @@ class Contact implements JsonSerializable {
     private function unassigned_review_token() {
         while (true) {
             $token = mt_rand(1, 2000000000);
-            if (!$this->conf->fetch_ivalue("select reviewId from PaperReview where reviewToken=$token")) {
-                return ", reviewToken=$token";
+            if (!$this->conf->fetch_ivalue("select reviewId from PaperReview where reviewToken={$token}")) {
+                return ", reviewToken={$token}";
             }
         }
     }
