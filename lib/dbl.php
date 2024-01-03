@@ -152,41 +152,41 @@ class Dbl_ConnectionParams {
 
     /** @return ?\mysqli */
     function connect() {
-	assert(($this->name ?? "") !== "");
+        assert(($this->name ?? "") !== "");
 
-	$dblink = new mysqli();
-	$client_flags = 0;
+        $dblink = new mysqli();
+        $client_flags = 0;
 
-	if ($this->ssl) {
-	    $client_flags += MYSQLI_CLIENT_SSL;
-	    if ($this->ssl_verify) {
+        if ($this->ssl) {
+            $client_flags += MYSQLI_CLIENT_SSL;
+            if ($this->ssl_verify) {
                 defined('MYSQLI_OPT_SSL_VERIFY_SERVER_CERT') && $dblink->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
-	    } else {
+            } else {
                 defined('MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT') && $client_flags += MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT;
             }
             $dblink->ssl_set($this->ssl_key, $this->ssl_cert, $this->ssl_ca, $this->ssl_capath, $this->ssl_cipher);
-	}
+        }
 
-	$dblink->real_connect(
-	    $this->host,
-	    $this->user,
-	    $this->password,
-	    $this->name,
-	    $this->port,
-	    $this->socket,
-	    $client_flags
-	);
+        $dblink->real_connect(
+            $this->host,
+            $this->user,
+            $this->password,
+            $this->name,
+            $this->port,
+            $this->socket,
+            $client_flags
+        );
 
         if ($dblink->connect_errno || mysqli_connect_errno()) {
             return null;
-	}
+        }
 
         // We send binary strings to MySQL, so we don't want warnings
         // about non-UTF-8 data
         $dblink->set_charset("binary");
         // The necessity of the following line is explosively terrible
         // (the default is 1024/!?))(U#*@$%&!U
-	$dblink->query("set group_concat_max_len=4294967295");
+        $dblink->query("set group_concat_max_len=4294967295");
 
         return $dblink;
     }
@@ -286,30 +286,29 @@ class Dbl {
         }
         $cp->host = $cp->host ?? ini_get("mysqli.default_host");
         $cp->user = $cp->user ?? ini_get("mysqli.default_user");
-	$cp->password = $cp->password ?? ini_get("mysqli.default_pw");
+        $cp->password = $cp->password ?? ini_get("mysqli.default_pw");
 
-	if (isset($opt["dbSsl"]) && is_bool($opt["dbSsl"]) && $opt["dbSsl"]) {
-	    $cp->ssl = true;
-            
-	    if (isset($opt["dbSslKey"]) && is_string($opt["dbSslKey"])) {
+        if (($opt["dbSsl"] ?? false) === true) {
+            $cp->ssl = true;
+            if (isset($opt["dbSslKey"]) && is_string($opt["dbSslKey"])) {
                 $cp->ssl_key = $opt["dbSslKey"];
-	    }
+            }
             if (isset($opt["dbSslCert"]) && is_string($opt["dbSslCert"])) {
                 $cp->ssl_cert = $opt["dbSslCert"];
-	    }
+            }
             if (isset($opt["dbSslCa"]) && is_string($opt["dbSslCa"])) {
                 $cp->ssl_ca = $opt["dbSslCa"];
-	    }
+            }
             if (isset($opt["dbSslCapath"]) && is_string($opt["dbSslCapath"])) {
                 $cp->ssl_capath = $opt["dbSslCapath"];
-	    }
+            }
             if (isset($opt["dbSslCipher"]) && is_string($opt["dbSslCipher"])) {
                 $cp->ssl_cipher = $opt["dbSslCipher"];
-	    }
+            }
             if (isset($opt["dbSslVerify"]) && is_bool($opt["dbSslVerify"])) {
                 $cp->ssl_verify = $opt["dbSslVerify"];
-	    }
-	}
+            }
+        }
 
         return $cp;
     }
