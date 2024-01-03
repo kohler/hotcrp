@@ -685,7 +685,7 @@ class CommentInfo {
         if ($viewer->can_view_comment_contents($this->prow, $this)) {
             $cj->text = $this->contents($viewer, !$idable);
             if ($this->has_attachments()) {
-                $cj->docs = $this->attachments_json($cj->editable);
+                $cj->docs = $this->attachments_json($cj->editable ?? false);
             }
         } else {
             $cj->text = false;
