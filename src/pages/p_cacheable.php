@@ -1,6 +1,6 @@
 <?php
 // pages/p_cacheable.php -- HotCRP cacheability helper
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Cacheable_Page {
     static function cacheable_headers() {
@@ -9,7 +9,7 @@ class Cacheable_Page {
     }
 
     static function skip_content_length_header() {
-        // see also Filer::skip_content_length_header
+        // see also Downloader::skip_content_length_header
         return function_exists("zlib_get_coding_type") && zlib_get_coding_type() !== false;
     }
 

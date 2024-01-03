@@ -441,7 +441,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 $sz += fwrite($out, $zi->compressed);
             } else if (($f = $doc->available_content_file())) {
                 $filesize = $doc->size();
-                $sz += Filer::readfile_subrange($out, 0, $filesize, 0, $f, $filesize);
+                $sz += Downloader::readfile_subrange($out, 0, $filesize, 0, $f, $filesize);
             } else {
                 $sz += fwrite($out, $doc->content());
             }
@@ -500,13 +500,13 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             $zi = $this->_zipi[$d0];
             $doc = $this->docs[$d0];
             $p0 = $zi->local_offset;
-            $p0 += Filer::print_subrange($out, $r0, $r1, $p0, $zi->localh);
+            $p0 += Downloader::print_subrange($out, $r0, $r1, $p0, $zi->localh);
             if ($zi->compressed !== null) {
-                $p0 += Filer::print_subrange($out, $r0, $r1, $p0, $zi->compressed);
+                $p0 += Downloader::print_subrange($out, $r0, $r1, $p0, $zi->compressed);
             } else if (($f = $doc->available_content_file())) {
-                $p0 += Filer::readfile_subrange($out, $r0, $r1, $p0, $f, $doc->size());
+                $p0 += Downloader::readfile_subrange($out, $r0, $r1, $p0, $f, $doc->size());
             } else {
-                $p0 += Filer::print_subrange($out, $r0, $r1, $p0, $doc->content());
+                $p0 += Downloader::print_subrange($out, $r0, $r1, $p0, $doc->content());
             }
             if ($p0 < min($r1, $zi->local_end_offset())) {
                 throw new Exception("Failure writing {$this->ufn[$d0]}, wrote " . ($p0 - $zi->local_offset) . ", expected " . (min($r1, $zi->local_end_offset()) - $zi->local_offset));
@@ -515,7 +515,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         if ($d0 === count($this->docs)) {
             foreach ($this->_zipi as $zi) {
-                Filer::print_subrange($out, $r0, $r1, $zi->central_offset, $zi->centralh);
+                Downloader::print_subrange($out, $r0, $r1, $zi->central_offset, $zi->centralh);
             }
         }
     }

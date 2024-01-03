@@ -1,6 +1,6 @@
 <?php
 // csv.php -- HotCRP CSV parsing functions
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
     /** @var list<string> */
@@ -939,7 +939,7 @@ class CsvGenerator {
             if (($this->flags & self::FLAG_COMPLETING) === 0) {
                 // signal to NGINX that buffering is a waste of time
                 header("X-Accel-Buffering: no");
-            } else if (!Filer::skip_content_length_header()) {
+            } else if (!Downloader::skip_content_length_header()) {
                 header("Content-Length: " . (strlen($this->headerline) + $this->lines_length));
             }
         }

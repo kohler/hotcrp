@@ -144,6 +144,7 @@ lib/dbhelper.sh
 lib/dbl.php
 lib/diff_match_patch.php
 lib/dkimsigner.php
+lib/downloader.php
 lib/filer.php
 lib/fmt.php
 lib/ftext.php
