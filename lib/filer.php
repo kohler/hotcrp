@@ -297,7 +297,7 @@ class Filer {
         }
         if (!is_dir($container)) {
             while (str_ends_with($fdir, "/")) {
-                $container = substr($fdir, 0, strlen($fdir) - 1);
+                $fdir = substr($fdir, 0, strlen($fdir) - 1);
             }
             if (strlen($container) < strlen($fdir)
                 || !($parent = self::_make_fpath_parents($fdir, $container))
