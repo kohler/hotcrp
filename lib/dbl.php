@@ -159,10 +159,10 @@ class Dbl_ConnectionParams {
 
         if ($this->ssl) {
             $client_flags += MYSQLI_CLIENT_SSL;
-            if ($this->ssl_verify) {
-                defined('MYSQLI_OPT_SSL_VERIFY_SERVER_CERT') && $dblink->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
-            } else {
-                defined('MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT') && $client_flags += MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT;
+            if ($this->ssl_verify && defined("MYSQLI_OPT_SSL_VERIFY_SERVER_CERT")) {
+                $dblink->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
+            } else if (!$this->ssl_verify && defined("MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT")) {
+                $client_flags += MYSQLI_CLIENT_SSL_DONT_VERIFY_SERVER_CERT;
             }
             $dblink->ssl_set($this->ssl_key, $this->ssl_cert, $this->ssl_ca, $this->ssl_capath, $this->ssl_cipher);
         }
