@@ -325,6 +325,10 @@ class PermissionProblem extends Exception
             && $format === 5) {
             $ms[] = $this->conf->_("<5><a href=\"{searchurl}\">List the {submissions} you can view</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", "q="), 0));
         }
+        if (!empty($ms)
+            && ($this->_a["confirmOverride"] ?? false)) {
+            $ms[] = $this->conf->_("<0>Are you sure you want to override the deadline?");
+        }
         $tt = "";
         foreach ($ms as $m) {
             $t = Ftext::as($format, $m);

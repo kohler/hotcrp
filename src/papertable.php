@@ -2080,9 +2080,8 @@ class PaperTable {
             if (!$whyNot) {
                 $buttons[] = [Ht::submit("update", $save_name, ["class" => "btn-primary btn-savepaper uic js-mark-submit"]), ""];
             } else if ($this->admin) {
-                $revWhyNot = $whyNot->filter(["deadline", "frozen"]);
-                $x = $revWhyNot->unparse_html() . " Are you sure you want to override the deadline?";
-                $buttons[] = [Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $x, "data-override-submit" => "update"]), "(admin only)"];
+                $revWhyNot = $whyNot->filter(["deadline", "frozen"])->set("confirmOverride", true);
+                $buttons[] = [Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $revWhyNot->unparse_html(), "data-override-submit" => "update"]), "(admin only)"];
             } else if (isset($whyNot["frozen"])
                        && $auuser->can_finalize_paper($this->prow)) {
                 $buttons[] = Ht::submit("update", $save_name, ["class" => "btn-savepaper uic js-mark-submit"]);
