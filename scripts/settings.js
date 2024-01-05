@@ -1226,15 +1226,21 @@ function canonical_input_type(it) {
 
 // Return an object `wsel` representing the current Selection, specialized for
 // element `el`.
-// * Move selection endpoints within `el` down into Text nodes if possible.
-// * `nsel.transfer_text(dst, src, src_min_offset, delta)` shifts pending
-//   selection endpoints from `src` to `dst`, depending on offset. Useful when
-//   splitting or combining Text nodes.
-// * `nsel.trim_newline(el)` trims trailing newlines from `el`, changing the
-//   pending selection as appropriate.
-// * `nsel.refresh()` installs the pending selection.
+//
+// When called, this shifts selection endpoints into `el` Text nodes when
+// possible.
+//
+// Methods on `wsel` allow callers to modify the DOM within `el` while tracking
+// what should happen to the selection in response. After completing their
+// DOM modifications, the caller should call `wsel.refresh()` to install
+// the modified selection.
+// * `wsel.splitTextNode(ch, pos)` is like `ch.splitTextNode(pos)`.
+// * `wsel.mergeTextNodeRight(ch)` is like `ch.appendData(ch.nextSibling.data);
+//   ch.nextSibling.remove()`.
+// * `wsel.removeNode(n)` is like `n.remove()`.
+// * `wsel.trimNewlines(ch)` trims trailing newlines from `ch`.
 function window_selection_inside(el) {
-    var sel = window.getSelection(),
+    let sel = window.getSelection(),
         selm = [el.contains(sel.anchorNode), el.contains(sel.focusNode)],
         selmx = selm[0] || selm[1],
         selx = [sel.anchorNode, sel.anchorOffset, sel.focusNode, sel.focusOffset];
@@ -1261,19 +1267,50 @@ function window_selection_inside(el) {
         }
         return changed;
     }
-    function refresh() {
-        selmx && sel.setBaseAndExtent(selx[0], selx[1], selx[2], selx[3]);
-    }
-    if (normalize_edge(0) || normalize_edge(2)) {
-        refresh();
-    }
     function transfer_text(dst, src, src_min_offset, offset_delta) {
-        for (var i = selmx ? 0 : 4; i !== 4; i += 2) {
+        for (let i = selmx ? 0 : 4; i !== 4; i += 2) {
             if (selx[i] === src && selx[i + 1] >= src_min_offset) {
                 selx[i] = dst;
                 selx[i + 1] += offset_delta;
             }
         }
+    }
+    function splitTextNode(ch, pos) {
+        const split = ch.splitText(pos);
+        selmx && transfer_text(split, ch, pos, -pos);
+        return split;
+    }
+    function mergeTextNodeRight(ch) {
+        const next = ch.nextSibling;
+        selmx && transfer_text(ch, next, 0, ch.length);
+        ch.appendData(next.data);
+        removeNode(next);
+    }
+    function positionWithinParent(n) {
+        let i = 0, ch = n.parentNode.firstChild;
+        while (ch && ch !== n) {
+            ++i;
+            ch = ch.nextSibling;
+        }
+        return ch ? i : null;
+    }
+    function removeNode(n) {
+        let npos = null;
+        for (let i = selmx ? 0 : 4; i !== 4; i += 2) {
+            if (selx[i] === n.parentNode) {
+                npos === null && (npos = positionWithinParent(n));
+                if (npos !== null && selx[i + 1] > npos) {
+                    --selx[i + 1];
+                }
+            }
+        }
+        n.remove();
+    }
+    function refresh() {
+        selmx && sel.setBaseAndExtent(selx[0], selx[1], selx[2], selx[3]);
+    }
+    if (normalize_edge(0) || normalize_edge(2)) {
+        refresh();
     }
     function render_sel(el, offset) {
         if (!el) {
@@ -1297,16 +1334,18 @@ function window_selection_inside(el) {
     }
     return {
         modified: selmx,
-        transfer_text: transfer_text,
-        trim_newline: function (el) {
-            var i = el.length - 1;
-            while (i >= 0 && el.data[i] === "\n") {
-                el.deleteData(i, 1);
-                transfer_text(el, el, i + 1, -1);
+        splitTextNode: splitTextNode,
+        mergeTextNodeRight: mergeTextNodeRight,
+        removeNode: removeNode,
+        trimNewlines: function (ch) {
+            let i = ch.length - 1;
+            while (i >= 0 && ch.data[i] === "\n") {
+                ch.deleteData(i, 1);
+                transfer_text(ch, ch, i + 1, -1);
                 --i;
             }
         },
-        reset_modified: function (el, offset) {
+        setContainedPositions: function (el, offset) {
             selm[0] && reset(0, el, offset);
             selm[1] && reset(2, el, offset);
         },
@@ -1329,27 +1368,26 @@ function make_content_editable(mainel) {
     // * No trailing newlines within these <div>s.
     // * Blank <div> lines contain <br>.
     function normalizer(firstel, lastel) {
-        var ch, next, fix1, fixfresh, nsel = window_selection_inside(mainel);
+        let ch, next, fix1, fixfresh, nsel = window_selection_inside(mainel);
 
         function append_line() {
-            var line = document.createElement("div");
+            const line = document.createElement("div");
             mainel.insertBefore(line, fix1.nextSibling);
             fix1 = line;
             fixfresh = true;
         }
 
         function fix_div(ch) {
-            var next, nl;
+            let next, nl;
             while (ch) {
                 next = ch.nextSibling;
                 if (ch.nodeType !== 1 && ch.nodeType !== 3) {
                     ch.remove();
                 } else if (ch.nodeType === 3 && (nl = ch.data.indexOf("\n")) !== -1) {
                     if (nl !== ch.length - 1) {
-                        next = ch.splitText(nl + 1);
-                        nsel.transfer_text(next, ch, nl + 1, -nl - 1);
+                        next = nsel.splitTextNode(ch, nl + 1);
                     }
-                    nsel.trim_newline(ch);
+                    nsel.trimNewlines(ch);
                     if (fix1 !== ch.parentElement) {
                         fix1.appendChild(ch);
                     }
@@ -1361,14 +1399,14 @@ function make_content_editable(mainel) {
                     }
                 } else if (is_br(ch)) {
                     if (fix1.firstChild && fix1.firstChild !== ch) {
-                        ch.remove();
+                        nsel.removeNode(ch);
                     } else if (fix1 !== ch.parentElement) {
                         fix1.appendChild(ch);
                     }
                     append_line();
                 } else {
                     fixfresh || append_line();
-                    ch.remove();
+                    nsel.removeNode(ch);
                     fix_div(ch.firstChild);
                     fixfresh || append_line();
                 }
@@ -1377,12 +1415,13 @@ function make_content_editable(mainel) {
         }
 
         ch = firstel = firstel || mainel.firstChild;
+        const prev = firstel ? firstel.previousSibling : null;
         while (ch && ch !== lastel) {
             if (ch.nodeType !== 1
                 || ch.tagName !== "DIV"
                 || ch.hasAttribute("style")) {
-                var line = document.createElement("div"),
-                    line1 = ch === firstel, child1 = true;
+                const line = document.createElement("div");
+                let child1 = true;
                 mainel.insertBefore(line, ch);
                 while (ch && (child1 || is_text_or_inline(ch))) {
                     line.appendChild(ch);
@@ -1390,22 +1429,21 @@ function make_content_editable(mainel) {
                     child1 = false;
                 }
                 if (ch && is_br(ch)) {
-                    line.firstChild ? ch.remove() : line.appendChild(ch);
+                    line.firstChild ? nsel.removeNode(ch) : line.appendChild(ch);
                 }
-                line1 && (firstel = line);
                 ch = line;
             }
             next = ch.nextSibling;
             fix1 = ch;
             fixfresh = false;
             fix_div(ch.firstChild);
-            ch.firstChild || ch.remove();
-            fixfresh && fix1.remove();
+            ch.firstChild || nsel.removeNode(ch);
+            fixfresh && nsel.removeNode(fix1);
             ch = next;
         }
 
         nsel.refresh();
-        return firstel;
+        return prev ? prev.nextSibling : mainel.firstChild;
     }
 
     function length() {
@@ -1764,21 +1802,19 @@ function jsonhl_install(lineel, errors, nsel) {
         if (ch.nodeType !== 3) {
             jsonhl_move_text(lineel, ch, ch.nextSibling);
             sib = ch.nextSibling;
-            ch.remove();
+            nsel.removeNode(ch);
             ch = sib;
         }
         while (ch && (sib = ch.nextSibling) && ch.length < len) {
-            if (sib.nodeType !== 3) {
-                jsonhl_move_text(lineel, sib, sib.nextSibling);
+            if (sib.nodeType === 3) {
+                nsel.mergeTextNodeRight(ch);
             } else {
-                nsel.transfer_text(ch, sib, 0, ch.length);
-                ch.appendData(sib.data);
+                jsonhl_move_text(lineel, sib, sib.nextSibling);
+                nsel.removeNode(sib);
             }
-            sib.remove();
         }
         if (ch && ch.length > len) {
-            sib = ch.splitText(len);
-            nsel.transfer_text(sib, ch, len, -len);
+            sib = nsel.splitTextNode(ch, len);
         }
     }
 
@@ -1814,31 +1850,8 @@ function jsonhl_install(lineel, errors, nsel) {
 
     if (lineel.firstChild === null) {
         lineel.appendChild(document.createElement("br"));
-        nsel.reset_modified(lineel, 0);
+        nsel.setContainedPositions(lineel, 0);
     }
-}
-
-function log_line_summary(lineno, lineel) {
-    var x = [], i = 0, ch,
-        sel = window.getSelection(), sub = lineel.contains(sel.anchorNode);
-    for (ch = lineel.firstChild; ch; ch = ch.nextSibling, ++i) {
-        if (sel.anchorNode === lineel && sel.anchorOffset === i) {
-            x.push("*");
-        }
-        if (ch.nodeType === 3 && sel.anchorNode === ch) {
-            x.push("T".concat(ch.length, "@", sel.anchorOffset));
-        } else if (ch.nodeType === 3) {
-            x.push("T".concat(ch.length));
-        } else if (sub && ch.contains(sel.anchorNode)) {
-            x.push(ch.tagName.concat(ch.childNodes.length, "@", sel.anchorOffset));
-        } else {
-            x.push(ch.tagName.concat(ch.childNodes.length));
-        }
-    }
-    if (sel.anchorNode === lineel && sel.anchorOffset === i) {
-        x.push("*");
-    }
-    console.log("".concat(lineno, ". ", x.join(" ")));
 }
 
 function make_utf16tf(text) {
@@ -2419,29 +2432,27 @@ function json_path_position(s, path) {
 }
 
 function make_json_validate() {
-    var mainel = this, reflectel = null,
+    let mainel = this, reflectel = null,
         maince = make_content_editable(mainel),
         states = [""], lineels = [null],
         redisplay_ln0 = 0, redisplay_el1 = null,
         normalization, rehighlight_queued,
         api_timer = null, api_value = null, msgbub = null,
-        commands = [], commandPos = 0,
+        commands = [], commandPos = 0, command_fix = false,
         undo_time, redo_time;
 
     function rehighlight() {
         try {
-            var i, saw_line1 = false, lineel, k, st, x, cmd, nsel;
-            if (normalization !== 0) {
+            var i, saw_line1 = false, lineel, k, st, x, nsel;
+            if (normalization < 0) {
                 maince.normalize();
-                if (normalization < 0
-                    && mainel.hasAttribute("data-highlight-ranges")) {
+                if (mainel.hasAttribute("data-highlight-ranges")) {
                     jsonhl_transfer_ranges(mainel);
                 }
             }
             i = redisplay_ln0;
             lineel = mainel.childNodes[i];
             st = states[i];
-            cmd = commands[commandPos - 1];
             nsel = window_selection_inside(mainel);
             while (lineel !== null
                    && (!saw_line1
@@ -2450,7 +2461,7 @@ function make_json_validate() {
                 if (msgbub && msgbub.span.parentElement === lineel) {
                     clear_msgbub();
                 }
-                if (lineel.nodeType !== 1 || lineel.tagName !== "DIV") {
+                if (lineel.nodeType !== 1 || lineel.tagName !== "DIV") { // XXX unsure ever happens
                     lineel = maince.normalize(lineel, lineel.nextSibling);
                 }
                 if (normalization >= 0) {
@@ -2459,7 +2470,6 @@ function make_json_validate() {
                 }
                 if (lineel === redisplay_el1) {
                     saw_line1 = true;
-                    cmd && cmd.afterRange[1] < 0 && (cmd.afterRange[1] = i);
                 }
                 if (lineels[i] !== lineel && lineels[i]) {
                     // incremental line insertions and deletions
@@ -2549,9 +2559,9 @@ function make_json_validate() {
 
     function union_range(r1, r2) {
         r1 = r1 || [Infinity, 0];
-        if (r2[0] >= 0 && r1[0] > r2[0])
+        if (r2[0] >= 0 && r2[0] < r1[0])
             r1 = [r2[0], r1[1]];
-        if (r2[1] >= 0 && r1[1] < r2[1])
+        if (r2[1] >= 0 && r2[1] > r1[1])
             r1 = [r1[0], r2[1]];
         return r1;
     }
@@ -2570,11 +2580,12 @@ function make_json_validate() {
         if (commandPos < commands.length) {
             commands.splice(commandPos);
         }
-        var c = commands[commandPos - 1], t = canonical_input_type(evt.inputType);
+        let c = commands[commandPos - 1], t = canonical_input_type(evt.inputType);
         if (!(c
               && c.type === t
               && evt.timeStamp <= c.recentTime + 250
-              && evt.timeStamp <= c.startTime + 3000)) {
+              && evt.timeStamp <= c.startTime + 3000
+              && !c.afterLines)) {
             if (commandPos > 2000) {
                 commands.splice(0, 1000);
             }
@@ -2588,40 +2599,46 @@ function make_json_validate() {
         }
         if (editRange[0] < c.beforeRange[0]) {
             c.beforeLines.splice(0, 0, ...maince.slice(editRange[0], c.beforeRange[0]));
-            c.beforeRange[0] = editRange[0];
+            c.beforeRange[0] = c.afterRange[0] = editRange[0];
         }
-        if (c.afterRange[1] < editRange[1]) {
+        if (editRange[1] > c.afterRange[1]) {
             c.beforeLines.splice(c.beforeLines.length, 0, ...maince.slice(c.afterRange[1], editRange[1]));
             c.beforeRange[1] += editRange[1] - c.afterRange[1];
         }
-        if (c.afterRange[1] <= editRange[1]) {
-            c.afterRange[1] = -1; // recompute end of range
-        }
+        redisplay_ln0 = c.beforeRange[0];
+        redisplay_el1 = mainel.childNodes[Math.max(c.afterRange[1], editRange[1])];
+        command_fix = true;
         c.recentTime = evt.timeStamp;
     }
 
     function handle_swap(dstRange, dstTexts, srcRange, srcTexts) {
-        var i, n = srcRange[1], elx = mainel.childNodes[n], el;
-        while (n > dstRange[1]) {
-            --n;
-            el = elx ? elx.previousSibling : mainel.lastChild;
-            el.remove();
+        if (srcRange[0] !== dstRange[0]
+            || srcTexts.length !== srcRange[1] - srcRange[0]
+            || dstTexts.length !== dstRange[1] - dstRange[0]) {
+            throw new Error("bad handle_swap " + JSON.stringify([srcRange, srcTexts.length, dstRange, dstTexts.length]));
         }
-        while (n < dstRange[1]) {
-            el = document.createElement("div");
-            el.append(document.createElement("br"));
-            mainel.insertBefore(el, elx);
-            ++n;
-        }
-        el = mainel.childNodes[dstRange[0]];
-        for (i = 0; el !== elx; el = el.nextSibling, ++i) {
+        let el = mainel.childNodes[dstRange[0]], i = 0;
+        while (i < dstTexts.length) {
+            if (i >= srcTexts.length) {
+                const nel = document.createElement("div");
+                mainel.insertBefore(nel, el);
+                el = nel;
+            }
             el.replaceChildren(dstTexts[i].length <= 1 ? document.createElement("br") : dstTexts[i].substring(0, dstTexts[i].length - 1));
+            ++i;
+            el = el.nextSibling;
+        }
+        while (i < srcTexts.length) {
+            const nel = el.nextSibling;
+            el.remove();
+            ++i;
+            el = nel;
         }
         redisplay_ln0 = dstRange[0];
-        redisplay_el1 = elx;
+        redisplay_el1 = el;
         queue_rehighlight();
         // place selection at end of difference
-        var dt = dstTexts[dstTexts.length - 1] || "",
+        const dt = dstTexts[dstTexts.length - 1] || "",
             dl = dt.length,
             st = srcTexts[srcTexts.length - 1] || "",
             sl = st.length;
@@ -2630,11 +2647,12 @@ function make_json_validate() {
             --i;
         }
         let [b, off] = maince.lp2boff(dstRange[1] - 1, i + 1);
+        $(b).scrollIntoView({marginTop: 24, atTop: true});
         window.getSelection().setBaseAndExtent(b, off, b, off);
     }
 
     function handle_undo(time) {
-        var c = commands[commandPos - 1];
+        const c = commands[commandPos - 1];
         if (c && (undo_time === null || time - undo_time > 3)) {
             undo_time = undo_time || time;
             c.recentTime = 0;
@@ -2646,7 +2664,7 @@ function make_json_validate() {
     }
 
     function handle_redo(time) {
-        var c = commands[commandPos];
+        const c = commands[commandPos];
         if (c && (redo_time === null || time - redo_time > 3)) {
             redo_time = redo_time || time;
             handle_swap(c.afterRange, c.afterLines, c.beforeRange, c.beforeLines);
@@ -2655,7 +2673,7 @@ function make_json_validate() {
     }
 
     function beforeinput(evt) {
-        var t = evt.inputType;
+        const t = evt.inputType;
         if (t !== "historyUndo") {
             undo_time = null;
         }
@@ -2671,12 +2689,23 @@ function make_json_validate() {
             evt.preventDefault();
             handle_redo(evt.timeStamp);
         } else {
-            var r = event_range(evt);
-            redisplay_ln0 = r[0];
-            redisplay_el1 = r[1] >= 0 ? mainel.childNodes[r[1]] : null;
-            prepare_undo(r, evt);
+            prepare_undo(event_range(evt), evt);
             evt.dataTransfer && (normalization = 1);
         }
+    }
+
+    function afterinput(evt) {
+        if (command_fix) {
+            let i = redisplay_ln0,
+                lineel = maince.normalize(mainel.childNodes[i], redisplay_el1);
+            while (lineel !== null && lineel !== redisplay_el1) {
+                ++i;
+                lineel = lineel.nextSibling;
+            }
+            commands[commandPos - 1].afterRange[1] = i;
+            command_fix = false;
+        }
+        queue_rehighlight(evt);
     }
 
     function clear_msgbub() {
@@ -2785,7 +2814,7 @@ function make_json_validate() {
     }
 
     mainel.addEventListener("beforeinput", beforeinput);
-    mainel.addEventListener("input", queue_rehighlight);
+    mainel.addEventListener("input", afterinput);
     document.addEventListener("selectionchange", selectionchange);
     if (mainel.hasAttribute("data-reflect-text")
         && (reflectel = document.getElementById(mainel.getAttribute("data-reflect-text")))) {

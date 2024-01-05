@@ -8024,7 +8024,7 @@ function suggest() {
             repl += " ";
             spacestate = hintinfo.smart_punctuation ? outPos : -1;
         }
-        if (endPos < 0) {
+        if (startPos < 0 || endPos < 0 || startPos > endPos || endPos > val.length) {
             let x = Object.assign({}, hintinfo);
             delete x.items;
             log_jserror(JSON.stringify({value:val,hint:x,repl:repl,startPos:startPos,endPos:endPos}));
