@@ -2858,10 +2858,10 @@ class Conf {
         return $this->_dtz;
     }
 
-    /** @param string $format
-     * @param int|float $t
+    /** @param int|float $t
+     * @param string $format
      * @return string */
-    private function _date_format($format, $t) {
+    function format_time($t, $format) {
         if ($this !== self::$main && !$this->_dtz && isset($this->opt["timezone"])) {
             $this->timezone();
         }
@@ -2913,7 +2913,7 @@ class Conf {
         } else {
             $f = $this->opt["dateFormat"];
         }
-        return $this->_date_format($f, $t);
+        return $this->format_time($t, $f);
     }
 
     /** @param int|float $value
@@ -3051,19 +3051,19 @@ class Conf {
     /** @param int $timestamp
      * @return string */
     function unparse_time_point($timestamp) {
-        return $this->_date_format("M j, Y", $timestamp);
+        return $this->format_time($timestamp, "M j, Y");
     }
 
     /** @param int $timestamp
      * @return string */
     function unparse_time_log($timestamp) {
-        return $this->_date_format("Y-m-d H:i:s O", $timestamp);
+        return $this->format_time($timestamp, "Y-m-d H:i:s O");
     }
 
     /** @param int $timestamp
      * @return string */
     function unparse_time_iso($timestamp) {
-        return $this->_date_format("Ymd\\THis", $timestamp);
+        return $this->format_time($timestamp, "Ymd\\THis");
     }
 
     /** @param int $timestamp
