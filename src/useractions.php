@@ -23,14 +23,14 @@ class UserActions {
     static function disable(Contact $user, $ids) {
         $conf = $user->conf;
         $users = self::load_users($conf, "select * from ContactInfo where contactId?a and (cflags&?)=0 and contactId!=?",
-            [$ids, Contact::CFLAG_UDISABLED, $user->contactId]);
+            [$ids, Contact::CF_UDISABLED, $user->contactId]);
         $j = (object) ["ok" => true, "message_list" => []];
         if (empty($users)) {
             $j->message_list[] = new MessageItem(null, "<0>No changes (those accounts were already disabled)", MessageSet::WARNING_NOTE);
         } else {
             $conf->qe("update ContactInfo set disabled=?, cflags=cflags|? where contactId?a and (cflags&?)=0",
-                Contact::CFLAG_UDISABLED, Contact::CFLAG_UDISABLED,
-                array_keys($users), Contact::CFLAG_UDISABLED);
+                Contact::CF_UDISABLED, Contact::CF_UDISABLED,
+                array_keys($users), Contact::CF_UDISABLED);
             $conf->delay_logs();
             foreach ($users as $u) {
                 $conf->log_for($user, $u, "Account disabled");
@@ -46,13 +46,13 @@ class UserActions {
     static function enable(Contact $user, $ids) {
         $conf = $user->conf;
         $users = self::load_users($conf, "select * from ContactInfo where contactId?a and (cflags&?)!=0",
-            [$ids, Contact::CFLAG_UDISABLED]);
+            [$ids, Contact::CF_UDISABLED]);
         $j = (object) ["ok" => true, "message_list" => []];
         if (empty($users)) {
             $j->message_list[] = new MessageItem(null, "<0>No changes (those accounts were already enabled)", MessageSet::WARNING_NOTE);
         } else {
             $conf->qe("update ContactInfo set disabled=0, cflags=(cflags&~?) where contactId?a and (cflags&?)!=0",
-                Contact::CFLAG_UDISABLED, array_keys($users), Contact::CFLAG_UDISABLED);
+                Contact::CF_UDISABLED, array_keys($users), Contact::CF_UDISABLED);
             $conf->delay_logs();
             foreach ($users as $u) {
                 $conf->log_for($user, $u, "Account enabled");

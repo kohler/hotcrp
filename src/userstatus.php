@@ -929,7 +929,7 @@ class UserStatus extends MessageSet {
         $this->check_invariants($cj);
         $actor = $this->viewer->is_root_user() ? null : $this->viewer;
         if (!$old_user) {
-            $create_cj = array_merge((array) $cj, ["disablement" => Contact::CFLAG_PLACEHOLDER]);
+            $create_cj = array_merge((array) $cj, ["disablement" => Contact::CF_PLACEHOLDER]);
             $user = Contact::make_keyed($this->conf, $create_cj)->store(0, $actor);
             $cj->email = $user->email; // adopt contactdb’s email capitalization
         }
@@ -1055,15 +1055,15 @@ class UserStatus extends MessageSet {
         $cflags = $user->cflags;
         if (isset($cj->disabled)) {
             if ($cj->disabled) {
-                $cflags |= Contact::CFLAG_UDISABLED;
+                $cflags |= Contact::CF_UDISABLED;
             } else {
-                $cflags &= ~Contact::CFLAG_UDISABLED;
+                $cflags &= ~Contact::CF_UDISABLED;
             }
         }
-        if (($cflags & Contact::CFMASK_DISABLEMENT) === Contact::CFLAG_PLACEHOLDER) {
-            $cflags &= ~Contact::CFLAG_PLACEHOLDER;
+        if (($cflags & Contact::CFM_DISABLEMENT) === Contact::CF_PLACEHOLDER) {
+            $cflags &= ~Contact::CF_PLACEHOLDER;
         }
-        $user->set_prop("disabled", $cflags & Contact::CFMASK_DISABLEMENT);
+        $user->set_prop("disabled", $cflags & Contact::CFM_DISABLEMENT);
         $user->set_prop("cflags", $cflags);
         if ($user->prop_changed("disabled") && isset($cj->disabled)) {
             $us->diffs[$cj->disabled ? "disabled" : "enabled"] = true;
@@ -1698,12 +1698,12 @@ topics. We use this information to help match papers to reviewers.</p>',
 
         if (!$us->is_auth_user()) {
             echo '<div class="d-flex mf mf-absolute">';
-            $disablement = $us->user->disabled_flags() & ~Contact::CFLAG_PLACEHOLDER;
+            $disablement = $us->user->disabled_flags() & ~Contact::CF_PLACEHOLDER;
             if ($us->user->contactdb_disabled()) {
                 $klass = "flex-grow-1 disabled";
                 $p = "<p class=\"pt-1 mb-0 feedback is-warning\">This account is disabled on all sites.</p>";
                 $disabled = true;
-            } else if (($disablement & Contact::CFLAG_ROLEDISABLED) !== 0) {
+            } else if (($disablement & Contact::CF_ROLEDISABLED) !== 0) {
                 $klass = "flex-grow-1 disabled";
                 $p = "<p class=\"pt-1 mb-0 feedback is-warning\">Conference settings prevent this account from being enabled.</p>";
                 $disabled = true;

@@ -458,7 +458,7 @@ class MailRecipients extends MessageSet {
      * @return string|false */
     function query($paper_sensitive) {
         $cols = [];
-        $where = ["(cflags&" . Contact::CFMASK_DISABLEMENT . ")=0"];
+        $where = ["(cflags&" . Contact::CFM_DISABLEMENT . ")=0"];
         $joins = ["ContactInfo"];
 
         // reviewer limit

@@ -22,7 +22,7 @@ class User_API {
         if ($user->privChair || $user->can_view_pc()) {
             $roles = $user->is_manager() ? "" : " and roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
             $result = $user->conf->qe("select " . $user->conf->user_query_fields($slice) . " from ContactInfo where email>=? and email<? and (cflags&?)=0{$roles} order by email asc limit 2",
-                $email, "{$email}~", Contact::CFMASK_DISABLEMENT);
+                $email, "{$email}~", Contact::CFM_DISABLEMENT);
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;
             }
@@ -38,7 +38,7 @@ class User_API {
                 $fields = $user->conf->user_query_fields($slice);
             }
             $result = Dbl::qe($db, "select {$fields} from ContactInfo where email>=? and email<? and (cflags&?)=0 order by email asc limit 2",
-                $email, "{$email}~", Contact::CFMASK_DISABLEMENT);
+                $email, "{$email}~", Contact::CFM_DISABLEMENT);
             $users = [];
             while (($u = Contact::fetch($result, $user->conf))) {
                 $users[] = $u;

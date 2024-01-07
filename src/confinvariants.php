@@ -418,7 +418,7 @@ class ConfInvariants {
             // anonymous users are disabled
             if (str_starts_with($u->email, "anonymous")
                 && Contact::is_anonymous_email($u->email)
-                && ($u->cflags & Contact::CFLAG_UDISABLED) === 0) {
+                && ($u->cflags & Contact::CF_UDISABLED) === 0) {
                 $this->invariant_error("anonymous_user_enabled", "anonymous user {$u->email} is not disabled");
             }
 
@@ -447,17 +447,17 @@ class ConfInvariants {
             }
 
             // disabled has only expected bits
-            if (($u->disabled & Contact::CFMASK_DISABLEMENT & ~Contact::CFMASK_DB) !== 0) {
+            if (($u->disabled & Contact::CFM_DISABLEMENT & ~Contact::CFM_DB) !== 0) {
                 $this->invariant_error("user_disabled", sprintf("user {$u->email}/{$u->contactId} bad disabled %x", $u->disabled));
             }
 
             // cflags has only expected bits
-            if (($u->cflags & ~Contact::CFMASK_DB) !== 0) {
+            if (($u->cflags & ~Contact::CFM_DB) !== 0) {
                 $this->invariant_error("user_cflags", sprintf("user {$u->email}/{$u->contactId} bad cflags %x", $u->cflags));
             }
 
             // cflags reflects disabled
-            if ($u->disabled !== ($u->cflags & Contact::CFMASK_DISABLEMENT)) {
+            if ($u->disabled !== ($u->cflags & Contact::CFM_DISABLEMENT)) {
                 $this->invariant_error("user_cflags_disabled", sprintf("user {$u->email}/{$u->contactId} disabled %x unreflected in cflags %x", $u->disabled, $u->cflags));
             }
 

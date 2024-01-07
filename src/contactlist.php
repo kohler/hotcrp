@@ -1010,7 +1010,7 @@ class ContactList {
         } else if ($this->_limit_cids !== null) {
             $mainwhere[] = "contactId" . sql_in_int_list(array_keys($this->_limit_cids));
         }
-        $mainwhere[] = "(cflags&" . Contact::CFLAG_PLACEHOLDER . ")=0";
+        $mainwhere[] = "(cflags&" . Contact::CF_PLACEHOLDER . ")=0";
 
         // make query
         $result = $this->conf->qe_raw("select * from ContactInfo" . (empty($mainwhere) ? "" : " where " . join(" and ", $mainwhere)));

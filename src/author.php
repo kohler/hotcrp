@@ -294,7 +294,7 @@ class Author {
 
     /** @return bool */
     function is_placeholder() {
-        return ($this->disablement & Contact::CFLAG_PLACEHOLDER) !== 0;
+        return ($this->disablement & Contact::CF_PLACEHOLDER) !== 0;
     }
 
     /** @return int */

@@ -631,7 +631,7 @@ class PaperStatus_Tester {
         $attenu = $this->conf->user_by_email("atten@_.com");
         xassert_eqq($nprow1->conflict_type($attenu), CONFLICT_AUTHOR);
         xassert_eqq($attenu->roles & Contact::ROLE_DBMASK, 0);
-        xassert_eqq($attenu->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
+        xassert_eqq($attenu->disabled_flags(), Contact::CF_PLACEHOLDER);
         xassert($nprow1->timeSubmitted > 0);
         xassert($nprow1->timeWithdrawn <= 0);
         xassert(!$nprow1->option(1));

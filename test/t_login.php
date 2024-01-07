@@ -102,7 +102,7 @@ class Login_Tester {
         $email = "scapegoat2@baa.com";
         Contact::make_keyed($this->conf, [
             "email" => $email,
-            "disablement" => Contact::CFLAG_PLACEHOLDER
+            "disablement" => Contact::CF_PLACEHOLDER
         ])->store();
         $user = $this->conf->user_by_email($email);
         xassert($user->is_unconfirmed());
@@ -126,12 +126,12 @@ class Login_Tester {
         // but user is still a placeholder
         $u = $this->conf->checked_user_by_email($email);
         xassert(!!$u);
-        xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::CF_PLACEHOLDER);
         xassert($u->is_unconfirmed());
         if ($this->cdb) {
             $u = $this->conf->checked_cdb_user_by_email($email);
             xassert(!!$u);
-            xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
+            xassert_eqq($u->disabled_flags(), Contact::CF_PLACEHOLDER);
         }
 
         $this->conf->invalidate_caches(["users" => true, "cdb" => true]);

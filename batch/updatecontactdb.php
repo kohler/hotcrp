@@ -209,7 +209,7 @@ class UpdateContactdb_Batch {
                     "firstName" => $au->firstName,
                     "lastName" => $au->lastName,
                     "affiliation" => $au->affiliation,
-                    "disablement" => Contact::CFLAG_PLACEHOLDER
+                    "disablement" => Contact::CF_PLACEHOLDER
                 ])->store();
                 // NB: Contact::store() creates CONFLICT_AUTHOR records.
                 $u->update_cdb();

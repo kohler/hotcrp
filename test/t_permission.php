@@ -1609,7 +1609,7 @@ class Permission_Tester {
         xassert(!maybe_user("anonymous10"));
         $u = Contact::make_keyed($this->conf, [
             "email" => "anonymous10",
-            "disablement" => Contact::CFLAG_UDISABLED
+            "disablement" => Contact::CF_UDISABLED
         ])->store(Contact::SAVE_ANY_EMAIL);
         xassert($u->contactId > 0);
         xassert_eqq($this->conf->fetch_value("select password from ContactInfo where email='anonymous10'"), " nologin");
@@ -1637,7 +1637,7 @@ class Permission_Tester {
         // registering email of an author grants author privilege
         $u = maybe_user("thalerd@eecs.umich.edu");
         xassert(!!$u);
-        xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::CF_PLACEHOLDER);
         $u = Contact::make_email($this->conf, "thalerd@eecs.umich.edu")->store();
         assert($u !== null);
         xassert($u->contactId > 0);
@@ -1651,7 +1651,7 @@ class Permission_Tester {
         // registration-time name overrides author name
         $u = maybe_user("schwartz@ctr.columbia.edu");
         xassert(!!$u);
-        xassert_eqq($u->disabled_flags(), Contact::CFLAG_PLACEHOLDER);
+        xassert_eqq($u->disabled_flags(), Contact::CF_PLACEHOLDER);
         $u = Contact::make_keyed($this->conf, ["email" => "schwartz@ctr.columbia.edu", "first" => "cengiz!", "last" => "SCHwarTZ", "affiliation" => "Coyumbia"])->store();
         assert($u !== null);
         xassert($u->contactId > 0);
