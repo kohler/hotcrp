@@ -260,10 +260,9 @@ class HelpRenderer extends Ht {
         }
     }
 
-    /** @param string $topic
-     * @param bool $top */
-    function print_group($topic, $top = false) {
-        $this->_help_topics->print_group($topic, $top);
+    /** @param string $topic */
+    function print_members($topic) {
+        $this->_help_topics->print_members($topic);
     }
 
     /** @return list<object> */

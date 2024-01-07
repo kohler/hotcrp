@@ -355,10 +355,9 @@ class SettingValues extends MessageSet {
         return $this->cs()->print($name);
     }
 
-    /** @param string $g
-     * @param bool $top */
-    function print_group($g, $top = false) {
-        $this->cs()->print_group($g, $top);
+    /** @param string $g */
+    function print_members($g) {
+        $this->cs()->print_members($g);
     }
 
     /** @param string $title

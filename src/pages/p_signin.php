@@ -163,12 +163,12 @@ class Signin_Page {
         }
         if ($folded) {
             echo Ht::unstash_script('hotcrp.fold("f-signin",false)');
-            $cs->print_group("signin/form");
+            $cs->print_members("signin/form");
             echo '</div><div class="fn">',
                 Ht::submit("Sign in", ["class" => "btn-success", "tabindex" => 1, "formmethod" => "get"]),
                 '</div>';
         } else {
-            $cs->print_group("signin/form");
+            $cs->print_members("signin/form");
         }
         echo '</form>';
     }
@@ -391,7 +391,7 @@ class Signin_Page {
     /** @param ComponentSet $cs */
     static function print_newaccount_body(Contact $user, Qrequest $qreq, $cs) {
         self::print_form_start_for($qreq, "newaccount");
-        $cs->print_group("newaccount/form");
+        $cs->print_members("newaccount/form");
         echo '</form>';
         Ht::stash_script("hotcrp.focus_within(\$(\"#f-signin\"));window.scroll(0,0)");
     }
@@ -446,7 +446,7 @@ class Signin_Page {
     }
     static function print_forgot_body(Contact $user, Qrequest $qreq, $cs) {
         self::print_form_start_for($qreq, "forgotpassword");
-        $cs->print_group("forgotpassword/form");
+        $cs->print_members("forgotpassword/form");
         echo '</form>';
         Ht::stash_script("hotcrp.focus_within(\$(\"#f-signin\"));window.scroll(0,0)");
     }
@@ -607,9 +607,9 @@ class Signin_Page {
         self::print_form_start_for($qreq, "resetpassword");
         if ($this->_reset_user) {
             echo Ht::hidden("resetcap", $this->_reset_tokstr);
-            $cs->print_group("resetpassword/form");
+            $cs->print_members("resetpassword/form");
         } else {
-            $cs->print_group("forgotpassword/form");
+            $cs->print_members("forgotpassword/form");
         }
         echo '</form>';
         Ht::stash_script("hotcrp.focus_within(\$(\"#f-signin\"));window.scroll(0,0)");

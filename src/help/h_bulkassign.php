@@ -49,7 +49,7 @@ supply <code>email</code>, <code>name</code>,
 fields can contain a tag value, using “tag#value” syntax, or the value
 can be supplied separately.</p>';
 
-        $hth->print_group("bulkassignactions");
+        $hth->print_members("bulkassignactions");
     }
 
     static function print_action_review(HelpRenderer $hth) {

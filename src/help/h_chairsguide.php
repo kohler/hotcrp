@@ -7,7 +7,7 @@ class ChairsGuide_HelpTopic {
         if ($gj->itemid === -1) {
             echo $hth->subhead("Submission time");
             echo "<p>Follow these steps to prepare to accept submissions.</p>\n\n<ol>\n";
-            $hth->print_group("chair/presubmission");
+            $hth->print_members("chair/presubmission");
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {
@@ -85,7 +85,7 @@ form also can include:</p>
         if ($gj->itemid === -1) {
             echo $hth->subhead("Assignments");
             echo "<p>After the submission deadline has passed:</p>\n<ol>\n";
-            $hth->print_group("chair/assignments");
+            $hth->print_members("chair/assignments");
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {
@@ -203,7 +203,7 @@ administrator’s identity.</p>\n\n";
         if ($gj->itemid === -1) {
             echo $hth->subhead("Before the meeting");
             echo "<ol>\n";
-            $hth->print_group("chair/premeeting");
+            $hth->print_members("chair/premeeting");
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {
@@ -263,7 +263,7 @@ administrator’s identity.</p>\n\n";
         if ($gj->itemid === -1) {
             echo $hth->subhead("At the meeting");
             echo "<ol>\n";
-            $hth->print_group("chair/atmeeting");
+            $hth->print_members("chair/atmeeting");
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {
@@ -301,7 +301,7 @@ administrator’s identity.</p>\n\n";
         if ($gj->itemid === -1) {
             echo $hth->subhead("After the meeting");
             echo "<ol>\n";
-            $hth->print_group("chair/postmeeting");
+            $hth->print_members("chair/postmeeting");
             echo "</ol>\n\n";
 
         } else if ($gj->itemid === 1) {

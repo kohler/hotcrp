@@ -147,7 +147,7 @@ class Settings_Page {
             // don't crosscheck) but reduces duplicate warnings
             $sv->report();
         }
-        $sv->print_group(strtolower($group), true);
+        $sv->cs()->print_body_members(strtolower($group));
 
         if ($sv->inputs_printed()) {
             echo '<div class="aab aabig mt-7">',

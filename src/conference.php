@@ -4601,7 +4601,7 @@ class Conf {
             '<button type="button" class="ui js-dropmenu-open ', $button_class, '">',
             $details_prefix, $user_html, $details_suffix,
             '</button></summary><div class="dropmenu-container dropmenu-sw"><ul class="uic dropmenu">';
-        $pagecs->print_group("__profilemenu", false);
+        $pagecs->print_members("__profilemenu");
         $pagecs->swap_separator($old_separator);
         echo '</ul></div></details>';
 

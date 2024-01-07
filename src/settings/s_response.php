@@ -205,7 +205,7 @@ class Response_SettingParser extends SettingParser {
         if ($sv->has_req("response/{$ctr}/delete")) {
             Ht::hidden("response/{$ctr}/delete", "1", ["data-default-value" => ""]);
         }
-        $sv->print_group("responses/properties");
+        $sv->print_members("responses/properties");
         echo '</div>';
     }
 

@@ -728,9 +728,9 @@ class Profile_Page {
         }
 
         if ($this->page_type === 2) {
-            $this->ustatus->print_group("__bulk");
+            $this->ustatus->print_members("__bulk");
         } else {
-            $this->ustatus->print_group($this->topic);
+            $this->ustatus->cs()->print_body_members($this->topic);
             if (false
                 && $this->ustatus->is_auth_self()
                 && $this->ustatus->cdb_user()) {

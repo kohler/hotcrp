@@ -251,7 +251,7 @@ class Track_SettingParser extends SettingParser {
         }
         echo '</div>';
 
-        $sv->print_group("tracks/permissions");
+        $sv->print_members("tracks/permissions");
 
         if ($this->nfolded) {
             echo '<div class="entryi wide fn3">',

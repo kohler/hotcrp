@@ -481,12 +481,13 @@ class ComponentSet {
         if ($sepgroup !== null) {
             $this->_separator_group = $sepgroup;
         }
-        return $this->_print_body($gj);
+        return $this->_print_body($gj, false);
     }
 
     /** @param object $gj
+     * @param bool $print_members
      * @return mixed */
-    private function _print_body($gj) {
+    private function _print_body($gj, $print_members) {
         foreach ($this->_print_callbacks as $f) {
             if ($f($gj) === false)
                 return false;
@@ -497,12 +498,11 @@ class ComponentSet {
         } else if (isset($gj->html_content)) {
             echo $gj->html_content;
         }
-        if ($result !== false && ($gj->print_members ?? false)) {
-            if ($gj->print_members === true) {
-                $result = $this->print_group($gj->name);
-            } else {
-                $result = $this->print_group($gj->print_members);
-            }
+        if (isset($gj->print_members)) {
+            $print_members = $gj->print_members;
+        }
+        if ($result !== false && $print_members) {
+            $result = $this->print_members($print_members === true ? $gj->name : $print_members);
         }
         if ($gj->separator_after ?? false) {
             $this->mark_separator();
@@ -512,20 +512,37 @@ class ComponentSet {
 
     /** @param string $name
      * @param bool $top
-     * @return mixed */
+     * @return mixed
+     * @deprecated */
     function print_group($name, $top = false) {
+        return $top ? $this->print_body_members($name) : $this->print_members($name);
+    }
+
+    /** @param string $name
+     * @return mixed */
+    function print_body_members($name) {
+        if (($gj = $this->get($name))) {
+            $this->start_print();
+            $result = $this->_print_body($gj, true);
+            $this->end_print();
+        } else {
+            $result = $this->print_members($name);
+        }
+        $this->print_end_section();
+        return $result;
+    }
+
+    /** @param string $name
+     * @return mixed */
+    function print_members($name) {
         $this->start_print();
         $result = null;
-        if ($top && ($gj = $this->get($name))) {
-            $result = $this->_print_body($gj);
-        }
         foreach ($this->members($name) as $gj) {
-            if ($result !== false) {
-                $result = $this->print($gj);
+            if (($result = $this->print($gj)) === false) {
+                break;
             }
         }
         $this->end_print();
-        $top && $this->print_end_section();
         return $result;
     }
 

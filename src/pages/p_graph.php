@@ -71,7 +71,7 @@ class Graph_Page {
         echo Ht::unstash(),
             $user->conf->make_script_file("scripts/d3-hotcrp.min.js", true),
             $user->conf->make_script_file("scripts/graph.js");
-        $gx->print_group($gj->name, true);
+        $gx->print_body_members($gj->name);
 
         $qreq->print_footer();
         return false;

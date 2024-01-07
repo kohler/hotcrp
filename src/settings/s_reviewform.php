@@ -652,7 +652,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
                 "horizontal" => true,
                 "group_attr" => ["data-property" => "type"]
             ]);
-        $sv->print_group("reviewfield/properties");
+        $sv->print_members("reviewfield/properties");
         echo '</fieldset>', // rf/$/edit
             '</div></template>';
 

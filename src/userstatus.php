@@ -1808,8 +1808,8 @@ John Adams,john@earbox.org,UC Berkeley,pc
 
 
     /** @param string $name */
-    function print_group($name) {
-        $this->cs()->print_group($name);
+    function print_members($name) {
+        $this->cs()->print_members($name);
     }
 
     /** @param string $title

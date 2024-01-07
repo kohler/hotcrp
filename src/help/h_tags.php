@@ -158,7 +158,7 @@ gray.</p>\n";
     function print_examples() {
         echo $this->hth->subhead("Examples");
         echo "<p>Here are some common ways tags are used.</p>\n";
-        $this->hth->print_group("tagexamples");
+        $this->hth->print_members("tagexamples");
     }
 
     function print_example_r1reject() {

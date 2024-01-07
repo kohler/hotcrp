@@ -73,7 +73,7 @@ class Help_Page {
             '<main id="helpcontent" class="leftmenu-content main-column">',
             '<h2 class="leftmenu">', $topicj->title, '</h2>';
         $conf->report_saved_messages();
-        $hth->print_group($topic, true);
+        $help_topics->print_body_members($topic);
         echo "</main>\n";
 
         $qreq->print_footer();

@@ -100,13 +100,13 @@ class Home_Page {
     function print_content(Contact $user, Qrequest $qreq, $gx) {
         echo '<main class="home-content">';
         ob_start();
-        $gx->print_group("home/sidebar");
+        $gx->print_members("home/sidebar");
         if (($t = ob_get_clean()) !== "") {
             echo '<nav class="home-sidebar">', $t, '</nav>';
             $this->_has_sidebar = true;
         }
         echo '<div class="home-main">';
-        $gx->print_group("home/main");
+        $gx->print_members("home/main");
         echo "</div></main>\n";
     }
 
@@ -117,7 +117,7 @@ class Home_Page {
 
     static function print_admin_sidebar(Contact $user, Qrequest $qreq, $gx) {
         echo '<div class="homegrp"><h2 class="home">Administration</h2><ul>';
-        $gx->print_group("home/sidebar/admin");
+        $gx->print_members("home/sidebar/admin");
         echo '</ul></div>';
     }
     static function print_admin_settings(Contact $user) {
@@ -139,7 +139,7 @@ class Home_Page {
 
     static function print_info_sidebar(Contact $user, Qrequest $qreq, $gx) {
         ob_start();
-        $gx->print_group("home/sidebar/info");
+        $gx->print_members("home/sidebar/info");
         if (($t = ob_get_clean())) {
             echo '<div class="homegrp"><h2 class="home">',
                 $user->conf->_c("home", "Conference information"),

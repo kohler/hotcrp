@@ -43,7 +43,7 @@ function handle_request($nav) {
         } else {
             $pc->set_root($pagej->group);
             handle_request_components($user, $qreq, $pagej, $pc);
-            $pc->print_group($pagej->group, true);
+            $pc->print_body_members($pagej->group);
         }
     } catch (Redirection $redir) {
         Conf::$main->redirect($redir->url);
