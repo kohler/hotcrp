@@ -167,8 +167,8 @@ class Profile_Page {
 
         // check email
         if (!$acct || strcasecmp($ustatus->jval->email, $acct->email)) {
-            if ($acct && $acct->data("locked")) {
-                $ustatus->error_at("email", "<0>This account is locked, so you can’t change its email address");
+            if ($acct && $acct->security_locked()) {
+                $ustatus->error_at("email", "<0>This account’s security settings are locked, so you can’t change its email address");
                 return null;
             } else if (($new_acct = $this->conf->fresh_user_by_email($ustatus->jval->email))) {
                 if (!$acct) {
@@ -472,7 +472,7 @@ class Profile_Page {
             $this->conf->error_msg("<0>You can’t delete your own account");
         } else if (!$this->user->has_account_here()) {
             $this->conf->feedback_msg(new MessageItem(null, "<0>This user’s account is not active on this site", MessageSet::MARKED_NOTE));
-        } else if ($this->user->data("locked")) {
+        } else if ($this->user->security_locked_here()) {
             $this->conf->error_msg("<0>This account is locked and can’t be deleted");
         } else if (($tracks = UserStatus::user_paper_info($this->conf, $this->user->contactId))
                    && !empty($tracks->soleAuthor)) {
@@ -660,7 +660,8 @@ class Profile_Page {
 
         if ($this->page_type === 0) {
             $first = $this->viewer->privChair;
-            foreach ($this->ustatus->cs()->members("", "title") as $gj) {
+            $cs = $this->ustatus->cs();
+            foreach ($cs->members("", "title") as $gj) {
                 echo '<li class="leftmenu-item',
                     $gj->name === $this->topic ? ' active' : ' ui js-click-child',
                     $first ? ' leftmenu-item-gap4' : '', '">';
@@ -668,7 +669,12 @@ class Profile_Page {
                 if ($gj->name === $this->topic) {
                     echo $title;
                 } else {
-                    echo Ht::link($title, $this->conf->selfurl($this->qreq, ["t" => $gj->name]));
+                    $aextra = [];
+                    if (isset($gj->dim_group_if)
+                        && $cs->xtp->check($gj->dim_group_if, $gj)) {
+                        $aextra["class"] = "dim";
+                    }
+                    echo Ht::link($title, $this->conf->selfurl($this->qreq, ["t" => $gj->name]), $aextra);
                 }
                 echo '</li>';
                 $first = false;
@@ -731,12 +737,8 @@ class Profile_Page {
             $this->ustatus->print_members("__bulk");
         } else {
             $this->ustatus->cs()->print_body_members($this->topic);
-            if (false
-                && $this->ustatus->is_auth_self()
-                && $this->ustatus->cdb_user()) {
-                echo '<div class="form-g"><div class="checki"><label><span class="checkc">',
-                    Ht::checkbox("saveglobal", 1, $use_req ? !!$this->qreq->saveglobal : true, ["class" => "ignore-diff"]),
-                    '</span>Update global profile</label></div></div>';
+            if ($this->ustatus->inputs_printed()) {
+                $this->ustatus->print_actions();
             }
             echo "</div>"; // foldaccount
         }

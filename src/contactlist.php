@@ -974,7 +974,7 @@ class ContactList {
                 . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uic js-submit-list ml-2"])];
 
             $mods = ["disableaccount" => "Disable", "enableaccount" => "Enable"];
-            if ($this->user->can_change_password(null)) {
+            if ($this->user->can_edit_any_password()) {
                 $mods["resetpassword"] = "Reset password";
             }
             $mods["sendaccount"] = "Send account information";

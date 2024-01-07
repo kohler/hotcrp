@@ -219,6 +219,7 @@ class Contact implements JsonSerializable {
     const CF_DELETED = 0x8;
     const CF_GDISABLED = 0x10;
     const CF_UNCONFIRMED = 0x20;
+    const CF_SECURITYLOCK = 0x40;
 
     const CFM_DISABLEMENT = 0x1F;
     const CFM_DB = ~0xC;
@@ -3205,14 +3206,33 @@ class Contact implements JsonSerializable {
             && $this->conf->tags()->censor(TagMap::CENSOR_VIEW, " {$tag}#0", $this, null) !== "";
     }
 
-    /** @param ?Contact $acct
-     * @return bool */
-    function can_change_password($acct) {
-        return ($this->privChair && !$this->conf->opt("chairHidePasswords"))
-            || ($acct
-                && $this->contactId > 0
-                && $this->contactId === $acct->contactId
-                && ($this->_activated & 7) === 1);
+    /** @return bool */
+    function security_locked() {
+        $cdbu = $this->cdb_user();
+        return ($this->cflags & self::CF_SECURITYLOCK) !== 0
+            || ($cdbu && ($cdbu->cflags & self::CF_SECURITYLOCK) !== 0);
+    }
+
+    /** @return bool */
+    function security_locked_here() {
+        return ($this->cflags & self::CF_SECURITYLOCK) !== 0;
+    }
+
+    /** @return bool */
+    function can_edit_any_password() {
+        return $this->privChair
+            && !$this->conf->external_login()
+            && !$this->conf->contactdb()
+            && !$this->conf->opt("chairHidePasswords");
+    }
+
+    /** @return bool */
+    function can_edit_password(Contact $acct) {
+        return !$acct->security_locked()
+            && ((($this->_activated & 7) === 1
+                 && $this->contactId > 0
+                 && $this->contactId === $acct->contactId)
+                || $this->can_edit_any_password());
     }
 
     /** @return bool */

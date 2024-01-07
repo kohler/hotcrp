@@ -9,43 +9,36 @@
         "name": "__crosscheck/main", "order": 100,
         "crosscheck_function": "UserStatus::crosscheck_main"
     },
-    {
-        "name": "main/main", "order": 1000,
-        "print_function": "UserStatus::print_main"
-    },
-    {
-        "name": "main/country", "order": 3000,
-        "print_function": "UserStatus::print_country"
-    },
-    {
-        "name": "main/roles", "order": 5000,
-        "print_function": "UserStatus::print_roles"
-    },
-    {
-        "name": "main/collaborators", "order": 6000,
-        "print_function": "UserStatus::print_collaborators"
-    },
+    [   "main/main", 1000, "UserStatus::print_main"   ],
+    [   "main/country", 3000, "UserStatus::print_country"   ],
+    [   "main/roles", 5000, "UserStatus::print_roles"   ],
+    [   "main/collaborators", 6000, "UserStatus::print_collaborators"   ],
     {
         "name": "main/topics", "order": 7000, "allow_if": "conf.has_topics",
         "print_function": "UserStatus::print_topics"
     },
     [   "main/tags", 8000, "UserStatus::print_tags"   ],
-    [   "main/mainactions", 100000, "UserStatus::print_main_actions"   ],
-    [   "main/actions", 1000000, "UserStatus::print_actions"   ],
+    {
+        "name": "main/administration", "order": 100000,
+        "print_function": "UserStatus::print_administration",
+        "inputs": false
+    },
     {   "name": "topics", "order": 400,
         "save_function": "UserStatus::save_topics"   },
 
 
     {   "name": "security", "title": "Security", "order": 200,
         "allow_if": "profile_security",
-        "request_function": "*Security_UserInfo::parse_qreq",
-        "save_members": true   },
+        "print_function": "*Security_UserInfo::print",
+        "request_function": "*Security_UserInfo::request",
+        "save_members": true,
+        "inputs": false   },
     [   "security/currentpassword", 10, "*Security_UserInfo::print_current_password"   ],
     {   "name": "security/newpassword", "order": 100,
         "print_function": "*Security_UserInfo::print_new_password",
         "request_function": "*Security_UserInfo::parse_qreq_new_password",
-        "save_function": "Security_UserInfo::save_new_password"   },
-    [   "security/actions", 1000000, "UserStatus::print_actions"   ],
+        "save_function": "Security_UserInfo::save_new_password",
+        "inputs": false   },
 
 
     {   "name": "preferences", "title": "Preferences", "order": 300   },
@@ -53,25 +46,26 @@
         "name": "preferences/follow", "title": "Email notification", "order": 4000,
         "print_function": "UserStatus::print_follow"
     },
-    [   "preferences/actions", 1000000, "UserStatus::print_actions"   ],
 
 
     {   "name": "developer", "title": "Developer settings", "short_title": "Developer",
         "order": 2000,
-        "allow_if": "profile_security",
-        "request_function": "Developer_UserInfo::parse_qreq",
+        "allow_if": "auth_self",
+        "request_function": "*Developer_UserInfo::request",
         "save_members": true   },
     {   "name": "developer/tokens", "title": "API tokens", "order": 10,
-        "print_function": "*Developer_UserInfo::print_bearer_tokens"   },
+        "print_function": "*Developer_UserInfo::print_bearer_tokens",
+        "inputs": false   },
     {   "name": "developer/newtoken", "order": 20,
-        "print_function": "Developer_UserInfo::print_new_bearer_token",
+        "print_function": "*Developer_UserInfo::print_new_bearer_token",
         "request_function": "*Developer_UserInfo::request_new_bearer_token",
-        "save_function": "*Developer_UserInfo::save_new_bearer_token"   },
+        "save_function": "*Developer_UserInfo::save_new_bearer_token",
+        "inputs": false   },
     {   "name": "developer/currenttokens", "order": 21,
         "print_function": "*Developer_UserInfo::print_current_bearer_tokens",
         "request_function": "*Developer_UserInfo::request_delete_bearer_tokens",
-        "save_function": "*Developer_UserInfo::save_delete_bearer_tokens"   },
-    [   "developer/actions", 1000000, "UserStatus::print_actions"   ],
+        "save_function": "*Developer_UserInfo::save_delete_bearer_tokens",
+        "inputs": false   },
 
 
     [   "__bulk/entry", 100, "UserStatus::print_bulk_entry"   ],

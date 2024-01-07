@@ -78,7 +78,7 @@ class SettingValues extends MessageSet {
     /** @var ?JsonParser */
     private $_jp;
     /** @var bool */
-    private $_inputs_printed;
+    private $_inputs_printed = false;
 
     function __construct(Contact $user) {
         parent::__construct();

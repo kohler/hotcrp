@@ -166,8 +166,9 @@ class CsvParser implements Iterator {
     }
 
     /** @param mixed $json
+     * @param bool $allow_mixed
      * @return CsvParser */
-    static function make_json($json) {
+    static function make_json($json, $allow_mixed = false) {
         $ja = is_array($json) ? $json : [];
         $csvp = new CsvParser([]);
 
@@ -187,7 +188,9 @@ class CsvParser implements Iterator {
             if (is_object($j)) {
                 $x = [];
                 foreach ($j as $k => $v) {
-                    if (is_bool($v)) {
+                    if ($allow_mixed) {
+                        $x[$csvp->hmap[$k]] = $v;
+                    } else if (is_bool($v)) {
                         $x[$csvp->hmap[$k]] = $v ? "Y" : "N";
                     } else if (is_scalar($v) || $v === null) {
                         $x[$csvp->hmap[$k]] = (string) $v;

@@ -58,6 +58,8 @@ class UserStatus extends MessageSet {
 
     /** @var ?ComponentSet */
     private $_cs;
+    /** @var bool */
+    private $_inputs_printed = false;
 
     /** @var array<string,int>
      * @readonly */
@@ -161,36 +163,44 @@ class UserStatus extends MessageSet {
         return $this->viewer->is_root_user() ? null : $this->viewer;
     }
 
+    /** @param object $gj
+     * @return ?bool */
+    function _print_callback($gj) {
+        $inputs = $gj->inputs ?? null;
+        if ($inputs || (isset($gj->print_function) && $inputs === null)) {
+            $this->_inputs_printed = true;
+        }
+        return null;
+    }
+
     /** @return ComponentSet */
     function cs() {
         if ($this->_cs === null) {
             $this->_cs = new ComponentSet($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
             $this->_cs->set_title_class("form-h")
                 ->set_section_class("form-section")
-                ->set_separator('<hr class="form-sep">');
+                ->set_separator('<hr class="form-sep">')
+                ->add_print_callback([$this, "_print_callback"]);
             $this->_cs->add_xt_checker([$this, "xt_allower"]);
             $this->initialize_cs();
         }
         return $this->_cs;
     }
+
     private function initialize_cs() {
         $this->_cs->set_callable("UserStatus", $this)->set_context_args($this);
     }
 
     /** @return bool */
-    function allow_security() {
-        return !$this->conf->external_login()
-            && ($this->is_auth_self()
-                || ($this->viewer->privChair
-                    && !$this->user->is_empty()
-                    && !$this->conf->contactdb()
-                    && !$this->conf->opt("chairHidePasswords")));
+    function allow_some_security() {
+        return !$this->user->is_empty()
+            && ($this->is_auth_self() || $this->viewer->can_edit_any_password());
     }
 
     /** @return ?bool */
     function xt_allower($e, $xt, $xtp) {
         if ($e === "profile_security") {
-            return $this->allow_security();
+            return $this->allow_some_security();
         } else if ($e === "auth_self") {
             return $this->is_auth_self();
         } else {
@@ -522,14 +532,6 @@ class UserStatus extends MessageSet {
             }
         }
 
-        // Password changes
-        if (isset($cj->new_password)
-            && $old_user
-            && $old_user->data("locked")) {
-            unset($cj->new_password);
-            $this->warning_at("password", "<0>Ignoring request to change locked user’s password");
-        }
-
         // Preferred email
         if (($cj->preferred_email ?? false)
             && !$this->has_problem_at("preferred_email")
@@ -764,16 +766,18 @@ class UserStatus extends MessageSet {
     /** @param int $roles
      * @param Contact $old_user */
     private function check_role_change($roles, $old_user) {
-        if ($old_user->data("locked")
-            && $old_user->roles !== $roles) {
-            $this->warning_at("roles", "<0>Ignoring request to change privileges for locked account");
-            $roles = $old_user->roles;
-        } else if ($this->no_deprivilege_self
-                   && $this->viewer
-                   && $this->viewer->conf === $this->conf
-                   && $this->viewer->contactId == $old_user->contactId
-                   && ($old_user->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) !== 0
-                   && ($roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) === 0) {
+        if ($roles === $old_user->roles) {
+            return $roles;
+        } else if ($old_user->security_locked_here()) {
+            $this->warning_at("roles", "<0>Ignoring request to change roles for locked account");
+            return $old_user->roles;
+        }
+        if ($this->no_deprivilege_self
+            && $this->viewer
+            && $this->viewer->conf === $this->conf
+            && $this->viewer->contactId == $old_user->contactId
+            && ($old_user->roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) !== 0
+            && ($roles & (Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) === 0) {
             $what = $old_user->roles & Contact::ROLE_CHAIR ? "chair" : "system administration";
             $this->warning_at("roles", "<0>You can’t drop your own {$what} privileges. Ask another administrator to do it for you");
             $roles |= $old_user->roles & Contact::ROLE_PCLIKE;
@@ -1053,7 +1057,7 @@ class UserStatus extends MessageSet {
 
         // Disabled
         $cflags = $user->cflags;
-        if (isset($cj->disabled)) {
+        if (isset($cj->disabled) && !$user->security_locked_here()) {
             if ($cj->disabled) {
                 $cflags |= Contact::CF_UDISABLED;
             } else {
@@ -1289,8 +1293,10 @@ class UserStatus extends MessageSet {
     /** @param string $k
      * @return ?string */
     function field_label($k) {
-        if ($k === "firstName" || $k === "lastName") {
-            return "Name";
+        if ($k === "firstName") {
+            return "First name";
+        } else if ($k === "lastName") {
+            return "Last name";
         } else if ($k === "email" || $k === "uemail") {
             return "Email";
         } else if ($k === "affiliation") {
@@ -1402,6 +1408,15 @@ class UserStatus extends MessageSet {
     }
 
 
+    /** @return bool */
+    function inputs_printed() {
+        return $this->_inputs_printed;
+    }
+
+    function mark_inputs_printed() {
+        $this->_inputs_printed = true;
+    }
+
     /** @param string $field
      * @param string $caption
      * @param string $entry
@@ -1412,6 +1427,7 @@ class UserStatus extends MessageSet {
             ($field ? Ht::label($caption, $field) : "<div class=\"f-c\">{$caption}</div>"),
             $this->feedback_html_at($field),
             $entry, "</div>";
+        $this->mark_inputs_printed();
     }
 
     static function pc_role_text($cj) {
@@ -1541,7 +1557,30 @@ class UserStatus extends MessageSet {
         if (!$us->viewer->privChair) {
             return;
         }
+
         $us->print_start_section("Roles", "roles");
+
+        if ($us->user->security_locked_here()) {
+            $roles = [];
+            if (($us->user->roles & Contact::ROLE_CHAIR) !== 0) {
+                $roles[] = "chair";
+            } else if (($us->user->roles & Contact::ROLE_PC) !== 0) {
+                $roles[] = "PC";
+            }
+            if (($us->user->roles & Contact::ROLE_ADMIN) !== 0) {
+                $roles[] = "sysadmin";
+            }
+            if (empty($roles)) {
+                $roles[] = "none";
+            }
+            if (ctype_lower($roles[0][0])) {
+                $roles[0] = ucfirst($roles[0]);
+            }
+            echo '<p class="w-text mb-1">', join(", ", $roles), '</p>',
+                self::feedback_html([MessageItem::warning("<0>This account’s security settings are locked, so its roles cannot be changed.")]);
+            return;
+        }
+
         echo "<table class=\"w-text\"><tr><td class=\"nw\">\n";
         if (($us->user->roles & Contact::ROLE_CHAIR) !== 0) {
             $pcrole = $cpcrole = "chair";
@@ -1660,6 +1699,9 @@ topics. We use this information to help match papers to reviewers.</p>',
     }
 
     private static function print_delete_action(UserStatus $us) {
+        if ($us->user->security_locked_here()) {
+            return;
+        }
         $tracks = self::user_paper_info($us->conf, $us->user->contactId);
         $args = ["class" => "ui btn-danger"];
         if (!empty($tracks->soleAuthor)) {
@@ -1687,7 +1729,7 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo Ht::button("Delete account", $args), '<p class="pt-1"></p>';
     }
 
-    static function print_main_actions(UserStatus $us) {
+    static function print_administration(UserStatus $us) {
         if (!$us->viewer->privChair || $us->is_new_user()) {
             return;
         }
@@ -1697,7 +1739,6 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $us->user->is_disabled()]), '</div><p></p>';
 
         if (!$us->is_auth_user()) {
-            echo '<div class="d-flex mf mf-absolute">';
             $disablement = $us->user->disabled_flags() & ~Contact::CF_PLACEHOLDER;
             if ($us->user->contactdb_disabled()) {
                 $klass = "flex-grow-1 disabled";
@@ -1707,14 +1748,19 @@ topics. We use this information to help match papers to reviewers.</p>',
                 $klass = "flex-grow-1 disabled";
                 $p = "<p class=\"pt-1 mb-0 feedback is-warning\">Conference settings prevent this account from being enabled.</p>";
                 $disabled = true;
+            } else if ($us->user->security_locked_here()) {
+                $klass = "flex-grow-1 disabled";
+                $p = "<p class=\"pt-1 mb-0 feedback is-warning\">This account’s security settings are locked, so it cannot be " . ($disablement ? "enabled" : "disabled") . ".</p>";
+                $disabled = true;
             } else {
                 $klass = "ui js-disable-user flex-grow-1 " . ($disablement ? "btn-success" : "btn-danger");
                 $p = "<p class=\"pt-1 mb-0\">Disabled accounts cannot sign in or view the site.</p>";
                 $disabled = false;
             }
-            echo Ht::button($disablement ? "Enable account" : "Disable account", [
-                "class" => $klass, "disabled" => $disabled
-            ]), '</div>', $p;
+            echo '<div class="d-flex mf mf-absolute">',
+                Ht::button($disablement ? "Enable account" : "Disable account", [
+                    "class" => $klass, "disabled" => $disabled
+                ]), '</div>', $p;
 
             self::print_delete_action($us);
         }
@@ -1722,18 +1768,18 @@ topics. We use this information to help match papers to reviewers.</p>',
         echo '</div>';
     }
 
-    static function print_actions(UserStatus $us) {
-        $us->cs()->print_end_section();
+    function print_actions() {
+        $this->cs()->print_end_section();
         $klass = "mt-7";
         $buttons = [
-            Ht::submit("save", $us->is_new_user() ? "Create account" : "Save changes", ["class" => "btn-primary"]),
+            Ht::submit("save", $this->is_new_user() ? "Create account" : "Save changes", ["class" => "btn-primary"]),
             Ht::submit("cancel", "Cancel", ["formnovalidate" => true])
         ];
-        if ($us->is_auth_self() && $us->cs()->root === "main") {
-            if ($us->cdb_user()) {
+        if ($this->is_auth_self() && $this->cs()->root === "main") {
+            if ($this->cdb_user()) {
                 echo '<label class="checki mt-7"><span class="checkc">',
                     Ht::hidden("has_update_global", 1),
-                    Ht::checkbox("update_global", 1, !$us->qreq->has_updateglobal || $us->qreq->updateglobal, ["class" => "ignore-diff"]),
+                    Ht::checkbox("update_global", 1, !$this->qreq->has_updateglobal || $this->qreq->updateglobal, ["class" => "ignore-diff"]),
                     '</span>Update global profile</label>';
                 $klass = "mt-3";
             }

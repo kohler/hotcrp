@@ -1,6 +1,6 @@
 <?php
 // saveusers.php -- HotCRP command-line user modification script
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -16,6 +16,8 @@ class SaveUsers_Batch {
     public $exit_status = 0;
     /** @var list<string> */
     public $jexpr = [];
+    /** @var bool */
+    public $quiet;
     /** @var string */
     public $filename;
     /** @var string */
@@ -27,6 +29,7 @@ class SaveUsers_Batch {
         $this->ustatus->notify = isset($arg["notify"]) && !isset($arg["no-notify"]);
         $this->ustatus->no_create = isset($arg["no-create"]);
         $this->ustatus->no_modify = isset($arg["no-modify"]);
+        $this->quiet = isset($arg["quiet"]);
 
         if (isset($arg["expression"])) {
             $this->jexpr = $arg["expression"];
@@ -55,46 +58,24 @@ class SaveUsers_Batch {
         }
     }
 
-    function save_contact($key, $cj) {
-        if (!isset($cj->email)
-            && is_string($key)
-            && validate_email($key)) {
-            $cj->email = $key;
-        }
-        if (($acct = $this->ustatus->save_user($cj))) {
-            if (empty($this->ustatus->diffs)) {
-                fwrite(STDOUT, "{$acct->email}: No changes\n");
-            } else {
-                fwrite(STDOUT, "{$acct->email}: Changed " . join(", ", array_keys($this->ustatus->diffs)) . "\n");
-            }
-        } else {
-            if ($this->ustatus->no_modify
-                && $this->ustatus->has_error_at("email_inuse")) {
-                $this->ustatus->msg_at("email_inuse", "Use `--modify` to modify existing users.", MessageSet::INFORM);
-            }
-            fwrite(STDERR, $this->ustatus->full_feedback_text());
-            $this->exit_status = 1;
-        }
-    }
-
     function parse_json($str) {
         $j = Json::try_decode($str);
-        if (is_object($j)) {
-            if (count((array) $j)
-                && validate_email(array_keys((array) $j)[0])) {
-                $j = (array) $j;
-            } else {
-                $j = [$j];
+        $ja = null;
+        if (is_array($j)) {
+            $ja = $j;
+        } else if (is_object($j) && isset($j->email)) {
+            $ja = [$j];
+        } else if (is_object($j)) {
+            $ja = [];
+            foreach ((array) $j as $k => $jx) {
+                $jx->email = $jx->email ?? $k;
+                $ja[] = $jx;
             }
-        }
-        if ($j === null || !is_array($j)) {
+        } else {
             throw new CommandLineException("{$this->filename}: " . (Json::last_error_msg() ?? "JSON parse error"));
         }
-        foreach ($j as $key => $cj) {
-            $this->ustatus->set_user(Contact::make($this->conf));
-            $this->ustatus->clear_messages();
-            $this->save_contact($key, $cj);
-        }
+        $csv = CsvParser::make_json($ja, true);
+        $this->parse_csvp($csv);
     }
 
     function parse_csv($str) {
@@ -107,13 +88,32 @@ class SaveUsers_Batch {
             throw new CommandLineException("{$this->filename}: email field missing from CSV header");
         }
         $this->ustatus->add_csv_synonyms($csv);
+        $this->parse_csvp($csv);
+    }
+
+    private function parse_csvp(CsvParser $csv) {
         while (($line = $csv->next_row())) {
             $this->ustatus->set_user(Contact::make($this->conf));
             $this->ustatus->clear_messages();
             $this->ustatus->csvreq = $line;
             $this->ustatus->jval = (object) ["id" => null];
             $this->ustatus->parse_csv_group("");
-            $this->save_contact(null, $this->ustatus->jval);
+            if (($acct = $this->ustatus->save_user($this->ustatus->jval))) {
+                if ($this->quiet) {
+                    // print nothing
+                } else if (empty($this->ustatus->diffs)) {
+                    fwrite(STDOUT, "{$acct->email}: No changes\n");
+                } else {
+                    fwrite(STDOUT, "{$acct->email}: Changed " . join(", ", array_keys($this->ustatus->diffs)) . "\n");
+                }
+            } else {
+                if ($this->ustatus->no_modify
+                    && $this->ustatus->has_error_at("email_inuse")) {
+                    $this->ustatus->msg_at("email_inuse", "Use `--modify` to modify existing users.", MessageSet::INFORM);
+                }
+                fwrite(STDERR, $this->ustatus->full_feedback_text());
+                $this->exit_status = 1;
+            }
         }
     }
 
@@ -145,7 +145,8 @@ class SaveUsers_Batch {
             "notify,N Send email notifications (default is no notifications).",
             "no-notify,no-email !",
             "no-modify,create-only Only create new users, do not modify existing.",
-            "no-create,modify-only Only modify existing users, do not create new."
+            "no-create,modify-only Only modify existing users, do not create new.",
+            "quiet,q Do not print changes."
         )->helpopt("help")
          ->description("Save HotCRP users as specified in JSON or CSV.
 Usage: php batch/saveusers.php [OPTION]... [JSONFILE | CSVFILE]

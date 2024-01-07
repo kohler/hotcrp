@@ -8,8 +8,8 @@ class Developer_UserInfo {
     /** @var list<array{int,bool,string}> */
     private $_delete_tokens = [];
 
-    static function parse_qreq(UserStatus $us) {
-        if ($us->allow_security()) {
+    function request(UserStatus $us) {
+        if ($us->is_auth_self() && !$us->user->security_locked()) {
             $us->request_group("developer");
         }
     }
@@ -44,8 +44,12 @@ class Developer_UserInfo {
     }
 
     function print_bearer_tokens(UserStatus $us) {
-        echo '<p class="w-text">Tokens let you access HotCRP’s API programmatically. Supply a token using an HTTP <code>Authorization</code> header, as in “<code>Authorization: Bearer <em>token-name</em></code>”.</p>',
-            Ht::feedback_msg(MessageItem::warning('<0>Treat tokens like passwords and keep them secret. Anyone who knows your tokens can access this site with your privileges.'));
+        echo '<p class="w-text">API tokens let you access HotCRP’s API programmatically. Supply a token using an HTTP <code>Authorization</code> header, as in “<code>Authorization: Bearer <em>token-name</em></code>”.</p>';
+        if ($us->is_auth_self()) {
+            $us->conf->warning_msg('<0>Treat tokens like passwords and keep them secret. Anyone who knows your tokens can access this site with your privileges.');
+        } else {
+            $us->conf->warning_msg('<0>You can only create and delete API tokens when logged in to your own account.');
+        }
     }
 
     function print_current_bearer_tokens(UserStatus $us) {
@@ -63,41 +67,44 @@ class Developer_UserInfo {
         if (!empty($toks)) {
             Icons::stash_defs("trash");
             echo Ht::unstash();
-            $us->print_start_section("Current tokens");
+            $us->print_start_section("Active tokens");
             $n = 1;
             foreach ($toks as $tok) {
                 if ($tok->timeCreated >= Conf::$now - 10) {
-                    self::print_fresh_bearer_token($us, $tok, $n);
+                    $this->print_fresh_bearer_token($us, $tok, $n);
                 } else {
-                    self::print_bearer_token($us, $tok, $n);
+                    $this->print_bearer_token($us, $tok, $n);
                 }
                 ++$n;
             }
         }
     }
 
-    /** @param int $n
-     * @return string */
-    static private function render_bearer_token_deleter(UserStatus $us, TokenInfo $tok, $n) {
+    /** @param int $n */
+    private function print_bearer_token_deleter(UserStatus $us, TokenInfo $tok, $n) {
+        if (!$us->is_auth_self() || $us->user->security_locked()) {
+            return;
+        }
         $dbid = $tok->is_cdb ? "A" : "L";
         $id = "{$tok->timeCreated}.{$dbid}." . substr($tok->salt, 0, 9);
-        return Ht::hidden("bearer_token/{$n}/id", $id)
-            . Ht::hidden("bearer_token/{$n}/delete", "", ["class" => "deleter", "data-default-value" => ""])
-            . Ht::button(Icons::ui_use("trash"), [
+        echo Ht::hidden("bearer_token/{$n}/id", $id),
+            Ht::hidden("bearer_token/{$n}/delete", "", ["class" => "deleter", "data-default-value" => ""]),
+            Ht::button(Icons::ui_use("trash"), [
                 "class" => "ml-3 btn-licon-s ui js-profile-token-delete need-tooltip",
                 "aria-label" => "Delete API token"
             ]);
+        $us->mark_inputs_printed();
     }
 
     /** @param int $n */
-    static function print_bearer_token(UserStatus $us, TokenInfo $tok, $n) {
+    function print_bearer_token(UserStatus $us, TokenInfo $tok, $n) {
         $data = json_decode($tok->data ?? "{}", true) ?? [];
         $note = $data["note"] ?? "";
         echo '<div class="f-i w-text"><label class="f-c">',
-            $note === "" ? "[Unnamed token]" : htmlspecialchars($note),
-            self::render_bearer_token_deleter($us, $tok, $n),
-            '</label>',
-            '<code>', substr($tok->salt, 0, 9), strlen($tok->salt) > 9 ? "…" : "", '</code>',
+            $note === "" ? "[Unnamed token]" : htmlspecialchars($note);
+        $this->print_bearer_token_deleter($us, $tok, $n);
+        echo '</label>',
+            '<code>', substr($tok->salt, 0, 10), strlen($tok->salt) > 9 ? "…" : "", '</code>',
             ' <span class="barsep">·</span> ',
             self::unparse_last_used($tok->timeUsed),
             ' <span class="barsep">·</span> ',
@@ -106,16 +113,16 @@ class Developer_UserInfo {
     }
 
     /** @param int $n */
-    static function print_fresh_bearer_token(UserStatus $us, TokenInfo $tok, $n) {
+    function print_fresh_bearer_token(UserStatus $us, TokenInfo $tok, $n) {
         $data = json_decode($tok->data ?? "{}", true) ?? [];
         $note = $data["note"] ?? "";
         echo '<div class="form-section form-outline-section mb-4 tag-yellow">',
             '<div class="f-i w-text mb-0"><label class="f-c">',
             $note === "" ? "[Unnamed token]" : htmlspecialchars($note),
             '</label>',
-            '<p class="w-text mb-1"><code><strong>', $tok->salt, '</strong></code>',
-            self::render_bearer_token_deleter($us, $tok, $n),
-            '</p>',
+            '<p class="w-text mb-1"><code><strong>', $tok->salt, '</strong></code>';
+        $this->print_bearer_token_deleter($us, $tok, $n);
+        echo '</p>',
             '<p class="feedback is-urgent-note">This is the new token you just created. Copy it now—you won’t be able to recover it later.</p>',
             '<p class="w-text mb-0">',
             self::unparse_last_used($tok->timeUsed),
@@ -138,7 +145,14 @@ class Developer_UserInfo {
         }
     }
 
-    static function print_new_bearer_token(UserStatus $us) {
+    function print_new_bearer_token(UserStatus $us) {
+        if (!$us->is_auth_self()) {
+            return;
+        } else if ($us->user->security_locked()) {
+            $us->conf->warning_msg("<0>This account’s security settings are locked, so its API tokens cannot be changed.");
+            return;
+        }
+
         echo Ht::button("Add token", ["class" => "ui js-profile-token-add mt-4"]);
 
         $us->cs()->add_section_class("hidden");
@@ -174,8 +188,9 @@ class Developer_UserInfo {
     }
 
     function request_new_bearer_token(UserStatus $us) {
-        assert($us->allow_security());
-        if (!$us->qreq["bearer_token/new/enable"]) {
+        assert($us->allow_some_security());
+        if (!$us->qreq["bearer_token/new/enable"]
+            || $us->user->security_locked()) {
             return;
         }
 
@@ -217,7 +232,10 @@ class Developer_UserInfo {
     }
 
     function request_delete_bearer_tokens(UserStatus $us) {
-        assert($us->allow_security());
+        assert($us->allow_some_security());
+        if ($us->user->security_locked()) {
+            return;
+        }
         for ($i = 1; isset($us->qreq["bearer_token/{$i}/id"]); ++$i) {
             if (preg_match('/\A(\d+)\.([AL])\.(hct_\w+)\z/', $us->qreq["bearer_token/{$i}/id"], $m)
                 && $us->qreq["bearer_token/{$i}/delete"]) {

@@ -17,12 +17,12 @@ class Security_UserInfo {
 
     function __construct(UserStatus $us) {
         $this->us = $us;
-        $this->_approved = $us->allow_security()
+        $this->_approved = $us->allow_some_security()
             && UpdateSession::usec_query($us->qreq, $us->viewer->email, 0, 1, Conf::$now - 300);
     }
 
-    function parse_qreq(UserStatus $us) {
-        if (!$us->allow_security()) {
+    function request(UserStatus $us) {
+        if (!$us->allow_some_security()) {
             return;
         }
         $pw = trim($us->qreq->oldpassword ?? "");
@@ -50,13 +50,27 @@ class Security_UserInfo {
         return $this->_approved;
     }
 
+    function print(UserStatus $us) {
+        if (!$us->allow_some_security()) {
+            if ($us->viewer->is_actas_user()) {
+                $us->conf->warning_msg("<0>You cannot edit other users’ security settings.");
+            } else {
+                $us->conf->warning_msg("<0>You can only access your own account’s security settings.");
+            }
+            return false;
+        } else if ($us->user->security_locked()) {
+            $us->conf->warning_msg("<0>This account‘s security settings are locked and cannot be changed.");
+            return false;
+        }
+    }
+
     function parse_qreq_new_password(UserStatus $us) {
         $pw = trim($us->qreq->upassword ?? "");
         $pw2 = trim($us->qreq->upassword2 ?? "");
         $this->_req_passwords = [$us->qreq->upassword ?? "", $us->qreq->upassword2 ?? ""];
         if (($pw === "" && $pw2 === "")
             || !$this->allow_security_changes()
-            || !$us->viewer->can_change_password($us->user)) {
+            || !$us->viewer->can_edit_password($us->user)) {
             return;
         }
         if ($pw !== $pw2) {
@@ -93,7 +107,7 @@ class Security_UserInfo {
     }
 
     function print_new_password(UserStatus $us) {
-        if (!$us->viewer->can_change_password($us->user)) {
+        if (!$us->viewer->can_edit_password($us->user)) {
             return;
         }
         $us->print_start_section("Change password");
@@ -117,10 +131,12 @@ class Security_UserInfo {
             $us->feedback_html_at("upassword2"),
             Ht::password("upassword2", $pws[1], ["size" => 52, "autocomplete" => $us->autocomplete("new-password"), "disabled" => !$this->_approved, "class" => "need-profile-current-password"]),
             '</div>', $open ? '' : '</div>', '</div>';
+        $us->mark_inputs_printed();
     }
 
     static function save_new_password(UserStatus $us) {
-        if (isset($us->jval->new_password)) {
+        if (isset($us->jval->new_password)
+            && $us->viewer->can_edit_password($us->user)) {
             $us->user->change_password($us->jval->new_password);
             $us->diffs["password"] = true;
         }
