@@ -1068,6 +1068,9 @@ class PaperSearch extends MessageSet {
                     && ($kwdef = $conf->search_keyword($kw))
                     && !($kwdef->allow_parens ?? false)) {
                     $kwarg = self::_canonical_expression($kwarg, $type, "n", $conf);
+                    if (!str_starts_with($kwarg, "(")) {
+                        $kwarg = "({$kwarg})";
+                    }
                 }
                 if ($kw !== "") {
                     $curqe = "{$kw}:{$kwarg}";
