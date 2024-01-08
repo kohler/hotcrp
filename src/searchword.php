@@ -40,8 +40,7 @@ class SearchWord {
     static function make_kwarg($kwarg, $pos1w, $pos1, $pos2) {
         $sw = new SearchWord;
         $sw->qword = $kwarg;
-        $sw->quoted = self::is_quoted($kwarg);
-        $sw->word = $sw->quoted ? substr($kwarg, 1, -1) : $kwarg;
+        list($sw->word, $sw->quoted) = self::maybe_unquote($kwarg);
         $sw->pos1w = $pos1w;
         $sw->pos1 = $pos1;
         $sw->pos2 = $pos2;
@@ -59,23 +58,42 @@ class SearchWord {
     }
 
     /** @param string $str
-     * @return bool */
-    static function is_quoted($str) {
-        return $str !== ""
-            && $str[0] === "\""
-            && strpos($str, "\"", 1) === strlen($str) - 1;
-    }
-
-    /** @param string $str
      * @return string */
     static function unquote($str) {
-        return self::is_quoted($str) ? substr($str, 1, -1) : $str;
+        $len = strlen($str);
+        if ($len === 0) {
+            return "";
+        }
+        $ch = ord($str[0]);
+        if ($ch === 34) {
+            $len1 = 1;
+        } else if ($ch === 0xE2
+                   && $len > 3
+                   && ord($str[1]) === 0x80
+                   && (ord($str[2]) | 1) === 0x9D) { // i.e., “”
+            $len1 = 3;
+        } else {
+            $len1 = 0;
+        }
+        $ch = $len > $len1 ? ord($str[$len - 1]) : 0;
+        if ($ch === 34) {
+            $len2 = 1;
+        } else if (($ch | 1) === 0x9D
+                   && $len >= $len1 + 3
+                   && ord($str[$len - 2]) === 0x80
+                   && ord($str[$len - 3]) === 0xE2) {
+            $len2 = 3;
+        } else {
+            $len2 = 0;
+        }
+        return substr($str, $len1, $len - $len1 - $len2);
     }
 
     /** @param string $str
      * @return array{string,bool} */
     static function maybe_unquote($str) {
-        return self::is_quoted($str) ? [substr($str, 1, -1), true] : [$str, false];
+        $uq = self::unquote($str);
+        return strlen($str) === strlen($uq) ? [$str, false] : [$uq, true];
     }
 
     /** @param ?string $cword */

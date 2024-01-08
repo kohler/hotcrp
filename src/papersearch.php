@@ -676,9 +676,6 @@ class PaperSearch extends MessageSet {
     static function parse_has($word, SearchWord $sword, PaperSearch $srch) {
         $kword = $word;
         $kwdef = $srch->conf->search_keyword($kword, $srch->user);
-        if (!$kwdef && ($kword = strtolower($word)) !== $word) {
-            $kwdef = $srch->conf->search_keyword($kword, $srch->user);
-        }
         if ($kwdef) {
             if ($kwdef->parse_has_function ?? null) {
                 $qe = call_user_func($kwdef->parse_has_function, $word, $sword, $srch);
@@ -799,7 +796,7 @@ class PaperSearch extends MessageSet {
     /** @param string $str
      * @return string */
     static private function _search_word_inferred_keyword($str) {
-        if (preg_match('/\A([-_.a-zA-Z0-9]+|"[^"]")(?:[=!<>]=?|≠|≤|≥)[^:]+\z/s', $str, $m)) {
+        if (preg_match('/\A([_a-zA-Z0-9][-_.a-zA-Z0-9]*)(?:[=!<>]=?|≠|≤|≥)[^:]+\z/s', $str, $m)) {
             return $m[1];
         } else {
             return "";
@@ -822,7 +819,7 @@ class PaperSearch extends MessageSet {
     private function _search_word($kw, $sword, $scope) {
         // Explicitly provided keyword
         if ($kw !== "") {
-            $qe = $this->_search_keyword(substr($kw, 0, -1), $sword, $scope, false);
+            $qe = $this->_search_keyword($kw, $sword, $scope, false);
             return $qe ?? new False_SearchTerm;
         }
 
@@ -913,28 +910,14 @@ class PaperSearch extends MessageSet {
         return $op;
     }
 
-    /** @param string $kw
-     * @return string */
-    static private function _shift_kwarg($kw, SearchSplitter $splitter, Conf $conf) {
-        if ($kw !== "") {
-            assert($kw[0] !== "\"");
-            $kwx = substr($kw, 0, -1);
-            $kwd = $conf->search_keyword($kwx);
-            if ($kwd && ($kwd->allow_parens ?? false)) {
-                return $splitter->shift_balanced_parens(null, true);
-            }
-        }
-        return $splitter->shift("()");
-    }
-
     /** @param string $str
+     * @param ?SearchScope $scope
      * @return ?SearchTerm */
-    private function _search_expression($str) {
-        $scope = new SearchScope(null, null, 0, strlen($str), null);
-        $next_defkw = null;
+    private function _search_expression($str, $scope = null) {
+        $scope = $scope ?? new SearchScope(null, null, 0, strlen($str), null);
         $parens = 0;
         $curqe = null;
-        $splitter = new SearchSplitter($str);
+        $splitter = new SearchSplitter($str, $scope->pos1, $scope->pos2);
 
         while (!$splitter->is_empty()) {
             $pos1 = $splitter->pos;
@@ -952,22 +935,25 @@ class PaperSearch extends MessageSet {
                 $pos1w = $splitter->pos;
                 $kw = $splitter->shift_keyword();
                 $pos1 = $splitter->pos;
-                $kwarg = self::_shift_kwarg($kw, $splitter, $this->conf);
+                $kwarg = $splitter->shift_balanced_parens(null, true);
                 $pos2 = $splitter->last_pos;
-                if ($kw === "" && $kwarg === "") {
-                    error_log("problem: no op, str “{$str}” in “{$this->q}”");
-                    break;
-                }
-                // Search like "ti:(foo OR bar)" adds a default keyword.
-                if ($kw !== "" && $kwarg === "" && $splitter->starts_with("(")) {
-                    $next_defkw = [substr($kw, 0, strlen($kw) - 1), $pos1w];
+                if ($kw !== ""
+                    && str_starts_with($kwarg, "(")
+                    && ($kwdef = $this->conf->search_keyword($kw, $this->user))
+                    && !($kwdef->allow_parens ?? false)) {
+                    // Search like "ti:(foo OR bar)" adds a default keyword.
+                    $nscope = new SearchScope(null, null, $pos1, $pos2, null);
+                    $nscope->defkw = $kw;
+                    $nscope->defkw_pos1w = $pos1w;
+                    $nscope->defkw_scope = $nscope;
+                    $curqe = $this->_search_expression($str, $nscope);
                 } else {
                     // The heart of the matter.
                     $sword = SearchWord::make_kwarg($kwarg, $pos1w, $pos1, $pos2);
                     $curqe = $this->_search_word($kw, $sword, $scope);
-                    if (!$curqe->is_uninteresting()) {
-                        $curqe->set_strspan($pos1w, $pos2);
-                    }
+                }
+                if (!$curqe->is_uninteresting()) {
+                    $curqe->set_strspan($pos1w, $pos2);
                 }
             } else if ($op->op === ")") {
                 while ($scope->op && $scope->op->op !== "(") {
@@ -981,12 +967,6 @@ class PaperSearch extends MessageSet {
             } else if ($op->op === "(") {
                 assert(!$curqe);
                 $scope = new SearchScope($op, null, $pos1, $pos2, $scope);
-                if ($next_defkw) {
-                    $scope->defkw = $next_defkw[0];
-                    $scope->defkw_pos1w = $next_defkw[1];
-                    $scope->defkw_scope = $scope;
-                    $next_defkw = null;
-                }
                 ++$parens;
             } else if ($op->unary || $curqe) {
                 $end_precedence = $op->precedence - ($op->precedence <= 1 ? 1 : 0);
@@ -1055,7 +1035,7 @@ class PaperSearch extends MessageSet {
         } else if ($ch === "#"
                    && $defkw === "") {
             return ["#", substr($word, 1)];
-        } else if (preg_match('/\A([-_.a-zA-Z0-9]+|"[^"]")((?:[=!<>]=?|≠|≤|≥)[^:]+|:.*)\z/s', $word, $m)) {
+        } else if (preg_match('/\A([_a-zA-Z0-9][-._a-zA-Z0-9]*)((?:[=!<>]=?|≠|≤|≥)[^:]+|:.*)\z/s', $word, $m)) {
             return [$m[1], $m[2]];
         } else {
             return ["", $word];
@@ -1082,14 +1062,19 @@ class PaperSearch extends MessageSet {
             }
             if (!$op) {
                 $kw = $splitter->shift_keyword();
-                $curqe = $kw . self::_shift_kwarg($kw, $splitter, $conf);
-                if ($qt !== "n") {
-                    $wordbrk = self::_search_word_breakdown($curqe, "");
-                    if ($wordbrk[0] === "") {
-                        $curqe = ($qt === "tag" ? "#" : "{$qt}:") . $curqe;
-                    } else if ($wordbrk[1] === ":") {
-                        $curqe .= $splitter->shift_balanced_parens();
-                    }
+                $kwarg = $splitter->shift_balanced_parens(null, true);
+                if ($kw !== ""
+                    && str_starts_with($kwarg, "(")
+                    && ($kwdef = $conf->search_keyword($kw))
+                    && !($kwdef->allow_parens ?? false)) {
+                    $kwarg = self::_canonical_expression($kwarg, $type, "n", $conf);
+                }
+                if ($kw !== "") {
+                    $curqe = "{$kw}:{$kwarg}";
+                } else if ($qt !== "n") {
+                    $curqe = ($qt === "tag" ? "#{$kwarg}" : "{$qt}:{$kwarg}");
+                } else {
+                    $curqe = $kwarg;
                 }
             } else if ($op->op === ")") {
                 while (count($stack)
@@ -1140,7 +1125,7 @@ class PaperSearch extends MessageSet {
         $x = [];
         if (($t ?? "") !== ""
             && ($t = self::long_canonical_limit($t)) !== null) {
-            $qa = ($qa ?? "") !== "" ? "({$qa}) in:$t" : "in:$t";
+            $qa = ($qa ?? "") !== "" ? "({$qa}) in:{$t}" : "in:{$t}";
         }
         if (($qa = self::_canonical_expression($qa, "all", $qt, $conf)) !== "") {
             $x[] = $qa;
@@ -1151,7 +1136,7 @@ class PaperSearch extends MessageSet {
         if (($qx = self::_canonical_expression($qx, "none", $qt, $conf)) !== "") {
             $x[] = $qx;
         }
-        if (count($x) == 1) {
+        if (count($x) === 1) {
             return preg_replace('/\A\((.*)\)\z/', '$1', $x[0]);
         } else {
             return join(" AND ", $x);

@@ -8,18 +8,20 @@ class SearchSplitter {
     /** @var bool */
     private $utf8q;
     /** @var int */
-    public $pos = 0;
+    public $pos;
     /** @var int */
     private $len;
     /** @var int */
     public $last_pos = 0;
 
-    /** @param string $str */
-    function __construct($str) {
+    /** @param string $str
+     * @param int $pos1
+     * @param ?int $pos2 */
+    function __construct($str, $pos1 = 0, $pos2 = null) {
         $this->str = $str;
-        $this->len = strlen($str);
-        $this->utf8q = strpos($str, chr(0xE2)) !== false
-            && is_valid_utf8($str);
+        $this->pos = $pos1;
+        $this->len = $pos2 ?? strlen($str);
+        $this->utf8q = strpos($str, chr(0xE2)) !== false && is_valid_utf8($str);
         $this->set_span_and_pos(0);
     }
 
@@ -30,7 +32,21 @@ class SearchSplitter {
 
     /** @return string */
     function rest() {
-        return substr($this->str, $this->pos);
+        return substr($this->str, $this->pos, $this->len - $this->pos);
+    }
+
+    /** @param int $len */
+    private function set_span_and_pos($len) {
+        $this->last_pos = $this->pos = min($this->pos + $len, $this->len);
+        if ($this->utf8q) {
+            if (preg_match('/\G\s+/u', $this->str, $m, 0, $this->pos)) {
+                $this->pos = min($this->pos + strlen($m[0]), $this->len);
+            }
+        } else {
+            while ($this->pos < $this->len && ctype_space($this->str[$this->pos])) {
+                ++$this->pos;
+            }
+        }
     }
 
     /** @return string */
@@ -41,29 +57,11 @@ class SearchSplitter {
             && preg_match('/\G["“”][^"“”]+["“”]:/su', $this->str, $m, 0, $this->pos)) {
             error_log("Unexpected quoted search keyword in “{$this->str}”");
         }
-        if (preg_match('/\G[_a-zA-Z0-9][-_.a-zA-Z0-9]*:/s', $this->str, $m, 0, $this->pos)) {
-            $this->set_span_and_pos(strlen($m[0]));
+        if (preg_match('/\G[_a-zA-Z0-9][-_.a-zA-Z0-9]*(?=:)/s', $this->str, $m, 0, $this->pos)
+            && $this->pos + strlen($m[0]) < $this->len) {
+            $this->set_span_and_pos(strlen($m[0]) + 1);
             return $m[0];
         } else {
-            return "";
-        }
-    }
-
-    /** @param string $exceptions
-     * @return string */
-    function shift($exceptions = null) {
-        if ($exceptions === null) {
-            $exceptions = '\(\)\[\]';
-        } else if ($exceptions !== "()" && $exceptions !== "") {
-            $exceptions = preg_quote($exceptions);
-        }
-        if ($this->utf8q
-            ? preg_match("/\\G(?:[\"“”][^\"“”]*(?:[\"“”]|\\z)|[^\"“”\\s{$exceptions}]*)*/su", $this->str, $m, 0, $this->pos)
-            : preg_match("/\\G(?:\"[^\"]*(?:\"|\\z)|[^\"\\s{$exceptions}]*)*/s", $this->str, $m, 0, $this->pos)) {
-            $this->set_span_and_pos(strlen($m[0]));
-            return $this->utf8q ? preg_replace('/[“”]/u', '"', $m[0]) : $m[0];
-        } else {
-            $this->last_pos = $this->pos = $this->len;
             return "";
         }
     }
@@ -107,21 +105,8 @@ class SearchSplitter {
 
     /** @param string $substr */
     function starts_with($substr) {
-        return substr_compare($this->str, $substr, $this->pos, strlen($substr)) === 0;
-    }
-
-    /** @param int $len */
-    private function set_span_and_pos($len) {
-        $this->last_pos = $this->pos = $this->pos + $len;
-        if ($this->utf8q) {
-            if (preg_match('/\G\s+/u', $this->str, $m, 0, $this->pos)) {
-                $this->pos += strlen($m[0]);
-            }
-        } else {
-            while ($this->pos < $this->len && ctype_space($this->str[$this->pos])) {
-                ++$this->pos;
-            }
-        }
+        return substr_compare($this->str, $substr, $this->pos, strlen($substr)) === 0
+            && $this->pos + strlen($substr) <= $this->len;
     }
 
     /** @param string $str

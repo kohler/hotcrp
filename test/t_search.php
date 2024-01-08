@@ -34,6 +34,8 @@ class Search_Tester {
                     "-has:submission");
         xassert_eqq(PaperSearch::canonical_query("NOT (foo OR bar)", "", "", "", $this->conf),
                     "NOT (foo OR bar)");
+        xassert_eqq(PaperSearch::canonical_query("ti:foo OR bar ti:(foo OR bar)", "", "", "tag", $this->conf),
+                    "ti:foo OR (#bar ti:(foo OR bar))");
     }
 
     function test_sort_etag() {

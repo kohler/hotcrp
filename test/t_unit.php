@@ -1327,4 +1327,16 @@ class Unit_Tester {
         xassert_eqq(Text::merge_whitespace("a\n", "\n\nb"), "a\n\nb");
         xassert_eqq(Text::merge_whitespace("a\n", "\n   b"), "a\n   b");
     }
+
+    function test_search_word_unquote() {
+        xassert_eqq(SearchWord::unquote("abc"), "abc");
+        xassert_eqq(SearchWord::unquote("\"abc"), "abc");
+        xassert_eqq(SearchWord::unquote("abc\""), "abc");
+        xassert_eqq(SearchWord::unquote("\"abc\""), "abc");
+        xassert_eqq(SearchWord::unquote("“abc\""), "abc");
+        xassert_eqq(SearchWord::unquote("”abc\""), "abc");
+        xassert_eqq(SearchWord::unquote("“abc”"), "abc");
+        xassert_eqq(SearchWord::unquote("\"abc”"), "abc");
+        xassert_eqq(SearchWord::unquote("\"abc“"), "abc");
+    }
 }
