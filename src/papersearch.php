@@ -761,7 +761,7 @@ class PaperSearch extends MessageSet {
      * @param bool $is_defkw
      * @return ?SearchTerm */
     private function _search_keyword($kw, $sword, $scope, $is_defkw) {
-        $kw = $kw[0] === "\"" ? trim(substr($kw, 1, -1)) : $kw;
+        assert($kw[0] !== "\"");
         $kwdef = $this->conf->search_keyword($kw, $this->user);
         if (!$kwdef || !($kwdef->parse_function ?? null)) {
             if ($scope
@@ -917,7 +917,8 @@ class PaperSearch extends MessageSet {
      * @return string */
     static private function _shift_kwarg($kw, SearchSplitter $splitter, Conf $conf) {
         if ($kw !== "") {
-            $kwx = $kw[0] === '"' ? substr($kw, 1, -2) : substr($kw, 0, -1);
+            assert($kw[0] !== "\"");
+            $kwx = substr($kw, 0, -1);
             $kwd = $conf->search_keyword($kwx);
             if ($kwd && ($kwd->allow_parens ?? false)) {
                 return $splitter->shift_balanced_parens(null, true);

@@ -35,11 +35,15 @@ class SearchSplitter {
 
     /** @return string */
     function shift_keyword() {
-        if ($this->utf8q
-            ? preg_match('/\G(?:[-_.a-zA-Z0-9]+|["“”][^"“”]+["“”]):/su', $this->str, $m, 0, $this->pos)
-            : preg_match('/\G(?:[-_.a-zA-Z0-9]+|"[^"]+"):/s', $this->str, $m, 0, $this->pos)) {
+        // XXX warning about quoted keywords should be removed soon
+        if ($this->pos < $this->len
+            && ($this->str[$this->pos] === "\"" || $this->str[$this->pos] === "\xE2")
+            && preg_match('/\G["“”][^"“”]+["“”]:/su', $this->str, $m, 0, $this->pos)) {
+            error_log("Unexpected quoted search keyword in “{$this->str}”");
+        }
+        if (preg_match('/\G[_a-zA-Z0-9][-_.a-zA-Z0-9]*:/s', $this->str, $m, 0, $this->pos)) {
             $this->set_span_and_pos(strlen($m[0]));
-            return $this->utf8q ? preg_replace('/[“”]/u', '"', $m[0]) : $m[0];
+            return $m[0];
         } else {
             return "";
         }
