@@ -22,7 +22,7 @@ abstract class SearchTerm {
      * @param SearchTerm ...$terms
      * @return SearchTerm */
     static function combine($op, ...$terms) {
-        $name = is_string($op) ? $op : $op->op;
+        $name = is_string($op) ? $op : $op->type;
         if ($name === "not") {
             $qr = new Not_SearchTerm;
         } else if (count($terms) === 1) {
@@ -64,7 +64,7 @@ abstract class SearchTerm {
      * @param SearchWord $sword
      * @return $this */
     function add_view_anno($view, $sword) {
-        $this->float["view"][] = [$view, $sword->pos1w, $sword->pos1, $sword->pos2];
+        $this->float["view"][] = [$view, $sword->kwpos1, $sword->pos1, $sword->pos2];
         return $this;
     }
 
@@ -73,7 +73,7 @@ abstract class SearchTerm {
     function view_anno_pos($field) {
         foreach (PaperSearch::view_generator($this->float["view"] ?? []) as $sve) {
             if ($field === $sve->keyword)
-                return [$sve->pos1w, $sve->pos1, $sve->pos2];
+                return [$sve->kwpos1, $sve->pos1, $sve->pos2];
         }
         return null;
     }
@@ -707,7 +707,7 @@ class Then_SearchTerm extends Op_SearchTerm {
     /** @var bool */
     private $is_highlight;
     /** @var ?string */
-    private $opinfo;
+    private $subtype;
     /** @var int */
     private $nthen = 0;
     /** @var list<Highlight_SearchInfo> */
@@ -720,13 +720,13 @@ class Then_SearchTerm extends Op_SearchTerm {
     private $_last_group;
 
     function __construct(SearchOperator $op) {
-        assert($op->op === "then" || $op->op === "highlight");
+        assert($op->type === "then" || $op->type === "highlight");
         parent::__construct("then");
-        $this->is_highlight = $op->op === "highlight";
-        $this->opinfo = $op->opinfo ?? null;
+        $this->is_highlight = $op->type === "highlight";
+        $this->subtype = $op->subtype;
     }
     protected function _finish() {
-        $opinfo = strtolower($this->opinfo ?? "");
+        $subtype = strtolower($this->subtype ?? "");
         $newvalues = $newhvalues = $newhinfo = [];
 
         foreach ($this->child as $qvidx => $qv) {
@@ -734,11 +734,11 @@ class Then_SearchTerm extends Op_SearchTerm {
                 if ($qv instanceof Then_SearchTerm) {
                     for ($i = 0; $i < $qv->nthen; ++$i) {
                         $newhvalues[] = $qv->child[$i];
-                        $newhinfo[] = new Highlight_SearchInfo(0, count($newvalues), $opinfo);
+                        $newhinfo[] = new Highlight_SearchInfo(0, count($newvalues), $subtype);
                     }
                 } else {
                     $newhvalues[] = $qv;
-                    $newhinfo[] = new Highlight_SearchInfo(0, count($newvalues), $opinfo);
+                    $newhinfo[] = new Highlight_SearchInfo(0, count($newvalues), $subtype);
                 }
             } else if ($qv && $qv instanceof Then_SearchTerm) {
                 $pos = count($newvalues);

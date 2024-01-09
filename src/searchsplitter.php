@@ -35,6 +35,14 @@ class SearchSplitter {
         return substr($this->str, $this->pos, $this->len - $this->pos);
     }
 
+    /** @param int $pos
+     * @return $this */
+    function set_pos($pos) {
+        assert($pos >= 0 && $pos <= $this->len);
+        $this->pos = $this->last_pos = $pos;
+        return $this;
+    }
+
     /** @param int $len */
     private function set_span_and_pos($len) {
         $this->last_pos = $this->pos = min($this->pos + $len, $this->len);
@@ -107,6 +115,22 @@ class SearchSplitter {
     function starts_with($substr) {
         return substr_compare($this->str, $substr, $this->pos, strlen($substr)) === 0
             && $this->pos + strlen($substr) <= $this->len;
+    }
+
+    /** @return ?SearchOperator */
+    function shift_operator() {
+        if (!$this->match('/\G(?:[-+!()]|\&\&|\|\||\^\^|(?:AND|and|OR|or|NOT|not|XOR|xor|THEN|then|HIGHLIGHT(?::\w+)?)(?=[\s\(\)]|\z))/s', $m)
+            || $this->pos + strlen($m[0]) > $this->len) {
+            return null;
+        }
+        $op = SearchOperator::get(strtoupper($m[0]));
+        if (!$op) {
+            $colon = strpos($m[0], ":");
+            $op = clone SearchOperator::get(strtoupper(substr($m[0], 0, $colon)));
+            $op->subtype = substr($m[0], $colon + 1);
+        }
+        $this->set_span_and_pos(strlen($m[0]));
+        return $op;
     }
 
     /** @param string $str
@@ -185,5 +209,69 @@ class SearchSplitter {
             }
         }
         return $w;
+    }
+
+    /** @param 'SPACE'|'SPACEOR' $spaceop
+     * @param int $max_terms
+     * @return ?SearchAtom */
+    function parse_expression($spaceop = "SPACE", $max_ops = 2048) {
+        $cura = null;
+        $parens = 0;
+        $nops = 0;
+        while (!$this->is_empty()) {
+            $pos1 = $this->pos;
+            $op = $this->shift_operator();
+            $pos2 = $this->last_pos;
+            if (!$op && (!$cura || !$cura->is_complete())) {
+                $kwpos1 = $this->pos;
+                $kw = $this->shift_keyword();
+                $pos1 = $this->pos;
+                $text = $this->shift_balanced_parens(null, true);
+                $pos2 = $this->last_pos;
+                $cura = SearchAtom::make_keyword($kw, $text, $kwpos1, $pos1, $pos2, $cura);
+                continue;
+            }
+
+            if ($op && $op->type === ")") {
+                if ($parens === 0) {
+                    continue;
+                }
+                do {
+                    $cura = $cura->complete($pos1);
+                } while ($cura->op->type !== "(");
+                $cura->pos2 = $pos2;
+                --$parens;
+                continue;
+            }
+
+            if (!$op || ($op && $op->unary && $cura && $cura->is_complete())) {
+                $op = SearchOperator::get($parens > 0 ? "SPACE" : $spaceop);
+                $this->set_pos($pos1);
+                $pos2 = $pos1;
+            }
+
+            if (!$op->unary) {
+                if (!$cura || $cura->is_incomplete_paren()) {
+                    $cura = SearchAtom::make_simple("", $pos1, $cura);
+                }
+                while ($cura->parent && $cura->parent->op->precedence >= $op->precedence) {
+                    $cura = $cura->complete($pos1);
+                }
+            }
+
+            if ($nops >= $max_ops) {
+                return null;
+            }
+
+            $cura = SearchAtom::make_op($op, $pos1, $pos2, $cura);
+            if ($op->type === "(") {
+                ++$parens;
+            }
+            ++$nops;
+        }
+        while ($cura && ($cura->parent || !$cura->is_complete())) {
+            $cura = $cura->complete($this->last_pos);
+        }
+        return $cura;
     }
 }

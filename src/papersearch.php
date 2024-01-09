@@ -1,127 +1,26 @@
 <?php
 // papersearch.php -- HotCRP class for searching for papers
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
-
-class SearchOperator {
-    /** @var string */
-    public $op;
-    /** @var bool */
-    public $unary;
-    /** @var int */
-    public $precedence;
-    /** @var ?string */
-    public $opinfo;
-
-    /** @var ?array<string,SearchOperator> */
-    static private $list = null;
-
-    /** @param string $op
-     * @param bool $unary
-     * @param int $precedence
-     * @param ?string $opinfo */
-    function __construct($op, $unary, $precedence, $opinfo = null) {
-        $this->op = $op;
-        $this->unary = $unary;
-        $this->precedence = $precedence;
-        $this->opinfo = $opinfo;
-    }
-
-    /** @return string */
-    function unparse() {
-        $x = strtoupper($this->op);
-        return $this->opinfo === null ? $x : "{$x}:{$this->opinfo}";
-    }
-
-    /** @return ?SearchOperator */
-    static function get($name) {
-        if (!self::$list) {
-            self::$list["("] = new SearchOperator("(", true, 0);
-            self::$list[")"] = new SearchOperator(")", true, 0);
-            self::$list["NOT"] = self::$list["-"] = self::$list["!"] =
-                new SearchOperator("not", true, 8);
-            self::$list["+"] = new SearchOperator("+", true, 8);
-            self::$list["SPACE"] = new SearchOperator("space", false, 7);
-            self::$list["AND"] = self::$list["&"] = self::$list["&&"] =
-                new SearchOperator("and", false, 6);
-            self::$list["XOR"] = self::$list["^"] =
-                new SearchOperator("xor", false, 5);
-            self::$list["OR"] = self::$list["|"] = self::$list["||"] =
-                new SearchOperator("or", false, 4);
-            self::$list["SPACEOR"] = new SearchOperator("or", false, 3);
-            self::$list["THEN"] = new SearchOperator("then", false, 2);
-            self::$list["HIGHLIGHT"] = new SearchOperator("highlight", false, 1, "");
-        }
-        return self::$list[$name] ?? null;
-    }
-}
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class SearchScope {
-    /** @var ?SearchOperator */
-    public $op;
-    /** @var ?SearchTerm */
-    public $leftqe;
     /** @var int */
     public $pos1;
     /** @var int */
     public $pos2;
-    /** @var ?SearchScope */
-    public $next;
-    /** @var ?string */
+    /** @var ?SearchAtom */
     public $defkw;
-    /** @var ?int */
-    public $defkw_pos1w;
-    /** @var ?SearchScope */
-    public $defkw_scope;
     /** @var bool */
     public $defkw_error = false;
     /** @var int */
     public $ignore_unknown = 0;
 
-    /** @param ?SearchOperator $op
-     * @param ?SearchTerm $leftqe
-     * @param int $pos1
+    /** @param int $pos1
      * @param int $pos2
-     * @param ?SearchScope $next */
-    function __construct($op, $leftqe, $pos1, $pos2, $next) {
-        $this->op = $op;
-        $this->leftqe = $leftqe;
+     * @param ?SearchAtom $defkw */
+    function __construct($pos1, $pos2, $defkw) {
         $this->pos1 = $pos1;
         $this->pos2 = $pos2;
-        if (($this->next = $next)) {
-            $this->defkw = $next->defkw;
-            $this->defkw_pos1w = $next->defkw_pos1w;
-            $this->defkw_scope = $next->defkw_scope;
-        }
-    }
-    /** @param ?SearchTerm $curqe
-     * @return array{?SearchTerm,SearchScope} */
-    function pop($curqe) {
-        assert(!!$this->op);
-        if ($curqe) {
-            if ($this->leftqe) {
-                $curqe = SearchTerm::combine($this->op, $this->leftqe, $curqe);
-            } else if ($this->op->op !== "+" && $this->op->op !== "(") {
-                $curqe = SearchTerm::combine($this->op, $curqe);
-            }
-            $curqe->apply_strspan($this->pos1, $this->pos2);
-        } else {
-            $curqe = $this->leftqe;
-        }
-        return [$curqe, $this->next];
-    }
-}
-
-class CanonicalizeScope {
-    /** @var SearchOperator */
-    public $op;
-    /** @var list<string> */
-    public $qe;
-
-    /** @param SearchOperator $op
-     * @param list<string> $qe */
-    function __construct($op, $qe) {
-        $this->op = $op;
-        $this->qe = $qe;
+        $this->defkw = $defkw;
     }
 }
 
@@ -252,7 +151,7 @@ class SearchViewElement {
     /** @var list<string> */
     public $decorations = [];
     /** @var ?int */
-    public $pos1w;
+    public $kwpos1;
     /** @var ?int */
     public $pos1;
     /** @var ?int */
@@ -680,7 +579,7 @@ class PaperSearch extends MessageSet {
             if ($kwdef->parse_has_function ?? null) {
                 $qe = call_user_func($kwdef->parse_has_function, $word, $sword, $srch);
             } else if ($kwdef->has ?? null) {
-                $sword2 = SearchWord::make_kwarg($kwdef->has, $sword->pos1w, $sword->pos1, $sword->pos2);
+                $sword2 = SearchWord::make_kwarg($kwdef->has, $sword->kwpos1, $sword->pos1, $sword->pos2);
                 $sword2->kwexplicit = true;
                 $sword2->kwdef = $kwdef;
                 $qe = call_user_func($kwdef->parse_function, $kwdef->has, $sword2, $srch);
@@ -762,12 +661,12 @@ class PaperSearch extends MessageSet {
         $kwdef = $this->conf->search_keyword($kw, $this->user);
         if (!$kwdef || !($kwdef->parse_function ?? null)) {
             if ($scope
-                && (!$is_defkw || !$scope->defkw_scope->defkw_error)
+                && (!$is_defkw || !$scope->defkw_error)
                 && $scope->ignore_unknown === 0) {
-                $xsword = SearchWord::make_kwarg($kw, $sword->pos1w, $sword->pos1w, $sword->pos1);
+                $xsword = SearchWord::make_kwarg($kw, $sword->kwpos1, $sword->kwpos1, $sword->pos1);
                 $this->lwarning($xsword, "<0>Unknown search keyword ‘{$kw}:’");
                 if ($is_defkw) {
-                    $scope->defkw_scope->defkw_error = true;
+                    $scope->defkw_error = true;
                 }
             }
             return null;
@@ -823,17 +722,16 @@ class PaperSearch extends MessageSet {
             return $qe ?? new False_SearchTerm;
         }
 
-        $has_defkw = !empty($scope->defkw);
         // Paper ID search term (`1-2`, `#1-#2`, etc.)
         if (!$sword->quoted
-            && !$has_defkw
+            && !$scope->defkw
             && self::_search_word_is_paperid($sword->word)) {
             return PaperID_SearchTerm::parse_normal($sword->word);
         }
 
         // Tag search term
         if (!$sword->quoted
-            && !$has_defkw
+            && !$scope->defkw
             && str_starts_with($sword->word, "#")) {
             return $this->_search_keyword("hashtag", $sword, null, false);
         }
@@ -852,9 +750,9 @@ class PaperSearch extends MessageSet {
         }
 
         // Default keyword (`ti:(xxx OR yyy)`, etc.)
-        if ($has_defkw) {
-            $sword->pos1w = $scope->defkw_pos1w;
-            $qe = $this->_search_keyword($scope->defkw, $sword, $scope, true);
+        if ($scope->defkw) {
+            $sword->kwpos1 = $scope->defkw->kwpos1;
+            $qe = $this->_search_keyword($scope->defkw->kword, $sword, $scope, true);
             return $qe ?? new False_SearchTerm;
         }
 
@@ -892,96 +790,52 @@ class PaperSearch extends MessageSet {
         }
     }
 
-    /** @return ?SearchOperator */
-    static private function _shift_keyword(SearchSplitter $splitter, $curqe) {
-        if (!$splitter->match('/\G(?:[-+!()^]|(?:AND|and|OR|or|NOT|not|XOR|xor|THEN|then|HIGHLIGHT(?::\w+)?|\&\&?|\|\|?)(?=[\s\(]))/s', $m)) {
+    /** @param ?SearchAtom $sa
+     * @param string $str
+     * @param SearchScope $scope
+     * @param int $depth
+     * @return ?SearchTerm */
+    private function _parse_atom($sa, $str, $scope, $depth) {
+        if (!$sa) {
             return null;
+        } else if ($sa->op) {
+            $child = [];
+            foreach ($sa->child as $sac) {
+                $child[] = $this->_parse_atom($sac, $str, $scope, $depth);
+            }
+            if ($sa->op->type === "+" || $sa->op->type === "(") {
+                return $child[0];
+            }
+            $st = SearchTerm::combine($sa->op, ...$child);
+        } else if ($sa->kword === null && $sa->text === "") {
+            $st = new True_SearchTerm;
+        } else if ($sa->kword !== null
+                   && str_starts_with($sa->text, "(")
+                   && ($kwdef = $this->conf->search_keyword($sa->kword, $this->user))
+                   && !($kwdef->allow_parens ?? false)) {
+            // Search like `ti:(foo OR bar)` adds a default keyword; must reparse.
+            $st = $this->_search_expression($str, new SearchScope($sa->pos1, $sa->pos2, $sa), $depth + 1);
+        } else {
+            $sword = SearchWord::make_kwarg($sa->text, $sa->kwpos1, $sa->pos1, $sa->pos2);
+            $st = $this->_search_word($sa->kword ?? "", $sword, $scope);
         }
-        $op = SearchOperator::get(strtoupper($m[0]));
-        if (!$op) {
-            $colon = strpos($m[0], ":");
-            $op = clone SearchOperator::get(strtoupper(substr($m[0], 0, $colon)));
-            $op->opinfo = substr($m[0], $colon + 1);
+        if ($st && !$st->is_uninteresting()) {
+            $st->apply_strspan($sa->kwpos1, $sa->pos2);
         }
-        if ($curqe && $op->unary) {
-            return null;
-        }
-        $splitter->shift_past($m[0]);
-        return $op;
+        return $st;
     }
 
     /** @param string $str
      * @param ?SearchScope $scope
+     * @param int $depth
      * @return ?SearchTerm */
-    private function _search_expression($str, $scope = null) {
-        $scope = $scope ?? new SearchScope(null, null, 0, strlen($str), null);
-        $parens = 0;
-        $curqe = null;
+    private function _search_expression($str, $scope = null, $depth = 0) {
+        if ($depth >= 512) {
+            return null;
+        }
+        $scope = $scope ?? new SearchScope(0, strlen($str), null);
         $splitter = new SearchSplitter($str, $scope->pos1, $scope->pos2);
-
-        while (!$splitter->is_empty()) {
-            $pos1 = $splitter->pos;
-            $op = self::_shift_keyword($splitter, $curqe);
-            $pos2 = $splitter->last_pos;
-            if ($curqe && !$op) {
-                $op = SearchOperator::get("SPACE");
-            }
-            if (!$curqe && $op && $op->op === "highlight") {
-                $curqe = new True_SearchTerm;
-                $curqe->set_strspan($pos1, $pos1);
-            }
-
-            if (!$op) {
-                $pos1w = $splitter->pos;
-                $kw = $splitter->shift_keyword();
-                $pos1 = $splitter->pos;
-                $kwarg = $splitter->shift_balanced_parens(null, true);
-                $pos2 = $splitter->last_pos;
-                if ($kw !== ""
-                    && str_starts_with($kwarg, "(")
-                    && ($kwdef = $this->conf->search_keyword($kw, $this->user))
-                    && !($kwdef->allow_parens ?? false)) {
-                    // Search like "ti:(foo OR bar)" adds a default keyword.
-                    $nscope = new SearchScope(null, null, $pos1, $pos2, null);
-                    $nscope->defkw = $kw;
-                    $nscope->defkw_pos1w = $pos1w;
-                    $nscope->defkw_scope = $nscope;
-                    $curqe = $this->_search_expression($str, $nscope);
-                } else {
-                    // The heart of the matter.
-                    $sword = SearchWord::make_kwarg($kwarg, $pos1w, $pos1, $pos2);
-                    $curqe = $this->_search_word($kw, $sword, $scope);
-                }
-                if (!$curqe->is_uninteresting()) {
-                    $curqe->set_strspan($pos1w, $pos2);
-                }
-            } else if ($op->op === ")") {
-                while ($scope->op && $scope->op->op !== "(") {
-                    list($curqe, $scope) = $scope->pop($curqe);
-                }
-                if ($scope->op) {
-                    $scope->pos2 = $pos1 + 1;
-                    list($curqe, $scope) = $scope->pop($curqe);
-                    --$parens;
-                }
-            } else if ($op->op === "(") {
-                assert(!$curqe);
-                $scope = new SearchScope($op, null, $pos1, $pos2, $scope);
-                ++$parens;
-            } else if ($op->unary || $curqe) {
-                $end_precedence = $op->precedence - ($op->precedence <= 1 ? 1 : 0);
-                while ($scope->op && $scope->op->precedence > $end_precedence) {
-                    list($curqe, $scope) = $scope->pop($curqe);
-                }
-                $scope = new SearchScope($op, $curqe, $pos1, $pos2, $scope);
-                $curqe = null;
-            }
-        }
-
-        while ($scope->op) {
-            list($curqe, $scope) = $scope->pop($curqe);
-        }
-        return $curqe;
+        return $this->_parse_atom($splitter->parse_expression(), $str, $scope, $depth);
     }
 
 
@@ -993,128 +847,90 @@ class PaperSearch extends MessageSet {
         }
     }
 
-    /** @param string $curqe
-     * @param list<CanonicalizeScope> &$stack
-     * @return ?string */
-    static private function _pop_canonicalize_stack($curqe, &$stack) {
-        $x = array_pop($stack);
-        if ($curqe) {
-            $x->qe[] = $curqe;
-        }
-        if (empty($x->qe)) {
-            return null;
-        } else if ($x->op->unary) {
-            $qe = $x->qe[0];
-            if ($x->op->op === "not") {
-                if (preg_match('/\A(?:[(-]|NOT )/i', $qe)) {
-                    $qe = "NOT {$qe}";
-                } else {
-                    $qe = "-{$qe}";
-                }
-            }
-            return $qe;
-        } else if (count($x->qe) === 1) {
-            return $x->qe[0];
-        } else if ($x->op->op === "space") {
-            return "(" . join(" ", $x->qe) . ")";
-        } else {
-            return "(" . join(" " . $x->op->unparse() . " ", $x->qe) . ")";
-        }
-    }
-
-    /** @param string $word
-     * @param string $defkw
-     * @return array{string,string} */
-    static private function _search_word_breakdown($word, $defkw = "") {
-        $ch = substr($word, 0, 1);
-        if ($ch !== ""
-            && $defkw === ""
-            && (ctype_digit($ch) || ($ch === "#" && ctype_digit((string) substr($word, 1, 1))))
-            && preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/s', $word)) {
-            return ["=", $word];
-        } else if ($ch === "#"
-                   && $defkw === "") {
-            return ["#", substr($word, 1)];
-        } else if (preg_match('/\A([_a-zA-Z0-9][-._a-zA-Z0-9]*)((?:[=!<>]=?|≠|≤|≥)[^:]+|:.*)\z/s', $word, $m)) {
-            return [$m[1], $m[2]];
-        } else {
-            return ["", $word];
-        }
-    }
-
-    static private function _canonical_expression($str, $type, $qt, Conf $conf) {
-        $str = trim((string) $str);
-        if ($str === "") {
+    /** @param ?SearchAtom $sa
+     * @param string $type
+     * @param string $qt
+     * @param Conf $conf
+     * @param int $depth
+     * @return string */
+    static private function _canonicalize_atom($sa, $type, $qt, $conf, $depth) {
+        if (!$sa) {
             return "";
         }
-
-        $stack = [];
-        '@phan-var list<CanonicalizeScope> $stack';
-        $parens = 0;
-        $defaultop = $type === "all" ? "SPACE" : "SPACEOR";
-        $curqe = null;
-        $splitter = new SearchSplitter($str);
-
-        while (!$splitter->is_empty()) {
-            $op = self::_shift_keyword($splitter, $curqe);
-            if ($curqe && !$op) {
-                $op = SearchOperator::get($parens ? "SPACE" : $defaultop);
+        if ($sa->op) {
+            $child = [];
+            foreach ($sa->flattened_children() as $sac) {
+                $child[] = self::_canonicalize_atom($sac, $type, $qt, $conf, $depth);
             }
-            if (!$op) {
-                $kw = $splitter->shift_keyword();
-                $kwarg = $splitter->shift_balanced_parens(null, true);
-                if ($kw !== ""
-                    && str_starts_with($kwarg, "(")
-                    && ($kwdef = $conf->search_keyword($kw))
-                    && !($kwdef->allow_parens ?? false)) {
-                    $kwarg = self::_canonical_expression($kwarg, $type, "n", $conf);
-                    if (!str_starts_with($kwarg, "(")) {
-                        $kwarg = "({$kwarg})";
-                    }
-                }
-                if ($kw !== "") {
-                    $curqe = "{$kw}:{$kwarg}";
-                } else if ($qt !== "n") {
-                    $curqe = ($qt === "tag" ? "#{$kwarg}" : "{$qt}:{$kwarg}");
+            if ($sa->op->type === "+" || $sa->op->type === "(") {
+                return $child[0];
+            } else if ($sa->op->type === "not") {
+                if ($child[0] === "") {
+                    return "NOT";
+                } else if (str_starts_with($child[0], "(")
+                           || strpos($child[0], " ") !== false) {
+                    return "NOT {$child[0]}";
                 } else {
-                    $curqe = $kwarg;
+                    return "-{$child[0]}";
                 }
-            } else if ($op->op === ")") {
-                while (count($stack)
-                       && $stack[count($stack) - 1]->op->op !== "(") {
-                    $curqe = self::_pop_canonicalize_stack($curqe, $stack);
-                }
-                if (count($stack)) {
-                    array_pop($stack);
-                    --$parens;
-                }
-            } else if ($op->op === "(") {
-                assert(!$curqe);
-                $stack[] = new CanonicalizeScope($op, []);
-                ++$parens;
+            }
+            if ($sa->op->type === "space") {
+                $op = "";
             } else {
-                $end_precedence = $op->precedence - ($op->precedence <= 1 ? 1 : 0);
-                while (count($stack)
-                       && $stack[count($stack) - 1]->op->precedence > $end_precedence) {
-                    $curqe = self::_pop_canonicalize_stack($curqe, $stack);
+                $op = strtoupper($sa->op->type);
+                if ($sa->op->subtype !== null) {
+                    $op .= ":{$sa->op->subtype}";
                 }
-                $top = count($stack) ? $stack[count($stack) - 1] : null;
-                if ($op->unary || !$top || $top->op->op !== $op->op) {
-                    $stack[] = new CanonicalizeScope($op, $curqe ? [$curqe] : []);
-                } else {
-                    $top->qe[] = $curqe;
-                }
-                $curqe = null;
             }
+            $a = [];
+            foreach ($child as $i => $s) {
+                if ($i !== 0 && $op !== "") {
+                    $a[] = $op;
+                }
+                if ($s !== "") {
+                    $a[] = $s;
+                }
+            }
+            return "(" . join(" ", $a) . ")";
         }
+        if ($sa->kword === null && $sa->text === "") {
+            return "";
+        }
+        if ($sa->kword !== null
+            && str_starts_with($sa->text, "(")
+            && ($kwdef = $conf->search_keyword($sa->kword))
+            && !($kwdef->allow_parens ?? false)) {
+            // Search like `ti:(foo OR bar)` adds a default keyword; must recanonicalize.
+            $s = self::_canonical_expression($sa->text, $type, "n", $conf, $depth + 1);
+            if (!str_starts_with($s, "(")) {
+                $s = "({$s})";
+            }
+        } else {
+            $s = $sa->text;
+        }
+        if ($sa->kword !== null) {
+            return "{$sa->kword}:{$s}";
+        } else if ($qt === "n") {
+            return $s;
+        } else if ($qt === "tag") {
+            return "#{$s}";
+        } else {
+            return "{$qt}:{$s}";
+        }
+    }
 
-        if ($type === "none") {
-            array_unshift($stack, new CanonicalizeScope(SearchOperator::get("NOT"), []));
+    static private function _canonical_expression($str, $type, $qt, Conf $conf, $depth = 0) {
+        if ($depth >= 512) {
+            return "";
         }
-        while (!empty($stack)) {
-            $curqe = self::_pop_canonicalize_stack($curqe, $stack);
+        $splitter = new SearchSplitter($str);
+        $sa = $splitter->parse_expression($type === "all" ? "SPACE" : "SPACEOR");
+        if ($type === "none" && $sa) {
+            $sax = SearchAtom::make_op(SearchOperator::get("NOT"), 0, strlen($str), null);
+            $sax->child[] = $sa;
+            $sa = $sax;
         }
-        return $curqe;
+        return self::_canonicalize_atom($sa, $type, $qt, $conf, $depth);
     }
 
     /** @param ?string $qa
@@ -1458,7 +1274,7 @@ class PaperSearch extends MessageSet {
         foreach ($words as $w) {
             $sve = new SearchViewElement;
             if (is_array($w)) {
-                $sve->pos1w = $w[1];
+                $sve->kwpos1 = $w[1];
                 $sve->pos1 = $w[2];
                 $sve->pos2 = $w[3];
                 $w = $w[0];

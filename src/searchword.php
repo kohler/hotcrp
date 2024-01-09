@@ -18,7 +18,7 @@ class SearchWord {
     /** @var ?string */
     public $cword;
     /** @var ?int */
-    public $pos1w;
+    public $kwpos1;
     /** @var ?int */
     public $pos1;
     /** @var ?int */
@@ -34,14 +34,14 @@ class SearchWord {
     }
 
     /** @param string $kwarg
-     * @param int $pos1w
+     * @param int $kwpos1
      * @param int $pos1
      * @param int $pos2 */
-    static function make_kwarg($kwarg, $pos1w, $pos1, $pos2) {
+    static function make_kwarg($kwarg, $kwpos1, $pos1, $pos2) {
         $sw = new SearchWord;
         $sw->qword = $kwarg;
         list($sw->word, $sw->quoted) = self::maybe_unquote($kwarg);
-        $sw->pos1w = $pos1w;
+        $sw->kwpos1 = $kwpos1;
         $sw->pos1 = $pos1;
         $sw->pos2 = $pos2;
         return $sw;
