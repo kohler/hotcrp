@@ -228,7 +228,7 @@ class Filer {
     /** @return ?non-empty-string */
     static function docstore_tmpdir(Conf $conf = null) {
         $conf = $conf ?? Conf::$main;
-        if (($prefix = self::docstore_fixed_prefix($conf->docstore()))) {
+        if ($conf && ($prefix = self::docstore_fixed_prefix($conf->docstore()))) {
             $tmpdir = "{$prefix}tmp/";
             '@phan-var non-empty-string $tmpdir';
             if (self::prepare_docstore($prefix, $tmpdir)) {
