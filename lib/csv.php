@@ -1127,6 +1127,17 @@ class CsvGenerator {
         return $this->headerline . join("", $this->lines);
     }
 
+    function unparse_to_stream($f) {
+        if ($this->stream) {
+            assert(!!$this->stream_filename);
+            $this->flush();
+            rewind($this->stream);
+            stream_copy_to_stream($this->stream, $f);
+        } else {
+            fwrite($f, $this->unparse());
+        }
+    }
+
 
     /** @return string */
     function mimetype_with_charset() {
