@@ -926,7 +926,7 @@ class CsvGenerator {
                 }
                 for ($i = 0; $i !== 100; ++$i) {
                     $fn = sprintf("%scsvtmp-%d-%08d.csv", $dir, time(), mt_rand(0, 99999999));
-                    if (($this->stream = @fopen($fn, "xb"))) {
+                    if (($this->stream = @fopen($fn, "xb+"))) {
                         $this->stream_filename = $fn;
                         break;
                     }
