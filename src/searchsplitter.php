@@ -127,6 +127,7 @@ class SearchSplitter {
         if (!$op) {
             $colon = strpos($m[0], ":");
             $op = clone SearchOperator::get(strtoupper(substr($m[0], 0, $colon)));
+            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $op->subtype = substr($m[0], $colon + 1);
         }
         $this->set_span_and_pos(strlen($m[0]));
@@ -212,10 +213,11 @@ class SearchSplitter {
     }
 
     /** @param 'SPACE'|'SPACEOR' $spaceop
-     * @param int $max_terms
+     * @param int $max_ops
      * @return ?SearchAtom */
     function parse_expression($spaceop = "SPACE", $max_ops = 2048) {
         $cura = null;
+        '@phan-var-force ?SearchAtom $cura';
         $parens = 0;
         $nops = 0;
         while (!$this->is_empty()) {
