@@ -150,6 +150,15 @@ class Dbl_ConnectionParams {
         return $t . urlencode($this->host ?? "localhost") . "/" . urlencode($this->name);
     }
 
+    function apply_defaults() {
+        if ($this->port === null) {
+            $this->port = $this->socket ? (int) ini_get("mysqli.default_port") : 0;
+        }
+        $this->host = $this->host ?? ini_get("mysqli.default_host");
+        $this->user = $this->user ?? ini_get("mysqli.default_user");
+        $this->password = $this->password ?? ini_get("mysqli.default_pw");
+    }
+
     /** @return ?\mysqli */
     function connect() {
         assert(($this->name ?? "") !== "");
@@ -202,6 +211,7 @@ class Dbl {
     const F_MULTI_OK = 64; // internal
     const F_ECHO = 128;
     const F_NOEXEC = 256;
+    const F_THROW = 512;
 
     /** @var int */
     static public $nerrors = 0;
@@ -281,13 +291,6 @@ class Dbl {
         if (isset($opt["dbSocket"]) && is_string($opt["dbSocket"])) {
             $cp->socket = $opt["dbSocket"];
         }
-        if ($cp->port === null) {
-            $cp->port = $cp->socket ? (int) ini_get("mysqli.default_port") : 0;
-        }
-        $cp->host = $cp->host ?? ini_get("mysqli.default_host");
-        $cp->user = $cp->user ?? ini_get("mysqli.default_user");
-        $cp->password = $cp->password ?? ini_get("mysqli.default_pw");
-
         if (($opt["dbSsl"] ?? false) === true) {
             $cp->ssl = true;
             if (isset($opt["dbSslKey"]) && is_string($opt["dbSslKey"])) {
@@ -309,7 +312,7 @@ class Dbl {
                 $cp->ssl_verify = $opt["dbSslVerify"];
             }
         }
-
+        $cp->apply_defaults();
         return $cp;
     }
 
@@ -607,17 +610,19 @@ class Dbl {
         }
         if ($dblink->errno && !($result instanceof \mysqli_result)) {
             $result->query_string = $qstr;
-            if (!($flags & self::F_ALLOWERROR)) {
+            if (($flags & self::F_ALLOWERROR) === 0) {
                 ++self::$nerrors;
             }
-            if ($flags & self::F_ERROR) {
+            if (($flags & self::F_THROW) !== 0) {
+                throw new Error("Database error");
+            } else if (($flags & self::F_ERROR) !== 0) {
                 call_user_func(self::$error_handler, $dblink, $qstr);
-            } else if ($flags & self::F_LOG) {
+            } else if (($flags & self::F_LOG) !== 0) {
                 error_log(self::landmark() . ": database error: {$dblink->error} in {$qstr}");
             }
         }
         if (self::$check_warnings
-            && !($flags & self::F_ALLOWERROR)
+            && ($flags & self::F_ALLOWERROR) === 0
             && $dblink->warning_count) {
             $wresult = $dblink->query("show warnings");
             while ($wresult && ($wrow = $wresult->fetch_row())) {
