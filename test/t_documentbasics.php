@@ -1,6 +1,6 @@
 <?php
 // t_documentbasics.php -- HotCRP tests
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class DocumentBasics_Tester {
     /** @var Conf
@@ -58,7 +58,11 @@ class DocumentBasics_Tester {
     function test_content_binary_hash() {
         $this->conf->save_setting("opt.contentHashMethod", 1, "sha1");
 
-        $doc = new DocumentInfo(["content" => ""], $this->conf);
+        $doc = DocumentInfo::make_content($this->conf, "");
+        xassert_eqq($doc->text_hash(), "da39a3ee5e6b4b0d3255bfef95601890afd80709");
+        xassert_eqq($doc->content_binary_hash(), hex2bin("da39a3ee5e6b4b0d3255bfef95601890afd80709"));
+
+        $doc = DocumentInfo::make_empty($this->conf);
         xassert_eqq($doc->text_hash(), "da39a3ee5e6b4b0d3255bfef95601890afd80709");
         xassert_eqq($doc->content_binary_hash(), hex2bin("da39a3ee5e6b4b0d3255bfef95601890afd80709"));
 
@@ -83,7 +87,7 @@ class DocumentBasics_Tester {
         $this->conf->save_refresh_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
         $this->conf->save_setting("opt.contentHashMethod", 1, "sha1");
 
-        $doc = new DocumentInfo(["content" => ""], $this->conf);
+        $doc = DocumentInfo::make_content($this->conf, "");
         $doc->set_content("Hello\n", "text/plain");
         xassert_eqq(Filer::docstore_path($doc), "/foo/bar/1d2/1d229/1d229271928d3f9e2bb0375bd6ce5db6c6d348d9");
 

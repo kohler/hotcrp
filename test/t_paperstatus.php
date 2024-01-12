@@ -1,6 +1,6 @@
 <?php
 // t_paperstatus.php -- HotCRP tests
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class PaperStatus_Tester {
     /** @var Conf
@@ -1228,14 +1228,14 @@ Phil Porras.");
     }
 
     function test_content_text_signature() {
-        $doc = new DocumentInfo(["content" => "ABCdefGHIjklMNO"], $this->conf);
+        $doc = DocumentInfo::make_content($this->conf, "ABCdefGHIjklMNO");
         xassert_eqq($doc->content_text_signature(), "starts with “ABCdefGH”");
-        $doc = new DocumentInfo(["content" => "\x02\x00A\x80BCdefGHIjklMN"], $this->conf);
+        $doc = DocumentInfo::make_content($this->conf, "\x02\x00A\x80BCdefGHIjklMN");
         xassert_eqq($doc->content_text_signature(), "starts with “\\x02\\x00A\\x80BCde”");
-        $doc = new DocumentInfo(["content" => ""], $this->conf);
+        $doc = DocumentInfo::make_content($this->conf, "");
         xassert_eqq($doc->content_text_signature(), "is empty");
 
-        $doc = new DocumentInfo(["content_file" => "/tmp/this-file-is-expected-not-to-exist.png.zip"], $this->conf);
+        $doc = DocumentInfo::make_content_file($this->conf, "/tmp/this-file-is-expected-not-to-exist.png.zip");
         ++Xassert::$disabled;
         $s = $doc->content_text_signature();
         --Xassert::$disabled;

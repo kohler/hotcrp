@@ -107,10 +107,7 @@ class CleanDocstore_Batch {
     /** @param DocumentFileTreeMatch $fm
      * @return bool */
     private function check_match($fm) {
-        $doc = new DocumentInfo([
-            "hash" => $fm->algohash,
-            "mimetype" => Mimetype::type($fm->extension)
-        ], $this->conf);
+        $doc = DocumentInfo::make_hash($this->conf, $fm->algohash, Mimetype::type($fm->extension));
         $hashalg = $doc->hash_algorithm();
         if ($hashalg === false) {
             fwrite(STDERR, "{$fm->fname}: unknown hash\n");

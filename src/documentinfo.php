@@ -1,6 +1,6 @@
 <?php
 // documentinfo.php -- HotCRP document objects
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class DocumentInfo implements JsonSerializable {
     /** @var Conf */
@@ -24,8 +24,8 @@ class DocumentInfo implements JsonSerializable {
     public $sha1 = ""; // binary hash; empty = unhashed, false = not available
     /** @var ?string|false */
     private $crc32;    // binary hash
-    /** @var int */
-    public $documentType = 0;
+    /** @var ?int */
+    public $documentType;
     /** @var ?string */
     public $filename;
     /** @var ?string|false */
@@ -80,9 +80,7 @@ class DocumentInfo implements JsonSerializable {
     function __construct($p, Conf $conf, PaperInfo $prow = null) {
         $this->conf = $conf;
         $this->prow = $prow;
-        if ($p === null) {
-            $this->fetch_incorporate();
-        } else {
+        if ($p !== null) {
             $this->assign($p);
         }
     }
@@ -163,18 +161,55 @@ class DocumentInfo implements JsonSerializable {
     /** @param mysqli_result|Dbl_Result $result
      * @return ?DocumentInfo */
     static function fetch($result, Conf $conf, PaperInfo $prow = null) {
-        return $result->fetch_object("DocumentInfo", [null, $conf, $prow]);
+        if (($doc = $result->fetch_object("DocumentInfo", [null, $conf, $prow]))) {
+            $doc->fetch_incorporate();
+        }
+        return $doc;
     }
 
     /** @return DocumentInfo */
     static function make_empty(Conf $conf, PaperInfo $prow = null) {
         // matches paperStorageId 1 in schema
-        return new DocumentInfo([
-            "paperStorageId" => 1, "paperId" => 0, "timestamp" => 0,
-            "mimetype" => "text/plain", "content" => "",
-            "hash" => "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-            "size" => 0
-        ], $conf, $prow);
+        $doc = new DocumentInfo(null, $conf, $prow);
+        $doc->paperStorageId = 1;
+        $doc->documentType = 0;
+        $doc->mimetype = "text/plain";
+        $doc->content = "";
+        $doc->sha1 = "\xda\x39\xa3\xee\x5e\x6b\x4b\x0d\x32\x55\xbf\xef\x95\x60\x18\x90\xaf\xd8\x07\x09";
+        $doc->size = 0;
+        return $doc;
+    }
+
+    /** @param string $content
+     * @param string $mimetype
+     * @return DocumentInfo */
+    static function make_content(Conf $conf, $content, $mimetype = "application/octet-stream") {
+        $doc = new DocumentInfo(null, $conf);
+        $doc->mimetype = $mimetype;
+        $doc->content = $content;
+        $doc->size = strlen($content);
+        return $doc;
+    }
+
+    /** @param string $content_file
+     * @param ?string $mimetype
+     * @return DocumentInfo */
+    static function make_content_file(Conf $conf, $content_file, $mimetype = null) {
+        $doc = new DocumentInfo(null, $conf);
+        $doc->mimetype = $mimetype;
+        $doc->content_file = $content_file;
+        $doc->analyze_content();
+        return $doc;
+    }
+
+    /** @param string $hash
+     * @param ?string $mimetype
+     * @return DocumentInfo */
+    static function make_hash(Conf $conf, $hash, $mimetype = null) {
+        $doc = new DocumentInfo(null, $conf);
+        $doc->sha1 = Filer::hash_as_binary($hash);
+        $doc->mimetype = $mimetype;
+        return $doc;
     }
 
     /** @param QrequestFile $upload
@@ -185,33 +220,33 @@ class DocumentInfo implements JsonSerializable {
         if (!$upload) {
             return null;
         }
-        $args = [
-            "paperId" => $paperId,
-            "documentType" => $documentType,
-            "timestamp" => time(),
-            "mimetype" => $upload->type,
-            "filename" => self::sanitize_filename($upload->name)
-        ];
+
+        $doc = new DocumentInfo(null, $conf);
+        $doc->paperId = $paperId;
+        $doc->documentType = $documentType;
+        $doc->timestamp = time();
+        $doc->mimetype = $upload->type;
+        $doc->filename = self::sanitize_filename($upload->name);
 
         $upload_error = "";
         if ($upload->content !== null) {
-            $args["content"] = $upload->content;
+            $doc->content = $upload->content;
+            $doc->size = strlen($upload->content);
         } else if ($upload->tmp_name !== null && is_readable($upload->tmp_name)) {
             $sz = filesize($upload->tmp_name);
             if ($sz !== false && $sz > 0) {
-                $args["size"] = $sz;
-                $args["content_file"] = $upload->tmp_name;
+                $doc->content_file = $upload->tmp_name;
+                $doc->size = $sz;
             } else {
                 $upload_error = " was empty, not saving";
             }
         } else {
             $upload_error = " could not be read";
         }
-        $doc = new DocumentInfo($args, $conf);
+
         $doc->analyze_content();
         if ($upload_error) {
-            $filename = $args["filename"];
-            $doc->error("<0>Uploaded file" . ($filename === "" ? "" : " ‘{$filename}’") . $upload_error);
+            $doc->error("<0>Uploaded file" . ($doc->filename === "" ? "" : " ‘{$doc->filename}’") . $upload_error);
         }
         return $doc;
     }
@@ -221,14 +256,13 @@ class DocumentInfo implements JsonSerializable {
      * @param int $documentType
      * @return ?DocumentInfo */
     static function make_capability(Conf $conf, $token, $paperId, $documentType) {
-        if ($token
-            && ($toki = TokenInfo::find($token, $conf))
-            && $toki->is_active()
-            && $toki->capabilityType === TokenInfo::UPLOAD) {
-            return self::make_token($conf, $toki, null, $paperId, $documentType);
-        } else {
+        if (!$token
+            || !($toki = TokenInfo::find($token, $conf))
+            || !$toki->is_active()
+            || $toki->capabilityType !== TokenInfo::UPLOAD) {
             return null;
         }
+        return self::make_token($conf, $toki, null, $paperId, $documentType);
     }
 
     /** @param ?string $content_file
@@ -242,20 +276,18 @@ class DocumentInfo implements JsonSerializable {
         if (!$tokd->hash) {
             return null;
         }
-        $args = [
-            "paperId" => $paperId ?? $toki->paperId,
-            "documentType" => $documentType ?? $tokd->dtype,
-            "timestamp" => time(),
-            "mimetype" => $tokd->mimetype ?? null,
-            "filename" => self::sanitize_filename($tokd->filename),
-            "size" => $tokd->size,
-            "hash" => $tokd->hash,
-            "crc32" => $tokd->crc32 ?? null
-        ];
+        $doc = new DocumentInfo(null, $conf);
+        $doc->paperId = $paperId ?? $toki->paperId;
+        $doc->documentType = $documentType ?? $tokd->dtype;
+        $doc->timestamp = time();
+        $doc->mimetype = $tokd->mimetype ?? null;
+        $doc->filename = self::sanitize_filename($tokd->filename);
+        $doc->size = $tokd->size;
+        $doc->sha1 = Filer::hash_as_binary($tokd->hash);
+        $doc->crc32 = $tokd->crc32 ?? null;
         if ($content_file !== null) {
-            $args["content_file"] = $content_file;
+            $doc->content_file = $content_file;
         }
-        $doc = new DocumentInfo($args, $conf);
         if ($doc->content_available() || $doc->load_docstore()) {
             $doc->analyze_content();
         }
@@ -263,15 +295,23 @@ class DocumentInfo implements JsonSerializable {
         return $doc;
     }
 
-    /** @param string $filename
-     * @param array $args
-     * @return ?DocumentInfo */
-    static function make_file($filename, Conf $conf, $args = []) {
-        $args["content_file"] = $filename;
-        $doc = new DocumentInfo($args, $conf);
-        $doc->analyze_content();
+    /** @param 0|-1 $dtype
+     * @param ?int $size
+     * @return DocumentInfo */
+    static function make_primary_document(PaperInfo $prow, $dtype, $size) {
+        $doc = new DocumentInfo(null, $prow->conf, $prow);
+        $doc->paperStorageId = $dtype < 0 ? $prow->finalPaperStorageId : $prow->paperStorageId;
+        $doc->paperId = $prow->paperId;
+        $doc->documentType = $dtype;
+        $doc->timestamp = (int) $prow->timestamp;
+        $doc->mimetype = $prow->mimetype;
+        $doc->sha1 = $prow->sha1;
+        $doc->size = $size ?? -1;
+        $doc->compression = -1;
+        $doc->infoJson = false; // metadata is not loaded
         return $doc;
     }
+
 
     /** @param string $name
      * @return bool */
@@ -325,6 +365,32 @@ class DocumentInfo implements JsonSerializable {
         }
         return $fn !== "" ? $fn : null;
     }
+
+
+    /** @param int $timestamp
+     * @return $this */
+    function set_timestamp($timestamp) {
+        assert($this->paperStorageId <= 0);
+        $this->timestamp = $timestamp;
+        return $this;
+    }
+
+    /** @param string $filename
+     * @return $this */
+    function set_filename($filename) {
+        assert($this->paperStorageId <= 0);
+        $this->filename = $filename;
+        return $this;
+    }
+
+    /** @param int $dtype
+     * @return $this */
+    function set_document_type($dtype) {
+        assert($this->paperStorageId <= 0);
+        $this->documentType = $dtype;
+        return $this;
+    }
+
 
     function analyze_content() {
         if (($info = Mimetype::content_info(null, $this->mimetype, $this))) {

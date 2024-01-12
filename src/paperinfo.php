@@ -2380,19 +2380,8 @@ class PaperInfo {
              || ($dtype === DTYPE_FINAL
                  && $did == $this->finalPaperStorageId))
             && !$full) {
-            if (!$this->_primary_document) {
-                $this->_primary_document = new DocumentInfo([
-                    "paperStorageId" => $did,
-                    "paperId" => $this->paperId,
-                    "documentType" => $dtype,
-                    "timestamp" => (int) $this->timestamp,
-                    "mimetype" => $this->mimetype,
-                    "hash" => $this->sha1,
-                    "size" => $this->size ?? -1
-                ], $this->conf, $this);
-                // mark the primary document as a skeleton
-                $this->_primary_document->compression = -1;
-            }
+            $this->_primary_document = $this->_primary_document
+                ?? DocumentInfo::make_primary_document($this, $dtype, $this->size);
             return $this->_primary_document;
         }
 

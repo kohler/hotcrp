@@ -1,6 +1,6 @@
 <?php
 // documentinfoset.php -- HotCRP document set
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class DocumentInfoSet_ZipInfo {
     /** @var ?int */
@@ -118,11 +118,10 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
      * @param ?int $timestamp
      * @return bool */
     function add_string_as($text, $fn, $mimetype = null, $timestamp = null) {
-        return $this->add_as(new DocumentInfo([
-            "content" => $text, "size" => strlen($text),
-            "filename" => $fn, "mimetype" => $mimetype ?? "text/plain",
-            "timestamp" => $timestamp ?? Conf::$now
-        ], $this->conf), $fn);
+        $doc = DocumentInfo::make_content($this->conf, $text, $mimetype ?? "text/plain")
+            ->set_timestamp($timestamp ?? Conf::$now)
+            ->set_filename($fn);
+        return $this->add_as($doc, $fn);
     }
 
     /** @return list<DocumentInfo> */
@@ -469,12 +468,9 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
 
     /** @return DocumentInfo */
     private function _make_success_document() {
-        return new DocumentInfo([
-            "filename" => $this->_filename,
-            "mimetype" => $this->_mimetype,
-            "documentType" => DTYPE_EXPORT,
-            "content_file" => $this->_filestore
-        ], $this->conf);
+        return DocumentInfo::make_content_file($this->conf, $this->_filestore, $this->_mimetype)
+            ->set_filename($this->_filename)
+            ->set_document_type(DTYPE_EXPORT);
     }
 
     /** @param resource $out

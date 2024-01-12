@@ -49,14 +49,14 @@ class S3Test_Batch {
                 }
                 $status = 2;
             } else {
-                $doc = new DocumentInfo(["content" => $content], $this->conf);
                 if ($this->extensions
                     && preg_match('/(\.\w+)\z/', $fn, $m)
                     && ($mtx = Mimetype::lookup($m[1]))) {
-                    $doc->mimetype = $mtx->mimetype;
+                    $mimetype = $mtx->mimetype;
                 } else {
-                    $doc->mimetype = Mimetype::content_type($content);
+                    $mimetype = Mimetype::content_type($content);
                 }
+                $doc = DocumentInfo::make_content($this->conf, $content, $mimetype);
                 $s3fn = $doc->s3_key();
                 if (!$s3doc->head($s3fn)) {
                     if (!$this->quiet) {
