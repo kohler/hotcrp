@@ -1308,6 +1308,22 @@ class Unit_Tester {
         $arg = self::getopt_parse((new Getopt)->short("ab[]c[]d:e[]+")->long("ano")->interleave(true),
             ["fart", "-axxxx", "--", "-c", "x", "-cy", "d=a", "-e", "a", "b", "-a", "c"]);
         xassert_eqq(json_encode($arg), '"Unknown option `-x`"');
+
+        $arg = self::getopt_parse((new Getopt)->long("a: =FOO {n}"),
+            ["fart", "-a10", "c"]);
+        xassert_eqq(json_encode($arg), '{"a":10,"_":["c"]}');
+
+        $arg = self::getopt_parse((new Getopt)->long("a: !subc {n} =FOO"),
+            ["fart", "-a10", "c"]);
+        xassert_eqq(json_encode($arg), '{"a":10,"_":["c"]}');
+
+        $arg = self::getopt_parse((new Getopt)->long("a: {n} =FOO"),
+            ["fart", "-a10x", "c"]);
+        xassert_eqq(json_encode($arg), '"`-a` requires integer"');
+
+        $arg = self::getopt_parse((new Getopt)->long("a: =FOO"),
+            ["fart", "-a10", "c"]);
+        xassert_eqq(json_encode($arg), '{"a":"10","_":["c"]}');
     }
 
     function test_friendly_boolean() {

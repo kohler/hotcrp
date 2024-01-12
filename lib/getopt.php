@@ -86,9 +86,17 @@ class Getopt {
             if (($sp = strpos($s, " ")) !== false) {
                 $help = substr($s, $sp + 1);
                 $s = substr($s, 0, $sp);
-                if ($help !== "" && $help[0] === "{" && ($rbr = strpos($help, "}")) !== false) {
-                    $type = substr($help, 1, $rbr - 1);
-                    $help = $rbr === strlen($help) - 1 ? "" : ltrim(substr($help, $rbr + 1));
+                $p = 0;
+                while ($p < strlen($help)
+                       && ($help[$p] === "=" || $help[$p] === "!")
+                       && ($sp = strpos($help, " ", $p + 1)) !== false) {
+                    $p = $sp + 1;
+                }
+                if ($p < strlen($help)
+                    && $help[$p] === "{"
+                    && ($rbr = strpos($help, "}", $p + 1)) !== false) {
+                    $type = substr($help, $p + 1, $rbr - $p - 1);
+                    $help = substr($help, 0, $p) . ltrim(substr($help, $rbr + 1));
                 }
             }
             $po = null;
