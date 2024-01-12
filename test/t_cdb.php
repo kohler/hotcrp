@@ -802,7 +802,7 @@ class Cdb_Tester {
         $this->conf->refresh_options();
 
         $p = PaperInfo::make_new($this->conf->root_user(), null);
-        $ps = new PaperStatus($this->conf->root_user(), ["disable_users" => true]);
+        $ps = (new PaperStatus($this->conf->root_user()))->set_disable_users(true);
         $pid = $ps->save_paper_web(new Qrequest("POST", [
             "title" => "A Systematic Sterdy of Neural Discourse Models for Implicit Discourse Relation",
             "has_authors" => 1,

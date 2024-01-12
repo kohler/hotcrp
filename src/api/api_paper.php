@@ -9,8 +9,8 @@ class Paper_API extends MessageSet {
     /** @var Contact
      * @readonly */
     public $user;
-    /** @var array<string,mixed> */
-    private $psargs;
+    /** @var bool */
+    private $disable_users = false;
     /** @var ?ZipArchive */
     private $ziparchive;
     /** @var ?string */
@@ -22,11 +22,6 @@ class Paper_API extends MessageSet {
     function __construct(Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->psargs = [
-            "disable_users" => false,
-            "add_topics" => false,
-            "any_content_file" => true
-        ];
     }
 
     static function run_get(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
@@ -139,10 +134,13 @@ class Paper_API extends MessageSet {
 
         if ($this->user->privChair) {
             if ($qreq->disable_users) {
-                $this->psargs["disable_users"] = true;
+                $this->disable_users = true;
             }
             if ($qreq->add_topics) {
-                $this->psargs["add_topics"] = true;
+                foreach ($this->conf->options()->form_fields() as $opt) {
+                    if ($opt instanceof Topics_PaperOption)
+                        $opt->allow_new_topics(true);
+                }
             }
         }
 
@@ -240,8 +238,10 @@ class Paper_API extends MessageSet {
             return false;
         }
 
-        $ps = new PaperStatus($this->user, $this->psargs);
-        $ps->on_document_import([$this, "on_document_import"]);
+        $ps = (new PaperStatus($this->user))
+            ->set_disable_users($this->disable_users)
+            ->set_any_content_file(true)
+            ->on_document_import([$this, "on_document_import"]);
         $pid = $ps->save_paper_json($j);
 
         foreach ($ps->decorated_message_list() as $mi) {

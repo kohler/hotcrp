@@ -10,7 +10,7 @@ class PaperStatus extends MessageSet {
      * @readonly */
     public $user;
     /** @var bool */
-    private $disable_users;
+    private $disable_users = false;
     /** @var bool */
     private $any_content_file = false;
     /** @var bool */
@@ -70,8 +70,6 @@ class PaperStatus extends MessageSet {
     function __construct(Contact $user, $options = []) {
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->disable_users = $options["disable_users"] ?? false;
-        $this->any_content_file = $options["any_content_file"] ?? false;
         $this->allow_hash_without_content = $user->privChair;
         $this->set_want_ftext(true, 5);
         $this->set_ignore_duplicates(true);
@@ -82,6 +80,20 @@ class PaperStatus extends MessageSet {
         $ps = new PaperStatus($user);
         $ps->prow = $prow;
         return $ps;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_disable_users($x) {
+        $this->disable_users = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_any_content_file($x) {
+        $this->any_content_file = $x;
+        return $this;
     }
 
     /** @param callable(object,PaperOption,PaperStatus):(?bool) $cb

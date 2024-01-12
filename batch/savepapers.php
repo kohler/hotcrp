@@ -206,11 +206,10 @@ class SavePapers_Batch {
             fwrite(STDERR, "{$pidtext}{$titletext}: ");
         }
 
-        $ps = new PaperStatus($this->user, [
-            "disable_users" => $this->disable_users,
-            "any_content_file" => $this->any_content_file
-        ]);
-        $ps->on_document_import([$this, "on_document_import"]);
+        $ps = (new PaperStatus($this->user))
+            ->set_disable_users($this->disable_users)
+            ->set_any_content_file($this->any_content_file)
+            ->on_document_import([$this, "on_document_import"]);
 
         if ($ps->prepare_save_paper_json($j)) {
             if ($this->dry_run) {
