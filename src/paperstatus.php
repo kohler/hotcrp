@@ -69,7 +69,7 @@ class PaperStatus extends MessageSet {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->disable_users = $options["disable_users"] ?? false;
-        if (($options["check_content_file"] ?? null) !== false) {
+        if (!($options["any_content_file"] ?? false)) {
             $this->_on_document_import[] = [$this, "document_import_check_filename"];
         }
         $this->set_want_ftext(true, 5);

@@ -53,6 +53,8 @@ class CreateDB_Batch {
     /** @var bool */
     public $setup_phase;
 
+    /** @var string */
+    public $root;
     /** @var bool */
     public $batch;
     /** @var bool */
@@ -67,6 +69,7 @@ class CreateDB_Batch {
     /** @param array<string,mixed> $arg
      * @param bool $interactive */
     function __construct($arg, $interactive) {
+        $this->root = dirname(__DIR__);
         $this->user = $arg["user"] ?? null;
         $this->need_password = isset($arg["password"]) && $arg["password"] === false;
         if (!$this->need_password) {
@@ -75,7 +78,7 @@ class CreateDB_Batch {
 
         $this->name = $arg["name"] ?? null;
         $this->write_config = !isset($arg["no-config"]);
-        $this->configfile = $arg["config"] ?? ($this->write_config ? SiteLoader::$root . "/conf/options.php" : null);
+        $this->configfile = $arg["config"] ?? ($this->write_config ? "{$this->root}/conf/options.php" : null);
         $this->grant = !isset($arg["no-grant"]);
         if (isset($arg["dbuser"])) {
             if (($comma = strpos($arg["dbuser"], ",")) === false) {
@@ -152,6 +155,31 @@ class CreateDB_Batch {
             return floatval($s);
         }
     }
+
+
+    /** @param string $user
+     * @return $this */
+    function set_user($user) {
+        $this->user = $user;
+        return $this;
+    }
+
+    /** @param ?string $password
+     * @return $this */
+    function set_password($password) {
+        $this->need_password = $password === null;
+        $this->password = $password;
+        return $this;
+    }
+
+    /** @param string $name
+     * @return $this */
+    function set_name($name) {
+        $this->name = $name;
+        return $this;
+    }
+
+
 
     function read_password() {
         if (PHP_SAPI !== "cli" || !$this->interactive) {
@@ -426,7 +454,7 @@ class CreateDB_Batch {
             if ($this->verbose) {
                 fwrite(STDOUT, Dbl::format_query($this->dblink(), "- CREATE USER ?@? IDENTIFIED BY <redacted>;\n", $this->dbuser, $h));
             }
-            $this->qe("CREATE USER ?@? IDENTIFIED BY ?", $this->dbuser, $h, $this->dbpass);
+            $this->vqe("CREATE USER ?@? IDENTIFIED BY ?", $this->dbuser, $h, $this->dbpass);
         }
         $this->vqe("FLUSH PRIVILEGES");
     }
@@ -447,9 +475,9 @@ class CreateDB_Batch {
 
     function install_schema() {
         if (!$this->quiet) {
-            fwrite(STDOUT, "Populating database...\n");
+            fwrite(STDOUT, "Initializing database...\n");
         }
-        $schema = file_get_contents(SiteLoader::$root . "/src/schema.sql");
+        $schema = file_get_contents("{$this->root}/src/schema.sql");
         if ($schema === false) {
             throw new CommandLineException("`schema.sql` not found or unreadable");
         }
@@ -485,7 +513,7 @@ class CreateDB_Batch {
         if ($this->minimal) {
             $skel = "<?php\nglobal \$Opt;\n";
         } else {
-            $skel = file_get_contents(SiteLoader::$root . "/etc/distoptions.php");
+            $skel = file_get_contents("{$this->root}/etc/distoptions.php");
         }
         if ($skel === false) {
             throw new CommandLineException("`distoptions.php` not found or unreadable");
@@ -524,9 +552,13 @@ class CreateDB_Batch {
     /** @return int */
     function run() {
         $this->dblink();
+        $this->check_name();
         $this->had_db = $this->database_exists();
-        $this->had_dbuser = $this->grant && $this->dbuser_exists();
-        $this->check_dbpass();
+        if ($this->grant) {
+            $this->check_dbuser();
+            $this->had_dbuser = $this->grant && $this->dbuser_exists();
+            $this->check_dbpass();
+        }
         if ($this->had_db) {
             $this->check_replace();
         }
@@ -543,7 +575,7 @@ class CreateDB_Batch {
             $this->install_schema();
         }
         if ($this->write_config) {
-            $this->configfile = $this->configfile ?? SiteLoader::$root . "/conf/options.php";
+            $this->configfile = $this->configfile ?? "{$this->root}/conf/options.php";
             if (file_exists($this->configfile)) {
                 if (!$this->quiet
                     && $this->interactive

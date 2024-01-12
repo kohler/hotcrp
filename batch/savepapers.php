@@ -24,6 +24,8 @@ class SavePapers_Batch {
     /** @var bool */
     public $disable_users = false;
     /** @var bool */
+    public $any_content_file = false;
+    /** @var bool */
     public $reviews = false;
     /** @var bool */
     public $add_topics = false;
@@ -71,6 +73,7 @@ class SavePapers_Batch {
             $this->pidflags |= Paper_API::PIDFLAG_MATCH_TITLE;
         }
         $this->disable_users = isset($arg["disable-users"]);
+        $this->any_content_file = isset($arg["any-content-file"]);
         $this->add_topics = isset($arg["add-topics"]);
         $this->reviews = isset($arg["r"]);
         $this->log = !isset($arg["no-log"]);
@@ -203,7 +206,10 @@ class SavePapers_Batch {
             fwrite(STDERR, "{$pidtext}{$titletext}: ");
         }
 
-        $ps = new PaperStatus($this->user, ["disable_users" => $this->disable_users]);
+        $ps = new PaperStatus($this->user, [
+            "disable_users" => $this->disable_users,
+            "any_content_file" => $this->any_content_file
+        ]);
         $ps->on_document_import([$this, "on_document_import"]);
 
         if ($ps->prepare_save_paper_json($j)) {
@@ -335,6 +341,7 @@ class SavePapers_Batch {
             "dry-run,d Don’t actually save",
             "ignore-errors Don’t exit after first error",
             "disable-users,disable Disable all newly created users",
+            "any-content-file Allow any `content_file` in documents",
             "ignore-pid Ignore `pid` JSON elements",
             "match-title Match papers by title if no `pid`",
             "add-topics Add all referenced topics to conference",

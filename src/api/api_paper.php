@@ -25,7 +25,7 @@ class Paper_API extends MessageSet {
         $this->psargs = [
             "disable_users" => false,
             "add_topics" => false,
-            "check_content_file" => false
+            "any_content_file" => true
         ];
     }
 
