@@ -4256,7 +4256,7 @@ class Conf {
             }
             if (($pos = array_search("'nonce'", $csp)) !== false) {
                 $nonceval = base64_encode(random_bytes(16));
-                $csp[$pos] = "'nonce-$nonceval'";
+                $csp[$pos] = "'nonce-{$nonceval}'";
                 Ht::set_script_nonce($nonceval);
             }
             header("Content-Security-Policy"

@@ -102,7 +102,7 @@ class S3VerifyAll_Batch {
             $last_key = (string) $node->Key;
             if ((!$match_re || preg_match($match_re, $last_key))
                 && preg_match($key_re, $last_key, $m)
-                && ($khash = Filer::hash_as_binary($m[1]))) {
+                && ($khash = HashAnalysis::hash_as_binary($m[1]))) {
                 if ($this->verbose) {
                     fwrite(STDOUT, "$last_key: ");
                 }
@@ -113,7 +113,7 @@ class S3VerifyAll_Batch {
                     if (!$this->verbose) {
                         fwrite(STDOUT, "$last_key: ");
                     }
-                    fwrite(STDOUT, "bad checksum " . Filer::hash_as_text($chash) . " (" . Filer::hash_as_text($khash) . ")\n");
+                    fwrite(STDOUT, "bad checksum " . HashAnalysis::hash_as_text($chash) . " (" . HashAnalysis::hash_as_text($khash) . ")\n");
                 } else if ($this->verbose) {
                     fwrite(STDOUT, "ok\n");
                 }

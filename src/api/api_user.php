@@ -83,7 +83,7 @@ class User_API {
     static function clickthrough(Contact $user, Qrequest $qreq) {
         if ($qreq->accept
             && $qreq->clickthrough_id
-            && ($hash = Filer::sha1_hash_as_text($qreq->clickthrough_id))) {
+            && ($hash = HashAnalysis::sha1_hash_as_text($qreq->clickthrough_id))) {
             if ($user->has_email()) {
                 $dest_user = $user;
             } else if ($qreq->p

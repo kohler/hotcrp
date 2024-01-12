@@ -32,7 +32,7 @@ class S3Transfer_Batch {
         $result = $this->conf->qe_raw("select paperStorageId, sha1 from PaperStorage where paperStorageId>1");
         $dids = [];
         while (($row = $result->fetch_row())) {
-            if (!$matcher || $matcher->test_hash(Filer::hash_as_text($row[1])))
+            if (!$matcher || $matcher->test_hash(HashAnalysis::hash_as_text($row[1])))
                 $dids[] = (int) $row[0];
         }
         Dbl::free($result);
@@ -60,7 +60,7 @@ class S3Transfer_Batch {
             if ($chash !== $doc->binary_hash()) {
                 $saved = $checked = false;
                 error_log("{$front}: S3 upload cancelled: data claims checksum {$doc->text_hash()}"
-                          . ", has checksum " . Filer::hash_as_text($chash));
+                          . ", has checksum " . HashAnalysis::hash_as_text($chash));
             } else {
                 $saved = $checked = $doc->check_s3();
                 if (!$saved) {

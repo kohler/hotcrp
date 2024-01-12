@@ -58,11 +58,11 @@ class DocumentBasics_Tester {
     function test_content_binary_hash() {
         $this->conf->save_setting("opt.contentHashMethod", 1, "sha1");
 
-        $doc = DocumentInfo::make_content($this->conf, "");
+        $doc = DocumentInfo::make_empty($this->conf);
         xassert_eqq($doc->text_hash(), "da39a3ee5e6b4b0d3255bfef95601890afd80709");
         xassert_eqq($doc->content_binary_hash(), hex2bin("da39a3ee5e6b4b0d3255bfef95601890afd80709"));
 
-        $doc = DocumentInfo::make_empty($this->conf);
+        $doc = DocumentInfo::make_content($this->conf, "");
         xassert_eqq($doc->text_hash(), "da39a3ee5e6b4b0d3255bfef95601890afd80709");
         xassert_eqq($doc->content_binary_hash(), hex2bin("da39a3ee5e6b4b0d3255bfef95601890afd80709"));
 

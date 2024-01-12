@@ -120,7 +120,7 @@ class Doc_Page {
 
         // version
         if (isset($qreq->version) && $dr->dtype >= DTYPE_FINAL) {
-            $version_hash = Filer::hash_as_binary(trim($qreq->version));
+            $version_hash = HashAnalysis::hash_as_binary(trim($qreq->version));
             if (!$version_hash) {
                 self::error("404 Not Found", MessageItem::error("<0>Version not found"), $qreq);
             }

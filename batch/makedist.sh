@@ -150,6 +150,7 @@ lib/fmt.php
 lib/ftext.php
 lib/getopt.php
 lib/gmpshim.php
+lib/hashanalysis.php
 lib/hclcolor.php
 lib/ht.php
 lib/icons.php

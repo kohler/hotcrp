@@ -3,7 +3,9 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class FileFilter {
+    /** @var int */
     public $id;
+    /** @var string */
     public $name;
 
     /** @return array<string,FileFilter> */

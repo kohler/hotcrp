@@ -20,8 +20,6 @@ class SiteLoader {
         "FmtArg" => "lib/fmt.php",
         "FormulaCall" => "src/formula.php",
         "FormatChecker" => "src/formatspec.php",
-        "HashAnalysis" => "lib/filer.php",
-        "IntlMsgSet" => "lib/fmt.php",
         "JsonSerializable" => "lib/json.php",
         "Limit_SearchTerm" => "src/searchterm.php",
         "LogEntryGenerator" => "src/logentry.php",

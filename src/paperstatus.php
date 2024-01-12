@@ -12,7 +12,9 @@ class PaperStatus extends MessageSet {
     /** @var bool */
     private $disable_users;
     /** @var bool */
-    private $allow_any_content_file = false;
+    private $any_content_file = false;
+    /** @var bool */
+    private $allow_hash_without_content = false;
     /** @var list<callable> */
     private $_on_document_import = [];
 
@@ -69,9 +71,8 @@ class PaperStatus extends MessageSet {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->disable_users = $options["disable_users"] ?? false;
-        if (!($options["any_content_file"] ?? false)) {
-            $this->_on_document_import[] = [$this, "document_import_check_filename"];
-        }
+        $this->any_content_file = $options["any_content_file"] ?? false;
+        $this->allow_hash_without_content = $user->privChair;
         $this->set_want_ftext(true, 5);
         $this->set_ignore_duplicates(true);
     }
@@ -162,15 +163,6 @@ class PaperStatus extends MessageSet {
     }
 
 
-    function document_import_check_filename($docj, PaperOption $o, PaperStatus $pstatus) {
-        if (is_string($docj->content_file ?? null)
-            && !($docj instanceof DocumentInfo)
-            && preg_match('/\A\/|(?:\A|\/)\.\.(?:\/|\z)/', $docj->content_file)) {
-            $pstatus->error_at_option($o, "<0>Bad content_file: only simple filenames allowed");
-            return false;
-        }
-    }
-
     /** @return ?DocumentInfo */
     function upload_document($docj, PaperOption $o) {
         // $docj can be a DocumentInfo or a JSON.
@@ -187,6 +179,16 @@ class PaperStatus extends MessageSet {
         }
         assert(!isset($docj->filter));
 
+        // check content_file
+        if (!$this->any_content_file
+            && !($docj instanceof DocumentInfo)
+            && isset($docj->content_file)
+            && is_string($docj->content_file)
+            && preg_match('/\A\/|(?:\A|\/)\.\.(?:\/|\z)/', $docj->content_file)) {
+            $this->error_at_option($o, "<0>Bad content_file: only simple filenames allowed");
+            return null;
+        }
+
         // check on_document_import
         foreach ($this->_on_document_import as $cb) {
             if (call_user_func($cb, $docj, $o, $this) === false)
@@ -196,8 +198,8 @@ class PaperStatus extends MessageSet {
         // validate JSON
         if ($docj instanceof DocumentInfo) {
             $doc = $docj;
-        } else {
-            $doc = $this->_upload_json_document($docj, $o);
+        } else if (!($doc = $this->_upload_json_document($docj, $o))) {
+            return null;
         }
 
         // save
@@ -221,42 +223,94 @@ class PaperStatus extends MessageSet {
         return $doc;
     }
 
-    /** @return DocumentInfo */
+    /** @param object $docj
+     * @return ?DocumentInfo */
     private function _upload_json_document($docj, PaperOption $o) {
-        $hash = null;
+        // extract content
+        $content = $content_file = null;
+        if (isset($docj->content) && is_string($docj->content)) {
+            $content = $docj->content;
+        } else if (isset($docj->content_base64) && is_string($docj->content_base64)) {
+            $content = base64_decode($docj->content_base64);
+        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
+            $content_file = $docj->content_file;
+        }
+
+        // extract requested hash
+        $ha = $want_algorithm = null;
         if (isset($docj->hash) && is_string($docj->hash)) {
-            $hash = Filer::hash_as_text($docj->hash);
-        } else if (!isset($docj->hash) && isset($docj->sha1) && is_string($docj->sha1)) {
-            $hash = Filer::sha1_hash_as_text($docj->sha1);
+            $ha = new HashAnalysis($docj->hash);
+        } else if (isset($docj->sha1) && is_string($docj->sha1)) {
+            $ha = new HashAnalysis($docj->sha1);
+            $want_algorithm = "sha1";
         }
+        if ($ha && (!$ha->ok()
+                    || !$ha->known_algorithm()
+                    || ($want_algorithm && $ha->algorithm() !== $want_algorithm))) {
+            $this->warning_at_option($o, "<0>Invalid `hash` ignored");
+            $ha = null;
+        }
+
+        // compute content hash
+        $content_ha = DocumentInfo::hash_analysis_like($this->conf, $ha ? $ha->text() : null);
+        if ($content !== null) {
+            $content_ha->set_hash($content);
+        } else if ($content_file !== null) {
+            $content_ha->set_hash_file($content_file);
+        }
+
+        // compare content hash with user-provided hash; error if different
+        if ($ha
+            && $content_ha->ok()
+            && $ha->binary() !== $content_ha->binary()) {
+            $this->error_at_option($o, "<0>Corrupt document ignored (its content did not match the provided hash)");
+            return null;
+        }
+
+        // also check CRC32 if provided
+        $crc32 = null;
+        if (isset($docj->crc32) && is_string($docj->crc32)) {
+            if (strlen($docj->crc32) === 8 && ctype_xdigit($docj->crc32)) {
+                $crc32 = hex2bin($docj->crc32);
+            } else if (strlen($docj->crc32) === 4 && $docj->crc32 !== "\0\0\0\0") {
+                $crc32 = $docj->crc32;
+            } else {
+                $this->warning_at_option($o, "<0>Invalid `crc32` ignored");
+            }
+        }
+        if ($crc32 !== null) {
+            $content_crc32 = false;
+            if ($content !== null) {
+                $content_crc32 = hash("crc32b", $content, true);
+            } else if ($content_file !== null) {
+                $content_crc32 = hash_file("crc32b", $content_file, true);
+            }
+            if ($content_crc32 !== false
+                && $crc32 !== $content_crc32) {
+                $this->error_at_option($o, "<0>Corrupt document ignored (its content did not match the provided checksum)");
+                return null;
+            }
+        }
+
+        // choose a hash
+        if ($ha) {
+            $hash = $ha->binary();
+        } else if ($content_ha->ok()) {
+            $hash = $content_ha->binary();
+        } else {
+            $hash = null;
+        }
+
+        // use existing document with same did and/or hash
         $docid = $docj->docid ?? null;
-
-        // make new document
-        $args = [
-            "paperId" => $this->_desired_pid ?? -1,
-            "hash" => $hash,
-            "documentType" => $o->id
-        ];
-        foreach (["timestamp", "mimetype",
-                  "content", "content_base64", "content_file"] as $k) {
-            if (isset($docj->$k))
-                $args[$k] = $docj->$k;
-        }
-        if (isset($docj->filename)) {
-            $args["filename"] = DocumentInfo::sanitize_filename($docj->filename);
-        }
-        $doc = new DocumentInfo($args, $this->conf, $this->prow);
-
-        // check for existing document with same did and/or hash
         if (!$this->will_insert()
-            && (($hash && !$doc->content_available())
-                || (is_int($docid) && $docid > 0))) {
+            && ($hash !== null || (is_int($docid) && $docid > 0))) {
             $qx = ["paperId=?" => $this->prow->paperId, "documentType=?" => $o->id];
+            if ($hash !== null) {
+                $qx["sha1=?"] = HashAnalysis::hash_as_binary($hash);
+            }
             if (is_int($docid) && $docid > 0) {
                 $qx["paperStorageId=?"] = $docid;
-            }
-            if ($hash) {
-                $qx["sha1=?"] = Filer::hash_as_binary($hash);
             }
             if (isset($docj->mimetype)) {
                 $qx["mimetype=?"] = $docj->mimetype;
@@ -264,19 +318,55 @@ class PaperStatus extends MessageSet {
             $result = $this->conf->qe_apply("select * from PaperStorage where " . join(" and ", array_keys($qx)), array_values($qx));
             $edoc = DocumentInfo::fetch($result, $this->conf, $this->prow);
             Dbl::free($result);
-            if ($edoc) {
+            if ($edoc
+                && ($edoc->paperStorageId === $docid
+                    || $content !== null
+                    || $content_file !== null
+                    || $this->allow_hash_without_content)) {
                 return $edoc;
             }
         }
 
-        // document upload requires available content
-        // Chair users can upload using *only* a hash; other users must
-        // provide the relevant content.
-        if ($doc->content_available()
-            || ($hash
-                && isset($docj->mimetype)
-                && $this->user->privChair
-                && $doc->ensure_content())) {
+        // content required from here on; fail if it's not available
+        if ($content === null
+            && $content_file === null
+            && ($hash === null
+                || !isset($docj->mimetype)
+                || !is_string($docj->mimetype)
+                || !$this->allow_hash_without_content)) {
+            $this->error_at_option($o, "<0>Ignored attempt to upload document without any content");
+            return null;
+        }
+
+        // make new document
+        $doc = (new DocumentInfo(null, $this->conf, $this->prow))
+            ->set_paper_id($this->_desired_pid ?? -1)
+            ->set_document_type($o->id);
+        if (isset($docj->mimetype) && is_string($docj->mimetype)) {
+            $doc->set_mimetype($docj->mimetype);
+        }
+        if (isset($docj->timestamp) && is_int($docj->timestamp)) {
+            $doc->set_timestamp($docj->timestamp);
+        }
+        if (isset($docj->filename) && is_string($docj->filename)) {
+            $doc->set_filename(DocumentInfo::sanitize_filename($docj->filename));
+        }
+        if (isset($docj->content) && is_string($docj->content)) {
+            $doc->__set_content($docj->content);
+        } else if (isset($docj->content_base64) && is_string($docj->content_base64)) {
+            $doc->__set_content(base64_decode($docj->content_base64));
+        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
+            $doc->__set_content_file($docj->content_file);
+        }
+        if ($hash !== null) {
+            $doc->set_hash($hash);
+        }
+        if ($crc32 !== null) {
+            $doc->set_crc32($crc32);
+        }
+
+        // analyze content, complain if not available
+        if ($doc->content_available() || $doc->ensure_content()) {
             $doc->analyze_content();
         } else {
             $doc->error("<0>Document has no content");
