@@ -15,6 +15,8 @@ class PaperStatus extends MessageSet {
     private $any_content_file = false;
     /** @var bool */
     private $allow_hash_without_content = false;
+    /** @var int */
+    private $doc_savef = 0;
     /** @var list<callable> */
     private $_on_document_import = [];
 
@@ -93,6 +95,17 @@ class PaperStatus extends MessageSet {
      * @return $this */
     function set_any_content_file($x) {
         $this->any_content_file = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_verify_hash($x) {
+        if ($x) {
+            $this->doc_savef &= ~DocumentInfo::SAVEF_NO_VERIFY_HASH;
+        } else {
+            $this->doc_savef |= DocumentInfo::SAVEF_NO_VERIFY_HASH;
+        }
         return $this;
     }
 
@@ -216,7 +229,7 @@ class PaperStatus extends MessageSet {
 
         // save
         if ($doc->paperStorageId === 0
-            && ($doc->has_error() || !$doc->save())) {
+            && ($doc->has_error() || !$doc->save($this->doc_savef))) {
             foreach ($doc->message_list() as $mi) {
                 $mi = $this->msg_at_option($o, $mi->message, $mi->status);
                 $mi->landmark = $doc->error_filename();
@@ -263,7 +276,9 @@ class PaperStatus extends MessageSet {
 
         // compute content hash
         $content_ha = HashAnalysis::make_algorithm($this->conf, $ha ? $ha->algorithm() : null);
-        if ($content !== null) {
+        if (($this->doc_savef & DocumentInfo::SAVEF_NO_VERIFY_HASH) !== 0) {
+            // do not compute content hash
+        } else if ($content !== null) {
             $content_ha->set_hash($content);
         } else if ($content_file !== null) {
             $content_ha->set_hash_file($content_file);
@@ -290,7 +305,9 @@ class PaperStatus extends MessageSet {
         }
         if ($crc32 !== null) {
             $content_crc32 = false;
-            if ($content !== null) {
+            if (($this->doc_savef & DocumentInfo::SAVEF_NO_VERIFY_HASH) !== 0) {
+                // do not compute content hash
+            } else if ($content !== null) {
                 $content_crc32 = hash("crc32b", $content, true);
             } else if ($content_file !== null) {
                 $content_crc32 = hash_file("crc32b", $content_file, true);
@@ -311,16 +328,18 @@ class PaperStatus extends MessageSet {
             $hash = null;
         }
 
-        // use existing document with same did and/or hash
-        $docid = $docj->docid ?? null;
+        // check for existing document
         if (!$this->will_insert()
-            && ($hash !== null || (is_int($docid) && $docid > 0))) {
-            $qx = ["paperId=?" => $this->prow->paperId, "documentType=?" => $o->id];
+            && isset($docj->docid)
+            && is_int($docj->docid)
+            && $docj->docid > 0) {
+            $qx = [
+                "paperId=?" => $this->prow->paperId,
+                "documentType=?" => $o->id,
+                "paperStorageId=?" => $docj->docid
+            ];
             if ($hash !== null) {
                 $qx["sha1=?"] = $hash;
-            }
-            if (is_int($docid) && $docid > 0) {
-                $qx["paperStorageId=?"] = $docid;
             }
             if (isset($docj->mimetype)) {
                 $qx["mimetype=?"] = $docj->mimetype;
@@ -328,11 +347,7 @@ class PaperStatus extends MessageSet {
             $result = $this->conf->qe_apply("select * from PaperStorage where " . join(" and ", array_keys($qx)), array_values($qx));
             $edoc = DocumentInfo::fetch($result, $this->conf, $this->prow);
             Dbl::free($result);
-            if ($edoc
-                && ($edoc->paperStorageId === $docid
-                    || $content !== null
-                    || $content_file !== null
-                    || $this->allow_hash_without_content)) {
+            if ($edoc) {
                 return $edoc;
             }
         }
@@ -340,10 +355,10 @@ class PaperStatus extends MessageSet {
         // content required from here on; fail if it's not available
         if ($content === null
             && $content_file === null
-            && ($hash === null
+            && (!$this->allow_hash_without_content
+                || $hash === null
                 || !isset($docj->mimetype)
-                || !is_string($docj->mimetype)
-                || !$this->allow_hash_without_content)) {
+                || !is_string($docj->mimetype))) {
             $this->error_at_option($o, "<0>Ignored attempt to upload document without any content");
             return null;
         }
