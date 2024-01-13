@@ -334,6 +334,7 @@ class DocumentInfo implements JsonSerializable {
         $doc->paperId = $this->paperId;
         $doc->timestamp = $this->timestamp;
         $doc->mimetype = $this->mimetype;
+        $doc->documentType = $this->documentType;
         $doc->filename = $this->filename;
         $doc->filterType = $ff->id;
         $doc->originalStorageId = $this->paperStorageId;

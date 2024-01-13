@@ -37,8 +37,8 @@ class Tag_SearchTerm extends SearchTerm {
         $tsm = new TagSearchMatcher($srch->user);
         if (preg_match('/\A([^#=!<>\x80-\xFF]+)(?:#|=)(-?(?:\.\d+|\d+\.?\d*))(?:\.\.\.?|-|–|—)(-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)) {
             $tagword = $m[1];
-            $tsm->add_value_matcher(new CountMatcher(">=$m[2]"));
-            $tsm->add_value_matcher(new CountMatcher("<=$m[3]"));
+            $tsm->add_value_matcher(new CountMatcher(">={$m[2]}"));
+            $tsm->add_value_matcher(new CountMatcher("<={$m[3]}"));
         } else if (preg_match('/\A([^#=!<>\x80-\xFF]+)(#?)([=!<>]=?|≠|≤|≥|)(-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)
                    && $m[1] !== "any"
                    && $m[1] !== "none"

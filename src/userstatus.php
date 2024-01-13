@@ -447,7 +447,7 @@ class UserStatus extends MessageSet {
         } else if (is_array($x)) {
             $t0 = $x;
         } else if ($x !== null) {
-            $this->error_at($key, "<0>Format error [$key]");
+            $this->error_at($key, "<0>Format error [{$key}]");
         }
         $tagger = new Tagger($this->viewer);
         $t1 = [];
