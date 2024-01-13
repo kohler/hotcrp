@@ -1,6 +1,6 @@
 <?php
 // contact.php -- HotCRP helper class representing system users
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Contact implements JsonSerializable {
     /** @var int */

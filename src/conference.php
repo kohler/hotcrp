@@ -1,6 +1,6 @@
 <?php
 // conference.php -- HotCRP central helper class (singleton)
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Conf {
     /** @var ?mysqli
@@ -3837,7 +3837,7 @@ class Conf {
 
 
     /** @param array{paperId?:list<int>|PaperID_SearchTerm,where?:string} $options
-     * @return Dbl_Result */
+     * @return \mysqli_result|Dbl_Result */
     function paper_result($options, Contact $user = null) {
         // Options:
         //   "paperId" => $pids Only papers in list<int> $pids
@@ -3864,11 +3864,6 @@ class Conf {
 
         $cxid = $user ? $user->contactXid : -2;
         assert($cxid > 0 || $cxid < -1);
-        if (is_int($options)
-            || (is_array($options) && !empty($options) && !is_associative_array($options))) {
-            error_log("bad \$options to Conf::paper_result"); // XXX
-            $options = ["paperId" => $options];
-        }
 
         // paper selection
         $paperset = null;
@@ -3880,11 +3875,22 @@ class Conf {
             throw new Exception("unexpected reviewId/commentId argument to Conf::paper_result");
         }
 
+        // return known-empty result
+        if (($cxid < 0
+             && (($options["myReviewRequests"] ?? false)
+                 || ($options["myLead"] ?? false)
+                 || ($options["myShepherd"] ?? false)
+                 || ($options["myManaged"] ?? false)
+                 || ($options["myWatching"] ?? false)
+                 || ($options["myConflicts"] ?? false)))
+            || $paperset === []) {
+            return Dbl_Result::make_empty();
+        }
+
         // prepare query: basic tables
         // * Every table in `$joins` can have at most one row per paperId,
         //   except for `PaperReview`.
-        $where = [];
-
+        $where = $qv = [];
         $joins = ["Paper"];
 
         if ($options["minimal"] ?? false) {
@@ -3900,30 +3906,37 @@ class Conf {
             $cols = ["Paper.*"];
         }
 
-        if ($user) {
-            $aujoinwhere = null;
-            if (($options["author"] ?? false)
-                && ($aujoinwhere = $user->act_author_view_sql("PaperConflict", true))) {
-                $where[] = $aujoinwhere;
-            }
-            if (($options["author"] ?? false) && !$aujoinwhere) {
-                $joins[] = "join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$cxid} and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")";
-            } else {
-                $joins[] = "left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$cxid})";
-            }
+        // author options
+        $author = $options["author"] ?? false;
+        $aucondition = $user && $author ? $user->act_author_view_sql("PaperConflict", true) : null;
+        if ($aucondition) {
+            $where[] = $aucondition;
+        } else if ($author && $cxid < 0) {
+            return Dbl_Result::make_empty();
+        }
+        if ($cxid > 0) {
+            $j = $author && !$aucondition ? "join" : "left join";
+            $t = $author && !$aucondition ? " and PaperConflict.conflictType>=" . CONFLICT_AUTHOR : "";
+            $joins[] = "{$j} PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$cxid}{$t})";
             $cols[] = "PaperConflict.conflictType";
-        } else if ($options["author"] ?? false) {
-            $where[] = "false";
+        } else {
+            $cols[] = "null as conflictType";
         }
 
-        // my review
+        // reviewer options
+        $recondition = $user ? $user->act_reviewer_sql("PaperReview") : "false";
         $no_paperreview = $paperreview_is_my_reviews = false;
-        $reviewjoin = "PaperReview.paperId=Paper.paperId and " . ($user ? $user->act_reviewer_sql("PaperReview") : "false");
         if ($options["myReviews"] ?? false) {
-            $joins[] = "join PaperReview on ({$reviewjoin})";
+            if ($recondition === "false") {
+                return Dbl_Result::make_empty();
+            }
+            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and {$recondition})";
             $paperreview_is_my_reviews = true;
         } else if ($options["myOutstandingReviews"] ?? false) {
-            $joins[] = "join PaperReview on ({$reviewjoin} and reviewNeedsSubmit!=0)";
+            if ($recondition === "false") {
+                return Dbl_Result::make_empty();
+            }
+            $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and {$recondition} and reviewNeedsSubmit!=0)";
         } else if ($options["myReviewRequests"] ?? false) {
             $joins[] = "join PaperReview on (PaperReview.paperId=Paper.paperId and requestedBy={$cxid} and reviewType=" . REVIEW_EXTERNAL . ")";
         } else {
@@ -3938,15 +3951,21 @@ class Conf {
             if ($options["reviewWordCounts"] ?? false) {
                 $cols[] = "coalesce((select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview force index (primary) where PaperReview.paperId=Paper.paperId), '') reviewWordCountSignature";
             }
-        } else if ($user) {
+        } else if (!$user) {
+            // no myReviewPermissions required
+        } else if ($recondition === "false") {
+            $cols[] = "'' as myReviewPermissions";
+        } else {
             // need myReviewPermissions
             if ($no_paperreview) {
-                $joins[] = "left join PaperReview on ({$reviewjoin})";
+                $joins[] = "left join PaperReview on (PaperReview.paperId=Paper.paperId and {$recondition})";
+                $no_paperreview = false;
+                $paperreview_is_my_reviews = true;
             }
-            if ($no_paperreview || $paperreview_is_my_reviews) {
+            if ($paperreview_is_my_reviews) {
                 $cols[] = "coalesce(" . PaperInfo::my_review_permissions_sql("PaperReview.") . ", '') myReviewPermissions";
             } else {
-                $cols[] = "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview force index (primary) where {$reviewjoin} group by paperId), '') myReviewPermissions";
+                $cols[] = "coalesce((select " . PaperInfo::my_review_permissions_sql() . " from PaperReview force index (primary) where PaperReview.paperId=Paper.paperId and {$recondition} group by paperId), '') myReviewPermissions";
             }
         }
 
@@ -3975,9 +3994,14 @@ class Conf {
         }
 
         if ($options["reviewerPreference"] ?? false) {
-            $joins[] = "left join PaperReviewPreference force index (primary) on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId={$cxid})";
-            $cols[] = "coalesce(PaperReviewPreference.preference, 0) as myReviewerPreference";
-            $cols[] = "PaperReviewPreference.expertise as myReviewerExpertise";
+            if ($cxid > 0) {
+                $joins[] = "left join PaperReviewPreference force index (primary) on (PaperReviewPreference.paperId=Paper.paperId and PaperReviewPreference.contactId={$cxid})";
+                $cols[] = "coalesce(PaperReviewPreference.preference, 0) as myReviewerPreference";
+                $cols[] = "PaperReviewPreference.expertise as myReviewerExpertise";
+            } else {
+                $cols[] = "0 as myReviewerPreference";
+                $cols[] = "null as myReviewerExpertise";
+            }
         }
 
         if ($options["allReviewerPreference"] ?? false) {
@@ -3989,14 +4013,19 @@ class Conf {
             $cols[] = "coalesce((select group_concat(contactId, ' ', conflictType) from PaperConflict force index (paperId) where PaperConflict.paperId=Paper.paperId), '') allConflictType";
         }
 
-        if (($options["myWatch"] ?? false) && $cxid > 0) {
-            $cols[] = "coalesce((select watch from PaperWatch force index (primary) where PaperWatch.paperId=Paper.paperId and PaperWatch.contactId={$cxid}), 0) watch";
+        if ($options["myWatch"] ?? false) {
+            if ($cxid > 0) {
+                $cols[] = "coalesce((select watch from PaperWatch force index (primary) where PaperWatch.paperId=Paper.paperId and PaperWatch.contactId={$cxid}), 0) watch";
+            } else {
+                $cols[] = "0 as watch";
+            }
         }
 
         // conditions
         if ($paperset !== null) {
             if (is_array($paperset)) {
-                $where[] = "Paper.paperId" . sql_in_int_list($paperset);
+                $where[] = "Paper.paperId?a";
+                $qv[] = $paperset;
             } else{
                 $where[] = $paperset->sql_predicate("Paper.paperId");
             }
@@ -4021,14 +4050,15 @@ class Conf {
             $where[] = "leadContactId!=0";
         }
         if ($options["myShepherd"] ?? false) {
-            $where[] = "shepherdContactId=$cxid";
+            $where[] = "shepherdContactId={$cxid}";
         } else if ($options["anyShepherd"] ?? false) {
             $where[] = "shepherdContactId!=0";
         }
         if ($options["myManaged"] ?? false) {
             $where[] = "managerContactId={$cxid}";
         }
-        if (($options["myWatching"] ?? false) && $cxid > 0) {
+        if ($options["myWatching"] ?? false) {
+            assert($paperreview_is_my_reviews);
             // return the papers with explicit or implicit WATCH_REVIEW
             // (i.e., author/reviewer/commenter); or explicitly managed
             // papers
@@ -4047,9 +4077,10 @@ class Conf {
             $where[] = "(" . join(" or ", $owhere) . ")";
         }
         if ($options["myConflicts"] ?? false) {
-            $where[] = $cxid > 0 ? "PaperConflict.conflictType>" . CONFLICT_MAXUNCONFLICTED : "false";
+            $where[] = "PaperConflict.conflictType>" . CONFLICT_MAXUNCONFLICTED;
         }
         if (isset($options["where"]) && $options["where"]) {
+            assert(strpos($options["where"], "?") === false);
             $where[] = $options["where"];
         }
 
@@ -4069,19 +4100,14 @@ class Conf {
             . ($options["limit"] ?? "");
 
         //Conf::msg_debugt($pq);
-        return $this->qe_raw($pq);
+        return $this->qe_apply($pq, $qv);
     }
 
     /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
      * @return PaperInfoSet|Iterable<PaperInfo> */
     function paper_set($options, Contact $user = null) {
-        // short-circuit database query if loading empty set
-        if (($options["paperId"] ?? null) === []) {
-            return new PaperInfoSet;
-        } else {
-            $result = $this->paper_result($options, $user);
-            return PaperInfoSet::make_result($result, $user, $this);
-        }
+        $result = $this->paper_result($options, $user);
+        return PaperInfoSet::make_result($result, $user, $this);
     }
 
     /** @param int $pid
