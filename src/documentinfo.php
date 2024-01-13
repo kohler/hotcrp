@@ -464,6 +464,14 @@ class DocumentInfo implements JsonSerializable {
         return $this;
     }
 
+    /** @param int $size
+     * @return $this */
+    function set_size($size) {
+        assert($this->paperStorageId <= 0);
+        $this->size = $size;
+        return $this;
+    }
+
     /** @param int $timestamp
      * @return $this */
     function set_timestamp($timestamp) {

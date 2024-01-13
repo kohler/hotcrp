@@ -400,6 +400,11 @@ class PaperStatus extends MessageSet {
         if ($crc32 !== null) {
             $doc->set_crc32($crc32);
         }
+        if (isset($docj->size)
+            && is_int($docj->size)
+            && ($this->doc_savef & DocumentInfo::SAVEF_SKIP_CONTENT) !== 0) {
+            $doc->set_size($docj->size);
+        }
 
         // analyze content, complain if not available
         if ($doc->content_available() || $doc->ensure_content()) {
