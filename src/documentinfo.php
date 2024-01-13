@@ -1085,7 +1085,7 @@ class DocumentInfo implements JsonSerializable {
         }
 
         // ensure content
-        $s3 = ($savef & self::SAVEF_NO_CONTENT) !== 0
+        $s3 = ($savef & self::SAVEF_SKIP_CONTENT) !== 0
             || ($this->_prefer_s3 && $this->check_s3());
         if ($this->has_error() || (!$s3 && !$this->ensure_content())) {
             return false;
