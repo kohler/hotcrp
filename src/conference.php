@@ -3800,6 +3800,13 @@ class Conf {
     }
 
 
+    /** @return 'sha1'|'sha256' */
+    function content_hash_algorithm() {
+        $sha1 = ($this->opt["contentHashMethod"] ?? "") === "sha1";
+        return $sha1 ? "sha1" : "sha256";
+    }
+
+
     //
     // Paper search
     //

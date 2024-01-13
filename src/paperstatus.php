@@ -256,15 +256,13 @@ class PaperStatus extends MessageSet {
             $ha = new HashAnalysis($docj->sha1);
             $want_algorithm = "sha1";
         }
-        if ($ha && (!$ha->ok()
-                    || !$ha->known_algorithm()
-                    || ($want_algorithm && $ha->algorithm() !== $want_algorithm))) {
+        if ($ha && (!$ha->ok() || ($want_algorithm && $ha->algorithm() !== $want_algorithm))) {
             $this->warning_at_option($o, "<0>Invalid `hash` ignored");
             $ha = null;
         }
 
         // compute content hash
-        $content_ha = DocumentInfo::hash_analysis_like($this->conf, $ha ? $ha->text() : null);
+        $content_ha = HashAnalysis::make_algorithm($this->conf, $ha ? $ha->algorithm() : null);
         if ($content !== null) {
             $content_ha->set_hash($content);
         } else if ($content_file !== null) {
@@ -319,7 +317,7 @@ class PaperStatus extends MessageSet {
             && ($hash !== null || (is_int($docid) && $docid > 0))) {
             $qx = ["paperId=?" => $this->prow->paperId, "documentType=?" => $o->id];
             if ($hash !== null) {
-                $qx["sha1=?"] = HashAnalysis::hash_as_binary($hash);
+                $qx["sha1=?"] = $hash;
             }
             if (is_int($docid) && $docid > 0) {
                 $qx["paperStorageId=?"] = $docid;

@@ -10,9 +10,14 @@ class HashAnalysis {
     /** @var ?bool */
     private $binary;
 
-    /** @param string $hash */
-    function __construct($hash) {
-        $len = strlen($hash);
+    /** @param ?string $hash */
+    function __construct($hash = null) {
+        $this->assign($hash);
+    }
+
+    /** @param ?string $hash */
+    function assign($hash) {
+        $len = strlen($hash ?? "");
         if ($len === 37
             && strcasecmp(substr($hash, 0, 5), "sha2-") === 0) {
             $this->prefix = "sha2-";
@@ -53,36 +58,34 @@ class HashAnalysis {
             $this->prefix = "";
             $this->hash = substr($hash, 5);
             $this->binary = false;
+        } else if ($hash === "sha256") {
+            $this->prefix = "sha2-";
+            $this->hash = null;
+        } else if ($hash === "sha1") {
+            $this->prefix = "";
+            $this->hash = null;
         } else {
-            if ($hash === "") {
-                $this->prefix = "";
-            } else if ($hash === "sha256") {
-                $this->prefix = "sha2-";
-            } else {
-                $this->prefix = "xxx-";
-            }
+            $this->prefix = "xxx-";
+            $this->hash = null;
         }
     }
 
-    /** @param ?string $algo
+    /** @param Conf $conf
+     * @param ?string $like
      * @return HashAnalysis */
-    static function make_known_algorithm($algo) {
-        $ha = new HashAnalysis("");
-        if ($algo === "sha1") {
-            $ha->prefix = "";
-        } else {
-            $ha->prefix = "sha2-";
+    static function make_algorithm($conf, $like = null) {
+        $ha = new HashAnalysis($like);
+        if ($ha->prefix === "xxx-") {
+            $algo = $conf->content_hash_algorithm();
+            $ha->prefix = $algo === "sha1" ? "" : "sha2-";
         }
+        $ha->hash = null;
         return $ha;
     }
 
     /** @return bool */
     function ok() {
         return $this->hash !== null;
-    }
-    /** @return bool */
-    function known_algorithm() {
-        return $this->prefix !== "xxx-";
     }
     /** @return string */
     function algorithm() {

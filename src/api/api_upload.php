@@ -190,8 +190,7 @@ class Upload_API {
             "hashpos" => 0
         ];
         if (PHP_VERSION_ID >= 80000) {
-            $ha = HashAnalysis::make_known_algorithm($this->conf->opt("contentHashMethod"));
-            $hashctx = hash_init($ha->algorithm());
+            $hashctx = hash_init($this->conf->content_hash_algorithm());
             $crc32ctx = hash_init("crc32b");
             $data["hashctx"] = base64_encode(serialize($hashctx));
             $data["crc32ctx"] = base64_encode(serialize($crc32ctx));
@@ -250,8 +249,7 @@ class Upload_API {
             $this->_hashpos = $this->_capd->hashpos;
         }
         if (!$this->_hashctx) {
-            $ha = HashAnalysis::make_known_algorithm($this->conf->opt("contentHashMethod"));
-            $this->_hashctx = hash_init($ha->algorithm());
+            $this->_hashctx = hash_init($this->conf->content_hash_algorithm());
             $this->_crc32ctx = hash_init("crc32b");
             $this->_hashpos = 0;
         }
@@ -450,7 +448,7 @@ class Upload_API {
                 $this->_error_ftext = "<0>Hash computation error";
                 return;
             }
-            $ha = HashAnalysis::make_known_algorithm($this->conf->opt("contentHashMethod"));
+            $ha = new HashAnalysis($this->conf->content_hash_algorithm());
             $hash = $ha->prefix() . hash_final($this->_hashctx);
             $crc = hash_final($this->_crc32ctx);
             $this->modify_capd(function ($d) use ($hash, $crc) {

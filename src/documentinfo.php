@@ -1395,24 +1395,11 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
-    /** @param Conf $conf
-     * @param ?string $like_hash
-     * @return HashAnalysis */
-    static function hash_analysis_like($conf, $like_hash = null) {
-        $ha = $like_hash ? new HashAnalysis($like_hash) : null;
-        if ($ha && $ha->known_algorithm()) {
-            $ha->clear_hash();
-        } else {
-            $ha = HashAnalysis::make_known_algorithm($conf->opt("contentHashMethod"));
-        }
-        return $ha;
-    }
-
     /** @param ?string $like_hash
      * @return string|false */
     function content_binary_hash($like_hash = null) {
         // never cached
-        $ha = self::hash_analysis_like($this->conf, $like_hash);
+        $ha = HashAnalysis::make_algorithm($this->conf, $like_hash);
         $this->ensure_content();
         if ($this->content !== null) {
             $ha->set_hash($this->content);
@@ -1426,7 +1413,7 @@ class DocumentInfo implements JsonSerializable {
      * @param ?string $like_hash
      * @return string|false */
     function file_binary_hash($file, $like_hash = null) {
-        $ha = self::hash_analysis_like($this->conf, $like_hash);
+        $ha = HashAnalysis::make_algorithm($this->conf, $like_hash);
         $ha->set_hash_file($file);
         return $ha->ok() ? $ha->binary() : false;
     }
