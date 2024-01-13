@@ -30,6 +30,10 @@ class SavePapers_Batch {
     /** @var bool */
     public $add_topics = false;
     /** @var bool */
+    public $skip_document_verify = false;
+    /** @var bool */
+    public $skip_document_content = false;
+    /** @var bool */
     public $dry_run = false;
     /** @var bool */
     public $log = true;
@@ -76,6 +80,8 @@ class SavePapers_Batch {
         $this->any_content_file = isset($arg["any-content-file"]);
         $this->add_topics = isset($arg["add-topics"]);
         $this->reviews = isset($arg["r"]);
+        $this->skip_document_verify = isset($arg["skip-document-verify"]);
+        $this->skip_document_content = isset($arg["skip-document-content"]);
         $this->log = !isset($arg["no-log"]);
         $this->dry_run = isset($arg["dry-run"]);
         $this->json5 = isset($arg["json5"]);
@@ -209,6 +215,8 @@ class SavePapers_Batch {
         $ps = (new PaperStatus($this->user))
             ->set_disable_users($this->disable_users)
             ->set_any_content_file($this->any_content_file)
+            ->set_skip_document_verify($this->skip_document_verify)
+            ->set_skip_document_content($this->skip_document_content)
             ->on_document_import([$this, "on_document_import"]);
 
         if ($ps->prepare_save_paper_json($j)) {
@@ -344,6 +352,8 @@ class SavePapers_Batch {
             "ignore-pid Ignore `pid` JSON elements",
             "match-title Match papers by title if no `pid`",
             "add-topics Add all referenced topics to conference",
+            "skip-document-verify Do not verify document hashes",
+            "skip-document-content Avoid storing document content",
             "json5,5 Allow JSON5 extensions",
             "no-log Don’t modify the action log"
         )->helpopt("help")

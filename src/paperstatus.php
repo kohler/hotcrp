@@ -100,11 +100,22 @@ class PaperStatus extends MessageSet {
 
     /** @param bool $x
      * @return $this */
-    function set_verify_hash($x) {
+    function set_skip_document_verify($x) {
         if ($x) {
-            $this->doc_savef &= ~DocumentInfo::SAVEF_NO_VERIFY_HASH;
+            $this->doc_savef |= DocumentInfo::SAVEF_SKIP_VERIFY;
         } else {
-            $this->doc_savef |= DocumentInfo::SAVEF_NO_VERIFY_HASH;
+            $this->doc_savef &= ~DocumentInfo::SAVEF_SKIP_VERIFY;
+        }
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_skip_document_content($x) {
+        if ($x) {
+            $this->doc_savef |= DocumentInfo::SAVEF_SKIP_CONTENT;
+        } else {
+            $this->doc_savef &= ~DocumentInfo::SAVEF_SKIP_CONTENT;
         }
         return $this;
     }
@@ -276,7 +287,7 @@ class PaperStatus extends MessageSet {
 
         // compute content hash
         $content_ha = HashAnalysis::make_algorithm($this->conf, $ha ? $ha->algorithm() : null);
-        if (($this->doc_savef & DocumentInfo::SAVEF_NO_VERIFY_HASH) !== 0) {
+        if (($this->doc_savef & DocumentInfo::SAVEF_SKIP_VERIFY) !== 0) {
             // do not compute content hash
         } else if ($content !== null) {
             $content_ha->set_hash($content);
@@ -305,7 +316,7 @@ class PaperStatus extends MessageSet {
         }
         if ($crc32 !== null) {
             $content_crc32 = false;
-            if (($this->doc_savef & DocumentInfo::SAVEF_NO_VERIFY_HASH) !== 0) {
+            if (($this->doc_savef & DocumentInfo::SAVEF_SKIP_VERIFY) !== 0) {
                 // do not compute content hash
             } else if ($content !== null) {
                 $content_crc32 = hash("crc32b", $content, true);

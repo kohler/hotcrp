@@ -818,7 +818,7 @@ class DocumentInfo implements JsonSerializable {
             return null;
         }
         if (file_exists($dspath)
-            && (($savef & self::SAVEF_NO_VERIFY_HASH) !== 0
+            && (($savef & self::SAVEF_SKIP_VERIFY) !== 0
                 || $this->file_binary_hash($dspath, $this->binary_hash()) === $this->binary_hash())) {
             $this->filestore = $dspath;
             return true;
@@ -1048,8 +1048,8 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
-    const SAVEF_NO_VERIFY_HASH = 1;
-    const SAVEF_NO_CONTENT = 2;
+    const SAVEF_SKIP_VERIFY = 1;
+    const SAVEF_SKIP_CONTENT = 2;
 
     /** @param int $savef
      * @return bool */
