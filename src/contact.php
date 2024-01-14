@@ -1097,8 +1097,8 @@ class Contact implements JsonSerializable {
         return ($this->cflags & $disabled) === 0
             && ($at = strpos($e, "@")) !== false
             && ($ch = $e[$at + 1]) !== "_"
-            && (($ch !== "e" && $ch !== "E")
-                || !preg_match('/\Gexample\.(?:com|net|org)\z/i', $e, $m, 0, $at + 1));
+            && !($at <= strlen($e) - 12
+                 && preg_match('/\G[@.]example\.(?:com|net|org|edu)\z/i', $e, $m, 0, strlen($e) - 12));
     }
 
     /** @return int */

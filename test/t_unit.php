@@ -986,7 +986,7 @@ class Unit_Tester {
 
     function test_valid_email() {
         xassert(Contact::make_email($this->conf, "ass@butt.com")->can_receive_mail());
-        xassert(Contact::make_email($this->conf, "ass@example.edu")->can_receive_mail());
+        xassert(Contact::make_email($this->conf, "ass@fxample.edu")->can_receive_mail());
         xassert(!Contact::make_email($this->conf, "ass")->can_receive_mail());
         xassert(!Contact::make_email($this->conf, "ass@_.com")->can_receive_mail());
         xassert(!Contact::make_email($this->conf, "ass@_.co.uk")->can_receive_mail());
@@ -996,6 +996,8 @@ class Unit_Tester {
         xassert(!Contact::make_email($this->conf, "ass@Example.com")->can_receive_mail());
         xassert(!Contact::make_email($this->conf, "ass@Example.ORG")->can_receive_mail());
         xassert(!Contact::make_email($this->conf, "ass@Example.net")->can_receive_mail());
+        xassert(!Contact::make_email($this->conf, "ass@example.edu")->can_receive_mail());
+        xassert(!Contact::make_email($this->conf, "ass@fart.example.edu")->can_receive_mail());
     }
 
     function test_sensitive_mail_preparation() {
