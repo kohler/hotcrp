@@ -2196,36 +2196,67 @@ class Conf {
     }
 
     /** @param ?Contact $u
-     * @param bool $nonmatching */
-    function invalidate_user($u, $nonmatching = false) {
-        if ($u !== null) {
+     * @param bool $saved */
+    function invalidate_user($u, $saved = false) {
+        if ($u === null) {
+            return;
+        } else if ($u->cdb_confid === 0) {
+            if ($this->_user_email_cache !== null
+                || $this->_user_cache !== null) {
+                $this->invalidate_local_user($u, $saved);
+            }
+        } else {
+            if ($this->_cdb_user_cache !== null) {
+                $this->invalidate_cdb_user($u, $saved);
+            }
+        }
+    }
+
+    /** @param Contact $u
+     * @param bool $saved */
+    private function invalidate_local_user($u, $saved) {
+        if ($this->_user_email_cache !== null) {
             $lemail = strtolower($u->email);
-            if ($u->cdb_confid === 0) {
-                $ux = $this->_user_email_cache[$lemail] ?? null;
-                if ($this->_user_email_cache !== null
-                    && (!$nonmatching || $ux !== $u)) {
-                    unset($this->_user_email_cache[$lemail]);
-                }
-                if ($u->contactId > 0) {
-                    $uid = $u->contactId;
-                } else if ($ux !== null && $ux->contactId > 0) {
-                    $uid = $ux->contactId;
-                } else {
-                    $uid = 0;
-                }
-                if ($this->_user_cache !== null
-                    && $uid > 0
-                    && (!$nonmatching || ($this->_user_cache[$uid] ?? null) !== $u)) {
-                    unset($this->_user_cache[$uid]);
-                }
-            } else if ($this->_cdb_user_cache !== null) {
-                $ux = $this->_cdb_user_cache[$lemail] ?? null;
-                unset($this->_cdb_user_cache[$lemail]);
-                if ($u->contactDbId > 0) {
-                    unset($this->_cdb_user_cache[$u->contactDbId]);
-                } else if ($ux !== null && $ux->contactDbId > 0) {
-                    unset($this->_cdb_user_cache[$ux->contactDbId]);
-                }
+            if ($u->contactId <= 0
+                && ($cu = $this->_user_email_cache[$lemail] ?? null)
+                && $cu->contactId > 0) {
+                $u->contactId = $u->contactXid = $cu->contactId;
+            }
+            if ($saved) {
+                $this->_user_email_cache[$lemail] = $u;
+            } else {
+                unset($this->_user_email_cache[$lemail]);
+            }
+        }
+        if ($this->_user_cache !== null
+            && $u->contactId > 0) {
+            if ($saved) {
+                $this->_user_cache[$u->contactId] = $u;
+            } else {
+                unset($this->_user_cache[$u->contactId]);
+            }
+        }
+    }
+
+    /** @param Contact $u
+     * @param bool $saved */
+    private function invalidate_cdb_user($u, $saved) {
+        $lemail = strtolower($u->email);
+        if ($u->contactDbId <= 0
+            && ($cu = $this->_cdb_user_cache[$lemail] ?? null)
+            && $cu->contactDbId > 0) {
+            $u->contactDbId = $cu->contactDbId;
+        }
+        if ($saved) {
+            $this->_cdb_user_cache[$lemail] = $u;
+        } else {
+            unset($this->_cdb_user_cache[$lemail]);
+        }
+        if ($u->contactDbId > 0) {
+            if ($saved) {
+                $this->_cdb_user_cache[$u->contactDbId] = $u;
+            } else {
+                unset($this->_cdb_user_cache[$u->contactDbId]);
             }
         }
     }

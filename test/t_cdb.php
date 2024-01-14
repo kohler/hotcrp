@@ -222,6 +222,7 @@ class Cdb_Tester {
         $acct = $this->us1->save_user((object) ["email" => $anna, "first" => "Anna", "last" => "Akhmatova"]);
         xassert(!!$acct);
         Dbl::qe("delete from ContactInfo where email=?", $anna);
+        $this->conf->invalidate_user(Contact::make_email($this->conf, $anna));
         Dbl::qe($this->conf->contactdb(), "update ContactInfo set passwordUseTime=1 where email=?", $anna);
         save_password($anna, "aquablouse", true);
         MailChecker::check0();

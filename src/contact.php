@@ -947,10 +947,9 @@ class Contact implements JsonSerializable {
         return $u;
     }
 
-    /** @param ?Contact $cdbu */
-    function update_cdb_roles($cdbu = null) {
+    function update_cdb_roles() {
         $roles = $this->cdb_roles();
-        if (($cdbu = $cdbu ?? $this->cdb_user())
+        if (($cdbu = $this->cdb_user())
             && ($roles !== $cdbu->roles
                 || ($roles !== 0 && (int) $cdbu->activity_at <= Conf::$now - 604800))) {
             assert($cdbu->cdb_confid < 0 || $cdbu->cdb_confid === $this->conf->opt["contactdbConfid"]);
@@ -976,13 +975,7 @@ class Contact implements JsonSerializable {
             return false;
         }
 
-        if ($this->_cdb_user) {
-            $this->conf->invalidate_user($this->_cdb_user);
-        } else {
-            $this->conf->invalidate_user(Contact::make_cdb_email($this->conf, $this->email));
-        }
-
-        $cdbur = $this->conf->cdb_user_by_email($this->email);
+        $cdbur = $this->conf->fresh_cdb_user_by_email($this->email);
         $cdbux = $cdbur ?? Contact::make_cdb_email($this->conf, $this->email);
         foreach (self::$props as $prop => $shape) {
             if (($shape & self::PROP_CDB) !== 0
@@ -1010,10 +1003,10 @@ class Contact implements JsonSerializable {
         if (!empty($cdbux->_mod_undo)) {
             assert($cdbux->cdb_confid !== 0);
             $cdbux->save_prop();
-            $this->invalidate_cdb_user();
+            $cdbur = $cdbux;
         }
-        if (($cdbur = $cdbur ?? $this->conf->cdb_user_by_email($this->email))) {
-            $this->update_cdb_roles($cdbur);
+        if (($this->_cdb_user = $cdbur)) {
+            $this->update_cdb_roles();
             return $cdbur->contactDbId;
         } else {
             return false;
@@ -2189,15 +2182,16 @@ class Contact implements JsonSerializable {
             $this->passwordTime = $cdbu->passwordTime;
             $this->passwordUseTime = 0;
         }
-
         $this->cdb_confid = $this->contactDbId = 0;
+        $this->_cdb_user = $cdbu;
+
         if ($this->save_prop()) {
             $this->set_roles_properties();
 
             // update roles
             if ($aupapers) {
                 $this->save_authored_papers($aupapers);
-                $this->update_cdb_roles($cdbu);
+                $this->update_cdb_roles();
             }
 
             // log creation (except for placeholder accounts)
@@ -2212,6 +2206,7 @@ class Contact implements JsonSerializable {
             // maybe failed because concurrent create (unlikely)
             $u = $this->conf->fresh_user_by_email($this->email);
             $this->unslice_using($u, true);
+            $this->conf->invalidate_user($this, true);
         }
 
         return $this;
