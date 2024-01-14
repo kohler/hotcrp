@@ -56,6 +56,8 @@ class SavePapers_Batch {
     /** @var ?string */
     private $_ziparchive_json;
 
+    /** @var PaperStatus */
+    public $ps;
     /** @var int */
     public $nerrors = 0;
     /** @var int */
@@ -170,14 +172,14 @@ class SavePapers_Batch {
         return $this->ziparchive->getFromName($this->_ziparchive_json);
     }
 
-    function on_document_import($docj, PaperOption $o, PaperStatus $pstatus) {
+    function on_document_import($docj, PaperOption $o) {
         if (!is_string($docj->content_file ?? null)
             || $docj instanceof DocumentInfo) {
             return;
         }
         if ($this->ziparchive) {
             $fname = $this->document_directory . $docj->content_file;
-            return Paper_API::apply_zip_content_file($docj, $fname, $this->ziparchive, $o, $pstatus);
+            return Paper_API::apply_zip_content_file($docj, $fname, $this->ziparchive, $o, $this->ps);
         } else if ($this->document_directory) {
             $docj->content_file = $this->document_directory . $docj->content_file;
         }
@@ -215,21 +217,21 @@ class SavePapers_Batch {
             fwrite(STDERR, "{$pidtext}{$titletext}: ");
         }
 
-        $ps = (new PaperStatus($this->user))
+        $this->ps = $this->ps ?? (new PaperStatus($this->user))
             ->set_disable_users($this->disable_users)
             ->set_any_content_file($this->any_content_file)
             ->set_skip_document_verify($this->skip_document_verify)
             ->set_skip_document_content($this->skip_document_content)
             ->on_document_import([$this, "on_document_import"]);
 
-        if ($ps->prepare_save_paper_json($j)) {
+        if ($this->ps->prepare_save_paper_json($j)) {
             if ($this->dry_run) {
-                $action = $ps->has_change() ? "changed" : "unchanged";
+                $action = $this->ps->has_change() ? "changed" : "unchanged";
                 $pid = true;
             } else {
-                $ps->execute_save();
-                $action = $ps->has_change() ? "saved" : "unchanged";
-                $pid = $ps->paperId;
+                $this->ps->execute_save();
+                $action = $this->ps->has_change() ? "saved" : "unchanged";
+                $pid = $this->ps->paperId;
             }
         } else {
             $action = "failed";
@@ -294,11 +296,51 @@ class SavePapers_Batch {
             }
         }
 
-        if ($ps->has_change() && $this->log && !$this->dry_run) {
-            $ps->log_save_activity("via CLI");
+        if ($this->ps->has_change() && $this->log && !$this->dry_run) {
+            $this->ps->log_save_activity("via CLI");
         }
         ++$this->nsuccesses;
         return true;
+    }
+
+    /** @param list<object> $jp */
+    private function _run_main($jp) {
+        if ($this->add_topics) {
+            foreach ($this->conf->options()->form_fields() as $opt) {
+                if ($opt instanceof Topics_PaperOption)
+                    $opt->allow_new_topics(true);
+            }
+        }
+
+        // prefetch authors together (useful for big updates)
+        $potential_authors = [];
+        foreach ($jp as $j) {
+            if (isset($j->authors) && is_array($j->authors)) {
+                foreach ($j->authors as $au) {
+                    if (is_object($au)
+                        && isset($au->email)
+                        && is_string($au->email))
+                        $potential_authors[] = $au->email;
+                }
+            }
+        }
+        $this->conf->resolve_primary_emails($potential_authors);
+
+        $this->conf->delay_logs();
+        foreach ($jp as $index => &$j) {
+            $this->run_one($index, $j);
+            if ($this->nerrors && !$this->ignore_errors) {
+                break;
+            }
+            $j = null;
+            gc_collect_cycles();
+            if ($index % 10 === 9) {
+                $this->conf->release_logs();
+                $this->conf->delay_logs();
+            }
+        }
+        $this->conf->release_logs();
+        unset($j);
     }
 
     /** @return 0|1|2 */
@@ -318,24 +360,7 @@ class SavePapers_Batch {
             fwrite(STDERR, "{$this->errprefix}invalid JSON, expected array of objects\n");
             ++$this->nerrors;
         } else {
-            if (is_object($jp)) {
-                $jp = [$jp];
-            }
-            if ($this->add_topics) {
-                foreach ($this->conf->options()->form_fields() as $opt) {
-                    if ($opt instanceof Topics_PaperOption)
-                        $opt->allow_new_topics(true);
-                }
-            }
-            foreach ($jp as $index => &$j) {
-                $this->run_one($index, $j);
-                if ($this->nerrors && !$this->ignore_errors) {
-                    break;
-                }
-                $j = null;
-                gc_collect_cycles();
-            }
-            unset($j);
+            $this->_run_main(is_object($jp) ? [$jp] : $jp);
         }
         if ($this->nerrors) {
             return $this->ignore_errors && $this->nsuccesses ? 2 : 1;
