@@ -26,6 +26,8 @@ class PaperStatus extends MessageSet {
     public $paperId;
     /** @var ?string */
     public $title;
+    /** @var ?list<int> */
+    private $_potential_pids;
     /** @var ?int */
     private $_desired_pid;
     /** @var ?list<string> */
@@ -1224,21 +1226,31 @@ class PaperStatus extends MessageSet {
 
     /** @return int */
     private function unused_random_pid() {
-        $n = max(100, 3 * $this->conf->fetch_ivalue("select count(*) from Paper"));
+        $this->_potential_pids = $this->_potential_pids ?? [];
         while (true) {
-            $pids = [];
-            while (count($pids) < 10) {
-                $pids[mt_rand(1, $n)] = true;
+            $np = count($this->_potential_pids);
+            if ($np > 0
+                && !$this->conf->fetch_ivalue("select exists (select * from Paper where paperId=?) from dual", $this->_potential_pids[$np - 1])) {
+                return array_pop($this->_potential_pids);
             }
 
-            $result = $this->conf->qe("select paperId from Paper where paperId?a", array_keys($pids));
+            $n = max(100, 3 * $this->conf->fetch_ivalue("select count(*) from Paper"));
+            while ($np < 20) {
+                $this->_potential_pids[] = mt_rand(1, $n);
+                ++$np;
+            }
+
+            $result = $this->conf->qe("select paperId from Paper where paperId?a", $this->_potential_pids);
             while (($row = $result->fetch_row())) {
-                unset($pids[(int) $row[0]]);
+                $pid = (int) $row[0];
+                while (($i = array_search($pid, $this->_potential_pids, true)) !== false) {
+                    array_splice($this->_potential_pids, $i, 1);
+                }
             }
-            Dbl::free($result);
+            $result->close();
 
-            if (!empty($pids)) {
-                return (array_keys($pids))[0];
+            if (!empty($this->_potential_pids)) {
+                return array_pop($this->_potential_pids);
             }
         }
     }
