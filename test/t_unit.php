@@ -107,6 +107,22 @@ class Unit_Tester {
         xassert_eqq($result, false);
     }
 
+    function test_array_sort_unique() {
+        $a = [1, 100, 200, 100, 300, 400];
+        array_sort_unique($a);
+        xassert_array_eqq($a, [1, 100, 200, 300, 400]);
+        array_sort_unique($a);
+        xassert_array_eqq($a, [1, 100, 200, 300, 400]);
+
+        // edge cases
+        $a = [];
+        array_sort_unique($a);
+        xassert_array_eqq($a, []);
+        $a = [1];
+        array_sort_unique($a);
+        xassert_array_eqq($a, [1]);
+    }
+
     function test_document_update_metadata() {
         $user_chair = $this->conf->checked_user_by_email("chair@_.com");
         $paper1 = $user_chair->checked_paper_by_id(1);

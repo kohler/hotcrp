@@ -58,6 +58,24 @@ function make_array(...$x) {
     return $x;
 }
 
+/** @param list<mixed> &$a */
+function array_sort_unique(&$a) {
+    if (($n = count($a)) > 1) {
+        sort($a);
+        for ($i = 0, $j = 1; $j !== $n; ++$j) {
+            if ($a[$i] !== $a[$j]) {
+                ++$i;
+                if ($i !== $j) {
+                    $a[$i] = $a[$j];
+                }
+            }
+        }
+        if ($i !== $n - 1) {
+            array_splice($a, $i + 1);
+        }
+    }
+}
+
 
 // string helpers
 

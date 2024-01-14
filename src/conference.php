@@ -76,7 +76,9 @@ class Conf {
     public $_header_printed = false;
     /** @var ?list<array{string,int}> */
     private $_save_msgs;
-    /** @var ?array<string,array<int,true>> */
+    /** @var int */
+    private $_save_logs_depth = 0;
+    /** @var ?array<string,list<int>> */
     private $_save_logs;
     /** @var string */
     private $_assets_url;
@@ -4891,40 +4893,42 @@ class Conf {
     const action_log_query_action_index = 6;
 
     function delay_logs() {
-        if ($this->_save_logs === null) {
-            $this->_save_logs = [];
-        }
+        ++$this->_save_logs_depth;
     }
 
     function release_logs() {
-        if ($this->_save_logs !== null) {
-            $qv = [];
-            '@phan-var-force list<list<string>> $qv';
-            $last_pids = null;
-            foreach ($this->_save_logs as $cid_text => $pids) {
-                $pos = strpos($cid_text, "|");
-                list($user, $dest_user, $true_user) = explode(",", substr($cid_text, 0, $pos));
-                $what = substr($cid_text, $pos + 1);
-                $pids = array_keys($pids);
-
-                // Combine `Tag` messages
-                if (str_starts_with($what, "Tag ")
-                    && ($n = count($qv)) > 0
-                    && str_starts_with($qv[$n-1][self::action_log_query_action_index], "Tag ")
-                    && $last_pids === $pids) {
-                    $qv[$n-1][self::action_log_query_action_index] .= substr($what, 3);
-                } else {
-                    foreach (self::format_log_values($what, $user, $dest_user, $true_user, $pids) as $x) {
-                        $qv[] = $x;
-                    }
-                    $last_pids = $pids;
-                }
-            }
-            if (!empty($qv)) {
-                $this->qe(self::action_log_query . " values ?v", $qv);
-            }
-            $this->_save_logs = null;
+        if ($this->_save_logs_depth > 0) {
+            --$this->_save_logs_depth;
         }
+        if ($this->_save_logs_depth > 0 || empty($this->_save_logs)) {
+            return;
+        }
+        $qv = [];
+        '@phan-var-force list<list<string>> $qv';
+        $last_pids = null;
+        foreach ($this->_save_logs as $cid_text => $pids) {
+            $pos = strpos($cid_text, "|");
+            list($user, $dest_user, $true_user) = explode(",", substr($cid_text, 0, $pos));
+            $what = substr($cid_text, $pos + 1);
+            array_sort_unique($pids);
+
+            // Combine `Tag` messages
+            if (str_starts_with($what, "Tag ")
+                && ($n = count($qv)) > 0
+                && str_starts_with($qv[$n-1][self::action_log_query_action_index], "Tag ")
+                && $last_pids === $pids) {
+                $qv[$n-1][self::action_log_query_action_index] .= substr($what, 3);
+            } else {
+                foreach (self::format_log_values($what, $user, $dest_user, $true_user, $pids) as $x) {
+                    $qv[] = $x;
+                }
+                $last_pids = $pids;
+            }
+        }
+        if (!empty($qv)) {
+            $this->qe(self::action_log_query . " values ?v", $qv);
+        }
+        $this->_save_logs = null;
     }
 
     private static function log_clean_user($user, &$text) {
@@ -4982,14 +4986,12 @@ class Conf {
         $user = self::log_clean_user($user, $text);
         $dest_user = self::log_clean_user($dest_user, $text);
 
-        if ($this->_save_logs !== null) {
+        if ($this->_save_logs_depth > 0) {
             $key = "{$user},{$dest_user},{$true_user}|{$text}";
-            if (!isset($this->_save_logs[$key])) {
-                $this->_save_logs[$key] = [];
-            }
-            foreach ($pids as $p) {
-                $this->_save_logs[$key][$p] = true;
-            }
+            $this->_save_logs = $this->_save_logs ?? [];
+            $pl = &$this->_save_logs[$key];
+            $pl = $pl ?? [];
+            array_push($pl, ...$pids);
             return;
         }
 
