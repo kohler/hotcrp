@@ -1032,7 +1032,7 @@ class Permission_Tester {
         xassert_eqq($paper4->viewable_tags($this->u_chair), "");
         xassert_match($paper5->viewable_tags($this->u_chair), '/\A fart#\d+ testtag#0\z/');
         $this->u_chair->set_overrides($overrides);
-        xassert_assign($this->conf->site_contact(), "action,paper,user,tag\nclearconflict,4 5,chair@_.com\ncleartag,4 5,,testtag");
+        xassert_assign($this->conf->root_user(), "action,paper,user,tag\nclearconflict,4 5,chair@_.com\ncleartag,4 5,,testtag");
     }
 
     function test_assign_preference() {
@@ -1198,12 +1198,12 @@ class Permission_Tester {
 
         $permissionizer = new MeetingTracker_Permissionizer($this->conf, [1, 2, 3]);
         xassert_eqq($permissionizer->admin_perm(), []);
-        xassert($permissionizer->check_admin_perm($this->conf->site_contact()));
+        xassert($permissionizer->check_admin_perm($this->conf->root_user()));
         xassert(!$permissionizer->check_admin_perm($user_jon));
 
         $permissionizer = new MeetingTracker_Permissionizer($this->conf, [3, 9, 13]);
         xassert_eqq($permissionizer->admin_perm(), [["+red"]]);
-        xassert($permissionizer->check_admin_perm($this->conf->site_contact()));
+        xassert($permissionizer->check_admin_perm($this->conf->root_user()));
         xassert($permissionizer->check_admin_perm($user_jon));
 
         xassert_eqq($permissionizer->default_visibility(), "");

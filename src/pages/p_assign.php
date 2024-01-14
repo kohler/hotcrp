@@ -661,9 +661,6 @@ class Assign_Page {
             $user->escape();
         }
         $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        // ensure site contact exists before locking tables
-        $user->conf->site_contact();
-
         $ap = new Assign_Page($user, $qreq);
         $ap->assign_load();
         $ap->handle_request();

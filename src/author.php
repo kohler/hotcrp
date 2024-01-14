@@ -187,37 +187,29 @@ class Author {
         }
     }
 
-    static private $object_keys = [
-        "firstName" => "firstName", "first" => "firstName", "givenName" => "firstName",
-        "given" => "firstName", "lastName" => "lastName", "last" => "lastName",
-        "familyName" => "lastName", "family" => "lastName", "email" => "email",
-        "affiliation" => "affiliation", "name" => "name", "fullName" => "name"
-    ];
-
-    /** @param object|array<string,mixed> $o */
-    function assign_keyed($o) {
-        if (!is_object($o) && !is_array($o)) {
+    /** @param object|array<string,mixed> $x */
+    function assign_keyed($x) {
+        if (!is_object($x) && !is_array($x)) {
             throw new Exception("invalid Author::make_keyed");
         }
-        $x = [];
-        foreach (is_object($o) ? get_object_vars($o) : $o as $k => $v) {
-            $mk = self::$object_keys[$k] ?? null;
-            if ($mk !== null && is_string($v)) {
-                if ($mk === "name") {
-                    $this->_name = $v;
-                    list($f, $l, $e) = Text::split_name($v, true);
-                    if (!isset($x["firstName"]) && !isset($x["lastName"])) {
-                        $this->firstName = $f;
-                        $this->lastName = $l;
-                    }
-                    if ($e !== null && !isset($x["email"])) {
-                        $this->email = $e;
-                    }
-                } else {
-                    $x[$mk] = $this->$mk = $v;
-                }
+        $arr = is_object($x) ? get_object_vars($x) : $x;
+        $f = $arr["firstName"] ?? $arr["first"] ?? $arr["givenName"] ?? $arr["given"] ?? null;
+        $l = $arr["lastName"] ?? $arr["last"] ?? $arr["familyName"] ?? $arr["family"] ?? null;
+        $e = $arr["email"] ?? null;
+        $a = $arr["affiliation"] ?? null;
+        if (($n = $arr["name"] ?? $arr["fullName"] ?? null) !== null) {
+            $this->_name = $n;
+            list($ff, $ll, $ee) = Text::split_name($n, true);
+            if ($f === null && $l === null) {
+                $f = $ff;
+                $l = $ll;
             }
+            $e = $e ?? $ee;
         }
+        $this->firstName = $f ?? "";
+        $this->lastName = $l ?? "";
+        $this->email = $e ?? "";
+        $this->affiliation = $a ?? "";
     }
 
     /** @param string $s

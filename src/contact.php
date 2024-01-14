@@ -369,18 +369,16 @@ class Contact implements JsonSerializable {
         return $u;
     }
 
-    /** @param array{email?:string,firstName?:string,lastName?:string} $args
-     * @return Contact */
-    static function make_site_contact(Conf $conf, $args) {
+    /** @return Contact */
+    static function make_root_user(Conf $conf) {
         $u = new Contact($conf);
         $u->contactXid = self::$next_xid--;
-        $u->email = $args["email"] ?? "";
-        $u->firstName = $args["firstName"] ?? "";
-        $u->lastName = $args["lastName"] ?? "";
+        $u->email = "rootuser";
         $u->roles = self::ROLE_PC | self::ROLE_CHAIR;
         $u->_root_user = true;
         $u->_dangerous_track_mask = 0;
         $u->set_roles_properties();
+        $u->_cdb_user = null;
         return $u;
     }
 

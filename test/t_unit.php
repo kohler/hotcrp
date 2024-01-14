@@ -635,7 +635,7 @@ class Unit_Tester {
     }
 
     function test_tagger_checks() {
-        $tagger = new Tagger($this->conf->site_contact());
+        $tagger = new Tagger($this->conf->root_user());
         xassert_eqq($tagger->check("none", 0), false);
         xassert_eqq($tagger->check("any", 0), false);
         xassert_eqq($tagger->check("undefined", 0), false);

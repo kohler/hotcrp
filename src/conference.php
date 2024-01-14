@@ -144,7 +144,7 @@ class Conf {
     private $_cdb_user_cache_missing;
     /** @var ?Contact */
     private $_root_user;
-    /** @var ?Contact */
+    /** @var ?Author */
     private $_site_contact;
     /** @var ?ReviewForm */
     private $_review_form;
@@ -1893,7 +1893,7 @@ class Conf {
     /** @return Contact */
     function root_user() {
         if (!$this->_root_user) {
-            $this->_root_user = Contact::make_site_contact($this, ["email" => "rootuser"]);
+            $this->_root_user = Contact::make_root_user($this);
             $this->_root_user->set_overrides(Contact::OVERRIDE_CONFLICT);
         }
         return $this->_root_user;
@@ -1907,19 +1907,18 @@ class Conf {
         return $chair;
     }
 
-    /** @return Contact */
+    /** @return Author */
     function site_contact() {
         if (!$this->_site_contact) {
-            $args = ["email" => $this->opt("contactEmail") ?? ""];
-            if (($args["email"] === "" || $args["email"] === "you@example.com")
-                && ($row = $this->default_site_contact())) {
-                $args["email"] = $row->email;
-                $args["firstName"] = $row->firstName;
-                $args["lastName"] = $row->lastName;
-            } else if (($name = $this->opt("contactName"))) {
-                list($args["firstName"], $args["lastName"], $unused) = Text::split_name($name);
+            $e = $this->opt("contactEmail") ?? "";
+            if (($e === "" || $e === "you@example.com")
+                && ($dsc = $this->default_site_contact())) {
+                $this->_site_contact = $dsc;
+            } else {
+                $this->_site_contact = Author::make_keyed([
+                    "email" => $e, "name" => $this->opt("contactName")
+                ]);
             }
-            $this->_site_contact = Contact::make_site_contact($this, $args);
         }
         return $this->_site_contact;
     }
@@ -2676,7 +2675,7 @@ class Conf {
             $this->qe_raw("insert into Settings (name, value) select '{$name}', 1 from dual where {$existsq} on duplicate key update value=1");
         }
         if ($adding <= 0) {
-            $this->qe_raw("delete from Settings where name='$name' and not ($existsq)");
+            $this->qe_raw("delete from Settings where name='{$name}' and not ({$existsq})");
         }
         $this->settings[$name] = (int) $this->fetch_ivalue("select value from Settings where name='{$name}'");
     }

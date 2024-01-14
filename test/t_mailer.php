@@ -30,7 +30,7 @@ class Mailer_Tester {
 
     function test_send() {
         MailChecker::clear();
-        $user = $this->conf->site_contact();
+        $user = $this->conf->checked_user_by_email("chair@_.com");
         $mr = (new MailRecipients($user))->set_recipients("au")->set_paper_ids([13, 14, 15, 16]);
         $this->run_send_template($mr, "@authors");
         MailChecker::check_db("t_mailer-send-1");
