@@ -891,7 +891,7 @@ class PaperStatus extends MessageSet {
         if (!$uu && $ctype >= CONFLICT_AUTHOR) {
             $j = $au->unparse_nea_json();
             $j["disablement"] = ($this->disable_users ? Contact::CF_UDISABLED : 0)
-                | Contact::CF_PLACEHOLDER;
+                | ($ctype >= CONFLICT_CONTACTAUTHOR ? 0 : Contact::CF_PLACEHOLDER);
             $uu = Contact::make_keyed($this->conf, $j)->store(0, $this->user);
             if ($uu) {
                 $this->_created_contacts[] = $uu;
