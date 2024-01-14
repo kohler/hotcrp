@@ -1345,19 +1345,38 @@ class PaperStatus extends MessageSet {
     private function _execute_conflicts() {
         if (!empty($this->_conflict_ins)) {
             // insert conflicts
-            $cfltf = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_ERROR);
             $auflags = CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR;
+            $clears = 0;
+            $qxa = [];
             foreach ($this->_conflict_ins as $ci) {
-                if (($ci[1] & CONFLICT_PCMASK) === (CONFLICT_PCMASK & ~1)) {
-                    $cfltf("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=if(conflictType&1,((conflictType&~?)|?),((conflictType&~?)|?))",
-                        $this->paperId, $ci[0], $ci[2],
-                        $ci[1] & $auflags, $ci[2] & $auflags, $ci[1], $ci[2]);
+                $ci1 = $ci[1] & ~$ci[2];
+                if ($ci1 !== 0) {
+                    $ci1x = "(PaperConflict.conflictType&~{$ci1})";
                 } else {
-                    $cfltf("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=((conflictType&~?)|?)",
-                        $this->paperId, $ci[0], $ci[2], $ci[1], $ci[2]);
+                    $ci1x = "PaperConflict.conflictType";
                 }
+                $clears |= $ci1;
+                if (($ci[1] & CONFLICT_PCMASK) === (CONFLICT_PCMASK & ~1)) {
+                    $ci1a = $ci[1] & ~$ci[2] & $auflags;
+                    $ci2a = $ci[2] & $auflags;
+                    if ($ci1a !== 0) {
+                        $ci1ax = "(PaperConflict.conflictType&~{$ci1a})";
+                    } else {
+                        $ci1ax = "PaperConflict.conflictType";
+                    }
+                    $k = "if(PaperConflict.conflictType&1,({$ci1ax}|{$ci2a}),({$ci1x}|{$ci[2]}))";
+                } else {
+                    $k = "({$ci1x}|?U(conflictType))";
+                }
+                $qxa[$k][] = [$this->paperId, $ci[0], $ci[2]];
             }
-            $cfltf("delete from PaperConflict where paperId=? and conflictType=0", $this->paperId);
+            $cfltf = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_ERROR);
+            foreach ($qxa as $k => $qv) {
+                $cfltf("insert into PaperConflict (paperId,contactId,conflictType) values ?v ?U on duplicate key update conflictType={$k}", $qv);
+            }
+            if ($clears !== 0) {
+                $cfltf("delete from PaperConflict where paperId=? and conflictType=0", $this->paperId);
+            }
             $cfltf(null);
         }
 

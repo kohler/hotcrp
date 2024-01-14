@@ -770,7 +770,7 @@ class Dbl {
 
     /** @param \mysqli $dblink
      * @param int $flags
-     * @return callable(?string,string|int|null...):void */
+     * @return callable(?string,string|int|null|list...):void */
     static function make_multi_query_stager($dblink, $flags) {
         // NB $q argument as `true` is deprecated but might still be present
         $qs = $qvs = [];
