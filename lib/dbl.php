@@ -219,7 +219,7 @@ class Dbl {
     static public $default_dblink;
     /** @var callable(\mysqli,string) */
     static private $error_handler = "Dbl::default_error_handler";
-    /** @var false|array<string,array{float,int,string}> */
+    /** @var false|array<string,array{float,int,int,string}> */
     static private $query_log = false;
     /** @var false|string */
     static private $query_log_key = false;
@@ -367,7 +367,7 @@ class Dbl {
             if (isset(self::$query_log[$qx])) {
                 ++self::$query_log[$qx][1];
             } else {
-                self::$query_log[$qx] = [0.0, 1, self::landmark()];
+                self::$query_log[$qx] = [0.0, 1, 0, self::landmark()];
             }
         }
         if (count($args) === $argpos + 1) {
@@ -568,6 +568,11 @@ class Dbl {
             $time = microtime(true);
             $result = $dblink->$qfunc($qstr);
             self::$query_log[self::$query_log_key][0] += microtime(true) - $time;
+            if ($result === true) {
+                self::$query_log[self::$query_log_key][2] += $dblink->affected_rows;
+            } else if ($result) {
+                self::$query_log[self::$query_log_key][2] += $result->num_rows;
+            }
             self::$query_log_key = false;
         } else {
             $result = $dblink->$qfunc($qstr);
@@ -971,19 +976,24 @@ class Dbl {
             uasort(self::$query_log, function ($a, $b) {
                 return $b[0] <=> $a[0];
             });
-            $self = Navigation::self();
+            $nq = $tt = $nr = 0;
+            foreach (self::$query_log as $what) {
+                $tt += $what[0];
+                $nq += $what[1];
+                $nr += $what[2];
+            }
             $i = 1;
             $n = count(self::$query_log);
-            $t = [0, 0];
             $qlog = "";
+            $self = Navigation::self();
             foreach (self::$query_log as $where => $what) {
-                $a = [$what[0], $what[1], $what[2], $where];
-                $qlog .= "query_log: {$self} #{$i}/{$n}: " . json_encode($a) . "\n";
+                $pct = round($what[0] / $tt * 1000) / 10;
+                $qlog .= "query_log: {$self} #{$i}/{$n}: "
+                    . json_encode([$what[0], $what[1], $pct, $what[2], $what[3], $where])
+                    . "\n";
                 ++$i;
-                $t[0] += $what[0];
-                $t[1] += $what[1];
             }
-            $qlog .= "query_log: total: " . json_encode($t) . "\n";
+            $qlog .= "query_log: total: " . json_encode([$tt, $nq, 100.0, $nr]) . "\n";
             if (self::$query_log_file) {
                 @file_put_contents(self::$query_log_file, $qlog, FILE_APPEND);
             } else {
