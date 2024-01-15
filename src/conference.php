@@ -3846,7 +3846,7 @@ class Conf {
     /** @return string */
     function rating_signature_query() {
         if ($this->setting("rev_ratings") !== REV_RATINGS_NONE) {
-            return "coalesce((select group_concat(contactId, ' ', rating) from ReviewRating where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId),'')";
+            return "coalesce((select group_concat(contactId, ' ', rating) from ReviewRating force index (primary) where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId),'')";
         } else {
             return "''";
         }
