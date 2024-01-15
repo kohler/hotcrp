@@ -1397,24 +1397,6 @@ class PaperStatus extends MessageSet {
                 }
             }
         }
-
-        if ($this->_created_contacts !== null) {
-            // send mail to new contacts
-            $prow = $this->conf->paper_by_id($this->paperId);
-            $rest = ["prow" => $prow];
-            if ($this->user->can_administer($prow)
-                && !$prow->has_author($this->user)) {
-                $rest["adminupdate"] = true;
-            }
-            foreach ($this->_created_contacts as $u) {
-                if ($u->password_unset()
-                    && !$u->activity_at
-                    && !$u->isPC
-                    && !$u->is_dormant()) {
-                    $u->prepare_mail("@newaccount.paper", $rest)->send();
-                }
-            }
-        }
     }
 
     private function _postexecute_check_required_options() {
@@ -1436,6 +1418,38 @@ class PaperStatus extends MessageSet {
             $this->conf->qe("update Paper set timeSubmitted=? where paperId=?",
                             $this->prow->timeSubmitted, $this->paperId);
             $this->_paper_submitted = false;
+        }
+    }
+
+    private function _postexecute_notify() {
+        $need_docinval = $this->_documents_changed && !$this->prow->is_new();
+        $need_mail = [];
+        foreach ($this->_created_contacts ?? [] as $u) {
+            if ($u->password_unset()
+                && !$u->activity_at
+                && !$u->isPC
+                && !$u->is_dormant()) {
+                $need_mail[] = $u;
+            }
+        }
+
+        if (!$need_docinval && !$need_mail) {
+            return;
+        }
+
+        $prow = $this->conf->paper_by_id($this->paperId, null, ["options" => true]);
+        if ($need_docinval) {
+            $prow->mark_inactive_documents();
+        }
+        if ($need_mail) {
+            $rest = ["prow" => $prow];
+            if ($this->user->can_administer($prow)
+                && !$prow->has_author($this->user)) {
+                $rest["adminupdate"] = true;
+            }
+            foreach ($need_mail as $u) {
+                $u->prepare_mail("@newaccount.paper", $rest)->send();
+            }
         }
     }
 
@@ -1499,11 +1513,9 @@ class PaperStatus extends MessageSet {
         // update automatic tags
         $this->conf->update_automatic_tags($this->paperId, "paper");
 
-        // update document inactivity
-        if ($this->_documents_changed
-            && ($prow = $this->conf->paper_by_id($this->paperId, null, ["options" => true]))) {
-            $prow->mark_inactive_documents();
-        }
+        // after tags set, update document inactivity and send mail to
+        // newly created users
+        $this->_postexecute_notify();
 
         // The caller should not use `$this->prow` any more, but in case they
         // do (e.g. in old tests), invalidate it when convenient.
