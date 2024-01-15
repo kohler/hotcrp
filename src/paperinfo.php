@@ -801,6 +801,7 @@ class PaperInfo {
         $prow->blind = true;
         $prow->allConflictType = "";
         $prow->_author_user = $user;
+        $prow->_review_array = [];
         $prow->_comment_skeleton_array = $prow->_comment_array = [];
         $prow->_row_set->add_paper($prow);
         if ($stag
