@@ -5025,7 +5025,9 @@ class Conf {
             $this->_save_logs = $this->_save_logs ?? [];
             $pl = &$this->_save_logs[$key];
             $pl = $pl ?? [];
-            array_push($pl, ...$pids);
+            if (!empty($pids)) {
+                array_push($pl, ...$pids);
+            }
             return;
         }
 
