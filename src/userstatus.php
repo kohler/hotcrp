@@ -208,24 +208,18 @@ class UserStatus extends MessageSet {
         }
     }
 
-    /** @return bool */
+    /** @return 0|1|2 */
     function update_if_empty(Contact $user) {
         // CDB user profiles belong to their owners
         if ($user->is_cdb_user()
             && (strcasecmp($user->email, $this->viewer->email) !== 0
                 || $this->viewer->is_actas_user())) {
-            return true;
+            return 1;
         } else if (($this->jval->user_override ?? null) !== null) {
-            return !$this->jval->user_override;
+            return $this->jval->user_override ? 0 : 1;
         } else {
-            return $this->update_profile_if_empty;
+            return $this->update_profile_if_empty ? 1 : 0;
         }
-    }
-
-    /** @return bool
-     * @deprecated */
-    function only_update_empty(Contact $user) {
-        return $this->update_if_empty($user);
     }
 
     /** @param int $cid
@@ -1131,7 +1125,7 @@ class UserStatus extends MessageSet {
         }
     }
 
-    /** @param bool $ifempty */
+    /** @param 0|1|2 $ifempty */
     private function set_profile_prop(Contact $user, $ifempty) {
         foreach (["firstName" => "name",
                   "lastName" => "name",
@@ -1144,7 +1138,7 @@ class UserStatus extends MessageSet {
                   "state" => "address",
                   "zip" => "address"] as $prop => $diff) {
             if (($v = $this->jval->$prop ?? null) !== null) {
-                $user->set_prop($prop, $v, $ifempty ? 1 : 0);
+                $user->set_prop($prop, $v, $ifempty);
                 if ($user->prop_changed($prop)) {
                     $this->diffs[$diff] = true;
                 }
