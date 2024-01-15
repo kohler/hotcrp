@@ -894,7 +894,7 @@ class Contact implements JsonSerializable {
     /** @return $this */
     function ensure_account_here() {
         assert($this->has_email());
-        if (!$this->has_account_here()) {
+        if (!$this->has_account_here() && !$this->is_root_user()) {
             $this->store();
         }
         return $this;
