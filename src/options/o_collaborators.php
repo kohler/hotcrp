@@ -63,16 +63,16 @@ class Collaborators_PaperOption extends PaperOption {
     }
     function render(FieldRender $fr, PaperValue $ov) {
         $n = ["<ul class=\"x namelist-columns\">"];
-        foreach (explode("\n", htmlspecialchars($ov->data())) as $line) {
-            if (strlen($line) > 6 || strcasecmp(trim($line), "none") !== 0)
+        if (($x = rtrim($ov->data() ?? "")) !== "") {
+            foreach (explode("\n", htmlspecialchars($x)) as $line) {
                 $n[] = "<li class=\"od\">{$line}</li>";
+            }
         }
         if (count($n) === 1) {
-            $fr->set_text("None");
-        } else {
-            $n[] = "</ul>";
-            $fr->set_html(join("", $n));
+            $n[] = "<li class=\"od\">—</li>";
         }
+        $n[] = "</ul>";
+        $fr->set_html(join("", $n));
     }
     // XXX no render because paper strip
 }
