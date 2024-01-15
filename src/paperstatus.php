@@ -15,6 +15,8 @@ class PaperStatus extends MessageSet {
     private $any_content_file = false;
     /** @var bool */
     private $allow_hash_without_content = false;
+    /** @var bool */
+    private $notify = true;
     /** @var int */
     private $doc_savef = 0;
     /** @var list<callable> */
@@ -88,6 +90,13 @@ class PaperStatus extends MessageSet {
      * @return $this */
     function set_disable_users($x) {
         $this->disable_users = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_notify($x) {
+        $this->notify = $x;
         return $this;
     }
 
@@ -1424,12 +1433,14 @@ class PaperStatus extends MessageSet {
     private function _postexecute_notify() {
         $need_docinval = $this->_documents_changed && !$this->prow->is_new();
         $need_mail = [];
-        foreach ($this->_created_contacts ?? [] as $u) {
-            if ($u->password_unset()
-                && !$u->activity_at
-                && !$u->isPC
-                && !$u->is_dormant()) {
-                $need_mail[] = $u;
+        if ($this->notify && $this->_created_contacts) {
+            foreach ($this->_created_contacts as $u) {
+                if ($u->password_unset()
+                    && !$u->activity_at
+                    && !$u->isPC
+                    && !$u->is_dormant()) {
+                    $need_mail[] = $u;
+                }
             }
         }
 

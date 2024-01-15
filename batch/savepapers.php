@@ -36,6 +36,8 @@ class SavePapers_Batch {
     /** @var bool */
     public $skip_document_content = false;
     /** @var bool */
+    public $notify = false;
+    /** @var bool */
     public $dry_run = false;
     /** @var bool */
     public $log = true;
@@ -89,6 +91,7 @@ class SavePapers_Batch {
         $this->skip_document_content = isset($arg["skip-document-content"]);
         $this->log = !isset($arg["no-log"]);
         $this->dry_run = isset($arg["dry-run"]);
+        $this->notify = isset($arg["notify"]);
         $this->json5 = isset($arg["json5"]);
         if (isset($arg["z"])) {
             $this->set_zipfile($arg["z"]);
@@ -220,6 +223,7 @@ class SavePapers_Batch {
         $this->ps = $this->ps ?? (new PaperStatus($this->user))
             ->set_disable_users($this->disable_users)
             ->set_any_content_file($this->any_content_file)
+            ->set_notify($this->notify)
             ->set_skip_document_verify($this->skip_document_verify)
             ->set_skip_document_content($this->skip_document_content)
             ->on_document_import([$this, "on_document_import"]);
@@ -386,7 +390,8 @@ class SavePapers_Batch {
             "z:,zipfile: =FILE Read documents from FILE",
             "dry-run,d Don’t actually save",
             "ignore-errors Don’t exit after first error",
-            "disable-users,disable Disable all newly created users",
+            "disable-users,disable Disable newly created users",
+            "notify,N Notify new users via email (off by default)",
             "any-content-file Allow any `content_file` in documents",
             "ignore-pid Ignore `pid` JSON elements",
             "match-title Match papers by title if no `pid`",

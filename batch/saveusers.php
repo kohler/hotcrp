@@ -136,17 +136,17 @@ class SaveUsers_Batch {
             "name:,n: !",
             "config: !",
             "help,h !",
-            "user:,u: =EMAIL Create or modify user EMAIL.",
-            "roles:,r: Set roles for `-u` user.",
-            "user-name:,uname: Set name for `-u` user.",
-            "disable Disable `-u` user.",
-            "enable Enable `-u` user.",
-            "expression[],expr[],e[] =JSON Create or modify users specified in JSON.",
-            "notify,N Send email notifications (default is no notifications).",
+            "user:,u: =EMAIL Create or modify user EMAIL",
+            "roles:,r: Set roles for `-u` user",
+            "user-name:,uname: Set name for `-u` user",
+            "disable Disable `-u` user",
+            "enable Enable `-u` user",
+            "expression[],expr[],e[] =JSON Create or modify users specified in JSON",
+            "notify,N Send email notifications (off by default)",
             "no-notify,no-email !",
-            "no-modify,create-only Only create new users, do not modify existing.",
-            "no-create,modify-only Only modify existing users, do not create new.",
-            "quiet,q Do not print changes."
+            "no-modify,create-only Only create new users, do not modify existing",
+            "no-create,modify-only Only modify existing users, do not create new",
+            "quiet,q Do not print changes"
         )->helpopt("help")
          ->description("Save HotCRP users as specified in JSON or CSV.
 Usage: php batch/saveusers.php [OPTION]... [JSONFILE | CSVFILE]
