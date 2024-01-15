@@ -1144,7 +1144,7 @@ class UserStatus extends MessageSet {
                   "state" => "address",
                   "zip" => "address"] as $prop => $diff) {
             if (($v = $this->jval->$prop ?? null) !== null) {
-                $user->set_prop($prop, $v, $ifempty);
+                $user->set_prop($prop, $v, $ifempty ? 1 : 0);
                 if ($user->prop_changed($prop)) {
                     $this->diffs[$diff] = true;
                 }

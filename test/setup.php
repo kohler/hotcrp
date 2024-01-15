@@ -1011,7 +1011,12 @@ class TestRunner {
         $timer->mark("contactdb");
 
         // Create initial administrator user.
-        $user_chair = Contact::make_keyed($conf, ["email" => "chair@_.com", "name" => "Jane Chair"])->store();
+        $user_chair = Contact::make_keyed($conf, ["email" => "chair@_.com", "name" => "Jane Chair"]);
+        assert($user_chair->firstName === "Jane");
+        $user_chair = $user_chair->store();
+        assert($user_chair->firstName === "Jane");
+        $x = $conf->fresh_user_by_email("chair@_.com");
+        assert($x->firstName === "Jane");
         $user_chair->save_roles(Contact::ROLE_ADMIN | Contact::ROLE_CHAIR | Contact::ROLE_PC, $user_chair);
 
         // Load data.

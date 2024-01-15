@@ -153,7 +153,7 @@ class Cdb_Tester {
 
         $te2_cdb = $this->conf->fresh_cdb_user_by_email("te2@_.com");
         xassert(!!$te2_cdb);
-        xassert_eqq($te2_cdb->firstName, "");
+        xassert_eqq($te2_cdb->firstName, "Te");
         xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 2");
         xassert_eqq($te2_cdb->email, "te2@_.com");
         xassert_eqq($te2_cdb->affiliation, "Brandeis University or something");
@@ -164,12 +164,13 @@ class Cdb_Tester {
         xassert(!!$acct);
 
         $te2 = user("te2@_.com");
+        xassert_eqq($te2->firstName, "Te 1");
         xassert_eqq($te2->lastName, "Thamrongrattanarit 1");
         xassert_eqq($te2->affiliation, "Brandeis University");
 
         $te2_cdb = $this->conf->fresh_cdb_user_by_email("te2@_.com");
         xassert(!!$te2_cdb);
-        xassert_eqq($te2_cdb->firstName, "");
+        xassert_eqq($te2_cdb->firstName, "Te");
         xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 2");
         xassert_eqq($te2_cdb->email, "te2@_.com");
         xassert_eqq($te2_cdb->affiliation, "Brandeis University or something");
@@ -188,7 +189,8 @@ class Cdb_Tester {
     function test_chair_update_no_cdb() {
         Contact::set_main_user(user("marina@poema.ru"));
         $te2 = user("te2@_.com");
-        $te2->cdb_user();
+        $te2_cdb_first = $te2->cdb_user()->firstName;
+        $te2_cdb_last = $te2->cdb_user()->lastName;
         Dbl::qe($this->conf->contactdb(), "update ContactInfo set affiliation='' where email='te2@_.com'");
         $acct = $this->us1->save_user((object) ["firstName" => "Wacky", "affiliation" => "String", "email" => "te2@_.com"]);
         xassert(!!$acct);
@@ -199,8 +201,8 @@ class Cdb_Tester {
         xassert_eqq($te2->affiliation, "String");
         $te2_cdb = $this->conf->fresh_cdb_user_by_email("te2@_.com");
         xassert(!!$te2_cdb);
-        xassert_eqq($te2_cdb->firstName, "");
-        xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 2");
+        xassert_eqq($te2_cdb->firstName, $te2_cdb_first);
+        xassert_eqq($te2_cdb->lastName, $te2_cdb_last);
         xassert_eqq($te2_cdb->affiliation, "String");
     }
 
@@ -399,7 +401,11 @@ class Cdb_Tester {
             "email" => "betty4@_.com",
             "name" => "Betty Crocker",
             "affiliation" => "France"
-        ])->store();
+        ]);
+        xassert_eqq($u->firstName, "Betty");
+        xassert_eqq($u->lastName, "Crocker");
+        xassert_eqq($u->affiliation, "France");
+        $u = $u->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Kelly");
         xassert_eqq($u->affiliation, "France");
@@ -466,9 +472,7 @@ class Cdb_Tester {
         xassert_eqq($u->disabled_flags(), Contact::CF_PLACEHOLDER);
         $cdb_cid = $u->contactId;
 
-        // remove localdb user and cdb user's roles
-        Dbl::qe($this->conf->dblink, "delete from ContactInfo where contactId=?", $ldb_cid);
-        Dbl::qe($this->conf->dblink, "delete from PaperConflict where contactId=?", $ldb_cid);
+        // remove cdb user's roles
         Dbl::qe($this->conf->contactdb(), "delete from Roles where contactDbId=?", $cdb_cid);
 
         // make cdb user non-disabled, but empty name
@@ -477,13 +481,12 @@ class Cdb_Tester {
             'cengiz@isi.edu');
         $this->conf->invalidate_user(Contact::make_cdb_email($this->conf, "cengiz@isi.edu"));
 
-        // creating a local user adopts name from authorship record
+        // creating a local user updates empty name from contactdb
         $u = Contact::make_email($this->conf, "Cengiz@isi.edu")->store();
         xassert($u->contactId > 0);
         xassert_eqq($u->firstName, "Cengiz");
         xassert_eqq($u->lastName, "Alaettinoğlu");
 
-        // creating a local user updates empty name from contactdb
         $cdbu = $this->conf->fresh_cdb_user_by_email("CENGiz@ISI.edu");
         xassert_eqq($cdbu->firstName, "Cengiz");
         xassert_eqq($cdbu->lastName, "Alaettinoğlu");
@@ -598,6 +601,7 @@ class Cdb_Tester {
         xassert_eqq($cdb_u->firstName, "Shane");
         xassert_eqq($cdb_u->lastName, "");
         xassert_eqq($cdb_u->disabled_flags(), Contact::CF_PLACEHOLDER);
+        xassert_eqq($cdb_u->is_placeholder(), true);
 
         // creating another placeholder will override properties
         Contact::make_keyed($this->conf, [
@@ -651,7 +655,8 @@ class Cdb_Tester {
         xassert_eqq($cdb_u->disabled_flags(), 0);
     }
 
-    function test_updatecontactdb_authors() {
+    function xxx_test_updatecontactdb_authors() {
+        // XXX This test requires email_authored_papers.
         $paper9 = $this->conf->checked_paper_by_id(9);
         $aulist = $paper9->author_list();
         $aulist[] = Author::make_keyed([

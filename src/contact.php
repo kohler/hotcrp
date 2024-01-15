@@ -982,7 +982,7 @@ class Contact implements JsonSerializable {
                 && ($shape & self::PROP_NOUPDATECDB) === 0
                 && ($value = $this->prop1($prop, $shape)) !== null
                 && $value !== "") {
-                $cdbux->set_prop($prop, $value, true);
+                $cdbux->set_prop($prop, $value, 1);
             }
         }
         if (!$cdbur && str_starts_with($this->password, " ")) {
@@ -1811,9 +1811,17 @@ class Contact implements JsonSerializable {
 
     /** @param string $prop
      * @param mixed $value
-     * @param bool $ifempty
-     * @return void */
-    function set_prop($prop, $value, $ifempty = false) {
+     * @param 0|1|2 $ifempty
+     * @return void
+     *
+     * `$ifempty` is used to control whether updates are ignored. This
+     * important when merging users from different sources.
+     * An update is ignored when:
+     * - `$ifempty !== 0`, AND
+     * - the current value of the property is not empty, AND
+     * - EITHER `$ifempty === 2`, OR the new value is empty, OR the current
+     *   user is not a placeholder. */
+    function set_prop($prop, $value, $ifempty = 0) {
         // validate argument
         $shape = self::$props[$prop] ?? 0;
         if ($shape === 0) {
@@ -1830,21 +1838,16 @@ class Contact implements JsonSerializable {
         if (($shape & ($this->cdb_confid !== 0 ? self::PROP_CDB : self::PROP_LOCAL)) === 0) {
             return;
         }
-        // on `$ifempty`, update only empty properties and placeholder users
+        // check `$ifempty`
         $old = $this->prop1($prop, $shape);
-        if ($ifempty
-            && (($this->cflags & self::CF_PLACEHOLDER) === 0
+        if ($ifempty !== 0
+            && ($ifempty === 2
+                || ($this->cflags & self::CF_PLACEHOLDER) === 0
                 || $value === null
-                || $value === "")) {
-            if ($old !== null && $old !== "") {
-                return;
-            } else if (($shape & self::PROP_NAME) !== 0) {
-                $prop2 = $prop === "firstName" ? "lastName" : "firstName";
-                $old2 = $this->_mod_undo[$prop2] ?? $this->$prop2;
-                if ($old2 !== null && $old2 !== "") {
-                    return;
-                }
-            }
+                || $value === "")
+            && $old !== null
+            && $old !== "") {
+            return;
         }
         // simplify
         if (($shape & self::PROP_SIMPLIFY) !== 0 && is_string($value)) {
@@ -1954,6 +1957,7 @@ class Contact implements JsonSerializable {
             $flag = self::PROP_LOCAL;
         }
         if ($this->$idk <= 0) {
+            $this->_mod_undo = $this->_mod_undo ?? [];
             if (!array_key_exists("password", $this->_mod_undo)) {
                 $this->password = validate_email($this->email) ? " unset" : " nologin";
                 $this->passwordTime = Conf::$now;
@@ -1996,7 +2000,7 @@ class Contact implements JsonSerializable {
             $result = Dbl::qe_apply($db, "update ContactInfo set " . join(", ", $qf) . " where {$idk}=?", $qv);
         } else {
             assert($this->email !== "");
-            $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join(", ", $qf) . " on duplicate key update firstName=firstName", $qv);
+            $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join(", ", $qf) . " on duplicate key update cflags=cflags", $qv);
             if ($result->affected_rows > 0) {
                 $this->$idk = (int) $result->insert_id;
                 if ($this->cdb_confid === 0) {
@@ -2004,16 +2008,17 @@ class Contact implements JsonSerializable {
                 }
             }
         }
-        $ok = $result->affected_rows > 0;
-        Dbl::free($result);
-        if ($ok) {
+        if ($result->is_error()) {
+            error_log("{$this->conf->dbname}: save {$this->email} fails {$result->errno} " . debug_string_backtrace());
+            return false;
+        } else if ($this->$idk <= 0) {
+            return false;
+        } else {
             // invalidate caches
             $this->_mod_undo = null;
             $this->conf->invalidate_user($this, true);
-        } else {
-            error_log("{$this->conf->dbname}: save {$this->email} fails " . debug_string_backtrace());
+            return true;
         }
-        return $ok;
     }
 
     function abort_prop() {
@@ -2070,10 +2075,13 @@ class Contact implements JsonSerializable {
     }
 
     /** @param Contact $src
-     * @param bool $ifempty */
+     * @param 0|1|2 $ifempty */
     function import_prop($src, $ifempty) {
         foreach (self::importable_props() as $prop => $shape) {
-            $this->set_prop($prop, $src->prop1($prop, $shape), $ifempty);
+            if (($value = $src->prop1($prop, $shape)) !== null
+                && $value !== "") {
+                $this->set_prop($prop, $value, $ifempty);
+            }
         }
 
         // disablement import is special
@@ -2116,97 +2124,85 @@ class Contact implements JsonSerializable {
         assert($this->email === trim($this->email));
         assert(empty($this->_mod_undo));
         assert($this->contactId <= 0);
+
+        // maybe refuse to create
+        $localu = null;
         $valid_email = validate_email($this->email);
+        if ((!$valid_email
+             && ($flags & self::SAVE_ANY_EMAIL) === 0)
+            || (($flags & self::SAVE_SELF_REGISTER) !== 0
+                && !$this->conf->allow_user_self_register())) {
+            $localu = $this->conf->fresh_user_by_email($this->email);
+            if (!$localu) {
+                return null;
+            }
+        }
 
-        // look up existing accounts
-        $u = $this->conf->fresh_user_by_email($this->email);
+        // `$this` will become a non-cdb user, so invalidate it
+        if ($this->cdb_confid !== 0) {
+            $this->conf->invalidate_user($this);
+            $this->cdb_confid = $this->contactDbId = 0;
+            $this->_cdb_user = false;
+        }
+
+        // look up cdb account
         $cdb = $valid_email ? $this->conf->contactdb() : null;
+        $cdbu = null;
         if ($cdb) {
-            $cdbu = $this->conf->cdb_user_by_email($this->email)
-                ?? Contact::make_cdb_email($this->conf, $this->email);
-        } else {
-            $cdbu = null;
+            $cdbu = $this->cdb_user() ?? Contact::make_cdb_email($this->conf, $this->email);
         }
 
-        // do not create invalid-email users unless granted permission
-        if (!$u && !$valid_email && ($flags & self::SAVE_ANY_EMAIL) === 0) {
-            return null;
-        }
-
-        // load authored papers (this may update name/affiliation)
-        if (!$u && $valid_email) {
-            $aupapers = self::email_authored_papers($this->conf, $this->email, $this);
-        } else {
-            $aupapers = [];
-        }
-
-        // create or update contactdb user
-        if ($cdbu) {
-            $cdbu->import_prop($this, true);
-            if ($cdbu->save_prop()) {
-                $this->invalidate_cdb_user();
-                if ($u) {
-                    $u->invalidate_cdb_user();
+        // import properties from cdb
+        if (!$localu) {
+            $this->_mod_undo = ["disabled" => 0, "cflags" => 0];
+            foreach (self::importable_props() as $prop => $shape) {
+                $this->_mod_undo[$prop] = ($shape & self::PROP_NULL) !== 0 ? null : "";
+            }
+            if ($cdbu) {
+                $this->password = "";
+                if ($cdbu->contactDbId > 0) {
+                    $this->import_prop($cdbu, $cdbu->is_placeholder() ? 2 : 0);
+                    $this->passwordTime = $cdbu->passwordTime;
+                } else {
+                    $this->passwordTime = 0;
                 }
-                $cdbu->set_roles_properties();
+                $this->passwordUseTime = 0;
+                $this->_mod_undo["password"] = null;
+                $this->_mod_undo["passwordTime"] = null;
+                $this->_mod_undo["passwordUseTime"] = null;
             }
-        }
+            $this->_cdb_user = $cdbu;
 
-        // update existing account
-        if ($u) {
-            $u->import_prop($this, true);
-            $u->save_prop(); // likely to do nothing
-            $this->unslice_using($u, true);
-            $this->set_roles_properties();
-            return $this;
-        }
-
-        // maybe refuse to create a user
-        if (($flags & self::SAVE_SELF_REGISTER) !== 0
-            && !$this->conf->allow_user_self_register()) {
-            return null;
-        }
-
-        // from here on, previous account did not exist
-        // override registration with current or cdb data
-        $this->_mod_undo = ["disabled" => 0, "cflags" => 0];
-        foreach (self::importable_props() as $prop => $shape) {
-            $this->_mod_undo[$prop] = ($shape & self::PROP_NULL) !== 0 ? null : "";
-        }
-        if ($cdbu) {
-            $this->import_prop($cdbu, false);
-            $this->_mod_undo["password"] = null;
-            $this->_mod_undo["passwordTime"] = null;
-            $this->_mod_undo["passwordUseTime"] = null;
-            $this->password = "";
-            $this->passwordTime = $cdbu->passwordTime;
-            $this->passwordUseTime = 0;
-        }
-        $this->cdb_confid = $this->contactDbId = 0;
-        $this->_cdb_user = $cdbu;
-
-        if ($this->save_prop()) {
-            $this->set_roles_properties();
-
-            // update roles
-            if ($aupapers) {
-                $this->save_authored_papers($aupapers);
-                $this->update_cdb_roles();
-            }
-
-            // log creation (except for placeholder accounts)
-            if (($this->cflags & self::CF_PLACEHOLDER) === 0) {
-                $msg = "Account created";
-                if (($this->cflags & self::CFM_DISABLEMENT & ~self::CF_ROLEDISABLED) !== 0) {
-                    $msg .= ", disabled";
+            if ($this->save_prop()) {
+                // log creation (except for placeholder accounts)
+                if (($this->cflags & self::CF_PLACEHOLDER) === 0) {
+                    $msg = "Account created";
+                    if (($this->cflags & self::CFM_DISABLEMENT & ~self::CF_ROLEDISABLED) !== 0) {
+                        $msg .= ", disabled";
+                    }
+                    $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, $msg);
                 }
-                $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, $msg);
+            } else {
+                // maybe user already existed
+                $localu = $this->conf->fresh_user_by_email($this->email);
+                if (!$localu) {
+                    return null;
+                }
             }
-        } else {
-            // maybe failed because concurrent create (unlikely)
-            $u = $this->conf->fresh_user_by_email($this->email);
-            $this->unslice_using($u, true);
-            $this->conf->invalidate_user($this, true);
+        }
+
+        // if `$localu` is set, update local user
+        if ($localu) {
+            $localu->import_prop($this, $localu->is_placeholder() ? 0 : 1);
+            $localu->save_prop(); // may do nothing
+            $this->unslice_using($localu, true);
+            $this->set_roles_properties();
+        }
+
+        // update cdb user if necessary
+        if ($cdbu) {
+            $cdbu->import_prop($this, $cdbu->is_placeholder() ? 0 : 1);
+            $cdbu->save_prop();
         }
 
         return $this;
