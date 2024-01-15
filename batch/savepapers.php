@@ -18,6 +18,8 @@ class SavePapers_Batch {
     /** @var bool */
     public $quiet = false;
     /** @var bool */
+    public $silent = false;
+    /** @var bool */
     public $ignore_errors = false;
     /** @var 0|1|2|3 */
     private $pidflags = 0;
@@ -68,7 +70,8 @@ class SavePapers_Batch {
 
     /** @return $this */
     function set_args($arg) {
-        $this->quiet = isset($arg["q"]);
+        $this->quiet = isset($arg["q"]) || isset($arg["silent"]);
+        $this->silent = isset($arg["silent"]);
         $this->ignore_errors = isset($arg["ignore-errors"]);
         if (isset($arg["ignore-pid"])) {
             $this->pidflags |= Paper_API::PIDFLAG_IGNORE_PID;
@@ -233,16 +236,20 @@ class SavePapers_Batch {
             $pid = false;
         }
         if (!is_bool($pid) && $pidish === "new") {
-            fwrite(STDERR, "-> #{$pid}: ");
+            if (!$this->quiet) {
+                fwrite(STDERR, "-> #{$pid}: ");
+            }
             $pidtext = "#{$pid}";
         }
+        $prefix = "{$pidtext}: ";
         if (!$this->quiet) {
             fwrite(STDERR, "{$action}\n");
         }
         // XXX does not change decision
-        $prefix = $pidtext . ": ";
-        foreach ($ps->decorated_message_list() as $mi) {
-            fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+        if (!$this->silent) {
+            foreach ($this->ps->decorated_message_list() as $mi) {
+                fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+            }
         }
         if (!$pid) {
             ++$this->nerrors;
@@ -271,8 +278,10 @@ class SavePapers_Batch {
                     $this->tf->check_and_save($this->user, $prow, null);
                 }
             }
-            foreach ($this->tf->message_list() as $mi) {
-                fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+            if (!$this->silent) {
+                foreach ($this->tf->message_list() as $mi) {
+                    fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+                }
             }
             $this->tf->clear_messages();
         }
@@ -344,7 +353,6 @@ class SavePapers_Batch {
             "r,reviews Save reviews as well as paper information",
             "f[],filter[] =FUNCTION Pass JSON through FUNCTION",
             "z:,zipfile: =FILE Read documents from FILE",
-            "q,quiet Don’t print progress information",
             "dry-run,d Don’t actually save",
             "ignore-errors Don’t exit after first error",
             "disable-users,disable Disable all newly created users",
@@ -355,6 +363,8 @@ class SavePapers_Batch {
             "skip-document-verify Do not verify document hashes",
             "skip-document-content Avoid storing document content",
             "json5,5 Allow JSON5 extensions",
+            "q,quiet Don’t print progress information",
+            "silent Don’t print progress information or submission errors",
             "no-log Don’t modify the action log"
         )->helpopt("help")
          ->description("Change papers as specified by FILE, a JSON object or array of objects.
