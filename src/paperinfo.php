@@ -2974,6 +2974,11 @@ class PaperInfo {
      * @param bool $maybe_null */
     private function load_review_fields($fid, $main_storage, $maybe_null) {
         $k = $fid . "Signature";
+        $this->ensure_reviews();
+        if (empty($this->_review_array)) {
+            $this->$k = "";
+            return;
+        }
         foreach ($this->_row_set as $prow) {
             $prow->$k = "";
         }
