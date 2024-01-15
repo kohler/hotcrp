@@ -28,7 +28,7 @@ class Cdb_Tester {
     }
 
     function test_setup() {
-        $removables = ["te@_.com", "te2@_.com", "akhmatova@poema.ru"];
+        $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email?a", $removables);
     }
@@ -102,21 +102,21 @@ class Cdb_Tester {
     }
 
     function test_cdb_import_1() {
-        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='te@_.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='te@tl.edu', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
         assert(!Dbl::is_error($result));
         Dbl::free($result);
-        xassert(!maybe_user("te@_.com"));
+        xassert(!maybe_user("te@tl.edu"));
 
-        $u = $this->conf->cdb_user_by_email("te@_.com");
+        $u = $this->conf->cdb_user_by_email("te@tl.edu");
         xassert(!!$u);
         xassert_eqq($u->firstName, "Te");
         xassert_eqq($u->disabled_flags(), 0);
 
         // inserting them should succeed and borrow their data
-        $acct = $this->us1->save_user((object) ["email" => "te@_.com"]);
+        $acct = $this->us1->save_user((object) ["email" => "te@tl.edu"]);
         xassert(!!$acct);
 
-        $te = user("te@_.com");
+        $te = user("te@tl.edu");
         xassert(!!$te);
         xassert_eqq($te->firstName, "Te");
         xassert_eqq($te->lastName, "Thamrongrattanarit");
@@ -126,61 +126,61 @@ class Cdb_Tester {
     }
 
     function test_change_email() {
-        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='', lastName='Thamrongrattanarit 2', email='te2@_.com', affiliation='Brandeis University or something', collaborators='Newsweek Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='', lastName='Thamrongrattanarit 2', email='te2@tl.edu', affiliation='Brandeis University or something', collaborators='Newsweek Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
         xassert(!Dbl::is_error($result));
         Dbl::free($result);
 
-        $u = $this->conf->cdb_user_by_email("te@_.com");
+        $u = $this->conf->cdb_user_by_email("te@tl.edu");
         xassert(!!$u);
         xassert_eqq($u->firstName, "Te");
         xassert_eqq($u->disabled_flags(), 0);
 
-        $u = $this->conf->cdb_user_by_email("te2@_.com");
+        $u = $this->conf->cdb_user_by_email("te2@tl.edu");
         xassert(!!$u);
         xassert_eqq($u->firstName, "");
         xassert_eqq($u->disabled_flags(), 0);
 
         // changing email works locally
-        user("te@_.com")->change_email("te2@_.com");
-        $te = maybe_user("te@_.com");
+        user("te@tl.edu")->change_email("te2@tl.edu");
+        $te = maybe_user("te@tl.edu");
         xassert(!$te);
 
-        $te2 = user("te2@_.com");
+        $te2 = user("te2@tl.edu");
         xassert(!!$te2);
         xassert_eqq($te2->firstName, "Te");
         xassert_eqq($te2->lastName, "Thamrongrattanarit");
         xassert_eqq($te2->affiliation, "Brandeis University");
 
-        $te2_cdb = $this->conf->fresh_cdb_user_by_email("te2@_.com");
+        $te2_cdb = $this->conf->fresh_cdb_user_by_email("te2@tl.edu");
         xassert(!!$te2_cdb);
         xassert_eqq($te2_cdb->firstName, "Te");
         xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 2");
-        xassert_eqq($te2_cdb->email, "te2@_.com");
+        xassert_eqq($te2_cdb->email, "te2@tl.edu");
         xassert_eqq($te2_cdb->affiliation, "Brandeis University or something");
         xassert_eqq($te2_cdb->disabled_flags(), 0);
 
         // changing local email does not change cdb
-        $acct = $this->us1->save_user((object) ["email" => "te2@_.com", "lastName" => "Thamrongrattanarit 1", "firstName" => "Te 1"]);
+        $acct = $this->us1->save_user((object) ["email" => "te2@tl.edu", "lastName" => "Thamrongrattanarit 1", "firstName" => "Te 1"]);
         xassert(!!$acct);
 
-        $te2 = user("te2@_.com");
+        $te2 = user("te2@tl.edu");
         xassert_eqq($te2->firstName, "Te 1");
         xassert_eqq($te2->lastName, "Thamrongrattanarit 1");
         xassert_eqq($te2->affiliation, "Brandeis University");
 
-        $te2_cdb = $this->conf->fresh_cdb_user_by_email("te2@_.com");
+        $te2_cdb = $this->conf->fresh_cdb_user_by_email("te2@tl.edu");
         xassert(!!$te2_cdb);
         xassert_eqq($te2_cdb->firstName, "Te");
         xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 2");
-        xassert_eqq($te2_cdb->email, "te2@_.com");
+        xassert_eqq($te2_cdb->email, "te2@tl.edu");
         xassert_eqq($te2_cdb->affiliation, "Brandeis University or something");
         xassert_eqq($te2_cdb->disabled_flags(), 0);
     }
 
     function test_simplify_whitespace_on_save() {
-        $acct = $this->us1->save_user((object) ["email" => "te2@_.com", "lastName" => " Thamrongrattanarit  1  \t", "firstName" => "Te  1", "affiliation" => "  Brandeis   Friendiversity"]);
+        $acct = $this->us1->save_user((object) ["email" => "te2@tl.edu", "lastName" => " Thamrongrattanarit  1  \t", "firstName" => "Te  1", "affiliation" => "  Brandeis   Friendiversity"]);
         xassert(!!$acct);
-        $te2 = user("te2@_.com");
+        $te2 = user("te2@tl.edu");
         xassert_eqq($te2->firstName, "Te 1");
         xassert_eqq($te2->lastName, "Thamrongrattanarit 1");
         xassert_eqq($te2->affiliation, "Brandeis Friendiversity");
@@ -188,18 +188,18 @@ class Cdb_Tester {
 
     function test_chair_update_no_cdb() {
         Contact::set_main_user(user("marina@poema.ru"));
-        $te2 = user("te2@_.com");
+        $te2 = user("te2@tl.edu");
         $te2_cdb_first = $te2->cdb_user()->firstName;
         $te2_cdb_last = $te2->cdb_user()->lastName;
-        Dbl::qe($this->conf->contactdb(), "update ContactInfo set affiliation='' where email='te2@_.com'");
-        $acct = $this->us1->save_user((object) ["firstName" => "Wacky", "affiliation" => "String", "email" => "te2@_.com"]);
+        Dbl::qe($this->conf->contactdb(), "update ContactInfo set affiliation='' where email='te2@tl.edu'");
+        $acct = $this->us1->save_user((object) ["firstName" => "Wacky", "affiliation" => "String", "email" => "te2@tl.edu"]);
         xassert(!!$acct);
-        $te2 = user("te2@_.com");
+        $te2 = user("te2@tl.edu");
         xassert(!!$te2);
         xassert_eqq($te2->firstName, "Wacky");
         xassert_eqq($te2->lastName, "Thamrongrattanarit 1");
         xassert_eqq($te2->affiliation, "String");
-        $te2_cdb = $this->conf->fresh_cdb_user_by_email("te2@_.com");
+        $te2_cdb = $this->conf->fresh_cdb_user_by_email("te2@tl.edu");
         xassert(!!$te2_cdb);
         xassert_eqq($te2_cdb->firstName, $te2_cdb_first);
         xassert_eqq($te2_cdb->lastName, $te2_cdb_last);
@@ -207,10 +207,10 @@ class Cdb_Tester {
     }
 
     function test_cdb_import_2() {
-        $acct = $this->us1->save_user((object) ["email" => "te@_.com"]);
+        $acct = $this->us1->save_user((object) ["email" => "te@tl.edu"]);
         xassert(!!$acct);
-        $te = user("te@_.com");
-        xassert_eqq($te->email, "te@_.com");
+        $te = user("te@tl.edu");
+        xassert_eqq($te->email, "te@tl.edu");
         xassert_eqq($te->firstName, "Te");
         xassert_eqq($te->lastName, "Thamrongrattanarit");
         xassert_eqq($te->affiliation, "Brandeis University");
@@ -254,9 +254,9 @@ class Cdb_Tester {
 
     function test_merge_accounts() {
         // user merging
-        $this->us1->save_user((object) ["email" => "anne1@_.com", "tags" => ["a#1"], "roles" => (object) ["pc" => true]]);
-        $this->us1->save_user((object) ["email" => "anne2@_.com", "first" => "Anne", "last" => "Dudfield", "data" => (object) ["data_test" => 139], "tags" => ["a#2", "b#3"], "roles" => (object) ["sysadmin" => true], "collaborators" => "derpo\n"]);
-        $user_anne1 = user("anne1@_.com");
+        $this->us1->save_user((object) ["email" => "anne1@dudfield.org", "tags" => ["a#1"], "roles" => (object) ["pc" => true]]);
+        $this->us1->save_user((object) ["email" => "anne2@dudfield.org", "first" => "Anne", "last" => "Dudfield", "data" => (object) ["data_test" => 139], "tags" => ["a#2", "b#3"], "roles" => (object) ["sysadmin" => true], "collaborators" => "derpo\n"]);
+        $user_anne1 = user("anne1@dudfield.org");
         $a1id = $user_anne1->contactId;
         xassert_eqq($user_anne1->firstName, "");
         xassert_eqq($user_anne1->lastName, "");
@@ -265,10 +265,10 @@ class Cdb_Tester {
         xassert_eqq($user_anne1->tag_value("b"), null);
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC);
         xassert_eqq($user_anne1->data("data_test"), null);
-        xassert_eqq($user_anne1->email, "anne1@_.com");
+        xassert_eqq($user_anne1->email, "anne1@dudfield.org");
         xassert_assign($user_anne1, "paper,tag\n1,~butt#1\n2,~butt#2");
 
-        $user_anne2 = user("anne2@_.com");
+        $user_anne2 = user("anne2@dudfield.org");
         $a2id = $user_anne2->contactId;
         xassert_eqq($user_anne2->firstName, "Anne");
         xassert_eqq($user_anne2->lastName, "Dudfield");
@@ -277,9 +277,9 @@ class Cdb_Tester {
         xassert_eqq($user_anne2->tag_value("b"), 3.0);
         xassert_eqq($user_anne2->roles, Contact::ROLE_ADMIN);
         xassert_eqq($user_anne2->data("data_test"), 139);
-        xassert_eqq($user_anne2->email, "anne2@_.com");
+        xassert_eqq($user_anne2->email, "anne2@dudfield.org");
         xassert_assign($user_anne2, "paper,tag\n2,~butt#3\n3,~butt#4");
-        xassert_assign($this->user_chair, "paper,action,user\n1,conflict,anne2@_.com");
+        xassert_assign($this->user_chair, "paper,action,user\n1,conflict,anne2@dudfield.org");
         xassert($user_anne1 && $user_anne2);
 
         $paper1 = $this->conf->checked_paper_by_id(1);
@@ -294,8 +294,8 @@ class Cdb_Tester {
 
         $merger = new MergeContacts($user_anne2, $user_anne1);
         xassert($merger->run());
-        $user_anne1 = user("anne1@_.com");
-        $user_anne2 = maybe_user("anne2@_.com");
+        $user_anne1 = user("anne1@dudfield.org");
+        $user_anne2 = maybe_user("anne2@dudfield.org");
         xassert($user_anne1 && !$user_anne2);
         xassert_eqq($user_anne1->firstName, "Anne");
         xassert_eqq($user_anne1->lastName, "Dudfield");
@@ -304,7 +304,7 @@ class Cdb_Tester {
         xassert_eqq($user_anne1->tag_value("b"), 3.0);
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
         xassert_eqq($user_anne1->data("data_test"), 139);
-        xassert_eqq($user_anne1->email, "anne1@_.com");
+        xassert_eqq($user_anne1->email, "anne1@dudfield.org");
         $paper1 = $this->conf->checked_paper_by_id(1);
         xassert($paper1->has_conflict($user_anne1));
         xassert_eqq($paper1->tag_value("{$a2id}~butt"), null);
@@ -319,28 +319,28 @@ class Cdb_Tester {
 
     function test_role_save_formats() {
         // different forms of profile saving
-        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => "pc"]);
-        $user_anne1 = user("anne1@_.com");
+        $this->us1->save_user((object) ["email" => "anne1@dudfield.org", "roles" => "pc"]);
+        $user_anne1 = user("anne1@dudfield.org");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC);
 
-        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => ["pc", "sysadmin"]]);
-        $user_anne1 = user("anne1@_.com");
+        $this->us1->save_user((object) ["email" => "anne1@dudfield.org", "roles" => ["pc", "sysadmin"]]);
+        $user_anne1 = user("anne1@dudfield.org");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
 
-        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => "chair, sysadmin"]);
-        $user_anne1 = user("anne1@_.com");
+        $this->us1->save_user((object) ["email" => "anne1@dudfield.org", "roles" => "chair, sysadmin"]);
+        $user_anne1 = user("anne1@dudfield.org");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_CHAIR | Contact::ROLE_ADMIN);
 
-        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => "-chair"]);
-        $user_anne1 = user("anne1@_.com");
+        $this->us1->save_user((object) ["email" => "anne1@dudfield.org", "roles" => "-chair"]);
+        $user_anne1 = user("anne1@dudfield.org");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
 
-        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => "-sysadmin"]);
-        $user_anne1 = user("anne1@_.com");
+        $this->us1->save_user((object) ["email" => "anne1@dudfield.org", "roles" => "-sysadmin"]);
+        $user_anne1 = user("anne1@dudfield.org");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC);
 
-        $this->us1->save_user((object) ["email" => "anne1@_.com", "roles" => "+chair"]);
-        $user_anne1 = user("anne1@_.com");
+        $this->us1->save_user((object) ["email" => "anne1@dudfield.org", "roles" => "+chair"]);
+        $user_anne1 = user("anne1@dudfield.org");
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_CHAIR);
     }
 
@@ -348,57 +348,57 @@ class Cdb_Tester {
         // betty1 is in neither db;
         // betty2 is in local db with no password or name;
         // betty3-5 are in cdb with name but no password;
-        Dbl::qe($this->conf->dblink, "insert into ContactInfo (email, password) values ('betty2@_.com','')");
+        Dbl::qe($this->conf->dblink, "insert into ContactInfo (email, password) values ('betty2@manchette.net','')");
         Dbl::qe($this->conf->contactdb(), "insert into ContactInfo (email, password, firstName, lastName) values
-            ('betty3@_.com','','Betty','Shabazz'),
-            ('betty4@_.com','','Betty','Kelly'),
-            ('betty5@_.com','','Betty','Davis')");
-        foreach (["betty3@_.com", "betty4@_.com", "betty5@_.com"] as $email) {
+            ('betty3@manchette.net','','Betty','Shabazz'),
+            ('betty4@manchette.net','','Betty','Kelly'),
+            ('betty5@manchette.net','','Betty','Davis')");
+        foreach (["betty3@manchette.net", "betty4@manchette.net", "betty5@manchette.net"] as $email) {
             $this->conf->invalidate_user(Contact::make_cdb_email($this->conf, $email));
         }
 
         // registration name populates new records
         $u = Contact::make_keyed($this->conf, [
-            "email" => "betty1@_.com",
+            "email" => "betty1@manchette.net",
             "name" => "Betty Grable"
         ])->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Grable");
         xassert(!$u->is_disabled());
-        $u = $this->conf->fresh_cdb_user_by_email("betty1@_.com");
+        $u = $this->conf->fresh_cdb_user_by_email("betty1@manchette.net");
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Grable");
         xassert(!$u->is_disabled());
 
         // registration name replaces empty local name, populates new cdb record
         $u = Contact::make_keyed($this->conf, [
-            "email" => "betty2@_.com",
+            "email" => "betty2@manchette.net",
             "name" => "Betty Apiafi"
         ])->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Apiafi");
         xassert(!$u->is_disabled());
-        $u = $this->conf->fresh_cdb_user_by_email("betty2@_.com");
+        $u = $this->conf->fresh_cdb_user_by_email("betty2@manchette.net");
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Apiafi");
         xassert(!$u->is_disabled());
 
         // cdb name overrides registration name
         $u = Contact::make_keyed($this->conf, [
-            "email" => "betty3@_.com",
+            "email" => "betty3@manchette.net",
             "name" => "Betty Crocker"
         ])->store();
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Shabazz");
         xassert(!$u->is_disabled());
-        $u = $this->conf->fresh_cdb_user_by_email("betty3@_.com");
+        $u = $this->conf->fresh_cdb_user_by_email("betty3@manchette.net");
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Shabazz");
         xassert(!$u->is_disabled());
 
         // registration affiliation replaces empty affiliations
         $u = Contact::make_keyed($this->conf, [
-            "email" => "betty4@_.com",
+            "email" => "betty4@manchette.net",
             "name" => "Betty Crocker",
             "affiliation" => "France"
         ]);
@@ -410,19 +410,19 @@ class Cdb_Tester {
         xassert_eqq($u->lastName, "Kelly");
         xassert_eqq($u->affiliation, "France");
         xassert(!$u->is_disabled());
-        $u = $this->conf->fresh_cdb_user_by_email("betty4@_.com");
+        $u = $this->conf->fresh_cdb_user_by_email("betty4@manchette.net");
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Kelly");
         xassert_eqq($u->affiliation, "France");
         xassert(!$u->is_disabled());
 
         // ensure_account_here
-        $u = $this->conf->fresh_user_by_email("betty5@_.com");
+        $u = $this->conf->fresh_user_by_email("betty5@manchette.net");
         xassert(!$u);
-        $u = $this->conf->cdb_user_by_email("betty5@_.com");
+        $u = $this->conf->cdb_user_by_email("betty5@manchette.net");
         xassert(!$u->is_disabled());
         $u->ensure_account_here();
-        $u = $this->conf->checked_user_by_email("betty5@_.com");
+        $u = $this->conf->checked_user_by_email("betty5@manchette.net");
         xassert($u->has_account_here());
         xassert_eqq($u->firstName, "Betty");
         xassert_eqq($u->lastName, "Davis");
@@ -431,7 +431,7 @@ class Cdb_Tester {
 
     function test_pc_json() {
         $pc_json = $this->conf->hotcrp_pc_json($this->user_chair);
-        xassert_eqq($pc_json[$pc_json["__order__"][0]]->email, "anne1@_.com");
+        xassert_eqq($pc_json[$pc_json["__order__"][0]]->email, "anne1@dudfield.org");
         $this->conf->sort_by_last = true;
         $this->conf->invalidate_caches(["pc" => true]);
         $pc_json = $this->conf->hotcrp_pc_json($this->user_chair);
@@ -445,8 +445,8 @@ class Cdb_Tester {
     function test_cdb_update() {
         // Betty is in the local db, but not yet the contact db;
         // cdb_update should put her in the cdb
-        Dbl::qe($this->conf->dblink, "insert into ContactInfo set email='betty6@_.com', password='Fart', firstName='Betty', lastName='Knowles'");
-        $u = $this->conf->checked_user_by_email("betty6@_.com");
+        Dbl::qe($this->conf->dblink, "insert into ContactInfo set email='betty6@manchette.net', password='Fart', firstName='Betty', lastName='Knowles'");
+        $u = $this->conf->checked_user_by_email("betty6@manchette.net");
         xassert(!!$u);
         xassert(!$u->cdb_user());
         $u->update_cdb();
@@ -520,7 +520,7 @@ class Cdb_Tester {
         Contact::$session_users = ["cengiz@isi.edu", "sophia@dros.nl"];
 
         // current user cannot edit Cengiz's review for some random user
-        $result = RequestReview_API::claimreview($user_cengiz, new Qrequest("POST", ["p" => "3", "r" => "$rrid", "email" => "betty6@_.com"]), $paper3);
+        $result = RequestReview_API::claimreview($user_cengiz, new Qrequest("POST", ["p" => "3", "r" => "$rrid", "email" => "betty6@manchette.net"]), $paper3);
         xassert_eqq($result->content["ok"], false);
         $rrow = $paper3->fresh_review_by_id($rrid);
         xassert(!!$rrow);
@@ -661,7 +661,7 @@ class Cdb_Tester {
         $aulist = $paper9->author_list();
         $aulist[] = Author::make_keyed([
             "name" => "Nonsense Person",
-            "email" => "NONSENSE@_.com"
+            "email" => "NONSENSE@xx.com"
         ]);
         $austr = join("\n", array_map(function ($au) { return $au->unparse_tabbed(); }, $aulist));
         $this->conf->qe("update Paper set authorInformation=? where paperId=9", $austr);
@@ -669,24 +669,24 @@ class Cdb_Tester {
         $paper10 = $this->conf->checked_paper_by_id(10);
         $aulist = $paper9->author_list();
         $aulist[] = Author::make_keyed([
-            "email" => "nonsense@_.com",
+            "email" => "nonsense@xx.com",
             "affiliation" => "Nonsense University"
         ]);
         $austr = join("\n", array_map(function ($au) { return $au->unparse_tabbed(); }, $aulist));
         $this->conf->qe("update Paper set authorInformation=? where paperId=10", $austr);
 
-        $u = $this->conf->fresh_user_by_email("nonsense@_.com");
+        $u = $this->conf->fresh_user_by_email("nonsense@xx.com");
         xassert(!$u);
-        $u = $this->conf->fresh_cdb_user_by_email("nonsense@_.com");
+        $u = $this->conf->fresh_cdb_user_by_email("nonsense@xx.com");
         xassert(!$u);
 
         $ucdb = new UpdateContactdb_Batch($this->conf, ["authors" => false]);
         $ucdb->run_authors();
 
-        $u = $this->conf->fresh_user_by_email("nonsense@_.com");
+        $u = $this->conf->fresh_user_by_email("nonsense@xx.com");
         xassert(!!$u);
         xassert_eqq($u->disabled_flags(), Contact::CF_PLACEHOLDER);
-        xassert_eqq($u->email, "NONSENSE@_.com");
+        xassert_eqq($u->email, "NONSENSE@xx.com");
         xassert_eqq($u->firstName, "Nonsense");
         xassert_eqq($u->lastName, "Person");
         xassert_eqq($u->affiliation, "Nonsense University");
@@ -695,10 +695,10 @@ class Cdb_Tester {
         $paper10 = $this->conf->checked_paper_by_id(10);
         xassert($paper10->has_author($u));
 
-        $u = $this->conf->fresh_cdb_user_by_email("nonsense@_.com");
+        $u = $this->conf->fresh_cdb_user_by_email("nonsense@xx.com");
         xassert(!!$u);
         xassert_eqq($u->disabled_flags(), Contact::CF_PLACEHOLDER);
-        xassert_eqq($u->email, "NONSENSE@_.com");
+        xassert_eqq($u->email, "NONSENSE@xx.com");
         xassert_eqq($u->firstName, "Nonsense");
         xassert_eqq($u->lastName, "Person");
         xassert_eqq($u->affiliation, "Nonsense University");
@@ -707,13 +707,13 @@ class Cdb_Tester {
 
     /** @suppress PhanAccessReadOnlyProperty */
     function test_cdb_user_new_paper() {
-        $u = $this->conf->fresh_cdb_user_by_email("newuser@_.com");
+        $u = $this->conf->fresh_cdb_user_by_email("newuser@fresh.com");
         xassert(!$u);
 
-        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='newuser@_.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
-        $u = $this->conf->fresh_cdb_user_by_email("newuser@_.com");
+        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='newuser@fresh.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+        $u = $this->conf->fresh_cdb_user_by_email("newuser@fresh.com");
         xassert(!!$u);
-        xassert(!$this->conf->fresh_user_by_email("newuser@_.com"));
+        xassert(!$this->conf->fresh_user_by_email("newuser@fresh.com"));
 
         $so = $this->conf->setting("sub_open");
         $ss = $this->conf->setting("sub_sub");
@@ -730,7 +730,7 @@ class Cdb_Tester {
             "has_authors" => 1,
             "authors:1:name" => "Attapol T. Rutherford",
             "authors:1:affiliation" => "Yelp",
-            "authors:1:email" => "newuser@_.com",
+            "authors:1:email" => "newuser@fresh.com",
             "authors:2:name" => "Vera Demberg",
             "authors:2:affiliation" => "Saarland University",
             "authors:2:email" => "vera@coli.uni-saarland.de",
@@ -744,7 +744,7 @@ class Cdb_Tester {
 
         $p1 = $this->conf->checked_paper_by_id($pid);
         xassert($p1->has_author($u));
-        $u1 = $this->conf->fresh_user_by_email("newuser@_.com");
+        $u1 = $this->conf->fresh_user_by_email("newuser@fresh.com");
         xassert(!$u1->is_dormant());
         xassert_eqq($p1->conflict_type($u1), CONFLICT_CONTACTAUTHOR | CONFLICT_AUTHOR);
         xassert(!empty($p1->conflict_type_list()));
@@ -756,13 +756,13 @@ class Cdb_Tester {
 
     /** @suppress PhanAccessReadOnlyProperty */
     function test_cdb_user_new_paper_2() {
-        $u = $this->conf->fresh_cdb_user_by_email("newuser1@_.com");
+        $u = $this->conf->fresh_cdb_user_by_email("newuser1@fresh.com");
         xassert(!$u);
 
-        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='newuser1@_.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
-        $u = $this->conf->fresh_cdb_user_by_email("newuser1@_.com");
+        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='newuser1@fresh.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+        $u = $this->conf->fresh_cdb_user_by_email("newuser1@fresh.com");
         xassert(!!$u);
-        xassert(!$this->conf->fresh_user_by_email("newuser1@_.com"));
+        xassert(!$this->conf->fresh_user_by_email("newuser1@fresh.com"));
 
         $so = $this->conf->setting("sub_open");
         $ss = $this->conf->setting("sub_sub");
@@ -777,11 +777,11 @@ class Cdb_Tester {
         $pid = $ps->save_paper_web(new Qrequest("POST", [
             "title" => "A Systematic Study of Neural Discourse Models for Implicit Discourse Relation",
             "has_authors" => 1,
-            "authors:1:email" => "fart@_.com",
+            "authors:1:email" => "fart@f.com",
             "has_contacts" => 1,
             "contacts:1:email" => "newuser1??????<Dmaoxn@)(*\$IR",
             "contacts:1:active" => 1,
-            "contacts:2:email" => "newuser2@_.com",
+            "contacts:2:email" => "newuser2@fresh.com",
             "contacts:2:active" => 1,
             "abstract" => "Inferring implicit discourse relations in natural language text is the most difficult subtask in discourse parsing. Many neural network models have been proposed to tackle this problem."
         ]), $p);
@@ -790,7 +790,7 @@ class Cdb_Tester {
 
         $p1 = $this->conf->checked_paper_by_id($pid);
         xassert($p1->has_author($u));
-        $u1 = $this->conf->fresh_user_by_email("newuser1@_.com");
+        $u1 = $this->conf->fresh_user_by_email("newuser1@fresh.com");
         xassert(!$u1->is_dormant());
         xassert_eqq($p1->conflict_type($u1), CONFLICT_CONTACTAUTHOR);
         xassert(!empty($p1->conflict_type_list()));
@@ -801,7 +801,7 @@ class Cdb_Tester {
     }
 
     function test_cdb_new_locally_disabled_user() {
-        $u = $this->conf->fresh_cdb_user_by_email("belling@_.com");
+        $u = $this->conf->fresh_cdb_user_by_email("belling@cat.com");
         xassert(!$u);
 
         $this->conf->set_opt("disableNonPC", 1);
@@ -812,47 +812,47 @@ class Cdb_Tester {
         $pid = $ps->save_paper_web(new Qrequest("POST", [
             "title" => "A Systematic Sterdy of Neural Discourse Models for Implicit Discourse Relation",
             "has_authors" => 1,
-            "authors:1:email" => "belling@_.com",
+            "authors:1:email" => "belling@cat.com",
             "has_contacts" => 1,
-            "contacts:1:email" => "belling@_.com",
+            "contacts:1:email" => "belling@cat.com",
             "contacts:1:active" => 1,
             "abstract" => "Inferring implicit discourse relations in natural language text is the most difficult subtask in discourse parsing. Many neural network models have been proposed to tackle this problem."
         ]), $p);
         xassert_gt($pid, 0);
 
-        $u = $this->conf->fresh_cdb_user_by_email("belling@_.com");
+        $u = $this->conf->fresh_cdb_user_by_email("belling@cat.com");
         xassert_eqq($u->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED);
-        $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='belling@_.com'") ?? -1;
+        $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='belling@cat.com'") ?? -1;
         xassert_eqq($d & ~Contact::CF_PLACEHOLDER, Contact::CF_UDISABLED);
-        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='belling@_.com'") ?? -1;
+        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='belling@cat.com'") ?? -1;
         xassert_eqq($d & ~Contact::CF_PLACEHOLDER, 0);
 
-        $u = $this->conf->fresh_cdb_user_by_email("kitcat@_.com");
+        $u = $this->conf->fresh_cdb_user_by_email("kitcat@cat.com");
         xassert(!$u);
 
         $u = Contact::make_keyed($this->conf, [
             "firstName" => "Kit",
             "lastName" => "Cat",
-            "email" => "kitcat@_.com",
+            "email" => "kitcat@cat.com",
             "affiliation" => "Fart University",
             "disablement" => Contact::CF_UDISABLED
         ])->store();
         xassert_eqq($u->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_UDISABLED | Contact::CF_ROLEDISABLED);
         $uu = $u->cdb_user();
         xassert_eqq($uu->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED);
-        $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='kitcat@_.com'") ?? -1;
+        $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='kitcat@cat.com'") ?? -1;
         xassert_eqq($d & ~Contact::CF_PLACEHOLDER, Contact::CF_UDISABLED);
-        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='kitcat@_.com'") ?? -1;
+        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='kitcat@cat.com'") ?? -1;
         xassert_eqq($d & ~Contact::CF_PLACEHOLDER, 0);
 
-        Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@_.com', affiliation='University of Connecticut', password='', disabled=1, cflags=1");
-        Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@_.com', affiliation='University of Connecticut', password=' unset', disabled=2, cflags=2");
-        $u = $this->conf->fresh_user_by_email("marthatanner@_.com");
+        Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@cat.com', affiliation='University of Connecticut', password='', disabled=1, cflags=1");
+        Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@cat.com', affiliation='University of Connecticut', password=' unset', disabled=2, cflags=2");
+        $u = $this->conf->fresh_user_by_email("marthatanner@cat.com");
         xassert_eqq($u->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED | Contact::CF_UDISABLED);
         $u->update_cdb();
-        $uu = $this->conf->fresh_cdb_user_by_email("marthatanner@_.com");
+        $uu = $this->conf->fresh_cdb_user_by_email("marthatanner@cat.com");
         xassert_eqq($uu->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED);
-        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='marthatanner@_.com'") ?? -1;
+        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='marthatanner@cat.com'") ?? -1;
         xassert_eqq($d & ~Contact::CF_PLACEHOLDER, 0);
 
         $this->conf->set_opt("disableNonPC", null);
