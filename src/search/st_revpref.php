@@ -119,6 +119,10 @@ class Revpref_SearchTerm extends SearchTerm {
         return (new Revpref_SearchTerm($srch->user, $value))->negate_if(strcasecmp($word, "none") === 0);
     }
 
+    function paper_requirements(&$options) {
+        $options["allReviewerPreference"] = true;
+    }
+
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->rpsm->test(0)
             || ($this->rpsm->preference_match

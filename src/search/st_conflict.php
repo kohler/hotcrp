@@ -47,6 +47,11 @@ final class Conflict_SearchTerm extends SearchTerm {
             return false;
         }
     }
+    function paper_requirements(&$options) {
+        if (!$this->self) {
+            $options["allConflictType"] = true;
+        }
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         if (!$this->self) {
             $sqi->add_allConflictType_column();

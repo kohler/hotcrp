@@ -2779,13 +2779,16 @@ class Conf {
             } else {
                 $pids = $paper;
             }
-            $rowset = $this->paper_set(["paperId" => $pids]);
+            $qopt = [];
             foreach ($this->tags()->entries_having(TagInfo::TF_AUTOMATIC) as $dt) {
-                $search = new PaperSearch($this->root_user(), ["q" => $dt->automatic_search(), "t" => "all"]);
-                $search->set_expand_automatic(true);
+                $dt->automatic_search_term()->paper_requirements($qopt);
+            }
+            $qopt["paperId"] = $pids;
+            $rowset = $this->paper_set($qopt);
+            foreach ($this->tags()->entries_having(TagInfo::TF_AUTOMATIC) as $dt) {
                 $fexpr = $dt->automatic_formula_expression();
                 foreach ($rowset as $prow) {
-                    $test = $search->test($prow);
+                    $test = $dt->automatic_search_term()->test($prow, null);
                     $value = $prow->tag_value($dt->tag);
                     if ($test
                         ? $fexpr !== "0" || $value !== 0.0

@@ -20,6 +20,14 @@ abstract class Option_SearchTerm extends SearchTerm {
         return $this->option;
     }
 
+    function paper_requirements(&$options) {
+        if ($this->option->id === PaperOption::TOPICSID) {
+            $options["topics"] = true;
+        } else {
+            $options["options"] = true;
+        }
+    }
+
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->option->id > 0) {
             $sqi->add_options_columns();

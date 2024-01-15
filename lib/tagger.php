@@ -23,6 +23,8 @@ class TagInfo {
     public $autosearch;
     /** @var ?string */
     public $autosearch_value;
+    /** @var ?SearchTerm */
+    private $_autosearch_term;
     /** @var ?float */
     public $allotment;
     /** @var ?list<TagStyle> */
@@ -98,6 +100,7 @@ class TagInfo {
             if ($ti->autosearch !== null) {
                 $this->autosearch = $ti->autosearch;
                 $this->autosearch_value = $ti->autosearch_value;
+                $this->_autosearch_term = null;
             }
             if ($ti->allotment !== null) {
                 $this->allotment = $ti->allotment;
@@ -207,6 +210,16 @@ class TagInfo {
         } else {
             return null;
         }
+    }
+    /** @return ?SearchTerm */
+    function automatic_search_term() {
+        if ($this->_autosearch_term === null
+            && ($q = $this->automatic_search()) !== null) {
+            $this->_autosearch_term = (new PaperSearch($this->conf->root_user(), ["q" => $q, "t" => "all"]))
+                ->set_expand_automatic(true)
+                ->main_term();
+        }
+        return $this->_autosearch_term;
     }
     /** @return ?string */
     function automatic_formula_expression() {

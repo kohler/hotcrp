@@ -136,6 +136,10 @@ abstract class SearchTerm {
         return false;
     }
 
+    /** @param array<string,mixed> &$options */
+    function paper_requirements(&$options) {
+    }
+
 
     /** @return string */
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -389,6 +393,11 @@ abstract class Op_SearchTerm extends SearchTerm {
             $a[] = $qv->debug_json();
         }
         return ["type" => $this->type, "child" => $a];
+    }
+    function paper_requirements(&$options) {
+        foreach ($this->child as $ch) {
+            $ch->paper_requirements($options);
+        }
     }
     function is_sqlexpr_precise() {
         foreach ($this->child as $ch) {
@@ -1084,6 +1093,12 @@ class Limit_SearchTerm extends SearchTerm {
             return true;
         default:
             return false;
+        }
+    }
+
+    function paper_requirements(&$options) {
+        if (in_array($this->limit, ["reviewable", "ar", "r", "rout"])) {
+            $options["reviewSignatures"] = true;
         }
     }
 

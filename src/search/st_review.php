@@ -221,6 +221,10 @@ class Review_SearchTerm extends SearchTerm {
         }
     }
 
+    function paper_requirements(&$options) {
+        $options["reviewSignatures"] = true;
+    }
+
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_review_signature_columns();
         if ($this->rsm->has_wordcount()) {
