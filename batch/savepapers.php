@@ -311,6 +311,12 @@ class SavePapers_Batch {
                     $opt->allow_new_topics(true);
             }
         }
+        if ($this->silent) {
+            foreach ($this->conf->options()->form_fields() as $opt) {
+                if ($opt instanceof PCConflicts_PaperOption)
+                    $opt->set_warn_missing(false);
+            }
+        }
 
         // prefetch authors together (useful for big updates)
         $potential_authors = [];

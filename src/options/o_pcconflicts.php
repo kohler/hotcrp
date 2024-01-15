@@ -9,6 +9,9 @@ class PCConflicts_PaperOption extends PaperOption {
     private $_visible_term;
     /** @var bool */
     private $selectors;
+    /** @var bool */
+    private $warn_missing = true;
+
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
         // XXX `final`
@@ -23,6 +26,10 @@ class PCConflicts_PaperOption extends PaperOption {
         }
         $this->override_exists_condition(true);
         $this->selectors = !!($args->selectors ?? false);
+    }
+    /** @param bool $warn_missing */
+    function set_warn_missing($warn_missing) {
+        $this->warn_missing = $warn_missing;
     }
     /** @return array<int,int> */
     static private function paper_value_map(PaperInfo $prow) {
@@ -71,7 +78,9 @@ class PCConflicts_PaperOption extends PaperOption {
     }
     function value_check(PaperValue $ov, Contact $user) {
         if ($this->test_visible($ov->prow)) {
-            $this->_warn_missing_conflicts($ov, $user);
+            if ($this->warn_missing) {
+                $this->_warn_missing_conflicts($ov, $user);
+            }
         } else if ($user->act_author_view($ov->prow)) {
             $this->_warn_changes($ov);
         }
