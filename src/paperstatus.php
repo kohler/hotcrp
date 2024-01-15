@@ -28,8 +28,6 @@ class PaperStatus extends MessageSet {
     public $title;
     /** @var ?list<int> */
     private $_potential_pids;
-    /** @var ?int */
-    private $_desired_pid;
     /** @var ?list<string> */
     private $_unknown_fields;
     /** @var list<PaperOption> */
@@ -195,12 +193,6 @@ class PaperStatus extends MessageSet {
     }
 
 
-    /** @return bool */
-    function will_insert() {
-        return $this->prow->paperId === 0;
-    }
-
-
     /** @return ?DocumentInfo */
     function upload_document($docj, PaperOption $o) {
         // $docj can be a DocumentInfo or a JSON.
@@ -256,7 +248,7 @@ class PaperStatus extends MessageSet {
         if ($doc->paperId === 0 || $doc->paperId === -1) {
             $this->_update_pid_dids[] = $doc->paperStorageId;
         } else {
-            assert($doc->paperId === $this->_desired_pid);
+            assert($doc->paperId === $this->prow->paperId);
         }
         return $doc;
     }
@@ -342,7 +334,7 @@ class PaperStatus extends MessageSet {
         }
 
         // check for existing document
-        if (!$this->will_insert()
+        if (!$this->prow->is_new()
             && isset($docj->docid)
             && is_int($docj->docid)
             && $docj->docid > 0) {
@@ -377,8 +369,8 @@ class PaperStatus extends MessageSet {
         }
 
         // make new document
-        $doc = (new DocumentInfo(null, $this->conf, $this->prow))
-            ->set_paper_id($this->_desired_pid ?? -1)
+        $doc = (new DocumentInfo(null, $this->conf))
+            ->set_paper($this->prow)
             ->set_document_type($o->id);
         if (isset($docj->mimetype) && is_string($docj->mimetype)) {
             $doc->set_mimetype($docj->mimetype);
@@ -599,7 +591,7 @@ class PaperStatus extends MessageSet {
         }
 
         // load previous conflicts
-        if (!$this->will_insert()) {
+        if (!$this->prow->is_new()) {
             foreach ($this->prow->conflict_types() as $uid => $ctype) {
                 $this->_conflict_values[$uid] = [$ctype, 0, 0];
             }
@@ -749,7 +741,7 @@ class PaperStatus extends MessageSet {
             : $pj->status->submitted && (!$this->has_error() || $old_submitted);
         if ($pj_submitted !== $old_submitted
             || $this->_noncontacts_changed) {
-            if ($this->prow->paperId <= 0) {
+            if ($this->prow->is_new()) {
                 $whynot = $this->user->perm_start_paper($this->prow);
             } else {
                 $whynot = $this->user->perm_edit_paper($this->prow);
@@ -983,7 +975,7 @@ class PaperStatus extends MessageSet {
             $cv = $this->_conflict_values[$this->user->contactId] ?? null;
             $ncv = self::new_conflict_value($cv);
             if (($ncv & CONFLICT_CONTACTAUTHOR) === 0
-                && ($this->will_insert()
+                && ($this->prow->is_new()
                     || ($ncv & CONFLICT_AUTHOR) === 0)) {
                 $this->update_conflict_value($this->user, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
                 $this->checkpoint_conflict_values();
@@ -1006,12 +998,12 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function _reset(PaperInfo $prow) {
+    /** @param ?int $pid */
+    private function _reset(PaperInfo $prow, $pid) {
         assert($prow->paperId !== -1);
         parent::clear();
         $this->prow = $prow;
         $this->paperId = $this->title = null;
-        $this->_desired_pid = $prow->paperId !== 0 ? $prow->paperId : null;
         $this->_fdiffs = $this->_xdiffs = [];
         $this->_unknown_fields = null;
         $this->_field_values = $this->_option_delid = $this->_option_ins = [];
@@ -1019,15 +1011,62 @@ class PaperStatus extends MessageSet {
         $this->_conflict_ins = $this->_created_contacts = null;
         $this->_author_change_cids = null;
         $this->_paper_submitted = $this->_documents_changed = false;
-        $this->_noncontacts_changed = $prow->paperId <= 0;
+        $this->_noncontacts_changed = $prow->is_new();
         $this->_update_pid_dids = $this->_joindocs = [];
         $this->_save_status = 0;
+        if ($prow->is_new()) {
+            $this->allocate_pid($pid);
+        }
+    }
+
+    /** @return int */
+    private function potential_random_pid() {
+        $this->_potential_pids = $this->_potential_pids ?? [];
+        while (true) {
+            if (!empty($this->_potential_pids)) {
+                return array_pop($this->_potential_pids);
+            }
+
+            $n = max(100, 3 * $this->conf->fetch_ivalue("select count(*) from Paper"));
+            for ($i = 0; $i !== 20; ++$i) {
+                $this->_potential_pids[] = mt_rand(1, $n);
+            }
+
+            $result = $this->conf->qe("select paperId from Paper where paperId?a", $this->_potential_pids);
+            while (($row = $result->fetch_row())) {
+                $pid = (int) $row[0];
+                while (($i = array_search($pid, $this->_potential_pids, true)) !== false) {
+                    array_splice($this->_potential_pids, $i, 1);
+                }
+            }
+            $result->close();
+        }
+    }
+
+    /** @param ?int $pid */
+    private function allocate_pid($pid) {
+        $random = $this->conf->setting("random_pids");
+        while (true) {
+            if ($pid === null && $random) {
+                $pid = $this->potential_random_pid();
+            }
+            if ($pid === null) {
+                $result = $this->conf->qe("insert into Paper set title='', abstract='', authorInformation=''");
+            } else {
+                $result = $this->conf->qe("insert into Paper set paperId=?, title='', abstract='', authorInformation='' on duplicate key update timeSubmitted=timeSubmitted", $pid);
+            }
+            if ($result->affected_rows > 0) {
+                $this->prow->set_prop("paperId", $result->insert_id);
+                return;
+            }
+            $pid = null;
+        }
     }
 
     /** @param ?PaperInfo $prow
      * @return bool */
     function prepare_save_paper_web(Qrequest $qreq, $prow) {
-        $this->_reset($prow ?? PaperInfo::make_new($this->user, $qreq->sclass));
+        $this->_reset($prow ?? PaperInfo::make_new($this->user, $qreq->sclass), null);
         $pj = (object) [];
 
         // Backward compatibility XXX
@@ -1096,9 +1135,8 @@ class PaperStatus extends MessageSet {
         if ($pid !== null) {
             $prow = $this->conf->paper_by_id($pid, $this->user, ["topics" => true, "options" => true]);
         }
-        $this->_reset($prow ?? PaperInfo::make_new($this->user, $pj->submission_class ?? null));
-        $this->_desired_pid = $pid;
-        assert($this->prow->paperId === 0 || $this->prow->paperId === $pid);
+        $this->_reset($prow ?? PaperInfo::make_new($this->user, $pj->submission_class ?? null), $pid);
+        assert($pid === null || $this->prow->paperId === $pid);
 
         return $this->_finish_prepare($pj);
     }
@@ -1120,7 +1158,8 @@ class PaperStatus extends MessageSet {
      * @return bool */
     private function _normalize_and_check($pj) {
         assert($this->_save_status === 0);
-        if (($perm = $this->user->perm_view_paper($this->prow, false, $this->_desired_pid ?? "new"))) {
+        $pid = $this->prow->is_new() ? "new" : $this->prow->paperId;
+        if (($perm = $this->user->perm_view_paper($this->prow, false, $pid))) {
             $perm->append_to($this, null, MessageSet::ESTOP);
             return false;
         }
@@ -1176,12 +1215,14 @@ class PaperStatus extends MessageSet {
         }
 
         // don't save if creating a mostly-empty paper
-        if ($this->will_insert()
+        if ($this->prow->is_new()
             && !array_diff(array_keys($this->prow->_old_prop), ["authorInformation", "blind"])
             && (!$this->prow->authorInformation
                 || $this->prow->authorInformation === (new Author($this->user))->unparse_tabbed())
             && empty($this->_option_ins)) {
             $this->error_at(null, $this->_("<0>Empty {submission}. Please fill out the fields and try again"));
+            $this->conf->qe("delete from Paper where paperId=?", $this->prow->paperId);
+            $this->conf->qe("update PaperStorage set paperId=-1 where paperId=?", $this->prow->paperId);
             return false;
         }
 
@@ -1224,37 +1265,6 @@ class PaperStatus extends MessageSet {
         $this->prow->set_prop("pdfFormatStatus", 0);
     }
 
-    /** @return int */
-    private function unused_random_pid() {
-        $this->_potential_pids = $this->_potential_pids ?? [];
-        while (true) {
-            $np = count($this->_potential_pids);
-            if ($np > 0
-                && !$this->conf->fetch_ivalue("select exists (select * from Paper where paperId=?) from dual", $this->_potential_pids[$np - 1])) {
-                return array_pop($this->_potential_pids);
-            }
-
-            $n = max(100, 3 * $this->conf->fetch_ivalue("select count(*) from Paper"));
-            while ($np < 20) {
-                $this->_potential_pids[] = mt_rand(1, $n);
-                ++$np;
-            }
-
-            $result = $this->conf->qe("select paperId from Paper where paperId?a", $this->_potential_pids);
-            while (($row = $result->fetch_row())) {
-                $pid = (int) $row[0];
-                while (($i = array_search($pid, $this->_potential_pids, true)) !== false) {
-                    array_splice($this->_potential_pids, $i, 1);
-                }
-            }
-            $result->close();
-
-            if (!empty($this->_potential_pids)) {
-                return array_pop($this->_potential_pids);
-            }
-        }
-    }
-
     /** @return array{list<string>,list<null|int|float|string>} */
     private function _sql_prop() {
         $qf = $qv = [];
@@ -1269,62 +1279,31 @@ class PaperStatus extends MessageSet {
     }
 
     /** @return bool */
-    private function _execute_insert() {
-        assert($this->prow->paperId === 0);
-        // set default columns
-        foreach (["title", "authorInformation", "abstract"] as $f) {
-            if (!$this->prow->prop_changed($f))
-                $this->prow->set_prop($f, "");
-        }
-        // prepare pid
-        $random_pids = $this->_desired_pid === null && $this->conf->setting("random_pids");
-        if ($random_pids) {
-            $this->conf->qe("lock tables Paper write");
-            $this->_desired_pid = $this->unused_random_pid();
-        }
-        if ($this->_desired_pid !== null) {
-            $this->prow->set_prop("paperId", $this->_desired_pid);
-        }
-        // insert
-        list($qf, $qv) = $this->_sql_prop();
-        $result = $this->conf->qe_apply("insert into Paper set " . join(", ", $qf), $qv);
-        if ($random_pids) {
-            $this->conf->qe("unlock tables");
-        }
-        if ($result->is_error() || !$result->insert_id) {
-            $this->error_at(null, $this->_("<0>Could not create {submission}"));
-            return false;
-        }
-        $this->paperId = (int) $result->insert_id;
-        $this->_save_status |= self::SAVE_STATUS_NEW;
-        // save initial tags
-        if (($t = $this->prow->all_tags_text()) !== "") {
-            $qv = [];
-            foreach (Tagger::split_unpack($t) as $ti) {
-                $qv[] = [$this->paperId, $ti[0], $ti[1]];
-            }
-            $this->conf->qe("insert into PaperTag (paperId, tag, tagIndex) values ?v", $qv);
-        }
-        return true;
-    }
-
-    /** @return bool */
     private function _execute_update() {
-        assert($this->prow->paperId !== 0
-               && $this->prow->paperId !== -1
-               && $this->prow->paperId === $this->_desired_pid);
         list($qf, $qv) = $this->_sql_prop();
-        $qv[] = $this->_desired_pid;
+        $qv[] = $this->prow->paperId;
         $result = $this->conf->qe_apply("update Paper set " . join(", ", $qf) . " where paperId=?", $qv);
         if ($result->is_error()) {
-            $this->error_at(null, $this->_("<0>Could not update {submission}"));
+            $action = $this->prow->is_new() ? "create" : "update";
+            $this->error_at(null, $this->_("<0>Could not {$action} {submission}"));
             return false;
         } else if ($result->affected_rows === 0
-                   && !$this->conf->fetch_ivalue("select exists(select * from Paper where paperId=?) from dual", $this->_desired_pid)) {
-            $this->error_at(null, $this->_("<0>{Submission} #{} has been deleted", $this->_desired_pid));
+                   && !$this->conf->fetch_ivalue("select exists(select * from Paper where paperId=?) from dual", $this->prow->paperId)) {
+            $this->error_at(null, $this->_("<0>{Submission} #{} has been deleted", $this->prow->paperId));
             return false;
         }
-        $this->paperId = $this->_desired_pid;
+        $this->paperId = $this->prow->paperId;
+        if ($this->prow->is_new()) {
+            $this->_save_status |= self::SAVE_STATUS_NEW;
+            // save initial tags
+            if (($t = $this->prow->all_tags_text()) !== "") {
+                $qv = [];
+                foreach (Tagger::split_unpack($t) as $ti) {
+                    $qv[] = [$this->paperId, $ti[0], $ti[1]];
+                }
+                $this->conf->qe("insert into PaperTag (paperId, tag, tagIndex) values ?v", $qv);
+            }
+        }
         return true;
     }
 
@@ -1469,20 +1448,18 @@ class PaperStatus extends MessageSet {
         assert($this->paperId === null);
         $this->_save_status = self::SAVE_STATUS_SAVED;
 
-        if ($this->will_insert() || $this->prow->prop_changed()) {
+        if ($this->prow->prop_changed()) {
             $modified_at = max(Conf::$now, $this->prow->timeModified + 1);
             $this->prow->set_prop("timeModified", $modified_at);
             if ($this->prow->prop_changed("paperStorageId")
                 || $this->prow->prop_changed("finalPaperStorageId")) {
                 $this->_update_joindoc();
             }
-            if ($this->will_insert()
-                ? !$this->_execute_insert()
-                : !$this->_execute_update()) {
+            if (!$this->_execute_update()) {
                 return false;
             }
         } else {
-            assert($this->prow->paperId === $this->_desired_pid);
+            assert(!$this->prow->is_new());
             $this->paperId = $this->prow->paperId;
         }
         assert($this->paperId !== null);

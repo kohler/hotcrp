@@ -3344,7 +3344,7 @@ class Contact implements JsonSerializable {
             return 0;
         }
         $rights = $this->rights($prow);
-        if ($prow->paperId <= 0
+        if ($prow->is_new()
             && ($sl = $this->conf->site_lock("paper:start")) > 0
             && ($sl > 1 || !$rights->can_administer)) {
             return 0;
