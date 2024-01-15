@@ -111,7 +111,9 @@ class Topic_SettingParser extends SettingParser {
             $tid = $sv->vstr("topic/{$ctr}/id") ?? "new";
             $tname = $sv->base_parse_req("topic/{$ctr}/name");
             if ($sv->reqstr("topic/{$ctr}/delete") || $tname === "") {
-                unset($this->topicj[$tid]);
+                if ($tid !== "new") {
+                    unset($this->topicj[$tid]);
+                }
             } else {
                 if ($tname !== null) {
                     if (preg_match('/\A(?:\d+\z|[-+,;:]|–|—)/', $tname)) {
