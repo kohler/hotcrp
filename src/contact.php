@@ -1962,6 +1962,10 @@ class Contact implements JsonSerializable {
                 $this->password = validate_email($this->email) ? " unset" : " nologin";
                 $this->passwordTime = Conf::$now;
             }
+            if ($flag === self::PROP_LOCAL
+                && !array_key_exists("cdbRoles", $this->_mod_undo)) {
+                $this->cdbRoles = 0;
+            }
         } else if (empty($this->_mod_undo)) {
             return true;
         }
