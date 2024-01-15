@@ -1403,7 +1403,7 @@ class SettingValues extends MessageSet {
             foreach ($this->_table_lock as $t => $need) {
                 $tables .= ", $t " . ($need < 2 ? "read" : "write");
             }
-            $this->conf->qe_raw("lock tables $tables");
+            $this->conf->qe_raw("lock tables {$tables}");
             $this->conf->delay_logs();
 
             // load db settings, pre-crosscheck

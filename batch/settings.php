@@ -29,12 +29,14 @@ class Settings_Batch {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->sv = new SettingValues($user);
-        if (!empty($arg["_"])) {
+        if ((isset($arg["file"]) ? 1 : 0) + (empty($arg["_"]) ? 0 : 1) + (isset($arg["expr"]) ? 1 : 0) > 1) {
+            throw new CommandLineException("Give at most one of `--file`, `--expr`, and FILE");
+        } else if (isset($arg["file"])) {
+            $this->filename = $arg["file"];
+        } else if (isset($arg["expr"])) {
+            $this->expr = $arg["expr"];
+        } else if (!empty($arg["_"])) {
             $this->filename = $arg["_"][0];
-        }
-        $this->expr = $arg["expr"] ?? null;
-        if ($this->filename !== null && $this->expr !== null) {
-            throw new CommandLineException("Give at most one of `--expr` and FILE");
         }
         $this->dry_run = isset($arg["dry-run"]);
         $this->diff = isset($arg["diff"]);
@@ -75,7 +77,7 @@ class Settings_Batch {
         $this->sv->add_json_string($s, $fn);
 
         $this->sv->parse();
-        if (!$this->dry_run && !$this->diff) {
+        if (!$this->dry_run) {
             $this->sv->execute();
         }
         $fb = $this->sv->full_feedback_text();
@@ -92,13 +94,12 @@ class Settings_Batch {
         if ($this->diff) {
             $dmp = new dmp\diff_match_patch;
             $dmp->Line_Histogram = true;
-            $old_jsonstr2 = self::output($this->sv, false);
-            if ($old_jsonstr !== $old_jsonstr2) {
-                $diff = $dmp->line_diff($old_jsonstr, $old_jsonstr2);
-                fwrite(STDOUT, $dmp->line_diff_toUnified($diff));
-                assert($old_jsonstr === $old_jsonstr2);
+            if ($this->dry_run) {
+                assert(self::output($this->sv, false) === $old_jsonstr);
+                $new_jsonstr = self::output($this->sv, true);
+            } else {
+                $new_jsonstr = self::output(new SettingValues($this->user), false);
             }
-            $new_jsonstr = self::output($this->sv, true);
             $diff = $dmp->line_diff($old_jsonstr, $new_jsonstr);
             fwrite(STDOUT, $dmp->line_diff_toUnified($diff));
         }
@@ -111,11 +112,14 @@ class Settings_Batch {
             "name:,n: !",
             "config: !",
             "help,h !",
-            "dry-run,d Do not modify settings.",
-            "diff Output unified settings diff.",
-            "expr:,e: =JSON Apply settings changes from JSON."
+            "dry-run,d Do not modify settings",
+            "diff Write unified settings diff of changes",
+            "expr:,e: =JSON Change settings via JSON",
+            "file:,f: =FILE Change settings via FILE"
         )->description("Query or modify HotCRP settings in JSON format.
-Usage: php batch/settings.php [FILE]")
+Usage: php batch/settings.php > JSONFILE
+       php batch/settings.php FILE
+       php batch/settings.php -e JSON")
          ->maxarg(1)
          ->helpopt("help")
          ->parse($argv);
