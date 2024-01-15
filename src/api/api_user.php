@@ -16,68 +16,69 @@ class User_API {
             return JsonResult::make_missing_error("email");
         }
 
-        $users = [];
         $slice = Contact::SLICE_MINIMAL - Contact::SLICEBIT_COLLABORATORS
             - Contact::SLICEBIT_COUNTRY - Contact::SLICEBIT_ORCID;
-        if ($user->privChair || $user->can_view_pc()) {
-            $roles = $user->is_manager() ? "" : " and roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
-            $result = $user->conf->qe("select " . $user->conf->user_query_fields($slice) . " from ContactInfo where email>=? and email<? and (cflags&?)=0{$roles} order by email asc limit 2",
-                $email, "{$email}~", Contact::CFM_DISABLEMENT);
-            while (($u = Contact::fetch($result, $user->conf))) {
-                $users[] = $u;
-            }
-            Dbl::free($result);
-        }
+        $broad_lookup = $user->conf->opt("allowLookupUser");
 
-        if ((empty($users) || strcasecmp($users[0]->email, $email) !== 0)
-            && $user->conf->opt("allowLookupUser")) {
-            if (($db = $user->conf->contactdb())) {
-                $fields = $user->conf->contactdb_user_query_fields($slice);
-            } else {
-                $db = $user->conf->dblink;
-                $fields = $user->conf->user_query_fields($slice);
-            }
-            $result = Dbl::qe($db, "select {$fields} from ContactInfo where email>=? and email<? and (cflags&?)=0 order by email asc limit 2",
-                $email, "{$email}~", Contact::CFM_DISABLEMENT);
-            $users = [];
-            while (($u = Contact::fetch($result, $user->conf))) {
-                $users[] = $u;
-            }
-            Dbl::free($result);
-        }
-
-        if (empty($users)
-            && strcasecmp($user->email, $email) >= 0
+        $found = null;
+        if (strcasecmp($user->email, $email) >= 0
             && strcasecmp($user->email, "{$email}~") < 0) {
-            $users[] = $user;
+            $found = $user;
         }
 
-        if (empty($users)) {
-            return new JsonResult(["ok" => false]);
-        } else {
-            $u = $users[0];
-            $ok = strcasecmp($u->email, $email) === 0;
-            $rj = [
-                "ok" => $ok,
-                "email" => $u->email,
-                "firstName" => $u->firstName,
-                "lastName" => $u->lastName,
-                "affiliation" => $u->affiliation
-            ];
-            if ($u->country() !== "") {
-                $rj["country"] = $u->country();
+        if (($user->can_view_pc() || $broad_lookup)
+            && (!$found || strcasecmp($found->email, $email) !== 0)) {
+            $roles = "";
+            if (!$user->is_manager() && !$broad_lookup) {
+                $roles = " and roles!=0 and (roles&" . Contact::ROLE_PC . ")!=0";
             }
-            if ($u->orcid() !== "") {
-                $rj["orcid"] = $u->orcid();
+            $result = $user->conf->qe("select " . $user->conf->user_query_fields($slice) . " from ContactInfo where email>=? and email<? and (cflags&?)=0{$roles} order by email asc limit 1",
+                $email, "{$email}~", Contact::CFM_DISABLEMENT);
+            while (($u = Contact::fetch($result, $user->conf))) {
+                if (!$found || strcasecmp($found->email, $u->email) > 0)
+                    $found = $u;
             }
-            if ($prow
-                && $user->allow_view_authors($prow)
-                && $qreq->potential_conflict
-                && ($potconf = $prow->potential_conflict_html($u))) {
-                $rj["potential_conflict"] = PaperInfo::potential_conflict_tooltip_html($potconf);
-            }
-            return new JsonResult($rj);
+            Dbl::free($result);
         }
+
+        if ($broad_lookup
+            && ($db = $user->conf->contactdb())
+            && (!$found || strcasecmp($found->email, $email) !== 0)) {
+            $result = Dbl::qe($db, "select " . $user->conf->contactdb_user_query_fields($slice) . " from ContactInfo where email>=? and email<? and (cflags&?)=0 order by email asc limit 1",
+                $email, "{$email}~", Contact::CFM_DISABLEMENT);
+            $i = 0;
+            while (($u = Contact::fetch($result, $user->conf))) {
+                if (!$found || strcasecmp($found->email, $u->email) > 0)
+                    $found = $u;
+            }
+            Dbl::free($result);
+        }
+
+        if (!$found) {
+            return new JsonResult(["ok" => false]);
+        }
+
+        $ok = strcasecmp($found->email, $email) === 0;
+        $rj = [
+            "ok" => $ok,
+            "email" => $found->email,
+            "firstName" => $found->firstName,
+            "lastName" => $found->lastName,
+            "affiliation" => $found->affiliation
+        ];
+        if ($found->country() !== "") {
+            $rj["country"] = $found->country();
+        }
+        if ($found->orcid() !== "") {
+            $rj["orcid"] = $found->orcid();
+        }
+        if ($prow
+            && $user->allow_view_authors($prow)
+            && $qreq->potential_conflict
+            && ($potconf = $prow->potential_conflict_html($found))) {
+            $rj["potential_conflict"] = PaperInfo::potential_conflict_tooltip_html($potconf);
+        }
+        return new JsonResult($rj);
     }
 
     static function clickthrough(Contact $user, Qrequest $qreq) {

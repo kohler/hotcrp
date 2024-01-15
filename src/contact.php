@@ -1087,11 +1087,19 @@ class Contact implements JsonSerializable {
             $disabled |= self::CF_UNCONFIRMED;
         }
         $e = $this->preferredEmail ? : $this->email;
-        return ($this->cflags & $disabled) === 0
-            && ($at = strpos($e, "@")) !== false
-            && ($ch = $e[$at + 1]) !== "_"
-            && !($at <= strlen($e) - 12
-                 && preg_match('/\G[@.]example\.(?:com|net|org|edu)\z/i', $e, $m, 0, strlen($e) - 12));
+        return ($this->cflags & $disabled) === 0 && self::is_real_email($e);
+    }
+
+    /** @param string $email
+     * @return bool */
+    static function is_real_email($email) {
+        $len = strlen($email);
+        return ($at = strpos($email, "@")) !== false
+            && $at + 1 < $len
+            && $email[$at + 1] !== "_"
+            && ($at + 12 > $len
+                || (ord($email[$len - 11]) | 0x20) !== 0x65 /* 'e' */
+                || !preg_match('/\G[@.]example\.(?:com|net|org|edu)\z/i', $email, $m, 0, $len - 12));
     }
 
     /** @return int */
@@ -2150,9 +2158,10 @@ class Contact implements JsonSerializable {
         }
 
         // look up cdb account
-        $cdb = $valid_email ? $this->conf->contactdb() : null;
         $cdbu = null;
-        if ($cdb) {
+        if ($valid_email
+            && self::is_real_email($this->email)
+            && ($cdb = $this->conf->contactdb())) {
             $cdbu = $this->cdb_user() ?? Contact::make_cdb_email($this->conf, $this->email);
         }
 
