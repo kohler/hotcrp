@@ -27,6 +27,13 @@ class MessageItem implements JsonSerializable {
         $this->status = $status;
     }
 
+    /** @param object $x
+     * @return MessageItem */
+    static function from_json($x) {
+        // XXX context, pos1, pos2?
+        return new MessageItem($x->field ?? null, $x->message ?? "", $x->status ?? 0);
+    }
+
     /** @param int $format
      * @return string */
     function message_as($format) {

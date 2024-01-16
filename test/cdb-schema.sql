@@ -7,7 +7,6 @@ CREATE TABLE `Capability` (
   `capabilityType` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
-  `otherId` int(11) NOT NULL DEFAULT 0,
   `timeCreated` bigint(11) NOT NULL,
   `timeUsed` bigint(11) NOT NULL DEFAULT 0,
   `timeInvalid` bigint(11) NOT NULL DEFAULT 0,

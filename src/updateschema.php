@@ -2940,6 +2940,17 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("update ContactInfo set cflags=34 where cflags=2")) {
             $conf->update_schema_version(286);
         }
+        if ($conf->sversion === 286
+            && $conf->ql_ok("alter table Capability change `otherId` `reviewId` int(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table Capability change `data` `data` varbinary(16384) DEFAULT NULL")
+            && $conf->ql_oK("alter table Capability add `output` longblob DEFAULT NULL")) {
+            $conf->update_schema_version(287);
+        }
+        if ($conf->sversion === 287
+            && $conf->ql_ok("alter table Capability change `output` `outputData` longblob DEFAULT NULL")
+            && $conf->ql_ok("alter table Capability add `inputData` varbinary(16384) DEFAULT NULL")) {
+            $conf->update_schema_version(288);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

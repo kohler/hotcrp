@@ -27,13 +27,15 @@ CREATE TABLE `Capability` (
   `capabilityType` int(11) NOT NULL,
   `contactId` int(11) NOT NULL,
   `paperId` int(11) NOT NULL,
-  `otherId` int(11) NOT NULL DEFAULT 0,
+  `reviewId` int(11) NOT NULL DEFAULT 0,
   `timeCreated` bigint(11) NOT NULL,
   `timeUsed` bigint(11) NOT NULL,
   `timeInvalid` bigint(11) NOT NULL,
   `timeExpires` bigint(11) NOT NULL,
   `salt` varbinary(255) NOT NULL,
-  `data` varbinary(8192) DEFAULT NULL,
+  `inputData` varbinary(16384) DEFAULT NULL,
+  `data` varbinary(16384) DEFAULT NULL,
+  `outputData` longblob DEFAULT NULL,
   PRIMARY KEY (`salt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -622,7 +624,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 286, null),   -- schema version
+  ('allowPaperOption', 288, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

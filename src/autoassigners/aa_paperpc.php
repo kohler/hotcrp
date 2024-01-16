@@ -24,6 +24,7 @@ class PaperPC_Autoassigner extends Autoassigner {
         $this->set_assignment_action($t);
         $this->extract_balance_method($subreq);
         $this->extract_max_load($subreq);
+        $this->extract_gadget_costs($subreq);
 
         $this->allow_incomplete = $subreq["allow_incomplete"] ?? false;
 

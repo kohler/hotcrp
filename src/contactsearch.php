@@ -1,6 +1,6 @@
 <?php
 // contactsearch.php -- HotCRP helper class for searching for users
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class ContactSearch {
     const F_QUOTED = 1;
@@ -85,22 +85,26 @@ class ContactSearch {
                 || ($this->user->roles & Contact::ROLE_PCLIKE) !== 0)) {
             return [$this->user->contactId];
         }
-        if (ctype_digit($this->text)) {
-            if (($this->type & self::F_USERID) === 0) {
-                return [];
+        if (($this->type & self::F_USERID) !== 0
+            && strspn($this->text, "0123456789 ,") === strlen($this->text)) {
+            preg_match_all('/\d+/', $this->text, $m);
+            $ids = [];
+            foreach ($m[0] as $d) {
+                $d = intval($d);
+                if ($d > 0
+                    && (($this->type & self::F_PC) !== 0 || $this->conf->pc_user_by_id($d))) {
+                    $ids[] = $d;
+                }
             }
-            $uid = intval($this->text);
-            if (($this->type & self::F_PC) !== 0
-                && $uid > 0
-                && !$this->conf->pc_member_by_id($uid)) {
-                $uid = 0;
-            }
-            return $uid > 0 ? [$uid] : [];
+            return $ids;
         }
         if ($this->user->can_view_pc()) {
             if ($this->text === ""
                 || strcasecmp($this->text, "pc") === 0) {
                 return array_keys($this->conf->pc_members());
+            } else if (($this->type & self::F_PC) !== 0
+                       && strcasecmp($this->text, "enabled") === 0) {
+                return array_keys($this->conf->enabled_pc_members());
             } else if (($this->type & self::F_PC) !== 0
                        && (strcasecmp($this->text, "any") === 0
                            || strcasecmp($this->text, "all") === 0

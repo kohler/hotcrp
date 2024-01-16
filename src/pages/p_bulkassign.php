@@ -77,7 +77,7 @@ class BulkAssign_Page {
             $aset->set_search_type($this->qreq->t);
         }
         if ($callback) {
-            $aset->add_progress_handler($callback);
+            $aset->add_progress_function($callback);
         }
         $aset->enable_papers($ssel->selection());
         $aset->parse($this->qreq->data, $this->qreq->filename, $this->assignment_defaults());
@@ -108,7 +108,7 @@ class BulkAssign_Page {
             $aset->set_search_type($this->qreq->t);
         }
         $aset->set_csv_context(true);
-        $aset->add_progress_handler([$this, "keep_browser_alive"]);
+        $aset->add_progress_function([$this, "keep_browser_alive"]);
         $defaults = $this->assignment_defaults();
         $text = convert_to_utf8($text);
         $aset->parse($text, $filename, $defaults);

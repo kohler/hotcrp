@@ -499,9 +499,56 @@ if (defined("JSON_UNESCAPED_LINE_TERMINATORS")) {
         return json_encode($x, $flags);
     }
 }
+
 /** @return string */
 function json_encode_db($x, $flags = 0) {
     return json_encode($x, $flags | JSON_UNESCAPED_UNICODE);
+}
+
+/** @param ?string $x
+ * @return ?object */
+function json_decode_object($x) {
+    if ($x === null || $x === "" || !is_object(($j = json_decode($x)))) {
+        return null;
+    }
+    return $j;
+}
+
+/** @param ?string &$s
+ * @param ?object &$x
+ * @param mixed $k
+ * @param mixed $v
+ * @param 1|2 $n
+ * @return bool */
+function json_encode_object_change(&$s, &$x, $k, $v, $n) {
+    if ($n === 1) {
+        if ($k === null || is_string($k)) {
+            $news = $k;
+        } else {
+            $news = json_encode_db($k);
+        }
+        if ($s === $news) {
+            return false;
+        }
+        $s = $news;
+        $x = null;
+        return true;
+    }
+    assert(is_string($k));
+    if ($x === null) {
+        $x = json_decode_object($s);
+    }
+    if (($x->$k ?? null) === $v) {
+        return false;
+    }
+    if ($v !== null) {
+        $x = $x ?? (object) [];
+        $x->$k = $v;
+    } else {
+        unset($x->$k);
+    }
+    $s = json_encode_db($x);
+    return true;
 }
 
 

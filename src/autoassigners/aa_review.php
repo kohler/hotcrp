@@ -57,13 +57,11 @@ class Review_Autoassigner extends Autoassigner {
 
         $this->extract_balance_method($subreq);
         $this->extract_max_load($subreq);
+        $this->extract_gadget_costs($subreq);
 
-        $n = $subreq["count"] ?? $gj->count ?? 1;
-        if (is_string($n)) {
-            $n = stoi($n) ?? -1;
-        }
-        if (!is_int($n) || $n <= 0) {
-            $this->error_at("count", "<0>Count should be a positive number");
+        $n = stoi($subreq["count"] ?? $gj->count ?? 1) ?? -1;
+        if ($n <= 0) {
+            $this->error_at("count", "<0>Positive number expected");
             $n = 1;
         }
         $this->count = $n;

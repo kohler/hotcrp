@@ -198,15 +198,15 @@ class Developer_UserInfo {
 
         $note = simplify_whitespace($us->qreq["bearer_token/new/note"] ?? "");
         if ($note !== "") {
-            $token->data = json_encode(["note" => $note]);
+            $token->set_data(["note" => $note]);
         }
 
         $exp = $us->qreq["bearer_token/new/expiration"] ?? "30";
         if ($exp === "never") {
-            $token->timeInvalid = $token->timeExpires = 0;
+            $token->set_invalid_at(0)->set_expires_at(0);
         } else {
-            $token->timeInvalid = Conf::$now + (ctype_digit($exp) ? intval($exp) : 30) * 86400;
-            $token->timeExpires = $token->timeInvalid + 604800;
+            $expiry = (ctype_digit($exp) ? intval($exp) : 30) * 86400;
+            $token->set_invalid_after($expiry)->set_expires_after($expiry + 604800);
         }
 
         $sites = $us->qreq["bearer_token/new/sites"] ?? "here";

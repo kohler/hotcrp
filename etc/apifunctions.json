@@ -71,7 +71,11 @@
     },
     {
         "name": "graphdata", "get": true,
-        "function": "GraphData_Api::graphdata"
+        "function": "GraphData_API::graphdata"
+    },
+    {
+        "name": "job", "get": true,
+        "function": "Job_API::job"
     },
     {
         "name": "jserror", "get": true,

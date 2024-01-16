@@ -230,7 +230,6 @@ src/assignmentset.php
 src/author.php
 src/authormatcher.php
 src/autoassigner.php
-src/autoassignerinterface.php
 src/autoassigners/aa_clear.php
 src/autoassigners/aa_discussionorder.php
 src/autoassigners/aa_paperpc.php

@@ -1478,6 +1478,11 @@ button:hover, button:focus, button:active, button:focus-within,
 	background-image: linear-gradient(#ee0000, #cc0000);
 	color: white;
 }
+a.btn-default, a.btn-primary, a.btn-success, a.btn-highlight,
+a.btn-default:hover, a.btn-primary:hover, a.btn-success:hover,
+a.btn-highlight:hover, a.btn-danger:hover, a.btn-danger:active {
+	color: white;
+}
 .disabled {
 	color: rgba(102, 102, 102, 0.5);
 }

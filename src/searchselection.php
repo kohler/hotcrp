@@ -1,6 +1,6 @@
 <?php
 // searchselection.php -- HotCRP helper class for paper selections
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class SearchSelection {
     /** @var list<int> */
@@ -9,15 +9,13 @@ class SearchSelection {
     private $selmap = [];
 
     function __construct($papers = null) {
-        if ($papers) {
-            $n = 1;
-            foreach ($papers as $pid) {
-                if (($pid = stoi($pid) ?? -1) > 0
-                    && !isset($this->selmap[$pid])) {
-                    $this->sel[] = $pid;
-                    $this->selmap[$pid] = $n;
-                    ++$n;
-                }
+        $n = 1;
+        foreach ($papers ?? [] as $pid) {
+            if (($pid = stoi($pid) ?? -1) > 0
+                && !isset($this->selmap[$pid])) {
+                $this->sel[] = $pid;
+                $this->selmap[$pid] = $n;
+                ++$n;
             }
         }
     }
@@ -139,5 +137,16 @@ class SearchSelection {
     /** @return string */
     function request_value() {
         return join(" ", $this->sel);
+    }
+
+    /** @return string */
+    function unparse_search() {
+        if (empty($this->sel)) {
+            return "NONE";
+        } else if (count($this->sel) > 100) {
+            return "pidcode:" . SessionList::encode_ids($this->sel);
+        } else {
+            return join(" ", $this->sel);
+        }
     }
 }

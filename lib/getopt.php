@@ -613,8 +613,15 @@ class CommandLineException extends Exception {
         $this->exitStatus = $exit_status ?? self::$default_exit_status;
     }
     /** @param int $exit_status
-     * @return $this */
+     * @return $this
+     * @deprecated */
     function exit_status($exit_status) {
+        $this->exitStatus = $exit_status;
+        return $this;
+    }
+    /** @param int $exit_status
+     * @return $this */
+    function set_exit_status($exit_status) {
         $this->exitStatus = $exit_status;
         return $this;
     }

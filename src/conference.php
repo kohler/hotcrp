@@ -352,7 +352,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 286) {
+        if ($this->sversion < 288) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -5541,7 +5541,7 @@ class Conf {
                 $ct_cleanups[$tf->type] = true;
         }
         if (!empty($ct_cleanups)) {
-            $result = $this->ql("select * from Capability where timeExpires>0 and timeExpires<? and capabilityType?a", Conf::$now, array_keys($ct_cleanups));
+            $result = TokenInfo::expired_tokens_result($this, array_keys($ct_cleanups));
             while (($tok = TokenInfo::fetch($result, $this, false))) {
                 if (($tf = $this->token_type($tok->capabilityType))
                     && isset($tf->cleanup_function))

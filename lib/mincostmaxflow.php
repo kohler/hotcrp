@@ -258,9 +258,17 @@ class MinCostMaxFlow {
     }
 
     /** @param callable(MinCostMaxFlow,int,...) $progressf
-     * @return void */
+     * @return void
+     * @deprecated */
     function add_progress_handler($progressf) {
         $this->progressf[] = $progressf;
+    }
+
+    /** @param callable(MinCostMaxFlow,int,...) $progressf
+     * @return $this */
+    function add_progress_function($progressf) {
+        $this->progressf[] = $progressf;
+        return $this;
     }
 
 

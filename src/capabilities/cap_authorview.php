@@ -44,10 +44,7 @@ class AuthorView_Capability {
             && !$user->conf->opt("disableCapabilities")) {
             $user->set_capability("@av{$tok->paperId}", true);
             $user->set_default_cap_param($uf->name, true);
-            if ($tok->timeUsed < Conf::$now - 3600) {
-                $tok->timeUsed = Conf::$now;
-                $tok->update();
-            }
+            $tok->update_use(3600)->update();
         }
     }
 

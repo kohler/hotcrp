@@ -1062,8 +1062,15 @@ class AssignmentSet {
     }
 
     /** @param callable(AssignmentSet,?CsvRow) $progressf
-     * @return $this */
+     * @return $this
+     * @deprecated */
     function add_progress_handler($progressf) {
+        $this->progressf[] = $progressf;
+        return $this;
+    }
+    /** @param callable(AssignmentSet,?CsvRow) $progressf
+     * @return $this */
+    function add_progress_function($progressf) {
         $this->progressf[] = $progressf;
         return $this;
     }

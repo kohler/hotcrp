@@ -4935,6 +4935,50 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
     handle_ui.stopPropagation(evt);
 });
 
+hotcrp.monitor_autoassignment = function (jobid) {
+    let start = now_sec(), tries = 0;
+    function success(data) {
+        const e = $$("propass");
+        if (data.message_list) {
+            let ex = e.firstElementChild;
+            while (ex && ex.nodeName === "H3") {
+                ex = ex.nextElementSibling;
+            }
+            if (!ex || ex.nodeName === "P") {
+                const ee = $e("div", "msg msg-warning");
+                e.insertBefore(ee, ex);
+                ex = ee;
+            }
+            ex.replaceChildren(render_feedback_list(data.message_list));
+        }
+        if (data.progress) {
+            let ex = e.firstElementChild;
+            while (ex && ex.nodeName !== "P") {
+                ex = ex.nextElementSibling;
+            }
+            if (!ex) {
+                ex = $e("p");
+                e.appendChild(ex);
+            }
+            ex.replaceChildren($e("strong", null, "Status:"), " " + data.progress.replace(/\.*$/, "..."));
+        }
+        if (data.status === "done") {
+            document.location.reload();
+        } else if (tries < 20) {
+            setTimeout(retry, 250);
+        } else {
+            setTimeout(retry, 500);
+        }
+    }
+    function retry() {
+        ++tries;
+        $.ajax(hoturl("api/job", {job: jobid}), {
+            method: "GET", cache: false, success: success
+        });
+    }
+    retry();
+};
+
 
 // mail
 handle_ui.on("change.js-mail-recipients", function () {
@@ -13565,6 +13609,7 @@ Object.assign(window.hotcrp, {
     // load_paper_sidebar
     // make_review_field
     // make_time_point
+    // monitor_autoassignment
     // onload
     paper_edit_conditions: function () {}, // XXX
     popup_skeleton: popup_skeleton,

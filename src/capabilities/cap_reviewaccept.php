@@ -16,7 +16,7 @@ class ReviewAccept_Capability {
         $tok = null;
         while (($xtok = TokenInfo::fetch($result, $rrow->conf))) {
             if ($xtok->capabilityType === TokenInfo::REVIEWACCEPT
-                && $xtok->otherId === $rrow->reviewId
+                && $xtok->reviewId === $rrow->reviewId
                 && (!$tok || $xtok->is_active()))
                 $tok = $xtok;
         }
@@ -25,7 +25,7 @@ class ReviewAccept_Capability {
         if (!$tok && $create) {
             $tok = new TokenInfo($rrow->conf, TokenInfo::REVIEWACCEPT);
             $tok->paperId = $rrow->paperId;
-            $tok->otherId = $rrow->reviewId;
+            $tok->reviewId = $rrow->reviewId;
             $tok->contactId = $rrow->contactId;
             $tok->set_invalid_after(2592000); /* 30 days */
             $tok->set_expires_after(5184000); /* 60 days */
@@ -49,10 +49,10 @@ class ReviewAccept_Capability {
                 $user->conf->qe("update Capability set timeInvalid=? where salt>=? and salt<? and salt!=? and (timeInvalid=0 or timeInvalid>?)",
                     Conf::$now, "hcra{$rrowid}@", "hcra{$rrowid}~", $uf->name, Conf::$now);
             }
-            $tok->timeUsed = Conf::$now;
-            $tok->set_min_invalid_after(7776000); /* 90 days */
-            $tok->set_min_expires_after(15552000); /* 180 days */
-            $tok->update();
+            $tok->update_use()
+                ->extend_validity(7776000) /* 90 days */
+                ->extend_expiry(15552000) /* 180 days */
+                ->update();
         } else {
             // Token not found, but users often follow links after they expire.
             // Do not report an error if the logged-in user corresponds to the review.

@@ -26,7 +26,7 @@ class DiscussionOrder_Autoassigner extends Autoassigner {
     /** @param array<int,list<int>> $cflt */
     private function run_discussion_order_once($cflt, $plist) {
         $m = new MinCostMaxFlow;
-        $m->add_progress_handler(array($this, "mcmf_progress"));
+        $m->add_progress_function(array($this, "mcmf_progress"));
         $this->mark_progress("Preparing assignment optimizer");
         // paper nodes
         // set p->po edge cost so low that traversing that edge will
