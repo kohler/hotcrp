@@ -284,7 +284,9 @@ class DocumentInfo implements JsonSerializable {
         $doc->filename = self::sanitize_filename($tokd->filename);
         $doc->size = $tokd->size;
         $doc->sha1 = HashAnalysis::hash_as_binary($tokd->hash);
-        $doc->crc32 = $tokd->crc32 ?? null;
+        if (ctype_xdigit($tokd->crc32) && strlen($tokd->crc32) === 8) {
+            $doc->crc32 = hex2bin($tokd->crc32);
+        }
         if ($content_file !== null) {
             $doc->content_file = $content_file;
         }
