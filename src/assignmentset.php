@@ -1828,21 +1828,7 @@ class AssignmentSet {
     /** @param string $joiner
      * @return string */
     function numjoin_assigned_pids($joiner) {
-        $t = [];
-        $l = $r = -1;
-        foreach ($this->assigned_pids() as $pid) {
-            if ($l >= 0 && $pid != $r + 1) {
-                $t[] = $l === $r ? $l : "$l-$r";
-            }
-            if ($l < 0 || $pid !== $r + 1) {
-                $l = $pid;
-            }
-            $r = $pid;
-        }
-        if ($l >= 0) {
-            $t[] = $l === $r ? $l : "$l-$r";
-        }
-        return join($joiner, $t);
+        return join($joiner, unparse_numrange_list($this->assigned_pids()));
     }
 
     /** @return string */

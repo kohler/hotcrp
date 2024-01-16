@@ -214,6 +214,13 @@ class FmtContext {
             return [$this->format, $xvalue];
         } else if ($fspec === ":numlist") {
             return [$vformat, numrangejoin($value)];
+        } else if ($fspec === ":numlist#") {
+            $a = unparse_numrange_list($value);
+            foreach ($a as &$x) {
+                $x = "#{$x}";
+            }
+            unset($x);
+            return [$vformat, commajoin($a)];
         } else {
             return $this->complain("{$fspec} does not expect array");
         }

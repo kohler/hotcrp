@@ -25,11 +25,29 @@ function stoi($s) {
         return $s;
     }
     $v = trim((string) $s);
-    if (is_numeric($v)
-        && ($iv = intval($v)) == floatval($v)) {
-        return $iv;
+    if (!is_numeric($v)) {
+        return null;
     }
-    return null;
+    $iv = intval($v);
+    if ($iv != floatval($v)) {
+        return null;
+    }
+    return $iv;
+}
+
+/** @param null|int|float|string $s
+ * @return null|int|float */
+function stonum($s) {
+    if ($s === null || is_int($s) || is_float($s)) {
+        return $s;
+    }
+    $v = trim((string) $s);
+    if (!is_numeric($v)) {
+        return null;
+    }
+    $iv = intval($v);
+    $fv = floatval($v);
+    return $iv == $fv ? $iv : $fv;
 }
 
 /** @param null|int|float|string $value
@@ -352,8 +370,8 @@ function prefix_commajoin($what, $prefix, $joinword = "and") {
 }
 
 /** @param iterable $range
- * @return string */
-function numrangejoin($range) {
+ * @return list<string> */
+function unparse_numrange_list($range) {
     $a = [];
     $format = $first = $last = null;
     $intval = $plen = 0;
@@ -390,7 +408,13 @@ function numrangejoin($range) {
     } else if ($format !== null) {
         $a[] = $first . "–" . substr($last, $plen);
     }
-    return commajoin($a);
+    return $a;
+}
+
+/** @param iterable $range
+ * @return string */
+function numrangejoin($range) {
+    return commajoin(unparse_numrange_list($range));
 }
 
 /** @param int|float|array $n
