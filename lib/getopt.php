@@ -607,7 +607,7 @@ class CommandLineException extends Exception {
     /** @param string $message
      * @param ?Getopt $getopt
      * @param ?int $exit_status */
-    function __construct($message, $getopt = null, $exit_status = null) {
+    function __construct($message = "", $getopt = null, $exit_status = null) {
         parent::__construct($message);
         $this->getopt = $getopt;
         $this->exitStatus = $exit_status ?? self::$default_exit_status;

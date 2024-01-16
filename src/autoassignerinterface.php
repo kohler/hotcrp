@@ -272,7 +272,7 @@ class AutoassignerInterface extends MessageSet {
         // configure
         if ($this->qreq->badpairs) {
             foreach ($this->qreq_badpairs() as $pair) {
-                $aa->avoid_pair_assignment($pair[0]->contactId, $pair[1]->contactId);
+                $aa->avoid_coassignment($pair[0]->contactId, $pair[1]->contactId);
             }
         }
         if ($this->conf->opt("autoassignReviewGadget") === "expertise") {

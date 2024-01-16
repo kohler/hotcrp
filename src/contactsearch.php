@@ -8,6 +8,7 @@ class ContactSearch {
     const F_USER = 4;
     const F_TAG = 8;
     const F_ALLOW_DELETED = 16;
+    const F_USERID = 32;
 
     /** @var Conf */
     public $conf;
@@ -80,15 +81,27 @@ class ContactSearch {
     /** @return ?list<int> */
     private function check_simple() {
         if (strcasecmp($this->text, "me") == 0
-            && (!($this->type & self::F_PC)
-                || ($this->user->roles & Contact::ROLE_PCLIKE))) {
+            && (($this->type & self::F_PC) === 0
+                || ($this->user->roles & Contact::ROLE_PCLIKE) !== 0)) {
             return [$this->user->contactId];
+        }
+        if (ctype_digit($this->text)) {
+            if (($this->type & self::F_USERID) === 0) {
+                return [];
+            }
+            $uid = intval($this->text);
+            if (($this->type & self::F_PC) !== 0
+                && $uid > 0
+                && !$this->conf->pc_member_by_id($uid)) {
+                $uid = 0;
+            }
+            return $uid > 0 ? [$uid] : [];
         }
         if ($this->user->can_view_pc()) {
             if ($this->text === ""
                 || strcasecmp($this->text, "pc") === 0) {
                 return array_keys($this->conf->pc_members());
-            } else if (($this->type & self::F_PC)
+            } else if (($this->type & self::F_PC) !== 0
                        && (strcasecmp($this->text, "any") === 0
                            || strcasecmp($this->text, "all") === 0
                            || $this->text === "*")) {

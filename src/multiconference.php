@@ -291,13 +291,16 @@ class Multiconference {
         if ($s !== "" && substr($s, -1) !== "\n") {
             $s = "{$s}\n";
         }
+        $exitStatus = 3;
+        if (property_exists($ex, "exitStatus") && is_int($ex->exitStatus)) {
+            $exitStatus = $ex->exitStatus;
+        }
         if (property_exists($ex, "getopt")
             && $ex->getopt instanceof Getopt
-            && $ex->exitStatus !== 0) {
+            && $exitStatus !== 0) {
             $s .= $ex->getopt->short_usage();
         }
-        if (property_exists($ex, "context")
-            && is_array($ex->context)) {
+        if (property_exists($ex, "context") && is_array($ex->context)) {
             foreach ($ex->context as $c) {
                 $i = 0;
                 while ($i !== strlen($c) && $c[$i] === " ") {
@@ -310,11 +313,6 @@ class Multiconference {
             $s .= debug_string_backtrace($ex) . "\n";
         }
         fwrite(STDERR, $s);
-        if (property_exists($ex, "exitStatus")
-            && is_int($ex->exitStatus)) {
-            exit($ex->exitStatus);
-        } else {
-            exit(3);
-        }
+        exit($exitStatus);
     }
 }

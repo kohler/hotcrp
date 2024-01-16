@@ -175,7 +175,7 @@ abstract class Autoassigner extends MessageSet {
 
     /** @param int $cid1
      * @param int $cid2 */
-    function avoid_pair_assignment($cid1, $cid2) {
+    function avoid_coassignment($cid1, $cid2) {
         assert($cid1 > 0 && $cid2 > 0);
         if ($cid1 !== $cid2
             && !in_array($cid2, $this->avoid_lists[$cid1] ?? [])) {
@@ -662,7 +662,7 @@ abstract class Autoassigner extends MessageSet {
     }
 
     /** @return bool */
-    private function action_avoids_pairs() {
+    private function might_coassign() {
         return $this->ass_action !== "lead" && $this->ass_action !== "shepherd";
     }
 
@@ -831,7 +831,7 @@ abstract class Autoassigner extends MessageSet {
         }
         // figure out members of badpairs classes
         $bpmembers = [];
-        if ($this->action_avoids_pairs() && !empty($this->avoid_lists)) {
+        if ($this->might_coassign() && !empty($this->avoid_lists)) {
             $this->compute_avoid_class();
             foreach ($this->acs as $ac) {
                 $bpmembers[$ac->avoid_class][] = $ac->cid;
