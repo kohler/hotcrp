@@ -95,7 +95,8 @@ class Autoassign_Batch {
                 $this->_jtok->change_data("exit_status", $exit_status)
                     ->change_data("status", "done");
             }
-            $this->_jtok->update();
+            Conf::set_current_time(microtime(true));
+            $this->_jtok->update_use()->update();
         } else {
             $s = MessageSet::feedback_text($message_list);
             if (($exit_status ?? 0) !== 0) {

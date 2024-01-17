@@ -106,6 +106,16 @@ class Review_Autoassigner extends Autoassigner {
         Dbl::free($result);
     }
 
+    private function set_ensure() {
+        $result = $this->conf->qe("select paperId, count(reviewId) from PaperReview where reviewType={$this->rtype} group by paperId");
+        while (($row = $result->fetch_row())) {
+            if (($ap = $this->aapaper((int) $row[0]))) {
+                $ap->ndesired = max($ap->ndesired - (int) $row[1], 0);
+            }
+        }
+        Dbl::free($result);
+    }
+
     function run() {
         $this->load_review_preferences($this->rtype);
         $this->set_load();
@@ -121,15 +131,10 @@ class Review_Autoassigner extends Autoassigner {
             $ap->ndesired = $count;
         }
         if ($this->kind === self::KIND_ENSURE) {
-            $result = $this->conf->qe("select paperId, count(reviewId) from PaperReview where reviewType={$this->rtype} group by paperId");
-            while (($row = $result->fetch_row())) {
-                if (($ap = $this->aapaper((int) $row[0]))) {
-                    $ap->ndesired = max($ap->ndesired - (int) $row[1], 0);
-                }
-            }
-            Dbl::free($result);
+            $this->set_ensure();
         }
         $this->reset_desired_assignment_count();
+        gc_collect_cycles();
 
         $this->assign_method();
         $this->finish_assignment(); // recover memory

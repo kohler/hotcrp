@@ -20,6 +20,7 @@ class Job_API {
             $jdata = $tok->data();
             $answer = ["ok" => $ok] + (array) $jdata;
             $answer["ok"] = $ok;
+            $answer["update_at"] = $answer["update_at"] ?? $tok->timeUsed;
             return new JsonResult($ok ? 200 : 409, $answer);
         }
     }

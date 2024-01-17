@@ -4938,7 +4938,8 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
 hotcrp.monitor_autoassignment = function (jobid) {
     let start = now_sec(), tries = 0;
     function success(data) {
-        const e = $$("propass");
+        const e = $$("propass"),
+            dead = data.update_at && data.update_at < now_sec() - 40;
         if (data.message_list) {
             let ex = e.firstElementChild;
             while (ex && ex.nodeName === "H3") {
@@ -4960,9 +4961,15 @@ hotcrp.monitor_autoassignment = function (jobid) {
                 ex = $e("p");
                 e.appendChild(ex);
             }
+            if (ex.previousElementSibling.tagName !== "PROGRESS") {
+                ex.before($e("progress"));
+            }
+            if (data.status === "done" && !dead) {
+                ex.previousElementSibling.value = 1;
+            }
             ex.replaceChildren($e("strong", null, "Status:"), " " + data.progress.replace(/\.*$/, "..."));
         }
-        if (data.status === "done") {
+        if (data.status === "done" || dead) {
             document.location.reload();
         } else if (tries < 20) {
             setTimeout(retry, 250);

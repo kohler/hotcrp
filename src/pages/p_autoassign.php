@@ -611,16 +611,7 @@ class Autoassign_Page {
 
         // if not done, report progress, check back using API
         if ($tok->data("status") !== "done") {
-            echo '<div id="propass" class="propass">',
-                '<h3 class="form-h">Preparing assignment</h3>';
-            echo Ht::feedback_msg($this->ms);
-            if (($s = $tok->data("progress"))) {
-                echo '<p><strong>Status:</strong> ', htmlspecialchars($s), '</p>';
-            }
-            echo '</div>',
-                Ht::unstash_script("hotcrp.monitor_autoassignment(" . json_encode_browser($this->jobid) . ")");
-            $qreq->print_footer();
-            exit;
+            $this->handle_in_progress($tok);
         }
 
         // if nothing to do, report that
@@ -639,6 +630,42 @@ class Autoassign_Page {
             Ht::submit("cancel", "Cancel"),
             '</div></form>';
         $qreq->print_footer();
+        exit;
+    }
+
+    private function handle_in_progress(TokenInfo $tok) {
+        if ($tok->timeUsed < Conf::$now - 40) {
+            $this->jobid = null;
+            $this->ms->error_at(null, "<5><strong>Assignment failure</strong>");
+            $this->ms->inform_at(null, "<0>The autoassigner appears to have failed. This can happen if it runs out of memory or times out. You may want to retry, or to change the assignment parameters; for example, consider assigning a subset of submissions first.");
+            echo '<h3 class="form-h">Preparing assignment</h3>',
+                Ht::feedback_msg($this->ms),
+                '<div class="aab aabig btnp">',
+                Ht::link("Revise assignment", $this->conf->selfurl($this->qreq, $this->qreq_parameters()), ["class" => "btn btn-primary"]),
+                '</div>';
+        } else {
+            echo '<div id="propass" class="propass">',
+                '<h3 class="form-h">Preparing assignment</h3>';
+            echo Ht::feedback_msg($this->ms);
+            if (($s = $tok->data("progress"))) {
+                echo '<p><strong>Status:</strong> ', htmlspecialchars($s), '</p>';
+            }
+            echo '</div>',
+                Ht::unstash_script("hotcrp.monitor_autoassignment(" . json_encode_browser($this->jobid) . ")");
+        }
+        $this->qreq->print_footer();
+        exit;
+    }
+
+    private function handle_empty_assignment(TokenInfo $tok) {
+        $this->ms->inform_at(null, "<0>Your assignment parameters are already satisfied, or I was unable to make any assignments given your constraints. You may want to check the parameters and try again.");
+        $this->jobid = null;
+        echo '<h3 class="form-h">Proposed assignment</h3>',
+            Ht::feedback_msg($this->ms),
+            '<div class="aab aabig btnp">',
+            Ht::link("Revise assignment", $this->conf->selfurl($this->qreq, $this->qreq_parameters()), ["class" => "btn btn-primary"]),
+            '</div>';
+        $this->qreq->print_footer();
         exit;
     }
 
@@ -661,18 +688,6 @@ class Autoassign_Page {
         $aset->execute(true);
         $this->jobid = null;
         $this->conf->redirect_self($this->qreq, $this->qreq_parameters());
-    }
-
-    private function handle_empty_assignment(TokenInfo $tok) {
-        $this->ms->inform_at(null, "Your assignment parameters are already satisfied, or I was unable to make any assignments given your constraints. You may want to check the parameters and try again.");
-        $this->jobid = null;
-        echo '<h3 class="form-h">Proposed assignment</h3>',
-            Ht::feedback_msg($this->ms),
-            '<div class="aab aabig btnp">',
-            Ht::link("Revise assignment", $this->conf->selfurl($this->qreq, $this->qreq_parameters()), ["class" => "btn btn-primary"]),
-            '</div>';
-        $this->qreq->print_footer();
-        exit;
     }
 
     /** @return Assignment_PaperColumn */
