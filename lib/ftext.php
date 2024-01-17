@@ -88,9 +88,9 @@ class Ftext {
                 function ($m) {
                     $tag = strtolower($m[2]);
                     if ($tag === "code" || $tag === "samp" || $tag === "tt") {
-                        return "\`";
+                        return "`";
                     } else if ($tag === "pre") {
-                        return "\`\`\`\n";
+                        return "```\n";
                     } else if ($tag === "b" || $tag === "strong") {
                         return "**";
                     } else if ($tag === "i" || $tag === "em") {

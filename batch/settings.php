@@ -28,7 +28,7 @@ class Settings_Batch {
     function __construct(Contact $user, $arg) {
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->sv = new SettingValues($user);
+        $this->sv = (new SettingValues($user))->set_link_json(true);
         if ((isset($arg["file"]) ? 1 : 0) + (empty($arg["_"]) ? 0 : 1) + (isset($arg["expr"]) ? 1 : 0) > 1) {
             throw new CommandLineException("Give at most one of `--file`, `--expr`, and FILE");
         } else if (isset($arg["file"])) {
@@ -80,7 +80,7 @@ class Settings_Batch {
         if (!$this->dry_run) {
             $this->sv->execute();
         }
-        $fb = $this->sv->full_feedback_text();
+        $fb = $this->sv->decorated_feedback_text();
         if ($fb === "" && !$this->diff) {
             if (empty($this->sv->changed_keys())) {
                 $fb = "No changes\n";
