@@ -378,7 +378,7 @@ class PaperStatus extends MessageSet {
         }
 
         // make new document
-        $doc = (new DocumentInfo(null, $this->conf))
+        $doc = DocumentInfo::make($this->conf)
             ->set_paper($this->prow)
             ->set_document_type($o->id);
         if (isset($docj->mimetype) && is_string($docj->mimetype)) {
@@ -391,11 +391,11 @@ class PaperStatus extends MessageSet {
             $doc->set_filename(DocumentInfo::sanitize_filename($docj->filename));
         }
         if (isset($docj->content) && is_string($docj->content)) {
-            $doc->__set_content($docj->content);
+            $doc->set_simple_content($docj->content);
         } else if (isset($docj->content_base64) && is_string($docj->content_base64)) {
-            $doc->__set_content(base64_decode($docj->content_base64));
+            $doc->set_simple_content(base64_decode($docj->content_base64));
         } else if (isset($docj->content_file) && is_string($docj->content_file)) {
-            $doc->__set_content_file($docj->content_file);
+            $doc->set_simple_content_file($docj->content_file);
         }
         if ($hash !== null) {
             $doc->set_hash($hash);

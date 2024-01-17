@@ -49,7 +49,7 @@ class S3VerifyAll_Batch {
 
         $algo_pos = -1;
         $algo_pfx = $last_key = $continuation_token = null;
-        $doc = new DocumentInfo(null, $this->conf);
+        $doc = DocumentInfo::make($this->conf);
         $xml = null;
         $xmlpos = 0;
         $key_re = '/.*/';

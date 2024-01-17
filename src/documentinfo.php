@@ -169,6 +169,11 @@ class DocumentInfo implements JsonSerializable {
 
 
     /** @return DocumentInfo */
+    static function make(Conf $conf) {
+        return new DocumentInfo(null, $conf);
+    }
+
+    /** @return DocumentInfo */
     static function make_empty(Conf $conf, PaperInfo $prow = null) {
         // matches paperStorageId 1 in schema
         $doc = new DocumentInfo(null, $conf, $prow);
@@ -412,7 +417,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @param string $content
      * @return $this */
-    function __set_content($content) {
+    function set_simple_content($content) {
         assert($this->paperStorageId <= 0);
         $this->content = $content;
         $this->content_file = $this->filestore = $this->_content_prefix = null;
@@ -423,7 +428,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @param string $content_file
      * @return $this */
-    function __set_content_file($content_file) {
+    function set_simple_content_file($content_file) {
         assert($this->paperStorageId <= 0);
         $this->content_file = $content_file;
         $this->content = $this->filestore = $this->_content_prefix = null;
@@ -436,7 +441,7 @@ class DocumentInfo implements JsonSerializable {
      * @param ?string $mimetype
      * @return $this */
     function set_content($content, $mimetype = null) {
-        $this->__set_content($content);
+        $this->set_simple_content($content);
         $this->mimetype = $mimetype ?? $this->mimetype;
         return $this->analyze_content();
     }
@@ -445,7 +450,7 @@ class DocumentInfo implements JsonSerializable {
      * @param ?string $mimetype
      * @return $this */
     function set_content_file($content_file, $mimetype = null) {
-        $this->__set_content_file($content_file);
+        $this->set_simple_content_file($content_file);
         $this->mimetype = $mimetype ?? $this->mimetype;
         return $this->analyze_content();
     }
