@@ -4235,6 +4235,15 @@ function $e(tag, attr) {
     return e;
 }
 
+function $frag() {
+    var f = document.createDocumentFragment(), i;
+    for (i = 0; i < arguments.length; ++i) {
+        if (arguments[i] != null)
+            f.append(arguments[i]);
+    }
+    return f;
+}
+
 
 function make_expander_element(foldnum) {
     function mksvgp(d) {
@@ -10442,28 +10451,34 @@ function render_tagset(plistui, tagstr, editable) {
         return strnatcasecmp(a[1], b[1]);
     });
     if (t.length === 0) {
-        if (!editable)
-            return null;
-        t.push(["none"]);
+        return editable ? document.createTextNode("none") : null;
+    } else if (t.length === 1) {
+        return t[0][0];
+    } else {
+        h = document.documentCreateFragment();
+        h.append(t[0][0]);
+        for (i = 1; i !== t.length; ++i) {
+            h.append(" ", t[i][0]);
+        }
+        return h;
     }
-    h = document.createDocumentFragment();
-    for (i = 0; i !== t.length; ++i) {
-        h.append(" ", t[i][0]);
-    }
-    return h;
 }
 
 function render_row_tags(pidfe) {
     let plistui = make_plist.call(tablelist(pidfe)),
         ptr = prownear(pidfe), editable = ptr.hasAttribute("data-tags-editable"),
-        t = render_tagset(plistui, ptr.getAttribute("data-tags"), editable), ct = true;
+        t = render_tagset(plistui, ptr.getAttribute("data-tags"), editable),
+        ct = true;
     if (t && ptr.hasAttribute("data-tags-conflicted")) {
-        t = $e("span", "fx5", t);
+        t = $frag($e("span", "fx5", t));
         if ((ct = render_tagset(plistui, ptr.getAttribute("data-tags-conflicted"), editable))) {
             t.prepend($e("span", "fn5", ct));
         }
     }
     if (t && ptr.getAttribute("data-tags-editable") != null) {
+        if (t.nodeType !== 11) {
+            t = $frag(t);
+        }
         t.append(" ", $e("span", "hoveronly",
             $e("span", "barsep", "·"), " ",
             $e("button", {type: "button", "class": "link ui js-plinfo-edittags"}, "Edit")));
@@ -10741,7 +10756,7 @@ function plist_hotcrptags(plistui, rv) {
         prx && addClass(prx, "colorconflict");
         ensure_pattern(rv.color_classes_conflicted);
         if (hasClass(pr.parentElement.parentElement, "fold5c")
-            && !hasClass(pr, "fold5o")) {
+            && !hasClass(pr, "fold5oo")) {
             cc = rv.color_classes_conflicted;
         }
     } else {
@@ -10788,18 +10803,24 @@ $(window).on("hotcrptags", function (evt, rv) {
 
 function change_color_classes(isconflicted) {
     return function () {
-        var a = pattrnear(this, isconflicted ? "data-color-classes-conflicted" : "data-color-classes");
+        const c = isconflicted && !hasClass(this, "fold5oo"),
+            a = pattrnear(this, c ? "data-color-classes-conflicted" : "data-color-classes");
         this.className = this.className.replace(/(?:^|\s+)(?:k[01]|tagbg|dark|tag-\S+)(?= |$)/g, "").trim() + (a ? " " + a : "");
     };
 }
 
-function fold_override(pctr, dofold) {
+function fold_override(tbl, dofold) {
     $(function () {
-        $(pctr).find(".fold5c, .fold5o").removeClass("fold5c fold5o");
-        fold(pctr, dofold, 5);
+        fold(tbl, dofold, 5);
         $("#forceShow").val(dofold ? 0 : 1);
+        // remove local hoverrides
+        if (hasClass(tbl, "has-local-override")) {
+            removeClass(tbl, "has-local-override");
+            $(tbl).find(".fold5oo").removeClass("fold5oo");
+            $(tbl).find(".fxx5").removeClass("fxx5").addClass("fx5");
+        }
         // show the color classes appropriate to this conflict state
-        $(pctr).find(".colorconflict").each(change_color_classes(dofold));
+        $(tbl).find(".colorconflict").each(change_color_classes(dofold));
     });
 }
 
@@ -10813,13 +10834,15 @@ handle_ui.on("js-override-conflict", function () {
             prb = null;
         }
     }
-    addClass(pr, "fold5o");
-    prb && addClass(prb, "fold5o");
+    addClass(pr.parentElement.parentElement, "has-local-override");
+    addClass(pr, "fold5oo");
+    prb && addClass(prb, "fold5oo");
     if (hasClass(pr, "colorconflict")) {
         var f = change_color_classes(false);
         f.call(pr);
         prb && f.call(prb);
     }
+    $(pr, prb).find(".fx5").removeClass("fx5").addClass("fxx5");
 });
 
 handle_ui.on("js-plinfo", function (evt) {

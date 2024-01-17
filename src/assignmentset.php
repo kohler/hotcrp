@@ -2064,15 +2064,11 @@ class Assignment_PaperColumn extends PaperColumn {
         return "Assignment";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        return !$pl->user->allow_administer($row)
-            || !isset($this->content[$row->paperId]);
+        return !isset($this->content[$row->paperId])
+            || !$pl->user->can_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        $t = $this->content[$row->paperId];
-        if ($t !== "" && !$pl->user->can_administer($row)) {
-            $t = '<em>Hidden for conflict</em>';
-        }
-        return $t;
+        return $this->content[$row->paperId];
     }
 
     static function print_unparse_display(Assignment_PaperColumn $pc) {

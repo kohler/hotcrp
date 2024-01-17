@@ -4910,7 +4910,7 @@ body {
 .fold2c .fx2, .fold2o .fn2,
 .fold3c .fx3, .fold3o .fn3,
 .fold4c .fx4, .fold4o .fn4,
-.fold5c .fx5, .fold5o .fn5,
+.fold5c .fx5, .fold5o .fn5, .fold5oo .fn5,
 .fold6c .fx6, .fold6o .fn6,
 .fold7c .fx7, .fold7o .fn7,
 .fold8c .fx8, .fold8o .fn8,
@@ -4975,12 +4975,8 @@ body {
 .hidden {
 	display: none !important;
 }
-.fold5o div.fx5,
 .unhidden {
 	display: block !important;
-}
-.fold5o span.fx5 {
-	display: inline !important;
 }
 .pseudohidden {
 	overflow: visible !important;
