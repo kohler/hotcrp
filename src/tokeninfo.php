@@ -386,7 +386,7 @@ class TokenInfo {
     /** @return bool */
     function update() {
         assert($this->capabilityType > 0 && !!$this->salt);
-        if ($this->_changes === 0) {
+        if (($this->_changes ?? 0) === 0) {
             return false;
         }
         $qf = $qv = [];
