@@ -10455,7 +10455,7 @@ function render_tagset(plistui, tagstr, editable) {
     } else if (t.length === 1) {
         return t[0][0];
     } else {
-        h = $df();
+        h = $frag();
         h.append(t[0][0]);
         for (i = 1; i !== t.length; ++i) {
             h.append(" ", t[i][0]);
