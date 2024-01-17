@@ -626,7 +626,7 @@ class Upload_API {
         } else {
             $user->ensure_account_here();
         }
-        session_write_close();
+        $qreq->qsession()->commit();
 
         if ($qreq->start) {
             $j = $this->exec_start($user, $qreq, $prow);
@@ -699,7 +699,9 @@ class Upload_API {
             && JsonCompletion::$allow_short_circuit) {
             $json = new JsonResult($this->_make_result());
             $json->emit($qreq->valid_token());
-            fastcgi_finish_request();
+            if (PHP_SAPI === "fpm-fcgi") {
+                fastcgi_finish_request();
+            }
             $this->transfer(false, "{$offset}+{$length}");
             exit;
         } else {

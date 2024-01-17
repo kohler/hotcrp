@@ -190,7 +190,7 @@ class Log_Page {
 
     /** @param LogEntryGenerator $leg */
     function handle_download($leg) {
-        session_commit();
+        $this->qreq->qsession()->commit();
         assert(Contact::ROLE_PC === 1 && Contact::ROLE_ADMIN === 2 && Contact::ROLE_CHAIR === 4);
         $role_map = ["", "pc", "sysadmin", "pc sysadmin", "chair", "chair", "chair", "chair"];
 

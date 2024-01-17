@@ -105,11 +105,7 @@ class Autoassign_Batch {
             fwrite(STDERR, $s);
         }
         if ($exit_status !== null) {
-            if ($this->attached) {
-                throw new CommandLineException("", $this->getopt, $exit_status);
-            } else {
-                exit($exit_status);
-            }
+            throw new CommandLineException("", $this->getopt, $exit_status);
         }
     }
 
@@ -118,7 +114,7 @@ class Autoassign_Batch {
      * @return never */
     private function reportx($message_list, $exit_status = null) {
         $this->report($message_list, $exit_status);
-        exit(3);
+        assert(false);
     }
 
     /** @param associative-array $arg */

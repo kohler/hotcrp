@@ -15,6 +15,8 @@ class Autoassign_Page {
     public $ms;
     /** @var string */
     public $jobid;
+    /** @var bool */
+    private $detached = false;
 
     function __construct(Contact $user, Qrequest $qreq) {
         assert($user->is_manager());
@@ -460,13 +462,16 @@ class Autoassign_Page {
 
 
     function detach() {
-        // If we get here, then the Autoassigner_Batch is about to run
-        // the autoassigner. We should arrange a redirect.
-        $nav = $this->qreq->navigation();
-        $url = $nav->make_absolute($this->conf->hoturl_raw("autoassign", $this->qreq_parameters()));
-        header("Location: {$url}");
-        $this->qreq->qsession()->commit();
-        fastcgi_finish_request();
+        // The Autoassigner_Batch is about to run the autoassigner;
+        // we should arrange a redirect.
+        if (PHP_SAPI === "fpm-fcgi") {
+            $nav = $this->qreq->navigation();
+            $url = $nav->make_absolute($this->conf->hoturl_raw("autoassign", $this->qreq_parameters()));
+            header("Location: {$url}");
+            $this->qreq->qsession()->commit();
+            fastcgi_finish_request();
+            $this->detached = true;
+        }
     }
 
     function start_job() {
@@ -528,12 +533,18 @@ class Autoassign_Page {
         } catch (CommandLineException $ex) {
         }
 
-        // If we get here, then Autoassign_Batch found an early error
-        // and has completed its work. We should display the error.
-
+        // Autoassign_Batch has completed its work.
+        if ($this->detached) {
+            exit();
+        }
         $tok->load_data();
-        $this->ms->append_list(self::token_message_list($tok));
-        $tok->delete();
+        if ($tok->data("exit_status") === 0) {
+            $this->conf->redirect_hoturl("autoassign", $this->qreq_parameters());
+        } else {
+            $this->ms->append_list(self::token_message_list($tok));
+            $tok->delete();
+            // do not redirect
+        }
     }
 
     /** @return list<array{Contact,Contact}> */

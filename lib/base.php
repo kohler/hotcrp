@@ -697,7 +697,8 @@ function debug_string_backtrace($ex = null, $limit = 32) {
 // zlib helper
 
 if (!function_exists("zlib_get_coding_type")) {
-    /** @phan-suppress-next-line PhanRedefineFunctionInternal */
+    /** @return bool
+     * @phan-suppress-next-line PhanRedefineFunctionInternal */
     function zlib_get_coding_type() {
         return false;
     }
