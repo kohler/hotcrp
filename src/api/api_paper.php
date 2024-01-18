@@ -206,18 +206,26 @@ class Paper_API extends MessageSet {
             $pstatus->error_at_option($o, "{$filename}: File not found");
             return false;
         }
-        // make room for large files in memory
-        if ($stat["size"] > 50000000
-            && $stat["size"] >= ini_get_bytes("memory_limit") * 0.3) {
-            ini_set("memory_limit", floor($stat["size"] * 3.25 / (1 << 20)) . "M");
+        // use resources to store large files
+        if ($stat["size"] > 50000000) {
+            if (PHP_VERSION_ID >= 80200) {
+                $content = $zip->getStreamIndex($stat["index"]);
+            } else {
+                $content = $zip->getStream($filename);
+            }
+        } else {
+            $content = $zip->getFromIndex($stat["index"]);
         }
-        $content = $zip->getFromIndex($stat["index"]);
         if ($content === false) {
             $pstatus->error_at_option($o, "{$filename}: File not found");
             return false;
         }
-        $docj->content = $content;
-        $docj->content_file = null;
+        if (is_string($content)) {
+            $docj->content = $content;
+            $docj->content_file = null;
+        } else {
+            $docj->content_file = $content;
+        }
         return true;
     }
 

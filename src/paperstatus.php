@@ -279,6 +279,17 @@ class PaperStatus extends MessageSet {
             $content = base64_decode($docj->content_base64);
         } else if (isset($docj->content_file) && is_string($docj->content_file)) {
             $content_file = $docj->content_file;
+        } else if (isset($docj->content_file) && is_resource($docj->content_file)) {
+            $fp = "upf-" . time() . "-%08d" . Mimetype::extension($mimetype);
+            if (($x = Filer::tempfile($fp, $this->conf))) {
+                $stat = fstat($docj->content_file);
+                $n = stream_copy_to_stream($docj->content_file, $x[0]);
+                if (isset($stat["size"]) && $stat["size"] === $n) {
+                    $content_file = $x[1];
+                }
+                fclose($x[0]);
+            }
+            fclose($docj->content_file);
         }
 
         // extract requested hash
