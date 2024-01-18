@@ -11170,12 +11170,20 @@ function transfer_form_values($dst, $src, names) {
 // login UI
 handle_ui.on("js-signin", function (evt) {
     const oevt = (evt && evt.originalEvent) || evt, submitter = oevt.submitter;
-    if (!submitter
-        || (submitter.name !== "cancel" && !submitter.formMethod)) {
+    if (!submitter || !submitter.formNoValidate) {
         const form = this, signin = document.getElementById("k-signin");
-        signin && (signin.disabled = true);
+        $(form).find("button").prop("disabled", true);
         evt.preventDefault();
-        $.get(hoturl("api/session"), function () { form.submit() });
+        $.get(hoturl("api/session"), function () {
+            if (submitter) {
+                submitter.disabled = false;
+                submitter.formNoValidate = true;
+                submitter.click();
+                submitter.disabled = true;
+            } else {
+                form.submit();
+            }
+        });
     }
 });
 
