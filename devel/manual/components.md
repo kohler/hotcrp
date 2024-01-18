@@ -31,7 +31,7 @@ setting.
 | Search keywords                        | `etc/searchkeywords.json`     | `$Opt["searchKeywords"]`  | ✓ | ✓ |   |
 | Setting topics and rendering           | `etc/settinggroups.json`      | `$Opt["settingGroups"]`   |   | ✓ | ✓ |
 | Settings                               | `etc/settinginfo.json`        | `$Opt["settingInfo"]`     |   | ✓ |   |
-| OAuth/OpenID authentication types      | None                          | `$Opt["oAuthTypes"]`      |   |   |   |
+| OAuth/OpenID authentication providers  | None                          | `$Opt["oAuthProviders"]`  |   |   |   |
 
 ## Component construction
 

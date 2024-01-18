@@ -202,7 +202,7 @@ class Conf {
     /** @var ?array<int,object> */
     private $_token_types;
     /** @var ?array<string,object> */
-    private $_oauth_types;
+    private $_oauth_providers;
     private $_hook_map;
     private $_hook_factories;
     /** @var ?array<string,FileFilter> */
@@ -1882,11 +1882,12 @@ class Conf {
     }
 
     /** @return array<string,object> */
-    function oauth_types() {
-        if ($this->_oauth_types === null) {
-            $this->_oauth_types = $this->_xtbuild_resolve([], "oAuthTypes");
+    function oauth_providers() {
+        if ($this->_oauth_providers === null) {
+            $k = isset($this->opt["oAuthProviders"]) ? "oAuthProviders" : "oAuthTypes";
+            $this->_oauth_providers = $this->_xtbuild_resolve([], $k);
         }
-        return $this->_oauth_types;
+        return $this->_oauth_providers;
     }
 
 

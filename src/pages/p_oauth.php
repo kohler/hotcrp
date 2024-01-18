@@ -2,7 +2,7 @@
 // pages/p_oauth.php -- HotCRP OAuth 2.0 authentication page
 // Copyright (c) 2022-2023 Eddie Kohler; see LICENSE.
 
-class OAuthInstance {
+class OAuthProvider {
     /** @var string */
     public $name;
     /** @var ?string */
@@ -35,9 +35,9 @@ class OAuthInstance {
 
     /** @param Conf $conf
      * @param ?string $name
-     * @return ?OAuthInstance */
+     * @return ?OAuthProvider */
     static function find($conf, $name) {
-        $authinfo = $conf->oauth_types();
+        $authinfo = $conf->oauth_providers();
         if (empty($authinfo)) {
             return null;
         }
@@ -47,7 +47,7 @@ class OAuthInstance {
         if (!($authdata = $authinfo[$name] ?? null)) {
             return null;
         }
-        $instance = new OAuthInstance($name);
+        $instance = new OAuthProvider($name);
         $instance->title = $authdata->title ?? null;
         $instance->issuer = $authdata->issuer ?? null;
         $instance->scope = $authdata->scope ?? null;
@@ -86,7 +86,7 @@ class OAuth_Page {
 
     function start() {
         $this->qreq->open_session();
-        if (($authi = OAuthInstance::find($this->conf, $this->qreq->authtype))) {
+        if (($authi = OAuthProvider::find($this->conf, $this->qreq->authtype))) {
             $tok = new TokenInfo($this->conf, TokenInfo::OAUTHSIGNIN);
             $tok->set_contactdb(!!$this->conf->contactdb())
                 ->set_expires_after(60)
@@ -117,6 +117,7 @@ class OAuth_Page {
         }
     }
 
+    /** @return MessageItem|list<MessageItem> */
     function response() {
         $state = $this->qreq->state;
         if (!isset($state)) {
@@ -144,16 +145,17 @@ class OAuth_Page {
             return MessageItem::error("<0>Authentication request ‘{$state}’ was for a different session");
         } else if (!isset($this->qreq->code)) {
             return MessageItem::error("<0>Authentication failed");
-        } else if (($authi = OAuthInstance::find($this->conf, $tokdata->authtype ?? null))) {
+        } else if (($authi = OAuthProvider::find($this->conf, $tokdata->authtype ?? null))) {
             return $this->instance_response($authi, $tok, $tokdata);
         } else {
-            $this->conf->error_msg("<0>OAuth authentication internal error");
+            return MessageItem::error("<0>OAuth authentication internal error");
         }
     }
 
-    /** @param OAuthInstance $authi
+    /** @param OAuthProvider $authi
      * @param TokenInfo $tok
-     * @param object $tokdata */
+     * @param object $tokdata
+     * @return MessageItem|list<MessageItem> */
     private function instance_response($authi, $tok, $tokdata) {
         // make authentication request
         $authtitle = $authi->title ?? $authi->name;
@@ -245,15 +247,18 @@ class OAuth_Page {
     static function go(Contact $user, Qrequest $qreq) {
         $oap = new OAuth_Page($user, $qreq);
         if (isset($qreq->state)) {
-            $mi = $oap->response();
-            if ($mi) {
-                $user->conf->feedback_msg($mi);
+            $ml = $oap->response();
+            if ($ml) {
+                $user->conf->feedback_msg($ml);
                 throw new Redirection($user->conf->hoturl("signin"));
             }
         } else if ($qreq->valid_post()) {
             $oap->start();
         } else {
             $user->conf->error_msg("<0>Missing CSRF token");
+        }
+        if (http_response_code() === 200) {
+            http_response_code(400);
         }
         $qreq->print_header("Authentication", "oauth", ["action_bar" => "", "body_class" => "body-error"]);
         $qreq->print_footer();

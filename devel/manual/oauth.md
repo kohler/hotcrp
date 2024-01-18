@@ -1,12 +1,12 @@
 # HotCRP OAuth
 
-Configure HotCRP’s `$Opt["oAuthTypes"]` setting in `conf/options.php` to use
+Configure HotCRP’s `$Opt["oAuthProviders"]` setting in `conf/options.php` to use
 [OAuth 2.0][OAuth] and [OpenID Connect][] to authenticate users.
 
-## `oAuthTypes` format
+## `oAuthProviders` format
 
-The `oAuthTypes` option is a list of [components][] defining supported OAuth
-authentication providers. Each `oAuthTypes` component should define:
+The `oAuthProviders` option is a list of [components][] defining supported OAuth
+authentication providers. Each `oAuthProviders` component should define:
 
 * `name`: The name of the provider. Each provider must have a distinct name.
   Internal to HotCRP. Example: `"Google"`
@@ -49,7 +49,7 @@ authentication providers. Each `oAuthTypes` component should define:
 ## Example configuration for Google authentication
 
 ```
-$Opt["oAuthTypes"][] = '{
+$Opt["oAuthProviders"][] = '{
     "name": "Google",
     "issuer": "https://accounts.google.com",
     "auth_uri": "https://accounts.google.com/o/oauth2/v2/auth",

@@ -259,7 +259,7 @@ class JWTParser extends MessageSet {
     }
 
     /** @param object $payload
-     * @param OAuthInstance $authi
+     * @param OAuthProvider $authi
      * @param 0|1|2 $level
      * @return bool */
     function validate_id_token($payload, $authi, $level = 1) {

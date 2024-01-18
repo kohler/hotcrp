@@ -67,6 +67,10 @@ class AdminHome_Page {
         if (!$site_contact->email || $site_contact->email == "you@example.com") {
             $ml[] = new MessageItem(null, "<5><a href=\"" . $conf->hoturl("settings", "group=basics") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong", MessageSet::URGENT_NOTE);
         }
+        // Configuration updates
+        if ($conf->opt("oAuthTypes")) {
+            $ml[] = new MessageItem(null, "<5><code>\$Opt[\"oAuthTypes\"]</code> is deprecated; rename the setting to <code>\$Opt[\"oAuthProviders\"]</code>", MessageSet::URGENT_NOTE);
+        }
         // Can anyone view submissions?
         if ($conf->has_tracks()) {
             $any_visible = false;
