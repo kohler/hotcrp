@@ -238,10 +238,10 @@ class SearchSplitter {
                 if ($parens === 0) {
                     continue;
                 }
-                do {
+                while (!$cura->is_paren()) {
                     $cura = $cura->complete($pos1);
-                } while ($cura->op->type !== "(");
-                $cura->pos2 = $pos2;
+                }
+                $cura->complete_paren($pos2);
                 --$parens;
                 continue;
             }
@@ -271,8 +271,10 @@ class SearchSplitter {
             }
             ++$nops;
         }
-        while ($cura && ($cura->parent || !$cura->is_complete())) {
-            $cura = $cura->complete($this->last_pos);
+        if ($cura) {
+            while (($nexta = $cura->complete($this->last_pos)) !== $cura) {
+                $cura = $nexta;
+            }
         }
         return $cura;
     }

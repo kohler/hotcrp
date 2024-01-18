@@ -79,8 +79,22 @@ class SearchAtom {
     }
 
     /** @return bool */
+    function is_paren() {
+        return $this->op && $this->op->type === "(";
+    }
+
+    /** @return bool */
     function is_incomplete_paren() {
         return $this->op && $this->op->type === "(" && empty($this->child);
+    }
+
+    /** @param int $pos */
+    function complete_paren($pos) {
+        assert($this->op && $this->op->type === "(");
+        $this->pos2 = $pos;
+        if (!$this->is_complete()) {
+            $this->child[] = self::make_simple("", $pos);
+        }
     }
 
     /** @param int $pos
