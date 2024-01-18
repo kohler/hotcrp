@@ -280,16 +280,9 @@ class PaperStatus extends MessageSet {
         } else if (isset($docj->content_file) && is_string($docj->content_file)) {
             $content_file = $docj->content_file;
         } else if (isset($docj->content_file) && is_resource($docj->content_file)) {
-            $fp = "upf-" . time() . "-%08d" . Mimetype::extension($mimetype);
-            if (($x = Filer::tempfile($fp, $this->conf))) {
-                $stat = fstat($docj->content_file);
-                $n = stream_copy_to_stream($docj->content_file, $x[0]);
-                if (isset($stat["size"]) && $stat["size"] === $n) {
-                    $content_file = $x[1];
-                }
-                fclose($x[0]);
+            if (!($content_file = $this->_upload_content_stream($docj->content_file, $mimetype, $o))) {
+                $this->warning_at_option($o, "<0>Could not copy `content_file` to a temporary file");
             }
-            fclose($docj->content_file);
         }
 
         // extract requested hash
@@ -431,6 +424,19 @@ class PaperStatus extends MessageSet {
         }
 
         return $doc;
+    }
+
+    /** @return ?string */
+    private function _upload_content_stream($f, $mimetype, PaperOption $o) {
+        $content_file = null;
+        $fp = "upf-" . time() . "-%08d" . Mimetype::extension($mimetype);
+        if (($x = Filer::tempfile($fp, $this->conf))) {
+            $ok = stream_copy_to_stream($f, $x[0]) !== false;
+            fclose($x[0]);
+            $content_file = $ok ? $x[1] : null;
+        }
+        fclose($f);
+        return $content_file;
     }
 
 
