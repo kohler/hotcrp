@@ -628,11 +628,11 @@ function xassert_match($a, $b) {
 }
 
 /** @param list<int> $actual
- * @param list<int|string>|string $expected
+ * @param list<int|string>|string|int $expected
  * @return bool */
 function xassert_int_list_eqq($actual, $expected) {
     $astr = join(" ", $actual);
-    $estr = is_array($expected) ? join(" ", $expected) : $expected;
+    $estr = is_array($expected) ? join(" ", $expected) : (string) $expected;
     $estr = preg_replace_callback('/(\d+)-(\d+)/', function ($m) {
         return join(" ", range(+$m[1], +$m[2]));
     }, $estr);
@@ -679,7 +679,7 @@ function search_text_col($user, $query, $col = "id") {
 
 /** @param Contact $user
  * @param string|array $query
- * @param list<int|string>|string $expected
+ * @param list<int|string>|string|int $expected
  * @return bool */
 function assert_search_papers($user, $query, $expected) {
     return xassert_int_list_eqq(array_keys(search_json($user, $query)), $expected);
@@ -687,7 +687,7 @@ function assert_search_papers($user, $query, $expected) {
 
 /** @param Contact $user
  * @param string|array $query
- * @param list<int|string>|string $expected
+ * @param list<int|string>|string|int $expected
  * @return bool */
 function assert_search_all_papers($user, $query, $expected) {
     $q = is_string($query) ? ["q" => $query] : $query;
@@ -697,7 +697,7 @@ function assert_search_all_papers($user, $query, $expected) {
 
 /** @param Contact $user
  * @param string|array $query
- * @param list<int|string>|string $expected
+ * @param list<int|string>|string|int $expected
  * @return bool */
 function assert_search_papers_ignore_warnings($user, $query, $expected) {
     return xassert_int_list_eqq(array_keys(search_json($user, $query, "id", true)), $expected);
@@ -1293,7 +1293,7 @@ class TestRunner {
                 "verbose,V be verbose",
                 "help,h !",
                 "reset,reset reset test database",
-                "no-reset,no-reset-db do not reset test database",
+                "no-reset,no-reset-db,R do not reset test database",
                 "no-cdb no contact database",
                 "stop,s stop on first error",
                 "color !",

@@ -75,16 +75,20 @@ class SearchWord {
         } else {
             $len1 = 0;
         }
-        $ch = $len > $len1 ? ord($str[$len - 1]) : 0;
-        if ($ch === 34) {
-            $len2 = 1;
-        } else if (($ch | 1) === 0x9D
-                   && $len >= $len1 + 3
-                   && ord($str[$len - 2]) === 0x80
-                   && ord($str[$len - 3]) === 0xE2) {
-            $len2 = 3;
-        } else {
+        if ($len1 === 0 || $len === $len1) {
             $len2 = 0;
+        } else {
+            $ch = ord($str[$len - 1]);
+            if ($ch === 34) {
+                $len2 = 1;
+            } else if (($ch | 1) === 0x9D
+                       && $len >= $len1 + 3
+                       && ord($str[$len - 2]) === 0x80
+                       && ord($str[$len - 3]) === 0xE2) {
+                $len2 = 3;
+            } else {
+                $len2 = 0;
+            }
         }
         return substr($str, $len1, $len - $len1 - $len2);
     }

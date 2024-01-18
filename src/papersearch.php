@@ -11,8 +11,6 @@ class SearchScope {
     public $defkw;
     /** @var bool */
     public $defkw_error = false;
-    /** @var int */
-    public $ignore_unknown = 0;
 
     /** @param int $pos1
      * @param int $pos2
@@ -652,27 +650,31 @@ class PaperSearch extends MessageSet {
     }
 
     /** @param string $kw
-     * @param SearchWord $sword
+     * @param ?SearchWord $sword
      * @param ?SearchScope $scope
      * @param bool $is_defkw
-     * @return ?SearchTerm */
-    private function _search_keyword($kw, $sword, $scope, $is_defkw) {
-        assert($kw[0] !== "\"");
+     * @return ?object */
+    private function _find_search_keyword($kw, $sword, $scope, $is_defkw) {
         $kwdef = $this->conf->search_keyword($kw, $this->user);
-        if (!$kwdef || !($kwdef->parse_function ?? null)) {
-            if ($scope
-                && (!$is_defkw || !$scope->defkw_error)
-                && $scope->ignore_unknown === 0) {
-                $xsword = SearchWord::make_kwarg($kw, $sword->kwpos1, $sword->kwpos1, $sword->pos1);
-                $this->lwarning($xsword, "<0>Unknown search keyword ‘{$kw}:’");
-                if ($is_defkw) {
-                    $scope->defkw_error = true;
-                }
-            }
-            return null;
+        if ($kwdef && ($kwdef->parse_function ?? null)) {
+            return $kwdef;
         }
+        if ($scope && (!$is_defkw || !$scope->defkw_error)) {
+            $xsword = SearchWord::make_kwarg($kw, $sword->kwpos1, $sword->kwpos1, $sword->pos1);
+            $this->lwarning($xsword, "<0>Unknown search keyword ‘{$kw}:’");
+            if ($is_defkw) {
+                $scope->defkw_error = true;
+            }
+        }
+        return null;
+    }
 
-        $sword->kwexplicit = !!$scope;
+    /** @param object $kwdef
+     * @param SearchWord $sword
+     * @param bool $kwexplicit
+     * @return SearchTerm */
+    private function _kwdef_parse($kwdef, $sword, $kwexplicit) {
+        $sword->kwexplicit = $kwexplicit;
         $sword->kwdef = $kwdef;
         $qx = call_user_func($kwdef->parse_function, $sword->word, $sword, $this);
         if ($qx && !is_array($qx)) {
@@ -693,12 +695,12 @@ class PaperSearch extends MessageSet {
     }
 
     /** @param string $str
-     * @return string */
+     * @return ?list<string> */
     static private function _search_word_inferred_keyword($str) {
-        if (preg_match('/\A([_a-zA-Z0-9][-_.a-zA-Z0-9]*)(?:[=!<>]=?|≠|≤|≥)[^:]+\z/s', $str, $m)) {
-            return $m[1];
+        if (preg_match('/\A([_a-zA-Z0-9][-_.a-zA-Z0-9]*)([=!<>]=?|≠|≤|≥)([^:\"]+\z|[^:\"]*\".*)/s', $str, $m)) {
+            return $m;
         } else {
-            return "";
+            return null;
         }
     }
 
@@ -718,8 +720,11 @@ class PaperSearch extends MessageSet {
     private function _search_word($kw, $sword, $scope) {
         // Explicitly provided keyword
         if ($kw !== "") {
-            $qe = $this->_search_keyword($kw, $sword, $scope, false);
-            return $qe ?? new False_SearchTerm;
+            if (($kwdef = $this->_find_search_keyword($kw, $sword, $scope, false))) {
+                return $this->_kwdef_parse($kwdef, $sword, true);
+            } else {
+                return new False_SearchTerm;
+            }
         }
 
         // Paper ID search term (`1-2`, `#1-#2`, etc.)
@@ -732,28 +737,34 @@ class PaperSearch extends MessageSet {
         // Tag search term
         if (!$sword->quoted
             && !$scope->defkw
-            && str_starts_with($sword->word, "#")) {
-            return $this->_search_keyword("hashtag", $sword, null, false);
+            && str_starts_with($sword->word, "#")
+            && ($kwdef = $this->_find_search_keyword("hashtag", $sword, null, false))) {
+            return $this->_kwdef_parse($kwdef, $sword, false);
         }
 
         // Inferred keyword: user wrote `ovemer>2`, meant `ovemer:>2`
         if (!$sword->quoted
-            && ($kw = self::_search_word_inferred_keyword($sword->word))) {
-            ++$scope->ignore_unknown;
-            $kwlen = strlen($kw);
-            $swordi = SearchWord::make_kwarg(substr($sword->word, $kwlen), $sword->pos1, $sword->pos1 + $kwlen, $sword->pos2);
-            $qe = $this->_search_keyword($kw, $swordi, $scope, false);
-            --$scope->ignore_unknown;
-            if ($qe) {
-                return $qe;
+            && ($m = self::_search_word_inferred_keyword($sword->qword))
+            && ($kwdef = $this->_find_search_keyword($m[1], $sword, null, false))) {
+            $pos1 = $sword->pos1 + strlen($m[1]);
+            if (($m[2] === "=" || $m[2] === "==") && !($kwdef->needs_relation ?? false)) {
+                $sw = $m[3];
+                $pos1 += strlen($m[2]);
+            } else {
+                $sw = $m[2] . $m[3];
             }
+            $swordi = SearchWord::make_kwarg($sw, $sword->pos1, $pos1, $sword->pos2);
+            return $this->_kwdef_parse($kwdef, $swordi, true);
         }
 
         // Default keyword (`ti:(xxx OR yyy)`, etc.)
         if ($scope->defkw) {
             $sword->kwpos1 = $scope->defkw->kwpos1;
-            $qe = $this->_search_keyword($scope->defkw->kword, $sword, $scope, true);
-            return $qe ?? new False_SearchTerm;
+            if (($kwdef = $this->_find_search_keyword($scope->defkw->kword, $sword, $scope, true))) {
+                return $this->_kwdef_parse($kwdef, $sword, true);
+            } else {
+                return new False_SearchTerm;
+            }
         }
 
         // Special words: unquoted `*`, `ANY`, `ALL`, `NONE`; empty string
@@ -773,8 +784,8 @@ class PaperSearch extends MessageSet {
         // Last case: check preconfigured keywords
         $qt = [];
         foreach ($this->_qt_fields() as $kw) {
-            if (($qe = $this->_search_keyword($kw, $sword, null, false)))
-                $qt[] = $qe;
+            if (($kwdef = $this->_find_search_keyword($kw, $sword, null, false)))
+                $qt[] = $this->_kwdef_parse($kwdef, $sword, false);
         }
         return SearchTerm::combine("or", ...$qt);
     }

@@ -227,7 +227,7 @@
     {
         "name": "r",
         "parse_function": "Review_SearchTerm::parse",
-        "reblank": true, "has": ">0"
+        "reblank": true, "has": ">0", "needs_relation": true
     },
     {
         "name": "token",

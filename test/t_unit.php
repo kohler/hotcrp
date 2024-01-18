@@ -1365,7 +1365,7 @@ class Unit_Tester {
     function test_search_word_unquote() {
         xassert_eqq(SearchWord::unquote("abc"), "abc");
         xassert_eqq(SearchWord::unquote("\"abc"), "abc");
-        xassert_eqq(SearchWord::unquote("abc\""), "abc");
+        xassert_eqq(SearchWord::unquote("abc\""), "abc\"");
         xassert_eqq(SearchWord::unquote("\"abc\""), "abc");
         xassert_eqq(SearchWord::unquote("“abc\""), "abc");
         xassert_eqq(SearchWord::unquote("”abc\""), "abc");

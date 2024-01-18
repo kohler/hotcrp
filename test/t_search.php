@@ -178,4 +178,10 @@ class Search_Tester {
         $a = $splitter->parse_expression();
         xassert_eqq(json_encode($a->unparse_json()), '{"op":"(","child":[{"op":"xor","child":[{"op":"(","child":[""]},"#whatever"]}]}');
     }
+
+    function test_equal_quote() {
+        $u = $this->conf->root_user();
+        assert_search_papers($u, "ti:\"scalable timers\"", 1);
+        assert_search_papers($u, "ti=\"scalable timers\"", 1);
+    }
 }

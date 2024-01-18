@@ -31,7 +31,8 @@ class Review_SearchTerm extends SearchTerm {
             "parse_function" => "Review_SearchTerm::parse",
             "rematch" => [$t, self::$recompleteness_map[$c] ?? $c],
             "reblank" => $c === "" && $t === "",
-            "has" => ">0"
+            "has" => ">0",
+            "needs_relation" => true
         ];
     }
 
@@ -173,7 +174,8 @@ class Review_SearchTerm extends SearchTerm {
                 "name" => $keyword,
                 "parse_function" => "Review_SearchTerm::parse_review_field",
                 "review_field" => $f[0],
-                "has" => "any"
+                "has" => "any",
+                "needs_relation" => true
             ];
         } else {
             return null;
