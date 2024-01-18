@@ -1658,7 +1658,7 @@ class AssignmentSet {
     private function apply_paper(PaperInfo $prow, $contacts, AssignmentParser $aparser, $req) {
         $allow = $aparser->allow_paper($prow, $this->astate);
         if ($allow !== true) {
-            $allow = $allow ? : new AssignmentError("<5>" . $prow->make_whynot(["administer" => true]));
+            $allow = $allow ? : new AssignmentError($prow->make_whynot(["administer" => true]));
             $this->astate->paper_error($allow->getMessage());
             return 0;
         }
