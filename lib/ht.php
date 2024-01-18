@@ -695,19 +695,24 @@ class Ht {
             && preg_match('/\A<(?:p|div|form|ul|ol|dl|blockquote|hr)\b/i', $s);
     }
 
+    /** @param int $status
+     * @return string */
+    static function msg_class($status) {
+        if ($status >= 2 || $status === -1 /* MessageSet::URGENT_NOTE */) {
+            return "msg msg-error";
+        } else if ($status > 0 || $status === -2 /* MessageSet::WARNING_NOTE */) {
+            return "msg msg-warning";
+        } else if ($status === -3 /* MessageSet::SUCCESS */) {
+            return "msg msg-confirm";
+        } else {
+            return "msg msg-info";
+        }
+    }
+
     /** @param string $msg
      * @param int $status */
     static function msg($msg, $status) {
         assert(is_int($status));
-        if ($status >= 2 || $status === -1 /* MessageSet::URGENT_NOTE */) {
-            $status = "error";
-        } else if ($status > 0 || $status === -2 /* MessageSet::WARNING_NOTE */) {
-            $status = "warning";
-        } else if ($status === -3 /* MessageSet::SUCCESS */) {
-            $status = "confirm";
-        } else {
-            $status = "info";
-        }
         $mx = "";
         foreach (is_array($msg) ? $msg : [$msg] as $x) {
             if ($x !== "") {
@@ -719,7 +724,7 @@ class Ht {
             }
         }
         if ($mx !== "") {
-            return "<div class=\"msg msg-{$status}\">{$mx}</div>";
+            return "<div class=\"" . self::msg_class($status) . "\">{$mx}</div>";
         } else {
             return "";
         }

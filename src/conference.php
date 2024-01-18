@@ -76,6 +76,8 @@ class Conf {
     public $_header_printed = false;
     /** @var ?list<array{string,int}> */
     private $_save_msgs;
+    /** @var bool */
+    private $_mx_auto = false;
     /** @var int */
     private $_save_logs_depth = 0;
     /** @var ?array<string,list<int>> */
@@ -4190,11 +4192,10 @@ class Conf {
     /** @param string $text
      * @param int $type */
     static function msg_on(Conf $conf = null, $text, $type) {
-        assert(is_int($type));
-        if (PHP_SAPI === "cli") {
-            if (is_array($text)) {
-                $text = join("\n", $text);
-            }
+        assert(is_int($type) && is_string($text ?? ""));
+        if (($text ?? "") === "") {
+            // do nothing
+        } else if (PHP_SAPI === "cli") {
             if ($type >= 2) {
                 fwrite(STDERR, "{$text}\n");
             } else if ($type === 1 || !defined("HOTCRP_TESTHARNESS")) {
@@ -4203,7 +4204,8 @@ class Conf {
         } else if ($conf && !$conf->_header_printed) {
             $conf->_save_msgs[] = [$text, $type];
         } else {
-            echo Ht::msg($text, $type);
+            $k = Ht::msg_class($type) . ($conf && $conf->_mx_auto ? " mx-auto" : "");
+            echo "<div class=\"{$k}\">{$text}</div>";
         }
     }
 
@@ -4705,6 +4707,7 @@ class Conf {
             echo ' id="t-', $id, '"';
         }
         $class = $extra["body_class"] ?? "";
+        $this->_mx_auto = strpos($class, "error") !== false;
         if (($list = $qreq->active_list())) {
             $class = $class === "" ? "has-hotlist" : "{$class} has-hotlist";
         }
