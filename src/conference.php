@@ -5223,7 +5223,7 @@ class Conf {
     /** @param list<string> $defaults
      * @param ?string $optname
      * @return array<string,object> */
-    private function _xtbuild_resolve($defaults, $optname) {
+    function _xtbuild_resolve($defaults, $optname) {
         list($x, $unused) = $this->_xtbuild($defaults, $optname);
         $a = [];
         $xtp = new XtParams($this, null);

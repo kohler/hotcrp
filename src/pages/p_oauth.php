@@ -92,7 +92,7 @@ class OAuth_Page {
                 ->set_expires_after(60)
                 ->set_token_pattern("hcoa[20]");
             $nonce = base48_encode(random_bytes(8));
-            $tok->set_data([
+            $tok->assign_data([
                 "authtype" => $authi->name,
                 "session" => $this->qreq->qsid(),
                 "site_uri" => $this->conf->opt("paperSite"),

@@ -119,15 +119,33 @@ class TokenInfo {
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
     function set_invalid_at($t) {
-        $this->timeInvalid = $t;
+        if ($t !== $this->timeInvalid) {
+            $this->timeInvalid = $t;
+            $this->_changes |= self::CHF_TIMES;
+        }
         return $this;
     }
 
     /** @param int $seconds
-     * @return $this
-     * @suppress PhanAccessReadOnlyProperty */
+     * @return $this */
     function set_invalid_after($seconds) {
-        $this->timeInvalid = Conf::$now + $seconds;
+        return $this->set_invalid_at(Conf::$now + $seconds);
+    }
+
+    /** @return $this */
+    function set_invalid() {
+        if ($this->timeInvalid <= 0 || $this->timeInvalid >= Conf::$now) {
+            $this->set_invalid_at(Conf::$now - 1);
+        }
+        return $this;
+    }
+
+    /** @param int $seconds
+     * @return $this */
+    function extend_validity($seconds) {
+        if ($this->timeInvalid > 0 && $this->timeInvalid < Conf::$now + $seconds) {
+            $this->set_invalid_at(Conf::$now + $seconds);
+        }
         return $this;
     }
 
@@ -135,15 +153,25 @@ class TokenInfo {
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
     function set_expires_at($t) {
-        $this->timeExpires = $t;
+        if ($t !== $this->timeExpires) {
+            $this->timeExpires = $t;
+            $this->_changes |= self::CHF_TIMES;
+        }
         return $this;
     }
 
     /** @param int $seconds
-     * @return $this
-     * @suppress PhanAccessReadOnlyProperty */
+     * @return $this */
     function set_expires_after($seconds) {
-        $this->timeExpires = Conf::$now + $seconds;
+        return $this->set_expires_at(Conf::$now + $seconds);
+    }
+
+    /** @param int $seconds
+     * @return $this */
+    function extend_expiry($seconds) {
+        if ($this->timeExpires > 0 && $this->timeExpires < Conf::$now + $seconds) {
+            $this->set_expires_at(Conf::$now + $seconds);
+        }
         return $this;
     }
 
@@ -158,13 +186,14 @@ class TokenInfo {
     /** @param null|string|associative-array|object $data
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function set_data($data) {
+    function assign_data($data) {
         if ($data !== null && !is_string($data)) {
             $data = json_encode_db($data);
         }
         /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
         $this->data = $data;
         $this->_jdata = null;
+        $this->_changes &= ~self::CHF_DATA;
         return $this;
     }
 
@@ -203,6 +232,15 @@ class TokenInfo {
         return $cap;
     }
 
+    /** @param string $token
+     * @param ?int $capabilityType
+     * @param bool $is_cdb
+     * @return ?TokenInfo */
+    static function find_active($token, $capabilityType, Conf $conf, $is_cdb = false) {
+        $tok = self::find($token, $conf, $is_cdb);
+        return $tok && $tok->is_active($capabilityType) ? $tok : null;
+    }
+
     /** @param list<int> $types
      * @return Dbl_Result */
     static function expired_tokens_result(Conf $conf, $types) {
@@ -212,9 +250,11 @@ class TokenInfo {
     }
 
 
-    /** @return bool */
-    function is_active() {
-        return ($this->timeExpires === 0 || $this->timeExpires > Conf::$now)
+    /** @param ?int $capabilityType
+     * @return bool */
+    function is_active($capabilityType = null) {
+        return ($capabilityType === null || $this->capabilityType === $capabilityType)
+            && ($this->timeExpires === 0 || $this->timeExpires > Conf::$now)
             && ($this->timeInvalid === 0 || $this->timeInvalid > Conf::$now);
     }
 
@@ -319,39 +359,6 @@ class TokenInfo {
         if ($within_sec === null || $this->timeUsed + $within_sec <= Conf::$now) {
             /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->timeUsed = Conf::$now;
-            $this->_changes |= self::CHF_TIMES;
-        }
-        return $this;
-    }
-
-    /** @param int $seconds
-     * @return $this */
-    function extend_validity($seconds) {
-        if ($this->timeInvalid > 0 && $this->timeInvalid < Conf::$now + $seconds) {
-            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-            $this->timeInvalid = Conf::$now + $seconds;
-            $this->_changes |= self::CHF_TIMES;
-        }
-        return $this;
-    }
-
-    /** @param int $t
-     * @return $this */
-    function change_expiry($t) {
-        if ($this->timeExpires !== $t) {
-            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-            $this->timeExpires = $t;
-            $this->_changes |= self::CHF_TIMES;
-        }
-        return $this;
-    }
-
-    /** @param int $seconds
-     * @return $this */
-    function extend_expiry($seconds) {
-        if ($this->timeExpires > 0 && $this->timeExpires < Conf::$now + $seconds) {
-            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-            $this->timeExpires = Conf::$now + $seconds;
             $this->_changes |= self::CHF_TIMES;
         }
         return $this;

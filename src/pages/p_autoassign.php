@@ -691,7 +691,7 @@ class Autoassign_Page {
     }
 
     private function handle_execute(TokenInfo $tok) {
-        $tok->change_expiry(Conf::$now - 1)->update();
+        $tok->set_invalid()->update();
         $aset = new AssignmentSet($this->user);
         $aset->set_override_conflicts(true);
         $aset->enable_papers($this->ssel->selection());

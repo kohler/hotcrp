@@ -195,7 +195,7 @@ class Upload_API {
             $data["hashctx"] = base64_encode(serialize($hashctx));
             $data["crc32ctx"] = base64_encode(serialize($crc32ctx));
         }
-        $this->_cap->set_data($data);
+        $this->_cap->assign_data($data);
         if ($this->assign_token()) {
             $qreq->token = $this->_cap->salt;
             return ["ok" => true];
@@ -325,12 +325,12 @@ class Upload_API {
             $this->conf->dblink,
             "select `data` from Capability where salt=?", [$this->_cap->salt],
             function ($oldd) use ($callable) {
-                $this->_cap->set_data($oldd);
+                $this->_cap->assign_data($oldd);
                 if (!$oldd || !($this->_capd = json_decode($oldd))) {
                     return $oldd;
                 }
                 call_user_func($callable, $this->_capd);
-                $this->_cap->set_data($this->_capd);
+                $this->_cap->assign_data($this->_capd);
                 return $this->_cap->data;
             },
             "update Capability set `data`=?{desired} where salt=? and `data`=?{expected}", [$this->_cap->salt]
@@ -525,7 +525,7 @@ class Upload_API {
                 $new_data = json_encode_db($this->_capd);
                 $result = $this->conf->qe("update Capability set `data`=? where salt=? and `data`=?", $new_data, $this->_cap->salt, $this->_cap->data);
                 if ($result->affected_rows > 0) {
-                    $this->_cap->set_data($new_data);
+                    $this->_cap->assign_data($new_data);
                     $have_lock = $this->_capd->s3_lock;
                     break;
                 }

@@ -54,7 +54,7 @@ class Job_Capability {
                 "update Capability set `data`=? where salt=? and `data` is null",
                 $new_data, $salt);
             if ($result->affected_rows > 0) {
-                $tok->set_data($new_data);
+                $tok->assign_data($new_data);
                 return $tok;
             }
             $tok->load_data();

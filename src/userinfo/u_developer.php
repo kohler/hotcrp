@@ -198,7 +198,7 @@ class Developer_UserInfo {
 
         $note = simplify_whitespace($us->qreq["bearer_token/new/note"] ?? "");
         if ($note !== "") {
-            $token->set_data(["note" => $note]);
+            $token->assign_data(["note" => $note]);
         }
 
         $exp = $us->qreq["bearer_token/new/expiration"] ?? "30";

@@ -201,7 +201,7 @@ class Profile_Page {
                 $capability->set_user($acct)
                     ->set_token_pattern("hcce[20]")
                     ->set_expires_after(259200)
-                    ->set_data(["oldemail" => $acct->email, "uemail" => $ustatus->jval->email]);
+                    ->assign_data(["oldemail" => $acct->email, "uemail" => $ustatus->jval->email]);
                 if (($token = $capability->create())) {
                     $rest = ["capability_token" => $token, "sensitive" => true];
                     $mailer = new HotCRPMailer($this->conf, $acct, $rest);
