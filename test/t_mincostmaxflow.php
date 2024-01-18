@@ -46,6 +46,7 @@ class MinCostMaxFlow_Tester {
             }
         }
 
+        Xassert::will_print();
         fwrite(STDERR, "- Phase 1 complete.\n");
     }
 
@@ -82,6 +83,7 @@ class MinCostMaxFlow_Tester {
         xassert_eqq($assignments[4], "u0 p2\nu1 p0\nu2 p1\n");
         xassert_eqq($assignments[5], "u0 p2\nu1 p1\nu2 p0\n");
 
+        Xassert::will_print();
         fwrite(STDERR, "- Phase 2 complete.\n");
     }
 
@@ -118,6 +120,7 @@ class MinCostMaxFlow_Tester {
         xassert_eqq($assignments[0], "u0 p0\nu1 p1\nu2 p2\n");
         xassert_eqq($assignments[1], "u0 p1\nu1 p0\nu2 p2\n");
 
+        Xassert::will_print();
         fwrite(STDERR, "- Phase 3 complete.\n");
     }
 
@@ -155,6 +158,7 @@ class MinCostMaxFlow_Tester {
         xassert_eqq($assignments[4], "u0 p2\nu1 p0\nu2 p1\n");
         xassert_eqq($assignments[5], "u0 p2\nu1 p1\nu2 p0\n");
 
+        Xassert::will_print();
         fwrite(STDERR, "- Phase 4 complete.\n");
     }
 
