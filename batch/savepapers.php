@@ -307,8 +307,11 @@ class SavePapers_Batch {
         return true;
     }
 
-    /** @param list<object> $jp */
-    private function _run_main($jp) {
+    /** @param list<object> &$jl */
+    private function _run_main(&$jl) {
+        // prefetch authors together (useful for big updates)
+        $this->prefetch_authors($jl);
+
         if ($this->add_topics) {
             foreach ($this->conf->options()->form_fields() as $opt) {
                 if ($opt instanceof Topics_PaperOption)
@@ -322,9 +325,27 @@ class SavePapers_Batch {
             }
         }
 
-        // prefetch authors together (useful for big updates)
+        $this->conf->delay_logs();
+        for ($index = 0; $index !== count($jl); ++$index) {
+            $j = $jl[$index];
+            $jl[$index] = null;
+            $this->run_one($index, $j);
+            if ($this->nerrors && !$this->ignore_errors) {
+                break;
+            }
+            gc_collect_cycles();
+            if ($index % 10 === 9) {
+                $this->conf->release_logs();
+                $this->conf->delay_logs();
+            }
+        }
+        $this->conf->release_logs();
+    }
+
+    /** @param list<object> $jl */
+    private function prefetch_authors($jl) {
         $potential_authors = [];
-        foreach ($jp as $j) {
+        foreach ($jl as $j) {
             if (isset($j->authors) && is_array($j->authors)) {
                 foreach ($j->authors as $au) {
                     if (is_object($au)
@@ -335,42 +356,28 @@ class SavePapers_Batch {
             }
         }
         $this->conf->resolve_primary_emails($potential_authors);
-
-        $this->conf->delay_logs();
-        foreach ($jp as $index => &$j) {
-            $this->run_one($index, $j);
-            if ($this->nerrors && !$this->ignore_errors) {
-                break;
-            }
-            $j = null;
-            gc_collect_cycles();
-            if ($index % 10 === 9) {
-                $this->conf->release_logs();
-                $this->conf->delay_logs();
-            }
-        }
-        $this->conf->release_logs();
-        unset($j);
     }
 
     /** @return 0|1|2 */
     function run($content) {
-        $jp = $jparser = null;
+        $j = $jparser = null;
         if (!$this->json5) {
-            $jp = json_decode($content);
+            $j = json_decode($content);
         }
-        if ($jp === null) {
+        if ($j === null) {
             $jparser = (new JsonParser)->flags($this->json5 ? JsonParser::JSON5 : 0);
-            $jp = $jparser->input($content)->decode();
+            $j = $jparser->input($content)->decode();
         }
-        if ($jp === null) {
+        if ($j === null) {
             fwrite(STDERR, "{$this->errprefix}invalid JSON: " . $jparser->last_error_msg() . "\n");
             ++$this->nerrors;
-        } else if (!is_array($jp) && !is_object($jp)) {
+        } else if (!is_array($j) && !is_object($j)) {
             fwrite(STDERR, "{$this->errprefix}invalid JSON, expected array of objects\n");
             ++$this->nerrors;
         } else {
-            $this->_run_main(is_object($jp) ? [$jp] : $jp);
+            $jl = is_object($j) ? [$j] : $j;
+            $j = $content = null; // release references
+            $this->_run_main($jl); // consumes `$jl`
         }
         if ($this->nerrors) {
             return $this->ignore_errors && $this->nsuccesses ? 2 : 1;

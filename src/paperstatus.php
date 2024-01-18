@@ -1549,12 +1549,18 @@ class PaperStatus extends MessageSet {
         $this->_postexecute_notify();
 
         // The caller should not use `$this->prow` any more, but in case they
-        // do (e.g. in old tests), invalidate it when convenient.
+        // do (e.g. in old tests), invalidate it now when it's convenient
+        // to do so. XXX It would be useful to keep `$this->prow` around...
         $this->prow->commit_prop();
         $this->prow->invalidate_options();
         $this->prow->invalidate_conflicts();
+        $this->prow->invalidate_documents();
+
+        // save new title and clear out memory
         $this->title = $this->prow->title();
         $this->prow = null;
+        $this->_field_values = null;
+        $this->_update_pid_dids = $this->_joindocs = null;
         return true;
     }
 
