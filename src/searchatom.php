@@ -145,4 +145,21 @@ class SearchAtom {
             return "{$indent}@{$this->kwpos1} {$ctx}\n";
         }
     }
+
+    /** @param ?string $str
+     * @return object|string */
+    function unparse_json($str = null) {
+        if (!$this->op) {
+            return $this->kword ? "{$this->kword}:{$this->text}" : $this->text;
+        } else {
+            $a = ["op" => $this->op->type];
+            foreach ($this->child as $sa) {
+                $a["child"][] = $sa->unparse_json($str);
+            }
+            if ($str !== null) {
+                $a["context"] = substr($str, $this->pos1, $this->pos2 - $this->pos1);
+            }
+            return (object) $a;
+        }
+    }
 }

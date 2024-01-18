@@ -166,4 +166,16 @@ class Search_Tester {
         }
         xassert_neqq(PaperSearch::canonical_query($s, "", "", "", $this->conf), $s);
     }
+
+    function test_search_splitter_parens() {
+        $s = "((a) XOR #whatever)";
+        $splitter = new SearchSplitter($s);
+        $a = $splitter->parse_expression();
+        xassert_eqq(json_encode($a->unparse_json()), '{"op":"(","child":[{"op":"xor","child":[{"op":"(","child":["a"]},"#whatever"]}]}');
+
+        $s = "(() XOR #whatever)";
+        $splitter = new SearchSplitter($s);
+        $a = $splitter->parse_expression();
+        xassert_eqq(json_encode($a->unparse_json()), '{"op":"(","child":[{"op":"xor","child":[{"op":"(","child":[""]},"#whatever"]}]}');
+    }
 }
