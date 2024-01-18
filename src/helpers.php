@@ -340,6 +340,7 @@ function actas_link($userlike) {
 }
 
 
+/** @return bool */
 function clean_tempdirs() {
     $dir = sys_get_temp_dir() ? : "/";
     while (substr($dir, -1) === "/") {
@@ -355,6 +356,7 @@ function clean_tempdirs() {
             rm_rf_tempdir("{$dir}/{$fname}");
     }
     closedir($dirh);
+    return true;
 }
 
 

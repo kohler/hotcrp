@@ -42,7 +42,7 @@ class Upload_API {
         $this->max_size = $conf->opt("uploadApiMaxSize") ?? self::MAX_SIZE;
         $this->max_blob = $conf->opt("uploadApiMaxBlob") ?? self::MAX_BLOB;
         $this->segments = [[0, 5<<20], [5<<20, 13<<20], [13<<20, 29<<20]];
-        $this->tmpdir = Filer::docstore_tmpdir($conf);
+        $this->tmpdir = Filer::docstore_tempdir($conf);
         //S3Client::$verbose = true;
     }
 

@@ -403,7 +403,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
 
     /** @return ?DocumentInfo */
     function make_zip_document() {
-        if (($dstore_tmp = Filer::docstore_tmpdir($this->conf))) {
+        if (($dstore_tmp = Filer::docstore_tempdir($this->conf))) {
             $this->_filestore = $dstore_tmp . $this->content_signature() . ".zip";
             // maybe zipfile with that signature already exists
             if (file_exists($this->_filestore)) {

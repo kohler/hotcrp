@@ -3,8 +3,9 @@
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Filer {
+    /** @var ?string */
     static public $tempdir;
-    static public $tempcounter = 0;
+    /** @var ?bool */
     static public $no_touch;
 
     /** @return bool
@@ -26,6 +27,48 @@ class Filer {
      * @deprecated */
     static function sha1_hash_as_text($hash) {
         return HashAnalysis::sha1_hash_as_text($hash);
+    }
+
+    /** @param ?string $pattern
+     * @param null|true|Conf $conf
+     * @return ?array{resource,string} */
+    static function tempfile($pattern = null, $conf = null) {
+        $pattern = $pattern ?? "{}";
+        $tempdir = $conf ? self::docstore_tempdir($conf) : null;
+        if ($tempdir === null) {
+            $tempdir = self::$tempdir = self::$tempdir ?? tempdir();
+        }
+        if ($tempdir === null) {
+            return null;
+        }
+        if (!str_ends_with($tempdir, "/")) {
+            $tempdir .= "/";
+        }
+        if (($br = strpos($pattern, "%")) === false) {
+            return [fopen($tempdir . $pattern, "wb+"), $tempdir . $pattern];
+        }
+        for ($i = 0; $i !== 100; ++$i) {
+            $fn = $tempdir . sprintf($pattern, mt_rand(0, 99999999));
+            if (($f = @fopen($fn, "xb+"))) {
+                return [$f, $fn];
+            }
+        }
+        return null;
+    }
+
+    /** @param resource $f
+     * @param string $s
+     * @return bool
+     *
+     * Replace the contents of `$f` with `$s`, returning `true` on success.
+     * May call `clean_tempdirs()` to clean /tmp. Assumes that `$f` was
+     * just opened. */
+    static function tempfile_write($f, $s) {
+        return fwrite($f, $s) === strlen($s)
+            || (clean_tempdirs()
+                && rewind($f)
+                && fwrite($f, $s) === strlen($s)
+                && ftruncate($f, strlen($s)));
     }
 
     // filestore path functions
@@ -65,33 +108,26 @@ class Filer {
         }
     }
 
-    /** @param ?string $pattern
+    /** @param ?string $s
      * @return ?string */
-    static function docstore_fixed_prefix($pattern) {
-        if ($pattern === null || $pattern === "") {
+    static function docstore_fixed_prefix($s) {
+        if ($s === null || $s === "") {
             return null;
         }
-        $prefix = "";
-        while (($pos = strpos($pattern, "%")) !== false) {
-            if ($pos == strlen($pattern) - 1) {
+        $pos = 0;
+        while (($pos = strpos($s, "%", $pos)) !== false) {
+            if ($pos === strlen($s) - 1) {
                 break;
-            } else if ($pattern[$pos + 1] === "%") {
-                $prefix .= substr($pattern, 0, $pos + 1);
-                $pattern = substr($pattern, $pos + 2);
+            } else if ($s[$pos + 1] === "%") {
+                $s = substr($s, 0, $pos + 1) . substr($s, $pos + 2);
+                $pos = $pos + 1;
+            } else if (($rpos = strrpos($s, "/", $pos - strlen($s))) !== false) {
+                return substr($s, 0, $rpos + 1);
             } else {
-                $prefix .= substr($pattern, 0, $pos);
-                if (($rslash = strrpos($prefix, "/")) !== false) {
-                    return substr($prefix, 0, $rslash + 1);
-                } else {
-                    return null;
-                }
+                return null;
             }
         }
-        $prefix .= $pattern;
-        if ($prefix[strlen($prefix) - 1] !== "/") {
-            $prefix .= "/";
-        }
-        return $prefix;
+        return str_ends_with($s, "/") ? $s : "{$s}/";
     }
 
     /** @param string $parent
@@ -112,7 +148,7 @@ class Filer {
     }
 
     /** @return ?non-empty-string */
-    static function docstore_tmpdir(Conf $conf = null) {
+    static function docstore_tempdir(Conf $conf = null) {
         $conf = $conf ?? Conf::$main;
         if ($conf && ($prefix = self::docstore_fixed_prefix($conf->docstore()))) {
             $tmpdir = "{$prefix}tmp/";
@@ -122,6 +158,12 @@ class Filer {
             }
         }
         return null;
+    }
+
+    /** @return ?non-empty-string
+     * @deprecated */
+    static function docstore_tmpdir(Conf $conf = null) {
+        return self::docstore_tempdir($conf);
     }
 
     /** @param string $pattern

@@ -265,6 +265,12 @@ class PaperStatus extends MessageSet {
     /** @param object $docj
      * @return ?DocumentInfo */
     private function _upload_json_document($docj, PaperOption $o) {
+        // extract mimetype
+        $mimetype = null;
+        if (isset($docj->mimetype) && is_string($docj->mimetype)) {
+            $mimetype = $docj->mimetype;
+        }
+
         // extract content
         $content = $content_file = null;
         if (isset($docj->content) && is_string($docj->content)) {
@@ -355,8 +361,8 @@ class PaperStatus extends MessageSet {
             if ($hash !== null) {
                 $qx["sha1=?"] = $hash;
             }
-            if (isset($docj->mimetype)) {
-                $qx["mimetype=?"] = $docj->mimetype;
+            if ($mimetype !== null) {
+                $qx["mimetype=?"] = $mimetype;
             }
             $result = $this->conf->qe_apply("select * from PaperStorage where " . join(" and ", array_keys($qx)), array_values($qx));
             $edoc = DocumentInfo::fetch($result, $this->conf, $this->prow);
@@ -371,8 +377,7 @@ class PaperStatus extends MessageSet {
             && $content_file === null
             && (!$this->allow_hash_without_content
                 || $hash === null
-                || !isset($docj->mimetype)
-                || !is_string($docj->mimetype))) {
+                || $mimetype === null)) {
             $this->error_at_option($o, "<0>Ignored attempt to upload document without any content");
             return null;
         }
@@ -381,8 +386,8 @@ class PaperStatus extends MessageSet {
         $doc = DocumentInfo::make($this->conf)
             ->set_paper($this->prow)
             ->set_document_type($o->id);
-        if (isset($docj->mimetype) && is_string($docj->mimetype)) {
-            $doc->set_mimetype($docj->mimetype);
+        if ($mimetype !== null) {
+            $doc->set_mimetype($mimetype);
         }
         if (isset($docj->timestamp) && is_int($docj->timestamp)) {
             $doc->set_timestamp($docj->timestamp);
@@ -390,12 +395,10 @@ class PaperStatus extends MessageSet {
         if (isset($docj->filename) && is_string($docj->filename)) {
             $doc->set_filename(DocumentInfo::sanitize_filename($docj->filename));
         }
-        if (isset($docj->content) && is_string($docj->content)) {
-            $doc->set_simple_content($docj->content);
-        } else if (isset($docj->content_base64) && is_string($docj->content_base64)) {
-            $doc->set_simple_content(base64_decode($docj->content_base64));
-        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
-            $doc->set_simple_content_file($docj->content_file);
+        if ($content !== null) {
+            $doc->set_simple_content($content);
+        } else if ($content_file !== null) {
+            $doc->set_simple_content_file($content_file);
         }
         if ($hash !== null) {
             $doc->set_hash($hash);

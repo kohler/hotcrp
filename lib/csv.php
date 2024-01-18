@@ -920,17 +920,9 @@ class CsvGenerator {
             $this->stream = false;
             if (($this->flags & self::FLAG_WILL_EMIT) !== 0) {
                 $this->stream = fopen("php://output", "wb");
-            } else if (($dir = Filer::docstore_tmpdir() ?? tempdir())) {
-                if (!str_ends_with($dir, "/")) {
-                    $dir .= "/";
-                }
-                for ($i = 0; $i !== 100; ++$i) {
-                    $fn = sprintf("%scsvtmp-%d-%08d.csv", $dir, time(), mt_rand(0, 99999999));
-                    if (($this->stream = @fopen($fn, "xb+"))) {
-                        $this->stream_filename = $fn;
-                        break;
-                    }
-                }
+            } else if (($x = Filer::tempfile("csvtmp-" . time() . "-%08d.csv", Conf::$main))) {
+                $this->stream = $x[0];
+                $this->stream_filename = $x[1];
             }
         }
         if ($this->stream === false) {

@@ -1143,59 +1143,44 @@ class DocumentInfo implements JsonSerializable {
         $this->ensure_content();
         if ($this->content !== null) {
             return $this->content;
-        } else if (($path = $this->available_content_file()) !== false) {
+        } else if (($path = $this->available_content_file()) !== null) {
             return @file_get_contents($path);
         } else {
             return false;
         }
     }
 
-    /** @return string|false */
+    /** @return ?string */
     function available_content_file() {
         if ($this->content_file !== null && is_readable($this->content_file)) {
             return $this->content_file;
         } else if ($this->filestore !== null && is_readable($this->filestore)) {
             return $this->filestore;
         } else {
-            return false;
+            return null;
         }
     }
 
-    /** @return string|false */
+    /** @return ?string */
     function content_file() {
         $this->ensure_content();
         if (($path = $this->available_content_file())) {
             return $path;
         } else if ($this->content === null) {
-            return false;
+            return null;
         } else if ($this->store_docstore(0)) {
             return $this->filestore;
         }
-        if (($f = $this->_temp_content_filename())) {
-            $trylen = file_put_contents($f, $this->content);
-            if ($trylen !== strlen($this->content)) {
-                clean_tempdirs();
-                $trylen = file_put_contents($f, $this->content);
-            }
-            if ($trylen === strlen($this->content)) {
-                $this->content_file = $f;
-                return $this->content_file;
-            }
+        $this->content_file = null;
+        $fp = "doc-" . time() . "-%08d" . Mimetype::extension($this->mimetype);
+        if (!($x = Filer::tempfile($fp, strlen($this->content) > 10000000 ? $this->conf : null))) {
+            return null;
         }
-        return false;
-    }
-
-    private function _temp_content_filename() {
-        if (!Filer::$tempdir && !(Filer::$tempdir = tempdir())) {
-            return false;
+        if (Filer::tempfile_write($x[0], $this->content)) {
+            $this->content_file = $x[1];
         }
-        if ($this->has_hash()) {
-            $base = $this->text_hash();
-        } else {
-            ++Filer::$tempcounter;
-            $base = "__temp" . Filer::$tempcounter . "__";
-        }
-        return Filer::$tempdir . "/" . $base . Mimetype::extension($this->mimetype);
+        fclose($x[0]);
+        return $this->content_file;
     }
 
     /** @return bool */
