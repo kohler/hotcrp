@@ -307,6 +307,7 @@ class Xassert {
             $x .= "\n";
         }
         fwrite(STDERR, $x);
+        self::fail();
     }
 
     /** @param string $xprefix
