@@ -12,6 +12,8 @@ abstract class SearchTerm {
     public $pos1;
     /** @var ?int */
     public $pos2;
+    /** @var ?SearchStringContext */
+    public $string_context;
 
     /** @param string $type */
     function __construct($type) {
@@ -22,6 +24,14 @@ abstract class SearchTerm {
      * @param SearchTerm ...$terms
      * @return SearchTerm */
     static function combine($op, ...$terms) {
+        return self::combine_in($op, null, ...$terms);
+    }
+
+    /** @param string|SearchOperator $op
+     * @param SearchStringContext $string_context
+     * @param SearchTerm ...$terms
+     * @return SearchTerm */
+    static function combine_in($op, $string_context, ...$terms) {
         $name = is_string($op) ? $op : $op->type;
         if ($name === "not") {
             $qr = new Not_SearchTerm;
@@ -37,6 +47,7 @@ abstract class SearchTerm {
             assert($name === "then" || $name === "highlight");
             $qr = new Then_SearchTerm($op);
         }
+        $qr->string_context = $string_context;
         foreach ($terms as $qt) {
             $qr->append($qt);
         }
@@ -55,7 +66,7 @@ abstract class SearchTerm {
         return $negate ? $this->negate() : $this;
     }
 
-    /** @return list<array{string,?int,?int,?int}> */
+    /** @return list<array{string,?int,?int,?int,?SearchStringContext}> */
     function view_anno() {
         return $this->float["view"] ?? [];
     }
@@ -64,16 +75,16 @@ abstract class SearchTerm {
      * @param SearchWord $sword
      * @return $this */
     function add_view_anno($view, $sword) {
-        $this->float["view"][] = [$view, $sword->kwpos1, $sword->pos1, $sword->pos2];
+        $this->float["view"][] = [$view, $sword->kwpos1, $sword->pos1, $sword->pos2, $sword->string_context];
         return $this;
     }
 
     /** @param string $field
-     * @return ?array{int,int,int} */
-    function view_anno_pos($field) {
+     * @return ?SearchViewElement */
+    function view_anno_element($field) {
         foreach (PaperSearch::view_generator($this->float["view"] ?? []) as $sve) {
             if ($field === $sve->keyword)
-                return [$sve->kwpos1, $sve->pos1, $sve->pos2];
+                return $sve;
         }
         return null;
     }
@@ -94,27 +105,19 @@ abstract class SearchTerm {
     }
 
     /** @param int $pos1
-     * @param int $pos2 */
-    function set_strspan($pos1, $pos2) {
-        $this->pos1 = $pos1;
-        $this->pos2 = $pos2;
-    }
-
-    /** @param int $pos1
-     * @param int $pos2 */
-    function apply_strspan($pos1, $pos2) {
-        if ($this->pos1 === null || $this->pos1 > $pos1) {
-            $this->pos1 = $pos1;
+     * @param int $pos2
+     * @param ?SearchStringContext $context */
+    function apply_strspan($pos1, $pos2, $context) {
+        if ($this->pos1 === null) {
+            $this->string_context = $context;
         }
-        if ($this->pos2 === null || $this->pos2 < $pos2) {
-            $this->pos2 = $pos2;
-        }
-    }
-
-    /** @param string $str */
-    function set_strspan_owner($str) {
-        if (!isset($this->float["strspan_owner"])) {
-            $this->float["strspan_owner"] = $str;
+        if ($this->string_context === $context) {
+            if ($this->pos1 === null || $this->pos1 > $pos1) {
+                $this->pos1 = $pos1;
+            }
+            if ($this->pos2 === null || $this->pos2 < $pos2) {
+                $this->pos2 = $pos2;
+            }
         }
     }
 
@@ -334,8 +337,8 @@ abstract class Op_SearchTerm extends SearchTerm {
                 }
             }
             $this->child[] = $term;
-            if ($term->pos1 !== null && !isset($term->float["strspan_owner"])) {
-                $this->apply_strspan($term->pos1, $term->pos2);
+            if ($term->string_context === $this->string_context && $term->pos1 !== null) {
+                $this->apply_strspan($term->pos1, $term->pos2, $term->string_context);
             }
         }
         return $this;
@@ -379,14 +382,6 @@ abstract class Op_SearchTerm extends SearchTerm {
         }
     }
 
-    function set_strspan_owner($str) {
-        if (!isset($this->float["strspan_owner"])) {
-            parent::set_strspan_owner($str);
-            foreach ($this->child as $qv) {
-                $qv->set_strspan_owner($str);
-            }
-        }
-    }
     function debug_json() {
         $a = [];
         foreach ($this->child as $qv) {

@@ -627,15 +627,16 @@ class Ht {
         if (($nl = strpos($s, "\n", $pos2)) !== false) {
             $s = substr($s, 0, $nl);
         }
-        if ($pos1 > 24 && strlen($s) > 64) {
-            $mp = $pos1 - 17;
-            while ($mp > 0
-                   && UnicodeHelper::utf8_glyphlen(substr($s, $mp, $pos1 - $mp)) < 17) {
-                --$mp;
+        $pos1x = max(0, min($pos1 - 17, strlen($s) - 64));
+        if ($pos1x > 0) {
+            $pfxlen = $pos1 - $pos1x;
+            while ($pos1x > 0
+                   && UnicodeHelper::utf8_glyphlen(substr($s, $pos1x, $pos1 - $pos1x)) < $pfxlen) {
+                --$pos1x;
             }
-            $s = "…" . substr($s, $mp);
-            $pos1 -= $mp - 3; /* ellipsis character UTF-8 encoding is 3 bytes long */
-            $pos2 -= $mp - 3;
+            $s = "…" . substr($s, $pos1x);
+            $pos1 -= $pos1x - 3; /* ellipsis character UTF-8 encoding is 3 bytes long */
+            $pos2 -= $pos1x - 3;
         }
         if ($pos2 - $pos1 > 12) {
             $lpos = $pos2;

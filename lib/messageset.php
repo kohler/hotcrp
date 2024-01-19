@@ -301,7 +301,8 @@ class MessageSet {
                 $mi->message = "<5>{$mi->message}";
             }
         }
-        if ($mi->message !== ""
+        if (($mi->message !== ""
+             || ($mi->context !== null && $mi->pos1 !== null))
             && (($this->_ms_flags & self::IGNORE_DUPS) === 0
                 || $this->message_index($mi) === false)) {
             if ($pos < 0 || $pos >= count($this->msgs)) {
@@ -710,44 +711,65 @@ class MessageSet {
         $t = "";
         $last_landmark = null;
         foreach ($message_list as $mi) {
-            if ($mi->message !== "") {
-                $s = $mi->message_as(5);
-                $pstart = $pstartclass = "";
-                if (str_starts_with($s, "<p")) {
-                    if ($s[2] === ">") {
-                        $pstart = "<p>";
-                        $s = substr($s, 3);
-                    } else if (preg_match('/\A<p class="(.*?)">/', $s, $m)) {
-                        $pstart = $m[0];
-                        $pstartclass = "{$m[1]} ";
-                        $s = substr($s, strlen($m[0]));
-                    }
+            if ($mi->message === ""
+                && ($mi->pos1 === null || $mi->context === null)) {
+                continue;
+            }
+            $s = $mi->message_as(5);
+            $pstart = $pstartclass = "";
+            if (str_starts_with($s, "<p")) {
+                if ($s[2] === ">") {
+                    $pstart = "<p>";
+                    $s = substr($s, 3);
+                } else if (preg_match('/\A<p class="(.*?)">/', $s, $m)) {
+                    $pstart = $m[0];
+                    $pstartclass = "{$m[1]} ";
+                    $s = substr($s, strlen($m[0]));
                 }
-                if ($mi->landmark !== null
-                    && $mi->landmark !== ""
-                    && ($mi->status !== self::INFORM || $mi->landmark !== $last_landmark)) {
-                    $lm = htmlspecialchars($mi->landmark);
-                    $s = "<span class=\"lineno\">{$lm}:</span> {$s}";
-                }
-                if ($mi->status !== self::INFORM) {
-                    if ($t !== "") {
-                        $ts[] = $t;
-                    }
-                    if ($pstart !== "") {
-                        $pstart = "<p class=\"" . self::status_class($mi->status, "{$pstartclass}is-diagnostic", "is-") . "\">";
-                        $k = "has-diagnostic";
-                    } else {
-                        $k = self::status_class($mi->status, "is-diagnostic", "is-");
-                    }
-                    $t = "<div class=\"{$k}\">{$pstart}{$s}</div>";
-                    $last_landmark = $mi->landmark;
+            }
+            if ($mi->landmark !== null
+                && $mi->landmark !== ""
+                && ($mi->status !== self::INFORM || $mi->landmark !== $last_landmark)) {
+                $lmx = $mi->landmark;
+                if (str_starts_with($lmx, "<5>")
+                    && ($clmx = CleanHTML::basic_clean(substr($lmx, 3))) !== false) {
+                    $lmx = $clmx;
                 } else {
-                    $t .= "<div class=\"msg-inform\">{$pstart}{$s}</div>";
+                    $lmx = htmlspecialchars($lmx);
                 }
-                if ($mi->pos1 !== null && $mi->context !== null) {
-                    $mark = Ht::mark_substring($mi->context, $mi->pos1, $mi->pos2, $mi->status);
-                    $t .= "<div class=\"msg-context\">{$mark}</div>";
+                if (str_ends_with($lmx, " ")) {
+                    $lmx = rtrim($lmx);
+                } else {
+                    $lmx .= ":";
                 }
+                $lm = "<span class=\"lineno\">{$lmx}</span> ";
+            } else {
+                $lm = "";
+            }
+            if ($mi->status !== self::INFORM && $t !== "") {
+                $ts[] = $t;
+                $t = "";
+            }
+            if ($s === "") {
+                // Do not report message
+            } else if ($mi->status !== self::INFORM) {
+                if ($pstart !== "") {
+                    $pstart = "<p class=\"" . self::status_class($mi->status, "{$pstartclass}is-diagnostic", "is-") . "\">";
+                    $k = "has-diagnostic";
+                } else {
+                    $k = self::status_class($mi->status, "is-diagnostic", "is-");
+                }
+                $t .= "<div class=\"{$k}\">{$pstart}{$lm}{$s}</div>";
+            } else {
+                $t .= "<div class=\"msg-inform\">{$pstart}{$lm}{$s}</div>";
+            }
+            if ($mi->pos1 !== null && $mi->context !== null) {
+                $mark = Ht::mark_substring($mi->context, $mi->pos1, $mi->pos2, $mi->status);
+                $lmx = $s === "" ? $lm : "";
+                $t .= "<div class=\"msg-context\">{$lmx}{$mark}</div>";
+            }
+            if ($mi->status !== self::INFORM) {
+                $last_landmark = $mi->landmark;
             }
         }
         if ($t !== "") {

@@ -22,6 +22,17 @@ class SearchScope {
     }
 }
 
+class SearchStringContext {
+    /** @var string */
+    public $subcontext;
+    /** @var int */
+    public $ppos1;
+    /** @var int */
+    public $ppos2;
+    /** @var ?SearchStringContext */
+    public $parent;
+}
+
 class SearchQueryInfo {
     /** @var PaperSearch
      * @readonly */
@@ -154,6 +165,8 @@ class SearchViewElement {
     public $pos1;
     /** @var ?int */
     public $pos2;
+    /** @var ?SearchStringContext */
+    public $string_context;
 
     /** @return ?string */
     function show_action() {
@@ -281,8 +294,8 @@ class PaperSearch extends MessageSet {
     private $_match_preg_query;
     /** @var ?list<ContactSearch> */
     private $_contact_searches;
-    /** @var ?list<array{SearchWord,string}> */
-    private $_saved_search_stack;
+    /** @var ?SearchStringContext */
+    private $_string_context;
     /** @var list<int> */
     private $_matches;
     /** @var ?Then_SearchTerm */
@@ -471,24 +484,40 @@ class PaperSearch extends MessageSet {
         return $this->warning_at(null, $message);
     }
 
+    /** @param string|MessageItem $message
+     * @param int $pos1
+     * @param int $pos2
+     * @param ?SearchStringContext $context
+     * @return list<MessageItem> */
+    function expand_message_context($message, $pos1, $pos2, $context) {
+        if (is_string($message)) {
+            $mi = MessageItem::warning($message);
+        } else {
+            $mi = $message;
+        }
+        $mi->pos1 = $pos1;
+        $mi->pos2 = $pos2;
+        $mis = [$mi];
+        while ($context) {
+            $mi->context = $context->subcontext;
+            $mi = MessageItem::inform("");
+            $mi->landmark = "<5>→ <em>expanded from</em> ";
+            $mi->pos1 = $context->ppos1;
+            $mi->pos2 = $context->ppos2;
+            $mis[] = $mi;
+            $context = $context->parent;
+        }
+        $mi->context = $this->q;
+        return $mis;
+    }
+
     /** @param SearchWord $sw
      * @param string $message
      * @return MessageItem */
     function lwarning($sw, $message) {
-        $mi = $mix = $this->warning($message);
-        $mix->pos1 = $sw->pos1;
-        $mix->pos2 = $sw->pos2;
-        if (!empty($this->_saved_search_stack)) {
-            for ($i = count($this->_saved_search_stack); $i > 0; --$i) {
-                list($swx, $textx) = $this->_saved_search_stack[$i - 1];
-                $mix->context = $textx;
-                $mix = $this->inform_at(null, "<0>…while evaluating saved search");
-                $mix->pos1 = $swx->pos1;
-                $mix->pos2 = $swx->pos2;
-            }
-        }
-        $mix->context = $this->q;
-        return $mi;
+        $mis = $this->expand_message_context($message, $sw->pos1, $sw->pos2, $sw->string_context);
+        $this->append_list($mis);
+        return $mis[0];
     }
 
 
@@ -577,7 +606,7 @@ class PaperSearch extends MessageSet {
             if ($kwdef->parse_has_function ?? null) {
                 $qe = call_user_func($kwdef->parse_has_function, $word, $sword, $srch);
             } else if ($kwdef->has ?? null) {
-                $sword2 = SearchWord::make_kwarg($kwdef->has, $sword->kwpos1, $sword->pos1, $sword->pos2);
+                $sword2 = SearchWord::make_kwarg($kwdef->has, $sword->kwpos1, $sword->pos1, $sword->pos2, $sword->string_context);
                 $sword2->kwexplicit = true;
                 $sword2->kwdef = $kwdef;
                 $qe = call_user_func($kwdef->parse_function, $kwdef->has, $sword2, $srch);
@@ -637,14 +666,21 @@ class PaperSearch extends MessageSet {
             $srch->lwarning($sword, "<0>Named search not found");
         } else if (!($nextq = $srch->_expand_named_search($word, $sj))) {
             $srch->lwarning($sword, "<0>Named search defined incorrectly");
-        } else if (count($srch->_saved_search_stack ?? []) >= 10) {
-            $srch->lwarning($sword, "<0>Circular reference in named search definitions");
         } else {
-            $srch->_saved_search_stack[] = [$sword, $nextq];
-            if (($qe = $srch->_search_expression($nextq))) {
-                $qe->set_strspan_owner($nextq);
+            $context = new SearchStringContext;
+            $context->subcontext = $nextq;
+            $context->ppos1 = $sword->kwpos1;
+            $context->ppos2 = $sword->pos2;
+            $context->parent = $srch->_string_context;
+            for ($n = 0, $c = $context; $c; ++$n, $c = $c->parent) {
             }
-            array_pop($srch->_saved_search_stack);
+            if ($n >= 10) {
+                $srch->lwarning($sword, "<0>Circular reference in named search definitions");
+            } else {
+                $srch->_string_context = $context;
+                $qe = $srch->_search_expression($nextq);
+                $srch->_string_context = $context->parent;
+            }
         }
         return $qe ?? new False_SearchTerm;
     }
@@ -660,7 +696,7 @@ class PaperSearch extends MessageSet {
             return $kwdef;
         }
         if ($scope && (!$is_defkw || !$scope->defkw_error)) {
-            $xsword = SearchWord::make_kwarg($kw, $sword->kwpos1, $sword->kwpos1, $sword->pos1);
+            $xsword = SearchWord::make_kwarg($kw, $sword->kwpos1, $sword->kwpos1, $sword->pos1, $sword->string_context);
             $this->lwarning($xsword, "<0>Unknown search keyword ‘{$kw}:’");
             if ($is_defkw) {
                 $scope->defkw_error = true;
@@ -680,7 +716,7 @@ class PaperSearch extends MessageSet {
         if ($qx && !is_array($qx)) {
             return $qx;
         } else if ($qx) {
-            return SearchTerm::combine("or", ...$qx);
+            return SearchTerm::combine_in("or", $this->_string_context, ...$qx);
         } else {
             return new False_SearchTerm; // assume error already given
         }
@@ -753,7 +789,7 @@ class PaperSearch extends MessageSet {
             } else {
                 $sw = $m[2] . $m[3];
             }
-            $swordi = SearchWord::make_kwarg($sw, $sword->pos1, $pos1, $sword->pos2);
+            $swordi = SearchWord::make_kwarg($sw, $sword->pos1, $pos1, $sword->pos2, $this->_string_context);
             return $this->_kwdef_parse($kwdef, $swordi, true);
         }
 
@@ -787,7 +823,7 @@ class PaperSearch extends MessageSet {
             if (($kwdef = $this->_find_search_keyword($kw, $sword, null, false)))
                 $qt[] = $this->_kwdef_parse($kwdef, $sword, false);
         }
-        return SearchTerm::combine("or", ...$qt);
+        return SearchTerm::combine_in("or", $this->_string_context, ...$qt);
     }
 
     /** @param string $str
@@ -817,7 +853,7 @@ class PaperSearch extends MessageSet {
             if ($sa->op->type === "+" || $sa->op->type === "(") {
                 return $child[0];
             }
-            $st = SearchTerm::combine($sa->op, ...$child);
+            $st = SearchTerm::combine_in($sa->op, $this->_string_context, ...$child);
         } else if ($sa->kword === null && $sa->text === "") {
             $st = new True_SearchTerm;
         } else if ($sa->kword !== null
@@ -827,11 +863,11 @@ class PaperSearch extends MessageSet {
             // Search like `ti:(foo OR bar)` adds a default keyword; must reparse.
             $st = $this->_search_expression($str, new SearchScope($sa->pos1, $sa->pos2, $sa), $depth + 1);
         } else {
-            $sword = SearchWord::make_kwarg($sa->text, $sa->kwpos1, $sa->pos1, $sa->pos2);
+            $sword = SearchWord::make_kwarg($sa->text, $sa->kwpos1, $sa->pos1, $sa->pos2, $this->_string_context);
             $st = $this->_search_word($sa->kword ?? "", $sword, $scope);
         }
         if ($st && !$st->is_uninteresting()) {
-            $st->apply_strspan($sa->kwpos1, $sa->pos2);
+            $st->apply_strspan($sa->kwpos1, $sa->pos2, $this->_string_context);
         }
         return $st;
     }
@@ -1279,7 +1315,7 @@ class PaperSearch extends MessageSet {
         return $this->_highlight_map;
     }
 
-    /** @param iterable<string>|iterable<array{string,?int,?int,?int}> $words
+    /** @param iterable<string>|iterable<array{string,?int,?int,?int,?SearchStringContext}> $words
      * @return Generator<SearchViewElement> */
     static function view_generator($words) {
         foreach ($words as $w) {
@@ -1288,6 +1324,7 @@ class PaperSearch extends MessageSet {
                 $sve->kwpos1 = $w[1];
                 $sve->pos1 = $w[2];
                 $sve->pos2 = $w[3];
+                $sve->string_context = $w[4];
                 $w = $w[0];
             }
 

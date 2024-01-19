@@ -1222,20 +1222,19 @@ class PaperList {
         } else {
             $mi = $message;
         }
-        if (($pos = $this->search->main_term()->view_anno_pos($name))
+        if (($sve = $this->search->main_term()->view_anno_element($name))
             && ($mi->status !== MessageSet::INFORM || empty($this->_finding_column_errors))) {
             if ($mi->pos1 !== null) {
-                $mi->pos1 += $pos[1];
-                $mi->pos2 += $pos[1];
+                $mis = $this->search->expand_message_context($mi, $mi->pos1 + $sve->pos1, $mi->pos2 + $sve->pos2, $sve->string_context);
             } else {
-                $mi->pos1 = $pos[0];
-                $mi->pos2 = $pos[2];
+                $mis = $this->search->expand_message_context($mi, $sve->kwpos1, $sve->pos2, $sve->string_context);
             }
-            $mi->context = $this->search->q;
         } else {
+            $mis = [$mi];
             $mi->pos1 = $mi->pos2 = null;
         }
-        $this->_finding_column_errors[] = $mi;
+        $this->_finding_column_errors = $this->_finding_column_errors ?? [];
+        array_push($this->_finding_column_errors, ...$mis);
     }
 
     /** @param string $name
@@ -1256,7 +1255,7 @@ class PaperList {
             if (empty($this->_columns_by_name[$name])
                 && $this->want_column_errors($name)) {
                 if (empty($this->_finding_column_errors)) {
-                    $this->column_error("<0>Field ‘{$name}’ not found");
+                    $this->column_error("<0>Field ‘{$name}’ cannot be shown");
                 }
                 foreach ($this->_finding_column_errors as $mi) {
                     $this->message_set()->append_item($mi);
