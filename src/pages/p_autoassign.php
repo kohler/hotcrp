@@ -466,7 +466,7 @@ class Autoassign_Page {
         // we should arrange a redirect.
         if (PHP_SAPI === "fpm-fcgi") {
             $nav = $this->qreq->navigation();
-            $url = $nav->make_absolute($this->conf->hoturl_raw("autoassign", $this->qreq_parameters()));
+            $url = $nav->resolve($this->conf->hoturl_raw("autoassign", $this->qreq_parameters()));
             header("Location: {$url}");
             $this->qreq->qsession()->commit();
             fastcgi_finish_request();

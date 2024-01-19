@@ -44,13 +44,13 @@ class NavigationState {
     //   required: SERVER_PORT, SCRIPT_FILENAME, SCRIPT_NAME, REQUEST_URI
     //   optional: HTTP_HOST, SERVER_NAME, HTTPS, REQUEST_SCHEME
 
-    function __construct($server) {
-        if (!$server) {
-            return;
-        }
+    /** @param associative-array $server
+     * @return NavigationState */
+    static function make_server($server) {
+        $nav = new NavigationState;
 
         // host, protocol, server
-        $this->host = $server["HTTP_HOST"] ?? $server["SERVER_NAME"] ?? null;
+        $nav->host = $server["HTTP_HOST"] ?? $server["SERVER_NAME"] ?? null;
         if ((isset($server["HTTPS"])
              && $server["HTTPS"] !== ""
              && $server["HTTPS"] !== "off")
@@ -62,40 +62,40 @@ class NavigationState {
             $x = "http://";
             $xport = 80;
         }
-        $this->protocol = $x;
-        $x .= $this->host ? : "localhost";
+        $nav->protocol = $x;
+        $x .= $nav->host ? : "localhost";
         if (($port = $server["SERVER_PORT"])
             && $port != $xport
             && strpos($x, ":", 6) === false) {
             $x .= ":" . $port;
         }
-        $this->server = $x;
-        $this->request_uri = $server["REQUEST_URI"];
-        $pct = strpos($this->request_uri, "%") !== false;
+        $nav->server = $x;
+        $nav->request_uri = $server["REQUEST_URI"];
+        $pct = strpos($nav->request_uri, "%") !== false;
 
-        // $this->query: easy-urldecoded portion including and after [?#];
+        // $nav->query: easy-urldecoded portion including and after [?#];
         // $uri: encoded portion preceding $query
-        $qpos = strpos($this->request_uri, "?");
-        if (($hpos = strpos($this->request_uri, "#")) !== false) {
+        $qpos = strpos($nav->request_uri, "?");
+        if (($hpos = strpos($nav->request_uri, "#")) !== false) {
             $qpos = $qpos === false ? $hpos : min($qpos, $hpos);
         }
         if ($qpos !== false) {
-            $this->query = substr($this->request_uri, $qpos);
+            $nav->query = substr($nav->request_uri, $qpos);
             if ($pct) {
-                $this->query = self::easy_urldecode($this->query);
+                $nav->query = self::easy_urldecode($nav->query);
             }
-            $uri = substr($this->request_uri, 0, $qpos);
+            $uri = substr($nav->request_uri, 0, $qpos);
         } else {
-            $this->query = "";
-            $uri = $this->request_uri;
+            $nav->query = "";
+            $uri = $nav->request_uri;
         }
 
-        // $this->base_path: encoded path to root of site; nonempty, ends in /
-        $bp = $this->find_base($uri, $server);
+        // base_path: encoded path to root of site; nonempty, ends in /
+        $bp = $nav->find_base($uri, $server);
         if ($bp === "/"
             || strlen($bp) > strlen($uri)
             || substr($uri, 0, strlen($bp)) === $bp) {
-            $this->base_path = $bp;
+            $nav->base_path = $bp;
         } else {
             $nsl = substr_count($bp, "/");
             $pos = -1;
@@ -104,25 +104,25 @@ class NavigationState {
                 --$nsl;
             }
             if ($pos !== false) {
-                $this->base_path = substr($uri, 0, $pos + 1);
+                $nav->base_path = substr($uri, 0, $pos + 1);
             } else { // this should never happen
-                $this->base_path = $uri;
+                $nav->base_path = $uri;
                 if ($uri === "" || $uri[strlen($uri) - 1] !== "/") {
-                    $this->base_path .= "/";
+                    $nav->base_path .= "/";
                 }
             }
         }
-        $this->above_base = strlen($this->base_path) > strlen($uri);
+        $nav->above_base = strlen($nav->base_path) > strlen($uri);
 
-        // $this->php_suffix: ".php" or ""
+        // php_suffix: ".php" or ""
         if (isset($server["HOTCRP_PHP_SUFFIX"])) {
-            $this->php_suffix = $server["HOTCRP_PHP_SUFFIX"];
-        } else if ($this->unproxied && function_exists("apache_get_modules")) {
-            $this->php_suffix = ".php";
+            $nav->php_suffix = $server["HOTCRP_PHP_SUFFIX"];
+        } else if ($nav->unproxied && function_exists("apache_get_modules")) {
+            $nav->php_suffix = ".php";
         }
 
-        // separate $this->page and $this->path
-        $nbp = strlen($this->base_path);
+        // separate page and path
+        $nbp = strlen($nav->base_path);
         $uri_suffix = (string) substr($uri, min($nbp, strlen($uri)));
         if ($pct) {
             $uri_suffix = self::easy_urldecode($uri_suffix);
@@ -131,29 +131,88 @@ class NavigationState {
             $n = strlen($uri_suffix);
         }
         if ($n === 0) {
-            $this->raw_page = "";
-            $this->page = "index";
-            $this->path = "";
+            $nav->raw_page = "";
+            $nav->page = "index";
+            $nav->path = "";
         } else {
-            $this->raw_page = substr($uri_suffix, 0, $n);
-            $this->page = $this->raw_page;
-            $this->path = substr($uri_suffix, $n);
-            $this->apply_php_suffix();
+            $nav->raw_page = substr($uri_suffix, 0, $n);
+            $nav->page = $nav->raw_page;
+            $nav->path = substr($uri_suffix, $n);
+            $nav->apply_php_suffix();
         }
 
-        // compute $this->base_path_relative
-        $path_slash = substr_count($this->path, "/");
+        // compute base_path_relative
+        $path_slash = substr_count($nav->path, "/");
         if ($path_slash > 0) {
-            $this->base_path_relative = str_repeat("../", $path_slash);
-        } else if ($this->raw_page === "") {
-            $this->base_path_relative = $this->base_path;
+            $nav->base_path_relative = str_repeat("../", $path_slash);
+        } else if ($nav->raw_page === "") {
+            $nav->base_path_relative = $nav->base_path;
         } else {
-            $this->base_path_relative = "";
+            $nav->base_path_relative = "";
         }
 
-        // $this->site_path: initially $this->base_path
-        $this->site_path = $this->base_path;
-        $this->site_path_relative = $this->base_path_relative;
+        // site_path is initially base_path
+        $nav->site_path = $nav->base_path;
+        $nav->site_path_relative = $nav->base_path_relative;
+
+        return $nav;
+    }
+
+    /** @param string $base_uri
+     * @param string $path
+     * @return NavigationState */
+    static function make_base($base_uri, $path = "") {
+        // no query or fragment allowed
+        $is_https = substr_compare($base_uri, "https://", 0, 8, true) === 0;
+        if (strpos($base_uri, "?") !== false
+            || strpos($base_uri, "#") !== false
+            || (!$is_https
+                && substr_compare($base_uri, "http://", 0, 7, true) !== 0)) {
+            throw new Exception("invalid \$base_uri");
+        }
+        if (!str_ends_with($base_uri, "/")) {
+            $base_uri .= "/";
+            if (str_starts_with($path, "/")) {
+                $path = substr($path, 1);
+            }
+        }
+        // protocol, host
+        $nav = new NavigationState;
+        $nav->protocol = $is_https ? "https://" : "http://";
+        $plen = strlen($nav->protocol);
+        $slash = strpos($base_uri, "/", $plen);
+        if ($slash === false) {
+            $slash = strlen($base_uri);
+        }
+        $nav->server = substr($base_uri, 0, $slash);
+        if (($colon = strpos($nav->server, ":", $plen)) === false) {
+            $nav->host = substr($nav->server, $plen);
+        } else {
+            $nav->host = substr($nav->server, $plen, $colon - $plen);
+        }
+        // base path
+        if ($slash === strlen($base_uri)) {
+            $nav->base_path = "/";
+        } else {
+            $nav->base_path = substr($base_uri, $slash);
+        }
+        $nav->base_path_relative = $nav->site_path = $nav->site_path_relative = $nav->base_path;
+        // rest
+        if (($n = strpos($path, "/")) === false) {
+            $n = strlen($path);
+        }
+        if ($n === 0) {
+            $nav->raw_page = "";
+            $nav->page = "index";
+            $nav->path = "";
+        } else {
+            $nav->raw_page = substr($path, 0, $n);
+            $nav->page = $nav->raw_page;
+            $nav->path = substr($path, $n);
+        }
+        $nav->query = "";
+        $nav->request_uri = $nav->base_path . $nav->path;
+        return $nav;
     }
 
     /** @param string $uri
@@ -383,8 +442,16 @@ class NavigationState {
 
     /** @param string $url
      * @param ?string $ref
-     * @return string */
+     * @return string
+     * @deprecated */
     function make_absolute($url, $ref = null) {
+        return $this->resolve($url, $ref);
+    }
+
+    /** @param string $url
+     * @param ?string $ref
+     * @return string */
+    function resolve($url, $ref = null) {
         $up = parse_url($url);
         if (isset($up["scheme"])) {
             return $url;
@@ -462,27 +529,29 @@ class NavigationState {
                 $path = "/{$path}";
             }
         }
-        $pos = 1;
-        while (($dot = strpos($path, ".", $pos)) !== false) {
-            if ($path[$dot - 1] !== "/") {
-                $pos = $dot + 1;
-                continue;
-            }
-            $left = strlen($path) - $dot;
-            if ($left === 1) {
+        $pos = 0;
+        while (($slashdot = strpos($path, "/.", $pos)) !== false) {
+            $dot = $slashdot + 1;
+            $sfxlen = strlen($path) - $dot;
+            if ($sfxlen === 1) {
                 $path = substr($path, 0, $dot);
                 break;
             }
             $ch = $path[$dot + 1];
             if ($ch === "/") {
                 $path = substr_replace($path, "", $dot, 2);
-            } else if ($ch !== "." || ($left > 2 && $path[$dot + 2] !== "/")) {
-                $pos = $dot + 2;
+            } else if ($ch !== "." || ($sfxlen > 2 && $path[$dot + 2] !== "/")) {
+                $pos = $dot + 1;
+            } else if ($slashdot === 0) {
+                $path = substr($path, $dot + 2);
+                if ($path === "") {
+                    $path = "/";
+                }
             } else {
-                $rpos = $left === 2 ? $dot + 2 : $dot + 3;
-                $slash = strrpos($path, "/", $dot - strlen($path) - 2) ? : 0;
+                $rpos = $sfxlen === 2 ? $dot + 2 : $dot + 3;
+                $slash = strrpos($path, "/", $dot - 2 - strlen($path)) ? : 0;
                 $path = substr_replace($path, "", $slash + 1, $rpos - $slash - 1);
-                $pos = $slash + 1;
+                $pos = $slash;
             }
         }
         return $path;
@@ -490,9 +559,17 @@ class NavigationState {
 
     /** @param ?string $url
      * @param string $ref
-     * @return ?string */
+     * @return ?string
+     * @deprecated */
     function make_absolute_under($url, $ref) {
-        // Like `make_absolute`, but result is constrained to live under
+        return $this->resolve_within($url, $ref);
+    }
+
+    /** @param ?string $url
+     * @param string $ref
+     * @return ?string */
+    function resolve_within($url, $ref = "") {
+        // Like `resolve`, but result is constrained to live under
         // `$ref` (returns null if that wouldn’t hold).
         // Relative paths in `$ref` are parsed relative to this server.
         // Relative paths in `$url` are parsed relative to `$ref`.
@@ -519,8 +596,11 @@ class NavigationState {
         } else {
             $rp_path = $rp["path"] ?? "";
             if (!str_starts_with($rp_path, "/")) {
-                $ref = substr($this->request_uri, 0, -strlen($this->query));
-                $rp_path = self::resolve_relative_path($rp_path, $ref);
+                $my_path = $this->request_uri;
+                if ($this->query !== "") {
+                    $my_path = substr($my_path, 0, -strlen($this->query));
+                }
+                $rp_path = self::resolve_relative_path($rp_path, $my_path);
             }
         }
 
@@ -583,7 +663,11 @@ class Navigation {
     /** @return NavigationState */
     static function get() {
         if (!self::$s) {
-            self::$s = new NavigationState(PHP_SAPI !== "cli" ? $_SERVER : null);
+            if (PHP_SAPI !== "cli") {
+                self::$s = NavigationState::make_server($_SERVER);
+            } else {
+                self::$s = new NavigationState;
+            }
         }
         return self::$s;
     }

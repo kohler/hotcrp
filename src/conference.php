@@ -3776,7 +3776,7 @@ class Conf {
     function redirect($url = null) {
         if (self::$test_mode) {
             $nav = Navigation::get();
-            throw new Redirection($nav->make_absolute($url ?? $this->hoturl("index")));
+            throw new Redirection($nav->resolve($url ?? $this->hoturl("index")));
         } else {
             $qreq = Qrequest::$main_request;
             if ($this->_save_msgs) {
@@ -3784,7 +3784,7 @@ class Conf {
                 $qreq->set_csession("msgs", $this->_save_msgs);
             }
             $qreq->qsession()->commit();
-            Navigation::redirect_absolute($qreq->navigation()->make_absolute($url ?? $this->hoturl("index")));
+            Navigation::redirect_absolute($qreq->navigation()->resolve($url ?? $this->hoturl("index")));
         }
     }
 
@@ -3810,9 +3810,9 @@ class Conf {
     function make_absolute_site($siteurl) {
         $nav = Navigation::get();
         if (str_starts_with($siteurl, "u/")) {
-            return $nav->make_absolute($siteurl, $nav->base_path);
+            return $nav->resolve($siteurl, $nav->base_path);
         } else {
-            return $nav->make_absolute($siteurl, $nav->site_path);
+            return $nav->resolve($siteurl, $nav->site_path);
         }
     }
 
@@ -3821,7 +3821,7 @@ class Conf {
     function qreq_redirect_url($qreq) {
         if (($r = $qreq->redirect ?? "") !== "" && $r !== "1") {
             $nav = $qreq->navigation();
-            return $nav->make_absolute_under($r, $nav->siteurl());
+            return $nav->resolve_within($r, $nav->siteurl());
         } else {
             return null;
         }

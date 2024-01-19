@@ -4,7 +4,7 @@
 
 class Navigation_Tester {
     function test_simple() {
-        $ns = new NavigationState([
+        $ns = NavigationState::make_server([
             "HTTP_HOST" => "butt.com", "SERVER_PORT" => 80,
             "SCRIPT_FILENAME" => __FILE__,
             "REQUEST_URI" => "/fart/barf/?butt",
@@ -12,15 +12,15 @@ class Navigation_Tester {
         ]);
         xassert_eqq($ns->host, "butt.com");
         xassert_eqq($ns->php_suffix, "");
-        xassert_eqq($ns->make_absolute("https://foo/bar/baz"), "https://foo/bar/baz");
-        xassert_eqq($ns->make_absolute("http://fooxxx/bar/baz"), "http://fooxxx/bar/baz");
-        xassert_eqq($ns->make_absolute("//foo/bar/baz"), "http://foo/bar/baz");
-        xassert_eqq($ns->make_absolute("/foo/bar/baz"), "http://butt.com/foo/bar/baz");
-        xassert_eqq($ns->make_absolute("after/path"), "http://butt.com/fart/barf/after/path");
-        xassert_eqq($ns->make_absolute("../after/path"), "http://butt.com/fart/after/path");
-        xassert_eqq($ns->make_absolute("?confusion=20"), "http://butt.com/fart/barf/?confusion=20");
+        xassert_eqq($ns->resolve("https://foo/bar/baz"), "https://foo/bar/baz");
+        xassert_eqq($ns->resolve("http://fooxxx/bar/baz"), "http://fooxxx/bar/baz");
+        xassert_eqq($ns->resolve("//foo/bar/baz"), "http://foo/bar/baz");
+        xassert_eqq($ns->resolve("/foo/bar/baz"), "http://butt.com/foo/bar/baz");
+        xassert_eqq($ns->resolve("after/path"), "http://butt.com/fart/barf/after/path");
+        xassert_eqq($ns->resolve("../after/path"), "http://butt.com/fart/after/path");
+        xassert_eqq($ns->resolve("?confusion=20"), "http://butt.com/fart/barf/?confusion=20");
 
-        $ns = new NavigationState([
+        $ns = NavigationState::make_server([
             "HTTP_HOST" => "butt.com", "SERVER_PORT" => 80,
             "SCRIPT_FILENAME" => __FILE__,
             "REQUEST_URI" => "/fart/barf/",
@@ -28,12 +28,12 @@ class Navigation_Tester {
         ]);
         xassert_eqq($ns->host, "butt.com");
         xassert_eqq($ns->php_suffix, "");
-        xassert_eqq($ns->make_absolute("after/path"), "http://butt.com/fart/barf/after/path");
-        xassert_eqq($ns->make_absolute("../after/path"), "http://butt.com/fart/after/path");
-        xassert_eqq($ns->make_absolute("?confusion=20"), "http://butt.com/fart/barf/?confusion=20");
-        xassert_eqq($ns->make_absolute("#ass"), "http://butt.com/fart/barf/#ass");
+        xassert_eqq($ns->resolve("after/path"), "http://butt.com/fart/barf/after/path");
+        xassert_eqq($ns->resolve("../after/path"), "http://butt.com/fart/after/path");
+        xassert_eqq($ns->resolve("?confusion=20"), "http://butt.com/fart/barf/?confusion=20");
+        xassert_eqq($ns->resolve("#ass"), "http://butt.com/fart/barf/#ass");
 
-        $ns = new NavigationState([
+        $ns = NavigationState::make_server([
             "HTTP_HOST" => "butt.com", "SERVER_PORT" => 80,
             "SCRIPT_FILENAME" => __FILE__,
             "REQUEST_URI" => "/fart/barf?whatever",
@@ -41,43 +41,51 @@ class Navigation_Tester {
         ]);
         xassert_eqq($ns->host, "butt.com");
         xassert_eqq($ns->php_suffix, "");
-        xassert_eqq($ns->make_absolute("after/path"), "http://butt.com/fart/after/path");
-        xassert_eqq($ns->make_absolute("../after/path"), "http://butt.com/after/path");
-        xassert_eqq($ns->make_absolute("../../after/path"), "http://butt.com/after/path");
-        xassert_eqq($ns->make_absolute("?confusion=20"), "http://butt.com/fart/barf?confusion=20");
-        xassert_eqq($ns->make_absolute("#ass"), "http://butt.com/fart/barf#ass");
+        xassert_eqq($ns->resolve("after/path"), "http://butt.com/fart/after/path");
+        xassert_eqq($ns->resolve("../after/path"), "http://butt.com/after/path");
+        xassert_eqq($ns->resolve("../../after/path"), "http://butt.com/after/path");
+        xassert_eqq($ns->resolve("?confusion=20"), "http://butt.com/fart/barf?confusion=20");
+        xassert_eqq($ns->resolve("#ass"), "http://butt.com/fart/barf#ass");
     }
 
-    function test_absolute_under() {
-        $ns = new NavigationState([
+    function test_resolve_within() {
+        $ns = NavigationState::make_server([
             "HTTP_HOST" => "butt.com", "SERVER_PORT" => 80,
             "SCRIPT_FILENAME" => __FILE__,
             "REQUEST_URI" => "/fart/barf/?butt",
             "SCRIPT_NAME" => "/fart"
         ]);
-        xassert_eqq($ns->make_absolute_under("https://foo/bar/baz", "/fart/"), null);
-        xassert_eqq($ns->make_absolute_under("//fooxxx/bar/baz", "/fart/"), null);
-        xassert_eqq($ns->make_absolute_under("/fart/foo/bar/baz", "/fart/"), "http://butt.com/fart/foo/bar/baz");
-        xassert_eqq($ns->make_absolute_under("/fart/foo/../baz", "/fart/"), "http://butt.com/fart/baz");
-        xassert_eqq($ns->make_absolute_under("/fart/foo/../baz", "/fart/"), "http://butt.com/fart/baz");
-        xassert_eqq($ns->make_absolute_under("foo/../baz", "/fart/"), "http://butt.com/fart/baz");
-        xassert_eqq($ns->make_absolute_under("foo/..", "/fart/"), "http://butt.com/fart/");
-        xassert_eqq($ns->make_absolute_under("foo/../", "/fart/"), "http://butt.com/fart/");
-        xassert_eqq($ns->make_absolute_under("./foo/././../", "/fart/"), "http://butt.com/fart/");
-        xassert_eqq($ns->make_absolute_under("./fo1/fo2/././../?x#a", "/fart/"), "http://butt.com/fart/fo1/?x#a");
-        xassert_eqq($ns->make_absolute_under("./fo1/.afo2/a.fo3/././../?x#a", "/fart/"), "http://butt.com/fart/fo1/.afo2/?x#a");
-        xassert_eqq($ns->make_absolute_under("./fo1/fo2/././../?x#a", "httpx://fart.com"), "httpx://fart.com/fo1/?x#a");
-        xassert_eqq($ns->make_absolute_under("httpx://fart.com/./fo1/fo2/././../?x#a", "httpx://fart.com"), "httpx://fart.com/fo1/?x#a");
+        xassert_eqq($ns->resolve_within("https://foo/bar/baz", "/fart/"), null);
+        xassert_eqq($ns->resolve_within("//fooxxx/bar/baz", "/fart/"), null);
+        xassert_eqq($ns->resolve_within("/fart/foo/bar/baz", "/fart/"), "http://butt.com/fart/foo/bar/baz");
+        xassert_eqq($ns->resolve_within("/fart/foo/../baz", "/fart/"), "http://butt.com/fart/baz");
+        xassert_eqq($ns->resolve_within("/fart/foo/../baz", "/fart/"), "http://butt.com/fart/baz");
+        xassert_eqq($ns->resolve_within("foo/../baz", "/fart/"), "http://butt.com/fart/baz");
+        xassert_eqq($ns->resolve_within("foo/..", "/fart/"), "http://butt.com/fart/");
+        xassert_eqq($ns->resolve_within("foo/../", "/fart/"), "http://butt.com/fart/");
+        xassert_eqq($ns->resolve_within("./foo/././../", "/fart/"), "http://butt.com/fart/");
+        xassert_eqq($ns->resolve_within("./fo1/fo2/././../?x#a", "/fart/"), "http://butt.com/fart/fo1/?x#a");
+        xassert_eqq($ns->resolve_within("./fo1/.afo2/a.fo3/././../?x#a", "/fart/"), "http://butt.com/fart/fo1/.afo2/?x#a");
+        xassert_eqq($ns->resolve_within("./fo1/fo2/././../?x#a", "httpx://fart.com"), "httpx://fart.com/fo1/?x#a");
+        xassert_eqq($ns->resolve_within("httpx://fart.com/./fo1/fo2/././../?x#a", "httpx://fart.com"), "httpx://fart.com/fo1/?x#a");
 
-        xassert_eqq($ns->make_absolute_under("https://foo/bar/baz", "/fart"), null);
-        xassert_eqq($ns->make_absolute_under("//fooxxx/bar/baz", "/fart"), null);
-        xassert_eqq($ns->make_absolute_under("/fart/foo/bar/baz", "/fart"), "http://butt.com/fart/foo/bar/baz");
-        xassert_eqq($ns->make_absolute_under("/fart/foo/../baz", "/fart"), "http://butt.com/fart/baz");
-        xassert_eqq($ns->make_absolute_under("/fart/foo/../baz", "/fart"), "http://butt.com/fart/baz");
-        xassert_eqq($ns->make_absolute_under("foo/../fart", "/fart"), "http://butt.com/fart/");
-        xassert_eqq($ns->make_absolute_under("foo/..", "/fart"), null);
-        xassert_eqq($ns->make_absolute_under("./foo/././../fart", "/fart"), "http://butt.com/fart/");
-        xassert_eqq($ns->make_absolute_under("./foo/././../farting", "/fart"), null);
+        xassert_eqq($ns->resolve_within("https://foo/bar/baz", "/fart"), null);
+        xassert_eqq($ns->resolve_within("//fooxxx/bar/baz", "/fart"), null);
+        xassert_eqq($ns->resolve_within("/fart/foo/bar/baz", "/fart"), "http://butt.com/fart/foo/bar/baz");
+        xassert_eqq($ns->resolve_within("/fart/foo/../baz", "/fart"), "http://butt.com/fart/baz");
+        xassert_eqq($ns->resolve_within("/fart/foo/../baz", "/fart"), "http://butt.com/fart/baz");
+        xassert_eqq($ns->resolve_within("foo/../fart", "/fart"), "http://butt.com/fart/");
+        xassert_eqq($ns->resolve_within("foo/..", "/fart"), null);
+        xassert_eqq($ns->resolve_within("./foo/././../fart", "/fart"), "http://butt.com/fart/");
+        xassert_eqq($ns->resolve_within("./foo/././../farting", "/fart"), null);
+        xassert_eqq($ns->resolve_within("/fart/barf/"), "http://butt.com/fart/barf/");
+        xassert_eqq($ns->resolve_within("/fort/bark/"), null);
+
+        $nav = NavigationState::make_base("https://y.com/z/q/");
+        xassert_eqq($nav->resolve_within("/z/q/a/b"), "https://y.com/z/q/a/b");
+        xassert_eqq($nav->resolve_within("/z/q"), "https://y.com/z/q/");
+        xassert_eqq($nav->resolve_within("../q/", "https://y.com/z/q/"), "https://y.com/z/q/");
+        xassert_eqq($nav->resolve_within("../q/", ""), "https://y.com/z/q/");
     }
 
     const FL_OSF = 1;
@@ -111,7 +119,7 @@ class Navigation_Tester {
                 $args["ORIG_SCRIPT_NAME"] = $args["SCRIPT_NAME"] . $path_info;
             }
         }
-        return new NavigationState(array_merge($args, $extra));
+        return NavigationState::make_server(array_merge($args, $extra));
     }
 
     /** @param string $request_uri
@@ -731,7 +739,7 @@ class Navigation_Tester {
 
 
     function test_php_suffix_override() {
-        $ns = new NavigationState([
+        $ns = NavigationState::make_server([
             "HTTP_HOST" => "butt.com", "SERVER_PORT" => 80,
             "SERVER_SOFTWARE" => "Apache 2.4", "SCRIPT_FILENAME" => __FILE__,
             "REQUEST_URI" => "/fart/barf/?butt",
