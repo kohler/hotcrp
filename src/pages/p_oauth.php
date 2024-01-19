@@ -95,6 +95,7 @@ class OAuth_Page {
             $tok->assign_data([
                 "authtype" => $authi->name,
                 "session" => $this->qreq->qsid(),
+                "redirect" => $this->qreq->redirect,
                 "site_uri" => $this->conf->opt("paperSite"),
                 "nonce" => $nonce
             ]);
@@ -234,14 +235,26 @@ class OAuth_Page {
         $info = LoginHelper::check_external_login(Contact::make_keyed($this->conf, $reg));
         if (!$info["ok"]) {
             LoginHelper::login_error($this->conf, $jid->email, $info, null);
-            throw new Redirection($tokdata->site_url);
-        } else {
-            $user = $info["user"];
-            $this->conf->feedback_msg(new MessageItem(null, "<0>Signed in", MessageSet::SUCCESS));
-            $uindex = UpdateSession::user_change($this->qreq, $user->email, true);
-            UpdateSession::usec_add($this->qreq, $user->email, 1, 0, true);
-            throw new Redirection(hoturl_add_raw($tokdata->site_uri, "i=" . urlencode($user->email)));
+            throw new Redirection($tokdata->site_uri);
         }
+
+        $user = $info["user"];
+        $this->conf->feedback_msg(new MessageItem(null, "<0>Signed in", MessageSet::SUCCESS));
+        $uindex = UpdateSession::user_change($this->qreq, $user->email, true);
+        UpdateSession::usec_add($this->qreq, $user->email, 1, 0, true);
+
+        $uri = $tokdata->site_uri;
+        if (!str_ends_with($uri, "/")) {
+            $uri .= "/";
+        }
+        if (count(Contact::session_users($this->qreq)) > 1) {
+            $uri .= "u/{$uindex}/";
+        }
+        if ($tokdata->redirect) {
+            $rnav = NavigationState::make_base($uri);
+            $uri = $rnav->resolve_within($tokdata->redirect) ?? $uri;
+        }
+        throw new Redirection($uri);
     }
 
     static function go(Contact $user, Qrequest $qreq) {
