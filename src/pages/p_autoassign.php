@@ -78,7 +78,7 @@ class Autoassign_Page {
             $qreq->has_pcc = true;
             foreach (preg_split('/\s+/', $qreq->pcs) as $n) {
                 if (ctype_digit($n))
-                    $qreq["pcc$n"] = true;
+                    $qreq["pcc{$n}"] = true;
             }
         }
         if (!isset($qreq->pctyp)

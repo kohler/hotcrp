@@ -28,6 +28,8 @@ class Autoassign_Batch {
     public $no_coassign = [];
     /** @var list<int> */
     public $pcc;
+    /** @var bool */
+    private $pcc_set = false;
     /** @var list<string> */
     public $users = [];
     /** @var bool */
@@ -67,6 +69,7 @@ class Autoassign_Batch {
         } else {
             $this->t = "s";
         }
+        $this->pcc = array_keys($this->conf->pc_members());
         if ($this->_jtok) {
             try {
                 $this->_jtok->update_use();
@@ -145,18 +148,17 @@ class Autoassign_Batch {
             $this->t = "all";
         }
         $pcc = $this->pcc;
-        if ($pcc === null) {
-            if (empty($arg["u"]) || str_starts_with($arg["u"][0], "-")) {
-                $pcc = array_keys($this->conf->pc_members());
-            } else {
+        if (!empty($arg["u"])) {
+            if (!str_starts_with($arg["u"][0], "-") && !$this->pcc_set) {
                 $pcc = [];
             }
+            $this->pcc_set = true;
         }
         foreach ($arg["u"] ?? [] as $utxt) {
             if (($neg = str_starts_with($utxt, "-"))) {
                 $utxt = substr($utxt, 1);
             }
-            $cs = new ContactSearch(ContactSearch::F_USER | ContactSearch::F_TAG | ContactSearch::F_PC, $utxt, $this->user);
+            $cs = new ContactSearch(ContactSearch::F_USER | ContactSearch::F_TAG | ContactSearch::F_USERID | ContactSearch::F_PC, $utxt, $this->user);
             if ($neg) {
                 $pcc = array_diff($pcc, $cs->user_ids());
             } else {
