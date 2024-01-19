@@ -1255,7 +1255,7 @@ class PaperList {
             if (empty($this->_columns_by_name[$name])
                 && $this->want_column_errors($name)) {
                 if (empty($this->_finding_column_errors)) {
-                    $this->column_error("<0>Field ‘{$name}’ cannot be shown");
+                    $this->column_error("<0>Field ‘{$name}’ not found");
                 }
                 foreach ($this->_finding_column_errors as $mi) {
                     $this->message_set()->append_item($mi);
