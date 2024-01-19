@@ -7909,7 +7909,7 @@ try {
 
 function suggest() {
     var elt = this, suggdata,
-        hintdiv, hintinfo, blurring = false, hiding = false,
+        hintdiv, hintinfo, blurring = false, hiding = false, will_display = false,
         wasnav = 0, spacestate = -1, wasmouse = null, autocomplete = null;
 
     function kill(success) {
@@ -8046,6 +8046,14 @@ function suggest() {
             }
         }
         next(null);
+        will_display = false;
+    }
+
+    function display_soon() {
+        if (!will_display) {
+            setTimeout(display, 1);
+            will_display = true;
+        }
     }
 
     function do_complete(complete_elt) {
@@ -8167,24 +8175,24 @@ function suggest() {
             }
         } else if (k.substring(0, 5) === "Arrow" && !m && hintdiv && move_active(k)) {
             evt.preventDefault();
-        } else {
-            if (pspacestate > 0
-                && event_key.printable(evt)
-                && elt.selectionStart === elt.selectionEnd
-                && elt.selectionStart === pspacestate
-                && elt.value.charCodeAt(pspacestate - 1) === 32
-                && punctre.test(k)) {
-                elt.setRangeText(k, pspacestate - 1, pspacestate, "end");
-                evt.preventDefault();
-                handle_ui.stopPropagation(evt);
-            }
-            if (hintdiv || event_key.printable(evt) || k === "Backspace") {
-                spacestate = 0;
-                setTimeout(display, 1);
-            }
+        } else if (pspacestate > 0
+                   && event_key.printable(evt)
+                   && elt.selectionStart === elt.selectionEnd
+                   && elt.selectionStart === pspacestate
+                   && elt.value.charCodeAt(pspacestate - 1) === 32
+                   && punctre.test(k)) {
+            elt.setRangeText(k, pspacestate - 1, pspacestate, "end");
+            evt.preventDefault();
+            handle_ui.stopPropagation(evt);
+            display_soon();
         }
         wasnav = Math.max(wasnav - 1, 0);
         wasmouse = null;
+    }
+
+    function input(evt) {
+        spacestate = 0;
+        display_soon();
     }
 
     function click(evt) {
@@ -8216,7 +8224,9 @@ function suggest() {
     if (!suggdata) {
         suggdata = {promises: []};
         $.data(elt, "suggest", suggdata);
-        $(elt).on("keydown", kp).on("blur", blur);
+        elt.addEventListener("keydown", kp);
+        elt.addEventListener("input", input);
+        elt.addEventListener("blur", blur);
     }
     $.each(classList(elt), function (i, c) {
         if (builders[c] && $.inArray(builders[c], suggdata.promises) < 0)
