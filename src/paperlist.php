@@ -218,8 +218,8 @@ class PaperList {
     private $_paper_linkto;
     /** @var bool */
     private $_view_facets = false;
-    /** @var bool */
-    private $_view_force = false;
+    /** @var int */
+    private $_view_force = 0;
     /** @var int */
     private $_view_hide_all = 0;
     /** @var array<string,int> */
@@ -661,7 +661,7 @@ class PaperList {
         }
 
         if ($k === "force") {
-            $this->_view_force = $v;
+            $this->_view_force = $v ? Contact::OVERRIDE_CONFLICT : 0;
         } else if ($k === "facets") {
             $this->_view_facets = $v;
         } else if ($k === "linkto") {
@@ -974,7 +974,7 @@ class PaperList {
         $this->_groups = []; // `_groups === null` means _sort has not been called
 
         // actually sort
-        $overrides = $this->user->add_overrides($this->_view_force ? Contact::OVERRIDE_CONFLICT : 0);
+        $overrides = $this->user->add_overrides($this->_view_force);
         if ($this->_then_map) {
             foreach ($rowset as $row) {
                 $row->_search_group = $this->_then_map[$row->paperId];
@@ -1095,7 +1095,7 @@ class PaperList {
         $sn = $s0->sort_subset === null ? $s0->full_sort_name() : "none";
         $sp = urlencode($sn);
         $rp = urlencode($this->_report_id);
-        $fsp = $this->_view_force ? 1 : "";
+        $fsp = $this->_view_force !== 0 ? 1 : "";
         return "{$qp}&sort={$sp}&forceShow={$fsp}&report={$rp}";
     }
 
@@ -1653,7 +1653,7 @@ class PaperList {
                     $this->row_attr["data-color-classes-conflicted"] = $ccx;
                     $trclass[] = "colorconflict";
                 }
-                $cc = $this->_view_force ? $cco : $ccx;
+                $cc = $this->_view_force !== 0 ? $cco : $ccx;
                 $rstate->hascolors = $rstate->hascolors || str_ends_with($cco, " tagbg");
             } else if ($this->row_tags !== "") {
                 $cc = $row->conf->tags()->color_classes($this->row_tags);
@@ -2040,7 +2040,7 @@ class PaperList {
         if (($sort = $this->sortdef()) !== "") {
             $args["sort"] = $sort;
         }
-        if ($this->_view_force) {
+        if ($this->_view_force !== 0) {
             $args["forceShow"] = 1;
         }
         return $this->search->create_session_list_object($this->paper_ids(), $this->_list_description(), $args);
@@ -2385,6 +2385,7 @@ class PaperList {
         $this->_reset_vcolumns(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
         $data = [];
         if (!empty($this->_vcolumns)) {
+            $overrides = $this->user->add_overrides($this->_view_force);
             foreach ($this->rowset() as $row) {
                 $this->_row_setup($row);
                 $p = ["id" => $row->paperId];
@@ -2396,6 +2397,7 @@ class PaperList {
                 }
                 $data[$row->paperId] = $p;
             }
+            $this->user->set_overrides($overrides);
         }
         return $data;
     }
@@ -2435,6 +2437,7 @@ class PaperList {
     function text_csv() {
         // get column list, check sort
         $this->_reset_vcolumns(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
+        $overrides = $this->user->add_overrides($this->_view_force);
 
         // collect row data
         $body = [];
@@ -2455,6 +2458,7 @@ class PaperList {
             }
         }
 
+        $this->user->set_overrides($overrides);
         return [$header, $body];
     }
 }
