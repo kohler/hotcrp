@@ -106,6 +106,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     public $content;
     /** @var bool */
     public $pretty_print;
+    /** @var bool */
+    public $minimal = false;
 
     /** @param int|array<string,mixed>|\stdClass|\JsonSerializable $a1
      * @param ?array<string,mixed> $a2 */
@@ -135,6 +137,17 @@ class JsonResult implements JsonSerializable, ArrayAccess {
             assert(is_associative_array($a2));
             $this->content = $a2;
         }
+    }
+
+    /** @param int $status
+     * @param array<string,mixed> $content
+     * @return JsonResult */
+    static function make_minimal($status, $content) {
+        $jr = new JsonResult(null);
+        $jr->status = $status;
+        $jr->content = $content;
+        $jr->minimal = true;
+        return $jr;
     }
 
     /** @param int $status
@@ -222,7 +235,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
 
     /** @param ?bool $validated */
     function emit($validated = null) {
-        if ($this->status) {
+        if ($this->status && !$this->minimal) {
             if (!isset($this->content["ok"])) {
                 $this->content["ok"] = $this->status <= 299;
             }

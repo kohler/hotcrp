@@ -63,6 +63,7 @@ class TokenInfo {
     const OAUTHSIGNIN = 6;
     const BEARER = 7;
     const JOB = 8;
+    const OAUTHCODE = 9;
 
     const CHF_TIMES = 1;
     const CHF_DATA = 2;

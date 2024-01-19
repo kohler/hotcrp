@@ -5354,7 +5354,7 @@ class Conf {
             && $method !== "OPTIONS"
             && !$qreq->valid_token()
             && (!$uf || ($uf->post ?? false))
-            && (!$uf || !($uf->allow_xss ?? false))) {
+            && (!$uf || ($uf->check_token ?? null) !== false)) {
             return JsonResult::make_error(403, "<0>Missing credentials");
         } else if ($user->is_disabled()
                    && (!$uf || !($uf->allow_disabled ?? false))) {

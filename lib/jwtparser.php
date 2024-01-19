@@ -326,6 +326,20 @@ class JWTParser extends MessageSet {
      * @return string */
     static function make_plaintext($payload) {
         $jose = '{"alg":"none","typ":"JWT"}';
-        return base64url_encode($jose) . "." . base64url_encode(json_encode_db($payload)) . ".";
+        $payload = json_encode_db($payload);
+        return base64url_encode($jose) . "." . base64url_encode($payload) . ".";
+    }
+
+    /** @param object $payload
+     * @param string $key
+     * @param 'HS256'|'HS384'|'HS512' $alg
+     * @return string */
+    static function make_mac($payload, $key, $alg = "HS256") {
+        assert(isset(self::$hash_alg_map[$alg]));
+        $jose = '{"alg":"' . $alg . '","typ":"JWT"}';
+        $payload = json_encode_db($payload);
+        $s = base64url_encode($jose) . "." . base64url_encode($payload);
+        $signature = hash_hmac(self::$hash_alg_map[$alg], $s, $key);
+        return $s . "." . base64url_encode($signature);
     }
 }

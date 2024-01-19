@@ -118,6 +118,10 @@
         "function": "Completion_API::mentioncompletion_api"
     },
     {
+        "name": "oauthtoken", "post": true, "allow_disabled": true, "check_token": false,
+        "function": "Authorize_Page::oauthtoken_api"
+    },
+    {
         "name": "paper", "get": true,
         "function": "Paper_API::run"
     },
