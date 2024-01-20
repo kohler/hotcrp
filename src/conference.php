@@ -4700,6 +4700,41 @@ class Conf {
 
     /** @param Qrequest $qreq
      * @param string|list<string> $title */
+    private function print_body_header($qreq, $title, $id, $extra) {
+        if ($id === "home" || ($extra["hide_title"] ?? false)) {
+            echo '<div id="h-site" class="header-site-home">',
+                '<h1><a class="q" href="', $this->hoturl("index", ["cap" => null]),
+                '">', htmlspecialchars($this->short_name), '</a></h1></div>';
+        } else {
+            echo '<div id="h-site" class="header-site-page">',
+                '<a class="q" href="', $this->hoturl("index", ["cap" => null]),
+                '"><span class="header-site-name">', htmlspecialchars($this->short_name),
+                '</span> Home</a></div>';
+        }
+
+        echo '<div id="h-right">';
+        if (($user = $qreq->user()) && !$user->is_empty()) {
+            $this->print_header_profile($id, $qreq, $user);
+        }
+        echo '</div>';
+        if (!($extra["hide_title"] ?? false)) {
+            $title_div = $extra["title_div"] ?? null;
+            if ($title_div === null) {
+                if (($subtitle = $extra["subtitle"] ?? null)) {
+                    $title .= " &nbsp;&#x2215;&nbsp; <strong>{$subtitle}</strong>";
+                }
+                if ($title && $title !== "Home") {
+                    $title_div = "<div id=\"h-page\"><h1>{$title}</h1></div>";
+                }
+            }
+            echo $title_div ?? "";
+        }
+        echo $extra["action_bar"] ?? QuicklinksRenderer::make($qreq),
+            "<hr class=\"c\">\n";
+    }
+
+    /** @param Qrequest $qreq
+     * @param string|list<string> $title */
     function print_body_entry($qreq, $title, $id, $extra = []) {
         $user = $qreq->user();
         echo "<body";
@@ -4733,43 +4768,11 @@ class Conf {
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
 
-        $action_bar = $extra["action_bar"] ?? QuicklinksRenderer::make($qreq);
-
-        $title_div = $extra["title_div"] ?? null;
-        if ($title_div === null) {
-            if (($subtitle = $extra["subtitle"] ?? null)) {
-                $title .= " &nbsp;&#x2215;&nbsp; <strong>{$subtitle}</strong>";
-            }
-            if ($title && $title !== "Home") {
-                $title_div = "<div id=\"h-page\"><h1>{$title}</h1></div>";
-            }
+        if (!($extra["hide_header"] ?? false)) {
+            $this->print_body_header($qreq, $title, $id, $extra);
         }
-
-        // site header
-        if ($id === "home" || ($extra["hide_title"] ?? false)) {
-            echo '<div id="h-site" class="header-site-home">',
-                '<h1><a class="q" href="', $this->hoturl("index", ["cap" => null]),
-                '">', htmlspecialchars($this->short_name), '</a></h1></div>';
-        } else {
-            echo '<div id="h-site" class="header-site-page">',
-                '<a class="q" href="', $this->hoturl("index", ["cap" => null]),
-                '"><span class="header-site-name">', htmlspecialchars($this->short_name),
-                '</span> Home</a></div>';
-        }
-
-        echo '<div id="h-right">';
-        if ($user && !$user->is_empty()) {
-            $this->print_header_profile($id, $qreq, $user);
-        }
-        echo '</div>';
-        if ($title_div && !($extra["hide_title"] ?? false)) {
-            echo $title_div;
-        }
-        echo $action_bar;
-
-        echo "  <hr class=\"c\">\n";
-
         $this->_header_printed = true;
+
         echo "<div id=\"h-messages\" class=\"msgs-wide\">\n";
         if (($x = $this->opt("maintenance"))) {
             echo Ht::msg(is_string($x) ? $x : "<strong>This site is down for maintenance.</strong> Please check back later.", 2);
