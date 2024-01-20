@@ -17,6 +17,8 @@ class Getopt {
     private $allmulti = false;
     /** @var ?bool */
     private $otheropt = false;
+    /** @var ?bool */
+    private $dupopt = true;
     /** @var bool */
     private $interleave = false;
     /** @var ?int */
@@ -149,6 +151,13 @@ class Getopt {
      * @return $this */
     function otheropt($otheropt) {
         $this->otheropt = $otheropt;
+        return $this;
+    }
+
+    /** @param ?bool $dupopt
+     * @return $this */
+    function dupopt($dupopt) {
+        $this->dupopt = $dupopt;
         return $this;
     }
 
@@ -527,6 +536,9 @@ class Getopt {
             if (!array_key_exists($name, $res)) {
                 $res[$name] = $pot >= self::MARG ? [$value] : $value;
             } else if ($pot < self::MARG && !$this->allmulti) {
+                if (!$this->dupopt) {
+                    throw new CommandLineException("`{$oname}` was given multiple times", $this);
+                }
                 $res[$name] = $value;
             } else if (is_array($res[$name])) {
                 $res[$name][] = $value;
