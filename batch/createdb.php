@@ -75,6 +75,18 @@ class CreateDB_Batch {
         if (!$this->need_password) {
             $this->password = $arg["password"] ?? null;
         }
+        if (isset($arg["password-file"])) {
+            if (($t = @file_get_contents($arg["password-file"])) === false) {
+                throw new CommandLineException("cannot read `--password-file`");
+            }
+            if (preg_match('/^user\s+(\S+)/m', $t, $m)) {
+                $this->user = $m[1];
+            }
+            if (preg_match('/^password\s+(.*)$/m', $t, $m)) {
+                $this->password = trim($m[1]);
+                $this->need_password = false;
+            }
+        }
 
         $this->name = $arg["name"] ?? null;
         $this->write_config = !isset($arg["no-config"]);
@@ -596,8 +608,9 @@ class CreateDB_Batch {
      * @return CreateDB_Batch */
     static function make_args($argv, $interactive) {
         $arg = (new Getopt)->long(
-            "user:,u: =USER Set username for database admin connection",
-            "password::,p:: =PASSWORD Set password for database admin connection",
+            "user:,u: =USER Set username for database admin",
+            "password::,p:: =PASSWORD Set password for database admin",
+            "password-file: =FILE Read database admin information from FILE",
             "name:,n: =DBNAME Set name of HotCRP database",
             "config:,c: =CONFIG Set configuration file [conf/options.php]",
             "minimal Output minimal configuration file",
