@@ -563,7 +563,9 @@ class Html_Sitype extends Sitype {
         if (($t = $ch->clean($vstr)) !== false) {
             return $t;
         } else {
-            $sv->error_at($si, "<5>{$ch->last_error}");
+            foreach ($ch->message_list() as $mi) {
+                $sv->append_item_at($si, $mi);
+            }
             return null;
         }
     }
