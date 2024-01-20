@@ -2227,6 +2227,37 @@ $(function () {
     });
 });
 
+handle_ui.on("js-range-combo", function (evt) {
+    let te = this.type === "text" || this.type === "number" ? this : null,
+        re = this.type === "range" ? this : null;
+    if (!te) {
+        te = re.previousElementSibling;
+        while (te && (te.nodeName !== "INPUT" || (te.type !== "text" && te.type !== "number"))) {
+            te = te.previousElementSibling;
+        }
+    } else {
+        re = te.nextElementSibling;
+        while (re && (re.nodeName !== "INPUT" || re.type !== "range")) {
+            re = re.nextElementSibling;
+        }
+    }
+    if (this === te && re) {
+        let value = te.value.trim();
+        if (value === "" && te.placeholder) {
+            value = te.placeholder.trim();
+        }
+        const valid = value === ""
+            || (/^\d+$/.test(value) && +value >= re.min && +value <= re.max);
+        toggleClass(te, "has-error", !valid);
+        if (valid && value !== "") {
+            re.value = +value;
+        }
+    } else if (this === re && te) {
+        removeClass(te, "has-error");
+        te.value = re.value;
+    }
+});
+
 
 // bubbles and tooltips
 var make_bubble = (function () {
