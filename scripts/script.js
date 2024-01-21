@@ -3090,7 +3090,83 @@ handle_ui.on("js-mark-submit", function () {
 });
 
 
-// initialization
+// banner
+hotcrp.banner = (function ($) {
+function resize(b) {
+    const offs = document.querySelectorAll(".need-banner-offset");
+    if (b) {
+        const h = b.offsetHeight;
+        for (const e of offs) {
+            let bo;
+            if (e.hasAttribute("data-banner-offset")) {
+                bo = e.getAttribute("data-banner-offset") || "0";
+            } else {
+                if (hasClass(e, "banner-bottom")) {
+                    const er = e.getBoundingClientRect(),
+                        eps = e.parentElement.getBoundingClientRect();
+                    bo = "B" + (eps.bottom - er.bottom);
+                } else {
+                    const es = window.getComputedStyle(e);
+                    bo = es.top;
+                }
+                e.setAttribute("data-banner-offset", bo);
+            }
+            if (bo.startsWith("B")) {
+                e.style.bottom = (-h + parseFloat(bo.substring(1))) + "px";
+            } else {
+                e.style.top = (h + parseFloat(bo)) + "px";
+            }
+        }
+        document.body.style.minHeight = "calc(100vh - " + h + "px)";
+    } else {
+        for (const e of offs) {
+            const bo = e.getAttribute("data-banner-offset");
+            e.style[bo.startsWith("B") ? "bottom" : "top"] = null;
+        }
+        document.body.style.minHeight = null;
+    }
+}
+return {
+    add: function (id) {
+        let e = $$(id);
+        if (!e) {
+            let b = $$("p-banner");
+            if (!b) {
+                b = document.createElement("div");
+                b.id = "p-banner";
+                document.body.prepend(b);
+            }
+            e = document.createElement("div");
+            e.id = id;
+            b.append(e);
+        }
+        return e;
+    },
+    remove: function (id) {
+        const e = $$(id);
+        if (e) {
+            if (global_tooltip
+                && e.contains(global_tooltip.near())) {
+                global_tooltip.close();
+            }
+            const b = e.parentElement;
+            e.remove();
+            if (!b.firstChild) {
+                b.remove();
+                resize(null);
+            } else {
+                resize(b);
+            }
+        }
+    },
+    resize: function () {
+        resize($$("p-banner"));
+    }
+};
+})(jQuery);
+
+
+// initialization and tracker
 (function ($) {
 var dl, dlname, dltime, redisplay_timeout,
     reload_outstanding = 0, reload_nerrors = 0, reload_count = 0,
@@ -3330,9 +3406,7 @@ function tracker_html(tr) {
 }
 
 function display_tracker() {
-    var mne = $$("p-tracker"),
-        moffsets = document.querySelectorAll(".need-tracker-offset"),
-        t, i, e;
+    var t, i, e;
 
     // tracker button
     if ((e = $$("tracker-connect-btn"))) {
@@ -3349,27 +3423,13 @@ function display_tracker() {
     if (!dl.tracker
         || (dl.tracker.ts && dl.tracker.ts.length === 0)
         || hasClass(document.body, "hide-tracker")) {
-        if (mne) {
-            if (global_tooltip
-                && mne.contains(global_tooltip.near())) {
-                global_tooltip.close();
-            }
-            mne.parentNode.removeChild(mne);
-        }
-        for (i = 0; i !== moffsets.length; ++i) {
-            moffsets[i].style.top = null;
-        }
+        hotcrp.banner.remove("p-tracker");
         removeClass(document.body, "has-tracker");
         return;
     }
 
     // tracker display
-    if (!mne) {
-        mne = document.createElement("div");
-        mne.id = "p-tracker";
-        document.body.insertBefore(mne, document.body.firstChild);
-        last_tracker_html = null;
-    }
+    const mne = hotcrp.banner.add("p-tracker");
     if (!ever_tracker_display) {
         $(window).on("resize", display_tracker);
         $(display_tracker);
@@ -3396,15 +3456,8 @@ function display_tracker() {
         if (tracker_has_format)
             render_text.on_page();
     }
-    for (i = 0; i !== moffsets.length; ++i) {
-        e = moffsets[i];
-        if (!e.hasAttribute("data-tracker-offset")) {
-            e.setAttribute("data-tracker-offset", window.getComputedStyle(e).top);
-        }
-        e.style.top = (mne.offsetHeight + parseFloat(e.getAttribute("data-tracker-offset") || "0")) + "px";
-    }
-    if (dl.tracker)
-        tracker_show_elapsed();
+    hotcrp.banner.resize();
+    dl.tracker && tracker_show_elapsed();
 }
 
 function tracker_refresh() {
@@ -13668,6 +13721,7 @@ Object.assign(window.hotcrp, {
     // add_diff_check
     // add_review
     // add_preference_ajax
+    // banner
     check_version: check_version,
     demand_load: demand_load,
     // drag_block_reorder

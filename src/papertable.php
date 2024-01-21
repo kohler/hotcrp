@@ -2369,9 +2369,9 @@ class PaperTable {
         }
         if ($this->npapstrip) {
             Ht::stash_script("hotcrp.load_paper_sidebar()");
-            echo '</div></div><nav class="pslcard-nav need-tracker-offset">';
+            echo '</div></div><nav class="pslcard-nav need-banner-offset">';
         } else {
-            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav need-tracker-offset">';
+            echo '<article class="pcontainer"><div class="pcard-left pcard-left-nostrip"><nav class="pslcard-nav need-banner-offset">';
         }
         $viewable_tags = $this->prow->viewable_tags($this->user);
         echo '<h4 class="pslcard-home">';

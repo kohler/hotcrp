@@ -4653,7 +4653,7 @@ class Conf {
         assert($user && !$user->is_empty());
 
         if ($user->is_actas_user()) {
-            $details_class = " header-actas need-tracker-offset";
+            $details_class = " header-actas need-banner-offset";
             $details_prefix = "<span class=\"warning-mark\"></span> Acting as ";
             $details_suffix = "";
             $button_class = "q";
@@ -4756,7 +4756,7 @@ class Conf {
         if (($x = $this->opt["uploadMaxFilesize"] ?? null) !== null) {
             echo ' data-document-max-size="', ini_get_bytes(null, $x), '"';
         }
-        echo '><div id="p-page" class="need-tracker-offset"><div id="p-header">';
+        echo '><div id="p-page" class="need-banner-offset"><div id="p-header">';
 
         // initial load (JS's timezone offsets are negative of PHP's)
         Ht::stash_script("hotcrp.onload.time(" . (-(int) date("Z", Conf::$now) / 60) . "," . ($this->opt("time24hour") ? 1 : 0) . ")");

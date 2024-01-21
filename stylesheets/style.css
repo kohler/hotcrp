@@ -4699,13 +4699,19 @@ body {
 }
 }
 
-#p-tracker {
+#p-banner {
 	left: 0;
 	top: 0;
 	width: 100%;
 	font-size: smaller;
 	position: fixed;
 	z-index: 8;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+}
+#p-tracker {
+	order: 100;
 }
 .tracker-match {
 	background: rgba(221, 250, 238, 0.9);

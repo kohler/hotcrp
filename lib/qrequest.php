@@ -647,7 +647,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function print_footer() {
         echo '<hr class="c"></div>', // close #p-body
             '</div>',                // close #p-page
-            '<div id="p-footer">',
+            '<div id="p-footer" class="need-banner-offset banner-bottom">',
             $this->_conf->opt("extraFooter") ?? "",
             '<a class="noq" href="https://hotcrp.com/">HotCRP</a>';
         if (!$this->_conf->opt("noFooterVersion")) {
