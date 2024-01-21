@@ -1879,6 +1879,12 @@ class Conf {
     }
 
     /** @return bool */
+    function allow_local_signin() {
+        $lt = $this->login_type();
+        return $lt !== "none" && $lt !== "oauth";
+    }
+
+    /** @return bool */
     function allow_user_self_register() {
         return !$this->disable_non_pc && !$this->opt("disableNewUsers");
     }

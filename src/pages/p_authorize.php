@@ -177,28 +177,31 @@ class Authorize_Page {
         echo '<p class="mt-4 mb-0 hint">If you continue, HotCRP.com will share your name, email address, affiliation, and other profile information with ', $clt, '.</p>';
     }
 
-    function print_form_active() {
+    function print_form_main() {
         $buttons = [];
         $nav = $this->qreq->navigation();
+        $top = "";
         foreach (Contact::session_users($this->qreq) as $i => $email) {
             if ($email === "") {
                 continue;
             }
             $url = $nav->base_absolute() . "u/{$i}/authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt) . "&authconfirm=1";
-            $buttons[] = Ht::button("Sign in as " . htmlspecialchars($email), ["type" => "submit", "formaction" => $url, "formmethod" => "post", "class" => "mt-2 w-100 flex-grow-1 btn-primary"]);
+            $buttons[] = Ht::button("Sign in as " . htmlspecialchars($email), ["type" => "submit", "formaction" => $url, "formmethod" => "post", "class" => "btn-primary{$top} w-100 flex-grow-1"]);
+            $top = " mt-2";
+        }
+
+        $local = $this->conf->allow_local_signin();
+        if (!empty($buttons) && $local) {
+            $buttons[] = Ht::button("Use another account", ["type" => "button", "class" => "ui js-foldup{$top} w-100 flex-grow-1", "data-fold-target" => "p-authorize-other#2o"]);
         }
         if (!empty($buttons)) {
-            echo '<div class="mb-4">', join("", $buttons), '</div>';
+            echo '<div class="mb-5">', join("", $buttons), '</div>';
         }
-    }
-
-    function print_form_actions() {
-        if (($lt = $this->conf->login_type()) === "none" || $lt === "oauth") {
-            return;
+        if ($local) {
+            echo '<div id="p-authorize-other" class="', empty($buttons) ? 'mt-3' : 'has-fold fold2c ui-fold js-fold-focus"><div class="mt-3 fx2', '">';
+            $this->cs->print_members("authorize/other");
+            echo empty($buttons) ? '</div>' : '</div></div>';
         }
-        echo '<div class="mt-3">',
-            Ht::submit("", "Sign in", ["id" => "k-signin", "class" => "btn-success w-100 flex-grow-1", "tabindex" => 1]),
-            '</div>';
     }
 
     private function handle_authconfirm() {

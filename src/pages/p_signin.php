@@ -57,9 +57,9 @@ class Signin_Page {
                 $info = $cs->call_function($gj, $gj->signin_function, $info, $gj);
             }
             $conf->redirect();
-        } else if (($lt = $conf->login_type()) === "none" || $lt === "oauth") {
+        } else if (!$conf->allow_local_signin()) {
             // do nothing
-        } else if ($lt === "htauth") {
+        } else if ($conf->login_type() === "htauth") {
             LoginHelper::check_http_auth($user, $qreq);
         } else if (!$qreq->valid_post()) {
             self::bad_post_error($user, $qreq, "signin");
@@ -194,12 +194,11 @@ class Signin_Page {
     }
 
     static function print_signin_form_local(Contact $user, Qrequest $qreq, ComponentSet $cs) {
-        if (($lt = $user->conf->login_type()) === "none" || $lt === "oauth") {
-            return;
+        if ($user->conf->allow_local_signin()) {
+            echo '<div class="mt-3">';
+            $cs->print_members("__local_signin");
+            echo '</div>';
         }
-        echo '<div class="mt-3">';
-        $cs->print_members("__local_signin");
-        echo '</div>';
     }
 
     function print_signin_form_email(Contact $user, Qrequest $qreq) {
@@ -262,10 +261,12 @@ class Signin_Page {
         }
         $buttons = [];
         $param = array_merge(["authtype" => null, "post" => $qreq->maybe_post_value()], $this->_oauth_hoturl_param ?? ["redirect" => $qreq->redirect]);
+        $top = "";
         foreach ($conf->oauth_providers() as $authdata) {
             if ($authdata->button_html && !($authdata->disabled ?? false)) {
                 $param["authtype"] = $authdata->name;
-                $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl("oauth", $param), "formmethod" => "post", "class" => "mt-2 w-100 flex-grow-1"]);
+                $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl("oauth", $param), "formmethod" => "post", "class" => "{$top}w-100 flex-grow-1"]);
+                $top = "mt-2 ";
             }
         }
         if (!empty($buttons)) {
