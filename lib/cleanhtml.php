@@ -20,6 +20,7 @@ class CleanHTML {
     const F_BLOCK = 1;
     const F_VOID = 2;
     const F_NOTEXT = 4;
+    const F_DISABLED = 8;
     const FSS = 8;
     const FSP = 16; // must be > FSS
     const FSP2 = 24;
@@ -176,6 +177,31 @@ class CleanHTML {
         $this->tags = self::$taginfo;
     }
 
+    /** @return $this */
+    function disable_all() {
+        foreach ($this->tags as &$tf) {
+            $tf |= self::F_DISABLED;
+        }
+        return $this;
+    }
+
+    /** @param string ...$tags
+     * @return $this */
+    function enable(...$tags) {
+        foreach ($tags as $tag) {
+            $this->tags[$tag] = ($this->tags[$tag] ?? 0) & ~self::F_DISABLED;
+        }
+        return $this;
+    }
+
+    /** @param string $tag
+     * @param int $flag
+     * @return $this */
+    function define($tag, $flag) {
+        $this->tags[$tag] = $flag;
+        return $this;
+    }
+
     /** @return MessageItem */
     private function e($str, $pos1, $pos2, $context) {
         $mi = MessageItem::error($str);
@@ -260,9 +286,9 @@ class CleanHTML {
                 $tag = strtolower($m[2]);
                 $tagp = $p;
                 $endp = $p + strlen($m[0]);
-                $tagtf = $this->tags[$tag] ?? null;
+                $tagtf = $this->tags[$tag] ?? self::F_DISABLED;
                 $x .= substr($t, $xp, $tagp - $xp);
-                if ($tagtf === null) {
+                if (($tagtf & self::F_DISABLED) !== 0) {
                     if (($this->flags & self::CLEAN_STRIP_UNKNOWN) !== 0) {
                         $p = $xp = $endp;
                         continue;
@@ -345,8 +371,8 @@ class CleanHTML {
                 $tag = strtolower($m[1]);
                 $tagp = $p;
                 $endp = $tagp + strlen($m[0]);
-                $tagtf = $this->tags[$tag] ?? null;
-                if ($tagtf === null) {
+                $tagtf = $this->tags[$tag] ?? self::F_DISABLED;
+                if (($tagtf & self::F_DISABLED) !== 0) {
                     $x .= substr($t, $xp, $tagp - $xp);
                     if (($this->flags & self::CLEAN_IGNORE_UNKNOWN) !== 0) {
                         $this->check_text($curtf, $tagstack, $tagp, $tagp + 1, $t);
