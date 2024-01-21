@@ -265,11 +265,11 @@ class Signin_Page {
             return;
         }
         $buttons = [];
-        $param = array_merge(["authtype" => null], $this->_oauth_hoturl_param ?? ["redirect" => $qreq->redirect]);
+        $param = array_merge(["authtype" => null, "post" => $qreq->maybe_post_value()], $this->_oauth_hoturl_param ?? ["redirect" => $qreq->redirect]);
         foreach ($conf->oauth_providers() as $authdata) {
             if ($authdata->button_html && !($authdata->disabled ?? false)) {
                 $param["authtype"] = $authdata->name;
-                $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl("=oauth", $param), "formmethod" => "post", "class" => "mt-2 w-100 flex-grow-1"]);
+                $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl("oauth", $param), "formmethod" => "post", "class" => "mt-2 w-100 flex-grow-1"]);
             }
         }
         if (!empty($buttons)) {
