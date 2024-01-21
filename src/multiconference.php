@@ -12,20 +12,20 @@ class Multiconference {
 
         $confid = $confid ?? $Opt["confid"] ?? null;
         if ($confid === null && PHP_SAPI !== "cli") {
-            $base = Navigation::get()->base_absolute(true);
-            if (($multis = $Opt["multiconferenceAnalyzer"] ?? null)) {
-                foreach (is_array($multis) ? $multis : [$multis] as $multi) {
-                    list($match, $replace) = explode(" ", $multi);
-                    if (preg_match("`\\A{$match}`", $base, $m)) {
-                        $confid = $replace;
-                        for ($i = 1; $i < count($m); ++$i) {
-                            $confid = str_replace("\${$i}", $m[$i], $confid);
+            $nav = Navigation::get();
+            if (($max = $Opt["multiconferenceAnalyzer"] ?? null)) {
+                if (is_string($max)) {
+                    $confid = self::test_multiconference_analyzer($max, $nav);
+                } else {
+                    foreach ($max as $ma) {
+                        if (($confid = self::test_multiconference_analyzer($ma, $nav))) {
+                            break;
                         }
-                        break;
                     }
                 }
-            } else if (preg_match('/\/([^\/]+)\/\z/', $base, $m)) {
-                $confid = $m[1];
+            } else if ($nav->base_path !== "/") {
+                $slash = strrpos($nav->base_path, "/", -2);
+                $confid = substr($nav->base_path, $slash + 1, -1);
             }
         }
 
@@ -38,6 +38,42 @@ class Multiconference {
             $Opt["confid"] = "__invalid__";
         }
     }
+
+    /** @param string $ma
+     * @param NavigationState $nav
+     * @return ?string */
+    static private function test_multiconference_analyzer($ma, $nav) {
+        $sp = strpos($ma, " ");
+        $p = 0;
+        if ($sp === 1) {
+            $t = $ma[0];
+            $p = 2;
+            $sp = strpos($ma, " ", 2);
+        } else {
+            $t = "b";
+        }
+        if ($sp === false) {
+            return null;
+        }
+        if ($t === "b") {
+            $subject = $nav->absolute_base(true);
+        } else if ($t === "h") {
+            $subject = strtolower($nav->host);
+        } else if ($t === "p") {
+            $subject = $nav->base_path;
+        } else {
+            return null;
+        }
+        if (!preg_match("\1\\A" . substr($ma, $p, $sp - $p) . "\1", $subject, $m)) {
+            return null;
+        }
+        $confid = substr($ma, $sp + 1);
+        for ($i = 1; isset($m[$i]); ++$i) {
+            $confid = str_replace("\${$i}", $m[$i], $confid);
+        }
+        return $confid;
+    }
+
 
     /** @param ?string $root
      * @param string $confid
