@@ -9,6 +9,8 @@ class Signin_Page {
     public $_reset_token;
     /** @var ?Contact */
     public $_reset_user;
+    /** @var ?associative-array<string,mixed> */
+    public $_oauth_hoturl_param;
     /** @var ?MessageSet */
     private $_ms;
 
@@ -257,15 +259,17 @@ class Signin_Page {
         }
     }
 
-    static function print_signin_form_oauth(Contact $user, Qrequest $qreq) {
+    function print_signin_form_oauth(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
         if (!$conf->opt("oAuthProviders") && !$conf->opt("oAuthTypes")) {
             return;
         }
         $buttons = [];
+        $param = array_merge(["authtype" => null], $this->_oauth_hoturl_param ?? ["redirect" => $qreq->redirect]);
         foreach ($conf->oauth_providers() as $authdata) {
             if ($authdata->button_html && !($authdata->disabled ?? false)) {
-                $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl("=oauth", ["authtype" => $authdata->name, "redirect" => $qreq->redirect]), "formmethod" => "post", "class" => "mt-2 w-100 flex-grow-1"]);
+                $param["authtype"] = $authdata->name;
+                $buttons[] = Ht::button($authdata->button_html, ["type" => "submit", "formaction" => $conf->hoturl("=oauth", $param), "formmethod" => "post", "class" => "mt-2 w-100 flex-grow-1"]);
             }
         }
         if (!empty($buttons)) {

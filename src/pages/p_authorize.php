@@ -1,6 +1,6 @@
 <?php
 // pages/p_authorize.php -- HotCRP OAuth 2.0 authorization provider page
-// Copyright (c) 2022-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2022-2024 Eddie Kohler; see LICENSE.
 
 class OAuthClient {
     /** @var string */
@@ -151,6 +151,7 @@ class Authorize_Page {
         Signin_Page::print_form_start_for($this->qreq, "=signin");
         $nav = $this->qreq->navigation();
         echo Ht::hidden("redirect", "authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt) . "&authconfirm=1");
+        $this->cs->callable("Signin_Page")->_oauth_hoturl_param = ["quiet" => 1];
         $this->cs->print_members("authorize/form");
         echo '</div>';
         $this->qreq->print_footer();

@@ -48,6 +48,7 @@ NEWS.md
 README.md
 api.php
 assign.php
+authorize.php
 autoassign.php
 bulkassign.php
 buzzer.php
@@ -347,6 +348,7 @@ src/options/o_topics.php
 src/pages/p_adminhome.php
 src/pages/p_api.php
 src/pages/p_assign.php
+src/pages/p_authorize.php
 src/pages/p_autoassign.php
 src/pages/p_bulkassign.php
 src/pages/p_buzzer.php

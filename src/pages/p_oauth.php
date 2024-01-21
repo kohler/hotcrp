@@ -77,11 +77,14 @@ class OAuth_Page {
     public $viewer;
     /** @var Qrequest */
     public $qreq;
+    /** @var ?string */
+    public $site_uri;
 
     function __construct(Contact $viewer, Qrequest $qreq) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         $this->qreq = $qreq;
+        $this->site_uri = $qreq->navigation()->base_absolute();
     }
 
     function start() {
@@ -95,6 +98,7 @@ class OAuth_Page {
             $tok->assign_data([
                 "authtype" => $authi->name,
                 "session" => $this->qreq->qsid(),
+                "quiet" => $this->qreq->quiet,
                 "redirect" => $this->qreq->redirect,
                 "site_uri" => $this->conf->opt("paperSite"),
                 "nonce" => $nonce
@@ -106,7 +110,7 @@ class OAuth_Page {
                     . "&redirect_uri=" . rawurlencode($authi->redirect_uri)
                     . "&state=" . $tok->salt
                     . "&nonce=" . $nonce;
-                $this->qreq->set_httponly_cookie("oauth-{$nonce}", "1", Conf::$now + 600);
+                $this->qreq->set_cookie_opt("oauth-{$nonce}", "1", ["expires" => Conf::$now + 600, "path" => "/", "httponly" => true]);
                 throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
             } else {
                 $this->conf->error_msg("<0>Authentication attempt failed");
@@ -125,7 +129,12 @@ class OAuth_Page {
             return MessageItem::error("<0>OAuth authentication response parameters required");
         } else if (!($tok = TokenInfo::find($state, $this->conf, !!$this->conf->contactdb()))) {
             return MessageItem::error("<0>Authentication request not found or expired");
-        } else if (!$tok->is_active()) {
+        }
+        $this->site_uri = $tok->data("site_uri") ?? $this->site_uri;
+        if (!str_ends_with($this->site_uri, "/")) {
+            $this->site_uri .= "/";
+        }
+        if (!$tok->is_active()) {
             return MessageItem::error("<0>Authentication request expired");
         } else if ($tok->timeUsed) {
             return MessageItem::error("<0>Authentication request reused");
@@ -141,9 +150,10 @@ class OAuth_Page {
             $noncematch = true;
         }
 
-        if (($tokdata->session ?? "<NO SESSION>") !== $this->qreq->qsid()
-            || !$noncematch) {
+        if (($tokdata->session ?? "<NO SESSION>") !== $this->qreq->qsid()) {
             return MessageItem::error("<0>Authentication request ‘{$state}’ was for a different session");
+        } else if (!$noncematch) {
+            return MessageItem::error("<0>Authentication request ‘{$state}’ may have been replayed");
         } else if (!isset($this->qreq->code)) {
             return MessageItem::error("<0>Authentication failed");
         } else if (($authi = OAuthProvider::find($this->conf, $tokdata->authtype ?? null))) {
@@ -239,14 +249,13 @@ class OAuth_Page {
         }
 
         $user = $info["user"];
-        $this->conf->feedback_msg(new MessageItem(null, "<0>Signed in", MessageSet::SUCCESS));
+        if (!$tokdata->quiet) {
+            $this->conf->feedback_msg(new MessageItem(null, "<0>Signed in", MessageSet::SUCCESS));
+        }
         $uindex = UpdateSession::user_change($this->qreq, $user->email, true);
         UpdateSession::usec_add($this->qreq, $user->email, 1, 0, true);
 
-        $uri = $tokdata->site_uri;
-        if (!str_ends_with($uri, "/")) {
-            $uri .= "/";
-        }
+        $uri = $this->site_uri;
         if (count(Contact::session_users($this->qreq)) > 1) {
             $uri .= "u/{$uindex}/";
         }
@@ -263,7 +272,7 @@ class OAuth_Page {
             $ml = $oap->response();
             if ($ml) {
                 $user->conf->feedback_msg($ml);
-                throw new Redirection($user->conf->hoturl("signin"));
+                throw new Redirection($oap->site_uri . "signin" . $qreq->navigation()->php_suffix);
             }
         } else if ($qreq->valid_post()) {
             $oap->start();
