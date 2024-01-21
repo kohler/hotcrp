@@ -56,7 +56,7 @@ class Multiconference {
             return null;
         }
         if ($t === "b") {
-            $subject = $nav->absolute_base(true);
+            $subject = $nav->base_absolute(true);
         } else if ($t === "h") {
             $subject = strtolower($nav->host);
         } else if ($t === "p") {
