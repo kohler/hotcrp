@@ -4,7 +4,13 @@
 
 class User_API {
     static function whoami(Contact $user, Qrequest $qreq) {
-        return ["ok" => true, "email" => $user->email];
+        return [
+            "ok" => true,
+            "email" => $user->email,
+            "given_name" => $user->firstName,
+            "family_name" => $user->lastName,
+            "affiliation" => $user->affiliation
+        ];
     }
 
     /** @return JsonResult */
