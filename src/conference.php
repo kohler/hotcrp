@@ -3431,16 +3431,19 @@ class Conf {
     }
 
 
-    function set_siteurl($base) {
-        $nav = Navigation::get();
-        $old_siteurl = $nav->siteurl();
-        $base = $nav->set_siteurl($base);
-        if ($this->_assets_url === $old_siteurl) {
-            $this->_assets_url = $base;
-            Ht::$img_base = "{$base}images/";
-        }
-        if ($this->_script_assets_site) {
-            $this->_script_assets_url = $base;
+    /** @param NavigationState $nav
+     * @param string $url */
+    function set_site_path_relative($nav, $url) {
+        if ($nav->site_path_relative !== $url) {
+            $old_baseurl = $nav->base_path_relative;
+            $base = $nav->set_site_path_relative($url);
+            if ($this->_assets_url === $old_baseurl) {
+                $this->_assets_url = $nav->base_path_relative;
+                Ht::$img_base = $this->_assets_url . "images/";
+            }
+            if ($this->_script_assets_site) {
+                $this->_script_assets_url = $nav->base_path_relative;
+            }
         }
     }
 

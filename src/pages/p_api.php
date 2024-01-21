@@ -6,7 +6,7 @@ class API_Page {
     static function go(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
         if ($qreq->base !== null) {
-            $conf->set_siteurl($qreq->base);
+            $conf->set_site_path_relative($qreq->navigation(), $qreq->base);
         }
         if (!$user->has_account_here()
             && ($key = $user->capability("@kiosk"))) {

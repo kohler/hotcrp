@@ -345,13 +345,23 @@ class NavigationState {
         }
     }
 
-    /** @param string $url
-     * @return string */
-    function set_siteurl($url) {
-        if ($url !== "" && $url[strlen($url) - 1] !== "/") {
-            $url .= "/";
+    /** @param string $url */
+    function set_site_path_relative($url) {
+        if ($url === $this->site_path_relative) {
+            return;
+        } else if ($url !== "" && $url !== "../" && !preg_match('/\A(\.\.\/)+\z/', $url)) {
+            $this->base_path_relative = $this->base_path;
+            $this->site_path_relative = $this->site_path;
+            return;
         }
-        return ($this->site_path_relative = $url);
+        if ($this->base_path_relative === $this->site_path_relative) {
+            $this->base_path_relative = $url;
+        } else if (str_starts_with($this->base_path_relative, "../")) {
+            $this->base_path_relative = substr($this->base_path_relative, 0, -strlen($this->site_path_relative)) . $url;
+        } else {
+            $this->base_path_relative = $this->base_path;
+        }
+        $this->site_path_relative = $url;
     }
 
     /** @param string $page
