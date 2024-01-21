@@ -7,7 +7,7 @@
 	width: 22.5%;
 }
 body.paper {
-	background: linear-gradient(to right, #e2e9ec, #e2e9ec 22.5%, white 22.5%, white);
+	background: linear-gradient(to right, var(--submission-bg), var(--submission-bg) 22.5%, var(--paper) 22.5%, var(--paper));
 }
 .pcard {
 	margin-left: 22.5%;
@@ -60,7 +60,7 @@ h1.leftmenu, h2.leftmenu {
 	margin-bottom: 8px;
 }
 body.leftmenu, body.paper {
-	background: white;
+	background: var(--paper);
 }
 body.leftmenu #p-header {
 	background: #ecf2f4;
@@ -118,7 +118,7 @@ h2.paptitle {
 }
 .pspcard {
 	padding: 8px 16px;
-	border-bottom: 1px solid #f33360;
+	border-bottom: 1px solid var(--brand-fg);
 }
 .pspcard-open {
 	padding-bottom: 4px;
