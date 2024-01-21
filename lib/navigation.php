@@ -307,16 +307,16 @@ class NavigationState {
 
     /** @param bool $downcase_host
      * @return string */
-    function site_absolute($downcase_host = false) {
+    function base_absolute($downcase_host = false) {
         $x = $downcase_host ? strtolower($this->server) : $this->server;
-        return $x . $this->site_path;
+        return $x . $this->base_path;
     }
 
     /** @param bool $downcase_host
      * @return string */
-    function base_absolute($downcase_host = false) {
+    function site_absolute($downcase_host = false) {
         $x = $downcase_host ? strtolower($this->server) : $this->server;
-        return $x . $this->base_path;
+        return $x . $this->site_path;
     }
 
     /** @param ?string $url

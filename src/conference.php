@@ -638,14 +638,14 @@ class Conf {
         }
 
         // assert URLs (general assets, scripts, jQuery)
-        $siteurl = (string) $nav->siteurl();
-        $this->_assets_url = $this->opt["assetsUrl"] ?? $this->opt["assetsURL"] ?? $siteurl;
+        $baseurl = $nav->base_path_relative ?? "";
+        $this->_assets_url = $this->opt["assetsUrl"] ?? $this->opt["assetsURL"] ?? $baseurl;
         if ($this->_assets_url !== "" && !str_ends_with($this->_assets_url, "/")) {
             $this->_assets_url .= "/";
         }
         $this->_script_assets_url = $this->opt["scriptAssetsUrl"]
-            ?? (strpos($_SERVER["HTTP_USER_AGENT"] ?? "", "MSIE") === false ? $this->_assets_url : $siteurl);
-        $this->_script_assets_site = $this->_script_assets_url === $siteurl;
+            ?? (strpos($_SERVER["HTTP_USER_AGENT"] ?? "", "MSIE") === false ? $this->_assets_url : $baseurl);
+        $this->_script_assets_site = $this->_script_assets_url === $baseurl;
 
         // check passwordHashMethod
         if (isset($this->opt["passwordHashMethod"])
