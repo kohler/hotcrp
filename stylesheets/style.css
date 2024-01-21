@@ -4909,14 +4909,14 @@ body {
 	margin-top: 0.5rem;
 	margin-bottom: 0.25rem;
 }
-.mail-preview-send {
+.mail-preview-send, .mail-preview-disabled {
 	padding-top: 0.75rem;
 	margin-bottom: 2rem;
 }
-.mail-preview-send.mail-preview-unchoose {
+.mail-preview-send.mail-preview-unchoose, .mail-preview-disabled {
 	border-color: #c5c5c5;
 	background-color: rgba(222, 222, 222, 0.5);
-	color: #777777;
+	color: #666666;
 }
 .mail-preview-send.mail-preview-unchoose .mail-preview-body {
 	height: 0;

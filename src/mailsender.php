@@ -406,29 +406,41 @@ class MailSender {
             $show_prep->finalize();
         }
 
-        echo '<fieldset class="mail-preview-send main-width';
-        if (!$this->sending) {
-            echo ' uimd ui js-click-child d-flex"><div class="pr-2">',
+        // are there any valid recipients?
+        $valid_recip = false;
+        $recipt = [];
+        foreach ($prep->recipients() as $u) {
+            $t = htmlspecialchars(MailPreparation::recipient_address($u));
+            if ($u->can_receive_mail($prep->self_requested())) {
+                $recipt[] = $t;
+                $valid_recip = true;
+            } else {
+                $recipt[] = "<del>{$t}</del>";
+            }
+        }
+
+        echo '<fieldset class="main-width';
+        if (!$this->sending && !$valid_recip) {
+            echo ' mail-preview-disabled d-flex"><div class="pr-2">',
+                Ht::checkbox("", 1, false, ["disabled" => true]),
+                '</div><div class="flex-grow-0">';
+        } else if (!$this->sending) {
+            echo ' mail-preview-send uimd ui js-click-child d-flex"><div class="pr-2">',
                 Ht::checkbox(self::prep_key($prep), 1, true, [
                     "class" => "uic js-range-click js-mail-preview-choose",
                     "data-range-type" => "mhcb", "id" => "psel{$this->cbcount}"
                 ]), '</div><div class="flex-grow-0">';
         } else {
-            echo '">';
+            echo ' mail-preview-send">';
         }
         foreach (["To", "cc", "bcc", "reply-to", "Subject"] as $k) {
             if ($k == "To") {
-                $vh = [];
-                foreach ($prep->recipients() as $u) {
-                    $t = htmlspecialchars(MailPreparation::recipient_address($u));
-                    if ($u->can_receive_mail($prep->self_requested())) {
-                        $vh[] = $t;
-                    } else {
-                        $vh[] = "<del>{$t}</del>";
-                    }
+                $vh = '<span class="nw">' . join(',</span> <span class="nw">', $recipt) . '</span>';
+                $ml = $prep->invalid_recipient_message_list();
+                if (!$valid_recip) {
+                    $ml[] = MessageItem::warning("<0>This mail has no valid recipients");
                 }
-                $vh = '<span class="nw">' . join(',</span> <span class="nw">', $vh) . '</span>';
-                if (($ml = $prep->invalid_recipient_message_list())) {
+                if ($ml) {
                     $vh = "<div class=\"mb-1\">{$vh}</div>" . MessageSet::feedback_html($ml);
                 }
             } else if ($k == "Subject") {
