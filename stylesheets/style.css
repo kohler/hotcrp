@@ -885,7 +885,6 @@ body.paper #p-body {
 }
 
 #h-messages {
-	margin-top: 12px;
 	margin-left: 24px;
 	margin-right: 24px;
 }
@@ -926,6 +925,9 @@ body.paper-error .msg {
 	margin-right: auto;
 	max-width: 80%;
 	width: fit-content;
+}
+#h-messages > .msg:first-child {
+	margin-top: 1rem;
 }
 .msg + .msg {
 	margin-top: -0.5rem;
