@@ -2044,6 +2044,8 @@ return function (felt) {
 
 function focus_within(elt, subfocus_selector, always) {
     var $wf = $(elt).find(".want-focus");
+    if ($wf.length === 0)
+        $wf = $(elt).find("[autofocus]");
     if (subfocus_selector)
         $wf = $wf.filter(subfocus_selector);
     if ($wf.length !== 1 && always) {
