@@ -4525,8 +4525,12 @@ class Conf {
         }
 
         // other scripts
-        foreach ($this->opt("scripts") ?? [] as $file) {
-            Ht::stash_html($this->make_script_file($file) . "\n");
+        foreach ($this->opt("scripts") ?? [] as $s) {
+            if ($s[0] === "{") {
+                Ht::stash_script($s);
+            } else {
+                Ht::stash_html($this->make_script_file($s) . "\n");
+            }
         }
 
         if ($stash) {
