@@ -129,7 +129,7 @@ class Signin_Page {
     /** @param ComponentSet $cs */
     static function print_signin_head(Contact $user, Qrequest $qreq, $cs) {
         $st = $user->conf->saved_messages_status();
-        $qreq->print_header("Sign in", "home", ["hide_title" => true, "body_class" => "body-signin"]);
+        $qreq->print_header("Sign in", "home", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
         $cs->push_print_cleanup("__footer");
     }
 
@@ -193,10 +193,17 @@ class Signin_Page {
         }
     }
 
-    function print_signin_form_email(Contact $user, Qrequest $qreq) {
+    static function print_signin_form_local(Contact $user, Qrequest $qreq, ComponentSet $cs) {
         if (($lt = $user->conf->login_type()) === "none" || $lt === "oauth") {
             return;
         }
+        echo '<div class="mt-3">';
+        $cs->print_members("__local_signin");
+        echo '</div>';
+    }
+
+    function print_signin_form_email(Contact $user, Qrequest $qreq) {
+        $lt = $user->conf->login_type();
         $email = $qreq->email ?? "";
         echo '<div class="', $this->control_class("email", "f-i fx"), '">',
             Ht::label($lt ? "Username" : "Email", "k-email"),
@@ -211,9 +218,7 @@ class Signin_Page {
     }
 
     function print_signin_form_password(Contact $user, Qrequest $qreq) {
-        if (($lt = $user->conf->login_type()) === "none" || $lt === "oauth") {
-            return;
-        }
+        $lt = $user->conf->login_type();
         echo '<div class="', $this->control_class("password", "f-i fx"), '">';
         if (!$lt) {
             echo '<div class="float-right"><a href="',
@@ -237,15 +242,9 @@ class Signin_Page {
 
     /** @param ComponentSet $cs */
     static function print_signin_form_actions(Contact $user, Qrequest $qreq, $cs) {
-        if (($lt = $user->conf->login_type()) === "none" || $lt === "oauth") {
-            return;
-        }
-        echo '<div class="popup-actions">',
-            Ht::submit("", "Sign in", ["id" => "k-signin", "class" => "btn-success", "tabindex" => 1]);
-        if ($cs->root !== "home") {
-            echo Ht::submit("cancel", "Cancel", ["tabindex" => 1, "formnovalidate" => true, "class" => "uic js-no-signin"]);
-        }
-        echo '</div>';
+        echo '<div class="mt-3">',
+            Ht::submit("", "Sign in", ["id" => "k-signin", "class" => "btn-success w-100 flex-grow-1", "tabindex" => 1]),
+            '</div>';
     }
 
     static function print_signin_form_create(Contact $user) {
@@ -270,7 +269,7 @@ class Signin_Page {
             }
         }
         if (!empty($buttons)) {
-            echo '<div class="mt-4">', join("", $buttons), '</div>';
+            echo '<div class="mt-5">', join("", $buttons), '</div>';
         }
     }
 
@@ -411,7 +410,7 @@ class Signin_Page {
     static function print_newaccount_form_actions(Contact $user, Qrequest $qreq) {
         echo '<div class="popup-actions">',
             Ht::submit("Create account", ["class" => "btn-primary"]),
-            Ht::submit("cancel", "Cancel", ["class" => "uic js-no-signin", "formnovalidate" => true]),
+            // Ht::submit("cancel", "Cancel", ["class" => "uic js-no-signin", "formnovalidate" => true]),
             '</div>';
     }
 
@@ -468,7 +467,7 @@ class Signin_Page {
     function print_forgot_form_actions() {
         echo '<div class="popup-actions">',
             Ht::submit("Reset password", ["class" => $this->_reset_user ? "btn-success" : "btn-primary"]),
-            Ht::submit("cancel", "Cancel", ["class" => "uic js-no-signin", "formnovalidate" => true]),
+            // Ht::submit("cancel", "Cancel", ["class" => "uic js-no-signin", "formnovalidate" => true]),
             '</div>';
     }
 

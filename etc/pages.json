@@ -148,11 +148,13 @@
     [   "signin/body", 3000, "Signin_Page::print_signin_form"   ],
     [   "signin/form/title", 1, "Signin_Page::print_signin_form_title"   ],
     [   "signin/form/accounts", 5, "Signin_Page::print_signin_form_accounts"   ],
-    [   "signin/form/email", 20, "*Signin_Page::print_signin_form_email"   ],
-    [   "signin/form/password", 30, "*Signin_Page::print_signin_form_password"   ],
-    [   "signin/form/actions", 100, "Signin_Page::print_signin_form_actions"   ],
-    [   "signin/form/create", 150, "Signin_Page::print_signin_form_create"   ],
+    [   "signin/form/local", 20, "Signin_Page::print_signin_form_local"   ],
     [   "signin/form/oauth", 1000, "*Signin_Page::print_signin_form_oauth"   ],
+
+    [   "__local_signin/email", 20, "*Signin_Page::print_signin_form_email"   ],
+    [   "__local_signin/password", 30, "*Signin_Page::print_signin_form_password"   ],
+    [   "__local_signin/actions", 100, "Signin_Page::print_signin_form_actions"   ],
+    [   "__local_signin/create", 150, "Signin_Page::print_signin_form_create"   ],
 
 
     {   "name": "signout", "allow_disabled": true   },
@@ -214,9 +216,7 @@
     {   "name": "authorize", "print_function": "*Authorize_Page::go", "allow_disabled": true   },
     [   "authorize/form/title", 1, "*Authorize_Page::print_form_title"   ],
     [   "authorize/form/active", 15, "*Authorize_Page::print_form_active"   ],
-    [   "authorize/form/email", 20, "signin/form/email"   ],
-    [   "authorize/form/password", 30, "signin/form/password"   ],
-    [   "authorize/form/actions", 100, "*Authorize_Page::print_form_actions"   ],
+    [   "authorize/form/local", 20, "signin/form/local"   ],
     [   "authorize/form/oauth", 1000, "*Signin_Page::print_signin_form_oauth"   ],
     [   "authorize/form/annotation", 2000, "*Authorize_Page::print_form_annotation"   ],
 
