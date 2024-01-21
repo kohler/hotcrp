@@ -147,7 +147,7 @@
     [   "signin/head", 1000, "Signin_Page::print_signin_head"   ],
     [   "signin/body", 3000, "Signin_Page::print_signin_form"   ],
     [   "signin/form/title", 1, "Signin_Page::print_signin_form_title"   ],
-    [   "signin/form/description", 10, "Signin_Page::print_signin_form_description"   ],
+    [   "signin/form/accounts", 5, "Signin_Page::print_signin_form_accounts"   ],
     [   "signin/form/email", 20, "*Signin_Page::print_signin_form_email"   ],
     [   "signin/form/password", 30, "*Signin_Page::print_signin_form_password"   ],
     [   "signin/form/actions", 100, "Signin_Page::print_signin_form_actions"   ],

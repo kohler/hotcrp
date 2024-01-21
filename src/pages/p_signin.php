@@ -179,7 +179,7 @@ class Signin_Page {
         echo '<h1 class="signin">Sign in</h1>';
     }
 
-    static function print_signin_form_description(Contact $user, Qrequest $qreq) {
+    static function print_signin_form_accounts(Contact $user, Qrequest $qreq) {
         if (($su = Contact::session_users($qreq))) {
             $nav = $qreq->navigation();
             $links = [];
@@ -190,9 +190,6 @@ class Signin_Page {
                 }
             }
             echo '<p class="is-warning"><span class="warning-mark"></span> ', $user->conf->_("You are already signed in as {:list} on this browser.", $links), '</p>';
-        }
-        if (($t = $user->conf->_("Sign in to submit or review papers.", new FmtArg("accounts", $su))) !== "") {
-            echo '<p class="mb-5">', $t, '</p>';
         }
     }
 
