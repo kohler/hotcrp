@@ -213,12 +213,12 @@
 
     {   "name": "authorize", "print_function": "*Authorize_Page::go", "allow_disabled": true   },
     [   "authorize/form/title", 1, "*Authorize_Page::print_form_title"   ],
-    [   "authorize/form/description", 10, "*Authorize_Page::print_form_description"   ],
     [   "authorize/form/active", 15, "*Authorize_Page::print_form_active"   ],
     [   "authorize/form/email", 20, "signin/form/email"   ],
     [   "authorize/form/password", 30, "signin/form/password"   ],
     [   "authorize/form/actions", 100, "*Authorize_Page::print_form_actions"   ],
-    [   "authorize/form/oauth", 1000, "Signin_Page::print_signin_form_oauth"   ],
+    [   "authorize/form/oauth", 1000, "*Signin_Page::print_signin_form_oauth"   ],
+    [   "authorize/form/annotation", 2000, "*Authorize_Page::print_form_annotation"   ],
 
 
     {   "name": "api", "print_function": "API_Page::go", "allow_disabled": true   },

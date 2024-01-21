@@ -11,6 +11,8 @@ class OAuthClient {
     public $client_id;
     /** @var string */
     public $client_secret;
+    /** @var ?string */
+    public $client_uri;
     /** @var list<string> */
     public $redirect_uri = [];
 
@@ -27,6 +29,7 @@ class OAuthClient {
         $oac->title = $x->title ?? null;
         $oac->client_id = $x->client_id ?? null;
         $oac->client_secret = $x->client_secret ?? null;
+        $oac->client_uri = $x->client_uri ?? null;
         if (isset($x->redirect_uri)) {
             if (is_string($x->redirect_uri)) {
                 $oac->redirect_uri[] = $x->redirect_uri;
@@ -63,6 +66,8 @@ class Authorize_Page {
     public $qreq;
     /** @var ComponentSet */
     public $cs;
+    /** @var OAuthClient */
+    public $client;
     /** @var array<string,object> */
     private $clients = [];
     /** @var TokenInfo */
@@ -147,7 +152,8 @@ class Authorize_Page {
             ->change_data("redirect_uri", $this->qreq->redirect_uri);
         $this->token->create();
 
-        $this->qreq->print_header("Sign in", "authorize", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
+        $this->client = $client;
+        $this->qreq->print_header("Sign in", "authorize", ["action_bar" => "", "hide_header" => true, "body_class" => "body-signin"]);
         Signin_Page::print_form_start_for($this->qreq, "=signin");
         $nav = $this->qreq->navigation();
         echo Ht::hidden("redirect", "authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt) . "&authconfirm=1");
@@ -158,11 +164,17 @@ class Authorize_Page {
     }
 
     function print_form_title() {
-        echo '<h1>Sign in</h1>';
+        echo '<h1>Choose an account</h1>';
+        $clt = htmlspecialchars($this->client->title ?? $this->client->name);
+        if ($this->client->client_uri) {
+            $clt = Ht::link($clt, htmlspecialchars($this->client->client_uri));
+        }
+        echo '<div class="mb-4">to continue to ', $clt, '</div>';
     }
 
-    function print_form_description() {
-
+    function print_form_annotation() {
+        $clt = htmlspecialchars($this->client->title ?? $this->client->name);
+        echo '<p class="mt-4 mb-0 hint">If you continue, HotCRP.com will share your name, email address, affiliation, and other profile information with ', $clt, '.</p>';
     }
 
     function print_form_active() {
@@ -173,10 +185,10 @@ class Authorize_Page {
                 continue;
             }
             $url = $nav->base_absolute() . "u/{$i}/authorize{$nav->php_suffix}?code=" . urlencode($this->token->salt) . "&authconfirm=1";
-            $buttons[] = Ht::button("Sign in as " . htmlspecialchars($email), ["type" => "submit", "formaction" => $url, "formmethod" => "post", "class" => "mt-2 w-100 flex-grow-1"]);
+            $buttons[] = Ht::button("Sign in as " . htmlspecialchars($email), ["type" => "submit", "formaction" => $url, "formmethod" => "post", "class" => "mt-2 w-100 flex-grow-1 btn-primary"]);
         }
         if (!empty($buttons)) {
-            echo '<div class="mt-4">', join("", $buttons), '</div>';
+            echo '<div class="mb-4">', join("", $buttons), '</div>';
         }
     }
 
@@ -184,12 +196,9 @@ class Authorize_Page {
         if (($lt = $this->conf->login_type()) === "none" || $lt === "oauth") {
             return;
         }
-        echo '<div class="popup-actions">',
-            Ht::submit("", "Sign in", ["id" => "k-signin", "class" => "btn-success", "tabindex" => 1]);
-        if ($this->cs->root !== "home") {
-            echo Ht::submit("cancel", "Cancel", ["tabindex" => 1, "formnovalidate" => true, "class" => "uic js-no-signin"]);
-        }
-        echo '</div>';
+        echo '<div class="mt-3">',
+            Ht::submit("", "Sign in", ["id" => "k-signin", "class" => "btn-success w-100 flex-grow-1", "tabindex" => 1]),
+            '</div>';
     }
 
     private function handle_authconfirm() {
@@ -264,7 +273,7 @@ class Authorize_Page {
         if (http_response_code() === 200) {
             http_response_code(400);
         }
-        $this->qreq->print_header("Sign in", "authorize", ["action_bar" => "", "body_class" => "body-error"]);
+        $this->qreq->print_header("Sign in", "authorize", ["action_bar" => "", "hide_header" => true, "body_class" => "body-error"]);
         $this->conf->error_msg($m);
         $this->qreq->print_footer();
         exit;
