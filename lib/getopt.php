@@ -512,7 +512,7 @@ class Getopt {
                 throw new CommandLineException("Missing argument for `{$oname}`", $this);
             }
 
-            $poty = $po->argtype;
+            $poty = $value !== false ? $po->argtype : null;
             if ($poty === "n" || $poty === "i") {
                 if (!ctype_digit($value) && !preg_match('/\A[-+]\d+\z/', $value)) {
                     throw new CommandLineException("`{$oname}` requires integer", $this);
