@@ -185,6 +185,43 @@ class MailPreparation implements JsonSerializable {
         $this->finalized = true;
     }
 
+    /** @return list<MessageItem> */
+    function invalid_recipient_message_list() {
+        $mx = [];
+        foreach ($this->recip as $ru) {
+            if ($ru->can_receive_mail($this->_self_requested)) {
+                continue;
+            } else if (!Contact::is_real_email($ru->preferredEmail ? : $ru->email)) {
+                $mx["fake"][] = $ru->email;
+            } else if ($ru->is_disabled()) {
+                $mx["disabled"][] = $ru->email;
+            } else if ($ru->is_dormant() && !$this->_self_requested) {
+                $mx["dormant"][] = $ru->email;
+            } else if ($ru->is_unconfirmed() && $this->conf->opt("sendEmailUnconfirmed") === false) {
+                $mx["unconfirmed"][] = $ru->email;
+            } else {
+                $mx["other"][] = $ru->email;
+            }
+        }
+        if (empty($mx)) {
+            return [];
+        }
+        $ml = [];
+        if (isset($mx["disabled"])) {
+            $ml[] = MessageItem::warning($this->conf->_("<0>Disabled {emails:plural account} {emails:list} cannot receive mail", new FmtArg("emails", $mx["disabled"], 0)));
+        }
+        if (isset($mx["dormant"])) {
+            $ml[] = MessageItem::warning($this->conf->_("<0>{emails:plural Account} {emails:list} {emails:plural has} not activated their {emails:plural account}", new FmtArg("emails", $mx["dormant"], 0)));
+        }
+        if (isset($mx["unconfirmed"])) {
+            $ml[] = MessageItem::warning($this->conf->_("<0>{emails:plural User} {emails:list} {emails:plural has} not yet signed in to their account (this site will not send mail to unconfirmed accounts)", new FmtArg("emails", $mx["unconfirmed"], 0)));
+        }
+        if (isset($mx["other"])) {
+            $ml[] = MessageItem::warning($this->conf->_("<0>Cannot send mail to {emails:plural account} {emails:list}", new FmtArg("emails", $mx["other"], 0)));
+        }
+        return $ml;
+    }
+
     /** @return bool */
     function sent() {
         return $this->sent;
@@ -202,27 +239,14 @@ class MailPreparation implements JsonSerializable {
         $headers = $this->headers;
 
         // enumerate valid recipients
-        $vto = $ml = [];
+        $vto = [];
         foreach ($this->recip as $ru) {
             if ($ru->can_receive_mail($this->_self_requested)) {
                 $vto[] = self::recipient_address($ru);
-            } else if ($ru->is_disabled()) {
-                $ml[] = MessageItem::error("<0>User {$ru->email} is disabled");
-            } else if ($ru->is_dormant() && !$this->_self_requested) {
-                $ml[] = MessageItem::error("<0>User {$ru->email} has not activated their account");
-            } else if ($ru->is_unconfirmed() && $this->conf->opt("sendEmailUnconfirmed") === false) {
-                $ml[] = MessageItem::error("<0>This site only sends mail to users who have previously signed in");
-            } else {
-                $ml[] = MessageItem::error("<0>User {$ru->email} cannot receive email at this time");
             }
         }
         if (empty($vto)) {
-            if (empty($ml)) {
-                $ml[] = MessageItem::error("<0>No valid recipients");
-            }
-            foreach ($ml as $mi) {
-                $this->append_item($mi);
-            }
+            $this->append_item(MessageItem::error("<0>No valid recipients"));
             return false;
         }
 

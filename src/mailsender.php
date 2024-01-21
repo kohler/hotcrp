@@ -428,6 +428,9 @@ class MailSender {
                     }
                 }
                 $vh = '<span class="nw">' . join(',</span> <span class="nw">', $vh) . '</span>';
+                if (($ml = $prep->invalid_recipient_message_list())) {
+                    $vh = "<div class=\"mb-1\">{$vh}</div>" . MessageSet::feedback_html($ml);
+                }
             } else if ($k == "Subject") {
                 $vh = htmlspecialchars(MimeText::decode_header($show_prep->subject));
             } else if (($line = $show_prep->headers[$k] ?? null)) {
