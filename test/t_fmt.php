@@ -187,4 +187,10 @@ class Fmt_Tester {
         xassert(!FmtItem::context_starts_with("a/b", "ab"));
         xassert(!FmtItem::context_starts_with("a", "a/b"));
     }
+
+    function test_plural() {
+        $ms = new Fmt;
+        xassert_eqq($ms->_("{:plural Hello}", 0), "Hellos");
+        xassert_eqq($ms->_("{:plural Hello}", 1), "Hello");
+    }
 }

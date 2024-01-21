@@ -221,6 +221,8 @@ class FmtContext {
             }
             unset($x);
             return [$vformat, commajoin($a)];
+        } else if (str_starts_with($fspec, ":plural ")) {
+            return [$vformat, plural_word(count($value), substr($fspec, 8))];
         } else {
             return $this->complain("{$fspec} does not expect array");
         }
@@ -275,6 +277,8 @@ class FmtContext {
                 $value = "<{$vformat}>{$value}";
             }
             return [$vformat, $value];
+        } else if (str_starts_with($fspec, ":plural ")) {
+            return [$vformat, plural_word($value, substr($fspec, 8))];
         } else if (preg_match('/\A:[-+]?\d*(?:|\.\d+)[difgG]\z/', $fspec)) {
             if (is_numeric($value)) {
                 return [$vformat, sprintf("%" . substr($fspec, 1), $value)];
