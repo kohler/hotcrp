@@ -43,6 +43,8 @@ class MailSender {
     private $skipcount = 0;
     /** @var array<int,true> */
     private $mrecipients = [];
+    /** @var bool */
+    private $had_nonreceivable = false;
     /** @var int */
     private $cbcount = 0;
 
@@ -341,7 +343,7 @@ class MailSender {
         }
         $s .= "% done\";";
         $m = plural($this->mcount, "mail") . ", "
-            . plural($this->mrecipients, "recipient");
+            . plural($this->mrecipients, $this->had_nonreceivable ? "valid recipient" : "recipient");
         $s .= "document.getElementById('mailinfo').innerHTML=\"<span class='barsep'>·</span>" . $m . "\";";
         if (!$this->sending && $this->groupable) {
             $s .= "\$('#mail-group-disabled').addClass('hidden');\$('#mail-group-enabled').removeClass('hidden')";
@@ -461,11 +463,15 @@ class MailSender {
         }
 
         ++$this->mcount;
-        foreach ($prep->recipient_uids() as $cid) {
-            $this->mrecipients[$cid] = true;
-            if ($this->sending) {
-                // Log format matters
-                $this->conf->log_for($this->user, $cid, "Sent mail #{$this->mailid}", $prep->paperId);
+        foreach ($prep->recipients() as $recip) {
+            if (!$recip->can_receive_mail($prep->self_requested())) {
+                $this->had_nonreceivable = true;
+            } else if ($recip->conf === $prep->conf) {
+                $this->mrecipients[$recip->contactId] = true;
+                if ($this->sending) {
+                    // Log format matters
+                    $this->conf->log_for($this->user, $recip, "Sent mail #{$this->mailid}", $prep->paperId);
+                }
             }
         }
 
