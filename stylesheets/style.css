@@ -2583,6 +2583,9 @@ img.check {
 .maxw-auto {
 	max-width: initial !important;
 }
+.minw-480 {
+	min-width: 480px;
+}
 .maxw-480 {
 	max-width: 480px;
 }
