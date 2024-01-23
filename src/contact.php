@@ -1782,7 +1782,7 @@ class Contact implements JsonSerializable {
         if ($prop === "roles") {
             return $value & ($this->cdb_confid === 0 ? self::ROLE_DBMASK : self::ROLE_CDBMASK);
         } else if ($prop === "cflags") {
-            return $value & self::CFM_DB;
+            return $value > 0 ? $value & self::CFM_DB : $value;
         } else {
             assert(false);
             return $value;
@@ -2167,7 +2167,7 @@ class Contact implements JsonSerializable {
 
         // import properties from cdb
         if (!$localu) {
-            $this->_mod_undo = ["disabled" => 0, "cflags" => 0];
+            $this->_mod_undo = ["disabled" => -1, "cflags" => -1];
             foreach (self::importable_props() as $prop => $shape) {
                 $this->_mod_undo[$prop] = ($shape & self::PROP_NULL) !== 0 ? null : "";
             }
