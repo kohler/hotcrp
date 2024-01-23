@@ -301,7 +301,8 @@ class Xassert {
         if (($sl[0] ?? null) === "!") {
             $x = join("", array_slice($sl, 1));
         } else {
-            $x = assert_location() . ": " . join("", $sl);
+            list($location, $rest) = self::landmark(true);
+            $x = $location . join("", $sl) . $rest;
         }
         if ($x !== "" && !str_ends_with($x, "\n")) {
             $x .= "\n";
@@ -340,8 +341,54 @@ class Xassert {
      * @param mixed $actual
      * @return void */
     static function match_fail($location, $eprefix, $expected, $aprefix, $actual) {
-        $location = ($location ?? assert_location()) . ": ";
-        self::fail_with("!", self::match_failure_message($location, $eprefix, $expected, $aprefix, $actual));
+        if ($location === null) {
+            list($location, $rest) = self::landmark(true);
+        } else {
+            $rest = "";
+        }
+        self::fail_with("!", self::match_failure_message($location, $eprefix, $expected, $aprefix, $actual), $rest);
+    }
+
+    /** @param bool $want_color
+     * @return array{string,string} */
+    static function landmark($want_color = false) {
+        $colorize = $want_color && self::$test_runner && self::$test_runner->color;
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        $first = "";
+        $rest = "";
+        for ($pos = 2; isset($trace[$pos]); ++$pos) {
+            $tr = $trace[$pos];
+            $fname = (isset($tr["class"]) ? $tr["class"] . "::" : "") . $tr["function"];
+            if (preg_match('/\A[Xx]?assert|\AMailChecker::check|::x?assert/s', $fname)) {
+                continue;
+            }
+            $loc = $fname;
+            if (($file = $trace[$pos - 1]["file"] ?? null) !== null) {
+                if (str_starts_with($file, SiteLoader::$root)) {
+                    $file = substr($file, strlen(SiteLoader::$root) + 1);
+                }
+                $loc = $file . ":" . $trace[$pos - 1]["line"] . ":" . $fname;
+            } else {
+                $loc = $fname;
+            }
+            if ($first === "") {
+                if ($colorize) {
+                    $first = "\x1b[1m{$loc}:\x1b[m ";
+                } else if ($want_color) {
+                    $first = "{$loc}: ";
+                } else {
+                    $first = $loc;
+                }
+            } else if ($colorize) {
+                $rest .= "  \x1b[90;1m{$loc}:\x1b[22m called from here\x1b[m\n";
+            } else {
+                $rest .= "  {$loc}: called from here\n";
+            }
+            if (preg_match('/::test[_A-Z]/', $fname)) {
+                return [$first, $rest];
+            }
+        }
+        return [$first, ""];
     }
 }
 
@@ -361,10 +408,6 @@ function xassert_error_handler($errno, $emsg, $file, $line) {
 }
 
 set_error_handler("xassert_error_handler");
-
-function assert_location($position = 1) {
-    return caller_landmark($position, '/(?:^[Xx]?assert|^MailChecker::check|::x?assert)/');
-}
 
 /** @param mixed $x
  * @param string $description
@@ -541,6 +584,19 @@ function xassert_gt($actual, $expected_bound) {
 /** @param string $haystack
  * @param string $needle
  * @return bool */
+function xassert_str_starts_with($haystack, $needle) {
+    $ok = str_starts_with($haystack, $needle);
+    if ($ok) {
+        Xassert::succeed();
+    } else {
+        Xassert::fail_with("Expected `{$haystack}` to start with `{$needle}`");
+    }
+    return $ok;
+}
+
+/** @param string $haystack
+ * @param string $needle
+ * @return bool */
 function xassert_str_contains($haystack, $needle) {
     $ok = strpos($haystack, $needle) !== false;
     if ($ok) {
@@ -656,7 +712,8 @@ function search_json($user, $query, $cols = "id", $allow_warnings = false) {
     $pl->parse_view($cols, PaperList::VIEWORIGIN_MAX);
     if ($pl->search->has_problem() && !$allow_warnings) {
         Xassert::will_print();
-        fwrite(STDERR, assert_location() . ": Search reports warnings: " . $pl->search->full_feedback_text());
+        list($first, $rest) = Xassert::landmark(true);
+        fwrite(STDERR, "{$first}Search reports warnings: " . $pl->search->full_feedback_text() . $rest);
     }
     return $pl->text_json();
 }
@@ -954,8 +1011,9 @@ class TestRunner {
     private $reset;
     /** @var bool */
     private $need_reset;
-    /** @var ?bool */
-    private $color;
+    /** @var ?bool
+     * @readonly */
+    public $color;
     /** @var int */
     private $width = 47;
     /** @var ?string */
@@ -1204,7 +1262,10 @@ class TestRunner {
                 && ($m->name[4] === "_" || ctype_upper($m->name[4]))
                 && ($methodmatch === "" || fnmatch($methodmatch, $m->name))) {
                 if ($this->verbose) {
-                    $mpfx = rtrim(str_pad("{$ro->getName()}::{$m->name} ", $this->width, "."));
+                    $mpfx = str_pad("{$ro->getName()}::{$m->name} ", $this->width, ".");
+                    if (strlen($mpfx) > $this->width) {
+                        $mpfx = rtrim($mpfx);
+                    }
                     if ($this->color) {
                         fwrite(STDERR, "{$mpfx} \x1b[01;36mRUN\x1b[m");
                     } else {
