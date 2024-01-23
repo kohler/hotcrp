@@ -422,12 +422,23 @@ function check_message_list(data, options) {
 function check_sessioninfo(data, options) {
     if (siteinfo.user.uid == data.sessioninfo.uid) {
         siteinfo.postvalue = data.sessioninfo.postvalue;
+        let myuri = hoturl_absolute_base();
         $("form").each(function () {
-            var m = /^([^#]*[&?;]post=)([^&?;#]*)/.exec(this.action);
-            if (m) {
-                this.action = m[1].concat(siteinfo.postvalue, this.action.substring(m[0].length));
+            let furi = url_absolute(this.action);
+            if (furi.startsWith(myuri)) {
+                let m = /^([^#]*[&?;]post=)([^&?;#]*)(.*)$/.exec(this.action);
+                if (m) {
+                    this.action = m[1].concat(siteinfo.postvalue, m[2]);
+                }
+                this.elements.post && (this.elements.post.value = siteinfo.postvalue);
             }
-            this.elements.post && (this.elements.post.value = siteinfo.postvalue);
+        });
+        $("button[formaction]").each(function () {
+            let furi = url_absolute(this.formAction), m;
+            if (furi.startsWith(myuri)
+                && /^([^#]*[&?;]post=)([^&?;#]*)(.*)$/.exec(this.formAction)) {
+                this.formAction = m[1].concat(siteinfo.postvalue, m[2]);
+            }
         });
     } else {
         $("form").each(function () {
@@ -1479,8 +1490,11 @@ function hoturl_html(page, options) {
 }
 
 function url_absolute(url, loc) {
-    var x = "", m;
     loc = loc || window.location.href;
+    if (window.URL) {
+        return (new URL(url, loc)).href;
+    }
+    var x = "", m;
     if (!/^\w+:\/\//.test(url)
         && (m = loc.match(/^(\w+:)/)))
         x = m[1];
