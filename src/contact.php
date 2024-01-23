@@ -204,15 +204,6 @@ class Contact implements JsonSerializable {
     public $myReviewPermissions;
     public $paperId;
 
-    /** @deprecated */
-    const DISABLEMENT_USER = 1;
-    /** @deprecated */
-    const DISABLEMENT_PLACEHOLDER = 2;
-    /** @deprecated */
-    const DISABLEMENT_ROLE = 4;
-    /** @deprecated */
-    const DISABLEMENT_DELETED = 8;
-
     const CF_UDISABLED = 0x1;
     const CF_PLACEHOLDER = 0x2;
     const CF_ROLEDISABLED = 0x4;
@@ -223,24 +214,6 @@ class Contact implements JsonSerializable {
 
     const CFM_DISABLEMENT = 0x1F;
     const CFM_DB = ~0xC;
-
-    /** @deprecated */
-    const CFLAG_UDISABLED = 0x1;
-    /** @deprecated */
-    const CFLAG_PLACEHOLDER = 0x2;
-    /** @deprecated */
-    const CFLAG_ROLEDISABLED = 0x4;
-    /** @deprecated */
-    const CFLAG_DELETED = 0x8;
-    /** @deprecated */
-    const CFLAG_GDISABLED = 0x10;
-    /** @deprecated */
-    const CFLAG_UNCONFIRMED = 0x20;
-
-    /** @deprecated */
-    const CFMASK_DISABLEMENT = 0x1F;
-    /** @deprecated */
-    const CFMASK_DB = ~0xC;
 
     const PROP_LOCAL = 0x01;
     const PROP_CDB = 0x02;
