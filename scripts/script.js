@@ -426,7 +426,7 @@ function check_sessioninfo(data, options) {
         $("form").each(function () {
             let furi = url_absolute(this.action);
             if (furi.startsWith(myuri)) {
-                let m = /^([^#]*[&?;]post=)([^&?;#]*)(.*)$/.exec(this.action);
+                let m = /^([^#]*[&?;]post=)[^&?;#]*(.*)$/.exec(this.action);
                 if (m) {
                     this.action = m[1].concat(siteinfo.postvalue, m[2]);
                 }
@@ -436,7 +436,7 @@ function check_sessioninfo(data, options) {
         $("button[formaction]").each(function () {
             let furi = url_absolute(this.formAction), m;
             if (furi.startsWith(myuri)
-                && /^([^#]*[&?;]post=)([^&?;#]*)(.*)$/.exec(this.formAction)) {
+                && (m = /^([^#]*[&?;]post=)[^&?;#]*(.*)$/.exec(this.formAction))) {
                 this.formAction = m[1].concat(siteinfo.postvalue, m[2]);
             }
         });
