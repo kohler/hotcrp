@@ -933,7 +933,7 @@ class PaperStatus extends MessageSet {
     /** @param Contact|Author|string $u
      * @param int $mask
      * @param int $new
-     * @return bool */
+     * @return void */
     function update_conflict_value($u, $mask, $new) {
         assert(($new & $mask) === $new);
         if (is_string($u) || $u->contactId <= 0) {
@@ -941,7 +941,7 @@ class PaperStatus extends MessageSet {
             $u = $this->_make_user($au, $new);
         }
         if (!$u || $u->contactId <= 0) {
-            return false;
+            return;
         }
         $uid = $u->contactId;
         if (!isset($this->_conflict_values[$uid])) {
@@ -953,8 +953,6 @@ class PaperStatus extends MessageSet {
             $cv[1] |= $mask;
             $cv[2] = ($cv[2] & ~$mask) | $new;
         }
-        // return true iff `$mask` bits have changed
-        return ($cv[0] & $mask) !== ((($cv[0] & ~$cv[1]) | $cv[2]) & $mask);
     }
 
     function checkpoint_conflict_values() {

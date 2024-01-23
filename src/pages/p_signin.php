@@ -359,24 +359,28 @@ class Signin_Page {
             $conf->redirect();
         } else if ($conf->login_type()
                    || !$conf->allow_user_self_register()) {
-            // do nothing
-        } else if ($qreq->valid_post()) {
-            $info = LoginHelper::new_account_info($conf, $qreq);
-            if ($info["ok"]) {
-                $prep = $this->mail_user($conf, $info);
-                if ($prep->sent()
-                    && $prep->reset_capability
-                    && isset($info["firstuser"])) {
-                    $conf->success_msg("<0>As the first user, you have been assigned system administrator privilege. Use this screen to set a password. All later users will have to sign in normally.");
-                    $conf->redirect_hoturl("resetpassword", ["__PATH__" => $prep->reset_capability]);
-                } else if ($prep) {
-                    $conf->redirect_hoturl("signin");
-                }
-            } else {
-                LoginHelper::login_error($conf, $qreq->email, $info, $this->ms());
-            }
-        } else {
+            return;
+        } else if (!$qreq->valid_post()) {
             self::bad_post_error($user, $qreq, "newaccount");
+            return;
+        }
+        $info = LoginHelper::new_account_info($conf, $qreq);
+        if (!$info["ok"]) {
+            LoginHelper::login_error($conf, $qreq->email, $info, $this->ms());
+            return;
+        }
+        $prep = $this->mail_user($conf, $info);
+        if (!$prep) {
+            return;
+        }
+        if ($prep->sent() && $prep->reset_capability) {
+            $this->_reset_tokstr = $prep->reset_capability;
+        }
+        if ($this->_reset_tokstr && isset($info["firstuser"])) {
+            $conf->success_msg("<0>As the first user, you have been assigned system administrator privilege. Use this screen to set a password. All later users will have to sign in normally.");
+            $conf->redirect_hoturl("resetpassword", ["__PATH__" => $prep->reset_capability]);
+        } else {
+            $conf->redirect_hoturl("signin");
         }
     }
     /** @param ComponentSet $cs */

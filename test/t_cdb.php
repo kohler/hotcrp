@@ -12,6 +12,9 @@ class Cdb_Tester {
     /** @var Contact
      * @readonly */
     public $user_chair;
+    /** @var \mysqli
+     * @readonly */
+    public $cdb;
 
     const MARINA = "marina@poema.ru";
 
@@ -20,7 +23,7 @@ class Cdb_Tester {
         $this->us1 = new UserStatus($conf->root_user());
         $this->user_chair = $conf->checked_user_by_email("chair@_.com");
 
-        if (!$conf->contactdb()) {
+        if (!($this->cdb = $conf->contactdb())) {
             error_log("! Error: The test contactdb has not been initialized.");
             error_log("! You may need to run `lib/createdb.sh -c test/cdb-options.php --no-dbuser --batch`.");
             exit(1);
@@ -102,7 +105,7 @@ class Cdb_Tester {
     }
 
     function test_cdb_import_1() {
-        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='te@tl.edu', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+        $result = Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='te@tl.edu', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
         assert(!Dbl::is_error($result));
         Dbl::free($result);
         xassert(!maybe_user("te@tl.edu"));
@@ -126,7 +129,7 @@ class Cdb_Tester {
     }
 
     function test_change_email() {
-        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='', lastName='Thamrongrattanarit 2', email='te2@tl.edu', affiliation='Brandeis University or something', collaborators='Newsweek Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+        $result = Dbl::qe($this->cdb, "insert into ContactInfo set firstName='', lastName='Thamrongrattanarit 2', email='te2@tl.edu', affiliation='Brandeis University or something', collaborators='Newsweek Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
         xassert(!Dbl::is_error($result));
         Dbl::free($result);
 
@@ -191,7 +194,7 @@ class Cdb_Tester {
         $te2 = user("te2@tl.edu");
         $te2_cdb_first = $te2->cdb_user()->firstName;
         $te2_cdb_last = $te2->cdb_user()->lastName;
-        Dbl::qe($this->conf->contactdb(), "update ContactInfo set affiliation='' where email='te2@tl.edu'");
+        Dbl::qe($this->cdb, "update ContactInfo set affiliation='' where email='te2@tl.edu'");
         $acct = $this->us1->save_user((object) ["firstName" => "Wacky", "affiliation" => "String", "email" => "te2@tl.edu"]);
         xassert(!!$acct);
         $te2 = user("te2@tl.edu");
@@ -225,7 +228,7 @@ class Cdb_Tester {
         xassert(!!$acct);
         Dbl::qe("delete from ContactInfo where email=?", $anna);
         $this->conf->invalidate_user(Contact::make_email($this->conf, $anna));
-        Dbl::qe($this->conf->contactdb(), "update ContactInfo set passwordUseTime=1 where email=?", $anna);
+        Dbl::qe($this->cdb, "update ContactInfo set passwordUseTime=1 where email=?", $anna);
         save_password($anna, "aquablouse", true);
         MailChecker::check0();
     }
@@ -349,7 +352,7 @@ class Cdb_Tester {
         // betty2 is in local db with no password or name;
         // betty3-5 are in cdb with name but no password;
         Dbl::qe($this->conf->dblink, "insert into ContactInfo (email, password) values ('betty2@manchette.net','')");
-        Dbl::qe($this->conf->contactdb(), "insert into ContactInfo (email, password, firstName, lastName) values
+        Dbl::qe($this->cdb, "insert into ContactInfo (email, password, firstName, lastName) values
             ('betty3@manchette.net','','Betty','Shabazz'),
             ('betty4@manchette.net','','Betty','Kelly'),
             ('betty5@manchette.net','','Betty','Davis')");
@@ -473,10 +476,10 @@ class Cdb_Tester {
         $cdb_cid = $u->contactId;
 
         // remove cdb user's roles
-        Dbl::qe($this->conf->contactdb(), "delete from Roles where contactDbId=?", $cdb_cid);
+        Dbl::qe($this->cdb, "delete from Roles where contactDbId=?", $cdb_cid);
 
         // make cdb user non-disabled, but empty name
-        Dbl::qe($this->conf->contactdb(), "update ContactInfo set email=?, password=?, firstName=?, lastName=?, disabled=? where email=?",
+        Dbl::qe($this->cdb, "update ContactInfo set email=?, password=?, firstName=?, lastName=?, disabled=? where email=?",
             'cenGiz@isi.edu', 'TEST PASSWORD', '', '', 0,
             'cengiz@isi.edu');
         $this->conf->invalidate_user(Contact::make_cdb_email($this->conf, "cengiz@isi.edu"));
@@ -501,7 +504,7 @@ class Cdb_Tester {
 
     function test_claim_review() {
         // Sophia is in cdb, not local db
-        Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set email='sophia@dros.nl', password='', firstName='Sophia', lastName='Dros'");
+        Dbl::qe($this->cdb, "insert into ContactInfo set email='sophia@dros.nl', password='', firstName='Sophia', lastName='Dros'");
         $user_sophia = $this->conf->fresh_user_by_email("sophia@dros.nl");
         xassert(!$user_sophia);
         $user_sophia = $this->conf->cdb_user_by_email("sophia@dros.nl");
@@ -710,7 +713,7 @@ class Cdb_Tester {
         $u = $this->conf->fresh_cdb_user_by_email("newuser@fresh.com");
         xassert(!$u);
 
-        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='newuser@fresh.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+        $result = Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='newuser@fresh.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
         $u = $this->conf->fresh_cdb_user_by_email("newuser@fresh.com");
         xassert(!!$u);
         xassert(!$this->conf->fresh_user_by_email("newuser@fresh.com"));
@@ -759,7 +762,7 @@ class Cdb_Tester {
         $u = $this->conf->fresh_cdb_user_by_email("newuser1@fresh.com");
         xassert(!$u);
 
-        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='newuser1@fresh.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
+        $result = Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Te', lastName='Thamrongrattanarit', email='newuser1@fresh.com', affiliation='Brandeis University', collaborators='Computational Linguistics Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
         $u = $this->conf->fresh_cdb_user_by_email("newuser1@fresh.com");
         xassert(!!$u);
         xassert(!$this->conf->fresh_user_by_email("newuser1@fresh.com"));
@@ -824,7 +827,7 @@ class Cdb_Tester {
         xassert_eqq($u->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED);
         $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='belling@cat.com'") ?? -1;
         xassert_eqq($d & ~Contact::CF_PLACEHOLDER, Contact::CF_UDISABLED);
-        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='belling@cat.com'") ?? -1;
+        $d = Dbl::fetch_ivalue($this->cdb, "select disabled from ContactInfo where email='belling@cat.com'") ?? -1;
         xassert_eqq($d & ~Contact::CF_PLACEHOLDER, 0);
 
         $u = $this->conf->fresh_cdb_user_by_email("kitcat@cat.com");
@@ -842,20 +845,79 @@ class Cdb_Tester {
         xassert_eqq($uu->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED);
         $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='kitcat@cat.com'") ?? -1;
         xassert_eqq($d & ~Contact::CF_PLACEHOLDER, Contact::CF_UDISABLED);
-        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='kitcat@cat.com'") ?? -1;
+        $d = Dbl::fetch_ivalue($this->cdb, "select disabled from ContactInfo where email='kitcat@cat.com'") ?? -1;
         xassert_eqq($d & ~Contact::CF_PLACEHOLDER, 0);
 
         Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@cat.com', affiliation='University of Connecticut', password='', disabled=1, cflags=1");
-        Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@cat.com', affiliation='University of Connecticut', password=' unset', disabled=2, cflags=2");
+        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@cat.com', affiliation='University of Connecticut', password=' unset', disabled=2, cflags=2");
         $u = $this->conf->fresh_user_by_email("marthatanner@cat.com");
         xassert_eqq($u->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED | Contact::CF_UDISABLED);
         $u->update_cdb();
         $uu = $this->conf->fresh_cdb_user_by_email("marthatanner@cat.com");
         xassert_eqq($uu->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED);
-        $d = Dbl::fetch_ivalue($this->conf->contactdb(), "select disabled from ContactInfo where email='marthatanner@cat.com'") ?? -1;
+        $d = Dbl::fetch_ivalue($this->cdb, "select disabled from ContactInfo where email='marthatanner@cat.com'") ?? -1;
         xassert_eqq($d & ~Contact::CF_PLACEHOLDER, 0);
 
         $this->conf->set_opt("disableNonPC", null);
         $this->conf->refresh_options();
+    }
+
+    function check_disablement($email, $want) {
+        $u = $this->conf->fresh_cdb_user_by_email($email);
+        xassert_eqq($u->disabled_flags(), $want);
+        $x = Dbl::fetch_ivalue($this->cdb, "select disabled from ContactInfo where email=?", $email);
+        xassert_eqq($x, $want);
+        $u = $this->conf->fresh_user_by_email($email);
+        xassert_eqq($u->disabled_flags(), $want);
+        $x = $this->conf->fetch_ivalue("select disabled from ContactInfo where email=?", $email);
+        xassert_eqq($x, $want);
+    }
+
+    function test_cdb_placeholder_reset() {
+        $u = $this->conf->fresh_cdb_user_by_email("fuzzle@cat.com");
+        xassert(!$u);
+        $u = $this->conf->fresh_cdb_user_by_email("gussie@cat.com");
+        xassert(!$u);
+
+        $p = PaperInfo::make_new($this->conf->root_user(), null);
+        $ps = new PaperStatus($this->conf->root_user());
+        $pid = $ps->save_paper_web(new Qrequest("POST", [
+            "title" => "Beautiful Companions",
+            "has_authors" => 1,
+            "authors:1:email" => "fuzzle@cat.com",
+            "authors:2:email" => "gussie@cat.com",
+            "has_contacts" => 1,
+            "contacts:1:email" => "fuzzle@cat.com",
+            "contacts:1:active" => 1,
+            "abstract" => "Tiny Paws Catlets!"
+        ]), $p);
+        xassert_gt($pid, 0);
+
+        $this->check_disablement("fuzzle@cat.com", 0);
+        $this->check_disablement("gussie@cat.com", Contact::CF_PLACEHOLDER);
+
+        // reset gussie's password
+        $gussie = $this->conf->fresh_user_by_email("gussie@cat.com");
+        $qreq = TestRunner::make_qreq($gussie, "newaccount?email=gussie@cat.com", "POST");
+        $cs = $this->conf->page_components($gussie, $qreq);
+        $sp = $cs->callable("Signin_Page");
+        try {
+            $sp->create_request($gussie, $qreq);
+        } catch (Redirection $r) {
+        }
+        xassert_str_starts_with($sp->_reset_tokstr ?? "", "hcpw1");
+
+        $qreq = TestRunner::make_qreq($gussie, "resetpassword?email=gussie@cat.com", "POST");
+        $qreq->set_req("resetcap", $sp->_reset_tokstr);
+        $qreq->set_req("password", "Tiny dancer");
+        $qreq->set_req("password2", "Tiny dancer");
+        $cs = $this->conf->page_components($gussie, $qreq);
+        $sp = $cs->callable("Signin_Page");
+        try {
+            $sp->reset_request($gussie, $qreq, $cs);
+        } catch (Redirection $r) {
+        }
+
+        $this->check_disablement("gussie@cat.com", 0);
     }
 }
