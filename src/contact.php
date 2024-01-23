@@ -1057,18 +1057,6 @@ class Contact implements JsonSerializable {
         return ($this->cflags & $disabled) === 0 && self::is_real_email($e);
     }
 
-    /** @param string $email
-     * @return bool */
-    static function is_real_email($email) {
-        $len = strlen($email);
-        return ($at = strpos($email, "@")) !== false
-            && $at + 1 < $len
-            && $email[$at + 1] !== "_"
-            && ($at + 12 > $len
-                || (ord($email[$len - 11]) | 0x20) !== 0x65 /* 'e' */
-                || !preg_match('/\G[@.]example\.(?:com|net|org|edu)\z/i', $email, $m, 0, $len - 12));
-    }
-
     /** @return int */
     function session_index() {
         return $this->_activated > 0 ? $this->_activated >> 8 : -1;
@@ -1260,6 +1248,25 @@ class Contact implements JsonSerializable {
         // see also PaperSearch, Mailer
         return substr_compare($email, "anonymous", 0, 9, true) === 0
             && (strlen($email) === 9 || ctype_digit(substr($email, 9)));
+    }
+
+    /** @param string $email
+     * @param ?int $at
+     * @return bool */
+    static function is_example_email($email) {
+        $len = strlen($email);
+        return ($at = strpos($email, "@")) !== false
+            && $at + 1 < $len
+            && ($email[$at + 1] === "_"
+                || ($at + 12 <= $len
+                    && (ord($email[$len - 11]) | 0x20) === 0x65 /* 'e' */
+                    && preg_match('/\G[@.]example\.(?:com|net|org|edu)\z/i', $email, $m, 0, $len - 12)));
+    }
+
+    /** @param string $email
+     * @return bool */
+    static function is_real_email($email) {
+        return validate_email($email) && !self::is_example_email($email);
     }
 
     /** @return bool */

@@ -1000,6 +1000,21 @@ class Unit_Tester {
         xassert(!Contact::is_anonymous_email("example@anonymous"));
     }
 
+    function test_is_real_email() {
+        xassert(!Contact::is_real_email("anonymous"));
+        xassert(!Contact::is_real_email("anonymous1"));
+        xassert(!Contact::is_real_email("anonymous10"));
+        xassert(!Contact::is_real_email("anonymous9"));
+        xassert(!Contact::is_real_email("anonymous@example.com"));
+        xassert(!Contact::is_real_email("example@anonymous")); // not enough dots
+        xassert(Contact::is_real_email("example@anonymous.com"));
+        xassert(Contact::is_real_email("ass@butt.com"));
+        xassert(Contact::is_real_email("ass@fxample.edu"));
+        xassert(!Contact::is_real_email("ass@_.com"));
+        xassert(!Contact::is_real_email("ass@_.co.uk"));
+        xassert(Contact::is_real_email("ass@underscore.com"));
+    }
+
     function test_valid_email() {
         xassert(Contact::make_email($this->conf, "ass@butt.com")->can_receive_mail());
         xassert(Contact::make_email($this->conf, "ass@fxample.edu")->can_receive_mail());
