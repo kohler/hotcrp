@@ -905,7 +905,7 @@ class Contact implements JsonSerializable {
         if (!$u
             && $this->conf->contactdb()
             && $this->has_email()
-            && !self::is_anonymous_email($this->email)) {
+            && self::is_real_email($this->email)) {
             $u = $this->_cdb_user = Contact::make_cdb_email($this->conf, $this->email);
             if ($this->contactId > 0) {
                 $u->contactXid = $this->contactId;
@@ -938,7 +938,7 @@ class Contact implements JsonSerializable {
     function update_cdb() {
         if (!$this->conf->contactdb()
             || !$this->has_account_here()
-            || !validate_email($this->email)) {
+            || !self::is_real_email($this->email)) {
             return false;
         }
 
@@ -1251,7 +1251,6 @@ class Contact implements JsonSerializable {
     }
 
     /** @param string $email
-     * @param ?int $at
      * @return bool */
     static function is_example_email($email) {
         $len = strlen($email);

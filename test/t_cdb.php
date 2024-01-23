@@ -920,4 +920,12 @@ class Cdb_Tester {
 
         $this->check_disablement("gussie@cat.com", 0);
     }
+
+    function test_cdb_example_user() {
+        xassert(!$this->conf->fresh_cdb_user_by_email("wonderful@example.edu"));
+        $acct = $this->us1->save_user((object) ["email" => "wonderful@example.edu"]);
+        xassert(!!$acct);
+        xassert(!$acct->cdb_user());
+        xassert(!$this->conf->fresh_cdb_user_by_email("wonderful@example.edu"));
+    }
 }
