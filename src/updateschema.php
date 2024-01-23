@@ -2951,6 +2951,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table Capability add `inputData` varbinary(16384) DEFAULT NULL")) {
             $conf->update_schema_version(288);
         }
+        if ($conf->sversion === 288
+            && $conf->ql_ok("update ContactInfo set disabled=0 where disabled=2 and cflags!=2 and (cflags&" . Contact::CFM_DISABLEMENT . ")=0")) {
+            $conf->update_schema_version(289);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
