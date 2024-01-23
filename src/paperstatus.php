@@ -1410,8 +1410,7 @@ class PaperStatus extends MessageSet {
                 }
                 $us[] = $u;
                 if (self::new_conflict_value($this->_conflict_values[$u->contactId]) >= CONFLICT_CONTACTAUTHOR
-                    && $u->activate_placeholder_prop(false)) {
-                    $u->save_prop();
+                    && $u->activate_placeholder(false)) {
                     $this->_created_contacts[] = $u;
                 }
             }

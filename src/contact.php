@@ -778,13 +778,7 @@ class Contact implements JsonSerializable {
 
         // maybe auto-create a user
         if (($this->_activated & 2) === 0 && $this->email) {
-            if ($this->activate_placeholder_prop(($this->_activated & 7) === 1)) {
-                $this->save_prop();
-                if (($cdbu = $this->cdb_user())
-                    && $cdbu->activate_placeholder_prop(($this->_activated & 7) === 1)) {
-                    $cdbu->save_prop();
-                }
-            }
+            $this->activate_placeholder(($this->_activated & 7) === 1);
             $trueuser_aucheck = $qreq->csession("trueuser_author_check") ?? 0;
             if (!$this->has_account_here()
                 && $trueuser_aucheck + 600 < Conf::$now) {
@@ -1912,7 +1906,7 @@ class Contact implements JsonSerializable {
 
     /** @param bool $confirm
      * @return bool */
-    function activate_placeholder_prop($confirm) {
+    private function activate_placeholder_prop($confirm) {
         $changed = false;
         if (($this->cflags & self::CF_PLACEHOLDER) !== 0) {
             $this->set_prop("cflags", $this->cflags & ~self::CF_PLACEHOLDER);
@@ -2013,6 +2007,20 @@ class Contact implements JsonSerializable {
         $this->_mod_undo = $this->_jdata = null;
         $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
         $this->set_roles_properties();
+    }
+
+    /** @param bool $confirm
+     * @return bool */
+    function activate_placeholder($confirm) {
+        if (!$this->activate_placeholder_prop($confirm)) {
+            return false;
+        }
+        $this->save_prop();
+        if (($cdbu = $this->cdb_user())
+            && $cdbu->activate_placeholder_prop($confirm)) {
+            $cdbu->save_prop();
+        }
+        return true;
     }
 
 
