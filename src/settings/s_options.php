@@ -379,7 +379,11 @@ class Options_SettingParser extends SettingParser {
         echo '<div id="sf/', $ctr, '/view" class="settings-xf-viewbox fn2 ui js-foldup">',
             '<div class="settings-xf-viewport"><div class="settings-xf-view">';
         if ($disabled) {
-            $this->pt->msg_at($io->formid, "<0>This field is currently disabled", MessageSet::URGENT_NOTE);
+            if ($io->id === PaperOption::PCCONFID) {
+                $this->pt->msg_at($io->formid, "<0>Field disabled for submitters (but accessible to administrators)", MessageSet::URGENT_NOTE);
+            } else {
+                $this->pt->msg_at($io->formid, "<0>Field disabled", MessageSet::URGENT_NOTE);
+            }
         } else if (strcasecmp($this->sfs->exists_if, "all") !== 0
                    && strcasecmp($this->sfs->exists_if, "phase:final") !== 0) {
             $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $this->sfs->exists_if . "’", MessageSet::WARNING_NOTE);
@@ -387,7 +391,8 @@ class Options_SettingParser extends SettingParser {
         if ($io->is_final()) {
             $this->pt->msg_at($io->formid, "<0>Present in the final-version phase", MessageSet::WARNING_NOTE);
         }
-        if (strcasecmp($this->sfs->editable_if, "all") === 0) {
+        if ($disabled
+            || strcasecmp($this->sfs->editable_if, "all") === 0) {
             // no editable comment
         } else if (strcasecmp($this->sfs->editable_if, "none") === 0) {
             $this->pt->msg_at($io->formid, "<0>Frozen on all submissions (not editable)", MessageSet::WARNING_NOTE);

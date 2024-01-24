@@ -367,6 +367,8 @@ class PCConflicts_PaperOption extends PaperOption {
     function export_setting() {
         $sfs = parent::export_setting();
         $sfs->exists_if = $this->visible_if ?? "all";
+        $sfs->exists_disabled = $sfs->exists_disabled
+            || strcasecmp($this->visible_if, "NONE") === 0;
         return $sfs;
     }
 }
