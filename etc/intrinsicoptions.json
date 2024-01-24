@@ -10,21 +10,19 @@
     },
     {
         "name": "Submission", "id": 0,
-        "type": "submission",
+        "type": "document",
         "json_key": "submission",
         "form_order": 1001, "required": "submit",
         "display": "top",
-        "type": "document",
         "function": "+Document_PaperOption",
         "configurable": true, "properties": ["title", "description", "condition", "exists_if", "edit_condition", "editable_if", "required"]
     },
     {
         "name": "Final version", "id": -1,
-        "type": "finalversion",
+        "type": "document",
         "json_key": "final",
         "form_order": 1002, "required": "submit", "final": true,
         "display": "top",
-        "type": "document",
         "function": "+Document_PaperOption",
         "configurable": true, "properties": ["name", "description", "condition", "exists_if", "edit_condition", "editable_if", "required"]
     },
