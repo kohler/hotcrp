@@ -6,6 +6,7 @@ class Tag_Fexpr extends Fexpr {
     private $tag;
     private $tsm;
     private $isvalue;
+    private $ti;
     function __construct($tag, TagSearchMatcher $tsm, $isvalue) {
         parent::__construct("tag");
         $this->tag = $tag;
@@ -93,6 +94,13 @@ class Tag_Fexpr extends Fexpr {
             return "Tag_Fexpr::tag_regex_value({$tags},{$regex},{$jvalue})";
         }
     }
+    function prepare(FormulaState $fst) {
+        $this->ti = $fst->ensure_tags();
+    }
+    function evaluate(FormulaState $fst) {
+        return Tag_Fexpr::tag_value($this->ti->value($fst), " " . $this->tsm->single_tag() . "#", $this->isvalue);
+    }
+
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         return ["op" => "tag", "tag" => $this->tag];

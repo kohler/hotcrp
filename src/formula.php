@@ -320,6 +320,16 @@ abstract class Fexpr implements JsonSerializable {
 
     abstract function compile(FormulaCompiler $state);
 
+    function prepare(FormulaState $fst) {
+        foreach ($this->args as $e) {
+            $e->prepare($fst);
+        }
+    }
+
+    function evaluate(FormulaState $fst) {
+        return null;
+    }
+
     /** @param ?Fexpr $other_expr */
     function compiled_relation($cmp, $other_expr = null) {
         if ($this->_format === Fexpr::FREVIEWFIELD
@@ -435,6 +445,9 @@ class Constant_Fexpr extends Fexpr {
     function compile(FormulaCompiler $state) {
         return $this->x;
     }
+    function evaluate(FormulaState $fst) {
+        return $this->x;
+    }
     function jsonSerialize() {
         if ($this->x === "null") {
             return null;
@@ -519,6 +532,8 @@ class Equality_Fexpr extends Fexpr {
 }
 
 class Inequality_Fexpr extends Fexpr {
+    /** @var int */
+    private $compar;
     function __construct($op, $e0, $e1) {
         assert(in_array($op, ["<", ">", "<=", ">="]));
         parent::__construct($op, [$e0, $e1]);
@@ -526,13 +541,31 @@ class Inequality_Fexpr extends Fexpr {
     }
     function typecheck(Formula $formula) {
         $this->typecheck_resolve_neighbors($formula);
-        return $this->typecheck_arguments($formula, true);
+        if (!$this->typecheck_arguments($formula, true)) {
+            return false;
+        }
+        $this->compar = CountMatcher::$opmap[$this->args[0]->compiled_relation($this->op, $this->args[1])];
+        return true;
     }
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
         $op = $this->args[0]->compiled_relation($this->op, $this->args[1]);
         return $this->check_null_args("{$t1} {$op} {$t2}", $t1, $t2);
+    }
+    function evaluate(FormulaState $fst) {
+        if (($x = $this->args[0]->evaluate($fst)) === null
+            || ($y = $this->args[1]->evaluate($fst)) === null) {
+            return null;
+        }
+        $delta = $x - $y;
+        if ($delta > 0.000001) {
+            return ($this->compar & 4) !== 0;
+        } else if ($delta > -0.000001) {
+            return ($this->compar & 2) !== 0;
+        } else {
+            return ($this->compar & 1) !== 0;
+        }
     }
 }
 
@@ -567,6 +600,12 @@ class Or_Fexpr extends Fexpr {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
         $t2 = $state->_addltemp($this->args[1]->compile($state));
         return "({$t1} ? : {$t2})";
+    }
+    function evaluate(FormulaState $fst) {
+        if (($x = $this->args[0]->evaluate($fst))) {
+            return $x;
+        }
+        return $this->args[1]->evaluate($fst);
     }
 }
 
@@ -1042,6 +1081,16 @@ class Count_Fexpr extends Aggregate_Fexpr {
     function compile(FormulaCompiler $state) {
         return $state->_compile_loop("0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)", $this);
     }
+    function evaluate(FormulaState $fst) {
+        $fst->push_loop($this->index_type);
+        $n = 0;
+        while ($fst->each()) {
+            if (($x = $this->args[0]->evaluate($fst)) !== null && $x !== false)
+                ++$n;
+        }
+        $fst->pop_loop();
+        return $n;
+    }
 }
 
 class Sum_Fexpr extends Aggregate_Fexpr {
@@ -1144,6 +1193,7 @@ class Pid_Fexpr extends Fexpr {
 }
 
 class Score_Fexpr extends Fexpr {
+    private $rfi;
     function __construct(Score_ReviewField $field) {
         parent::__construct("rf");
         $this->set_format(Fexpr::FREVIEWFIELD, $field);
@@ -1169,6 +1219,12 @@ class Score_Fexpr extends Fexpr {
             $fval = "{$rrow}->fidval(" . json_encode($field->short_id) . ")";
         }
         return "({$field->view_score} > {$rrow_vsb} ? {$fval} : null)";
+    }
+    function prepare(FormulaState $fst) {
+        $this->rfi = $fst->ensure_rf($this->format_detail());
+    }
+    function evaluate(FormulaState $fst) {
+        return $this->rfi->value($fst);
     }
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
@@ -2853,6 +2909,13 @@ class Formula implements JsonSerializable {
     /** @return int */
     function index_type() {
         return $this->check() ? $this->_parse->index_type : 0;
+    }
+
+    /** @return FormulaState */
+    function make_state(Contact $user) {
+        $fst = new FormulaState($user, $this->_parse->fexpr);
+        $this->_parse->fexpr->prepare($fst);
+        return $fst;
     }
 
     #[\ReturnTypeWillChange]
