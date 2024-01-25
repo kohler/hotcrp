@@ -1,6 +1,6 @@
 <?php
 // formula.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
 
 class FormulaCall {
     /** @var Formula */
@@ -13,8 +13,10 @@ class FormulaCall {
     public $args = [];
     /** @var list<string> */
     public $rawargs = [];
-    /** @var mixed */
-    public $modifier = false;
+    /** @var ?int */
+    public $index_type;
+    /** @var ?mixed */
+    public $modifier;
     /** @var object */
     public $kwdef;
     /** @var int */
@@ -32,6 +34,27 @@ class FormulaCall {
      * @return MessageItem */
     function lerror($message) {
         return $this->formula->lerror($this->pos1, $this->pos2, $message);
+    }
+    /** @param mixed $args
+     * @return bool */
+    function check_nargs($args) {
+        if (is_int($args)) {
+            $args = [$args, $args];
+        }
+        if (!is_array($args)) {
+            return true;
+        }
+        if (count($this->args) < $args[0]) {
+            $note = $args[0] < $args[1] ? "at least " : "";
+            $this->lerror("<0>Too few arguments to function ‘{$this->name}’ (expected {$note}{$args[0]})");
+            return false;
+        } else if (count($this->args) > $args[1]) {
+            $note = $args[0] < $args[1] ? "{$args[0]}–{$args[1]}" : $args[1];
+            $this->lerror("<0>Too many arguments to function ‘{$this->name}’ (expected {$note})");
+            return false;
+        } else {
+            return true;
+        }
     }
 }
 
@@ -182,25 +205,22 @@ abstract class Fexpr implements JsonSerializable {
     function typecheck_arguments(Formula $formula, $ismath = false) {
         $ok = true;
         foreach ($this->args as $a) {
-            $aok = $a->typecheck($formula);
-            if ($aok && $ismath && !$a->math_format()) {
-                $formula->fexpr_lerror($a, $a->disallowed_use_error());
-                $aok = false;
-            }
-            $ok = $ok && $aok;
+            $ok = $a->typecheck($formula)
+                && (!$ismath || $a->typecheck_math_format($formula))
+                && $ok;
         }
         if ($ok
             && ($this->_format === Fexpr::FUNKNOWN
                 || ($this->nonnullable_format() && $this->_format_detail === null))) {
-            $this->_do_typecheck_format();
+            $this->_typecheck_format();
         }
         return $ok;
     }
 
-    private function _do_typecheck_format() {
+    private function _typecheck_format() {
         $commonf = null;
         $nonnull = true;
-        foreach ($this->typecheck_format() ?? [] as $fe) {
+        foreach ($this->inferred_format() ?? [] as $fe) {
             $nonnull = $nonnull && $fe->nonnull_format();
             if ($fe->format() < Fexpr::FNUMERIC) {
                 /* ignore it */
@@ -228,8 +248,28 @@ abstract class Fexpr implements JsonSerializable {
     }
 
     /** @return ?list<Fexpr> */
-    function typecheck_format() {
+    function inferred_format() {
         return null;
+    }
+
+    /** @return ?list<Fexpr> */
+    static function inferred_numeric_format(Fexpr $fexpr) {
+        $f = $fexpr->format();
+        if ($f === self::FBOOL || $f === self::FTAGVALUE) {
+            return null;
+        } else {
+            return [$fexpr];
+        }
+    }
+
+    /** @return bool */
+    function typecheck_math_format(Formula $formula) {
+        if ($this->math_format()) {
+            return true;
+        } else {
+            $formula->fexpr_lerror($this, $this->disallowed_use_error());
+            return false;
+        }
     }
 
     /** @return int */
@@ -437,12 +477,12 @@ class Constant_Fexpr extends Fexpr {
 
 class Ternary_Fexpr extends Fexpr {
     function __construct($e0, $e1, $e2) {
-        parent::__construct("?!", [$e0, $e1, $e2]);
+        parent::__construct("?:", [$e0, $e1, $e2]);
     }
     function typecheck(Formula $formula) {
         return $this->typecheck_arguments($formula);
     }
-    function typecheck_format() {
+    function inferred_format() {
         return [$this->args[1], $this->args[2]];
     }
     function viewable_by(Contact $user) {
@@ -500,7 +540,7 @@ class And_Fexpr extends Fexpr {
     function __construct($e0, $e1) {
         parent::__construct("&&", [$e0, $e1]);
     }
-    function typecheck_format() {
+    function inferred_format() {
         return $this->args;
     }
     function compile(FormulaCompiler $state) {
@@ -517,7 +557,7 @@ class Or_Fexpr extends Fexpr {
     function __construct($e0, $e1) {
         parent::__construct("||", [$e0, $e1]);
     }
-    function typecheck_format() {
+    function inferred_format() {
         return $this->args;
     }
     function viewable_by(Contact $user) {
@@ -564,7 +604,7 @@ class Additive_Fexpr extends Fexpr {
     function typecheck(Formula $formula) {
         return $this->typecheck_arguments($formula, true);
     }
-    function typecheck_format() {
+    function inferred_format() {
         $f0 = $this->args[0]->format();
         $f1 = $this->args[1]->format();
         $d0 = $f0 >= self::FDATE && $f0 <= self::FTIMEDELTA;
@@ -674,7 +714,7 @@ class In_Fexpr extends Fexpr {
     }
 }
 
-class Extremum_Fexpr extends Fexpr {
+class ArgumentSelection_Fexpr extends Fexpr {
     function __construct(FormulaCall $ff) {
         if ($ff->name === "min") {
             $op = "least";
@@ -689,7 +729,7 @@ class Extremum_Fexpr extends Fexpr {
         $this->typecheck_resolve_neighbors($formula);
         return $this->typecheck_arguments($formula, true);
     }
-    function typecheck_format() {
+    function inferred_format() {
         return $this->args;
     }
     function compile(FormulaCompiler $state) {
@@ -767,147 +807,164 @@ class Round_Fexpr extends Fexpr {
     }
 }
 
-class Aggregate_Fexpr extends Fexpr {
+abstract class Aggregate_Fexpr extends Fexpr {
     /** @var int */
     public $index_type;
-    function __construct($fn, array $values, int $index_type) {
+
+    function __construct($fn, array $values, ?int $index_type) {
         parent::__construct($fn, $values);
-        $this->index_type = $index_type;
+        $this->index_type = $index_type ?? 0;
     }
     static function parse_modifier(FormulaCall $ff, $arg) {
-        if (!$ff->modifier) {
-            $ff->modifier = [false, false];
+        if (!str_starts_with($arg, ".")) {
+            return false;
         }
-        if ($arg === ".pc"
-            && !$ff->modifier[0]) {
-            $ff->modifier[0] = Fexpr::IDX_PC;
+        $pos = array_search($arg, [".pc", ".re", ".rev", ".review", ".cre", ".creview", ".anyre", ".anyreview"]);
+        if ($ff->index_type) {
+            $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "<0>Collection already specified");
+        } else if ($pos === false) {
+            $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "<0>Collection ‘{$arg}’ not found");
+        } else if ($pos === 0) {
+            $ff->index_type = Fexpr::IDX_PC;
+        } else if ($pos < 4) {
+            $ff->index_type = Fexpr::IDX_REVIEW;
+        } else if ($pos < 6) {
+            $ff->index_type = Fexpr::IDX_CREVIEW;
+        } else {
+            $ff->index_type = Fexpr::IDX_ANYREVIEW;
+        }
+        return true;
+    }
+    function typecheck_index(Formula $formula) {
+        if ($this->index_type !== 0) {
             return true;
-        } else if (in_array($arg, [".re", ".rev", ".review"])
-                   && !$ff->modifier[0]) {
-            $ff->modifier[0] = Fexpr::IDX_REVIEW;
+        }
+        $lt = parent::inferred_index();
+        if ($lt === 0 || ($lt & ($lt - 1)) === 0) {
+            $this->index_type = $lt;
             return true;
-        } else if (in_array($arg, [".cre", ".creview"])
-                   && !$ff->modifier[0]) {
-            $ff->modifier[0] = Fexpr::IDX_CREVIEW;
-            return true;
-        } else if (in_array($arg, [".anyre", ".anyreview"])
-                   && !$ff->modifier[0]) {
-            $ff->modifier[0] = Fexpr::IDX_ANYREVIEW;
-            return true;
-        } else if (($ff->name === "variance" || $ff->name === "stddev")
-                   && !$ff->modifier[1]
-                   && strpos($ff->text, "_") === false
-                   && in_array($arg, [".p", ".pop", ".s", ".samp"])) {
-            $ff->modifier[1] = true;
+        } else {
+            $formula->fexpr_lerror($this, "<0>Ambiguous collection, specify ‘{$this->op}.pc’ or ‘{$this->op}.re’");
+            return false;
+        }
+    }
+    function inferred_index() {
+        return 0;
+    }
+}
+
+class My_Fexpr extends Aggregate_Fexpr {
+    function __construct(Fexpr $e) {
+        parent::__construct("my", [$e], Fexpr::IDX_MY);
+    }
+    static function make(FormulaCall $ff) {
+        return $ff->check_nargs(1) ? new My_Fexpr($ff->args[0]) : null;
+    }
+    function typecheck(Formula $formula) {
+        return $this->typecheck_arguments($formula);
+    }
+    function inferred_format() {
+        return $this->args;
+    }
+    function compile(FormulaCompiler $state) {
+        return $state->_compile_my($this->args[0]);
+    }
+}
+
+class All_Fexpr extends Aggregate_Fexpr {
+    function __construct($fn, Fexpr $e, ?int $index_type) {
+        parent::__construct($fn, [$e], $index_type);
+        $this->set_format(Fexpr::FBOOL);
+    }
+    static function make(FormulaCall $ff) {
+        return $ff->check_nargs(1) ? new All_Fexpr($ff->name, $ff->args[0], $ff->index_type) : null;
+    }
+    function typecheck(Formula $formula) {
+        return $this->typecheck_arguments($formula)
+            && $this->typecheck_index($formula);
+    }
+    function compile(FormulaCompiler $state) {
+        $x = $this->op === "all" ? "(~r~ !== null ? ~l~ && ~r~ : ~l~)" : "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)";
+        return self::cast_bool($state->_compile_loop("null", $x, $this));
+    }
+}
+
+class Some_Fexpr extends Aggregate_Fexpr {
+    function __construct(Fexpr $e, ?int $index_type = null) {
+        parent::__construct("some", [$e], $index_type);
+    }
+    static function make(FormulaCall $ff) {
+        return $ff->check_nargs(1) ? new Some_Fexpr($ff->args[0], $ff->index_type) : null;
+    }
+    function typecheck(Formula $formula) {
+        return $this->typecheck_arguments($formula)
+            && $this->typecheck_index($formula);
+    }
+    function inferred_format() {
+        return $this->args;
+    }
+    function compile(FormulaCompiler $state) {
+        return $state->_compile_loop("null", "~r~ = ~l~;
+if (~r~ !== null && ~r~ !== false) {
+  break;
+}", $this);
+    }
+}
+
+class Variance_Fexpr extends Aggregate_Fexpr {
+    function __construct($fn, Fexpr $e, ?int $index_type) {
+        parent::__construct($fn, [$e], $index_type);
+    }
+    static function parse_modifier(FormulaCall $ff, $arg) {
+        if (!$ff->modifier
+            && strpos($ff->text, "_") === false
+            && in_array($arg, [".p", ".pop", ".s", ".samp"])) {
+            $ff->modifier = true;
             if ($arg === ".p" || $arg === ".pop") {
                 $ff->name .= "_pop";
             }
             return true;
-        } else if (str_starts_with($arg, ".")) {
-            $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "<0>Collection ‘" . substr($arg, 1) . "’ not found");
-            return true;
         } else {
-            return false;
+            return parent::parse_modifier($ff, $arg);
         }
     }
     static function make(FormulaCall $ff) {
-        $op = $ff->name;
-        if (($op === "min" || $op === "max")
-            && count($ff->args) > 1) {
-            if (!$ff->modifier) {
-                return new Extremum_Fexpr($ff);
-            } else {
-                return null;
-            }
-        }
-        if ($op === "wavg" && count($ff->args) === 1) {
-            $op = "avg";
-        }
-        $arg_count = 1;
-        if ($op === "atminof" || $op === "atmaxof"
-            || $op === "argmin" || $op === "argmax"
-            || $op === "wavg" || $op === "quantile") {
-            $arg_count = 2;
-        }
-        if (count($ff->args) !== $arg_count) {
-            $ff->lerror("<0>Wrong number of arguments for {$op} (expected {$arg_count})");
-            return null;
-        }
-        if ($op === "atminof" || $op === "atmaxof") {
-            $op = "arg" . substr($op, 2, 3);
-            $ff->args = [$ff->args[1], $ff->args[0]];
-        }
-        if ($op === "my") {
-            $index_type = Fexpr::IDX_MY;
-        } else if ($ff->modifier) {
-            $index_type = $ff->modifier[0];
-        } else {
-            $index_type = 0;
-        }
-        return new Aggregate_Fexpr($op, $ff->args, $index_type);
+        return $ff->check_nargs(1) ? new Variance_Fexpr($ff->name, $ff->args[0], $ff->index_type) : null;
     }
-
     function typecheck(Formula $formula) {
-        $ok = $this->typecheck_arguments($formula);
-        if ($this->op !== "argmin"
-            && $this->op !== "argmax"
-            && $this->op !== "any"
-            && $this->op !== "all"
-            && $this->op !== "some"
-            && $this->op !== "count"
-            && !$this->args[0]->math_format()) {
-            $formula->fexpr_lerror($this->args[0], $this->args[0]->disallowed_use_error());
-            $ok = false;
-        }
-        if (count($this->args) > 1
-            && !$this->args[1]->math_format()) {
-            $formula->fexpr_lerror($this->args[1], $this->args[1]->disallowed_use_error());
-            $ok = false;
-        }
-        if ($ok && $this->index_type === 0) {
-            $lt = parent::inferred_index();
-            if ($lt === 0 || ($lt & ($lt - 1)) === 0) {
-                $this->index_type = $lt;
-            } else {
-                $formula->fexpr_lerror($this, "<0>Ambiguous collection, specify ‘{$this->op}.pc’ or ‘{$this->op}.re’");
-                $ok = false;
-            }
-        }
-        if ($ok
-            && $this->index_type === self::IDX_PC
-            && ($this->op === "sum" || $this->op === "count")
-            && $this->args[0] instanceof Tag_Fexpr
-            && $this->args[0]->inferred_index()) {
-            $this->index_type = self::IDX_PC_SET_PRIVATE_TAG;
-        }
-        return $ok;
+        return $this->typecheck_arguments($formula, true)
+            && $this->typecheck_index($formula);
     }
-
-    function typecheck_format() {
-        if ($this->op === "all" || $this->op === "any") {
-            $this->set_format(Fexpr::FBOOL);
-            return null;
-        } else if ($this->op === "min" || $this->op === "max"
-                   || $this->op === "argmin" || $this->op === "argmax"
-                   || $this->op === "some") {
-            return [$this->args[0]];
-        } else if ($this->op === "avg" || $this->op === "wavg"
-                   || $this->op === "median" || $this->op === "quantile") {
-            $f = $this->args[0]->format();
-            if ($f === self::FBOOL || $f === self::FTAGVALUE) {
-                return null;
-            } else {
-                return [$this->args[0]];
-            }
+    function compile(FormulaCompiler $state) {
+        $t = $state->_compile_loop("[0, 0, 0]", "(~l~ !== null ? [~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1] : ~r~)", $this);
+        if ($this->op === "variance") {
+            return "({$t}[2] > 1 ? {$t}[0] / ({$t}[2] - 1) - ({$t}[1] * {$t}[1]) / ({$t}[2] * ({$t}[2] - 1)) : ({$t}[2] ? 0 : null))";
+        } else if ($this->op === "variance_pop") {
+            return "({$t}[2] ? {$t}[0] / {$t}[2] - ({$t}[1] * {$t}[1]) / ({$t}[2] * {$t}[2]) : null)";
+        } else if ($this->op === "stddev") {
+            return "({$t}[2] > 1 ? sqrt({$t}[0] / ({$t}[2] - 1) - ({$t}[1] * {$t}[1]) / ({$t}[2] * ({$t}[2] - 1))) : ({$t}[2] ? 0 : null))";
         } else {
-            return null;
+            return "({$t}[2] ? sqrt({$t}[0] / {$t}[2] - ({$t}[1] * {$t}[1]) / ({$t}[2] * {$t}[2])) : null)";
         }
     }
+}
 
-    function inferred_index() {
-        return 0;
+class Quantile_Fexpr extends Aggregate_Fexpr {
+    function __construct($fn, array $values, ?int $index_type) {
+        parent::__construct($fn, $values, $index_type);
     }
-
+    static function make(FormulaCall $ff) {
+        return $ff->check_nargs($ff->name === "median" ? 1 : 2)
+            ? new Quantile_Fexpr($ff->name, $ff->args, $ff->index_type)
+            : null;
+    }
+    function typecheck(Formula $formula) {
+        return $this->typecheck_arguments($formula, true)
+            && $this->typecheck_index($formula);
+    }
+    function inferred_format() {
+        return self::inferred_numeric_format($this->args[0]);
+    }
     static function quantile($a, $p) {
         // The “R-7” quantile implementation
         if (count($a) === 0 || $p < 0 || $p > 1) {
@@ -922,77 +979,161 @@ class Aggregate_Fexpr extends Fexpr {
         }
         return $v;
     }
+    function compile(FormulaCompiler $state) {
+        if ($this->op === "median") {
+            $q = "0.5";
+        } else {
+            $q = $state->_addltemp($this->args[1]->compile($state));
+            if ($this->compiled_relation("<") === ">") {
+                $q = "1 - {$q}";
+            }
+        }
+        $t = $state->_compile_loop("[]", "if (~l~ !== null)\n  array_push(~r~, +~l~);", $this);
+        return "Quantile_Fexpr::quantile({$t}, {$q})";
+    }
+}
 
-    private function loop_info(FormulaCompiler $state) {
-        if ($this->op === "all") {
-            return ["null", "(~r~ !== null ? ~l~ && ~r~ : ~l~)", self::cast_bool("~x~")];
-        } else if ($this->op === "any") {
-            return ["null", "(~l~ !== null || ~r~ !== null ? ~l~ || ~r~ : ~r~)", self::cast_bool("~x~")];
-        } else if ($this->op === "some") {
-            return ["null", "~r~ = ~l~;
-if (~r~ !== null && ~r~ !== false) {
-  break;
-}"];
-        } else if ($this->op === "min" || $this->op === "max") {
-            $cmp = $this->compiled_relation($this->op === "min" ? "<" : ">");
-            return ["null", "(~l~ !== null && (~r~ === null || ~l~ $cmp ~r~) ? ~l~ : ~r~)"];
-        } else if ($this->op === "argmin" || $this->op === "argmax") {
-            $cmp = $this->args[1]->compiled_relation($this->op === "argmin" ? "<" : ">");
-            return ["[null, [null]]",
+class Extremum_Fexpr extends Aggregate_Fexpr {
+    function __construct($fn, Fexpr $e, ?int $index_type) {
+        parent::__construct($fn, [$e], $index_type);
+    }
+    static function make(FormulaCall $ff) {
+        if (count($ff->args) > 1 && !$ff->modifier) {
+            return new ArgumentSelection_Fexpr($ff);
+        } else {
+            return $ff->check_nargs(1) ? new Extremum_Fexpr($ff->name, $ff->args[0], $ff->index_type) : null;
+        }
+    }
+    function typecheck(Formula $formula) {
+        return $this->typecheck_arguments($formula, true)
+            && $this->typecheck_index($formula);
+    }
+    function inferred_format() {
+        return $this->args;
+    }
+    function compile(FormulaCompiler $state) {
+        $cmp = $this->compiled_relation($this->op === "min" ? "<" : ">");
+        return $state->_compile_loop("null", "(~l~ !== null && (~r~ === null || ~l~ {$cmp} ~r~) ? ~l~ : ~r~)", $this);
+    }
+}
+
+class Count_Fexpr extends Aggregate_Fexpr {
+    function __construct(Fexpr $e, ?int $index_type = null) {
+        parent::__construct("count", [$e], $index_type);
+    }
+    static function make(FormulaCall $ff) {
+        return $ff->check_nargs(1) ? new Count_Fexpr($ff->args[0], $ff->index_type) : null;
+    }
+    /** @return true
+     * @suppress PhanUndeclaredMethod */
+    static function check_private_tag_index(Aggregate_Fexpr $fexpr) {
+        if ($fexpr->index_type === self::IDX_PC
+            && $fexpr->args[0] instanceof Tag_Fexpr
+            && str_starts_with($fexpr->args[0]->tag(), "_~")) {
+            $fexpr->index_type = self::IDX_PC_SET_PRIVATE_TAG;
+        }
+        return true;
+    }
+    function typecheck(Formula $formula) {
+        return $this->typecheck_arguments($formula)
+            && $this->typecheck_index($formula)
+            && self::check_private_tag_index($this);
+    }
+    function compile(FormulaCompiler $state) {
+        return $state->_compile_loop("0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)", $this);
+    }
+}
+
+class Sum_Fexpr extends Aggregate_Fexpr {
+    function __construct(Fexpr $e, ?int $index_type = null) {
+        parent::__construct("sum", [$e], $index_type);
+    }
+    static function make(FormulaCall $ff) {
+        return $ff->check_nargs(1) ? new Sum_Fexpr($ff->args[0], $ff->index_type) : null;
+    }
+    function typecheck(Formula $formula) {
+        return $this->typecheck_arguments($formula, true)
+            && $this->typecheck_index($formula)
+            && Count_Fexpr::check_private_tag_index($this);
+    }
+    function compile(FormulaCompiler $state) {
+        return $state->_compile_loop("null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : +~l~) : ~r~)", $this);
+    }
+}
+
+class ArgExtremum_Fexpr extends Aggregate_Fexpr {
+    function __construct($fn, array $values, ?int $index_type) {
+        if (str_starts_with($fn, "at")) { // atminof, atmaxof
+            parent::__construct("arg" . substr($fn, 2, 3), [$values[1], $values[0]], $index_type);
+        } else {
+            parent::__construct($fn, $values, $index_type);
+        }
+    }
+    static function make(FormulaCall $ff) {
+        return $ff->check_nargs(2) ? new ArgExtremum_Fexpr($ff->name, $ff->args, $ff->index_type) : null;
+    }
+    function typecheck(Formula $formula) {
+        return $this->typecheck_arguments($formula)
+            && $this->args[1]->typecheck_math_format($formula)
+            && $this->typecheck_index($formula);
+    }
+    function inferred_format() {
+        return [$this->args[0]];
+    }
+    function compile(FormulaCompiler $state) {
+        $cmp = $this->args[1]->compiled_relation($this->op === "argmin" ? "<" : ">");
+        $t = $state->_compile_loop("[null, [null]]",
 "if (~l1~ !== null && (~r~[0] === null || ~l1~ {$cmp} ~r~[0])) {
   ~r~[0] = ~l1~;
   ~r~[1] = [~l~];
 } else if (~l1~ !== null && ~l1~ == ~r~[0]) {
   ~r~[1][] = ~l~;
-}",
-                    "~x~[1][count(~x~[1]) > 1 ? mt_rand(0, count(~x~[1]) - 1) : 0]"];
-        } else if ($this->op === "count") {
-            return ["0", "(~l~ !== null && ~l~ !== false ? ~r~ + 1 : ~r~)"];
-        } else if ($this->op === "sum") {
-            return ["null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : +~l~) : ~r~)"];
-        } else if ($this->op === "avg") {
-            return ["[0, 0]", "(~l~ !== null ? [~r~[0] + ~l~, ~r~[1] + 1] : ~r~)",
-                    "(~x~[1] ? ~x~[0] / ~x~[1] : null)"];
-        } else if ($this->op === "median" || $this->op === "quantile") {
-            if ($this->op === "median") {
-                $q = "0.5";
-            } else {
-                $q = $state->_addltemp($this->args[1]->compile($state));
-                if ($this->compiled_relation("<") === ">") {
-                    $q = "1 - {$q}";
-                }
-            }
-            return ["[]", "if (~l~ !== null)\n  array_push(~r~, +~l~);",
-                    "Aggregate_Fexpr::quantile(~x~, $q)"];
-        } else if ($this->op === "wavg") {
-            return ["[0, 0]", "(~l~ !== null && ~l1~ !== null ? [~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~] : ~r~)",
-                    "(~x~[1] ? ~x~[0] / ~x~[1] : null)"];
-        } else if ($this->op === "stddev" || $this->op === "stddev_pop"
-                   || $this->op === "variance" || $this->op === "variance_pop") {
-            if ($this->op === "variance") {
-                $x = "(~x~[2] > 1 ? ~x~[0] / (~x~[2] - 1) - (~x~[1] * ~x~[1]) / (~x~[2] * (~x~[2] - 1)) : (~x~[2] ? 0 : null))";
-            } else if ($this->op === "variance_pop") {
-                $x = "(~x~[2] ? ~x~[0] / ~x~[2] - (~x~[1] * ~x~[1]) / (~x~[2] * ~x~[2]) : null)";
-            } else if ($this->op === "stddev") {
-                $x = "(~x~[2] > 1 ? sqrt(~x~[0] / (~x~[2] - 1) - (~x~[1] * ~x~[1]) / (~x~[2] * (~x~[2] - 1))) : (~x~[2] ? 0 : null))";
-            } else {
-                $x = "(~x~[2] ? sqrt(~x~[0] / ~x~[2] - (~x~[1] * ~x~[1]) / (~x~[2] * ~x~[2])) : null)";
-            }
-            return ["[0, 0, 0]", "(~l~ !== null ? [~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1] : ~r~)", $x];
+}", $this);
+        return "({$t}[1][count({$t}[1]) > 1 ? mt_rand(0, count({$t}[1]) - 1) : 0])";
+    }
+}
+
+class Mean_Fexpr extends Aggregate_Fexpr {
+    function __construct(Fexpr $e, ?int $index_type = null) {
+        parent::__construct("avg", [$e], $index_type);
+    }
+    static function make(FormulaCall $ff) {
+        return $ff->check_nargs(1) ? new Mean_Fexpr($ff->args[0], $ff->index_type) : null;
+    }
+    function typecheck(Formula $formula) {
+        return $this->typecheck_arguments($formula, true)
+            && $this->typecheck_index($formula);
+    }
+    function inferred_format() {
+        return self::inferred_numeric_format($this->args[0]);
+    }
+    function compile(FormulaCompiler $state) {
+        $t = $state->_compile_loop("[0, 0]", "(~l~ !== null ? [~r~[0] + ~l~, ~r~[1] + 1] : ~r~)", $this);
+        return "({$t}[1] ? {$t}[0] / {$t}[1] : null)";
+    }
+}
+
+class Wavg_Fexpr extends Aggregate_Fexpr {
+    function __construct(array $values, ?int $index_type = null) {
+        parent::__construct("wavg", $values, $index_type);
+    }
+    static function make(FormulaCall $ff) {
+        if (count($ff->args) === 1) {
+            return Mean_Fexpr::make($ff);
         } else {
-            return null;
+            return $ff->check_nargs(2) ? new Wavg_Fexpr($ff->args, $ff->index_type) : null;
         }
     }
-
+    function typecheck(Formula $formula) {
+        return $this->typecheck_arguments($formula, true)
+            && $this->typecheck_index($formula);
+    }
+    function inferred_format() {
+        return self::inferred_numeric_format($this->args[0]);
+    }
     function compile(FormulaCompiler $state) {
-        if ($this->op === "my") {
-            return $state->_compile_my($this->args[0]);
-        } else if (($li = $this->loop_info($state))) {
-            $t = $state->_compile_loop($li[0], $li[1], $this);
-            return $li[2] ?? false ? str_replace("~x~", $t, $li[2]) : $t;
-        } else {
-            return "null";
-        }
+        $t = $state->_compile_loop("[0, 0]", "(~l~ !== null && ~l1~ !== null ? [~r~[0] + ~l~ * ~l1~, ~r~[1] + ~l1~] : ~r~)", $this);
+        return "({$t}[1] ? {$t}[0] / {$t}[1] : null)";
     }
 }
 
@@ -1023,6 +1164,12 @@ class Score_Fexpr extends Fexpr {
         $rrow = $state->_rrow();
         $rrow_vsb = $state->_rrow_view_score_bound(true);
         return "({$field->view_score} > {$rrow_vsb} && {$rrow}->fields[{$field->order}] > 0 ? {$rrow}->fields[{$field->order}] : null)";
+    }
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        $field = $this->format_detail();
+        '@phan-var-force ReviewField $field';
+        return ["op" => "rf", "field" => $field->search_keyword()];
     }
 }
 
@@ -1728,7 +1875,7 @@ class Formula implements JsonSerializable {
             if ($state->indexed
                 && !$this->_allow_indexed
                 && $e->matches_at_most_once()) {
-                $e = new Aggregate_Fexpr("some", [$e], 0);
+                $e = new Some_Fexpr($e);
                 $e->typecheck($this);
                 $state = new FormulaCompiler($this->user);
                 $e->compile($state);
@@ -1890,6 +2037,7 @@ class Formula implements JsonSerializable {
 
         $ff->pos1 = $pos1 = -strlen($t);
         $t = substr($t, strlen($name));
+        $ff->pos2 = -strlen($t);
 
         if ($kwdef->parse_modifier_function ?? false) {
             $xt = $name === "#" ? "#" . $t : $t;
@@ -1899,6 +2047,7 @@ class Formula implements JsonSerializable {
                 if (call_user_func($kwdef->parse_modifier_function, $ff, $m[1], $m[2], $this)) {
                     $t = $xt = $m[2];
                 } else {
+                    $ff->pos2 = -strlen($t);
                     break;
                 }
             }
@@ -1908,13 +2057,7 @@ class Formula implements JsonSerializable {
             if (!$this->_parse_function_args($ff, $t)) {
                 $this->lerror($pos1, -strlen($t), "<0>Function ‘{$name}’ requires arguments");
                 return Constant_Fexpr::cerror($pos1, -strlen($t));
-            } else if ((is_int($args) && count($ff->args) !== $args)
-                       || (is_array($args) && (count($ff->args) < $args[0] || count($ff->args) > $args[1]))) {
-                $m = "<0>Wrong number of arguments for ‘{$name}’";
-                if (is_int($args)) {
-                    $m .= " ($args expected)";
-                }
-                $this->lerror($pos1, -strlen($t), $m);
+            } else if (!$ff->check_nargs($args)) {
                 return Constant_Fexpr::cerror($pos1, -strlen($t));
             }
         }

@@ -1,25 +1,26 @@
 <?php
 // formulas/f_author.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
 
 class Author_Fexpr extends Fexpr {
     private $matchtype;
     private $matchidx;
     static private $matchers = [];
     function __construct(FormulaCall $ff, Formula $formula) {
-        if ($ff->modifier === "none") {
-            $this->matchtype = $ff->modifier;
-        } else if (is_array($ff->modifier)
-                   && $ff->modifier[0] == $formula->user->contactId) {
+        parent::__construct($ff);
+        $m = $ff->modifier;
+        if ($m === "none") {
+            $this->matchtype = $m;
+        } else if (is_array($m) && $m[0] === $formula->user->contactId) {
             $this->matchtype = $formula->user->contactId;
-        } else if (is_array($ff->modifier) || is_object($ff->modifier)) {
-            self::$matchers[] = $ff->modifier;
+        } else if (is_array($m) || is_object($m)) {
+            self::$matchers[] = $m;
             $this->matchtype = "m";
             $this->matchidx = count(self::$matchers) - 1;
         }
     }
     static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
-        if ($ff->modifier === false && !str_starts_with($arg, ".")) {
+        if ($ff->modifier === null && !str_starts_with($arg, ".")) {
             if (str_starts_with($arg, ":")) {
                 $arg = substr($arg, 1);
             }

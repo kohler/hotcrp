@@ -1,12 +1,13 @@
 <?php
 // formulas/f_topic.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
 
 class Topic_Fexpr extends Fexpr {
+    /** @var true|array<int> */
     private $match;
     function __construct(FormulaCall $ff, Formula $formula) {
-        parent::__construct("topic");
-        if ($ff->modifier === false || $ff->modifier === [-1]) {
+        parent::__construct($ff);
+        if ($ff->modifier === null || $ff->modifier === [-1]) {
             $this->match = true;
             $this->set_format(Fexpr::FNUMERIC);
         } else {
@@ -17,7 +18,7 @@ class Topic_Fexpr extends Fexpr {
         }
     }
     static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
-        if ($ff->modifier === false && !str_starts_with($arg, ".")) {
+        if ($ff->modifier === null && !str_starts_with($arg, ".")) {
             if (str_starts_with($arg, ":")) {
                 $arg = substr($arg, 1);
             }
