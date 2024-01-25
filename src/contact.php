@@ -199,6 +199,13 @@ class Contact implements JsonSerializable {
     /** @var ?array */
     private $_mod_undo;
 
+    /** @var ?PaperContactInfo */
+    private $_last_rights;
+    /** @var ?PaperInfo */
+    private $_last_rights_paper;
+    /** @var ?int */
+    private $_last_rights_version;
+
     // Per-paper DB information, usually null
     public $conflictType;
     public $myReviewPermissions;
@@ -829,6 +836,9 @@ class Contact implements JsonSerializable {
             $overrides &= ~self::OVERRIDE_CONFLICT;
         }
         $this->_overrides = $overrides;
+        if ($overrides !== $this->_overrides) {
+            $this->_last_rights = null;
+        }
         return $old_overrides;
     }
 
@@ -2567,6 +2577,7 @@ class Contact implements JsonSerializable {
             $this->contactXid = self::$next_xid--;
             $this->_rights_version = self::$rights_version - 1;
         }
+        $this->_last_rights = null;
     }
 
     /** @param int $wantmask */
@@ -2924,6 +2935,13 @@ class Contact implements JsonSerializable {
 
     /** @return PaperContactInfo */
     private function rights(PaperInfo $prow) {
+        // short-circuit lookup
+        if ($this->_last_rights
+            && $this->_last_rights_paper === $prow
+            && $this->_last_rights_version === self::$rights_version) {
+            return $this->_last_rights;
+        }
+
         $ci = $prow->contact_info($this);
 
         // check first whether administration is allowed
@@ -3061,6 +3079,9 @@ class Contact implements JsonSerializable {
             }
         }
 
+        $this->_last_rights = $ci;
+        $this->_last_rights_paper = $prow;
+        $this->_last_rights_version = self::$rights_version;
         return $ci;
     }
 
