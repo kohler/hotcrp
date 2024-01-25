@@ -338,6 +338,11 @@ abstract class ReviewField implements JsonSerializable {
     }
 
 
+    /** @return bool */
+    function always_exists() {
+        return $this->exists_if === null && $this->round_mask === 0;
+    }
+
     /** @return ?string */
     function exists_condition() {
         if ($this->exists_if !== null) {

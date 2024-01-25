@@ -1163,7 +1163,12 @@ class Score_Fexpr extends Fexpr {
         $state->_ensure_rrow_score($field);
         $rrow = $state->_rrow();
         $rrow_vsb = $state->_rrow_view_score_bound(true);
-        return "({$field->view_score} > {$rrow_vsb} && {$rrow}->fields[{$field->order}] > 0 ? {$rrow}->fields[{$field->order}] : null)";
+        if ($field->always_exists()) {
+            $fval = "{$rrow}->fields[{$field->order}]";
+        } else {
+            $fval = "{$rrow}->fidval(" . json_encode($field->short_id) . ")";
+        }
+        return "({$field->view_score} > {$rrow_vsb} ? {$fval} : null)";
     }
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
