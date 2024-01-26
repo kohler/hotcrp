@@ -61,7 +61,7 @@ class SingleTag_FormulaValue extends FormulaValue {
     /** @param string $tag
      * @param bool $isvalue */
     function __construct($tag, $isvalue) {
-        parent::__construct("single_tag {$tag}")
+        parent::__construct("single_tag {$tag}", 0);
         $this->tm = " {$tag}#";
         $this->isvalue = $isvalue;
     }
@@ -189,10 +189,10 @@ class FormulaState {
     }
 
     /** @param FormulaValue $fv
-     * @return $this */
+     * @return FormulaValue */
     function add($fv) {
         $this->fv[] = $fv;
-        return $this;
+        return $fv;
     }
 
     /** @return FormulaValue */

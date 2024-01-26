@@ -21,7 +21,7 @@ class Ffff_Batch {
             $state->run($prow);
         }
 
-        if (0) {
+        if (1) {
             $t0 = microtime(true);
             $t = "";
             for ($i = 0; $i !== 100; ++$i) {
@@ -43,6 +43,23 @@ class Ffff_Batch {
             }
             $t3 = microtime(true);
             fwrite(STDOUT, sprintf("%.06f %s\n", $t3 - $t2, sha1($stt)));
+        }
+
+        if (1) {
+            try {
+                $t0 = microtime(true);
+                $machine = FormulaMachine::make_formula($state);
+                $stt = "";
+                for ($i = 0; $i !== 100; ++$i) {
+                    foreach ($prows as $prow) {
+                        $stt .= $machine->execute($state, $prow) ? "1" : "0";
+                    }
+                }
+                $t1 = microtime(true);
+                fwrite(STDOUT, sprintf("%.06f %s\n", $t1 - $t0, sha1($stt)));
+            } catch (Exception $err) {
+                fwrite(STDERR, $err->getMessage() . $err->getTraceAsString() . "\n");
+            }
         }
     }
 }
