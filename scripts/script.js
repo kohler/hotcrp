@@ -12945,20 +12945,26 @@ handle_ui.on("js-submit-list", function (evt) {
     // find selected
     const table = (fnbutton && fnbutton.closest(".pltable")) || form;
     es = table.querySelectorAll("input.js-selector");
-    const allval = [];
-    let chkval = [], isdefault = false, allnum = true;
+    // Keep track of both string versions and numeric versions
+    // (numeric versions for possible session list encoding).
+    const allval = [], allnumval = [];
+    let chkval = [], chknumval = [], isdefault = false;
     for (i = 0; i !== es.length; ++i) {
-        let v = es[i].value;
-        if (allnum && (v | 0) == v && !v.startsWith("0"))
-            v = v | 0;
-        else
-            allnum = false;
+        const v = es[i].value, checked = es[i].checked;
         allval.push(v);
-        es[i].checked && chkval.push(v);
+        checked && chkval.push(v);
+        if (allnumval && ((v | 0) != v || v.startsWith("0"))) {
+            allnumval = null;
+        }
+        if (allnumval) {
+            allnumval.push(v | 0);
+            checked && chknumval.push(v | 0);
+        }
     }
     if (!chkval.length) {
         if (fnbutton && hasClass(fnbutton, "can-submit-all")) {
             chkval = allval;
+            chknumval = allnumval;
             isdefault = true;
         } else {
             alert("Select one or more rows first.");
@@ -12969,8 +12975,8 @@ handle_ui.on("js-submit-list", function (evt) {
         alert("Nothing selected.");
         return;
     }
-    const chktxt = allnum && chkval.length > 30
-        ? encode_session_list_ids(chkval)
+    const chktxt = chknumval && chknumval.length > 30
+        ? encode_session_list_ids(chknumval)
         : chkval.join(" ");
 
     // remove old background forms
@@ -13042,7 +13048,7 @@ handle_ui.on("js-submit-list", function (evt) {
             subfne.remove();
     }
 
-    // check bulk-download warning
+    // check bulk-download warning (need string versions of ids)
     if (need_bulkwarn && !handle_list_submit_bulkwarn(table, chkval, bgform, evt))
         return;
 
