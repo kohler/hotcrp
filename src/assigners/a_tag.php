@@ -48,9 +48,10 @@ class Tag_Assignable extends Assignable {
         if (!$state->mark_type("tag", ["pid", "ltag"], "Tag_Assigner::make")) {
             return;
         }
-        $result = $state->conf->qe("select paperId, tag, tagIndex from PaperTag where paperId?a", $state->paper_ids());
-        while (($row = $result->fetch_row())) {
-            $state->load(new Tag_Assignable(+$row[0], strtolower($row[1]), $row[1], (float) $row[2]));
+        foreach ($state->prows() as $prow) {
+            foreach (Tagger::split_unpack($prow->all_tags_text()) as $ti) {
+                $state->load(new Tag_Assignable($prow->paperId, strtolower($ti[0]), $ti[0], $ti[1]));
+            }
         }
         Dbl::free($result);
     }
