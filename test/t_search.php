@@ -75,6 +75,12 @@ class Search_Tester {
         xassert_search($this->conf->root_user(), "1-10 XOR 4-5", "1 2 3 6 7 8 9 10");
     }
 
+    function test_halfopen_interval() {
+        xassert_search($this->conf->root_user(), "5-100000 XOR 10-100000", "5 6 7 8 9");
+        xassert_search($this->conf->root_user(), "5- XOR 10-100000", "5 6 7 8 9");
+        xassert_search($this->conf->root_user(), "8-,7-,6-,5- XOR 10-100000", "5 6 7 8 9");
+    }
+
     function test_review_term_to_round_mask() {
         $rl = $this->conf->round_list();
         xassert_eqq($rl[0], "");

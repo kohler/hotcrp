@@ -727,7 +727,7 @@ class PaperSearch extends MessageSet {
     static private function _search_word_is_paperid($str) {
         $ch = substr($str, 0, 1);
         return ($ch === "#" || ctype_digit($ch))
-            && preg_match('/\A(?:#?\d+(?:(?:-|–|—)#?\d+)?(?:\s*,\s*|\z))+\z/s', $str);
+            && preg_match('/\A(?:#?\d++(?:(?:-|–|—)(?:|#?\d++))?(?:\s*,\s*|\z))+\z/s', $str);
     }
 
     /** @param string $str
@@ -763,7 +763,7 @@ class PaperSearch extends MessageSet {
             }
         }
 
-        // Paper ID search term (`1-2`, `#1-#2`, etc.)
+        // Paper ID search term (`1-2`, `#1-#2`, `1-`, etc.)
         if (!$sword->quoted
             && !$scope->defkw
             && self::_search_word_is_paperid($sword->word)) {

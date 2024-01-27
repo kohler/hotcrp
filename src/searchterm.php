@@ -1467,7 +1467,11 @@ class PaperID_SearchTerm extends SearchTerm {
                     $n = $this->n + ($rev ? $p1x - $p0 - 1 : 0);
                     array_splice($this->r, $i, 0, [[$p0, $p1x, $n, $rev, $explicit]]);
                 }
-                $this->n += $p1x - $p0;
+                // ensure `$this->n <= PHP_INT_MAX`
+                // (it naturally will be, UNLESS someone calls add_range
+                // with negative PIDs)
+                $delta = min($p1x - $p0, PHP_INT_MAX - $this->n);
+                $this->n += $delta;
             }
             $p0 = max($p0, $p1x);
         }
@@ -1524,7 +1528,7 @@ class PaperID_SearchTerm extends SearchTerm {
             return "false";
         } else if ($this->n <= 8 * count($this->r)
                    && ($pids = $this->paper_ids()) !== null) {
-            return "$field in (" . join(",", $pids) . ")";
+            return "{$field} in (" . join(",", $pids) . ")";
         } else {
             $s = [];
             foreach ($this->r as $r) {
@@ -1568,10 +1572,18 @@ class PaperID_SearchTerm extends SearchTerm {
      * @return PaperID_SearchTerm */
     static function parse_normal($word) {
         $st = new PaperID_SearchTerm;
-        while (preg_match('/\A#?(\d+)(?:(?:-|–|—)#?(\d+))?\s*,?\s*(.*)\z/s', $word, $m)) {
-            $m[2] = (isset($m[2]) && $m[2] ? $m[2] : $m[1]);
-            $st->add_range(intval($m[1]), intval($m[2]));
-            $word = $m[3];
+        $pos = 0;
+        while (preg_match('/\G#?(\d++)((?:-|–|—)#?(\d++)|(?:-|–|—)|)\s*,?\s*/s', $word, $m, 0, $pos)) {
+            $p1 = intval($m[1]);
+            if ($m[2] === "") {
+                $p2 = $p1;
+            } else if (!isset($m[3]) || $m[3] === "") {
+                $p2 = PHP_INT_MAX;
+            } else {
+                $p2 = intval($m[3]);
+            }
+            $st->add_range($p1, $p2);
+            $pos += strlen($m[0]);
         }
         return $st;
     }
