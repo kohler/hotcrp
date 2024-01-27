@@ -72,7 +72,7 @@ class Search_Tester {
     }
 
     function test_xor() {
-        assert_search_papers($this->conf->root_user(), "1-10 XOR 4-5", "1 2 3 6 7 8 9 10");
+        xassert_search($this->conf->root_user(), "1-10 XOR 4-5", "1 2 3 6 7 8 9 10");
     }
 
     function test_review_term_to_round_mask() {
@@ -181,7 +181,7 @@ class Search_Tester {
 
     function test_equal_quote() {
         $u = $this->conf->root_user();
-        assert_search_papers($u, "ti:\"scalable timers\"", 1);
-        assert_search_papers($u, "ti=\"scalable timers\"", 1);
+        xassert_search($u, "ti:\"scalable timers\"", 1);
+        xassert_search($u, "ti=\"scalable timers\"", 1);
     }
 }

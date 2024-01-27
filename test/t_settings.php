@@ -619,8 +619,8 @@ class Settings_Tester {
             "ovemer" => 2, "revexp" => 1, "mf" => "C", "jf" => "C", "ready" => true
         ]);
 
-        assert_search_papers($this->u_chair, "mf:C", "30");
-        assert_search_papers($this->u_chair, "mf:<B", "30"); // XXX
+        xassert_search($this->u_chair, "mf:C", "30");
+        xassert_search($this->u_chair, "mf:<B", "30"); // XXX
 
         $rrow = checked_fresh_review(30, $this->u_mgbaker);
         xassert_eqq($rrow->fidval("s05"), 3);
@@ -958,14 +958,14 @@ class Settings_Tester {
         xassert(!$rrds[0]->unnamed);
 
         // add a response
-        assert_search_papers($this->u_chair, "has:response", "");
-        assert_search_papers($this->u_chair, "has:Buttresponse", "");
+        xassert_search($this->u_chair, "has:response", "");
+        xassert_search($this->u_chair, "has:Buttresponse", "");
 
         $result = $this->conf->qe("insert into PaperComment (paperId,contactId,timeModified,timeDisplayed,comment,commentType,replyTo,commentRound) values (1,?,?,?,'Hi',?,0,?)", $this->u_chair->contactId, Conf::$now, Conf::$now, CommentInfo::CTVIS_AUTHOR | CommentInfo::CT_RESPONSE, 1);
         $new_commentId = $result->insert_id;
 
-        assert_search_papers($this->u_chair, "has:response", "1");
-        assert_search_papers($this->u_chair, "has:Buttresponse", "1");
+        xassert_search($this->u_chair, "has:response", "1");
+        xassert_search($this->u_chair, "has:Buttresponse", "1");
 
         // changes ignored if response_active checkbox off
         $sv = SettingValues::make_request($this->u_chair, [
@@ -1008,9 +1008,9 @@ class Settings_Tester {
         xassert_eqq($rrds[1]->done, $t0 + 10000);
         xassert(!$rrds[1]->unnamed);
 
-        assert_search_papers($this->u_chair, "has:response", "1");
-        assert_search_papers($this->u_chair, "has:unnamedresponse", "");
-        assert_search_papers($this->u_chair, "has:Buttresponse", "1");
+        xassert_search($this->u_chair, "has:response", "1");
+        xassert_search($this->u_chair, "has:unnamedresponse", "");
+        xassert_search($this->u_chair, "has:Buttresponse", "1");
 
         // switch response round names
         $sv = SettingValues::make_request($this->u_chair, [
@@ -1034,9 +1034,9 @@ class Settings_Tester {
         xassert_eqq($rrds[1]->done, $t0 + 10002);
         xassert(!$rrds[1]->unnamed);
 
-        assert_search_papers($this->u_chair, "has:response", "1");
-        assert_search_papers($this->u_chair, "has:unnamedresponse", "1");
-        assert_search_papers($this->u_chair, "has:Buttresponse", "");
+        xassert_search($this->u_chair, "has:response", "1");
+        xassert_search($this->u_chair, "has:unnamedresponse", "1");
+        xassert_search($this->u_chair, "has:Buttresponse", "");
 
         // response instructions & defaults
         $definstrux = $this->conf->fmt()->default_translation("resp_instrux");

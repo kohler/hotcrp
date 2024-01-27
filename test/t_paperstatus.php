@@ -798,7 +798,7 @@ Phil Porras.");
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [1, 3]);
 
-        assert_search_ids($this->u_chair, "topic:\"cloud computing\"", "{$this->pid2}");
+        xassert_search($this->u_chair, "topic:\"cloud computing\"", "{$this->pid2}");
 
         $ps->save_paper_json((object) [
             "id" => $this->pid2,

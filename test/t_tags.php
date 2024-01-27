@@ -16,9 +16,9 @@ class Tags_Tester {
     }
 
     function test_mutual_automatic_search() {
-        assert_search_all_papers($this->u_chair, "#up", "");
-        assert_search_all_papers($this->u_chair, "#withdrawn", "");
-        assert_search_all_papers($this->u_chair, "tcpanaly", "15");
+        xassert_search_all($this->u_chair, "#up", "");
+        xassert_search_all($this->u_chair, "#withdrawn", "");
+        xassert_search_all($this->u_chair, "tcpanaly", "15");
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "automatic_tag": [
@@ -28,21 +28,21 @@ class Tags_Tester {
         }');
         xassert($sv->execute());
 
-        assert_search_all_papers($this->u_chair, "#up", "15");
-        assert_search_all_papers($this->u_chair, "#withdrawn", "");
+        xassert_search_all($this->u_chair, "#up", "15");
+        xassert_search_all($this->u_chair, "#withdrawn", "");
 
         xassert_assign($this->u_chair, "paper,action,notify\n15,withdraw,no\n");
 
         $p15 = $this->conf->checked_paper_by_id(15);
         xassert_gt($p15->timeWithdrawn, 0);
 
-        assert_search_all_papers($this->u_chair, "#up", "");
-        assert_search_all_papers($this->u_chair, "#withdrawn", "15");
+        xassert_search_all($this->u_chair, "#up", "");
+        xassert_search_all($this->u_chair, "#withdrawn", "15");
 
         xassert_assign($this->u_chair, "paper,action,notify\n15,revive,no\n");
 
-        assert_search_all_papers($this->u_chair, "#up", "15");
-        assert_search_all_papers($this->u_chair, "#withdrawn", "");
+        xassert_search_all($this->u_chair, "#up", "15");
+        xassert_search_all($this->u_chair, "#withdrawn", "");
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "automatic_tag": [
@@ -52,13 +52,13 @@ class Tags_Tester {
         }');
         xassert($sv->execute());
 
-        assert_search_all_papers($this->u_chair, "#up", "");
-        assert_search_all_papers($this->u_chair, "#withdrawn", "");
+        xassert_search_all($this->u_chair, "#up", "");
+        xassert_search_all($this->u_chair, "#withdrawn", "");
     }
 
     function test_mutual_valued_automatic_search() {
-        assert_search_all_papers($this->u_chair, "#nau", "");
-        assert_search_all_papers($this->u_chair, "#lotsau", "");
+        xassert_search_all($this->u_chair, "#nau", "");
+        xassert_search_all($this->u_chair, "#lotsau", "");
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "automatic_tag": [
@@ -68,9 +68,9 @@ class Tags_Tester {
         }');
         xassert($sv->execute());
 
-        assert_search_all_papers($this->u_chair, "#nau 1-10 sort:id", "1 2 3 4 5 6 7 8 9 10");
+        xassert_search_all($this->u_chair, "#nau 1-10 sort:id", "1 2 3 4 5 6 7 8 9 10");
         xassert_eqq($this->conf->checked_paper_by_id(1)->tag_value("nau"), 4.0);
-        assert_search_all_papers($this->u_chair, "#lotsau 1-10 sort:id", "1 2 4 6 10");
+        xassert_search_all($this->u_chair, "#lotsau 1-10 sort:id", "1 2 4 6 10");
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
             "automatic_tag": [
@@ -80,8 +80,8 @@ class Tags_Tester {
         }');
         xassert($sv->execute());
 
-        assert_search_all_papers($this->u_chair, "#nau", "");
-        assert_search_all_papers($this->u_chair, "#lotsau", "");
+        xassert_search_all($this->u_chair, "#nau", "");
+        xassert_search_all($this->u_chair, "#lotsau", "");
     }
 
     function test_tag_patterns() {
@@ -181,7 +181,7 @@ class Tags_Tester {
     }
 
     function test_assign_override_conflicts() {
-        assert_search_papers($this->u_chair, "conf:me", "");
+        xassert_search($this->u_chair, "conf:me", "");
 
         $p1 = $this->conf->checked_paper_by_id(1);
         xassert_assign($this->u_chair, "action,paper,tag\ntag,1,testtag");
@@ -190,7 +190,7 @@ class Tags_Tester {
         xassert_eqq($p1->tag_value("testtag"), 0.0);
 
         $this->conf->qe("insert into PaperConflict set paperId=1, contactId=?, conflictType=?", $this->u_chair->contactId, Conflict::GENERAL);
-        assert_search_papers($this->u_chair, "conf:me", "1");
+        xassert_search($this->u_chair, "conf:me", "1");
 
         $aset = new AssignmentSet($this->u_chair);
         $aset->parse("action,paper,tag\ntag,1,testtag");
