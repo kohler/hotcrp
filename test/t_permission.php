@@ -549,16 +549,16 @@ class Permission_Tester {
         xassert_search($user_chair, "order:fart", "1 2 3 6 5 4");
 
         xassert_assign($user_chair, "action,paper,tag\nseqnexttag,7,fart#3\nseqnexttag,8,fart\n", true);
-        xassert_search($user_chair, "order:fart", "7 8 1 2 3 6 5 4");
+        xassert_search($user_chair, "order:fart", "1 2 3 6 5 4 7 8");
 
         xassert_assign($user_chair, "action,paper,tag\ncleartag,8,fArt\n", true);
-        xassert_search($user_chair, "order:fart", "7 1 2 3 6 5 4");
+        xassert_search($user_chair, "order:fart", "1 2 3 6 5 4 7");
 
-        xassert_assign($user_chair, "action,paper,tag\ntag,8,fArt#4\n", true);
-        xassert_search($user_chair, "order:fart", "7 8 1 2 3 6 5 4");
+        xassert_assign($user_chair, "action,paper,tag\ntag,8,fArt#2\n", true);
+        xassert_search($user_chair, "order:fart", "8 1 2 3 6 5 4 7");
 
         $paper8 = $user_chair->checked_paper_by_id(8);
-        xassert_eqq($paper8->tag_value("fart"), 4.0);
+        xassert_eqq($paper8->tag_value("fart"), 2.0);
         xassert_str_contains($paper8->all_tags_text(), " fArt#");
 
         xassert_assign($user_chair, "action,paper,tag\ntag,8,fArt#(pid+104)\n", true);
@@ -570,8 +570,8 @@ class Permission_Tester {
         xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(9)), "fArt#114 fart2");
         xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(10)), "fArt#115 fart2");
 
-        xassert_assign($user_chair, "action,paper,tag\ntag,8 9 10,fArt#(pid<9 ? 4: false) fart2#clear\n", true);
-        xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(8)), "fArt#4");
+        xassert_assign($user_chair, "action,paper,tag\ntag,8 9 10,fArt#(pid<9 ? 4.5: false) fart2#clear\n", true);
+        xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(8)), "fArt#4.5");
         xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(9)), "");
         xassert_eqq(paper_tag_normalize($user_chair->checked_paper_by_id(10)), "");
 
@@ -615,7 +615,7 @@ class Permission_Tester {
         xassert(!!$this->conf->setting("has_colontag"));
 
         // NOT searches
-        xassert_search($user_chair, "#fart", "7 8 1 2 3 6 5 4");
+        xassert_search($user_chair, "#fart", "1 8 2 3 6 5 4 7");
         xassert_search($user_chair, "tag:#fart", "1 2 3 4 5 6 7 8");
         xassert_search($user_chair, "tag:fart", "1 2 3 4 5 6 7 8");
         xassert_search($user_chair, "NOT #fart", "9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30");

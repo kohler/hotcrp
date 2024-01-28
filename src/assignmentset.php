@@ -1118,7 +1118,8 @@ class AssignmentSet {
         return $this;
     }
 
-    /** @param string|list<string> $action */
+    /** @param string|list<string> $action
+     * @return $this */
     function enable_actions($action) {
         assert(empty($this->assigners));
         if ($this->enabled_actions === null) {
@@ -1128,9 +1129,11 @@ class AssignmentSet {
             if (($aparser = $this->conf->assignment_parser($a, $this->user)))
                 $this->enabled_actions[$aparser->type] = true;
         }
+        return $this;
     }
 
-    /** @param int|PaperInfo|list<int|PaperInfo> $paper */
+    /** @param int|PaperInfo|list<int|PaperInfo> $paper
+     * @return $this */
     function enable_papers($paper) {
         assert(empty($this->assigners));
         if ($this->enabled_pids === null) {
@@ -1144,6 +1147,7 @@ class AssignmentSet {
                 $this->enabled_pids[(int) $p] = true;
             }
         }
+        return $this;
     }
 
     /** @return int */

@@ -108,9 +108,9 @@ class NextTagAssigner implements AssignmentPreapplyFunction {
 
 class Tag_AssignmentParser extends UserlessAssignmentParser {
     const I_SET = 0;
-    const I_NEXT = 1;
-    const I_NEXTSEQ = 2;
-    const I_SOME = 3;
+    const I_SOME = 1;
+    const I_NEXT = 2;
+    const I_NEXTSEQ = 3;
     /** @var ?bool */
     private $remove;
     /** @var 0|1|2|3 */
@@ -127,7 +127,11 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
     }
     function expand_papers($req, AssignmentState $state) {
-        return $this->itype ? "ALL" : (string) $req["paper"];
+        if ($this->itype >= self::I_NEXT) {
+            return "ALL";
+        } else {
+            return parent::expand_papers($req, $state);
+        }
     }
     function load_state(AssignmentState $state) {
         Tag_Assignable::load($state);
@@ -171,26 +175,18 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     private function apply1($tag, PaperInfo $prow, Contact $contact, $req,
                             AssignmentState $state) {
         // parse tag into parts
-        $xvalue = trim((string) $req["tag_value"]);
         if (!preg_match('/\A([-+]?+#?+)(|~~|[^-~+#]*+~)([a-zA-Z@*_:.][-+a-zA-Z0-9!@*_:.\/]*)(\z|#|#?[=!<>]=?|#?≠|#?≤|#?≥)(.*)\z/', $tag, $m)
             || ($m[4] !== "" && $m[4] !== "#")) {
             $state->error("<0>Invalid tag ‘{$tag}’");
             return false;
         }
-
-        // check parts
-        $m[5] = trim($m[5]);
-        if ($xvalue !== "" && $m[5] !== "" && $m[5] !== $xvalue) {
-            $state->error("<0>‘{$tag}’: Value conflicts with ‘tag_value’");
-            return false;
-        } else if (($this->remove || str_starts_with($m[1], "-")) && $m[5] !== "") {
-            $state->warning("<0>‘{$tag}’: Tag values ignored when removing a tag");
-        } else if (($this->remove && str_starts_with($m[1], "+"))
-                   || ($this->remove === false && str_starts_with($m[1], "-"))) {
+        if (($this->remove && str_starts_with($m[1], "+"))
+            || ($this->remove === false && str_starts_with($m[1], "-"))) {
             $state->error("<0>Tag ‘{$tag}’ is incompatible with this action");
             return false;
         }
 
+        // set parts
         $xremove = $this->remove || str_starts_with($m[1], "-");
         $xtag = $m[3];
         if ($m[2] === "~" || strcasecmp($m[2], "me~") === 0) {
@@ -201,8 +197,22 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         } else {
             $xuser = $m[2];
         }
-        $xvalue = $xvalue !== "" ? $xvalue : $m[5];
         $xitype = $this->itype;
+
+        // set value part
+        $xvalue = trim((string) $req["tag_value"]);
+        if (($m[5] = trim($m[5])) !== "") {
+            if ($xvalue !== "" && $m[5] !== $xvalue) {
+                $state->error("<0>‘{$tag}’: Value conflicts with ‘tag_value’");
+                return false;
+            }
+            $xvalue = $m[5];
+        }
+        if ($xvalue !== ""
+            && ($this->remove || str_starts_with($m[1], "-") || $xitype >= self::I_NEXT)) {
+            $state->warning("<0>‘{$tag}’: Tag values ignored with this action");
+            $xvalue = "";
+        }
 
         // parse index
         if ($xremove) {
@@ -330,7 +340,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     private function apply_next_index($pid, $xitype, $tag, $nvalue, AssignmentState $state) {
         $ltag = strtolower($tag);
         // NB ignore $index on second & subsequent nexttag assignments
-        $fin = $state->register_preapply_function("seqtag $ltag", new NextTagAssigner($state, $tag, $nvalue, $xitype === self::I_NEXTSEQ));
+        $fin = $state->register_preapply_function("seqtag {$ltag}", new NextTagAssigner($state, $tag, $nvalue, $xitype === self::I_NEXTSEQ));
         assert($fin instanceof NextTagAssigner);
         unset($fin->pidindex[$pid]);
         return $fin->next_index($xitype === self::I_NEXTSEQ);
