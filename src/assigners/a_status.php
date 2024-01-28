@@ -30,30 +30,38 @@ class Status_Assignable extends Assignable {
     }
 }
 
-class Withdraw_PreapplyFunction implements AssignmentPreapplyFunction {
+class WithdrawVotesAssigner implements AssignmentPreapplyFunction {
     // When withdrawing a paper, remove voting tags so people don't have
     // phantom votes.
-    private $pid;
-    private $ltag;
-    function __construct($pid) {
-        $this->pid = $pid;
+    private $pids = [];
+    function __construct(AssignmentState $astate) {
+    }
+    function add_paper(PaperInfo $prow) {
+        $this->pids[] = $prow->paperId;
     }
     function preapply(AssignmentState $state) {
-        $res = $state->query_items(new Status_Assignable($this->pid));
-        if (!$res
-            || $res[0]["_withdrawn"] <= 0
-            || $res[0]->pre("_withdrawn") > 0) {
+        $wpids = [];
+        foreach ($this->pids as $pid) {
+            $res = $state->query_items(new Status_Assignable($pid));
+            if ($res
+                && $res[0]["_withdrawn"] > 0
+                && $res[0]->pre("_withdrawn") <= 0) {
+                $wpids[] = $pid;
+            }
+        }
+        if (empty($wpids)) {
             return;
         }
         $ltre = [];
         foreach ($state->conf->tags()->entries_having(TagInfo::TFM_VOTES) as $ti) {
             $ltre[] = $ti->tag_regex();
         }
-        $res = $state->query(new Tag_Assignable($this->pid, null));
         $tag_re = '{\A(?:\d+~|)(?:' . join("|", $ltre) . ')\z}i';
-        foreach ($res as $x) {
-            if (preg_match($tag_re, $x->ltag)) {
-                $state->add(new Tag_Assignable($this->pid, $x->ltag, null, null, true));
+        foreach ($wpids as $pid) {
+            foreach ($state->query(new Tag_Assignable($pid, null)) as $x) {
+                if (preg_match($tag_re, $x->ltag)) {
+                    $state->add(new Tag_Assignable($pid, $x->ltag, null, null, true));
+                }
             }
         }
     }
@@ -106,7 +114,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
                 $res->_submitted = -$res->_submitted;
                 if ($state->conf->tags()->has(TagInfo::TFM_VOTES)) {
                     Tag_Assignable::load($state);
-                    $state->register_preapply_function("withdraw {$prow->paperId}", new Withdraw_PreapplyFunction($prow->paperId));
+                    $state->callable("WithdrawVotesAssigner")->add_paper($prow);
                 }
             }
             $r = $req["withdraw_reason"];

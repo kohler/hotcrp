@@ -165,13 +165,17 @@ class AssignmentItemSet {
 class AssignmentState extends MessageSet {
     /** @var array<int,AssignmentItemSet> */
     private $st = [];
+    /** @var int */
+    private $stversion = 0;
     /** @var array<string,list<string>> */
     private $types = [];
     /** @var array<string,callable(AssignmentItem,AssignmentState):Assigner> */
     private $realizers = [];
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var Contact */
+    /** @var Contact
+     * @readonly */
     public $user;     // executor
     /** @var Contact */
     public $reviewer; // default contact
@@ -203,8 +207,7 @@ class AssignmentState extends MessageSet {
     private $nonexact_msgs = [];
     /** @var bool */
     public $has_user_error = false;
-    /** @var array<string,AssignmentPreapplyFunction> */
-    private $preapply_functions = [];
+    private $callables = [];
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -355,6 +358,10 @@ class AssignmentState extends MessageSet {
         return $cf;
     }
 
+    /** @return int */
+    function state_version() {
+        return $this->stversion;
+    }
     /** @template T
      * @param T $q
      * @return list<T> */
@@ -362,6 +369,7 @@ class AssignmentState extends MessageSet {
         $res = [];
         foreach ($this->query_items($q) as $item) {
             $res[] = $item->delete_at($this->landmark);
+            ++$this->stversion;
         }
         return $res;
     }
@@ -375,6 +383,7 @@ class AssignmentState extends MessageSet {
             if (!$predicate
                 || call_user_func($predicate, $item->after ?? $item->before)) {
                 $res[] = $item->delete_at($this->landmark);
+                ++$this->stversion;
             }
         }
         return $res;
@@ -392,6 +401,7 @@ class AssignmentState extends MessageSet {
         $item->after = $x;
         $item->deleted = false;
         $item->landmark = $this->landmark;
+        ++$this->stversion;
         return $item;
     }
 
@@ -537,18 +547,20 @@ class AssignmentState extends MessageSet {
         $this->has_user_error = false;
     }
 
-    /** @param string $name
-     * @param AssignmentPreapplyFunction $hook
-     * @return AssignmentPreapplyFunction */
-    function register_preapply_function($name, $hook) {
-        if (!isset($this->preapply_functions[$name])) {
-            $this->preapply_functions[$name] = $hook;
+    /** @template T
+     * @param class-string<T> $name
+     * @return T */
+    function callable($name, ...$args) {
+        if (!isset($this->callables[$name])) {
+            $this->callables[$name] = new $name($this, ...$args);
         }
-        return $this->preapply_functions[$name];
+        return $this->callables[$name];
     }
+
     function call_preapply_functions() {
-        foreach ($this->preapply_functions as $f) {
-            $f->preapply($this);
+        foreach ($this->callables as $k) {
+            if ($k instanceof AssignmentPreapplyFunction)
+                $k->preapply($this);
         }
     }
 }
