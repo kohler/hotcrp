@@ -283,4 +283,52 @@ class Tags_Tester {
 
         $this->conf->qe("delete from PaperTagAnno where tag in ('t','tt','tu')");
     }
+
+    function test_next() {
+        $root = $this->conf->root_user();
+        $u_varghese = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu");
+        $p4 = $this->conf->checked_paper_by_id(4);
+        xassert(!$u_varghese->can_view_tags($p4));
+        xassert_search_all($root, "#order", "");
+
+        // create order
+        xassert_assign($root, "action,paper,tag\nseqnexttag,1,order\nseqnexttag,2,order\nseqnexttag,3,order\nseqnexttag,4,order\n");
+        $p4->load_tags();
+        xassert_eqq($p4->tag_value("order"), 4.0);
+
+        // adding to order extends order
+        xassert_assign($root, "action,paper,tag\nseqnexttag,5,order\n");
+        $p5 = $this->conf->checked_paper_by_id(5);
+        xassert_eqq($p5->tag_value("order"), 5.0);
+
+        // `enable_papers` does not limit scope of order search
+        $aset = (new AssignmentSet($root))->enable_papers(6);
+        xassert_assign($root, "action,paper,tag\nseqnexttag,6,order\n");
+        $p6 = $this->conf->checked_paper_by_id(6);
+        xassert_eqq($p6->tag_value("order"), 6.0);
+
+        // adding to order with `#seqnext` extends order
+        xassert_assign($root, "action,paper,tag\ntag,7,order#seqnext\n");
+        $p7 = $this->conf->checked_paper_by_id(7);
+        xassert_eqq($p7->tag_value("order"), 7.0);
+
+        // `enable_papers` does not limit scope of order search
+        $aset = (new AssignmentSet($root))->enable_papers(6);
+        xassert_assign($root, "action,paper,tag\ntag,8,order#seqnext\n");
+        $p8 = $this->conf->checked_paper_by_id(8);
+        xassert_eqq($p8->tag_value("order"), 8.0);
+
+        // can’t use `nexttag` to peek at your own tag
+        xassert_assign($root, "action,paper,tag\ntag,5-,order#clear\n");
+        $p8->load_tags();
+        xassert_eqq($p8->tag_value("order"), null);
+        xassert_assign($u_varghese, "action,paper,tag\nseqnexttag,5,order\n");
+        $p5->load_tags();
+        xassert_eqq($p5->tag_value("order"), 4.0);
+
+        // clearing order resets order
+        xassert_assign($root, "action,paper,tag\ntag,7,order#seqnext\n");
+        $p7 = $this->conf->checked_paper_by_id(7);
+        xassert_eqq($p7->tag_value("order"), 5.0);
+    }
 }
