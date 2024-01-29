@@ -199,12 +199,12 @@ abstract class Autoassigner extends MessageSet {
             return null;
         }
         $tagger = new Tagger($this->user);
-        $tag = $tagger->check($tag, Tagger::NOVALUE);
-        if ($tag === null || $tag === "") {
+        $tag = $tagger->check($tag, Tagger::NOVALUE | Tagger::ALLOWNONE);
+        if ($tag !== false) {
+            return $tag;
+        } else {
             $this->error_at($field, $tagger->error_ftext(true));
             return null;
-        } else {
-            return $tag;
         }
     }
 
@@ -219,7 +219,8 @@ abstract class Autoassigner extends MessageSet {
                 $this->error_at("balance", "<0>Balance should be ‘all’ or ‘new’");
             }
         }
-        if (($bt = $this->extract_tag($args, "balance_offset_tag")) !== null) {
+        $bt = $this->extract_tag($args, "balance_offset_tag") ?? "";
+        if ($bt !== "") {
             foreach ($this->acs as $ac) {
                 if (($tv = $ac->user->tag_value($bt))) {
                     $ac->balance += $tv;
@@ -257,7 +258,9 @@ abstract class Autoassigner extends MessageSet {
 
     /** @param array<string,mixed> $args */
     function extract_max_load($args) {
-        if (($ml = $this->extract_tag($args, "max_load_tag"))) {
+        $ml = $this->extract_tag($args, "max_load_tag")
+            ?? $this->conf->setting_data("autoassign_review_max_load_tag") ?? "";
+        if ($ml !== "") {
             foreach ($this->acs as $ac) {
                 $tv = $ac->user->tag_value($ml);
                 if ($tv !== null && $tv >= 0) {

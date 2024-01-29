@@ -1390,6 +1390,7 @@ class Tagger {
     const NOCHAIR = 8;
     const ALLOWSTAR = 16;
     const ALLOWCONTACTID = 32;
+    const ALLOWNONE = 64;
     const EEMPTY = -1;
     const EINVAL = -2;
     const EMULTIPLE = -3;
@@ -1541,14 +1542,18 @@ class Tagger {
      * @param int $flags
      * @return string|false */
     function check($tag, $flags = 0) {
-        if ($tag === null || $tag === "" || $tag === "#") {
+        if (($tag = $tag ?? "") !== "" && $tag[0] === "#") {
+            $tag = substr($tag, 1);
+        }
+        if (($flags & self::ALLOWNONE) !== 0
+            && ($tag === "" || strcasecmp($tag, "none") === 0)) {
+            $this->errcode = 0;
+            return "";
+        } else if ($tag === "") {
             return $this->set_error_code($tag, self::EEMPTY);
         }
         if (!$this->contact->privChair) {
             $flags |= self::NOCHAIR;
-        }
-        if ($tag[0] === "#") {
-            $tag = substr($tag, 1);
         }
         if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-?\d+(?:\.\d*)?|-?\.\d+|))\z/', $tag, $m)) {
             if (preg_match('/\A([-a-zA-Z0-9!@*_:.\/#=]+)[\s,]+\S+/', $tag, $m)

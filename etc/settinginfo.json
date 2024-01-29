@@ -1152,6 +1152,18 @@
         "type": "radio", "values": ["default", "none", "highlight"], "default_value": "default"
     },
 
+    {
+        "name": "autoassign_review_max_load_tag",
+        "title": "Autoassignment maximum PC review load tag",
+        "type": "tag", "subtype": "allow_chair", "required": false
+    },
+    {
+        "name": "autoassign_review_preference_gadget",
+        "title": "Review autoassignment method",
+        "type": "radio", "values": ["default", "expertise"], "default_value": "default",
+        "storage": "opt.autoassignReviewGadget"
+    },
+
     {   "name": "extrev_hard_0", "merge": true, "storage": "extrev_hard"   },
     {   "name": "extrev_soft_0", "merge": true, "storage": "extrev_soft"   },
     {   "name": "pcrev_hard_0", "merge": true, "storage": "pcrev_hard"   },
