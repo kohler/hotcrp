@@ -5067,7 +5067,7 @@ hotcrp.monitor_job = function (jobid, statuselt) {
                 }
                 ex.replaceChildren(render_feedback_list(data.message_list));
             }
-            if (data.progress != null || (data.status === "done" && !dead)) {
+            if (data.progress != null || data.status === "done") {
                 let ex = statuselt.firstElementChild;
                 while (ex && ex.nodeName !== "P" && ex.nodeName !== "PROGRESS") {
                     ex = ex.nextElementSibling;
@@ -5092,10 +5092,10 @@ hotcrp.monitor_job = function (jobid, statuselt) {
                 }
                 ex.replaceChildren($e("strong", null, "Status:"), " " + data.progress.replace(/\.*$/, "..."));
             }
-            if (dead) {
-                reject(data);
-            } else if (data.status === "done") {
+            if (data.status === "done") {
                 resolve(data);
+            } else if (dead) {
+                reject(data);
             } else if (tries < 20) {
                 setTimeout(retry, 250);
             } else {
