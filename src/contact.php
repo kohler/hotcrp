@@ -836,7 +836,7 @@ class Contact implements JsonSerializable {
             $overrides &= ~self::OVERRIDE_CONFLICT;
         }
         $this->_overrides = $overrides;
-        if ($overrides !== $this->_overrides) {
+        if ($old_overrides !== $this->_overrides) {
             $this->_last_rights = null;
         }
         return $old_overrides;
