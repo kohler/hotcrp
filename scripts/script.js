@@ -5077,8 +5077,14 @@ hotcrp.monitor_job = function (jobid, statuselt) {
                     statuselt.insertBefore(ee, ex);
                     ex = ee;
                 }
-                if (data.status === "done" && !dead) {
+                if (data.status === "done") {
+                    ex.max = 1;
                     ex.value = 1;
+                } else if (data.progress_max && data.progress_value) {
+                    ex.max = data.progress_max;
+                    ex.value = data.progress_value;
+                } else if (ex.position >= 0) {
+                    ex.removeAttribute("value");
                 }
             }
             if (data.progress && data.progress !== true) {
@@ -5087,7 +5093,7 @@ hotcrp.monitor_job = function (jobid, statuselt) {
                     ex = ex.nextElementSibling;
                 }
                 if (!ex) {
-                    ex = $e("p");
+                    ex = $e("p", "mb-0");
                     statuselt.appendChild(ex);
                 }
                 ex.replaceChildren($e("strong", null, "Status:"), " " + data.progress.replace(/\.*$/, "..."));
