@@ -211,11 +211,10 @@ class Developer_UserInfo {
 
         $sites = $us->qreq["bearer_token/new/sites"] ?? "here";
         if ($sites === "all" && ($cdbu = $us->user->cdb_user())) {
-            $token->set_contactdb(true);
-            $token->contactId = $cdbu->contactDbId;
+            $token->set_cdb_user($cdbu);
         } else {
             $us->user->ensure_account_here();
-            $token->contactId = $us->user->contactId;
+            $token->set_user($us->user);
         }
     }
 

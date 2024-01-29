@@ -94,9 +94,21 @@ class TokenInfo {
     /** @return $this
      * @suppress PhanAccessReadOnlyProperty */
     function set_user(Contact $user) {
-        assert(($user->contactId > 0 && !$this->is_cdb) || $user->contactDbId > 0);
-        $this->is_cdb = $user->contactId <= 0;
-        $this->contactId = $this->is_cdb ? $user->contactDbId : $user->contactId;
+        assert(!$this->is_cdb);
+        $this->is_cdb = false;
+        $this->contactId = $user->contactId > 0 ? $user->contactId : 0;
+        $this->email = $user->email;
+        $this->_user = $user;
+        return $this;
+    }
+
+    /** @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_cdb_user(Contact $user) {
+        assert($user->contactDbId > 0);
+        $this->is_cdb = true;
+        $this->contactId = $user->contactDbId > 0 ? $user->contactDbId : 0;
+        $this->email = $user->email;
         $this->_user = $user;
         return $this;
     }

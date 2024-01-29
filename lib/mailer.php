@@ -282,7 +282,7 @@ class Mailer {
         if (!$this->censor && !$this->preparation->reset_capability) {
             $capinfo = new TokenInfo($this->conf, TokenInfo::RESETPASSWORD);
             if (($cdbu = $this->recipient->cdb_user())) {
-                $capinfo->set_user($cdbu)->set_token_pattern("hcpw1[20]");
+                $capinfo->set_cdb_user($cdbu)->set_token_pattern("hcpw1[20]");
             } else {
                 $capinfo->set_user($this->recipient)->set_token_pattern("hcpw0[20]");
             }

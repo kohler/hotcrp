@@ -15,13 +15,12 @@ class Job_API {
         $tok = Job_Capability::find($jobid, $user->conf);
         if (!$tok) {
             return new JsonResult(404, ["ok" => false]);
-        } else {
-            $ok = $tok->is_active();
-            $jdata = $tok->data();
-            $answer = ["ok" => $ok] + (array) $jdata;
-            $answer["ok"] = $ok;
-            $answer["update_at"] = $answer["update_at"] ?? $tok->timeUsed;
-            return new JsonResult($ok ? 200 : 409, $answer);
         }
+
+        $ok = $tok->is_active();
+        $answer = ["ok" => $ok] + (array) $tok->data();
+        $answer["ok"] = $ok;
+        $answer["update_at"] = $answer["update_at"] ?? $tok->timeUsed;
+        return new JsonResult($ok ? 200 : 409, $answer);
     }
 }
