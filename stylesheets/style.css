@@ -2627,7 +2627,7 @@ textarea[name=comment] {
 }
 
 .revrating {
-	margin-top: 1.25rem;
+	margin-top: 1rem;
 	margin-bottom: 1.25rem;
 	font-size: 0.9rem;
 	color: var(--headline-fg);
@@ -2647,6 +2647,7 @@ textarea[name=comment] {
 	font-size: 100%;
 	white-space: nowrap;
 	color: inherit;
+	margin-top: 0.25rem;
 }
 .revrating-unused > button {
 	color: #e35f5f;

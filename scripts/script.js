@@ -5045,54 +5045,71 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
 });
 
 hotcrp.monitor_autoassignment = function (jobid) {
-    let start = now_sec(), tries = 0;
-    function success(data) {
-        const e = $$("propass"),
-            dead = data.update_at && data.update_at < now_sec() - 40;
-        if (data.message_list) {
-            let ex = e.firstElementChild;
-            while (ex && ex.nodeName === "H3") {
-                ex = ex.nextElementSibling;
+    hotcrp.monitor_job(jobid, $$("propass")).finally(function () {
+        document.location.reload();
+    });
+};
+
+hotcrp.monitor_job = function (jobid, statuselt) {
+    return new Promise(function (resolve, reject) {
+        let start = now_sec(), tries = 0;
+        function success(data) {
+            const dead = data.update_at && data.update_at < now_sec() - 40;
+            if (data.message_list) {
+                let ex = statuselt.firstElementChild;
+                while (ex && ex.nodeName === "H3") {
+                    ex = ex.nextElementSibling;
+                }
+                if (!ex || ex.nodeName === "P") {
+                    const ee = $e("div", "msg msg-warning");
+                    statuselt.insertBefore(ee, ex);
+                    ex = ee;
+                }
+                ex.replaceChildren(render_feedback_list(data.message_list));
             }
-            if (!ex || ex.nodeName === "P") {
-                const ee = $e("div", "msg msg-warning");
-                e.insertBefore(ee, ex);
-                ex = ee;
+            if (data.progress != null || (data.status === "done" && !dead)) {
+                let ex = statuselt.firstElementChild;
+                while (ex && ex.nodeName !== "P" && ex.nodeName !== "PROGRESS") {
+                    ex = ex.nextElementSibling;
+                }
+                if (!ex || ex.nodeName !== "PROGRESS") {
+                    const ee = $e("progress");
+                    statuselt.insertBefore(ee, ex);
+                    ex = ee;
+                }
+                if (data.status === "done" && !dead) {
+                    ex.value = 1;
+                }
             }
-            ex.replaceChildren(render_feedback_list(data.message_list));
+            if (data.progress && data.progress !== true) {
+                let ex = statuselt.firstElementChild;
+                while (ex && ex.nodeName !== "P") {
+                    ex = ex.nextElementSibling;
+                }
+                if (!ex) {
+                    ex = $e("p");
+                    statuselt.appendChild(ex);
+                }
+                ex.replaceChildren($e("strong", null, "Status:"), " " + data.progress.replace(/\.*$/, "..."));
+            }
+            if (dead) {
+                reject(data);
+            } else if (data.status === "done") {
+                resolve(data);
+            } else if (tries < 20) {
+                setTimeout(retry, 250);
+            } else {
+                setTimeout(retry, 500);
+            }
         }
-        if (data.progress) {
-            let ex = e.firstElementChild;
-            while (ex && ex.nodeName !== "P") {
-                ex = ex.nextElementSibling;
-            }
-            if (!ex) {
-                ex = $e("p");
-                e.appendChild(ex);
-            }
-            if (ex.previousElementSibling.tagName !== "PROGRESS") {
-                ex.before($e("progress"));
-            }
-            if (data.status === "done" && !dead) {
-                ex.previousElementSibling.value = 1;
-            }
-            ex.replaceChildren($e("strong", null, "Status:"), " " + data.progress.replace(/\.*$/, "..."));
+        function retry() {
+            ++tries;
+            $.ajax(hoturl("api/job", {job: jobid}), {
+                method: "GET", cache: false, success: success
+            });
         }
-        if (data.status === "done" || dead) {
-            document.location.reload();
-        } else if (tries < 20) {
-            setTimeout(retry, 250);
-        } else {
-            setTimeout(retry, 500);
-        }
-    }
-    function retry() {
-        ++tries;
-        $.ajax(hoturl("api/job", {job: jobid}), {
-            method: "GET", cache: false, success: success
-        });
-    }
-    retry();
+        retry();
+    });
 };
 
 
@@ -13765,6 +13782,7 @@ Object.assign(window.hotcrp, {
     // make_review_field
     // make_time_point
     // monitor_autoassignment
+    // monitor_job
     // onload
     paper_edit_conditions: function () {}, // XXX
     popup_skeleton: popup_skeleton,
