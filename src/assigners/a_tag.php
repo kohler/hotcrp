@@ -92,6 +92,9 @@ class NextTagAssignmentState {
         }
         $this->all = true;
     }
+    /** @param string $ltag
+     * @param bool $isseq
+     * @return float */
     function compute_next(PaperInfo $prow, $ltag, $isseq) {
         if ($this->astate->state_version() === $this->expected_state_version
             && $this->prev_ltag === $ltag) {
@@ -317,7 +320,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         $ntag = $xuser . $xtag;
         $ltag = strtolower($ntag);
         if ($xitype === self::I_NEXT || $xitype === self::I_NEXTSEQ) {
-            $nvalue = $state->callable("NextTagAssignmentState")->compute_next($prow, $ltag, $xitype);
+            $nvalue = $state->callable("NextTagAssignmentState")->compute_next($prow, $ltag, $xitype === self::I_NEXTSEQ);
         } else if ($nvalue === null) {
             $items = $state->query_items(new Tag_Assignable($prow->paperId, $ltag),
                                          AssignmentState::INCLUDE_DELETED);
