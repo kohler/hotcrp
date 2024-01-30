@@ -567,14 +567,13 @@ function graph_cdf(selector, args) {
 
     // CDF lines
     data.forEach(function (d, i) {
-        var klass = "gcdf";
-        if (series[i].className)
-            klass += " " + series[i].className;
+        var cl = series[i].className;
         if (d[d.length - 1][0] != xdomain[args.x.flip ? 0 : 1])
             d.push([xdomain[args.x.flip ? 0 : 1], d[d.length - 1][1]]);
         var p = svg.append("path").attr("data-index", i)
             .datum(d)
-            .attr("class", klass)
+            .attr("class", "gcdf" + (cl ? " " + cl : ""))
+            .attr("stroke", ensure_pattern(series[i].className, "gcdf"))
             .attr("d", line);
         if (series[i].dashpattern)
             p.attr("stroke-dasharray", series[i].dashpattern.join(","));

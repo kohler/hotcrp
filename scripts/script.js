@@ -11029,6 +11029,7 @@ var fmap = {},
         "": {prefix: "", size: 34, incr: 8, type: 0},
         "gdot": {prefix: "gdot ", size: 12, incr: 3, type: 1},
         "glab": {prefix: "glab ", size: 20, incr: 6, type: 1},
+        "gcdf": {prefix: "gcdf ", size: 12, incr: 3, type: 1},
         "badge": {prefix: "badge ", size: 12, incr: 3, type: 2}
     },
     stylesheet = null,

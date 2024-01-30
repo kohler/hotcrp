@@ -469,12 +469,13 @@ class FormulaGraph extends MessageSet {
     }
     private function _cdf_data(PaperInfoSet $rowset) {
         // calculate query styles
-        $qcolors = $this->_qstyles;
-        $need_anal = array_fill(0, count($qcolors), false);
+        $qcolorset = array_fill(0, count($this->_qstyles), null);
+        $need_anal = array_fill(0, count($this->_qstyles), false);
+        $has_color = array_fill(0, count($this->_qstyles), 0);
+        $no_color = array_fill(0, count($this->_qstyles), 0);
         $nneed_anal = 0;
-        foreach ($qcolors as $qi => $q) {
+        foreach ($qcolorset as $qi => $q) {
             if ($this->_qstyles_bytag[$qi]) {
-                $qcolors[$qi] = [];
                 $need_anal[$qi] = true;
                 ++$nneed_anal;
             }
@@ -484,29 +485,30 @@ class FormulaGraph extends MessageSet {
                 break;
             }
             foreach ($this->papermap[$prow->paperId] as $qi) {
-                if ($need_anal[$qi]) {
-                    $c = [];
-                    if ($prow->paperTags) {
-                        $c = $this->conf->tags()->styles($prow->viewable_tags($this->user), TagStyle::BG);
-                    }
-                    if ($qcolors[$qi] !== null && !empty($c)) {
-                        $c = array_values(array_intersect($qcolors[$qi], $c));
-                    }
-                    if (empty($c)) {
-                        $qcolors[$qi] = $this->_qstyles[$qi];
-                        $need_anal[$qi] = false;
-                        --$nneed_anal;
-                    } else {
-                        $qcolors[$qi] = $c;
-                    }
+                if (!$need_anal[$qi]) {
+                    continue;
+                }
+                $c = $this->conf->tags()->styles($prow->viewable_tags($this->user), TagStyle::BG);
+                if (empty($c) && ++$no_color[$qi] <= 4) {
+                    continue;
+                }
+                if (!empty($c) && $qcolorset[$qi] !== null) {
+                    $c = array_values(array_intersect($qcolorset[$qi], $c));
+                }
+                if (empty($c)) {
+                    $need_anal[$qi] = false;
+                    --$nneed_anal;
+                } else {
+                    $qcolorset[$qi] = $c;
+                    ++$has_color[$qi];
                 }
             }
         }
-        if ($nneed_anal !== 0) {
-            foreach ($need_anal as $qi => $na) {
-                if ($na) {
-                    $qcolors[$qi] = join(" ", $qcolors[$qi]);
-                }
+
+        $qcolors = $this->_qstyles;
+        foreach ($need_anal as $qi => $na) {
+            if ($na && $has_color[$qi] >= 5 * $no_color[$qi]) {
+                $qcolors[$qi] = join(" ", $qcolorset[$qi]);
             }
         }
 
