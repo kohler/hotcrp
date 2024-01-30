@@ -339,8 +339,9 @@ class PaperTable {
         $this->edit_status = $status;
         if ($this->user->can_edit_paper($this->prow)) {
             $this->edit_mode = 2;
-        } else if ($this->prow->has_author($this->user)
-                   && $this->prow->paperId > 0) {
+        } else if (($this->prow->has_author($this->user)
+                    && $this->prow->paperId > 0)
+                   || $this->admin) {
             $this->edit_mode = 1;
         } else {
             $this->edit_mode = 0;
