@@ -414,6 +414,37 @@ class FormulaGraph extends MessageSet {
         return $queries;
     }
 
+    /** @param bool $reviewf
+     * @return ?callable */
+    private function _compile_xorder_function($reviewf) {
+        if (!$this->fxorder) {
+            return null;
+        } else if ($reviewf) {
+            return $this->fxorder->compile_extractor_function();
+        } else {
+            return $this->fxorder->compile_json_function();
+        }
+    }
+
+    /** @param list $order_data
+     * @bool $reviewf */
+    private function _resolve_xorder_data($order_data, $reviewf) {
+        if (!$this->fxorder) {
+            return null;
+        }
+        $this->_xorder_data = [];
+        if ($reviewf) {
+            $ordercf = $this->fxorder->compile_combiner_function();
+            foreach ($order_data as $x => $vs) {
+                $this->_xorder_data[] = new Order_GraphData($x, $ordercf($vs));
+            }
+        } else {
+            foreach ($order_data as $x => $vs) {
+                $this->_xorder_data[] = new Order_GraphData($x, $vs[0]);
+            }
+        }
+    }
+
     /** @param Formula $fx
      * @return list<CDF_GraphData> */
     private function _cdf_data_one_fx($fx, $qcolors, $dashp, PaperInfoSet $rowset) {
@@ -422,26 +453,32 @@ class FormulaGraph extends MessageSet {
         if ($fx->indexed()) {
             $reviewf = Formula::compile_indexes_function($this->user, $fx->index_type());
         }
+        $orderf = $this->_compile_xorder_function(!!$reviewf);
+        $order_data = [];
 
         $data = [];
         foreach ($rowset as $prow) {
             $revs = $reviewf ? $reviewf($prow, $this->user) : [null];
             $queries = $this->papermap[$prow->paperId];
             foreach ($revs as $rcid) {
-                if (($x = $fxf($prow, $rcid, $this->user)) !== null) {
-                    $this->_x_tagvalue_bool = $this->_x_tagvalue_bool && is_bool($x);
-                    if ($rcid) {
-                        $queries = $this->_filter_queries($prow, $prow->review_by_user($rcid));
+                if (($x = $fxf($prow, $rcid, $this->user)) === null) {
+                    continue;
+                }
+                $this->_x_tagvalue_bool = $this->_x_tagvalue_bool && is_bool($x);
+                if ($rcid) {
+                    $queries = $this->_filter_queries($prow, $prow->review_by_user($rcid));
+                }
+                if ($this->fx_type === Fexpr::FSEARCH) {
+                    foreach ($queries as $q) {
+                        $data[0][] = $q;
                     }
-                    if ($this->fx_type === Fexpr::FSEARCH) {
-                        foreach ($queries as $q) {
-                            $data[0][] = $q;
-                        }
-                    } else {
-                        foreach ($queries as $q) {
-                            $data[$q][] = $x;
-                        }
+                } else {
+                    foreach ($queries as $q) {
+                        $data[$q][] = $x;
                     }
+                }
+                if ($orderf) {
+                    $order_data[$x][] = $orderf($prow, $rcid, $this->user);
                 }
             }
         }
@@ -458,15 +495,17 @@ class FormulaGraph extends MessageSet {
                 $dlabel = $this->queries[$q];
             }
             if ($dlabel || $fxlabel) {
-                $d->label = rtrim("$fxlabel $dlabel");
+                $d->label = rtrim("{$fxlabel} {$dlabel}");
             }
             if ($dashp) {
                 $d->dashpattern = $dashp;
             }
             $result[] = $d;
         }
+        $this->_resolve_xorder_data($order_data, !!$reviewf);
         return $result;
     }
+
     private function _cdf_data(PaperInfoSet $rowset) {
         // calculate query styles
         $qcolorset = array_fill(0, count($this->_qstyles), null);
@@ -573,17 +612,8 @@ class FormulaGraph extends MessageSet {
             $index_type = Formula::combine_index_types($this->fx->index_type(), $this->fxorder ? $this->fxorder->index_type() : 0, $this->fy->index_type());
             $reviewf = Formula::compile_indexes_function($this->user, $index_type);
         }
-        $orderf = $ordercf = $order_data = null;
-        if ($this->fxorder) {
-            $order_data = [];
-            if ($reviewf) {
-                $orderf = $this->fxorder->compile_extractor_function();
-                $ordercf = $this->fxorder->compile_combiner_function();
-            } else {
-                $orderf = $this->fxorder->compile_json_function();
-                $ordercf = function ($x) { return $x[0]; };
-            }
-        }
+        $orderf = $this->_compile_xorder_function(!!$reviewf);
+        $order_data = [];
         $this->_scatter_data = [];
 
         foreach ($rowset as $prow) {
@@ -629,12 +659,7 @@ class FormulaGraph extends MessageSet {
             }
         }
 
-        if ($ordercf) {
-            $this->_xorder_data = [];
-            foreach ($order_data as $x => $vs) {
-                $this->_xorder_data[] = new Order_GraphData($x, $ordercf($vs));
-            }
-        }
+        $this->_resolve_xorder_data($order_data, !!$reviewf);
     }
 
     private function _combine_data(PaperInfoSet $rowset) {
