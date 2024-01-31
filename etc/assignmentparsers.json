@@ -66,6 +66,42 @@
     {   "name": "noreview", "alias": "clearreview"   },
     {   "name": "unassignreview", "alias": "clearreview"   },
     {
+        "name": "clearprimaryreview", "parser_class": "Review_AssignmentParser",
+        "review_type": "none", "old_review_type": "primary",
+        "parameters": ["user", "?review_round"]
+    },
+    {   "name": "clearpri", "alias": "clearprimaryreview"   },
+    {   "name": "clearprimary", "alias": "clearprimaryreview"   },
+    {
+        "name": "clearsecondaryreview", "parser_class": "Review_AssignmentParser",
+        "review_type": "none", "old_review_type": "secondary",
+        "parameters": ["user", "?review_round"]
+    },
+    {   "name": "clearsec", "alias": "clearsecondaryreview"   },
+    {   "name": "clearsecondary", "alias": "clearsecondaryreview"   },
+    {
+        "name": "clearpcreview", "parser_class": "Review_AssignmentParser",
+        "review_type": "none", "old_review_type": "optional",
+        "parameters": ["user", "?review_round"]
+    },
+    {   "name": "clearoptional", "alias": "clearpcreview"   },
+    {   "name": "clearoptionalreview", "alias": "clearpcreview"   },
+    {   "name": "clearoptionalpcreview", "alias": "clearpcreview"   },
+    {
+        "name": "clearmetareview", "parser_class": "Review_AssignmentParser",
+        "review_type": "none", "old_review_type": "meta",
+        "parameters": ["user", "?review_round"]
+    },
+    {   "name": "clearmeta", "alias": "clearmetareview"   },
+    {
+        "name": "clearexternalreview", "parser_class": "Review_AssignmentParser",
+        "review_type": "none", "old_review_type": "external",
+        "parameters": ["user", "?review_round"]
+    },
+    {   "name": "clearext", "alias": "clearexternalreview"   },
+    {   "name": "clearexternal", "alias": "clearexternalreview"   },
+    {   "name": "clearextreview", "alias": "clearexternalreview"   },
+    {
         "name": "unsubmitreview", "parser_class": "UnsubmitReview_AssignmentParser",
         "parameters": ["user", "?review_type", "?review_round"],
         "description": "Unsubmit review"

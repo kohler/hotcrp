@@ -940,7 +940,8 @@ class ReviewAssigner_Data {
     /** @var ?string */
     public $error_ftext;
 
-    /** @return array{?string,?string,bool} */
+    /** @param string $key
+     * @return array{?string,?string,bool} */
     static function separate($key, $req, $state, $rtype) {
         $a0 = $a1 = trim((string) $req[$key]);
         $require_match = $rtype ? false : $a0 !== "";

@@ -78,6 +78,8 @@ class Review_Assignable extends Assignable {
 class Review_AssignmentParser extends AssignmentParser {
     /** @var int */
     private $rtype;
+    /** @var ?string */
+    private $old_rtype;
     function __construct(Conf $conf, $aj) {
         parent::__construct($aj->name);
         if ($aj->review_type === "none") {
@@ -89,6 +91,7 @@ class Review_AssignmentParser extends AssignmentParser {
         } else {
             $this->rtype = -1;
         }
+        $this->old_rtype = $aj->old_review_type ?? null;
     }
     static function load_review_state(AssignmentState $state) {
         if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make")) {
@@ -111,6 +114,9 @@ class Review_AssignmentParser extends AssignmentParser {
     /** @param CsvRow $req
      * @return ReviewAssigner_Data */
     private function make_rdata($req, AssignmentState $state) {
+        if ($this->old_rtype) {
+            $req = ["reviewtype" => $this->old_rtype, "round" => $req["round"]];
+        }
         return ReviewAssigner_Data::make($req, $state, $this->rtype);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
