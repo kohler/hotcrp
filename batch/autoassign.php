@@ -37,6 +37,8 @@ class Autoassign_Batch {
     /** @var bool */
     public $dry_run = false;
     /** @var bool */
+    public $unsorted_dry_run = false;
+    /** @var bool */
     public $help_param = false;
     /** @var bool */
     public $profile = false;
@@ -123,7 +125,8 @@ class Autoassign_Batch {
     /** @param associative-array $arg */
     private function parse_arg($arg) {
         $this->quiet = $this->quiet || isset($arg["quiet"]);
-        $this->dry_run = $this->dry_run || isset($arg["dry-run"]);
+        $this->unsorted_dry_run = $this->unsorted_dry_run || isset($arg["unsorted-dry-run"]);
+        $this->dry_run = $this->dry_run || $this->unsorted_dry_run || isset($arg["dry-run"]);
         $this->help_param = $this->help_param || isset($arg["help-param"]);
         $this->profile = $this->profile || isset($arg["profile"]);
         if (isset($arg["autoassigner"])) {
@@ -280,6 +283,9 @@ class Autoassign_Batch {
 
         // exit if dry run
         if ($this->dry_run) {
+            if (!$this->unsorted_dry_run) {
+                $aa->sort_assignments();
+            }
             if ($this->_jtok) {
                 $this->_jtok->change_output(join("",  $aa->assignments()));
                 $this->report([], 0);
@@ -343,6 +349,7 @@ class Autoassign_Batch {
             "config: !",
             "job:,j: JOBID Run stored job",
             "dry-run,d Do not perform assignment; output CSV instead",
+            "unsorted-dry-run,D !",
             "autoassigner:,a: =AA !",
             "q:,search: =QUERY Use papers matching QUERY [all]",
             "type:,t: =TYPE Set search type [all]",

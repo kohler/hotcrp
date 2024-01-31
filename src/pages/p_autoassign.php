@@ -527,7 +527,7 @@ class Autoassign_Page {
         assert($this->jobid !== null);
 
         $getopt = Autoassign_Batch::make_getopt();
-        $arg = $getopt->parse(["batch/autoassign", "-j{$this->jobid}", "-d"]);
+        $arg = $getopt->parse(["batch/autoassign", "-j{$this->jobid}", "-D"]);
         try {
             (new Autoassign_Batch($this->conf, $arg, $getopt, [$this, "detach"]))->run();
         } catch (CommandLineException $ex) {
