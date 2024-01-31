@@ -1681,17 +1681,17 @@ class Conf {
         }
     }
 
-    /** @param bool $external
+    /** @param int|bool $external
      * @return string */
     function assignment_round_option($external) {
-        $x = $this->settingTexts["rev_roundtag"] ?? "";
-        if ($external) {
-            $x = $this->settingTexts["extrev_roundtag"] ?? $x;
+        $v = $this->settingTexts["rev_roundtag"] ?? "";
+        if (is_int($external) ? $external < REVIEW_PC : $external) {
+            $v = $this->settingTexts["extrev_roundtag"] ?? $v;
         }
-        return $x === "" ? "unnamed" : $x;
+        return $v === "" ? "unnamed" : $v;
     }
 
-    /** @param bool $external
+    /** @param int|bool $external
      * @return int */
     function assignment_round($external) {
         return $this->round_number($this->assignment_round_option($external)) ?? 0;

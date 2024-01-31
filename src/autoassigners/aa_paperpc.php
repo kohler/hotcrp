@@ -49,17 +49,20 @@ class PaperPC_Autoassigner extends Autoassigner {
     }
 
     private function set_load() {
-        $q = "select {$this->ass_action}ContactId, count(paperId) from Paper where paperId ?A group by {$this->ass_action}ContactId";
+        $q = "select {$this->ass_action}ContactId, count(paperId) from Paper where paperId?A group by {$this->ass_action}ContactId";
         $result = $this->conf->qe($q, $this->paper_ids());
         while (($row = $result->fetch_row())) {
             $this->add_aauser_load((int) $row[0], (int) $row[1]);
+            if ($this->balance === self::BALANCE_ALL) {
+                $this->add_aauser_balance((int) $row[0], (int) $row[1]);
+            }
         }
         Dbl::free($result);
     }
 
     private function load_preferences() {
         $time = microtime(true);
-        $this->make_elements();
+        $this->make_ae();
 
         $set = $this->conf->paper_set(["paperId" => $this->paper_ids(), "allConflictType" => true, "reviewSignatures" => true, "scores" => $this->rf ? [$this->rf] : []]);
 

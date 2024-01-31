@@ -247,6 +247,7 @@ class Autoassign_Batch {
         } else {
             $aa = call_user_func($this->gj->function, $this->user, $this->pcc, $pids, $this->param, $this->gj);
         }
+        '@phan-var-force Autoassigner $aa';
         foreach ($this->no_coassign as $pair) {
             $aa->avoid_coassignment($pair[0], $pair[1]);
         }

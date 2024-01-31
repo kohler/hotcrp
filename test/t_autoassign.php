@@ -216,7 +216,7 @@ class Autoassign_Tester {
 
         $prows = $this->conf->paper_set(["paperId" => $this->cur_pids]);
         foreach ($prows as $prow) {
-            // xassert_le(count($prow->reviews_as_list()), 5); XXX test currently fails!
+            xassert_le(count($prow->reviews_as_list()), 5);
         }
 
         $rbu = $this->reviews_by_user($prows);
@@ -272,7 +272,7 @@ class Autoassign_Tester {
         }
     }
 
-    function xxx_test_avoid_coassignment_active_expertise()  {
+    function test_avoid_coassignment_active_expertise()  {
         $this->setup();
         $qv = [[1, $this->pcc[0], 0, 0], [2, $this->pcc[0], 0, 1],
                [1, $this->pcc[2], 0, 1], [2, $this->pcc[2], 0, 0]];

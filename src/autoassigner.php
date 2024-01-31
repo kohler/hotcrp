@@ -4,6 +4,8 @@
 
 class AutoassignerElement {
     /** @var int */
+    public $cid;
+    /** @var int */
     public $pid;
     /** @var ?int */
     public $pref;
@@ -18,8 +20,10 @@ class AutoassignerElement {
     /** @var int */
     public $eass = 0;
 
-    /** @param int $pid */
-    function __construct($pid) {
+    /** @param int $cid
+     * @param int $pid */
+    function __construct($cid, $pid) {
+        $this->cid = $cid;
         $this->pid = $pid;
     }
 }
@@ -44,11 +48,9 @@ class AutoassignerUser {
     /** @var ?list<int> */
     public $work_list;
     /** @var int */
-    public $avoid_class = 0;
-    /** @var int */
     public $ndesired = -1;
-    /** @var ?list<int> */
-    public $newass;
+    /** @var int */
+    public $nassigned = 0;
 
     /** @param Contact $user */
     function __construct(Contact $user) {
@@ -57,8 +59,8 @@ class AutoassignerUser {
         $this->user = $user;
     }
     /** @return bool */
-    function assignments_complete() {
-        return ($this->ndesired >= 0 && count($this->newass) >= $this->ndesired)
+    function work_list_complete() {
+        return ($this->ndesired >= 0 && $this->nassigned >= $this->ndesired)
             || $this->load >= $this->max_load
             || $this->work_list === [];
     }
@@ -72,10 +74,26 @@ class AutoassignerPaper {
     public $ndesired = -1;
     /** @var int */
     public $nassigned = 0;
+    /** @var bool */
+    public $balance = false;
+    /** @var list<AutoassignerElement> */
+    public $ainfo = [];
 
     /** @param int $pid */
     function __construct($pid) {
         $this->pid = $pid;
+    }
+    /** @param int $min
+     * @param ?int $max
+     * @return int */
+    function assignment_count($min, $max = null) {
+        $max = $max ?? $min;
+        $ct = 0;
+        foreach ($this->ainfo as $ae) {
+            if ($ae->eass >= $min && $ae->eass <= $max)
+                ++$ct;
+        }
+        return $ct;
     }
 }
 
@@ -134,6 +152,8 @@ abstract class Autoassigner extends MessageSet {
     /** @var int */
     public $assignment_cost = 100;
     /** @var int */
+    public $paper_assignment_cost = 40;
+    /** @var int */
     public $preference_cost = 60;
     /** @var int */
     public $expertise_x_cost = -200;
@@ -152,6 +172,7 @@ abstract class Autoassigner extends MessageSet {
     private $ndesired = -2;
     /** @var int */
     protected $nassigned = 0;
+    /** @var array<string,int|float> */
     public $profile = ["maxflow" => 0, "mincost" => 0];
 
     const METHOD_MCMF = 0;
@@ -164,10 +185,17 @@ abstract class Autoassigner extends MessageSet {
     const REVIEW_GADGET_PLAIN = 0;
     const REVIEW_GADGET_EXPERTISE = 1;
 
-    const ENOASSIGN = 1;
-    const EOTHERASSIGN = 2; // order matters
-    const EOLDASSIGN = 3;
-    const ENEWASSIGN = 4;
+    const EAVOIDASSIGN = 1;
+    const ENOASSIGN = 2;
+    const EOTHERASSIGN = 3; // order matters
+    const EOLDASSIGN = 4;
+    const ENEWASSIGN = 5;
+
+    /** @var array<string,?int> */
+    static private $known_costs = [
+        "assignment" => 1, "paper_assignment" => 1,
+        "preference" => 1, "expertise_x" => null, "expertise_y" => null
+    ];
 
     /** @param ?list<int> $pcids
      * @param list<int> $papersel */
@@ -183,17 +211,16 @@ abstract class Autoassigner extends MessageSet {
         foreach ($papersel as $pid) {
             $this->aps[$pid] = new AutoassignerPaper($pid);
         }
-
         if ($this->conf->opt("autoassignReviewGadget") === "expertise") {
             $this->review_gadget = self::REVIEW_GADGET_EXPERTISE;
         } else {
             $this->review_gadget = self::REVIEW_GADGET_PLAIN;
         }
         if (($jc = json_decode_object($this->conf->opt("autoassignCosts")))) {
-            $this->assignment_cost = $jc->assignment ?? $this->assignment_cost;
-            $this->preference_cost = $jc->preference ?? $this->preference_cost;
-            $this->expertise_x_cost = $jc->expertise_x ?? $this->expertise_x_cost;
-            $this->expertise_y_cost = $jc->expertise_y ?? $this->expertise_y_cost;
+            foreach (self::$known_costs as $n => $mv) {
+                if (isset($jc->$n))
+                    $this->{"{$n}_cost"} = $jc->$n;
+            }
         }
     }
 
@@ -310,15 +337,12 @@ abstract class Autoassigner extends MessageSet {
                    || ($gadget === null && $x === false)) {
             $this->review_gadget = self::REVIEW_GADGET_PLAIN;
         }
-
-        $this->assignment_cost = $this->extract_intval($args, "assignment_cost", 1)
-            ?? $this->assignment_cost;
-        $this->preference_cost = $this->extract_intval($args, "preference_cost", 1)
-            ?? $this->preference_cost;
-        $this->expertise_x_cost = $this->extract_intval($args, "expertise_x_cost", null)
-            ?? $this->expertise_x_cost;
-        $this->expertise_y_cost = $this->extract_intval($args, "expertise_y_cost", null)
-            ?? $this->expertise_y_cost;
+        foreach (self::$known_costs as $n => $mv) {
+            $ncost = "{$n}_cost";
+            if (($v = $this->extract_intval($args, $ncost, $mv)) !== null) {
+                $this->$ncost = $v;
+            }
+        }
     }
 
     /** @param callable $progressf
@@ -376,83 +400,120 @@ abstract class Autoassigner extends MessageSet {
 
 
     /** @return list<int> */
-    function paper_ids() {
+    final function paper_ids() {
         return array_keys($this->aps);
     }
 
     /** @return list<int> */
-    function user_ids() {
+    final function user_ids() {
         return array_keys($this->acs);
     }
 
     /** @return string */
-    function assignment_action() {
+    final function assignment_action() {
         return $this->ass_action;
     }
 
     /** @return int */
-    function user_count() {
+    final function user_count() {
         return count($this->acs);
     }
 
     /** @return array<int,AutoassignerUser> */
-    protected function aausers() {
+    final protected function aausers() {
         return $this->acs;
     }
 
     /** @param int $uid
      * @return ?AutoassignerUser */
-    protected function aauser($uid) {
+    final protected function aauser($uid) {
         return $this->acs[$uid] ?? null;
     }
 
     /** @param int $uid
      * @param int $load */
-    protected function add_aauser_load($uid, $load) {
+    final protected function add_aauser_load($uid, $load) {
         if (($ac = $this->aauser($uid))) {
             $ac->load += $load;
-            if ($this->balance === self::BALANCE_ALL) {
-                $ac->balance += $load;
-            }
+        }
+    }
+
+    /** @param int $uid
+     * @param int $balance */
+    final protected function add_aauser_balance($uid, $balance) {
+        if (($ac = $this->aauser($uid))) {
+            $ac->balance += $balance;
         }
     }
 
     /** @return array<int,AutoassignerPaper> */
-    protected function aapapers() {
+    final protected function aapapers() {
         return $this->aps;
     }
 
     /** @param int $pid
      * @return ?AutoassignerPaper */
-    protected function aapaper($pid) {
+    final protected function aapaper($pid) {
         return $this->aps[$pid] ?? null;
     }
 
     /** @param int $pid
      * @param int $ndesired */
-    protected function set_aapaper_ndesired($pid, $ndesired) {
+    final protected function set_aapaper_ndesired($pid, $ndesired) {
         if (($ap = $this->aapaper($pid))) {
             $ap->ndesired = $ndesired;
-            $this->ndesired = -1;
+            $this->ndesired = -2;
         }
     }
 
+    final protected function make_ae() {
+        gc_collect_cycles();
+        $this->ainfo = [];
+        foreach ($this->acs as $ac) {
+            $alist = [];
+            foreach ($this->aps as $ap) {
+                $ap->ainfo[] = $alist[] = new AutoassignerElement($ac->cid, $ap->pid);
+            }
+            $this->ainfo[$ac->cid] = array_combine(array_keys($this->aps), $alist);
+        }
+        $this->has_pref_index = false;
+    }
+
     /** @return array<int,array<int,AutoassignerElement>> */
-    protected function ae_map() {
+    final protected function ae_map() {
         return $this->ainfo;
     }
 
     /** @param int $cid
      * @return array<int,AutoassignerElement> */
-    protected function ae_map_for($cid) {
+    final protected function ae_map_for($cid) {
         return $this->ainfo[$cid] ?? [];
     }
 
     /** @param int $cid
      * @param int $pid
      * @return ?AutoassignerElement */
-    protected function ae($cid, $pid) {
+    final protected function ae($cid, $pid) {
         return $this->ainfo[$cid][$pid] ?? null;
+    }
+
+    /** @param int $cid
+     * @param int $pid
+     * @param int $eass */
+    final protected function load_assignment($cid, $pid, $eass) {
+        if (($a = $this->ainfo[$cid][$pid] ?? null)
+            && $a->eass !== $eass) {
+            if ($eass === self::ENEWASSIGN) {
+                ++$this->aps[$pid]->nassigned;
+                ++$this->acs[$cid]->nassigned;
+                ++$this->nassigned;
+            } else if ($a->eass === self::ENEWASSIGN) {
+                --$this->aps[$pid]->nassigned;
+                --$this->acs[$cid]->nassigned;
+                --$this->nassigned;
+            }
+            $a->eass = $eass;
+        }
     }
 
 
@@ -481,30 +542,6 @@ abstract class Autoassigner extends MessageSet {
             $u[$ac->cid] = $ac->unhappiness;
         }
         return $u;
-    }
-
-    /** @return bool */
-    function has_tentative_assignment() {
-        return count($this->ass) || $this->mcmf;
-    }
-
-    /** @return array<int,array<int,true>> */
-    function tentative_assignment_map() {
-        $a = [];
-        foreach ($this->acs as $ac) {
-            $a[$ac->cid] = [];
-            foreach ($ac->newass ?? [] as $pid) {
-                $a[$ac->cid][$pid] = true;
-            }
-        }
-        if (($m = $this->mcmf)) {
-            foreach ($this->acs as $cid => $p) {
-                foreach ($m->downstream("u{$cid}", "p") as $v) {
-                    $a[$cid][(int) substr($v->name, 1)] = true;
-                }
-            }
-        }
-        return $a;
     }
 
     function reset_desired_assignment_count() {
@@ -543,26 +580,20 @@ abstract class Autoassigner extends MessageSet {
     }
 
 
-    /** @param null|int|AutoassignerUser $ac
-     * @param int $pid */
-    function assign1($ac, $pid) {
-        assert($this->ass_action !== "");
-        if (is_int($ac)) {
-            $ac = $this->acs[$ac] ?? null;
+    private function first_assignment() {
+        $t = "paper,action,email";
+        foreach ($this->ass_extra as $k => $v) {
+            $t .= "," . CsvGenerator::quote($k);
         }
-        if (!$ac || !($ap = $this->aps[$pid] ?? null)) {
-            return;
-        }
-        $a = $this->ainfo[$ac->cid][$pid] ?? null;
+        $this->ass = [$t . "\n"];
+    }
 
-        if (empty($this->ass)) {
-            $t = "paper,action,email";
-            foreach ($this->ass_extra as $k => $v) {
-                $t .= "," . CsvGenerator::quote($k);
-            }
-            $this->ass = [$t . "\n"];
-        }
-        $t = "{$pid},{$this->ass_action},{$ac->user->email}";
+    /** @param AutoassignerElement $a
+     * @param AutoassignerUser $ac
+     * @param AutoassignerPaper $ap
+     * @return string */
+    private function assignment_suffix($a, $ac, $ap) {
+        $t = "";
         foreach ($this->ass_extra as $k => $v) {
             if (is_string($v)) {
                 $t .= $v;
@@ -580,11 +611,30 @@ abstract class Autoassigner extends MessageSet {
                 $t .= ",???";
             }
         }
-        $this->ass[] = $t . "\n";
+        return $t . "\n";
+    }
 
-        $ac->newass[] = $pid;
+    /** @param null|int|AutoassignerUser $ac
+     * @param int $pid */
+    function assign1($ac, $pid) {
+        assert($this->ass_action !== "");
+        if (is_int($ac)) {
+            $ac = $this->acs[$ac] ?? null;
+        }
+        if (!$ac || !($ap = $this->aps[$pid] ?? null)) {
+            return;
+        }
+        $a = $this->ainfo[$ac->cid][$pid] ?? null;
+
+        if (empty($this->ass)) {
+            $this->first_assignment();
+        }
+        $this->ass[] = "{$pid},{$this->ass_action},{$ac->user->email}"
+            . $this->assignment_suffix($a, $ac, $ap);
+
         ++$ac->load;
         ++$ac->balance;
+        ++$ac->nassigned;
         ++$ap->nassigned;
         if ($a) {
             $a->eass = self::ENEWASSIGN;
@@ -592,32 +642,41 @@ abstract class Autoassigner extends MessageSet {
         }
         foreach ($this->avoid_lists[$ac->cid] ?? [] as $cid2) {
             if (($a2 = $this->ainfo[$cid2][$pid] ?? null)) {
-                $a2->eass = max($a2->eass, self::ENOASSIGN);
+                $a2->eass = max($a2->eass, self::EAVOIDASSIGN);
             }
         }
         ++$this->nassigned;
     }
 
+    /** @param bool $first */
+    protected function process_avoid_lists($first) {
+        $avcids = array_keys($this->avoid_lists ?? []);
+        foreach ($first ? [] : $avcids as $c1) {
+            foreach ($this->ainfo[$c1] as $ae) {
+                if ($ae->eass === self::EAVOIDASSIGN)
+                    $ae->eass = 0;
+            }
+        }
+        foreach ($avcids as $c1) {
+            foreach ($this->ainfo[$c1] as $ae) {
+                if ($ae->eass >= self::EOTHERASSIGN) {
+                    foreach ($this->avoid_lists[$c1] as $c2) {
+                        if (($a2 = $this->ainfo[$c2][$ae->pid] ?? null))
+                            $a2->eass = max($a2->eass, self::EAVOIDASSIGN);
+                    }
+                }
+            }
+        }
+    }
 
+
+    /** @param string $status */
     protected function mark_progress($status) {
         foreach ($this->progressf as $progressf) {
             call_user_func($progressf, $status);
         }
     }
 
-
-    protected function make_elements() {
-        gc_collect_cycles();
-        $this->ainfo = [];
-        foreach ($this->acs as $ac) {
-            $alist = [];
-            foreach ($this->paper_ids() as $pid) {
-                $alist[$pid] = new AutoassignerElement($pid);
-            }
-            $this->ainfo[$ac->cid] = $alist;
-        }
-        $this->has_pref_index = false;
-    }
 
     protected function compute_pref_index() {
         if ($this->has_pref_index) {
@@ -662,78 +721,73 @@ abstract class Autoassigner extends MessageSet {
     }
 
 
-    private function compute_avoid_class() {
-        foreach ($this->acs as $ac) {
-            $al = $this->avoid_lists[$ac->cid] ?? [];
-            if (empty($al)) {
-                $ac->avoid_class = 0;
-            } else {
-                $ac->avoid_class = min($ac->cid, ...$al);
+    protected function load_review_refusals() {
+        $result = $this->conf->qe("select contactId, paperId from PaperReviewRefused where paperId ?a", $this->paper_ids());
+        while (($row = $result->fetch_row())) {
+            if (($a = $this->ainfo[(int) $row[0]][(int) $row[1]] ?? null)) {
+                $a->eass = self::ENOASSIGN;
             }
+        }
+        Dbl::free($result);
+    }
+
+    /** @return array */
+    protected function review_query_options() {
+        return [
+            "paperId" => $this->paper_ids(), "reviewSignatures" => true,
+            "topics" => true, "allReviewerPreference" => true,
+            "allConflictType" => true,
+            "tags" => $this->conf->check_track_sensitivity(Track::ASSREV)
+        ];
+    }
+
+    /** @param PaperInfo $prow */
+    protected function load_paper_reviews($prow) {
+        foreach ($prow->reviews_as_list() as $rrow) {
+            if (($a = $this->ae($rrow->contactId, $prow->paperId)))
+                $a->eass = self::EOLDASSIGN;
+        }
+    }
+
+    /** @param PaperInfo $prow */
+    protected function load_paper_preferences_and_conflicts($prow) {
+        foreach ($this->acs as $ac) {
+            $a = $this->ainfo[$ac->cid][$prow->paperId];
+            $pf = $prow->preference($ac->user);
+            $a->pref = $pf->preference;
+            $a->exp = $pf->expertise;
+            $a->topicscore = $prow->topic_interest_score($ac->user);
+            if ($a->eass < self::ENOASSIGN
+                && ($prow->has_conflict($ac->user)
+                    || !$ac->user->can_accept_review_assignment($prow))) {
+                $a->eass = self::ENOASSIGN;
+            }
+            $a->cpref = max($a->pref, -1000) + ((float) $a->topicscore / 100.0);
         }
     }
 
     /** @param int $reviewtype */
     protected function load_review_preferences($reviewtype) {
         $time = microtime(true);
-        $this->make_elements();
-
-        // first load refusals
-        $result = $this->conf->qe("select contactId, paperId from PaperReviewRefused where paperId ?a", $this->paper_ids());
-        while (($row = $result->fetch_row())) {
-            $cid = (int) $row[0];
-            $pid = (int) $row[1];
-            if (($a = $this->ainfo[$cid][$pid] ?? null)) {
-                $a->eass = self::ENOASSIGN;
-            }
-        }
-        Dbl::free($result);
+        $this->make_ae();
+        $this->load_review_refusals();
 
         // then load preferences
-        $result = $this->conf->paper_result(["paperId" => $this->paper_ids(), "topics" => true, "allReviewerPreference" => true, "allConflictType" => true, "reviewSignatures" => true, "tags" => $this->conf->check_track_sensitivity(Track::ASSREV)]);
-        $nmade = 0;
+        $nloaded = 0;
+        $result = $this->conf->paper_result($this->review_query_options());
         while (($row = PaperInfo::fetch($result, null, $this->conf))) {
-            $pid = $row->paperId;
-            // process existing reviews
-            foreach ($row->reviews_as_list() as $rrow) {
-                // mark existing assignment
-                if (($a = $this->ae($rrow->contactId, $pid))) {
-                    if ($reviewtype <= 0 || $rrow->reviewType === $reviewtype) {
-                        $a->eass = self::EOLDASSIGN;
-                    } else {
-                        $a->eass = self::EOTHERASSIGN;
-                    }
-                }
-                // mark invalid assignments if bad pairs
-                foreach ($this->avoid_lists[$rrow->contactId] ?? [] as $xcid) {
-                    if (($a2 = $this->ae($xcid, $pid))) {
-                        $a2->eass = max($a2->eass, self::ENOASSIGN);
-                    }
-                }
-            }
-            // process conflicts and preferences
-            foreach ($this->acs as $ac) {
-                $a = $this->ainfo[$ac->cid][$pid];
-                $pf = $row->preference($ac->user);
-                $a->pref = $pf->preference;
-                $a->exp = $pf->expertise;
-                $a->topicscore = $row->topic_interest_score($ac->user);
-                if ($a->eass < self::ENOASSIGN
-                    && ($row->has_conflict($ac->user)
-                        || !$ac->user->can_accept_review_assignment($row))) {
-                    $a->eass = self::ENOASSIGN;
-                }
-                $a->cpref = max($a->pref, -1000) + ((float) $a->topicscore / 100.0);
-            }
-            ++$nmade;
-            if ($nmade % 16 === 0) {
-                $this->mark_progress(sprintf("Loading reviewer preferences (%d%% done)", (int) ($nmade * 100 / count($this->paper_ids()) + 0.5)));
+            $this->load_paper_reviews($row);
+            $this->load_paper_preferences_and_conflicts($row);
+            ++$nloaded;
+            if ($nloaded % 50 === 0) {
+                $this->mark_progress(sprintf("Loading reviewer preferences (%d%% done)", (int) ($nloaded * 100 / count($this->paper_ids()) + 0.5)));
             }
         }
         Dbl::free($result);
         gc_collect_cycles();
 
         $this->compute_pref_index();
+        $this->process_avoid_lists(true);
         $this->profile["preferences"] = microtime(true) - $time;
     }
 
@@ -797,7 +851,7 @@ abstract class Autoassigner extends MessageSet {
             $this->assign_from_work_list($ac);
 
             // if have exhausted preferences, remove pc member
-            if ($ac->assignments_complete()) {
+            if ($ac->work_list_complete()) {
                 unset($acs[$ac->cid]);
             }
         }
@@ -817,7 +871,7 @@ abstract class Autoassigner extends MessageSet {
             $this->assign_from_work_list($ac);
 
             // if have exhausted preferences, remove pc member
-            if ($ac->assignments_complete()) {
+            if ($ac->work_list_complete()) {
                 unset($acs[$ac->cid]);
             }
         }
@@ -844,105 +898,78 @@ abstract class Autoassigner extends MessageSet {
         }
     }
 
-    /** @return int */
-    private function assign_mcmf_once() {
+    /** @param AutoassignerElement $a
+     * @param AutoassignerUser $ac
+     * @return int */
+    private function mcmf_assignment_preference_cost($a, $ac) {
+        return (int) ($a->pref_index * $this->preference_cost / $ac->pref_index_bound);
+    }
+
+    /** @return bool */
+    private function mcmf_assign_once() {
         $m = new MinCostMaxFlow;
         $m->add_progress_function([$this, "mcmf_progress"]);
         $this->mcmf_max_cost = null;
         $this->mark_progress("Preparing assignment optimizer" . $this->mcmf_round_descriptor);
-        // existing assignment counts
-        $ceass = array_fill_keys($this->user_ids(), 0);
-        $peass = array_fill_keys($this->paper_ids(), 0);
-        foreach ($this->ainfo as $cid => $alist) {
-            foreach ($alist as $a) {
-                if ($a->eass === self::ENEWASSIGN
-                    || ($a->eass >= self::EOTHERASSIGN && $this->balance !== self::BALANCE_NEW)) {
-                    ++$ceass[$cid];
-                    ++$peass[$a->pid];
-                }
-            }
-        }
         // paper nodes
         $nass = 0;
         foreach ($this->aps as $pid => $ap) {
-            if (($tct = $peass[$pid] + $ap->ndesired - $ap->nassigned) <= 0) {
+            if ($ap->ndesired <= 0) {
                 continue;
             }
             $m->add_node("p{$pid}", "p");
-            $m->add_edge("p{$pid}", ".sink", $tct, 0, $peass[$pid]);
+            if ($ap->balance) {
+                for ($i = $ap->nassigned; $i < $ap->ndesired; ++$i) {
+                    $m->add_edge("p{$pid}", ".sink", 1, $this->paper_assignment_cost * $i);
+                }
+            } else {
+                $m->add_edge("p{$pid}", ".sink", max($ap->ndesired - $ap->nassigned, 0), 0);
+            }
             if ($this->review_gadget == self::REVIEW_GADGET_EXPERTISE) {
                 $m->add_node("p{$pid}x", "px");
                 $m->add_node("p{$pid}y", "py");
                 $m->add_node("p{$pid}xy", "pxy");
                 $m->add_edge("p{$pid}x", "p{$pid}xy", 1, $this->expertise_x_cost);
-                $m->add_edge("p{$pid}x", "p{$pid}y", $tct, 0);
+                $m->add_edge("p{$pid}x", "p{$pid}y", $ap->ndesired, 0);
                 $m->add_edge("p{$pid}y", "p{$pid}xy", 2, $this->expertise_y_cost);
-                $m->add_edge("p{$pid}y", "p{$pid}", $tct, 0);
+                $m->add_edge("p{$pid}y", "p{$pid}", $ap->ndesired, 0);
                 $m->add_edge("p{$pid}xy", "p{$pid}", 2, 0);
             }
-            $nass += $ap->ndesired - $ap->nassigned;
+            $nass += max($ap->ndesired - $ap->nassigned, 0);
         }
         // user nodes
         $assperpc = ceil($nass / $this->user_count());
-        $minload = $minbalance = PHP_INT_MAX;
         $maxload = $assperpc;
+        $minbalance = PHP_INT_MAX;
         foreach ($this->acs as $ac) {
-            $minload = min($minload, $ac->load);
             $maxload = max($maxload, $ac->load + $assperpc);
-            $minbalance = min($minbalance, $ac->balance);
+            $minbalance = min($minbalance, $ac->balance - $ac->nassigned);
         }
         foreach ($this->acs as $cid => $ac) {
             $m->add_node("u{$cid}", "u");
             if ($ac->ndesired >= 0) {
-                $m->add_edge(".source", "u{$cid}", $ac->ndesired, 0, count($ac->newass ?? []));
+                $m->add_edge(".source", "u{$cid}", max($ac->ndesired - $ac->nassigned, 0), 0);
             } else {
-                for ($ld = 0; $ac->load + $ld < min($maxload, $ac->max_load); ++$ld) {
-                    $c = $ac->balance + $ld - $minbalance;
-                    $m->add_edge(".source", "u{$cid}", 1, $this->assignment_cost * $c);
+                $ldbase = $ac->load - $ac->nassigned;
+                $balancebase = $ac->balance - $ac->nassigned - $minbalance;
+                for ($i = $ac->nassigned; $ldbase + $i < min($ac->max_load, $ac->load + $maxload); ++$i) {
+                    $cost = $this->assignment_cost * ($balancebase + $i);
+                    $m->add_edge(".source", "u{$cid}", 1, $cost);
                 }
             }
-            if ($ceass[$cid]) {
-                $m->add_edge(".source", "u{$cid}", $ceass[$cid], 0, $ceass[$cid]);
-            }
-        }
-        // figure out members of badpairs classes
-        $bpmembers = [];
-        if ($this->might_coassign() && !empty($this->avoid_lists)) {
-            $this->compute_avoid_class();
-            foreach ($this->acs as $ac) {
-                $bpmembers[$ac->avoid_class][] = $ac->cid;
-            }
-            unset($bpmembers[0]);
         }
         // paper <-> contact map
         foreach ($this->aps as $pid => $ap) {
-            if ($ap->ndesired <= $ap->nassigned && $peass[$pid] <= 0) {
+            if ($ap->ndesired <= 0) {
                 continue;
             }
             foreach ($this->acs as $cid => $ac) {
                 $a = $this->ainfo[$cid][$pid];
-                if ($a->eass === self::ENOASSIGN
-                    || ($a->eass > 0 && $a->eass < self::ENEWASSIGN && $this->balance == self::BALANCE_NEW)
+                if (($a->eass > 0 && $a->eass <= self::ENEWASSIGN)
                     || ($a->eass === 0 && $ap->ndesired <= $ap->nassigned)) {
                     continue;
                 }
-                if ($ac->avoid_class > 0) {
-                    $dst = "b{$pid}.{$ac->avoid_class}";
-                    if (!$m->node_exists($dst)) {
-                        // Existing assignments might invalidate the badpair
-                        // requirement.
-                        $capacity = 0;
-                        foreach ($bpmembers[$ac->avoid_class] as $cid2) {
-                            if (($a2 = $this->ainfo[$cid2][$pid] ?? null)
-                                && $a2->eass > self::ENOASSIGN
-                                && ($a2->eass >= self::ENEWASSIGN || $this->balance !== self::BALANCE_NEW)) {
-                                ++$capacity;
-                            }
-                        }
-                        $m->add_node($dst, "b");
-                        $m->add_edge($dst, "p{$pid}", max($capacity, 1), 0);
-                    }
-                } else if ($this->review_gadget == self::REVIEW_GADGET_EXPERTISE) {
+                if ($this->review_gadget == self::REVIEW_GADGET_EXPERTISE) {
                     if ($a->exp > 0) {
                         $dst = "p{$pid}x";
                     } else if ($a->exp === 0) {
@@ -953,7 +980,8 @@ abstract class Autoassigner extends MessageSet {
                 } else {
                     $dst = "p{$pid}";
                 }
-                $cost = (int) ($a->pref_index * $this->preference_cost / $ac->pref_index_bound);
+                // see also mcmf_assign_results below
+                $cost = $this->mcmf_assignment_preference_cost($a, $ac);
                 $m->add_edge("u{$cid}", $dst, 1, $cost, $a->eass ? 1 : 0);
             }
         }
@@ -964,21 +992,11 @@ abstract class Autoassigner extends MessageSet {
         // make assignments
         $this->mark_progress("Completing assignment" . $this->mcmf_round_descriptor);
         $time = microtime(true);
-        $nassigned = 0;
-        if (!$m->infeasible) {
-            foreach ($this->aausers() as $cid => $ac) {
-                $pids = [];
-                foreach ($m->downstream("u{$cid}", "p") as $v) {
-                    $pids[] = (int) substr($v->name, 1);
-                }
-                sort($pids);
-                foreach ($pids as $pid) {
-                    if ($this->ainfo[$cid][$pid]->eass === 0) {
-                        $this->assign1($ac, $pid);
-                        ++$nassigned;
-                    }
-                }
-            }
+        $changed = false;
+        if ($m->infeasible) {
+            $this->error_at(null, "<0>Internal error: Assignment infeasible");
+        } else if ($m->current_flow() > 0) {
+            $changed = $this->mcmf_apply($m);
         }
         $this->profile["maxflow"] = $m->maxflow_end_at - $m->maxflow_start_at;
         if ($m->mincost_start_at) {
@@ -987,19 +1005,87 @@ abstract class Autoassigner extends MessageSet {
         $this->profile["memory"] = memory_get_usage();
         $this->mcmf = null;
         $this->profile["traverse"] = microtime(true) - $time;
-        return $nassigned;
+        return $changed;
+    }
+
+    /** @param array<int,list<int>> $acp
+     * @param int $cid
+     * @param int $pid
+     * @return bool */
+    private function mcmf_assignment_conflicts($acp, $cid, $pid) {
+        foreach ($this->avoid_lists[$cid] as $cid2) {
+            if (in_array($pid, $acp[$cid2] ?? []))
+                return true;
+        }
+        return false;
+    }
+
+    private function mcmf_apply(MinCostMaxFlow $m) {
+        // collect resulting assignments
+        $acp = [];
+        foreach ($this->aausers() as $cid => $ac) {
+            foreach ($m->downstream("u{$cid}", "p") as $v) {
+                $acp[$cid][] = (int) substr($v->name, 1);
+            }
+        }
+
+        // make assignments that don’t violate constraints
+        $changed = false;
+        $nacp = [];
+        foreach ($acp as $cid => $pids) {
+            $careful = isset($this->avoid_lists[$cid]);
+            foreach ($pids as $pid) {
+                $a = $this->ainfo[$cid][$pid];
+                if ($a->eass !== 0) {
+                    continue;
+                }
+                if ($careful
+                    && $this->mcmf_assignment_conflicts($acp, $cid, $pid)) {
+                    $nacp[] = $a;
+                } else {
+                    $this->assign1($cid, $pid);
+                    $changed = true;
+                }
+            }
+        }
+        if (empty($nacp)) {
+            return $changed;
+        }
+
+        // sort constraint-violating assignments by cost;
+        // make those that are still valid
+        $nacp_cost = [];
+        foreach ($nacp as $a) {
+            $cost = $this->mcmf_assignment_preference_cost($a, $this->acs[$a->cid]);
+            if ($this->review_gadget === self::REVIEW_GADGET_EXPERTISE) {
+                if ($a->exp > 0) {
+                    $cost += $this->expertise_x_cost;
+                } else if ($a->exp === 0) {
+                    $cost += $this->expertise_y_cost;
+                }
+            }
+            $nacp_cost[] = $cost;
+        }
+        uksort($nacp, function ($i, $j) use ($nacp_cost) {
+            return $nacp_cost[$i] <=> $nacp_cost[$j];
+        });
+        foreach ($nacp as $a) {
+            if ($a->eass === 0) {
+                $this->assign1($a->cid, $a->pid);
+                $changed = true;
+            }
+        }
+        return $changed;
     }
 
     private function assign_mcmf() {
         $this->mcmf_round_descriptor = "";
         $this->mcmf_optimizing_for = "Optimizing assignment for preferences and balance";
-        $mcmf_round = 1;
-        while ($this->assign_mcmf_once()) {
-            if ($this->nassigned >= $this->desired_assignment_count()) {
-                break;
-            }
+        $mcmf_round = 0;
+        while ($this->mcmf_assign_once()
+               && $this->nassigned < $this->desired_assignment_count()) {
             ++$mcmf_round;
-            $this->mcmf_round_descriptor = ", round {$mcmf_round}";
+            $this->mcmf_round_descriptor = ", round " . ($mcmf_round + 1);
             gc_collect_cycles();
         }
     }
