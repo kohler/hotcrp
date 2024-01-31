@@ -318,17 +318,16 @@ class Review_Assigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         $t = $aset->user->reviewer_html_for($this->contact);
-        if (!$this->item["_rtype"]) {
-            $t = '<del>' . $t . '</del>';
-        }
+        $deleted = !$this->item->post("_rtype");
         if ($this->item->differs("_rtype") || $this->item->differs("_rsubmitted")) {
             if ($this->item->pre("_rtype")) {
-                $t .= ' <del>' . $this->icon(true) . '</del>';
+                $i = $this->icon(true);
+                $t .= $deleted ? " {$i}" : " <del>{$i}</del>";
             }
             if ($this->item->post("_rtype")) {
                 $t .= ' <ins>' . $this->icon(false) . '</ins>';
             }
-        } else if ($this->item["_rtype"]) {
+        } else if (!$deleted) {
             $t .= ' ' . $this->icon(false);
         }
         if ($this->item->differs("_round")) {
@@ -341,8 +340,9 @@ class Review_Assigner extends Assigner {
         } else if (($round = $this->item["_round"])) {
             $t .= '<span class="revround" title="Review round">' . htmlspecialchars($aset->conf->round_name($round)) . '</span>';
         }
-        if (!$this->item->existed()) {
-            $t .= $this->unparse_preference_span($aset);
+        $t .= $this->unparse_preference_span($aset);
+        if ($deleted) {
+            $t = "<del>{$t}</del>";
         }
         return $t;
     }
