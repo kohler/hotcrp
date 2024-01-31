@@ -82,6 +82,24 @@ class AutoassignerPaper {
 class AutoassignerComputed {
 }
 
+class AutoassignerParameter {
+    /** @var string */
+    public $name;
+    /** @var bool */
+    public $required;
+    /** @var string */
+    public $argname;
+    /** @var string */
+    public $description;
+
+    function __construct($name, $required, $argname, $description) {
+        $this->name = $name;
+        $this->required = $required;
+        $this->argname = $argname;
+        $this->description = $description;
+    }
+}
+
 abstract class Autoassigner extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -1002,8 +1020,26 @@ abstract class Autoassigner extends MessageSet {
 
 
 
+    /** @param ?list<string> $parameters
+     * @return list<AutoassignerParameter> */
+    static function expand_parameters(Conf $conf, $parameters) {
+        $result = [];
+        foreach ($parameters ?? [] as $s) {
+            if (!is_string($s)) {
+                continue;
+            } else if (str_starts_with($s, "\$")) {
+                if (($gj = $conf->autoassigner(substr($s, 1)))) {
+                    array_push($result, ...self::expand_parameters($conf, $gj->parameters ?? []));
+                }
+            } else if (($o = self::expand_parameter_help($s))) {
+                $result[] = $o;
+            }
+        }
+        return $result;
+    }
+
     /** @param string $help
-     * @return ?object */
+     * @return ?AutoassignerParameter */
     static function expand_parameter_help($help) {
         if (!preg_match('/\A(\??)(\S+)\s*(|\{\S*\})\s*(|[^{].*)\z/', $help, $m)) {
             return null;
@@ -1033,6 +1069,17 @@ abstract class Autoassigner extends MessageSet {
         } else {
             $argname = strtoupper(substr($m[3], 1, -1));
         }
-        return (object) ["required" => $m[1] === "", "name" => $m[2], "argname" => $argname, "description" => $m[4]];
+        return new AutoassignerParameter($m[2], $m[1] === "", $argname, $m[4]);
+    }
+
+    /** @param string $name
+     * @param list<AutoassignerParameter> $params
+     * @return ?AutoassignerParameter */
+    static function find_parameter($name, $params) {
+        foreach ($params as $p) {
+            if ($p->name === $name)
+                return $p;
+        }
+        return null;
     }
 }

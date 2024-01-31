@@ -134,9 +134,6 @@ class Autoassign_Batch {
         if (isset($arg["count"])) {
             $this->param["count"] = $arg["count"];
         }
-        if (isset($arg["type"])) {
-            $this->param["type"] = $arg["type"];
-        }
         foreach ($arg["_"] ?? [] as $x) {
             if (($eq = strpos($x, "=")) === false) {
                 $this->report([MessageItem::error("<0>`NAME=VALUE` format expected for parameter arguments")], 3);
@@ -146,6 +143,8 @@ class Autoassign_Batch {
         $this->q = $arg["q"] ?? $this->q;
         if (isset($arg["all"])) {
             $this->t = "all";
+        } else {
+            $this->t = $arg["type"] ?? "s";
         }
         $pcc = $this->pcc;
         if (!empty($arg["u"])) {
@@ -191,7 +190,10 @@ class Autoassign_Batch {
             fwrite(STDOUT, $this->getopt->help());
             throw new CommandLineException("", $this->getopt, 0);
         }
-        $gj = $this->aaname !== "" ? $this->conf->autoassigner($this->aaname) : null;
+        $gj = null;
+        if ($this->aaname !== "" && !str_starts_with($this->aaname, "__")) {
+            $gj = $this->conf->autoassigner($this->aaname);
+        }
         if (!$gj) {
             $ml = [];
             if ($this->aaname === "") {
@@ -205,11 +207,12 @@ class Autoassign_Batch {
             $this->report([MessageItem::error("<0>Invalid autoassigner `{$this->aaname}`")], 3);
         }
         $this->gj = $gj;
-        $parameters = $this->gj->parameters ?? [];
-        if (isset($this->param["type"])
-            && !in_array("type", $parameters)
-            && in_array("rtype", $parameters)) {
-            $this->param["rtype"] = $this->param["type"];
+        if (isset($this->param["type"])) {
+            $parameters = Autoassigner::expand_parameters($this->conf, $gj->parameters ?? []);
+            if (!Autoassigner::find_parameter("type", $parameters)
+                && Autoassigner::find_parameter("rtype", $parameters)) {
+                $this->param["rtype"] = $this->param["type"];
+            }
         }
     }
 
@@ -316,11 +319,9 @@ class Autoassign_Batch {
     function run() {
         if ($this->help_param) {
             $s = ["{$this->gj->name} parameters:\n"];
-            foreach ($this->gj->parameters ?? [] as $p) {
-                if (($px = Autoassigner::expand_parameter_help($p))) {
-                    $arg = "  {$px->name}={$px->argname}" . ($px->required ? " *" : "");
-                    $s[] = Getopt::format_help_line($arg, $px->description);
-                }
+            foreach (Autoassigner::expand_parameters($this->conf, $this->gj->parameters ?? []) as $px) {
+                $arg = "  {$px->name}={$px->argname}" . ($px->required ? " *" : "");
+                $s[] = Getopt::format_help_line($arg, $px->description);
             }
             $s[] = "\n";
             fwrite(STDOUT, join("", $s));
@@ -344,11 +345,11 @@ class Autoassign_Batch {
             "dry-run,d Do not perform assignment; output CSV instead",
             "autoassigner:,a: =AA !",
             "q:,search: =QUERY Use papers matching QUERY [all]",
+            "type:,t: =TYPE Set search type [all]",
             "all Include all papers (default is submitted papers)",
             "u[],user[] =USER Include users matching USER (`-u -USER` excludes)",
             "disjoint[],X[] =USER1,USER2 Don’t coassign users",
             "count:,c: {n} =N Set `count` parameter to N",
-            "type:,t: =TYPE Set `type`/`rtype` parameter to TYPE",
             "help-param Print parameters for AUTOASSIGNER",
             "profile Print profile to standard error",
             "quiet Don’t warn on empty assignment",

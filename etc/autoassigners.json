@@ -19,28 +19,45 @@
         "parameters": ["?score", "?allow_incomplete {bool}", "?method", "?balance", "?max_load", "?max_load_tag"]
     },
     {
-        "name": "review",
-        "function": "+Review_Autoassigner",
+        "name": "__review_parameters",
         "parameters": [
-            "count {n} Number of reviews to assign per paper",
             "?rtype Review type",
             "?round Review round",
             "?method",
             "?balance",
             "?load",
             "?max_load",
-            "?max_load_tag"
+            "?max_load_tag",
+            "?gadget",
+            "?assignment_cost",
+            "?preference_cost",
+            "?expertise_x_cost",
+            "?expertise_y_cost"
+        ]
+    },
+    {
+        "name": "review",
+        "function": "+Review_Autoassigner",
+        "parameters": [
+            "count {n} Number of reviews to assign per paper",
+            "$__review_parameters"
         ]
     },
     {
         "name": "review_ensure",
         "function": "+Review_Autoassigner",
-        "parameters": ["count {n} Number of reviews to ensure per paper", "?rtype", "?round", "?method", "?balance", "?load", "?max_load", "?max_load_tag"]
+        "parameters": [
+            "count {n} Number of reviews to ensure per paper",
+            "$__review_parameters"
+        ]
     },
     {
         "name": "review_per_pc",
         "function": "+Review_Autoassigner",
-        "parameters": ["count {n} Number of reviews to assign per PC member", "?rtype", "?round", "?method", "?balance", "?load", "?max_load", "?max_load_tag"]
+        "parameters": [
+            "count {n} Number of reviews to assign per PC member",
+            "$__review_parameters"
+        ]
     },
     {
         "name": "discussion_order",
