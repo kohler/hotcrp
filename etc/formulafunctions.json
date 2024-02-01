@@ -31,9 +31,9 @@
     {"name": "variance_pop", "args": 1, "function": "Variance_Fexpr::make", "parse_modifier_function": "Variance_Fexpr::parse_modifier"},
     {"name": "var_pop", "alias": "variance_pop"},
 
-    {"name": "greatest", "args": true, "function": "+ArgumentSelection_Fexpr"},
-    {"name": "least", "args": true, "function": "+ArgumentSelection_Fexpr"},
-    {"name": "coalesce", "args": true, "function": "+ArgumentSelection_Fexpr"},
+    {"name": "greatest", "args": true, "function": "+LeastGreatest_Fexpr"},
+    {"name": "least", "args": true, "function": "+LeastGreatest_Fexpr"},
+    {"name": "coalesce", "args": true, "function": "+Coalesce_Fexpr"},
     {"name": "round", "args": [1, 2], "function": "+Round_Fexpr"},
     {"name": "floor", "args": [1, 2], "function": "+Round_Fexpr"},
     {"name": "trunc", "args": [1, 2], "function": "+Round_Fexpr"},

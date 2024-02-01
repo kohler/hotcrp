@@ -30,6 +30,19 @@ class FormulaCall {
         $this->text = $name;
         $this->kwdef = $kwdef;
     }
+
+    /** @param list<Fexpr> $args
+     * @return FormulaCall */
+    static function make_args(Formula $formula, $name, $args) {
+        $fc = new FormulaCall($formula, null, $name);
+        $fc->args = $args;
+        foreach ($args as $a) {
+            $fc->pos1 = min($fc->pos1 ?? $a->pos1, $a->pos1);
+            $fc->pos2 = max($fc->pos2 ?? $a->pos2, $a->pos2);
+        }
+        return $fc;
+    }
+
     /** @param string $message
      * @return MessageItem */
     function lerror($message) {
@@ -121,10 +134,12 @@ abstract class Fexpr implements JsonSerializable {
             $this->pos2 = $op->pos1;
         }
     }
+
     /** @param Fexpr $x */
     function add($x) {
         $this->args[] = $x;
     }
+
     /** @param int $left
      * @param int $right */
     function set_landmark($left, $right) {
@@ -714,7 +729,7 @@ class In_Fexpr extends Fexpr {
     }
 }
 
-class ArgumentSelection_Fexpr extends Fexpr {
+class LeastGreatest_Fexpr extends Fexpr {
     function __construct(FormulaCall $ff) {
         if ($ff->name === "min") {
             $op = "least";
@@ -733,19 +748,39 @@ class ArgumentSelection_Fexpr extends Fexpr {
         return $this->args;
     }
     function compile(FormulaCompiler $state) {
+        if (count($this->args) === 0) {
+            return "null";
+        }
+        $t = $state->_addltemp($this->args[0]->compile($state));
         $cmp = $this->compiled_relation($this->op === "greatest" ? ">" : "<");
-        $t1 = "null";
         for ($i = 0; $i < count($this->args); ++$i) {
             $t2 = $state->_addltemp($this->args[$i]->compile($state));
-            if ($i === 0) {
-                $t1 = $t2;
-            } else if ($this->op === "coalesce") {
-                $state->lstmt[] = "{$t1} = {$t1} ?? {$t2};";
-            } else {
-                $state->lstmt[] = "{$t1} = ({$t1} === null || ({$t2} !== null && {$t2} {$cmp} {$t1}) ? {$t2} : {$t1});";
-            }
+            $state->lstmt[] = "if ({$t} !== null && ({$t2} === null || {$t2} {$cmp} {$t}))\n  {$t} = {$t2};";
         }
-        return $t1;
+        return $t;
+    }
+}
+
+class Coalesce_Fexpr extends Fexpr {
+    function __construct(FormulaCall $ff) {
+        parent::__construct("coalesce", $ff->args);
+    }
+    function typecheck(Formula $formula) {
+        $this->typecheck_resolve_neighbors($formula);
+        return $this->typecheck_arguments($formula);
+    }
+    function inferred_format() {
+        return $this->args;
+    }
+    function compile(FormulaCompiler $state) {
+        if (count($this->args) === 0) {
+            return "null";
+        }
+        $t = $state->_addltemp($this->args[0]->compile($state));
+        for ($i = 1; $i < count($this->args); ++$i) {
+            $state->lstmt[] = "{$t} = {$t} ?? (" . $this->args[$i]->compile($state) . ");";
+        }
+        return $t;
     }
 }
 
@@ -999,7 +1034,7 @@ class Extremum_Fexpr extends Aggregate_Fexpr {
     }
     static function make(FormulaCall $ff) {
         if (count($ff->args) > 1 && !$ff->modifier) {
-            return new ArgumentSelection_Fexpr($ff);
+            return new LeastGreatest_Fexpr($ff);
         } else {
             return $ff->check_nargs(1) ? new Extremum_Fexpr($ff->name, $ff->args[0], $ff->index_type) : null;
         }
@@ -1013,7 +1048,7 @@ class Extremum_Fexpr extends Aggregate_Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $cmp = $this->compiled_relation($this->op === "min" ? "<" : ">");
-        return $state->_compile_loop("null", "(~l~ !== null && (~r~ === null || ~l~ {$cmp} ~r~) ? ~l~ : ~r~)", $this);
+        return $state->_compile_loop("null", "(~r~ === null || (~l~ !== null && ~l~ {$cmp} ~r~) ? ~l~ : ~r~)", $this);
     }
 }
 
@@ -1729,25 +1764,26 @@ class Formula implements JsonSerializable {
     /** @var ?PaperInfo */
     private $_placeholder_prow;
 
-    const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
+    const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|\?\?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
     /** @var bool */
     const DEBUG = false;
 
     static public $opprec = [
-        "**" => 13,
-        "u+" => 12, "u-" => 12, "u!" => 12,
-        "*" => 11, "/" => 11, "%" => 11,
-        "+" => 10, "-" => 10,
-        "<<" => 9, ">>" => 9,
-        "<" => 8, ">" => 8, "<=" => 8, ">=" => 8, "≤" => 8, "≥" => 8,
-        "=" => 7, "==" => 7, "!=" => 7, "≠" => 7,
-        "&" => 6,
-        "^" => 5,
-        "|" => 4,
-        ":" => 3,
-        "&&" => 2, "and" => 2,
-        "||" => 1, "or" => 1,
+        "**" => 14,
+        "u+" => 13, "u-" => 13, "u!" => 13,
+        "*" => 12, "/" => 12, "%" => 12,
+        "+" => 11, "-" => 11,
+        "<<" => 10, ">>" => 10,
+        "<" => 9, ">" => 9, "<=" => 9, ">=" => 9, "≤" => 9, "≥" => 9,
+        "=" => 8, "==" => 8, "!=" => 8, "≠" => 8,
+        "&" => 7,
+        "^" => 6,
+        "|" => 5,
+        ":" => 4,
+        "&&" => 3, "and" => 3,
+        "||" => 2, "or" => 2,
+        "??" => 1,
         "?:" => 0,
         "in" => -1
     ];
@@ -2481,6 +2517,8 @@ class Formula implements JsonSerializable {
                 $e = new And_Fexpr($e, $e2);
             } else if ($opx === "||") {
                 $e = new Or_Fexpr($e, $e2);
+            } else if ($opx === "??") {
+                $e = new Coalesce_Fexpr(FormulaCall::make_args($this, "??", [$e, $e2]));
             } else if ($opx === "+" || $opx === "-") {
                 $e = new Additive_Fexpr($opx, $e, $e2);
             } else if ($opx === "*" || $opx === "/" || $opx === "%") {
