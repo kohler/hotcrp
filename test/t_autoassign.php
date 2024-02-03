@@ -294,4 +294,46 @@ class Autoassign_Tester {
             xassert_eqq(count($prow->reviews_as_list()), 2);
         }
     }
+
+    function test_adjust_reviews_normal() {
+        $this->setup_10x10_pref3();
+        $this->xassert_autoassigner("review", $this->cur_pcc, $this->cur_pids, ["count" => 3]);
+        $rbu1 = $this->reviews_by_user($this->cur_pids);
+
+        $aa = $this->xassert_autoassigner("review_adjust", $this->pcc, $this->cur_pids, ["count" => 5, "balance" => "new"]);
+
+        $prows = $this->conf->paper_set(["paperId" => $this->cur_pids]);
+        foreach ($prows as $prow) {
+            xassert_eqq(count($prow->reviews_as_list()), 5);
+        }
+
+        // preserves all previous assignments
+        $rbu2 = $this->reviews_by_user($prows);
+        foreach ($this->pcc as $uid) {
+            xassert_eqq(array_diff($rbu1[$uid] ?? [], $rbu2[$uid]), []);
+            xassert_le(count($rbu2[$uid]), 4);
+        }
+    }
+
+    function test_adjust_reviews_repel() {
+        $this->setup_10x10_pref3();
+        $this->xassert_autoassigner("review", $this->cur_pcc, $this->cur_pids, ["count" => 3]);
+        $rbu1 = $this->reviews_by_user($this->cur_pids);
+
+        $aa = $this->xassert_autoassigner("review_adjust", $this->pcc, $this->cur_pids, ["count" => 5, "balance" => "new", "remove_assignment_cost" => -300]);
+
+        $prows = $this->conf->paper_set(["paperId" => $this->cur_pids]);
+        foreach ($prows as $prow) {
+            xassert_eqq(count($prow->reviews_as_list()), 5);
+        }
+
+        // preserves all previous assignments
+        $rbu2 = $this->reviews_by_user($prows);
+        foreach ($this->pcc as $uid) {
+            if (isset($rbu1[$uid])) {
+                xassert_eqq(array_diff($rbu1[$uid], $rbu2[$uid]), $rbu1[$uid]);
+            }
+            xassert_le(count($rbu2[$uid]), 4);
+        }
+    }
 }

@@ -52,6 +52,14 @@
         ]
     },
     {
+        "name": "review_adjust",
+        "function": "+Review_Autoassigner",
+        "parameters": [
+            "count {n} Number of reviews to ensure per paper",
+            "$__review_parameters"
+        ]
+    },
+    {
         "name": "review_per_pc",
         "function": "+Review_Autoassigner",
         "parameters": [

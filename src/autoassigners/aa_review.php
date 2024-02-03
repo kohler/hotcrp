@@ -9,6 +9,8 @@ class Review_Autoassigner extends Autoassigner {
     private $count;
     /** @var 1|2|3 */
     private $kind;
+    /** @var bool */
+    private $adjust = false;
     /** @var 1|2|3 */
     private $load;
     /** @var ?int */
@@ -33,6 +35,9 @@ class Review_Autoassigner extends Autoassigner {
             $this->kind = self::KIND_PER_USER;
         } else if ($gj->name === "review_ensure") {
             $this->kind = self::KIND_ENSURE;
+        } else if ($gj->name === "review_adjust") {
+            $this->kind = self::KIND_ENSURE;
+            $this->adjust = true;
         } else {
             $this->kind = self::KIND_ADD;
         }
@@ -114,11 +119,20 @@ class Review_Autoassigner extends Autoassigner {
         foreach ($prow->reviews_as_list() as $rrow) {
             if ($this->kind === self::KIND_ENSURE
                 && $rrow->reviewType === $this->rtype) {
-                $eass = self::EOLDASSIGN;
+                if ($this->adjust
+                    && $rrow->reviewRound === $this->round) {
+                    $eass = self::ENEWASSIGN;
+                } else {
+                    $eass = self::EOLDASSIGN;
+                }
             } else {
                 $eass = self::EOTHERASSIGN;
             }
             $this->load_assignment($rrow->contactId, $prow->paperId, $eass);
+            if ($eass === self::ENEWASSIGN
+                && $this->balance === self::BALANCE_NEW) {
+                $this->add_aauser_balance($rrow->contactId, 1);
+            }
         }
     }
 
