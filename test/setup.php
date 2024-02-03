@@ -261,6 +261,8 @@ class Xassert {
     static public $nerror = 0;
     /** @var int */
     static public $disabled = 0;
+    /** @var ?string */
+    static public $context = null;
     /** @var bool */
     static public $stop = false;
     /** @var ?TestRunner */
@@ -290,6 +292,18 @@ class Xassert {
     static function will_print() {
         if (self::$test_runner) {
             self::$test_runner->will_print();
+        }
+    }
+
+    static function print_landmark() {
+        list($location, $rest) = self::landmark(true);
+        $x = $location . $rest;
+        if ($x !== "") {
+            self::will_print();
+            if (!str_ends_with($x, "\n")) {
+                $x .= "\n";
+            }
+            fwrite(STDERR, $x);
         }
     }
 
@@ -372,6 +386,9 @@ class Xassert {
                 $loc = $fname;
             }
             if ($first === "") {
+                if (self::$context !== null) {
+                    $loc .= " <" . self::$context . ">";
+                }
                 if ($colorize) {
                     $first = "\x1b[1m{$loc}:\x1b[m ";
                 } else if ($want_color) {

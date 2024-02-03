@@ -10,5 +10,6 @@ TestRunner::run(
     "UserAPI_Tester",
     "UploadAPI_Tester",
     "Mailer_Tester",
-    "Events_Tester"
+    "Events_Tester",
+    "Autoassign_Tester"
 );
