@@ -1,6 +1,6 @@
 <?php
 // api_upload.php -- HotCRP upload manager
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
 
 class Upload_API {
     const MIN_MULTIPART_SIZE = 5 << 20;

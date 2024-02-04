@@ -1,6 +1,6 @@
 <?php
 // jwtparser.php -- HotCRP class for limited parsing of JSON Web Tokens
-// Copyright (c) 2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2022-2024 Eddie Kohler; see LICENSE.
 
 class JWTParser extends MessageSet {
     /** @var ?object */

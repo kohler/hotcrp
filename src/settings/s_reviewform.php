@@ -1,6 +1,6 @@
 <?php
 // settings/s_reviewform.php -- HotCRP review form definition page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class ReviewForm_SettingParser extends SettingParser {
     /** @var ReviewForm */

@@ -1,6 +1,6 @@
 <?php
 // u_developer.php -- HotCRP Profile > Developer
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
 
 class Developer_UserInfo {
     /** @var ?TokenInfo */

@@ -1,6 +1,6 @@
 <?php
 // cap_authorview.php -- HotCRP author-view capability management
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class AuthorView_Capability {
     /** @param PaperInfo $prow

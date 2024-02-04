@@ -1,6 +1,6 @@
 <?php
 // pages/p_api.php -- HotCRP JSON API access page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class API_Page {
     static function go(Contact $user, Qrequest $qreq) {

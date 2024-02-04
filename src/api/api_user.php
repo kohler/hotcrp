@@ -1,6 +1,6 @@
 <?php
 // api_user.php -- HotCRP user-related API calls
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
 
 class User_API {
     static function whoami(Contact $user, Qrequest $qreq) {

@@ -1,6 +1,6 @@
 <?php
 // o_collaborators.php -- HotCRP helper class for collaborators intrinsic
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Collaborators_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {

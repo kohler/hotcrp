@@ -1,6 +1,6 @@
 <?php
 // pages/p_log.php -- HotCRP action log page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Log_Page {
     /** @var Conf */

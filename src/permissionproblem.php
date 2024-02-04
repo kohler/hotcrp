@@ -1,6 +1,6 @@
 <?php
 // permissionproblem.php -- HotCRP helper class for permission errors
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class PermissionProblem extends Exception
     implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {

@@ -1,6 +1,6 @@
 <?php
 // pages/p_oauth.php -- HotCRP OAuth 2.0 authentication page
-// Copyright (c) 2022-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2022-2024 Eddie Kohler; see LICENSE.
 
 class OAuthProvider {
     /** @var string */

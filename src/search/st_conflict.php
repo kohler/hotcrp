@@ -1,6 +1,6 @@
 <?php
 // search/st_conflict.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 final class Conflict_SearchTerm extends SearchTerm {
     /** @var Contact */

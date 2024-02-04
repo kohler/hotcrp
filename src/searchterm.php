@@ -1,6 +1,6 @@
 <?php
 // searchterm.php -- HotCRP paper search terms
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 abstract class SearchTerm {
     /** @var string

@@ -1,6 +1,6 @@
 <?php
 // t_login.php -- HotCRP tests
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Login_Tester {
     /** @var Conf

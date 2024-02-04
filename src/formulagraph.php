@@ -1,6 +1,6 @@
 <?php
 // formulagraph.php -- HotCRP class for drawing graphs
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Scatter_GraphData implements JsonSerializable {
     /** @var int|float|bool */

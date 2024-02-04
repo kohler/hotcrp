@@ -1,6 +1,6 @@
 <?php
 // pages/p_settings.php -- HotCRP chair-only conference settings management page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Settings_Page {
     /** @var Conf */

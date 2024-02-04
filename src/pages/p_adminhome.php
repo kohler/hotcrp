@@ -1,6 +1,6 @@
 <?php
 // pages/p_adminhome.php -- HotCRP home page fragments for administrators
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class AdminHome_Page {
     static function check_admin(Contact $user, Qrequest $qreq) {

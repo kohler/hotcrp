@@ -1,6 +1,6 @@
 <?php
 // autoassigners/aa_discussionorder.php -- HotCRP helper classes for autoassignment
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class DiscussionOrder_Autoassigner extends Autoassigner {
     /** @var string */

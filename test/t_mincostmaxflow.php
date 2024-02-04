@@ -1,6 +1,6 @@
 <?php
 // t_mincostmaxflow.php -- HotCRP tests
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class MinCostMaxFlow_Tester {
     /** @param MinCostMaxFlow $m

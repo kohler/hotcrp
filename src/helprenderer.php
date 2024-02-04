@@ -1,6 +1,6 @@
 <?php
 // helprenderer.php -- HotCRP help renderer class
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class HelpRenderer extends Ht {
     /** @var Conf */

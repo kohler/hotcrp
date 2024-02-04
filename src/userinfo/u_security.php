@@ -1,6 +1,6 @@
 <?php
 // u_security.php -- HotCRP Profile > Security
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
 
 class Security_UserInfo {
     /** @var UserStatus

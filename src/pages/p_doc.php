@@ -1,6 +1,6 @@
 <?php
 // pages/doc.php -- HotCRP document download page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Doc_Page {
     /** @param string $status

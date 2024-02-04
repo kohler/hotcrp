@@ -1,6 +1,6 @@
 <?php
 // mailsender.php -- HotCRP mail merge manager
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class MailSender {
     /** @var Conf

@@ -1,6 +1,6 @@
 <?php
 // mincostmaxflow.php -- HotCRP min-cost max-flow
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class MinCostMaxFlow_Node {
     /** @var string */

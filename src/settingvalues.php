@@ -1,6 +1,6 @@
 <?php
 // settingvalues.php -- HotCRP conference settings manager
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class SettingValues extends MessageSet {
     /** @var Conf

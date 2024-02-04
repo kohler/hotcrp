@@ -1,6 +1,6 @@
 <?php
 // t_mailer.php -- HotCRP tests
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Mailer_Tester {
     /** @var Conf

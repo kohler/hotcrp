@@ -1,6 +1,6 @@
 <?php
 // sitype.php -- HotCRP conference settings types
-// Copyright (c) 2022-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2022-2024 Eddie Kohler; see LICENSE.
 
 abstract class Sitype {
     /** @var associative-array<string,class-string> */

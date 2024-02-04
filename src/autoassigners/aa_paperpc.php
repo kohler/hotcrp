@@ -1,6 +1,6 @@
 <?php
 // autoassigners/aa_paperpc.php -- HotCRP helper classes for autoassignment
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class PaperPC_Autoassigner extends Autoassigner {
     /** @var ?ReviewField */

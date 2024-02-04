@@ -1,6 +1,6 @@
 <?php
 // help/h_tags.php -- HotCRP help functions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Tags_HelpTopic {
     /** @var Conf */

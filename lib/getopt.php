@@ -1,6 +1,6 @@
 <?php
 // getopt.php -- HotCRP helper function for extended getopt
-// Copyright (c) 2009-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
 
 class Getopt {
     /** @var array<string,GetoptOption> */

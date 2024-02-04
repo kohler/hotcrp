@@ -1,6 +1,6 @@
 <?php
 // fmt.php -- HotCRP helper functions for message formatting i18n
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class FmtArg {
     /** @var int|string */

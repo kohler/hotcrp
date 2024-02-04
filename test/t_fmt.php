@@ -1,6 +1,6 @@
 <?php
 // t_fmt.php -- HotCRP tests
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Fmt_Tester {
     function test_1() {

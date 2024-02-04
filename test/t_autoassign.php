@@ -1,6 +1,6 @@
 <?php
 // t_autoassign.php -- HotCRP tests
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Autoassign_Tester {
     /** @var Conf

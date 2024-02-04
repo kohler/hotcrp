@@ -1,6 +1,6 @@
 <?php
 // cleanhtml.php -- HTML cleaner for CSS prevention
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class CleanHTML {
     const CLEAN_INLINE = 1;

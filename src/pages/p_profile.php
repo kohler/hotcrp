@@ -1,6 +1,6 @@
 <?php
 // pages/p_profile.php -- HotCRP profile management page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Profile_Page {
     /** @var Conf
