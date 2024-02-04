@@ -3000,7 +3000,7 @@ class Contact implements JsonSerializable {
                 && ($ru = $this->reviewer_capability_user($prow->paperId))
                 && ($rci = $prow->contact_info($ru))) {
                 if ($rci->review_status == 0) {
-                    $rci->review_status = PaperContactInfo::RS_DECLINED;
+                    $rci->review_status = PaperContactInfo::CIRS_DECLINED;
                 }
                 $ci->reviewType = $rci->reviewType;
                 $ci->review_status = $rci->review_status;
@@ -3046,7 +3046,7 @@ class Contact implements JsonSerializable {
 
             // check decision visibility
             $sdr = $ci->allow_pc_broad
-                || ($ci->review_status > PaperContactInfo::RS_UNSUBMITTED
+                || ($ci->review_status > PaperContactInfo::CIRS_UNSUBMITTED
                     && ($this->conf->setting("viewrev_ext") ?? 0) >= 0);
             $ci->can_view_decision = $ci->can_administer
                 || (($sdr || $ci->act_author_view)
@@ -3059,7 +3059,7 @@ class Contact implements JsonSerializable {
             if ($ci->act_author_view && !$ci->allow_administer) {
                 $ci->view_authors_state = 2;
             } else if ($ci->allow_pc_broad || $ci->review_status > 0) {
-                $bs = $prow->blindness_state($ci->review_status > PaperContactInfo::RS_PROXIED);
+                $bs = $prow->blindness_state($ci->review_status > PaperContactInfo::CIRS_PROXIED);
                 if ($bs === 0) {
                     $bs = $ci->can_view_decision && ($isPC || $ci->allow_review) ? -1 : 1;
                 }
@@ -3590,7 +3590,7 @@ class Contact implements JsonSerializable {
         return $rights->allow_author_view
             || ($pdf
                 // assigned reviewer can view PDF of withdrawn, but submitted, paper
-                ? $rights->review_status > PaperContactInfo::RS_DECLINED
+                ? $rights->review_status > PaperContactInfo::CIRS_DECLINED
                   && $prow->timeSubmitted != 0
                 : $rights->review_status > 0)
             || ($rights->allow_pc_broad
@@ -3808,7 +3808,7 @@ class Contact implements JsonSerializable {
         } else if ($oview === PaperOption::VIS_CONFLICT) {
             return $this->can_view_conflicts($prow) ? 2 : 0;
         } else if ($oview === PaperOption::VIS_REVIEW) {
-            return $rights->review_status >= PaperContactInfo::RS_PROXIED
+            return $rights->review_status >= PaperContactInfo::CIRS_PROXIED
                 || $this->can_view_review($prow, null) ? 2 : 0;
         } else {
             return 0;
@@ -3873,7 +3873,7 @@ class Contact implements JsonSerializable {
                   || ($oview === PaperOption::VIS_AUTHOR
                       && !$this->can_view_authors($prow))
                   || ($oview === PaperOption::VIS_REVIEW
-                      && $rights->review_status < PaperContactInfo::RS_PROXIED
+                      && $rights->review_status < PaperContactInfo::CIRS_PROXIED
                       && !$this->can_view_review($prow, null)))) {
             $whyNot["permission"] = "field:view";
             $whyNot["option"] = $opt;
@@ -3936,9 +3936,10 @@ class Contact implements JsonSerializable {
         if (!$rrow || $rrow->reviewType > 0) {
             $rights = $this->rights($prow);
             return $rights->allow_administer
-                || $rights->allow_pc
-                || $rights->review_status > 0
-                || $this->can_view_review($prow, $rrow);
+                || ((!$rrow || !$rrow->is_tentative())
+                    && ($rights->allow_pc
+                        || $rights->review_status > 0
+                        || $this->can_view_review($prow, $rrow)));
         } else {
             // this branch is ReviewRequestInfo or ReviewRefusalInfo
             return $this->can_view_review_identity($prow, $rrow);
@@ -4007,10 +4008,17 @@ class Contact implements JsonSerializable {
         assert(!$rrow || $prow->paperId == $rrow->paperId);
         $viewscore = $viewscore ?? VIEWSCORE_AUTHOR;
         $rights = $this->rights($prow);
-        // can always view if can administer, is metareviewer, own review
-        if (($this->_can_administer_for_track($prow, $rights, Track::VIEWREV)
-             && ($flags & self::CAN_VIEW_REVIEW_NO_ADMINISTER) === 0)
-            || $rights->reviewType == REVIEW_META
+        // can always view if can administer
+        if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREV)
+            && ($flags & self::CAN_VIEW_REVIEW_NO_ADMINISTER) === 0) {
+            return true;
+        }
+        // cannot view tentative reviews unless admin
+        if ($rrow && $rrow->is_tentative()) {
+            return false;
+        }
+        // can view if is metareviewer, own review
+        if ($rights->reviewType == REVIEW_META
             || ($rrow
                 && $this->is_owned_review($rrow)
                 && $viewscore >= VIEWSCORE_REVIEWERONLY)) {
@@ -4040,7 +4048,7 @@ class Contact implements JsonSerializable {
         if ($seerev < 0) {
             return false;
         }
-        return $rights->review_status > PaperContactInfo::RS_UNSUBMITTED
+        return $rights->review_status > PaperContactInfo::CIRS_UNSUBMITTED
             || ($seerev === Conf::VIEWREV_UNLESSANYINCOMPLETE
                 && !$this->has_outstanding_review())
             || ($seerev === Conf::VIEWREV_UNLESSINCOMPLETE
@@ -4116,9 +4124,14 @@ class Contact implements JsonSerializable {
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
         // See also can_view_comment_identity.
-        if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
-            || ($rights->reviewType === REVIEW_META
-                && $this->conf->check_tracks($prow, $this, Track::VIEWREVID))
+        if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)) {
+            return true;
+        }
+        if ($rbase && $rbase->is_tentative()) {
+            return false;
+        }
+        if (($rights->reviewType === REVIEW_META
+             && $this->conf->check_tracks($prow, $this, Track::VIEWREVID))
             || ($rbase
                 && $rbase->requestedBy == $this->contactId
                 && $rights->allow_pc)
@@ -4131,10 +4144,11 @@ class Contact implements JsonSerializable {
         $seerevid_setting = $this->seerevid_setting($prow, $rbase, $rights);
         return $seerevid_setting === Conf::VIEWREV_ALWAYS
             || ($seerevid_setting >= 0
-                && $rights->review_status > PaperContactInfo::RS_UNSUBMITTED)
+                && $rights->review_status > PaperContactInfo::CIRS_UNSUBMITTED)
             || ($seerevid_setting === Conf::VIEWREV_IFASSIGNED
                 && $rights->reviewType > 0
-                && !$rights->self_assigned);
+                && !$rights->self_assigned
+                && $rights->review_status > 0);
     }
 
     /** @return bool */
@@ -4826,7 +4840,7 @@ class Contact implements JsonSerializable {
         if ($seerevid !== 0) {
             return $seerevid > 0;
         } else {
-            return $rights->review_status > PaperContactInfo::RS_UNSUBMITTED
+            return $rights->review_status > PaperContactInfo::CIRS_UNSUBMITTED
                 || ($crow && $prow->can_view_review_identity_of($crow->contactId, $this));
         }
     }
@@ -5337,7 +5351,7 @@ class Contact implements JsonSerializable {
         // if not author, reviewer, or commenter, remove REVIEW bit
         if (($w & self::WATCH_REVIEW) !== 0
             && !$prow->has_author($this)
-            && !$prow->has_reviewer($this)
+            && !$prow->has_active_reviewer($this)
             && !$prow->has_commenter($this)) {
             $w &= ~self::WATCH_REVIEW;
         }

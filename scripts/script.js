@@ -6140,8 +6140,14 @@ function append_review_id(rrow, eheader) {
         e.innerHTML = rrow.blind ? "[" + rrow.reviewer + "]" : rrow.reviewer;
     }
     if (rrow.rtype) {
-        xc = (rrow.submitted || rrow.approved ? "" : " rtinc") +
-            (rrow.subreview ? " rtsubrev" : "");
+        if (rrow.tentative) {
+            xc = " rttentative"
+        } else {
+            xc = rrow.subreview ? " rtsubrev" : "";
+            if (!rrow.submitted && !rrow.approved) {
+                xc += " rtinc";
+            }
+        }
         ad && ad.append(" ");
         add_ad(review_types.make_icon(rrow.rtype, xc));
         if (rrow.round) {

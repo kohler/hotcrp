@@ -2882,6 +2882,10 @@ del .rto {
 	color: red;
 	border-color: red;
 }
+.rttentative {
+	opacity: 0.4;
+	border-style: dotted;
+}
 .rtsubrev {
 	color: #555555;
 	border-color: #555555;

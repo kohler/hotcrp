@@ -98,7 +98,7 @@ class PaperTable {
         }
 
         $this->can_view_reviews = $user->can_view_review($prow, null);
-        if (!$this->can_view_reviews && $prow->has_reviewer($user)) {
+        if (!$this->can_view_reviews && $prow->has_active_reviewer($user)) {
             foreach ($prow->reviews_by_user($user) as $rrow) {
                 if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
                     $this->can_view_reviews = true;
@@ -2515,14 +2515,13 @@ class PaperTable {
 
         // actual rows
         foreach ($this->all_rrows as $rr) {
-            $want_my_scores = $want_scores;
-            if ($user->is_owned_review($rr) && $this->mode === "re") {
-                $want_my_scores = true;
-            }
             $canView = $user->can_view_review($prow, $rr);
 
             // skip unsubmitted reviews;
             // assign page lists actionable reviews separately
+            if (!$canView && $rr->is_tentative()) {
+                continue;
+            }
             if (!$canView && $hideUnviewable) {
                 $last_pc_reviewer = -1;
                 continue;
@@ -2542,7 +2541,8 @@ class PaperTable {
             if ($rr->reviewOrdinal && !$isdelegate) {
                 $id .= " #" . $rr->unparse_ordinal_id();
             }
-            if ($rr->reviewStatus < ReviewInfo::RS_ADOPTED) {
+            if ($rr->reviewStatus < ReviewInfo::RS_ADOPTED
+                && !$rr->is_tentative()) {
                 $d = $rr->status_description();
                 if ($d === "draft") {
                     $id = "Draft " . $id;
@@ -2629,7 +2629,8 @@ class PaperTable {
 
             // scores
             $scores = [];
-            if ($want_my_scores && $canView) {
+            if ($canView
+                && ($want_scores || ($user->is_owned_review($rr) && $this->mode === "re"))) {
                 $view_score = $user->view_score_bound($prow, $rr);
                 foreach ($conf->review_form()->forder as $f) {
                     if ($f->view_score > $view_score

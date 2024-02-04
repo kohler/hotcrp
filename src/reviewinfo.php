@@ -33,7 +33,7 @@ class ReviewInfo implements JsonSerializable {
     public $reviewModified;
     /** @var ?int */
     public $reviewSubmitted;
-    /** @var ?int */
+    /** @var int */
     public $reviewAuthorSeen;
     /** @var int */
     public $timeDisplayed;
@@ -239,9 +239,7 @@ class ReviewInfo implements JsonSerializable {
         if ($this->reviewSubmitted !== null) {
             $this->reviewSubmitted = (int) $this->reviewSubmitted;
         }
-        if ($this->reviewAuthorSeen !== null) {
-            $this->reviewAuthorSeen = (int) $this->reviewAuthorSeen;
-        }
+        $this->reviewAuthorSeen = (int) $this->reviewAuthorSeen;
         $this->timeDisplayed = (int) $this->timeDisplayed;
         $this->timeApprovalRequested = (int) $this->timeApprovalRequested;
         $this->reviewNeedsSubmit = (int) $this->reviewNeedsSubmit;
@@ -360,6 +358,11 @@ class ReviewInfo implements JsonSerializable {
     }
 
 
+    /** @return bool */
+    function is_tentative() {
+        return false;
+    }
+
     /** @return int */
     function compute_review_status() {
         if ($this->reviewSubmitted) {
@@ -434,26 +437,40 @@ class ReviewInfo implements JsonSerializable {
         return $this->reviewRound ? $this->conf->round_name($this->reviewRound) : "";
     }
 
-    /** @return string */
-    function icon_h() {
+    /** @param ?string $classes
+     * @return string */
+    function icon_classes($classes = null) {
+        $k = "rto rt{$this->reviewType}";
+        if ($classes !== null) {
+            $k = Ht::add_tokens($k, $classes);
+        }
+        if ($this->reviewStatus < ReviewInfo::RS_COMPLETED) {
+            if ($this->is_tentative()) {
+                $k .= " rttentative";
+            } else if ($this->timeApprovalRequested < 0) {
+                $k .= " rtsubrev";
+            } else {
+                $k .= " rtinc";
+            }
+        }
+        return $k;
+    }
+
+    /** @param ?string $classes
+     * @return string */
+    function icon_h($classes = null) {
+        $k = $this->icon_classes($classes);
         $title = $this->status_title(true);
         if ($title === "Review") {
             $title = ReviewForm::$revtype_names_full[$this->reviewType];
         }
-        $t = '<span class="rto rt' . $this->reviewType;
-        if ($this->reviewStatus < ReviewInfo::RS_COMPLETED) {
-            if ($this->timeApprovalRequested < 0) {
-                $t .= " rtsubrev";
-            } else {
-                $t .= " rtinc";
-            }
-            if ($title !== "Subreview" || $this->timeApprovalRequested >= 0) {
-                $title .= " (" . $this->status_description() . ")";
-            }
+        if ($this->reviewStatus < ReviewInfo::RS_COMPLETED
+            && !$this->is_tentative()
+            && ($title !== "Subreview" || $this->timeApprovalRequested >= 0)) {
+            $title .= " (" . $this->status_description() . ")";
         }
-        return $t . '" title="' . $title . '"><span class="rti">'
-            . ReviewForm::$revtype_icon_text[$this->reviewType]
-            . '</span></span>';
+        $text = ReviewForm::$revtype_icon_text[$this->reviewType];
+        return "<span class=\"{$k}\" title=\"{$title}\"><span class=\"rti\">{$text}</span></span>";
     }
 
     /** @param Conf $conf
@@ -480,6 +497,8 @@ class ReviewInfo implements JsonSerializable {
             return $ucfirst ? "Request" : "request";
         } else if ($this->subject_to_approval()) {
             return $ucfirst ? "Subreview" : "subreview";
+        } else if ($this->is_tentative()) {
+            return $ucfirst ? "Tentative review" : "tentative review";
         } else {
             return $ucfirst ? "Review" : "review";
         }
@@ -503,6 +522,8 @@ class ReviewInfo implements JsonSerializable {
             return "accepted";
         } else if ($this->reviewType < REVIEW_PC) {
             return "outstanding";
+        } else if ($this->is_tentative()) {
+            return "tentative";
         } else {
             return "not started";
         }

@@ -335,7 +335,7 @@ class MeetingTracker {
                     if ($prow->managerContactId == $user->contactId) {
                         $p->is_manager = true;
                     }
-                    if ($prow->has_reviewer($user)) {
+                    if ($prow->has_active_reviewer($user)) {
                         $p->is_reviewer = true;
                     }
                     if ($prow->conflictType > CONFLICT_MAXUNCONFLICTED) {

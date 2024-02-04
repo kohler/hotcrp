@@ -599,14 +599,12 @@ function unparse_preference($preference) {
 }
 
 /** @param int $revtype
- * @param bool $unfinished
  * @param ?string $classes
  * @return string */
-function review_type_icon($revtype, $unfinished = false, $classes = null) {
+function review_type_icon($revtype, $classes = null) {
     // see also script.js:review_form
     assert(!!$revtype);
     return '<span class="rto rt' . $revtype
-        . ($revtype > 0 && $unfinished ? " rtinc" : "")
         . ($classes ? " " . $classes : "")
         . '" title="' . ReviewForm::$revtype_names_full[$revtype]
         . '"><span class="rti">' . ReviewForm::$revtype_icon_text[$revtype] . '</span></span>';

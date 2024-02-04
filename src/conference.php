@@ -59,9 +59,11 @@ class Conf {
     /** @var bool
      * @readonly */
     public $tag_seeall;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $ext_subreviews;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $any_response_open;
     /** @var bool */
     public $sort_by_last;
@@ -354,7 +356,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 289) {
+        if ($this->sversion < 290) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);

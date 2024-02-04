@@ -651,6 +651,9 @@ Ready\n";
         if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
             $rj["submitted"] = true;
         } else {
+            if ($rrow->is_tentative()) {
+                $rj["tentative"] = true;
+            }
             if ($rrow->is_subreview()) {
                 $rj["subreview"] = true;
             }
@@ -1459,7 +1462,7 @@ class ReviewValues extends MessageSet {
             // reviewer identities
             if (!$always_combine
                 && !$prow->has_author($minic)
-                && (!$prow->has_reviewer($minic)
+                && (!$prow->has_active_reviewer($minic)
                     || !$minic->can_view_review_identity($prow, null))) {
                 $p->unique_preparation = true;
             }

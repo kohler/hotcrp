@@ -1243,12 +1243,12 @@ class Limit_SearchTerm extends SearchTerm {
             return $row->has_author_view($user);
         case "ar":
             return $row->has_author_view($user)
-                || ($row->timeWithdrawn <= 0 && $row->has_reviewer($user));
+                || ($row->timeWithdrawn <= 0 && $row->has_active_reviewer($user));
         case "r":
-            return $row->has_reviewer($user);
+            return $row->has_active_reviewer($user);
         case "rout":
             foreach ($row->reviews_by_user($user, $user->review_tokens()) as $rrow) {
-                if ($rrow->reviewNeedsSubmit != 0)
+                if ($rrow->reviewNeedsSubmit != 0 && !$rrow->is_tentative())
                     return true;
             }
             return false;
@@ -1256,7 +1256,7 @@ class Limit_SearchTerm extends SearchTerm {
             if (($this->reviewer !== $user && !$user->allow_administer($row))
                 || !$this->reviewer->can_accept_review_assignment_ignore_conflict($row)) {
                 return false;
-            } else if ($row->has_reviewer($this->reviewer)) {
+            } else if ($row->has_active_reviewer($this->reviewer)) {
                 return true;
             } else {
                 return ($row->timeSubmitted > 0

@@ -81,6 +81,11 @@ class ReviewRefusalInfo {
         return $row;
     }
 
+    /** @return bool */
+    function is_tentative() {
+        return false;
+    }
+
     /** @return Contact */
     function reviewer() {
         if ($this->_reviewer === null) {

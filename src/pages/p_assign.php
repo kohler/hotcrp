@@ -347,7 +347,7 @@ class Assign_Page {
 
         $namex = "<span class=\"fn\">{$name}</span><span class=\"fx\">{$fullname}</span>{$actas}";
         if ($rrow->reviewType !== REVIEW_REFUSAL) {
-            $namex .= ' ' . review_type_icon($rrowid->isPC ? REVIEW_PC : REVIEW_EXTERNAL, true);
+            $namex .= ' ' . review_type_icon($rrowid->isPC ? REVIEW_PC : REVIEW_EXTERNAL, "rtinc");
         }
         if ($this->user->can_view_review_meta($this->prow, $rrow)) {
             $namex .= ReviewInfo::make_round_h($this->conf, $rrow->reviewRound);
@@ -449,8 +449,11 @@ class Assign_Page {
             '<button type="button" class="q ui js-assignment-fold">', expander(null, 0),
             $this->user->reviewer_html_for($pc), '</button>';
         if ($crevtype != 0) {
-            echo review_type_icon($crevtype, $rrow && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED, "ml-2"),
-                $rrow ? $rrow->round_h() : "";
+            if ($rrow) {
+                echo review_type_icon($crevtype, $rrow->icon_classes("ml-2")), $rrow->round_h();
+            } else {
+                echo review_type_icon($crevrype);
+            }
         }
         if ($revtype >= 0) {
             $pf = $this->prow->preference($pc);

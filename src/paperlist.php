@@ -1390,7 +1390,7 @@ class PaperList {
         $pm = "";
         if ($pt === "finishreview") {
             $ci = $row->contact_info($this->user);
-            $pt = $ci->review_status <= PaperContactInfo::RS_UNSUBMITTED ? "review" : "paper";
+            $pt = $ci->review_status <= PaperContactInfo::CIRS_UNSUBMITTED ? "review" : "paper";
         } else if ($pt === "paperedit") {
             $pt = "paper";
             $pm = "&amp;m=edit";

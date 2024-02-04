@@ -299,36 +299,25 @@ class Review_Assigner extends Assigner {
         $tv = $pf->preference ? null : $prow->topic_interest_score($this->cid);
         return $pf->exists() || $tv ? " " . $pf->unparse_span($tv) : "";
     }
-    private function unparse_item(AssignmentSet $aset, $before) {
-        if (!$this->item->get($before, "_rtype")) {
-            return "";
-        }
-        $t = $aset->user->reviewer_html_for($this->contact) . ' '
-            . review_type_icon($this->item->get($before, "_rtype"),
-                               !$this->item->get($before, "_rsubmitted"));
-        if (($round = $this->item->get($before, "_round"))) {
-            $t .= '<span class="revround" title="Review round">'
-                . htmlspecialchars($aset->conf->round_name($round)) . '</span>';
-        }
-        return $t . $this->unparse_preference_span($aset);
-    }
-    private function icon($before) {
-        return review_type_icon($this->item->get($before, "_rtype"),
-                                !$this->item->get($before, "_rsubmitted"));
+    /** @param bool $before
+     * @return string */
+    private function icon_h($before) {
+        $k = $this->item->get($before, "_rsubmitted") ? null : " rtinc";
+        return review_type_icon($this->item->get($before, "_rtype"), $k);
     }
     function unparse_display(AssignmentSet $aset) {
         $t = $aset->user->reviewer_html_for($this->contact);
         $deleted = !$this->item->post("_rtype");
         if ($this->item->differs("_rtype") || $this->item->differs("_rsubmitted")) {
             if ($this->item->pre("_rtype")) {
-                $i = $this->icon(true);
+                $i = $this->icon_h(true);
                 $t .= $deleted ? " {$i}" : " <del>{$i}</del>";
             }
             if ($this->item->post("_rtype")) {
-                $t .= ' <ins>' . $this->icon(false) . '</ins>';
+                $t .= ' <ins>' . $this->icon_h(false) . '</ins>';
             }
         } else if (!$deleted) {
-            $t .= ' ' . $this->icon(false);
+            $t .= ' ' . $this->icon_h(false);
         }
         if ($this->item->differs("_round")) {
             if (($round = $this->item->pre("_round"))) {

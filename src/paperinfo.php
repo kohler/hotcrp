@@ -67,11 +67,11 @@ class PaperContactInfo {
     public $reviewRound = 0;
     /** @var int */
     public $review_status = 0;    // 0 means no review
-    const RS_NONE = 0;
-    const RS_DECLINED = 1;        // declined assigned review
-    const RS_UNSUBMITTED = 2;     // review not submitted, needs submit
-    const RS_PROXIED = 3;         // review proxied (e.g., lead)
-    const RS_SUBMITTED = 4;       // review submitted
+    const CIRS_NONE = 0;
+    const CIRS_DECLINED = 1;      // declined assigned review
+    const CIRS_UNSUBMITTED = 2;   // review not submitted, needs submit
+    const CIRS_PROXIED = 3;       // review proxied (e.g., lead)
+    const CIRS_SUBMITTED = 4;     // review submitted
 
     /** @var ?bool */
     public $rights_forced = null;
@@ -139,7 +139,7 @@ class PaperContactInfo {
     static function make_user($prow, $user) {
         $ci = new PaperContactInfo($prow->paperId, $user->contactXid);
         if (self::is_nonempty($prow, $user)) {
-            $ci->review_status = PaperContactInfo::RS_PROXIED;
+            $ci->review_status = self::CIRS_PROXIED;
         }
         return $ci;
     }
@@ -151,7 +151,7 @@ class PaperContactInfo {
         $ci = PaperContactInfo::make_user($prow, $user);
         $ci->conflictType = (int) $object->conflictType;
         if (isset($object->myReviewPermissions)) {
-            $ci->mark_my_review_permissions($object->myReviewPermissions);
+            $ci->mark_my_review_permissions($prow->conf, $object->myReviewPermissions);
         } else if ($object instanceof PaperInfo
                    && $object->reviewSignatures !== null) {
             foreach ($object->reviews_by_user($user->contactId, $user->review_tokens()) as $rrow) {
@@ -166,43 +166,47 @@ class PaperContactInfo {
         $this->conflictType = max($ct, $this->conflictType);
     }
 
-    /** @param int $rt
-     * @param int $rs
-     * @param int $rns
-     * @param int $rround
-     * @param int $reqby */
-    private function mark_review_type($rt, $rs, $rns, $rround, $reqby) {
-        if ($rt !== REVIEW_PC || $reqby !== $this->contactId) {
+    /** @param Conf $conf
+     * @param int $reviewType
+     * @param int $reviewSubmitted
+     * @param int $reviewNeedsSubmit
+     * @param int $reviewRound
+     * @param int $requestedBy */
+    private function mark_review_type($conf, $reviewType,
+            $reviewSubmitted, $reviewNeedsSubmit, $reviewRound,
+            $requestedBy) {
+        if ($reviewType !== REVIEW_PC || $requestedBy !== $this->contactId) {
             $this->self_assigned = false;
         } else if ($this->reviewType === 0) {
             $this->self_assigned = true;
         }
 
-        $this->reviewType = max($rt, $this->reviewType);
-        $this->reviewSubmitted = max($rs, $this->reviewSubmitted);
-        $this->reviewRound = $rround;
+        $this->reviewType = max($reviewType, $this->reviewType);
+        $this->reviewSubmitted = max($reviewSubmitted, $this->reviewSubmitted);
+        $this->reviewRound = $reviewRound;
 
-        if ($rt > 0) {
-            if ($rs > 0 || $rns == 0) {
-                $this->review_status = PaperContactInfo::RS_SUBMITTED;
-            } else if ($this->review_status == 0) {
-                $this->review_status = PaperContactInfo::RS_UNSUBMITTED;
+        if ($reviewType > 0) {
+            if ($reviewSubmitted > 0 || $reviewNeedsSubmit === 0) {
+                $this->review_status = self::CIRS_SUBMITTED;
+            } else if ($this->review_status === 0) {
+                $this->review_status = self::CIRS_UNSUBMITTED;
             }
         }
     }
 
     function mark_review(ReviewInfo $rrow) {
-        $this->mark_review_type($rrow->reviewType, (int) $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->reviewRound, $rrow->requestedBy);
+        $this->mark_review_type($rrow->conf, $rrow->reviewType,
+            (int) $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->reviewRound,
+            $rrow->requestedBy);
     }
 
     /** @param ?string $sig */
-    private function mark_my_review_permissions($sig) {
-        if ((string) $sig === "") {
-            return;
-        }
-        foreach (explode(",", $sig) as $r) {
-            list($rt, $rs, $rns, $rround, $reqby) = explode(" ", $r);
-            $this->mark_review_type((int) $rt, (int) $rs, (int) $rns, (int) $rround, (int) $reqby);
+    private function mark_my_review_permissions($conf, $sig) {
+        if ((string) $sig !== "") {
+            foreach (explode(",", $sig) as $r) {
+                $a = explode(" ", $r);
+                $this->mark_review_type($conf, (int) $a[0], (int) $a[1], (int) $a[2], (int) $a[3], (int) $a[4]);
+            }
         }
     }
 
@@ -257,7 +261,7 @@ class PaperContactInfo {
                 if ($x[2] !== null) {
                     $ci->mark_conflict((int) $x[2]);
                 } else {
-                    $ci->mark_review_type((int) $x[3], (int) $x[4], (int) $x[5], (int) $x[6], (int) $x[7]);
+                    $ci->mark_review_type($pr->conf, (int) $x[3], (int) $x[4], (int) $x[5], (int) $x[6], (int) $x[7]);
                 }
             }
             $result->close();
@@ -1724,16 +1728,12 @@ class PaperInfo {
         return $this->review_type($contact) > 0;
     }
 
-    /** @return int */
-    function review_status($contact) {
-        $ci = $this->optional_contact_info($contact);
-        return $ci ? $ci->review_status : 0;
-    }
-
     /** @return bool */
-    function review_not_incomplete($contact) {
-        // see also code in Contact
-        return $this->review_status($contact) > PaperContactInfo::RS_UNSUBMITTED;
+    function has_active_reviewer($contact) {
+        $ci = $this->optional_contact_info($contact);
+        return $ci
+            && $ci->reviewType > 0
+            && $ci->review_status >= PaperContactInfo::CIRS_UNSUBMITTED;
     }
 
 

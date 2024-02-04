@@ -645,7 +645,10 @@ class ReviewerType_PaperColumn extends PaperColumn {
     /** @return array{?PaperListReviewAnalysis,int} */
     private function analysis(PaperList $pl, PaperInfo $row) {
         $rrow = $row->review_by_user($this->contact);
-        if ($rrow && (!$this->not_me || $pl->user->can_view_review_identity($row, $rrow))) {
+        if ($rrow
+            && ($this->not_me
+                ? $pl->user->can_view_review_identity($row, $rrow)
+                : !$rrow->is_tentative())) {
             $ranal = $pl->make_review_analysis($rrow, $row);
         } else {
             $ranal = null;
