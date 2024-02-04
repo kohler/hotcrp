@@ -1005,9 +1005,6 @@ abstract class Autoassigner extends MessageSet {
                 $balancebase = $ac->balance - $ac->nassigned - $minbalance;
                 for ($i = $nfixed; $ldbase + $i < min($ac->max_load, $ac->load + $maxload); ++$i) {
                     $cost = $this->assignment_cost * ($balancebase + $i);
-                    if ($adjusting && $i < $ac->nassigned) {
-                        $cost = 0;
-                    }
                     $m->add_edge(".source", "u{$cid}", 1, $cost);
                 }
             }
