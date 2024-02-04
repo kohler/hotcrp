@@ -336,4 +336,44 @@ class Autoassign_Tester {
             xassert_le(count($rbu2[$uid]), 4);
         }
     }
+
+    function test_adjust_reviews_reassign() {
+        $this->setup_10x10_pref3();
+        $pids = range(1, 15);
+        $this->xassert_autoassigner("review", $this->pcc, $pids, ["count" => 3]);
+
+        $prows = $this->conf->paper_set(["paperId" => $pids]);
+        foreach ($prows as $prow) {
+            xassert_eqq(count($prow->reviews_as_list()), 3);
+        }
+        $rbu1 = $this->reviews_by_user($prows);
+        foreach ($rbu1 as $px) {
+            xassert_in_eqq(count($px), [2, 3]);
+        }
+        $repcc = [$this->pcc[10], $this->pcc[11], $this->pcc[12]];
+
+        $qv = [];
+        foreach ($repcc as $cid) {
+            foreach ($rbu1[$cid] as $pid) {
+                $qv[] = [$pid, $cid, -10];
+            }
+        }
+        $this->conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ?v", $qv);
+        $this->conf->qe("delete from PaperReview where contactId?a", $repcc);
+
+        $this->xassert_autoassigner("review_adjust", $this->pcc, $pids, ["count" => 3]);
+
+        $prows = $this->conf->paper_set(["paperId" => $pids]);
+        $x = [];
+        foreach ($prows as $prow) {
+            xassert_eqq(count($prow->reviews_as_list()), 3);
+            foreach ($prow->reviews_as_list() as $rr) {
+                $x[$prow->paperId][] = $rr->contactId;
+            }
+        }
+        $rbu2 = $this->reviews_by_user($prows);
+        foreach ($rbu2 as $px) {
+            xassert_in_eqq(count($px), [2, 3]);
+        }
+    }
 }

@@ -156,7 +156,7 @@ abstract class Autoassigner extends MessageSet {
     /** @var int */
     public $paper_assignment_cost = 40;
     /** @var ?int */
-    public $remove_assignment_cost = 80;
+    public $remove_assignment_cost = 60;
     /** @var int */
     public $preference_cost = 60;
     /** @var int */
