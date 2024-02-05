@@ -120,7 +120,8 @@ class Review_Autoassigner extends Autoassigner {
             if ($this->kind === self::KIND_ENSURE
                 && $rrow->reviewType === $this->rtype) {
                 if ($this->adjust
-                    && $rrow->reviewRound === $this->round) {
+                    && $rrow->reviewRound === $this->round
+                    && $rrow->reviewStatus < ReviewInfo::RS_DRAFTED) {
                     $eass = self::ENEWASSIGN;
                 } else {
                     $eass = self::EOLDASSIGN;
