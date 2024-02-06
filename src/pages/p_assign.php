@@ -452,7 +452,7 @@ class Assign_Page {
             if ($rrow) {
                 echo review_type_icon($crevtype, $rrow->icon_classes("ml-2")), $rrow->round_h();
             } else {
-                echo review_type_icon($crevrype);
+                echo review_type_icon($crevtype);
             }
         }
         if ($revtype >= 0) {
