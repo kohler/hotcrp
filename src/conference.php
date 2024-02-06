@@ -356,7 +356,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 290) {
+        if ($this->sversion < 291) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -374,13 +374,20 @@ class Conf {
             unset($this->settings["frombackup"]);
         }
 
+        $this->refresh_settings();
+        $this->refresh_options();
+
         // GC old capabilities
         if (($this->settings["__capability_gc"] ?? 0) < Conf::$now - 86400) {
             $this->clean_tokens();
         }
 
-        $this->refresh_settings();
-        $this->refresh_options();
+        // might need to redo automatic tags
+        if ($this->settings["__recompute_automatic_tags"] ?? 0) {
+            $this->qe("delete from Settings where name='__recompute_automatic_tags' and value=?", $this->settings["__recompute_automatic_tags"]);
+            unset($this->settings["__recompute_automatic_tags"], $this->settingTexts["__recompute_automatic_tags"]);
+            $this->update_automatic_tags();
+        }
     }
 
     /** @suppress PhanAccessReadOnlyProperty */

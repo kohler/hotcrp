@@ -1156,6 +1156,19 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
     }
 
+    private function v291_unfuck_checkboxes($options_data) {
+        $any = false;
+        foreach ($options_data as $v) {
+            if (is_object($v) && $v->type === "checkboxes") {
+                $this->conf->qe("update PaperOption set value=value+1 where optionId=? order by paperId asc, value desc", $v->id);
+                $any = true;
+            }
+        }
+        if ($any) {
+            $this->conf->save_setting("__recompute_automatic_tags", mt_rand(1, 2000000000));
+        }
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -1185,14 +1198,26 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if (is_object($options_data)) {
             $options_data = $this->v1_options_setting($options_data);
         }
-        if (is_array($options_data) && $conf->sversion <= 247) {
+        if ($conf->sversion <= 247
+            && is_array($options_data)) {
             $options_data = $this->v248_options_setting($options_data);
         }
-        if (is_array($options_data) && $conf->sversion <= 277) {
+        if ($conf->sversion <= 277
+            && is_array($options_data)) {
             $options_data = $this->v278_options_setting($options_data);
         }
-        if (is_array($options_data) && $conf->sversion <= 278) {
+        if ($conf->sversion <= 278
+            && is_array($options_data)) {
             $options_data = $this->v279_options_setting($options_data);
+        }
+
+        // unfuck checkboxes options
+        if ($conf->sversion <= 290
+            && !$conf->setting("__unfucked_checkboxes_v291")) {
+            $conf->save_setting("__unfucked_checkboxes_v291", 1);
+            if (is_array($options_data)) {
+                $this->v291_unfuck_checkboxes($options_data);
+            }
         }
 
         // update `review_form`
@@ -2959,6 +2984,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("update PaperReview set reviewAuthorSeen=0 where reviewAuthorSeen is null")
             && $conf->ql_ok("alter table PaperReview change `reviewAuthorSeen` `reviewAuthorSeen` bigint(1) NOT NULL DEFAULT 0")) {
             $conf->update_schema_version(290);
+        }
+        If ($conf->sversion === 290) {
+            $conf->ql_ok("delete from Settings where name='__unfucked_checkboxes_v291'");
+            $conf->update_schema_version(291);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

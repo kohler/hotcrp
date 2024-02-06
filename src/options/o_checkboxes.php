@@ -37,14 +37,7 @@ class Checkboxes_PaperOption extends CheckboxesBase_PaperOption {
 
     /** @return TopicSet */
     function topic_set() {
-        if ($this->topics === null) {
-            $this->topics = new TopicSet($this->conf);
-            foreach ($this->values() as $i => $s) {
-                if ($s !== null)
-                    $this->topics->__add($i, $s);
-            }
-        }
-        return $this->topics;
+        return $this->values_topic_set();
     }
 
 
