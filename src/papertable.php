@@ -754,12 +754,22 @@ class PaperTable {
             $l = [];
             if (!$this->allow_edit_final) {
                 foreach ($this->prow->form_fields() as $o) {
-                    if ($o->required
-                        && $o->test_exists($this->prow)
-                        && !$o->has_complex_exists_condition() /* XXX */
-                        && $o->editable_condition() === null
-                        && ($x = $o->present_script_expression()))
-                        $l[] = $x;
+                    if ($o->required <= 0
+                        || !$o->test_can_exist()
+                        || $o->editable_condition() !== null
+                        || !($prc = $o->present_script_expression())) {
+                        continue;
+                    }
+                    $exc = $o->exists_script_expression($this->prow);
+                    if ($exc === null && $o->exists_condition() !== null) {
+                        // complex exists condition, cannot be scripted
+                        continue;
+                    }
+                    if ($exc !== null && $exc !== true) {
+                        $not_exc = ["type" => "not", "child" => [$exc]];
+                        $prc = ["type" => "or", "child" => [$not_exc, $prc]];
+                    }
+                    $l[] = $prc;
                 }
             }
             if (empty($l)) {
