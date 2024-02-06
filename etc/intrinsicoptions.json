@@ -10,7 +10,7 @@
     },
     {
         "name": "Submission", "id": 0,
-        "type": "document",
+        "type": "document", "include_empty": true,
         "json_key": "submission",
         "form_order": 1001, "required": "submit",
         "display": "top",
@@ -19,7 +19,7 @@
     },
     {
         "name": "Final version", "id": -1,
-        "type": "document",
+        "type": "document", "include_empty": true,
         "json_key": "final",
         "form_order": 1002, "required": "submit", "final": true,
         "display": "top",
