@@ -32,6 +32,41 @@ class XtParams {
     }
 
     /** @param object $xt
+     * @param XtParams $xtp
+     * @return ?bool */
+    static function allow_checker_GET($xt, $xtp) {
+        return isset($xt->alias) ? null : $xt->get ?? false;
+    }
+
+    /** @param object $xt
+     * @param XtParams $xtp
+     * @return ?bool */
+    static function allow_checker_HEAD($xt, $xtp) {
+        return isset($xt->alias) ? null : $xt->head ?? $xt->get ?? false;
+    }
+
+    /** @param object $xt
+     * @param XtParams $xtp
+     * @return ?bool */
+    static function allow_checker_POST($xt, $xtp) {
+        return isset($xt->alias) ? null : $xt->post ?? $xt->get ?? false;
+    }
+
+    /** @param ?string $method
+     * @return $this */
+    function add_allow_checker_method($method) {
+        if ($method === "GET" || $method === "HEAD" || $method === "POST") {
+            $this->allow_checkers[] = "XtParams::allow_checker_{$method}";
+        } else if ($method !== null && $method !== "") {
+            $method = strtolower($method);
+            $this->allow_checkers[] = function ($xt, $xtp) use ($method) {
+                return isset($xt->alias) ? null : $xt->$method ?? false;
+            };
+        }
+        return $this;
+    }
+
+    /** @param object $xt
      * @return bool */
     function checkf($xt) {
         if (isset($xt->allow_if) && !$this->check($xt->allow_if, $xt)) {
@@ -39,7 +74,7 @@ class XtParams {
         }
         if ($this->allow_checkers !== null) {
             foreach ($this->allow_checkers as $checker) {
-                if (($x = $checker($xt, $this)) !== nulL)
+                if (($x = $checker($xt, $this)) !== null)
                     return $x;
             }
         }

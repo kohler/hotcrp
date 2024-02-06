@@ -5342,35 +5342,11 @@ class Conf {
         }
         return $this->_api_map;
     }
-    /** @param object $xt
-     * @param XtParams $xtp
-     * @param string $method
-     * @return ?bool */
-    private function api_method_checker($xt, $xtp, $method) {
-        if (!$method || isset($xt->alias)) {
-            return null;
-        }
-        $k = strtolower($method);
-        $methodx = $xt->$k ?? null;
-        if ($methodx === null
-            && ($method === "POST" || $method === "HEAD")) {
-            $methodx = $xt->get ?? false;
-        }
-        return $methodx ?? false;
-    }
-    /** @param string $method
-     * @return callable(object,XtParams):bool */
-    function make_api_method_checker($method) {
-        return function ($xt, $xtp) use ($method) {
-            return $this->api_method_checker($xt, $xtp, $method);
-        };
-    }
     function has_api($fn, Contact $user = null, $method = null) {
         return !!$this->api($fn, $user, $method);
     }
     function api($fn, Contact $user = null, $method = null) {
-        $xtp = new XtParams($this, $user);
-        $xtp->allow_checkers[] = $this->make_api_method_checker($method);
+        $xtp = (new XtParams($this, $user))->add_allow_checker_method($method);
         $uf = $xtp->search_name($this->api_map(), $fn);
         return self::xt_enabled($uf) ? $uf : null;
     }

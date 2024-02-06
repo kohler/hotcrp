@@ -79,7 +79,7 @@ class ListAction {
         }
         $conf = $user->conf;
         $gex = self::grouped_extensions($user);
-        $gex->xtp->allow_checkers = [$conf->make_api_method_checker($qreq->method())];
+        $gex->xtp->add_allow_checker_method($qreq->method());
         $uf = $gex->get($name);
         if (!$uf && ($slash = strpos($name, "/"))) {
             $uf = $gex->get(substr($name, 0, $slash));
