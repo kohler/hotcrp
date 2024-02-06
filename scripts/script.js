@@ -5313,12 +5313,12 @@ handle_ui.on(".js-autoassign-prepare", function () {
     if (!this.elements.a || !(a = this.elements.a.value)) {
         return;
     }
-    this.action = hoturl_add(this.action, "a=" + encodeURIComponent(a));
+    this.action = hoturl_add(this.action, "a=" + urlencode(a));
     for (k in this.elements) {
         if (k.startsWith(a + ":")) {
             v = this.elements[k].value;
             if (v && typeof v === "string" && v.length < 100)
-                this.action = hoturl_add(this.action, encodeURIComponent(k) + "=" + encodeURIComponent(v));
+                this.action = hoturl_add(this.action, encodeURIComponent(k) + "=" + urlencode(v));
         }
     }
 });
@@ -8675,6 +8675,9 @@ Hotlist.at = function (elt) {
 Hotlist.prototype.ids = function () {
     return this.obj && this.obj.ids ? decode_session_list_ids(this.obj.ids) : null;
 };
+Hotlist.prototype.urlbase = function () {
+    return this.obj && this.obj.urlbase;
+};
 Hotlist.prototype.resolve = function () {
     var obj;
     if (this.obj
@@ -8919,6 +8922,33 @@ function hotlist_search_params(x, ids) {
     }
     return q;
 }
+
+handle_ui.on("click.js-sq", function () {
+    removeClass(this, "js-sq");
+    let q;
+    if (this.hasAttribute("data-q")) {
+        q = this.getAttribute("data-q");
+    } else if (this.firstChild.nodeType === 3) {
+        q = this.firstChild.data;
+    } else if (this.lastChild === this.firstChild
+               || (this.lastChild.nodeType === 3 && this.lastChild.data === "#0")) {
+        q = this.firstChild.firstChild.data;
+    } else {
+        q = "order:" + this.firstChild.firstChild.data;
+    }
+    const hle = this.closest(".has-hotlist");
+    if (hle && hle.nodeName !== "BODY") {
+        if (hle.hasAttribute("data-search-view")) {
+            q += " " + hle.getAttribute("data-search-view");
+        }
+        const urlbase = Hotlist.at(hle).urlbase();
+        if (urlbase) {
+            this.href = siteinfo.site_relative + hoturl_add(urlbase, "q=" + urlencode(q));
+            return;
+        }
+    }
+    this.href = siteinfo.site_relative + "search?q=" + urlencode(q);
+});
 
 
 // review preferences
@@ -10571,16 +10601,12 @@ function render_tagset(plistui, tagstr, editable) {
                 tagx = tagmap ? tagmap[tbase.toLowerCase()] || 0 : 0;
             tbase = tbase.substring(twiddle, hash);
             if ((tagx & 2) || tindex != "0")
-                h = $e("a", "qo nw", $e("u", "x", "#" + tbase), "#" + tindex);
+                h = $e("a", "qo nw uic js-sq", $e("u", "x", "#" + tbase), "#" + tindex);
             else
-                h = $e("a", "q nw", "#" + tbase);
+                h = $e("a", "q nw uic js-sq", "#" + tbase);
             if (tagx & 2)
-                q = "#".concat(tbase, " showsort:-#", tbase);
-            else if (tindex != "0")
-                q = "order:#" + tbase;
-            else
-                q = "#" + tbase;
-            h.setAttribute("href", hoturl("search", {q: q}));
+                h.setAttribute("data-q", "#".concat(tbase, "showsort:-#", tbase));
+            h.href = "";
             if (taghighlighter && taghighlighter.test(tbase))
                 h = $e("strong", null, h);
             t.push([h, text.substring(twiddle, hash)]);

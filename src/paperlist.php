@@ -215,7 +215,7 @@ class PaperList {
     /** @var bool */
     private $_sortable;
     /** @var ?string */
-    private $_paper_linkto;
+    private $_view_linkto;
     /** @var bool */
     private $_view_facets = false;
     /** @var int */
@@ -608,8 +608,11 @@ class PaperList {
         assert($origin >= self::VIEWORIGIN_REPORT && $origin <= self::VIEWORIGIN_MAX);
         if ($v === "show" || $v === "hide") {
             $v = $v === "show";
+        } else if ($v === "edit") {
+            $v = true;
+            $decorations[] = "edit";
         }
-        assert(is_bool($v) || $v === "edit");
+        assert(is_bool($v));
 
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
             $k = substr($k, 1, -1);
@@ -650,9 +653,6 @@ class PaperList {
         $flags = ($flags & ~(self::VIEW_ORIGINMASK | self::VIEW_SHOW))
             | $origin
             | ($v ? self::VIEW_SHOW : 0);
-        if ($v === "edit") {
-            $decorations[] = "edit";
-        }
         if (!empty($decorations)) {
             $this->_view_decorations[$k] = $decorations;
         } else {
@@ -666,7 +666,7 @@ class PaperList {
         } else if ($k === "linkto") {
             if (!empty($decorations)
                 && in_array($decorations[0], ["paper", "paperedit", "assign", "finishreview"])) {
-                $this->_paper_linkto = $decorations[0];
+                $this->_view_linkto = $decorations[0];
             }
         } else if (($k === "aufull" || $k === "anonau")
                    && $origin >= self::VIEWORIGIN_SEARCH
@@ -1385,7 +1385,7 @@ class PaperList {
 
     /** @return string */
     function _paperLink(PaperInfo $row) {
-        $pt = $this->_paper_linkto ?? "paper";
+        $pt = $this->_view_linkto ?? "paper";
         $pm = "";
         if ($pt === "finishreview") {
             $ci = $row->contact_info($this->user);
@@ -2132,6 +2132,13 @@ class PaperList {
             $this->table_attr["id"] = $this->_table_id;
         }
         $this->table_attr["data-search-params"] = $this->encoded_search_params();
+        $views = [];
+        foreach ($this->search->view_commands() as $svc) {
+            $views[] = $svc->command;
+        }
+        if (!empty($views)) {
+            $this->table_attr["data-search-view"] = join(" ", $views);
+        }
         if ($this->_table_fold_session) {
             $this->table_attr["data-fold-session-prefix"] = $this->_table_fold_session;
             $this->table_attr["data-fold-session"] = json_encode_browser([
