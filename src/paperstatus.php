@@ -786,6 +786,21 @@ class PaperStatus extends MessageSet {
             }
         }
 
+        // if submitting for the first time, and a required field is present
+        // but missing, save draft instead
+        if ($pj_submitted && !$old_submitted) {
+            foreach ($this->prow->form_fields() as $opt) {
+                if ($opt->required > 0
+                    && $opt->test_exists($this->prow)) {
+                    $ov = $this->prow->force_option($opt);
+                    if (!$opt->value_check_required($ov)) {
+                        $ov->append_messages_to($this);
+                        $pj_submitted = $old_submitted;
+                    }
+                }
+            }
+        }
+
         // mark whether submitted
         $this->_paper_submitted = $pj_submitted && !$pj_withdrawn;
 
@@ -1425,28 +1440,6 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    private function _postexecute_check_required_options() {
-        $prow = $this->conf->paper_by_id($this->paperId, $this->user, ["options" => true]);
-        $required_failure = false;
-        foreach ($prow->form_fields() as $o) {
-            if ($o->required
-                && $this->user->can_edit_option($prow, $o)) {
-                $ov = $prow->force_option($o);
-                if (!$o->value_check_required($ov)) {
-                    $ov->append_messages_to($this);
-                    $required_failure = true;
-                }
-            }
-        }
-        if ($required_failure && $this->prow->timeSubmitted <= 0) {
-            // Some required option was missing and the paper was not submitted
-            // before, so it shouldn't be submitted now.
-            $this->conf->qe("update Paper set timeSubmitted=? where paperId=?",
-                            $this->prow->timeSubmitted, $this->paperId);
-            $this->_paper_submitted = false;
-        }
-    }
-
     private function _postexecute_notify() {
         $need_docinval = $this->_documents_changed && !$this->prow->is_new();
         $need_mail = [];
@@ -1510,9 +1503,6 @@ class PaperStatus extends MessageSet {
         $this->_execute_options();
         $this->_execute_conflicts();
 
-        if ($this->_paper_submitted) {
-            $this->_postexecute_check_required_options();
-        }
         if (!empty($this->_update_pid_dids)) {
             $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $this->paperId, $this->_update_pid_dids);
         }
