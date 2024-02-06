@@ -756,7 +756,6 @@ class PaperTable {
                 foreach ($this->prow->form_fields() as $o) {
                     if ($o->required <= 0
                         || !$o->test_can_exist()
-                        || $o->editable_condition() !== null
                         || !($prc = $o->present_script_expression())) {
                         continue;
                     }
