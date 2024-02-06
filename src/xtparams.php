@@ -93,7 +93,7 @@ class XtParams {
             return self::resolve_comparison($v, $compar, $compval);
         } else if (str_starts_with($s, "setting.")) {
             list($x, $compar, $compval) = self::split_comparison($s);
-            $v = $this->conf->opt(substr($x, 8));
+            $v = $this->conf->setting(substr($x, 8));
             return self::resolve_comparison($v, $compar, $compval);
         } else if (str_starts_with($s, "conf.")) {
             $f = substr($s, 5);
