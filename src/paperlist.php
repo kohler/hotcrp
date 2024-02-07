@@ -102,7 +102,7 @@ class PaperListTableRender {
             if (is_array($v) || is_object($v)) {
                 $v = $k === "class" ? join(" ", $v) : json_encode_browser($v);
             }
-            if ($k === "data-fields" || $k === "data-groups" || $k === "data-columns" /* XXX backwards compat */) {
+            if ($k === "data-fields" || $k === "data-groups") {
                 $v = str_replace("'", "&apos;", htmlspecialchars($v, ENT_NOQUOTES | ENT_SUBSTITUTE | ENT_HTML5));
                 echo " ", $k, "='", $v, "'";
             } else {
@@ -1825,7 +1825,6 @@ class PaperList {
         $classes[] = "fold7" . ($this->viewing("statistics") ? "o" : "c");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
         $this->table_attr["data-fields"] = $jscol;
-        $this->table_attr["data-columns"] = $jscol; /* XXX backward compat */
     }
 
     /** @param PaperListTableRender $rstate
