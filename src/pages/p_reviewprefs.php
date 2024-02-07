@@ -124,6 +124,10 @@ class ReviewPrefs_Page {
         if ($conf->has_topics()) {
             $show_data[] = self::pref_element($pl, "topics", "Topics");
         }
+        if ($conf->fetch_ivalue("select exists(select * from PaperTag) from dual")
+            && $user->can_view_tags()) {
+            $show_data[] = self::pref_element($pl, "tags", "Tags");
+        }
         if (!empty($show_data) && !$pl->is_empty()) {
             echo '<div class="entryi"><label>Show</label>',
                 '<ul class="entry inline">', join('', $show_data), '</ul></div>';
