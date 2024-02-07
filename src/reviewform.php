@@ -171,8 +171,8 @@ class ReviewForm {
             return $f ? [$f] : [];
         }
         $fs = [];
-        foreach (PaperSearch::view_generator(SearchSplitter::split_balanced_parens($s)) as $sve) {
-            if (($sve->action === "show" || $sve->action === "showsort")
+        foreach (SearchViewCommand::analyze(SearchSplitter::split_balanced_parens($s)) as $sve) {
+            if ($sve->show_action() === "show"
                 && ($x = $this->conf->find_all_fields($sve->keyword))
                 && count($x) === 1
                 && $x[0] instanceof Score_ReviewField

@@ -152,43 +152,6 @@ class SearchQueryInfo {
     }
 }
 
-class SearchViewElement {
-    /** @var 'show'|'hide'|'edit'|'showsort'|'editsort'|'sort' */
-    public $action;
-    /** @var string */
-    public $keyword;
-    /** @var list<string> */
-    public $decorations = [];
-    /** @var ?int */
-    public $kwpos1;
-    /** @var ?int */
-    public $pos1;
-    /** @var ?int */
-    public $pos2;
-    /** @var ?SearchStringContext */
-    public $string_context;
-
-    /** @return ?string */
-    function show_action() {
-        if (in_array($this->action, ["show", "hide", "edit", "showsort", "editsort"])) {
-            return substr($this->action, 0, 4);
-        } else {
-            return null;
-        }
-    }
-
-    /** @return bool */
-    function sort_action() {
-        return str_ends_with($this->action, "sort");
-    }
-
-    /** @return bool */
-    function nondefault_sort_action() {
-        return str_ends_with($this->action, "sort")
-            && ($this->keyword !== "id" || !empty($this->decorations));
-    }
-}
-
 class PaperSearchPrepareParam {
     /** @var 0|1|2|3 */
     private $_nest = 0;
@@ -1316,70 +1279,10 @@ class PaperSearch extends MessageSet {
     }
 
     /** @param iterable<string>|iterable<array{string,?int,?int,?int,?SearchStringContext}> $words
-     * @return Generator<SearchViewElement> */
+     * @return list<SearchViewCommand>
+     * @deprecated */
     static function view_generator($words) {
-        foreach ($words as $w) {
-            $sve = new SearchViewElement;
-            if (is_array($w)) {
-                $sve->kwpos1 = $w[1];
-                $sve->pos1 = $w[2];
-                $sve->pos2 = $w[3];
-                $sve->string_context = $w[4];
-                $w = $w[0];
-            }
-
-            $colon = strpos($w, ":");
-            if ($colon === false
-                || !in_array(substr($w, 0, $colon), ["show", "sort", "edit", "hide", "showsort", "editsort"])) {
-                $w = "show:" . $w;
-                $colon = 4;
-            }
-
-            $sve->action = substr($w, 0, $colon);
-            $d = substr($w, $colon + 1);
-            $keyword = null;
-            if (str_starts_with($d, "[")) { /* XXX backward compat */
-                $dlen = strlen($d);
-                for ($ltrim = 1; $ltrim !== $dlen && ctype_space($d[$ltrim]); ++$ltrim) {
-                }
-                $rtrim = $dlen;
-                if ($rtrim > $ltrim && $d[$rtrim - 1] === "]") {
-                    --$rtrim;
-                    while ($rtrim > $ltrim && ctype_space($d[$rtrim - 1])) {
-                        --$rtrim;
-                    }
-                }
-                $sve->pos1 = $sve->pos1 !== null ? $sve->pos1 + $ltrim : null;
-                $sve->pos2 = $sve->pos2 !== null ? $sve->pos2 - ($dlen - $rtrim) : null;
-                $d = substr($d, $ltrim, $rtrim - $ltrim);
-            } else if (str_ends_with($d, "]")
-                       && ($lbrack = strrpos($d, "[")) !== false) {
-                $keyword = substr($d, 0, $lbrack);
-                $d = substr($d, $lbrack + 1, strlen($d) - $lbrack - 2);
-            }
-
-            if ($d !== "") {
-                $splitter = new SearchSplitter($d);
-                while ($splitter->skip_span(" \n\r\t\v\f,")) {
-                    $sve->decorations[] = $splitter->shift_balanced_parens(" \n\r\t\v\f,");
-                }
-            }
-
-            $keyword = $keyword ?? array_shift($sve->decorations) ?? "";
-            if ($keyword !== "") {
-                if ($keyword[0] === "-") {
-                    array_unshift($sve->decorations, "reverse");
-                }
-                if ($keyword[0] === "-" || $keyword[0] === "+") {
-                    $keyword = substr($keyword, 1);
-                    $sve->pos1 = $sve->pos1 !== null ? $sve->pos1 + 1 : null;
-                }
-                if ($keyword !== "") {
-                    $sve->keyword = $keyword;
-                    yield $sve;
-                }
-            }
-        }
+        return SearchViewCommand::analyze($words);
     }
 
     /** @param string|bool $action
@@ -1401,12 +1304,17 @@ class PaperSearch extends MessageSet {
         }
     }
 
+    /** @return list<SearchViewCommand> */
+    function view_commands() {
+        return $this->main_term()->view_commands();
+    }
+
     /** @return list<string> */
     private function sort_field_list() {
         $r = [];
-        foreach (self::view_generator($this->main_term()->view_anno() ?? []) as $sve) {
-            if ($sve->sort_action()) {
-                $r[] = $sve->keyword;
+        foreach ($this->main_term()->view_commands() as $svc) {
+            if ($svc->sort_action()) {
+                $r[] = $svc->keyword;
             }
         }
         return $r;

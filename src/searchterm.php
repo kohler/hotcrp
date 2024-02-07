@@ -66,25 +66,29 @@ abstract class SearchTerm {
         return $negate ? $this->negate() : $this;
     }
 
-    /** @return list<array{string,?int,?int,?int,?SearchStringContext}> */
-    function view_anno() {
-        return $this->float["view"] ?? [];
-    }
-
-    /** @param string $view
+    /** @param string $command
      * @param SearchWord $sword
      * @return $this */
-    function add_view_anno($view, $sword) {
-        $this->float["view"][] = [$view, $sword->kwpos1, $sword->pos1, $sword->pos2, $sword->string_context];
+    function add_view_anno($command, $sword) {
+        $this->float["view"][] = new SearchViewCommand($command, $sword);
         return $this;
     }
 
+    /** @return list<SearchViewCommand> */
+    function view_commands() {
+        $v = $this->float["view"] ?? [];
+        if (!empty($v)) {
+            $v = SearchViewCommand::analyze($v);
+        }
+        return $v;
+    }
+
     /** @param string $field
-     * @return ?SearchViewElement */
-    function view_anno_element($field) {
-        foreach (PaperSearch::view_generator($this->float["view"] ?? []) as $sve) {
-            if ($field === $sve->keyword)
-                return $sve;
+     * @return ?SearchViewCommand */
+    function find_view_command($field) {
+        foreach ($this->view_commands() as $svc) {
+            if ($svc->keyword === $field)
+                return $svc;
         }
         return null;
     }
@@ -304,27 +308,12 @@ abstract class Op_SearchTerm extends SearchTerm {
     function __construct($type) {
         parent::__construct($type);
     }
-    /** @param list<string> $vxs
-     * @return list<string> */
-    private static function strip_sort($vxs) {
-        $res = [];
-        foreach ($vxs as $vx) {
-            if (preg_match('/\A([a-z]*)sort(:.*)\z/s', $vx[0], $m)) {
-                if ($m[1] !== "") {
-                    $res[] = [$m[1] . $m[2], $vx[1], $vx[2]];
-                }
-            } else {
-                $res[] = $vx;
-            }
-        }
-        return $res;
-    }
     /** @param SearchTerm $term */
     protected function append($term) {
         if ($term) {
             foreach ($term->float as $k => $v) {
                 if ($k === "view" && $this->type === "then") {
-                    $v = self::strip_sort($v);
+                    $v = SearchViewCommand::strip_sorts($v);
                 }
                 if ($k === "view" || $k === "tags") {
                     if (!isset($this->float[$k])) {

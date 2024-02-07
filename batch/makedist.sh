@@ -472,6 +472,7 @@ src/searchoperator.php
 src/searchselection.php
 src/searchsplitter.php
 src/searchterm.php
+src/searchviewcommand.php
 src/searchword.php
 src/sessionlist.php
 src/settinginfoset.php

@@ -382,10 +382,9 @@ class PaperList {
             $this->_then_map = $this->search->groups_by_paper_id();
             $this->_highlight_map = $this->search->highlights_by_paper_id();
         }
-        $qe = $this->search->main_term();
-        foreach (PaperSearch::view_generator($qe->view_anno()) as $sve) {
-            if (($show_action = $sve->show_action())) {
-                $this->set_view($sve->keyword, $show_action, self::VIEWORIGIN_SEARCH, $sve->decorations);
+        foreach ($this->search->view_commands() as $svc) {
+            if (($show_action = $svc->show_action())) {
+                $this->set_view($svc->keyword, $show_action, self::VIEWORIGIN_SEARCH, $svc->decorations);
             }
         }
 
@@ -748,7 +747,7 @@ class PaperList {
      * @param 0|1|2|3|4|5 $origin */
     function parse_view($str, $origin) {
         $groups = SearchSplitter::split_balanced_parens($str ?? "");
-        foreach (PaperSearch::view_generator($groups) as $sve) {
+        foreach (SearchViewCommand::analyze($groups) as $sve) {
             if (($show_action = $sve->show_action())) {
                 $this->set_view($sve->keyword, $show_action, $origin, $sve->decorations);
             }
@@ -907,7 +906,7 @@ class PaperList {
     /** @param ?list<int> $sort_subset */
     private function _add_search_sorters(SearchTerm $qe, $sort_subset) {
         $nsortcol = count($this->_sortcol);
-        foreach (PaperSearch::view_generator($qe->view_anno()) as $sve) {
+        foreach ($qe->view_commands() as $sve) {
             if ($sve->sort_action()) {
                 $this->_add_sorter($sve->keyword, PaperList::VIEWORIGIN_SEARCH, $sve->decorations, $sort_subset, $sve->pos1, $sve->pos2);
             }
@@ -1222,7 +1221,7 @@ class PaperList {
         } else {
             $mi = $message;
         }
-        if (($sve = $this->search->main_term()->view_anno_element($name))
+        if (($sve = $this->search->main_term()->find_view_command($name))
             && ($mi->status !== MessageSet::INFORM || empty($this->_finding_column_errors))) {
             if ($mi->pos1 !== null) {
                 $mis = $this->search->expand_message_context($mi, $mi->pos1 + $sve->pos1, $mi->pos2 + $sve->pos1, $sve->string_context);
