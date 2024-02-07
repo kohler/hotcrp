@@ -1695,19 +1695,19 @@ class Tagger {
             $x .= $b;
         }
         foreach ($dt->badges($tags) as $tb) {
-            $klass = " class=\"badge badge-{$tb[1]}\"";
+            $klass = "badge badge-{$tb[1]}";
             if (str_starts_with($tb[1], "rgb-")) {
                 TagMap::stash_ensure_pattern("badge-{$tb[1]}");
             }
             $tag = $this->unparse($tb[0]);
             if ($type === self::DECOR_PAPER && ($q = $this->js_sq($tag, false)) !== null) {
                 $dq = $q === "" ? "" : " data-q=\"" . htmlspecialchars($q) . "\"";
-                $b = "<a href=\"\" class=\"uic js-sq\"{$dq}{$klass}>#{$tag}</a>";
+                $b = "<a href=\"\" class=\"uic js-sq {$klass}\"{$dq}>#{$tag}</a>";
             } else {
                 if ($type !== self::DECOR_USER) {
                     $tag = "#{$tag}";
                 }
-                $b = "<span{$klass}>{$tag}</span>";
+                $b = "<span class=\"{$klass}\">{$tag}</span>";
             }
             $x .= ' ' . $b;
         }
