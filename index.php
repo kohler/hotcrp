@@ -56,6 +56,12 @@ function handle_request($nav) {
 
 $nav = Navigation::get();
 
+// handle OPTIONS requests, including CORS preflight
+if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
+    include("src/pages/p_api.php");
+    API_Page::go_options($nav);
+}
+
 // handle `/u/USERINDEX/`
 if ($nav->page === "u") {
     $unum = $nav->path_component(0);
