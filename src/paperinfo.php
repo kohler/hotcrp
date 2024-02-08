@@ -1034,7 +1034,7 @@ class PaperInfo {
             } else {
                 $phase = self::PHASE_REVIEW;
             }
-            $this->_flags = ($phase & ~self::PHASE_MASK) | self::HAS_PHASE | ($phase << self::PHASE_SHIFT);
+            $this->_flags = ($this->_flags & ~self::PHASE_MASK) | self::HAS_PHASE | ($phase << self::PHASE_SHIFT);
         }
         return ($this->_flags & self::PHASE_MASK) >> self::PHASE_SHIFT;
     }
