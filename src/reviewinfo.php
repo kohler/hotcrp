@@ -311,7 +311,7 @@ class ReviewInfo implements JsonSerializable {
             if ($f->order && $f->main_storage)
                 $t .= ", ' {$f->order}=', {$f->main_storage}";
         }
-        return "group_concat($t order by r.reviewId)";
+        return "group_concat({$t} order by r.reviewId)";
     }
 
     /** @param string $signature

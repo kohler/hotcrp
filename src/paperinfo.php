@@ -147,14 +147,13 @@ class PaperContactInfo {
     /** @param PaperInfo $prow
      * @param Contact $user
      * @suppress PhanAccessReadOnlyProperty */
-    static function make_my($prow, $user, $object) {
+    static function make_my($prow, $user) {
         $ci = PaperContactInfo::make_user($prow, $user);
-        $ci->conflictType = (int) $object->conflictType;
-        if (isset($object->myReviewPermissions)) {
-            $ci->mark_my_review_permissions($prow->conf, $object->myReviewPermissions);
-        } else if ($object instanceof PaperInfo
-                   && $object->reviewSignatures !== null) {
-            foreach ($object->reviews_by_user($user->contactId, $user->review_tokens()) as $rrow) {
+        $ci->conflictType = (int) $prow->conflictType;
+        if (isset($prow->myReviewPermissions)) {
+            $ci->mark_my_review_permissions($prow->conf, $prow->myReviewPermissions);
+        } else if ($prow->reviewSignatures !== null) {
+            foreach ($prow->reviews_by_user($user->contactId, $user->review_tokens()) as $rrow) {
                 $ci->mark_review($rrow);
             }
         }
@@ -536,18 +535,20 @@ class PaperInfo {
     /** @var ?string */
     public $allConflictType;
     /** @var ?string */
-    public $myReviewerPreference;
-    /** @var ?string */
-    public $myReviewerExpertise;
-    /** @var ?string */
     public $allReviewerPreference;
 
     /** @var ?string */
     public $myReviewPermissions;
     /** @var ?string */
+    public $myReviewerPreference;
+    /** @var ?string */
+    public $myReviewerExpertise;
+    /** @var ?string */
     public $conflictType;
     /** @var ?int */
     public $watch;
+    /** @var ?int */
+    private $myContactXid;
 
     /** @var ?string */
     public $reviewSignatures;
@@ -648,8 +649,6 @@ class PaperInfo {
     private $_request_array;
     /** @var ?list<ReviewRefusalInfo> */
     private $_refusal_array;
-    /** @var ?int */
-    private $_watch_cid;
     /** @var ?array<int,int> */
     private $_watch_array;
     /** @var ?TokenInfo */
@@ -742,27 +741,6 @@ class PaperInfo {
         }
     }
 
-    /** @param Contact $user */
-    private function incorporate_user($user) {
-        assert($this->conf === $user->conf);
-        if ($this->myReviewPermissions !== null
-            || $this->reviewSignatures !== null) {
-            $this->_rights_version = Contact::$rights_version;
-            $this->load_my_contact_info($user, $this);
-        } else {
-            assert($this->conflictType === null);
-        }
-        if ($this->myReviewerPreference !== null) {
-            $re = $this->myReviewerExpertise;
-            $this->_pref1 = new PaperReviewPreference((int) $this->myReviewerPreference, $re === null ? $re : (int) $re);
-            $this->_pref1_cid = $user->contactId;
-        }
-        if ($this->watch !== null) {
-            $this->watch = (int) $this->watch;
-            $this->_watch_cid = $user->contactId;
-        }
-    }
-
     /** @param Dbl_Result $result
      * @param ?Contact $user
      * @param ?PaperInfoSet $paperset
@@ -773,7 +751,8 @@ class PaperInfo {
             $prow->set_outcome_sign();
             $prow->_row_set->add_paper($prow);
             if ($user !== null) {
-                $prow->incorporate_user($user);
+                $prow->myContactXid = $user->contactXid;
+                $prow->_rights_version = Contact::$rights_version;
             }
         }
         return $prow;
@@ -835,7 +814,8 @@ class PaperInfo {
         $prow->conflictType = "0";
         $prow->myReviewPermissions = "{$rtype} 1 0 0 -1";
         $prow->_row_set->add_paper($prow);
-        $prow->incorporate_user($user);
+        $prow->myContactXid = $user->contactXid;
+        $prow->_rights_version = Contact::$rights_version;
         return $prow;
     }
 
@@ -888,6 +868,7 @@ class PaperInfo {
                 $this->_contact_info = [];
                 $this->reviewSignatures = $this->_review_array = $this->_reviews_have = null;
                 $this->allConflictType = $this->_ctype_list = null;
+                $this->myContactXid = null;
                 ++$this->_review_array_version;
             }
             $this->_rights_version = Contact::$rights_version;
@@ -927,8 +908,11 @@ class PaperInfo {
         $this->check_rights_version();
         $cid = $user->contactXid;
         if (!array_key_exists($cid, $this->_contact_info)) {
-            if ($this->_review_array
-                || $this->reviewSignatures !== null) {
+            if ($this->myContactXid === $cid) {
+                $ci = PaperContactInfo::make_my($this, $user);
+                $this->_contact_info[$cid] = $ci;
+            } else if ($this->_review_array
+                       || $this->reviewSignatures !== null) {
                 $ci = PaperContactInfo::make_user($this, $user);
                 if ($cid > 0) {
                     $ci->mark_conflict($this->conflict_type($cid));
@@ -936,7 +920,7 @@ class PaperInfo {
                 foreach ($this->reviews_by_user($cid, $user->review_tokens()) as $rrow) {
                     $ci->mark_review($rrow);
                 }
-                $this->_contact_info[$user->contactXid] = $ci;
+                $this->_contact_info[$cid] = $ci;
             } else {
                 PaperContactInfo::load_into($this, $user);
             }
@@ -954,11 +938,6 @@ class PaperInfo {
             $this->_contact_info[$user->contactXid] = $ci = new PaperContactInfo($this->paperId, $user->contactXid);
         }
         return $ci;
-    }
-
-    function load_my_contact_info($contact, $object) {
-        $ci = PaperContactInfo::make_my($this, $contact, $object);
-        $this->_contact_info[$ci->contactId] = $ci;
     }
 
     /** @return Contact */
@@ -2143,7 +2122,10 @@ class PaperInfo {
         }
         foreach ($row_set as $prow) {
             $prow->allReviewerPreference = "";
-            $prow->_prefs_array = $prow->_pref1_cid = $prow->_pref1 = $prow->_desirability = null;
+            $prow->_prefs_array = null;
+            $prow->myReviewerPreference = $prow->myReviewerExpertise = null;
+            $prow->_pref1_cid = $prow->_pref1 = null;
+            $prow->_desirability = null;
         }
         $result = $this->conf->qe("select paperId, " . $this->conf->all_reviewer_preference_query() . " from PaperReviewPreference where paperId?a group by paperId", $row_set->paper_ids());
         while ($result && ($row = $result->fetch_row())) {
@@ -2176,6 +2158,12 @@ class PaperInfo {
      * @return PaperReviewPreference */
     function preference($contact) {
         $cid = is_int($contact) ? $contact : $contact->contactId;
+        if ($this->myReviewerPreference !== null
+            && $this->myContactXid === $cid) {
+            $pf = (int) $this->myReviewerPreference;
+            $ex = $this->myReviewerExpertise;
+            return new PaperReviewPreference($pf, $ex !== null ? (int) $ex : null);
+        }
         if ($this->_pref1_cid === null
             && $this->_prefs_array === null
             && $this->allReviewerPreference === null) {
@@ -2186,12 +2174,16 @@ class PaperInfo {
             $result = $this->conf->qe("select paperId, preference, expertise from PaperReviewPreference where paperId?a and contactId=?", $this->_row_set->paper_ids(), $cid);
             while ($result && ($row = $result->fetch_row())) {
                 $prow = $this->_row_set->get((int) $row[0]);
-                $prow->_pref1 = new PaperReviewPreference((int) $row[1], $row[2] === null ? null : (int) $row[2]);
+                $prow->_pref1 = new PaperReviewPreference((int) $row[1], $row[2] !== null ? (int) $row[2] : null);
             }
             Dbl::free($result);
         }
-        $pf = $this->_pref1_cid === $cid ? $this->_pref1 : ($this->preferences())[$cid] ?? null;
-        return $pf ?? new PaperReviewPreference(0, null);
+        if ($this->_pref1_cid === $cid) {
+            $pref = $this->_pref1;
+        } else {
+            $pref = ($this->preferences())[$cid] ?? null;
+        }
+        return $pref ?? new PaperReviewPreference(0, null);
     }
 
     /** @return array<int,PaperReviewPreference> */
@@ -2585,12 +2577,11 @@ class PaperInfo {
 
     /** @param bool $always */
     function load_reviews($always = false) {
-        ++$this->_review_array_version;
-
         if ($this->reviewSignatures !== null
             && $this->_review_array === null
             && !$always) {
             $this->_review_array = [];
+            ++$this->_review_array_version;
             $this->_flags &= ~self::REVIEW_FLAGS;
             $this->_reviews_have = null;
             if ($this->reviewSignatures !== "") {
@@ -2610,9 +2601,10 @@ class PaperInfo {
         $had = 0;
         foreach ($row_set as $prow) {
             $prow->_review_array = [];
-            $prow->_reviews_have = null;
+            ++$prow->_review_array_version;
             $had |= $prow->_flags;
             $prow->_flags = ($prow->_flags & ~self::REVIEW_FLAGS) | self::REVIEW_HAS_FULL;
+            $prow->_reviews_have = null;
         }
 
         $result = $this->conf->qe("select PaperReview.*, " . $this->conf->rating_signature_query() . " ratingSignature from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
@@ -3424,6 +3416,7 @@ class PaperInfo {
 
     /** @return array<int,int> */
     function load_watch() {
+        $this->watch = null;
         $this->_watch_array = [];
         $result = $this->conf->qe("select contactId, watch from PaperWatch where paperId=?", $this->paperId);
         while (($row = $result->fetch_row())) {
@@ -3440,11 +3433,11 @@ class PaperInfo {
 
     /** @return int */
     function watch(Contact $user) {
-        if ($user->contactId === $this->_watch_cid) {
-            return $this->watch;
-        } else {
-            return ($this->all_watch())[$user->contactId] ?? 0;
+        if ($this->watch !== null
+            && $this->myContactXid === $user->contactXid) {
+            return (int) $this->watch;
         }
+        return ($this->all_watch())[$user->contactId] ?? 0;
     }
 
 
