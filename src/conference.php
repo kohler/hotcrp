@@ -4340,19 +4340,16 @@ class Conf {
     }
 
     function prepare_security_headers() {
-        if (($csp = $this->opt("contentSecurityPolicy"))) {
-            if (is_string($csp)) {
-                $csp = [$csp];
-            } else if ($csp === true) {
-                $csp = [];
-            }
+        $csp = $this->opt("contentSecurityPolicy");
+        if ($csp === null || $csp === true) {
+            // disallow frame embedding by default
+            header("Content-Security-Policy: frame-ancestors 'none'");
+        } else if ($csp !== false && $csp !== []) {
+            $csp = is_string($csp) ? [$csp] : $csp;
             $report_only = false;
             if (($pos = array_search("'report-only'", $csp)) !== false) {
                 $report_only = true;
                 array_splice($csp, $pos, 1);
-            }
-            if (empty($csp)) {
-                array_push($csp, "script-src", "'nonce'");
             }
             if (($pos = array_search("'nonce'", $csp)) !== false) {
                 $nonceval = base64_encode(random_bytes(16));
@@ -4367,7 +4364,7 @@ class Conf {
             header("Cross-Origin-Opener-Policy: same-origin");
         }
         if (($sts = $this->opt("strictTransportSecurity"))) {
-            header("Strict-Transport-Security: $sts");
+            header("Strict-Transport-Security: {$sts}");
         }
     }
 
@@ -4490,7 +4487,7 @@ class Conf {
         ];
         $userinfo = [];
         if (($x = $this->opt("sessionDomain"))) {
-            $siteinfo["cookie_params"] .= "; Domain=$x";
+            $siteinfo["cookie_params"] .= "; Domain={$x}";
         }
         if ($this->opt("sessionSecure")) {
             $siteinfo["cookie_params"] .= "; Secure";

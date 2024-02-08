@@ -27,6 +27,7 @@ function handle_request_components($user, $qreq, $pagej, $pc) {
 
 /** @param NavigationState $nav */
 function handle_request($nav) {
+    $qreq = null;
     try {
         $conf = initialize_conf();
         if ($nav->page === "api") {
@@ -48,7 +49,7 @@ function handle_request($nav) {
     } catch (Redirection $redir) {
         Conf::$main->redirect($redir->url);
     } catch (JsonCompletion $jc) {
-        $jc->result->emit();
+        $jc->result->emit($qreq);
     } catch (PageCompletion $unused) {
     }
 }
@@ -58,7 +59,7 @@ $nav = Navigation::get();
 // handle `/u/USERINDEX/`
 if ($nav->page === "u") {
     $unum = $nav->path_component(0);
-    if ($unum !== false && ctype_digit($unum)) {
+    if ($unum !== null && ctype_digit($unum)) {
         if (!$nav->shift_path_components(2)) {
             // redirect `/u/USERINDEX` => `/u/USERINDEX/`
             Navigation::redirect_absolute("{$nav->server}{$nav->base_path}u/{$unum}/{$nav->query}");

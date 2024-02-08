@@ -698,7 +698,7 @@ class Upload_API {
             && !$this->synchronous
             && JsonCompletion::$allow_short_circuit) {
             $json = new JsonResult($this->_make_result());
-            $json->emit($qreq->valid_token());
+            $json->emit($qreq);
             if (PHP_SAPI === "fpm-fcgi") {
                 fastcgi_finish_request();
             }

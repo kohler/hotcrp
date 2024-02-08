@@ -233,8 +233,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     }
 
 
-    /** @param ?bool $validated */
-    function emit($validated = null) {
+    /** @param ?Qrequest $qreq */
+    function emit($qreq = null) {
         if ($this->status && !$this->minimal) {
             if (!isset($this->content["ok"])) {
                 $this->content["ok"] = $this->status <= 299;
@@ -245,22 +245,23 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         } else if (isset($this->content["status"])) {
             $this->status = $this->content["status"];
         }
-        if ($validated
-            ?? (Qrequest::$main_request && Qrequest::$main_request->valid_token())) {
+        if ($qreq && $qreq->valid_token()) {
             // Don’t set status on unvalidated requests, since that can leak
             // information (e.g. via <link prefetch onerror>).
             if ($this->status) {
                 http_response_code($this->status);
             }
-            header("Access-Control-Allow-Origin: *");
+            if (($origin = $qreq->header("Origin"))) {
+                header("Access-Control-Allow-Origin: {$origin}");
+            }
         }
         header("Content-Type: application/json; charset=utf-8");
-        if (Qrequest::$main_request && isset(Qrequest::$main_request->pprint)) {
-            $pprint = friendly_boolean(Qrequest::$main_request->pprint);
+        if ($qreq && isset($qreq->pprint)) {
+            $pprint = friendly_boolean($qreq->pprint);
         } else if ($this->pretty_print !== null) {
             $pprint = $this->pretty_print;
         } else {
-            $pprint = Contact::$main_user && Contact::$main_user->is_bearer_authorized();
+            $pprint = $qreq->user() && $qreq->user()->is_bearer_authorized();
         }
         echo json_encode_browser($this->content, $pprint ? JSON_PRETTY_PRINT : 0), "\n";
     }

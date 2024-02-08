@@ -3,7 +3,9 @@
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class API_Page {
+    /** @return JsonResult */
     static function go(Contact $user, Qrequest $qreq) {
+        // initialize user, paper request
         $conf = $user->conf;
         if ($qreq->base !== null) {
             $conf->set_site_path_relative($qreq->navigation(), $qreq->base);
@@ -52,7 +54,7 @@ class API_Page {
             }
         }
 
-        json_exit($jr);
+        return $jr;
     }
 
     /** @param string $fn
@@ -152,7 +154,13 @@ class API_Page {
             initialize_request(["no_main_user" => true]);
             MeetingTracker::trackerstatus_api(Contact::make($conf));
         } else {
-            self::go(...initialize_request(["bearer" => true]));
+            list($user, $qreq) = initialize_request(["bearer" => true]);
+            try {
+                $jr = self::go($user, $qreq);
+            } catch (JsonCompletion $jc) {
+                $jr = $jc->result;
+            }
+            $jr->emit($qreq);
         }
     }
 }
