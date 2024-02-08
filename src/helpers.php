@@ -261,7 +261,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         } else if ($this->pretty_print !== null) {
             $pprint = $this->pretty_print;
         } else {
-            $pprint = $qreq->user() && $qreq->user()->is_bearer_authorized();
+            $pprint = $qreq && $qreq->user() && $qreq->user()->is_bearer_authorized();
         }
         echo json_encode_browser($this->content, $pprint ? JSON_PRETTY_PRINT : 0), "\n";
     }
