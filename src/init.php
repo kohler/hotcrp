@@ -273,8 +273,7 @@ function initialize_request($kwarg = null) {
     // check method
     if ($qreq->method() !== "GET"
         && $qreq->method() !== "POST"
-        && $qreq->method() !== "HEAD"
-        && ($qreq->method() !== "OPTIONS" || $nav->page !== "api")) {
+        && $qreq->method() !== "HEAD") {
         header("HTTP/1.0 405 Method Not Allowed");
         exit;
     }
