@@ -48,15 +48,15 @@ CREATE TABLE `Capability` (
 DROP TABLE IF EXISTS `ContactCounter`;
 CREATE TABLE `ContactCounter` (
   `contactId` int(11) NOT NULL,
-  `apiCount` bigint(11) NOT NULL DEFAULT '0',
-  `apiLimit` bigint(11) NOT NULL DEFAULT '0',
-  `apiRefreshMtime` bigint(11) NOT NULL DEFAULT '0',
-  `apiRefreshWindow` int(11) NOT NULL DEFAULT '0',
-  `apiRefreshAmount` int(11) NOT NULL DEFAULT '0',
-  `apiLimit2` bigint(11) NOT NULL DEFAULT '0',
-  `apiRefreshMtime2` bigint(11) NOT NULL DEFAULT '0',
-  `apiRefreshWindow2` int(11) NOT NULL DEFAULT '0',
-  `apiRefreshAmount2` int(11) NOT NULL DEFAULT '0',
+  `apiCount` bigint(11) NOT NULL DEFAULT 0,
+  `apiLimit` bigint(11) NOT NULL DEFAULT 0,
+  `apiRefreshMtime` bigint(11) NOT NULL DEFAULT 0,
+  `apiRefreshWindow` int(11) NOT NULL DEFAULT 0,
+  `apiRefreshAmount` int(11) NOT NULL DEFAULT 0,
+  `apiLimit2` bigint(11) NOT NULL DEFAULT 0,
+  `apiRefreshMtime2` bigint(11) NOT NULL DEFAULT 0,
+  `apiRefreshWindow2` int(11) NOT NULL DEFAULT 0,
+  `apiRefreshAmount2` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -335,13 +335,13 @@ CREATE TABLE `PaperReview` (
   `paperId` int(11) NOT NULL,
   `reviewId` int(11) NOT NULL AUTO_INCREMENT,
   `contactId` int(11) NOT NULL,
+  `reviewType` tinyint(1) NOT NULL,
   `requestedBy` int(11) NOT NULL DEFAULT 0,
   `reviewToken` int(11) NOT NULL DEFAULT 0,
   `reviewRound` int(1) NOT NULL DEFAULT 0,
   `reviewOrdinal` int(1) NOT NULL DEFAULT 0,
-  `reviewType` tinyint(1) NOT NULL DEFAULT 0,
-  `reviewBlind` tinyint(1) NOT NULL DEFAULT 1,
-  `reviewTime` bigint(1) NOT NULL DEFAULT 0,
+  `reviewBlind` tinyint(1) NOT NULL,
+  `reviewTime` bigint(11) NOT NULL DEFAULT 0,
   `reviewModified` bigint(1) NOT NULL DEFAULT 0,
   `reviewSubmitted` bigint(1) DEFAULT NULL,
   `reviewAuthorSeen` bigint(1) NOT NULL DEFAULT 0,
@@ -349,6 +349,7 @@ CREATE TABLE `PaperReview` (
   `timeApprovalRequested` bigint(11) NOT NULL DEFAULT 0,
   `reviewNeedsSubmit` tinyint(1) NOT NULL DEFAULT 1,
   `reviewViewScore` tinyint(2) NOT NULL DEFAULT -3,
+  `rflags` int(11) NOT NULL,
 
   `timeRequested` bigint(11) NOT NULL DEFAULT 0,
   `timeRequestNotified` bigint(11) NOT NULL DEFAULT 0,
@@ -408,6 +409,7 @@ CREATE TABLE `PaperReviewHistory` (
   `reviewNotified` bigint(1) DEFAULT NULL,
   `reviewAuthorNotified` bigint(11) NOT NULL,
   `reviewEditVersion` int(1) NOT NULL,
+  `rflags` int(11) NOT NULL,
   `revdelta` longblob DEFAULT NULL,
 
   PRIMARY KEY (`paperId`,`reviewId`,`reviewTime`)
@@ -624,7 +626,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 291, null),   -- schema version
+  ('allowPaperOption', 292, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

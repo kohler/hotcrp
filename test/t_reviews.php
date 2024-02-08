@@ -1425,4 +1425,20 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq(ReviewField::clean_name("Fudge (secret)"), "Fudge");
         xassert_eqq(ReviewField::clean_name("Fudge (shown only to Emmanuel Macron)"), "Fudge (shown only to Emmanuel Macron)");
     }
+
+    function test_self_assign() {
+        save_review(30, $this->u_lixia, ["ready" => true, "ovemer" => 2, "revexp" => 2]);
+        $prow = $this->conf->checked_paper_by_id(30);
+        $rrow = $prow->review_by_user($this->u_lixia);
+        xassert_eqq($rrow->requestedBy, $this->u_lixia->contactId);
+        xassert_eqq($rrow->reviewType, REVIEW_PC);
+        xassert_neqq($rrow->rflags & ReviewInfo::RF_SELF_ASSIGNED, 0);
+        xassert($prow->contact_info($this->u_lixia)->self_assigned);
+    }
+
+    function test_rflags_type() {
+        for ($i = 0; $i <= REVIEW_META; ++$i) {
+            xassert_eqq(ReviewInfo::rflags_type(1 << $i), $i);
+        }
+    }
 }

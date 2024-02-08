@@ -1,6 +1,6 @@
 <?php
 // reviewhistoryinfo.php -- HotCRP class representing reviews
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class ReviewHistoryInfo implements JsonSerializable {
     // fields always present
@@ -41,6 +41,8 @@ class ReviewHistoryInfo implements JsonSerializable {
     public $reviewAuthorNotified;
     /** @var ?int */
     public $reviewEditVersion;  // NB also used to check if `data` was loaded
+    /** @var int */
+    public $rflags;
     /** @var ?string */
     public $revdelta;
 
@@ -74,6 +76,7 @@ class ReviewHistoryInfo implements JsonSerializable {
         $this->reviewNotified = (int) $this->reviewNotified;
         $this->reviewAuthorNotified = (int) $this->reviewAuthorNotified;
         $this->reviewEditVersion = (int) $this->reviewEditVersion;
+        $this->rflags = (int) $this->rflags;
     }
 
     #[\ReturnTypeWillChange]

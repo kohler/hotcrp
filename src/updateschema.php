@@ -2985,9 +2985,22 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table PaperReview change `reviewAuthorSeen` `reviewAuthorSeen` bigint(1) NOT NULL DEFAULT 0")) {
             $conf->update_schema_version(290);
         }
-        If ($conf->sversion === 290) {
+        if ($conf->sversion === 290) {
             $conf->ql_ok("delete from Settings where name='__unfucked_checkboxes_v291'");
             $conf->update_schema_version(291);
+        }
+        if ($conf->sversion === 291
+            && $conf->ql_ok("alter table PaperReview add `rflags` int(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `rflags` `rflags` int(11) NOT NULL")
+            && $conf->ql_ok("alter table PaperReview change `reviewBlind` `reviewBlind` tinyint(1) NOT NULL")
+            && $conf->ql_ok("alter table PaperReview change `reviewType` `reviewType` tinyint(1) NOT NULL")
+            && $conf->ql_ok("alter table PaperReviewHistory add `rflags` int(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReviewHistory change `rflags` `rflags` int(11) NOT NULL")
+            && $conf->ql_ok("update PaperReview set rflags=1|(1<<reviewType)|if(reviewModified>0,256,0)|if(reviewModified>1,512,0)|if(timeApprovalRequested!=0,1024,0)|if(timeApprovalRequested<0,2048,0)|if(coalesce(reviewSubmitted,0)>0,4096,0)|if(reviewBlind!=0,65536,0)|if(reviewType=2 and requestedBy=contactId,131072,0)")
+            && $conf->ql_ok("update PaperReviewHistory set rflags=1|(1<<reviewType)|if(reviewModified>0,256,0)|if(reviewModified>1,512,0)|if(timeApprovalRequested!=0,1024,0)|if(timeApprovalRequested<0,2048,0)|if(coalesce(reviewSubmitted,0)>0,4096,0)|if(reviewBlind!=0,65536,0)")
+            // also clean up reviewNextTime
+            && $conf->ql_ok("alter table PaperReviewHistory change `reviewNextTime` `reviewNextTime` bigint(11) NOT NULL")) {
+            $conf->update_schema_version(292);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

@@ -44,6 +44,8 @@ class ReviewInfo implements JsonSerializable {
     /** @var int */
     private $reviewViewScore;
     /** @var int */
+    public $rflags;
+    /** @var int */
     public $reviewStatus;
 
     // sometimes loaded
@@ -118,6 +120,16 @@ class ReviewInfo implements JsonSerializable {
     const RS_ADOPTED = 4;
     const RS_COMPLETED = 5;
 
+    const RF_LIVE = 1;
+    const RF_TYPEMASK = 254;
+    const RF_ACCEPTED = 1 << 8;
+    const RF_DRAFTED = 1 << 9;
+    const RF_DELIVERED = 1 << 10;
+    const RF_ADOPTED = 1 << 11;
+    const RF_SUBMITTED = 1 << 12;
+    const RF_BLIND = 1 << 16;
+    const RF_SELF_ASSIGNED = 1 << 17;
+
     const RATING_GOODMASK = 1;
     const RATING_BADMASK = 126;
     const RATING_ANYMASK = 127;
@@ -185,6 +197,12 @@ class ReviewInfo implements JsonSerializable {
         return self::$type_revmap[$type];
     }
 
+    /** @param int $rflags
+     * @return int */
+    static function rflags_type($rflags) {
+        return ($rflags & 0x30 ? 4 : 0) + ($rflags & 0x0C ? 2 : 0) + ($rflags & 0x2A ? 1 : 0);
+    }
+
     /** @param int $type
      * @return string */
     static function unparse_assigner_action($type) {
@@ -216,6 +234,7 @@ class ReviewInfo implements JsonSerializable {
         $rrow->timeApprovalRequested = 0;
         $rrow->reviewNeedsSubmit = 0;
         $rrow->reviewViewScore = -3;
+        $rrow->rflags = self::RF_LIVE | (1 << $rrow->reviewType) | ($rrow->reviewBlind ? self::RF_BLIND : 0);
         $rrow->reviewStatus = self::RS_EMPTY;
         $rrow->fields = $rrow->conf->review_form()->order_array(null);
         return $rrow;
@@ -244,6 +263,7 @@ class ReviewInfo implements JsonSerializable {
         $this->timeApprovalRequested = (int) $this->timeApprovalRequested;
         $this->reviewNeedsSubmit = (int) $this->reviewNeedsSubmit;
         $this->reviewViewScore = (int) $this->reviewViewScore;
+        $this->rflags = (int) $this->rflags;
         $this->reviewStatus = $this->compute_review_status();
 
         if ($this->timeRequested !== null) {
@@ -306,7 +326,7 @@ class ReviewInfo implements JsonSerializable {
      * @param ?list<ReviewField> $scores
      * @return string */
     static function review_signature_sql(Conf $conf, $scores = null) {
-        $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit, ' ', r.reviewViewScore";
+        $t = "r.reviewId, ' ', r.contactId, ' ', r.reviewToken, ' ', r.reviewType, ' ', r.reviewRound, ' ', r.requestedBy, ' ', r.reviewBlind, ' ', r.reviewModified, ' ', coalesce(r.reviewSubmitted,0), ' ', coalesce(r.reviewAuthorSeen,0), ' ', r.reviewOrdinal, ' ', r.timeDisplayed, ' ', r.timeApprovalRequested, ' ', r.reviewNeedsSubmit, ' ', r.reviewViewScore, ' ', r.rflags";
         foreach ($scores ?? [] as $f) {
             if ($f->order && $f->main_storage)
                 $t .= ", ' {$f->order}=', {$f->main_storage}";
@@ -337,10 +357,11 @@ class ReviewInfo implements JsonSerializable {
         $rrow->timeApprovalRequested = (int) $vals[12];
         $rrow->reviewNeedsSubmit = (int) $vals[13];
         $rrow->reviewViewScore = (int) $vals[14];
+        $rrow->rflags = (int) $vals[15];
         $rrow->reviewStatus = $rrow->compute_review_status();
-        if (isset($vals[15])) {
+        if (isset($vals[16])) {
             $rrow->fields = $prow->conf->review_form()->order_array(null);
-            for ($i = 15; isset($vals[$i]); ++$i) {
+            for ($i = 16; isset($vals[$i]); ++$i) {
                 $eq = strpos($vals[$i], "=");
                 $order = intval(substr($vals[$i], 0, $eq));
                 $fv = intval(substr($vals[$i], $eq + 1));
@@ -1012,6 +1033,7 @@ class ReviewInfo implements JsonSerializable {
         $rrow->reviewNotified = $rhrow->reviewNotified;
         $rrow->reviewAuthorNotified = $rhrow->reviewAuthorNotified;
         $rrow->reviewEditVersion = $rhrow->reviewEditVersion;
+        $rrow->rflags = $rhrow->rflags;
 
         if ($rhrow->revdelta !== null) {
             $patch = json_decode($rhrow->revdelta, true);

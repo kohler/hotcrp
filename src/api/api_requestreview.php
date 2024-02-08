@@ -295,19 +295,32 @@ class RequestReview_API {
         }
 
         if (!$rrow) {
-            $prow->conf->qe("insert into PaperReview set paperId=?, reviewId=?, contactId=?, requestedBy=?, timeRequested=?, reviewType=?, reviewRound=?, data=?",
+            $reviewBlind = $prow->conf->is_review_blind(null) ? 1 : 0;
+            $prow->conf->qe("insert into PaperReview
+                set paperId=?, reviewId=?, contactId=?,
+                    requestedBy=?, timeRequested=?,
+                    reviewType=?, reviewRound=?, data=?,
+                    reviewBlind=?,
+                    rflags=?",
                 $prow->paperId, $refrow->refusedReviewId, $refrow->contactId,
                 $refrow->requestedBy, $refrow->timeRequested,
-                $refrow->refusedReviewType, $refrow->reviewRound, $refrow->data);
+                $refrow->refusedReviewType, $refrow->reviewRound, $refrow->data,
+                $reviewBlind,
+                ReviewInfo::RF_LIVE | (1 << $refrow->refusedReviewType) | ($reviewBlind ? ReviewInfo::RF_BLIND : 0));
             $prow->conf->qe("delete from PaperReviewRefused where refusedReviewId=?",
                 $refrow->refusedReviewId);
             $rrow = $prow->fresh_review_by_id($refrow->refusedReviewId);
         }
 
         if ($rrow->reviewStatus < ReviewInfo::RS_ACCEPTED) {
-            $prow->conf->qe("update PaperReview set reviewModified=1, timeRequestNotified=greatest(?,timeRequestNotified)
+            $prow->conf->qe("update PaperReview
+                set reviewModified=1,
+                    timeRequestNotified=greatest(?,timeRequestNotified),
+                    rflags=rflags|?
                 where paperId=? and reviewId=? and reviewModified<=0",
-                Conf::$now, $prow->paperId, $rrow->reviewId); /* XXX PaperReviewHistory? */
+                Conf::$now,
+                ReviewInfo::RF_ACCEPTED,
+                $prow->paperId, $rrow->reviewId); /* XXX PaperReviewHistory? */
             $user->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} accepted", $prow);
 
             // send mail to requesters
@@ -379,11 +392,15 @@ class RequestReview_API {
 
         // commit refusal to database
         if ($rrow) {
-            $prow->conf->qe("insert into PaperReviewRefused set paperId=?, email=?, contactId=?, requestedBy=?, timeRequested=?, refusedBy=?, timeRefused=?, reason=?, refusedReviewType=?, refusedReviewId=?, reviewRound=?, data=?
+            $prow->conf->qe("insert into PaperReviewRefused
+                set paperId=?, email=?, contactId=?,
+                    requestedBy=?, timeRequested=?, refusedBy=?,
+                    timeRefused=?, reason=?, refusedReviewType=?,
+                    refusedReviewId=?, reviewRound=?, data=?
                 on duplicate key update reason=coalesce(?,reason)",
                 $prow->paperId, $rrow->reviewer()->email, $rrow->contactId,
-                $rrow->requestedBy, $rrow->timeRequested,
-                $user->contactId, Conf::$now, $reason, $rrow->reviewType,
+                $rrow->requestedBy, $rrow->timeRequested, $user->contactId,
+                Conf::$now, $reason, $rrow->reviewType,
                 $rrid, $rrow->reviewRound, $rrow->data_string(),
                 $reason);
             $prow->conf->qe("delete from PaperReview where paperId=? and reviewId=?",

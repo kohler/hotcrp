@@ -146,7 +146,7 @@ class ReviewDiffInfo {
             reviewModified=?, reviewSubmitted=?, timeDisplayed=?, timeApprovalRequested=?,
             reviewAuthorSeen=?, reviewAuthorModified=?,
             reviewNotified=?, reviewAuthorNotified=?,
-            reviewEditVersion=?,
+            reviewEditVersion=?, rflags=?,
             revdelta=?",
             $rrow->paperId, $rrow->reviewId,
               $rrow->base_prop("reviewTime"), $rrow->reviewTime,
@@ -162,6 +162,7 @@ class ReviewDiffInfo {
             $rrow->base_prop("reviewNotified") ?? 0,
               $rrow->base_prop("reviewAuthorNotified") ?? 0,
             $rrow->base_prop("reviewEditVersion") ?? 0,
+              $rrow->base_prop("rflags") ?? 0,
             empty($patch) ? null : json_encode_db($patch));
         $result && $result->close();
     }

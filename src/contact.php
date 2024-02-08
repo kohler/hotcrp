@@ -5698,6 +5698,9 @@ class Contact implements JsonSerializable {
         assert($type >= 0 && $oldtype >= 0);
         $round = $extra["round_number"] ?? null;
         $new_requester_cid = $this->contactId;
+        if (($new_requester = $extra["requester_contact"] ?? null)) {
+            $new_requester_cid = $new_requester->contactId;
+        }
         $time = Conf::$now;
 
         // can't delete a review that's in progress
@@ -5721,10 +5724,12 @@ class Contact implements JsonSerializable {
             $round = $round ?? $this->conf->assignment_round($type === REVIEW_EXTERNAL);
             assert($round !== null); // `null` should not happen
             $round = $round ?? 0;
-            if (($new_requester = $extra["requester_contact"] ?? null)) {
-                $new_requester_cid = $new_requester->contactId;
+            $reviewBlind = $this->conf->is_review_blind(null) ? 1 : 0;
+            $rflags = ReviewInfo::RF_LIVE | (1 << $type) | ($reviewBlind ? ReviewInfo::RF_BLIND : 0);
+            if ($extra["selfassign"] ?? false) {
+                $rflags |= ReviewInfo::RF_SELF_ASSIGNED;
             }
-            $q = "insert into PaperReview set paperId={$pid}, contactId={$reviewer_cid}, reviewType={$type}, reviewRound={$round}, timeRequested={$time}, requestedBy={$new_requester_cid}";
+            $q = "insert into PaperReview set paperId={$pid}, contactId={$reviewer_cid}, reviewType={$type}, reviewRound={$round}, timeRequested={$time}, requestedBy={$new_requester_cid}, reviewBlind={$reviewBlind}, rflags={$rflags}";
             if ($extra["mark_notify"] ?? null) {
                 $q .= ", timeRequestNotified={$time}";
             }
@@ -5734,15 +5739,22 @@ class Contact implements JsonSerializable {
         } else if ($type === 0) {
             $q = "delete from PaperReview where paperId={$pid} and reviewId={$reviewId}";
         } else {
-            $q = "update PaperReview set reviewType={$type}";
+            $xflags = ReviewInfo::RF_TYPEMASK;
+            $qtail = "";
             if ($round !== null) {
-                $q .= ", reviewRound={$round}";
+                $qtail .= ", reviewRound={$round}";
+            }
+            if (($rrow->rflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0
+                && $type > REVIEW_PC) {
+                $xflags |= ReviewInfo::RF_SELF_ASSIGNED;
+                $qtail .= ", timeRequested={$time}, requestedBy={$new_requester_cid}";
             }
             if ($type !== REVIEW_SECONDARY && $oldtype === REVIEW_SECONDARY) {
                 $rns = $rrow->reviewStatus < ReviewInfo::RS_ADOPTED ? 1 : 0;
-                $q .= ", reviewNeedsSubmit={$rns}";
+                $qtail .= ", reviewNeedsSubmit={$rns}";
             }
-            $q .= " where paperId={$pid} and reviewId={$reviewId}";
+            $rflags = 1 << $type;
+            $q = "update PaperReview set reviewType={$type}, rflags=(rflags&~{$xflags})|{$rflags}{$qtail} where paperId={$pid} and reviewId={$reviewId}";
         }
 
         $result = $this->conf->qe_raw($q);
@@ -5763,9 +5775,9 @@ class Contact implements JsonSerializable {
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
         if ($type > 0 && $oldtype === 0) {
-            $this->conf->ql("delete from PaperReviewRefused where paperId=$pid and contactId=$reviewer_cid");
+            $this->conf->ql("delete from PaperReviewRefused where paperId={$pid} and contactId={$reviewer_cid}");
             if (($req_email = $extra["requested_email"] ?? null)) {
-                $this->conf->qe("delete from ReviewRequest where paperId=$pid and email=?", $req_email);
+                $this->conf->qe("delete from ReviewRequest where paperId={$pid} and email=?", $req_email);
             }
             if ($type < REVIEW_SECONDARY) {
                 $this->update_review_delegation($pid, $new_requester_cid, 1);
@@ -5826,7 +5838,12 @@ class Contact implements JsonSerializable {
                 $needsSubmit = -1;
             }
         }
-        $result = $this->conf->qe("update PaperReview set reviewSubmitted=null, reviewNeedsSubmit=?, timeApprovalRequested=0 where paperId=? and reviewId=?", $needsSubmit, $rrow->paperId, $rrow->reviewId);
+        $rsflags = ReviewInfo::RF_DELIVERED | ReviewInfo::RF_ADOPTED | ReviewInfo::RF_SUBMITTED;
+        $result = $this->conf->qe("update PaperReview
+            set reviewSubmitted=null, reviewNeedsSubmit=?,
+                timeApprovalRequested=0, rflags=rflags&~?
+            where paperId=? and reviewId=?",
+            $needsSubmit, $rsflags, $rrow->paperId, $rrow->reviewId);
         if ($result->affected_rows) {
             if ($rrow->reviewType < REVIEW_SECONDARY) {
                 $this->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);

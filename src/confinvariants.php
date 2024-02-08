@@ -62,17 +62,19 @@ class ConfInvariants {
         } else if ($text === null) {
             $text = $abbrev;
         }
-        $text = preg_replace_callback('/\{(\d+)\}/', function ($m) {
-            $v = $this->irow[$m[1]] ?? "";
-            if (!is_usascii($v)) {
-                $v = bin2hex($v);
-                if (str_starts_with($v, "736861322d") && strlen($v) === 74) {
-                    $v = "sha2-" . substr($v, 10);
+        $vs = [];
+        foreach ($this->irow as $t) {
+            $t = $t ?? "<null>";
+            if (!is_usascii($t)) {
+                $t = bin2hex($t);
+                if (str_starts_with($t, "736861322d") && strlen($t) === 74) {
+                    $t = "sha2-" . substr($t, 10);
                 }
             }
-            return $v;
-        }, $text);
-        $msg = "{$this->prefix}{$this->conf->dbname} invariant violation: {$text}";
+            $vs[] = $t;
+        }
+        $msg = "{$this->prefix}{$this->conf->dbname} invariant violation: "
+            . $this->conf->_($text, ...$vs);
         if ($this->msgbuf !== null) {
             $this->msgbuf[] = $msg . "\n";
         } else {
@@ -241,6 +243,15 @@ class ConfInvariants {
         $any = $this->invariantq("select paperId, reviewId from PaperReview where timeDisplayed=0 and (reviewSubmitted is not null or reviewOrdinal>0) limit 1");
         if ($any) {
             $this->invariant_error("review_timeDisplayed", "submitted/ordinal review #{0}/{1} has no timeDisplayed");
+        }
+
+        // rflags is defined correctly
+        $skipf = ReviewInfo::RF_SELF_ASSIGNED;
+        $any = $this->invariantq("select paperId, reviewId, rflags, concat(reviewType, ':', reviewModified, ':', timeApprovalRequested, ':', coalesce(reviewSubmitted,0), ':', reviewBlind) from PaperReview r
+            where (rflags&~?)!=1|(1<<reviewType)|if(reviewModified>0,256,0)|if(reviewModified>1,512,0)|if(timeApprovalRequested!=0,1024,0)|if(timeApprovalRequested<0,2048,0)|if(coalesce(reviewSubmitted>0),4096,0)|if(reviewBlind!=0,65536,0)
+            limit 1", $skipf);
+        if ($any) {
+            $this->invariant_error("rflags", "bad rflags for review #{0}/{1} [{2:x} v {3}]");
         }
 
         return $this;
