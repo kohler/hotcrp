@@ -6140,8 +6140,8 @@ function append_review_id(rrow, eheader) {
         e.innerHTML = rrow.blind ? "[" + rrow.reviewer + "]" : rrow.reviewer;
     }
     if (rrow.rtype) {
-        if (rrow.tentative) {
-            xc = " rttentative"
+        if (rrow.ghost) {
+            xc = " rtghost"
         } else {
             xc = rrow.subreview ? " rtsubrev" : "";
             if (!rrow.submitted && !rrow.approved) {

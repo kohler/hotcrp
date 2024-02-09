@@ -380,8 +380,8 @@ class ReviewInfo implements JsonSerializable {
 
 
     /** @return bool */
-    function is_tentative() {
-        return false;
+    function is_ghost() {
+        return ($this->rflags & self::RF_LIVE) === 0;
     }
 
     /** @return int */
@@ -466,8 +466,8 @@ class ReviewInfo implements JsonSerializable {
             $k = Ht::add_tokens($k, $classes);
         }
         if ($this->reviewStatus < ReviewInfo::RS_COMPLETED) {
-            if ($this->is_tentative()) {
-                $k .= " rttentative";
+            if ($this->is_ghost()) {
+                $k .= " rtghost";
             } else if ($this->timeApprovalRequested < 0) {
                 $k .= " rtsubrev";
             } else {
@@ -486,7 +486,7 @@ class ReviewInfo implements JsonSerializable {
             $title = ReviewForm::$revtype_names_full[$this->reviewType];
         }
         if ($this->reviewStatus < ReviewInfo::RS_COMPLETED
-            && !$this->is_tentative()
+            && !$this->is_ghost()
             && ($title !== "Subreview" || $this->timeApprovalRequested >= 0)) {
             $title .= " (" . $this->status_description() . ")";
         }
@@ -518,7 +518,7 @@ class ReviewInfo implements JsonSerializable {
             return $ucfirst ? "Request" : "request";
         } else if ($this->subject_to_approval()) {
             return $ucfirst ? "Subreview" : "subreview";
-        } else if ($this->is_tentative()) {
+        } else if ($this->is_ghost()) {
             return $ucfirst ? "Tentative review" : "tentative review";
         } else {
             return $ucfirst ? "Review" : "review";
@@ -543,7 +543,7 @@ class ReviewInfo implements JsonSerializable {
             return "accepted";
         } else if ($this->reviewType < REVIEW_PC) {
             return "outstanding";
-        } else if ($this->is_tentative()) {
+        } else if ($this->is_ghost()) {
             return "tentative";
         } else {
             return "not started";

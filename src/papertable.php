@@ -2528,7 +2528,7 @@ class PaperTable {
 
             // skip unsubmitted reviews;
             // assign page lists actionable reviews separately
-            if (!$canView && $rr->is_tentative()) {
+            if (!$canView && $rr->is_ghost()) {
                 continue;
             }
             if (!$canView && $hideUnviewable) {
@@ -2551,7 +2551,7 @@ class PaperTable {
                 $id .= " #" . $rr->unparse_ordinal_id();
             }
             if ($rr->reviewStatus < ReviewInfo::RS_ADOPTED
-                && !$rr->is_tentative()) {
+                && !$rr->is_ghost()) {
                 $d = $rr->status_description();
                 if ($d === "draft") {
                     $id = "Draft " . $id;

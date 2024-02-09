@@ -1237,7 +1237,7 @@ class Limit_SearchTerm extends SearchTerm {
             return $row->has_active_reviewer($user);
         case "rout":
             foreach ($row->reviews_by_user($user, $user->review_tokens()) as $rrow) {
-                if ($rrow->reviewNeedsSubmit != 0 && !$rrow->is_tentative())
+                if ($rrow->reviewNeedsSubmit != 0 && !$rrow->is_ghost())
                     return true;
             }
             return false;

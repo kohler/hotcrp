@@ -651,8 +651,8 @@ Ready\n";
         if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
             $rj["submitted"] = true;
         } else {
-            if ($rrow->is_tentative()) {
-                $rj["tentative"] = true;
+            if ($rrow->is_ghost()) {
+                $rj["ghost"] = true;
             }
             if ($rrow->is_subreview()) {
                 $rj["subreview"] = true;

@@ -188,7 +188,8 @@ class PaperContactInfo {
             if (($rflags & ReviewInfo::RF_SUBMITTED) !== 0
                 || $reviewNeedsSubmit === 0) {
                 $this->review_status = self::CIRS_SUBMITTED;
-            } else if ($this->review_status === 0) {
+            } else if ($this->review_status === 0
+                       && ($rflags & ReviewInfo::RF_LIVE) !== 0) {
                 $this->review_status = self::CIRS_UNSUBMITTED;
             }
         }

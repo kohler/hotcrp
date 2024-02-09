@@ -2882,7 +2882,7 @@ del .rto {
 	color: red;
 	border-color: red;
 }
-.rttentative {
+.rtghost {
 	opacity: 0.4;
 	border-style: dotted;
 }

@@ -3311,7 +3311,7 @@ class Contact implements JsonSerializable {
     function act_reviewer_sql($table) {
         $m = [];
         if ($this->contactId > 0) {
-            $m[] = "({$table}.contactId={$this->contactId} and {$table}.reviewType>0)";
+            $m[] = "{$table}.contactId={$this->contactId}";
         }
         if (($rev_tokens = $this->review_tokens())) {
             $m[] = "{$table}.reviewToken in (" . join(",", $rev_tokens) . ")";
@@ -3326,11 +3326,9 @@ class Contact implements JsonSerializable {
         }
         if (empty($m)) {
             return "false";
-        } else if (count($m) === 1) {
-            return $m[0];
-        } else {
-            return "(" . join(" or ", $m) . ")";
         }
+        $mx = count($m) === 1 ? $m[0] : "(" . join(" or ", $m) . ")";
+        return "({$mx} and ({$table}.rflags&1)!=0)"; // ReviewInfo::RF_LIVE
     }
 
     /** @param bool $allow_no_email
@@ -3936,7 +3934,7 @@ class Contact implements JsonSerializable {
         if (!$rrow || $rrow->reviewType > 0) {
             $rights = $this->rights($prow);
             return $rights->allow_administer
-                || ((!$rrow || !$rrow->is_tentative())
+                || ((!$rrow || !$rrow->is_ghost())
                     && ($rights->allow_pc
                         || $rights->review_status > 0
                         || $this->can_view_review($prow, $rrow)));
@@ -4013,8 +4011,8 @@ class Contact implements JsonSerializable {
             && ($flags & self::CAN_VIEW_REVIEW_NO_ADMINISTER) === 0) {
             return true;
         }
-        // cannot view tentative reviews unless admin
-        if ($rrow && $rrow->is_tentative()) {
+        // cannot view ghost reviews unless admin
+        if ($rrow && $rrow->is_ghost()) {
             return false;
         }
         // can view if is metareviewer, own review
@@ -4127,7 +4125,7 @@ class Contact implements JsonSerializable {
         if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)) {
             return true;
         }
-        if ($rbase && $rbase->is_tentative()) {
+        if ($rbase && $rbase->is_ghost()) {
             return false;
         }
         if (($rights->reviewType === REVIEW_META

@@ -1440,5 +1440,6 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         for ($i = 0; $i <= REVIEW_META; ++$i) {
             xassert_eqq(ReviewInfo::rflags_type(1 << $i), $i);
         }
+        xassert_eqq(ReviewInfo::RF_LIVE, 1);
     }
 }
