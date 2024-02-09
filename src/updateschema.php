@@ -3002,6 +3002,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table PaperReviewHistory change `reviewNextTime` `reviewNextTime` bigint(11) NOT NULL")) {
             $conf->update_schema_version(292);
         }
+        if ($conf->sversion === 292
+            && $conf->ql_ok("alter table Paper change `withdrawReason` `withdrawReason` blob DEFAULT NULL")) {
+            $conf->update_schema_version(293);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
