@@ -58,11 +58,9 @@ class PaperContactInfo {
     /** @var int */
     public $conflictType = 0;
     /** @var int */
-    public $reviewType = 0;
-    /** @var bool */
-    public $self_assigned = false;
+    public $rflags = 0;
     /** @var int */
-    public $reviewSubmitted = 0;
+    public $reviewType = 0;
     /** @var int */
     public $reviewRound = 0;
     /** @var int */
@@ -160,32 +158,35 @@ class PaperContactInfo {
         return $ci;
     }
 
+    /** @return bool */
+    function self_assigned() {
+        return ($this->rflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0;
+    }
+
+    /** @return bool */
+    function review_submitted() {
+        return ($this->rflags & ReviewInfo::RF_SUBMITTED) !== 0;
+    }
+
     /** @param int $ct */
     function mark_conflict($ct) {
         $this->conflictType = max($ct, $this->conflictType);
     }
 
     /** @param Conf $conf
-     * @param int $reviewType
-     * @param int $reviewSubmitted
+     * @param int $rflags
      * @param int $reviewNeedsSubmit
-     * @param int $reviewRound
-     * @param int $requestedBy */
-    private function mark_review_type($conf, $reviewType,
-            $reviewSubmitted, $reviewNeedsSubmit, $reviewRound,
-            $requestedBy) {
-        if ($reviewType !== REVIEW_PC || $requestedBy !== $this->contactId) {
-            $this->self_assigned = false;
-        } else if ($this->reviewType === 0) {
-            $this->self_assigned = true;
-        }
+     * @param int $reviewRound */
+    private function mark_review_type($conf, $rflags,
+            $reviewNeedsSubmit, $reviewRound) {
+        $this->rflags |= $rflags;
 
-        $this->reviewType = max($reviewType, $this->reviewType);
-        $this->reviewSubmitted = max($reviewSubmitted, $this->reviewSubmitted);
-        $this->reviewRound = $reviewRound;
+        if (($rflags & ReviewInfo::RF_TYPEMASK) !== 0) {
+            $this->reviewType = max(ReviewInfo::rflags_type($rflags), $this->reviewType);
+            $this->reviewRound = $reviewRound;
 
-        if ($reviewType > 0) {
-            if ($reviewSubmitted > 0 || $reviewNeedsSubmit === 0) {
+            if (($rflags & ReviewInfo::RF_SUBMITTED) !== 0
+                || $reviewNeedsSubmit === 0) {
                 $this->review_status = self::CIRS_SUBMITTED;
             } else if ($this->review_status === 0) {
                 $this->review_status = self::CIRS_UNSUBMITTED;
@@ -194,9 +195,8 @@ class PaperContactInfo {
     }
 
     function mark_review(ReviewInfo $rrow) {
-        $this->mark_review_type($rrow->conf, $rrow->reviewType,
-            (int) $rrow->reviewSubmitted, $rrow->reviewNeedsSubmit, $rrow->reviewRound,
-            $rrow->requestedBy);
+        $this->mark_review_type($rrow->conf, $rrow->rflags,
+            $rrow->reviewNeedsSubmit, $rrow->reviewRound);
     }
 
     /** @param ?string $sig */
@@ -204,7 +204,7 @@ class PaperContactInfo {
         if ((string) $sig !== "") {
             foreach (explode(",", $sig) as $r) {
                 $a = explode(" ", $r);
-                $this->mark_review_type($conf, (int) $a[0], (int) $a[1], (int) $a[2], (int) $a[3], (int) $a[4]);
+                $this->mark_review_type($conf, (int) $a[0], (int) $a[1], (int) $a[2]);
             }
         }
     }
@@ -250,7 +250,7 @@ class PaperContactInfo {
         }
         // two queries is marginally faster than one union query
         $mresult = Dbl::multi_qe($prow->conf->dblink, "select paperId, contactId, conflictType from PaperConflict where paperId?a and contactId?a;
-            select paperId, contactId, null, reviewType, reviewSubmitted, reviewNeedsSubmit, reviewRound, requestedBy from PaperReview where paperId?a and {$prwhere}",
+            select paperId, contactId, null, rflags, reviewNeedsSubmit, reviewRound from PaperReview where paperId?a and {$prwhere}",
             $row_set->paper_ids(), array_keys($user_set),
             $row_set->paper_ids(), array_keys($user_set), ...$qv);
         while (($result = $mresult->next())) {
@@ -260,7 +260,7 @@ class PaperContactInfo {
                 if ($x[2] !== null) {
                     $ci->mark_conflict((int) $x[2]);
                 } else {
-                    $ci->mark_review_type($pr->conf, (int) $x[3], (int) $x[4], (int) $x[5], (int) $x[6], (int) $x[7]);
+                    $ci->mark_review_type($pr->conf, (int) $x[3], (int) $x[4], (int) $x[5]);
                 }
             }
             $result->close();
@@ -812,7 +812,8 @@ class PaperInfo {
         $prow->outcome = 1;
         $prow->outcome_sign = 1;
         $prow->conflictType = "0";
-        $prow->myReviewPermissions = "{$rtype} 1 0 0 -1";
+        $rf = ReviewInfo::RF_LIVE | (1 << $rtype) | ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED | ReviewInfo::RF_SUBMITTED;
+        $prow->myReviewPermissions = "{$rf} 0 0";
         $prow->_row_set->add_paper($prow);
         $prow->myContactXid = $user->contactXid;
         $prow->_rights_version = Contact::$rights_version;
@@ -828,7 +829,7 @@ class PaperInfo {
     /** @param string $prefix
      * @return string */
     static function my_review_permissions_sql($prefix = "") {
-        return "group_concat({$prefix}reviewType, ' ', coalesce({$prefix}reviewSubmitted,0), ' ', {$prefix}reviewNeedsSubmit, ' ', {$prefix}reviewRound, ' ', {$prefix}requestedBy)";
+        return "group_concat({$prefix}rflags, ' ', {$prefix}reviewNeedsSubmit, ' ', {$prefix}reviewRound)";
     }
 
     /** @return PermissionProblem */

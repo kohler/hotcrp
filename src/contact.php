@@ -4147,7 +4147,7 @@ class Contact implements JsonSerializable {
                 && $rights->review_status > PaperContactInfo::CIRS_UNSUBMITTED)
             || ($seerevid_setting === Conf::VIEWREV_IFASSIGNED
                 && $rights->reviewType > 0
-                && !$rights->self_assigned
+                && !$rights->self_assigned()
                 && $rights->review_status > 0);
     }
 

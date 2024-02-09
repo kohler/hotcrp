@@ -74,7 +74,7 @@ class AssignReview_PaperColumn extends PaperColumn {
         } else {
             $rt = ReviewInfo::unparse_type(min(max($ci->reviewType, 0), REVIEW_META));
         }
-        $rs = $ci->reviewSubmitted ? " s" : "";
+        $rs = $ci->review_submitted() ? " s" : "";
         $pl->need_render = true;
         $t = '<span class="need-assignment-selector';
         if (!$this->contact->can_accept_review_assignment_ignore_conflict($row)
