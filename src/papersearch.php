@@ -1654,7 +1654,7 @@ class PaperSearch extends MessageSet {
     static function viewable_manager_limits(Contact $user) {
         if ($user->privChair) {
             if ($user->conf->has_any_manager()) {
-                $ts = ["admin", "alladmin", "s"];
+                $ts = ["alladmin", "admin", "s"];
             } else {
                 $ts = ["s"];
             }

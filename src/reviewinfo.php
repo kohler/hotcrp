@@ -129,6 +129,7 @@ class ReviewInfo implements JsonSerializable {
     const RF_SUBMITTED = 1 << 12;
     const RF_BLIND = 1 << 16;
     const RF_SELF_ASSIGNED = 1 << 17;
+    const RFM_NONDRAFT = 0x1C00; /* RF_DELIVERED | RF_ADOPTED | RF_SUBMITTED */
 
     const RATING_GOODMASK = 1;
     const RATING_BADMASK = 126;
@@ -458,6 +459,20 @@ class ReviewInfo implements JsonSerializable {
         return $this->reviewRound ? $this->conf->round_name($this->reviewRound) : "";
     }
 
+    /** @param int $rflags
+     * @return string */
+    static function rflags_icon_class_suffix($rflags) {
+        if (($rflags & self::RF_SUBMITTED) !== 0) {
+            return "";
+        } else if (($rflags & self::RF_LIVE) === 0) {
+            return " rtghost";
+        } else if (($rflags & self::RF_ADOPTED) !== 0) {
+            return " rtsubrev";
+        } else {
+            return " rtinc";
+        }
+    }
+
     /** @param ?string $classes
      * @return string */
     function icon_classes($classes = null) {
@@ -465,16 +480,7 @@ class ReviewInfo implements JsonSerializable {
         if ($classes !== null) {
             $k = Ht::add_tokens($k, $classes);
         }
-        if ($this->reviewStatus < ReviewInfo::RS_COMPLETED) {
-            if ($this->is_ghost()) {
-                $k .= " rtghost";
-            } else if ($this->timeApprovalRequested < 0) {
-                $k .= " rtsubrev";
-            } else {
-                $k .= " rtinc";
-            }
-        }
-        return $k;
+        return $k . self::rflags_icon_class_suffix($this->rflags);
     }
 
     /** @param ?string $classes

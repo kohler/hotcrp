@@ -1479,6 +1479,7 @@ class ReviewValues extends MessageSet {
         $old_nonempty_view_score = $this->rf->nonempty_view_score($rrow);
         $oldstatus = $rrow->reviewStatus;
         $rflags = $rrow->rflags;
+        '@phan-var-force int $rflags';
         $admin = $user->allow_administer($prow);
         $usedReviewToken = $user->active_review_token_for($prow, $rrow);
 

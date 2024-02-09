@@ -15,12 +15,25 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
     function user_universe($req, AssignmentState $state) {
         return "reviewers";
     }
+    /** @param 'pid'|'cid' $key
+     * @param ?int $pid
+     * @param ?int $cid
+     * @return list<int> */
+    static private function make_filter(AssignmentState $state, $key, $pid, $cid) {
+        $cf = [];
+        foreach ($state->query(new Review_Assignable($pid, $cid)) as $m) {
+            if (($m->_rflags & ReviewInfo::RFM_NONDRAFT) !== 0)
+                $cf[] = $m->$key;
+        }
+        return $cf;
+    }
     function paper_filter($contact, $req, AssignmentState $state) {
-        return $state->make_filter("pid", (new Review_Assignable(null, $contact->contactId))->set_rnondraft(1));
+        $pids = self::make_filter($state, "pid", null, $contact->contactId);
+        return array_fill_keys($pids, true);
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
-        $cf = $state->make_filter("cid", (new Review_Assignable($prow->paperId, null))->set_rnondraft(1));
-        return $state->users_by_id(array_keys($cf));
+        $cids = self::make_filter($state, "cid", $prow->paperId, null);
+        return $state->users_by_id($cids);
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
@@ -45,10 +58,13 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         }
 
         // remove existing review
-        $matches = $state->remove((new Review_Assignable($prow->paperId, $contact->contactId, $oldtype, $oldround))->set_rnondraft(1));
-        foreach ($matches as $r) {
-            $r->_rsubmitted = $r->_rnondraft = 0;
-            $state->add($r);
+        $matcher = new Review_Assignable($prow->paperId, $contact->contactId, $oldtype, $oldround);
+        foreach ($state->query($matcher) as $r) {
+            if (($r->_rflags & ReviewInfo::RFM_NONDRAFT) !== 0) {
+                $r = clone $r;
+                $r->_rflags &= ~ReviewInfo::RFM_NONDRAFT;
+                $state->add($r);
+            }
         }
         return true;
     }

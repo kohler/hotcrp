@@ -10,11 +10,7 @@ class Review_Assignable extends Assignable {
     /** @var ?int */
     public $_round;
     /** @var ?int */
-    public $_rmodified;
-    /** @var ?int */
-    public $_rsubmitted;
-    /** @var ?int */
-    public $_rnondraft;
+    public $_rflags;
     /** @var ?int */
     public $_requested_by;
     /** @var ?string */
@@ -38,20 +34,8 @@ class Review_Assignable extends Assignable {
     }
     /** @param int $x
      * @return $this */
-    function set_rmodified($x) {
-        $this->_rmodified = $x;
-        return $this;
-    }
-    /** @param int $x
-     * @return $this */
-    function set_rsubmitted($x) {
-        $this->_rsubmitted = $x;
-        return $this;
-    }
-    /** @param int $x
-     * @return $this */
-    function set_rnondraft($x) {
-        $this->_rnondraft = $x;
+    function set_rflags($x) {
+        $this->_rflags = $x;
         return $this;
     }
     /** @param int $x
@@ -70,6 +54,7 @@ class Review_Assignable extends Assignable {
         $rrow->reviewType = $this->_rtype;
         $rrow->reviewId = $reviewId;
         $rrow->reviewRound = $this->_round ?? 0;
+        $rrow->rflags = $this->_rflags;
         $rrow->requestedBy = $this->_requested_by;
         return $rrow;
     }
@@ -95,13 +80,11 @@ class Review_AssignmentParser extends AssignmentParser {
     }
     static function load_review_state(AssignmentState $state) {
         if ($state->mark_type("review", ["pid", "cid"], "Review_Assigner::make")) {
-            $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, reviewModified, reviewSubmitted, timeApprovalRequested, requestedBy from PaperReview where paperId?a", $state->paper_ids());
+            $result = $state->conf->qe("select paperId, contactId, reviewType, reviewRound, rflags, requestedBy from PaperReview where paperId?a", $state->paper_ids());
             while (($row = $result->fetch_row())) {
                 $ra = new Review_Assignable((int) $row[0], (int) $row[1], (int) $row[2], (int) $row[3]);
-                $ra->set_rmodified($row[4] > 1 ? 1 : 0);
-                $ra->set_rsubmitted($row[5] > 0 ? 1 : 0);
-                $ra->set_rnondraft($row[5] > 0 || $row[6] != 0 ? 1 : 0);
-                $ra->set_requested_by((int) $row[7]);
+                $ra->set_rflags((int) $row[4]);
+                $ra->set_requested_by((int) $row[5]);
                 $state->load($ra);
             }
             Dbl::free($result);
@@ -236,8 +219,7 @@ class Review_AssignmentParser extends AssignmentParser {
             $rev = $revmatch;
             $rev->_rtype = 0;
             $rev->_round = $rdata->newround;
-            $rev->_rsubmitted = 0;
-            $rev->_rnondraft = 0;
+            $rev->_rflags = 0;
             $rev->_requested_by = $state->user->contactId;
         }
         if (!$rev->_rtype || $rdata->newtype > 0) {
@@ -272,7 +254,8 @@ class Review_Assigner extends Assigner {
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
         $this->rtype = $item->post("_rtype");
-        $this->unsubmit = $item->pre("_rnondraft") && !$item->post("_rnondraft");
+        $this->unsubmit = ($item->pre_i("_rflags") & ReviewInfo::RFM_NONDRAFT) !== 0
+            && ($item->post_i("_rflags") & ReviewInfo::RFM_NONDRAFT) === 0;
         if (!$item->existed()
             && $this->rtype == REVIEW_EXTERNAL
             && !$this->contact->is_anonymous_user()
@@ -283,7 +266,9 @@ class Review_Assigner extends Assigner {
     static function make(AssignmentItem $item, AssignmentState $state) {
         if (!$item->pre("_rtype") && $item->post("_rtype")) {
             Conflict_Assigner::check_unconflicted($item, $state);
-        } else if ($item->pre("_rtype") && !$item->post("_rtype") && $item->pre("_rmodified")) {
+        } else if ($item->pre("_rtype")
+                   && !$item->post("_rtype")
+                   && ($item->pre_i("_rflags") & ReviewInfo::RFM_NONDRAFT) !== 0) {
             $uname = $state->user_by_id($item["cid"])->name(NAME_E);
             throw new AssignmentError("<0>{$uname} has already modified their review for #" . $item->pid() . ", so it cannot be unassigned.");
         }
@@ -302,13 +287,17 @@ class Review_Assigner extends Assigner {
     /** @param bool $before
      * @return string */
     private function icon_h($before) {
-        $k = $this->item->get($before, "_rsubmitted") ? null : " rtinc";
-        return review_type_icon($this->item->get($before, "_rtype"), $k);
+        $rflags = $this->item->get($before, "_rflags");
+        return review_type_icon($this->item->get($before, "_rtype"),
+                                ReviewInfo::rflags_icon_class_suffix($rflags));
     }
     function unparse_display(AssignmentSet $aset) {
         $t = $aset->user->reviewer_html_for($this->contact);
         $deleted = !$this->item->post("_rtype");
-        if ($this->item->differs("_rtype") || $this->item->differs("_rsubmitted")) {
+        $oldrflags = $this->item->pre_i("_rflags");
+        $newrflags = $this->item->post_i("_rflags");
+        if ($this->item->differs("_rtype")
+            || (($oldrflags ^ $newrflags) & ReviewInfo::RF_SUBMITTED) !== 0) {
             if ($this->item->pre("_rtype")) {
                 $i = $this->icon_h(true);
                 $t .= $deleted ? " {$i}" : " <del>{$i}</del>";

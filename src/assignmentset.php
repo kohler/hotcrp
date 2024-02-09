@@ -117,6 +117,26 @@ class AssignmentItem implements ArrayAccess, JsonSerializable {
         $x = $this->after ?? $this->before;
         return $x->$offset ?? null;
     }
+    /** @param bool $pre
+     * @param string $offset
+     * @return int */
+    function get_i($pre, $offset) {
+        if (!$pre && $this->after) {
+            return $this->after->$offset ?? null;
+        } else {
+            return $this->before->$offset ?? null;
+        }
+    }
+    /** @param string $offset
+     * @return int */
+    function pre_i($offset) {
+        return $this->before->$offset;
+    }
+    /** @param string $offset
+     * @return int */
+    function post_i($offset) {
+        return ($this->after ?? $this->before)->$offset;
+    }
     /** @param string $offset
      * @return bool */
     function differs($offset) {
