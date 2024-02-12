@@ -122,7 +122,7 @@ form also can include:</p>
   multi-track conferences.</li>\n";
 
         } else if ($gj->itemid === 6) {
-            echo "<li><p><strong>", $hth->hotlink("Collect review preferences from the PC.", "reviewprefs"), "</strong>
+            echo "<li><p><strong>", $hth->hotlink("Collect review preferences (bids) from the PC.", "reviewprefs"), "</strong>
   PC members can enter per-paper review preferences (also known as bids) to
   mark papers they want or don’t want to review. Preferences are integers, typically
   in the range −20 to 20; the higher the number, the more desired the review assignment.
@@ -131,9 +131,11 @@ form also can include:</p>
   convenient) page through the ", $hth->search_link("list of submitted papers", ""),
   " and set their preferences on the ", $hth->hotlink("paper pages", "paper"), ".</p>
 
-  <p>If desired, review preferences can be collected before the submission
-  deadline.  Select ", $hth->setting_link("“PC can see <em>all registered papers</em> until submission deadline”", "draft_submission_early_visibility"),
-  ", which allows PC members to see abstracts for registered papers that haven’t yet
+  <p>PC members can enter review preferences as soon as they can see submissions.
+  A “Review preferences” link will automatically appear on the site home page.
+  If desired, you can also collect preferences on unsubmitted abstracts; select ",
+    $hth->setting_link("“PC can view incomplete submissions until submission deadline”", "draft_submission_early_visibility"),
+  ", which allows the PC to see abstracts for registered papers that haven’t yet
   been submitted.</p></li>\n";
 
         } else if ($gj->itemid === 7) {
