@@ -238,10 +238,7 @@ class SearchSplitter {
                 if ($parens === 0) {
                     continue;
                 }
-                while (!$cura->is_paren()) {
-                    $cura = $cura->complete($pos1);
-                }
-                $cura->complete_paren($pos2);
+                $cura = $cura->complete_paren($pos1, $pos2);
                 --$parens;
                 continue;
             }

@@ -79,22 +79,8 @@ class SearchAtom {
     }
 
     /** @return bool */
-    function is_paren() {
-        return $this->op && $this->op->type === "(";
-    }
-
-    /** @return bool */
     function is_incomplete_paren() {
         return $this->op && $this->op->type === "(" && empty($this->child);
-    }
-
-    /** @param int $pos */
-    function complete_paren($pos) {
-        assert($this->op && $this->op->type === "(");
-        $this->pos2 = $pos;
-        if (!$this->is_complete()) {
-            $this->child[] = self::make_simple("", $pos);
-        }
     }
 
     /** @param int $pos
@@ -111,6 +97,23 @@ class SearchAtom {
         } else {
             return $this;
         }
+    }
+
+    /** @param int $pos1
+     * @param int $pos2
+     * @return SearchAtom */
+    function complete_paren($pos1, $pos2) {
+        $a = $this;
+        $first = $a->op && $a->op->type === "(" && !empty($a->child);
+        while (!$a->op || $a->op->type !== "(" || $first) {
+            $a = $a->complete($pos1);
+            $first = false;
+        }
+        $a->pos2 = $pos2;
+        if (empty($a->child)) {
+            $a->child[] = self::make_simple("", $pos2);
+        }
+        return $a;
     }
 
     /** @return list<SearchAtom> */

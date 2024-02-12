@@ -173,6 +173,7 @@ class Search_Tester {
         xassert_neqq(PaperSearch::canonical_query($s, "", "", "", $this->conf), $s);
     }
 
+    /** @suppress PhanTypeArraySuspiciousNullable */
     function test_search_splitter_parens() {
         $s = "((a) XOR #whatever)";
         $splitter = new SearchSplitter($s);
@@ -183,6 +184,16 @@ class Search_Tester {
         $splitter = new SearchSplitter($s);
         $a = $splitter->parse_expression();
         xassert_eqq(json_encode($a->unparse_json()), '{"op":"(","child":[{"op":"xor","child":[{"op":"(","child":[""]},"#whatever"]}]}');
+
+        $s = "((OveMer:>3 OveMer:<2) or (OveMer:>4 OveMer:<3)) #r2";
+        $splitter = new SearchSplitter($s);
+        $a = $splitter->parse_expression();
+        xassert_eqq($a->op->type, "space");
+        xassert_eqq($a->child[0]->op->type, "(");
+        xassert_eqq($a->child[0]->child[0]->op->type, "or");
+        xassert_eqq(json_encode($a->child[0]->child[0]->child[0]->unparse_json()), '{"op":"(","child":[{"op":"space","child":["OveMer:>3","OveMer:<2"]}]}');
+        xassert_eqq(json_encode($a->child[0]->child[0]->child[1]->unparse_json()), '{"op":"(","child":[{"op":"space","child":["OveMer:>4","OveMer:<3"]}]}');
+        xassert_eqq(json_encode($a->child[1]->unparse_json()), '"#r2"');
     }
 
     function test_equal_quote() {
