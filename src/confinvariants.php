@@ -63,7 +63,7 @@ class ConfInvariants {
             $text = $abbrev;
         }
         $vs = [];
-        foreach ($this->irow as $t) {
+        foreach ($this->irow ?? [] as $t) {
             $t = $t ?? "<null>";
             if (!is_usascii($t)) {
                 $t = bin2hex($t);
