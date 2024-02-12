@@ -1103,11 +1103,15 @@ function site_key(key) {
     return siteinfo.base + key;
 }
 function pjson(x) {
-    try {
-        return x ? JSON.parse(x) : false;
-    } catch (err) {
+    if (x) {
+        try {
+            return JSON.parse(x);
+        } catch (err) {
+        }
+    } else if (x === false) {
         return false;
     }
+    return null;
 }
 function wsgc(s) {
     needgc = false;
@@ -8623,9 +8627,14 @@ var Hotlist;
 (function ($) {
 var cookie_set_at;
 function update_digest(info) {
-    var add, search,
-        digests = hotcrp.wstorage.site_json(false, "list_digests") || [],
-        found = -1, now = now_msec();
+    let digests = hotcrp.wstorage.site_json(false, "list_digests");
+    if (digests === false) {
+        return false;
+    } else if (digests == null) {
+        digests = [];
+    }
+    const now = now_msec();
+    let add, search, found = -1;
     if (typeof info === "number") {
         add = 0;
         search = info;
@@ -8696,26 +8705,25 @@ Hotlist.prototype.resolve = function () {
 };
 Hotlist.prototype.cookie_at = function (pid) {
     this.resolve();
-    var digest, ids, pos;
-    if (this.str.length > 1500
-        && this.obj
-        && this.obj.ids
-        && hotcrp.wstorage()
-        && (digest = update_digest(this.obj))) {
-        var x = Object.assign({digest: "listdigest" + digest}, this.obj);
-        delete x.ids;
-        delete x.sorted_ids;
-        if (pid
-            && (ids = this.ids())
-            && (pos = $.inArray(pid, ids)) >= 0) {
-            x.curid = pid;
-            x.previd = pos > 0 ? ids[pos - 1] : false;
-            x.nextid = pos < ids.length - 1 ? ids[pos + 1] : false;
-        }
-        return JSON.stringify(x);
-    } else {
+    let digest;
+    if (this.str.length <= 1500
+        || !this.obj
+        || !this.obj.ids
+        || !(digest = update_digest(this.obj))) {
         return this.str;
     }
+    const x = Object.assign({digest: "listdigest" + digest}, this.obj);
+    delete x.ids;
+    delete x.sorted_ids;
+    let ids, pos;
+    if (pid
+        && (ids = this.ids())
+        && (pos = $.inArray(pid, ids)) >= 0) {
+        x.curid = pid;
+        x.previd = pos > 0 ? ids[pos - 1] : false;
+        x.nextid = pos < ids.length - 1 ? ids[pos + 1] : false;
+    }
+    return JSON.stringify(x);
 };
 Hotlist.prototype.reorder = function (tbody) {
     if (this.obj) {
@@ -8738,12 +8746,16 @@ Hotlist.prototype.reorder = function (tbody) {
     }
 };
 function set_cookie(info, pid) {
-    var cstr = info.cookie_at(pid);
-    cookie_set_at = now_msec();
-    var p = "; Max-Age=20", m;
-    if (siteinfo.site_relative && (m = /^[a-z][-a-z0-9+.]*:\/\/[^/]*(\/.*)/i.exec(hoturl_absolute_base())))
+    let p = siteinfo.cookie_params, m;
+    if (siteinfo.site_relative
+        && (m = /^[a-z][-a-z0-9+.]*:\/\/[^\/]*(\/.*)/i.exec(hoturl_absolute_base()))) {
         p += "; Path=" + m[1];
-    document.cookie = "hotlist-info-".concat(cookie_set_at, "=", encodeURIComponent(cstr), siteinfo.cookie_params, p);
+    }
+    if (cookie_set_at) {
+        document.cookie = "hotlist-info-".concat(cookie_set_at, "=; Max-Age=0", p);
+    }
+    cookie_set_at = now_msec();
+    document.cookie = "hotlist-info-".concat(cookie_set_at, "=", encodeURIComponent(info.cookie_at(pid)), "; Max-Age=20", p);
 }
 function is_listable(sitehref) {
     return /^(?:paper|review|assign|profile)(?:|\.php)\//.test(sitehref);
@@ -8761,7 +8773,7 @@ function handle_list(e, href) {
             && document.getElementById("footer"))
             // Existence of `#footer` checks that the table is fully loaded
             info.reorder(hl.tBodies[0]);
-        var m = /^[^/]*\/(\d+)(?:$|[a-zA-Z]*\/)/.exec(sitehref);
+        var m = /^[^/]*\/(\d+)(?:$|[a-zA-Z]*\/|\?)/.exec(sitehref);
         set_cookie(info, m ? +m[1] : null);
     }
 }
