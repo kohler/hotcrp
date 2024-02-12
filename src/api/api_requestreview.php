@@ -36,7 +36,7 @@ class RequestReview_API {
             "name" => $qreq->name,
             "affiliation" => $qreq->affiliation,
             "email" => $email
-        ]);
+        ])->simplify_whitespace();
         $reason = trim($qreq->reason ?? "");
 
         // check proposal:
@@ -115,7 +115,7 @@ class RequestReview_API {
                 $ml[] = new MessageItem("email", "<5>Proposed an external review from " . $xreviewer->name_h(NAME_E), MessageSet::WARNING_NOTE);
                 $ml[] = new MessageItem("email", "<0>An administrator must approve this proposal for it to take effect.", MessageSet::INFORM);
             }
-            $user->log_activity("Review proposal added for $email", $prow);
+            $user->log_activity("Review proposal added for {$email}", $prow);
             $prow->conf->update_automatic_tags($prow, "review");
             HotCRPMailer::send_administrators("@proposereview", $prow,
                                               ["requester_contact" => $requester,

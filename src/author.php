@@ -212,6 +212,17 @@ class Author {
         $this->affiliation = $a ?? "";
     }
 
+    /** @return $this */
+    function simplify_whitespace() {
+        $this->firstName = simplify_whitespace($this->firstName);
+        $this->lastName = simplify_whitespace($this->lastName);
+        $this->affiliation = simplify_whitespace($this->affiliation);
+        if ($this->_name !== null) {
+            $this->_name = simplify_whitespace($this->_name);
+        }
+        return $this;
+    }
+
     /** @param string $s
      * @param int $paren
      * @return int */

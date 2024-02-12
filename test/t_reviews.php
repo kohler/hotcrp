@@ -1274,6 +1274,11 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_search($this->u_chair, "has:proposal admin:me", "17");
         xassert_search($this->u_lixia, "has:proposal admin:me", "");
         xassert_search($this->u_mgbaker, "has:proposal", "17");
+
+        $xqreq = new Qrequest("POST", ["email" => "external4@_.com", "firstName" => "Beth  ", "lastName" => " March", "affiliation" => "Transcendent"]);
+        $paper17 = $this->conf->checked_paper_by_id(17);
+        $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
+        MailChecker::check_db("test06-external4-request17");
     }
 
     function test_search_routstanding() {

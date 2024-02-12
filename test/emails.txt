@@ -1886,11 +1886,28 @@ Reviewer expertise
 ******** test06-external3-request17
 To: Christian Huitema <huitema@bellcore.com>, Jane Chair <chair@_.com>, Scott Shenker <shenker@parc.xerox.com>
 Subject: [Testconf I] Review proposal for submission #17
-X-Landmark: test/test06.php:885
+X-Landmark: test/t_reviews.php:1263
 
 Greetings,
 
 Lixia Zhang <lixia@cs.ucla.edu> would like Amy March <external3@_.com>
+to review Test Conference I (Testconf I) submission #17.
+
+Visit the assignment page to approve or deny the proposal.
+
+* Title: Network Text Editor (NTE): A Scalable Shared Text Editor for
+  the MBone
+* Site: http://hotcrp.lcdf.org/test/assign/17
+
+- Testconf I Submissions
+******** test06-external4-request17
+To: Christian Huitema <huitema@bellcore.com>, Jane Chair <chair@_.com>, Scott Shenker <shenker@parc.xerox.com>
+Subject: [Testconf I] Review proposal for submission #17
+X-Landmark: test/t_reviews.php:1280
+
+Greetings,
+
+Lixia Zhang <lixia@cs.ucla.edu> would like Beth March <external4@_.com>
 to review Test Conference I (Testconf I) submission #17.
 
 Visit the assignment page to approve or deny the proposal.
