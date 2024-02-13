@@ -1509,7 +1509,7 @@ class ReviewValues extends MessageSet {
             && $user->isPC
             && !$usedReviewToken) {
             $rrow->set_prop("reviewType", REVIEW_PC);
-            $rflags = ($rflags & ~ReviewInfo::RF_TYPEMASK) | (1 << REVIEW_PC);
+            $rflags = ($rflags & ~ReviewInfo::RFM_TYPES) | (1 << REVIEW_PC);
         }
 
         // review body
@@ -1586,11 +1586,11 @@ class ReviewValues extends MessageSet {
         if ($newstatus === ReviewInfo::RS_ACCEPTED
             && $rrow->reviewModified <= 0) {
             $rrow->set_prop("reviewModified", 1);
-            $rflags |= ReviewInfo::RF_ACCEPTED;
+            $rflags |= ReviewInfo::RF_LIVE | ReviewInfo::RF_ACCEPTED;
         } else if ($newstatus >= ReviewInfo::RS_DRAFTED
                    && $any_fval_diffs) {
             $rrow->set_prop("reviewModified", $now);
-            $rflags |= ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED | ReviewInfo::RF_LIVE;
+            $rflags |= ReviewInfo::RF_LIVE | ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED;
         }
         if ($newstatus === ReviewInfo::RS_DELIVERED
             && $rrow->timeApprovalRequested <= 0) {

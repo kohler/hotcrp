@@ -248,6 +248,8 @@ class Permission_Tester {
             xassert_eqq($j[$i]["conf"], "N");
         }
 
+        // review search
+        $this->conf->save_refresh_setting("rev_open", 1);
         xassert_search($user_chair, "re:estrin", "4 8 18");
         xassert_search($this->u_shenker, "re:estrin", "4 8 18");
 
@@ -255,7 +257,6 @@ class Permission_Tester {
         xassert_search($user_mgbaker, "re:estrin", "4 8");
 
         // make reviewer identity anonymous until review completion
-        $this->conf->save_refresh_setting("rev_open", 1);
         $this->conf->save_refresh_setting("viewrevid", 0);
         $this->conf->refresh_settings();
         xassert_search($user_mgbaker, "re:varghese", "");

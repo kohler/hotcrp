@@ -181,16 +181,18 @@ class PaperContactInfo {
             $reviewNeedsSubmit, $reviewRound) {
         $this->rflags |= $rflags;
 
-        if (($rflags & ReviewInfo::RF_TYPEMASK) !== 0) {
+        if (($rflags & ReviewInfo::RFM_TYPES) !== 0) {
             $this->reviewType = max(ReviewInfo::rflags_type($rflags), $this->reviewType);
             $this->reviewRound = $reviewRound;
 
             if (($rflags & ReviewInfo::RF_SUBMITTED) !== 0
                 || $reviewNeedsSubmit === 0) {
                 $this->review_status = self::CIRS_SUBMITTED;
-            } else if ($this->review_status === 0
-                       && ($rflags & ReviewInfo::RF_LIVE) !== 0) {
-                $this->review_status = self::CIRS_UNSUBMITTED;
+            } else if ($this->review_status === 0) {
+                $m = $conf->rev_open ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONDRAFT;
+                if (($rflags & $m) !== 0) {
+                    $this->review_status = self::CIRS_UNSUBMITTED;
+                }
             }
         }
     }

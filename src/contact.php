@@ -3326,9 +3326,12 @@ class Contact implements JsonSerializable {
         }
         if (empty($m)) {
             return "false";
+        } else if (count($m) > 1) {
+            $m = ["(" . join(" or ", $m) . ")"];
         }
-        $mx = count($m) === 1 ? $m[0] : "(" . join(" or ", $m) . ")";
-        return "({$mx} and ({$table}.rflags&1)!=0)"; // ReviewInfo::RF_LIVE
+        // see also ReviewInfo::is_ghost
+        $mask = $this->conf->rev_open ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONEMPTY;
+        return "({$m[0]} and ({$table}.rflags&{$mask})!=0)";
     }
 
     /** @param bool $allow_no_email
@@ -5737,7 +5740,7 @@ class Contact implements JsonSerializable {
         } else if ($type === 0) {
             $q = "delete from PaperReview where paperId={$pid} and reviewId={$reviewId}";
         } else {
-            $xflags = ReviewInfo::RF_TYPEMASK;
+            $xflags = ReviewInfo::RFM_TYPES;
             $qtail = "";
             if ($round !== null) {
                 $qtail .= ", reviewRound={$round}";

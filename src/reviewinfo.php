@@ -121,7 +121,7 @@ class ReviewInfo implements JsonSerializable {
     const RS_COMPLETED = 5;
 
     const RF_LIVE = 1;
-    const RF_TYPEMASK = 254;
+    const RFM_TYPES = 254;
     const RF_ACCEPTED = 1 << 8;
     const RF_DRAFTED = 1 << 9;
     const RF_DELIVERED = 1 << 10;
@@ -129,6 +129,7 @@ class ReviewInfo implements JsonSerializable {
     const RF_SUBMITTED = 1 << 12;
     const RF_BLIND = 1 << 16;
     const RF_SELF_ASSIGNED = 1 << 17;
+    const RFM_NONEMPTY = 0x1F00; /* RF_ACCEPTED | RF_DRAFTED | RFM_NONDRAFT */
     const RFM_NONDRAFT = 0x1C00; /* RF_DELIVERED | RF_ADOPTED | RF_SUBMITTED */
 
     const RATING_GOODMASK = 1;
@@ -382,7 +383,8 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return bool */
     function is_ghost() {
-        return ($this->rflags & self::RF_LIVE) === 0;
+        $m = $this->conf->rev_open ? self::RF_LIVE : self::RFM_NONEMPTY;
+        return ($this->rflags & $m) === 0;
     }
 
     /** @return int */

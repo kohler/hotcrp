@@ -1447,5 +1447,6 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         }
         xassert_eqq(ReviewInfo::RF_LIVE, 1);
         xassert_eqq(ReviewInfo::RFM_NONDRAFT, ReviewInfo::RF_DELIVERED | ReviewInfo::RF_ADOPTED | ReviewInfo::RF_SUBMITTED);
+        xassert_eqq(ReviewInfo::RFM_NONEMPTY, ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED | ReviewInfo::RF_DELIVERED | ReviewInfo::RF_ADOPTED | ReviewInfo::RF_SUBMITTED);
     }
 }
