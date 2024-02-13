@@ -64,11 +64,11 @@ class NavigationState {
         }
         $this->protocol = $x;
         $x .= $this->host ? : "localhost";
-        if (($port = $server["SERVER_PORT"])
-            && $port != $xport
-            && strpos($x, ":", 6) === false) {
-            $x .= ":" . $port;
-        }
+        // if (($port = $server["SERVER_PORT"])
+        //     && $port != $xport
+        //     && strpos($x, ":", 6) === false) {
+        //     $x .= ":" . $port;
+        // }
         $this->server = $x;
         $this->request_uri = $server["REQUEST_URI"];
         $pct = strpos($this->request_uri, "%") !== false;
