@@ -138,6 +138,7 @@ class Permission_Tester {
         $this->conf->save_setting("sub_open", 1);
         $this->conf->save_setting("sub_update", Conf::$now + 10);
         $this->conf->save_setting("sub_sub", Conf::$now + 10);
+        $this->conf->save_setting("rev_open", 1);
         $this->conf->refresh_settings();
 
         // load users
@@ -249,7 +250,6 @@ class Permission_Tester {
         }
 
         // review search
-        $this->conf->save_refresh_setting("rev_open", 1);
         xassert_search($user_chair, "re:estrin", "4 8 18");
         xassert_search($this->u_shenker, "re:estrin", "4 8 18");
 
