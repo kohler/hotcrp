@@ -2,6 +2,8 @@
 // index.php -- HotCRP home page
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
+$_SERVER["SERVER_PORT"] = "443";
+
 require_once("lib/navigation.php");
 
 /** @param Contact $user
