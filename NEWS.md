@@ -6,7 +6,7 @@ HotCRP NEWS
 * Upgrade notes
 
     * PHP 8.2 and 8.3 are supported, PHP 7.0 is not.
-    * Remove support for `#perm` tags; the experiment failed.
+    * Remove support for `#perm` tags.
 
 * Batch scripts
 

@@ -23,8 +23,8 @@ class AdminHome_Page {
     static function print(Contact $user) {
         $conf = $user->conf;
         $ml = [];
-        if (PHP_VERSION_ID <= 70100) {
-            $ml[] = new MessageItem(null, "<0>HotCRP requires PHP version 7.1 or higher.  You are running PHP version " . phpversion(), 2);
+        if (PHP_VERSION_ID <= 70200) {
+            $ml[] = new MessageItem(null, "<0>HotCRP requires PHP version 7.2 or higher.  You are running PHP version " . phpversion(), 2);
         }
         $result = Dbl::qx($conf->dblink, "show variables like 'max_allowed_packet'");
         $max_file_size = ini_get_bytes("upload_max_filesize");
@@ -94,10 +94,11 @@ class AdminHome_Page {
                 $ml[] = new MessageItem(null, "<5>The <code>\$Opt[\"$k\"]</code> setting, ‘<code>" . htmlspecialchars($url) . "</code>’, is not a valid URL.  Edit the <code>conf/options.php</code> file to fix this problem", MessageSet::URGENT_NOTE);
         }
         // Unnotified reviews?
-        if (($conf->setting("pcrev_assigntime") ?? 0) > ($conf->setting("pcrev_informtime") ?? 0)) {
+        if (($conf->setting("pcrev_assigntime") ?? 0) > ($conf->setting("pcrev_informtime") ?? 0)
+            && $conf->rev_open) {
             $assigntime = $conf->setting("pcrev_assigntime");
-            $result = $conf->qe("select paperId from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and reviewNeedsSubmit!=0 limit 1");
-            if ($result->num_rows) {
+            $result = $conf->fetch_ivalue("select exists(*) from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and (rflags&" . ReviewInfo::RF_LIVE . ")!=0");
+            if ($result) {
                 $ml[] = new MessageItem(null, "<5>PC review assignments have changed.&nbsp; <a href=\"" . $conf->hoturl("mail", "template=newpcrev") . "\">Send review assignment notifications</a> <span class=\"barsep\">·</span> <a href=\"" . $conf->hoturl("=index", "clearnewpcrev={$assigntime}") . "\">Clear this message</a>", MessageSet::MARKED_NOTE);
             } else {
                 $conf->save_setting("pcrev_informtime", $assigntime);
