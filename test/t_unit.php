@@ -740,25 +740,30 @@ class Unit_Tester {
     }
 
     function test_parse_preference() {
-        xassert_eqq(Preference_AssignmentParser::parse("--2"), [-2, null]);
-        xassert_eqq(Preference_AssignmentParser::parse("--3 "), [-3, null]);
-        xassert_eqq(Preference_AssignmentParser::parse("\"--2\""), [-2, null]);
-        xassert_eqq(Preference_AssignmentParser::parse("\"-2-\""), [-2, null]);
-        xassert_eqq(Preference_AssignmentParser::parse("`-2-`"), [-2, null]);
-        xassert_eqq(Preference_AssignmentParser::parse(" - 2"), [-2, null]);
-        xassert_eqq(Preference_AssignmentParser::parse(" – 2"), [-2, null]);
-        xassert_eqq(Preference_AssignmentParser::parse(" — 2"), [-2, null]);
-        xassert_eqq(Preference_AssignmentParser::parse(" — 2--"), null);
-        xassert_eqq(Preference_AssignmentParser::parse("+0.2"), [0, null]);
-        xassert_eqq(Preference_AssignmentParser::parse("-2x"), [-2, 1]);
-        xassert_eqq(Preference_AssignmentParser::parse("-2     Y"), [-2, 0]);
-        xassert_eqq(Preference_AssignmentParser::parse("- - - -Y"), null);
-        xassert_eqq(Preference_AssignmentParser::parse("- - - -"), [-4, null]);
-        xassert_eqq(Preference_AssignmentParser::parse("++"), [2, null]);
-        xassert_eqq(Preference_AssignmentParser::parse("+ 2+"), [2, null]);
-        xassert_eqq(Preference_AssignmentParser::parse("xsaonaif"), null);
-        xassert_eqq(Preference_AssignmentParser::parse("NONE"), [0, null]);
-        xassert_eqq(Preference_AssignmentParser::parse("CONFLICT"), [-100, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef("--2"), [-2.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef("--3 "), [-3.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef("\"--2\""), [-2.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef("\"-2-\""), null);
+        xassert_eqq(Preference_AssignmentParser::parsef("`-2-`"), null);
+        xassert_eqq(Preference_AssignmentParser::parsef(" - 2"), [-2.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef(" – 2"), [-2.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef(" — 2"), [-2.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef(" — 2--"), null);
+        xassert_eqq(Preference_AssignmentParser::parsef("+0.2"), [0.2, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef("-2x"), [-2.0, 1]);
+        xassert_eqq(Preference_AssignmentParser::parsef("-2     Y"), [-2.0, 0]);
+        xassert_eqq(Preference_AssignmentParser::parsef("- 3z   "), [-3.0, -1]);
+        xassert_eqq(Preference_AssignmentParser::parsef("- - - -Y"), null);
+        xassert_eqq(Preference_AssignmentParser::parsef("- - - -"), [-4.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef("++"), [2.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef("+ 2"), [2.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef("+ 2+"), null);
+        xassert_eqq(Preference_AssignmentParser::parsef("xsaonaif"), null);
+        xassert_eqq(Preference_AssignmentParser::parsef("NONE"), [0.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef("n/a"), [0.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef("x"), [0.0, 1]);
+        xassert_eqq(Preference_AssignmentParser::parsef("c"), [-100.0, null]);
+        xassert_eqq(Preference_AssignmentParser::parsef("CONFLICT"), [-100.0, null]);
     }
 
     function test_span_balanced_parens() {

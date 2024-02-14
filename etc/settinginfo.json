@@ -135,6 +135,18 @@
         "parser_class": "Messages_SettingParser"
     },
     {
+        "name": "preference_min", "storage": "pref_min",
+        "title": "Minimum allowed review preference",
+        "type": "int", "default_value": -1000000,
+        "parser_class": "Preference_SettingParser"
+    },
+    {
+        "name": "preference_max", "storage": "pref_max",
+        "title": "Maximum allowed review preference",
+        "type": "int", "default_value": 1000000,
+        "parser_class": "Preference_SettingParser"
+    },
+    {
         "name": "submission_edit_message", "storage": "msg.submit",
         "title": "Submission edit message",
         "type": "htmlstring", "size": 5

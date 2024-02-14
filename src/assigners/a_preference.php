@@ -69,45 +69,57 @@ class Preference_AssignmentParser extends AssignmentParser {
     static private function make_exp($exp) {
         return $exp === null ? "N" : +$exp;
     }
-    /** @return ?array{int,?int} */
-    static function parse($str) {
-        if ($str === "" || strcasecmp($str, "none") == 0) {
-            return [0, null];
-        } else if (is_numeric($str)) {
-            $str = (float) $str;
-            if ($str <= 1000000) {
-                return [(int) round($str), null];
-            } else {
-                return null;
-            }
+    /** @return ?array{float,?int} */
+    static function parsef($str) {
+        $str = trim($str);
+        if ($str === "") {
+            return [0.0, null];
         }
-
-        $str = rtrim(preg_replace('{(?:\A\s*[\"\'`]\s*|\s*[\"\'`]\s*\z|\s+(?=[-+\d.xyz]))}i', "", $str));
-        if ($str === "" || strcasecmp($str, "none") == 0 || strcasecmp($str, "n/a") == 0) {
-            return [0, null];
-        } else if (strspn($str, "-") === strlen($str)) {
-            return [-strlen($str), null];
-        } else if (strspn($str, "+") === strlen($str)) {
-            return [strlen($str), null];
-        } else if (preg_match('{\A(?:--?(?=-[\d.])|\+(?=\+?[\d.])|)([-+]?(?:\d+(?:\.\d*)?|\.\d+)|)([xyz]?)(?:[-+]|)\z}i', $str, $m)) {
-            if ($m[1] === "") {
-                $p = 0;
-            } else if ((float) $m[1] <= 1000000) {
-                $p = (int) round((float) $m[1]);
-            } else {
-                return null;
+        if (is_numeric($str)) {
+            return [floatval($str), null];
+        }
+        if (strpos($str, "\xE2") !== false) {
+            $str = preg_replace('/\xE2(?:\x88\x92|\x80\x93|\x80\x94)/', "-", $str);
+        }
+        if (preg_match('/\A(?:[\"\'`]\s*+|)(-\s*+(?:-\s*+|)(?=[\d.])|\+\s*+(?:\+\s*+|)(?=[\d.])|)(\d++(?:\.\d*+|)|\.\d++|(?=[cnx-z]))\s*([x-z]?|c|conflict|none|n\/a|)(?:\s*+[\"\'`]|)\z/i', $str, $m)) {
+            // $m[1] sign; $m[2] preference; $m[3] expertise
+            $exp = null;
+            if ($m[3] !== "") {
+                $exps = strtolower($m[3]);
+                if ($exps >= "x" && $exps <= "z") {
+                    $exp = 9 - (ord($exps) & 15);
+                } else if ($exps === "none" || $exps === "n/a") {
+                    return [0.0, null];
+                } else {
+                    return [-100.0, null];
+                }
             }
             if ($m[2] === "") {
-                $e = null;
+                $pref = 0.0;
             } else {
-                $e = 9 - (ord($m[2]) & 15);
+                $pref = floatval($m[2]);
+                if ($m[1] !== "" && str_starts_with($m[1], "-")) {
+                    $pref = -$pref;
+                }
             }
-            return [$p, $e];
-        } else if (strcasecmp($str, "conflict") == 0) {
-            return [-100, null];
+            return [$pref, $exp];
+        }
+        $str = preg_replace('/\s++(?=[-+])/', "", $str);
+        if (strspn($str, "-") === strlen($str)) {
+            return [(float) -strlen($str), null];
+        } else if (strspn($str, "+") === strlen($str)) {
+            return [(float) strlen($str), null];
         } else {
-            $str2 = str_replace(["\xE2\x88\x92", "–", "—"], ["-", "-", "-"], $str);
-            return $str === $str2 ? null : self::parse($str2);
+            return null;
+        }
+    }
+    /** @return ?array{int,?int} */
+    static function parse($str) {
+        $x = self::parsef($str);
+        if ($x !== null && $x[0] > -1000000.5 && $x[0] < 1000000.5) {
+            return [(int) round($x[0]), $x[1]];
+        } else {
+            return null;
         }
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
@@ -115,7 +127,8 @@ class Preference_AssignmentParser extends AssignmentParser {
         if ($pref === null) {
             return new AssignmentError("<0>Preference missing");
         }
-        $ppref = self::parse($pref);
+
+        $ppref = self::parsef($pref);
         if ($ppref === null) {
             if (preg_match('/([+-]?)\s*(\d+)\s*([xyz]?)/i', $pref, $m)) {
                 $msg = $state->conf->_("<0>Invalid preference ‘{}’. Did you mean ‘{}’?", $pref, $m[1] . $m[2] . strtoupper($m[3]));
@@ -125,6 +138,15 @@ class Preference_AssignmentParser extends AssignmentParser {
             $state->user_error($msg);
             return false;
         }
+
+        $min = $prow->conf->setting("pref_min") ?? -1000000;
+        $max = $prow->conf->setting("pref_max") ?? 1000000;
+        if ($ppref[0] !== -100.0 && ($ppref[0] < $min || $ppref[0] > $max)) {
+            $state->user_error($state->conf->_("<0>Preference ‘{}’ out of range (must be between {} and {})", $ppref[0], $min, $max));
+            return false;
+        }
+        $prefv = (int) round($ppref[0]);
+
         if ($prow->timeWithdrawn > 0) {
             $state->warning("<5>" . $prow->make_whynot(["withdrawn" => 1])->unparse_html());
         }
@@ -135,12 +157,14 @@ class Preference_AssignmentParser extends AssignmentParser {
                 $state->user_error($state->conf->_("<0>Invalid expertise ‘{}’", $exp));
                 return false;
             }
-            $ppref[1] = $pexp[1];
+            $expv = $pexp[1];
+        } else {
+            $expv = $ppref[1];
         }
 
         $state->remove(new Preference_Assignable($prow->paperId, $contact->contactId));
-        if ($ppref[0] || $ppref[1] !== null) {
-            $state->add(new Preference_Assignable($prow->paperId, $contact->contactId, $ppref[0], self::make_exp($ppref[1])));
+        if ($prefv !== 0 || $expv !== null) {
+            $state->add(new Preference_Assignable($prow->paperId, $contact->contactId, $prefv, self::make_exp($expv)));
         }
         return true;
     }
