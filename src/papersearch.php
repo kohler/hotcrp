@@ -261,6 +261,8 @@ class PaperSearch extends MessageSet {
     private $_string_context;
     /** @var list<int> */
     private $_matches;
+    /** @var list<int> */
+    private $_sorted_matches;
     /** @var ?Then_SearchTerm */
     private $_then_term;
     /** @var ?array<int,int> */
@@ -361,6 +363,7 @@ class PaperSearch extends MessageSet {
         $this->_match_preg_query = null;
         $this->_contact_searches = null;
         $this->_matches = null;
+        $this->_sorted_matches = null;
     }
 
     /** @param bool $x
@@ -1218,12 +1221,12 @@ class PaperSearch extends MessageSet {
     /** @return list<int> */
     function sorted_paper_ids() {
         $this->_prepare();
-        if ($this->_default_sort || $this->sort_field_list()) {
+        if (($this->_default_sort || $this->sort_field_list())
+            && $this->_sorted_matches === null) {
             $pl = new PaperList("empty", $this, ["sort" => $this->_default_sort]);
-            return $pl->paper_ids();
-        } else {
-            return $this->paper_ids();
+            $this->_sorted_matches = $pl->paper_ids();
         }
+        return $this->_sorted_matches ?? $this->_matches;
     }
 
     /** @return ?Then_SearchTerm */
@@ -1330,6 +1333,14 @@ class PaperSearch extends MessageSet {
             }
         }
         $this->_matches = $m;
+        if ($this->_default_sort || $this->sort_field_list()) {
+            $m = [];
+            foreach ($this->sorted_paper_ids() as $pid) {
+                if (call_user_func($callback, $pid))
+                    $m[] = $pid;
+            }
+            $this->_sorted_matches = $m;
+        }
     }
 
     /** @return bool */
