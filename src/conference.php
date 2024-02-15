@@ -295,11 +295,11 @@ class Conf {
         }
     }
 
-    /** @param int|float $t */
-    static function set_current_time($t) {
-        global $Now;
+    /** @param null|int|float $t */
+    static function set_current_time($t = null) {
+        $t = $t ?? microtime(true);
         self::$unow = $t;
-        $Now = Conf::$now = (int) $t;
+        Conf::$now = (int) $t;
         if (Conf::$main) {
             Conf::$main->refresh_time_settings();
         }

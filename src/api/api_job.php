@@ -12,7 +12,7 @@ class Job_API {
             return JsonResult::make_parameter_error("job");
         }
 
-        $tok = Job_Capability::find($jobid, $user->conf);
+        $tok = Job_Capability::find($user->conf, $jobid);
         if (!$tok) {
             return new JsonResult(404, ["ok" => false]);
         }

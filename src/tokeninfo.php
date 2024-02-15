@@ -46,6 +46,8 @@ class TokenInfo {
     private $_user = false;
     /** @var ?string */
     private $_token_pattern;
+    /** @var ?callable(TokenInfo):bool */
+    private $_token_approver;
     /** @var ?object */
     private $_jinputData;
     /** @var ?object */
@@ -117,6 +119,13 @@ class TokenInfo {
      * @return $this */
     function set_token_pattern($pattern) {
         $this->_token_pattern = $pattern;
+        return $this;
+    }
+
+    /** @param callable(TokenInfo):bool $approver
+     * @return $this */
+    function set_token_approver($approver) {
+        $this->_token_approver = $approver;
         return $this;
     }
 
@@ -317,6 +326,8 @@ class TokenInfo {
         $this->timeExpires = $this->timeExpires ?? 0;
         $need_salt = !$this->salt;
         assert(!$need_salt || $this->_token_pattern);
+        $changes = $this->_changes;
+        $this->_changes = 0;
 
         $qf = "";
         $qv = [
@@ -333,16 +344,28 @@ class TokenInfo {
             $qv[] = $this->inputData;
         }
 
-        for ($tries = 0; $tries < ($need_salt ? 4 : 1); ++$tries) {
-            $salt = $need_salt ? $this->instantiate_token() : $this->salt;
-            $qv[0] = $salt;
-            $result = Dbl::qe($this->dblink(), "insert into Capability (salt, capabilityType, contactId, paperId, timeCreated, timeUsed, timeInvalid, timeExpires, data{$qf}) values ?v", [$qv]);
-            if ($result->affected_rows > 0) {
-                $this->salt = $salt;
-                $this->_changes = 0;
-                return $salt;
+        for ($tries = 0; $tries < ($need_salt ? 5 : 1); ++$tries) {
+            if ($need_salt) {
+                $this->salt = $this->instantiate_token();
             }
+            $qv[0] = $this->salt;
+            $result = Dbl::qe($this->dblink(), "insert into Capability (salt, capabilityType, contactId, paperId, timeCreated, timeUsed, timeInvalid, timeExpires, data{$qf}) values ?v", [$qv]);
+            if ($result->affected_rows <= 0) {
+                continue;
+            }
+            if ($this->_token_approver
+                && !call_user_func($this->_token_approver, $this)) {
+                Dbl::qe($this->dblink(), "delete from Capability where salt=?", $this->salt);
+                continue;
+            }
+            $this->update();
+            return $this->salt;
         }
+
+        if ($need_salt) {
+            $this->salt = null;
+        }
+        $this->_changes = $changes;
         return null;
     }
 
@@ -369,6 +392,9 @@ class TokenInfo {
     /** @param ?int $within_sec
      * @return $this */
     function update_use($within_sec = null) {
+        if ($within_sec === null) {
+            Conf::set_current_time();
+        }
         if ($within_sec === null || $this->timeUsed + $within_sec <= Conf::$now) {
             /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->timeUsed = Conf::$now;

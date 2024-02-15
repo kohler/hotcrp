@@ -68,7 +68,7 @@ require_once(SiteLoader::find("lib/dbl.php"));
 require_once(SiteLoader::find("src/helpers.php"));
 require_once(SiteLoader::find("src/conference.php"));
 require_once(SiteLoader::find("src/contact.php"));
-Conf::set_current_time(microtime(true));
+Conf::set_current_time();
 if (defined("HOTCRP_TESTHARNESS")) {
     Conf::$test_mode = true;
 }
