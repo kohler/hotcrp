@@ -220,7 +220,8 @@ class Autoassign_Batch {
     }
 
     function report_progress($progress) {
-        $this->_jtok->change_data("progress", $progress)->update();
+        Conf::set_current_time();
+        $this->_jtok->change_data("progress", $progress)->update_use()->update();
         set_time_limit(240);
     }
 
