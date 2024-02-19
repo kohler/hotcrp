@@ -110,6 +110,8 @@ class ReviewInfo implements JsonSerializable {
     private $_reviewer;
     /** @var ?ReviewDiffInfo */
     private $_diff;
+    /** @var ?array<string,mixed> */
+    private $_old_prop;
 
     const VIEWSCORE_RECOMPUTE = -100;
 
@@ -728,12 +730,9 @@ class ReviewInfo implements JsonSerializable {
         return $this->$prop;
     }
 
-    /** @param ?string $prop
-     * @return bool */
-    function prop_changed($prop = null) {
-        return $this->_diff
-            && !$this->_diff->is_empty()
-            && (!$prop || array_key_exists($prop, $this->_diff->_old_prop));
+    /** @return bool */
+    function prop_changed() {
+        return $this->_diff && !$this->_diff->is_empty();
     }
 
     const SAVE_PROP_STAGED = 2;

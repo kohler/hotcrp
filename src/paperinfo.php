@@ -2602,8 +2602,13 @@ class PaperInfo {
         } else {
             $row_set = PaperInfoSet::make_singleton($this);
         }
+        $rdiffs = [];
         $had = 0;
         foreach ($row_set as $prow) {
+            foreach ($prow->_review_array ?? [] as $rrow) {
+                if ($rrow->prop_changed())
+                    $rdiffs[$rrow->reviewId] = $rrow->prop_diff();
+            }
             $prow->_review_array = [];
             ++$prow->_review_array_version;
             $had |= $prow->_flags;
@@ -2613,6 +2618,9 @@ class PaperInfo {
 
         $result = $this->conf->qe("select PaperReview.*, " . $this->conf->rating_signature_query() . " ratingSignature from PaperReview where paperId?a order by paperId, reviewId", $row_set->paper_ids());
         while (($rrow = ReviewInfo::fetch($result, $row_set, $this->conf))) {
+            if (($diff = $rdiffs[$rrow->reviewId] ?? null)) {
+                $diff->apply_prop_changes_to($rrow);
+            }
             $rrow->prow->_review_array[$rrow->reviewId] = $rrow;
         }
         Dbl::free($result);

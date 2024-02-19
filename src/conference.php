@@ -4193,7 +4193,7 @@ class Conf {
     function checked_paper_by_id($pid, Contact $user = null, $options = []) {
         $prow = $this->paper_by_id($pid, $user, $options);
         if (!$prow) {
-            throw new Exception("Conf::checked_paper_by_id($pid) failed");
+            throw new Exception("Conf::checked_paper_by_id({$pid}) failed");
         }
         return $prow;
     }

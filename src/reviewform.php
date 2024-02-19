@@ -1635,7 +1635,7 @@ class ReviewValues extends MessageSet {
             ? VIEWSCORE_AUTHORDEC
             : VIEWSCORE_AUTHOR;
         $diffinfo = $rrow->prop_diff();
-        if (!$rrow->reviewId || $rrow->prop_changed()) {
+        if (!$rrow->reviewId || $diffinfo->is_viewable()) {
             $rrow->set_prop("reviewViewScore", $view_score);
             // XXX distinction between VIEWSCORE_AUTHOR/VIEWSCORE_AUTHORDEC?
             if ($diffinfo->view_score() >= $author_view_score) {
@@ -1698,7 +1698,7 @@ class ReviewValues extends MessageSet {
 
         // actually affect database
         $rrow->set_prop("rflags", $rflags);
-        $no_attempt = $rrow->reviewId > 0 && !$rrow->prop_changed();
+        $no_attempt = $rrow->reviewId > 0 && !$diffinfo->is_viewable();
         $result = $rrow->save_prop();
 
         // unlock tables even if problem
@@ -1731,8 +1731,7 @@ class ReviewValues extends MessageSet {
         assert($new_rrow->reviewStatus === $newstatus);
 
         // log updates -- but not if review token is used
-        if (!$usedReviewToken
-            && $rrow->prop_changed()) {
+        if (!$usedReviewToken && $diffinfo->is_viewable()) {
             $log_actions = [];
             if (!$old_reviewId) {
                 $log_actions[] = "started";
@@ -1770,7 +1769,7 @@ class ReviewValues extends MessageSet {
                 . join(", ", $log_fields), $prow);
         }
 
-        if ($old_reviewId > 0 && $rrow->prop_changed()) {
+        if ($old_reviewId > 0 && $diffinfo->is_viewable()) {
             $diffinfo->save_history();
         }
 
@@ -1805,7 +1804,7 @@ class ReviewValues extends MessageSet {
                    && $oldstatus < $newstatus
                    && $rrow->contactId !== $user->contactId) {
             $this->approved[] = $what;
-        } else if ($rrow->prop_changed()) {
+        } else if ($diffinfo->is_viewable()) {
             if ($newstatus >= ReviewInfo::RS_ADOPTED) {
                 $this->updated[] = $what;
             } else {

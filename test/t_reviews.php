@@ -1449,4 +1449,17 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq(ReviewInfo::RFM_NONDRAFT, ReviewInfo::RF_DELIVERED | ReviewInfo::RF_ADOPTED | ReviewInfo::RF_SUBMITTED);
         xassert_eqq(ReviewInfo::RFM_NONEMPTY, ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED | ReviewInfo::RF_DELIVERED | ReviewInfo::RF_ADOPTED | ReviewInfo::RF_SUBMITTED);
     }
+
+    function test_ensure_full_reviews_preserves_prop_changes() {
+        $prow = $this->conf->checked_paper_by_id(30, null, ["reviewSignatures" => true]);
+        $rrow = $prow->review_by_user($this->u_lixia);
+        $t = ($rrow->reviewSubmitted ? : Conf::$now) + 1;
+        $rrow->set_prop("reviewSubmitted", $t);
+        xassert($rrow->prop_changed());
+
+        $prow->ensure_full_reviews();
+        $rrow2 = $prow->review_by_user($this->u_lixia);
+        xassert_neqq($rrow, $rrow2);
+        xassert_eqq($rrow->reviewSubmitted, $rrow2->reviewSubmitted);
+    }
 }

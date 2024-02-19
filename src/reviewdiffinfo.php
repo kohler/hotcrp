@@ -21,7 +21,7 @@ class ReviewDiffInfo {
     /** @var ?dmp\diff_match_patch */
     private $_dmp;
 
-    const VALIDATE_PATCH = true;
+    const VALIDATE_PATCH = false;
 
     function __construct(ReviewInfo $rrow) {
         $this->rrow = $rrow;
@@ -29,7 +29,12 @@ class ReviewDiffInfo {
 
     /** @return bool */
     function is_empty() {
-        return empty($this->_fields) && $this->_x_view_score === VIEWSCORE_EMPTY;
+        return empty($this->_old_prop) && empty($this->_fields);
+    }
+
+    /** @return bool */
+    function is_viewable() {
+        return !empty($this->_fields) || $this->_x_view_score !== VIEWSCORE_EMPTY;
     }
 
     /** @return int */
@@ -134,6 +139,18 @@ class ReviewDiffInfo {
         return $patch;
     }
 
+    function apply_prop_changes_to(ReviewInfo $rrow) {
+        assert($rrow->reviewId === $this->rrow->reviewId);
+        foreach ($this->_old_prop as $name => $value) {
+            if ($name !== "sfields" && $name !== "tfields") {
+                $rrow->set_prop($name, $this->rrow->{$name});
+            }
+        }
+        foreach ($this->_fields as $i => $f) {
+            $rrow->set_fval_prop($f, $this->rrow->finfoval($f), true);
+        }
+    }
+
     /** @param ?callable(?string,string|int|null...):void $stager */
     function save_history($stager = null) {
         assert($this->rrow->reviewId > 0);
@@ -186,6 +203,7 @@ class ReviewDiffInfo {
         }
         return $str;
     }
+
     /** @param string $str
      * @return ?array */
     static function parse_patch($str) {

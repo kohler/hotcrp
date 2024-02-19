@@ -155,7 +155,8 @@ class MailChecker {
                     "Mail mismatch\n",
                     "... line {$badline} differs near {$havel[$badline-1]}\n",
                     "... expected {$wantl[$badline-1]}\n",
-                    "... ", var_export($wtext, true), " !== ", var_export($have, true), "\n"
+                    "... ", str_replace("\n", "\n    ", rtrim($wtext)),
+                    "\n!== ", str_replace("\n", "\n    ", rtrim($wtext)), "\n"
                 ];
                 if (is_object($want) && isset($want->landmark)) {
                     $ml[] =  "... expected mail at {$want->landmark}\n";
@@ -170,7 +171,7 @@ class MailChecker {
         }
 
         foreach ($haves as $have) {
-            Xassert::fail_with("Unexpected mail: " . var_export($have, true));
+            Xassert::fail_with("Unexpected mail: " . $have);
         }
         self::$preps = [];
     }
@@ -332,8 +333,8 @@ class Xassert {
      * @param mixed $actual
      * @return string */
     static function match_failure_message($xprefix, $eprefix, $expected, $aprefix, $actual) {
-        $estr = var_export($expected, true);
-        $astr = var_export($actual, true);
+        $estr = xassert_var_export($expected);
+        $astr = xassert_var_export($actual);
         if (strlen($estr) < 20 && strlen($astr) < 20) {
             return "{$xprefix}{$eprefix}{$estr}{$aprefix}{$astr}\n";
         } else {
@@ -427,6 +428,27 @@ function xassert_error_handler($errno, $emsg, $file, $line) {
 set_error_handler("xassert_error_handler");
 
 /** @param mixed $x
+ * @return string */
+function xassert_var_export($x) {
+    if (is_scalar($x)) {
+        return json_encode($x);
+    } else if (is_object($x)) {
+        $cn = get_class($x);
+        $ch = spl_object_id($x);
+        $xp = "[{$cn}#{$ch}]";
+        if (($s = json_encode($x))) {
+            $s = strlen($s) > 120 ? substr($s, 0, 120) . "...}" : $s;
+            $xp .= $s;
+        }
+        return $xp;
+    } else if (($s = json_encode($x))) {
+        return strlen($s) > 121 ? substr($s, 0, 120) . "..." : $s;
+    } else {
+        return "[" . gettype($s) . "]";
+    }
+}
+
+/** @param mixed $x
  * @param string $description
  * @return bool */
 function xassert($x, $description = "") {
@@ -475,7 +497,7 @@ function xassert_neqq($actual, $nonexpected) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected !== " . var_export($actual, true));
+        Xassert::fail_with("Expected !== " . xassert_var_export($actual));
     }
     return $ok;
 }
