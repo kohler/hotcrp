@@ -16,11 +16,10 @@ class Job_Capability {
     }
 
     /** @param string $salt
-     * @param Conf $conf
      * @param ?string $batch_class
      * @param bool $allow_inactive
      * @return TokenInfo */
-    static function find($salt, Conf $conf, $batch_class = null, $allow_inactive = false) {
+    static function find(Conf $conf, $salt, $batch_class = null, $allow_inactive = false) {
         if (($salt === false || $salt === "e")
             && !($salt = getenv("HOTCRP_JOB"))) {
             throw new CommandLineException("HOTCRP_JOB not set");
@@ -46,11 +45,10 @@ class Job_Capability {
     }
 
     /** @param string $salt
-     * @param Conf $conf
      * @param ?string $command
      * @return TokenInfo */
-    static function claim($salt, Conf $conf, $command = null) {
-        $tok = self::find($salt, $conf, $command);
+    static function claim(Conf $conf, $salt, $command = null) {
+        $tok = self::find($conf, $salt, $command);
         while (true) {
             if ($tok->data !== null) {
                 throw new CommandLineException("Job `{$salt}` has already started");
