@@ -108,8 +108,8 @@
     ["paper_edit", "<0>New {sclass} {submission}", "<0>New {submission}", ["{sclass}="]],
     ["paper_edit", "<0>new {sclass} {submission}", "<0>new {submission}", ["{sclass}="]],
     ["paper_edit", "<0>Edit {sclass} {submission}", "<0>Edit {submission}", ["{sclass}="]],
-    ["paper_edit", "<0>Incomplete {submissions} will not be considered.", "<0>{Submissions} incomplete as of {deadline:time} will not be considered.", ["{deadline}>0"]],
-    ["paper_edit", "<5>{Submissions} not marked ready for review by {:expandedtime} will not be evaluated.", "<5>{Submissions} not marked ready for review by then will not be evaluated.", ["{0}={1}"]],
+    ["paper_edit", "<0>Incomplete {submissions} will not be evaluated.", "<0>{Submissions} incomplete as of {deadline:time} will not be evaluated.", ["{deadline}>0"]],
+    ["paper_edit", "<5>{Submissions} marked ready for review as of {:expandedtime} will be evaluated.", "<5>Only {submissions} marked ready for review will be evaluated.", ["{0}={1}"]],
     ["paper_edit", "<5>Please check {:list} for potential issues.", "<5>Please check the potential issues highlighted below.", ["!#{0}"]],
     ["<5>This {submission} is not ready for review. Required fields {:list} are missing.", "<5>This {submission} is not ready for review. Required field {:list} is missing.", ["#{0}=1"]],
 

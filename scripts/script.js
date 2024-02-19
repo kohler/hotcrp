@@ -12014,7 +12014,7 @@ function evaluate_compar(x, compar, y) {
 }
 
 function evaluate_edit_condition(ec, form) {
-    if (ec === true || ec === false || typeof ec === "number") {
+    if (ec === null || ec === true || ec === false || typeof ec === "number") {
         return ec;
     } else if (edit_conditions[ec.type]) {
         return edit_conditions[ec.type](ec, form);
@@ -12261,7 +12261,7 @@ function prepare_autoready_condition(f) {
         condition = JSON.parse(f.getAttribute("data-autoready-condition"));
     }
     function chf() {
-        const iscond = !condition || hotcrp.evaluate_edit_condition(condition, f);
+        const iscond = condition === null || hotcrp.evaluate_edit_condition(condition, f);
         readye.disabled = !iscond;
         if (iscond && readye.hasAttribute("data-autoready")) {
             readye.checked = true;
@@ -12280,7 +12280,7 @@ function prepare_autoready_condition(f) {
             if (hasClass(e, "if-unready-required")) {
                 toggleClass(e, "hidden", iscond);
             } else if (hasClass(e, "if-unready")) {
-                toggleClass(e, "hidden", !iscond || readychecked);
+                toggleClass(e, "hidden", iscond && readychecked);
             } else if (hasClass(e, "if-ready")) {
                 toggleClass(e, "hidden", !iscond || !readychecked);
             }
