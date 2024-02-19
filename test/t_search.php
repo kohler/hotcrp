@@ -201,4 +201,28 @@ class Search_Tester {
         xassert_search($u, "ti:\"scalable timers\"", 1);
         xassert_search($u, "ti=\"scalable timers\"", 1);
     }
+
+    function test_combine_script_expressions() {
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("and", []), false);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("and", [false, null]), false);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("and", [true, null]), null);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("and", [true]), true);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("or", []), false);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("or", [false, null]), null);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("or", [true, null]), true);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("or", [null]), null);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("or", [false, ["type" => "x"]]), ["type" => "x"]);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("not", [false]), true);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("not", [true]), false);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("not", [["type" => "x"]]), ["type" => "not", "child" => [["type" => "x"]]]);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("not", [null]), null);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [false, null]), null);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [false, false]), false);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [false, true]), true);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [true, true]), false);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [true, false]), true);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [true, false, true, true, ["type" => "x"]]), ["type" => "not", "child" => [["type" => "x"]]]);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [true, false, true, ["type" => "x"]]), ["type" => "x"]);
+        xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [true, false, false, ["type" => "x"], ["type" => "y"]]), ["type" => "xor", "child" => [["type" => "x"], ["type" => "y"], true]]);
+    }
 }

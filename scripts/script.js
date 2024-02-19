@@ -12038,6 +12038,13 @@ edit_conditions.or = function (ec, form) {
 edit_conditions.not = function (ec, form) {
     return !evaluate_edit_condition(ec.child[0], form);
 };
+edit_conditions.xor = function (ec, form) {
+    var x = false;
+    for (var i = 0; i !== ec.child.length; ++i)
+        if (evaluate_edit_condition(ec.child[i], form))
+            x = !x;
+    return x;
+};
 edit_conditions.checkbox = function (ec, form) {
     var e = form.elements[ec.formid];
     return e && e.checked;

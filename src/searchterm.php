@@ -412,6 +412,51 @@ abstract class Op_SearchTerm extends SearchTerm {
         }
         return $x;
     }
+
+    /** @param 'and'|'or'|'not'|'xor' $op
+     * @param list<null|bool|array{type:string}> $sexprs
+     * @return null|bool|array{type:string} */
+    static function combine_script_expressions($op, $sexprs) {
+        $ok = true;
+        $bresult = $op === "and";
+        $any = false;
+        $ch = [];
+        foreach ($sexprs as $sexpr) {
+            if ($sexpr === null) {
+                $ok = false;
+            } else if (is_bool($sexpr)) {
+                $any = true;
+                if ($sexpr ? $op === "or" : $op === "and") {
+                    return $sexpr;
+                } else if ($sexpr ? $op === "xor" : $op === "not") {
+                    $bresult = !$bresult;
+                }
+            } else {
+                $ch[] = $sexpr;
+            }
+        }
+        if (!$ok) {
+            return null;
+        } else if (empty($ch)) {
+            return $any && $bresult;
+        } else if ($op === "not" || ($bresult && $op === "xor" && count($ch) === 1)) {
+            return ["type" => "not", "child" => $ch];
+        }
+        if ($bresult && $op === "xor") {
+            $ch[] = true;
+        }
+        if (count($ch) === 1) {
+            return $ch[0];
+        }
+        return ["type" => $op, "child" => $ch];
+    }
+    function script_expression(PaperInfo $row, $about) {
+        $sexprs = [];
+        foreach ($this->child as $ch) {
+            $sexprs[] = $ch->script_expression($row, $about);
+        }
+        return self::combine_script_expressions($this->type, $sexprs);
+    }
 }
 
 class Not_SearchTerm extends Op_SearchTerm {
@@ -455,17 +500,6 @@ class Not_SearchTerm extends Op_SearchTerm {
     }
     function test(PaperInfo $row, $xinfo) {
         return !$this->child[0]->test($row, $xinfo);
-    }
-
-    function script_expression(PaperInfo $row, $about) {
-        $x = $this->child[0]->script_expression($row, $about);
-        if ($x === null) {
-            return null;
-        } else if ($x === false || $x === true) {
-            return !$x;
-        } else {
-            return ["type" => "not", "child" => [$x]];
-        }
     }
 }
 
@@ -522,27 +556,6 @@ class And_SearchTerm extends Op_SearchTerm {
             $s = $s ?? $s1;
         }
         return $s;
-    }
-    function script_expression(PaperInfo $row, $about) {
-        $ch = [];
-        $ok = true;
-        foreach ($this->child as $subt) {
-            $x = $subt->script_expression($row, $about);
-            if ($x === null) {
-                return null;
-            } else if ($x === false) {
-                $ok = false;
-            } else if ($x !== true) {
-                $ch[] = $x;
-            }
-        }
-        if (!$ok || empty($ch)) {
-            return $ok;
-        } else if (count($ch) === 1) {
-            return $ch[0];
-        } else {
-            return ["type" => "and", "child" => $ch];
-        }
     }
     function drag_assigners(Contact $user) {
         $ch = [];
@@ -612,33 +625,6 @@ class Or_SearchTerm extends Op_SearchTerm {
                 return true;
         }
         return false;
-    }
-    /** @param list<SearchTerm> $child
-     * @param 0|2 $about
-     * @return null|bool|array{type:string} */
-    static function make_script_expression($child, PaperInfo $row, $about) {
-        $ch = [];
-        $ok = false;
-        foreach ($child as $subt) {
-            $x = $subt->script_expression($row, $about);
-            if ($x === null) {
-                return null;
-            } else if ($x === true) {
-                $ok = true;
-            } else if ($x !== false) {
-                $ch[] = $x;
-            }
-        }
-        if ($ok || empty($ch)) {
-            return $ok;
-        } else if (count($ch) === 1) {
-            return $ch[0];
-        } else {
-            return ["type" => "or", "child" => $ch];
-        }
-    }
-    function script_expression(PaperInfo $row, $about) {
-        return self::make_script_expression($this->child, $row, $about);
     }
 }
 
@@ -826,7 +812,11 @@ class Then_SearchTerm extends Op_SearchTerm {
         return false;
     }
     function script_expression(PaperInfo $row, $about) {
-        return Or_SearchTerm::make_script_expression(array_slice($this->child, 0, $this->nthen), $row, $about);
+        $sexprs = [];
+        for ($i = 0; $i !== $this->nthen; ++$i) {
+            $sexprs[] = $this->child[$i]->script_expression($row, $about);
+        }
+        return self::combine_script_expressions("or", $sexprs);
     }
 
     /** @return bool */
