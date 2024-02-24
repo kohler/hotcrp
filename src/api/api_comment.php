@@ -266,7 +266,7 @@ class Comment_API {
 
         if ($this->status === self::RESPONSE_REPLACED) {
             // report response replacement error
-            $jr = JsonResult::make_error(404, "<0>{uccmttype} was edited concurrently");
+            $jr = JsonResult::make_error(404, "<0>{$uccmttype} was edited concurrently");
             $jr["conflict"] = true;
         } else {
             $jr = new JsonResult($this->status, ["ok" => $this->status <= 299]);
