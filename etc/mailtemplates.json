@@ -367,8 +367,8 @@
 		"subject": "[%CONFSHORTNAME%] Review proposal for submission #%NUMBER% denied",
 		"body": [
 			"Dear %NAME%,\n\n",
-			"Your proposal that %REVIEWERCONTACT% review %CONFNAME% submission #%NUMBER% has been denied by an administrator. You may want to propose someone else.\n",
-			"%IF(REASON)%\nThey gave the following reason: %REASON%\n%ENDIF%\n",
+			"Your proposal that %REVIEWERCONTACT% review %CONFNAME% submission #%NUMBER% has been denied by an administrator. You may want to propose someone else.\n\n",
+			"%IF(REASON)%\nThey gave the following reason: %REASON%\n\n%ENDIF%\n",
 			"* Title: %TITLE%\n",
 			"* Author(s): %OPT(AUTHORS)%\n",
 			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
@@ -395,8 +395,8 @@
 		"subject": "[%CONFSHORTNAME%] Accepted review request for submission #%NUMBER%",
 		"body": [
 			"Dear %NAME%,\n\n",
-			"%REVIEWERCONTACT% has confirmed their intention to complete the review you requested of %CONFNAME% submission #%NUMBER%.\n",
-			"%IF(REASON)%\nThey gave the following reason: %REASON%\n%ENDIF%\n",
+			"%REVIEWERCONTACT% has confirmed their intention to complete the review you requested of %CONFNAME% submission #%NUMBER%.\n\n",
+			"%IF(REASON)%\nThey gave the following reason: %REASON%\n\n%ENDIF%\n",
 			"* Title: %TITLE%\n",
 			"* Author(s): %OPT(AUTHORS)%\n",
 			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
@@ -409,8 +409,8 @@
 		"subject": "[%CONFSHORTNAME%] Declined review request for submission #%NUMBER%",
 		"body": [
 			"Dear %NAME%,\n\n",
-			"%REVIEWERCONTACT% cannot complete the review you requested of %CONFNAME% submission #%NUMBER%. You may want to find an alternate reviewer.\n",
-			"%IF(REASON)%\nThey gave the following reason: %REASON%\n%ENDIF%\n",
+			"%REVIEWERCONTACT% cannot complete the review you requested of %CONFNAME% submission #%NUMBER%. You may want to find an alternate reviewer.\n\n",
+			"%IF(REASON)%\nThey gave the following reason: %REASON%\n\n%ENDIF%\n",
 			"* Title: %TITLE%\n",
 			"* Author(s): %OPT(AUTHORS)%\n",
 			"* Site: %URL(paper, p=%NUMBER%)%\n\n",
