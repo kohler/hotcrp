@@ -2883,6 +2883,126 @@ return function () {
 
 
 // popup dialogs
+function $popup(options) {
+    options = options || {};
+    let near = options.near || options.anchor || window,
+        forme = $e("form", {enctype: "multipart/form-data", "accept-charset": "UTF-8", "class": options.form_class || null}),
+        modale = $e("div", {"class": "modal hidden", role: "dialog"},
+            $e("div", {"class": "modal-dialog".concat(near === "window" ? " modal-dialog-centered" : ""), role: "document"},
+                $e("div", "modal-content", forme)));
+    let prior_focus;
+    function show_errors(data) {
+        $(forme).find(".msg-error, .feedback, .feedback-list").remove();
+        const gmlist = [];
+        let e;
+        for (let mx of data.message_list) {
+            if (mx.field
+                && (e = form.elements[mx.field])
+                && append_feedback_near(e, mx)) {
+                continue;
+            }
+            gmlist.push(mx);
+        }
+        if (gmlist.length) {
+            $(forme).find("h2").after(render_message_list(gmlist));
+        }
+    }
+    function close() {
+        removeClass(document.body, "modal-open");
+        document.body.removeEventListener("keydown", dialog_keydown);
+        if (document.activeElement
+            && modale.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+        hotcrp.tooltip.close();
+        $(modale).find("textarea, input").unautogrow();
+        $(modale).trigger("closedialog");
+        modale.remove();
+        if (prior_focus) {
+            prior_focus.focus({preventScroll: true});
+        }
+    }
+    function dialog_click(evt) {
+        if (evt.target === modale
+            && evt.button === 0
+            && !form_differs(forme)) {
+            close();
+        }
+    }
+    function dialog_keydown(evt) {
+        if (event_key(evt) === "Escape"
+            && event_modkey(evt) === 0
+            && !form_differs(forme)) {
+            close();
+            evt.preventDefault();
+        }
+    }
+    function show() {
+        document.body.appendChild(modale);
+        let $modal = $(modale);
+        $modal.on("click", dialog_click);
+        $modal.find("button[name=cancel]").on("click", close);
+        document.body.addEventListener("keydown", dialog_keydown);
+        if (options.action) {
+            if (options.action instanceof HTMLFormElement) {
+                forme.setAttribute("action", options.action.action);
+                forme.setAttribute("method", options.action.method);
+            } else {
+                forme.setAttribute("action", options.action);
+                forme.setAttribute("method", options.method || "post");
+            }
+            if (forme.getAttribute("method") === "post"
+                && !/post=/.test(forme.getAttribute("action"))
+                && !/^(?:[a-z][-a-z0-9+.]*:|\/\/)/i.test(forme.getAttribute("action"))) {
+                forme.prepend(hidden_input("post", siteinfo.postvalue));
+            }
+        }
+        for (const k in {minWidth: 1, maxWidth: 1, width: 1}) {
+            if (options[k] != null)
+                $modal.children().css(k, options[k]);
+        }
+    }
+    const self = {
+        show: function (visible) {
+            if (!modale.isConnected) {
+                show();
+            }
+            if (visible !== false) {
+                let e = document.activeElement;
+                $(modale).awaken();
+                popup_near($(modale), near);
+                if (e && document.activeElement !== e) {
+                    prior_focus = e;
+                }
+                hotcrp.tooltip.close();
+                // XXX also close down suggestions
+            }
+            return self;
+        },
+        append: function (...e) {
+            forme.append(...e);
+            return self;
+        },
+        append_actions: function (...actions) {
+            forme.appendChild($e("div", "popup-actions", ...actions));
+            return self;
+        },
+        on: function (...args) {
+            $(modale).on(...args);
+            return self;
+        },
+        find: function (selector) {
+            return $(modale).find(selector);
+        },
+        form: function () {
+            return forme;
+        },
+        show_errors: show_errors,
+        close: close
+    };
+    return self;
+}
+
 function popup_skeleton(options) {
     var hc = new HtmlCollector,
         $d = null,
@@ -3079,17 +3199,16 @@ function override_deadlines(callback) {
 handle_ui.on("js-override-deadlines", override_deadlines);
 
 handle_ui.on("js-confirm-override-conflict", function () {
-    var self = this, hc = popup_skeleton({near: this});
-    hc.push('<p>Are you sure you want to override your conflict?</p>');
-    hc.push_actions([
-        '<button type="button" name="bsubmit" class="btn-primary">Override conflict</button>',
-        '<button type="button" name="cancel">Cancel</button>'
-    ]);
-    hc.show().on("click", "button", function () {
-        if (this.name === "bsubmit") {
-            document.location = self.href;
-        }
-    });
+    const self = this;
+    $popup({near: this})
+        .append($e("p", null, "Are you sure you want to override your conflict?"))
+        .append_actions($e("button", {type: "button", name: "bsubmit", "class": "btn-primary"}, "Override conflict"),
+            $e("button", {type: "button", name: "cancel"}, "Cancel"))
+        .show().on("click", "button", function () {
+            if (this.name === "bsubmit") {
+                document.location = self.href;
+            }
+        });
 });
 
 function form_submitter(form, evt) {
@@ -5035,13 +5154,12 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
     $.ajax(hoturl("api/mailtext", a), {
         method: "GET", success: function (data) {
             if (data.ok && data.subject && data.body) {
-                var hc = popup_skeleton();
-                hc.push('<h2>External review request email preview</h2>');
-                hc.push('<div class="mail-preview"></div>');
-                hc.push_actions(['<button type="button" class="btn-primary no-focus" name="cancel">Close</button>']);
-                var $d = hc.show(false);
-                render_mail_preview($d.find("div.mail-preview")[0], data, ["subject", "body"]);
-                hc.show(true);
+                const mp = $e("div", "mail-preview");
+                const $pu = $popup().append($e("h2", null, "External review request email preview"), mp)
+                    .append_actions($e("button", {type: "button", "class": "btn-primary no-focus", name: "cancel"}, "Close"))
+                    .show(false);
+                render_mail_preview(mp, data, ["subject", "body"]);
+                $pu.show(true);
             }
         }
     });
@@ -11327,19 +11445,15 @@ function ensure_pattern_here() {
 
 
 /* form value transfer */
-function transfer_form_values($dst, $src, names) {
-    var $si = $src.find("input, select, textarea"), $di = $dst.find("input, select, textarea");
-    for (var i = 0; i != names.length; ++i) {
-        var n = names[i], $s = $si.filter("[name='" + n + "']");
-        if ($s.length > 0 && ($s[0].type === "checkbox" || $s[0].type === "radio"))
-            $s = $s.filter(":checked");
-        var $d = $di.filter("[name='" + n + "']");
-        if ($s.length === 0) {
-            $d.filter("input[type=hidden]").remove();
-        } else {
-            if (!$d.length)
-                $d = $('<input type="hidden" name="' + n + '">').appendTo($dst);
-            $d.val($s.val());
+function transfer_form_values(dstform, srcform, names) {
+    for (const name of names) {
+        const dste = dstform.elements[name], srce = srcform.elements[name];
+        if (srce && dste) {
+            dste.value = srce.value;
+        } else if (srce) {
+            dstform.appendChild(hidden_input(name, srce.value));
+        } else if (dste && dste.type === "hidden") {
+            dste.remove();
         }
     }
 }
@@ -11745,32 +11859,27 @@ handle_ui.on("js-remove-document", function () {
 });
 
 handle_ui.on("js-withdraw", function () {
-    var f = this.form,
-        hc = popup_skeleton({near: this, action: f});
-    hc.push('<p>Are you sure you want to withdraw this ' + siteinfo.snouns[0] + ' from consideration and/or publication?');
-    if (!this.hasAttribute("data-revivable"))
-        hc.push(' Only administrators can undo this step.');
-    hc.push('</p>');
-    hc.push('<textarea name="reason" rows="3" cols="40" class="w-99 need-autogrow" placeholder="Optional explanation" spellcheck="true"></textarea>');
+    const f = this.form, $pu = $popup({near: this, action: f});
+    $pu.append($e("p", null, "Are you sure you want to with draw this " + siteinfo.snouns[0] + " from consideration and/or publication?" + (this.hasAttribute("data-revivable") ? "" : " Only administrators can undo this step.")),
+        $e("textarea", {name: "reason", rows: 3, cols: 40, placeholder: "Optional explanation", spellcheck: "true", "class": "w-99 need-autogrow"}));
     if (!this.hasAttribute("data-withdrawable")) {
-        hc.push('<label class="checki"><span class="checkc"><input type="checkbox" name="override" value="1"> </span>Override deadlines</label>');
+        $pu.append($e("label", "checki", $e("span", "checkc", $e("input", {type: "checkbox", name: "override", value: 1})), "Override deadlines"));
     }
-    hc.push_actions(['<button type="submit" name="withdraw" value="1" class="btn-danger">Withdraw</button>',
-        '<button type="button" name="cancel">Cancel</button>']);
-    var $d = hc.show();
-    transfer_form_values($d.find("form"), $(f), ["status:notify", "status:notify_reason"]);
-    $d.on("submit", "form", function () { addClass(f, "submitting"); });
+    $pu.append_actions($e("button", {type: "submit", name: "withdraw", value: 1, "class": "btn-danger"}, "Withdraw"),
+        $e("button", {type: "button", name: "cancel"}, "Cancel"));
+    $pu.show();
+    transfer_form_values($pu.form(), f, ["status:notify", "status:notify_reason"]);
+    $pu.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
 handle_ui.on("js-delete-paper", function () {
-    var f = this.form,
-        hc = popup_skeleton({near: this, action: f});
-    hc.push('<p>Be careful: This will permanently delete all information about this ' + siteinfo.snouns[0] + ' from the database and <strong>cannot be undone</strong>.</p>');
-    hc.push_actions(['<button type="submit" name="delete" value="1" class="btn-danger">Delete</button>',
-        '<button type="button" name="cancel">Cancel</button>']);
-    var $d = hc.show();
-    transfer_form_values($d.find("form"), $(f), ["status:notify", "status:notify_reason"]);
-    $d.on("submit", "form", function () { addClass(f, "submitting"); });
+    const f = this.form, $pu = $popup({near: this, action: f});
+    $pu.append($e("p", null, "Be careful: This will permanently delete all information about this " + siteinfo.snouns[0] + " from the database and ", $e("strong", null, "cannot be undone"), "."));
+    $pu.append_actions($e("button", {type: "submit", name: "delete", value: 1, "class": "btn-danger"}, "Delete"),
+        $e("button", {type: "button", name: "cancel"}, "Cancel"));
+    $pu.show();
+    transfer_form_values($pu.form(), f, ["status:notify", "status:notify_reason"]);
+    $pu.on("submit", "form", function () { addClass(f, "submitting"); });
 });
 
 handle_ui.on("js-clickthrough", function () {
@@ -12609,23 +12718,21 @@ handle_ui.on("js-acceptish-review", function (evt) {
 });
 
 handle_ui.on("js-deny-review-request", function () {
-    var f = this.form,
-        hc = popup_skeleton({near: this, action: f});
-    hc.push('<p>Select “Deny request” to deny this review request.</p>');
-    hc.push('<textarea name="reason" rows="3" cols="60" class="w-99 need-autogrow" placeholder="Optional explanation" spellcheck="true"></textarea>');
-    hc.push_actions(['<button type="submit" name="denyreview" value="1" class="btn-danger">Deny request</button>',
-        '<button type="button" name="cancel">Cancel</button>']);
-    var $d = hc.show();
-    transfer_form_values($d, $(f), ["firstName", "lastName", "affiliation", "reason"]);
+    const f = this.form, $pu = $popup({near: this, action: f})
+        .append($e("p", null, "Select “Deny request” to deny this review request."),
+            $e("textarea", {name: "reason", rows: 3, cols: 60, placeholder: "Optional explanation", spellcheck: "true", "class": "w-99 need-autogrow"}))
+        .append_actions($e("button", {type: "submit", name: "denyreview", value: 1, "class": "btn-danger"}, "Deny request"),
+            $e("button", {type: "button", name: "cancel"}, "Cancel"))
+        .show();
+    transfer_form_values($pu.form(), f, ["firstName", "lastName", "affiliation", "reason"]);
 });
 
 handle_ui.on("js-delete-review", function () {
-    var f = this.form,
-        hc = popup_skeleton({near: this, action: f});
-    hc.push('<p>Be careful: This will permanently delete all information about this review assignment from the database and <strong>cannot be undone</strong>.</p>');
-    hc.push_actions(['<button type="submit" name="deletereview" value="1" class="btn-danger">Delete review</button>',
-        '<button type="button" name="cancel">Cancel</button>']);
-    hc.show();
+    const f = this.form, $pu = $popup({near: this, action: f})
+        .append($e("p", null, "Be careful: This will permanently delete all information about this review assignment from the database and ", $e("strong", null, "cannot be undone"), "."))
+        .append_actions($e("button", {type: "submit", name: "deletereview", value: 1, "class": "btn-danger"}, "Delete review"),
+            $e("button", {type: "button", name: "cancel"}, "Cancel"))
+        .show();
 });
 
 handle_ui.on("js-approve-review", function (evt) {
