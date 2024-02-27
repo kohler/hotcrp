@@ -2885,12 +2885,34 @@ return function () {
 // popup dialogs
 function $popup(options) {
     options = options || {};
-    let near = options.near || options.anchor || window,
+    const near = options.near || options.anchor || window,
         forme = $e("form", {enctype: "multipart/form-data", "accept-charset": "UTF-8", "class": options.form_class || null}),
         modale = $e("div", {"class": "modal hidden", role: "dialog"},
-            $e("div", {"class": "modal-dialog".concat(near === "window" ? " modal-dialog-centered" : ""), role: "document"},
+            $e("div", {"class": "modal-dialog".concat(near === window ? " modal-dialog-centered" : "", options.className ? " " + options.className : ""), role: "document"},
                 $e("div", "modal-content", forme)));
+    if (options.action) {
+        if (options.action instanceof HTMLFormElement) {
+            forme.setAttribute("action", options.action.action);
+            forme.setAttribute("method", options.action.method);
+        } else {
+            forme.setAttribute("action", options.action);
+            forme.setAttribute("method", options.method || "post");
+        }
+        if (forme.getAttribute("method") === "post"
+            && !/post=/.test(forme.getAttribute("action"))
+            && !/^(?:[a-z][-a-z0-9+.]*:|\/\/)/i.test(forme.getAttribute("action"))) {
+            forme.prepend(hidden_input("post", siteinfo.postvalue));
+        }
+    }
+    for (const k of ["minWidth", "maxWidth", "width"]) {
+        if (options[k] != null)
+            $(modale.firstChild).css(k, options[k]);
+    }
+    $(modale).on("click", dialog_click);
+    document.body.appendChild(modale);
+    document.body.addEventListener("keydown", dialog_keydown);
     let prior_focus;
+
     function show_errors(data) {
         $(forme).find(".msg-error, .feedback, .feedback-list").remove();
         const gmlist = [];
@@ -2923,60 +2945,31 @@ function $popup(options) {
         }
     }
     function dialog_click(evt) {
-        if (evt.target === modale
-            && evt.button === 0
-            && !form_differs(forme)) {
+        if (evt.button === 0
+            && ((evt.target === modale && !form_differs(forme))
+                || (evt.target.nodeName === "BUTTON" && evt.target.name === "cancel"))) {
             close();
         }
     }
     function dialog_keydown(evt) {
         if (event_key(evt) === "Escape"
             && event_modkey(evt) === 0
+            && !hasClass(modale, "hidden")
             && !form_differs(forme)) {
             close();
             evt.preventDefault();
         }
     }
-    function show() {
-        document.body.appendChild(modale);
-        let $modal = $(modale);
-        $modal.on("click", dialog_click);
-        $modal.find("button[name=cancel]").on("click", close);
-        document.body.addEventListener("keydown", dialog_keydown);
-        if (options.action) {
-            if (options.action instanceof HTMLFormElement) {
-                forme.setAttribute("action", options.action.action);
-                forme.setAttribute("method", options.action.method);
-            } else {
-                forme.setAttribute("action", options.action);
-                forme.setAttribute("method", options.method || "post");
-            }
-            if (forme.getAttribute("method") === "post"
-                && !/post=/.test(forme.getAttribute("action"))
-                && !/^(?:[a-z][-a-z0-9+.]*:|\/\/)/i.test(forme.getAttribute("action"))) {
-                forme.prepend(hidden_input("post", siteinfo.postvalue));
-            }
-        }
-        for (const k in {minWidth: 1, maxWidth: 1, width: 1}) {
-            if (options[k] != null)
-                $modal.children().css(k, options[k]);
-        }
-    }
     const self = {
-        show: function (visible) {
-            if (!modale.isConnected) {
-                show();
+        show: function () {
+            const e = document.activeElement;
+            $(modale).awaken();
+            popup_near(modale, near);
+            if (e && document.activeElement !== e) {
+                prior_focus = e;
             }
-            if (visible !== false) {
-                let e = document.activeElement;
-                $(modale).awaken();
-                popup_near($(modale), near);
-                if (e && document.activeElement !== e) {
-                    prior_focus = e;
-                }
-                hotcrp.tooltip.close();
-                // XXX also close down suggestions
-            }
+            hotcrp.tooltip.close();
+            // XXX also close down suggestions
             return self;
         },
         append: function (...e) {
@@ -2988,7 +2981,7 @@ function $popup(options) {
             return self;
         },
         on: function (...args) {
-            $(modale).on(...args);
+            $(forme).on(...args);
             return self;
         },
         find: function (selector) {
@@ -5156,10 +5149,9 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
             if (data.ok && data.subject && data.body) {
                 const mp = $e("div", "mail-preview");
                 const $pu = $popup().append($e("h2", null, "External review request email preview"), mp)
-                    .append_actions($e("button", {type: "button", "class": "btn-primary no-focus", name: "cancel"}, "Close"))
-                    .show(false);
+                    .append_actions($e("button", {type: "button", "class": "btn-primary no-focus", name: "cancel"}, "Close"));
                 render_mail_preview(mp, data, ["subject", "body"]);
-                $pu.show(true);
+                $pu.show();
             }
         }
     });
@@ -5274,9 +5266,9 @@ handle_ui.on("change.js-mail-recipients", function () {
 });
 
 handle_ui.on("js-mail-set-template", function () {
-    var $d, f, templatelist;
+    let $pu, preview, templatelist;
     function selected_tm(tn) {
-        tn = tn || f.elements.template.value;
+        tn = tn || $pu.form().elements.template.value;
         var i = 0;
         while (templatelist[i] && templatelist[i].name !== tn) {
             ++i;
@@ -5284,43 +5276,39 @@ handle_ui.on("js-mail-set-template", function () {
         return templatelist[i] || null;
     }
     function render() {
-        var fl = f.querySelector("fieldset").lastChild, tm = selected_tm();
-        fl.replaceChildren();
-        tm && render_mail_preview(fl, tm, ["recipients", "cc", "reply-to", "subject", "body"]);
+        const tm = selected_tm();
+        preview.replaceChildren();
+        tm && render_mail_preview(preview, tm, ["recipients", "cc", "reply-to", "subject", "body"]);
     }
     function submitter() {
         document.location = hoturl("mail", {template: selected_tm().name});
     }
     demand_load.mail_templates().then(function (tl) {
-        var hc = popup_skeleton({className: "modal-dialog-w40"}), i, mf;
+        $pu = $popup({className: "modal-dialog-w40"})
+            .append($e("h2", null, "Mail templates"));
         templatelist = tl;
-        hc.push('<h2>Mail templates</h2>');
         if (tl.length) {
-            hc.push('<select name="template" class="w-100 want-focus" size="5">', '</select>');
-            for (i = 0; tl[i]; ++i) {
-                hc.push('<option value="'.concat(tl[i].name, i ? '">' : '" selected>', escape_html(tl[i].title), '</option>'));
+            const tmpl = $e("select", {name: "template", "class": "w-100 want-focus ignore-diff", size: 5});
+            for (let i = 0; tl[i]; ++i) {
+                tmpl.append($e("option", {value: tl[i].name, selected: !i}, tl[i].title));
             }
-            hc.pop();
-            hc.push('<fieldset class="mt-4 modal-demo-fieldset"><div class="mail-preview"></div></fieldset>');
-            hc.push_actions(['<button type="submit" name="go" class="btn-primary">Use template</button>',
-                '<button type="button" name="cancel">Cancel</button>']);
-        } else {
-            hc.push('<p>There are no template you can load.</p>');
-            hc.push_actions(['<button type="button"> name="cancel">OK</button>']);
-        }
-        $d = hc.show(false);
-        f = $d.find("form")[0];
-        if (f.elements.template) {
-            mf = document.getElementById("mailform");
+            const mf = document.getElementById("mailform");
             if (mf && mf.elements.template && mf.elements.template.value
-                && selected_tm(mf.elements.template.value))
-                f.elements.template.value = mf.elements.template.value;
-            $(f.elements.template).on("input", render);
-            $(f).on("submit", submitter);
-            $(f.elements.go).on("click")
+                && selected_tm(mf.elements.template.value)) {
+                tmpl.value = mf.elements.template.value;
+            }
+            preview = $e("div", "mail-preview");
+            $(tmpl).on("input", render);
+            $pu.append(tmpl, $e("fieldset", "mt-4 modal-demo-fieldset", preview))
+                .append_actions($e("button", {type: "submit", name: "go", "class": "btn-primary"}, "Use template"),
+                    $e("button", {type: "button", name: "cancel"}, "Cancel"))
+                .on("submit", submitter);
             render();
+        } else {
+            $pu.append($e("p", null, "There are no templates you can load."))
+                .append_actions($e("button", {type: "button", name: "cancel"}, "OK"));
         }
-        hc.show(true);
+        $pu.show();
     });
 });
 
@@ -9648,7 +9636,7 @@ function taganno_success(rv) {
 }
 
 handle_ui.on("js-annotate-order", function () {
-    var $d, form, etagannos, annos, need_session = false,
+    var $pu, form, etagannos, annos, need_session = false,
         mytag = this.getAttribute("data-anno-tag"),
         dtag = mytag;
     if (mytag.startsWith(siteinfo.user.uid + "~")) {
@@ -9658,7 +9646,7 @@ handle_ui.on("js-annotate-order", function () {
         if (this.name === "add") {
             add_anno({});
             awaken_anno();
-            $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
+            $pu.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
             etagannos.lastChild.querySelector("legend > input").focus();
         } else if (hasClass(this, "js-delete-ta")) {
             ondeleteclick.call(this, evt);
@@ -9712,9 +9700,9 @@ handle_ui.on("js-annotate-order", function () {
             function (rv) {
                 if (rv.ok) {
                     taganno_success(rv);
-                    $d.close();
+                    $pu.close();
                 } else {
-                    $d.show_errors(rv);
+                    $pu.show_errors(rv);
                 }
            });
     }
@@ -9793,33 +9781,33 @@ handle_ui.on("js-annotate-order", function () {
         etagannos.appendChild(fieldset);
     }
     function awaken_anno() {
-        $d.find(".need-pcselector").each(populate_pcselector);
+        $pu.find(".need-pcselector").each(populate_pcselector);
     }
     function show_dialog(rv) {
         if (!rv.ok || !rv.editable)
             return;
-        let hc = popup_skeleton({className: "modal-dialog-w40", form_class: "need-diff-check"}), i;
-        hc.push('<h2>Annotate #' + dtag + ' order</h2>');
-        hc.push('<p>These annotations will appear in searches such as “order:' + dtag + '”.</p>');
-        hc.push('<p><span class="select"><select name="ta/type"><option value="generic" selected>Generic order</option><option value="session">Session order</option></select></span></p>');
-        hc.push('<div class="tagannos"></div>');
-        hc.push('<div class="mt-3"><button type="button" name="add">Add group</button></div>');
-        hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save changes</button>', '<button type="button" name="cancel">Cancel</button>']);
-        $d = hc.show(false);
-        form = $d[0].querySelector("form");
-        etagannos = $d[0].querySelector(".tagannos");
+        $pu = $popup({className: "modal-dialog-w40", form_class: "need-diff-check"})
+            .append($e("h2", null, "Annotate #" + dtag + " order"),
+                $e("p", null, "These annotations will appear in searches such as “order:" + dtag + "”."),
+                $e("p", null, $e("span", "select", $e("select", {name: "ta/type"}, $e("option", {value: "generic", selected: true}, "Generic order"), $e("option", {value: "session"}, "Session order")))),
+                $e("div", "tagannos"),
+                $e("div", "mt-3", $e("button", {type: "button", name: "add"}, "Add group")))
+            .append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save changes"),
+                $e("button", {type: "button", name: "cancel"}, "Cancel"));
+        form = $pu.form();
+        etagannos = form.querySelector(".tagannos");
         annos = rv.anno;
         for (i = 0; i < annos.length; ++i) {
             add_anno(annos[i]);
         }
-        $d.on("click", "button", clickh);
+        $pu.on("click", "button", clickh);
         const etype = form.elements["ta/type"],
             etypeval = need_session ? "session" : "generic";
         etype.setAttribute("data-default-value", etypeval);
         etype.value = etypeval;
         $(etype).on("change", on_change_type).change();
         awaken_anno();
-        hc.show();
+        $pu.show();
         demand_load.pc().then(function () { check_form_differs(form); }); // :(
     }
     $.get(hoturl("=api/taganno", {tag: mytag}), show_dialog);
@@ -11869,7 +11857,7 @@ handle_ui.on("js-withdraw", function () {
         $e("button", {type: "button", name: "cancel"}, "Cancel"));
     $pu.show();
     transfer_form_values($pu.form(), f, ["status:notify", "status:notify_reason"]);
-    $pu.on("submit", "form", function () { addClass(f, "submitting"); });
+    $pu.on("submit", function () { addClass(f, "submitting"); });
 });
 
 handle_ui.on("js-delete-paper", function () {
@@ -11879,7 +11867,7 @@ handle_ui.on("js-delete-paper", function () {
         $e("button", {type: "button", name: "cancel"}, "Cancel"));
     $pu.show();
     transfer_form_values($pu.form(), f, ["status:notify", "status:notify_reason"]);
-    $pu.on("submit", "form", function () { addClass(f, "submitting"); });
+    $pu.on("submit", function () { addClass(f, "submitting"); });
 });
 
 handle_ui.on("js-clickthrough", function () {
