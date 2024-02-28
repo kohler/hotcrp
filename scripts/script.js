@@ -1999,15 +1999,22 @@ function check_form_differs(form, elt) {
 window.form_highlight = check_form_differs; /* XXX */
 
 function hidden_input(name, value, attr) {
-    var input = document.createElement("input");
-    input.type = "hidden";
-    input.name = name;
-    input.value = value;
+    const e = document.createElement("input");
+    e.type = "hidden";
+    e.name = name;
+    e.value = value;
     if (attr) {
-        for (var k in attr)
-            input.setAttribute(k, attr[k]);
+        for (const i in attr) {
+            if (attr[i] == null) {
+                // skip
+            } else if (typeof attr[i] === "boolean") {
+                e[i] = attr[i];
+            } else {
+                e.setAttribute(i, attr[i]);
+            }
+        }
     }
-    return input;
+    return e;
 }
 
 hotcrp.add_diff_check = function (form) {
@@ -2247,7 +2254,7 @@ $(function () {
     });
 });
 
-handle_ui.on("js-range-combo", function (evt) {
+handle_ui.on("js-range-combo", function () {
     let te = this.type === "text" || this.type === "number" ? this : null,
         re = this.type === "range" ? this : null;
     if (!te) {
@@ -2911,7 +2918,7 @@ function $popup(options) {
     $(modale).on("click", dialog_click);
     document.body.appendChild(modale);
     document.body.addEventListener("keydown", dialog_keydown);
-    let prior_focus;
+    let prior_focus, actionse;
 
     function show_errors(data) {
         $(forme).find(".msg-error, .feedback, .feedback-list").remove();
@@ -2919,7 +2926,7 @@ function $popup(options) {
         let e;
         for (let mx of data.message_list) {
             if (mx.field
-                && (e = form.elements[mx.field])
+                && (e = forme.elements[mx.field])
                 && append_feedback_near(e, mx)) {
                 continue;
             }
@@ -2977,7 +2984,10 @@ function $popup(options) {
             return self;
         },
         append_actions: function (...actions) {
-            forme.appendChild($e("div", "popup-actions", ...actions));
+            if (!actionse) {
+                forme.appendChild((actionse = $e("div", "popup-actions")));
+            }
+            actionse.append(...actions);
             return self;
         },
         on: function (...args) {
@@ -2986,6 +2996,12 @@ function $popup(options) {
         },
         find: function (selector) {
             return $(modale).find(selector);
+        },
+        querySelector: function (selector) {
+            return forme.querySelector(selector);
+        },
+        querySelectorAll: function (selector) {
+            return forme.querySelectorAll(selector);
         },
         form: function () {
             return forme;
@@ -3223,7 +3239,7 @@ handle_ui.on("js-mark-submit", function () {
 
 
 // banner
-hotcrp.banner = (function ($) {
+hotcrp.banner = (function () {
 function resize(b) {
     const offs = document.querySelectorAll(".need-banner-offset");
     if (b) {
@@ -3612,16 +3628,18 @@ function tracker_refresh() {
 }
 
 handle_ui.on("js-tracker", function (evt) {
-    var $d, trno = 1, elapsed_timer;
-    function push_tracker(hc, tr) {
-        hc.push('<div class="lg tracker-group" data-index="' + trno + '" data-trackerid="' + tr.trackerid + '">', '</div>');
-        hc.push('<input type="hidden" name="tr' + trno + '-id" value="' + escape_html(tr.trackerid) + '">');
+    let $pu, trno = 1, elapsed_timer;
+    function make_tracker(tr) {
+        const trp = "tr" + trno, ktrp = "k-tr" + trno,
+            $t = $e("fieldset", {"class": "tracker-group", "data-index": trno, "data-trackerid": tr.trackerid},
+                $e("legend", "mb-1",
+                    $e("input", {id: ktrp + "-name", type: "text", name: trp + "-name", size: 24, "class": "want-focus need-autogrow", value: tr.name || "", placeholder: tr.is_new ? "New tracker" : "Unnamed tracker"})),
+                hidden_input(trp + "-id", tr.trackerid));
         if (tr.trackerid === "new" && siteinfo.paperid)
-            hc.push('<input type="hidden" name="tr' + trno + '-p" value="' + siteinfo.paperid + '">');
+            $t.append(hidden_input(trp + "-p", siteinfo.paperid));
         if (tr.listinfo)
-            hc.push('<input type="hidden" name="tr' + trno + '-listinfo" value="' + escape_html(tr.listinfo) + '">');
-        hc.push('<div class="entryi"><label for="k-tr' + trno + '-name">Name</label><div class="entry"><input id="k-tr' + trno + '-name" type="text" name="tr' + trno + '-name" size="30" class="want-focus need-autogrow" value="' + escape_html(tr.name || "") + (tr.is_new ? '" placeholder="New tracker' : '" placeholder="Unnamed') + '"></div></div>');
-        var vis = tr.visibility || "", vistype;
+            $t.append(hidden_input(trp + "-listinfo", tr.listinfo));
+        let vis = tr.visibility || "", vistype;
         if (vis === "+none" || vis === "none") {
             vistype = "none";
             vis = "";
@@ -3630,58 +3648,74 @@ handle_ui.on("js-tracker", function (evt) {
         } else {
             vistype = "";
         }
-        hc.push('<div class="entryi has-fold fold' + (vistype === "+" || vistype === "-" ? "o" : "c") + '" data-fold-values="+ -"><label for="k-tr' + trno + '-vistype">PC visibility</label><div class="entry">', '</div></div>');
-        hc.push('<span class="select"><select id="k-tr' + trno + '-vistype" name="tr' + trno + '-vistype" class="uich js-foldup" data-default-value="' + vistype + '">', '</select></span>');
-        var vismap = [["", "Whole PC"], ["+", "PC members with tag"], ["-", "PC members without tag"]];
+        const gvis = (dl.tracker && dl.tracker.global_visibility) || "",
+            vismap = [["", "Whole PC"], ["+", "PC members with tag"], ["-", "PC members without tag"]],
+            vissel = $e("select", {id: ktrp + "-vistype", name: trp + "-vistype", "class": "uich js-foldup", "data-default-value": vistype});
         if (hotcrp.status.is_admin) {
             vismap.push(["none", "Administrators only"]);
         }
-        var i, v, issel, isdisabled, gvis = (dl.tracker && dl.tracker.global_visibility) || "";
-        for (i = 0; i !== vismap.length; ++i) {
-            v = vismap[i];
-            issel = v[0] === vistype ? " selected" : "";
-            isdisabled = gvis === "+none" && v[0] !== "none" ? " disabled" : "";
-            hc.push('<option value="'.concat(v[0], '"', issel, isdisabled, '>', v[1], '</option>'));
+        for (const v of vismap) {
+            vissel.append($e("option", {value: v[0], selected: v[0] === vistype, disabled: gvis === "+none" && v[0] !== "none"}, v[1]));
         }
-        hc.pop();
-        hc.push_pop('  <input type="text" name="tr' + trno + '-vis" value="' + escape_html(vis.substring(1)) + '" placeholder="(tag)" class="need-suggest need-autogrow pc-tags fx">');
-        if (dl.tracker && (vis = dl.tracker.global_visibility)) {
-            hc.push('<div class="entryi"><label>Global visibility</label><div class="entry">', '</div></div>');
-            if (vis === "+none")
-                hc.push('Administrators only');
-            else if (vis.charAt(0) === "+")
-                hc.push('PC members with tag ' + vis.substring(1));
+        $t.append($e("div", {"class": "entryi has-fold fold" + (vistype === "+" || vistype === "-" ? "o" : "c"), "data-fold-values": "+ -"},
+            $e("label", {"for": ktrp + "-vistype"}, "PC visibility"),
+            $e("div", "entry", $e("span", "select", vissel),
+                $e("input", {type: "text", name: trp + "-vis", value: vis.substring(1), placeholder: "(tag)", "class": "need-suggest need-autogrow pc-tags fx ml-2"}))));
+        if (gvis) {
+            let gvist;
+            if (gvis === "+none")
+                gvist = "Administrators only";
+            else if (gvis.charAt(0) === "+")
+                gvist = "PC members with tag " + gvis.substring(1);
             else
-                hc.push('PC members without tag ' + vis.substring(1));
-            hc.push_pop('<div class="f-h">This <a href="' + escape_html(hoturl("settings", "group=tracks")) + '">setting</a> restricts all trackers.</div>');
+                gvist = "PC members without tag " + gvis.substring(1);
+            $t.append($e("div", "entryi",
+                $e("label", null, "Global visibility"),
+                $e("div", "entry", gvist, $e("div", "f-h", "This ", $e("a", {href: hoturl("settings", "group=tracks")}, "setting"), " restricts all trackers."))));
         }
-        hc.push('<div class="entryi"><label></label><div class="entry"><label class="checki"><input type="hidden" name="has_tr' + trno + '-hideconflicts" value="1"><input class="checkc" name="tr' + trno + '-hideconflicts" value="1" type="checkbox"' + (tr.hide_conflicts ? ' checked' : '') + '>Hide conflicted papers</label></div></div>');
-        if (tr.start_at)
-            hc.push('<div class="entryi"><label>Elapsed time</label><span class="trackerdialog-elapsed" data-start-at="' + tr.start_at + '"></span></div>');
+        $t.append($e("div", "entryi", $e("label"),
+            $e("div", "entry", $e("label", "checki",
+                $e("span", "checkc", hidden_input("has_" + trp + "-hideconflicts", 1),
+                    $e("input", {name: trp + "-hideconflicts", value: 1, type: "checkbox", checked: !!tr.hide_conflicts})),
+                "Hide conflicted papers"))));
+        if (tr.start_at) {
+            $t.append($e("div", "entryi", $e("label", null, "Elapsed time"),
+                $e("span", {"class": "trackerdialog-elapsed", "data-start-at": tr.start_at})));
+        }
         try {
-            var j = JSON.parse(tr.listinfo || "null"), ids, pos;
+            let j = JSON.parse(tr.listinfo || "null"), a = [], ids, pos;
             if (j && j.ids && (ids = decode_session_list_ids(j.ids))) {
                 if (tr.papers
                     && tr.papers[tr.paper_offset]
                     && tr.papers[tr.paper_offset].pid
-                    && (pos = ids.indexOf(tr.papers[tr.paper_offset].pid)) > -1)
-                    ids[pos] = '<b>' + ids[pos] + '</b>';
-                hc.push('<div class="entryi"><label>Order</label><div class="entry"><input type="hidden" name="tr' + trno + '-p" disabled>' + ids.join(" ") + '</div></div>');
+                    && (pos = ids.indexOf(tr.papers[tr.paper_offset].pid)) > -1) {
+                    pos > 0 && a.push(ids.slice(0, pos).join(" ") + " ");
+                    a.push($e("b", null, ids[pos]));
+                    pos < ids.length - 1 && a.push(" " + ids.slice(pos + 1).join(" "));
+                } else {
+                    a.push(ids.join(" "));
+                }
+                $t.append($e("div", "entryi", $e("label", null, "Order"),
+                    $e("div", "entry", hidden_input(trp + "-p", "", {disabled: true}), ...a)));
             }
         } catch (e) {
         }
         if (tr.start_at) {
-            hc.push('<div class="entryi"><label></label><div class="entry">', '</div></div>');
-            hc.push('<label><input name="tr' + trno + '-hide" value="1" type="checkbox"' + (wstor.site(true, "hotcrp-tracking-hide-" + tr.trackerid) ? " checked" : "") + '> Hide on this tab</label>');
-            hc.push('<label class="padl"><input name="tr' + trno + '-stop" value="1" type="checkbox"> Stop</label>');
-            hc.pop();
+            $t.append($e("div", "entryi", $e("label"),
+                $e("div", "entry",
+                    $e("label", "checki d-inline-block mr-3",
+                        $e("span", "checkc", $e("input", {name: trp + "-hide", value: 1, type: "checkbox", checked: !!wstor.site(true, "hotcrp-tracking-hide-" + tr.trackerid)})),
+                        "Hide on this tab"),
+                    $e("label", "checki d-inline-block",
+                        $e("span", "checkc", $e("input", {name: trp + "-stop", value: 1, type: "checkbox"})),
+                        "Stop"))));
         }
-        hc.pop();
         ++trno;
+        return $t;
     }
     function show_elapsed() {
-        var now = now_sec();
-        $d.find(".trackerdialog-elapsed").each(function () {
+        const now = now_sec();
+        $pu.find(".trackerdialog-elapsed").each(function () {
             this.innerHTML = unparse_duration(now - this.getAttribute("data-start-at"));
         });
     }
@@ -3694,18 +3728,18 @@ handle_ui.on("js-tracker", function (evt) {
             visibility: wstor.site(false, "hotcrp-tracking-visibility"),
             hide_conflicts: true,
             listinfo: document.body.getAttribute("data-hotlist")
-        }, $myg = $(this).closest("div.lg"), hc = new HtmlCollector;
-        if (siteinfo.paperid)
+        }, $myg = $(this).closest("div.lg");
+        if (siteinfo.paperid) {
             tr.papers = [{pid: siteinfo.paperid}];
-        push_tracker(hc, tr);
-        focus_within($(hc.render()).insertBefore($myg));
+        }
+        focus_within($(make_tracker(tr)).insertBefore($myg));
         $myg.remove();
-        $d.awaken();
+        $pu.awaken();
     }
     function make_submit_success(hiding, why) {
         return function (data) {
             if (data.ok) {
-                $d && $d.close();
+                $pu && $pu.close();
                 if (data.new_trackerid) {
                     wstor.site(true, "hotcrp-tracking", [null, +data.new_trackerid, null, document.body.getAttribute("data-hotlist") || null]);
                     if ("new" in hiding)
@@ -3717,20 +3751,20 @@ handle_ui.on("js-tracker", function (evt) {
                 tracker_configured = true;
                 streload();
             } else {
-                if (!$d && why === "new") {
+                if (!$pu && why === "new") {
                     start();
-                    $d.find("button[name=new]").click();
+                    $pu.find("button[name=new]").click();
                 }
-                if ($d)
-                    $d.show_errors(data);
+                if ($pu)
+                    $pu.show_errors(data);
             }
         };
     }
     function submit(evt) {
-        var f = $d.find("form")[0], hiding = {};
-        $d.find(".tracker-changemark").remove();
+        var f = $pu.form(), hiding = {};
+        $pu.find(".tracker-changemark").remove();
 
-        $d.find(".tracker-group").each(function () {
+        $pu.find(".tracker-group").each(function () {
             var trno = this.getAttribute("data-index"),
                 id = this.getAttribute("data-trackerid"),
                 e = f["tr" + trno + "-hide"];
@@ -3740,7 +3774,7 @@ handle_ui.on("js-tracker", function (evt) {
 
         // mark differences
         var trd = {};
-        $d.find("input, select, textarea").each(function () {
+        $pu.find("input, select, textarea").each(function () {
             var m = this.name.match(/^tr(\d+)/);
             if (m && input_differs(this))
                 trd[m[1]] = true;
@@ -3750,18 +3784,18 @@ handle_ui.on("js-tracker", function (evt) {
         }
 
         $.post(hoturl("=api/trackerconfig"),
-               $d.find("form").serialize(),
+               $($pu.form()).serialize(),
                make_submit_success(hiding));
         evt.preventDefault();
     }
     function stop_all() {
-        $d.find("input[name$='stop']").prop("checked", true);
-        $d.find("form").submit();
+        $pu.find("input[name$='stop']").prop("checked", true);
+        $($pu.form()).submit();
     }
     function start() {
-        var hc = popup_skeleton({className: "modal-dialog-w40", form_class: "need-diff-check"});
-        hc.push('<h2>Meeting tracker</h2>');
-        var trackers, nshown = 0;
+        $pu = $popup({className: "modal-dialog-w40", form_class: "need-diff-check"})
+            .append($e("h2", null, "Meeting tracker"));
+        let trackers, nshown = 0;
         if (!dl.tracker) {
             trackers = [];
         } else if (!dl.tracker.ts) {
@@ -3769,9 +3803,9 @@ handle_ui.on("js-tracker", function (evt) {
         } else {
             trackers = dl.tracker.ts;
         }
-        for (var i = 0; i !== trackers.length; ++i) {
+        for (let i = 0; i !== trackers.length; ++i) {
             if (trackers[i].allow_administer) {
-                push_tracker(hc, trackers[i]);
+                $pu.append(make_tracker(trackers[i]));
                 ++nshown;
             }
         }
@@ -3779,23 +3813,23 @@ handle_ui.on("js-tracker", function (evt) {
             && hasClass(document.body, "has-hotlist")
             && (hotcrp.status.is_admin || hotcrp.status.is_track_admin)) {
             if (!hotcrp.status.tracker_here) {
-                hc.push('<div class="lg"><button type="button" name="new">Start new tracker</button></div>');
+                $pu.append($e("div", "lg", $e("button", {type: "button", name: "new"}, "Start new tracker")));
             } else {
-                hc.push('<div class="lg"><button type="button" class="need-tooltip disabled" tabindex="-1" aria-label="This browser tab is already running a tracker.">Start new tracker</button></div>');
+                $pu.append($e("div", "lg", $e("button", {type: "button", "class": "need-tooltip disabled", tabindex: -1, "aria-label": "This browser tab is already running a tracker."}, "Start new tracker")));
             }
         } else {
-            hc.push('<div class="lg"><button type="button" class="need-tooltip disabled" tabindex="-1" aria-label="To start a new tracker, open a tab on a submission page.">Start new tracker</button></div>')
+            $pu.append($e("div", "lg", $e("button", {type: "button", "class": "need-tooltip disabled", tabindex: -1, "aria-label": "To start a new tracker, open a tab on a submission page."}, "Start new tracker")));
         }
-        hc.push_actions();
-        hc.push('<button type="submit" name="save" class="btn-primary">Save changes</button><button type="button" name="cancel">Cancel</button>');
+        $pu.append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save changes"),
+            $e("button", {type: "button", name: "cancel"}, "Cancel"));
         if (nshown) {
-            hc.push('<button type="button" name="stopall" class="btn-danger float-left">Stop all</button>');
-            hc.push('<a class="btn float-left" target="_blank" rel="noopener" href="' + hoturl("buzzer") + '">Tracker status page</a>');
+            $pu.append_actions($e("button", {type: "button", name: "stopall", "class": "btn-danger float-left"}, "Stop all"),
+                $e("a", {"class": "btn float-left", target: "_blank", rel: "noopener", href: hoturl("buzzer")}, "Tracker status page"));
         }
-        $d = hc.show();
+        $pu.show();
         show_elapsed();
         elapsed_timer = setInterval(show_elapsed, 1000);
-        $d.on("closedialog", clear_elapsed)
+        $pu.on("closedialog", clear_elapsed)
             .on("click", "button[name=new]", new_tracker)
             .on("click", "button[name=stopall]", stop_all)
             .on("submit", "form", submit);
@@ -4427,13 +4461,13 @@ function svge_use_licon(name) {
 }
 
 function $e(tag, attr) {
-    var e = document.createElement(tag), i;
+    const e = document.createElement(tag);
     if (!attr) {
         // nothing
     } else if (typeof attr === "string") {
         e.className = attr;
     } else {
-        for (i in attr) {
+        for (const i in attr) {
             if (attr[i] == null) {
                 // skip
             } else if (typeof attr[i] === "boolean") {
@@ -4443,7 +4477,7 @@ function $e(tag, attr) {
             }
         }
     }
-    for (i = 2; i < arguments.length; ++i) {
+    for (let i = 2; i < arguments.length; ++i) {
         if (arguments[i] != null) {
             e.append(arguments[i]);
         }
@@ -5166,7 +5200,7 @@ hotcrp.monitor_autoassignment = function (jobid) {
 
 hotcrp.monitor_job = function (jobid, statuselt) {
     return new Promise(function (resolve, reject) {
-        let start = now_sec(), tries = 0;
+        let tries = 0;
         function success(data) {
             const dead = data.update_at && data.update_at < now_sec() - 40;
             if (data.message_list) {
@@ -5936,26 +5970,24 @@ hotcrp.make_time_point = function (ts, ttext, className) {
 
 // reviews
 handle_ui.on("js-review-tokens", function () {
-    var $d, hc = popup_skeleton();
-    hc.push('<h2>Review tokens</h2>');
-    hc.push('<p>Review tokens implement fully anonymous reviewing. If you have been given review tokens, enter them here to view the corresponding papers and edit the reviews.</p>');
-    hc.push('<input type="text" size="60" name="token" value="' + escape_html(this.getAttribute("data-review-tokens") || "") + '" placeholder="Review tokens">');
-    hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save tokens</button>',
-        '<button type="button" name="cancel">Cancel</button>']);
-    $d = hc.show();
-    $d.on("submit", "form", function (evt) {
-        $d.find(".msg").remove();
-        $.post(hoturl("=api/reviewtoken"), $d.find("form").serialize(),
-            function (data) {
-                if (data.ok) {
-                    $d.close();
-                    location.assign(hoturl("index", {reviewtokenreport: 1}));
-                } else {
-                    $d.show_errors(data);
-                }
-            });
-        evt.preventDefault();
-    });
+    const $pu = $popup().append($e("h2", null, "Review tokens"),
+            $e("p", null, "Review tokens implement fully anonymous reviewing. If you have been given review tokens, enter them here to view the corresponding papers and edit the reviews."),
+            $e("input", {type: "text", size: 60, name: "token", value: this.getAttribute("data-review-tokens"), placeholder: "Review tokens", "class": "w-99"}))
+        .append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save tokens"),
+            $e("button", {type: "button", name: "cancel"}, "Cancel"))
+        .on("submit", function (evt) {
+            $pu.find(".msg").remove();
+            $.post(hoturl("=api/reviewtoken"), $($pu.form()).serialize(),
+                function (data) {
+                    if (data.ok) {
+                        $pu.close();
+                        location.assign(hoturl("index", {reviewtokenreport: 1}));
+                    } else {
+                        $pu.show_errors(data);
+                    }
+                });
+            evt.preventDefault();
+        }).show();
 });
 
 (function ($) {
@@ -8429,7 +8461,7 @@ function suggest() {
         wasmouse = null;
     }
 
-    function input(evt) {
+    function input() {
         spacestate = 0;
         display_soon();
     }
@@ -8739,8 +8771,7 @@ function update_digest(info) {
     } else if (digests == null) {
         digests = [];
     }
-    const now = now_msec();
-    let add, search, found = -1;
+    let now = now_msec(), add, search, found = -1;
     if (typeof info === "number") {
         add = 0;
         search = info;
@@ -8854,7 +8885,7 @@ Hotlist.prototype.reorder = function (tbody) {
 function set_cookie(info, pid) {
     let p = siteinfo.cookie_params, m;
     if (siteinfo.site_relative
-        && (m = /^[a-z][-a-z0-9+.]*:\/\/[^\/]*(\/.*)/i.exec(hoturl_absolute_base()))) {
+        && (m = /^[a-z][-a-z0-9+.]*:\/\/[^/]*(\/.*)/i.exec(hoturl_absolute_base()))) {
         p += "; Path=" + m[1];
     }
     if (cookie_set_at) {
@@ -9797,7 +9828,7 @@ handle_ui.on("js-annotate-order", function () {
         form = $pu.form();
         etagannos = form.querySelector(".tagannos");
         annos = rv.anno;
-        for (i = 0; i < annos.length; ++i) {
+        for (let i = 0; i < annos.length; ++i) {
             add_anno(annos[i]);
         }
         $pu.on("click", "button", clickh);
@@ -10710,7 +10741,7 @@ function render_tagset(plistui, tagstr, editable) {
     plistui.ensure_tagmap();
     var t = [], tags = (tagstr || "").split(/ /),
         tagmap = plistui.tagmap, taghighlighter = plistui.taghighlighter,
-        h, q, i;
+        h, i;
     for (i = 0; i !== tags.length; ++i) {
         var text = tags[i], twiddle = text.indexOf("~"), hash = text.indexOf("#");
         if (text !== "" && (twiddle <= 0 || text.substr(0, twiddle) == siteinfo.user.uid)) {
@@ -11451,7 +11482,7 @@ function transfer_form_values(dstform, srcform, names) {
 handle_ui.on("js-signin", function (evt) {
     const oevt = (evt && evt.originalEvent) || evt, submitter = oevt.submitter;
     if (!submitter || !submitter.formNoValidate) {
-        const form = this, signin = document.getElementById("k-signin");
+        const form = this;
         $(form).find("button").prop("disabled", true);
         evt.preventDefault();
         $.get(hoturl("api/session"), function () {
@@ -12716,7 +12747,7 @@ handle_ui.on("js-deny-review-request", function () {
 });
 
 handle_ui.on("js-delete-review", function () {
-    const f = this.form, $pu = $popup({near: this, action: f})
+    $popup({near: this, action: this.form})
         .append($e("p", null, "Be careful: This will permanently delete all information about this review assignment from the database and ", $e("strong", null, "cannot be undone"), "."))
         .append_actions($e("button", {type: "submit", name: "deletereview", value: 1, "class": "btn-danger"}, "Delete review"),
             $e("button", {type: "button", name: "cancel"}, "Cancel"))
@@ -13117,8 +13148,8 @@ handle_ui.on("js-submit-list", function (evt) {
     es = table.querySelectorAll("input.js-selector");
     // Keep track of both string versions and numeric versions
     // (numeric versions for possible session list encoding).
-    const allval = [], allnumval = [];
-    let chkval = [], chknumval = [], isdefault = false;
+    const allval = [];
+    let allnumval = [], chkval = [], chknumval = [], isdefault = false;
     for (i = 0; i !== es.length; ++i) {
         const v = es[i].value, checked = es[i].checked;
         allval.push(v);

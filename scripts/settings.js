@@ -11,7 +11,7 @@
 /* global input_default_value, form_differs, check_form_differs */
 /* global render_feedback_list, append_feedback_near, append_feedback_to */
 /* global render_text */
-/* global popup_skeleton, make_bubble */
+/* global $popup, make_bubble */
 /* global fold, foldup, focus_at */
 /* global sprintf, escape_html, plural, text_eq */
 /* global make_color_scheme, ensure_pattern_here */
@@ -329,7 +329,7 @@ demand_load.submission_field_library = demand_load.make(function (resolve) {
 });
 
 function add_dialog() {
-    var $d, grid, samples;
+    let $pu, grid, samples;
     function submit(evt) {
         var selidx = +grid.getAttribute("data-selected-index"),
             h = samples[selidx].sf_edit_html,
@@ -341,19 +341,17 @@ function add_dialog() {
         $(h).removeClass("hidden").appendTo("#settings-sform").awaken();
         $$("sf/" + next + "/name").focus();
         sf_order();
-        $d.close();
+        $pu.close();
         evt.preventDefault();
     }
     function create(library) {
         samples = library.samples;
-        const hc = popup_skeleton({className: "modal-dialog-wide"});
-        hc.push('<h2>Add field</h2>');
-        hc.push('<p>Choose a template for the new field.</p>');
-        hc.push('<div class="grid-select grid-select-autosubmit" role="listbox"></div>');
-        hc.push_actions(['<button type="submit" name="add" class="btn-primary">Add field</button>',
-            '<button type="button" name="cancel">Cancel</button>']);
-        $d = hc.show();
-        grid = $d[0].querySelector(".grid-select");
+        grid = $e("div", {"class": "grid-select grid-select-autosubmit", role: "listbox"});
+        $pu = $popup({className: "modal-dialog-wide"})
+            .append($e("h2", null, "Add submission field"), $e("p", null, "Choose a template for the new field."), grid)
+            .append_actions($e("button", {type: "submit", name: "add", "class": "btn-primary"}, "Add field"),
+                $e("button", {type: "button", name: "cancel"}, "Cancel"))
+            .show();
         for (let i = 0; i !== samples.length; ++i) {
             const e = $e("div", "settings-xf-view");
             e.innerHTML = samples[i].sf_view_html;
@@ -366,7 +364,7 @@ function add_dialog() {
         grid.addEventListener("keydown", grid_select_event);
         grid.addEventListener("click", grid_select_event);
         grid.addEventListener("dblclick", grid_select_event);
-        $d.find("form").on("submit", submit);
+        $pu.on("submit", submit);
     }
     demand_load.submission_field_library().then(create);
 }
@@ -1012,14 +1010,14 @@ function rf_make_sample(fj) {
 }
 
 function add_dialog() {
-    var $d, grid, samples;
+    let $pu, grid, samples;
     function submit(evt) {
         var samp = samples[+grid.getAttribute("data-selected-index")],
             fld = Object.assign({}, samp.__base);
         delete fld.id;
         rf_add(fld);
         $$("rf/" + fieldorder.length + "/name").focus();
-        $d.close();
+        $pu.close();
         rf_order();
         check_form_differs("#f-settings");
         evt.preventDefault();
@@ -1027,14 +1025,12 @@ function add_dialog() {
     function create(library) {
         samples = library.samples;
         rftypes = library.types;
-        const hc = popup_skeleton({className: "modal-dialog-wide"});
-        hc.push('<h2>Add field</h2>');
-        hc.push('<p>Choose a template for the new field.</p>');
-        hc.push('<div class="grid-select grid-select-autosubmit" role="listbox"></div>');
-        hc.push_actions(['<button type="submit" name="add" class="btn-primary">Add field</button>',
-            '<button type="button" name="cancel">Cancel</button>']);
-        $d = hc.show();
-        grid = $d[0].querySelector(".grid-select");
+        grid = $e("div", {"class": "grid-select grid-select-autosubmit", role: "listbox"});
+        $pu = $popup({className: "modal-dialog-wide"})
+            .append($e("h2", null, "Add review field"), $e("p", null, "Choose a template for the new field."), grid)
+            .append_actions($e("button", {type: "submit", name: "add", "class": "btn-primary"}, "Add field"),
+                $e("button", {type: "button", name: "cancel"}, "Cancel"))
+            .show();
         for (let i = 0; i !== samples.length; ++i) {
             if (!samples[i].parse_value) {
                 samples[i] = rf_make_sample(samples[i]);
@@ -1050,7 +1046,7 @@ function add_dialog() {
         grid.addEventListener("keydown", grid_select_event);
         grid.addEventListener("click", grid_select_event);
         grid.addEventListener("dblclick", grid_select_event);
-        $d.find("form").on("submit", submit);
+        $pu.on("submit", submit);
     }
     demand_load.review_field_library().then(create);
 }
