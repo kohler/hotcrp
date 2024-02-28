@@ -532,6 +532,12 @@ handle_ui.on("js-settings-track-add", function () {
     this.form.elements["track/".concat(i, "/tag")].focus();
 });
 
+handle_ui.on("js-settings-track-delete", function () {
+    settings_delete(this.closest(".settings-tracks"),
+        "This track will be removed.");
+    check_form_differs(this.form);
+});
+
 handle_ui.on("js-settings-topics-copy", function () {
     var topics = [];
     $(this).closest(".has-copy-topics").find("input").each(function () {

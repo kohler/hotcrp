@@ -237,19 +237,22 @@ class Track_SettingParser extends SettingParser {
         $this->ctr = $ctr;
         $this->nfolded = 0;
         $trx = $sv->oldv("track/{$ctr}");
-        echo '<div id="track/', $ctr, '" class="has-fold ',
+        echo '<fieldset id="track/', $ctr, '" class="settings-tracks has-fold ',
             $trx->is_new ? "fold3o" : "fold3c", '">',
-            Ht::hidden("track/{$ctr}/id", $trx->tag,
-                ["data-default-value" => $trx->is_new ? "" : null]),
-            '<div class="settings-tracks"><div class="entryg">';
+            '<legend class="mb-1">';
         if ($trx->is_default) {
-            echo "For submissions not on other tracks:";
+            echo 'Submissions not on other tracks';
         } else {
-            echo $sv->label("track/{$ctr}/tag", "For submissions with tag", ["class" => "mr-2"]),
-                $sv->entry("track/{$ctr}/tag", ["class" => "settings-track-name need-suggest tags", "spellcheck" => false, "autocomplete" => "off"]),
-                ':';
+            echo 'Track #', $sv->entry("track/{$ctr}/tag", ["class" => "settings-track-name need-suggest tags want-delete-marker ml-1", "spellcheck" => false, "autocomplete" => "off"]),
+                Ht::button(Icons::ui_use("trash"), ["id" => "track/{$ctr}/deleter", "class" => "ui js-settings-track-delete ml-2 need-tooltip", "aria-label" => "Delete track", "tabindex" => -1]),
+                $sv->feedback_at("track/{$ctr}/tag");
+            if ($sv->reqstr("track/{$ctr}/delete")) {
+                echo Ht::hidden("track/{$ctr}/delete", "1", ["data-default-value" => ""]);
+            }
         }
-        echo '</div>';
+        echo '</legend>',
+            Ht::hidden("track/{$ctr}/id", $trx->tag, ["data-default-value" => $trx->is_new ? "" : null]),
+            '<div id="track/', $ctr, '/edit">';
 
         $sv->print_members("tracks/permissions");
 
@@ -261,18 +264,18 @@ class Track_SettingParser extends SettingParser {
                 $sv->conf->_("({} more permissions have default values)", $this->nfolded),
                 '</button></div></div>';
         }
-        echo "</div></div>\n\n";
+        echo "</div></fieldset>\n\n";
     }
 
     private function print_cross_track(SettingValues $sv) {
-        echo "<div class=\"settings-tracks\"><div class=\"entryg\">General permissions:</div>";
+        echo "<fieldset class=\"settings-tracks\"><legend class=\"mb-1\">General permissions</legend>";
         $this->ctr = $sv->search_oblist("track", "id", "any");
         $this->print_perm($sv, "viewtracker", "Who can see the <a href=\"" . $sv->conf->hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", self::PERM_DEFAULT_UNFOLDED);
-        echo "</div>\n\n";
+        echo "</fieldset>\n\n";
     }
 
     function print(SettingValues $sv) {
-        echo "<p>Tracks control the PC members allowed to view or review different sets of submissions. <span class=\"nw\">(<a href=\"" . $sv->conf->hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
+        echo "<p>Tracks offer fine-grained permission control over submissions with specific tags. <span class=\"nw\">(<a href=\"" . $sv->conf->hoturl("help", "t=tracks") . "\">Help</a>)</span></p>",
             Ht::hidden("has_track", 1);
 
         foreach ($sv->oblist_keys("track") as $ctr) {
@@ -364,8 +367,9 @@ class Track_SettingParser extends SettingParser {
                 if (!$this->cur_trx->is_default) {
                     $sv->error_if_missing("track/{$ctr}/tag");
                     $sv->error_if_duplicate_member("track", $ctr, "tag", "Track tag");
-                    if ($this->cur_trx->tag === "_"
-                        || !$sv->tagger()->check($this->cur_trx->tag, Tagger::NOVALUE)) {
+                    if (!$sv->has_error_at("track/{$ctr}/tag")
+                        && ($this->cur_trx->tag === "_"
+                            || !$sv->tagger()->check($this->cur_trx->tag, Tagger::NOVALUE))) {
                         $sv->error_at("track/{$ctr}/tag", "<0>Track name ‘{$this->cur_trx->tag}’ is reserved");
                     }
                 }
