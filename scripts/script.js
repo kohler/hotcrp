@@ -7842,7 +7842,7 @@ demand_load.alltag_info = demand_load.make(function (resolve) {
         });
     else
         resolve({tags: []});
-})
+});
 
 demand_load.tags = demand_load.make(function (resolve) {
     demand_load.alltag_info().then(function (v) { resolve(v.tags); });

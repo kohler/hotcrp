@@ -24,11 +24,18 @@ class Title_PaperOption extends PaperOption {
         $ov->prow->set_prop("title", $ov->data());
         return true;
     }
+    /** @return ?PaperValue */
+    private function check_value(?PaperValue $ov) {
+        if ($ov && $ov->data() !== null && strlen($ov->data()) > 511) {
+            $ov->estop("<0>Field too long");
+        }
+        return $ov;
+    }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
-        return $this->parse_json_string($prow, $qreq->title, PaperOption::PARSE_STRING_CONVERT | PaperOption::PARSE_STRING_SIMPLIFY);
+        return $this->check_value($this->parse_json_string($prow, $qreq->title, PaperOption::PARSE_STRING_CONVERT | PaperOption::PARSE_STRING_SIMPLIFY));
     }
     function parse_json(PaperInfo $prow, $j) {
-        return $this->parse_json_string($prow, $j, PaperOption::PARSE_STRING_SIMPLIFY);
+        return $this->check_value($this->parse_json_string($prow, $j, PaperOption::PARSE_STRING_SIMPLIFY));
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $this->print_web_edit_text($pt, $ov, $reqov, ["no_format_description" => true, "rows" => 1]);
