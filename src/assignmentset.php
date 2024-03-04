@@ -1600,7 +1600,7 @@ class AssignmentSet {
 
     /** @param CsvRow $req
      * @return void */
-    private function apply_req(AssignmentParser $aparser = null, $req) {
+    private function apply_req(?AssignmentParser $aparser, $req) {
         // check action
         if (!$aparser) {
             if ($req["action"]) {
@@ -2086,7 +2086,7 @@ class Assignment_PaperColumn extends PaperColumn {
     public $content = [];
     /** @var ?AssignmentCountSet */
     public $change_counts;
-    function __construct(Contact $user, Contact $reviewer = null) {
+    function __construct(Contact $user, ?Contact $reviewer = null) {
         parent::__construct($user->conf, (object) ["name" => "autoassignment", "prefer_row" => true, "className" => "pl_autoassignment"]);
         $this->conf = $user->conf;
         $this->user = $user;

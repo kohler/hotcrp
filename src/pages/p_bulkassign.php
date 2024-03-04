@@ -37,7 +37,7 @@ class BulkAssign_Page {
         return $defaults;
     }
 
-    function keep_browser_alive(AssignmentSet $aset, CsvRow $line = null) {
+    function keep_browser_alive(AssignmentSet $aset, ?CsvRow $line = null) {
         $time = microtime(true);
         if (!$this->csv_started) {
             $this->csv_started = $time;

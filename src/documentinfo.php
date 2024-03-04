@@ -77,7 +77,7 @@ class DocumentInfo implements JsonSerializable {
     const FLAG_NO_DOCSTORE = 1;
 
     /** @param array{paperId?:int,paperStorageId?:int,timestamp?:int,mimetype?:string,content?:string,content_base64?:string,content_file?:string,hash?:?string,crc32?:?string,documentType?:int,filename?:?string,metadata?:array|object,infoJson?:?string,size?:int,filterType?:?int,originalStorageId?:?int,sourceHash?:?string,filters_applied?:?list<FileFilter>,sha1?:void,filestore?:void} $p */
-    function __construct($p, Conf $conf, PaperInfo $prow = null) {
+    function __construct($p, Conf $conf, ?PaperInfo $prow = null) {
         $this->conf = $conf;
         $this->prow = $prow;
         if ($p !== null) {
@@ -160,7 +160,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @param mysqli_result|Dbl_Result $result
      * @return ?DocumentInfo */
-    static function fetch($result, Conf $conf, PaperInfo $prow = null) {
+    static function fetch($result, Conf $conf, ?PaperInfo $prow = null) {
         if (($doc = $result->fetch_object("DocumentInfo", [null, $conf, $prow]))) {
             $doc->fetch_incorporate();
         }
@@ -174,7 +174,7 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return DocumentInfo */
-    static function make_empty(Conf $conf, PaperInfo $prow = null) {
+    static function make_empty(Conf $conf, ?PaperInfo $prow = null) {
         // matches paperStorageId 1 in schema
         $doc = new DocumentInfo(null, $conf, $prow);
         $doc->paperStorageId = 1;
@@ -1865,7 +1865,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @param ?CheckFormat $cf
      * @return ?int */
-    function npages(CheckFormat $cf = null) {
+    function npages(?CheckFormat $cf = null) {
         if (($this->mimetype && $this->mimetype !== "application/pdf")
             || $this->npages === -1000000) {
             return null;
@@ -1898,7 +1898,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @param ?CheckFormat $cf
      * @return ?int */
-    function nwords(CheckFormat $cf = null) {
+    function nwords(?CheckFormat $cf = null) {
         if ($this->mimetype && $this->mimetype !== "application/pdf") {
             return null;
         } else {

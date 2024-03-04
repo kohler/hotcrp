@@ -366,7 +366,7 @@ class Si {
     }
 
     /** @return ?string */
-    function title_html(SettingValues $sv = null) {
+    function title_html(?SettingValues $sv = null) {
         if (($t = $this->title($sv))) {
             return htmlspecialchars($t);
         } else {

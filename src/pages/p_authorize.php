@@ -73,7 +73,7 @@ class Authorize_Page {
     /** @var TokenInfo */
     private $token;
 
-    function __construct(Contact $viewer, Qrequest $qreq, ComponentSet $cs = null) {
+    function __construct(Contact $viewer, Qrequest $qreq, ?ComponentSet $cs = null) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         $this->qreq = $qreq;

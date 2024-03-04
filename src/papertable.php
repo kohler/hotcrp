@@ -351,7 +351,7 @@ class PaperTable {
         $this->useRequest = $useRequest;
     }
 
-    function set_review_values(ReviewValues $rvalues = null) {
+    function set_review_values(?ReviewValues $rvalues = null) {
         $this->review_values = $rvalues;
     }
 

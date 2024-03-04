@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class Preference_API {
-    static function pref_api(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+    static function pref_api(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         $overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $u = APIHelpers::parse_reviewer_for($qreq->u ?? $qreq->reviewer, $user, $prow);
         $user->set_overrides($overrides);

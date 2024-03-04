@@ -431,7 +431,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
-    static function set_main_user(Contact $user = null) {
+    static function set_main_user(?Contact $user) {
         global $Me;
         Contact::$main_user = $Me = $user;
     }
@@ -2818,7 +2818,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return int|false */
-    function active_review_token_for(PaperInfo $prow, ReviewInfo $rrow = null) {
+    function active_review_token_for(PaperInfo $prow, ?ReviewInfo $rrow = null) {
         if ($this->_review_tokens !== null) {
             foreach ($rrow ? [$rrow] : $prow->all_reviews() as $rr) {
                 if ($rr->reviewToken !== 0
@@ -3107,7 +3107,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function allow_administer(PaperInfo $prow = null) {
+    function allow_administer(?PaperInfo $prow = null) {
         if ($prow) {
             return $this->rights($prow)->allow_administer;
         } else {
@@ -3270,7 +3270,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return int */
-    function view_conflict_type(PaperInfo $prow = null) {
+    function view_conflict_type(?PaperInfo $prow) {
         if ($prow) {
             return $this->rights($prow)->view_conflict_type;
         } else {
@@ -3600,7 +3600,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return ?PermissionProblem */
-    function perm_view_paper(PaperInfo $prow = null, $pdf = false, $pid = null) {
+    function perm_view_paper(?PaperInfo $prow, $pdf = false, $pid = null) {
         if (!$prow) {
             return $this->no_paper_whynot($pid);
         } else if ($this->can_view_paper($prow, $pdf)) {
@@ -3684,7 +3684,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_manager(PaperInfo $prow = null) {
+    function can_view_manager(?PaperInfo $prow = null) {
         if ($this->privChair) {
             return true;
         } else if (!$this->can_view_pc()) {
@@ -3703,7 +3703,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_lead(PaperInfo $prow = null) {
+    function can_view_lead(?PaperInfo $prow = null) {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->can_administer
@@ -3716,7 +3716,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_shepherd(PaperInfo $prow = null) {
+    function can_view_shepherd(?PaperInfo $prow = null) {
         // XXX Allow shepherd view when outcome == 0 && can_view_decision.
         // This is a mediocre choice, but people like to reuse the shepherd field
         // for other purposes, and I might hear complaints.
@@ -3905,7 +3905,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function is_my_review(ReviewInfo $rrow = null) {
+    function is_my_review(?ReviewInfo $rrow) {
         return $rrow
             && ($rrow->contactId === $this->contactXid
                 || ($this->_review_tokens
@@ -3917,7 +3917,7 @@ class Contact implements JsonSerializable {
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
      * @return bool */
-    function is_owned_review($rbase = null) {
+    function is_owned_review($rbase) {
         return $rbase
             && $rbase->contactId > 0
             && ($rbase->contactId === $this->contactXid
@@ -4249,7 +4249,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function time_review(PaperInfo $prow, ReviewInfo $rrow = null) {
+    function time_review(PaperInfo $prow, ?ReviewInfo $rrow = null) {
         $rights = $this->rights($prow);
         if ($rrow) {
             return ($rights->allow_administer || $this->is_owned_review($rrow))
@@ -4291,7 +4291,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function allow_view_preference(PaperInfo $prow = null, $aggregate = false) {
+    function allow_view_preference(?PaperInfo $prow = null, $aggregate = false) {
         if ($prow) {
             $rights = $this->rights($prow);
             return $aggregate
@@ -4303,7 +4303,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_preference(PaperInfo $prow = null, $aggregate = false) {
+    function can_view_preference(?PaperInfo $prow = null, $aggregate = false) {
         if ($prow) {
             $rights = $this->rights($prow);
             return $aggregate
@@ -4396,7 +4396,7 @@ class Contact implements JsonSerializable {
 
     /** @param ?int $round
      * @return bool */
-    function can_create_review(PaperInfo $prow, Contact $reviewer = null, $round = null) {
+    function can_create_review(PaperInfo $prow, ?Contact $reviewer = null, $round = null) {
         $reviewer = $reviewer ?? $this;
         $rights = $this->rights($prow);
         if ($rights->can_administer) {
@@ -4413,7 +4413,7 @@ class Contact implements JsonSerializable {
 
     /** @param ?int $round
      * @return ?PermissionProblem */
-    function perm_create_review(PaperInfo $prow, Contact $reviewer = null, $round = null) {
+    function perm_create_review(PaperInfo $prow, ?Contact $reviewer = null, $round = null) {
         $reviewer = $reviewer ?? $this;
         if ($this->can_create_review($prow, $reviewer, $round)) {
             return null;
@@ -4504,7 +4504,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_clickthrough($ctype, PaperInfo $prow = null) {
+    function can_clickthrough($ctype, ?PaperInfo $prow = null) {
         if ($this->privChair || !$this->conf->opt("clickthrough_{$ctype}"))  {
             return true;
         }
@@ -4520,7 +4520,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_review_ratings(PaperInfo $prow, ReviewInfo $rrow = null, $override_self = false) {
+    function can_view_review_ratings(PaperInfo $prow, ?ReviewInfo $rrow = null, $override_self = false) {
         $rs = $this->conf->setting("rev_ratings");
         $rights = $this->rights($prow);
         if (!$this->can_view_review($prow, $rrow)
@@ -4917,7 +4917,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_edit_formula(Formula $formula = null) {
+    function can_edit_formula(?Formula $formula = null) {
         // XXX one PC member can edit another's formulas?
         return $this->privChair
             || ($this->isPC && (!$formula || $formula->createdBy > 0));
@@ -4925,7 +4925,7 @@ class Contact implements JsonSerializable {
 
     // A review field is visible only if its view_score > view_score_bound.
     /** @return int */
-    function view_score_bound(PaperInfo $prow, ReviewInfo $rrow = null) {
+    function view_score_bound(PaperInfo $prow, ?ReviewInfo $rrow = null) {
         // Returns the maximum view_score for an invisible review
         // field. Values are:
         //   VIEWSCORE_ADMINONLY     admin can view
@@ -4979,7 +4979,7 @@ class Contact implements JsonSerializable {
 
 
     /** @return bool */
-    function can_view_tags(PaperInfo $prow = null) {
+    function can_view_tags(?PaperInfo $prow = null) {
         // see also AllTags_API::alltags, PaperInfo::{searchable,viewable}_tags
         if ($prow) {
             $rights = $this->rights($prow);
@@ -4992,7 +4992,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_most_tags(PaperInfo $prow = null) {
+    function can_view_most_tags(?PaperInfo $prow = null) {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_pc
@@ -5003,7 +5003,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_hidden_tags(PaperInfo $prow = null) {
+    function can_view_hidden_tags(?PaperInfo $prow = null) {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->can_administer
@@ -5056,7 +5056,7 @@ class Contact implements JsonSerializable {
 
     /** @param string $tag
      * @return bool */
-    function can_view_tag(PaperInfo $prow = null, $tag) {
+    function can_view_tag(?PaperInfo $prow, $tag) {
         // basic checks
         if (!$this->isPC) {
             return false;
@@ -5097,7 +5097,7 @@ class Contact implements JsonSerializable {
 
     /** @param string $tag
      * @return bool */
-    function can_view_peruser_tag(PaperInfo $prow = null, $tag) {
+    function can_view_peruser_tag(?PaperInfo $prow, $tag) {
         if ($prow) {
             return $this->can_view_tag($prow, ($this->contactId + 1) . "~{$tag}");
         } else {
@@ -5210,7 +5210,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_edit_some_tag(PaperInfo $prow = null) {
+    function can_edit_some_tag(?PaperInfo $prow = null) {
         if (($this->_overrides & self::OVERRIDE_TAG_CHECKS)
             || $this->_root_user) {
             return true;
@@ -5247,7 +5247,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_edit_most_tags(PaperInfo $prow = null) {
+    function can_edit_most_tags(?PaperInfo $prow = null) {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_pc

@@ -3,7 +3,7 @@
 // Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
 
 class Mail_API {
-    static function mailtext(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+    static function mailtext(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (!$user->isPC
             || ($prow && !$user->can_view_paper($prow))) {
             return JsonResult::make_permission_error();
@@ -95,7 +95,7 @@ class Mail_API {
         return $user->privChair || $user->contactId === (int) $logrow->contactId;
     }
 
-    static function maillog(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+    static function maillog(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (!$qreq->mailid || !ctype_digit($qreq->mailid)) {
             return JsonResult::make_missing_error("mailid");
         } else if (!$user->privChair) {

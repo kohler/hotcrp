@@ -24,7 +24,7 @@ class Paper_API extends MessageSet {
         $this->user = $user;
     }
 
-    static function run_get(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+    static function run_get(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         $ml = [];
         if ($prow) {
             $pids = [$prow->paperId];
@@ -102,7 +102,7 @@ class Paper_API extends MessageSet {
         }
     }
 
-    private function run_post(Qrequest $qreq, PaperInfo $prow = null) {
+    private function run_post(Qrequest $qreq, ?PaperInfo $prow) {
         $ct = $qreq->body_content_type();
         if ($ct === "application/json") {
             $jsonstr = $qreq->body();
@@ -279,7 +279,7 @@ class Paper_API extends MessageSet {
         return $p;
     }
 
-    static function run(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+    static function run(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if ($qreq->is_get()) {
             return self::run_get($user, $qreq, $prow);
         } else {

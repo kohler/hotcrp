@@ -216,7 +216,7 @@ class ManualAssign_Page {
     }
 
 
-    function print(Contact $reviewer = null) {
+    function print(?Contact $reviewer = null) {
         $this->qreq->print_header("Assignments", "manualassign", ["subtitle" => "Manual"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
             '<li class="papmode"><a href="', $this->conf->hoturl("autoassign"), '">Automatic</a></li>',

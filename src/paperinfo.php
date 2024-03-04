@@ -1023,7 +1023,7 @@ class PaperInfo {
     }
 
     /** @return 0|1 */
-    function visible_phase(Contact $user = null) {
+    function visible_phase(?Contact $user = null) {
         $p = $this->phase();
         if ($p === self::PHASE_FINAL
             && $user
@@ -3074,7 +3074,7 @@ class PaperInfo {
         }
     }
 
-    function ensure_review_ratings(ReviewInfo $ensure_rrow = null) {
+    function ensure_review_ratings(?ReviewInfo $ensure_rrow = null) {
         $pids = [];
         foreach ($this->_row_set as $prow) {
             if ($prow === $this
@@ -3569,7 +3569,7 @@ class PaperInfo {
         return $us;
     }
 
-    function delete_from_database(Contact $user = null) {
+    function delete_from_database(?Contact $user = null) {
         // XXX email self?
         if ($this->paperId <= 0) {
             return false;

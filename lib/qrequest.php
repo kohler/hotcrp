@@ -683,7 +683,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this->_active_list;
     }
 
-    function set_active_list(SessionList $list = null) {
+    function set_active_list(?SessionList $list) {
         assert($this->_active_list === false);
         $this->_active_list = $list;
     }

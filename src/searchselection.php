@@ -23,7 +23,7 @@ class SearchSelection {
     /** @param Qrequest $qreq
      * @param ?string $key
      * @return SearchSelection */
-    static function make($qreq, Contact $user = null, $key = null) {
+    static function make($qreq, ?Contact $user = null, $key = null) {
         $key = $key ?? ($qreq->has("p") ? "p" : "pap");
         if ($qreq->has_a($key)) {
             $ps = $qreq->get_a($key);

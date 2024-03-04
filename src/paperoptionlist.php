@@ -322,7 +322,7 @@ class PaperOptionList implements IteratorAggregate {
 
     /** @param ?string $key
      * @return list<PaperOption> */
-    private function unsorted_field_list(PaperInfo $prow = null, $key = null) {
+    private function unsorted_field_list(?PaperInfo $prow, $key) {
         $nonfinal = $prow && $prow->outcome_sign <= 0;
         $olist = [];
         foreach ($this->intrinsic_json_map() as $id => $oj) {
@@ -340,7 +340,7 @@ class PaperOptionList implements IteratorAggregate {
 
     /** @param bool $all
      * @return array<int,PaperOption> */
-    function form_fields(PaperInfo $prow = null, $all = false) {
+    function form_fields(?PaperInfo $prow = null, $all = false) {
         $omap = [];
         foreach ($this->unsorted_field_list($prow, "form_order") as $o) {
             if ($all || $o->on_form())
@@ -351,7 +351,7 @@ class PaperOptionList implements IteratorAggregate {
     }
 
     /** @return array<int,PaperOption> */
-    function page_fields(PaperInfo $prow = null) {
+    function page_fields(?PaperInfo $prow = null) {
         $omap = [];
         foreach ($this->unsorted_field_list($prow, "page_order") as $o) {
             if ($o->on_page())

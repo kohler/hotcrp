@@ -39,7 +39,7 @@ class FieldRender {
     const CFVERBOSE = 0x8000;
 
     /** @param int $context */
-    function __construct($context, Contact $user = null) {
+    function __construct($context, ?Contact $user = null) {
         assert(($context & 3) !== 0 && ($context & 3) !== 3);
         assert((($context & 0xFF0) & (($context & 0xFF0) - 1)) === 0);
         $this->context = $context;

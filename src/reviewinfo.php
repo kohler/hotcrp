@@ -219,7 +219,7 @@ class ReviewInfo implements JsonSerializable {
 
 
     /** @return ReviewInfo */
-    static function make_blank(PaperInfo $prow = null, Contact $user) {
+    static function make_blank(?PaperInfo $prow, Contact $user) {
         $rrow = new ReviewInfo;
         $rrow->conf = $user->conf;
         $rrow->prow = $prow;
@@ -244,7 +244,7 @@ class ReviewInfo implements JsonSerializable {
         return $rrow;
     }
 
-    private function _incorporate(PaperInfo $prow = null, Conf $conf = null) {
+    private function _incorporate(?PaperInfo $prow, ?Conf $conf) {
         $this->conf = $conf ?? $prow->conf;
         $this->prow = $prow;
         $this->paperId = (int) $this->paperId;
@@ -316,7 +316,7 @@ class ReviewInfo implements JsonSerializable {
 
     /** @param PaperInfo|PaperInfoSet|null $prowx
      * @return ?ReviewInfo */
-    static function fetch($result, $prowx = null, Conf $conf = null) {
+    static function fetch($result, $prowx = null, ?Conf $conf = null) {
         $rrow = $result ? $result->fetch_object("ReviewInfo") : null;
         '@phan-var ?ReviewInfo $rrow';
         if ($rrow) {

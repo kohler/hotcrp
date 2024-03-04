@@ -228,7 +228,7 @@ class Profile_Page {
 
 
     /** @return \Generator<MessageItem> */
-    private function decorated_message_list(MessageSet $msx, UserStatus $us = null) {
+    private function decorated_message_list(MessageSet $msx, ?UserStatus $us = null) {
         $ms = new MessageSet(MessageSet::IGNORE_DUPS_FIELD);
         foreach ($msx->message_list() as $mi) {
             if ($us

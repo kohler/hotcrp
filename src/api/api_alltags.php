@@ -22,7 +22,7 @@ class AllTags_API {
 
     /** @param string $tag
      * @return ?string */
-    static private function strip($tag, Contact $user, PaperInfo $prow = null) {
+    static private function strip($tag, Contact $user, ?PaperInfo $prow) {
         $twiddle = strpos($tag, "~");
         if ($twiddle === false
             || ($twiddle === 0
@@ -55,7 +55,7 @@ class AllTags_API {
         $tags = [];
         $result = $user->conf->qe($q . " where " . join(" and ", $qwhere));
         while ($result && ($row = $result->fetch_row())) {
-            if (($tag = self::strip($row[0], $user))
+            if (($tag = self::strip($row[0], $user, null))
                 && (!$hidden || !$dt->is_hidden($tag))) {
                 $tags[] = $tag;
             }

@@ -61,7 +61,7 @@ class PaperExport {
 
 
     /** @return ?object */
-    function document_json(DocumentInfo $doc = null) {
+    function document_json(?DocumentInfo $doc) {
         if (!$doc) {
             return null;
         }

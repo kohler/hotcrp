@@ -148,7 +148,7 @@ class Filer {
     }
 
     /** @return ?non-empty-string */
-    static function docstore_tempdir(Conf $conf = null) {
+    static function docstore_tempdir(?Conf $conf = null) {
         $conf = $conf ?? Conf::$main;
         if ($conf && ($prefix = self::docstore_fixed_prefix($conf->docstore()))) {
             $tmpdir = "{$prefix}tmp/";
@@ -158,12 +158,6 @@ class Filer {
             }
         }
         return null;
-    }
-
-    /** @return ?non-empty-string
-     * @deprecated */
-    static function docstore_tmpdir(Conf $conf = null) {
-        return self::docstore_tempdir($conf);
     }
 
     /** @param string $pattern

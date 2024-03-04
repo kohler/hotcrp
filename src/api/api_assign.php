@@ -3,7 +3,7 @@
 // Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class Assign_API {
-    static function assign(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+    static function assign(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (!isset($qreq->assignments)) {
             return JsonResult::make_missing_error("assignments");
         }

@@ -569,7 +569,7 @@ class TagMap {
     /** @param string $tag
      * @param string $ltag
      * @return ?TagInfo */
-    private function update_patterns($tag, $ltag, TagInfo $ti = null) {
+    private function update_patterns($tag, $ltag, ?TagInfo $ti) {
         if (!$this->pattern_re) {
             $a = [];
             foreach ($this->pattern_storage as $p) {
@@ -1069,7 +1069,7 @@ class TagMap {
     /** @param 0|1 $ctype
      * @param ?string $tags
      * @return string */
-    function censor($ctype, $tags, Contact $user, PaperInfo $prow = null) {
+    function censor($ctype, $tags, Contact $user, ?PaperInfo $prow = null) {
         // empty tag optimization
         if ($tags === null || $tags === "") {
             return "";

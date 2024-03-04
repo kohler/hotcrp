@@ -297,7 +297,7 @@ class ReviewForm {
         return $x;
     }
 
-    function text_form(PaperInfo $prow_in = null, ReviewInfo $rrow_in = null, Contact $contact) {
+    function text_form(?PaperInfo $prow_in, ?ReviewInfo $rrow_in, Contact $contact) {
         $prow = $prow_in ?? PaperInfo::make_new($contact, null);
         $rrow = $rrow_in ?? ReviewInfo::make_blank($prow, $contact);
         $revViewScore = $prow->paperId > 0 ? $contact->view_score_bound($prow, $rrow) : $contact->permissive_view_score_bound();
@@ -486,7 +486,7 @@ Ready\n";
         echo Ht::actions($buttons, ["class" => "aab aabig"]);
     }
 
-    function print_form(PaperInfo $prow, ReviewInfo $rrow_in = null, Contact $viewer,
+    function print_form(PaperInfo $prow, ?ReviewInfo $rrow_in, Contact $viewer,
                         ReviewValues $rvalues) {
         $rrow = $rrow_in ?? ReviewInfo::make_blank($prow, $viewer);
         self::check_review_author_seen($prow, $rrow, $viewer);
@@ -1215,7 +1215,7 @@ class ReviewValues extends MessageSet {
         $this->rmsg("reviewerEmail", $msg, self::ERROR);
     }
 
-    function check_and_save(Contact $user, PaperInfo $prow = null, ReviewInfo $rrow = null) {
+    function check_and_save(Contact $user, ?PaperInfo $prow = null, ?ReviewInfo $rrow = null) {
         assert(!$rrow || $rrow->paperId === $prow->paperId);
         $this->reviewId = $this->review_ordinal_id = null;
 

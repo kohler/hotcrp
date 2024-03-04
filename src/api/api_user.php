@@ -14,7 +14,7 @@ class User_API {
     }
 
     /** @return JsonResult */
-    static function user(Contact $user, Qrequest $qreq, PaperInfo $prow = null) {
+    static function user(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (!$user->can_lookup_user()) {
             return JsonResult::make_permission_error();
         }

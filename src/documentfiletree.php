@@ -275,7 +275,7 @@ class DocumentFileTree implements JsonSerializable {
     }
 
     /** @return DocumentFileTreeMatch */
-    function first_match(DocumentFileTreeMatch $after = null) {
+    function first_match(?DocumentFileTreeMatch $after = null) {
         $this->clear();
         $fm = new DocumentFileTreeMatch($this->treeid);
         for ($i = 0; $i < $this->_n; ++$i) {
@@ -488,7 +488,7 @@ class DocumentFileTreeDir implements JsonSerializable {
      * @param DocumentFileTreeMatch $fm
      * @return bool */
     function append_first_component(DocumentFileTree $ftree, $position, $fm,
-                                    DocumentFileTreeMatch $after = null) {
+                                    ?DocumentFileTreeMatch $after = null) {
         if (!$this->_sorted) {
             if (!empty($this->_used)) {
                 $this->clean();

@@ -3906,7 +3906,7 @@ class Conf {
 
     /** @param array{paperId?:list<int>|PaperID_SearchTerm,where?:string} $options
      * @return \mysqli_result|Dbl_Result */
-    function paper_result($options, Contact $user = null) {
+    function paper_result($options, ?Contact $user = null) {
         // Options:
         //   "paperId" => $pids Only papers in list<int> $pids
         //   "finalized"        Only submitted papers
@@ -4173,14 +4173,14 @@ class Conf {
 
     /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
      * @return PaperInfoSet|Iterable<PaperInfo> */
-    function paper_set($options, Contact $user = null) {
+    function paper_set($options, ?Contact $user = null) {
         $result = $this->paper_result($options, $user);
         return PaperInfoSet::make_result($result, $user, $this);
     }
 
     /** @param int $pid
      * @return ?PaperInfo */
-    function paper_by_id($pid, Contact $user = null, $options = []) {
+    function paper_by_id($pid, ?Contact $user = null, $options = []) {
         $options["paperId"] = [$pid];
         $result = $this->paper_result($options, $user);
         $prow = PaperInfo::fetch($result, $user, $this);
@@ -4190,7 +4190,7 @@ class Conf {
 
     /** @param int $pid
      * @return PaperInfo */
-    function checked_paper_by_id($pid, Contact $user = null, $options = []) {
+    function checked_paper_by_id($pid, ?Contact $user = null, $options = []) {
         $prow = $this->paper_by_id($pid, $user, $options);
         if (!$prow) {
             throw new Exception("Conf::checked_paper_by_id({$pid}) failed");
@@ -4220,7 +4220,7 @@ class Conf {
 
     /** @param string $text
      * @param int $type */
-    static function msg_on(Conf $conf = null, $text, $type) {
+    static function msg_on(?Conf $conf, $text, $type) {
         assert(is_int($type) && is_string($text ?? ""));
         if (($text ?? "") === "") {
             // do nothing
@@ -5273,7 +5273,7 @@ class Conf {
             $this->_xtbuild(["etc/searchkeywords.json"], "searchKeywords");
     }
     /** @return ?object */
-    function search_keyword($keyword, Contact $user = null) {
+    function search_keyword($keyword, ?Contact $user = null) {
         if ($this->_search_keyword_base === null) {
             $this->make_search_keyword_map();
         }
@@ -5288,7 +5288,7 @@ class Conf {
 
     /** @param string $keyword
      * @return ?AssignmentParser */
-    function assignment_parser($keyword, Contact $user = null) {
+    function assignment_parser($keyword, ?Contact $user = null) {
         require_once("assignmentset.php");
         if ($this->_assignment_parsers === null) {
             list($this->_assignment_parsers, $unused) =
@@ -5346,10 +5346,10 @@ class Conf {
         }
         return $this->_api_map;
     }
-    function has_api($fn, Contact $user = null, $method = null) {
+    function has_api($fn, ?Contact $user = null, $method = null) {
         return !!$this->api($fn, $user, $method);
     }
-    function api($fn, Contact $user = null, $method = null) {
+    function api($fn, ?Contact $user = null, $method = null) {
         $xtp = (new XtParams($this, $user))->add_allow_checker_method($method);
         $uf = $xtp->search_name($this->api_map(), $fn);
         return self::xt_enabled($uf) ? $uf : null;
@@ -5431,7 +5431,7 @@ class Conf {
         return $this->_paper_column_factories;
     }
     /** @return ?object */
-    function basic_paper_column($name, Contact $user = null) {
+    function basic_paper_column($name, ?Contact $user = null) {
         $xtp = new XtParams($this, $user);
         $uf = $xtp->search_name($this->paper_column_map(), $name);
         return self::xt_enabled($uf) ? $uf : null;
@@ -5701,7 +5701,7 @@ class Conf {
         }
         return $this->_hook_map;
     }
-    function call_hooks($name, Contact $user = null, ...$args) {
+    function call_hooks($name, ?Contact $user, ...$args) {
         $hs = ($this->hook_map())[$name] ?? null;
         foreach ($this->_hook_factories as $fj) {
             if ($fj->match === ".*"

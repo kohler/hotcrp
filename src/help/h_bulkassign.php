@@ -173,7 +173,7 @@ a conflict type, such as “advisor” or “institutional”.</p>";
         }
     }
 
-    static function print_actions(Contact $user, HelpRenderer $hth = null) {
+    static function print_actions(Contact $user, ?HelpRenderer $hth = null) {
         $apge = new ComponentSet($user, "etc/assignmentparsers.json", $user->conf->opt("assignmentParsers"));
         $apx = [];
         foreach ($apge->groups() as $ufg) {

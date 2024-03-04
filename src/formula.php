@@ -1942,7 +1942,7 @@ class Formula implements JsonSerializable {
     }
 
     /** @return bool */
-    function check(Contact $user = null) {
+    function check(?Contact $user = null) {
         $user = $user ?? $this->user;
         assert($user !== null);
         if ($this->_parse === null || $user !== $this->user) {
