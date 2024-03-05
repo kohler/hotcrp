@@ -472,10 +472,10 @@ function pluralize($s) {
                && $len > 1
                && ($s[$len - 2] === "s" || $s[$len - 2] === "c")) {
         return "{$s}es";
-    } else if (($last === "y" || $last === "o")
+    } else if ($last === "y"
                && $len > 1
                && strpos("bcdfgjklmnpqrstvxz", $s[$len - 2]) !== false) {
-        return $last === "y" ? substr($s, 0, $len - 1) . "ies" : $s . "es";
+        return substr($s, 0, $len - 1) . "ies";
     } else if ($last === "t") {
         if ($s === "that") {
             return "those";

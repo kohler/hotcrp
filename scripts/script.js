@@ -713,10 +713,10 @@ function pluralize(s) {
                && len > 1
                && ((ch = s.charCodeAt(len - 2)) === 115 /*s*/ || ch === 99 /*c*/)) {
         return s + "es";
-    } else if ((last === 121 /*y*/ || last === 111 /*o*/)
+    } else if (last === 121 /*y*/
                && len > 1
                && /^[bcdfgjklmnpqrstvxz]/.test(s.charAt(len - 2))) {
-        return last === 121 ? s.substring(0, len - 1) + "ies" : s + "es";
+        return s.substring(0, len - 1) + "ies";
     } else if (last === 116 /*t*/) {
         if (s === "that") {
             return "those";
