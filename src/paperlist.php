@@ -275,6 +275,8 @@ class PaperList {
     private $_finding_column;
     /** @var ?list<MessageItem> */
     private $_finding_column_errors;
+    /** @var ?bool */
+    private $_report_view_errors;
 
     /** @var list<PaperColumn> */
     private $_sortcol = [];
@@ -508,6 +510,11 @@ class PaperList {
         return $this->search->message_set();
     }
 
+    /** @return list<MessageItem> */
+    function message_list() {
+        return $this->message_set()->message_list();
+    }
+
     /** @return string */
     function siteurl() {
         return $this->qreq->navigation()->siteurl();
@@ -563,8 +570,15 @@ class PaperList {
      * @return bool */
     function want_column_errors($k) {
         $origin = $this->view_origin($k);
-        return $origin === self::VIEWORIGIN_SEARCH
-            || $origin === self::VIEWORIGIN_MAX;
+        return $this->_report_view_errors
+            ?? ($origin === self::VIEWORIGIN_SEARCH || $origin === self::VIEWORIGIN_MAX);
+    }
+
+    /** @param ?bool $x
+     * @return $this */
+    function set_report_view_errors($x) {
+        $this->_report_view_errors = $x;
+        return $this;
     }
 
     /** @param int $v
@@ -1368,6 +1382,13 @@ class PaperList {
         foreach ($this->_vcolumns as $f) {
             $f->reset($this);
         }
+    }
+
+    /** @param ?int $context
+     * @return $this */
+    function prepare_table_view($context = null) {
+        $this->_reset_vcolumns($context ?? (FieldRender::CFLIST | FieldRender::CFHTML));
+        return $this;
     }
 
 

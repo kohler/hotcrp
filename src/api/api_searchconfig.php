@@ -1,6 +1,6 @@
 <?php
 // api_searchconfig.php -- HotCRP search configuration API calls
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
 
 class SearchConfig_API {
     static function viewoptions(Contact $user, Qrequest $qreq) {
@@ -18,8 +18,7 @@ class SearchConfig_API {
             $pl = new PaperList($report, $search, ["sort" => true]);
             $pl->parse_view($qreq->display, PaperList::VIEWORIGIN_MAX);
             $parsed_view = $pl->unparse_view(PaperList::VIEWORIGIN_REPORT, true);
-            // check for errors
-            $pl->table_html();
+            $pl->prepare_table_view();
             if ($pl->message_set()->has_error()) {
                 return new JsonResult(["ok" => false, "message_list" => $pl->message_set()->message_list()]);
             }
@@ -37,11 +36,14 @@ class SearchConfig_API {
         }
 
         $pl = new PaperList($report, $search, ["sort" => ""], $qreq);
+        $pl->set_report_view_errors(true);
         $pl->apply_view_report_default();
         $vd = $pl->unparse_view(PaperList::VIEWORIGIN_REPORT, true);
+        $dml = $pl->prepare_table_view()->message_list();
 
         $search = new PaperSearch($user, $qreq->q ?? "NONE");
         $pl = new PaperList($report, $search, ["sort" => true], $qreq);
+        $pl->set_report_view_errors(true);
         $pl->apply_view_report_default();
         $pl->apply_view_session($qreq);
         $vr = $pl->unparse_view(PaperList::VIEWORIGIN_REPORT, true);
@@ -51,7 +53,9 @@ class SearchConfig_API {
             "ok" => true, "report" => $report,
             "display_current" => join(" ", $vr),
             "display_default" => join(" ", $vd),
-            "display_difference" => join(" ", $vrx)
+            "display_difference" => join(" ", $vrx),
+            "display_default_message_list" => $dml,
+            "message_list" => $pl->prepare_table_view()->message_list()
         ]);
     }
 

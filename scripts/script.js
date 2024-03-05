@@ -1693,12 +1693,17 @@ function render_message_list(ml) {
 }
 
 function render_feedback_list(ml) {
-    var ul = document.createElement("ul"), i;
+    const ul = document.createElement("ul");
     ul.className = "feedback-list";
-    for (i = 0; i !== (ml || []).length; ++i) {
-        append_feedback_to(ul, ml[i]);
+    for (const mi of ml || []) {
+        append_feedback_to(ul, mi);
     }
     return ul;
+}
+
+function maybe_render_feedback_list(ml) {
+    const ul = render_feedback_list(ml);
+    return ul.firstChild ? ul : null;
 }
 
 function append_feedback_to(ul, mi) {
@@ -2979,15 +2984,25 @@ function $popup(options) {
             // XXX also close down suggestions
             return self;
         },
-        append: function (...e) {
-            forme.append(...e);
+        append: function (...es) {
+            for (const e of es) {
+                if (e != null) {
+                    forme.append(e);
+                }
+            }
             return self;
         },
         append_actions: function (...actions) {
             if (!actionse) {
                 forme.appendChild((actionse = $e("div", "popup-actions")));
             }
-            actionse.append(...actions);
+            for (const e of actions) {
+                if (e === "Cancel") {
+                    actionse.append($e("button", {type: "button", name: "cancel"}, "Cancel"));
+                } else if (e != null) {
+                    actionse.append(e);
+                }
+            }
             return self;
         },
         on: function (...args) {
@@ -3211,8 +3226,7 @@ handle_ui.on("js-confirm-override-conflict", function () {
     const self = this;
     $popup({near: this})
         .append($e("p", null, "Are you sure you want to override your conflict?"))
-        .append_actions($e("button", {type: "button", name: "bsubmit", "class": "btn-primary"}, "Override conflict"),
-            $e("button", {type: "button", name: "cancel"}, "Cancel"))
+        .append_actions($e("button", {type: "button", name: "bsubmit", "class": "btn-primary"}, "Override conflict"), "Cancel")
         .show().on("click", "button", function () {
             if (this.name === "bsubmit") {
                 document.location = self.href;
@@ -3820,8 +3834,7 @@ handle_ui.on("js-tracker", function (evt) {
         } else {
             $pu.append($e("div", "lg", $e("button", {type: "button", "class": "need-tooltip disabled", tabindex: -1, "aria-label": "To start a new tracker, open a tab on a submission page."}, "Start new tracker")));
         }
-        $pu.append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save changes"),
-            $e("button", {type: "button", name: "cancel"}, "Cancel"));
+        $pu.append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save changes"), "Cancel");
         if (nshown) {
             $pu.append_actions($e("button", {type: "button", name: "stopall", "class": "btn-danger float-left"}, "Stop all"),
                 $e("a", {"class": "btn float-left", target: "_blank", rel: "noopener", href: hoturl("buzzer")}, "Tracker status page"));
@@ -5334,8 +5347,7 @@ handle_ui.on("js-mail-set-template", function () {
             preview = $e("div", "mail-preview");
             $(tmpl).on("input", render);
             $pu.append(tmpl, $e("fieldset", "mt-4 modal-demo-fieldset", preview))
-                .append_actions($e("button", {type: "submit", name: "go", "class": "btn-primary"}, "Use template"),
-                    $e("button", {type: "button", name: "cancel"}, "Cancel"))
+                .append_actions($e("button", {type: "submit", name: "go", "class": "btn-primary"}, "Use template"), "Cancel")
                 .on("submit", submitter);
             render();
         } else {
@@ -5973,8 +5985,7 @@ handle_ui.on("js-review-tokens", function () {
     const $pu = $popup().append($e("h2", null, "Review tokens"),
             $e("p", null, "Review tokens implement fully anonymous reviewing. If you have been given review tokens, enter them here to view the corresponding papers and edit the reviews."),
             $e("input", {type: "text", size: 60, name: "token", value: this.getAttribute("data-review-tokens"), placeholder: "Review tokens", "class": "w-99"}))
-        .append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save tokens"),
-            $e("button", {type: "button", name: "cancel"}, "Cancel"))
+        .append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save tokens"), "Cancel")
         .on("submit", function (evt) {
             $pu.find(".msg").remove();
             $.post(hoturl("=api/reviewtoken"), $($pu.form()).serialize(),
@@ -9823,8 +9834,7 @@ handle_ui.on("js-annotate-order", function () {
                 $e("p", null, $e("span", "select", $e("select", {name: "ta/type"}, $e("option", {value: "generic", selected: true}, "Generic order"), $e("option", {value: "session"}, "Session order")))),
                 $e("div", "tagannos"),
                 $e("div", "mt-3", $e("button", {type: "button", name: "add"}, "Add group")))
-            .append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save changes"),
-                $e("button", {type: "button", name: "cancel"}, "Cancel"));
+            .append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save changes"), "Cancel");
         form = $pu.form();
         etagannos = form.querySelector(".tagannos");
         annos = rv.anno;
@@ -11884,8 +11894,7 @@ handle_ui.on("js-withdraw", function () {
     if (!this.hasAttribute("data-withdrawable")) {
         $pu.append($e("label", "checki", $e("span", "checkc", $e("input", {type: "checkbox", name: "override", value: 1})), "Override deadlines"));
     }
-    $pu.append_actions($e("button", {type: "submit", name: "withdraw", value: 1, "class": "btn-danger"}, "Withdraw"),
-        $e("button", {type: "button", name: "cancel"}, "Cancel"));
+    $pu.append_actions($e("button", {type: "submit", name: "withdraw", value: 1, "class": "btn-danger"}, "Withdraw"), "Cancel");
     $pu.show();
     transfer_form_values($pu.form(), f, ["status:notify", "status:notify_reason"]);
     $pu.on("submit", function () { addClass(f, "submitting"); });
@@ -11894,8 +11903,7 @@ handle_ui.on("js-withdraw", function () {
 handle_ui.on("js-delete-paper", function () {
     const f = this.form, $pu = $popup({near: this, action: f});
     $pu.append($e("p", null, "Be careful: This will permanently delete all information about this " + siteinfo.snouns[0] + " from the database and ", $e("strong", null, "cannot be undone"), "."));
-    $pu.append_actions($e("button", {type: "submit", name: "delete", value: 1, "class": "btn-danger"}, "Delete"),
-        $e("button", {type: "button", name: "cancel"}, "Cancel"));
+    $pu.append_actions($e("button", {type: "submit", name: "delete", value: 1, "class": "btn-danger"}, "Delete"), "Cancel");
     $pu.show();
     transfer_form_values($pu.form(), f, ["status:notify", "status:notify_reason"]);
     $pu.on("submit", function () { addClass(f, "submitting"); });
@@ -12740,8 +12748,7 @@ handle_ui.on("js-deny-review-request", function () {
     const f = this.form, $pu = $popup({near: this, action: f})
         .append($e("p", null, "Select “Deny request” to deny this review request."),
             $e("textarea", {name: "reason", rows: 3, cols: 60, placeholder: "Optional explanation", spellcheck: "true", "class": "w-99 need-autogrow"}))
-        .append_actions($e("button", {type: "submit", name: "denyreview", value: 1, "class": "btn-danger"}, "Deny request"),
-            $e("button", {type: "button", name: "cancel"}, "Cancel"))
+        .append_actions($e("button", {type: "submit", name: "denyreview", value: 1, "class": "btn-danger"}, "Deny request"), "Cancel")
         .show();
     transfer_form_values($pu.form(), f, ["firstName", "lastName", "affiliation", "reason"]);
 });
@@ -12749,8 +12756,7 @@ handle_ui.on("js-deny-review-request", function () {
 handle_ui.on("js-delete-review", function () {
     $popup({near: this, action: this.form})
         .append($e("p", null, "Be careful: This will permanently delete all information about this review assignment from the database and ", $e("strong", null, "cannot be undone"), "."))
-        .append_actions($e("button", {type: "submit", name: "deletereview", value: 1, "class": "btn-danger"}, "Delete review"),
-            $e("button", {type: "button", name: "cancel"}, "Cancel"))
+        .append_actions($e("button", {type: "submit", name: "deletereview", value: 1, "class": "btn-danger"}, "Delete review"), "Cancel")
         .show();
 });
 
@@ -12777,7 +12783,7 @@ handle_ui.on("js-approve-review", function (evt) {
             $e("p", null, "Submit this review as an independent review. It will be shown to authors and its scores will be counted in statistics."));
     }
     const $pu = $popup({near: evt.sidebarTarget || self}).append(grid)
-        .append_actions($e("button", {type: "button", name: "cancel"}, "Cancel"))
+        .append_actions("Cancel")
         .show().on("click", "button", function (evt) {
             const b = evt.target.name;
             if (b !== "cancel") {
@@ -12859,8 +12865,7 @@ handle_ui.on("js-edit-formulas", function () {
             .append($e("h2", null, "Named formulas"),
                 $e("p", null, $e("a", {href: hoturl("help", "t=formulas"), target: "_blank", rel: "noopener"}, "Formulas"), ", such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”."),
                 ef, $e("button", {type: "button", name: "add"}, "Add named formula"))
-            .append_actions($e("button", {type: "submit", name: "saveformulas", value: 1, "class": "btn-primary"}, "Save"),
-                $e("button", {type: "button", name: "cancel"}, "Cancel"))
+            .append_actions($e("button", {type: "submit", name: "saveformulas", value: 1, "class": "btn-primary"}, "Save"), "Cancel")
             .on("click", "button", click).on("submit", submit).show();
     }
     $.get(hoturl("=api/namedformula"), function (data) {
@@ -12870,47 +12875,42 @@ handle_ui.on("js-edit-formulas", function () {
 });
 
 handle_ui.on("js-edit-view-options", function () {
-    var $d;
+    let $pu;
     function submit(evt) {
         $.ajax(hoturl("=api/viewoptions"), {
             method: "POST", data: $(this).serialize(),
             success: function (data) {
                 if (data.ok) {
-                    $d.close();
+                    $pu.close();
                     location.reload();
                 } else {
-                    var ta = $d.find("[name=display]")[0];
-                    while (ta.previousSibling
-                           && hasClass(ta.previousSibling, "feedback")) {
-                        ta.parentElement.removeChild(ta.previousSibling);
-                    }
-                    data.errors = data.errors || ["Error saving view options."];
-                    for (var i in data.errors) {
-                        $('<p class="feedback is-error">' + data.errors[i] + '</p>').insertBefore(ta);
+                    const ta = $pu.querySelector("textarea[name=display]");
+                    if (ta.previousElementSibling
+                        && hasClass(ta.previousElementSibling, "feedback-list")) {
+                        ta.previousElementSibling.remove();
                     }
                     addClass(ta, "has-error");
+                    ta.before(render_feedback_list(data.message_list));
                     ta.focus();
                 }
             }
         });
         evt.preventDefault();
     }
-    function create(display_default, display_current) {
-        var hc = popup_skeleton({className: "modal-dialog-w40", form_class: "need-diff-check"});
-        hc.push('<h2>View options</h2>');
-        hc.push('<div class="f-i"><div class="f-c">Default view options</div>', '</div>');
-        hc.push('<div class="reportdisplay-default">' + escape_html(display_default || "(none)") + '</div>');
-        hc.pop();
-        hc.push('<div class="f-i"><div class="f-c">Current view options</div>', '</div>');
-        hc.push('<textarea class="reportdisplay-current w-99 need-autogrow uikd js-keydown-enter-submit" name="display" rows="1" cols="60">' + escape_html(display_current || "") + '</textarea>');
-        hc.pop();
-        hc.push_actions(['<button type="submit" name="save" class="btn-primary">Save options as default</button>', '<button type="button" name="cancel">Cancel</button>']);
-        $d = hc.show();
-        $d.on("submit", "form", submit);
+    function create(data) {
+        $pu = $popup({className: "modal-dialog-w40", form_class: "need-diff-check"})
+            .append($e("h2", null, "View options"),
+                $e("div", "f-i", $e("div", "f-c", "Default view options"),
+                    maybe_render_feedback_list(data.display_default_message_list),
+                    $e("div", "reportdisplay-default", data.display_default || "(none)")),
+                $e("div", "f-i", $e("div", "f-c", "Current view options"),
+                    maybe_render_feedback_list(data.message_list),
+                    $e("textarea", {"class": "reportdisplay-current w-99 need-autogrow uikd js-keydown-enter-submit", name: "display", rows: 1, cols: 60}, data.display_current || "")))
+            .append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save options as default"), "Cancel")
+            .on("submit", submit).show();
     }
     $.get(hoturl("=api/viewoptions", {q: $$("f-search").getAttribute("data-lquery")}), function (data) {
-        if (data.ok)
-            create(data.display_default, data.display_current);
+        data.ok && create(data);
     });
 });
 
@@ -12994,8 +12994,7 @@ handle_ui.on("js-edit-namedsearches", function () {
                 $e("p", null, "Invoke a named search with “ss:NAME”. Named searches are shared with the PC."),
                 $e("div", "editsearches"),
                 $e("button", {type: "button", name: "add"}, "Add named search"))
-            .append_actions($e("button", {type: "submit", name: "savesearches", value: 1, "class": "btn-primary"}, "Save"),
-                $e("button", {type: "button", name: "cancel"}, "Cancel"));
+            .append_actions($e("button", {type: "submit", name: "savesearches", value: 1, "class": "btn-primary"}, "Save"), "Cancel");
         const ns = $pu.querySelector(".editsearches");
         for (const s of data.searches || []) {
             ns.append(render1(s));
@@ -13064,8 +13063,7 @@ function handle_list_submit_bulkwarn(table, chkval, bgform, evt) {
     if (n >= 4) {
         const ctr = $e("div", "container"),
             $pu = $popup({near: evt.target}).append(ctr)
-                .append_actions($e("button", {type: "button", name: "bsubmit", "class": "btn-primary"}, "Download"),
-                    $e("button", {type: "button", name: "cancel"}, "Cancel"));
+                .append_actions($e("button", {type: "button", name: "bsubmit", "class": "btn-primary"}, "Download"), "Cancel");
         let m = table.getAttribute("data-bulkwarn-ftext");
         if (m === null || m === "") {
             m = "<5><p>Some program committees discourage reviewers from downloading " + siteinfo.snouns[1] + " in bulk. Are you sure you want to continue?</p>";
