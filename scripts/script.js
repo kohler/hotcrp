@@ -12755,72 +12755,74 @@ handle_ui.on("js-delete-review", function () {
 });
 
 handle_ui.on("js-approve-review", function (evt) {
-    var self = this, hc = popup_skeleton({near: evt.sidebarTarget || self});
-    hc.push('<div class="grid-btn-explanation">', '</div>');
-    var subreviewClass = "";
+    const self = this, grid = $e("div", "grid-btn-explanation");
+    let subreviewClass = "";
     if (hasClass(self, "can-adopt")) {
-        hc.push('<button type="button" name="adoptsubmit" class="btn-primary big">Adopt and submit</button><p>Submit a copy of this review under your name. You can make changes afterwards.</p>');
-        hc.push('<button type="button" name="adoptdraft" class="big">Adopt as draft</button><p>Save a copy of this review as a draft review under your name.</p>');
+        grid.append($e("button", {type: "button", name: "adoptsubmit", "class": "btn-primary big"}, "Adopt and submit"),
+            $e("p", null, "Submit a copy of this review under your own name. You can make changes afterwards."),
+            $e("button", {type: "button", name: "adoptdraft", "class": "bug"}, "Adopt as draft"),
+            $e("p", null, "Save a copy of this review as a draft review under your name."));
     } else if (hasClass(self, "can-adopt-replace")) {
-        hc.push('<button type="button" name="adoptsubmit" class="btn-primary big">Adopt and submit</button><p>Replace your draft review with a copy of this review and submit it. You can make changes afterwards.</p>');
-        hc.push('<button type="button" name="adoptdraft" class="big">Adopt as draft</button><p>Replace your draft review with a copy of this review.</p>');
+        grid.append($e("button", {type: "button", name: "adoptsubmit", "class": "btn-primary big"}, "Adopt and submit"),
+            $e("p", null, "Replace your draft review with a copy of this review and submit it. You can make changes afterwards."),
+            $e("button", {type: "button", name: "adoptdraft", "class": "big"}, "Adopt as draft"),
+            $e("p", null, "Replace your draft review with a copy of this review."));
     } else {
         subreviewClass = " btn-primary";
     }
-    hc.push('<button type="button" name="approvesubreview" class="big' + subreviewClass + '">Approve subreview</button><p>Approve this review as a subreview. It will not be shown to authors and its scores will not be counted in statistics.</p>');
+    grid.append($e("button", {type: "button", name: "approvesubreview", "class": "big" + subreviewClass}, "Approve subreview"),
+        $e("p", null, "Approve this review as a subreview. It will not be shown to authors and its scores will not be counted in statistics."));
     if (hasClass(self, "can-approve-submit")) {
-        hc.push('<button type="button" name="submitreview" class="big">Submit as full review</button><p>Submit this review as an independent review. It will be shown to authors and its scores will be counted in statistics.</p>');
+        grid.append($e("button", {type: "button", name: "submitreview", "class": "big"}, "Submit as full review"),
+            $e("p", null, "Submit this review as an independent review. It will be shown to authors and its scores will be counted in statistics."));
     }
-    hc.pop();
-    hc.push_actions(['<button type="button" name="cancel">Cancel</button>']);
-    var $d = hc.show();
-    $d.on("click", "button", function (evt) {
-        var b = evt.target.name;
-        if (b !== "cancel") {
-            var form = self.form;
-            $(form).append(hidden_input(b, "1"))
-                .append(hidden_input(b.startsWith("adopt") ? "adoptreview" : "update", "1"));
-            addClass(form, "submitting");
-            form.submit();
-            $d.close();
-        }
-    });
+    const $pu = $popup({near: evt.sidebarTarget || self}).append(grid)
+        .append_actions($e("button", {type: "button", name: "cancel"}, "Cancel"))
+        .show().on("click", "button", function (evt) {
+            const b = evt.target.name;
+            if (b !== "cancel") {
+                const form = self.form;
+                form.append(hidden_input(b, "1"), hidden_input(b.startsWith("adopt") ? "adoptreview" : "update", "1"));
+                addClass(form, "submitting");
+                form.submit();
+                $pu.close();
+            }
+        });
 });
 
 
 // search/paperlist UI
 handle_ui.on("js-edit-formulas", function () {
-    var $d, count = 0;
-    function push1(hc, f) {
+    let $pu, count = 0;
+    function render1(f) {
         ++count;
-        hc.push('<div class="editformulas-formula" data-formula-number="' + count + '">', '</div>');
-        hc.push('<div class="entryi"><label for="k-formula/' + count + '/name">Name</label><div class="entry nw">', '</div></div>');
+        const nei = $e("legend"), xei = $e("div", "entry");
         if (f.editable) {
-            hc.push('<input type="text" id="k-formula/' + count + '/name" class="editformulas-name need-autogrow" name="formula/' + count + '/name" size="30" value="' + escape_html(f.name) + '" placeholder="Formula name">');
-            hc.push('<button type="button" class="ui closebtn delete-link need-tooltip" aria-label="Delete formula">x</button>');
-        } else
-            hc.push(escape_html(f.name));
-        hc.pop();
-        hc.push('<div class="entryi"><label for="k-formula/' + count + '/expression">Expression</label><div class="entry">', '</div></div>');
-        if (f.editable)
-            hc.push('<textarea class="editformulas-expression need-autogrow w-99" id="k-formula/' + count + '/expression" name="formula/' + count + '/expression" rows="1" cols="64" placeholder="Formula definition">' + escape_html(f.expression) + '</textarea>')
-                .push('<input type="hidden" name="formula/' + count + '/id" value="' + f.id + '">');
-        else
-            hc.push(escape_html(f.expression));
-        hc.pop();
-        if (f.error_html) {
-            hc.push('<div class="entryi"><label class="is-error">Error</label><div class="entry">' + f.error_html + '</div></div>');
+            nei.className = "mb-1";
+            nei.append($e("input", {type: "text", id: "k-formula/" + count + "/name", "class": "editformulas-name need-autogrow", name: "formula/" + count + "/name", size: 30, value: f.name, placeholder: "Formula name"}),
+                $e("button", {type: "button", "class": "ml-2 delete-link need-tooltip btn-licon-s", "aria-label": "Delete formula"}, svge_use_licon("trash")));
+            xei.append($e("textarea", {"class": "editformulas-expression need-autogrow w-99", id: "k-formula/" + count + "/expression", name: "formula/" + count + "/expression", rows: 1, cols: 64, placeholder: "Formula definition"}, f.expression));
+        } else {
+            nei.append(f.name);
+            xei.append(f.expression);
         }
-        hc.pop();
+        const e = $e("fieldset", {"class": "editformulas-formula", "data-formula-number": count},
+            nei,
+            $e("div", "entryi", $e("label", {"for": "k-formula/" + count + "/expression"}, "Expression"), xei),
+            hidden_input("formula/" + count + "/id", f.id));
+        if (f.message_list) {
+            e.append(render_feedback_list(f.message_list));
+        }
+        return e;
     }
     function click() {
         if (this.name === "add") {
-            var hc = new HtmlCollector;
-            push1(hc, {name: "", expression: "", editable: true, id: "new"});
-            var $f = $(hc.render()).appendTo($d.find(".editformulas")).awaken();
-            $f[0].setAttribute("data-formula-new", "");
-            focus_at($f.find(".editformulas-name"));
-            $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
+            const e = render1({name: "", expression: "", editable: true, id: "new"});
+            e.setAttribute("data-formula-new", "");
+            $pu.find(".editformulas").append(e);
+            $(e).awaken();
+            focus_at(e.querySelector(".editformulas-name"));
+            $pu.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
         } else if (hasClass(this, "delete-link")) {
             ondelete.call(this);
         }
@@ -12832,33 +12834,34 @@ handle_ui.on("js-edit-formulas", function () {
         else {
             $x.find(".editformulas-expression").closest(".entryi").addClass("hidden");
             $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
-            $x.append('<em>(Formula deleted)</em>');
+            $x.find(".delete-link").prop("disabled", true);
+            $x.append(render_feedback_list([{status: 1, message: "<0>This named formula will be deleted."}]));
         }
-        $x.append('<input type="hidden" name="formula/' + $x.data("formulaNumber") + '/delete" value="1">');
+        $x.append(hidden_input("formula/" + $x.data("formulaNumber") + "/delete", 1));
     }
     function submit(evt) {
         evt.preventDefault();
         $.post(hoturl("=api/namedformula"),
-            $d.find("form").serialize(),
+            $($pu.form()).serialize(),
             function (data) {
                 if (data.ok)
                     location.reload(true);
                 else
-                    $d.show_errors(data);
+                    $pu.show_errors(data);
             });
     }
     function create(formulas) {
-        var hc = popup_skeleton({className: "modal-dialog-w40", form_class: "need-diff-check"}), i;
-        hc.push('<h2>Named formulas</h2>');
-        hc.push('<p><a href="' + hoturl("help", "t=formulas") + '" target="_blank" rel="noopener">Formulas</a>, such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”.</p>');
-        hc.push('<div class="editformulas">', '</div>');
-        for (i in formulas || [])
-            push1(hc, formulas[i]);
-        hc.pop_push('<button type="button" name="add">Add named formula</button>');
-        hc.push_actions(['<button type="submit" name="saveformulas" value="1" class="btn-primary">Save</button>', '<button type="button" name="cancel">Cancel</button>']);
-        $d = hc.show();
-        $d.on("click", "button", click);
-        $d.on("submit", "form", submit);
+        const ef = $e("div", "editformulas");
+        for (const f of formulas || []) {
+            ef.append(render1(f));
+        }
+        $pu = $popup({className: "modal-dialog-w40", form_class: "need-diff-check"})
+            .append($e("h2", null, "Named formulas"),
+                $e("p", null, $e("a", {href: hoturl("help", "t=formulas"), target: "_blank", rel: "noopener"}, "Formulas"), ", such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”."),
+                ef, $e("button", {type: "button", name: "add"}, "Add named formula"))
+            .append_actions($e("button", {type: "submit", name: "saveformulas", value: 1, "class": "btn-primary"}, "Save"),
+                $e("button", {type: "button", name: "cancel"}, "Cancel"))
+            .on("click", "button", click).on("submit", submit).show();
     }
     $.get(hoturl("=api/namedformula"), function (data) {
         if (data.ok)
@@ -12912,18 +12915,19 @@ handle_ui.on("js-edit-view-options", function () {
 });
 
 handle_ui.on("js-edit-namedsearches", function () {
-    var $d, count = 0;
+    let $pu, count = 0;
     function render1(f) {
         ++count;
-        const nentry = $e("div", "entry nw"), qentry = $e("div", "entry");
+        const nentry = $e("legend"), qentry = $e("div", "entry");
         if (f.editable) {
+            nentry.className = "mb-1";
             nentry.append($e("input", {
                     id: "k-named_search/" + count + "/name",
                     type: "text", name: "named_search/" + count + "/name",
                     "class": "editsearches-name need-autogrow",
                     size: 30, value: f.name, placeholder: "Name of search"
                 }), $e("button", {
-                    type: "button", "class": "ui delete-link ml-2 need-tooltip",
+                    type: "button", "class": "ui btn-licon-s delete-link ml-2 need-tooltip",
                     "aria-label": "Delete search"
                 }, svge_use_licon("trash")));
             qentry.append($e("textarea", {
@@ -12936,20 +12940,12 @@ handle_ui.on("js-edit-namedsearches", function () {
             nentry.append(f.name);
             qentry.append(f.q);
         }
-        const div = $e("div", {"class": "editsearches-search", "data-search-number": count},
-            $e("div", "entryi",
-                $e("label", {"for": "k-named_search/" + count + "/name"}, "Name"),
-                nentry),
+        return $e("fieldset", {"class": "editsearches-search", "data-search-number": count},
+            nentry,
             $e("div", "entryi",
                 $e("label", {"for": "k-named_search/" + count + "/q"}, "Search"),
                 qentry),
             hidden_input("named_search/" + count + "/id", f.id || f.name));
-        if (f.error_html) {
-            const e = $e("div", "entry");
-            e.innerHTML = f.error_html;
-            div.append($e("div", "entryi", $e("label", "is-error", "Error"), e));
-        }
-        return div;
     }
     function click() {
         if (this.name === "add") {
@@ -12963,10 +12959,10 @@ handle_ui.on("js-edit-namedsearches", function () {
                     a.push(data.display_difference);
                 }
                 const div = render1({name: "", q: a.join(" "), editable: true, id: "new"});
-                $(div).appendTo($d.find(".editsearches")).awaken();
+                $(div).appendTo($pu.find(".editsearches")).awaken();
                 div.setAttribute("data-search-new", "");
                 focus_at($(div).find(".editsearches-name"));
-                $d.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
+                $pu.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
             });
         } else if (hasClass(this, "delete-link")) {
             ondelete.call(this);
@@ -12979,34 +12975,32 @@ handle_ui.on("js-edit-namedsearches", function () {
         else {
             $x.find(".editsearches-query").closest(".entryi").addClass("hidden");
             $x.find(".editsearches-name").prop("disabled", true).css("text-decoration", "line-through");
-            $x.append('<em>(Search deleted)</em>');
+            $x.find(".delete-link").prop("disabled", true);
+            $x.append(render_feedback_list([{status: 1, message: "<0>This named search will be deleted."}]));
         }
-        $x.append('<input type="hidden" name="search:' + $x.data("searchNumber") + ':delete" value="1">');
+        $x.append(hidden_input("named_search/" + $x.data("searchNumber") + "/delete", 1));
     }
     function submit(evt) {
         evt.preventDefault();
         $.post(hoturl("=api/namedsearch"),
-            $d.find("form").serialize(),
+            $($pu.form()).serialize(),
             function (data) {
-                data.ok ? location.reload(true) : $d.show_errors(data);
+                data.ok ? location.reload(true) : $pu.show_errors(data);
             });
     }
     function create(data) {
-        var hc = popup_skeleton({className: "modal-dialog-w40", form_class: "need-diff-check"}), i;
-        hc.push('<h2>Named searches</h2>');
-        hc.push('<p>Invoke a named search with “ss:NAME”. Named searches are shared with the PC.</p>');
-        hc.push('<div class="editsearches"></div>');
-        hc.push('<button type="button" name="add">Add named search</button>');
-        hc.push_actions(['<button type="submit" name="savesearches" value="1" class="btn-primary">Save</button>', '<button type="button" name="cancel">Cancel</button>']);
-        $d = hc.show(false);
-        const ns = $d.find(".editsearches")[0];
-        for (i in data.searches || []) {
-            ns.append(render1(data.searches[i]));
+        $pu = $popup({className: "modal-dialog-w40", form_class: "need-diff-check"})
+            .append($e("h2", null, "Named searches"),
+                $e("p", null, "Invoke a named search with “ss:NAME”. Named searches are shared with the PC."),
+                $e("div", "editsearches"),
+                $e("button", {type: "button", name: "add"}, "Add named search"))
+            .append_actions($e("button", {type: "submit", name: "savesearches", value: 1, "class": "btn-primary"}, "Save"),
+                $e("button", {type: "button", name: "cancel"}, "Cancel"));
+        const ns = $pu.querySelector(".editsearches");
+        for (const s of data.searches || []) {
+            ns.append(render1(s));
         }
-        hc.show();
-        $d.on("click", "button", click);
-        $d.on("submit", "form", submit);
-        $d.show_errors(data);
+        $pu.show().on("click", "button", click).on("submit", submit).show_errors(data);
     }
     $.get(hoturl("=api/namedsearch"), function (data) {
         if (data.ok)
@@ -13068,26 +13062,23 @@ function handle_list_submit_bulkwarn(table, chkval, bgform, evt) {
             ++n;
     }
     if (n >= 4) {
-        var hc = popup_skeleton({near: evt.target});
-        hc.push('<div class="container"></div>');
-        hc.push_actions([
-            '<button type="button" name="bsubmit" class="btn-primary">Download</button>',
-            '<button type="button" name="cancel">Cancel</button>'
-        ]);
-        var $d = hc.show(false), m = table.getAttribute("data-bulkwarn-ftext");
+        const ctr = $e("div", "container"),
+            $pu = $popup({near: evt.target}).append(ctr)
+                .append_actions($e("button", {type: "button", name: "bsubmit", "class": "btn-primary"}, "Download"),
+                    $e("button", {type: "button", name: "cancel"}, "Cancel"));
+        let m = table.getAttribute("data-bulkwarn-ftext");
         if (m === null || m === "") {
             m = "<5><p>Some program committees discourage reviewers from downloading " + siteinfo.snouns[1] + " in bulk. Are you sure you want to continue?</p>";
         }
-        render_text.onto($d.find(".container")[0], "f", m);
-        $d.on("closedialog", function () {
+        render_text.onto(ctr, "f", m);
+        $pu.on("closedialog", function () {
             bgform && document.body.removeChild(bgform);
         });
-        $d.on("click", "button[name=bsubmit]", function () {
+        $pu.show().on("click", "button[name=bsubmit]", function () {
             bgform.submit();
             bgform = null;
-            $d.close();
+            $pu.close();
         });
-        hc.show();
         return false;
     } else
         return true;
@@ -13940,6 +13931,7 @@ $(function () {
 
 Object.assign(window.hotcrp, {
     $e: $e,
+    $popup: $popup,
     // add_comment
     // add_diff_check
     // add_review

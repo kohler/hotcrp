@@ -63,7 +63,7 @@ class SearchConfig_API {
                 $fj["editable"] = true;
             }
             if (!$f->check()) {
-                $fj["error_html"] = MessageSet::feedback_html($f->message_list());
+                $fj["message_list"] = $f->message_list();
             }
             $fjs[] = $fj;
         }

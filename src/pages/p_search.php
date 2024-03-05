@@ -144,6 +144,7 @@ class Search_Page {
             $this->set_header(40, "<strong>Formulas:</strong>");
         }
         if ($user->isPC && $pl->search->limit() !== "a") {
+            Icons::stash_defs("trash");
             $this->item(40, '<div class="mt-2"><button type="button" class="link ui js-edit-formulas">Edit formulas</button></div>');
         }
     }

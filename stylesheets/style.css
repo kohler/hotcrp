@@ -1435,7 +1435,8 @@ button.btn-t {
 	font-size: 120%;
 }
 .btn-licon-s {
-	padding: 1px 4px;
+	padding-left: 5px;
+	padding-right: 5px;
 }
 button:hover, .btn:hover, select:hover {
 	border-color: #a5a5a5;
@@ -3374,7 +3375,7 @@ button.draghandle.disabled:hover, button.draghandle:disabled:hover {
 }
 
 .editformulas-formula, .editsearches-search {
-	margin: 1em 0 3em;
+	margin: 1em 0 2em;
 }
 
 span.match {
