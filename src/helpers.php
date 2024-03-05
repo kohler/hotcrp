@@ -472,13 +472,18 @@ function pluralize($s) {
                && $len > 1
                && ($s[$len - 2] === "s" || $s[$len - 2] === "c")) {
         return "{$s}es";
-    } else if ($last === "y"
+    } else if (($last === "y" || $last === "o")
                && $len > 1
                && strpos("bcdfgjklmnpqrstvxz", $s[$len - 2]) !== false) {
-        return substr($s, 0, $len - 1) . "ies";
-    } else if ($last === "t"
-               && $s === "that") {
-        return "those";
+        return $last === "y" ? substr($s, 0, $len - 1) . "ies" : $s . "es";
+    } else if ($last === "t") {
+        if ($s === "that") {
+            return "those";
+        } else if ($s === "it") {
+            return "them";
+        } else {
+            return "{$s}s";
+        }
     } else if ($last === ")"
                && preg_match('/\A(.*?)(\s*\([^)]*\))\z/', $s, $m)) {
         return pluralize($m[1]) . $m[2];

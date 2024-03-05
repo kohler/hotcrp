@@ -270,7 +270,7 @@ class UserStatus extends MessageSet {
             $l = Ht::link(commajoin(array_map(function ($p) { return "#$p"; }, $pids)),
                           $conf->hoturl("search", ["q" => join(" ", $pids)]));
         }
-        return plural_word(count($pids), "submission") . " " . $l;
+        return $conf->snouns[count($pids) !== 1 ? 0 : 1] . " " . $l;
     }
 
     /** @param string $what
@@ -1660,7 +1660,7 @@ topics. We use this information to help match papers to reviewers.</p>',
                 }
                 echo "      <tr><td class=\"{$tic}\">{$n}</td>";
                 $ival = $tmap[$tid] ?? 0;
-                $reqval = isset($us->qreq["ti$tid"]) ? (int) $us->qreq["ti$tid"] : $ival;
+                $reqval = isset($us->qreq["ti{$tid}"]) ? (int) $us->qreq["ti{$tid}"] : $ival;
                 for ($j = -2; $j <= 2; ++$j) {
                     $ichecked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
                     $reqchecked = $reqval >= $ibound[$j+2] && $reqval < $ibound[$j+3];
@@ -1697,28 +1697,19 @@ topics. We use this information to help match papers to reviewers.</p>',
             return;
         }
         $tracks = self::user_paper_info($us->conf, $us->user->contactId);
-        $args = ["class" => "ui btn-danger"];
+        $args = ["class" => "ui btn-danger js-delete-user"];
         if (!empty($tracks->soleAuthor)) {
             $args["class"] .= " js-cannot-delete-user";
-            $args["data-sole-author"] = self::render_paper_link($us->conf, $tracks->soleAuthor);
-        } else {
-            $args["class"] .= " js-delete-user";
-            $x = $y = [];
-            if (!empty($tracks->author)) {
-                $x[] = "is contact for " . self::render_paper_link($us->conf, $tracks->author);
-                $y[] = "delete " . plural_word($tracks->author, "this authorship association");
-            }
-            if (!empty($tracks->review)) {
-                $x[] = "reviewed " . self::render_paper_link($us->conf, $tracks->review);
-                $y[] = "<strong>permanently delete</strong> " . plural_word($tracks->review, "this review");
-            }
-            if (!empty($tracks->comment)) {
-                $x[] = "commented on " . self::render_paper_link($us->conf, $tracks->comment);
-                $y[] = "<strong>permanently delete</strong> " . plural_word($tracks->comment, "this comment");
-            }
-            if (!empty($x)) {
-                $args["data-delete-info"] = "<p>This user " . commajoin($x) . ". Deleting the user will also " . commajoin($y) . ".</p>";
-            }
+            $args["data-sole-contact"] = join(" ", $tracks->soleAuthor);
+        }
+        if (!empty($tracks->author)) {
+            $args["data-contact"] = join(" ", $tracks->author);
+        }
+        if (!empty($tracks->review)) {
+            $args["data-reviewer"] = join(" ", $tracks->review);
+        }
+        if (!empty($tracks->comment)) {
+            $args["data-commenter"] = join(" ", $tracks->comment);
         }
         echo Ht::button("Delete account", $args), '<p class="pt-1"></p>';
     }

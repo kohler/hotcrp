@@ -692,26 +692,62 @@ function regexp_quote(s) {
     return String(s).replace(/([-()[\]{}+?*.$^|,:#<!\\])/g, '\\$1').replace(/\x08/g, '\\x08');
 }
 
-function plural_noun(n, what) {
-    if ($.isArray(n))
-        n = n.length;
-    if (n == 1)
-        return what;
-    if (what == "this")
-        return "these";
-    if (/^.*?(?:s|sh|ch|[bcdfgjklmnpqrstvxz][oy])$/.test(what)) {
-        if (what.charAt(what.length - 1) === "y")
-            return what.substring(0, what.length - 1) + "ies";
-        else
-            return what + "es";
-    } else
-        return what + "s";
+function pluralize(s) {
+    if (s.charCodeAt(0) === 116 /*t*/
+        && (s.startsWith("this ") || s.startsWith("that "))) {
+        return (s.charCodeAt(2) === 105 /*i*/ ? "these " : "those ") + pluralize(s.substring(5));
+    }
+    const len = s.length, last = s.charCodeAt(len - 1);
+    let ch, m;
+    if (last === 115 /*s*/) {
+        if (s === "this") {
+            return "these";
+        } else if (s === "has") {
+            return "have";
+        } else if (s === "is") {
+            return "are";
+        } else {
+            return s + "es";
+        }
+    } else if (last === 104 /*h*/
+               && len > 1
+               && ((ch = s.charCodeAt(len - 2)) === 115 /*s*/ || ch === 99 /*c*/)) {
+        return s + "es";
+    } else if ((last === 121 /*y*/ || last === 111 /*o*/)
+               && len > 1
+               && /^[bcdfgjklmnpqrstvxz]/.test(s.charAt(len - 2))) {
+        return last === 121 ? s.substring(0, len - 1) + "ies" : s + "es";
+    } else if (last === 116 /*t*/) {
+        if (s === "that") {
+            return "those";
+        } else if (s === "it") {
+            return "them";
+        } else {
+            return s + "s";
+        }
+    } else if (last === 41 /*)*/
+               && (m = s.match(/^(.*?)(\s*\([^)]*\))$/))) {
+        return pluralize(m[1]) + m[2];
+    } else {
+        return s + "s";
+    }
 }
 
-function plural(n, what) {
+function plural_word(n, singular, plural) {
+    const z = $.isArray(n) ? n.length : n;
+    if (z == 1) {
+        return singular;
+    } else if (plural != null) {
+        return plural;
+    } else {
+        return pluralize(singular);
+    }
+}
+
+function plural(n, singular) {
     if ($.isArray(n))
         n = n.length;
-    return n + " " + plural_noun(n, what);
+    return n + " " + plural_word(n, singular);
 }
 
 /* exported ordinal */
@@ -12628,23 +12664,41 @@ handle_ui.on("js-users-selection", function () {
     this.form.submit();
 });
 
-handle_ui.on("js-cannot-delete-user", function () {
-    var hc = popup_skeleton({near: this});
-    hc.push('<p><strong>This account cannot be deleted</strong> because they are the sole contact for ' + $(this).data("soleAuthor") + '. To delete the account, first remove those ' + siteinfo.snouns[1] + ' from the database or give them more contacts.</p>');
-    hc.push_actions(['<button type="button" name="cancel">Cancel</button>']);
-    hc.show();
-});
-
 handle_ui.on("js-delete-user", function () {
-    var f = this.form,
-        hc = popup_skeleton({near: this, action: f}), x;
-    hc.push('<p>Be careful: This will permanently delete all information about this account from the database and <strong>cannot be undone</strong>.</p>');
-    if ((x = this.getAttribute("data-delete-info")))
-        hc.push(x);
-    hc.push_actions(['<button type="submit" name="delete" value="1" class="btn-danger">Delete user</button>',
-        '<button type="button" name="cancel">Cancel</button>']);
-    var $d = hc.show();
-    $d.on("submit", "form", function () { addClass(f, "submitting"); });
+    function plinks(pids) {
+        if (typeof pids === "string") {
+            pids = pids.split(/\s+/);
+        }
+        return $e("a", {href: hoturl("paper", {q: pids.join(" ")}), target: "_blank", rel: "noopener"}, pids.length === 1 ? siteinfo.snouns[0] + " #" + pids[0] : pids.length + " " + siteinfo.snouns[1]);
+    }
+    const f = this.form, $pu = $popup({near: this, action: f});
+    if (this.hasAttribute("data-sole-contact")) {
+        const pids = this.getAttribute("data-sole-contact").split(/\s+/);
+        $pu.append($e("p", null, $e("strong", null, "This account cannot be deleted"),
+            " because it is the sole contact for ",
+            plinks(pids), ". To delete the account, first delete ".concat(plural_word(pids, "that " + siteinfo.snouns[0], "those " + siteinfo.snouns[1]), " from the database or give ", plural_word(pids, "it"), " more contacts.")))
+            .append_actions("Cancel").show();
+        return;
+    }
+    const ul = $e("ul");
+    if (this.hasAttribute("data-contact")) {
+        const pids = this.getAttribute("data-contact").split(/\s+/);
+        ul.append($e("li", null, "Contact authorship on ", plinks(pids)));
+    }
+    if (this.hasAttribute("data-reviewer")) {
+        const pids = this.getAttribute("data-reviewer").split(/\s+/);
+        ul.append($e("li", null, "Reviews on ", plinks(pids)));
+    }
+    if (this.hasAttribute("data-commenter")) {
+        const pids = this.getAttribute("data-commenter").split(/\s+/);
+        ul.append($e("li", null, "Comments on ", plinks(pids)));
+    }
+    if (ul.firstChild !== null) {
+        $pu.append($e("p", null, "Deleting this account will also delete:"), ul);
+    }
+    $pu.append($e("p", null, "Be careful: Account deletion ", $e("strong", null, "cannot be undone"), "."))
+        .append_actions($e("button", {type: "submit", name: "delete", value: 1, "class": "btn-danger"}, "Delete user"), "Cancel")
+        .on("submit", function () { addClass(f, "submitting"); }).show();
 });
 
 handle_ui.on("js-disable-user", function () {
@@ -13948,6 +14002,7 @@ Object.assign(window.hotcrp, {
     fold_storage: fold_storage,
     foldup: foldup,
     handle_ui: handle_ui,
+    hidden_input: hidden_input,
     hoturl: hoturl,
     // init_deadlines
     // load_editable_paper

@@ -238,18 +238,15 @@ function do_show_papers() {
 }
 
 function do_kiosk() {
-    var hc = hotcrp.popup_skeleton({near: this, action: hotcrp.hoturl("=buzzer")});
-    hc.push('<p>Kiosk mode is a discussion status page with no other site privileges. It’s safe to leave a browser in kiosk mode open in the hallway.</p>');
-    hc.push('<p><strong>Kiosk mode will sign your browser out of the site.</strong> Do not use kiosk mode on your main browser.</p>');
-    hc.push('<p>These URLs access kiosk mode directly:</p>');
-    hc.push('<dl><dt>With papers</dt><dd>' + escape_html(info.kiosk_urls[1])
-            + '</dd><dt>Conflicts only</dt><dd>' + escape_html(info.kiosk_urls[0])
-            + '</dd></dl>');
+    const $pu = hotcrp.$popup({near: this, action: hotcrp.hoturl("=buzzer")})
+        .append($e("p", null, "Kiosk mode is a discussion status page with no other site privileges. It’s safe to leave a browser in kiosk mode open in the hallway."),
+            $e("p", null, $e("strong", null, "Kiosk mode will sign your browser out of the site."), " Do not use kiosk mode on your main browser."),
+            $e("p", null, "These URLs access kiosk mode directly:"),
+            $e("dl", null, $e("dt", null, "With papers"), $e("dd", null, info.kiosk_urls[1]),
+                $e("dt", null, "Conflicts only"), $e("dd", null, info.kiosk_urls[0])));
     if (show_papers)
-        hc.push('<input type="hidden" name="buzzer_showpapers" value="1" />');
-    hc.push_actions(['<button type="submit" name="signout_to_kiosk" value="1" class="btn btn-danger">Enter kiosk mode</button>',
-        '<button type="button" name="cancel">Cancel</button>']);
-    hc.show();
+        $pu.append(hotcrp.hidden_input("buzzer_showpapers", 1));
+    $pu.append_actions($e("button", {type: "submit", name: "signout_to_kiosk", value: 1, "class": "btn btn-danger"}, "Enter kiosk mode"), "Cancel").show();
 }
 
 return function (initial_info) {
