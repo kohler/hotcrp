@@ -13159,7 +13159,7 @@ handle_ui.on("js-submit-list", function (evt) {
     evt.preventDefault();
 
     // choose action
-    var form = this, fn, fnbutton, e, ne, i, es;
+    var form = this, fn = "", fnbutton, e, ne, i, es;
     if (this instanceof HTMLButtonElement) {
         fn = this.value;
         fnbutton = this;
