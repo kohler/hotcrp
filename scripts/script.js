@@ -3214,7 +3214,7 @@ function popup_near(elt, near) {
 }
 
 function override_deadlines(callback) {
-    let self = this, hc;
+    let self = this, $pu;
     function default_callback() {
         self.form.hotcrpSubmitter = null;
         for (let v of (self.getAttribute("data-override-submit") || "").split("&")) {
@@ -3230,31 +3230,32 @@ function override_deadlines(callback) {
         addClass(self.form, "submitting");
         $(self.form).submit(); // call other handlers
     }
-    if (typeof callback === "object" && "sidebarTarget" in callback) {
-        hc = popup_skeleton({near: callback.sidebarTarget});
+    const p = $e("p");
+    p.innerHTML = this.getAttribute("data-override-text") || "Are you sure you want to override the deadline?";
+    const bu = $e("button", {type: "button", name: "bsubmit", "class": "btn-primary"});
+    if (this.getAttribute("aria-label")) {
+        bu.textContent = this.getAttribute("aria-label");
+    } else if (this.innerHTML) {
+        bu.innerHTML = this.innerHTML;
+    } else if (this.getAttribute("value")) {
+        bu.textContent = this.getAttribute("value");
     } else {
-        hc = popup_skeleton({near: this});
+        bu.textContent = "Save changes";
     }
-    hc.push('<p>' + (this.getAttribute("data-override-text") || "Are you sure you want to override the deadline?") + '</p>');
-    hc.push_actions([
-        '<button type="button" name="bsubmit" class="btn-primary"></button>',
-        '<button type="button" name="cancel">Cancel</button>'
-    ]);
-    let $d = hc.show(false);
-    $d.find("button[name=bsubmit]")
-        .html(this.getAttribute("aria-label")
-              || $(this).html()
-              || this.getAttribute("value")
-              || "Save changes")
-        .on("click", function () {
-            if (callback && $.isFunction(callback)) {
-                callback();
-            } else {
-                default_callback();
-            }
-            $d.close();
-        });
-    hc.show();
+    $(bu).on("click", function () {
+        if (callback && $.isFunction(callback)) {
+            callback();
+        } else {
+            default_callback();
+        }
+        $pu.close();
+    });
+    if (typeof callback === "object" && "sidebarTarget" in callback) {
+        $pu = $popup({near: callback.sidebarTarget});
+    } else {
+        $pu = $popup({near: this});
+    }
+    $pu.append(p).append_actions(bu, "Cancel").show();
 }
 handle_ui.on("js-override-deadlines", override_deadlines);
 
