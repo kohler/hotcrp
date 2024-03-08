@@ -46,7 +46,7 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         $rarg0 = trim((string) $req["round"]);
         $oldround = null;
         if ($rarg0 !== ""
-            && strcasecmp($rarg0, "any") != 0
+            && strcasecmp($rarg0, "any") !== 0
             && ($oldround = $state->conf->round_number($rarg0)) === null) {
             return new AssignmentError("<0>Review round ‘{$rarg0}’ not found");
         }
