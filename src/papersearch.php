@@ -1235,7 +1235,7 @@ class PaperSearch extends MessageSet {
     }
 
     /** @return list<TagAnno> */
-    function paper_groups() {
+    function group_list() {
         $this->_prepare();
         if ($this->_then_term) {
             $groups = $this->_then_term->group_terms();

@@ -241,7 +241,7 @@ class SearchConfig_API {
             $fjs[] = $nsj;
             $ps = new PaperSearch($user, $q);
             foreach ($ps->message_list() as $mi) {
-                $ms->append_item_at("named_search/" . count($fjs) . "/q", $mi);
+                $ms->append_item_at("named_search/" . count($fjs) . "/search", $mi);
             }
         }
         usort($fjs, function ($a, $b) {
@@ -270,7 +270,7 @@ class SearchConfig_API {
         for ($fidx = 1; isset($qreq["named_search/{$fidx}/id"]); ++$fidx) {
             $id = $qreq["named_search/{$fidx}/id"];
             $name = $qreq["named_search/{$fidx}/name"];
-            $q = $qreq["named_search/{$fidx}/q"];
+            $q = $qreq["named_search/{$fidx}/search"];
             $deleted = $qreq["named_search/{$fidx}/delete"];
             if ($id === "" || (!isset($name) && !isset($q) && !isset($deleted))) {
                 continue;
@@ -314,7 +314,7 @@ class SearchConfig_API {
 
             // complain about stuff
             if ($q === "") {
-                $msgset->error_at("named_search/{$fidx}/q", "<0>{$pfx}Query required");
+                $msgset->error_at("named_search/{$fidx}/search", "<0>{$pfx}Search required");
             } else if ($name === "") {
                 $msgset->error_at("named_search/{$fidx}/name", "<0>Search name required");
             } else if (preg_match('/\A(?:formula[:\d].*|f:.*|ss:.*|search:.*|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d*)?|none|any|all|unknown|new)\z/', $name)) {

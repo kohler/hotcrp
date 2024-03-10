@@ -82,11 +82,11 @@ class NamedSearch_SettingParser extends SettingParser {
             $sv->error_if_missing("named_search/{$ctr}/name");
             $sv->error_if_duplicate_member("named_search", $ctr, "name", "Search name");
             if ($ns->q === "") {
-                $sv->warning_at("named_search/{$ctr}/q", "<0>Empty search");
+                $sv->warning_at("named_search/{$ctr}/search", "<0>Empty search");
             } else {
                 $ps = new PaperSearch($sv->conf->root_user(), $ns->q);
                 foreach ($ps->message_list() as $mi) {
-                    $sv->append_item_at("named_search/{$ctr}/q", $mi);
+                    $sv->append_item_at("named_search/{$ctr}/search", $mi);
                 }
             }
             $j[] = $ns->export_json();
@@ -105,7 +105,7 @@ class NamedSearch_SettingParser extends SettingParser {
             if ($ns->q !== "") {
                 $ps = new PaperSearch($sv->conf->root_user(), $ns->q);
                 foreach ($ps->message_list() as $mi) {
-                    $sv->append_item_at("named_search/{$ctr}/q", $mi);
+                    $sv->append_item_at("named_search/{$ctr}/search", $mi);
                 }
             }
         }

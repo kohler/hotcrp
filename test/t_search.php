@@ -6,9 +6,13 @@ class Search_Tester {
     /** @var Conf
      * @readonly */
     public $conf;
+    /** @var Contact
+     * @readonly */
+    public $u_root;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
+        $this->u_root = $conf->root_user();
     }
 
     function test_canonical_query() {
@@ -55,7 +59,7 @@ class Search_Tester {
     }
 
     function test_multihighlight() {
-        $srch = new PaperSearch($this->conf->root_user(), "1-10 HIGHLIGHT:pink 1-2 HIGHLIGHT:yellow 1-5 HIGHLIGHT:green 1-8");
+        $srch = new PaperSearch($this->u_root, "1-10 HIGHLIGHT:pink 1-2 HIGHLIGHT:yellow 1-5 HIGHLIGHT:green 1-8");
         $h = $srch->highlights_by_paper_id();
         assert($h !== null);
         xassert_eqq($h[1], ["pink", "yellow", "green"]);
@@ -72,13 +76,13 @@ class Search_Tester {
     }
 
     function test_xor() {
-        xassert_search($this->conf->root_user(), "1-10 XOR 4-5", "1 2 3 6 7 8 9 10");
+        xassert_search($this->u_root, "1-10 XOR 4-5", "1 2 3 6 7 8 9 10");
     }
 
     function test_halfopen_interval() {
-        xassert_search($this->conf->root_user(), "5-100000 XOR 10-100000", "5 6 7 8 9");
-        xassert_search($this->conf->root_user(), "5- XOR 10-100000", "5 6 7 8 9");
-        xassert_search($this->conf->root_user(), "8-,7-,6-,5- XOR 10-100000", "5 6 7 8 9");
+        xassert_search($this->u_root, "5-100000 XOR 10-100000", "5 6 7 8 9");
+        xassert_search($this->u_root, "5- XOR 10-100000", "5 6 7 8 9");
+        xassert_search($this->u_root, "8-,7-,6-,5- XOR 10-100000", "5 6 7 8 9");
     }
 
     function test_review_term_to_round_mask() {
@@ -91,7 +95,7 @@ class Search_Tester {
         xassert_eqq($this->conf->round_number("R2"), 2);
         xassert_eqq($rl[3], "R3");
 
-        $u = $this->conf->root_user();
+        $u = $this->u_root;
         $st = (new PaperSearch($u, "hello"))->main_term();
         xassert_eqq(Review_SearchTerm::term_round_mask($st), [0, true]);
 
@@ -121,7 +125,7 @@ class Search_Tester {
     }
 
     function test_term_phase() {
-        $u = $this->conf->root_user();
+        $u = $this->u_root;
         $st = (new PaperSearch($u, "phase:final"))->main_term();
         xassert_eqq(Phase_SearchTerm::term_phase($st), PaperInfo::PHASE_FINAL);
         $st = (new PaperSearch($u, "phase:review"))->main_term();
@@ -139,7 +143,7 @@ class Search_Tester {
     }
 
     function test_all() {
-        $u = $this->conf->root_user();
+        $u = $this->u_root;
         $base_ids = (new PaperSearch($u, ""))->paper_ids();
         $ids = (new PaperSearch($u, "all"))->paper_ids();
         xassert_eqq($ids, $base_ids);
@@ -197,7 +201,7 @@ class Search_Tester {
     }
 
     function test_equal_quote() {
-        $u = $this->conf->root_user();
+        $u = $this->u_root;
         xassert_search($u, "ti:\"scalable timers\"", 1);
         xassert_search($u, "ti=\"scalable timers\"", 1);
     }
@@ -224,5 +228,34 @@ class Search_Tester {
         xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [true, false, true, true, ["type" => "x"]]), ["type" => "not", "child" => [["type" => "x"]]]);
         xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [true, false, true, ["type" => "x"]]), ["type" => "x"]);
         xassert_eqq(Op_SearchTerm::combine_script_expressions("xor", [true, false, false, ["type" => "x"], ["type" => "y"]]), ["type" => "xor", "child" => [["type" => "x"], ["type" => "y"], true]]);
+    }
+
+    function test_named_searches() {
+        $sv = (new SettingValues($this->u_root))->add_json_string('{
+            "named_search": [
+                {"name": "foo", "search": "#fart OR #faart"},
+                {"name": "bar", "search": "#bar OR #baar"}
+            ]
+        }');
+        xassert($sv->execute());
+
+        $ns = $this->conf->setting_json("named_searches");
+        $n = 0;
+        foreach ($this->conf->setting_json("named_searches") as $nsj) {
+            if ($nsj->name === "bar") {
+                xassert_eqq($nsj->q, "#bar OR #baar");
+                ++$n;
+            } else if ($nsj->name === "foo") {
+                xassert_eqq($nsj->q, "#fart OR #faart");
+                ++$n;
+            }
+        }
+        xassert_eqq($n, 2);
+
+        $srch = new PaperSearch($this->u_root, "ss:foo OR #faaart THEN ss:bar OR #baaar");
+        $tas = $srch->group_list();
+        xassert_eqq(count($tas), 2);
+        xassert_eqq($tas[0]->heading, "ss:foo OR #faaart");
+        xassert_eqq($tas[1]->heading, "ss:bar OR #baaar");
     }
 }

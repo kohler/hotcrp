@@ -1154,10 +1154,11 @@
     },
     {   "name_pattern": "named_search/$/title", "internal": true, "parser_class": "NamedSearch_SettingParser"   },
     {
-        "name_pattern": "named_search/$/q",
+        "name_pattern": "named_search/$/search",
         "title": "/Search",
-        "type": "string", "subtype": "search"
+        "type": "string", "subtype": "search", "storage": "member.q"
     },
+    {   "name_pattern": "named_search/$/q", "alias_pattern": "named_search/$/search"   },
     {
         "name_pattern": "named_search/$/display",
         "title": "/Display",

@@ -1003,7 +1003,7 @@ class PaperList {
         if ($this->_sort_etag !== "") {
             $groups = $this->_sort_etag_anno_groups();
         } else {
-            $groups = $this->search->paper_groups();
+            $groups = $this->search->group_list();
         }
         if (!empty($groups)) {
             $this->_collect_groups($rowset->as_list(), $groups);

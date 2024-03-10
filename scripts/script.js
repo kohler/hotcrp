@@ -2965,13 +2965,12 @@ function $popup(options) {
         $(forme).find(".msg-error, .feedback, .feedback-list").remove();
         const gmlist = [];
         let e;
-        for (let mx of data.message_list) {
-            if (mx.field
-                && (e = forme.elements[mx.field])
-                && append_feedback_near(e, mx)) {
-                continue;
+        for (let mx of data.message_list || []) {
+            if (!mx.field
+                || !(e = forme.elements[mx.field])
+                || !append_feedback_near(e, mx)) {
+                gmlist.push(mx);
             }
-            gmlist.push(mx);
         }
         if (gmlist.length) {
             $(forme).find("h2").after(render_message_list(gmlist));
@@ -12986,8 +12985,8 @@ handle_ui.on("js-edit-namedsearches", function () {
                     "aria-label": "Delete search"
                 }, svge_use_licon("trash")));
             qentry.append($e("textarea", {
-                    id: "k-named_search/" + count + "/q",
-                    "name": "named_search/" + count + "/q",
+                    id: "k-named_search/" + count + "/search",
+                    "name": "named_search/" + count + "/search",
                     "class": "editsearches-query need-autogrow w-99",
                     rows: 1, cols: 64, placeholder: "(All)"
                 }, f.q))
@@ -12998,7 +12997,7 @@ handle_ui.on("js-edit-namedsearches", function () {
         return $e("fieldset", {"class": "editsearches-search", "data-search-number": count},
             nentry,
             $e("div", "entryi",
-                $e("label", {"for": "k-named_search/" + count + "/q"}, "Search"),
+                $e("label", {"for": "k-named_search/" + count + "/search"}, "Search"),
                 qentry),
             hidden_input("named_search/" + count + "/id", f.id || f.name));
     }
@@ -13057,8 +13056,7 @@ handle_ui.on("js-edit-namedsearches", function () {
         $pu.show().on("click", "button", click).on("submit", submit).show_errors(data);
     }
     $.get(hoturl("=api/namedsearch"), function (data) {
-        if (data.ok)
-            create(data);
+        data.ok && create(data);
     });
 });
 
