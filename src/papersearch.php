@@ -815,9 +815,6 @@ class PaperSearch extends MessageSet {
             foreach ($sa->child as $sac) {
                 $child[] = $this->_parse_atom($sac, $str, $scope, $depth);
             }
-            if ($sa->op->type === "+" || $sa->op->type === "(") {
-                return $child[0];
-            }
             $st = SearchTerm::combine_in($sa->op, $this->_string_context, ...$child);
         } else if ($sa->kword === null && $sa->text === "") {
             $st = new True_SearchTerm;
@@ -831,7 +828,7 @@ class PaperSearch extends MessageSet {
             $sword = SearchWord::make_kwarg($sa->text, $sa->kwpos1, $sa->pos1, $sa->pos2, $this->_string_context);
             $st = $this->_search_word($sa->kword ?? "", $sword, $scope);
         }
-        if ($st && !$st->is_uninteresting()) {
+        if ($st) {
             $st->apply_strspan($sa->kwpos1, $sa->pos2, $this->_string_context);
         }
         return $st;
@@ -1233,6 +1230,42 @@ class PaperSearch extends MessageSet {
         return $this->_then_term;
     }
 
+    /** @param ?SearchAtom $a
+     * @return array{int,int} */
+    private static function strip_show_atom($a) {
+        if (!$a
+            || ($a->kword && in_array($a->kword, ["show", "hide", "edit", "sort", "showsort", "editsort"]))) {
+            return [0, 0];
+        }
+        if (!$a->kword && !$a->op->unary) {
+            $pos1 = $pos2 = null;
+            foreach ($a->child as $ch) {
+                $span = self::strip_show_atom($ch);
+                if ($span[0] >= $span[1]) {
+                    continue;
+                }
+                if ($pos1 === null || $pos1 > $span[0]) {
+                    $pos1 = $span[0];
+                }
+                if ($pos2 === null || $pos2 < $span[1]) {
+                    $pos2 = $span[1];
+                }
+            }
+            if ($pos1 !== null) {
+                return [$pos1, $pos2];
+            }
+        }
+        return [$a->kwpos1, $a->pos2];
+    }
+
+    /** @param string $q
+     * @return string */
+    private static function strip_show($q) {
+        $splitter = new SearchSplitter($q, 0, strlen($q));
+        $span = self::strip_show_atom($splitter->parse_expression());
+        return $span[0] < $span[1] ? substr($q, $span[0], $span[1] - $span[0]) : "";
+    }
+
     /** @return list<TagAnno> */
     function group_list() {
         $this->_prepare();
@@ -1240,12 +1273,14 @@ class PaperSearch extends MessageSet {
             $groups = $this->_then_term->group_terms();
             if (count($groups) > 1) {
                 $gs = [];
-                foreach ($groups as $i => $ch) {
-                    $spanstr = $ch->get_float("strspan_owner") ?? $this->q;
-                    $srch = rtrim(substr($spanstr, $ch->pos1 ?? 0, ($ch->pos2 ?? 0) - ($ch->pos1 ?? 0)));
+                foreach ($groups as $ch) {
+                    $srchstr = $ch->source_subquery($this->q);
+                    if ($ch->get_float("view")) {
+                        $srchstr = self::strip_show($srchstr);
+                    }
                     $h = $ch->get_float("legend");
-                    $ta = TagAnno::make_legend($h ?? $srch);
-                    $ta->set_prop("search", $srch);
+                    $ta = TagAnno::make_legend($h ?? $srchstr);
+                    $ta->set_prop("search", $srchstr);
                     $gs[] = $ta;
                 }
                 return $gs;

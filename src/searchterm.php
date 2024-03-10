@@ -92,11 +92,6 @@ abstract class SearchTerm {
         return null;
     }
 
-    /** @return bool */
-    function is_uninteresting() {
-        return false;
-    }
-
     /** @param string $k */
     final function set_float($k, $v) {
         $this->float[$k] = $v;
@@ -132,6 +127,30 @@ abstract class SearchTerm {
         $this->string_context = $term->string_context;
         $this->float = $term->float;
         return $this;
+    }
+
+    /** @param ?SearchStringContext $context
+     * @return ?array{int,int} */
+    function strspan_in($context) {
+        if ($this->pos1 === null) {
+            return null;
+        }
+        $pos1 = $this->pos1;
+        $pos2 = $this->pos2;
+        $tcontext = $this->string_context;
+        while ($tcontext && $tcontext !== $context) {
+            $pos1 = $tcontext->ppos1;
+            $pos2 = $tcontext->ppos2;
+            $tcontext = $tcontext->parent;
+        }
+        return $tcontext === $context ? [$pos1, $pos2] : null;
+    }
+
+    /** @param string $q
+     * @return string */
+    final function source_subquery($q) {
+        $q = $this->string_context ? $this->string_context->q : $q;
+        return $this->pos1 !== null ? substr($q, $this->pos1, $this->pos2 - $this->pos1) : $q;
     }
 
     /** @return bool */
@@ -287,9 +306,6 @@ class True_SearchTerm extends SearchTerm {
     function __construct() {
         parent::__construct("true");
     }
-    function is_uninteresting() {
-        return count($this->float) === 1 && isset($this->float["view"]);
-    }
     function simple_search(&$options) {
         return true;
     }
@@ -338,18 +354,8 @@ abstract class Op_SearchTerm extends SearchTerm {
                 $this->float[$k] = $v;
             }
         }
-        if ($term->pos1 !== null) {
-            $tpos1 = $term->pos1;
-            $tpos2 = $term->pos2;
-            $tcontext = $term->string_context;
-            while ($tcontext && $tcontext !== $context) {
-                $tpos1 = $tcontext->ppos1;
-                $tpos2 = $tcontext->ppos2;
-                $tcontext = $tcontext->parent;
-            }
-            if ($tcontext === $context) {
-                $this->apply_strspan($tpos1, $tpos2, $context);
-            }
+        if (($span = $term->strspan_in($context))) {
+            $this->apply_strspan($span[0], $span[1], $context);
         }
         return $this;
     }
