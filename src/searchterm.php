@@ -47,9 +47,8 @@ abstract class SearchTerm {
             assert($name === "then" || $name === "highlight");
             $qr = new Then_SearchTerm($op);
         }
-        $qr->string_context = $string_context;
         foreach ($terms as $qt) {
-            $qr->append($qt);
+            $qr->append_in($qt, $string_context);
         }
         return $qr->_finish();
     }
@@ -57,7 +56,7 @@ abstract class SearchTerm {
     /** @return SearchTerm */
     function negate() {
         $qr = new Not_SearchTerm;
-        return $qr->append($this)->_finish();
+        return $qr->append_in($this, $this->string_context)->_finish();
     }
 
     /** @param bool $negate
@@ -123,6 +122,16 @@ abstract class SearchTerm {
                 $this->pos2 = $pos2;
             }
         }
+    }
+
+    /** @param SearchTerm $term
+     * @return $this */
+    protected function assign_context($term) {
+        $this->pos1 = $term->pos1;
+        $this->pos2 = $term->pos2;
+        $this->string_context = $term->string_context;
+        $this->float = $term->float;
+        return $this;
     }
 
     /** @return bool */
@@ -308,26 +317,38 @@ abstract class Op_SearchTerm extends SearchTerm {
     function __construct($type) {
         parent::__construct($type);
     }
-    /** @param SearchTerm $term */
-    protected function append($term) {
-        if ($term) {
-            foreach ($term->float as $k => $v) {
-                if ($k === "view" && $this->type === "then") {
-                    $v = SearchViewCommand::strip_sorts($v);
-                }
-                if ($k === "view" || $k === "tags") {
-                    if (!isset($this->float[$k])) {
-                        $this->float[$k] = $v;
-                    } else {
-                        array_splice($this->float[$k], count($this->float[$k]), 0, $v);
-                    }
-                } else {
-                    $this->float[$k] = $v;
-                }
+    /** @param SearchTerm $term
+     * @param ?SearchStringContext $context */
+    protected function append_in($term, $context) {
+        if (!$term) {
+            return $this;
+        }
+        $this->child[] = $term;
+        foreach ($term->float as $k => $v) {
+            if ($k === "view" && $this->type === "then") {
+                $v = SearchViewCommand::strip_sorts($v);
             }
-            $this->child[] = $term;
-            if ($term->string_context === $this->string_context && $term->pos1 !== null) {
-                $this->apply_strspan($term->pos1, $term->pos2, $term->string_context);
+            if ($k === "view" || $k === "tags") {
+                if (!isset($this->float[$k])) {
+                    $this->float[$k] = $v;
+                } else {
+                    array_splice($this->float[$k], count($this->float[$k]), 0, $v);
+                }
+            } else {
+                $this->float[$k] = $v;
+            }
+        }
+        if ($term->pos1 !== null) {
+            $tpos1 = $term->pos1;
+            $tpos2 = $term->pos2;
+            $tcontext = $term->string_context;
+            while ($tcontext && $tcontext !== $context) {
+                $tpos1 = $tcontext->ppos1;
+                $tpos2 = $tcontext->ppos2;
+                $tcontext = $tcontext->parent;
+            }
+            if ($tcontext === $context) {
+                $this->apply_strspan($tpos1, $tpos2, $context);
             }
         }
         return $this;
@@ -350,15 +371,11 @@ abstract class Op_SearchTerm extends SearchTerm {
     /** @param list<SearchTerm> $newchild
      * @param bool $any */
     protected function _finish_combine($newchild, $any) {
-        $qr = null;
         if (!$newchild) {
-            $qr = $any ? new True_SearchTerm : new False_SearchTerm;
-        } else if (count($newchild) == 1) {
-            $qr = clone $newchild[0];
-        }
-        if ($qr) {
-            $qr->float = $this->float;
-            return $qr;
+            $qe = $any ? new True_SearchTerm : new False_SearchTerm;
+            return $qe->assign_context($this);
+        } else if (count($newchild) === 1) {
+            return (clone $newchild[0])->assign_context($this);
         } else {
             $this->child = $newchild;
             return $this;
@@ -474,12 +491,7 @@ class Not_SearchTerm extends Op_SearchTerm {
         } else if ($qv instanceof Not_SearchTerm) {
             $qr = clone $qv->child[0];
         }
-        if ($qr) {
-            $qr->float = $this->float;
-            return $qr;
-        } else {
-            return $this;
-        }
+        return $qr ? $qr->assign_context($this) : $this;
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
@@ -514,9 +526,7 @@ class And_SearchTerm extends Op_SearchTerm {
         $any = false;
         foreach ($this->_flatten_children() as $qv) {
             if ($qv instanceof False_SearchTerm) {
-                $qr = new False_SearchTerm;
-                $qr->float = $this->float;
-                return $qr;
+                return (new False_SearchTerm)->assign_context($this);
             } else if ($qv instanceof True_SearchTerm) {
                 $any = true;
             } else if ($qv->type === "pn" && $this->type === "space") {
@@ -579,9 +589,7 @@ class Or_SearchTerm extends Op_SearchTerm {
         $newchild = [];
         foreach ($this->_flatten_children() as $qv) {
             if ($qv instanceof True_SearchTerm) {
-                $qe = new True_SearchTerm;
-                $qe->float = $this->float;
-                return $qe;
+                return (new True_SearchTerm)->assign_context($this);
             } else if ($qv instanceof False_SearchTerm) {
                 // skip
             } else if ($qv->type === "pn") {

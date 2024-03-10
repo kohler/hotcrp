@@ -24,11 +24,13 @@ class SearchScope {
 
 class SearchStringContext {
     /** @var string */
-    public $subcontext;
+    public $q;
     /** @var int */
     public $ppos1;
     /** @var int */
     public $ppos2;
+    /** @var int */
+    public $depth;
     /** @var ?SearchStringContext */
     public $parent;
 }
@@ -465,7 +467,7 @@ class PaperSearch extends MessageSet {
         $mi->pos2 = $pos2;
         $mis = [$mi];
         while ($context) {
-            $mi->context = $context->subcontext;
+            $mi->context = $context->q;
             $mi = MessageItem::inform("");
             $mi->landmark = "<5>→ <em>expanded from</em> ";
             $mi->pos1 = $context->ppos1;
@@ -632,21 +634,18 @@ class PaperSearch extends MessageSet {
             $srch->lwarning($sword, "<0>Named search not found");
         } else if (!($nextq = $srch->_expand_named_search($word, $sj))) {
             $srch->lwarning($sword, "<0>Named search defined incorrectly");
+        } else if ($srch->_string_context && $srch->_string_context->depth >= 10) {
+            $srch->lwarning($sword, "<0>Circular reference in named search definitions");
         } else {
             $context = new SearchStringContext;
-            $context->subcontext = $nextq;
+            $context->q = $nextq;
             $context->ppos1 = $sword->kwpos1;
             $context->ppos2 = $sword->pos2;
+            $context->depth = $srch->_string_context ? $srch->_string_context->depth + 1 : 1;
             $context->parent = $srch->_string_context;
-            for ($n = 0, $c = $context; $c; ++$n, $c = $c->parent) {
-            }
-            if ($n >= 10) {
-                $srch->lwarning($sword, "<0>Circular reference in named search definitions");
-            } else {
-                $srch->_string_context = $context;
-                $qe = $srch->_search_expression($nextq);
-                $srch->_string_context = $context->parent;
-            }
+            $srch->_string_context = $context;
+            $qe = $srch->_search_expression($nextq);
+            $srch->_string_context = $context->parent;
         }
         return $qe ?? new False_SearchTerm;
     }
