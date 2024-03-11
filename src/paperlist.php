@@ -1003,7 +1003,7 @@ class PaperList {
         if ($this->_sort_etag !== "") {
             $groups = $this->_sort_etag_anno_groups();
         } else {
-            $groups = $this->search->group_list();
+            $groups = $this->search->group_anno_list();
         }
         if (!empty($groups)) {
             $this->_collect_groups($rowset->as_list(), $groups);
@@ -2074,6 +2074,7 @@ class PaperList {
         if ($this->_sort_etag !== "") {
             return "tagval:{$this->_sort_etag}";
         }
+        // XXX should check that `then_term` is not complex
         $thenqe = $this->search->then_term();
         $groups = $thenqe ? $thenqe->group_terms() : [];
         if (count($groups) < 2) {

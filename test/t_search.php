@@ -270,9 +270,10 @@ class Search_Tester {
         xassert_eqq($n, 2);
 
         $srch = new PaperSearch($this->u_root, "ss:foo OR #faaart THEN ss:bar OR #baaar");
-        $tas = $srch->group_list();
+        $tas = $srch->group_anno_list();
         xassert_eqq(count($tas), 2);
         xassert_eqq($tas[0]->heading, "ss:foo OR #faaart");
         xassert_eqq($tas[1]->heading, "ss:bar OR #baaar");
     }
+
 }

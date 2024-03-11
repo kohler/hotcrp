@@ -280,6 +280,12 @@ abstract class SearchTerm {
     function prepare_visit($param, PaperSearch $srch) {
     }
 
+    /** @param int $group
+     * @return SearchTerm */
+    function group_slice_term($group) {
+        return $this;
+    }
+
     /** @param bool $top
      * @param PaperList $pl
      * @return ?PaperColumn */
@@ -612,6 +618,22 @@ class And_SearchTerm extends Op_SearchTerm {
         }
         return parent::merge_highlight_lists($hl, $row);
     }
+    function group_slice_term($group) {
+        if (!isset($this->float["ge"])) {
+            return $this;
+        }
+        $newchild = [];
+        $ft = false;
+        foreach ($this->child as $ch) {
+            if (isset($ch->float["ge"]) && !$ft) {
+                $newchild[] = $ch->group_slice_term($group);
+                $ft = true;
+            } else {
+                $newchild[] = $ch;
+            }
+        }
+        return SearchTerm::combine_in($this->type, $this->string_context, ...$newchild);
+    }
     function default_sort_column($top, $pl) {
         $s = null;
         foreach ($this->child as $qv) {
@@ -819,6 +841,11 @@ class Then_SearchTerm extends Op_SearchTerm {
         return $visitor($this, ...$x);
     }
 
+    /** @return int */
+    function ngroups() {
+        return $this->_group_offsets[$this->nthen];
+    }
+
     /** @return list<SearchTerm> */
     function group_terms() {
         $gt = [];
@@ -880,6 +907,38 @@ class Then_SearchTerm extends Op_SearchTerm {
             }
         }
         return $hl;
+    }
+    function group_slice_term($group) {
+        if (!isset($this->float["ge"])) {
+            return $this;
+        }
+        $g = 0;
+        while ($g !== $this->nthen && $group >= $this->_group_offsets[$g + 1]) {
+            ++$g;
+        }
+        if ($g < $this->nthen) {
+            // XXX This loses information about HIGHLIGHTs, which is probably OK for now
+            return $this->child[$g]->group_slice_term($group - $this->_group_offsets[$g]);
+        } else {
+            return new False_SearchTerm;
+        }
+    }
+    /** @param int $group
+     * @return ?SearchTerm */
+    function group_head_term($group) {
+        $g = 0;
+        while ($g !== $this->nthen && $group >= $this->_group_offsets[$g + 1]) {
+            ++$g;
+        }
+        if ($g < $this->nthen) {
+            if (($thench = $this->_nested_thens[$g])) {
+                return $thench->group_head_term($group - $this->_group_offsets[$g]);
+            } else {
+                return $this->child[$g];
+            }
+        } else {
+            return null;
+        }
     }
     function script_expression(PaperInfo $row, $about) {
         $sexprs = [];

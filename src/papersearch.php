@@ -248,6 +248,8 @@ class PaperSearch extends MessageSet {
     private $_then_map;
     /** @var ?array<int,list<string>> */
     private $_highlight_map;
+    /** @var ?list<SearchTerm> */
+    private $_group_slice_terms;
 
     static public $search_type_names = [
         "a" => "Your submissions",
@@ -338,6 +340,7 @@ class PaperSearch extends MessageSet {
     private function clear_compilation() {
         $this->clear_messages();
         $this->_qe = null;
+        $this->_then_term = null;
         $this->_match_preg = null;
         $this->_match_preg_query = null;
         $this->_contact_searches = null;
@@ -1040,7 +1043,10 @@ class PaperSearch extends MessageSet {
             // extract regular expressions
             $param = new PaperSearchPrepareParam;
             $this->_qe->prepare_visit($param, $this);
+
+            // extract group information
             $this->_then_term = $this->_qe->get_float("ge");
+            $this->_group_slice_terms = null;
         }
         return $this->_qe;
     }
@@ -1204,6 +1210,7 @@ class PaperSearch extends MessageSet {
 
     /** @return ?Then_SearchTerm */
     function then_term() {
+        $this->_prepare();
         return $this->_then_term;
     }
 
@@ -1244,29 +1251,24 @@ class PaperSearch extends MessageSet {
     }
 
     /** @return list<TagAnno> */
-    function group_list() {
+    function group_anno_list() {
         $this->_prepare();
-        if ($this->_then_term) {
-            $groups = $this->_then_term->group_terms();
-            if (count($groups) > 1) {
-                $gs = [];
-                foreach ($groups as $ch) {
-                    $srchstr = $ch->source_subquery($this->q);
-                    if ($ch->get_float("view")) {
-                        $srchstr = self::strip_show($srchstr);
-                    }
-                    $h = $ch->get_float("legend");
-                    $ta = TagAnno::make_legend($h ?? $srchstr);
-                    $ta->set_prop("search", $srchstr);
-                    $gs[] = $ta;
+        if (($ng = $this->ngroups()) > 1) {
+            $gs = [];
+            for ($i = 0; $i !== $ng; ++$i) {
+                $ch = $this->_then_term->group_head_term($i);
+                $srchstr = $ch->source_subquery($this->q);
+                if ($ch->get_float("view")) {
+                    $srchstr = self::strip_show($srchstr);
                 }
-                return $gs;
+                $h = $ch->get_float("legend");
+                $ta = TagAnno::make_legend($h ?? $srchstr);
+                $ta->set_prop("search", $srchstr);
+                $gs[] = $ta;
             }
-            $qe1 = $this->_then_term->child[0];
-        } else {
-            $qe1 = $this->_qe;
+            return $gs;
         }
-        if (($h = $qe1->get_float("legend"))) {
+        if (($h = $this->_qe->get_float("legend"))) {
             return [TagAnno::make_legend($h)];
         } else {
             return [];
@@ -1278,6 +1280,27 @@ class PaperSearch extends MessageSet {
     function paper_group_index($pid) {
         $this->_prepare();
         return $this->_then_map[$pid] ?? null;
+    }
+
+    /** @return int */
+    function ngroups() {
+        $this->_prepare();
+        return $this->_then_term ? $this->_then_term->ngroups() : 1;
+    }
+
+    /** @return list<SearchTerm> */
+    function group_slice_terms() {
+        $this->_prepare();
+        if (($ng = $this->ngroups()) === 1) {
+            return [$this->_qe];
+        }
+        if ($this->_group_slice_terms === null) {
+            $this->_group_slice_terms = [];
+            for ($g = 0; $g !== $ng; ++$g) {
+                $this->_group_slice_terms[] = $this->_qe->group_slice_term($g);
+            }
+        }
+        return $this->_group_slice_terms;
     }
 
     /** @return array<int,int> */
