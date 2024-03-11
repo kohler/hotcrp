@@ -72,7 +72,24 @@ class Search_Tester {
         xassert_eqq($h[8], ["green"]);
         xassert_eqq($h[9] ?? [], []);
         xassert_eqq($h[10] ?? [], []);
-        xassert(!array_key_exists(11, $h));
+        xassert(!array_key_exists(11, $h ?? []));
+    }
+
+    function test_nested_highlight() {
+        $srch = new PaperSearch($this->u_root, "(1-10 AND Scalable HIGHLIGHT:pink) OR (2 4 6 8 10 HIGHLIGHT:blue)");
+        $h = $srch->highlights_by_paper_id();
+        xassert_neqq($h, null);
+        xassert_eqq($h[1], ["pink"]);
+        xassert_eqq($h[2], ["blue"]);
+        xassert_eqq($h[3] ?? [], []);
+        xassert_eqq($h[4], ["pink", "blue"]);
+        xassert_eqq($h[5] ?? [], []);
+        xassert_eqq($h[6], ["blue"]);
+        xassert_eqq($h[7] ?? [], []);
+        xassert_eqq($h[8], ["blue"]);
+        xassert_eqq($h[9] ?? [], []);
+        xassert_eqq($h[10], ["blue"]);
+        xassert(!array_key_exists(11, $h ?? []));
     }
 
     function test_xor() {
