@@ -1179,7 +1179,7 @@ class PaperSearch extends MessageSet {
         // filter papers
         $thqe = $this->_then_term;
         $this->_then_map = [];
-        if ($thqe && $thqe->has_highlight()) {
+        if ($qe->get_float("hl")) {
             $this->_highlight_map = [];
         }
         foreach ($rowset as $row) {
@@ -1189,7 +1189,7 @@ class PaperSearch extends MessageSet {
                 $this->_matches[] = $row->paperId;
                 $this->_then_map[$row->paperId] = $thqe ? $thqe->_last_group() : 0;
                 if ($this->_highlight_map !== null
-                    && ($hls = $thqe->_last_highlights($row)) !== []) {
+                    && ($hls = $qe->highlight_list($row)) !== []) {
                     $this->_highlight_map[$row->paperId] = $hls;
                 }
             }

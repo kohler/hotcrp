@@ -231,6 +231,33 @@ abstract class SearchTerm {
      * @return bool */
     abstract function test(PaperInfo $row, $xinfo);
 
+    /** @return list<string> */
+    function highlight_list(PaperInfo $row) {
+        return [];
+    }
+
+    /** @param list<SearchTerm> $terms
+     * @param PaperInfo $row
+     * @return list<string> */
+    static protected function merge_highlight_lists($terms, $row) {
+        $hl = [];
+        foreach ($terms as $qe) {
+            if (isset($qe->float["hl"])
+                && ($qehl = $qe->highlight_list($row))) {
+                if (empty($hl)) {
+                    $hl = $qehl;
+                } else {
+                    foreach ($qehl as $h) {
+                        if (!in_array($h, $hl)) {
+                            $hl[] = $h;
+                        }
+                    }
+                }
+            }
+        }
+        return $hl;
+    }
+
 
     /** @param callable(SearchTerm,...):mixed $visitor
      * @return mixed */
@@ -341,14 +368,16 @@ abstract class Op_SearchTerm extends SearchTerm {
         }
         $this->child[] = $term;
         foreach ($term->float as $k => $v) {
-            if ($k === "view" && $this->type === "then") {
-                $v = SearchViewCommand::strip_sorts($v);
-            }
-            if ($k === "view" || $k === "tags") {
-                if (!isset($this->float[$k])) {
+            if ($k === "view") {
+                if ($this->type === "then") {
+                    $v = SearchViewCommand::strip_sorts($v);
+                }
+                $this->float[$k] = array_merge($this->float[$k] ?? [], $v);
+            } else if ($k === "tags") {
+                $this->float[$k] = array_merge($this->float[$k] ?? [], $v);
+            } else if ($k === "hl") {
+                if ($this->type !== "not") {
                     $this->float[$k] = $v;
-                } else {
-                    array_splice($this->float[$k], count($this->float[$k]), 0, $v);
                 }
             } else {
                 $this->float[$k] = $v;
@@ -562,6 +591,17 @@ class And_SearchTerm extends Op_SearchTerm {
         }
         return true;
     }
+    function highlight_list(PaperInfo $row) {
+        $hl = [];
+        foreach ($this->child as $ch) {
+            if ($ch->test($row, null)) {
+                $hl[] = $ch;
+            } else {
+                return [];
+            }
+        }
+        return parent::merge_highlight_lists($hl, $row);
+    }
     function default_sort_column($top, $pl) {
         $s = null;
         foreach ($this->child as $qv) {
@@ -640,6 +680,15 @@ class Or_SearchTerm extends Op_SearchTerm {
         }
         return false;
     }
+    function highlight_list(PaperInfo $row) {
+        $hl = [];
+        foreach ($this->child as $ch) {
+            if ((empty($hl) || $ch->get_float("hl"))
+                && $ch->test($row, null))
+                $hl[] = $ch;
+        }
+        return empty($hl) ? [] : parent::merge_highlight_lists($hl, $row);
+    }
 }
 
 class Xor_SearchTerm extends Op_SearchTerm {
@@ -679,32 +728,25 @@ class Xor_SearchTerm extends Op_SearchTerm {
         }
         return $x;
     }
-}
-
-class Highlight_SearchInfo {
-    /** @var int */
-    public $pos;
-    /** @var int */
-    public $count;
-    /** @var string */
-    public $color;
-
-    function __construct($pos, $count, $color) {
-        $this->pos = $pos;
-        $this->count = $count;
-        $this->color = $color;
+    function highlight_list(PaperInfo $row) {
+        $hl = [];
+        foreach ($this->child as $ch) {
+            if ($ch->test($row, null))
+                $hl[] = $ch;
+        }
+        return count($hl) % 2 ? parent::merge_highlight_lists($hl, $row) : [];
     }
 }
 
 class Then_SearchTerm extends Op_SearchTerm {
     /** @var bool */
     private $is_highlight;
-    /** @var ?string */
-    private $subtype;
+    /** @var string */
+    private $color;
     /** @var int */
     private $nthen = 0;
-    /** @var list<Highlight_SearchInfo> */
-    private $hlinfo = [];
+    /** @var list<string> */
+    private $_colors = [];
     /** @var list<?Then_SearchTerm> */
     private $_nested_thens = [];
     /** @var list<int> */
@@ -716,43 +758,37 @@ class Then_SearchTerm extends Op_SearchTerm {
         assert($op->type === "then" || $op->type === "highlight");
         parent::__construct("then");
         $this->is_highlight = $op->type === "highlight";
-        $this->subtype = $op->subtype;
+        $this->color = $this->is_highlight ? strtolower($op->subtype ?? "") : "";
     }
     protected function _finish() {
-        $subtype = strtolower($this->subtype ?? "");
-        $newvalues = $newhvalues = $newhinfo = [];
-
-        foreach ($this->child as $qvidx => $qv) {
-            if ($qv && $qvidx > 0 && $this->is_highlight) {
-                if ($qv instanceof Then_SearchTerm) {
-                    for ($i = 0; $i < $qv->nthen; ++$i) {
-                        $newhvalues[] = $qv->child[$i];
-                        $newhinfo[] = new Highlight_SearchInfo(0, count($newvalues), $subtype);
-                    }
+        $newchild = [];
+        foreach ($this->child as $qv) {
+            if (!($qv instanceof Then_SearchTerm)) {
+                $newchild[] = $qv;
+            } else if ($this->is_highlight) {
+                if (empty($newchild)) {
+                    $newchild = $qv->child;
+                    $this->nthen = $qv->nthen;
+                    $this->_colors = $qv->_colors;
                 } else {
-                    $newhvalues[] = $qv;
-                    $newhinfo[] = new Highlight_SearchInfo(0, count($newvalues), $subtype);
+                    $newchild[] = $qv;
                 }
-            } else if ($qv && $qv instanceof Then_SearchTerm) {
-                $pos = count($newvalues);
-                for ($i = 0; $i < $qv->nthen; ++$i) {
-                    $newvalues[] = $qv->child[$i];
-                }
-                for ($i = $qv->nthen; $i < count($qv->child); ++$i) {
-                    $newhvalues[] = $qv->child[$i];
-                }
-                foreach ($qv->hlinfo as $hinfo) {
-                    $newhinfo[] = new Highlight_SearchInfo($pos, $hinfo->count, $hinfo->color);
-                }
-            } else if ($qv) {
-                $newvalues[] = $qv;
+            } else if ($qv->nthen === count($qv->child)) {
+                array_push($newchild, ...$qv->child);
+            } else {
+                $newchild[] = $qv;
+            }
+            if (!$this->is_highlight || $this->nthen === 0) {
+                $this->nthen = count($newchild);
             }
         }
-
-        $this->child = $newvalues;
-        $this->nthen = count($newvalues);
-        array_splice($this->child, $this->nthen, 0, $newhvalues);
-        $this->hlinfo = $newhinfo;
+        $this->child = $newchild;
+        if ($this->nthen < count($this->child)) {
+            $this->set_float("hl", true);
+        }
+        while ($this->nthen + count($this->_colors) < count($this->child)) {
+            $this->_colors[] = $this->color;
+        }
         return $this;
     }
     function prepare_visit($param, PaperSearch $srch) {
@@ -825,6 +861,26 @@ class Then_SearchTerm extends Op_SearchTerm {
         }
         return false;
     }
+    function highlight_list(PaperInfo $row) {
+        $match = null;
+        for ($i = 0; $i !== $this->nthen; ++$i) {
+            if ($this->child[$i]->test($row, null)) {
+                $match = $this->child[$i];
+                break;
+            }
+        }
+        if (!$match) {
+            return [];
+        }
+        $hl = isset($match->float["hl"]) ? $match->highlight_list($row) : [];
+        for ($i = $this->nthen; $i !== count($this->child); ++$i) {
+            if (!in_array($this->_colors[$i - $this->nthen], $hl)
+                && $this->child[$i]->test($row, null)) {
+                $hl[] = $this->_colors[$i - $this->nthen];
+            }
+        }
+        return $hl;
+    }
     function script_expression(PaperInfo $row, $about) {
         $sexprs = [];
         for ($i = 0; $i !== $this->nthen; ++$i) {
@@ -833,39 +889,11 @@ class Then_SearchTerm extends Op_SearchTerm {
         return self::combine_script_expressions("or", $sexprs);
     }
 
-    /** @return bool */
-    function has_highlight() {
-        if ($this->nthen < count($this->child)) {
-            return true;
-        }
-        foreach ($this->_nested_thens as $thench) {
-            if ($thench && $thench->has_highlight()) {
-                return true;
-            }
-        }
-        return false;
-    }
     /** @return int */
     function _last_group() {
         $g = $this->_last_group;
         $thench = $this->_nested_thens[$g];
         return $this->_group_offsets[$g] + ($thench ? $thench->_last_group() : 0);
-    }
-    /** @return list<string> */
-    function _last_highlights(PaperInfo $row) {
-        $g = $this->_last_group;
-        $hls = [];
-        foreach ($this->hlinfo as $i => $hl) {
-            if ($g >= $hl->pos
-                && $g < $hl->pos + $hl->count
-                && $this->child[$this->nthen + $i]->test($row, null)) {
-                $hls[] = $hl->color;
-            }
-        }
-        if (($thench = $this->_nested_thens[$g])) {
-            array_push($hls, ...$thench->_last_highlights($row));
-        }
-        return $hls;
     }
 
     function debug_json() {
@@ -873,22 +901,11 @@ class Then_SearchTerm extends Op_SearchTerm {
         foreach ($this->child as $qv) {
             $a[] = $qv->debug_json();
         }
-        if ($this->nthen === count($this->child)) {
-            return ["type" => $this->type, "child" => $a];
-        } else {
-            assert(count($this->child) === $this->nthen + count($this->hlinfo));
-            $j = [
-                "type" => $this->type,
-                "child" => array_slice($a, 0, $this->nthen),
-                "highlights" => []
-            ];
-            foreach ($this->hlinfo as $i => $hl) {
-                $h = get_object_vars($hl);
-                $h["search"] = $a[$this->nthen + $i];
-                $j["highlights"][] = $h;
-            }
-            return $j;
+        $j = ["type" => $this->type, "child" => array_slice($a, 0, $this->nthen)];
+        for ($i = $this->nthen; $i !== count($this->child); ++$i) {
+            $j["highlights"][] = ["search" => $a[$i], "color" => $this->_colors[$i - $this->nthen]];
         }
+        return $j;
     }
 }
 
