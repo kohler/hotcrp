@@ -120,12 +120,16 @@ abstract class SearchTerm {
     }
 
     /** @param SearchTerm $term
+     * @param ?SearchTerm $clone_of
      * @return $this */
-    protected function assign_context($term) {
+    protected function assign_context($term, $clone_of = null) {
         $this->pos1 = $term->pos1;
         $this->pos2 = $term->pos2;
         $this->string_context = $term->string_context;
         $this->float = $term->float;
+        if ($clone_of !== null && ($this->float["ge"] ?? null) === $clone_of) {
+            $this->float["ge"] = $this;
+        }
         return $this;
     }
 
@@ -374,10 +378,17 @@ abstract class Op_SearchTerm extends SearchTerm {
                 }
                 $this->float[$k] = array_merge($this->float[$k] ?? [], $v);
             } else if ($k === "tags") {
-                $this->float[$k] = array_merge($this->float[$k] ?? [], $v);
+                if ($this->type !== "not") {
+                    $this->float["tags"] = array_merge($this->float["tags"] ?? [], $v);
+                }
             } else if ($k === "hl") {
                 if ($this->type !== "not") {
-                    $this->float[$k] = $v;
+                    $this->float["hl"] = $v;
+                }
+            } else if ($k === "ge") {
+                if (($this->type === "and" || $this->type === "space" || $this->type === "then")
+                    && !isset($this->float["ge"])) {
+                    $this->float["ge"] = $v;
                 }
             } else {
                 $this->float[$k] = $v;
@@ -410,7 +421,7 @@ abstract class Op_SearchTerm extends SearchTerm {
             $qe = $any ? new True_SearchTerm : new False_SearchTerm;
             return $qe->assign_context($this);
         } else if (count($newchild) === 1) {
-            return (clone $newchild[0])->assign_context($this);
+            return (clone $newchild[0])->assign_context($this, $newchild[0]);
         } else {
             $this->child = $newchild;
             return $this;
@@ -516,7 +527,6 @@ class Not_SearchTerm extends Op_SearchTerm {
         parent::__construct("not");
     }
     protected function _finish() {
-        unset($this->float["tags"]);
         $qv = $this->child ? $this->child[0] : null;
         $qr = null;
         if (!$qv || $qv instanceof False_SearchTerm) {
@@ -783,6 +793,15 @@ class Then_SearchTerm extends Op_SearchTerm {
             }
         }
         $this->child = $newchild;
+        $this->_group_offsets[] = $go = 0;
+        for ($i = 0; $i !== $this->nthen; ++$i) {
+            $this->_nested_thens[] = $ge = $this->child[$i]->get_float("ge");
+            $go += $ge ? $ge->_group_offsets[$ge->nthen] : 1;
+            $this->_group_offsets[] = $go;
+        }
+        if ($this->nthen > 1) {
+            $this->set_float("ge", $this);
+        }
         if ($this->nthen < count($this->child)) {
             $this->set_float("hl", true);
         }
@@ -790,25 +809,6 @@ class Then_SearchTerm extends Op_SearchTerm {
             $this->_colors[] = $this->color;
         }
         return $this;
-    }
-    function prepare_visit($param, PaperSearch $srch) {
-        $group_offset = 0;
-        foreach ($this->child as $i => $qv) {
-            $param1 = $param->nest($this);
-            $qv->prepare_visit($param1, $srch);
-            if ($i < $this->nthen) {
-                $this->_group_offsets[] = $group_offset;
-                if ($param->allow_then() && $param1->then_term()) {
-                    $this->_nested_thens[] = $param1->then_term();
-                    $group_offset += count($param1->then_term()->group_terms());
-                } else {
-                    $this->_nested_thens[] = null;
-                    $group_offset += 1;
-                }
-            }
-        }
-        $this->_group_offsets[] = $group_offset;
-        $param->set_then_term($this);
     }
     function visit($visitor) {
         // Only visit non-highlight terms

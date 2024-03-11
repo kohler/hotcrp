@@ -157,19 +157,10 @@ class SearchQueryInfo {
 class PaperSearchPrepareParam {
     /** @var 0|1|2|3 */
     private $_nest = 0;
-    /** @var ?Then_SearchTerm */
-    private $_then_term;
-    /** @var int */
-    private $_then_count;
 
     /** @return bool */
     function toplevel() {
         return $this->_nest === 0;
-    }
-
-    /** @return bool */
-    function allow_then() {
-        return $this->_nest <= 1;
     }
 
     /** @return bool */
@@ -196,20 +187,6 @@ class PaperSearchPrepareParam {
         $x = clone $this;
         $x->_nest = $level;
         return $x;
-    }
-
-
-    /** @return ?Then_SearchTerm */
-    function then_term() {
-        return $this->_then_term;
-    }
-
-    /** @param Then_SearchTerm $then */
-    function set_then_term($then) {
-        if ($this->_nest <= 1) {
-            ++$this->_then_count;
-            $this->_then_term = $this->_then_count === 1 ? $then : null;
-        }
     }
 }
 
@@ -1063,7 +1040,7 @@ class PaperSearch extends MessageSet {
             // extract regular expressions
             $param = new PaperSearchPrepareParam;
             $this->_qe->prepare_visit($param, $this);
-            $this->_then_term = $param->then_term();
+            $this->_then_term = $this->_qe->get_float("ge");
         }
         return $this->_qe;
     }
