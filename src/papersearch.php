@@ -154,42 +154,6 @@ class SearchQueryInfo {
     }
 }
 
-class PaperSearchPrepareParam {
-    /** @var 0|1|2|3 */
-    private $_nest = 0;
-
-    /** @return bool */
-    function toplevel() {
-        return $this->_nest === 0;
-    }
-
-    /** @return bool */
-    function want_field_highlighter() {
-        return $this->_nest <= 2;
-    }
-
-    /** @param Op_SearchTerm $opterm
-     * @return PaperSearchPrepareParam */
-    function nest($opterm) {
-        if ($opterm->type === "and" || $opterm->type === "space") {
-            $level = 0;
-        } else if ($opterm->type === "then") {
-            $level = 1;
-        } else if ($opterm->type !== "not") {
-            $level = 2;
-        } else {
-            $level = 3;
-        }
-        if ($level <= $this->_nest
-            && ($level !== 1 || $this->_nest !== 1)) {
-            return $this;
-        }
-        $x = clone $this;
-        $x->_nest = $level;
-        return $x;
-    }
-}
-
 class PaperSearch extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -230,10 +194,6 @@ class PaperSearch extends MessageSet {
      * @readonly */
     private $_default_sort; // XXX should be used more often
 
-    /** @var ?array<string,TextPregexes> */
-    private $_match_preg;
-    /** @var ?string */
-    private $_match_preg_query;
     /** @var ?list<ContactSearch> */
     private $_contact_searches;
     /** @var ?SearchStringContext */
@@ -340,9 +300,8 @@ class PaperSearch extends MessageSet {
     private function clear_compilation() {
         $this->clear_messages();
         $this->_qe = null;
+        // XXX does not reset _limit_explicit, that should be ok
         $this->_then_term = null;
-        $this->_match_preg = null;
-        $this->_match_preg_query = null;
         $this->_contact_searches = null;
         $this->_matches = null;
         $this->_sorted_matches = null;
@@ -395,12 +354,6 @@ class PaperSearch extends MessageSet {
     /** @return bool */
     function limit_explicit() {
         return $this->_limit_explicit;
-    }
-    function apply_limit(Limit_SearchTerm $limit) {
-        if (!$this->_limit_explicit) {
-            $this->_limit_qe->set_limit($limit->named_limit);
-            $this->_limit_explicit = true;
-        }
     }
 
     /** @return Contact */
@@ -1040,9 +993,11 @@ class PaperSearch extends MessageSet {
                 $this->_qe = new True_SearchTerm;
             }
 
-            // extract regular expressions
-            $param = new PaperSearchPrepareParam;
-            $this->_qe->prepare_visit($param, $this);
+            // check for limit
+            if (($xlimit = $this->_qe->get_float("xlimit"))) {
+                $this->_limit_explicit = true;
+                $this->_limit_qe->set_limit($xlimit->named_limit);
+            }
 
             // extract group information
             $this->_then_term = $this->_qe->get_float("ge");
@@ -1221,7 +1176,7 @@ class PaperSearch extends MessageSet {
             || ($a->kword && in_array($a->kword, ["show", "hide", "edit", "sort", "showsort", "editsort"]))) {
             return [0, 0];
         }
-        if (!$a->kword && !$a->op->unary) {
+        if (!$a->kword && $a->op && !$a->op->unary) {
             $pos1 = $pos2 = null;
             foreach ($a->child as $ch) {
                 $span = self::strip_show_atom($ch);
@@ -1301,6 +1256,16 @@ class PaperSearch extends MessageSet {
             }
         }
         return $this->_group_slice_terms;
+    }
+
+    /** @param ?int $group
+     * @return SearchTerm */
+    function group_slice_term($group) {
+        if ($group === null) {
+            return $this->main_term();
+        } else {
+            return ($this->group_slice_terms())[$group] ?? $this->_qe;
+        }
     }
 
     /** @return array<int,int> */
@@ -1549,7 +1514,7 @@ class PaperSearch extends MessageSet {
         $l = (new SessionList($listid, $ids, $this->description($listname)))
             ->set_urlbase($this->url_site_relative_raw($args));
         if ($this->field_highlighters()) {
-            $l->highlight = $this->_match_preg_query ? : true;
+            $l->highlight = true;
         }
         return $l;
     }
@@ -1576,30 +1541,27 @@ class PaperSearch extends MessageSet {
     }
 
 
-    /** @param string $q */
-    function set_field_highlighter_query($q) {
-        $ps = new PaperSearch($this->user, ["q" => $q]);
-        $this->_match_preg = $ps->field_highlighters();
-        $this->_match_preg_query = $q;
+    /** @return bool */
+    function has_field_highlighter($field) {
+        return $this->main_term()->get_float("fhl:{$field}") !== null;
     }
 
-    /** @return array<string,TextPregexes> */
-    function field_highlighters() {
-        $this->main_term();
-        return $this->_match_preg ?? [];
-    }
-
-    /** @return string */
-    function field_highlighter($field) {
-        return ($this->field_highlighters())[$field] ?? "";
-    }
-
-    /** @param string $field */
-    function add_field_highlighter($field, TextPregexes $regex) {
-        if (!$this->_match_preg_query && !$regex->is_empty()) {
-            $this->_match_preg[$field] = $this->_match_preg[$field] ?? TextPregexes::make_empty();
-            $this->_match_preg[$field]->add_matches($regex);
+    /** @param ?int $group
+     * @return array<string,TextPregexes> */
+    function field_highlighters($group = null) {
+        $hl = [];
+        foreach ($this->group_slice_term($group)->float_map() as $k => $v) {
+            if (str_starts_with($k, "fhl:")) {
+                $hl[substr($k, 4)] = $v;
+            }
         }
+        return $hl;
+    }
+
+    /** @param ?int $group
+     * @return ?TextPregexes */
+    function field_highlighter($field, $group = null) {
+        return $this->group_slice_term($group)->get_float("fhl:{$field}");
     }
 
 

@@ -167,9 +167,6 @@ class ManualAssign_Page {
             "q" => $this->qreq->q,
             "reviewer" => $reviewer
         ]))->set_urlbase("manualassign");
-        if (!empty($hlsearch)) {
-            $search->set_field_highlighter_query(join(" OR ", $hlsearch));
-        }
         $pl = new PaperList("reviewAssignment", $search, ["sort" => true], $this->qreq);
         $pl->apply_view_session($this->qreq);
         $pl->apply_view_qreq($this->qreq);

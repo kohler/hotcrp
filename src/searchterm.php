@@ -92,20 +92,25 @@ abstract class SearchTerm {
         return null;
     }
 
+    /** @return array<string,mixed> */
+    final function float_map() {
+        return $this->float;
+    }
+
     /** @param string $k */
     final function set_float($k, $v) {
         $this->float[$k] = $v;
     }
 
     /** @param string $k */
-    function get_float($k) {
+    final function get_float($k) {
         return $this->float[$k] ?? null;
     }
 
     /** @param int $pos1
      * @param int $pos2
      * @param ?SearchStringContext $context */
-    function apply_strspan($pos1, $pos2, $context) {
+    final function apply_strspan($pos1, $pos2, $context) {
         if ($this->pos1 === null) {
             $this->string_context = $context;
         }
@@ -275,11 +280,6 @@ abstract class SearchTerm {
     }
 
 
-    /** @param PaperSearchPrepareParam $param
-     * @return void */
-    function prepare_visit($param, PaperSearch $srch) {
-    }
-
     /** @param int $group
      * @return SearchTerm */
     function group_slice_term($group) {
@@ -396,6 +396,20 @@ abstract class Op_SearchTerm extends SearchTerm {
                     && !isset($this->float["ge"])) {
                     $this->float["ge"] = $v;
                 }
+            } else if (str_starts_with($k, "fhl:")) {
+                if ($this->type !== "not" && !$v->is_empty()) {
+                    if (!isset($this->float[$k])) {
+                        $this->float[$k] = $v;
+                    } else {
+                        $this->float[$k] = $v2 = clone $this->float[$k];
+                        $v2->add_matches($v);
+                    }
+                }
+            } else if ($k === "xlimit") {
+                if (($this->type === "and" || $this->type === "space")
+                    && !isset($this->float[$k])) {
+                    $this->float[$k] = $v;
+                }
             } else {
                 $this->float[$k] = $v;
             }
@@ -431,12 +445,6 @@ abstract class Op_SearchTerm extends SearchTerm {
         } else {
             $this->child = $newchild;
             return $this;
-        }
-    }
-    function prepare_visit($param, PaperSearch $srch) {
-        $param = $param->nest($this);
-        foreach ($this->child as $qv) {
-            $qv->prepare_visit($param, $srch);
         }
     }
 
@@ -1033,6 +1041,8 @@ class Limit_SearchTerm extends SearchTerm {
         $this->set_limit($limit);
         if ($implicit) {
             $this->lflag |= self::LFLAG_IMPLICIT;
+        } else {
+            $this->set_float("xlimit", $this);
         }
     }
 
@@ -1364,11 +1374,6 @@ class Limit_SearchTerm extends SearchTerm {
         }
     }
 
-    function prepare_visit($param, PaperSearch $srch) {
-        if ($param->toplevel() && ($this->lflag & self::LFLAG_IMPLICIT) === 0) {
-            $srch->apply_limit($this);
-        }
-    }
     function about() {
         if (in_array($this->limit, ["viewable", "reviewable", "ar", "r", "rout", "req"])) {
             return self::ABOUT_REVIEW_SET;
@@ -1403,6 +1408,7 @@ class TextMatch_SearchTerm extends SearchTerm {
             $this->trivial = $text;
         } else {
             $this->regex = Text::star_text_pregexes($text, $quoted);
+            $this->set_float("fhl:{$t}", $this->regex);
         }
     }
     static function parse($word, SearchWord $sword, PaperSearch $srch) {
@@ -1448,11 +1454,6 @@ class TextMatch_SearchTerm extends SearchTerm {
             return null;
         } else {
             return ["type" => $this->field, "match" => $this->trivial];
-        }
-    }
-    function prepare_visit($param, PaperSearch $srch) {
-        if ($param->want_field_highlighter() && $this->regex) {
-            $srch->add_field_highlighter($this->type, $this->regex);
         }
     }
     function about() {
