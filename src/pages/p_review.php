@@ -64,7 +64,6 @@ class Review_Page {
                 $this->rrow_explicit = false;
             }
         } catch (Redirection $redir) {
-            assert(PaperRequest::simple_qreq($this->qreq));
             throw $redir;
         } catch (PermissionProblem $perm) {
             $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());

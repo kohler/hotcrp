@@ -41,7 +41,6 @@ class Assign_Page {
                 throw $whynot;
             }
         } catch (Redirection $redir) {
-            assert(PaperRequest::simple_qreq($this->qreq));
             throw $redir;
         } catch (PermissionProblem $perm) {
             $this->error_exit(MessageItem::error("<5>" . $perm->unparse_html()));
