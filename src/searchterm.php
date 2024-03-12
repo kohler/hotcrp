@@ -397,6 +397,7 @@ abstract class Op_SearchTerm extends SearchTerm {
                     $this->float["ge"] = $v;
                 }
             } else if (str_starts_with($k, "fhl:")) {
+                '@phan-var-force TextPregexes $v';
                 if ($this->type !== "not" && !$v->is_empty()) {
                     if (!isset($this->float[$k])) {
                         $this->float[$k] = $v;
@@ -825,7 +826,9 @@ class Then_SearchTerm extends Op_SearchTerm {
         $this->child = $newchild;
         $this->_group_offsets[] = $go = 0;
         for ($i = 0; $i !== $this->nthen; ++$i) {
-            $this->_nested_thens[] = $ge = $this->child[$i]->get_float("ge");
+            $ge = $this->child[$i]->get_float("ge");
+            '@phan-var-force ?Then_SearchTerm $ge';
+            $this->_nested_thens[] = $ge;
             $go += $ge ? $ge->_group_offsets[$ge->nthen] : 1;
             $this->_group_offsets[] = $go;
         }
