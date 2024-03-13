@@ -1155,7 +1155,7 @@ class PaperSearch extends MessageSet {
     /** @return list<int> */
     function sorted_paper_ids() {
         $this->_prepare();
-        if (($this->_default_sort || $this->sort_field_list())
+        if (($this->_default_sort || $this->sort_field_list() || $this->_then_term)
             && $this->_sorted_matches === null) {
             $pl = new PaperList("empty", $this, ["sort" => $this->_default_sort]);
             $this->_sorted_matches = $pl->paper_ids();
