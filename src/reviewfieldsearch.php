@@ -40,7 +40,7 @@ abstract class ReviewFieldSearch {
                           ReviewSearchMatcher $rsm, PaperSearch $srch) {
         if ($sword->cword === "any") {
             return new Present_ReviewFieldSearch($rf, true);
-        } else if ($sword->cword === "none" || $sword->cword === "blank") {
+        } else if ($sword->cword === "none" || $sword->cword === "empty") {
             return new Present_ReviewFieldSearch($rf, false);
         }
         $nmsg = $srch->message_set()->message_count();

@@ -927,7 +927,7 @@ abstract class DiscreteValues_ReviewField extends Discrete_ReviewField {
     static function check_none($s) {
         if ($s === "" || $s[0] === "(" || $s === "undefined") {
             return null;
-        } else if (in_array(strtolower($s), ["none", "n/a", "0", "-", "–", "—", "no entry"])
+        } else if (in_array(strtolower($s), ["none", "n/a", "0", "-", "–", "—", "no entry", "empty"])
                    || substr_compare($s, "none ", 0, 5, true) === 0) {
             return 0;
         } else {
@@ -1113,7 +1113,7 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
                 echo '</strong>';
             }
         } else {
-            echo 'None of the above';
+            echo 'No entry';
         }
         echo '</label>';
     }
@@ -1196,7 +1196,7 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
             }
         }
         if (!$this->required) {
-            $t[] = "==-==    None of the above\n==-== Enter your choice:\n";
+            $t[] = "==-==    No entry\n==-== Enter your choice:\n";
         } else if (($this->flags & self::FLAG_ALPHA) !== 0) {
             $t[] = "==-== Enter the letter of your choice:\n";
         } else if (($this->flags & self::FLAG_NUMERIC) !== 0) {
@@ -1215,7 +1215,7 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
         } else if ($this->required || ($fval ?? 0) === 0) {
             $t[] = "(Your choice here)\n";
         } else {
-            $t[] = "None of the above\n";
+            $t[] = "No entry\n";
         }
     }
 
@@ -1232,6 +1232,12 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
             "<0>at least one completed review has {title} {value}",
             $varg
         );
+        if (!$this->required) {
+            $ex[] = new SearchExample(
+                $this, "{$kw}:empty",
+                "<0>at least one completed review has an empty {title} field"
+            );
+        }
         if (count($this->values) > 2
             && ($this->flags & self::FLAG_NUMERIC) !== 0) {
             $ex[] = new SearchExample(
@@ -1259,12 +1265,6 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
                 ...$fmtargs
             ))->hint("<0>This means all scores between {v1} and {v2}, with at least one {v1} and at least one {v2}.")
               ->primary_only(true);
-        }
-        if (!$this->required) {
-            $ex[] = new SearchExample(
-                $this, "{$kw}:none",
-                "<0>at least one completed review has an empty {value} field"
-            );
         }
 
         // counts
@@ -1427,7 +1427,11 @@ class Text_ReviewField extends ReviewField {
                 $this, "{$kw}:{text}",
                 "<0>at least one completed review has “{text}” in the {title} field",
                 new FmtArg("text", "finger")
-            ))->primary_only(true)
+            ))->primary_only(true),
+            new SearchExample(
+                $this, "{$kw}:empty",
+                "<0>at least one completed review has an empty {title} field"
+            )
         ];
     }
 

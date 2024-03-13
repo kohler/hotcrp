@@ -1077,7 +1077,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_search($this->u_chair, "ovemer:3", "1 19");
         xassert_search($this->u_chair, "ovemer:4", "19 20 21");
         xassert_search($this->u_chair, "ovemer:5", "20 21");
-        xassert_search($this->u_chair, "ovemer:none", "21");
+        xassert_search($this->u_chair, "ovemer:empty", "21");
 
         xassert_search($this->u_chair, "ovemer:any ovemer:none:1", "1 18 19 21");
         xassert_search($this->u_chair, "ovemer:any ovemer:=0:1", "1 18 19 21");
@@ -1130,7 +1130,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_search($this->u_chair, "ovemer:C", "1 19");
         xassert_search($this->u_chair, "ovemer:B", "19 20 21");
         xassert_search($this->u_chair, "ovemer:A", "20 21");
-        xassert_search($this->u_chair, "ovemer:none", "21");
+        xassert_search($this->u_chair, "ovemer:empty", "21");
 
         xassert_search($this->u_chair, "ovemer:any ovemer:none:E", "1 18 19 21");
         xassert_search($this->u_chair, "ovemer:any ovemer:=0:E", "1 18 19 21");
