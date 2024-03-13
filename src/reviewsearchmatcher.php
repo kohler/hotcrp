@@ -459,13 +459,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 return false;
             }
             $rf = $this->rfsrch->rf;
-            if ($rf->view_score <= $user->view_score_bound($prow, $rrow)) {
-                return false;
-            }
-            $fvx = $rf->test_exists($rrow);
-            $fv = $fvx ? $rrow->fields[$rf->order] : null;
-            if ((self::$mode === 1 && !$fvx)
-                || !$this->rfsrch->test_value($rrow, $fv)) {
+            if ($rf->view_score <= $user->view_score_bound($prow, $rrow)
+                || !$rf->test_exists($rrow)
+                || !$this->rfsrch->test_value($rrow, $rrow->fields[$rf->order])) {
                 return false;
             }
         }
