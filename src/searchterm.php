@@ -573,6 +573,10 @@ class Not_SearchTerm extends Op_SearchTerm {
     function test(PaperInfo $row, $xinfo) {
         return !$this->child[0]->test($row, $xinfo);
     }
+    function about() {
+        $x = $this->child[0]->about();
+        return $x === self::ABOUT_REVIEW ? self::ABOUT_UNKNOWN : $x;
+    }
 }
 
 class And_SearchTerm extends Op_SearchTerm {

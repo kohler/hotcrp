@@ -214,6 +214,11 @@ class Review_SearchTerm extends SearchTerm {
         if (str_starts_with($word, ":")) {
             $word = substr($word, 1);
         }
+        if ($word === "none" && ReviewSearchMatcher::$mode === 1) {
+            // `FIELD:none` is the opposite of `FIELD:any`; implement with negation
+            $rsm->apply_field(new Present_ReviewFieldSearch($f, true));
+            return (new Review_SearchTerm($srch->user, $rsm))->negate();
+        }
         $sword->cword = $word;
         if (($rfsrch = ReviewFieldSearch::parse($sword, $f, $rsm, $srch))) {
             $rsm->apply_field($rfsrch);

@@ -1,6 +1,6 @@
 <?php
 // reviewfields/rf_discrete.php -- HotCRP search for discrete fields
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 /** @inherits ReviewFieldSearch<Discrete_ReviewField> */
 class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
@@ -34,8 +34,7 @@ class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
         $this->finished = $this->op & CountMatcher::RELSPAN ? 3 : 0;
     }
 
-    function test_review($user, $prow, $rrow) {
-        $fv = $rrow->fval($this->rf);
+    function test_value($rrow, $fv) {
         if (!in_array($fv ?? 0, $this->scores)) {
             if (($this->op & CountMatcher::RELALL) !== 0 && $fv !== null) {
                 $this->finished = -1;

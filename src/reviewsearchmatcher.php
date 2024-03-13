@@ -1,6 +1,6 @@
 <?php
 // reviewsearchmatcher.php -- HotCRP helper class for searching for reviews
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class ReviewSearchMatcher extends ContactCountMatcher {
     // `status` bits
@@ -48,6 +48,9 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     public $rfop = 0;
     /** @var ?ReviewFieldSearch<ReviewField> */
     private $rfsrch;
+
+    /** @var int */
+    static public $mode = 0;
 
     static private $status_map = [
         // preferred names come first
@@ -451,11 +454,20 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 return false;
             }
         }
-        if ($this->rfsrch
-            && ($this->rfsrch->rf->view_score <= $user->view_score_bound($prow, $rrow)
-                || $this->rfsrch->finished < 0
-                || !$this->rfsrch->test_review($user, $prow, $rrow))) {
-            return false;
+        if ($this->rfsrch) {
+            if ($this->rfsrch->finished < 0) {
+                return false;
+            }
+            $rf = $this->rfsrch->rf;
+            if ($rf->view_score <= $user->view_score_bound($prow, $rrow)) {
+                return false;
+            }
+            $fvx = $rf->test_exists($rrow);
+            $fv = $fvx ? $rrow->fields[$rf->order] : null;
+            if ((self::$mode === 1 && !$fvx)
+                || !$this->rfsrch->test_value($rrow, $fv)) {
+                return false;
+            }
         }
         return true;
     }

@@ -1,6 +1,6 @@
 <?php
 // reviewfields/rf_text.php -- HotCRP search helper for text review fields
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 /** @inherits ReviewFieldSearch<Text_ReviewField> */
 class Text_ReviewFieldSearch extends ReviewFieldSearch {
@@ -22,8 +22,7 @@ class Text_ReviewFieldSearch extends ReviewFieldSearch {
         return "tfields is not null";
     }
 
-    function test_review($user, $prow, $rrow) {
-        $fv = $rrow->fval($this->rf);
+    function test_value($rrow, $fv) {
         $match = $fv !== null
             && $fv !== ""
             && $rrow->field_match_pregexes($this->preg, $this->rf->order);
