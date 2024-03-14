@@ -24,6 +24,24 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     }
 
 
+    function jsonSerialize() {
+        $j = parent::jsonSerialize();
+        if ($this->min_count > 1) {
+            $j->min = $this->min_count;
+        }
+        if ($this->max_count > 0) {
+            $j->max = $this->max_count;
+        }
+        return $j;
+    }
+
+    function export_setting() {
+        $sfs = parent::export_setting();
+        $sfs->min = $this->min_count;
+        $sfs->max = $this->max_count;
+        return $sfs;
+    }
+
     /** @return TopicSet */
     abstract function topic_set();
 
@@ -258,13 +276,6 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             $fr->set_html("<ul class=\"topict topict-{$lenclass}\">" . join("", $ts) . '</ul>');
             $fr->value_long = true;
         }
-    }
-
-    function export_setting() {
-        $sfs = parent::export_setting();
-        $sfs->min = $this->min_count;
-        $sfs->max = $this->max_count;
-        return $sfs;
     }
 
     function parse_search(SearchWord $sword, PaperSearch $srch) {

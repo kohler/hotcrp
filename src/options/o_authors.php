@@ -315,6 +315,13 @@ class Authors_PaperOption extends PaperOption {
         }
     }
 
+    function jsonSerialize() {
+        $j = parent::jsonSerialize();
+        if ($this->max_count > 0) {
+            $j->max = $this->max_count;
+        }
+        return $j;
+    }
     function export_setting() {
         $sfs = parent::export_setting();
         $sfs->max = $this->max_count;

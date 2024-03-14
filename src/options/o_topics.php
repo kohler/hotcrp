@@ -13,18 +13,6 @@ class Topics_PaperOption extends CheckboxesBase_PaperOption {
         }
     }
 
-    function jsonSerialize() {
-        $j = parent::jsonSerialize();
-        if ($this->min_count > 1) {
-            $j->min = $this->min_count;
-        }
-        if ($this->max_count > 0) {
-            $j->max = $this->max_count;
-        }
-        return $j;
-    }
-
-
     function topic_set() {
         return $this->conf->topic_set();
     }

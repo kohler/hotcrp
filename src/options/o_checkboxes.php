@@ -20,12 +20,6 @@ class Checkboxes_PaperOption extends CheckboxesBase_PaperOption {
         if ($this->is_ids_nontrivial()) {
             $j->ids = $this->ids();
         }
-        if ($this->min_count > 1) {
-            $j->min = $this->min_count;
-        }
-        if ($this->max_count > 0) {
-            $j->max = $this->max_count;
-        }
         return $j;
     }
 
