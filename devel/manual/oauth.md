@@ -5,7 +5,7 @@ Configure HotCRP’s `$Opt["oAuthProviders"]` setting in `conf/options.php` to u
 
 ## `oAuthProviders` format
 
-The `oAuthProviders` option is a list of [components][] defining supported OAuth
+The `oAuthProviders` option is a [component list][components] of OAuth
 authentication providers. Each `oAuthProviders` component should define:
 
 * `name`: The name of the provider. Each provider must have a distinct name.

@@ -1,12 +1,13 @@
 HotCRP NEWS
 ===========
 
-## Version 3.0xx
+## Version 3.0.0 – 14.Mar.2024
 
 * Upgrade notes
 
-    * PHP 8.2 and 8.3 are supported, PHP 7.0 is not.
+    * PHP 8.2 and 8.3 are supported, PHP 7.0 and 7.1 are not.
     * Remove support for `#perm` tags.
+    * Prefer `$Opt["oAuthProviders"]` (not `$Opt["oAuthTypes"]`).
 
 * Batch scripts
 
@@ -17,6 +18,9 @@ HotCRP NEWS
 
     * Add support for multiple submission classes! Different deadlines for
       different kinds of submission.
+    * Submission updates are transactional. Conflicting parallel updates
+      should be caught by the system; users get the submission form back and
+      can try again.
 
 * Reviews
 
@@ -26,19 +30,34 @@ HotCRP NEWS
       and other systems may “click” those links automatically.
     * Fix longstanding bug with accepting a review with clickthrough terms.
       (Infinite recursion.)
+    * Comments being edited pop out when the user scrolls up, so you can
+      edit a comment and read reviews in parallel.
 
 * Search
 
     * Deprecated shorthand score searches `ovemer:X...Y`, `ovemer:X-Y`.
       Instead be explicit: `ovemer:all:X-Y` and `ovemer:span:X-Y`.
+    * Add `sort:color`.
 
-* Navigation: Support deployment within Apache, proxied or not.
+* Signin
+
+    * Improve OAuth signin support, and add support to be an OAuth provider.
+
+* Navigation
+
+    * Support deployment within Apache, proxied or not.
+    * Validate redirect parameters to avoid open redirect vulnerabilities.
 
 * Support decision variants: “Desk-reject” decisions are immediately visible
   to authors, regardless of other settings. There is also support for “other”
   decisions, which are neither acceptish nor rejectish.
 
-* More internal improvements; for example, the autoassigner is extensible.
+* Add initial developer manual.
+
+* More internal improvements; for example, allow autoassigner extensions, and
+  support TLS database connections.
+
+* Many, many, many bug fixes and other improvements.
 
 
 ## Version 3.0b3 – 30.Aug.2022
@@ -48,7 +67,7 @@ HotCRP NEWS
 * Add dropdown menu for help, settings, and accounts.
 
 
-## Version 3.0b2 - 22.Aug.2022
+## Version 3.0b2 – 22.Aug.2022
 
 * Upgrade notes
 
@@ -129,7 +148,7 @@ HotCRP NEWS
     * Add support for bearer-token API access.
 
 
-## Version 3.0b1 - 12.Nov.2020
+## Version 3.0b1 – 12.Nov.2020
 
 * Upgrade notes
 
@@ -280,7 +299,7 @@ HotCRP NEWS
 * Many other bug fixes, tests, and improvements.
 
 
-## Version 2.102 - 9.Aug.2018
+## Version 2.102 – 9.Aug.2018
 
 * Support integration with Lutz Prechelt’s [Review Quality Collector][].
 
@@ -325,7 +344,7 @@ HotCRP NEWS
 * Support PHP 7.2; stop supporting PHP 5.5.
 
 
-## Version 2.101 - 18.Oct.2017
+## Version 2.101 – 18.Oct.2017
 
 * Support metareviewers.
 
@@ -381,7 +400,7 @@ HotCRP NEWS
 * Thanks for feature requests and bug reports to many users.
 
 
-## Version 2.100 - 15.Jun.2016
+## Version 2.100 – 15.Jun.2016
 
 * Sort reviews & comments by post time, rather than putting all the reviews
   first and all the comments later.
@@ -432,14 +451,14 @@ HotCRP NEWS
   Oleg Vaskevich, Eijiro Sumii, Marcos Aguilera.
 
 
-## Version 2.99 - 21.Nov.2015
+## Version 2.99 – 21.Nov.2015
 
 * Support real-valued tag indexes and tag indexes for PC members.
 
 * Fix some bugs in 2.98.
 
 
-## Version 2.98 - 19.Nov.2015
+## Version 2.98 – 19.Nov.2015
 
 * MySQL improvements: Use InnoDB; set the connection charset to binary, which
   is required on newer MySQL instances; support emoji in reviews.
@@ -452,7 +471,7 @@ HotCRP NEWS
   and improvements.
 
 
-## Version 2.97 - 28.Sep.2015
+## Version 2.97 – 28.Sep.2015
 
 * Add `re:words` search term and formula term.
 
@@ -460,7 +479,7 @@ HotCRP NEWS
   (a regular expression's backtracking went exponential).
 
 
-## Version 2.96 - 24.Sep.2015
+## Version 2.96 – 24.Sep.2015
 
 * New improved look.
 
@@ -489,7 +508,7 @@ HotCRP NEWS
   Emery Berger also suggested a feature or two.
 
 
-## Version 2.95 - 19.Jun.2015
+## Version 2.95 – 19.Jun.2015
 
 * Graphs!!!!!
 
@@ -515,7 +534,7 @@ HotCRP NEWS
 * Hundreds of bug fixes and minor improvements, and some performance work.
 
 
-## Version 2.94 - 15.Mar.2015
+## Version 2.94 – 15.Mar.2015
 
 * Add buzzer, a discussion status page based on the tracker. Many
   tracker stability improvements.
@@ -534,7 +553,7 @@ HotCRP NEWS
   Dan Tsafrir, Peter Sewell, Gail Murphy, George Candea, and others.
 
 
-## Version 2.93 - 2.Oct.2014
+## Version 2.93 – 2.Oct.2014
 
 * Improve autoassigner to spread out user unhappiness.
 
@@ -573,19 +592,19 @@ HotCRP NEWS
   Douglis, and others.
 
 
-## Version 2.92 - 13.May.2014
+## Version 2.92 – 13.May.2014
 
 * Bug fixes for bugs reported by Shriram Krishnamurthi, Aditya Akella,
   Yoshi Kohno, Garth Gibson.
 
 
-## Version 2.91 - 1.May.2014
+## Version 2.91 – 1.May.2014
 
 * Bug fixes to profile editing and submission options problems
   reported by Lars Eggert and Kevin Fu.
 
 
-## Version 2.90 - 25.Apr.2014
+## Version 2.90 – 25.Apr.2014
 
 * Major refactoring release.
 
@@ -620,7 +639,7 @@ HotCRP NEWS
   Kevin Fu, Soheil Hassas Yeganeh, Robby Findler, and Johannes Dahse.
 
 
-## Version 2.61 - 14.Aug.2013
+## Version 2.61 – 14.Aug.2013
 
 * Correct some XSS errors and one SQL injection error reported by
   Johannes Dahse using a static checking tool of his design. The XSS
@@ -633,7 +652,7 @@ HotCRP NEWS
   Thanks to Anil Madhavapeddy and Peter Sewell.
 
 
-## Version 2.60 - 19.Jul.2013
+## Version 2.60 – 19.Jul.2013
 
 * Major new feature: Paper managers. Administrators can assign PC
   members to "manage" individual papers. These PC members gain admin
@@ -658,7 +677,7 @@ HotCRP NEWS
   and Jeff Mogul.
 
 
-## Version 2.59 - 14.Jun.2013
+## Version 2.59 – 14.Jun.2013
 
 * Bug fix: "Monitor external reviews" works. Reported by Peter Sewell.
 
@@ -668,14 +687,14 @@ HotCRP NEWS
   papers" searches. Reported by Nickolai Zeldovich and Jeff Mogul.
 
 
-## Version 2.58 - 23.Mar.2013
+## Version 2.58 – 23.Mar.2013
 
 * More information leak plugging: explicit search for review fields
   that should be hidden from authors, and review rounds. Reported by
   John Heidemann.
 
 
-## Version 2.57 - 16.Mar.2013
+## Version 2.57 – 16.Mar.2013
 
 * Bug fix: The search page's score graphs exposed score values for
   authored papers during the rebuttal phase. This is normally OK, but
@@ -687,7 +706,7 @@ HotCRP NEWS
 * Add a random-walk-based paper ranking method (John Douceur).
 
 
-## Version 2.56 - 29.Jan.2013
+## Version 2.56 – 29.Jan.2013
 
 * This is a major refactoring release. Internals, particularly for
   paper list display, are cleaner and more extensible. But bugs are
@@ -724,12 +743,12 @@ HotCRP NEWS
 * Thanks to Jeff Mogul and John Douceur.
 
 
-## Version 2.55 - 31.Dec.2012
+## Version 2.55 – 31.Dec.2012
 
 * Minor bugfix release.
 
 
-## Version 2.54 - 30.Dec.2012
+## Version 2.54 – 30.Dec.2012
 
 * Fix bug in 2.53 where long papers could not be uploaded. Kamin
   Whitehouse report.
@@ -739,7 +758,7 @@ HotCRP NEWS
 * Some other bug fixes.
 
 
-## Version 2.53 - 26.Dec.2012
+## Version 2.53 – 26.Dec.2012
 
 * Support sending mail to PC members about their new review assignments.
 
@@ -751,14 +770,14 @@ HotCRP NEWS
   Petros Maniatis, Jeff Mogul, Antoine Picard, and Anthony Riley.
 
 
-## Version 2.52 - 23.Jul.2012
+## Version 2.52 – 23.Jul.2012
 
 * Allow chairs to change all PC conflicts on papers' Edit screens.
 
 * Other bug fixes and improvements.
 
 
-## Version 2.51 - 22.Jun.2012
+## Version 2.51 – 22.Jun.2012
 
 * Fix bug with setting tags on per-paper pages (caused by cross-site
   request forgery protection).
@@ -766,7 +785,7 @@ HotCRP NEWS
 * Other fixes and improvements.
 
 
-## Version 2.50 - 10.May.2012
+## Version 2.50 – 10.May.2012
 
 * Fix database error on response submissions (a problem since v2.48).
   Problem reported by Robby Findler.
@@ -778,7 +797,7 @@ HotCRP NEWS
 * Thanks to Dan Tsafrir, Wilson Hsieh, Giuliano Casale, and Geoff Voelker.
 
 
-## Version 2.49 - 29.Mar.2012
+## Version 2.49 – 29.Mar.2012
 
 * Add update notification. Chairs' browsers contact an updates server,
   hotcrp.lcdf.org/updates, to check whether the HotCRP installation should
@@ -786,7 +805,7 @@ HotCRP NEWS
   with version information, set `$Opt["updatesSite"] = false`.
 
 
-## Version 2.48 - 28.Mar.2012
+## Version 2.48 – 28.Mar.2012
 
 * Correct major information exposure with author-view capabilities.
   Author-view capability URLs, when entered by users not otherwise logged
@@ -804,7 +823,7 @@ HotCRP NEWS
   Jane-Ellen Long, and others.
 
 
-## Version 2.47 - 14.Dec.2011
+## Version 2.47 – 14.Dec.2011
 
 * Add author-view capabilities. These parameters, when appended to any
   HotCRP URL, grant the client the right to view a paper like an author.
@@ -835,7 +854,7 @@ HotCRP NEWS
   Mogul, Clay Shepard, Gareth Gale, and Amit Sahai.
 
 
-## Version 2.46 - 5.Aug.2011
+## Version 2.46 – 5.Aug.2011
 
 * Support multiple final-version uploads.
 
@@ -846,7 +865,7 @@ HotCRP NEWS
 * Other bug fixes.
 
 
-## Version 2.45 - 24.Apr.2011
+## Version 2.45 – 24.Apr.2011
 
 * New, improved visual appearance for paper pages.
 
@@ -873,7 +892,7 @@ HotCRP NEWS
   Stamatogiannakis, and Michael Hicks.
 
 
-## Version 2.44 - 8.Feb.2011
+## Version 2.44 – 8.Feb.2011
 
 * Correct recent bugs: improve Ajax return values (which lacked "b"
   characters due to a quoting mishap); do not ask authors for responses
@@ -886,14 +905,14 @@ HotCRP NEWS
 * Thanks especially to Jeff Mogul and John Byers.
 
 
-## Version 2.43 - 3.Jan.2011
+## Version 2.43 – 3.Jan.2011
 
 * Correct 2.41 bug that could cause SQL errors on the home page when users
   had many comments to view.  Double ouch!  Apologies to Tony Del Porto and
   Usenix.
 
 
-## Version 2.42 - 2.Jan.2011
+## Version 2.42 – 2.Jan.2011
 
 * Correct 2.41 bug that broke `ovemer:3` searches (ouch).
 
@@ -903,7 +922,7 @@ HotCRP NEWS
 * Style nits (paragraph breaks in abstracts, reviewer icon alignment).
 
 
-## Version 2.41 - 13.Dec.2010
+## Version 2.41 – 13.Dec.2010
 
 * The "Recent activity" on the home page includes information about
   submitted reviews as well as submitted comments (frequent request,
@@ -957,7 +976,7 @@ HotCRP NEWS
   Andersen.
 
 
-## Version 2.40 - 30.Jul.2010
+## Version 2.40 – 30.Jul.2010
 
 * Search expression improvements: Allow parenthesized expressions, `AND`
   keywords, and `THEN` searches.  `THEN` is the lowest precedence operator.
@@ -980,7 +999,7 @@ HotCRP NEWS
   Long, and Dana Randall.
 
 
-## Version 2.39 - 20.May.2010
+## Version 2.39 – 20.May.2010
 
 * PC member tags.  Each PC member can be associated with a list of tags,
   which use the same format as paper tags.  This list is only set by
@@ -998,7 +1017,7 @@ HotCRP NEWS
 * Thanks especially to Jeff Mogul and Ian Goldberg.
 
 
-## Version 2.38 - 27.Jan.2010
+## Version 2.38 – 27.Jan.2010
 
 * Add "Recent comments" section to the home page for PC members.  This
   lists recent viewable comments, newest comments first.
@@ -1018,12 +1037,12 @@ HotCRP NEWS
   Tony Del Porto, Jane-Ellen Long, and Casey Henderson.
 
 
-## Version 2.37 - 19.Dec.2009
+## Version 2.37 – 19.Dec.2009
 
 * Bug-fix release.
 
 
-## Version 2.36 - 17.Dec.2009
+## Version 2.36 – 17.Dec.2009
 
 * Formulas
 
@@ -1067,7 +1086,7 @@ HotCRP NEWS
   and John P. John.
 
 
-## Version 2.35 - 7.Oct.2009
+## Version 2.35 – 7.Oct.2009
 
 * Paper options: Support numeric values, text values, and PDF uploads.
 
@@ -1099,7 +1118,7 @@ HotCRP NEWS
   addition to bug reports and feature requests.
 
 
-## Version 2.34 - 21.Mar.2009
+## Version 2.34 – 21.Mar.2009
 
 * Tag colors!  After a Dan Wallach suggestion.  Tag a paper "red" and it
   shows up as red in paper lists.  Or instruct the system that "reject"
@@ -1124,12 +1143,12 @@ HotCRP NEWS
 * Thanks to Stefan Lorenz and John Wilkes.
 
 
-## Version 2.33 - 15.Feb.2009
+## Version 2.33 – 15.Feb.2009
 
 * Re-fix "Don't assign (X) and (Y) to the same paper."
 
 
-## Version 2.32 - 15.Feb.2009
+## Version 2.32 – 15.Feb.2009
 
 * Add `au:pc` search, which returns papers whose contact authors contain at
   least one PC member.
@@ -1143,7 +1162,7 @@ HotCRP NEWS
 * Thanks to John Wilkes, Jeff Mogul, Stefan Lorenz, and Benjamin Pierce.
 
 
-## Version 2.31 - 26.Jan.2009
+## Version 2.31 – 26.Jan.2009
 
 * Administrators can delete users.
 
@@ -1155,7 +1174,7 @@ HotCRP NEWS
   Slightly better support for browsers without Javascript.
 
 
-## Version 2.30 - 7.Jan.2009
+## Version 2.30 – 7.Jan.2009
 
 * Add chair-only tags: double-twiddle tags, like `~~tag`, are only visible
   to and changeable by chairs and administrators.  Andrew Myers idea.
@@ -1167,18 +1186,18 @@ HotCRP NEWS
   `$Opt["noPapers"]` (C. Craig Ross).
 
 
-## Version 2.29 - 1.Jan.2009
+## Version 2.29 – 1.Jan.2009
 
 * Bug fix release.  Fixes bugs in tag search and tag setting, some reported
   by John Wilkes.
 
 
-## Version 2.28 - 20.Dec.2008
+## Version 2.28 – 20.Dec.2008
 
 * Allow periods in email addresses (Jeff Mogul).
 
 
-## Version 2.27 - 16.Dec.2008
+## Version 2.27 – 16.Dec.2008
 
 * Search results: Add tons of Display options, load them all by Ajax, and
   chairs gain a "Make these options the default" link.
@@ -1200,7 +1219,7 @@ HotCRP NEWS
   Gebhart, Paolo Faraboschi, John Wilkes, Dina Papagiannaki, and others.
 
 
-## Version 2.26 - 27.Oct.2008
+## Version 2.26 – 27.Oct.2008
 
 * Submitters can be forced to define what type of conflict a PC member has.
   Requested by Dina Papagiannaki.
@@ -1225,7 +1244,7 @@ HotCRP NEWS
 * Many help and usability improvements inspired by Benjamin Pierce requests.
 
 
-## Version 2.25 - 22.Sep.2008
+## Version 2.25 – 22.Sep.2008
 
 * Many bug fixes for new-style paper views.
 
@@ -1260,7 +1279,7 @@ HotCRP NEWS
 * Thanks also to Benjamin Pierce, Richard Gass, Michael Vrable, and others.
 
 
-## Version 2.24 - 22.Aug.2008
+## Version 2.24 – 22.Aug.2008
 
 * Major changes
 
@@ -1380,7 +1399,7 @@ HotCRP NEWS
 * Special thanks to Robbert van Renesse.
 
 
-## Version 2.23 - 22.Jul.2008
+## Version 2.23 – 22.Jul.2008
 
 * Do not infinite loop when sending mail to non-ASCII names associated with
   long email addresses.  Reported by Robbert van Renesse and Rich Draves.
@@ -1392,7 +1411,7 @@ HotCRP NEWS
   Jeonghee Shin.
 
 
-## Version 2.22 - 15.Jul.2008
+## Version 2.22 – 15.Jul.2008
 
 * Appearance fixes: use default controls in most cases.
 
@@ -1410,12 +1429,12 @@ HotCRP NEWS
 * Improve some messages and help text.
 
 
-## Version 2.21 - 11.May.2008
+## Version 2.21 – 11.May.2008
 
 * Further improve validation and Internet Explorer 6 compatibility.
 
 
-## Version 2.20 - 11.May.2008
+## Version 2.20 – 11.May.2008
 
 * Improve Internet Explorer 6 compatibility.  Reported by Terence Kelly.
   Includes Drew McLellan's supersleight for transparent PNG support
@@ -1430,7 +1449,7 @@ HotCRP NEWS
 * Bug fixes to preference list, English, and createdb script.
 
 
-## Version 2.19 - 6.May.2008
+## Version 2.19 – 6.May.2008
 
 * Provide visible feedback on Ajax forms.
 
@@ -1438,7 +1457,7 @@ HotCRP NEWS
   Isaacs).
 
 
-## Version 2.18 - 5.May.2008
+## Version 2.18 – 5.May.2008
 
 * Record PC feedback about whether reviews were helpful.  PC members and,
   optionally, external reviewers can rate one another's reviews.  Hopefully
@@ -1465,7 +1484,7 @@ HotCRP NEWS
   reviews (Stefan Savage).
 
 
-## Version 2.17 - 23.Apr.2008
+## Version 2.17 – 23.Apr.2008
 
 * IMPORTANT: Continue reviewer identity leak fix via search rewrite.
 
@@ -1481,7 +1500,7 @@ HotCRP NEWS
   than "0/1").
 
 
-## Version 2.16 - 21.Apr.2008
+## Version 2.16 – 21.Apr.2008
 
 * IMPORTANT: Reviewer identity leak fix.
 
@@ -1489,7 +1508,7 @@ HotCRP NEWS
   John Wilkes).
 
 
-## Version 2.15 - 9.Apr.2008
+## Version 2.15 – 9.Apr.2008
 
 * Improve homepage with a right-hand sidebar.
 
@@ -1520,7 +1539,7 @@ HotCRP NEWS
 * Bug fix: Searching for `cre:>0`, etc. works.
 
 
-## Version 2.14 - 12.Mar.2008
+## Version 2.14 – 12.Mar.2008
 
 * Review field options can take lettered values, such as A-D or X-Z, as
   well as numeric values.
@@ -1550,7 +1569,7 @@ HotCRP NEWS
 * Thanks to Michael Vrable, Stefan Savage, and Scott Rose.
 
 
-## Version 2.13 - 22.Jan.2008
+## Version 2.13 – 22.Jan.2008
 
 * Add support for paper format checking with Geoff Voelker's banal script.
   Thanks to Geoff for the script and debugging support, and to Harald
@@ -1575,7 +1594,7 @@ HotCRP NEWS
 * Thanks also to Matthew Frank, Joseph Tucek, and Bernhard Ager.
 
 
-## Version 2.12 - 30.Dec.2007
+## Version 2.12 – 30.Dec.2007
 
 * Introduce "twiddle tags", such as `~tag`, which are visible only to the
   PC members that created them.  Based on a request from Matthew Frank.
@@ -1602,7 +1621,7 @@ HotCRP NEWS
   Birman, and Jon Crowcroft.
 
 
-## Version 2.11 - 27.Oct.2007
+## Version 2.11 – 27.Oct.2007
 
 * Mail tool allows sending mail to contact authors or reviewers for
   selected papers.
@@ -1614,7 +1633,7 @@ HotCRP NEWS
   paper downloads when submissions are closed (bug report from V. Arun).
 
 
-## Version 2.10 - 24.Oct.2007
+## Version 2.10 – 24.Oct.2007
 
 * Add some support for MIME extensions; message bodies are marked UTF-8,
   and message headers containing UTF-8 characters are quoted according to
@@ -1624,7 +1643,7 @@ HotCRP NEWS
   unrequested reviews, and other things.
 
 
-## Version 2.9 - 20.Oct.2007
+## Version 2.9 – 20.Oct.2007
 
 * Add a setting allowing PC members to see tags even for conflicted papers.
 
@@ -1637,7 +1656,7 @@ HotCRP NEWS
 * Setting description improvements.
 
 
-## Version 2.8 - 11.Oct.2007
+## Version 2.8 – 11.Oct.2007
 
 * Bug fix: Do not reveal authors' identities via responses.
 
@@ -1658,7 +1677,7 @@ HotCRP NEWS
 * Other behavior improvements.
 
 
-## Version 2.7 - 23.Aug.2007
+## Version 2.7 – 23.Aug.2007
 
 * Email notification for comments.  Authors, reviewers, and PC members can
   request email notification when comments are added to a paper they are
@@ -1683,7 +1702,7 @@ HotCRP NEWS
   bugs.
 
 
-## Version 2.6 - 20.Aug.2007
+## Version 2.6 – 20.Aug.2007
 
 * New way to collect author information.  Author information is entered
   using separate text fields for Name, Email, and Affiliation.  If a user's
@@ -1698,12 +1717,12 @@ HotCRP NEWS
 * Style changes, especially on settings pages.
 
 
-## Version 2.5 - 12.Aug.2007
+## Version 2.5 – 12.Aug.2007
 
 * Optionally collect users' addresses and phone numbers.
 
 
-## Version 2.4 - 12.Aug.2007
+## Version 2.4 – 12.Aug.2007
 
 * Allow setting an info message that appears on the homepage.
 
@@ -1715,7 +1734,7 @@ HotCRP NEWS
 * Style changes.
 
 
-## Version 2.3 - 16.Jul.2007
+## Version 2.3 – 16.Jul.2007
 
 * New action log display includes search.
 
@@ -1724,19 +1743,19 @@ HotCRP NEWS
 * Other fixes.
 
 
-## Version 2.2 - 11.Jul.2007
+## Version 2.2 – 11.Jul.2007
 
 * Download a text file with reviewer names and emails (Frans).
 
 * Better offline reviewing.
 
 
-## Version 2.1 - 10.Jul.2007
+## Version 2.1 – 10.Jul.2007
 
 * IE compatibility.
 
 
-## Version 2.0 - 9.Jul.2007
+## Version 2.0 – 9.Jul.2007
 
 * New mail system.
 
@@ -1752,7 +1771,7 @@ HotCRP NEWS
 * Thanks to Akos Ledeczi.
 
 
-## Version 2.0b9 - 16.Jun.2007
+## Version 2.0b9 – 16.Jun.2007
 
 * More Ajax.
 
@@ -1778,7 +1797,7 @@ HotCRP NEWS
 * Thanks to Bernhard Ager, Frans Kaashoek, and Fernando Pereira.
 
 
-## Version 2.0b8 - 11.Mar.2007
+## Version 2.0b8 – 11.Mar.2007
 
 * Fix policy leak: Do not reveal reviewer identities if reviews are always
   anonymous!
@@ -1788,7 +1807,7 @@ HotCRP NEWS
 * Thanks to Jeff Chase.
 
 
-## Version 2.0b7 - 3.Mar.2007
+## Version 2.0b7 – 3.Mar.2007
 
 * Fix policy leak: When sending email, include only information the
   recipient can see.
@@ -1809,7 +1828,7 @@ HotCRP NEWS
 * Thanks to Bernhard Ager, Jeff Chase, Frans Kaashoek, and Andrew Myers.
 
 
-## Version 2.0b6 - 1.Feb.2007
+## Version 2.0b6 – 1.Feb.2007
 
 * Fix policy leak: PC members cannot see PC-only fields on review forms for
   their authored papers.
@@ -1820,7 +1839,7 @@ HotCRP NEWS
 * Other fixes.
 
 
-## Version 2.0b5 - 27.Jan.2007
+## Version 2.0b5 – 27.Jan.2007
 
 * Improve tags and help.
 
@@ -1831,7 +1850,7 @@ HotCRP NEWS
 * Other fixes.
 
 
-## Version 2.0b4 - 13.Jan.2007
+## Version 2.0b4 – 13.Jan.2007
 
 * Add automatic assignments.
 
@@ -1848,7 +1867,7 @@ HotCRP NEWS
 * Other fixes.
 
 
-## Version 2.0b3 - 10.Dec.2006
+## Version 2.0b3 – 10.Dec.2006
 
 * Move to Conference Settings pages from deadline settings.
 
@@ -1861,12 +1880,12 @@ HotCRP NEWS
 * Other fixes.
 
 
-## Version 2.0b2 - 1.Dec.2006
+## Version 2.0b2 – 1.Dec.2006
 
 * Internal updates.
 
 
-## Version 2.0b1 - 28.Nov.2006
+## Version 2.0b1 – 28.Nov.2006
 
 * Initial release.
 

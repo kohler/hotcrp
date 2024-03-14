@@ -17,3 +17,4 @@ configuring features inaccessible through the public settings UI.
 ## Notes
 
 * [CSS notes](./css.md)
+* [Sessions](./sessions.md)

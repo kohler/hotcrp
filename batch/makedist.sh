@@ -1,4 +1,4 @@
-export VERSION=3.0b3
+export VERSION=3.0.0
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
@@ -155,6 +155,7 @@ lib/hashanalysis.php
 lib/hclcolor.php
 lib/ht.php
 lib/icons.php
+lib/isovideomimetype.php
 lib/json.php
 lib/jsonexception.php
 lib/jsonparser.php
@@ -198,6 +199,7 @@ src/api/api_events.php
 src/api/api_follow.php
 src/api/api_formatcheck.php
 src/api/api_graphdata.php
+src/api/api_job.php
 src/api/api_mail.php
 src/api/api_paper.php
 src/api/api_paperpc.php
@@ -240,6 +242,7 @@ src/backuppattern.php
 src/banal
 src/capabilities/cap_authorview.php
 src/capabilities/cap_bearer.php
+src/capabilities/cap_job.php
 src/capabilities/cap_reviewaccept.php
 src/checkformat.php
 src/commentinfo.php
@@ -287,6 +290,7 @@ src/formulas/f_topic.php
 src/formulas/f_topicscore.php
 src/help/h_bulkassign.php
 src/help/h_chairsguide.php
+src/help/h_developer.php
 src/help/h_formulas.php
 src/help/h_jsonsettings.php
 src/help/h_keywords.php
@@ -572,12 +576,12 @@ images/view48.png
 images/viewas.png
 
 scripts/.htaccess
-scripts/d3-hotcrp.min.js
 scripts/buzzer.js
+scripts/d3-hotcrp.min.js
 scripts/emojicodes.json
 scripts/graph.js
 scripts/jquery-1.12.4.min.js
-scripts/jquery-3.6.4.min.js
+scripts/jquery-3.7.1.min.js
 scripts/script.js
 scripts/settings.js
 
