@@ -1170,16 +1170,20 @@ class PaperSearch extends MessageSet {
     }
 
     /** @param ?SearchAtom $a
+     * @param bool $top
      * @return array{int,int} */
-    private static function strip_show_atom($a) {
+    private static function strip_show_atom($a, $top) {
         if (!$a
             || ($a->kword && in_array($a->kword, ["show", "hide", "edit", "sort", "showsort", "editsort"]))) {
             return [0, 0];
         }
+        if ($a->op && $a->op->type === "(" && $top && $a->child[0]) {
+            return self::strip_show_atom($a->child[0], true);
+        }
         if (!$a->kword && $a->op && !$a->op->unary) {
             $pos1 = $pos2 = null;
             foreach ($a->child as $ch) {
-                $span = self::strip_show_atom($ch);
+                $span = self::strip_show_atom($ch, false);
                 if ($span[0] >= $span[1]) {
                     continue;
                 }
@@ -1201,7 +1205,7 @@ class PaperSearch extends MessageSet {
      * @return string */
     private static function strip_show($q) {
         $splitter = new SearchSplitter($q, 0, strlen($q));
-        $span = self::strip_show_atom($splitter->parse_expression());
+        $span = self::strip_show_atom($splitter->parse_expression(), true);
         return $span[0] < $span[1] ? substr($q, $span[0], $span[1] - $span[0]) : "";
     }
 
@@ -1213,7 +1217,7 @@ class PaperSearch extends MessageSet {
             for ($i = 0; $i !== $ng; ++$i) {
                 $ch = $this->_then_term->group_head_term($i);
                 $srchstr = $ch->source_subquery($this->q);
-                if ($ch->get_float("view")) {
+                if ($ch->get_float("view") || str_starts_with($srchstr, "(")) {
                     $srchstr = self::strip_show($srchstr);
                 }
                 $h = $ch->get_float("legend");
