@@ -3006,6 +3006,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table Paper change `withdrawReason` `withdrawReason` blob DEFAULT NULL")) {
             $conf->update_schema_version(293);
         }
+        if ($conf->sversion === 293
+            && $conf->ql_ok("alter table Capability add `lookupKey` varbinary(255) DEFAULT NULL")) {
+            $conf->update_schema_version(294);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

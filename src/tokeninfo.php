@@ -39,6 +39,9 @@ class TokenInfo {
     public $data;
     /** @var ?string */
     public $outputData;
+    /** @var ?string
+     * @readonly */
+    public $lookupKey;
 
     /** @var ?string */
     public $email;
@@ -134,6 +137,14 @@ class TokenInfo {
      * @suppress PhanAccessReadOnlyProperty */
     function set_salt($salt) {
         $this->salt = $salt;
+        return $this;
+    }
+
+    /** @param ?string $key
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_lookup_key($key) {
+        $this->lookupKey = $key;
         return $this;
     }
 
@@ -265,10 +276,18 @@ class TokenInfo {
 
     /** @param list<int> $types
      * @return Dbl_Result */
-    static function expired_tokens_result(Conf $conf, $types) {
+    static function expired_result(Conf $conf, $types) {
         // do not load `inputData` or `outputData`
         return $conf->ql("select capabilityType, contactId, paperId, reviewId, timeCreated, timeUsed, timeInvalid, timeExpires, salt, `data` from Capability where timeExpires>0 and timeExpires<? and capabilityType?a",
             Conf::$now, $types);
+    }
+
+    /** @param string $lookup_key
+     * @return Dbl_Result */
+    static function active_lookup_key_result(Conf $conf, $lookup_key) {
+        // do not load `inputData` or `outputData`
+        return $conf->ql("select * from Capability where (timeExpires<=0 or timeExpires>=?) and lookupKey?e",
+            Conf::$now, $lookup_key);
     }
 
 
@@ -342,6 +361,10 @@ class TokenInfo {
         if ($this->inputData !== null) {
             $qf .= ", inputData";
             $qv[] = $this->inputData;
+        }
+        if ($this->lookupKey !== null) {
+            $qf .= ", lookupKey";
+            $qv[] = $this->lookupKey;
         }
 
         for ($tries = 0; $tries < ($need_salt ? 5 : 1); ++$tries) {

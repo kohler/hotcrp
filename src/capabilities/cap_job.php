@@ -70,7 +70,6 @@ class Job_Capability {
     static function run_live(TokenInfo $tok, ?Qrequest $qreq = null, $redirect_uri = null) {
         assert(self::validate($tok, null));
         $batch_class = $tok->input("batch_class");
-        $argv = $tok->input("argv");
 
         $status = "done";
         $detacher = function () use (&$status, $qreq, $redirect_uri) {
