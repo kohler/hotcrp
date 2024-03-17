@@ -1,4 +1,4 @@
-<?php
+<?php /*{hotcrp Autoassign_Batch}*/
 // autoassign.php -- HotCRP autoassignment script
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 

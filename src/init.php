@@ -78,6 +78,15 @@ if (PHP_SAPI === "cli") {
     if (function_exists("pcntl_signal")) {
         pcntl_signal(SIGPIPE, SIG_DFL);
     }
+    if (getenv("HOTCRP_EXEC_MODE") === "background"
+        && function_exists("pcntl_fork")) {
+        if (function_exists("posix_setsid")) {
+            posix_setsid();
+        }
+        if (pcntl_fork() > 0) {
+            exit(0);
+        }
+    }
 }
 
 
