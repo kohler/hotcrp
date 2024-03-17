@@ -1177,8 +1177,8 @@ class PaperSearch extends MessageSet {
             || ($a->kword && in_array($a->kword, ["show", "hide", "edit", "sort", "showsort", "editsort"]))) {
             return [0, 0];
         }
-        if ($a->op && $a->op->type === "(" && $top && $a->child[0]) {
-            return self::strip_show_atom($a->child[0], true);
+        if ($a->op && $a->op->type === "(" && $top && ($ch = $a->child[0] ?? null)) {
+            return self::strip_show_atom($ch, true);
         }
         if (!$a->kword && $a->op && !$a->op->unary) {
             $pos1 = $pos2 = null;

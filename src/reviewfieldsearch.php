@@ -32,6 +32,7 @@ abstract class ReviewFieldSearch {
      * @param ReviewInfo $rrow
      * @return bool */
     final function test_review($user, $prow, $rrow) {
+        /** @phan-suppress-next-line PhanTypeMismatchArgument */
         return $this->test_value($rrow, $rrow->fval($this->rf));
     }
 
