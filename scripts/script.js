@@ -5266,7 +5266,7 @@ hotcrp.monitor_job = function (jobid, statuselt) {
             }
             if (data.progress != null || data.status === "done") {
                 let ex = statuselt.firstElementChild;
-                while (ex && ex.nodeName !== "P" && ex.nodeName !== "PROGRESS") {
+                while (ex && !hasClass(ex, "is-job-progress") && ex.nodeName !== "PROGRESS") {
                     ex = ex.nextElementSibling;
                 }
                 if (!ex || ex.nodeName !== "PROGRESS") {
@@ -5286,11 +5286,11 @@ hotcrp.monitor_job = function (jobid, statuselt) {
             }
             if (data.progress && data.progress !== true) {
                 let ex = statuselt.firstElementChild;
-                while (ex && ex.nodeName !== "P") {
+                while (ex && !hasClass(ex, "is-job-progress")) {
                     ex = ex.nextElementSibling;
                 }
                 if (!ex) {
-                    ex = $e("p", "mb-0");
+                    ex = $e("p", "mb-0 is-job-progress");
                     statuselt.appendChild(ex);
                 }
                 ex.replaceChildren($e("strong", null, "Status:"), " " + data.progress.replace(/\.*$/, "..."));

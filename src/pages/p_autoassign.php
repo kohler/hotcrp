@@ -649,7 +649,7 @@ class Autoassign_Page {
                 '<h3 class="form-h">Preparing assignment</h3>';
             echo Ht::feedback_msg($this->ms);
             if (($s = $tok->data("progress"))) {
-                echo '<p><strong>Status:</strong> ', htmlspecialchars($s), '</p>';
+                echo '<p class="is-job-progress"><strong>Status:</strong> ', htmlspecialchars($s), '</p>';
             }
             echo '</div>',
                 Ht::unstash_script("hotcrp.monitor_autoassignment(" . json_encode_browser($this->jobid) . ")");
