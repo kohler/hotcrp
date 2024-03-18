@@ -88,7 +88,16 @@ class Job_Capability {
         putenv("HOTCRP_JOB={$tok->salt}");
 
         try {
-            $x = call_user_func("{$batch_class}_Batch::make_args", $tok->input("argv"), $detacher);
+            $argv = [$batch_class];
+            if (($confid = $tok->conf->opt("confid"))) {
+                // The `-n` option is not normally needed: the batch class
+                // calls initialize_conf, which does nothing as Conf::$main
+                // is already initialized. But we should include it anyway
+                // for consistency.
+                $argv[] = "-n{$confid}";
+            }
+            array_push($argv, ...$tok->input("argv"));
+            $x = call_user_func("{$batch_class}_Batch::make_args", $argv, $detacher);
             $x->run();
         } catch (CommandLineException $ex) {
         }
@@ -114,8 +123,7 @@ class Job_Capability {
         $cmd[] = self::shell_quote_light($tok->conf->opt("phpCommand") ?? "php");
         $cmd[] = self::shell_quote_light($paths[0]);
         if (($confid = $tok->conf->opt("confid"))) {
-            $cmd[] = "-n";
-            $cmd[] = self::shell_quote_light($confid);
+            $cmd[] = self::shell_quote_light("-n{$confid}");
         }
         foreach ($tok->input("argv") as $w) {
             $cmd[] = self::shell_quote_light($w);

@@ -15,8 +15,6 @@ class Autoassign_Page {
     public $ms;
     /** @var string */
     public $jobid;
-    /** @var bool */
-    private $detached = false;
 
     function __construct(Contact $user, Qrequest $qreq) {
         assert($user->is_manager());
@@ -469,7 +467,7 @@ class Autoassign_Page {
     function start_job() {
         // prepare arguments for batch autoassigner
         $qreq = $this->qreq;
-        $argv = ["batch/autoassign", "-q" . $this->ssel->unparse_search(), "-t" . $qreq->t];
+        $argv = ["-q" . $this->ssel->unparse_search(), "-t" . $qreq->t];
 
         if ($qreq->pctyp === "sel") {
             $pcsel = [];
@@ -513,7 +511,7 @@ class Autoassign_Page {
             $argmap->$k1 = $k;
         }
 
-        $tok = Job_Capability::make($this->user, "Autoassign", ["batch/autoassign.php", "-je", "-D"])
+        $tok = Job_Capability::make($this->user, "Autoassign", ["-je", "-D"])
             ->set_input("assign_argv", $argv)
             ->set_input("argmap", $argmap);
         $this->jobid = $tok->create();

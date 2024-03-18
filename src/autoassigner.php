@@ -475,6 +475,7 @@ abstract class Autoassigner extends MessageSet {
 
     final protected function make_ae() {
         gc_collect_cycles();
+        $this->mark_progress("Initializing");
         $this->ainfo = [];
         foreach ($this->acs as $ac) {
             $alist = [];

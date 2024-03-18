@@ -410,15 +410,16 @@ class Getopt {
     }
 
     /** @param list<string> $argv
+     * @param ?int $first_arg
      * @return array<string,string|int|float|list<string>> */
-    function parse($argv) {
+    function parse($argv, $first_arg = null) {
         $res = [];
         $rest = [];
         $pot = 0;
         $active_po = null;
         $oname = $name = "";
         $odone = false;
-        for ($i = 1; $i !== count($argv); ++$i) {
+        for ($i = $first_arg ?? 1; $i !== count($argv); ++$i) {
             $arg = $argv[$i];
             $po = null;
             $wantpo = $value = false;

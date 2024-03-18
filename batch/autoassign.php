@@ -76,7 +76,7 @@ class Autoassign_Batch {
             try {
                 $this->_jtok->update_use();
                 $this->parse_arg($arg);
-                $this->parse_arg($getopt->parse($this->_jtok->input("assign_argv") ?? []));
+                $this->parse_arg($getopt->parse($this->_jtok->input("assign_argv") ?? [], 0));
                 $this->complete_arg();
             } catch (CommandLineException $ex) {
                 $this->report([MessageItem::error("<0>{$ex->getMessage()}")], $ex->exitStatus);
@@ -119,6 +119,12 @@ class Autoassign_Batch {
     private function reportx($message_list, $exit_status = null) {
         $this->report($message_list, $exit_status);
         assert(false);
+    }
+
+    /** @param string $msg */
+    static private function my_error_log($msg) {
+        error_log($msg);
+        file_put_contents("/tmp/hotcrp.log", $msg, FILE_APPEND);
     }
 
     /** @param associative-array $arg */
