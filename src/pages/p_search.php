@@ -432,7 +432,6 @@ class Search_Page {
         $pl->apply_view_qreq($qreq);
         $param = ["#" => "view"];
         foreach ($pl->unparse_view(PaperList::VIEWORIGIN_SEARCH, false) as $vx) {
-            error_log($vx);
             if (str_starts_with($vx, "sort:score[")) {
                 $param["scoresort"] = substr($vx, 11, -1);
             } else if (strpos($vx, "[") === false) {

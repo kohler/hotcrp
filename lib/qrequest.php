@@ -776,6 +776,34 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             return ".empty";
         }
     }
+
+
+    /** @return array<string,string|list> */
+    function debug_json() {
+        $a = [];
+        foreach ($this->_v as $k => $v) {
+            if ($v === "__array__" && ($av = $this->_a[$k] ?? null) !== null) {
+                if (count($av) > 20) {
+                    $av = array_slice($av, 0, 20);
+                    $av[] = "...";
+                }
+                $a[$k] = $av;
+            } else if ($v !== null) {
+                if (strlen($v) > 120) {
+                    $v = substr($v, 0, 117) . "...";
+                }
+                $a[$k] = $v;
+            }
+        }
+        foreach ($this->_files as $k => $v) {
+            $fv = ["name" => $v->name, "type" => $v->type, "size" => $v->size];
+            if ($v->error) {
+                $fv["error"] = $v->error;
+            }
+            $a[$k] = $v;
+        }
+        return $a;
+    }
 }
 
 class QrequestFile {
@@ -800,19 +828,5 @@ class QrequestFile {
         $this->tmp_name = $a["tmp_name"] ?? null;
         $this->content = $a["content"] ?? null;
         $this->error = $a["error"] ?? 0;
-    }
-
-    /** @return array{name:string,type:string,size:int,tmp_name?:string,content?:string,error:int}
-     * @deprecated */
-    function as_array() {
-        $a = ["name" => $this->name, "type" => $this->type, "size" => $this->size];
-        if ($this->tmp_name !== null) {
-            $a["tmp_name"] = $this->tmp_name;
-        }
-        if ($this->content !== null) {
-            $a["content"] = $this->content;
-        }
-        $a["error"] = $this->error;
-        return $a;
     }
 }

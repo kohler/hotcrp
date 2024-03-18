@@ -25,7 +25,10 @@ class SearchConfig_API {
 
             $want = join(" ", $parsed_view);
             if ($want !== $pl->unparse_baseline_view()) {
-                $user->conf->save_setting("{$report}display_default", 1, join(" ", $parsed_view));
+                $user->conf->save_setting("{$report}display_default", 1, $want);
+                if (strpos($want, "show:show") !== false) {
+                    error_log("saving with show:show: " . json_encode($qreq->debug_json()));
+                }
             } else {
                 $user->conf->save_setting("{$report}display_default", null);
             }
