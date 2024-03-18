@@ -546,7 +546,7 @@ class FormulaGraph extends MessageSet {
 
         $qcolors = $this->_qstyles;
         foreach ($need_anal as $qi => $na) {
-            if ($na && $has_color[$qi] >= 5 * $no_color[$qi]) {
+            if ($na && $has_color[$qi] && $has_color[$qi] >= 5 * $no_color[$qi]) {
                 $qcolors[$qi] = join(" ", $qcolorset[$qi]);
             }
         }
