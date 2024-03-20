@@ -168,7 +168,7 @@ class Multiconference {
             if ($maintenance) {
                 $j["maintenance"] = true;
             }
-            echo json_encode($j), "\n";
+            echo json_encode_browser($j), "\n";
             exit;
         }
 

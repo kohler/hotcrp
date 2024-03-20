@@ -209,7 +209,7 @@ class CommentInfo {
                         $j["done"] = $rrd->done;
                     }
                 }
-                $t[] = "hotcrp.set_response_round(" . json_encode($rrd->name) . "," . json_encode($j) . ")";
+                $t[] = "hotcrp.set_response_round(" . json_encode_browser($rrd->name) . "," . json_encode_browser($j) . ")";
             }
             Icons::stash_licon("ui_tag");
             Icons::stash_licon("ui_attachment");
@@ -316,7 +316,7 @@ class CommentInfo {
         } else {
             $this->_jdata->$key = $value;
         }
-        $s = json_encode($this->_jdata);
+        $s = json_encode_db($this->_jdata);
         $this->commentData = $s === "{}" ? null : $s;
     }
 
@@ -866,10 +866,13 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         // notifications
         $displayed = ($ctype & self::CT_DRAFT) === 0;
 
-        // text
+        // text, mentions
         $text = $req["text"] ?? null;
+        $desired_mentions = [];
         if ($text !== false) {
             $text = (string) $text;
+            $desired_mentions = $this->analyze_mentions($user, $text, $ctype);
+            $this->set_data("mentions", empty($desired_mentions) ? null : $desired_mentions);
         }
 
         // query
@@ -1051,8 +1054,8 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         if ($displayed
             && $this->commentId
             && ($this->commentType & self::CTVIS_MASK) > self::CTVIS_ADMINONLY
-            && strpos($text, "@") !== false) {
-            $this->analyze_mentions($user);
+            && !empty($desired_mentions)) {
+            $this->inform_mentions($desired_mentions);
         }
 
         if ($this->timeNotified === $this->timeModified) {
@@ -1076,25 +1079,28 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         return $n;
     }
 
-    /** @param Contact $user */
-    private function analyze_mentions($user) {
-        // enumerate desired mentions and save them
-        $desired_mentions = [];
-        $text = $this->commentOverflow ?? $this->comment;
-        foreach (MentionParser::parse($text, ...Completion_API::mention_lists($user, $this->prow, $this->commentType & self::CTVIS_MASK, Completion_API::MENTION_PARSE)) as $mpx) {
+    /** @param Contact $user
+     * @param string $text
+     * @param int $ctype
+     * @return list<array{int,int,int,bool}> */
+    private function analyze_mentions($user, $text, $ctype) {
+        if (strpos($text, "@") === false) {
+            return [];
+        }
+        $dm = [];
+        foreach (MentionParser::parse($text, ...Completion_API::mention_lists($user, $this->prow, $ctype & self::CTVIS_MASK, Completion_API::MENTION_PARSE)) as $mpx) {
             $named = $mpx[0] instanceof Contact || $mpx[0]->status !== Author::STATUS_ANONYMOUS_REVIEWER;
-            $desired_mentions[] = [$mpx[0]->contactId, $mpx[1], $mpx[2], $named];
-            $this->conf->prefetch_user_by_id($mpx[0]->contactId);
+            $dm[] = [$mpx[0]->contactId, $mpx[1], $mpx[2], $named];
         }
+        return $dm;
+    }
 
-        $old_data = $this->commentData;
-        $this->set_data("mentions", empty($desired_mentions) ? null : $desired_mentions);
-        if ($this->commentData !== $old_data) {
-            $this->conf->qe("update PaperComment set commentData=? where paperId=? and commentId=?", $this->commentData, $this->paperId, $this->commentId);
+    /** @param list<array{int,int,int,bool}> $mentions */
+    private function inform_mentions($mentions) {
+        foreach ($mentions as $mxm) {
+            $this->conf->prefetch_user_by_id($mxm[0]);
         }
-
-        // go over mentions, send email
-        foreach ($desired_mentions as $mxm) {
+        foreach ($mentions as $mxm) {
             $mentionee = $this->conf->user_by_id($mxm[0], USER_SLICE);
             if (!$mentionee) {
                 continue;

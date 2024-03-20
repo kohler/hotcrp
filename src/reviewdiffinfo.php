@@ -197,7 +197,7 @@ class ReviewDiffInfo {
                 $upatch[$n] = $v;
             }
         }
-        $str = json_encode($upatch);
+        $str = json_encode_db($upatch);
         if ($bdata !== "") {
             $str = strlen($str) . $str . $bdata;
         }

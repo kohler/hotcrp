@@ -1169,6 +1169,26 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
     }
 
+    private function v295_unfuck_mentions() {
+        $result = $this->conf->qe("select * from PaperComment where commentData like '%mention%' and (comment is null or comment not like '%@%')");
+        $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
+        while (($ci = $result->fetch_object())) {
+            $text = $ci->commentOverflow ?? $ci->comment;
+            if (strpos($text, "@") === false
+                && ($data = json_decode($ci->commentData))
+                && isset($data->mentions)) {
+                unset($data->mentions);
+                $datastr = json_encode_db($data);
+                $cleanf("update PaperComment set commentData=? where paperId=? and commentId=?",
+                        $datastr === "{}" ? null : $datastr,
+                        $ci->paperId, $ci->commentId);
+            }
+        }
+        $result->close();
+        $cleanf(null);
+        return true;
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -3009,6 +3029,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 293
             && $conf->ql_ok("alter table Capability add `lookupKey` varbinary(255) DEFAULT NULL")) {
             $conf->update_schema_version(294);
+        }
+        if ($conf->sversion === 294
+            && $this->v295_unfuck_mentions()) {
+            $conf->update_schema_version(295);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
