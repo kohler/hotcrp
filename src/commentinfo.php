@@ -607,7 +607,7 @@ class CommentInfo {
         if (($this->commentType & self::CT_DRAFT) !== 0) {
             $cj->draft = true;
             if (!$this->prow->has_author($viewer)) {
-                $cj->folded = true;
+                $cj->collapsed = $cj->folded /* XXX */ = true;
             }
         }
         if (($this->commentType & self::CT_RESPONSE) !== 0) {

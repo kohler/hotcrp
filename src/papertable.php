@@ -2963,7 +2963,7 @@ class PaperTable {
                 if (($any_submitted || $rc->reviewStatus === ReviewInfo::RS_ADOPTED)
                     && $rc->reviewStatus < ReviewInfo::RS_COMPLETED
                     && !$this->user->is_my_review($rc)) {
-                    $rcj->folded = true;
+                    $rcj->collapsed = $rcj->folded /* XXX */ = true;
                 }
                 $s .= "hotcrp.add_review(" . json_encode_browser($rcj) . ");\n";
             } else {

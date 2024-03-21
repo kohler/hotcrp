@@ -6284,7 +6284,7 @@ function revrating_key(evt) {
 
 function make_review_h2(rrow, rlink, rdesc) {
     let h2 = $e("h2"), ma, rd = $e("span");
-    if (rrow.folded) {
+    if (rrow.collapsed) {
         ma = $e("button", {type: "button", "class": "qo ui js-foldup", "data-fold-target": 20}, make_expander_element(20));
     } else {
         ma = $e("a", {href: hoturl("review", rlink), "class": "qo"});
@@ -6294,7 +6294,7 @@ function make_review_h2(rrow, rlink, rdesc) {
     ma.append(rd);
     h2.append(ma);
     if (rrow.editable) {
-        if (rrow.folded) {
+        if (rrow.collapsed) {
             ma = $e("a", {href: hoturl("review", rlink), "class": "qo"});
             h2.append(" ", ma);
         } else {
@@ -6362,10 +6362,12 @@ hotcrp.add_review = function (rrow) {
         rdesc = "Draft " + rdesc;
     if (rrow.ordinal)
         rdesc += " #" + rid;
+    if (rrow.folded && rrow.collapsed == null) /* XXX */
+        rrow.collapsed = rrow.folded;
 
     earticle = document.createElement("article");
     earticle.id = "r" + rid;
-    earticle.className = "pcard revcard need-anchor-unfold has-fold fold20" + (rrow.folded ? "c" : "o");
+    earticle.className = "pcard revcard need-anchor-unfold has-fold fold20" + (rrow.collapsed ? "c" : "o");
     earticle.setAttribute("data-pid", rrow.pid);
     earticle.setAttribute("data-rid", rrow.rid);
     rrow.ordinal && earticle.setAttribute("data-review-ordinal", rrow.ordinal);
@@ -7238,6 +7240,8 @@ function cmt_save_callback(cj) {
         if (!data.cmt && editing_response) {
             data.cmt = {is_new: true, response: cj.response, editable: true};
         }
+        if (data.cmt && data.cmt.folded && data.cmt.collapsed == null) /* XXX */
+            data.cmt.collapsed = data.cmt.folded;
         var new_cid = data.cmt ? cj_cid(data.cmt) : null;
         if (new_cid) {
             cmts[new_cid] = data.cmt;
@@ -7329,7 +7333,7 @@ function cmt_button_click(evt) {
         evt.preventDefault();
         cmt_save(this, "submit");
     } else if (this.name === "cancel") {
-        cj.folded && fold(this.closest(".cmtcard"), true, 20);
+        cj.collapsed && fold(this.closest(".cmtcard"), true, 20);
         cmt_render(cj, false);
     } else if (this.name === "delete") {
         override_deadlines.call(this, function () {
@@ -7388,7 +7392,7 @@ function cmt_render(cj, editing) {
     if (cj.response && cj.text !== false) {
         const h2 = $e("h2");
         let cnc = h2;
-        if (cj.folded && !editing) {
+        if (cj.collapsed && !editing) {
             cnc = $e("button", {type: "button", "class": "qo ui js-foldup", "data-fold-target": 20}, make_expander_element(20));
         } else if (cj.editable && !editing) {
             cnc = $e("button", {type: "button", "class": "qo ui cmteditor"});
@@ -7396,7 +7400,7 @@ function cmt_render(cj, editing) {
         h2 === cnc || h2.append(cnc);
         cnc.append($e("span", "cmtcard-header-name", cj_name(cj)));
         if (cj.editable && !editing) {
-            if (cj.folded) {
+            if (cj.collapsed) {
                 cnc = $e("button", {type: "button", "class": "qo ui cmteditor"});
                 h2.append(" ", cnc);
             }
@@ -7508,6 +7512,8 @@ function cmt_render_preview(evt, format, value, dest) {
 
 function add_comment(cj, editing) {
     var cid = cj_cid(cj), celt = $$(cid);
+    if (cj.folded && cj.collapsed == null) /* XXX */
+        cj.collapsed = cj.folded;
     cmts[cid] = cj;
     if (editing == null
         && cj.response
@@ -7517,9 +7523,9 @@ function add_comment(cj, editing) {
         && hotcrp.status.myperm.is_author) {
         editing = 2;
     }
-    if (cj.folded
+    if (cj.collapsed
         && cj.text === false) {
-        cj.folded = false;
+        cj.collapsed = false;
     }
     if (celt) {
         cmt_render(cj, editing);
@@ -7557,7 +7563,7 @@ function add_new_comment_button(cj, cid) {
 
 function add_new_comment(cj, cid) {
     document.querySelector(".pcontainer").insertBefore($e("article", {
-        id: cid, "class": "pcard cmtcard cmtid comment need-anchor-unfold has-fold ".concat(cj.folded ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
+        id: cid, "class": "pcard cmtcard cmtid comment need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
     }), $$("k-comment-actions"));
 }
 
