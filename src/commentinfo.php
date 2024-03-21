@@ -290,6 +290,38 @@ class CommentInfo {
         }
     }
 
+    /** @return string */
+    function raw_contents() {
+        return $this->commentOverflow ?? $this->comment ?? "";
+    }
+
+    /** @param ?Contact $viewer
+     * @param bool $censor_mentions
+     * @param ?int $censor_mentions_after
+     * @return string */
+    function contents($viewer = null, $censor_mentions = false, $censor_mentions_after = null) {
+        $t = $this->raw_contents();
+        if ($t === ""
+            || !$censor_mentions
+            || !($mx = $this->data("mentions"))
+            || !is_array($mx)) {
+            return $t;
+        }
+        $delta = 0;
+        foreach ($mx as $m) {
+            if (is_array($m)
+                && count($m) >= 4
+                && $m[3]
+                && (!$viewer || $m[0] !== $viewer->contactId)
+                && ($censor_mentions_after === null || $m[1] + $delta < $censor_mentions_after)) {
+                $r = $this->prow->unparse_pseudonym($viewer, $m[0]) ?? "Anonymous";
+                $t = substr_replace($t, "@{$r}", $m[1] + $delta, $m[2] - $m[1]);
+                $delta += strlen($r) - ($m[2] - $m[1] - 1);
+            }
+        }
+        return $t;
+    }
+
     /** @return object */
     private function make_data() {
         if ($this->_jdata === null) {
@@ -522,33 +554,6 @@ class CommentInfo {
         return $this->attachments()->document_ids();
     }
 
-    /** @param ?Contact $viewer
-     * @param bool $censor_mentions
-     * @param ?int $censor_mentions_after
-     * @return string */
-    function contents($viewer = null, $censor_mentions = false, $censor_mentions_after = null) {
-        $t = $this->commentOverflow ?? $this->comment ?? "";
-        if ($t === ""
-            || !$censor_mentions
-            || !($mx = $this->data("mentions"))
-            || !is_array($mx)) {
-            return $t;
-        }
-        $delta = 0;
-        foreach ($mx as $m) {
-            if (is_array($m)
-                && count($m) >= 4
-                && $m[3]
-                && (!$viewer || $m[0] !== $viewer->contactId)
-                && ($censor_mentions_after === null || $m[1] + $delta < $censor_mentions_after)) {
-                $r = $this->prow->unparse_pseudonym($viewer, $m[0]) ?? "Anonymous";
-                $t = substr_replace($t, "@{$r}", $m[1] + $delta, $m[2] - $m[1]);
-                $delta += strlen($r) - ($m[2] - $m[1] - 1);
-            }
-        }
-        return $t;
-    }
-
     /** @param bool $editable
      * @return list<object> */
     function attachments_json($editable = false) {
@@ -689,7 +694,7 @@ class CommentInfo {
             }
         } else {
             $cj->text = false;
-            $cj->word_count = count_words($this->commentOverflow ?? $this->comment);
+            $cj->word_count = count_words($this->raw_contents());
         }
 
         return $cj;
@@ -980,7 +985,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             }
             $ch = [];
             if ($this->commentId
-                && $text !== ($this->commentOverflow ?? $this->comment)) {
+                && $text !== $this->raw_contents()) {
                 $ch[] = "text";
             }
             if ($this->commentId
@@ -1116,7 +1121,8 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 "comment_row" => $this
             ]);
             if (!$mxm[3]) {
-                $notification->user_html = htmlspecialchars(substr($text, $mxm[1] + 1, $mxm[2] - $mxm[1] - 1));
+                $n = substr($this->raw_contents(), $mxm[1] + 1, $mxm[2] - $mxm[1] - 1);
+                $notification->user_html = htmlspecialchars($n);
             }
         }
     }
