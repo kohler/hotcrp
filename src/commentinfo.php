@@ -428,13 +428,15 @@ class CommentInfo {
     private function unparse_commenter_pseudonym(Contact $viewer) {
         if (($this->commentType & self::CT_BYAUTHOR_MASK) !== 0) {
             return "Author";
-        } else if (($this->commentType & (self::CTVIS_MASK | self::CT_BYSHEPHERD)) === (self::CTVIS_AUTHOR | self::CT_BYSHEPHERD)) {
+        } else if (($this->commentType & (self::CTVIS_MASK | self::CT_BYSHEPHERD)) === (self::CTVIS_AUTHOR | self::CT_BYSHEPHERD)
+                   && $this->contactId === $this->prow->shepherdContactId) {
             return "Shepherd";
         } else if (($rrow = $this->prow->review_by_user($this->contactId))
                    && $rrow->reviewOrdinal
                    && $viewer->can_view_review_assignment($this->prow, $rrow)) {
             return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
-        } else if (($this->commentType & self::CT_BYSHEPHERD) !== 0) {
+        } else if (($this->commentType & self::CT_BYSHEPHERD) !== 0
+                   && $this->contactId === $this->prow->shepherdContactId) {
             return "Shepherd";
         } else if (($this->commentType & self::CT_BYADMINISTRATOR) !== 0) {
             return "Administrator";
