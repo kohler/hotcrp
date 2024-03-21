@@ -26,10 +26,11 @@ class AuthorView_Capability {
             Dbl::free($result);
             // create new token
             if (!$prow->_author_view_token || !$prow->_author_view_token->salt) {
-                $tok = new TokenInfo($prow->conf, TokenInfo::AUTHORVIEW);
-                $tok->paperId = $prow->paperId;
-                $tok->set_token_pattern("hcav{$prow->paperId}[16]");
-                if ($tok->create()) {
+                $tok = (new TokenInfo($prow->conf, TokenInfo::AUTHORVIEW))
+                    ->set_paper($prow)
+                    ->set_token_pattern("hcav{$prow->paperId}[16]")
+                    ->insert();
+                if ($tok->stored()) {
                     $prow->_author_view_token = $tok;
                 }
             }

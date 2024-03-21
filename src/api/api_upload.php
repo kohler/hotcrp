@@ -120,7 +120,8 @@ class Upload_API {
             $this->_cap->set_salt("hcup" . base48_encode(random_bytes(12)));
             if (($handle = fopen($this->segment_file(), "x"))) {
                 fclose($handle);
-                if ($this->_cap->create()) {
+                $this->_cap->insert();
+                if ($this->_cap->stored()) {
                     return true;
                 }
                 unlink($this->segment_file());
@@ -161,9 +162,8 @@ class Upload_API {
         } else if ($size > $this->max_size) {
             return self::_make_simple_error(400, "<0>`size` too large") + ["maxsize" => $this->max_size];
         }
-        $this->_cap = new TokenInfo($this->conf, TokenInfo::UPLOAD);
-        $this->_cap->set_user($user)->set_expires_after(7200);
-        $this->_cap->paperId = $prow ? $prow->paperId : 0;
+        $this->_cap = (new TokenInfo($this->conf, TokenInfo::UPLOAD))
+            ->set_user($user)->set_paper($prow)->set_expires_after(7200);
         if (isset($qreq->filename)
             && strlen($qreq->filename) <= 255
             && is_valid_utf8($qreq->filename)) {

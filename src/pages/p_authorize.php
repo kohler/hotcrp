@@ -149,8 +149,8 @@ class Authorize_Page {
             ->change_data("state", $this->qreq->state)
             ->change_data("nonce", $this->qreq->nonce)
             ->change_data("client_id", $client->client_id)
-            ->change_data("redirect_uri", $this->qreq->redirect_uri);
-        $this->token->create();
+            ->change_data("redirect_uri", $this->qreq->redirect_uri)
+            ->insert();
 
         $this->client = $client;
         $this->qreq->print_header("Sign in", "authorize", ["action_bar" => "", "hide_header" => true, "body_class" => "body-signin"]);

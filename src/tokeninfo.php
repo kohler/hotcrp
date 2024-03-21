@@ -12,13 +12,16 @@ class TokenInfo {
     /** @var int
      * @readonly */
     public $capabilityType;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $contactId;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $paperId;
     /** @var int */
     public $reviewId;
-    /** @var int */
+    /** @var ?int
+     * @readonly */
     public $timeCreated;
     /** @var int
      * @readonly */
@@ -82,6 +85,11 @@ class TokenInfo {
         }
     }
 
+    /** @return bool */
+    final function stored() {
+        return $this->timeCreated !== null;
+    }
+
     /** return \mysqli */
     private function dblink() {
         return $this->is_cdb ? $this->conf->contactdb() : $this->conf->dblink;
@@ -90,7 +98,7 @@ class TokenInfo {
     /** @param bool $is_cdb
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function set_contactdb($is_cdb) {
+    final function set_contactdb($is_cdb) {
         assert($this->_user === false && !$this->contactId);
         $this->is_cdb = $is_cdb;
         return $this;
@@ -98,8 +106,8 @@ class TokenInfo {
 
     /** @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function set_user(Contact $user) {
-        assert(!$this->is_cdb);
+    final function set_user(Contact $user) {
+        assert(!$this->is_cdb && !$this->stored());
         $this->is_cdb = false;
         $this->contactId = $user->contactId > 0 ? $user->contactId : 0;
         $this->email = $user->email;
@@ -109,8 +117,8 @@ class TokenInfo {
 
     /** @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function set_cdb_user(Contact $user) {
-        assert($user->contactDbId > 0);
+    final function set_cdb_user(Contact $user) {
+        assert($user->contactDbId > 0 && !$this->stored());
         $this->is_cdb = true;
         $this->contactId = $user->contactDbId > 0 ? $user->contactDbId : 0;
         $this->email = $user->email;
@@ -118,16 +126,43 @@ class TokenInfo {
         return $this;
     }
 
+    /** @param int $uid
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    final function set_user_id($uid) {
+        assert(!$this->is_cdb && !$this->stored());
+        $this->contactId = $uid;
+        return $this;
+    }
+
+    /** @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    final function set_paper(?PaperInfo $prow) {
+        assert(!$this->stored());
+        $this->paperId = $prow ? $prow->paperId : 0;
+        return $this;
+    }
+
+    /** @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    final function set_review(ReviewInfo $rrow) {
+        assert(!$this->stored());
+        $this->paperId = $rrow->paperId;
+        $this->reviewId = $rrow->reviewId;
+        return $this;
+    }
+
     /** @param string $pattern
      * @return $this */
-    function set_token_pattern($pattern) {
+    final function set_token_pattern($pattern) {
+        assert(!$this->stored());
         $this->_token_pattern = $pattern;
         return $this;
     }
 
     /** @param callable(TokenInfo):bool $approver
      * @return $this */
-    function set_token_approver($approver) {
+    final function set_token_approver($approver) {
         $this->_token_approver = $approver;
         return $this;
     }
@@ -135,7 +170,8 @@ class TokenInfo {
     /** @param string $salt
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function set_salt($salt) {
+    final function set_salt($salt) {
+        assert(!$this->stored());
         $this->salt = $salt;
         return $this;
     }
@@ -143,7 +179,7 @@ class TokenInfo {
     /** @param ?string $key
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function set_lookup_key($key) {
+    final function set_lookup_key($key) {
         $this->lookupKey = $key;
         return $this;
     }
@@ -151,7 +187,7 @@ class TokenInfo {
     /** @param int $t
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function set_invalid_at($t) {
+    final function set_invalid_at($t) {
         if ($t !== $this->timeInvalid) {
             $this->timeInvalid = $t;
             $this->_changes |= self::CHF_TIMES;
@@ -161,12 +197,12 @@ class TokenInfo {
 
     /** @param int $seconds
      * @return $this */
-    function set_invalid_after($seconds) {
+    final function set_invalid_after($seconds) {
         return $this->set_invalid_at(Conf::$now + $seconds);
     }
 
     /** @return $this */
-    function set_invalid() {
+    final function set_invalid() {
         if ($this->timeInvalid <= 0 || $this->timeInvalid >= Conf::$now) {
             $this->set_invalid_at(Conf::$now - 1);
         }
@@ -175,7 +211,7 @@ class TokenInfo {
 
     /** @param int $seconds
      * @return $this */
-    function extend_validity($seconds) {
+    final function extend_validity($seconds) {
         if ($this->timeInvalid > 0 && $this->timeInvalid < Conf::$now + $seconds) {
             $this->set_invalid_at(Conf::$now + $seconds);
         }
@@ -185,7 +221,7 @@ class TokenInfo {
     /** @param int $t
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function set_expires_at($t) {
+    final function set_expires_at($t) {
         if ($t !== $this->timeExpires) {
             $this->timeExpires = $t;
             $this->_changes |= self::CHF_TIMES;
@@ -195,13 +231,13 @@ class TokenInfo {
 
     /** @param int $seconds
      * @return $this */
-    function set_expires_after($seconds) {
+    final function set_expires_after($seconds) {
         return $this->set_expires_at(Conf::$now + $seconds);
     }
 
     /** @param int $seconds
      * @return $this */
-    function extend_expiry($seconds) {
+    final function extend_expiry($seconds) {
         if ($this->timeExpires > 0 && $this->timeExpires < Conf::$now + $seconds) {
             $this->set_expires_at(Conf::$now + $seconds);
         }
@@ -211,7 +247,7 @@ class TokenInfo {
     /** @param null|string|associative-array|object $data
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function set_input($data, $value = null) {
+    final function set_input($data, $value = null) {
         json_encode_object_change($this->inputData, $this->_jinputData, $data, $value, func_num_args());
         return $this;
     }
@@ -219,7 +255,7 @@ class TokenInfo {
     /** @param null|string|associative-array|object $data
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function assign_data($data) {
+    final function assign_data($data) {
         if ($data !== null && !is_string($data)) {
             $data = json_encode_db($data);
         }
@@ -293,14 +329,14 @@ class TokenInfo {
 
     /** @param ?int $capabilityType
      * @return bool */
-    function is_active($capabilityType = null) {
+    final function is_active($capabilityType = null) {
         return ($capabilityType === null || $this->capabilityType === $capabilityType)
             && ($this->timeExpires === 0 || $this->timeExpires > Conf::$now)
             && ($this->timeInvalid === 0 || $this->timeInvalid > Conf::$now);
     }
 
     /** @return ?Contact */
-    function user() {
+    final function user() {
         if ($this->_user === false) {
             if ($this->contactId <= 0) {
                 $this->_user = null;
@@ -314,7 +350,7 @@ class TokenInfo {
     }
 
     /** @return ?Contact */
-    function local_user() {
+    final function local_user() {
         if (!$this->is_cdb) {
             return $this->user();
         } else if ($this->email !== null) {
@@ -326,20 +362,20 @@ class TokenInfo {
     }
 
     /** @return string */
-    function instantiate_token() {
+    final function instantiate_token() {
         return preg_replace_callback('/\[(\d+)\]/', function ($m) {
             return base48_encode(random_bytes(intval($m[1])));
         }, $this->_token_pattern);
     }
 
-    /** @return ?string
+    /** @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function create() {
+    final function insert() {
+        assert($this->timeCreated === null);
         assert($this->capabilityType > 0);
         $this->contactId = $this->contactId ?? 0;
         $this->paperId = $this->paperId ?? 0;
         $this->reviewId = $this->reviewId ?? 0;
-        $this->timeCreated = $this->timeCreated ?? Conf::$now;
         $this->timeUsed = $this->timeUsed ?? 0;
         $this->timeInvalid = $this->timeInvalid ?? 0;
         $this->timeExpires = $this->timeExpires ?? 0;
@@ -350,9 +386,9 @@ class TokenInfo {
 
         $qf = "";
         $qv = [
-            null, $this->capabilityType, $this->contactId, $this->paperId,
-            $this->timeCreated, $this->timeUsed, $this->timeInvalid,
-            $this->timeExpires, $this->data
+            null /* salt */, null /* timeCreated */,
+            $this->capabilityType, $this->contactId, $this->paperId,
+            $this->timeUsed, $this->timeInvalid, $this->timeExpires, $this->data
         ];
         if ($this->reviewId !== 0) {
             $qf .= ", reviewId";
@@ -372,7 +408,8 @@ class TokenInfo {
                 $this->salt = $this->instantiate_token();
             }
             $qv[0] = $this->salt;
-            $result = Dbl::qe($this->dblink(), "insert into Capability (salt, capabilityType, contactId, paperId, timeCreated, timeUsed, timeInvalid, timeExpires, data{$qf}) values ?v", [$qv]);
+            $qv[1] = Conf::$now;
+            $result = Dbl::qe($this->dblink(), "insert into Capability (salt, timeCreated, capabilityType, contactId, paperId, timeUsed, timeInvalid, timeExpires, data{$qf}) values ?v", [$qv]);
             if ($result->affected_rows <= 0) {
                 continue;
             }
@@ -381,32 +418,40 @@ class TokenInfo {
                 Dbl::qe($this->dblink(), "delete from Capability where salt=?", $this->salt);
                 continue;
             }
-            $this->update();
-            return $this->salt;
+            $this->timeCreated = $qv[1];
+            $this->update();  // does nothing unless _token_approver modifies self
+            return $this;
         }
 
         if ($need_salt) {
             $this->salt = null;
         }
         $this->_changes = $changes;
-        return null;
+        return $this;
+    }
+
+    /** @return ?string
+     * @deprecated */
+    function create() {
+        $this->insert();
+        return $this->timeCreated ? $this->salt : null;
     }
 
     /** @param ?string $key
      * @return mixed */
-    function data($key = null) {
+    final function data($key = null) {
         $this->_jdata = $this->_jdata ?? json_decode_object($this->data);
         return $key ? $this->_jdata->$key ?? null : $this->_jdata;
     }
 
-    function load_data() {
+    final function load_data() {
         /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
         $this->data = Dbl::fetch_value($this->dblink(), "select `data` from Capability where salt=?", $this->salt);
     }
 
     /** @param ?string $key
      * @return mixed */
-    function input($key = null) {
+    final function input($key = null) {
         $this->_jinputData = $this->_jinputData ?? json_decode_object($this->inputData);
         return $key ? $this->_jinputData->$key ?? null : $this->_jinputData;
     }
@@ -414,7 +459,7 @@ class TokenInfo {
 
     /** @param ?int $within_sec
      * @return $this */
-    function update_use($within_sec = null) {
+    final function update_use($within_sec = null) {
         if ($within_sec === null) {
             Conf::set_current_time();
         }
@@ -428,7 +473,7 @@ class TokenInfo {
 
     /** @param ?string $data
      * @return $this */
-    function change_data($data, $value = null) {
+    final function change_data($data, $value = null) {
         if (json_encode_object_change($this->data, $this->_jdata, $data, $value, func_num_args())) {
             $this->_changes |= self::CHF_DATA;
         }
@@ -437,7 +482,7 @@ class TokenInfo {
 
     /** @param ?string $data
      * @return $this */
-    function change_output($data, $value = null) {
+    final function change_output($data, $value = null) {
         if (json_encode_object_change($this->outputData, $this->_joutputData, $data, $value, func_num_args())) {
             $this->_changes |= self::CHF_OUTPUT_DATA;
         }
@@ -446,14 +491,14 @@ class TokenInfo {
 
     /** @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function unload_output() {
+    final function unload_output() {
         $this->outputData = $this->_joutputData = null;
         $this->_changes &= ~self::CHF_OUTPUT_DATA;
         return $this;
     }
 
     /** @return bool */
-    function update() {
+    final function update() {
         assert($this->capabilityType > 0 && !!$this->salt);
         if (($this->_changes ?? 0) === 0) {
             return false;
@@ -480,7 +525,7 @@ class TokenInfo {
         return true;
     }
 
-    function delete() {
+    final function delete() {
         Dbl::qe($this->dblink(), "delete from Capability where salt=?", $this->salt);
     }
 }

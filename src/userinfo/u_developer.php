@@ -220,8 +220,8 @@ class Developer_UserInfo {
 
     function save_new_bearer_token(UserStatus $us) {
         if ($this->_new_token !== null) {
-            $this->_new_token->set_token_pattern("hct_[30]");
-            if ($this->_new_token->create() !== null) {
+            $this->_new_token->set_token_pattern("hct_[30]")->insert();
+            if ($this->_new_token->stored()) {
                 $us->diffs["API tokens"] = true;
             } else {
                 $us->error_at(null, "<0>Error while creating new API token");

@@ -513,8 +513,9 @@ class Autoassign_Page {
 
         $tok = Job_Capability::make($this->user, "Autoassign", ["-je", "-D"])
             ->set_input("assign_argv", $argv)
-            ->set_input("argmap", $argmap);
-        $this->jobid = $tok->create();
+            ->set_input("argmap", $argmap)
+            ->insert();
+        $this->jobid = $tok->salt;
         assert($this->jobid !== null);
 
         $s = Job_Capability::run_live($tok, $this->qreq, [$this, "redirect_uri"]);

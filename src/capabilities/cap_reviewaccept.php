@@ -23,19 +23,16 @@ class ReviewAccept_Capability {
         Dbl::free($result);
 
         if (!$tok && $create) {
-            $tok = new TokenInfo($rrow->conf, TokenInfo::REVIEWACCEPT);
-            $tok->paperId = $rrow->paperId;
-            $tok->reviewId = $rrow->reviewId;
-            $tok->contactId = $rrow->contactId;
-            $tok->set_invalid_after(2592000); /* 30 days */
-            $tok->set_expires_after(5184000); /* 60 days */
-            $tok->set_token_pattern("hcra{$rrow->reviewId}[16]");
-            if (!$tok->create()) {
-                return null;
-            }
+            $tok = (new TokenInfo($rrow->conf, TokenInfo::REVIEWACCEPT))
+                ->set_review($rrow)
+                ->set_user_id($rrow->contactId)
+                ->set_invalid_after(2592000 /* 30 days */)
+                ->set_expires_after(5184000 /* 60 days */)
+                ->set_token_pattern("hcra{$rrow->reviewId}[16]")
+                ->insert();
         }
 
-        return $tok;
+        return $tok && $tok->stored() ? $tok : null;
     }
 
     static function apply_review_acceptor(Contact $user, $uf) {

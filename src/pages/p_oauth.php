@@ -102,8 +102,8 @@ class OAuth_Page {
                 "redirect" => $this->qreq->redirect,
                 "site_uri" => $this->conf->opt("paperSite"),
                 "nonce" => $nonce
-            ]);
-            if ($tok->create()) {
+            ])->insert();
+            if ($tok->stored()) {
                 $params = "client_id=" . urlencode($authi->client_id)
                     . "&response_type=code"
                     . "&scope=" . rawurlencode($authi->scope ?? "openid email profile")

@@ -286,9 +286,9 @@ class Mailer {
             } else {
                 $capinfo->set_user($this->recipient)->set_token_pattern("hcpw0[20]");
             }
-            $capinfo->set_expires_after(259200);
-            $token = $capinfo->create();
-            $this->preparation->reset_capability = $token;
+            $capinfo->set_expires_after(259200)->insert();
+            assert($capinfo->stored());
+            $this->preparation->reset_capability = $capinfo->salt;
         }
         $token = $this->censor ? "HIDDEN" : $this->preparation->reset_capability;
         return $this->conf->hoturl_raw("resetpassword", null, Conf::HOTURL_ABSOLUTE | Conf::HOTURL_NO_DEFAULTS) . "/" . urlencode($token);
