@@ -4425,7 +4425,7 @@ function foldup(evt, opts) {
         }
     }
     if (!("open" in opts)
-        && (this.tagName === "INPUT" || this.tagName === "SELECT")) {
+        && (this.tagName === "INPUT" || this.tagName === "SELECT" || this.tagName === "TEXTAREA")) {
         var value = null;
         if (this.type === "checkbox") {
             opts.open = this.checked;
@@ -4435,9 +4435,12 @@ function foldup(evt, opts) {
             value = this.value;
         } else if (this.type === "select-one") {
             value = this.selectedIndex < 0 ? "" : this.options[this.selectedIndex].value;
+        } else if (this.type === "text" || this.type === "textarea") {
+            opts.open = this.value !== "";
         }
         if (value !== null) {
-            var values = (e.getAttribute("data-" + foldname + "-values") || "").split(/\s+/);
+            var vstr = e.getAttribute("data-" + foldname + "-values") || "",
+                values = $.trim(vstr) === "" ? [] : vstr.split(/\s+/);
             opts.open = values.indexOf(value) >= 0;
         }
     }
