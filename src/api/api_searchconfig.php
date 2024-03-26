@@ -264,11 +264,11 @@ class SearchConfig_API {
         $ssjs = $user->conf->named_searches();
         foreach ($ssjs as $sj) {
             $sj->id = $sj->name;
+            $sj->fidx = null;
         }
         $tagger = new Tagger($user);
 
         // determine new formula set from request
-        $id2idx = [];
         $msgset = new MessageSet;
         for ($fidx = 1; isset($qreq["named_search/{$fidx}/id"]); ++$fidx) {
             $id = $qreq["named_search/{$fidx}/id"];
@@ -284,16 +284,20 @@ class SearchConfig_API {
             $pfx = $name === "" ? "" : "{$name}: ";
 
             // find matching search
-            $sidx = 0;
-            while ($sidx !== count($ssjs)
-                   && strcasecmp($id, $ssjs[$sidx]->id) !== 0) {
-                ++$sidx;
+            if ($id === "new") {
+                $sidx = count($ssjs);
+            } else {
+                $sidx = 0;
+                while ($sidx !== count($ssjs)
+                       && strcasecmp($id, $ssjs[$sidx]->id) !== 0) {
+                    ++$sidx;
+                }
             }
             if ($sidx === count($ssjs)) {
-                if ($id !== "new") {
-                    $msgset->error_at("named_search/{$fidx}/name", "<0>{$pfx}This search has been deleted");
+                if ($deleted || ($name === "" && $q === "")) {
                     continue;
-                } else if ($deleted || ($name === "" && $q === "")) {
+                } else if ($id !== "new") {
+                    $msgset->error_at("named_search/{$fidx}/name", "<0>{$pfx}This search has been deleted");
                     continue;
                 }
             }
@@ -315,7 +319,7 @@ class SearchConfig_API {
                 continue;
             }
 
-            // complain about stuff
+            // check for errors or create
             if ($q === "") {
                 $msgset->error_at("named_search/{$fidx}/search", "<0>{$pfx}Search required");
             } else if ($name === "") {
@@ -336,14 +340,18 @@ class SearchConfig_API {
         }
 
         // check for duplicate names
-        $names = [];
+        $fidx_by_name = [];
         foreach ($ssjs as $sj) {
             $name = strtolower($sj->name);
-            if (isset($names[$name])) {
-                $msgset->error_at("named_search/{$sj->fidx}/name", "<0>Search name ‘{$sj->name}’ is not unique");
-                $msgset->error_at("named_search/" . $names[$name] . "/name");
+            if (array_key_exists($name, $fidx_by_name)) {
+                if (isset($sj->fidx)) {
+                    $msgset->error_at("named_search/{$sj->fidx}/name", "<0>Search name ‘{$sj->name}’ is not unique");
+                }
+                if (isset($fidx_by_name[$name])) {
+                    $msgset->error_at("named_search/{$fidx_by_name[$name]}/name", "<0>Search name ‘{$sj->name}’ is not unique");
+                }
             } else {
-                $names[$name] = $sj->fidx;
+                $fidx_by_name[$name] = $sj->fidx;
             }
         }
 

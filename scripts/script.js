@@ -12995,7 +12995,7 @@ handle_ui.on("js-edit-namedsearches", function () {
                 }, svge_use_licon("trash")));
             qentry.append($e("textarea", {
                     id: "k-named_search/" + count + "/search",
-                    "name": "named_search/" + count + "/search",
+                    name: "named_search/" + count + "/search",
                     "class": "editsearches-query need-autogrow w-99",
                     rows: 1, cols: 64, placeholder: "(All)"
                 }, f.q))
@@ -13032,16 +13032,16 @@ handle_ui.on("js-edit-namedsearches", function () {
         }
     }
     function ondelete() {
-        var $x = $(this).closest(".editsearches-search");
-        if ($x[0].hasAttribute("data-search-new"))
-            $x.addClass("hidden");
-        else {
-            $x.find(".editsearches-query").closest(".entryi").addClass("hidden");
-            $x.find(".editsearches-name").prop("disabled", true).css("text-decoration", "line-through");
-            $x.find(".delete-link").prop("disabled", true);
-            $x.append(render_feedback_list([{status: 1, message: "<0>This named search will be deleted."}]));
+        var fs = this.closest("fieldset");
+        if (fs.hasAttribute("data-search-new")) {
+            addClass(fs, "hidden");
+        } else {
+            $(fs).find(".editsearches-query").closest(".entryi").addClass("hidden");
+            $(fs).find(".editsearches-name").prop("disabled", true).css("text-decoration", "line-through");
+            $(fs).find(".delete-link").prop("disabled", true);
+            fs.append(render_feedback_list([{status: 1, message: "<0>This named search will be deleted."}]));
         }
-        $x.append(hidden_input("named_search/" + $x.data("searchNumber") + "/delete", 1));
+        fs.append(hidden_input("named_search/" + fs.getAttribute("data-search-number") + "/delete", 1));
     }
     function submit(evt) {
         evt.preventDefault();
