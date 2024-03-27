@@ -14,6 +14,10 @@ class APISpec_Batch {
     public $user;
     /** @var array<string,list<object>> */
     public $api_map;
+    /** @var array<string,object> */
+    public $schemas = [];
+    /** @var array<string,object> */
+    public $parameters = [];
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
@@ -37,13 +41,24 @@ class APISpec_Batch {
                 $paths[$path] = $this->expand($fn);
             }
         }
-        fwrite(STDOUT, json_encode([
+        $components = [];
+        if (!empty($this->schemas)) {
+            $components["schemas"] = $this->schemas;
+        }
+        if (!empty($this->parameters)) {
+            $components["parameters"] = $this->parameters;
+        }
+        $j = [
             "openapi" => "3.0.0",
             "info" => [
                 "title" => "HotCRP"
             ],
             "paths" => $paths
-        ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . "\n");
+        ];
+        if (!empty($components)) {
+            $j["components"] = $components;
+        }
+        fwrite(STDOUT, json_encode($j, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . "\n");
         return 0;
     }
 
@@ -58,22 +73,52 @@ class APISpec_Batch {
         return $x;
     }
 
+    /** @param string $name
+     * @return array */
+    private function resolve_common_schema($name) {
+        if (!isset($this->schemas[$name])) {
+            if ($name === "pid") {
+                $this->schemas[$name] = [
+                    "type" => "integer",
+                    "minimum" => 1
+                ];
+            } else {
+                assert(false);
+            }
+        }
+        return ["\$ref" => "#/components/schemas/{$name}"];
+    }
+
+    /** @param string $name
+     * @return array */
+    private function resolve_common_param($name) {
+        if (!isset($this->parameters[$name])) {
+            if ($name === "p") {
+                $this->parameters[$name] = [
+                    "name" => "p",
+                    "in" => "path",
+                    "required" => true,
+                    "schema" => $this->resolve_common_schema("pid")
+                ];
+            } else {
+                assert(false);
+            }
+        }
+        return ["\$ref" => "#/components/parameters/{$name}"];
+    }
+
     /** @return object */
     private function expand1($fn, $method, $j) {
         $x = (object) [];
         $params = [];
         if ($j->paper ?? false) {
-            $params["p"] = [
-                "name" => "p",
-                "in" => "path",
-                "required" => true
-            ];
+            $params[] = $this->resolve_common_param("p");
         }
         $mparameters = strtolower($method) . "_parameters";
         foreach ($j->$mparameters ?? $j->parameters ?? [] as $p) {
             $optional = str_starts_with($p, "?");
             $name = $optional ? substr($p, 1) : $p;
-            $params[$name] = [
+            $params[] = [
                 "name" => $name,
                 "in" => "query",
                 "required" => !$optional
