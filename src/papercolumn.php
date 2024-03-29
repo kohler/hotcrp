@@ -725,7 +725,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
         $t = "";
         if ($ranal) {
             $t = $ranal->icon_html(true);
-        } else if ($flags & self::F_CONFLICT) {
+        } else if (($flags & self::F_CONFLICT) !== 0
+                   && $pl->search->limit() !== "a") {
             $t = review_type_icon(-1);
         }
         $x = [];
