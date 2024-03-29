@@ -78,7 +78,7 @@ class APISpec_Batch {
     private function resolve_common_schema($name) {
         if (!isset($this->schemas[$name])) {
             if ($name === "pid") {
-                $this->schemas[$name] = [
+                $this->schemas[$name] = (object) [
                     "type" => "integer",
                     "minimum" => 1
                 ];
@@ -94,7 +94,7 @@ class APISpec_Batch {
     private function resolve_common_param($name) {
         if (!isset($this->parameters[$name])) {
             if ($name === "p") {
-                $this->parameters[$name] = [
+                $this->parameters[$name] = (object) [
                     "name" => "p",
                     "in" => "path",
                     "required" => true,
