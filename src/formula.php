@@ -1977,6 +1977,18 @@ class Formula implements JsonSerializable {
         return $this->_placeholder_prow;
     }
 
+    /** @return PaperOption */
+    function format_sf() {
+        assert($this->_format === Fexpr::FSUBFIELD);
+        return $this->_format_detail;
+    }
+
+    /** @return ReviewField */
+    function format_rf() {
+        assert($this->_format === Fexpr::FREVIEWFIELD);
+        return $this->_format_detail;
+    }
+
     /** @param string $t
      * @param string $span
      * @return int */
@@ -2757,11 +2769,12 @@ class Formula implements JsonSerializable {
         $rx = round($x * 100) / 100;
         if ($this->_format > Fexpr::FNUMERIC) {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
-                return $this->_format_detail->unparse_span_html($rx, $real_format);
+                return $this->format_rf()->unparse_span_html($rx, $real_format);
             } else if ($this->_format === Fexpr::FSUBFIELD) {
                 $prow = $this->placeholder_prow();
                 $fr = new FieldRender(FieldRender::CFHTML);
-                $this->_format_detail->render($fr, PaperValue::make($prow, $this->_format_detail, $x));
+                $sf = $this->format_sf();
+                $sf->render($fr, PaperValue::make($prow, $sf, $x));
                 return $fr->value_html();
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
                 return ReviewField::make_expertise($this->conf)->unparse_span_html($x + 2, $real_format);
@@ -2791,11 +2804,12 @@ class Formula implements JsonSerializable {
         $rx = round($x * 100) / 100;
         if ($this->_format > Fexpr::FNUMERIC) {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
-                return $this->_format_detail->unparse_computed($rx, $real_format);
+                return $this->format_rf()->unparse_computed($rx, $real_format);
             } else if ($this->_format === Fexpr::FSUBFIELD) {
                 $prow = $this->placeholder_prow();
                 $fr = new FieldRender(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
-                $this->_format_detail->render($fr, PaperValue::make($prow, $this->_format_detail, $x));
+                $sf = $this->format_sf();
+                $sf->render($fr, PaperValue::make($prow, $sf, $x));
                 return $fr->value; // XXX
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
                 return ReviewField::make_expertise($this->conf)->unparse_computed($x + 2, $real_format);

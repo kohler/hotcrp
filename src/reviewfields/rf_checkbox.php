@@ -29,15 +29,15 @@ class Checkbox_ReviewField extends Discrete_ReviewField {
         return $fval > 0 ? "yes" : "no";
     }
 
-    function unparse_computed($fval, $real_format = null) {
+    function unparse_computed($fval, $format = null) {
         if ($fval === null) {
             return "";
         } else if ($fval == 0) {
             return "✗";
         } else if ($fval == 1) {
             return "✓";
-        } else if ($real_format !== null) {
-            return sprintf($real_format, $fval);
+        } else if ($format !== null) {
+            return sprintf($format, $fval);
         } else if ($fval < 0.125) {
             return "✗";
         } else if ($fval >= 0.875) {

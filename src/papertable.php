@@ -2661,7 +2661,7 @@ class PaperTable {
                 foreach ($conf->review_form()->forder as $f) {
                     if ($f->view_score > $view_score
                         && ($fv = $rr->fval($f)) !== null
-                        && ($fh = $f->unparse_span_html($fv)) !== "") {
+                        && ($fh = $f->unparse_span_html($fv, null)) !== "") {
                         if ($score_header[$f->short_id] === "") {
                             $score_header[$f->short_id] = '<th class="rlscore">' . $f->web_abbreviation() . "</th>";
                         }
