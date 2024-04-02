@@ -5053,7 +5053,8 @@ a.help {
 	max-width: 32em;
 }
 .modal-dialog-w40 {
-	width: 40rem;
+	width: fit-content;
+	min-width: 40rem;
 	max-width: 80vw;
 }
 .modal-dialog-wide {

@@ -3881,7 +3881,7 @@ handle_ui.on("js-tracker", function (evt) {
         $pu.on("closedialog", clear_elapsed)
             .on("click", "button[name=new]", new_tracker)
             .on("click", "button[name=stopall]", stop_all)
-            .on("submit", "form", submit);
+            .on("submit", submit);
     }
     if (evt.shiftKey
         || evt.ctrlKey
