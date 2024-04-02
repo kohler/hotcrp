@@ -1359,7 +1359,7 @@ class Text_ReviewField extends ReviewField {
     }
 
     function parse($text) {
-        $text = rtrim($text);
+        $text = rtrim(cleannl($text));
         if ($text === "") {
             return null;
         }
