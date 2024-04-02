@@ -111,15 +111,12 @@ function preg_matchpos($pattern, $subject) {
 /** @param string $text
  * @return string */
 function cleannl($text) {
-    if (substr($text, 0, 3) === "\xEF\xBB\xBF") {
+    if (str_starts_with($text, "\xEF\xBB\xBF")) {
         $text = substr($text, 3);
     }
     if (strpos($text, "\r") !== false) {
         $text = str_replace("\r\n", "\n", $text);
         $text = str_replace("\r", "\n", $text);
-    }
-    if ($text !== "" && $text[strlen($text) - 1] !== "\n") {
-        $text .= "\n";
     }
     return $text;
 }

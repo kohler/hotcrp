@@ -852,12 +852,13 @@ class PaperOption implements JsonSerializable {
     /** @param PaperValue $ov
      * @param PaperValue $reqov */
     function print_web_edit_text(PaperTable $pt, $ov, $reqov, $extra = []) {
-        $default_value = null;
         $od = $ov->data();
         $reqd = $reqov->data();
         if ($od !== $reqd
-            && trim($od ?? "") !== trim(cleannl($reqd ?? ""))) {
+            && rtrim($od ?? "") !== rtrim(cleannl($reqd ?? ""))) {
             $default_value = $od ?? "";
+        } else {
+            $default_value = null;
         }
         $pt->print_editable_option_papt($this);
         echo '<div class="papev">';
