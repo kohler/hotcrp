@@ -696,7 +696,7 @@ class PaperStatus_Tester {
         xassert(!$ps->has_problem());
         xassert_array_eqq($ps->changed_keys(), ["abstract"], true);
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
-        xassert_eqq($nprow1->abstract, "They\nsee\r\nlots of\n\n\ncolors.");
+        xassert_eqq($nprow1->abstract, "They\nsee\nlots of\n\n\ncolors.");
     }
 
     function test_save_collaborators() {

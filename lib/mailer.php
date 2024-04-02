@@ -578,7 +578,7 @@ class Mailer {
 
         // separate text into lines
         $lines = explode("\n", $text);
-        if (count($lines) && $lines[count($lines) - 1] === "") {
+        if (!empty($lines) && $lines[count($lines) - 1] === "") {
             array_pop($lines);
         }
 

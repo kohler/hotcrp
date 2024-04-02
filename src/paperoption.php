@@ -821,27 +821,29 @@ class PaperOption implements JsonSerializable {
     const PARSE_STRING_CONVERT = 8;
     /** @return ?PaperValue */
     function parse_json_string(PaperInfo $prow, $j, $flags = 0) {
-        if (is_string($j)) {
-            if ($flags & self::PARSE_STRING_CONVERT) {
-                $j = convert_to_utf8($j);
-            }
-            if ($flags & self::PARSE_STRING_SIMPLIFY) {
-                $j = simplify_whitespace($j);
-            } else if ($flags & self::PARSE_STRING_TRIM) {
+        if ($j === null) {
+            return null;
+        } else if (!is_string($j)) {
+            return PaperValue::make_estop($prow, $this, "<0>Expected string");
+        }
+        if (($flags & self::PARSE_STRING_CONVERT) !== 0) {
+            $j = convert_to_utf8($j);
+        }
+        if (($flags & self::PARSE_STRING_SIMPLIFY) !== 0) {
+            $j = simplify_whitespace($j);
+        } else {
+            $j = cleannl($j);
+            if (($flags & self::PARSE_STRING_TRIM) !== 0) {
                 $j = rtrim($j);
                 if ($j !== "" && ctype_space($j[0])) {
-                    $j = preg_replace('/\A(?: {0,3}[\r\n]*)*/', "", $j);
+                    $j = preg_replace('/\A(?: ? ? ?\n)*+ ? ? ?/', "", $j);
                 }
             }
-            if ($j !== "" || ($flags & self::PARSE_STRING_EMPTY) !== 0) {
-                return PaperValue::make($prow, $this, 1, $j);
-            } else {
-                return PaperValue::make($prow, $this);
-            }
-        } else if ($j === null) {
-            return null;
+        }
+        if ($j !== "" || ($flags & self::PARSE_STRING_EMPTY) !== 0) {
+            return PaperValue::make($prow, $this, 1, $j);
         } else {
-            return PaperValue::make_estop($prow, $this, "<0>Expected string");
+            return PaperValue::make($prow, $this);
         }
     }
 
@@ -1680,7 +1682,7 @@ class Text_PaperOption extends PaperOption {
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
-        return $this->parse_json_string($prow, convert_to_utf8($qreq[$this->formid] ?? ""));
+        return $this->parse_json_string($prow, $qreq[$this->formid] ?? "", PaperOption::PARSE_STRING_CONVERT);
     }
     function parse_json(PaperInfo $prow, $j) {
         return $this->parse_json_string($prow, $j);
