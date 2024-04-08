@@ -953,8 +953,7 @@ class PaperList {
             }
             // default editable tag
             $this->_sort_etag = "";
-            if (!$thenqe
-                && $this->_sortcol[0] instanceof Tag_PaperColumn
+            if ($this->_sortcol[0] instanceof Tag_PaperColumn
                 && !$this->_sortcol[0]->sort_descending) {
                 $this->_sort_etag = $this->_sortcol[0]->etag();
             }
@@ -1000,10 +999,9 @@ class PaperList {
         $this->user->set_overrides($overrides);
 
         // clean up, assign groups
-        if ($this->_sort_etag !== "") {
+        $groups = $this->search->group_anno_list();
+        if (empty($groups) && $this->_sort_etag !== "") {
             $groups = $this->_sort_etag_anno_groups();
-        } else {
-            $groups = $this->search->group_anno_list();
         }
         if (!empty($groups)) {
             $this->_collect_groups($rowset->as_list(), $groups);
