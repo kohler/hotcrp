@@ -3318,7 +3318,7 @@ function resize(b) {
         document.body.style.minHeight = "calc(100vh - " + h + "px)";
     } else {
         for (const e of offs) {
-            const bo = e.getAttribute("data-banner-offset");
+            const bo = e.getAttribute("data-banner-offset") || "";
             e.style[bo.startsWith("B") ? "bottom" : "top"] = null;
         }
         document.body.style.minHeight = null;
