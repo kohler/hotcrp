@@ -9230,14 +9230,13 @@ function tablelist(elt) {
     return elt ? elt.closest(".pltable") : null;
 }
 
-function tablelist_each_facet(tbl, f) {
-    if (hasClass(tbl, "pltable-facets")) {
-        for (tbl = tbl.firstChild; tbl; tbl = tbl.nextSibling) {
-            if (tbl.nodeName === "TABLE")
-                f(tbl);
-        }
+function tablelist_facets(tbl) {
+    if (!tbl) {
+        return [];
+    } else if (!hasClass(tbl, "pltable-facets")) {
+        return [tbl];
     } else {
-        f(tbl);
+        return tbl.children;
     }
 }
 
@@ -9316,17 +9315,20 @@ function tagannorow_fill(row, anno) {
     }
 }
 
-function tagannorow_add(tbl, tbody, before, anno) {
-    tbl = tbl || tablelist(tbody);
-    var $r = $(tbl).find("thead > tr.pl_headrow:first-child > th"),
-        selcol = -1, titlecol = -1, ncol = $r.length, i, x, tr;
-    for (i = 0; i !== ncol; ++i) {
-        if (hasClass($r[i], "pl_sel"))
-            selcol = i;
-        else if (hasClass($r[i], "pl_title"))
-            titlecol = i;
+function tagannorow_add(tfacet, tbody, before, anno) {
+    let selcol = -1, titlecol = -1, ncol = 0, i = 0;
+    for (const th of tfacet.tHead.rows[0].children) {
+        if (th.nodeName === "TH") {
+            if (hasClass(th, "pl_sel")) {
+                selcol = ncol;
+            } else if (hasClass(th, "pl_title")) {
+                titlecol = ncol;
+            }
+            ++ncol;
+        }
     }
 
+    let tr;
     if (anno.blank) {
         tr = $e("tr", "plheading-blank",
             $e("td", {"class": "plheading", colspan: ncol}));
@@ -9371,51 +9373,62 @@ function tagannorow_add(tbl, tbody, before, anno) {
 
 
 function tablelist_reorder(tbl, pids, groups, remove_all) {
-    var tbody = tbl.tBodies[0], pida = "data-pid";
-    remove_all && $(tbody).detach();
-
-    var rowmap = [], xpid = 0, cur = tbody.firstChild, next;
-    while (cur) {
-        if (cur.nodeType === 1 && (xpid = cur.getAttribute(pida)))
-            rowmap[xpid] = rowmap[xpid] || [];
-        next = cur.nextSibling;
-        if (xpid)
-            rowmap[xpid].push(cur);
-        else
-            tbody.removeChild(cur);
-        cur = next;
+    const pida = "data-pid", tfacets = tablelist_facets(tbl), tbodies = [], rowmap = [];
+    for (const tf of tfacets) {
+        const tb = tf.tBodies[0];
+        tbodies.push(tb);
+        remove_all && $(tb).detach();
+        let cur = tb.firstChild;
+        while (cur) {
+            const xpid = cur.nodeType === 1 && cur.getAttribute(pida),
+                next = cur.nextSibling;
+            if (xpid) {
+                rowmap[xpid] = rowmap[xpid] || [];
+                rowmap[xpid].push(cur);
+            } else {
+                cur.remove();
+            }
+            cur = next;
+        }
     }
 
-    cur = tbody.firstChild;
-    var cpid = cur ? cur.getAttribute(pida) : 0;
-
-    var pid_index = 0, grp_index = 0;
+    let tf = tfacets[0], tb = tbodies[0],
+        cur = tb.firstChild, cpid = cur && cur.getAttribute(pida),
+        pid_index = 0, grp_index = 0;
     groups = groups || [];
     while (pid_index < pids.length || grp_index < groups.length) {
-        // handle headings
-        if (grp_index < groups.length && groups[grp_index].pos == pid_index) {
+        if (grp_index < groups.length && groups[grp_index].pos === pid_index) {
+            if (tbodies.length > 1) {
+                tf = tfacets[grp_index];
+                tb = tbodies[grp_index];
+                cur = tb.firstChild;
+                cpid = cur && cur.getAttribute(pida);
+            }
             if (grp_index > 0 || !groups[grp_index].blank) {
-                tagannorow_add(tbl, tbody, cur, groups[grp_index]);
+                tagannorow_add(tf, tb, cur, groups[grp_index]);
             }
             ++grp_index;
         } else {
-            var npid = pids[pid_index];
+            const npid = pids[pid_index];
             if (cpid == npid) {
                 do {
                     cur = cur.nextSibling;
-                    if (!cur || cur.nodeType == 1)
-                        cpid = cur ? cur.getAttribute(pida) : 0;
+                    cpid = cur && cur.getAttribute(pida);
                 } while (cpid == npid);
             } else {
-                for (var j = 0; rowmap[npid] && j < rowmap[npid].length; ++j)
-                    tbody.insertBefore(rowmap[npid][j], cur);
-                delete rowmap[npid];
+                for (const tr of rowmap[npid] || []) {
+                    tb.insertBefore(tr, cur);
+                }
             }
             ++pid_index;
         }
     }
 
-    remove_all && $(tbody).appendTo(tbl);
+    if (remove_all) {
+        for (let i = 0; i !== tfacets.length; ++i) {
+            tfacets[i].insertBefore(tbodies[i], tfacets[i].tFoot);
+        }
+    }
     tablelist_postreorder(tbl);
 }
 
@@ -9433,20 +9446,22 @@ function tablelist_postreorder(tbl) {
         nh = 0;
         lasthead = head;
     }
-    for (let cur = tbl.tBodies[0].firstChild; cur; cur = cur.nextSibling) {
-        if (cur.nodeName !== "TR") {
-            continue;
-        } else if (hasClass(cur, "plheading")) {
-            change_heading(cur);
-        } else if (hasClass(cur, "pl")) {
-            e = !e;
-            ++n;
-            ++nh;
-            $(cur.firstChild).find(".pl_rownum").text(n + ". ");
-        }
-        if (hasClass(cur, e ? "k0" : "k1")) {
-            toggleClass(cur, "k0", !e);
-            toggleClass(cur, "k1", e);
+    for (const tf of tablelist_facets(tbl)) {
+        for (let cur = tf.tBodies[0].firstChild; cur; cur = cur.nextSibling) {
+            if (cur.nodeName !== "TR") {
+                continue;
+            } else if (hasClass(cur, "plheading")) {
+                change_heading(cur);
+            } else if (hasClass(cur, "pl")) {
+                e = !e;
+                ++n;
+                ++nh;
+                $(cur.firstChild).find(".pl_rownum").text(n + ". ");
+            }
+            if (hasClass(cur, e ? "k0" : "k1")) {
+                toggleClass(cur, "k0", !e);
+                toggleClass(cur, "k1", e);
+            }
         }
     }
     lasthead && change_heading(null);
@@ -9470,21 +9485,38 @@ function sorter_analyze(sorter) {
 }
 
 function tablelist_ids(tbl) {
-    var tbody = tbl.tBodies[0], tbl_ids = [], xpid;
-    for (var cur = tbody.firstChild; cur; cur = cur.nextSibling)
-        if (cur.nodeType === 1
-            && /^pl\b/.test(cur.className)
-            && (xpid = cur.getAttribute("data-pid")))
-            tbl_ids.push(+xpid);
-    return tbl_ids;
+    const ids = [];
+    let xpid;
+    for (const t of tablelist_facets(tbl)) {
+        for (const tr of t.tBodies[0].children) {
+            if (tr.nodeType === 1
+                && (tr.className === "pl" || tr.className.startsWith("pl "))
+                && (xpid = tr.getAttribute("data-pid"))) {
+                ids.push(+xpid);
+            }
+        }
+    }
+    return ids;
 }
 
-function tablelist_ids_equal(tbl, ids) {
-    var tbl_ids = tablelist_ids(tbl);
+function tablelist_compatible(tbl, data) {
+    if (hasClass(tbl, "pltable-facets")
+        && tbl.children.length !== data.groups.length) {
+        return false;
+    }
+    const tbl_ids = tablelist_ids(tbl), ids = [].concat(data.ids);
     tbl_ids.sort();
-    ids = [].concat(ids);
     ids.sort();
     return tbl_ids.join(" ") === ids.join(" ");
+}
+
+function facet_sortable_ths(tbl) {
+    const l = [];
+    for (const th of tbl.tHead.rows[0].children) {
+        if (th.nodeName === "TH" && hasClass(th, "sortable"))
+            l.push(th);
+    }
+    return l;
 }
 
 function tablelist_header_sorter(th) {
@@ -9552,7 +9584,7 @@ function tablelist_load(tbl, k, v) {
     }
     function success(data) {
         var use_history = tbl === mainlist() && k;
-        if (data.ok && data.ids && tablelist_ids_equal(tbl, data.ids)) {
+        if (data.ok && data.ids && tablelist_compatible(tbl, data)) {
             use_history && push_history_state();
             tablelist_apply(tbl, data, searchparam);
             use_history && push_history_state(hoturl_search(window.location.href, k, v));
@@ -9578,20 +9610,19 @@ function search_sort_click(evt) {
 function scoresort_change() {
     var tbl = mainlist();
     $.post(hoturl("=api/session"), {v: "scoresort=" + this.value});
-    if (tbl) {
-        tablelist_load(tbl, "scoresort", this.value);
-    }
+    tbl && tablelist_load(tbl, "scoresort", this.value);
 }
 
 function showforce_click() {
-    var tbl = mainlist(), v = this.checked ? 1 : null;
-    if (tbl) {
-        siteinfo.want_override_conflict = !!v;
-        $(tbl.tHead.rows[0]).find("th.sortable a.pl_sort").each(function () {
-            this.setAttribute("href", hoturl_search(this.getAttribute("href"), "forceShow", v));
-        });
-        tablelist_load(tbl, "forceShow", v);
+    const plt = mainlist(), v = this.checked ? 1 : null;
+    siteinfo.want_override_conflict = !!v;
+    for (const tbl of tablelist_facets(plt)) {
+        for (const th of facet_sortable_ths(tbl)) {
+            const a = th.querySelector("a.pl_sort");
+            a && a.setAttribute("href", hoturl_search(a.getAttribute("href"), "forceShow", v));
+        }
     }
+    plt && tablelist_load(plt, "forceShow", v);
 }
 
 if ("pushState" in window.history) {
@@ -10386,14 +10417,13 @@ Assign_DraggableTable.prototype.commit = function () {
 return {
     try_reorder: function (tbl, data) {
         if (data.search_params === tbl.getAttribute("data-search-params")
-            && tablelist_ids_equal(tbl, data.ids)) {
+            && tablelist_compatible(tbl, data)) {
             tablelist_reorder(tbl, data.ids, data.groups);
         }
     },
     prepare_draggable: function () {
-        tablelist_each_facet(this, function (tbl) {
-            var tr;
-            for (tr = tbl.tBodies[0].firstChild; tr; tr = tr.nextSibling) {
+        for (const tbl of tablelist_facets(this)) {
+            for (const tr of tbl.tBodies[0].children) {
                 if (tr.nodeName === "TR"
                     && (hasClass(tr, "pl")
                         || (hasClass(tr, "plheading") && tr.hasAttribute("data-anno-id")))
@@ -10401,7 +10431,7 @@ return {
                     add_draghandle(tr);
                 }
             }
-        });
+        }
     }
 };
 })();
@@ -10551,9 +10581,9 @@ function populate_pidrows(tbl, bypid) {
 Plist.prototype.pidrow = function (pid) {
     if (!(pid in this._bypid)) {
         var bypid = this._bypid;
-        tablelist_each_facet(this.pltable, function (tbl) {
+        for (const tbl of tablelist_facets(this.pltable)) {
             populate_pidrows(tbl, bypid);
-        });
+        }
     }
     return this._bypid[pid];
 };
