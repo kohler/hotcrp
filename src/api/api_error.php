@@ -6,10 +6,7 @@ class Error_API {
     static function jserror(Contact $user, Qrequest $qreq) {
         $errormsg = trim((string) $qreq->error);
         if ($errormsg === ""
-            || (isset($_SERVER["HTTP_USER_AGENT"])
-                && preg_match('/MSIE [78]|MetaSr/', $_SERVER["HTTP_USER_AGENT"]))
-            || preg_match('/(?:moz|safari|chrome)-extension/', $errormsg . ($qreq->stack ?? ""))
-            || strpos($errormsg, "Uncaught ReferenceError: hotcrp") !== false) {
+            || preg_match('/(?:moz|safari|chrome)-extension/', $errormsg . ($qreq->stack ?? ""))) {
             return new JsonResult(["ok" => true]);
         }
         $url = $qreq->url ?? "";

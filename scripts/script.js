@@ -379,7 +379,9 @@ function log_jserror(errormsg, error, noconsole) {
 (function () {
     var old_onerror = window.onerror, nerrors_logged = 0;
     window.onerror = function (errormsg, url, lineno, colno, error) {
-        if ((url || !lineno) && ++nerrors_logged <= 10) {
+        if ((url || !lineno)
+            && ++nerrors_logged <= 10
+            && !/(?:moz|safari|chrome)-extension|AdBlock/.test(errormsg)) {
             var x = {error: errormsg, url: url, lineno: lineno};
             if (colno)
                 x.colno = colno;
