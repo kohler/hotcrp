@@ -11,6 +11,8 @@ class Comment_API {
     private $prow;
     /** @var int */
     private $status = 200;
+    /** @var bool */
+    private $ok = true;
     /** @var MessageSet */
     private $ms;
 
@@ -95,7 +97,7 @@ class Comment_API {
         // empty
         if ($req["text"] === "" && empty($docs)) {
             if (!$qreq->delete && (!$xcrow->commentId || !isset($qreq->text))) {
-                $this->status = 400;
+                $this->ok = false;
                 $this->ms->error_at(null, "<0>Refusing to save empty comment");
                 return null;
             } else {
@@ -107,7 +109,7 @@ class Comment_API {
         $newctype = $xcrow->requested_type($req);
         $whyNot = $this->user->perm_edit_comment($this->prow, $xcrow, $newctype);
         if ($whyNot) {
-            $this->status = 403;
+            $this->ok = false;
             $whyNot->append_to($this->ms, null, 2);
             return null;
         }
@@ -260,16 +262,16 @@ class Comment_API {
         }
 
         // check post
-        if ($this->status === 200 && $qreq->is_post()) {
+        if ($this->status === 200 && $this->ok && $qreq->is_post()) {
             $crow = $this->run_post($qreq, $rrd, $crow);
         }
 
         if ($this->status === self::RESPONSE_REPLACED) {
             // report response replacement error
-            $jr = JsonResult::make_error(404, "<0>{$uccmttype} was edited concurrently");
+            $jr = JsonResult::make_error(200, "<0>{$uccmttype} was edited concurrently");
             $jr["conflict"] = true;
         } else {
-            $jr = new JsonResult($this->status, ["ok" => $this->status <= 299]);
+            $jr = new JsonResult($this->status, ["ok" => $this->ok && $this->status <= 299]);
             if ($this->ms->has_message()) {
                 $jr["message_list"] = $this->ms->message_list();
             }
