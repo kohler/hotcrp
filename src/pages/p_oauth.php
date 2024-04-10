@@ -266,15 +266,15 @@ class OAuth_Page {
 
         $user = $info["user"];
         if (isset($jid->groups) && isset($authi->group_mappings)) {
+            $user_roles = $user->roles;
             foreach ($authi->group_mappings as $group => $role) {
-                $user_roles = $user->roles;
                 if (in_array($group, $jid->groups, true)) {
-                    $user_roles = UserStatus::parse_roles($role, $user_roles);
+                    $user_roles = $user_roles | UserStatus::parse_roles($role, $user_roles);
                 } elseif ($authi->remove_groups) {
                     $user_roles &= ~UserStatus::parse_roles($role, $user_roles);
                 }
-                $user->save_roles($user_roles, $user);
             }
+            $user->save_roles($user_roles, $user);
         }
         if (!$tokdata->quiet) {
             $this->conf->feedback_msg(new MessageItem(null, "<0>Signed in", MessageSet::SUCCESS));
