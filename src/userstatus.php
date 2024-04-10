@@ -405,13 +405,13 @@ class UserStatus extends MessageSet {
         } else if (is_array($x)) {
             foreach ($x as $v) {
                 if (!is_string($v)) {
-                    $this->error_at($field, "<0>Format error [$field]");
+                    $this->error_at($field, "<0>Format error [{$field}]");
                 } else if ($v !== "") {
                     $res[$lc ? strtolower($v) : $v] = true;
                 }
             }
         } else {
-            $this->error_at($field, "<0>Format error [$field]");
+            $this->error_at($field, "<0>Format error [{$field}]");
         }
         return (object) $res;
     }
@@ -478,7 +478,7 @@ class UserStatus extends MessageSet {
                   "affiliation", "phone", "new_password",
                   "city", "state", "zip", "country"] as $k) {
             if (isset($cj->$k) && !is_string($cj->$k)) {
-                $this->error_at($k, "<0>Format error [$k]");
+                $this->error_at($k, "<0>Format error [{$k}]");
                 unset($cj->$k);
             }
         }
@@ -682,8 +682,9 @@ class UserStatus extends MessageSet {
     }
 
     /** @param int $old_roles
+     * @param ?MessageSet $ms
      * @return int */
-    private function parse_roles($j, $old_roles) {
+    static function parse_roles($j, $old_roles, $ms = null) {
         if (is_object($j) || is_associative_array($j)) {
             $reset_roles = true;
             $ij = [];
@@ -691,7 +692,7 @@ class UserStatus extends MessageSet {
                 if ($v === true) {
                     $ij[] = $k;
                 } else if ($v !== false && $v !== null) {
-                    $this->error_at("roles", "<0>Format error [roles]");
+                    $ms && $ms->error_at("roles", "<0>Format error in roles");
                     return $old_roles;
                 }
             }
@@ -703,7 +704,7 @@ class UserStatus extends MessageSet {
             $ij = $j;
         } else {
             if ($j !== null) {
-                $this->error_at("roles", "<0>Format error [roles]");
+                $ms && $ms->error_at("roles", "<0>Format error in roles");
             }
             return $old_roles;
         }
@@ -711,7 +712,7 @@ class UserStatus extends MessageSet {
         $add_roles = $remove_roles = 0;
         foreach ($ij as $v) {
             if (!is_string($v)) {
-                $this->error_at("roles", "<0>Format error [roles]");
+                $ms && $ms->error_at("roles", "<0>Format error in roles");
                 return $old_roles;
             } else if ($v !== "") {
                 $action = null;
@@ -720,13 +721,13 @@ class UserStatus extends MessageSet {
                     $v = $m[2];
                 }
                 if ($v === "") {
-                    $this->error_at("roles", "<0>Format error [roles]");
+                    $ms && $ms->error_at("roles", "<0>Format error in roles");
                     return $old_roles;
                 } else if (is_bool($action) && strcasecmp($v, "none") === 0) {
-                    $this->error_at("roles", "<0>Format error near “none” [roles]");
+                    $ms && $ms->error_at("roles", "<0>Format error near “none”");
                     return $old_roles;
                 } else if (is_bool($reset_roles) && is_bool($action) === $reset_roles) {
-                    $this->warning_at("roles", "<0>Expected ‘" . ($reset_roles ? "" : "+") . "{$v}’ in roles");
+                    $ms && $ms->warning_at("roles", "<0>Expected ‘" . ($reset_roles ? "" : "+") . "{$v}’ in roles");
                 } else if ($reset_roles === null) {
                     $reset_roles = $action === null;
                 }
@@ -739,7 +740,7 @@ class UserStatus extends MessageSet {
                            || strcasecmp($v, "admin") === 0) {
                     $role = Contact::ROLE_ADMIN;
                 } else if (strcasecmp($v, "none") !== 0) {
-                    $this->warning_at("roles", "<0>Unknown role ‘{$v}’");
+                    $ms && $ms->warning_at("roles", "<0>Unknown role ‘{$v}’");
                 }
                 if ($action !== false) {
                     $add_roles |= $role;
@@ -913,7 +914,7 @@ class UserStatus extends MessageSet {
         $this->normalize($cj, $user);
         $roles = $old_roles = $old_user ? $old_user->roles : 0;
         if (isset($cj->roles)) {
-            $roles = $this->parse_roles($cj->roles, $roles);
+            $roles = self::parse_roles($cj->roles, $roles, $this);
             if ($old_user) {
                 $roles = $this->check_role_change($roles, $old_user);
             }
