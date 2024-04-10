@@ -5088,12 +5088,13 @@ function populate(e, v, placeholder) {
 }
 
 handle_ui.on("input.js-email-populate", function () {
-    var self = this,
-        v = self.value.toLowerCase().trim(),
-        f = this.form || this.closest("form"),
+    const self = this, f = this.form || this.closest("form");
+    if (!f) {
+        return;
+    }
+    let v = self.value.toLowerCase().trim(),
         fn = null, ln = null, nn = null, af = null,
-        country = null, orcid = null, placeholder = false,
-        idx;
+        country = null, orcid = null, placeholder = false, idx;
     if (this.name === "email" || this.name === "uemail") {
         fn = f.elements.firstName;
         ln = f.elements.lastName;
@@ -5109,38 +5110,46 @@ handle_ui.on("input.js-email-populate", function () {
         idx = parseInt(this.name.substring(9));
         nn = f.elements["contacts:" + idx + ":name"];
     }
-    if (!fn && !ln && !nn && !af)
+    if (!fn && !ln && !nn && !af) {
         return;
+    }
 
     function success(data) {
         if (data) {
-            if (data.email)
+            if (data.email) {
                 data.lemail = data.email.toLowerCase();
-            else
+            } else {
                 data.lemail = v + "~";
-            if (!email_info.length)
+            }
+            if (!email_info.length) {
                 email_info_at = now_sec();
-            var i = 0;
-            while (i !== email_info.length && email_info[i] !== v)
+            }
+            let i = 0;
+            while (i !== email_info.length && email_info[i] !== v) {
                 i += 2;
-            if (i === email_info.length)
+            }
+            if (i === email_info.length) {
                 email_info.push(v, data);
+            }
         }
-        if (!data || !data.email || data.lemail !== v)
+        if (!data || !data.email || data.lemail !== v) {
             data = {};
+        }
         if (self.value.trim() !== v
-            && self.getAttribute("data-populated-email") === v)
+            && self.getAttribute("data-populated-email") === v) {
             return;
-        if (!data.name) {
-            if (data.firstName && data.lastName)
-                data.name = data.firstName + " " + data.lastName;
-            else if (data.lastName)
-                data.name = data.lastName;
-            else
-                data.name = data.firstName;
         }
         fn && populate(fn, data.firstName || "", placeholder);
         ln && populate(ln, data.lastName || "", placeholder);
+        if (nn && !data.name) {
+            if (data.firstName && data.lastName) {
+                data.name = data.firstName + " " + data.lastName;
+            } else if (data.lastName) {
+                data.name = data.lastName;
+            } else {
+                data.name = data.firstName;
+            }
+        }
         nn && populate(nn, data.name || "", placeholder);
         af && populate(af, data.affiliation || "", placeholder);
         country && populate(country, data.country || "", false);
@@ -5152,28 +5161,30 @@ handle_ui.on("input.js-email-populate", function () {
         self.setAttribute("data-populated-email", v);
     }
 
-    if (/^\S+@\S+\.\S\S+$/.test(v)) {
-        if ((email_info_at && now_sec() - email_info_at >= 3600)
-            || email_info.length > 200)
-            email_info = [];
-        var i = 0;
-        while (i !== email_info.length
-               && (v < email_info[i] || v > email_info[i + 1].lemail))
-            i += 2;
-        if (i === email_info.length) {
-            var args = {email: v};
-            if (hasClass(this, "want-potential-conflict")) {
-                args.potential_conflict = 1;
-                args.p = siteinfo.paperid;
-            }
-            $.ajax(hoturl("=api/user", args), {
-                method: "GET", success: success
-            });
-        } else if (v === email_info[i + 1].lemail) {
-            success(email_info[i + 1]);
-        } else {
-            success(null);
+    if (!/^\S+@\S+\.\S\S+$/.test(v)) {
+        success(null);
+        return;
+    }
+    if ((email_info_at && now_sec() - email_info_at >= 3600)
+        || email_info.length > 200) {
+        email_info = [];
+    }
+    let i = 0;
+    while (i !== email_info.length
+           && (v < email_info[i] || v > email_info[i + 1].lemail)) {
+        i += 2;
+    }
+    if (i === email_info.length) {
+        let args = {email: v};
+        if (hasClass(this, "want-potential-conflict")) {
+            args.potential_conflict = 1;
+            args.p = siteinfo.paperid;
         }
+        $.ajax(hoturl("=api/user", args), {
+            method: "GET", success: success
+        });
+    } else if (v === email_info[i + 1].lemail) {
+        success(email_info[i + 1]);
     } else {
         success(null);
     }
