@@ -253,17 +253,14 @@ class OAuth_Page {
         }
 
         $user = $info["user"];
-        error_log(var_export($authi, true)."\n");
         if (isset($jid->groups) && isset($authi->group_mappings)) {
             foreach ($authi->group_mappings as $group => $role) {
                 if (in_array($group, $jid->groups, true)) {
-                    error_log("setting: ".$group." ".constant("Contact::".$role)."\n");
-                    $user_roles = $user->roles | constant("Contact::".$role);
+                    $user_roles = UserStatus::parse_roles($role, $user->roles);
                     $user->save_roles($user_roles, $user);
                 } else {
-                    error_log("removing: ".$group." ".constant("Contact::".$role)."\n");
                     $user_roles = $user->roles;
-                    $user_roles &= ~constant("Contact::".$role);
+                    $user_roles &= ~UserStatus::parse_roles($role, $user->roles);
                     $user->save_roles($user_roles, $user);
                 }
             }
