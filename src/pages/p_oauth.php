@@ -270,7 +270,7 @@ class OAuth_Page {
                 if (in_array($group, $jid->groups, true)) {
                     $user_roles = UserStatus::parse_roles($role, $user->roles);
                     $user->save_roles($user_roles, $user);
-                } elseif $authi->remove_groups {
+                } elseif ($authi->remove_groups) {
                     $user_roles = $user->roles;
                     $user_roles &= ~UserStatus::parse_roles($role, $user->roles);
                     $user->save_roles($user_roles, $user);
