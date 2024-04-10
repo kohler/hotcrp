@@ -255,12 +255,14 @@ class OAuth_Page {
 
         $user = $info["user"];
         if (isset($jid->groups) && isset($authi->group_mappings)) {
-            $user_roles = $user->roles;
+            if ($authi->remove_groups) {
+                $user_roles = 0;
+            } else {
+                $user_roles = $user->roles;
+            }
             foreach ($authi->group_mappings as $group => $role) {
                 if (in_array($group, $jid->groups, true)) {
                     $user_roles = $user_roles | UserStatus::parse_roles($role, $user_roles);
-                } elseif ($authi->remove_groups) {
-                    $user_roles &= ~UserStatus::parse_roles($role, $user_roles);
                 }
             }
             $user->save_roles($user_roles, $user);
