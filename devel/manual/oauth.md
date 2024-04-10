@@ -107,7 +107,7 @@ $Opt["oAuthProviders"][] = '{
     "client_id": "123456789-nnnnnnnnnnnnnnnnnnnnnnnnn.apps.googleusercontent.com",
     "client_secret": "GOCSPX-nnnnnnnnnnnnnnnnnnnnnnnn",
     "button_html": "Sign in with Google",
-    "remove_groups": True,
+    "remove_groups": true,
     "group_mappings": {
         "operators": "sysadmin",
         "reviewers": "pc",
