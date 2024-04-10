@@ -116,7 +116,7 @@ $Opt["oAuthProviders"][] = '{
 }';
 ```
 
-Setting `remove_groups` to `True` enables removing group permissions if these
+Setting `remove_groups` to `true` enables removing group permissions if these
 are absent in the OpenID claim.
 
 [OAuth]: https://en.wikipedia.org/wiki/OAuth
