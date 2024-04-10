@@ -1,6 +1,11 @@
 // graph.js -- HotCRP JavaScript library for graph drawing
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
+/* global hotcrp, siteinfo, $$, svge */
+/* global hasClass */
+/* global append_feedback_near, log_jserror */
+/* global make_bubble */
+/* global strftime, text_to_html, escape_html */
 hotcrp.graph = (function ($, d3) {
 var handle_ui = hotcrp.handle_ui,
     ensure_pattern = hotcrp.ensure_pattern,

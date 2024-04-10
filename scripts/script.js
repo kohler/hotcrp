@@ -9242,6 +9242,10 @@ function tablelist_facets(tbl) {
     }
 }
 
+function facet_tablelist(tfacet) {
+    return hasClass(tfacet, "pltable-facet") ? tfacet.parentElement : tfacet;
+}
+
 function tablelist_search(tbl) {
     var x = tbl.getAttribute("data-search-params");
     if (x === "" && tbl === mainlist()) { /* XXX backward compat */
@@ -9318,7 +9322,7 @@ function tagannorow_fill(row, anno) {
 }
 
 function tagannorow_add(tfacet, tbody, before, anno) {
-    let selcol = -1, titlecol = -1, ncol = 0, i = 0;
+    let selcol = -1, titlecol = -1, ncol = 0;
     for (const th of tfacet.tHead.rows[0].children) {
         if (th.nodeName === "TH") {
             if (hasClass(th, "pl_sel")) {
@@ -9362,11 +9366,12 @@ function tagannorow_add(tfacet, tbody, before, anno) {
             $e("span", "plheading-count")));
     }
 
-    if (anno.tag
-        && anno.annoid
-        && (x = tbl.getAttribute("data-drag-action")).startsWith("tagval:")
-        && strnatcasecmp(x, "#" + tag_canonicalize(anno.tag)) === 0) {
-        add_draghandle(tr);
+    if (anno.tag && anno.annoid) {
+        const dra = facet_tablelist(tfacet).getAttribute("data-drag-action") || "";
+        if (dra.startsWith("tagval:")
+            && strnatcasecmp(dra, "tagval:" + tag_canonicalize(anno.tag)) === 0) {
+            add_draghandle(tr);
+        }
     }
     tbody.insertBefore(tr, before);
     tagannorow_fill(tr, anno)
