@@ -59,6 +59,7 @@ class OAuthProvider {
         $instance->token_function = $authdata->token_function ?? null;
         $instance->require = $authdata->require ?? null;
         $instance->group_mappings = $authdata->group_mappings ?? null;
+        $instance->remove_groups = $authdata->remove_groups ?? false;
         foreach (["title", "issuer", "scope"] as $k) {
             if ($instance->$k !== null && !is_string($instance->$k))
                 return null;
@@ -66,6 +67,13 @@ class OAuthProvider {
         foreach (["client_id", "client_secret", "auth_uri", "token_uri", "redirect_uri"] as $k) {
             if (!is_string($instance->$k))
                 return null;
+        }
+        foreach (["remove_groups"]) {
+            if ($instance->$k && is_string($instance->$k)) {
+                if ($instance->$k == "true" or $instance->$k == "1") {
+                    $instance->$k = 1;
+                }
+            }
         }
         return $instance;
     }
@@ -258,7 +266,7 @@ class OAuth_Page {
                 if (in_array($group, $jid->groups, true)) {
                     $user_roles = UserStatus::parse_roles($role, $user->roles);
                     $user->save_roles($user_roles, $user);
-                } else {
+                } elseif $authi->remove_groups {
                     $user_roles = $user->roles;
                     $user_roles &= ~UserStatus::parse_roles($role, $user->roles);
                     $user->save_roles($user_roles, $user);
