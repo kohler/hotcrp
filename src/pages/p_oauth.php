@@ -70,7 +70,7 @@ class OAuthProvider {
         }
         // Mechanic to catch misconfigurations where the supplied cfg JSON
         // contains Strings instead of Boolean types.
-        foreach (["remove_groups"]) {
+        foreach (["remove_groups"] as $k) {
             if ($instance->$k && is_string($instance->$k)) {
                 if ($instance->$k == "true" or $instance->$k == "1") {
                     $instance->$k = true;
