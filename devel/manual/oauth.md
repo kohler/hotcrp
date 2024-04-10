@@ -107,13 +107,17 @@ $Opt["oAuthProviders"][] = '{
     "client_id": "123456789-nnnnnnnnnnnnnnnnnnnnnnnnn.apps.googleusercontent.com",
     "client_secret": "GOCSPX-nnnnnnnnnnnnnnnnnnnnnnnn",
     "button_html": "Sign in with Google",
+    "remove_groups": True,
     "group_mappings": {
-        "operators": "ROLE_ADMIN",
-        "reviewers": "ROLE_PC",
-        "chairs": "ROLE_CHAIR"
+        "operators": "sysadmin",
+        "reviewers": "pc",
+        "chairs": "chair"
     }
 }';
 ```
+
+Setting `remove_groups` to `True` enables removing group permissions if these
+are absent in the OpenID claim.
 
 [OAuth]: https://en.wikipedia.org/wiki/OAuth
 [OpenID Connect]: https://en.wikipedia.org/wiki/OpenID
