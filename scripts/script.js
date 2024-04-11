@@ -2542,6 +2542,7 @@ return function (content, bubopt) {
             ds = /^[ahv]$/.test(dsx) ? dsx : "a";
 
         var wpos = $(window).geometry();
+        $(bubdiv).css({maxWidth: "", left: "", top: ""});
         var bpos = make_bpos(wpos, dsx);
 
         if (ds === "a") {
@@ -2668,20 +2669,22 @@ return function (content, bubopt) {
         },
         html: function (content) {
             var n = bubch[1];
-            if (content === undefined)
+            if (content === undefined) {
                 return n.innerHTML;
+            }
             if (typeof content === "string"
                 && content === n.innerHTML
-                && bubdiv.style.visibility === "visible")
+                && bubdiv.style.visibility === "visible") {
                 return bubble;
-            nearpos && $(bubdiv).css({maxWidth: "", left: "", top: ""});
-            if (typeof content === "string")
+            }
+            if (typeof content === "string") {
                 n.innerHTML = content;
-            else if (content && content.jquery) {
+            } else if (content && content.jquery) {
                 n.replaceChildren();
                 content.appendTo(n);
-            } else
+            } else {
                 n.replaceChildren(content);
+            }
             nearpos && show();
             return bubble;
         },
@@ -2719,9 +2722,8 @@ return function (content, bubopt) {
 })();
 
 
-var global_tooltip;
 hotcrp.tooltip = (function ($) {
-var builders = {};
+var builders = {}, global_tooltip = null;
 
 function prepare_info(elt, info) {
     var xinfo = elt.getAttribute("data-tooltip-info");
@@ -2761,7 +2763,7 @@ function show_tooltip(info) {
     var tt, bub = null, to = null, near = null,
         refcount = 0, content = info.content;
 
-    function erase() {
+    function close() {
         to = clearTimeout(to);
         bub && bub.remove();
         $self.removeData("tooltipState");
@@ -2813,11 +2815,10 @@ function show_tooltip(info) {
             var delay = info.type === "focus" ? 0 : 200;
             to = clearTimeout(to);
             if (--refcount == 0 && info.type !== "sticky")
-                to = setTimeout(erase, delay);
+                to = setTimeout(close, delay);
             return tt;
         },
-        close: erase,
-        erase: erase, /* XXX backward compat */
+        close: close,
         _element: $self[0],
         html: function (new_content) {
             if (new_content === undefined) {
@@ -2863,7 +2864,11 @@ tooltip.close = function (e) {
     var tt = e ? $(e).data("tooltipState") : global_tooltip;
     tt && tt.close();
 };
-tooltip.erase = tooltip.close; /* XXX backward compat */
+tooltip.close_under = function (e) {
+    if (global_tooltip && e.contains(global_tooltip.near())) {
+        global_tooltip.close();
+    }
+};
 tooltip.add_builder = function (name, f) {
     builders[name] = f;
 };
@@ -3345,10 +3350,7 @@ return {
     remove: function (id) {
         const e = $$(id);
         if (e) {
-            if (global_tooltip
-                && e.contains(global_tooltip.near())) {
-                global_tooltip.close();
-            }
+            hotcrp.tooltip.close_under(e);
             const b = e.parentElement;
             e.remove();
             if (!b.firstChild) {
@@ -3647,10 +3649,7 @@ function display_tracker() {
         t = tracker_html(dl.tracker);
     }
     if (t !== last_tracker_html) {
-        if (global_tooltip
-            && mne.contains(global_tooltip.near())) {
-            global_tooltip.close();
-        }
+        hotcrp.tooltip.close_under(mne);
         last_tracker_html = mne.innerHTML = t;
         $(mne).awaken();
         if (tracker_has_format)
