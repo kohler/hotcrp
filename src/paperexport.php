@@ -185,6 +185,13 @@ class PaperExport {
             $pj->final_submitted_at = $prow->timeFinalSubmitted;
         }
 
+        if (($tlist = $prow->sorted_viewable_tags($this->user))) {
+            $pj->tags = [];
+            foreach (Tagger::split_unpack($tlist) as $tv) {
+                $pj->tags[] = (object) ["tag" => $tv[0], "value" => $tv[1]];
+            }
+        }
+
         return $pj;
     }
 }
