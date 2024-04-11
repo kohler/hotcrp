@@ -1687,10 +1687,8 @@ var graphers = {
     procrastination: {filter: true, function: procrastination_filter},
     scatter: {function: graph_scatter},
     cdf: {function: graph_cdf},
-    "cumulative-count": {function: graph_cdf}, /* XXX backward compat */
     cumulative_count: {function: graph_cdf},
     bar: {function: graph_bars},
-    "full-stack": {function: graph_bars}, /* XXX backward compat */
     full_stack: {function: graph_bars},
     box: {function: graph_boxplot}
 };

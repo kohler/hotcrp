@@ -10532,7 +10532,7 @@ function Plist(tbl) {
     this.taghighlighter = false;
     this.next_foldnum = 8;
     this._bypid = {};
-    var fs = JSON.parse(tbl.getAttribute("data-fields") || tbl.getAttribute("data-columns") /* XXX backward compat */), i;
+    var fs = JSON.parse(tbl.getAttribute("data-fields")), i;
     for (i = 0; i !== fs.length; ++i) {
         this.add_field(fs[i], true);
     }
@@ -14068,7 +14068,6 @@ Object.assign(window.hotcrp, {
     // monitor_autoassignment
     // monitor_job
     // onload
-    paper_edit_conditions: function () {}, // XXX
     popup_skeleton: popup_skeleton,
     // render_list
     render_text: render_text,
