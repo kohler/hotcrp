@@ -716,7 +716,7 @@ class UserStatus extends MessageSet {
                 return $old_roles;
             } else if ($v !== "") {
                 $action = null;
-                if (preg_match('/\A(\+|-|–|—|−)\s*(.*)\z/', $v, $m)) {
+                if (preg_match('/\A(\+|-|–|—|−)\s*(.*)\z/s', $v, $m)) {
                     $action = $m[1] === "+";
                     $v = $m[2];
                 }
