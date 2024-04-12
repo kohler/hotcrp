@@ -92,6 +92,32 @@ users. If `$Opt["loginType"]` is `"oauth"` or `"none"`, then HotCRP will not
 use its own password storage or allow attempts to sign in other than through
 OAuth.
 
+## Importing group permissions
+
+Group permissions can be imported from an openID provider if the token contains
+a "group" claim. This can be configured via a "group mappings" setting in an
+oAuthProvider setting:
+
+```
+$Opt["oAuthProviders"][] = '{
+    "name": "Google",
+    "issuer": "https://accounts.google.com",
+    "auth_uri": "https://accounts.google.com/o/oauth2/v2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "client_id": "123456789-nnnnnnnnnnnnnnnnnnnnnnnnn.apps.googleusercontent.com",
+    "client_secret": "GOCSPX-nnnnnnnnnnnnnnnnnnnnnnnn",
+    "button_html": "Sign in with Google",
+    "remove_groups": true,
+    "group_mappings": {
+        "operators": "sysadmin",
+        "reviewers": "pc",
+        "chairs": "chair"
+    }
+}';
+```
+
+Setting `remove_groups` to `true` enables removing group permissions if these
+are absent in the OpenID claim.
 
 [OAuth]: https://en.wikipedia.org/wiki/OAuth
 [OpenID Connect]: https://en.wikipedia.org/wiki/OpenID

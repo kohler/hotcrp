@@ -58,6 +58,8 @@ class OAuthProvider {
         $instance->redirect_uri = $authdata->redirect_uri ?? $conf->hoturl("oauth", null, Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
         $instance->token_function = $authdata->token_function ?? null;
         $instance->require = $authdata->require ?? null;
+        $instance->group_mappings = $authdata->group_mappings ?? null;
+        $instance->remove_groups = $authdata->remove_groups ?? false;
         foreach (["title", "issuer", "scope"] as $k) {
             if ($instance->$k !== null && !is_string($instance->$k))
                 return null;
@@ -242,6 +244,9 @@ class OAuth_Page {
         if (isset($jid->orcid) && is_string($jid->orcid)) {
             $reg["orcid"] = $jid->orcid;
         }
+        if (isset($jid->affiliation) && is_string($jid->affiliation)) {
+            $reg["affiliation"] = $jid->affiliation;
+        }
         $info = LoginHelper::check_external_login(Contact::make_keyed($this->conf, $reg));
         if (!$info["ok"]) {
             LoginHelper::login_error($this->conf, $jid->email, $info, null);
@@ -249,6 +254,19 @@ class OAuth_Page {
         }
 
         $user = $info["user"];
+        if (isset($jid->groups) && isset($authi->group_mappings)) {
+            if ($authi->remove_groups) {
+                $user_roles = 0;
+            } else {
+                $user_roles = $user->roles;
+            }
+            foreach ($authi->group_mappings as $group => $role) {
+                if (in_array($group, $jid->groups, true)) {
+                    $user_roles = $user_roles | UserStatus::parse_roles($role, $user_roles);
+                }
+            }
+            $user->save_roles($user_roles, $user);
+        }
         if (!$tokdata->quiet) {
             $this->conf->feedback_msg(new MessageItem(null, "<0>Signed in", MessageSet::SUCCESS));
         }
