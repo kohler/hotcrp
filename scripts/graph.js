@@ -1,11 +1,11 @@
 // graph.js -- HotCRP JavaScript library for graph drawing
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
-/* global hotcrp, siteinfo, $$, svge */
+/* global hotcrp, siteinfo, $$, $e, $frag, svge */
 /* global hasClass */
 /* global append_feedback_near, log_jserror */
 /* global make_bubble */
-/* global strftime, text_to_html, escape_html */
+/* global strftime */
 hotcrp.graph = (function ($, d3) {
 var handle_ui = hotcrp.handle_ui,
     ensure_pattern = hotcrp.ensure_pattern,
@@ -395,20 +395,22 @@ function proj2(d) {
 }
 
 function pid_sorter(a, b) {
-    if (typeof a === "object")
+    if (typeof a === "object") {
         a = a.id || a[2];
-    if (typeof b === "object")
+    }
+    if (typeof b === "object") {
         b = b.id || b[2];
-    var d = (typeof a === "string" ? parseInt(a, 10) : a) -
+    }
+    const d = (typeof a === "string" ? parseInt(a, 10) : a) -
             (typeof b === "string" ? parseInt(b, 10) : b);
     return d ? d : (a < b ? -1 : (a == b ? 0 : 1));
 }
 
-function pid_renderer(ps, cc) {
+function render_pid_p(ps, cc) {
     ps.sort(pid_sorter);
-    var a = [];
-    for (var i = 0; i !== ps.length; ++i) {
-        var p = ps[i], cx = cc, rest = null;
+    const e = $e("p");
+    for (let i = 0; i !== ps.length; ++i) {
+        let p = ps[i], cx = cc, rest = "";
         if (typeof p === "object") {
             if (p.id) {
                 rest = p.rest;
@@ -419,20 +421,21 @@ function pid_renderer(ps, cc) {
                 p = p[2];
             }
         }
+        const comma = i === ps.length - 1 ? "" : ",";
+        let pe = "#" + p;
         if (cx) {
             ensure_pattern(cx);
-            p = '<span class="'.concat(cx, '">#', p, '</span>');
-        } else
-            p = '#' + p;
-        var comma = i === ps.length - 1 ? "" : ","
-        if (rest)
-            a.push('<span class="nw">'.concat(p, rest, comma, '</span>'));
-        else if (cx && comma)
-            a.push('<span class="nw">'.concat(p, comma, '</span>'));
-        else
-            a.push(p + comma);
+            pe = $e("span", cx, pe);
+        }
+        i > 0 && e.append(" ");
+        if (rest || cx) {
+            e.append($e("span", "nw", pe, rest, comma));
+        } else {
+            e.append(pe + comma);
+        }
     }
-    return a.join(" ");
+    e.normalize();
+    return e;
 }
 
 function clicker(pids, event) {
@@ -487,12 +490,14 @@ function make_axis(ticks) {
     return $.extend({
         prepare: function () {},
         rewrite: function () {},
-        unparse_html: function (value) {
-            if (value == Math.floor(value))
-                return value;
-            var dom = this.scale().domain(),
-                dig = Math.max(0, -Math.round(Math.log10(dom[1] - dom[0])) + 2);
-            return value.toFixed(dig);
+        render_onto: function (e, value) {
+            if (value == Math.floor(value)) {
+                e.append(value);
+            } else {
+                const dom = this.scale().domain(),
+                    dig = Math.max(0, -Math.round(Math.log10(dom[1] - dom[0])) + 2);
+                e.append(value.toFixed(dig));
+            }
         },
         search: function () { return null; }
     }, ticks);
@@ -517,11 +522,13 @@ function make_args(selector, args) {
     return args;
 }
 
-function position_label(axis, p, prefix) {
-    var aa = axis.axis_args, t = '<span class="nw">' + (prefix || "");
-    if (aa.label)
-        t += escape_html(aa.label) + " ";
-    return t + aa.ticks.unparse_html.call(axis, p, true) + '</span>';
+function render_position(axis, p, prefix) {
+    const e = $e("span", "nw"), aa = axis.axis_args;
+    if (prefix || aa.label) {
+        e.append((prefix || "") + (aa.label ? aa.label + " " : ""));
+    }
+    aa.ticks.render_onto.call(axis, e, p, true);
+    return e;
 }
 
 
@@ -626,13 +633,15 @@ function graph_cdf(selector, args) {
             hubble = hubble || make_bubble("", {color: args.tooltip_class || "graphtip", "pointer-events": "none"});
             var dir = Math.abs(tangentAngle(p.pathNode, p.pathLength));
             if (args.cdf_tooltip_position) {
-                var label = (hovered_series.label ? text_to_html(hovered_series.label) + " " : "") +
-                    args.x.ticks.unparse_html.call(xAxis, x.invert(p[0]), true) +
-                    ", " +
-                    args.y.ticks.unparse_html.call(yAxis, y.invert(p[1]), true);
-                hubble.html(label);
-            } else
+                const f = $frag();
+                hovered_series.label && f.append(hovered_series.label + " ");
+                args.x.ticks.render_onto.call(xAxis, f, x.invert(p[0]), true);
+                f.append(", ");
+                args.y.ticks.render_onto.call(yAxis, f, y.invert(p[1]), true);
+                hubble.replace_content(f);
+            } else {
                 hubble.text(hovered_series.label);
+            }
             hubble.anchor(dir >= 0.25*Math.PI && dir <= 0.75*Math.PI ? "e" : "s")
                 .at(p[0] + args.left, p[1], this);
         } else if (hubble) {
@@ -919,13 +928,19 @@ function scatter_highlight(svg, data, klass) {
 }
 
 function scatter_union(p) {
-    if (p.head)
+    if (!p) {
+        return null;
+    }
+    if (p.head) {
         p = p.head;
-    if (!p.next)
+    }
+    if (!p.next) {
         return p;
+    }
     if (!p.union) {
-        var u = [p[0], p[1], [].concat(p[2]), p[3]], pp = p.next;
+        const u = [p[0], p[1], [].concat(p[2]), p[3]];
         u.r = p.r;
+        let pp = p.next;
         while (pp) {
             u.r = Math.max(u.r, pp.r);
             Array.prototype.push.apply(u[2], pp[2]);
@@ -975,40 +990,38 @@ function graph_scatter(selector, args) {
         .on("click", mouseclick);
 
     function make_tooltip(p, ps) {
-        return '<p>' + position_label(xAxis, p[0]) + ', ' +
-            position_label(yAxis, p[1]) + '</p><p>' +
-            pid_renderer(ps, p[3]) + '</p>';
+        return [
+            $e("p", null, render_position(xAxis, p[0]), ", ", render_position(yAxis, p[1])),
+            render_pid_p(ps, p[3])
+        ];
     }
 
     var hovered_data, hubble;
     function mousemoved(event) {
-        var m = d3.pointer(event), p = data.quadtree.gfind(m, 4);
-        if (p && (p.head || p.next))
-            p = scatter_union(p);
-        if (p != hovered_data) {
-            if (p)
-                hovers.datum(p)
-                    .attr("d", scatter_annulus)
-                    .attr("transform", scatter_transform)
-                    .style("display", null);
-            else
-                hovers.style("display", "none");
-            svg.style("cursor", p ? "pointer" : null);
-            hovered_data = p;
+        let m = d3.pointer(event), p = scatter_union(data.quadtree.gfind(m, 4));
+        if (!p) {
+            hovered_data && mouseout();
+            return;
+        } else if (p === hovered_data) {
+            return;
         }
-        if (p) {
-            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-            hubble.html(make_tooltip(p[2][0], p[2]))
-                .anchor("s")
-                .near(hovers.node());
-        } else if (hubble)
-            hubble = hubble.remove() && null;
+        hovers.datum(p)
+            .attr("d", scatter_annulus)
+            .attr("transform", scatter_transform)
+            .style("display", null);
+        hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
+        hubble.replace_content(...make_tooltip(p[2][0], p[2]))
+            .anchor("s")
+            .near(hovers.node());
+        svg.style("cursor", "pointer");
+        hovered_data = p;
     }
 
     function mouseout() {
         hovers.style("display", "none");
         hubble && hubble.remove();
         hovered_data = hubble = null;
+        svg.style("cursor", null);
     }
 
     function mouseclick(event) {
@@ -1148,22 +1161,25 @@ function graph_bars(selector, args) {
         .on("click", mouseclick);
 
     function make_tooltip(p) {
-        return '<p>' + position_label(xAxis, p[0]) + ', ' +
-            position_label(yAxis, p[1]) + '</p><p>' +
-            pid_renderer(p[2], p[3]) + '</p>';
+        return [
+            $e("p", null, render_position(xAxis, p[0]), ", ", render_position(yAxis, p[1])),
+            render_pid_p(p[2], p[3])
+        ];
     }
 
     function make_mouseover(d) {
-        if (!d || d.i0 == null)
+        if (!d || d.i0 == null) {
             return d;
+        }
         if (!d.ia) {
             d.ia = [d[0], 0, [], "", d[4]];
             d.ia.yoff = 0;
-            for (var i = d.i0; i !== data.length && data[i].i0 === d.i0; ++i) {
+            for (let i = d.i0; i !== data.length && data[i].i0 === d.i0; ++i) {
                 d.ia[1] = data[i][1] + data[i].yoff;
-                var pids = data[i][2], cc = data[i][3];
-                for (var j = 0; j !== pids.length; ++j)
+                const pids = data[i][2], cc = data[i][3];
+                for (let j = 0; j !== pids.length; ++j) {
                     d.ia[2].push(cc ? {id: pids[j], color_classes: cc} : pids[j]);
+                }
             }
         }
         return d.ia;
@@ -1171,25 +1187,27 @@ function graph_bars(selector, args) {
 
     var hovered_data, hubble;
     function mouseover() {
-        var p = make_mouseover(d3.select(this).data()[0]);
-        if (p != hovered_data) {
-            if (p)
-                place(hovers.datum(p), "Z").style("display", null);
-            else
-                hovers.style("display", "none");
-            svg.style("cursor", p ? "pointer" : null);
-            hovered_data = p;
+        const p = make_mouseover(d3.select(this).data()[0]);
+        if (!p) {
+            hovered_data && mouseout();
+            return;
+        } else if (p === hovered_data) {
+            return;
         }
-        if (p) {
-            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-            hubble.html(make_tooltip(p)).anchor("h").near(hovers.node());
-        }
+        place(hovers.datum(p), "Z").style("display", null);
+        svg.style("cursor", "pointer");
+        hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
+        hubble.replace_content(...make_tooltip(p))
+            .anchor("h")
+            .near(hovers.node());
+        hovered_data = p;
     }
 
     function mouseout() {
         hovers.style("display", "none");
         hubble && hubble.remove();
         hovered_data = hubble = null;
+        svg.style("cursor", null);
     }
 
     function mouseclick(event) {
@@ -1374,42 +1392,45 @@ function graph_boxplot(selector, args) {
     }, false);
 
     function make_tooltip(p, ps, ds, cc) {
-        var yformat = args.y.ticks.unparse_html, t, x = [];
-        t = '<p>' + position_label(xAxis, p[0]);
+        const yformat = args.y.ticks.render_onto, pe = $e("p");
+        let x = ps;
+        pe.append(render_position(xAxis, p[0]));
         if (p.q) {
-            t += ", " + position_label(yAxis, p.q[2], "median ");
-            for (var i = 0; i < ps.length; ++i)
-                x.push({id: ps[i], rest: " (" + yformat.call(yAxis, ds[i]) + ")"});
+            pe.append(", ", render_position(yAxis, p.q[2], "median "));
+            x = [];
+            for (let i = 0; i < ps.length; ++i) {
+                const rest = $frag(" (");
+                yformat.call(yAxis, rest, ds[i]);
+                rest.append(")");
+                x.push({id: ps[i], rest: rest});
+            }
         } else {
-            t += ", " + position_label(yAxis, ds[0]);
-            x = ps;
+            pe.append(", ", render_position(yAxis, ds[0]));
         }
-        x.sort(pid_sorter);
-        return t + '</p><p>' + pid_renderer(x, cc) + '</p>';
+        return [pe, render_pid_p(x, cc)];
     }
 
     var hovered_data, hubble;
     function mouseover() {
-        var p = d3.select(this).data()[0];
-        if (p != hovered_data) {
-            hovers.style("display", "none");
-            if (p) {
-                hovers.filter(":not(.outlier)").style("display", null).datum(p);
-                place_whisker(0, hovers.filter(".whiskerl"));
-                place_whisker(3, hovers.filter(".whiskerh"));
-                place_box(hovers.filter(".box"));
-                place_median(hovers.filter(".median"));
-                place_mean(hovers.filter(".mean"));
-            }
-            svg.style("cursor", p ? "pointer" : null);
-            hovered_data = p;
+        let p = d3.select(this).data()[0];
+        if (!p) {
+            hovered_data && mouseout();
+            return;
+        } else if (p === hovered_data) {
+            return;
         }
-        if (p) {
-            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-            if (!p.th)
-                p.th = make_tooltip(p, p.p, p.d, p.c);
-            hubble.html(p.th).anchor("h").near(hovers.filter(".box").node());
-        }
+        hovers.filter(":not(.outlier)").style("display", null).datum(p);
+        place_whisker(0, hovers.filter(".whiskerl"));
+        place_whisker(3, hovers.filter(".whiskerh"));
+        place_box(hovers.filter(".box"));
+        place_median(hovers.filter(".median"));
+        place_mean(hovers.filter(".mean"));
+        svg.style("cursor", "pointer");
+        hovered_data = p;
+        hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
+        hubble.replace_content(...make_tooltip(p, p.p, p.d, p.c))
+            .anchor("h")
+            .near(hovers.filter(".box").node());
     }
 
     function mouseover_outlier() {
@@ -1433,6 +1454,7 @@ function graph_boxplot(selector, args) {
         hovers.style("display", "none");
         hubble && hubble.remove();
         hovered_data = hubble = null;
+        svg.style("cursor", null);
     }
 
     function mouseclick(event) {
@@ -1490,16 +1512,15 @@ function score_ticks(rf) {
                     d.text(rf.unparse_symbol(value, split));
             });
         },
-        unparse_html: function (value, include_numeric) {
-            var k = rf.className(value), t = rf.unparse_symbol(value, true);
-            if (!k)
-                return t;
-            t = '<span class="sv '.concat(k, '">', t, '</span>');
+        render_onto: function (e, value, include_numeric) {
+            const k = rf.className(value),
+                t = rf.unparse_symbol(value, true);
+            e.append(k ? $e("span", "sv " + k, t) : t);
             if (include_numeric
                 && !rf.default_numeric
-                && value !== Math.round(value * 2) / 2)
-                t = t.concat(' (', value.toFixed(2).replace(/\.00$/, ""), ')');
-            return t;
+                && value !== Math.round(value * 2) / 2) {
+                e.append(" (" + value.toFixed(2).replace(/\.00$/, "") + ")");
+            }
         },
         type: "score"
     };
@@ -1510,12 +1531,12 @@ function time_ticks() {
         if (value < 1000000000) {
             value = Math.round(value / 8640) / 10;
             return value + "d";
+        }
+        const d = new Date(value * 1000);
+        if (d.getHours() || d.getMinutes()) {
+            return strftime("%Y-%m-%dT%R", d);
         } else {
-            var d = new Date(value * 1000);
-            if (d.getHours() || d.getMinutes())
-                return strftime("%Y-%m-%dT%R", d);
-            else
-                return strftime("%Y-%m-%d", d);
+            return strftime("%Y-%m-%d", d);
         }
     }
     return {
@@ -1536,7 +1557,9 @@ function time_ticks() {
             }
             this.tickFormat(format);
         },
-        unparse_html: format,
+        render_onto: function (e, value) {
+            e.append(format(value));
+        },
         type: "time"
     };
 }
@@ -1638,16 +1661,16 @@ function named_integer_ticks(map) {
             this.ticks(count).tickFormat(mtext);
         },
         rewrite: rewrite,
-        unparse_html: function (value, include_numeric) {
-            var fvalue = Math.round(value);
+        render_onto: function (e, value, include_numeric) {
+            const fvalue = Math.round(value);
             if (Math.abs(value - fvalue) <= 0.05 && map[fvalue]) {
-                var t = text_to_html(mtext(fvalue));
-                // NB `value` might be a bool
-                if (value !== fvalue && include_numeric && typeof value === "number")
-                    t += " (" + value.toFixed(2) + ")";
-                return t;
-            } else
-                return value.toFixed(2);
+                e.append(mtext(fvalue));
+                if (include_numeric
+                    && value !== fvalue
+                    && typeof value === "number") {
+                    e.append(" (" + value.toFixed(2) + ")");
+                }
+            }
         },
         search: function (value) {
             var m = map[value];

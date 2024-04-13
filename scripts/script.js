@@ -2689,13 +2689,18 @@ return function (content, bubopt) {
             return bubble;
         },
         text: function (text) {
-            if (text === undefined)
+            if (text === undefined) {
                 return $(bubch[1]).text();
-            else
-                return bubble.html(text ? text_to_html(text) : text);
+            }
+            return bubble.replace_content(text);
         },
         content_node: function () {
             return bubch[1];
+        },
+        replace_content: function (...es) {
+            bubch[1].replaceChildren(...es);
+            nearpos && show();
+            return bubble;
         },
         hover: function (enter, leave) {
             $(bubdiv).hover(enter, leave);
