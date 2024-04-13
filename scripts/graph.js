@@ -1419,6 +1419,7 @@ function graph_boxplot(selector, args) {
         } else if (p === hovered_data) {
             return;
         }
+        hovers.style("display", "none");
         hovers.filter(":not(.outlier)").style("display", null).datum(p);
         place_whisker(0, hovers.filter(".whiskerl"));
         place_whisker(3, hovers.filter(".whiskerh"));
@@ -1434,20 +1435,21 @@ function graph_boxplot(selector, args) {
     }
 
     function mouseover_outlier() {
-        var p = d3.select(this).data()[0];
-        if (p != hovered_data) {
-            hovers.style("display", "none");
-            if (p)
-                place_outlier(hovers.filter(".outlier").style("display", null).datum(p));
-            svg.style("cursor", p ? "pointer" : null);
-            hovered_data = p;
+        let p = d3.select(this).data()[0];
+        if (!p) {
+            hovered_data && mouseout();
+            return;
+        } else if (p === hovered_data) {
+            return;
         }
-        if (p) {
-            hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-            if (!p.th)
-                p.th = make_tooltip(p[2][0], p[2].map(proj2), p[2].map(proj1), p[3]);
-            hubble.html(p.th).anchor("h").near(hovers.filter(".outlier").node());
-        }
+        hovers.style("display", "none");
+        place_outlier(hovers.filter(".outlier").style("display", null).datum(p));
+        svg.style("cursor", "pointer");
+        hovered_data = p;
+        hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
+        hubble.replace_content(...make_tooltip(p[2][0], p[2].map(proj2), p[2].map(proj1), p[3]))
+            .anchor("h")
+            .near(hovers.filter(".outlier").node());
     }
 
     function mouseout() {
