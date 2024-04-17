@@ -1775,8 +1775,8 @@ class Formula implements JsonSerializable {
 
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|\?\?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
-    /** @var bool */
-    const DEBUG = false;
+    /** @var 0|1|2 */
+    const DEBUG = 1;
 
     static public $opprec = [
         "**" => 14,
@@ -2587,6 +2587,14 @@ class Formula implements JsonSerializable {
     }
 
 
+    private static function debug_report($function) {
+        if (self::DEBUG === 1) {
+            error_log("{$function}\n");
+        } else if (self::DEBUG > 1) {
+            Conf::msg_debugt("{$function}\n");
+        }
+    }
+
     /** @param Contact $user
      * @param string $expr
      * @param int $sortable
@@ -2621,14 +2629,15 @@ class Formula implements JsonSerializable {
         if ($this->check()) {
             $state = new FormulaCompiler($this->user);
             $expr = $this->_parse->fexpr->compile($state);
-            $t = self::compile_body($this->user, $state, $expr, $sortable);
+            $body = self::compile_body($this->user, $state, $expr, $sortable);
         } else {
-            $t = "return null;\n";
+            $body = "return null;\n";
         }
-
-        $args = '$prow, $rrow_cid, $contact';
-        self::DEBUG && Conf::msg_debugt("function ({$args}) {\n  // " . simplify_whitespace($this->expression) . "\n  {$t}}\n");
-        return eval("return function ($args) {\n  $t};");
+        $function = "function (\$prow, \$rrow_cid, \$contact) {\n"
+            . "  // " . simplify_whitespace($this->expression)
+            . "\n  {$body}}";
+        self::DEBUG && self::debug_report($function);
+        return eval("return {$function};");
     }
 
     /** @return callable(PaperInfo,?int,Contact):mixed */
@@ -2663,31 +2672,30 @@ class Formula implements JsonSerializable {
     }
 
     static function compile_indexes_function(Contact $user, $index_types) {
-        if ($index_types !== 0) {
-            $state = new FormulaCompiler($user);
-            $g = $state->loop_variable($index_types);
-            $t = "assert(\$contact->contactXid === {$user->contactXid});\n  "
-                . join("\n  ", $state->gstmt) . "\n";
-            if (($index_types & Fexpr::IDX_REVIEW) !== 0) {
-                $check = "";
-                if ($index_types === Fexpr::IDX_CREVIEW) {
-                    $check = "    if (!\$rrow->reviewSubmitted) { continue; }\n";
-                }
-                $t .= "  \$cids = [];\n"
-                    . "  foreach ({$g} as \$rrow) {\n"
-                    . $check
-                    . "    \$cids[] = \$rrow->contactId;\n"
-                    . "  }\n"
-                    . "  return \$cids;\n";
-            } else {
-                $t .= "  return array_keys({$g});\n";
-            }
-            $args = '$prow, $contact';
-            self::DEBUG && error_log("function ({$args}) {\n  {$t}}\n");
-            return eval("return function ({$args}) {\n  {$t}};");
-        } else {
+        if ($index_types === 0) {
             return null;
         }
+        $state = new FormulaCompiler($user);
+        $g = $state->loop_variable($index_types);
+        $body = "assert(\$contact->contactXid === {$user->contactXid});\n  "
+            . join("\n  ", $state->gstmt) . "\n";
+        if (($index_types & Fexpr::IDX_REVIEW) !== 0) {
+            $check = "";
+            if ($index_types === Fexpr::IDX_CREVIEW) {
+                $check = "    if (!\$rrow->reviewSubmitted) { continue; }\n";
+            }
+            $body .= "  \$cids = [];\n"
+                . "  foreach ({$g} as \$rrow) {\n"
+                . $check
+                . "    \$cids[] = \$rrow->contactId;\n"
+                . "  }\n"
+                . "  return \$cids;\n";
+        } else {
+            $body .= "  return array_keys({$g});\n";
+        }
+        $function = "function (\$prow, \$contact) {\n  {$body}}";
+        self::DEBUG && self::debug_report($function);
+        return eval("return {$function};");
     }
 
     /** @return bool */
@@ -2709,18 +2717,20 @@ class Formula implements JsonSerializable {
 
     function compile_extractor_function() {
         $this->support_combiner();
-        $t = $this->_extractorf ? : "  return null;\n";
-        $args = '$prow, $rrow_cid, $contact';
-        self::DEBUG && error_log("function ({$args}) {\n  // extractor " . simplify_whitespace($this->expression) . "\n  {$t}}\n");
-        return eval("return function ({$args}) {\n  {$t}};");
+        $function = "function (\$prow, \$rrow_cid, \$contact) {\n"
+            . "  // extractor " . simplify_whitespace($this->expression)
+            . "\n  " . ($this->_extractorf ? : "return null;\n") . "}";
+        self::DEBUG && self::debug_report($function);
+        return eval("return {$function};");
     }
 
     function compile_combiner_function() {
         $this->support_combiner();
-        $t = $this->_combinerf ? : "  return null;\n";
-        $args = '$extractor_results';
-        self::DEBUG && error_log("function ({$args}) {\n  // combiner " . simplify_whitespace($this->expression) . "\n  {$t}}\n");
-        return eval("return function ({$args}) {\n  {$t}};");
+        $function = "function (\$extractor_results) {\n"
+            . "  // combiner " . simplify_whitespace($this->expression)
+            . "\n  " . ($this->_combinerf ? : "return null;\n") . "}";
+        self::DEBUG && self::debug_report($function);
+        return eval("return {$function};");
     }
 
 /*    function _unparse_iso_duration($x) {
