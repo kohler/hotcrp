@@ -168,7 +168,7 @@ abstract class Fexpr implements JsonSerializable {
     /** @return bool */
     function nonnullable_format() {
         return $this->_format === Fexpr::FNUMERIC
-               || $this->_format === Fexpr::FBOOL;
+            || $this->_format === Fexpr::FBOOL;
     }
 
     /** @return bool */
@@ -234,19 +234,23 @@ abstract class Fexpr implements JsonSerializable {
 
     private function _typecheck_format() {
         $commonf = null;
-        $nonnull = true;
-        foreach ($this->inferred_format() ?? [] as $fe) {
-            $nonnull = $nonnull && $fe->nonnull_format();
-            if ($fe->format() < Fexpr::FNUMERIC) {
-                /* ignore it */
-            } else if (!$commonf) {
-                $commonf = $fe;
-            } else if ($commonf->_format !== $fe->_format
-                       || (!$commonf->nonnullable_format()
-                           && $commonf->_format_detail !== $fe->_format_detail)) {
-                $commonf = null;
-                break;
+        if (($inferred = $this->inferred_format())) {
+            $nonnull = true;
+            foreach ($inferred as $fe) {
+                $nonnull = $nonnull && $fe->nonnull_format();
+                if ($fe->format() < Fexpr::FNUMERIC) {
+                    /* ignore it */
+                } else if (!$commonf) {
+                    $commonf = $fe;
+                } else if ($commonf->_format !== $fe->_format
+                           || (!$commonf->nonnullable_format()
+                               && $commonf->_format_detail !== $fe->_format_detail)) {
+                    $commonf = null;
+                    break;
+                }
             }
+        } else {
+            $nonnull = false;
         }
         if ($this->_format === Fexpr::FUNKNOWN) {
             $this->_format = $commonf ? $commonf->_format : Fexpr::FNUMERIC;
