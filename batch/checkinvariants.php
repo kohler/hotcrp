@@ -179,14 +179,14 @@ class CheckInvariants_Batch {
         $result = $this->conf->qe("select * from ContactInfo");
         $mq = Dbl::make_multi_qe_stager($this->conf->dblink);
         while (($u = Contact::fetch($result, $this->conf))) {
-            $fn = simplify_whitespace($u->firstName);
-            $ln = simplify_whitespace($u->lastName);
-            $af = simplify_whitespace($u->affiliation);
-            if ($fn !== $u->firstName || $ln !== $u->lastName || $af !== $u->affiliation) {
-                $u->firstName = $fn;
-                $u->lastName = $ln;
-                $u->affiliation = $af;
-                $mq("update ContactInfo set firstName=?, lastName=?, affiliation=?, unaccentedName=? where contactId=?", $fn, $ln, $af, $u->db_searchable_name(), $u->contactId);
+            $u->firstName = simplify_whitespace(($fn = $u->firstName));
+            $u->lastName = simplify_whitespace(($ln = $u->lastName));
+            $u->affiliation = simplify_whitespace(($af = $u->affiliation));
+            $un = $u->unaccentedName;
+            $u->unaccentedName = $u->db_searchable_name();
+            if ($fn !== $u->firstName || $ln !== $u->lastName
+                || $af !== $u->affiliation || $un !== $u->unaccentedName) {
+                $mq("update ContactInfo set firstName=?, lastName=?, affiliation=?, unaccentedName=? where contactId=?", $u->firstName, $u->lastName, $u->affiliation, $u->unaccentedName, $u->contactId);
             }
         }
         $mq(null);
