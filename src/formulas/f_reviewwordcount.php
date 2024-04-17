@@ -1,13 +1,13 @@
 <?php
 // formulas/f_reviewwordcount.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
 
 class ReviewWordCount_Fexpr extends Fexpr {
     function __construct() {
         parent::__construct("rewordcount");
     }
     function inferred_index() {
-        return Fexpr::IDX_PC;
+        return Fexpr::IDX_REVIEW;
     }
     function viewable_by(Contact $user) {
         return $user->is_reviewer();
