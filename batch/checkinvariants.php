@@ -141,6 +141,10 @@ class CheckInvariants_Batch {
             $this->report_fix("document match");
             $this->fix_document_match();
         }
+        if (isset($ic->problems["user_whitespace"]) && $this->want_fix("whitespace")) {
+            $this->report_fix("whitespace");
+            $this->fix_whitespace();
+        }
         return 0;
     }
 
@@ -171,6 +175,20 @@ class CheckInvariants_Batch {
         $this->conf->qe("update Paper p join PaperStorage s on (s.paperId=p.paperId and s.paperStorageId=p.finalPaperStorageId) set p.size=s.size where p.size<0 and p.finalPaperStorageId>1");
     }
 
+    private function fix_whitespace() {
+        $result = $this->conf->qe("select * from Contact");
+        $mq = Dbl::make_multi_qe_stager($this->conf->dblink);
+        while (($u = $result->fetch_object())) {
+            $fn = simplify_whitespace($u->firstName);
+            $ln = simplify_whitespace($u->lastName);
+            $af = simplify_whitespace($u->affiliation);
+            if ($fn !== $u->firstName || $ln !== $u->lastName || $af !== $u->affiliation) {
+                $mq("update Contact set firstName=?, lastName=?, affiliation=? where contactId=?", $fn, $ln, $af, $u->contactId);
+            }
+        }
+        $mq(null);
+    }
+
     /** @return CheckInvariants_Batch */
     static function make_args($argv) {
         $arg = (new Getopt)->long(
@@ -180,7 +198,7 @@ class CheckInvariants_Batch {
             "verbose,V Be verbose",
             "fix-autosearch ! Repair any incorrect autosearch tags",
             "fix-inactive ! Repair any inappropriately inactive documents",
-            "fix[] =PROBLEM Repair PROBLEM [all, autosearch, inactive, setting, document-match]",
+            "fix[] =PROBLEM Repair PROBLEM [all, autosearch, inactive, setting, document-match, whitespace]",
             "color",
             "no-color !",
             "pad-prefix !"
