@@ -442,7 +442,7 @@ class ConfInvariants {
 
             // whitespace is simplified
             $t = " ";
-            foreach ([$u->firstName, $u->lastName, $u->email, $u->affiliation] as $s) {
+            foreach ([$u->firstName, $u->lastName, $u->email, $u->affiliation, $u->unaccentedName] as $s) {
                 if ($s !== "")
                     $t .= "{$s} ";
             }
