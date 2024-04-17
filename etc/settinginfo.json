@@ -784,7 +784,7 @@
     {
         "name_pattern": "rf/$/scheme",
         "title": "/Color scheme",
-        "type": "radio", "values": ["sv", "svr", "bupu", "pubu", "rdpk", "pkrd", "viridisr", "viridis", "orbu", "buor", "turbo", "turbor", "catx", "none"]
+        "type": "radio", "values": ["sv", "svr", "bupu", "pubu", "rdpk", "pkrd", "viridisr", "viridis", "orbu", "buor", "turbo", "turbor", "observablex", "catx", "none"]
     },
 
 

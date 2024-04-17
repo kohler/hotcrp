@@ -564,7 +564,8 @@ abstract class Discrete_ReviewField extends ReviewField {
         "viridisr" => [1, 9, "viridis"], "viridis" => [0, 9, "viridisr"],
         "orbu" => [0, 9, "buor"], "buor" => [1, 9, "orbu"],
         "turbo" => [0, 9, "turbor"], "turbor" => [1, 9, "turbo"],
-        "catx" => [2, 10, null], "none" => [2, 1, null]
+        "observablex" => [2, 10, null], "catx" => [2, 10, null],
+        "none" => [2, 1, null]
     ];
 
     /** @var array<string,string>

@@ -660,7 +660,8 @@ var fieldorder = [], rftypes,
               "viridisr", "Yellow to purple", "viridis", "Purple to yellow",
               "orbu", "Orange to blue", "buor", "Blue to orange",
               "turbo", "Turbo", "turbor", "Turbo reversed",
-              "catx", "Category10", "none", "None"];
+              "observablex", "Observable10", "catx", "Category10",
+              "none", "None"];
 
 function rffinder(name) {
     return field_find(rftypes, name);

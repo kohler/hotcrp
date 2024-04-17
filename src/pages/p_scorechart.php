@@ -35,8 +35,8 @@ class Scorechart_Page {
     /** @var int */
     private $scale;
 
-    public static $scheme_colors = ["sv" => "9c3131a04b00a26300a179009d8f00929e007fad005fbd0000cc00", "bupu" => "4b8bc14181be3b76bb396bb73b5fb24053ab4646a34d389a54278f", "pkrd" => "e14da0d7448bcc3b76c13363b52b50a9243e9c1e2c8f1819821201", "viridis" => "440154472c7a3b518b2c718e21908d27ad815cc863aadc32dbcb39", "orbu" => "fca636f68443e86659d14d6fb23a818e2c8f6721963e15940d0887", "turbo" => "23171b4569ee26bce13ff3936be619ecd12eff821dcb2f0d900c00", "catx" => "1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf", "none" => "222222"];
-    public static $scheme_categorical = ["catx" => true, "none" => true];
+    public static $scheme_colors = ["sv" => "9c3131a04b00a26300a179009d8f00929e007fad005fbd0000cc00", "bupu" => "4b8bc14181be3b76bb396bb73b5fb24053ab4646a34d389a54278f", "pkrd" => "e14da0d7448bcc3b76c13363b52b50a9243e9c1e2c8f1819821201", "viridis" => "440154472c7a3b518b2c718e21908d27ad815cc863aadc32dbcb39", "orbu" => "fca636f68443e86659d14d6fb23a818e2c8f6721963e15940d0887", "turbo" => "23171b4569ee26bce13ff3936be619ecd12eff821dcb2f0d900c00", "observablex" => "4269d0efb118ff725c6cc5b03ca951ff8ab7a463f297bbf59c6b4e9498a0", "catx" => "1f77b4ff7f0e2ca02cd627289467bd8c564be377c27f7f7fbcbd2217becf", "none" => "222222"];
+    public static $scheme_categorical = ["observablex" => true, "catx" => true, "none" => true];
     public static $scheme_reverse = ["sv" => "svr", "svr" => "sv", "bupu" => "pubu", "pubu" => "bupu", "rdpk" => "pkrd", "pkrd" => "rdpk", "viridisr" => "viridis", "viridis" => "viridisr", "orbu" => "buor", "buor" => "orbu", "turbo" => "turbor", "turbor" => "turbo"];
 
     /** @param array{int,int,int} $c1
