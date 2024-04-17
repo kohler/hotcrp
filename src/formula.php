@@ -234,23 +234,20 @@ abstract class Fexpr implements JsonSerializable {
 
     private function _typecheck_format() {
         $commonf = null;
-        if (($inferred = $this->inferred_format())) {
-            $nonnull = true;
-            foreach ($inferred as $fe) {
-                $nonnull = $nonnull && $fe->nonnull_format();
-                if ($fe->format() < Fexpr::FNUMERIC) {
-                    /* ignore it */
-                } else if (!$commonf) {
-                    $commonf = $fe;
-                } else if ($commonf->_format !== $fe->_format
-                           || (!$commonf->nonnullable_format()
-                               && $commonf->_format_detail !== $fe->_format_detail)) {
-                    $commonf = null;
-                    break;
-                }
+        $inferred = $this->inferred_format();
+        $nonnull = !empty($inferred);
+        foreach ($inferred ?? [] as $fe) {
+            $nonnull = $nonnull && $fe->nonnull_format();
+            if ($fe->format() < Fexpr::FNUMERIC) {
+                /* ignore it */
+            } else if (!$commonf) {
+                $commonf = $fe;
+            } else if ($commonf->_format !== $fe->_format
+                       || (!$commonf->nonnullable_format()
+                           && $commonf->_format_detail !== $fe->_format_detail)) {
+                $commonf = null;
+                break;
             }
-        } else {
-            $nonnull = false;
         }
         if ($this->_format === Fexpr::FUNKNOWN) {
             $this->_format = $commonf ? $commonf->_format : Fexpr::FNUMERIC;
@@ -633,7 +630,7 @@ class Additive_Fexpr extends Fexpr {
         if ((!$d0 && !$d1)
             || (!$d0 && $f0)
             || (!$d1 && $f1)) {
-            return null;
+            return $this->args;
         } else if ($this->op === "-" && $d0 && $d1 && !$delta0 && !$delta1) {
             $fx = Fexpr::FDATEDELTA;
         } else if ($d0 && (!$d1 || $delta1)) {
@@ -641,7 +638,7 @@ class Additive_Fexpr extends Fexpr {
         } else if ($d1 && (!$d0 || $delta0)) {
             $fx = $delta1 ? Fexpr::FDATEDELTA : Fexpr::FDATE;
         } else {
-            return null;
+            return $this->args;
         }
         if ($f0 === Fexpr::FTIME || $f0 === Fexpr::FTIMEDELTA
             || $f1 === Fexpr::FTIME || $f1 === Fexpr::FTIMEDELTA) {
@@ -664,6 +661,9 @@ class Multiplicative_Fexpr extends Fexpr {
     }
     function typecheck(Formula $formula) {
         return $this->typecheck_arguments($formula, true);
+    }
+    function inferred_format() {
+        return $this->args;
     }
     function compile(FormulaCompiler $state) {
         $t1 = $state->_addltemp($this->args[0]->compile($state));
@@ -1052,7 +1052,8 @@ class Extremum_Fexpr extends Aggregate_Fexpr {
     }
     function compile(FormulaCompiler $state) {
         $cmp = $this->compiled_relation($this->op === "min" ? "<" : ">");
-        return $state->_compile_loop("null", "(~r~ === null || (~l~ !== null && ~l~ {$cmp} ~r~) ? ~l~ : ~r~)", $this);
+        $cmpx = $this->args[0]->nonnull_format() ? "~l~ {$cmp} ~r~" : "(~l~ !== null && ~l~ {$cmp} ~r~)";
+        return $state->_compile_loop("null", "(~r~ === null || {$cmpx} ? ~l~ : ~r~)", $this);
     }
 }
 
@@ -1096,7 +1097,11 @@ class Sum_Fexpr extends Aggregate_Fexpr {
             && Count_Fexpr::check_private_tag_index($this);
     }
     function compile(FormulaCompiler $state) {
-        return $state->_compile_loop("null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : +~l~) : ~r~)", $this);
+        if ($this->args[0]->nonnull_format()) {
+            return $state->_compile_loop("null", "(~r~ !== null ? ~r~ + ~l~ : +~l~)", $this);
+        } else {
+            return $state->_compile_loop("null", "(~l~ !== null ? (~r~ !== null ? ~r~ + ~l~ : +~l~) : ~r~)", $this);
+        }
     }
 }
 
