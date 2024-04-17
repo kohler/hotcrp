@@ -1048,10 +1048,6 @@ class FormulaGraph extends MessageSet {
             }
         }
 
-        if (!$isx && ($rotate_y ?? $ticks !== null || $named_ticks !== null)) {
-            $j["rotate_ticks"] = -90;
-        }
-
         if ($isx && $this->_xorder_map && $named_ticks !== null) {
             $newticks = [];
             foreach ($named_ticks as $n => $x) {

@@ -5328,3 +5328,6 @@ th.pl_logaction {
 	fill: none;
 	pointer-events: none;
 }
+.hotgraph .axis {
+	font-size: smaller;
+}

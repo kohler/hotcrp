@@ -675,12 +675,6 @@ var urldecode = function (s) {
     return decodeURIComponent(s.replace(/\+/g, "%20"));
 };
 
-function text_to_html(text) {
-    var n = document.createElement("div");
-    n.appendChild(document.createTextNode(text));
-    return n.innerHTML;
-}
-
 function text_eq(a, b) {
     if (a === b)
         return true;
@@ -6580,18 +6574,20 @@ function Score_ReviewField(fj) {
 
 Object.setPrototypeOf(Score_ReviewField.prototype, DiscreteValues_ReviewField.prototype);
 
-Score_ReviewField.prototype.unparse_symbol = function (val, split) {
-    if (val === (val | 0) && this.symbols[val - 1] != null)
+Score_ReviewField.prototype.unparse_symbol = function (val) {
+    if (val === (val | 0) && this.symbols[val - 1] != null) {
         return this.symbols[val - 1];
-    var rval = (split ? Math.round(val * 2) / 2 : Math.round(val)) - 1;
-    if (this.default_numeric || rval < 0 || rval > this.symbols.length - 1)
-        return val.toFixed(2);
-    else if (rval === (rval | 0))
-        return this.symbols[rval];
-    else if (this.flip)
+    }
+    const rval = Math.round(val * 2) / 2 - 1;
+    if (this.default_numeric || rval < 0 || rval > this.symbols.length - 1) {
+        return val;
+    } else if (rval === (rval | 0)) {
+        return this.symbols[rval].toString();
+    } else if (this.flip) {
         return this.symbols[rval + 0.5].concat("~", this.symbols[rval - 0.5]);
-    else
+    } else {
         return this.symbols[rval - 0.5].concat("~", this.symbols[rval + 0.5]);
+    }
 };
 
 Score_ReviewField.prototype.render_in = function (fv, rrow, fe) {
@@ -6637,18 +6633,19 @@ Checkbox_ReviewField.prototype.className = function (val) {
 };
 
 Checkbox_ReviewField.prototype.unparse_symbol = function (val) {
-    if (val === true || val === false)
+    if (val === true || val === false) {
         return val ? "✓" : "✗";
-    else if (val < 0.125)
+    } else if (val < 0.125) {
         return "✗";
-    else if (val < 0.375)
+    } else if (val < 0.375) {
         return "¼✓";
-    else if (val < 0.625)
+    } else if (val < 0.625) {
         return "½✓";
-    else if (val < 0.875)
+    } else if (val < 0.875) {
         return "¾✓";
-    else
+    } else {
         return "✓";
+    }
 };
 
 Checkbox_ReviewField.prototype.render_in = function (fv, rrow, fe) {
@@ -6668,9 +6665,10 @@ function Checkboxes_ReviewField(fj) {
 Object.setPrototypeOf(Checkboxes_ReviewField.prototype, DiscreteValues_ReviewField.prototype);
 
 Checkboxes_ReviewField.prototype.unparse_symbol = function (val) {
-    if (!val || val !== (val | 0))
+    if (!val || val !== (val | 0)) {
         return "";
-    var s, b, t = [];
+    }
+    let s, b, t = [];
     for (s = b = 1; b <= val; b <<= 1, ++s) {
         if (val & b)
             t.push(this.symbols[s - 1]);
