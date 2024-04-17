@@ -176,14 +176,14 @@ class CheckInvariants_Batch {
     }
 
     private function fix_whitespace() {
-        $result = $this->conf->qe("select * from Contact");
+        $result = $this->conf->qe("select * from ContactInfo");
         $mq = Dbl::make_multi_qe_stager($this->conf->dblink);
         while (($u = $result->fetch_object())) {
             $fn = simplify_whitespace($u->firstName);
             $ln = simplify_whitespace($u->lastName);
             $af = simplify_whitespace($u->affiliation);
             if ($fn !== $u->firstName || $ln !== $u->lastName || $af !== $u->affiliation) {
-                $mq("update Contact set firstName=?, lastName=?, affiliation=? where contactId=?", $fn, $ln, $af, $u->contactId);
+                $mq("update ContactInfo set firstName=?, lastName=?, affiliation=? where contactId=?", $fn, $ln, $af, $u->contactId);
             }
         }
         $mq(null);
