@@ -1776,7 +1776,7 @@ class Formula implements JsonSerializable {
     const BINARY_OPERATOR_REGEX = '/\A(?:[-\+\/%^]|\*\*?|\&\&?|\|\|?|\?\?|==?|!=|<[<=]?|>[>=]?|≤|≥|≠)/';
 
     /** @var 0|1|2 */
-    const DEBUG = 1;
+    const DEBUG = 0;
 
     static public $opprec = [
         "**" => 14,
