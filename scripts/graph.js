@@ -333,12 +333,8 @@ function expand_extent(e, args) {
 
 
 function draw_axes(svg, xAxis, yAxis, args) {
-    function axisLabelStyles(x) {
-        x.style("text-anchor", "end")
-            .style("pointer-events", "none");
-    }
-
     const parent = d3.select(svg.node().parentElement);
+
     const xaxe = parent.append("g")
         .attr("class", "x axis")
         .attr("transform", `translate(${args.marginLeft},${args.marginTop+args.plotHeight})`)
@@ -355,7 +351,6 @@ function draw_axes(svg, xAxis, yAxis, args) {
             .style("pointer-events", "none")
             .text(`${args.x.label} →`);
     }
-
     xaxe.select(".domain").each(function () {
         var d = this.getAttribute("d");
         this.setAttribute("d", d.replace(/^M([^A-Z]*),([^A-Z]*)V0H([^A-Z]*)V([^A-Z]*)$/,
@@ -381,14 +376,13 @@ function draw_axes(svg, xAxis, yAxis, args) {
             .text(`↑ ${args.y.label}`);
     }
     yaxe.select(".domain").remove();
-
-    args.y.discrete && xaxe.select(".domain").each(function () {
+    /*args.y.discrete && yaxe.select(".domain").each(function () {
         var d = this.getAttribute("d");
         this.setAttribute("d", d.replace(/^M([^A-Z]*),([^A-Z]*)H0V([^A-Z]*)H([^A-Z]*)$/,
             function (m, x1, y1, y2, x2) {
                 return x1 === x2 ? "M0,".concat(y1, "V", y2) : m;
             }));
-    });
+    });*/
 
     args.x.ticks.rewrite.call(xaxe, svg);
     args.y.ticks.rewrite.call(yaxe, svg);
