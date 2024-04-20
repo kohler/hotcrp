@@ -10,7 +10,7 @@ hotcrp.graph = (function ($, d3) {
 var handle_ui = hotcrp.handle_ui,
     ensure_pattern = hotcrp.ensure_pattern,
     hoturl = hotcrp.hoturl;
-var BOTTOM_MARGIN = 38;
+var BOTTOM_MARGIN = 37;
 var PATHSEG_ARGMAP = {
     m: 2, M: 2, z: 0, Z: 0, l: 2, L: 2, h: 1, H: 1, v: 1, V: 1, c: 6, C: 6,
     s: 4, S: 4, q: 4, Q: 4, t: 2, T: 2, a: 7, A: 7, b: 1, B: 1
@@ -1790,7 +1790,7 @@ function make_args(selector, args) {
         args.widthDefault = true;
     }
     if (args.height == null) {
-        args.height = 520;
+        args.height = 540;
         args.heightDefault = true;
     }
     args.plotWidth = args.width - args.marginLeft - args.marginRight;

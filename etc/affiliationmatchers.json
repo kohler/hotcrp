@@ -714,6 +714,9 @@
     "korea": {
         "alternate": [{"word": "kaist", "if": "advanced institute science technology"}]
     },
+    "law": {
+        "weak": true
+    },
     "london": {
         "weak": true,
         "alternate": [{"word": "ucl", "if": "university college"}]
@@ -961,7 +964,8 @@
         "weak": true,
         "alternate": [
             {"word": "nyu", "if": "new university"}
-        ]
+        ],
+        "sync": ["new"]
     },
     "zurich": {
         "weak": true
