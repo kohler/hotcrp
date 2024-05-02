@@ -1115,7 +1115,8 @@ class Contact implements JsonSerializable {
 
     /** @return string */
     function db_searchable_name() {
-        return substr(strtolower(UnicodeHelper::deaccent($this->searchable_name())), 0, 2048);
+        $n = strtolower(UnicodeHelper::deaccent($this->searchable_name()));
+        return simplify_whitespace(substr($n, 0, 2048));
     }
 
     /** @return array{email?:string,first?:string,last?:string,affiliation?:string} */
