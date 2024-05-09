@@ -98,7 +98,7 @@ class Qsession {
 
     /** @param ?string $sid
      * @return ?string */
-    function start($sid) {
+    protected function start($sid) {
         return null;
     }
 
