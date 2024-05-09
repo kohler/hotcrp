@@ -1,6 +1,6 @@
 <?php
 // qsession.php -- HotCRP session handling; default is empty
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Qsession {
     /** @var ?string

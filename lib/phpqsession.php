@@ -1,6 +1,6 @@
 <?php
 // phpqsession.php -- HotCRP session handler wrapping PHP sessions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class PHPQsession extends Qsession {
     function start($sid) {
