@@ -677,6 +677,7 @@ class Autoassign_Page {
         $csvg = $this->conf->make_csvg("assignments");
         $aset->make_acsv()->unparse_into($csvg);
         $csvg->sort(SORT_NATURAL)->emit();
+        exit;
     }
 
     private function handle_execute(TokenInfo $tok) {
