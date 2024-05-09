@@ -256,7 +256,7 @@ class Log_Page {
             }
         }
         $csvg->emit();
-        exit;
+        exit();
     }
 
 

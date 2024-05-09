@@ -169,7 +169,7 @@ class Multiconference {
                 $j["maintenance"] = true;
             }
             echo json_encode_browser($j), "\n";
-            exit;
+            exit();
         }
 
         http_response_code($status);
@@ -184,7 +184,7 @@ class Multiconference {
         }
         echo '<div class="msg mx-auto msg-error">', MessageSet::feedback_html($mis), '</div>';
         $qreq->print_footer();
-        exit;
+        exit();
     }
 
     /** @return Qrequest */

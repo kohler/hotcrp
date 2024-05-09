@@ -144,7 +144,7 @@ class API_Page {
             header("Allow: OPTIONS, GET, HEAD, POST"); // XXX other methods?
         }
         http_response_code($ok ? 200 : 403);
-        exit;
+        exit();
     }
 
     /** @param NavigationState $nav
@@ -167,7 +167,7 @@ class API_Page {
                 http_response_code(404);
                 header("Content-Type: application/json; charset=utf-8");
                 echo '{"ok": false, "error": "API function missing"}', "\n";
-                exit;
+                exit();
             }
         }
         if ($_GET["fn"] === "deadlines") {

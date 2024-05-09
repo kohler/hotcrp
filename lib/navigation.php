@@ -704,6 +704,6 @@ class Navigation {
 <title>Redirection</title>
 <script>location=", json_encode($url), ";</script></head>
 <body><p>You should be redirected <a href=\"", htmlspecialchars($url), "\">to here</a>.</p></body></html>\n";
-        exit;
+        exit();
     }
 }

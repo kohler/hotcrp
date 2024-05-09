@@ -60,7 +60,7 @@ class GetReviewBase_ListAction extends ListAction {
                 $zip->message_set()->append_item($mi);
             }
             $zip->download();
-            exit;
+            exit();
         }
     }
 }

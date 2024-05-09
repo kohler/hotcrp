@@ -127,10 +127,10 @@ class ListAction {
             }
         } else if ($res instanceof CsvGenerator) {
             $res->emit();
-            exit;
+            exit();
         } else if ($res instanceof Redirection) {
             $user->conf->redirect($res->url);
-            exit;
+            exit();
         }
     }
 

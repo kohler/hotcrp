@@ -38,6 +38,6 @@ class GetJsonRQC_ListAction extends ListAction {
         header("Content-Type: application/json; charset=utf-8");
         header("Content-Disposition: attachment; filename=" . mime_quote_string($user->conf->download_prefix . "rqc.json"));
         echo json_encode($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
-        exit;
+        exit();
     }
 }

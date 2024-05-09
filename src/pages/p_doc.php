@@ -11,7 +11,7 @@ class Doc_Page {
 
         if (str_starts_with($status, "403") && $qreq->user()->is_empty()) {
             $qreq->user()->escape();
-            exit;
+            exit();
         } else if (str_starts_with($status, "5")) {
             $navpath = $qreq->path();
             error_log($qreq->conf()->dbname . ": bad doc $status "
@@ -28,7 +28,7 @@ class Doc_Page {
             $qreq->print_header("Download", null);
             $qreq->conf()->feedback_msg($ml);
             $qreq->print_footer();
-            exit;
+            exit();
         }
     }
 

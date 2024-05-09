@@ -54,6 +54,6 @@ class GetJson_ListAction extends ListAction {
             header("Content-Disposition: attachment; filename=" . mime_quote_string($pj_filename));
             echo json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
         }
-        exit;
+        exit();
     }
 }

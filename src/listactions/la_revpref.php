@@ -194,7 +194,7 @@ class Revpref_ListAction extends ListAction {
                 Ht::submit("cancel", "Cancel", ["formnovalidate" => true])
             ], ["class" => "aab aabig"]), "</form>\n";
             $qreq->print_footer();
-            exit;
+            exit();
         }
     }
 }
