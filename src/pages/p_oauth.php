@@ -23,6 +23,10 @@ class OAuthProvider {
     public $token_uri;
     /** @var ?string */
     public $token_function;
+    /** @var ?object */
+    public $group_mappings;
+    /** @var bool */
+    public $remove_groups;
 
     /** @var ?string */
     public $nonce;
