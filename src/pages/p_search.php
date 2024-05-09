@@ -418,7 +418,9 @@ class Search_Page {
 
     static function redisplay(Contact $user, Qrequest $qreq) {
         // change session based on request
-        Session_API::parse_view($qreq, "pl", $qreq);
+        if ($qreq->qsession()->is_open()) {
+            Session_API::parse_view($qreq, "pl", $qreq);
+        }
         // redirect, including differences between search and request
         // create PaperList
         if (isset($qreq->q)) {

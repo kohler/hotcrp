@@ -102,6 +102,11 @@ class Qsession {
         return null;
     }
 
+    /** @return bool */
+    function is_open() {
+        return $this->sopen;
+    }
+
     /** @return ?string */
     function new_sid() {
         return null;
