@@ -646,7 +646,7 @@ class Conf {
             $this->opt["paperSite"] = substr($this->opt["paperSite"], 0, -1);
         }
 
-        // assert URLs (general assets, scripts, jQuery)
+        // asset URLs (general assets, scripts, jQuery)
         $baseurl = $nav->base_path_relative ?? "";
         $this->_assets_url = $this->opt["assetsUrl"] ?? $this->opt["assetsURL"] ?? $baseurl;
         if ($this->_assets_url !== "" && !str_ends_with($this->_assets_url, "/")) {

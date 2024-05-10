@@ -39,7 +39,7 @@ function set_session_name(Conf $conf) {
         $_COOKIE[$sn] = $_COOKIE[$upgrade_sn];
         hotcrp_setcookie($upgrade_sn, "", [
             "expires" => time() - 3600, "path" => "/",
-            "domain" => $conf->opt("sessionUpgradeDomain") ?? ($domain ? : ""),
+            "domain" => $conf->opt("sessionUpgradeDomain") ?? $domain,
             "secure" => $secure
         ]);
     }
@@ -74,11 +74,6 @@ function set_session_name(Conf $conf) {
                                   $params["domain"], $params["secure"],
                                   $params["httponly"]);
     }
-}
-
-/** @deprecated */
-function ensure_session() {
-    Qrequest::$main_request->open_session();
 }
 
 function unlink_session() {

@@ -350,7 +350,7 @@ class Dbl {
         } else if ($args[0] === null && count($args) > 1) {
             $argpos = 1;
         }
-        if ((($flags & self::F_RAW) && count($args) != $argpos + 1)
+        if ((($flags & self::F_RAW) && count($args) !== $argpos + 1)
             || (($flags & self::F_APPLY) && count($args) > $argpos + 2)) {
             trigger_error(self::landmark() . ": wrong number of arguments");
         } else if (($flags & self::F_APPLY)
@@ -815,7 +815,7 @@ class Dbl {
     }
 
     static private function do_make_result($args, $flags = self::F_ERROR) {
-        if (count($args) == 1 && !is_string($args[0])) {
+        if (count($args) === 1 && !is_string($args[0])) {
             return $args[0];
         } else {
             return self::do_query($args, $flags);
@@ -1067,7 +1067,7 @@ function sqlq($value) {
 function sql_in_int_list($set) {
     if (empty($set)) {
         return " is null";
-    } else if (count($set) == 1) {
+    } else if (count($set) === 1) {
         return "=" . $set[0];
     } else {
         return " in (" . join(", ", $set) . ")";
