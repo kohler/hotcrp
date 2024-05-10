@@ -77,6 +77,7 @@ class Qsession {
                 return;
             }
             $this->sopen = true;
+            unset($curv["deletedat"]);
             foreach ($curv as $k => $v) {
                 $this->set($k, $v);
             }
