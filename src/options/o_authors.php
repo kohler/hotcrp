@@ -106,15 +106,6 @@ class Authors_PaperOption extends PaperOption {
         $ps->checkpoint_conflict_values();
         return true;
     }
-    static private function translate_qreq(Qrequest $qreq) {
-        $n = 1;
-        while (isset($qreq["authors:email_{$n}"]) || isset($qreq["auemail{$n}"])) {
-            $qreq["authors:{$n}:email"] = $qreq["authors:email_{$n}"] ?? $qreq["auemail{$n}"];
-            $qreq["authors:{$n}:name"] = $qreq["authors:name_{$n}"] ?? $qreq["auname{$n}"];
-            $qreq["authors:{$n}:affiliation"] = $qreq["authors:affiliation_{$n}"] ?? $qreq["auaff{$n}"];
-            ++$n;
-        }
-    }
     static private function expand_author(Author $au, PaperInfo $prow) {
         if ($au->email !== ""
             && ($aux = $prow->author_by_email($au->email))) {
@@ -128,9 +119,6 @@ class Authors_PaperOption extends PaperOption {
         }
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
-        if (!isset($qreq["authors:1:email"])) {
-            self::translate_qreq($qreq);
-        }
         $v = [];
         $auth = new Author;
         for ($n = 1; true; ++$n) {
