@@ -361,8 +361,8 @@ class Options_SettingParser extends SettingParser {
             echo MessageSet::feedback_html([MessageItem::marked_note("<0>This field always appears first on the submission form and cannot be deleted.")]);
         } else {
             echo '<span class="btnbox">',
-                Ht::button(Icons::ui_use("movearrow0"), ["class" => "btn-licon ui js-settings-sf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
-                Ht::button(Icons::ui_use("movearrow2"), ["class" => "btn-licon ui js-settings-sf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
+                Ht::button(Icons::ui_use("movearrow0"), ["class" => "btn-licon ui js-settings-sf-move move-up need-tooltip", "aria-label" => "Move up in display order"]),
+                Ht::button(Icons::ui_use("movearrow2"), ["class" => "btn-licon ui js-settings-sf-move move-down need-tooltip", "aria-label" => "Move down in display order"]),
                 '</span>';
             if ($this->sfs->option_id > 0) {
                 echo Ht::button(Icons::ui_use("trash"), ["class" => "btn-licon ui js-settings-sf-move delete need-tooltip", "aria-label" => "Delete", "data-exists-count" => $this->option_use_count($this->sfs->option_id)]);

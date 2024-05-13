@@ -141,10 +141,10 @@ function settings_field_order(parentid) {
             continue;
         }
         ++i;
-        if ((e = n.querySelector(".moveup"))) {
+        if ((e = n.querySelector(".move-up"))) {
             e.disabled = movedown === null;
         }
-        if ((e = n.querySelector(".movedown"))) {
+        if ((e = n.querySelector(".move-down"))) {
             e.disabled = false;
             movedown = e;
         }
@@ -307,9 +307,9 @@ function sf_order() {
 
 handle_ui.on("js-settings-sf-move", function (evt) {
     var sf = this.closest(".settings-sf");
-    if (hasClass(this, "moveup") && sf.previousSibling) {
+    if (hasClass(this, "move-up") && sf.previousSibling) {
         sf.parentNode.insertBefore(sf, sf.previousSibling);
-    } else if (hasClass(this, "movedown") && sf.nextSibling) {
+    } else if (hasClass(this, "move-down") && sf.nextSibling) {
         sf.parentNode.insertBefore(sf, sf.nextSibling.nextSibling);
     } else if (hasClass(this, "delete")) {
         var msg, x;
@@ -878,9 +878,9 @@ function rf_render_view(fld, example) {
 
 function rf_move() {
     var rf = this.closest(".settings-rf");
-    if (hasClass(this, "moveup") && rf.previousSibling) {
+    if (hasClass(this, "move-up") && rf.previousSibling) {
         rf.parentNode.insertBefore(rf, rf.previousSibling);
-    } else if (hasClass(this, "movedown") && rf.nextSibling) {
+    } else if (hasClass(this, "move-down") && rf.nextSibling) {
         rf.parentNode.insertBefore(rf, rf.nextSibling.nextSibling);
     }
     hotcrp.tooltip.close(this);
@@ -926,7 +926,7 @@ function rf_append(fld) {
     field_instantiate($f.children(".settings-xf-edit")[0], rffinder, rftype.name, rfproperties);
     $f.find(".js-settings-rf-delete").on("click", rf_delete);
     $f.find(".js-settings-rf-move").on("click", rf_move);
-    $f.find(".rf-id").val(fld.id);
+    $f.find(".is-id").val(fld.id);
     $f.appendTo("#settings-rform");
     rf_fill(pos, fld, true);
     $f.awaken();

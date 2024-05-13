@@ -605,6 +605,11 @@ class DocumentInfo implements JsonSerializable {
     }
 
 
+    /** @return PaperOption */
+    function option() {
+        return $this->conf->option_by_id($this->documentType);
+    }
+
     /** @return bool */
     function content_available() {
         return $this->content !== null
@@ -1107,11 +1112,10 @@ class DocumentInfo implements JsonSerializable {
         }
 
         // validate
-        if (!$this->filterType) {
-            $opt = $this->conf->option_by_id($this->documentType);
-            if ($opt && !$opt->validate_document($this)) {
-                return false;
-            }
+        if (!$this->filterType
+            && ($opt = $this->option())
+            && !$opt->validate_document($this)) {
+            return false;
         }
 
         // store
@@ -1553,7 +1557,7 @@ class DocumentInfo implements JsonSerializable {
             assert(!!$this->filename);
             return $this->filename;
         } else {
-            $o = $this->conf->option_by_id($this->documentType);
+            $o = $this->option();
             if ($o && $o->nonpaper && $this->paperId < 0) {
                 $fn .= $o->dtype_name();
                 $oabbr = "";
@@ -1644,7 +1648,7 @@ class DocumentInfo implements JsonSerializable {
 
         if ($this->documentType == DTYPE_FINAL
             || ($this->documentType > 0
-                && ($o = $this->conf->option_by_id($this->documentType))
+                && ($o = $this->option())
                 && $o->is_final())) {
             $suffix = "f";
         }

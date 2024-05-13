@@ -5535,12 +5535,12 @@ handle_ui.on(".js-autoassign-prepare", function () {
 
 function row_fill(row, i, defaults, changes) {
     ++i;
-    var ipts, e, m, num = i + ".";
+    let e, m;
+    const numstr = i + ".";
     if ((e = row.querySelector(".row-counter"))
-        && e.textContent !== num)
-        e.replaceChildren(num);
-    ipts = row.querySelectorAll("input, select, textarea");
-    for (e of ipts) {
+        && e.textContent !== numstr)
+        e.replaceChildren(numstr);
+    for (e of row.querySelectorAll("input, select, textarea")) {
         if (!e.name
             || !(m = /^(.*?)(\d+|\$)(|:.*)$/.exec(e.name))
             || m[2] == i)
@@ -5566,10 +5566,12 @@ function is_row_interesting(row) {
 }
 
 function row_add(group, before, button) {
-    var row, id = (button && button.getAttribute("data-row-template"))
+    const id = (button && button.getAttribute("data-row-template"))
         || group.getAttribute("data-row-template");
-    if (!id || !(row = document.getElementById(id)))
+    let row;
+    if (!id || !(row = document.getElementById(id))) {
         return null;
+    }
     if ("content" in row) {
         row = row.content.cloneNode(true).firstElementChild;
     } else {
@@ -5581,9 +5583,8 @@ function row_add(group, before, button) {
 }
 
 function row_order_defaults(group) {
-    var ipts = group.querySelectorAll("input, select, textarea"),
-        e, defaults = {};
-    for (e of ipts) {
+    const defaults = {};
+    for (const e of group.querySelectorAll("input, select, textarea")) {
         if (e.name)
             defaults[e.name] = input_default_value(e);
     }
@@ -5591,9 +5592,9 @@ function row_order_defaults(group) {
 }
 
 function row_order_drag_confirm(group, defaults) {
-    var i, row, changes = [];
+    const changes = [];
     defaults = defaults || row_order_defaults(group);
-    for (row = group.firstElementChild, i = 0;
+    for (let row = group.firstElementChild, i = 0;
          row; row = row.nextElementSibling, ++i) {
         row_fill(row, i, defaults, changes);
     }
@@ -5629,7 +5630,7 @@ function row_order_autogrow(group, defaults) {
             }
         } else {
             while (nr > min_rows && nr > 1 && !hasClass(row, "row-order-inserted")) {
-                let prev_row = row.previousElementSibling;
+                const prev_row = row.previousElementSibling;
                 if (is_row_interesting(prev_row)) {
                     break;
                 }
@@ -5639,7 +5640,7 @@ function row_order_autogrow(group, defaults) {
             }
         }
     }
-    var ndig = Math.ceil(Math.log10(nr + 1)).toString();
+    const ndig = Math.ceil(Math.log10(nr + 1)).toString();
     if (group.getAttribute("data-row-counter-digits") !== ndig) {
         group.setAttribute("data-row-counter-digits", ndig);
     }
@@ -5658,6 +5659,7 @@ handle_ui.on("dragstart.row-order-draghandle", function (evt) {
         changed && row_order_drag_confirm(group);
     }).start(evt);
 });
+
 hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
     const row = this.closest(".draggable"), group = row.parentElement;
     let details = this.closest("details"), menu;
@@ -5679,8 +5681,14 @@ hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
         attr["type"] = "button";
         return $e("li", attr.disabled ? "disabled" : "has-link", $e("button", attr, text));
     }
-    menu.append(buttonli("link ui row-order-dragmenu move-up", {disabled: !row.previousElementSibling}, "Move up"));
-    menu.append(buttonli("link ui row-order-dragmenu move-down", {disabled: !row.nextElementSibling}, "Move down"));
+    let sib = row.previousElementSibling;
+    menu.append(buttonli("link ui row-order-dragmenu move-up", {
+        disabled: !sib || hasClass(sib, "row-order-barrier")
+    }, "Move up"));
+    sib = row.nextElementSibling;
+    menu.append(buttonli("link ui row-order-dragmenu move-down", {
+        disabled: !sib || hasClass(sib, "row-order-barrier")
+    }, "Move down"));
     if (group.hasAttribute("data-row-template")) {
         const max_rows = +group.getAttribute("data-max-rows") || 0;
         if (max_rows <= 0 || row_order_count(group) < max_rows) {
@@ -5690,13 +5698,19 @@ hotcrp.dropmenu.add_builder("row-order-draghandle", function () {
     }
     menu.append(buttonli("link ui row-order-dragmenu remove", {disabled: !row_order_allow_remove(group)}, "Remove"));
 });
+
 handle_ui.on("row-order-dragmenu", function () {
     hotcrp.dropmenu.close(this);
-    var row = this.closest(".draggable"), sib, group = row.parentElement,
+    const row = this.closest(".draggable"), group = row.parentElement,
         defaults = row_order_defaults(group);
-    if (hasClass(this, "move-up") && (sib = row.previousElementSibling)) {
+    let sib;
+    if (hasClass(this, "move-up")
+        && (sib = row.previousElementSibling)
+        && !hasClass(sib, "row-order-barrier")) {
         sib.before(row);
-    } else if (hasClass(this, "move-down") && (sib = row.nextElementSibling)) {
+    } else if (hasClass(this, "move-down")
+               && (sib = row.nextElementSibling)
+               && !hasClass(sib, "row-order-barrier")) {
         sib.after(row);
     } else if (hasClass(this, "remove") && row_order_allow_remove(group)) {
         row.remove();
@@ -5707,6 +5721,7 @@ handle_ui.on("row-order-dragmenu", function () {
     }
     row_order_drag_confirm(group, defaults);
 });
+
 handle_ui.on("row-order-append", function () {
     var group = document.getElementById(this.getAttribute("data-rowset")),
         nr, row;
@@ -11973,7 +11988,7 @@ handle_ui.on("js-remove-document", function () {
         $doc.find(".document-stamps, .document-shortformat").removeClass("hidden");
         $(this).removeClass("undelete").html("Delete");
     } else {
-        $(hidden_input(doce.getAttribute("data-document-name") + ":remove", "1", {"class": "document-remover", "data-default-value": ""})).appendTo($doc.find(".document-actions")).trigger("change");
+        $(hidden_input(doce.getAttribute("data-document-name") + ":delete", "1", {"class": "document-remover", "data-default-value": ""})).appendTo($doc.find(".document-actions")).trigger("change");
         if (!$en.find("del").length)
             $en.wrapInner("<del></del>");
         $doc.find(".document-uploader").trigger("hotcrp-change-document");
@@ -12311,7 +12326,7 @@ edit_conditions.document_count = function (ec, form) {
         if (this.getAttribute("data-dtype") == ec.dtype) {
             var name = this.getAttribute("data-document-name"),
                 preve = form.elements[name],
-                removee = form.elements[name + ":remove"],
+                removee = form.elements[name + ":delete"],
                 filee = form.elements[name + ":file"],
                 uploade = form.elements[name + ":upload"];
             if (!removee || !removee.value) {

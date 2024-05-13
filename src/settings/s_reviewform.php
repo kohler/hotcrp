@@ -576,12 +576,12 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
 
     static function print_actions(SettingValues $sv) {
         echo '<div class="entryi mb-0 settings-rf-actions" data-property="actions"><label></label><div class="btnp entry"><span class="btnbox">',
-            Ht::button(Icons::ui_use("movearrow0"), ["id" => "rf/\$/moveup", "class" => "btn-licon ui js-settings-rf-move moveup need-tooltip", "aria-label" => "Move up in display order"]),
-            Ht::button(Icons::ui_use("movearrow2"), ["id" => "rf/\$/movedown", "class" => "btn-licon ui js-settings-rf-move movedown need-tooltip", "aria-label" => "Move down in display order"]),
+            Ht::button(Icons::ui_use("movearrow0"), ["id" => "rf/\$/moveup", "class" => "btn-licon ui js-settings-rf-move move-up need-tooltip", "aria-label" => "Move up in display order"]),
+            Ht::button(Icons::ui_use("movearrow2"), ["id" => "rf/\$/movedown", "class" => "btn-licon ui js-settings-rf-move move-down need-tooltip", "aria-label" => "Move down in display order"]),
             '</span>',
             Ht::button(Icons::ui_use("trash"), ["class" => "btn-licon ui js-settings-rf-delete need-tooltip", "aria-label" => "Delete"]),
             Ht::hidden("rf/\$/order", "0", ["id" => "rf/\$/order", "class" => "is-order"]),
-            Ht::hidden("rf/\$/id", "", ["id" => "rf/\$/id", "class" => "rf-id"]),
+            Ht::hidden("rf/\$/id", "", ["id" => "rf/\$/id", "class" => "is-id"]),
             "</div></div>";
     }
 

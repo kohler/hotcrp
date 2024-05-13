@@ -1446,7 +1446,7 @@ class Document_PaperOption extends PaperOption {
                 }
             }
             return $ov;
-        } else if ($qreq["{$fk}:remove"]) {
+        } else if ($qreq["{$fk}:delete"] || $qreq["{$fk}:remove"] /* compat */) {
             return PaperValue::make($prow, $this);
         } else {
             return null;
