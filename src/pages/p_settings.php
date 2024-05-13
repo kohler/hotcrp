@@ -97,9 +97,11 @@ class Settings_Page {
         echo Ht::unstash(), // clear out other script references
             $this->conf->make_script_file("scripts/settings.js"), "\n",
 
-            Ht::form($this->conf->hoturl("=settings", "group={$group}"),
-                     ["id" => "f-settings", "class" => "need-diff-check need-unload-protection"]),
-
+            Ht::form($this->conf->hoturl("=settings", "group={$group}"), [
+                "id" => "f-settings",
+                "name" => base64_encode(random_bytes(8)), // prevent FF from autofilling on reload
+                "class" => "need-diff-check need-unload-protection"
+            ]),
             '<div class="leftmenu-left"><nav class="leftmenu-menu">',
             '<h1 class="leftmenu"><button type="button" class="q uic js-leftmenu">Settings</button></h1>',
             '<ul class="leftmenu-list">';
