@@ -187,6 +187,7 @@ class PaperValue implements JsonSerializable {
     function invalidate() {
         $this->prow->invalidate_options(true);
         $this->load_value_data();
+        $this->_anno = null;
     }
     /** @param string $method
      * @deprecated */
