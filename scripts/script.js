@@ -5501,7 +5501,7 @@ handle_ui.on(".js-badpairs-row", function (evt) {
     var tbody = $("#bptable > tbody"), n = tbody.children().length;
     if (hasClass(this, "more")) {
         ++n;
-        tbody.append('<tr><td class="rentry nw">or &nbsp;</td><td class="lentry"><span class="select"><select name="bpa' + n + '" class="badpairs"></select></span> &nbsp;and&nbsp; <span class="select"><select name="bpb' + n + '" class="badpairs"></select></span></td></tr>');
+        tbody.append('<tr><td class="rxcaption nw">or</td><td class="lentry"><span class="select"><select name="bpa' + n + '" class="badpairs"></select></span> &nbsp;and&nbsp; <span class="select"><select name="bpb' + n + '" class="badpairs"></select></span></td></tr>');
         var options = tbody.find("select").first().html();
         tbody.find("select[name=bpa" + n + "], select[name=bpb" + n + "]").html(options).val("none");
     } else if (n > 1) {

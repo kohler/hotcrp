@@ -512,6 +512,7 @@ label.checki {
 	display: inline-block;
 	text-indent: 0;
 	margin-left: -1.275em;
+	text-align: left;
 	width: 1.275em;
 	white-space: nowrap;
 }

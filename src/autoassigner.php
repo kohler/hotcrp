@@ -727,12 +727,12 @@ abstract class Autoassigner extends MessageSet {
         }
         foreach ($this->acs as $ac) {
             $pf = $this->ainfo[$ac->cid] ?? [];
-            uasort($pf, function ($a1, $a2) {
+            usort($pf, function ($a1, $a2) {
                 return $a2->cpref <=> $a1->cpref;
             });
             $pgidx = -1;
             $last = null;
-            foreach ($pf as $pid => $a) {
+            foreach ($pf as $a) {
                 if (!$last || $a->cpref != $last->cpref) {
                     ++$pgidx;
                     $last = $a;

@@ -272,13 +272,13 @@ class Autoassign_Page {
     private function print_bad_pairs() {
         echo '<div class="g"></div><div class="relative"><table id="bptable"><tbody>', "\n";
         for ($i = 1; $i == 1 || isset($this->qreq["bpa{$i}"]); ++$i) {
-            echo '    <tr><td class="entry nw">';
+            echo '    <tr><td class="rxcaption nw">';
             if ($i == 1) {
                 echo '<label class="d-inline-block checki"><span class="checkc">',
                     Ht::checkbox("badpairs", 1, isset($this->qreq["badpairs"])),
-                    '</span>Don’t assign</label> &nbsp;';
+                    '</span>Don’t assign</label>';
             } else {
-                echo "or &nbsp;";
+                echo "or";
             }
             echo '</td><td class="lentry">', $this->bp_selector($i, "a"),
                 " &nbsp;and&nbsp; ", $this->bp_selector($i, "b");
