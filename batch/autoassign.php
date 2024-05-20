@@ -177,7 +177,7 @@ class Autoassign_Batch {
         foreach ($arg["disjoint"] ?? [] as $dtxt) {
             if (($comma = strpos($dtxt, ",")) !== false
                 && ($uid1 = $this->find_pc(substr($dtxt, 0, $comma))) !== null
-                && ($uid2 = $this->find_pc(substr($dtxt, $comma + 2))) !== null) {
+                && ($uid2 = $this->find_pc(substr($dtxt, $comma + 1))) !== null) {
                 $this->no_coassign[] = [$uid1, $uid2];
             } else {
                 $this->reportx([MessageItem::error("<0>`USER1,USER2` expected for `--disjoint`")], 3);
