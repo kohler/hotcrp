@@ -24,7 +24,7 @@ class Autoassign_Batch {
     public $q = "";
     /** @var string */
     public $t;
-    /** @var list<array{int,int}> */
+    /** @var list<list<int>> */
     public $no_coassign = [];
     /** @var list<int> */
     public $pcc;
@@ -143,10 +143,11 @@ class Autoassign_Batch {
             $this->param["count"] = $arg["count"];
         }
         foreach ($arg["_"] ?? [] as $x) {
-            if (($eq = strpos($x, "=")) === false) {
+            if (($eq = strpos($x, "=")) > 0) {
+                $this->param[substr($x, 0, $eq)] = substr($x, $eq + 1);
+            } else {
                 $this->report([MessageItem::error("<0>`NAME=VALUE` format expected for parameter arguments")], 3);
             }
-            $this->param[substr($x, 0, $eq)] = substr($x, $eq + 1);
         }
         $this->q = $arg["q"] ?? $this->q;
         if (isset($arg["all"])) {
@@ -165,31 +166,39 @@ class Autoassign_Batch {
             if (($neg = str_starts_with($utxt, "-"))) {
                 $utxt = substr($utxt, 1);
             }
-            $cs = new ContactSearch(ContactSearch::F_USER | ContactSearch::F_TAG | ContactSearch::F_USERID | ContactSearch::F_PC, $utxt, $this->user);
+            $uids = $this->find_pc($utxt);
             if ($neg) {
-                $pcc = array_diff($pcc, $cs->user_ids());
+                $pcc = array_diff($pcc, $uids);
             } else {
-                $pcc = array_unique(array_merge($pcc, $cs->user_ids()));
+                $pcc = array_unique(array_merge($pcc, $uids));
             }
             $pcc = array_values($pcc);
         }
         $this->pcc = $pcc;
         foreach ($arg["disjoint"] ?? [] as $dtxt) {
-            if (($comma = strpos($dtxt, ",")) !== false
-                && ($uid1 = $this->find_pc(substr($dtxt, 0, $comma))) !== null
-                && ($uid2 = $this->find_pc(substr($dtxt, $comma + 1))) !== null) {
-                $this->no_coassign[] = [$uid1, $uid2];
+            $l = [];
+            foreach (explode(",", $dtxt) as $w) {
+                $uids = $w === "" ? [] : $this->find_pc($w);
+                if (count($uids) > 0) {
+                    $l = array_merge($l, $uids);
+                } else {
+                    $l = [];
+                    break;
+                }
+            }
+            if (count($l) >= 2) {
+                $this->no_coassign[] = array_values(array_unique($l));
             } else {
-                $this->reportx([MessageItem::error("<0>`USER1,USER2` expected for `--disjoint`")], 3);
+                $this->reportx([MessageItem::error("<0>`USER1,USER2[,...]` expected for `--disjoint`")], 3);
             }
         }
     }
 
-    /** @return int */
+    /** @param string $s
+     * @return list<int> */
     private function find_pc($s) {
-        $cs = new ContactSearch(ContactSearch::F_USER | ContactSearch::F_PC | ContactSearch::F_USERID, $s, $this->user);
-        $uids = $cs->user_ids();
-        return count($uids) === 1 ? $uids[0] : null;
+        $cs = new ContactSearch(ContactSearch::F_USER | ContactSearch::F_TAG | ContactSearch::F_PC | ContactSearch::F_USERID, $s, $this->user);
+        return $cs->user_ids();
     }
 
     private function complete_arg() {
@@ -253,8 +262,13 @@ class Autoassign_Batch {
             $aa = call_user_func($this->gj->function, $this->user, $this->pcc, $pids, $this->param, $this->gj);
         }
         '@phan-var-force Autoassigner $aa';
-        foreach ($this->no_coassign as $pair) {
-            $aa->avoid_coassignment($pair[0], $pair[1]);
+        foreach ($this->no_coassign as $l) {
+            $n = count($l);
+            for ($i = 0; $i < $n - 1; ++$i) {
+                for ($j = $i + 1; $j < $n; ++$j) {
+                    $aa->avoid_coassignment($l[$i], $l[$j]);
+                }
+            }
         }
         $this->report($aa->message_list(), $aa->has_error() ? 1 : null);
 
