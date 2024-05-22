@@ -215,7 +215,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
         $xitype = $this->itype;
 
-        // set value part
+        // parse value
         $xvalue = trim((string) $req["tag_value"]);
         if (($m[5] = trim($m[5])) !== "") {
             if ($xvalue !== "" && $m[5] !== $xvalue) {
@@ -226,56 +226,12 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
         }
         if ($xvalue !== ""
             && ($this->remove || str_starts_with($m[1], "-") || $xitype >= self::I_NEXT)) {
-            $state->warning("<0>‘{$tag}’: Tag values ignored with this action");
+            $state->warning("<0>‘{$tag}’: Tag value ignored with this action");
             $xvalue = "";
         }
-
-        // parse index
-        if ($xremove) {
-            $nvalue = false;
-        } else if ($xvalue === "") {
-            $nvalue = null;
-        } else if (preg_match('/\A[-+]?(?:\.\d+|\d+|\d+\.\d*)\z/', $xvalue)) {
-            $nvalue = (float) $xvalue;
-        } else if (strcasecmp($xvalue, "none") === 0
-                   || strcasecmp($xvalue, "clear") === 0) {
-            $nvalue = false;
-        } else if (strcasecmp($xvalue, "next") === 0) {
-            $xitype = self::I_NEXT;
-            $nvalue = null;
-        } else if (strcasecmp($xvalue, "seqnext") === 0
-                   || strcasecmp($xvalue, "nextseq") === 0) {
-            $xitype = self::I_NEXTSEQ;
-            $nvalue = null;
-        } else if (strcasecmp($xvalue, "some") === 0) {
-            $xitype = self::I_SOME;
-            $nvalue = null;
-        } else {
-            if (!$this->formula
-                || $this->formula->expression !== $xvalue
-                || ($this->formula->user && $this->formula->user !== $state->user)) {
-                $this->formula = new Formula($xvalue);
-                if (!$this->formula->check($state->user)) {
-                    $state->error("<0>‘{$xvalue}’: Bad tag value");
-                    return false;
-                }
-                $this->formulaf = $this->formula->compile_function();
-            }
-            if (!$state->user->can_view_formula($this->formula)) {
-                $state->error("<0>‘{$xvalue}’: Can’t compute this formula here");
-                return false;
-            }
-            $nvalue = call_user_func($this->formulaf, $prow, null, $state->user);
-            if ($nvalue === null || $nvalue === false) {
-                $nvalue = false;
-            } else if ($nvalue === true) {
-                $nvalue = 0.0;
-            } else if (is_int($nvalue)) {
-                $nvalue = (float) $nvalue;
-            } else if (!is_float($nvalue)) {
-                $state->error("<0>‘{$xvalue}’: Bad tag value");
-                return false;
-            }
+        $nvalue = $xremove ? false : $this->parse_value($xvalue, $xitype, $state, $prow);
+        if ($nvalue === "error") {
+            return false;
         }
 
         // ignore attempts to change vote & automatic tags
@@ -344,10 +300,79 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $state->remove(new Tag_Assignable($prow->paperId, $ltag));
         } else {
             assert(is_float($nvalue));
-            $state->add(new Tag_Assignable($prow->paperId, $ltag, $ntag, $nvalue));
+            if ($nvalue > -TAG_INDEXBOUND
+                && $nvalue < TAG_INDEXBOUND) {
+                $state->add(new Tag_Assignable($prow->paperId, $ltag, $ntag, $nvalue));
+            } else {
+                $state->error("<0>Tag value out of range");
+                return false;
+            }
         }
         return true;
     }
+
+    /** @param string $xvalue
+     * @param int &$xitype
+     * @return null|false|float|'error' */
+    private function parse_value($xvalue, &$xitype, AssignmentState $state, PaperInfo $prow) {
+        // empty string: no value
+        if ($xvalue === "") {
+            return null;
+        }
+
+        // explicit numeric value
+        if (preg_match('/\A[-+]?(?:\.\d+|\d+|\d+\.\d*)\z/', $xvalue)) {
+            return (float) $xvalue;
+        }
+
+        // special values
+        if (strcasecmp($xvalue, "none") === 0
+            || strcasecmp($xvalue, "clear") === 0) {
+            return false;
+        } else if (strcasecmp($xvalue, "next") === 0) {
+            $xitype = self::I_NEXT;
+            return null;
+        } else if (strcasecmp($xvalue, "seqnext") === 0
+            || strcasecmp($xvalue, "nextseq") === 0) {
+            $xitype = self::I_NEXTSEQ;
+            return null;
+        } else if (strcasecmp($xvalue, "some") === 0) {
+            $xitype = self::I_SOME;
+            return null;
+        }
+
+        // check for formula
+        if (!$this->formula
+            || $this->formula->expression !== $xvalue
+            || ($this->formula->user && $this->formula->user !== $state->user)) {
+            $this->formula = new Formula($xvalue);
+            if (!$this->formula->check($state->user)) {
+                $state->error("<0>‘{$xvalue}’: Bad tag value");
+                return "error";
+            }
+            $this->formulaf = $this->formula->compile_function();
+        }
+
+        // evaluate formula
+        if (!$state->user->can_view_formula($this->formula)) {
+            $state->error("<0>‘{$xvalue}’: Can’t compute this formula here");
+            return "error";
+        }
+        $v = call_user_func($this->formulaf, $prow, null, $state->user);
+        if ($v === null || $v === false) {
+            return false;
+        } else if ($v === true) {
+            return 0.0;
+        } else if (is_int($v)) {
+            return (float) $v;
+        } else if (is_float($v)) {
+            return $v;
+        } else {
+            $state->error("<0>‘{$xvalue}’: Bad tag value");
+            return "error";
+        }
+    }
+
     /** @param string $xuser
      * @param string $xtag */
     private function apply_remove(PaperInfo $prow, AssignmentState $state, $xuser, $xtag) {

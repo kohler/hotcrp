@@ -1395,6 +1395,8 @@ class Tagger {
     const EINVAL = -2;
     const EMULTIPLE = -3;
     const E2BIG = -4;
+    const EFORMAT = -5;
+    const ERANGE = -6;
 
     /** @var Conf */
     private $conf;
@@ -1464,7 +1466,7 @@ class Tagger {
     /** @param string $tvlist
      * @return list<string> */
     static function split($tvlist) {
-        preg_match_all('/\S+/', $tvlist, $m);
+        preg_match_all('/[^\s,]+/', $tvlist, $m);
         return $m[0];
     }
 
@@ -1500,6 +1502,8 @@ class Tagger {
             return "<0>Single tag required";
         case self::E2BIG:
             return "<0>Tag too long";
+        case self::ERANGE:
+            return "<0>Tag value out of range";
         case self::ALLOWSTAR:
             return "<0>Invalid tag{$t} (stars aren’t allowed here)";
         case self::NOCHAIR:
@@ -1520,6 +1524,8 @@ class Tagger {
             return "<0>Tag values aren’t allowed here";
         case self::ALLOWRESERVED:
             return "<0>Tag{$t} reserved";
+        case self::EFORMAT:
+            return "<0>Format error";
         case self::EINVAL:
         default:
             return "<0>Invalid tag{$t}";
@@ -1531,8 +1537,10 @@ class Tagger {
         return $this->errcode;
     }
 
-    /** @return false */
-    private function set_error_code($tag, $errcode) {
+    /** @param int $errcode
+     * @param ?string $tag
+     * @return false */
+    private function set_error_code($errcode, $tag = null) {
         $this->errcode = $errcode;
         $this->errtag = $tag;
         return false;
@@ -1550,7 +1558,7 @@ class Tagger {
             $this->errcode = 0;
             return "";
         } else if ($tag === "") {
-            return $this->set_error_code($tag, self::EEMPTY);
+            return $this->set_error_code(self::EEMPTY, $tag);
         }
         if (!$this->contact->privChair) {
             $flags |= self::NOCHAIR;
@@ -1558,35 +1566,35 @@ class Tagger {
         if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-?\d+(?:\.\d*)?|-?\.\d+|))\z/', $tag, $m)) {
             if (preg_match('/\A([-a-zA-Z0-9!@*_:.\/#=]+)[\s,]+\S+/', $tag, $m)
                 && $this->check($m[1], $flags)) {
-                return $this->set_error_code($tag, self::EMULTIPLE);
+                return $this->set_error_code(self::EMULTIPLE, $tag);
             } else {
-                return $this->set_error_code($tag, self::EINVAL);
+                return $this->set_error_code(self::EINVAL, $tag);
             }
         }
         if (($flags & self::ALLOWSTAR) === 0
             && strpos($tag, "*") !== false) {
-            return $this->set_error_code($tag, self::ALLOWSTAR);
+            return $this->set_error_code(self::ALLOWSTAR, $tag);
         }
         if ($m[1] === "") {
             // OK
         } else if ($m[1] === "~~") {
             if (($flags & self::NOCHAIR) !== 0) {
-                return $this->set_error_code($tag, self::NOCHAIR);
+                return $this->set_error_code(self::NOCHAIR, $tag);
             }
         } else {
             if (($flags & self::NOPRIVATE) !== 0) {
-                return $this->set_error_code($tag, self::NOPRIVATE);
+                return $this->set_error_code(self::NOPRIVATE, $tag);
             } else if ($m[1] === "~") {
                 if ($this->_contactId) {
                     $m[1] = $this->_contactId . "~";
                 }
             } else if ($m[1] !== $this->_contactId . "~"
                        && ($flags & self::ALLOWCONTACTID) === 0) {
-                return $this->set_error_code($tag, self::ALLOWCONTACTID);
+                return $this->set_error_code(self::ALLOWCONTACTID, $tag);
             }
         }
         if ($m[3] !== "" && ($flags & self::NOVALUE) !== 0) {
-            return $this->set_error_code($tag, self::NOVALUE);
+            return $this->set_error_code(self::NOVALUE, $tag);
         }
         if (($flags & self::ALLOWRESERVED) === 0) {
             $l2 = strlen($m[2]);
@@ -1595,18 +1603,70 @@ class Tagger {
                 || ($l2 === 3 && strcasecmp($m[2], "all") === 0)
                 || ($l2 === 9 && strcasecmp($m[2], "undefined") === 0)
                 || ($l2 === 7 && strcasecmp($m[2], "default") === 0)) {
-                return $this->set_error_code($tag, self::ALLOWRESERVED);
+                return $this->set_error_code(self::ALLOWRESERVED, $tag);
             }
         }
         $t = $m[1] . $m[2];
         if (strlen($t) > TAG_MAXLEN) {
-            return $this->set_error_code($tag, self::E2BIG);
+            return $this->set_error_code(self::E2BIG, $tag);
         }
         if ($m[3] !== "") {
             $t .= "#" . substr($m[3], 1);
         }
         $this->errcode = 0;
         return $t;
+    }
+
+    /** @param mixed $x
+     * @param int $flags
+     * @return ?list<array{string,?float}> */
+    function check_json($x, $flags = 0) {
+        if (is_string($x)) {
+            $x = self::split($x);
+        }
+        if (!is_list($x)) {
+            $this->set_error_code(self::EFORMAT);
+            return null;
+        }
+        $errcode = 0;
+        $tlist = [];
+        foreach ($x as $v) {
+            if (is_string($v)) {
+                if (($tv = $this->check($v, $flags)) === false) {
+                    continue;
+                }
+                $tx = self::unpack($tv);
+                $tx[1] = $tx[1] ?? 0.0;
+                $tlist[] = $tx;
+            } else if (is_object($v)
+                       && isset($v->tag)
+                       && is_string($v->tag)) {
+                if (($t = $this->check($v->tag, $flags | self::NOVALUE)) === false) {
+                    continue;
+                }
+                $tx = [$t, 0.0];
+                if (isset($v->value)) {
+                    if (is_float($v->value)) {
+                        $tx[1] = $v->value;
+                    } else if (is_int($v->value)) {
+                        $tx[1] = (float) $v->value;
+                    } else {
+                        $errcode = $errcode ? : self::ERANGE;
+                        continue;
+                    }
+                }
+            } else {
+                $errcode = self::EFORMAT;
+                continue;
+            }
+            if ($tx[1] > -TAG_INDEXBOUND && $tx[1] < TAG_INDEXBOUND) {
+                $tlist[] = $tx;
+            } else {
+                $errcode = $errcode ? : self::ERANGE;
+            }
+        }
+        $this->errcode = $errcode;
+        return $tlist;
     }
 
     function expand($tag) {
@@ -1627,9 +1687,9 @@ class Tagger {
         if (is_array($tags)) {
             $tags = join(" ", $tags);
         }
-        $tags = str_replace("#0 ", " ", " $tags ");
+        $tags = str_replace("#0 ", " ", " {$tags} ");
         if ($this->_contactId) {
-            $tags = str_replace(" " . $this->_contactId . "~", " ~", $tags);
+            $tags = str_replace(" {$this->_contactId}~", " ~", $tags);
         }
         return trim($tags);
     }
