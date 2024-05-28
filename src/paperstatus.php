@@ -60,6 +60,8 @@ class PaperStatus extends MessageSet {
     private $_update_pid_dids;
     /** @var list<DocumentInfo> */
     private $_joindocs;
+    /** @var list<array{string,float|false}> */
+    private $_tags_changed;
     /** @var int */
     private $_save_status;
 
@@ -1054,10 +1056,13 @@ class PaperStatus extends MessageSet {
         $this->_author_change_cids = null;
         $this->_paper_submitted = $this->_documents_changed = false;
         $this->_noncontacts_changed = $prow->is_new();
-        $this->_update_pid_dids = $this->_joindocs = [];
+        $this->_update_pid_dids = $this->_joindocs = $this->_tags_changed = [];
         $this->_save_status = 0;
         if ($prow->is_new()) {
             $this->allocate_pid($pid);
+            foreach (Tagger::split_unpack($prow->all_tags_text()) as $tv) {
+                $this->_tags_changed[] = $tv;
+            }
         }
     }
 
@@ -1337,16 +1342,25 @@ class PaperStatus extends MessageSet {
         $this->paperId = $this->prow->paperId;
         if ($this->prow->is_new()) {
             $this->_save_status |= self::SAVE_STATUS_NEW;
-            // save initial tags
-            if (($t = $this->prow->all_tags_text()) !== "") {
-                $qv = [];
-                foreach (Tagger::split_unpack($t) as $ti) {
-                    $qv[] = [$this->paperId, $ti[0], $ti[1]];
-                }
-                $this->conf->qe("insert into PaperTag (paperId, tag, tagIndex) values ?v", $qv);
-            }
         }
         return true;
+    }
+
+    private function _execute_tags() {
+        $ins = $del = [];
+        foreach ($this->_tags_changed as $tv) {
+            if ($tv[1] === false) {
+                $del[] = $tv[0];
+            } else {
+                $ins[] = [$this->paperId, $tv[0], $tv[1]];
+            }
+        }
+        if (!empty($del)) {
+            $this->conf->qe("delete from PaperTag where paperId=? and tag?a", $this->paperId, $del);
+        }
+        if (!empty($ins)) {
+            $this->conf->qe("insert into PaperTag (paperId, tag, tagIndex) values ?v", $ins);
+        }
     }
 
     private function _execute_topics() {
@@ -1499,6 +1513,7 @@ class PaperStatus extends MessageSet {
         }
         assert($this->paperId !== null);
 
+        $this->_execute_tags();
         $this->_execute_topics();
         $this->_execute_options();
         $this->_execute_conflicts();
