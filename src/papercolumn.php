@@ -271,7 +271,8 @@ class Title_PaperColumn extends PaperColumn {
         if ($this->want_pdf) {
             $t .= $pl->_contentDownload($row);
         }
-        if ($this->want_decoration && (string) $row->paperTags !== "") {
+        if ($this->want_decoration
+            && ($pl->row_tags !== "" || $pl->row_tags_override !== "")) {
             $t .= $row->decoration_html($pl->user, $pl->row_tags, $pl->row_tags_override);
         }
         return $t;

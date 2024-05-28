@@ -1661,27 +1661,29 @@ class PaperList {
 
         // row classes
         $trclass = [];
-        $cc = "";
-        if ($row->paperTags ?? null) {
-            if ($this->row_tags_override !== ""
-                && ($cco = $row->conf->tags()->color_classes($this->row_tags_override))) {
-                $ccx = $row->conf->tags()->color_classes($this->row_tags);
-                if ($cco !== $ccx) {
-                    $this->row_attr["data-color-classes"] = $cco;
-                    $this->row_attr["data-color-classes-conflicted"] = $ccx;
-                    $trclass[] = "colorconflict";
-                }
-                $cc = $this->_view_force !== 0 ? $cco : $ccx;
-                $rstate->hascolors = $rstate->hascolors || str_ends_with($cco, " tagbg");
-            } else if ($this->row_tags !== "") {
-                $cc = $row->conf->tags()->color_classes($this->row_tags);
-            }
+        if ($this->row_tags_override !== ""
+            && $this->row_tags_override !== $this->row_tags) {
+            $cco = $row->conf->tags()->color_classes($this->row_tags_override);
+            $ccx = $row->conf->tags()->color_classes($this->row_tags);
+        } else if ($this->row_tags !== "") {
+            $cco = $ccx = $row->conf->tags()->color_classes($this->row_tags);
+        } else {
+            $cco = $ccx = "";
         }
-        if ($cc) {
-            $trclass[] = $cc;
-            $rstate->hascolors = $rstate->hascolors || str_ends_with($cc, " tagbg");
+        if ($cco !== $ccx) {
+            $this->row_attr["data-color-classes"] = $cco;
+            $this->row_attr["data-color-classes-conflicted"] = $ccx;
+            $trclass[] = "colorconflict";
+            $trclass[] = $this->_view_force !== 0 ? $cco : $ccx;
+            $rstate->hascolors = $rstate->hascolors
+                || str_ends_with($cco, " tagbg")
+                || str_ends_with($ccx, " tagbg");
+        } else if ($cco !== "") {
+            $trclass[] = $cco;
+            $rstate->hascolors = $rstate->hascolors
+                || str_ends_with($cco, " tagbg");
         }
-        if (!$cc || !$rstate->hascolors) {
+        if (!$rstate->hascolors) {
             $trclass[] = "k" . $rstate->colorindex;
         }
         if ($this->_highlight_map !== null

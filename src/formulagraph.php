@@ -574,8 +574,7 @@ class FormulaGraph extends MessageSet {
         if ($this->_qstyles_bytag[$qnum]) {
             if ($this->reviewer_color && $this->user->can_view_user_tags()) {
                 return self::REVIEWER_COLOR;
-            } else if ($prow->paperTags
-                       && ($c = $prow->viewable_tags($this->user))
+            } else if (($c = $prow->viewable_tags($this->user))
                        && ($c = $prow->conf->tags()->styles($c, TagStyle::BG))) {
                 return join(" ", $c);
             }
