@@ -449,9 +449,9 @@ class Assign_Page {
             $this->user->reviewer_html_for($pc), '</button>';
         if ($crevtype != 0) {
             if ($rrow) {
-                echo review_type_icon($crevtype, $rrow->icon_classes("ml-2")), $rrow->round_h();
+                echo review_type_icon($crevtype, $rrow->icon_classes("ml-1")), $rrow->round_h();
             } else {
-                echo review_type_icon($crevtype);
+                echo review_type_icon($crevtype, "ml-1");
             }
         }
         if ($revtype >= 0) {
