@@ -7,13 +7,17 @@ class DocumentRequest implements JsonSerializable {
     public $paperId;
     /** @var ?PaperInfo */
     public $prow;
+    /** @var int */
     public $dtype;
     /** @var ?PaperOption */
     public $opt;
-    public $linkid;
+    /** @var ?string */
+    private $linkid;
     /** @var ?string */
     public $attachment;
+    /** @var ?int */
     public $docid;
+    /** @var list<FileFilter> */
     public $filters = [];
     public $req_filename;
 
@@ -21,7 +25,7 @@ class DocumentRequest implements JsonSerializable {
         if (preg_match('/\A[-+]?\d+\z/', $pid)) {
             $this->paperId = intval($pid);
         } else {
-            throw new Exception("Document not found [submission $pid]");
+            throw new Exception("Document not found [submission {$pid}]");
         }
     }
 
@@ -96,15 +100,13 @@ class DocumentRequest implements JsonSerializable {
         // parse options and filters
         $this->opt = $this->dtype = null;
         while ($dtname !== "" && $this->dtype === null) {
-            if (str_starts_with($dtname, "comment-")
-                && preg_match('/\Acomment-(?:c[aAxX]?\d+|(?:|[a-zA-Z](?:|[-a-zA-Z0-9]*))response)\z/', $dtname)) {
+            if ((str_starts_with($dtname, "comment-")
+                 && $this->check_comment_linkid($conf, substr($dtname, 8), 0))
+                || (str_starts_with($dtname, "response")
+                    && $this->check_comment_linkid($conf, substr($dtname, 8), 1))
+                || (str_ends_with($dtname, "response")
+                    && $this->check_comment_linkid($conf, substr($dtname, 0, -8), 2))) {
                 $this->dtype = DTYPE_COMMENT;
-                $this->linkid = substr($dtname, 8);
-                break;
-            } else if ((str_starts_with($dtname, "response") || str_ends_with($dtname, "response"))
-                       && preg_match('/\A[-a-zA-Z0-9]*\z/', $dtname)) {
-                $this->dtype = DTYPE_COMMENT;
-                $this->linkid = $dtname;
                 break;
             }
             if (($dtnum = stoi($dtname)) !== null) {
@@ -167,22 +169,21 @@ class DocumentRequest implements JsonSerializable {
         }
 
         if (!$want_path) {
-            if ($this->opt) {
-                $dtname = $this->opt->dtype_name();
-            }
-            if ($this->paperId < 0) {
-                $this->req_filename = "[$dtname";
-            } else if ($this->dtype === DTYPE_SUBMISSION) {
-                $this->req_filename = "[submission #{$this->paperId}";
-            } else if ($this->dtype === DTYPE_FINAL) {
-                $this->req_filename = "[submission #{$this->paperId} final version";
-            } else {
-                $this->req_filename = "[#{$this->paperId} $dtname";
+            $n = $this->opt ? $this->opt->dtype_name() : $dtname;
+            if ($this->paperId >= 0) {
+                if ($this->dtype === DTYPE_SUBMISSION) {
+                    $n = "submission #{$this->paperId}";
+                } else if ($this->dtype === DTYPE_FINAL) {
+                    $n = "#{$this->paperId} final version";
+                } else {
+                    $n = "#{$this->paperId} {$n}";
+                }
             }
             if ($this->attachment) {
-                $this->req_filename .= " attachment " . $this->attachment;
+                $this->req_filename = "[{$n} attachment {$this->attachment}]";
+            } else {
+                $this->req_filename = "[{$n}]";
             }
-            $this->req_filename .= "]";
         }
 
         if ($this->dtype === null
@@ -195,6 +196,45 @@ class DocumentRequest implements JsonSerializable {
             $this->prow = PaperInfo::make_placeholder($user->conf, -2);
         } else {
             $this->prow = $user->conf->paper_by_id($this->paperId, $user);
+        }
+    }
+
+    /** @param string $dtname
+     * @param 0|1|2 $reqtype
+     * @return bool */
+    private function check_comment_linkid(Conf $conf, $dtname, $reqtype) {
+        // `linkid` settings must match CommentInfo::unparse_html_id
+        if ($reqtype === 0) {
+            if (str_ends_with($dtname, "response")) {
+                $dtname = substr($dtname, 0, -8);
+                $reqtype = 2;
+            } else if (preg_match('/\Ac([aAxX]?)([1-9]\d*)\z/', $dtname, $m)) {
+                if ($m[1] === "a") {
+                    $this->linkid = "cA" . $m[2];
+                } else if ($m[1] === "X") {
+                    $this->linkid = "cx" . $m[2];
+                } else {
+                    $this->linkid = $dtname;
+                }
+                return true;
+            } else {
+                return false;
+            }
+        }
+        if ($reqtype === 1 && str_starts_with($dtname, "-")) {
+            $dtname = substr($dtname, 1);
+        } else if ($reqtype === 2 && str_ends_with($dtname, "-")) {
+            $dtname = substr($dtname, 0, -1);
+        }
+        if (preg_match('/\A(?:|[a-zA-Z](?:[a-zA-Z0-9]|[-_][a-zA-Z0-9])*)\z/', $dtname)) {
+            if (($rrd = $conf->response_round($dtname))) {
+                $this->linkid = $rrd->unnamed ? "response" : "{$rrd->name}response";
+            } else {
+                $this->linkid = "{$dtname}response"; // will not match
+            }
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -220,8 +260,9 @@ class DocumentRequest implements JsonSerializable {
 
     private function perm_view_comment_document(Contact $user) {
         $doc_crow = $cmtid = null;
-        if ($this->linkid[0] === "x" || $this->linkid[0] === "X") {
-            $cmtid = (int) substr($this->linkid, 1);
+        if (str_starts_with($this->linkid, "cx")
+            && !str_ends_with($this->linkid, "response")) {
+            $cmtid = intval(substr($this->linkid, 2));
         }
         foreach ($this->prow->viewable_comment_skeletons($user) as $crow) {
             if ($crow->unparse_html_id() === $this->linkid

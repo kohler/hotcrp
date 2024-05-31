@@ -272,12 +272,13 @@ class CommentInfo {
 
     /** @return string */
     function unparse_html_id() {
+        // Return values must match DocumentRequest::check_comment_linkid
         if (($o = $this->unparse_ordinal()) !== null) {
             return "c{$o}";
         } else if (($rrd = $this->response_round()) !== null) {
             return $rrd->unnamed ? "response" : "{$rrd->name}response";
         } else {
-            return "cx" . $this->commentId;
+            return "cx{$this->commentId}";
         }
     }
 
