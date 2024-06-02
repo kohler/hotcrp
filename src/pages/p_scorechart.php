@@ -145,7 +145,9 @@ class Scorechart_Page {
         imagecolortransparent($pic, $cWhite);
         imagefilledrectangle($pic, 0, $picHeight, $picWidth + 2 * $scale, $picHeight + $scale, $cgray);
         imagefilledrectangle($pic, 0, $picHeight - $blockHeight - $blockPad, $scale - 1, $picHeight + $scale, $cgray);
-        imagefilledrectangle($pic, $picWidth + $scale, $picHeight - $blockHeight - $blockPad, $picWidth + 2 * $scale, $picHeight + $scale, $cgray);
+        if ($valMax === $this->valMax) {
+            imagefilledrectangle($pic, $picWidth + $scale, $picHeight - $blockHeight - $blockPad, $picWidth + 2 * $scale, $picHeight + $scale, $cgray);
+        }
 
         $cv_black = [0, 0, 0];
         $cv_bad = [200, 128, 128];
@@ -153,7 +155,7 @@ class Scorechart_Page {
         $pos = 0;
 
         for ($value = 1; $value < $valMax; $value++) {
-            $vpos = $this->flip ? $valMax - $value : $value;
+            $vpos = $this->flip ? $this->valMax - $value : $value;
             $height = min($this->values[$vpos], $maxY);
             $cv_cur = $this->rgb_array($vpos);
             $cFill = imagecolorallocate($pic, $cv_cur[0], $cv_cur[1], $cv_cur[2]);
@@ -176,12 +178,11 @@ class Scorechart_Page {
         $lx = $blockPad + $scale - 1;
         $rx = $picWidth - $blockWidth - $blockPad + $scale - 1;
         $y = $picHeight - $blockSkip + 2 - imagefontheight($font);
-        if ($this->values[$this->flip ? $valMax - 1 : 1] === 0
-            && (!$this->flip || $valMax === $this->valMax)) {
+        if ($this->values[$this->flip ? $this->valMax - 1 : 1] === 0) {
             imagestring($pic, $font, $lx, $y, $this->loLabel, $cgray);
         }
-        if ($this->values[$this->flip ? 1 : $valMax - 1] === 0
-            && ($this->flip || $valMax === $this->valMax)) {
+        if ($this->values[$this->flip ? 1 : $this->valMax - 1] === 0
+            && $valMax === $this->valMax) {
             imagestring($pic, $font, $rx, $y, $this->hiLabel, $cgray);
         }
 
