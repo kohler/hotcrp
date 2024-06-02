@@ -164,7 +164,7 @@ class Scorechart_Page {
             $curY = $picHeight - ($blockHeight + $blockSkip) * $height + $blockHeight;
 
             for ($h = 1; $h <= $height; $h++) {
-                if ($h == $height && $vpos == $this->valLight) {
+                if ($h === $height && $vpos === $this->valLight) {
                     $cv_cur = self::quality_color($cv_black, $cv_cur, 0.5);
                     $cFill = imagecolorallocate($pic, $cv_cur[0], $cv_cur[1], $cv_cur[2]);
                 }
@@ -210,7 +210,7 @@ class Scorechart_Page {
             }
             $x1 = round(($picWidth + $this->scale) * $pos / $this->sum);
             $x2 = round(($picWidth + $this->scale) * ($pos + $height) / $this->sum - 2 * $this->scale);
-            if ($x2 > $x1) {
+            if ($x2 >= $x1) {
                 $cv_cur = $this->rgb_array($vpos);
                 $cFill = imagecolorallocate($pic, $cv_cur[0], $cv_cur[1], $cv_cur[2]);
                 imagefilledrectangle($pic, (int) $x1, 0, (int) $x2, $picHeight, $cFill);
