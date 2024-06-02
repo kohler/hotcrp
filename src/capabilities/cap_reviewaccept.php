@@ -26,7 +26,7 @@ class ReviewAccept_Capability {
             $tok = (new TokenInfo($rrow->conf, TokenInfo::REVIEWACCEPT))
                 ->set_review($rrow)
                 ->set_user_id($rrow->contactId)
-                ->set_invalid_after(2592000 /* 30 days */)
+                ->set_invalid_after(3888000 /* 45 days */)
                 ->set_expires_after(5184000 /* 60 days */)
                 ->set_token_pattern("hcra{$rrow->reviewId}[16]")
                 ->insert();
@@ -47,7 +47,7 @@ class ReviewAccept_Capability {
                     Conf::$now, "hcra{$rrowid}@", "hcra{$rrowid}~", $uf->name, Conf::$now);
             }
             $tok->update_use()
-                ->extend_validity(7776000) /* 90 days */
+                ->extend_validity(10368000) /* 120 days */
                 ->extend_expiry(15552000) /* 180 days */
                 ->update();
         } else {
@@ -74,10 +74,6 @@ class ReviewAccept_Capability {
                     new MessageItem(null, "<0>Bad review link", MessageSet::ERROR),
                     new MessageItem(null, $t, MessageSet::INFORM)
                 ]);
-                error_log("bad review acceptor {$uf->name}: "
-                          . (!$tok || $tok->capabilityType !== TokenInfo::REVIEWACCEPT
-                             ? "not found"
-                             : "created {$tok->timeCreated}, used {$tok->timeUsed}, invalid {$tok->timeInvalid}, expired {$tok->timeExpires}, user {$tok->contactId}"));
             }
         }
     }
