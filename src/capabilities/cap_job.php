@@ -16,19 +16,24 @@ class Job_Capability {
     }
 
     /** @param string $salt
+     * @return ?string */
+    static function canonical_token($salt) {
+        if ($salt === false || $salt === "e") {
+            $salt = getenv("HOTCRP_JOB");
+        }
+        if ($salt && strpos($salt, "_") === false) {
+            $salt = "hcj_{$salt}";
+        }
+        return $salt ? : null;
+    }
+
+    /** @param string $salt
      * @param ?string $batch_class
      * @param bool $allow_inactive
      * @return TokenInfo */
     static function find(Conf $conf, $salt, $batch_class = null, $allow_inactive = false) {
-        if (($salt === false || $salt === "e")
-            && !($salt = getenv("HOTCRP_JOB"))) {
-            throw new CommandLineException("HOTCRP_JOB not set");
-        }
-        if ($salt !== null && strpos($salt, "_") === false) {
-            $salt = "hcj_{$salt}";
-        }
-        $tok = TokenInfo::find($salt, $conf);
-        if (!$tok
+        if (!($rsalt = self::canonical_token($salt))
+            || !($tok = TokenInfo::find($rsalt, $conf))
             || !self::validate($tok, $batch_class)
             || (!$allow_inactive && !$tok->is_active())) {
             throw new CommandLineException("Invalid job token `{$salt}`");
