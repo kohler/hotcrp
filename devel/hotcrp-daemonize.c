@@ -19,6 +19,9 @@ int main(int argc, char** argv) {
         }
     }
     closedir(dir);
+    if (fork() > 0) {
+        exit(0);
+    }
     setsid();
     execvp(argv[1], argv + 1);
     exit(127);
