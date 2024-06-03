@@ -18,7 +18,7 @@ class Job_API {
             $tok = null;
         }
         if (!$tok) {
-            return new JsonResult(404, ["ok" => false]);
+            return JsonResult::make_not_found_error("job");
         }
 
         $ok = $tok->is_active();
