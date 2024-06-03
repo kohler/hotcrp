@@ -7,6 +7,7 @@
 /devel/d3/d3-hotcrp.min.js
 /devel/d3/node_modules
 /devel/d3/package-lock.json
+/devel/hotcrp-daemonize
 /docs
 /filestore
 /logs

@@ -153,6 +153,9 @@ class Job_Capability {
         }
 
         $cmd = [];
+        if (($daemonize = $tok->conf->opt("daemonizeCommand"))) {
+            $cmd[] = $daemonize;
+        }
         $cmd[] = self::shell_quote_light($tok->conf->opt("phpCommand") ?? "php");
         $cmd[] = self::shell_quote_light($paths[0]);
         if (($confid = $tok->conf->opt("confid"))) {
