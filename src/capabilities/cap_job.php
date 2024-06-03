@@ -36,6 +36,23 @@ class Job_Capability {
         return $tok;
     }
 
+    /** @param string $batch_class
+     * @param list<string> $argv
+     * @return ?TokenInfo */
+    static function find_active_match(Contact $user, $batch_class, $argv = []) {
+        $result = $user->conf->ql("select * from Capability
+                where capabilityType=? and salt>='hcj' and salt<'hck'
+                and contactId=? and (timeExpires<=0 or timeExpires>=?)
+                and inputData=?
+                order by timeExpires desc limit 1",
+            TokenInfo::JOB,
+            $user->contactId > 0 ? $user->contactId : 0, Conf::$now,
+            json_encode_db(["batch_class" => $batch_class, "argv" => $argv]));
+        $tok = TokenInfo::fetch($result, $user->conf);
+        $result->close();
+        return $tok;
+    }
+
     /** @param ?string $batch_class
      * @return bool */
     static function validate(TokenInfo $tok, $batch_class) {
@@ -106,12 +123,23 @@ class Job_Capability {
         return $status;
     }
 
-    /** @return int */
-    static function run_background(TokenInfo $tok) {
+    /** @param 'foreground'|'background' $batchmode
+     * @return int */
+    static function run_child(TokenInfo $tok, $batchmode = "foreground") {
         assert(self::validate($tok, null));
+
+        // Requirements:
+        // * `$B = $tok->input("batch_class")` is set
+        // * The class `{$B}_Batch` can be loaded
+        // * The file defining `{$B}_Batch` contains the string
+        //   `/*{hotcrp {$B}_Batch}*/` in the first 1024 characters
         $batch_class = $tok->input("batch_class");
-        $f = strtolower($batch_class) . "_batch.php";
-        $paths = SiteLoader::expand_includes(SiteLoader::$root, $f, ["autoload" => true]);
+        if (!$batch_class) {
+            return -1;
+        }
+        $paths = SiteLoader::expand_includes(SiteLoader::$root,
+            strtolower($batch_class) . "_batch.php",
+            ["autoload" => true]);
         if (count($paths) !== 1
             || ($s = file_get_contents($paths[0], false, null, 0, 1024)) === false
             || !preg_match('/\A[^\n]*\/\*\{hotcrp\s*([^\n]*?)\}\*\//', $s, $m)
@@ -131,7 +159,7 @@ class Job_Capability {
 
         $env = getenv();
         $env["HOTCRP_JOB"] = $tok->salt;
-        $env["HOTCRP_EXEC_MODE"] = "background";
+        $env["HOTCRP_BATCHMODE"] = $batchmode;
 
         $redirect = PHP_VERSION_ID >= 70400 ? ["redirect", 1] : ["file", "/dev/null", "a"];
         $p = proc_open(join(" ", $cmd),

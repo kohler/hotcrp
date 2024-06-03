@@ -73,19 +73,10 @@ if (defined("HOTCRP_TESTHARNESS")) {
     Conf::$test_mode = true;
 }
 if (PHP_SAPI === "cli") {
-    set_exception_handler("Multiconference::batch_exception_handler");
+    set_exception_handler("BatchProcess::exception_handler");
     ini_set("error_log", "");
     if (function_exists("pcntl_signal")) {
         pcntl_signal(SIGPIPE, SIG_DFL);
-    }
-    if (getenv("HOTCRP_EXEC_MODE") === "background"
-        && function_exists("pcntl_fork")) {
-        if (function_exists("posix_setsid")) {
-            posix_setsid();
-        }
-        if (pcntl_fork() > 0) {
-            exit(0);
-        }
     }
 }
 

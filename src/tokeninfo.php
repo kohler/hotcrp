@@ -321,7 +321,6 @@ class TokenInfo {
     /** @param string $lookup_key
      * @return Dbl_Result */
     static function active_lookup_key_result(Conf $conf, $lookup_key) {
-        // do not load `inputData` or `outputData`
         return $conf->ql("select * from Capability where (timeExpires<=0 or timeExpires>=?) and lookupKey?e",
             Conf::$now, $lookup_key);
     }

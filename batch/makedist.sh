@@ -133,6 +133,7 @@ lib/abbreviationmatcher.php
 lib/archiveinfo.php
 lib/backupdb.sh
 lib/base.php
+lib/batchprocess.php
 lib/cleanhtml.php
 lib/collatorshim.php
 lib/column.php
