@@ -47,11 +47,14 @@ class Job_Capability {
     static function find_active_match(Contact $user, $batch_class, $argv = []) {
         $result = $user->conf->ql("select * from Capability
                 where capabilityType=? and salt>='hcj' and salt<'hck'
-                and contactId=? and (timeExpires<=0 or timeExpires>=?)
+                and contactId=?
+                and (timeInvalid<=0 or timeInvalid>=?)
+                and (timeExpires<=0 or timeExpires>=?)
                 and inputData=?
                 order by timeExpires desc limit 1",
             TokenInfo::JOB,
-            $user->contactId > 0 ? $user->contactId : 0, Conf::$now,
+            $user->contactId > 0 ? $user->contactId : 0,
+            Conf::$now, Conf::$now,
             json_encode_db(["batch_class" => $batch_class, "argv" => $argv]));
         $tok = TokenInfo::fetch($result, $user->conf);
         $result->close();
