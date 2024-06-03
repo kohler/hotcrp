@@ -8,7 +8,6 @@
 int main(int argc, char** argv) {
     DIR* dir = opendir("/dev/fd");
     struct dirent* de;
-    unsigned long u;
     while (dir && (de = readdir(dir))) {
         if (!isdigit((unsigned char) de->d_name[0])) {
             continue;
