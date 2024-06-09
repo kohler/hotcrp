@@ -4682,7 +4682,8 @@ function hashjump_destination(e, p) {
         return false;
     }
     $(".hashtarget").removeClass("hashtarget");
-    window.scroll(0, pg.top - Math.max(wh > 300 ? 20 : 0, (wh - pg.height) * 0.25));
+    const border = wh > 300 && !hasClass(p, "revcard") ? 20 : 0;
+    window.scroll(0, pg.top - Math.max(border, (wh - pg.height) * 0.25));
     focus_at(e);
     return true;
 }
@@ -4753,7 +4754,7 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
         hash = p.id;
         location.hash = "#" + hash;
     }
-    if (hasClass(e, "cmtcard")
+    if ((hasClass(e, "cmtcard") || hasClass(e, "revcard"))
         && hashjump_destination(e, e)) {
         addClass(e, "hashtarget");
         return true;

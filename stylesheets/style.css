@@ -4483,6 +4483,7 @@ a:hover .t-editor,
 	border-top: 5px solid #e6e1cf !important;
 	padding-top: 1.25rem !important;
 }
+.revcard.hashtarget header::before,
 .cmtcard.hashtarget header::before {
 	width: 1rem;
 	margin-left: -1.25rem;
