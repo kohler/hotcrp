@@ -7421,7 +7421,7 @@ function cmt_render(cj, editing) {
 
     // header
     const hdre = $e("header", cj.editable ? "cmtt ui js-click-child" : "cmtt");
-    cj.is_new || (hdre.id = cj.cid);
+    cj.is_new || (hdre.id = "cx" + cj.cid);
     if (cj.response && cj.text !== false) {
         const h2 = $e("h2");
         let cnc = h2;

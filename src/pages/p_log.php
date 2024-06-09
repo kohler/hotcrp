@@ -543,11 +543,11 @@ class Log_Page {
             $act = $m[4];
         } else if (substr($act, 0, 7) === "Comment"
                    && preg_match('/\AComment (\d+)(.*)\z/s', $act, $m)) {
-            $at = "<a href=\"" . $conf->hoturl("paper", "p={$row->paperId}#cid{$m[1]}") . "\">Comment " . $m[1] . "</a>";
+            $at = "<a href=\"" . $conf->hoturl("paper", "p={$row->paperId}#cx{$m[1]}") . "\">Comment " . $m[1] . "</a>";
             $act = $m[2];
         } else if (substr($act, 0, 8) === "Response"
                    && preg_match('/\AResponse (\d+)(.*)\z/s', $act, $m)) {
-            $at = "<a href=\"" . $conf->hoturl("paper", "p={$row->paperId}#cid{$m[1]}") . "\">Response " . $m[1] . "</a>";
+            $at = "<a href=\"" . $conf->hoturl("paper", "p={$row->paperId}#cx{$m[1]}") . "\">Response " . $m[1] . "</a>";
             $act = $m[2];
         } else if (strpos($act, " mail ") !== false
                    && preg_match('/\A(Sending|Sent|Account was sent) mail #(\d+)(.*)\z/s', $act, $m)) {
