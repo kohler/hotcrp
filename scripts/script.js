@@ -4675,6 +4675,18 @@ function jump_hash(hash, focus) {
     return false;
 }
 
+function hashjump_destination(e, p) {
+    const eg = $(e).geometry(), pg = $(p).geometry(), wh = $(window).height();
+    if ((eg.width > 0 || eg.height > 0)
+        && (pg.top > eg.top || eg.top - pg.top > wh * 0.75)) {
+        return false;
+    }
+    $(".hashtarget").removeClass("hashtarget");
+    window.scroll(0, pg.top - Math.max(wh > 300 ? 20 : 0, (wh - pg.height) * 0.25));
+    focus_at(e);
+    return true;
+}
+
 handle_ui.on("hashjump.js-hash", function (hashc, focus) {
     if (hashc.length > 1 || (hashc.length === 1 && typeof hashc[0] !== "string")) {
         hashc = [];
@@ -4684,10 +4696,10 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
     }
 
     // look up destination element
-    var hash = hashc[0] || "", m, e, p;
+    let hash = hashc[0] || "", m, e, p;
     if (hash === "" || hash === "default") {
         e = $$("default");
-        hash = ""
+        hash = location.hash = "";
     } else {
         e = $$(hash);
         if (!e
@@ -4698,11 +4710,12 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
             location.hash = "#" + hash;
         }
     }
-
     if (!e) {
-        /* do nothing */
-    } else if (hasClass(e, "is-tla")) {
-        // tabbed UI
+        return;
+    }
+
+    // tabbed UI
+    if (hasClass(e, "is-tla")) {
         if (!hasClass(e, "active")) {
             $(".is-tla, .papmode").removeClass("active");
             $(".tll").removeClass("active").attr("aria-selected", "false");
@@ -4717,19 +4730,33 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
         }
         focus && focus_within(e);
         return true;
-    } else if ((p = e.closest(".pfe, .rfe, .f-i, .form-g, .form-section, .entryi, .checki"))) {
-        // highlight destination
-        var eg = $(e).geometry(), pg = $(p).geometry(), wh = $(window).height();
-        if ((eg.width <= 0 && eg.height <= 0)
-            || (pg.top <= eg.top && eg.top - pg.top <= wh * 0.75)) {
-            $(".tla-highlight").removeClass("tla-highlight");
-            window.scroll(0, pg.top - Math.max(wh > 300 ? 20 : 0, (wh - pg.height) * 0.25));
-            $(p).find("label, .field-title").first().addClass("tla-highlight");
-            focus_at(e);
-            return true;
-        }
-    } else if (hasClass(e, "need-anchor-unfold")) {
+    }
+
+    // highlight destination
+    if ((p = e.closest(".pfe, .rfe, .f-i, .form-g, .form-section, .entryi, .checki"))
+        && hashjump_destination(e, p)) {
+        $(p).find("label, .field-title").first().addClass("hashtarget");
+        return true;
+    }
+
+    // anchor unfolding
+    if (hasClass(e, "need-anchor-unfold")) {
         foldup.call(e, null, {open: true});
+    }
+
+    // comments
+    if (hash.startsWith("cx")
+        && hasClass(e, "cmtt")
+        && (p = e.closest("article"))
+        && hasClass(p, "cmtcard")
+        && p.id) {
+        hash = p.id;
+        location.hash = "#" + hash;
+    }
+    if (hasClass(e, "cmtcard")
+        && hashjump_destination(e, e)) {
+        addClass(e, "hashtarget");
+        return true;
     }
 }, -1);
 
