@@ -4755,7 +4755,8 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
         location.hash = "#" + hash;
     }
     if ((hasClass(e, "cmtcard") || hasClass(e, "revcard"))
-        && hashjump_destination(e, e)) {
+        && hashjump_destination(e, e)
+        && hash !== "cnew") {
         addClass(e, "hashtarget");
         return true;
     }
