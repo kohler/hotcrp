@@ -632,6 +632,7 @@ class CreateDB_Batch {
             "batch Batch installation: never stop for input",
             "replace Replace existing HotCRP database if present",
             "replace-user Replace existing HotCRP database user if present",
+            "no-config Do not create config file",
             "no-grant Do not create user or grant privileges for HotCRP database access",
             "dbuser: =USER,PASS Specify database USER and PASS for HotCRP database access",
             "host: =HOST Specify database host [localhost]",
