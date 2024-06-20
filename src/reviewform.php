@@ -554,17 +554,20 @@ Ready\n";
         }
         if ($rrow->reviewStatus >= ReviewInfo::RS_DRAFTED
             && $viewer->can_view_review_time($prow, $rrow)) {
-            $revtime = $this->conf->unparse_time($rrow->reviewModified);
+            $tattr = $this->conf->unparse_time_iso8601($rrow->reviewModified);
+            $ttext = $this->conf->unparse_time_relative($rrow->reviewModified);
+            $ttitle = $this->conf->unparse_time($rrow->reviewModified);
+            $revtime = "<time class=\"revtime\" datetime=\"{$tattr}\" data-ts=\"{$rrow->reviewModified}\" title=\"{$ttitle}\">{$ttext}</time>";
         }
         if ($revname || $revtime) {
             echo '<div class="revthead">';
             if ($revname) {
-                echo '<div class="revname">', $revname, '</div>';
+                echo '<address class="revname">', $revname, '</address>';
             }
-            if ($revtime) {
-                echo '<div class="revtime">', $revtime, '</div>';
+            if ($revname && $revtime) {
+                echo '<span class="barsep">·</span>';
             }
-            echo '</div>';
+            echo $revtime, '</div>';
         }
 
         // download?

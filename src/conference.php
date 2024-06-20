@@ -3120,6 +3120,12 @@ class Conf {
     }
 
     /** @param int $timestamp
+     * @return string */
+    function unparse_time_iso8601($timestamp) {
+        return $this->format_time($timestamp, "c");
+    }
+
+    /** @param int $timestamp
      * @param int $now
      * @return string */
     function unparse_time_relative($timestamp, $now = 0, $format = 0) {
