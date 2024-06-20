@@ -1208,8 +1208,8 @@ class ReviewValues extends MessageSet {
         $this->req["ready"] = $ready ? 1 : 0;
     }
 
-    function set_adopt() {
-        $this->req["adoptreview"] = $this->req["ready"] = 1;
+    function set_approved() {
+        $this->req["approvesubreview"] = $this->req["ready"] = 1;
     }
 
     /** @param ?string $msg */
@@ -1383,7 +1383,7 @@ class ReviewValues extends MessageSet {
 
         if ($unready) {
             if ($submit && $anyvalues) {
-                $what = $this->req["adoptreview"] ?? null ? "approved" : "submitted";
+                $what = $this->req["approvesubreview"] ?? null ? "approved" : "submitted";
                 $this->rmsg("ready", $this->conf->_("<0>This review can’t be {$what} until entries are provided for all required fields."), self::WARNING);
             }
             $this->req["ready"] = 0;
@@ -1391,7 +1391,7 @@ class ReviewValues extends MessageSet {
 
         if ($this->has_error_since($msgcount)) {
             return false;
-        } else if ($anyvalues || ($this->req["adoptreview"] ?? null)) {
+        } else if ($anyvalues || ($this->req["approvesubreview"] ?? null)) {
             return true;
         } else {
             $this->blank[] = "#" . $this->paperId;
@@ -1573,7 +1573,7 @@ class ReviewValues extends MessageSet {
             $approvable = $rrow->subject_to_approval();
             if ($approvable && !$user->isPC) {
                 $newstatus = max($oldstatus, ReviewInfo::RS_DELIVERED);
-            } else if ($approvable && ($this->req["adoptreview"] ?? null)) {
+            } else if ($approvable && ($this->req["approvesubreview"] ?? null)) {
                 $newstatus = ReviewInfo::RS_ADOPTED;
             } else {
                 $newstatus = ReviewInfo::RS_COMPLETED;

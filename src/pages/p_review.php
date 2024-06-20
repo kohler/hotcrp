@@ -131,7 +131,7 @@ class Review_Page {
             if (isset($this->qreq->approvesubreview)
                 && $this->rrow
                 && $this->user->can_approve_review($this->prow, $this->rrow)) {
-                $rv->set_adopt();
+                $rv->set_approved();
             }
             if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
                 $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
@@ -234,7 +234,7 @@ class Review_Page {
                 if (!$rv->has_problem_at("ready")) {
                     // mark the source review as approved
                     $rvx = new ReviewValues($this->rf());
-                    $rvx->set_adopt();
+                    $rvx->set_approved();
                     $rvx->check_and_save($this->user, $this->prow, $this->rrow);
                 }
             }
