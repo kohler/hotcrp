@@ -4,8 +4,9 @@
 
 class APIHelpers {
     /** @param ?string $text
+     * @param ?string $field
      * @return Contact */
-    static function parse_user($text, Contact $viewer) {
+    static function parse_user($text, Contact $viewer, $field = null) {
         if (!isset($text)
             || $text === ""
             || strcasecmp($text, "me") === 0
@@ -21,7 +22,7 @@ class APIHelpers {
         if ($u) {
             return $u;
         } else if ($viewer->isPC) {
-            JsonResult::make_error(404, "<0>User not found")->complete();
+            JsonResult::make_not_found_error($field, "<0>User not found")->complete();
         } else {
             JsonResult::make_permission_error()->complete();
         }

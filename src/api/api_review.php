@@ -15,7 +15,7 @@ class Review_API {
             }
             $rrows = $rrow ? [$rrow] : [];
         } else if (isset($qreq->u)) {
-            $u = APIHelpers::parse_user($qreq->u, $user);
+            $u = APIHelpers::parse_user($qreq->u, $user, "u");
             $rrows = $prow->full_reviews_by_user($u);
             $need_id = $user->contactId !== $u->contactId;
         } else {

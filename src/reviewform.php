@@ -1211,7 +1211,7 @@ class ReviewValues extends MessageSet {
 
     /** @param ?string $msg */
     private function reviewer_error($msg) {
-        $msg = $msg ?? $this->conf->_("<0>Can’t submit a review for %s.", $this->req["reviewerEmail"]);
+        $msg = $msg ?? $this->conf->_("<0>Can’t submit a review for {}.", $this->req["reviewerEmail"]);
         $this->rmsg("reviewerEmail", $msg, self::ERROR);
     }
 
@@ -1246,7 +1246,7 @@ class ReviewValues extends MessageSet {
         } else if (isset($this->req["reviewerEmail"])
                    && strcasecmp($this->req["reviewerEmail"], $user->email) != 0) {
             if (!($reviewer = $this->conf->user_by_email($this->req["reviewerEmail"]))) {
-                $this->reviewer_error($user->privChair ? $this->conf->_("<0>User %s not found", htmlspecialchars($this->req["reviewerEmail"])) : null);
+                $this->reviewer_error($user->privChair ? $this->conf->_("<0>User {} not found", $this->req["reviewerEmail"]) : null);
                 return false;
             }
         }
@@ -1330,7 +1330,7 @@ class ReviewValues extends MessageSet {
             }
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
             if ($fval === false) {
-                $this->rmsg($fid, $this->conf->_("<0>%s cannot be ‘%s’.", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$fid]), 100)), self::WARNING);
+                $this->rmsg($fid, $this->conf->_("<0>{} cannot be ‘{}’.", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$fid]), 100)), self::WARNING);
                 unset($this->req[$fid]);
                 $unready = true;
                 continue;
@@ -1350,7 +1350,7 @@ class ReviewValues extends MessageSet {
 
         if ($missingfields && $submit && $anyvalues) {
             foreach ($missingfields as $f) {
-                $this->rmsg($f->short_id, $this->conf->_("<0>%s: Entry required", $f->name), self::WARNING);
+                $this->rmsg($f->short_id, $this->conf->_("<0>{}: Entry required", $f->name), self::WARNING);
             }
         }
 
