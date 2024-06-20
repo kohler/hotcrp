@@ -1567,11 +1567,18 @@ class Contact implements JsonSerializable {
         return $pids;
     }
 
-    /** @param int $pid
+    /** @param int|PaperInfo $p
+     * @return ?int */
+    function reviewer_capability($p) {
+        $pid = is_int($p) ? $p : $p->paperId;
+        return $this->_capabilities["@ra{$pid}"] ?? null;
+    }
+
+    /** @param int|PaperInfo $p
      * @return ?Contact */
-    function reviewer_capability_user($pid) {
-        if ($this->_capabilities !== null
-            && ($rcid = $this->_capabilities["@ra{$pid}"] ?? null)) {
+    function reviewer_capability_user($p) {
+        $pid = is_int($p) ? $p : $p->paperId;
+        if (($rcid = $this->_capabilities["@ra{$pid}"] ?? null)) {
             return $this->conf->user_by_id($rcid, USER_SLICE);
         } else {
             return null;

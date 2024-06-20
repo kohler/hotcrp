@@ -1,6 +1,6 @@
 <?php
 // paperrequest.php -- HotCRP helper class for parsing paper requests
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class PaperRequest {
     /** @var PaperInfo */
@@ -254,7 +254,7 @@ class PaperRequest {
         } else if (isset($qreq->reviewId)) {
             $rrow = $this->prow->review_by_ordinal_id($qreq->reviewId);
             if (!$rrow) {
-                if (($racid = $user->capability("@ra{$this->prow->paperId}"))) {
+                if (($racid = $user->reviewer_capability($this->prow))) {
                     // XXX @ra nonsense
                     return null;
                 } else {
@@ -265,7 +265,7 @@ class PaperRequest {
                 throw $whynot2 ?? $whynot;
             }
             return $rrow;
-        } else if (($racid = $user->capability("@ra{$this->prow->paperId}"))) {
+        } else if (($racid = $user->reviewer_capability($this->prow))) {
             return $this->prow->review_by_user($racid);
         } else {
             return null;

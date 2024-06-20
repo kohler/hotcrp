@@ -1,6 +1,6 @@
 <?php
 // api_requestreview.php -- HotCRP review-request API calls
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
 
 class RequestReview_API {
     /** @param Contact $user
@@ -243,7 +243,7 @@ class RequestReview_API {
         } else {
             return $user->contactXid === $remrow->contactId
                 || ($remrow->email && strcasecmp($user->email, $remrow->email) === 0)
-                || $user->capability("@ra{$prow->paperId}") == $remrow->contactId;
+                || $user->reviewer_capability($prow) === $remrow->contactId;
         }
     }
 

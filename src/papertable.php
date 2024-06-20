@@ -1247,13 +1247,12 @@ class PaperTable {
             && $this->user->is_my_review($this->editrrow)) {
             $this->_print_accept_decline();
         } else if ($this->mode === "p"
-                   && $this->qreq->page() === "review") {
-            $capuid = $this->user->capability("@ra{$this->prow->paperId}");
-            $capu = $capuid ? $this->conf->user_by_id($capuid, USER_SLICE) : $this->user;
-            $refusals = $capu ? $this->prow->review_refusals_by_user($capu) : [];
+                   && $this->qreq->page() === "review"
+                   && ($capu = $this->user->reviewer_capability_user($this->prow))) {
+            $refusals = $this->prow->review_refusals_by_user($capu);
             if ($refusals && $refusals[0]->refusedReviewId) {
                 $this->_print_decline_reason($capu, $refusals[0]);
-            } else if ($capuid) {
+            } else {
                 echo "<div class=\"msg msg-warning demargin remargin-left remargin-right\"><p>Your review for this {$this->conf->snouns[0]} is currently inaccessible.</p></div>";
             }
         }

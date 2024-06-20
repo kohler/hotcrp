@@ -1,6 +1,6 @@
 <?php
 // pages/p_review.php -- HotCRP paper review display/edit page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Review_Page {
     /** @var Conf */
@@ -284,7 +284,7 @@ class Review_Page {
 
     /** @return ?int */
     function current_capability_rrid() {
-        if (($capuid = $this->user->capability("@ra{$this->prow->paperId}"))) {
+        if (($capuid = $this->user->reviewer_capability($this->prow))) {
             $u = $this->conf->user_by_id($capuid, USER_SLICE);
             $rrow = $this->prow->review_by_user($capuid);
             $refs = $u ? $this->prow->review_refusals_by_user($u) : [];
@@ -395,7 +395,7 @@ class Review_Page {
         $pp->load_prow();
 
         // fix user
-        $capuid = $user->capability("@ra{$pp->prow->paperId}");
+        $capuid = $user->reviewer_capability($pp->prow);
 
         // action
         if ($qreq->cancel) {

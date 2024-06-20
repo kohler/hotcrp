@@ -1,6 +1,6 @@
 <?php
-// api/api_review.php -- HotCRP paper-related API calls
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// api/api_review.php -- HotCRP review-related API calls
+// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
 
 class Review_API {
     static function review(Contact $user, Qrequest $qreq, PaperInfo $prow) {
@@ -15,14 +15,9 @@ class Review_API {
             }
             $rrows = $rrow ? [$rrow] : [];
         } else if (isset($qreq->u)) {
-            $need_id = true;
-            $u = APIHelpers::parse_reviewer_for($qreq->u, $user, $prow);
+            $u = APIHelpers::parse_user($qreq->u, $user);
             $rrows = $prow->full_reviews_by_user($u);
-            if (!$rrows
-                && $user->contactId !== $u->contactId
-                && !$user->can_view_review_identity($prow, null)) {
-                return JsonResult::make_permission_error();
-            }
+            $need_id = $user->contactId !== $u->contactId;
         } else {
             $prow->ensure_full_reviews();
             $rrows = $prow->reviews_as_display();
@@ -35,7 +30,7 @@ class Review_API {
                 $vrrows[] = $rf->unparse_review_json($user, $prow, $rrow);
             }
         }
-        if (!$vrrows && $rrows) {
+        if (!$vrrows && ($rrows || $need_id)) {
             return JsonResult::make_permission_error();
         } else {
             return new JsonResult(["ok" => true, "reviews" => $vrrows]);

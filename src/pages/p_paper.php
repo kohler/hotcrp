@@ -1,6 +1,6 @@
 <?php
 // pages/p_paper.php -- HotCRP paper view and edit page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Paper_Page {
     /** @var Conf */
@@ -555,7 +555,7 @@ class Paper_Page {
         }
 
         // capability messages: decline, accept to different user
-        if (($capuid = $user->capability("@ra{$pp->prow->paperId}"))
+        if (($capuid = $user->reviewer_capability($pp->prow))
             && $capuid !== $user->contactXid) {
             $pp->print_capability_user_message($capuid);
         }
