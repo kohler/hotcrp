@@ -69,7 +69,7 @@ class SavePapers_Batch {
         $this->conf = $conf;
         $this->user = $conf->root_user();
         $this->user->set_overrides(Contact::OVERRIDE_CONFLICT);
-        $this->tf = new ReviewValues($conf->review_form(), ["no_notify" => true]);
+        $this->tf = new ReviewValues($conf, ["no_notify" => true]);
     }
 
     /** @return $this */

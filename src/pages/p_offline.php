@@ -35,9 +35,9 @@ class Offline_Page {
             $this->ms->error_at("file");
             return false;
         }
-        $rf = $this->conf->review_form();
-        $tf = ReviewValues::make_text($rf, $this->qreq->file_contents("file"),
-                                      $this->qreq->file_filename("file"));
+        $tf = (new ReviewValues($this->conf))
+            ->set_text($this->qreq->file_contents("file"),
+                       $this->qreq->file_filename("file"));
         while ($tf->parse_text($this->qreq->override)) {
             $tf->check_and_save($this->user, null, null);
         }

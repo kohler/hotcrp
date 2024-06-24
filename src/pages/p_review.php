@@ -34,11 +34,6 @@ class Review_Page {
         return $this->pt;
     }
 
-    /** @return ReviewForm */
-    function rf() {
-        return $this->conf->review_form();
-    }
-
     /** @param bool $is_error */
     function print_header($is_error) {
         PaperTable::print_header($this->pt, $this->qreq, $is_error);
@@ -121,7 +116,7 @@ class Review_Page {
             $this->qreq->ready = 1;
         }
 
-        $rv = new ReviewValues($this->rf());
+        $rv = new ReviewValues($this->conf);
         $rv->paperId = $this->prow->paperId;
         if (($whynot = ($this->rrow
                         ? $this->user->perm_edit_review($this->prow, $this->rrow, true)
@@ -150,9 +145,8 @@ class Review_Page {
             $this->conf->error_msg("<0>File upload required");
             return;
         }
-        $rv = ReviewValues::make_text($this->rf(),
-                $this->qreq->file_contents("file"),
-                $this->qreq->file_filename("file"));
+        $rv = (new ReviewValues($this->conf))
+            ->set_text($this->qreq->file_contents("file"), $this->qreq->file_filename("file"));
         if ($rv->parse_text($this->qreq->override)
             && $rv->check_and_save($this->user, $this->prow, $this->rrow)) {
             $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
@@ -169,7 +163,7 @@ class Review_Page {
 
     function handle_download_form() {
         $filename = "review-" . ($this->rrow ? $this->rrow->unparse_ordinal_id() : $this->prow->paperId);
-        $rf = $this->rf();
+        $rf = $this->conf->review_form();
         $this->conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
             ->set_inline(false)
             ->add_string($rf->text_form_header(false)
@@ -179,7 +173,7 @@ class Review_Page {
     }
 
     function handle_download_text() {
-        $rf = $this->rf();
+        $rf = $this->conf->review_form();
         if ($this->rrow && $this->rrow_explicit) {
             $this->conf->make_csvg("review-" . $this->rrow->unparse_ordinal_id(), CsvGenerator::TYPE_STRING)
                 ->add_string($rf->unparse_text($this->prow, $this->rrow, $this->user))
@@ -219,7 +213,7 @@ class Review_Page {
             return;
         }
 
-        $rv = new ReviewValues($this->rf());
+        $rv = new ReviewValues($this->conf);
         $rv->paperId = $this->prow->paperId;
         $my_rrow = $this->prow->review_by_user($this->user);
         $my_rid = ($my_rrow ?? $this->rrow)->unparse_ordinal_id();
@@ -233,7 +227,7 @@ class Review_Page {
                 $my_rid = $rv->review_ordinal_id;
                 if (!$rv->has_problem_at("ready")) {
                     // mark the source review as approved
-                    $rvx = new ReviewValues($this->rf());
+                    $rvx = new ReviewValues($this->conf);
                     $rvx->set_approved();
                     $rvx->check_and_save($this->user, $this->prow, $this->rrow);
                 }
@@ -343,7 +337,7 @@ class Review_Page {
         if ($this->rv) {
             $pt->set_review_values($this->rv);
         } else if ($this->qreq->has_annex("after_login")) {
-            $rv = new ReviewValues($this->rf());
+            $rv = new ReviewValues($this->conf);
             $rv->parse_qreq($this->qreq, !!$this->qreq->override);
             $pt->set_review_values($rv);
         }

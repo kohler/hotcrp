@@ -886,9 +886,15 @@ class ReviewValues extends MessageSet {
     /** @var bool */
     private $no_notify = false;
 
-    function __construct(ReviewForm $rf, $options = []) {
-        $this->conf = $rf->conf;
-        $this->rf = $rf;
+    /** @param ReviewForm|Conf $rf */
+    function __construct($rf, $options = []) {
+        if ($rf instanceof ReviewForm) {
+            $this->conf = $rf->conf;
+            $this->rf = $rf;
+        } else {
+            $this->conf = $rf;
+            $this->rf = $this->conf->review_form();
+        }
         foreach (["no_notify"] as $k) {
             if (array_key_exists($k, $options))
                 $this->$k = $options[$k];
@@ -896,13 +902,21 @@ class ReviewValues extends MessageSet {
         $this->set_want_ftext(true);
     }
 
-    /** @return ReviewValues */
-    static function make_text(ReviewForm $rf, $text, $filename = null) {
-        $rv = new ReviewValues($rf);
-        $rv->text = $text;
-        $rv->lineno = 0;
-        $rv->filename = $filename;
-        return $rv;
+    /** @param string $text
+     * @param ?string $filename
+     * @return $this */
+    function set_text($text, $filename = null) {
+        $this->text = $text;
+        $this->filename = $filename;
+        $this->lineno = 0;
+        return $this;
+    }
+
+    /** @param ReviewForm|Conf $rf
+     * @return ReviewValues
+     * @deprecated */
+    static function make_text($rf, $text, $filename = null) {
+        return (new ReviewValues($rf))->set_text($text, $filename);
     }
 
     /** @param int|string $field

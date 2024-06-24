@@ -3101,7 +3101,7 @@ class PaperTable {
             if (!$this->user->can_clickthrough("review", $this->prow)) {
                 self::print_review_clickthrough();
             }
-            $rvalues = $this->review_values ?? new ReviewValues($this->conf->review_form());
+            $rvalues = $this->review_values ?? new ReviewValues($this->conf);
             $this->conf->review_form()->print_form($this->prow, $this->editrrow, $this->user, $rvalues);
         } else {
             $this->print_rc([$this->editrrow], false);

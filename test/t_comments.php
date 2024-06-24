@@ -123,7 +123,7 @@ class Comments_Tester {
         // ensure a PC member has a submitted review
         $paper = $this->conf->checked_paper_by_id(4);
         $reviewer = $this->conf->user_by_email("estrin@usc.edu");
-        $tf = new ReviewValues($this->conf->review_form());
+        $tf = new ReviewValues($this->conf);
         xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "No summary", "comaut" => "No comments"]));
         xassert($tf->check_and_save($reviewer, $paper));
 
