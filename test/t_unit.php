@@ -104,7 +104,23 @@ class Unit_Tester {
         xassert_eqq($result->fetch_row(), null);
         Dbl::free($result);
         $result = $mresult->next();
-        xassert_eqq($result, false);
+        xassert(!$result);
+
+        $mresult = Dbl::multi_q("select 0 from dual; select 2, 3 from dual; select 1 from dual");
+        $result = $mresult->next();
+        xassert($result instanceof mysqli_result);
+        xassert_array_eqq($result->fetch_row(), ["0"]);
+        $result->close();
+        $result = $mresult->next();
+        xassert($result instanceof mysqli_result);
+        xassert_array_eqq($result->fetch_row(), ["2", "3"]);
+        $result->close();
+        $result = $mresult->next();
+        xassert($result instanceof mysqli_result);
+        xassert_array_eqq($result->fetch_row(), ["1"]);
+        $result->close();
+        $result = $mresult->next();
+        xassert(!$result);
     }
 
     function test_array_sort_unique() {

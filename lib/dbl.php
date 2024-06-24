@@ -73,36 +73,38 @@ class Dbl_MultiResult {
     private $dblink;
     /** @var int */
     private $flags;
+    /** @var 0|1|2|3 */
+    private $mstate;
     /** @var string */
     private $query_string;
 
     /** @param int $flags
      * @param string $qstr
-     * @param bool $result */
-    function __construct(mysqli $dblink, $flags, $qstr, $result) {
+     * @param bool $mqresult */
+    function __construct(mysqli $dblink, $flags, $qstr, $mqresult) {
+        assert(($flags & Dbl::F_MULTI) !== 0);
         $this->dblink = $dblink;
-        $this->flags = $flags | Dbl::F_MULTI | ($result ? Dbl::F_MULTI_OK : 0);
+        $this->flags = $flags;
+        $this->mstate = $mqresult ? 2 : 1;
         $this->query_string = $qstr;
     }
-    /** @return false|Dbl_Result */
+    /** @return ?Dbl_Result */
     function next() {
-        // XXX does processing stop at first error?
-        if ($this->flags & Dbl::F_MULTI_OK) {
-            $result = $this->dblink->store_result();
-        } else if ($this->flags & Dbl::F_MULTI) {
-            $result = false;
-        } else {
-            return false;
-        }
-        if ($this->dblink->more_results()) {
-            if ($this->dblink->next_result()) {
-                $this->flags |= Dbl::F_MULTI_OK;
+        // maybe load next result from connection
+        if ($this->mstate === 3) {
+            if ($this->dblink->more_results()) {
+                $this->mstate = $this->dblink->next_result() ? 2 : 1;
             } else {
-                $this->flags &= ~Dbl::F_MULTI_OK;
+                $this->mstate = 0;
             }
-        } else {
-            $this->flags &= ~(Dbl::F_MULTI | Dbl::F_MULTI_OK);
         }
+        // maybe done
+        if ($this->mstate === 0) {
+            return null;
+        }
+        // process next result (which might be an error)
+        $result = $this->mstate === 2 ? $this->dblink->store_result() : false;
+        $this->mstate = 3;
         return Dbl::do_result($this->dblink, $this->flags, $this->query_string, $result);
     }
     function free_all() {
@@ -208,7 +210,6 @@ class Dbl {
     const F_ERROR = 8;
     const F_ALLOWERROR = 16;
     const F_MULTI = 32;
-    const F_MULTI_OK = 64; // internal
     const F_ECHO = 128;
     const F_NOEXEC = 256;
     const F_THROW = 512;
@@ -605,8 +606,12 @@ class Dbl {
         return self::do_query_with($dblink, $qstr, $argv, $flags);
     }
 
-    /** @return Dbl_Result */
-    static public function do_result($dblink, $flags, $qstr, $result) {
+    /** @param \mysqli $dblink
+     * @param int $flags
+     * @param string $qstr
+     * @param null|bool|\mysqli_result|Dbl_Result $result
+     * @return Dbl_Result */
+    static function do_result($dblink, $flags, $qstr, $result) {
         if (is_bool($result)) {
             $result = Dbl_Result::make($dblink);
         } else if ($result === null) {
