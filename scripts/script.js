@@ -2082,6 +2082,10 @@ handle_ui.on("js-ignore-unload-protection", function (evt) {
     }
 });
 
+handle_ui.on("js-reload", function () {
+    location.reload();
+});
+
 var focus_at = (function () {
 var ever_focused;
 return function (felt) {
