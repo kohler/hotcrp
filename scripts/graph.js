@@ -1,21 +1,26 @@
 // graph.js -- HotCRP JavaScript library for graph drawing
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
-/* global hotcrp, siteinfo, $$, $e, $frag, svge */
+/* global hotcrp, siteinfo, svge */
 /* global hasClass */
-/* global append_feedback_near, log_jserror */
+/* global log_jserror */
 /* global make_bubble */
 /* global strftime */
 hotcrp.graph = (function ($, d3) {
-var handle_ui = hotcrp.handle_ui,
+const $$ = hotcrp.$$,
+    $e = hotcrp.$e,
+    $frag = hotcrp.$frag,
+    handle_ui = hotcrp.handle_ui,
     ensure_pattern = hotcrp.ensure_pattern,
+    feedback = hotcrp.feedback,
     hoturl = hotcrp.hoturl;
-var BOTTOM_MARGIN = 37;
-var PATHSEG_ARGMAP = {
+
+let BOTTOM_MARGIN = 37;
+const PATHSEG_ARGMAP = {
     m: 2, M: 2, z: 0, Z: 0, l: 2, L: 2, h: 1, H: 1, v: 1, V: 1, c: 6, C: 6,
     s: 4, S: 4, q: 4, Q: 4, t: 2, T: 2, a: 7, A: 7, b: 1, B: 1
 };
-var normalized_path_cache = {}, normalized_path_cache_size = 0;
+let normalized_path_cache = {}, normalized_path_cache_size = 0;
 
 function svg_path_number_of_items(s) {
     if (s instanceof SVGPathElement) {
@@ -1806,9 +1811,9 @@ function make_args(selector, args) {
 return function (selector, args) {
     if (!d3) {
         const $err = $('<div class="msg msg-error"></div>').appendTo(selector);
-        append_feedback_near($err[0], {message: "<0>Graphs are not supported on this browser", status: 2});
+        feedback.append_item_near($err[0], {message: "<0>Graphs are not supported on this browser", status: 2});
         if (document.documentMode) {
-            append_feedback_near($err[0], {message: "<5>You appear to be using a version of Internet Explorer, which is no longer supported. <a href=\"https://browsehappy.com\">Edge, Firefox, Chrome, and Safari</a> are supported, among others.", status: -5 /*MessageSet::INFORM*/});
+            feedback.append_item_near($err[0], {message: "<5>You appear to be using a version of Internet Explorer, which is no longer supported. <a href=\"https://browsehappy.com\">Edge, Firefox, Chrome, and Safari</a> are supported, among others.", status: -5 /*MessageSet::INFORM*/});
         }
         return null;
     }

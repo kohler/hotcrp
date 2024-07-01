@@ -300,8 +300,7 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
             $state->remove(new Tag_Assignable($prow->paperId, $ltag));
         } else {
             assert(is_float($nvalue));
-            if ($nvalue > -TAG_INDEXBOUND
-                && $nvalue < TAG_INDEXBOUND) {
+            if ($nvalue > -TAG_INDEXBOUND && $nvalue < TAG_INDEXBOUND) {
                 $state->add(new Tag_Assignable($prow->paperId, $ltag, $ntag, $nvalue));
             } else {
                 $state->error("<0>Tag value out of range");

@@ -4,17 +4,30 @@
 "use strict";
 
 (function () {
-/* global hotcrp, $$, $e, hidden_input, log_jserror */
-/* global hoturl, hoturl_html, demand_load */
+/* global hotcrp, log_jserror */
+/* global demand_load */
 /* global addClass, removeClass, toggleClass, hasClass */
-/* global handle_ui, event_key, event_modkey */
-/* global input_default_value, form_differs, check_form_differs */
-/* global render_feedback_list, append_feedback_near, append_feedback_to */
 /* global render_text */
-/* global $popup, make_bubble */
-/* global fold, foldup, focus_at */
+/* global make_bubble */
+/* global focus_at */
 /* global sprintf, escape_html, plural, text_eq */
-/* global make_color_scheme, ensure_pattern_here */
+const $$ = hotcrp.$$,
+    $e = hotcrp.$e,
+    $popup = hotcrp.$popup,
+    check_form_differs = hotcrp.check_form_differs,
+    event_key = hotcrp.event_key,
+    feedback = hotcrp.feedback,
+    fold = hotcrp.fold,
+    foldup = hotcrp.foldup,
+    form_differs = hotcrp.form_differs,
+    handle_ui = hotcrp.handle_ui,
+    hoturl = hotcrp.hoturl,
+    hidden_input = hotcrp.hidden_input,
+    input_default_value = hotcrp.input_default_value;
+
+function hoturl_html(page, options) {
+    return escape_html(hoturl(page, options));
+}
 
 handle_ui.on("hashjump.js-hash", function (hashc) {
     var e, fx, fp;
@@ -225,14 +238,14 @@ function grid_select_event(evt) {
         evt = null;
     } else if (evt.type === "dblclick") {
         if (!hasClass(this, "grid-select-autosubmit")
-            || event_modkey(evt)
+            || event_key.modcode(evt) !== 0
             || evt.button !== 0
             || !e) {
             return false;
         }
         action = 2;
     } else if (evt.type === "click") {
-        if (event_modkey(evt)
+        if (event_key.modcode(evt) !== 0
             || evt.button !== 0
             || !e) {
             return false;
@@ -242,7 +255,7 @@ function grid_select_event(evt) {
         if (!e) {
             return false;
         }
-        var key = event_key(evt), mod = event_modkey(evt);
+        var key = event_key(evt), mod = event_key.modcode(evt);
         selidx = +e.getAttribute("data-index");
         columns = window.getComputedStyle(this).gridTemplateColumns.split(" ").length;
         if (key === "ArrowLeft" && !mod) {
@@ -253,13 +266,13 @@ function grid_select_event(evt) {
             selidx -= columns;
         } else if (key === "ArrowDown" && !mod) {
             selidx += columns;
-        } else if (key === "Home" && (!mod || mod === event_modkey.CTRL)) {
+        } else if (key === "Home" && (!mod || mod === event_key.CTRL)) {
             selidx = columns < 3 ? 0 : selidx - selidx % columns;
             action = 0;
         } else if (key === "End" && !mod) {
             selidx = columns < 3 ? this.childNodes.length - 1 : selidx + (selidx + columns - 1) % columns;
             action = 0;
-        } else if (key === "End" && mod === event_modkey.CTRL) {
+        } else if (key === "End" && mod === event_key.CTRL) {
             selidx = this.childNodes.length - 1;
             action = 0;
         } else if (key === " " && !mod) {
@@ -399,8 +412,8 @@ function handle_sf_field_wizard_change() {
     let changed = false;
     function mark(e) {
         if (e.name === "sf_pdf_submission") {
-            hotcrp.fold("pdfupload", e.value == 1, 2);
-            hotcrp.fold("pdfupload", e.value != 0, 3);
+            fold("pdfupload", e.value == 1, 2);
+            fold("pdfupload", e.value != 0, 3);
         }
     }
     function apply1(type, sfx, value) {
@@ -699,7 +712,7 @@ function rf_fill_control(form, name, value, setdefault) {
 }
 
 function rf_color() {
-    var c = this, sv = $(this).val(), i, scheme = make_color_scheme(9, sv, false);
+    var c = this, sv = $(this).val(), i, scheme = hotcrp.make_color_scheme(9, sv, false);
     hasClass(c.parentElement, "select") && (c = c.parentElement);
     while (c && !hasClass(c, "rf-scheme-example")) {
         c = c.nextSibling;
@@ -988,14 +1001,14 @@ function rfs(data) {
                 e = document.getElementById(m[1] + "/values_text");
             }
             if (e && (entryi = e.closest(".entryi"))) {
-                append_feedback_near(entryi, mi);
+                feedback.append_item_near(entryi, mi);
                 if (mi.status > 1)
                     foldup.call(entryi, null, {n: 2, open: true});
             }
             if ((m = mi.field.match(/^([^/]*\/\d+)(?=$|\/)/))
                 && (e = document.getElementById(m[1] + "/view"))
                 && (e = e.querySelector("ul.feedback-list"))) {
-                append_feedback_to(e, mi);
+                feedback.append_item_near(e, mi);
             }
         }
     }
@@ -1105,9 +1118,9 @@ handle_ui.on("input.js-settings-response-name", function () {
     if (s === "") {
         helt.replaceChildren("Example display: ‘Response’; example search: ‘has:response’");
     } else if (!/^[A-Za-z][-_A-Za-z0-9]*$/.test(s)) {
-        helt.replaceChildren(render_feedback_list([{status: 2, message: "<0>Round names must start with a letter and can contain only letters, numbers, and dashes"}]));
+        helt.replaceChildren(feedback.render_list([{status: 2, message: "<0>Round names must start with a letter and can contain only letters, numbers, and dashes"}]));
     } else if (/^(?:none|any|all|default|undefined|unnamed|.*response|response.*|draft.*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc(?:review)|ext(?:ernal)|meta(?:review))$/i.test(s)) {
-        helt.replaceChildren(render_feedback_list([{status: 2, message: "<0>Round name ‘".concat(s, "’ is reserved")}]));
+        helt.replaceChildren(feedback.render_list([{status: 2, message: "<0>Round name ‘".concat(s, "’ is reserved")}]));
     } else {
         helt.replaceChildren("Example display: ‘", s, " Response’; example search: ‘has:", s, "response’");
     }
@@ -2753,7 +2766,7 @@ function make_json_validate() {
         for (i = 0; i !== tips.length; ++i) {
             if (tips[i].pos1 <= pos && pos <= tips[i].pos2) {
                 msgbub = make_bubble({anchor: "nw", color: "feedback", container: mainel.parentElement})
-                    .html(render_feedback_list([tips[i]]))
+                    .html(feedback.render_list([tips[i]]))
                     .near(node);
                 msgbub.span = node;
                 return;
@@ -2995,7 +3008,7 @@ function settings_describe(d) {
         $i.append(e);
     }
 
-    $i.find(".taghh, .badge").each(ensure_pattern_here);
+    $i.find(".taghh, .badge").each(hotcrp.ensure_pattern_here);
 }
 
 function settings_path_jump(el, path, use_key) {

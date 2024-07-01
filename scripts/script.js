@@ -1029,7 +1029,7 @@ try {
 
 // events
 var event_key = (function () {
-var key_map = {"Spacebar": " ", "Esc": "Escape"},
+const key_map = {"Spacebar": " ", "Esc": "Escape"},
     charCode_map = {"9": "Tab", "13": "Enter", "27": "Escape"},
     keyCode_map = {
         "9": "Tab", "13": "Enter", "16": "ShiftLeft", "17": "ControlLeft",
@@ -1100,20 +1100,19 @@ event_key.is_submit_enter = function (evt, allow_none) {
         && (allow_none || evt.metaKey || evt.ctrlKey)
         && event_key(evt) === "Enter";
 };
+event_key.modcode = function (evt) {
+    return (evt.shiftKey ? 1 : 0) + (evt.ctrlKey ? 2 : 0) + (evt.altKey ? 4 : 0) + (evt.metaKey ? 8 : 0);
+};
+event_key.SHIFT = 1;
+event_key.CTRL = 2;
+event_key.ALT = 4;
+event_key.META = 8;
 return event_key;
 })();
 
-function event_modkey(evt) {
-    return (evt.shiftKey ? 1 : 0) + (evt.ctrlKey ? 2 : 0) + (evt.altKey ? 4 : 0) + (evt.metaKey ? 8 : 0);
-}
-event_modkey.SHIFT = 1;
-event_modkey.CTRL = 2;
-event_modkey.ALT = 4;
-event_modkey.META = 8;
-
 function make_onkey(key, f) {
     return function (evt) {
-        if (!event_modkey(evt) && event_key(evt) === key) {
+        if (!event_key.modcode(evt) && event_key(evt) === key) {
             evt.preventDefault();
             handle_ui.stopImmediatePropagation(evt);
             f.call(this, evt);
@@ -1696,8 +1695,10 @@ return {
 
 // message list functions
 
+const feedback = (function () {
+
 function message_list_status(ml) {
-    var i, status = 0;
+    let i, status = 0;
     for (i = 0; i !== (ml || []).length; ++i) {
         if (ml[i].status === -3 /*MessageSet::SUCCESS*/ && status === 0) {
             status = -3 /*MessageSet::SUCCESS*/;
@@ -1708,8 +1709,22 @@ function message_list_status(ml) {
     return status;
 }
 
-function render_message_list(ml) {
-    var status = message_list_status(ml),
+function render_list(ml) {
+    const ul = document.createElement("ul");
+    ul.className = "feedback-list";
+    for (const mi of ml || []) {
+        append_item(ul, mi);
+    }
+    return ul;
+}
+
+function maybe_render_list(ml) {
+    const ul = render_list(ml);
+    return ul.firstChild ? ul : null;
+}
+
+function render_alert(ml) {
+    const status = message_list_status(ml),
         div = document.createElement("div");
     if (status === -3 /*MessageSet::SUCCESS*/) {
         div.className = "msg msg-success";
@@ -1720,30 +1735,14 @@ function render_message_list(ml) {
     } else {
         div.className = "msg msg-info";
     }
-    div.appendChild(render_feedback_list(ml));
+    div.appendChild(render_list(ml));
     return div;
 }
 
-function render_feedback_list(ml) {
-    const ul = document.createElement("ul");
-    ul.className = "feedback-list";
-    for (const mi of ml || []) {
-        append_feedback_to(ul, mi);
-    }
-    return ul;
-}
-
-function maybe_render_feedback_list(ml) {
-    const ul = render_feedback_list(ml);
-    return ul.firstChild ? ul : null;
-}
-
-function append_feedback_to(ul, mi) {
-    var sklass, li, div;
+function append_item(ul, mi) {
+    let li, div;
     if (mi.message != null && mi.message !== "") {
-        if (ul.tagName !== "UL")
-            throw new Error("bad append_feedback");
-        sklass = "";
+        let sklass = "";
         if (mi.status != null && mi.status >= -4 /*MessageSet::MARKED_NOTE*/ && mi.status <= 3)
             sklass = ["note", "success", "warning-note", "urgent-note", "", "warning", "error", "error"][mi.status + 4];
         div = document.createElement("div");
@@ -1759,22 +1758,19 @@ function append_feedback_to(ul, mi) {
         render_text.ftext_onto(div, mi.message, 5);
     }
     if (mi.context) {
-        div = document.createElement("div");
-        div.className = "msg-context";
-        var s = mi.context[0],
+        const s = mi.context[0],
             p1 = string_utf8_index(s, mi.context[1]),
-            p2 = string_utf8_index(s, mi.context[2]),
-            span = document.createElement("span");
-        sklass = mi.status > 1 ? "is-error" : "is-warning";
-        span.className = (p2 > p1 + 2 ? "context-mark " : "context-caret-mark ") +
-            (mi.status > 1 ? "is-error" : "is-warning");
-        span.append(s.substring(p1, p2));
-        div.append(s.substring(0, p1), span, s.substring(p2));
-        ul.lastChild.appendChild(div);
+            p2 = string_utf8_index(s, mi.context[2]);
+        let sklass = p2 > p1 + 2 ? "context-mark" : "context-caret-mark";
+        if (mi.status > 0)
+            sklass += mi.status > 1 ? " is-error" : " is-warning";
+        ul.lastChild || ul.appendChild(document.createElement("li"));
+        ul.lastChild.appendChild($e("div", "msg-context",
+            s.substring(0, p1), $e("span", sklass, s.substring(p1, p2)), s.substring(p2)));
     }
 }
 
-function append_feedback_near(elt, mi) {
+function append_item_near(elt, mi) {
     if (mi.status === 1 && !hasClass(elt, "has-error")) {
         addClass(elt, "has-warning");
     } else if (mi.status >= 2) {
@@ -1797,12 +1793,23 @@ function append_feedback_near(elt, mi) {
         fl = fl.nextElementSibling;
     }
     if (fl && hasClass(fl, "feedback-list")) {
-        append_feedback_to(fl, mi);
+        append_item(fl, mi);
     } else {
-        owner.insertBefore(render_feedback_list([mi]), fl);
+        owner.insertBefore(render_list([mi]), fl);
     }
     return true;
 }
+
+return {
+    list_status: message_list_status,
+    render_alert: render_alert,
+    render_list: render_list,
+    maybe_render_list: maybe_render_list,
+    append_item: append_item,
+    append_item_near: append_item_near
+};
+
+})();
 
 
 // ui
@@ -1986,21 +1993,22 @@ function input_set_default_value(elt, val) {
 }
 
 function input_differs(elt) {
-    var type = elt.type, i;
+    const type = elt.type;
     if (!type) {
         if (elt instanceof RadioNodeList) {
-            for (i = 0; i !== elt.length; ++i) {
+            for (let i = 0; i !== elt.length; ++i) {
                 if (input_differs(elt[i]))
                     return true;
             }
         }
         return false;
-    } else if (type === "button" || type === "submit" || type === "reset")
+    } else if (type === "button" || type === "submit" || type === "reset") {
         return false;
-    else if (type === "checkbox" || type === "radio")
+    } else if (type === "checkbox" || type === "radio") {
         return elt.checked !== input_default_value(elt);
-    else
+    } else {
         return !text_eq(elt.value, input_default_value(elt));
+    }
 }
 
 function form_differs(form) {
@@ -2026,14 +2034,12 @@ function form_differs(form) {
 
 function check_form_differs(form, elt) {
     (form instanceof HTMLElement) || (form = $(form)[0]);
-    var differs = (elt && form_differs(elt)) || form_differs(form);
+    const differs = (elt && form_differs(elt)) || form_differs(form);
     toggleClass(form, "differs", !!differs);
     if (form.hasAttribute("data-differs-toggle")) {
         $("." + form.getAttribute("data-differs-toggle")).toggleClass("hidden", !differs);
     }
 }
-
-window.form_highlight = check_form_differs; /* XXX */
 
 function hidden_input(name, value, attr) {
     const e = document.createElement("input");
@@ -2162,7 +2168,7 @@ handle_ui.on("js-range-click", function (evt) {
     f.jsRangeClick = rangeclick_state;
 
     var key = false;
-    if (evt.type === "keydown" && !event_modkey(evt)) {
+    if (evt.type === "keydown" && !event_key.modcode(evt)) {
         key = event_key(evt);
     }
     if (rangeclick_state.__clicking__
@@ -2978,12 +2984,12 @@ function $popup(options) {
         for (let mx of data.message_list || []) {
             if (!mx.field
                 || !(e = forme.elements[mx.field])
-                || !append_feedback_near(e, mx)) {
+                || !feedback.append_item_near(e, mx)) {
                 gmlist.push(mx);
             }
         }
         if (gmlist.length) {
-            $(forme).find("h2").after(render_message_list(gmlist));
+            $(forme).find("h2").after(feedback.render_alert(gmlist));
         }
     }
     function close() {
@@ -3010,7 +3016,7 @@ function $popup(options) {
     }
     function dialog_keydown(evt) {
         if (event_key(evt) === "Escape"
-            && event_modkey(evt) === 0
+            && event_key.modcode(evt) === 0
             && !hasClass(modale, "hidden")
             && !form_differs(forme)) {
             close();
@@ -3099,14 +3105,14 @@ function popup_skeleton(options) {
         for (i in mlist || []) {
             mx = mlist[i];
             if (mx.field && (e = form.elements[mx.field])) {
-                if (append_feedback_near(e, mx)) {
+                if (feedback.append_item_near(e, mx)) {
                     continue;
                 }
             }
             gmlist.push(mx);
         }
         if (gmlist.length) {
-            x = render_message_list(gmlist);
+            x = feedback.render_alert(gmlist);
             dbody.length ? dbody.prepend(x) : $d.find("h2").after(x);
         }
         return $d;
@@ -3135,7 +3141,7 @@ function popup_skeleton(options) {
     }
     function dialog_keydown(evt) {
         if (event_key(evt) === "Escape"
-            && event_modkey(evt) === 0
+            && event_key.modcode(evt) === 0
             && (!form || !form_differs(form))) {
             close();
             evt.preventDefault();
@@ -3428,35 +3434,26 @@ function display_main(is_initial) {
 
     elt = $$("h-deadline");
     if (dlname) {
-        var impending = !dltime || dltime - now < 180.5,
-            s = '<a href="' + hoturl_html("deadlines");
-        if (impending)
-            s += '" class="impending';
-        s += '">' + dlname + ' deadline</a> ';
-        if (!dltime || dltime - now < 0.5)
-            s += "is NOW";
-        else
-            s += unparse_time_relative(dltime, now, 8);
-        if (impending)
-            s = '<span class="impending">' + s + '</span>';
         if (!elt) {
-            var hdrelt = $$("h-right"), divelt, sepelt;
+            const hdrelt = $$("h-right");
             if (!hdrelt)
                 return;
-            divelt = document.createElement("div");
-            divelt.className = "d-inline-block";
             elt = document.createElement("span");
             elt.id = "h-deadline";
-            divelt.appendChild(elt);
+            const divelt = $e("div", "d-inline-block", elt);
             if (hdrelt.firstChild) {
-                sepelt = document.createElement("span");
-                sepelt.className = "barsep ml-1 mr-1";
-                sepelt.textContent = "·";
-                divelt.append(sepelt);
+                divelt.append($e("span", "barsep ml-1 mr-1", "·"));
             }
             hdrelt.insertBefore(divelt, hdrelt.firstChild);
         }
-        elt.innerHTML = s;
+        const ax = $e("a", {href: hoturl("deadlines")}, dlname + " deadline"),
+            tx = dltime && dltime - now >= 0.5 ? " " + unparse_time_relative(dltime, now, 8) : " is NOW";
+        if (!dltime || dltime - now < 180.5) {
+            ax.className = "impending";
+            elt.replaceChildren($e("span", "impending", ax, tx));
+        } else {
+            elt.replaceChildren(ax, tx);
+        }
     } else {
         if (elt && elt.parentElement.className === "d-inline-block")
             elt.parentElement.remove();
@@ -5313,7 +5310,7 @@ hotcrp.monitor_job = function (jobid, statuselt) {
                     statuselt.insertBefore(ee, ex);
                     ex = ee;
                 }
-                ex.replaceChildren(render_feedback_list(data.message_list));
+                ex.replaceChildren(feedback.render_list(data.message_list));
             }
             if (data.progress != null || data.status === "done") {
                 let ex = statuselt.firstElementChild;
@@ -5791,19 +5788,18 @@ function minifeedback(e, rv) {
     ul.className = "feedback-list";
     if (rv && rv.message_list) {
         for (i = 0; i !== rv.message_list.length; ++i) {
-            mx = rv.message_list[i];
-            append_feedback_to(ul, rv.message_list[i]);
+            feedback.append_item(ul, mx);
             status = Math.max(status, mx.status);
         }
     } else if (rv && rv.error) {
-        append_feedback_to(ul, {status: 2, message: "<5>" + rv.error});
+        feedback.append_item(ul, {status: 2, message: "<5>" + rv.error});
         status = 2;
     }
     if (!ul.firstChild && (!rv || !rv.ok)) {
         if (rv && (rv.error || rv.warning)) {
             log_jserror("rv has error/warning: " + JSON.stringify(rv));
         }
-        append_feedback_to(ul, {status: 2, message: "Error"});
+        feedback.append_item(ul, {status: 2, message: "Error"});
         status = 2;
     }
     removeClass(e, "has-error");
@@ -6331,7 +6327,7 @@ handle_ui.on("js-revrating", function () {
 
 function revrating_key(evt) {
     var k = event_key(evt);
-    if ((k === "ArrowLeft" || k === "ArrowRight") && !event_modkey(evt)) {
+    if ((k === "ArrowLeft" || k === "ArrowRight") && event_key.modcode(evt) === 0) {
         foldup.call(this, null, {open: true});
         var wantbit = $(this).closest(".revrating-choice").attr("data-revrating-bit");
         if (wantbit != null) {
@@ -6447,7 +6443,7 @@ hotcrp.add_review = function (rrow) {
 
     // messages
     if (rrow.message_list) {
-        earticle.appendChild($e("div", "revcard-feedback fx20", render_feedback_list(rrow.message_list)));
+        earticle.appendChild($e("div", "revcard-feedback fx20", feedback.render_list(rrow.message_list)));
     }
 
     // body
@@ -7076,22 +7072,22 @@ function cmt_edit_messages(cj, form) {
     if (cj.response
         && resp_rounds[cj.response].instrux
         && resp_rounds[cj.response].instrux !== "none") {
-        append_feedback_to(ul, {message: '<5>' + resp_rounds[cj.response].instrux, status: 0});
+        feedback.append_item(ul, {message: '<5>' + resp_rounds[cj.response].instrux, status: 0});
     }
     if (cj.response) {
         if (resp_rounds[cj.response].done > now_sec()) {
-            append_feedback_to(ul, {message: strftime("<0>The response deadline is %X your time.", new Date(resp_rounds[cj.response].done * 1000)), status: -2 /*MessageSet::WARNING_NOTE*/});
+            feedback.append_item(ul, {message: strftime("<0>The response deadline is %X your time.", new Date(resp_rounds[cj.response].done * 1000)), status: -2 /*MessageSet::WARNING_NOTE*/});
         } else if (cj.draft) {
-            append_feedback_to(ul, {message: "<0>The response deadline has passed and this draft response will not be shown to reviewers.", status: 2});
+            feedback.append_item(ul, {message: "<0>The response deadline has passed and this draft response will not be shown to reviewers.", status: 2});
         }
     }
     if (cj.response
         && !hotcrp.status.myperm.is_author) {
-        append_feedback_to(ul, {message: '<0>You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.', status: -4 /*MessageSet::MARKED_NOTE*/});
+        feedback.append_item(ul, {message: '<0>You aren’t a contact for this paper, but as an administrator you can edit the authors’ response.', status: -4 /*MessageSet::MARKED_NOTE*/});
     } else if (cj.review_token
                && hotcrp.status.myperm.review_tokens
                && hotcrp.status.myperm.review_tokens.indexOf(cj.review_token) >= 0) {
-        append_feedback_to(ul, {message: '<0>You have a review token for this paper, so your comment will be anonymous.', status: -4 /*MessageSet::MARKED_NOTE*/});
+        feedback.append_item(ul, {message: '<0>You have a review token for this paper, so your comment will be anonymous.', status: -4 /*MessageSet::MARKED_NOTE*/});
     } else if (!cj.response
                && cj.author_email
                && siteinfo.user.email
@@ -7100,11 +7096,11 @@ function cmt_edit_messages(cj, form) {
             msg = "<0>You didn’t write this comment, but as a fellow author you can edit it.";
         else
             msg = "<0>You didn’t write this comment, but as an administrator you can edit it.";
-        append_feedback_to(ul, {message: msg, status: -4 /*MessageSet::MARKED_NOTE*/});
+        feedback.append_item(ul, {message: msg, status: -4 /*MessageSet::MARKED_NOTE*/});
     } else if (cj.is_new
                && siteinfo.user
                && (siteinfo.user.is_actas || (siteinfo.user.session_users || []).length > 1)) {
-        append_feedback_to(ul, {message: "<0>Commenting as " + siteinfo.user.email, status: -2 /*MessageSet::WARNING_NOTE*/});
+        feedback.append_item(ul, {message: "<0>Commenting as " + siteinfo.user.email, status: -2 /*MessageSet::WARNING_NOTE*/});
     }
     if (ul.firstChild) {
         form.parentElement.insertBefore(ul, form);
@@ -7298,7 +7294,7 @@ function cmt_save_callback(cj) {
                 form.action = hoturl("=paper", arg);
                 form.submit();
             }
-            $(celt).find(".cmtmsg").html(render_message_list(data.message_list));
+            $(celt).find(".cmtmsg").html(feedback.render_alert(data.message_list));
             $(celt).find("button, input[type=file]").prop("disabled", false);
             $(form.elements.draft).remove();
             return;
@@ -7334,7 +7330,7 @@ function cmt_save_callback(cj) {
             cmt_render(data.cmt, editing_response);
         }
         if (data.message_list) {
-            $(celt).find(".cmtmsg").html(render_message_list(data.message_list));
+            $(celt).find(".cmtmsg").html(feedback.render_alert(data.message_list));
         }
     };
 }
@@ -8551,7 +8547,7 @@ function suggest() {
     }
 
     function kp(evt) {
-        var k = event_key(evt), m = event_modkey(evt),
+        var k = event_key(evt), m = event_key.modcode(evt),
             pspacestate = spacestate;
         if (k === "Escape" && !m) {
             if (hintinfo) {
@@ -9156,11 +9152,11 @@ $(function () {
                 && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
                 if (pos > 0) {
                     mode.p = ids[pos - 1];
-                    $(this).prepend('<a id="n-prev" class="ulh" href="'.concat(hoturl_html(page, mode), '">&lt; #', ids[pos - 1], '</a> '));
+                    this.prepend($e("a", {id: "n-prev", "class": "ulh", href: hoturl(page, mode)}, "< #" + ids[pos - 1]), " ");
                 }
                 if (pos < ids.length - 1) {
                     mode.p = ids[pos + 1];
-                    $(this).append(' <a id="n-next" class="ulh" href="'.concat(hoturl_html(page, mode), '">#', ids[pos + 1], ' &gt;</a>'));
+                    this.append(" ", $e("a", {id: "n-next", "class": "ulh", href: hoturl(page, mode)}, "#" + ids[pos + 1] + " >"));
                 }
             }
         });
@@ -9852,7 +9848,7 @@ handle_ui.on("js-annotate-order", function () {
             content = fs.querySelector(".taganno-content");
         addClass(content, "hidden");
         fs.appendChild(hidden_input("ta/" + n + "/delete", "1"));
-        fs.appendChild(render_feedback_list([{message: "<0>This annotation will be deleted.", status: 1}]));
+        fs.appendChild(feedback.render_list([{message: "<0>This annotation will be deleted.", status: 1}]));
         addClass(fs.querySelector("legend > input"), "text-decoration-line-through");
         this.disabled = true;
         hotcrp.tooltip.close(this);
@@ -10016,7 +10012,7 @@ function make_tag_save_callback(elt) {
 
 handle_ui.on("edittag", function (evt) {
     var key = null, m, ch, newval;
-    if (evt.type === "keydown" && event_modkey(evt) === 0) {
+    if (evt.type === "keydown" && event_key.modcode(evt) === 0) {
         key = event_key(evt);
     }
     if (evt.type === "click"
@@ -11675,7 +11671,7 @@ handle_ui.on("js-check-format", function () {
     if (this && "tagName" in this && this.tagName === "A")
         $self.addClass("hidden");
     var running = setTimeout(function () {
-        $cf.html(render_message_list([{message: "<0>Checking format (this can take a while)...", status: -4 /*MessageSet::MARKED_NOTE*/}]));
+        $cf.html(feedback.render_alert([{message: "<0>Checking format (this can take a while)...", status: -4 /*MessageSet::MARKED_NOTE*/}]));
     }, 1000);
     $.ajax(hoturl("=api/formatcheck", {p: siteinfo.paperid}), {
         timeout: 20000, data: {
@@ -11922,7 +11918,7 @@ handle_ui.on("document-uploader", function (event) {
     function ajax(r) {
         if (!r.ok) {
             if (cancel() && r.message_list) {
-                doce.appendChild(render_message_list(r.message_list));
+                doce.appendChild(feedback.render_alert(r.message_list));
             }
             return;
         }
@@ -12160,8 +12156,8 @@ function render_tag_messages(message_list) {
     t1.replaceChildren();
     for (i = 0; i !== message_list.length; ++i) {
         var mi = message_list[i];
-        append_feedback_to(t0, mi);
-        mi.status > 0 && append_feedback_to(t1, mi);
+        feedback.append_item(t0, mi);
+        mi.status > 0 && feedback.append_item(t1, mi);
     }
     toggleClass(t0, "hidden", !t0.firstChild);
     toggleClass(t1, "hidden", !t1.firstChild);
@@ -12237,7 +12233,7 @@ function save_pstags(evt) {
         success: function (data) {
             $f.find("input").prop("disabled", false);
             if (data.ok) {
-                if (message_list_status(data.message_list) < 2) {
+                if (feedback.list_status(data.message_list) < 2) {
                     foldup.call($f[0], null, {open: false});
                     minifeedback(f.elements.tags, {ok: true});
                 }
@@ -12982,7 +12978,7 @@ handle_ui.on("js-edit-formulas", function () {
             $e("div", "entryi", $e("label", {"for": "k-formula/" + count + "/expression"}, "Expression"), xei),
             hidden_input("formula/" + count + "/id", f.id));
         if (f.message_list) {
-            e.append(render_feedback_list(f.message_list));
+            e.append(feedback.render_list(f.message_list));
         }
         return e;
     }
@@ -13006,7 +13002,7 @@ handle_ui.on("js-edit-formulas", function () {
             $x.find(".editformulas-expression").closest(".entryi").addClass("hidden");
             $x.find(".editformulas-name").prop("disabled", true).css("text-decoration", "line-through");
             $x.find(".delete-link").prop("disabled", true);
-            $x.append(render_feedback_list([{status: 1, message: "<0>This named formula will be deleted."}]));
+            $x.append(feedback.render_list([{status: 1, message: "<0>This named formula will be deleted."}]));
         }
         $x.append(hidden_input("formula/" + $x.data("formulaNumber") + "/delete", 1));
     }
@@ -13055,7 +13051,7 @@ handle_ui.on("js-edit-view-options", function () {
                         ta.previousElementSibling.remove();
                     }
                     addClass(ta, "has-error");
-                    ta.before(render_feedback_list(data.message_list));
+                    ta.before(feedback.render_list(data.message_list));
                     ta.focus();
                 }
             }
@@ -13066,10 +13062,10 @@ handle_ui.on("js-edit-view-options", function () {
         $pu = $popup({className: "modal-dialog-w40", form_class: "need-diff-check"})
             .append($e("h2", null, "View options"),
                 $e("div", "f-i", $e("div", "f-c", "Default view options"),
-                    maybe_render_feedback_list(data.display_default_message_list),
+                    feedback.maybe_render_list(data.display_default_message_list),
                     $e("div", "reportdisplay-default", data.display_default || "(none)")),
                 $e("div", "f-i", $e("div", "f-c", "Current view options"),
-                    maybe_render_feedback_list(data.message_list),
+                    feedback.maybe_render_list(data.message_list),
                     $e("textarea", {"class": "reportdisplay-current w-99 need-autogrow uikd js-keydown-enter-submit", name: "display", rows: 1, cols: 60}, data.display_current || "")))
             .append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save options as default"), "Cancel")
             .on("submit", submit).show();
@@ -13141,7 +13137,7 @@ handle_ui.on("js-edit-namedsearches", function () {
             $(fs).find(".editsearches-query").closest(".entryi").addClass("hidden");
             $(fs).find(".editsearches-name").prop("disabled", true).css("text-decoration", "line-through");
             $(fs).find(".delete-link").prop("disabled", true);
-            fs.append(render_feedback_list([{status: 1, message: "<0>This named search will be deleted."}]));
+            fs.append(feedback.render_list([{status: 1, message: "<0>This named search will be deleted."}]));
         }
         fs.append(hidden_input("named_search/" + fs.getAttribute("data-search-number") + "/delete", 1));
     }
@@ -14075,8 +14071,8 @@ $(function () {
     }
     if (document.documentMode || window.attachEvent) {
         var msg = $('<div class="msg msg-error"></div>').appendTo("#h-messages");
-        append_feedback_near(msg[0], {message: "<0>This site no longer supports Internet Explorer", status: 2});
-        append_feedback_near(msg[0], {message: "<5>Please use <a href=\"https://browsehappy.com/\">a modern browser</a> if you can.", status: -5 /*MessageSet::INFORM*/});
+        feedback.append_item_near(msg[0], {message: "<0>This site no longer supports Internet Explorer", status: 2});
+        feedback.append_item_near(msg[0], {message: "<5>Please use <a href=\"https://browsehappy.com/\">a modern browser</a> if you can.", status: -5 /*MessageSet::INFORM*/});
         err.push("Internet Explorer");
     }
     if (err.length > 0) {
@@ -14092,32 +14088,41 @@ $(function () {
 
 
 Object.assign(window.hotcrp, {
+    $$: $$,
     $e: $e,
+    $frag: $frag,
     $popup: $popup,
     // add_comment
     // add_diff_check
     // add_review
     // add_preference_ajax
     // banner
+    check_form_differs: check_form_differs,
     check_version: check_version,
     demand_load: demand_load,
     // drag_block_reorder
     // dropmenu
     // edit_comment
     ensure_pattern: ensure_pattern,
+    ensure_pattern_here: ensure_pattern_here,
     escape_html: escape_html,
     // evaluate_edit_condition
+    event_key: event_key,
+    feedback: feedback,
     focus_within: focus_within,
     fold: fold,
     fold_storage: fold_storage,
     foldup: foldup,
+    form_differs: form_differs,
     handle_ui: handle_ui,
     hidden_input: hidden_input,
     hoturl: hoturl,
     // init_deadlines
+    input_default_value: input_default_value,
     // load_editable_paper
     // load_editable_review
     // load_paper_sidebar
+    make_color_scheme: make_color_scheme,
     // make_review_field
     // make_time_point
     // monitor_autoassignment
