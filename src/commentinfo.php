@@ -1123,6 +1123,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 "prow" => $this->prow,
                 "comment_row" => $this
             ]);
+            $notification->sent = true;
             if (!$mxm[3]) {
                 $n = substr($this->raw_contents(), $mxm[1] + 1, $mxm[2] - $mxm[1] - 1);
                 $notification->user_html = htmlspecialchars($n);
