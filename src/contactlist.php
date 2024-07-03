@@ -203,62 +203,86 @@ class ContactList {
 
     /** @param int $fieldId */
     function selector($fieldId) {
-        if (!$this->user->isPC
-            && $fieldId !== self::FIELD_NAME
-            && $fieldId !== self::FIELD_AFFILIATION
-            && $fieldId !== self::FIELD_AFFILIATION_ROW) {
-            return false;
-        } else if (in_array($fieldId, [self::FIELD_NAME, self::FIELD_SELECTOR, self::FIELD_EMAIL, self::FIELD_AFFILIATION, self::FIELD_LASTVISIT], true)) {
-            return true;
-        }
         switch ($fieldId) {
+        case self::FIELD_NAME:
+        case self::FIELD_AFFILIATION:
+            return true;
+        case self::FIELD_AFFILIATION_ROW:
+            $this->have_folds["aff"] = true;
+            return true;
+        case self::FIELD_SELECTOR:
+        case self::FIELD_EMAIL:
+        case self::FIELD_LASTVISIT:
+            return $this->user->isPC;
         case self::FIELD_HIGHTOPICS:
         case self::FIELD_LOWTOPICS:
+            if (!$this->user->isPC) {
+                return false;
+            }
             $this->have_folds["topics"] = $this->qopt["topics"] = true;
-            break;
+            return true;
         case self::FIELD_REVIEWS:
         case self::FIELD_INCOMPLETE_REVIEWS:
+            if (!$this->user->isPC) {
+                return false;
+            }
             $this->qopt["reviews"] = true;
-            break;
+            return true;
         case self::FIELD_LEADS:
+            if (!$this->user->isPC) {
+                return false;
+            }
             $this->qopt["papers"] = $this->qopt["leads"] = true;
-            break;
+            return true;
         case self::FIELD_SHEPHERDS:
+            if (!$this->user->isPC) {
+                return false;
+            }
             $this->qopt["papers"] = $this->qopt["shepherds"] = true;
-            break;
+            return true;
         case self::FIELD_REVIEW_RATINGS:
-            if ($this->conf->setting("rev_ratings") == REV_RATINGS_NONE) {
+            if (!$this->user->isPC
+                || $this->conf->setting("rev_ratings") == REV_RATINGS_NONE) {
                 return false;
             }
             $this->qopt["revratings"] = $this->qopt["reviews"] = true;
-            break;
+            return true;
         case self::FIELD_PAPERS:
+            if (!$this->user->isPC) {
+                return false;
+            }
             $this->qopt["papers"] = $this->limit;
-            break;
+            return true;
         case self::FIELD_REVIEW_PAPERS:
+            if (!$this->user->isPC) {
+                return false;
+            }
             $this->qopt["repapers"] = $this->qopt["reviews"] = true;
-            break;
-        case self::FIELD_AFFILIATION_ROW:
-            $this->have_folds["aff"] = true;
-            break;
+            return true;
         case self::FIELD_TAGS:
+            if (!$this->user->can_view_user_tags()) {
+                return false;
+            }
             $this->have_folds["tags"] = true;
-            break;
+            return true;
         case self::FIELD_COLLABORATORS:
+            if (!$this->user->isPC) {
+                return false;
+            }
             $this->have_folds["collab"] = true;
-            break;
+            return true;
         default:
             $f = $this->_rfields[$fieldId - self::FIELD_SCORE];
-            if (!$this->user->can_view_some_review_field($f)) {
+            if (!$this->user->isPC
+                || !$this->user->can_view_some_review_field($f)) {
                 return false;
             }
             $this->qopt["reviews"] = true;
             if (!in_array($f, $this->_wfields)) {
                 $this->_wfields[] = $f;
             }
-            break;
+            return true;
         }
-        return true;
     }
 
     /** @param int $uid
