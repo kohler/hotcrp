@@ -982,7 +982,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 $log .= " submitted";
             } else {
                 $log .= $this->commentId ? " edited" : " started";
-                if (($ctype & self::CT_DRAFT) === 0) {
+                if (($ctype & self::CT_DRAFT) !== 0) {
                     $log .= " draft";
                 }
             }
