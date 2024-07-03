@@ -4,26 +4,33 @@
 "use strict";
 
 (function () {
-/* global hotcrp, log_jserror */
-/* global demand_load */
-/* global addClass, removeClass, toggleClass, hasClass */
-/* global render_text */
-/* global make_bubble */
-/* global focus_at */
-/* global sprintf, escape_html, plural, text_eq */
+/* global hotcrp */
 const $$ = hotcrp.$$,
     $e = hotcrp.$e,
     $popup = hotcrp.$popup,
+    addClass = hotcrp.classes.add,
+    hasClass = hotcrp.classes.has,
+    removeClass = hotcrp.classes.remove,
+    toggleClass = hotcrp.classes.toggle,
     check_form_differs = hotcrp.check_form_differs,
+    demand_load = hotcrp.demand_load,
+    escape_html = hotcrp.text.escape_html,
     event_key = hotcrp.event_key,
     feedback = hotcrp.feedback,
+    focus_at = hotcrp.focus_at,
     fold = hotcrp.fold,
     foldup = hotcrp.foldup,
     form_differs = hotcrp.form_differs,
     handle_ui = hotcrp.handle_ui,
     hoturl = hotcrp.hoturl,
     hidden_input = hotcrp.hidden_input,
-    input_default_value = hotcrp.input_default_value;
+    input_default_value = hotcrp.input_default_value,
+    log_jserror = hotcrp.log_jserror,
+    make_bubble = hotcrp.make_bubble,
+    plural = hotcrp.text.plural,
+    render_text = hotcrp.render_text,
+    sprintf = hotcrp.text.sprintf,
+    text_eq = hotcrp.text.text_eq;
 
 function hoturl_html(page, options) {
     return escape_html(hoturl(page, options));

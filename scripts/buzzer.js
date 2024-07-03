@@ -1,7 +1,6 @@
 hotcrp.start_buzzer_page = (function ($) {
 /* global hotcrp */
 var info, has_format, muted, show_papers, initial = true,
-    escape_html = hotcrp.escape_html,
     fold = hotcrp.fold,
     $e = hotcrp.$e,
     usere = hotcrp.usere;

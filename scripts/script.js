@@ -4,6 +4,7 @@
 "use strict";
 var siteinfo, hotcrp;
 hotcrp = {};
+hotcrp.text = {};
 
 function $$(id) {
     return document.getElementById(id);
@@ -140,6 +141,12 @@ if ("classList" in document.createElement("span")
         return k === "" ? [] : k.split(/\s+/);
     };
 }
+hotcrp.classes = {
+    has: hasClass,
+    add: addClass,
+    remove: removeClass,
+    toggle: toggleClass
+};
 
 if (!Element.prototype.closest) {
     Element.prototype.closest = function (s) {
@@ -969,10 +976,11 @@ unparse_time_relative.NO_PREP = 2;
 unparse_time_relative.SHORT = 4;
 
 function unparse_duration(d, include_msec) {
-    var neg = d < 0, t;
+    const neg = d < 0;
     if (neg)
         d = -d;
-    var p = Math.floor(d);
+    const p = Math.floor(d);
+    let t;
     if (p >= 3600)
         t = sprintf("%d:%02d:%02d", p/3600, (p/60)%60, p%60)
     else
@@ -1026,6 +1034,17 @@ try {
 }
 })();
 
+Object.assign(hotcrp.text, {
+    escape_html: escape_html,
+    plural: plural,
+    plural_word: plural_word,
+    pluralize: pluralize,
+    sprintf: sprintf,
+    strftime: strftime,
+    text_eq: text_eq,
+    urldecode: urldecode,
+    urlencode: urlencode
+});
 
 // events
 var event_key = (function () {
@@ -14099,16 +14118,18 @@ Object.assign(window.hotcrp, {
     // banner
     check_form_differs: check_form_differs,
     check_version: check_version,
+    // classes
     demand_load: demand_load,
     // drag_block_reorder
     // dropmenu
     // edit_comment
     ensure_pattern: ensure_pattern,
     ensure_pattern_here: ensure_pattern_here,
-    escape_html: escape_html,
+    escape_html: escape_html, // XXX deprecated
     // evaluate_edit_condition
     event_key: event_key,
     feedback: feedback,
+    focus_at: focus_at,
     focus_within: focus_within,
     fold: fold,
     fold_storage: fold_storage,
@@ -14122,6 +14143,8 @@ Object.assign(window.hotcrp, {
     // load_editable_paper
     // load_editable_review
     // load_paper_sidebar
+    log_jserror: log_jserror,
+    make_bubble: make_bubble,
     make_color_scheme: make_color_scheme,
     // make_review_field
     // make_time_point
@@ -14139,6 +14162,8 @@ Object.assign(window.hotcrp, {
     // set_scoresort
     // shortcut
     // suggest
+    svge: svge,
+    // text
     // tooltip
     // tracker_show_elapsed
     // update_tag_decoration
