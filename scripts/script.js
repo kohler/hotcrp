@@ -8419,7 +8419,7 @@ function suggest() {
             addClass(div.childNodes[cinfo.best], "s9y");
         }
 
-        var $elt = jQuery(elt),
+        let $elt = jQuery(elt),
             shadow = textarea_shadow($elt, elt.tagName === "INPUT" ? 2000 : 0),
             positionpos = precaretpos;
         if (cinfo.prefix
@@ -8427,12 +8427,11 @@ function suggest() {
             && elt.value.substring(positionpos - cinfo.prefix.length, positionpos) === cinfo.prefix) {
             positionpos -= cinfo.prefix.length;
         }
-        shadow.text(elt.value.substring(0, positionpos))
-            .append("<span>&#x2060;</span>")
-            .append(document.createTextNode(elt.value.substring(positionpos)));
-        var $pos = shadow.find("span").geometry(), soff = shadow.offset();
-        $pos = geometry_translate($pos, -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
-        hintdiv.near($pos, elt);
+        const wj = $e("span", null, "⁠");
+        shadow[0].replaceChildren(elt.value.substring(0, positionpos), wj, elt.value.substring(positionpos));
+        const soff = shadow.offset(),
+            pos = geometry_translate($(wj).geometry(), -soff.left - $elt.scrollLeft(), -soff.top + 4 - $elt.scrollTop());
+        hintdiv.near(pos, elt);
         shadow.remove();
         if (autocomplete === null) {
             autocomplete = elt.autocomplete;
