@@ -1610,6 +1610,7 @@ class UserStatus extends MessageSet {
 
     static function print_collaborators(UserStatus $us) {
         if (!$us->user->isPC
+            && !$us->conf->setting("sub_collab")
             && !$us->qreq->collaborators
             && !$us->user->collaborators()
             && !$us->viewer->privChair) {
