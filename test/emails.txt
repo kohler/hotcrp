@@ -2129,3 +2129,51 @@ Response by Author (1 word)
 ---------------------------------------------------------------------------
 Non-Draft
 
+******** t_comments-multiple-mentions
+To: Christian Huitema <huitema@bellcore.com>
+Subject: [Testconf I] Mentioned for #1 "Scalable Timers for Soft State
+ Protocols"
+
+Comment @2 by Jane Chair <chair@_.com> (Administrator)
+---------------------------------------------------------------------------
+@Christian Huitema @Christian Huitema @Christian Huitema Hello
+
+
+\***************************************************************************
+
+
+You were mentioned in this comment for Test Conference I (Testconf I)
+submission #1. For the most up-to-date comments, see the submission
+site.
+
+* Title: Scalable Timers for Soft State Protocols
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** t_comments-multiple-mentions
+To: Mary Baker <mgbaker@cs.stanford.edu>
+Subject: [Testconf I] Comment for #1 "Scalable Timers for Soft State
+ Protocols"
+
+Comment @2 by Jane Chair <chair@_.com> (Administrator)
+---------------------------------------------------------------------------
+@Christian Huitema @Christian Huitema @Christian Huitema Hello
+
+
+\***************************************************************************
+
+
+You’re following comments for Test Conference I (Testconf I) submission
+#1. For the most up-to-date comments, or to unsubscribe from email
+notification, see the submission site.
+
+* Title: Scalable Timers for Soft State Protocols
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions

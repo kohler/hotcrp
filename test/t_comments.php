@@ -142,4 +142,11 @@ class Comments_Tester {
         xassert($j->ok);
         MailChecker::check_db("t_comments-response-combination");
     }
+
+    function test_multiple_mentions() {
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "@Christian Huitema @Christian Huitema @Christian Huitema Hello"], $paper1);
+        xassert($j->ok);
+        MailChecker::check_db("t_comments-multiple-mentions");
+    }
 }
