@@ -212,8 +212,9 @@ class ContactList {
             return true;
         case self::FIELD_SELECTOR:
         case self::FIELD_EMAIL:
-        case self::FIELD_LASTVISIT:
             return $this->user->isPC;
+        case self::FIELD_LASTVISIT:
+            return $this->user->privChair;
         case self::FIELD_HIGHTOPICS:
         case self::FIELD_LOWTOPICS:
             if (!$this->user->isPC) {
