@@ -652,8 +652,8 @@ class CommentInfo {
         // identity and time
         $idable = $viewer->can_view_comment_identity($this->prow, $this);
         $idable_override = $idable
-            || ($viewer->allow_administer($this->prow)
-                && $viewer->call_with_overrides(Contact::OVERRIDE_CONFLICT, "can_view_comment_identity", $this->prow, $this));
+            || (($this->commentType & self::CT_BYAUTHOR_MASK) !== 0
+                && $viewer->allow_view_authors($this->prow));
         if ($idable || $idable_override) {
             $cuser = $this->commenter();
             if (($this->commentType & self::CT_BYAUTHOR_MASK) === 0

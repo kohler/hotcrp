@@ -855,7 +855,8 @@ class Contact implements JsonSerializable {
     }
 
     /** @param int $overrides
-     * @param string $method */
+     * @param string $method
+     * @deprecated */
     function call_with_overrides($overrides, $method, ...$args) {
         $old_overrides = $this->set_overrides($overrides);
         $result = call_user_func_array([$this, $method], $args);
