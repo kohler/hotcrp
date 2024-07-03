@@ -8019,14 +8019,11 @@ demand_load.mail_templates = demand_load.make(function (resolve) {
 })();
 
 demand_load.mentions = demand_load.make(function (resolve) {
-    if (siteinfo.user.is_pclike)
-        $.get(hoturl("api/mentioncompletion", {p: siteinfo.paperid}), null, function (v) {
-            var tlist = ((v && v.mentioncompletion) || []).map(completion_item);
-            tlist.sort(function (a, b) { return strnatcasecmp(a.s, b.s); });
-            resolve(tlist);
-        });
-    else
-        resolve([]);
+    $.get(hoturl("api/mentioncompletion", {p: siteinfo.paperid}), null, function (v) {
+        var tlist = ((v && v.mentioncompletion) || []).map(completion_item);
+        tlist.sort(function (a, b) { return strnatcasecmp(a.s, b.s); });
+        resolve(tlist);
+    });
 });
 
 demand_load.emoji_codes = demand_load.make(function (resolve) {
