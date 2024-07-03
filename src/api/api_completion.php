@@ -219,7 +219,10 @@ class Completion_API {
         if ($prow
             && $user->can_view_authors($prow)
             && $cvis >= CommentInfo::CTVIS_AUTHOR) {
-            $alist = $prow->contact_list();
+            foreach ($prow->contact_list() as $au) {
+                if ($au->contactId !== $user->contactId)
+                    $alist[] = $au;
+            }
         }
 
         if ($prow && $user->can_view_review_assignment($prow, null)) {
