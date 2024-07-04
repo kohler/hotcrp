@@ -2756,6 +2756,37 @@ class Conf {
         }
     }
 
+    /** @param int $pid
+     * @param int $cid
+     * @return null|-1|0|1 */
+    function compute_secondary_review_needs_submit($pid, $cid) {
+        $secondary = REVIEW_SECONDARY;
+        $row = Dbl::fetch_first_row($this->qe("select sum(contactId={$cid} and reviewType={$secondary} and reviewSubmitted is null), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid} and reviewSubmitted is not null), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid}) from PaperReview where paperId={$pid}"));
+        if (!$row || !$row[0]) {
+            return null;
+        } else if ($row[1]) {
+            return 0;
+        } else {
+            return $row[2] ? -1 : 1;
+        }
+    }
+
+    /** @param int $pid
+     * @param int $cid
+     * @param 2|1|0|-1 $direction */
+    function update_review_delegation($pid, $cid, $direction) {
+        if ($direction === 2) {
+            $this->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewSubmitted is null", $pid, $cid);
+        } else if ($direction === 1) {
+            $this->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewSubmitted is null and reviewNeedsSubmit=1", $pid, $cid);
+        } else {
+            $rns = $this->compute_secondary_review_needs_submit($pid, $cid);
+            if ($rns !== null && ($direction === 0 || $rns !== 0)) {
+                $this->qe("update PaperReview set reviewNeedsSubmit=? where paperId=? and contactId=? and reviewSubmitted is null", $rns, $pid, $cid);
+            }
+        }
+    }
+
     /** @param int $adding */
     function update_paperlead_setting($adding) {
         if (($this->setting("paperlead") ?? 0) <= 0 ? $adding >= 0 : $adding <= 0) {

@@ -5790,7 +5790,7 @@ class Contact implements JsonSerializable {
                 $this->conf->qe("delete from ReviewRequest where paperId={$pid} and email=?", $req_email);
             }
             if ($type < REVIEW_SECONDARY) {
-                $this->update_review_delegation($pid, $new_requester_cid, 1);
+                $this->conf->update_review_delegation($pid, $new_requester_cid, 1);
             }
             if ($type >= REVIEW_PC
                 && ($this->conf->setting("pcrev_assigntime") ?? 0) < Conf::$now) {
@@ -5798,7 +5798,7 @@ class Contact implements JsonSerializable {
             }
         } else if ($type === 0) {
             if ($oldtype < REVIEW_SECONDARY && $rrow->requestedBy > 0) {
-                $this->update_review_delegation($pid, $rrow->requestedBy, -1);
+                $this->conf->update_review_delegation($pid, $rrow->requestedBy, -1);
             }
             // Mark rev_tokens setting for future update by update_rev_tokens_setting
             if ($rrow->reviewToken !== 0) {
@@ -5807,7 +5807,7 @@ class Contact implements JsonSerializable {
         } else if ($type === REVIEW_SECONDARY
                    && $oldtype !== REVIEW_SECONDARY
                    && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
-            $this->update_review_delegation($pid, $reviewer_cid, 0);
+            $this->conf->update_review_delegation($pid, $reviewer_cid, 0);
         }
         if ($type === REVIEW_META || $oldtype === REVIEW_META) {
             $this->conf->update_metareviews_setting($type == REVIEW_META ? 1 : -1);
@@ -5822,31 +5822,19 @@ class Contact implements JsonSerializable {
 
     /** @param int $pid
      * @param int $cid
-     * @param 1|0|-1 $direction */
+     * @param 1|0|-1 $direction
+     * @deprecated */
     function update_review_delegation($pid, $cid, $direction) {
-        if ($direction > 0) {
-            $this->conf->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewSubmitted is null and reviewNeedsSubmit=1", $pid, $cid);
-        } else {
-            $row = Dbl::fetch_first_row($this->conf->qe("select sum(contactId={$cid} and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null), sum(reviewType>0 and reviewType<" . REVIEW_SECONDARY . " and requestedBy={$cid} and reviewSubmitted is not null), sum(reviewType>0 and reviewType<" . REVIEW_SECONDARY . " and requestedBy={$cid}) from PaperReview where paperId={$pid}"));
-            if ($row && $row[0]) {
-                $rns = $row[1] ? 0 : ($row[2] ? -1 : 1);
-                if ($direction == 0 || $rns != 0)
-                    $this->conf->qe("update PaperReview set reviewNeedsSubmit=? where paperId=? and contactId=? and reviewSubmitted is null", $rns, $pid, $cid);
-            }
-        }
+        $this->conf->update_review_delegation($pid, $cid, $direction);
     }
 
     /** @param ReviewInfo $rrow
      * @return bool */
     function unsubmit_review_row($rrow, $extra = null) {
-        $needsSubmit = 1;
-        if ($rrow->reviewType == REVIEW_SECONDARY) {
-            $row = Dbl::fetch_first_row($this->conf->qe("select count(reviewSubmitted), count(reviewId) from PaperReview where paperId=? and requestedBy=? and reviewType>0 and reviewType<" . REVIEW_SECONDARY, $rrow->paperId, $rrow->contactId));
-            if ($row && $row[0]) {
-                $needsSubmit = 0;
-            } else if ($row && $row[1]) {
-                $needsSubmit = -1;
-            }
+        if ($rrow->reviewType === REVIEW_SECONDARY) {
+            $needsSubmit = $this->conf->compute_secondary_review_needs_submit($rrow->paperId, $rrow->contactId) ?? 1;
+        } else {
+            $needsSubmit = 1;
         }
         $rsflags = ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED | ReviewInfo::RF_SUBMITTED;
         $result = $this->conf->qe("update PaperReview
@@ -5856,7 +5844,7 @@ class Contact implements JsonSerializable {
             $needsSubmit, $rsflags, $rrow->paperId, $rrow->reviewId);
         if ($result->affected_rows) {
             if ($rrow->reviewType < REVIEW_SECONDARY) {
-                $this->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
+                $this->conf->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
             }
             $this->conf->log_for($this, $rrow->contactId, "Unsubmitted " . $this->assign_review_explanation($rrow->reviewType, $rrow->reviewRound), $rrow->paperId);
         }

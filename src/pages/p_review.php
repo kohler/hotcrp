@@ -259,7 +259,7 @@ class Review_Page {
             // perhaps a delegatee needs to redelegate
             if ($this->rrow->reviewType < REVIEW_SECONDARY
                 && $this->rrow->requestedBy > 0) {
-                $this->user->update_review_delegation($this->prow->paperId, $this->rrow->requestedBy, -1);
+                $this->conf->update_review_delegation($this->prow->paperId, $this->rrow->requestedBy, -1);
             }
         }
         $this->conf->redirect_self($this->qreq, ["r" => null, "reviewId" => null]);

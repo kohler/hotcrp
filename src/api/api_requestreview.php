@@ -407,7 +407,7 @@ class RequestReview_API {
                 $prow->paperId, $rrid);
 
             if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0) {
-                $user->update_review_delegation($prow->paperId, $rrow->requestedBy, -1);
+                $prow->conf->update_review_delegation($prow->paperId, $rrow->requestedBy, -1);
             }
             if ($rrow->reviewToken) {
                 $prow->conf->update_rev_tokens_setting(-1);
@@ -556,7 +556,7 @@ class RequestReview_API {
         foreach ($rrows as $rrow) {
             $user->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
                 $prow->paperId, $rrow->reviewId);
-            $user->update_review_delegation($prow->paperId, $rrow->requestedBy, -1);
+            $user->conf->update_review_delegation($prow->paperId, $rrow->requestedBy, -1);
             if ($rrow->reviewToken) {
                 $user->conf->update_rev_tokens_setting(0);
             }
