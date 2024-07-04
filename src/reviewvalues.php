@@ -950,43 +950,10 @@ class ReviewValues extends MessageSet {
 
         // log updates -- but not if review token is used
         if (!$usedReviewToken && $diffinfo->is_viewable()) {
-            $log_actions = [];
-            if (!$old_reviewId) {
-                $log_actions[] = "started";
-            }
-            if ($newsubmit) {
-                $log_actions[] = "submitted";
-            }
-            if ($old_reviewId && !$newsubmit && $diffinfo->fields()) {
-                $log_actions[] = "edited";
-            }
-            $log_fields = [];
-            foreach ($diffinfo->fields() as $f) {
-                $t = $f->search_keyword();
-                if (($fs = $f->unparse_search($rrow->fields[$f->order])) !== "") {
-                    $t = "{$t}:{$fs}";
-                }
-                $log_fields[] = $t;
-            }
-            if (($wc = $this->rf->full_word_count($rrow)) !== null) {
-                $log_fields[] = plural($wc, "word");
-            }
-            if ($newstatus < ReviewInfo::RS_DELIVERED) {
-                $statusword = " draft";
-            } else if ($newstatus === ReviewInfo::RS_DELIVERED) {
-                $statusword = " approvable";
-            } else if ($newstatus === ReviewInfo::RS_APPROVED) {
-                $statusword = " adopted";
-            } else {
-                $statusword = "";
-            }
-            $user->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} "
-                . join(", ", $log_actions)
-                . $statusword
-                . (empty($log_fields) ? "" : ": ")
-                . join(", ", $log_fields), $prow);
+            $user->log_activity_for($rrow->contactId, $this->_log_message($rrow, $old_reviewId, $oldstatus, $newstatus, $diffinfo), $prow);
         }
 
+        // log change
         if ($old_reviewId > 0 && $diffinfo->is_viewable()) {
             $diffinfo->save_history();
         }
@@ -1045,6 +1012,54 @@ class ReviewValues extends MessageSet {
         }
 
         return true;
+    }
+
+    /** @param ReviewInfo $rrow
+     * @param int $old_reviewId
+     * @param int $oldstatus
+     * @param int $newstatus
+     * @param ReviewDiffInfo $diffinfo */
+    private function _log_message($rrow, $old_reviewId,
+                                  $oldstatus, $newstatus, $diffinfo) {
+        $actions = [];
+        if (!$old_reviewId) {
+            $actions[] = "started";
+        } else if ($diffinfo->fields()) {
+            $actions[] = "edited";
+        }
+        if ($newstatus >= ReviewInfo::RS_COMPLETED
+            && $oldstatus < ReviewInfo::RS_COMPLETED) {
+            $actions[] = "submitted";
+        } else if ($newstatus === ReviewInfo::RS_APPROVED
+                   && $oldstatus < ReviewInfo::RS_APPROVED) {
+            $actions[] = "approved";
+        } else if ($newstatus === ReviewInfo::RS_DELIVERED
+                   && $oldstatus < ReviewInfo::RS_DELIVERED) {
+            $actions[] = "delivered";
+        } else if ($newstatus < ReviewInfo::RS_DELIVERED
+                   && $oldstatus >= ReviewInfo::RS_DELIVERED) {
+            $actions[] = "unsubmitted";
+        } else if (empty($log_actions)) {
+            $actions[] = "updated";
+        }
+        $atext = join(", ", $actions);
+
+        $stext = $newstatus < ReviewInfo::RS_DELIVERED ? " draft" : "";
+
+        $fields = [];
+        foreach ($diffinfo->fields() as $f) {
+            $t = $f->search_keyword();
+            if (($fs = $f->unparse_search($rrow->fields[$f->order])) !== "") {
+                $t .= ":{$fs}";
+            }
+            $fields[] = $t;
+        }
+        if (($wc = $this->rf->full_word_count($rrow)) !== null) {
+            $fields[] = plural($wc, "word");
+        }
+        $ftext = empty($fields) ? "" : ": " . join(", ", $fields);
+
+        return "Review {$rrow->reviewId} {$atext}{$stext}{$ftext}";
     }
 
     /** @param int $status

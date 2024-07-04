@@ -5686,10 +5686,10 @@ class Contact implements JsonSerializable {
 
     /** @param int $type
      * @param int $round */
-    private function assign_review_explanation($type, $round) {
-        $t = ReviewForm::$revtype_names_lc[$type] . " review";
+    private function review_explanation($type, $round) {
+        $t = ReviewForm::$revtype_names_lc[$type];
         if ($round && ($rname = $this->conf->round_name($round))) {
-            $t .= " (round $rname)";
+            $t .= ", round {$rname}";
         }
         return $t;
     }
@@ -5774,12 +5774,12 @@ class Contact implements JsonSerializable {
 
         if ($type > 0 && $oldtype === 0) {
             $reviewId = $result->insert_id;
-            $msg = "Assigned " . $this->assign_review_explanation($type, $round);
+            $msg = "Review {$reviewId} assigned: " . $this->review_explanation($type, $round);
         } else if ($type === 0) {
-            $msg = "Removed " . $this->assign_review_explanation($oldtype, $rrow->reviewRound);
+            $msg = "Review {$reviewId} removed";
             $reviewId = 0;
         } else {
-            $msg = "Changed " . $this->assign_review_explanation($oldtype, $rrow->reviewRound) . " to " . $this->assign_review_explanation($type, $round);
+            $msg = "Review {$reviewId} changed: " . $this->review_explanation($oldtype, $rrow->reviewRound) . " to " . $this->review_explanation($type, $round);
         }
         $this->conf->log_for($this, $reviewer_cid, $msg, $pid);
 
@@ -5846,7 +5846,7 @@ class Contact implements JsonSerializable {
             if ($rrow->reviewType < REVIEW_SECONDARY) {
                 $this->conf->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
             }
-            $this->conf->log_for($this, $rrow->contactId, "Unsubmitted " . $this->assign_review_explanation($rrow->reviewType, $rrow->reviewRound), $rrow->paperId);
+            $this->conf->log_for($this, $rrow->contactId, "Review {$rrow->reviewId} unsubmitted", $rrow->paperId);
         }
         if (!$extra || !($extra["no_autosearch"] ?? false)) {
             $this->conf->update_automatic_tags($rrow->paperId, "review");
