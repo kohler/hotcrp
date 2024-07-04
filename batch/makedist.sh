@@ -438,6 +438,7 @@ src/reviewrefusalinfo.php
 src/reviewrequestinfo.php
 src/reviewsearchmatcher.php
 src/reviewtimes.php
+src/reviewvalues.php
 src/schema.sql
 src/search/st_admin.php
 src/search/st_author.php
