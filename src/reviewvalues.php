@@ -430,6 +430,7 @@ class ReviewValues extends MessageSet {
         $this->rmsg("reviewerEmail", $msg, self::ERROR);
     }
 
+    /** @return bool */
     function check_and_save(Contact $user, ?PaperInfo $prow = null, ?ReviewInfo $rrow = null) {
         assert(!$rrow || $rrow->paperId === $prow->paperId);
         $this->reviewId = $this->review_ordinal_id = null;
@@ -746,16 +747,9 @@ class ReviewValues extends MessageSet {
             if (!$exists && $old_fval === null) {
                 continue;
             }
-            if ($fval === false) {
+            if ($fval === false
+                || ($rrow->reviewId > 0 && $f->required && !$f->value_present($fval))) {
                 $fval = $old_fval;
-            } else {
-                $fval = $f->value_clean_storage($fval);
-                if ($rrow->reviewId > 0 && $f->required && !$f->value_present($fval)) {
-                    $fval = $old_fval;
-                } else if (is_string($fval)) {
-                    // Check for valid UTF-8; re-encode from Windows-1252 or Mac OS
-                    $fval = cleannl(convert_to_utf8($fval));
-                }
             }
             $fval_diffs = $fval !== $old_fval
                 && (!is_string($fval) || $fval !== cleannl($old_fval ?? ""));

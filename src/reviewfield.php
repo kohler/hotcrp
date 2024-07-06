@@ -405,12 +405,6 @@ abstract class ReviewField implements JsonSerializable {
      * @return bool */
     abstract function value_present($fval);
 
-    /** @param ?int|?string $fval
-     * @return ?int|?string */
-    function value_clean_storage($fval) {
-        return $fval;
-    }
-
     /** @param int|float|string $fval
      * @return string */
     abstract function unparse_value($fval);
@@ -1334,14 +1328,6 @@ class Text_ReviewField extends ReviewField {
         return $fval !== null && $fval !== "";
     }
 
-    function value_clean_storage($fval) {
-        if ($fval !== null && $fval !== "" && !ctype_space($fval)) {
-            return $fval;
-        } else {
-            return null;
-        }
-    }
-
     /** @return bool */
     function include_word_count() {
         return $this->order && $this->view_score >= VIEWSCORE_AUTHORDEC;
@@ -1360,11 +1346,8 @@ class Text_ReviewField extends ReviewField {
     }
 
     function parse($text) {
-        $text = rtrim(cleannl($text));
-        if ($text === "") {
-            return null;
-        }
-        return $text . "\n";
+        $text = rtrim(cleannl(convert_to_utf8($text)));
+        return $text === "" ? null : "{$text}\n";
     }
 
     function parse_json($j) {

@@ -318,6 +318,13 @@ class Reviews_Tester {
         xassert_search($this->u_chair, "papsum:author", "");
         xassert_search($this->u_chair, "comaut:pc", "");
         xassert_search($this->u_chair, "compc:author", "");
+
+        $tf = $this->conf->checked_review_field("t01");
+        xassert_eqq($tf->parse("Hi"), "Hi\n");
+        xassert_eqq($tf->parse_json("Hi"), "Hi\n");
+        xassert_eqq($tf->parse("Hi\n\n\n"), "Hi\n");
+        xassert_eqq($tf->parse("\n\n\n"), null);
+        xassert_eqq($tf->parse("\xA1\xC2ll\xF8!"), "¡Âllø!\n"); // ISO 8859-1 -> UTF-8
     }
 
     function test_many_fields() {
