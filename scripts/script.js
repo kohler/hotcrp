@@ -5811,6 +5811,7 @@ function minifeedback(e, rv) {
             status = Math.max(status, mx.status);
         }
     } else if (rv && rv.error) {
+        log_jserror("rv has error: " + JSON.stringify(rv));
         feedback.append_item(ul, {status: 2, message: "<5>" + rv.error});
         status = 2;
     }

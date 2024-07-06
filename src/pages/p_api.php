@@ -107,7 +107,7 @@ class API_Page {
                 $ml[] = $mi;
             }
         }
-        if (empty($ml) && isset($jr->content["error"])) {
+        if (empty($ml) && isset($jr->content["error"])) { // XXX backward compat
             $ml[] = new MessageItem(null, "<0>" . $jr->content["error"], 2);
         }
         if (empty($ml) && !($jr->content["ok"] ?? ($jr->status <= 299))) {
@@ -166,7 +166,7 @@ class API_Page {
             } else {
                 http_response_code(404);
                 header("Content-Type: application/json; charset=utf-8");
-                echo '{"ok": false, "error": "API function missing"}', "\n";
+                echo '{"ok": false, "message_list": [{"field": "fn", "message": "<0>Parameter missing", "status": 2}]}', "\n";
                 exit();
             }
         }

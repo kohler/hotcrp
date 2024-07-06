@@ -32,11 +32,11 @@ class TagAnno_API {
             return JsonResult::make_error(400, $tagger->error_ftext());
         }
         if (!$user->can_edit_tag_anno($tag)) {
-            return ["ok" => false, "error" => "Permission error"];
+            return JsonResult::make_permission_error();
         }
         $reqanno = json_decode($qreq->anno ?? "");
         if (!is_object($reqanno) && !is_array($reqanno)) {
-            return ["ok" => false, "error" => "Bad request"];
+            return JsonResult::make_parameter_error("anno");
         }
 
         $dt = $user->conf->tags()->ensure($tag);
@@ -53,7 +53,7 @@ class TagAnno_API {
             if (!is_object($anno)
                 || !isset($anno->annoid)
                 || (!is_int($anno->annoid) && !preg_match('/^n/', $anno->annoid))) {
-                return ["ok" => false, "error" => "Bad request"];
+                return JsonResult::make_parameter_error("anno");
             }
             if (isset($anno->deleted) && $anno->deleted) {
                 if (is_int($anno->annoid)) {

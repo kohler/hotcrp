@@ -160,10 +160,10 @@ class Tags_API {
     static function votereport_api(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         $tagger = new Tagger($user);
         if (!($tag = $tagger->check($qreq->tag, Tagger::NOVALUE))) {
-            return JsonResult::make_error(400, $tagger->error_ftext());
+            return JsonResult::make_parameter_error("tag", $tagger->error_ftext());
         }
         if (!$user->can_view_peruser_tag($prow, $tag)) {
-            return ["ok" => false, "error" => "Permission error"];
+            return JsonResult::make_permission_error();
         }
         $votemap = [];
         preg_match_all('/ (\d+)~' . preg_quote($tag) . '#(\S+)/i', $prow->all_tags_text(), $m);

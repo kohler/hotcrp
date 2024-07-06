@@ -129,10 +129,6 @@ class JsonResult implements JsonSerializable, ArrayAccess {
                 assert(!($a2 instanceof JsonResult));
                 $this->content = (array) $a2;
             }
-        } else if (is_string($a2)) {
-            error_log("bad JsonResult with string " . debug_string_backtrace());
-            assert($this->status && $this->status > 299);
-            $this->content = ["ok" => false, "error" => $a2];
         } else {
             assert(is_associative_array($a2));
             $this->content = $a2;

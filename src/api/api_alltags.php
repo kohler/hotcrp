@@ -5,7 +5,9 @@
 class AllTags_API {
     static function run(Contact $user) {
         if (!$user->isPC) {
-            return ["ok" => false, "error" => "Permission error", "tags" => []];
+            $jr = JsonResult::make_permission_error();
+            $jr["tags"] = [];
+            return $jr;
         } else if ($user->conf->check_track_view_sensitivity()
                    || (!$user->conf->tag_seeall
                        && ($user->privChair
