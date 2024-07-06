@@ -5806,7 +5806,7 @@ function minifeedback(e, rv) {
     var ul = document.createElement("ul"), status = 0, i, mx;
     ul.className = "feedback-list";
     if (rv && rv.message_list) {
-        for (i = 0; i !== rv.message_list.length; ++i) {
+        for (let mx of rv.message_list) {
             feedback.append_item(ul, mx);
             status = Math.max(status, mx.status);
         }
