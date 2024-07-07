@@ -643,7 +643,7 @@ class ReviewValues extends MessageSet {
         } else if ($newstatus < ReviewInfo::RS_COMPLETED
                    && $newstatus >= ReviewInfo::RS_DELIVERED
                    && ($diffinfo->fields() || $newstatus !== $oldstatus)) {
-            if ($newstatus >= ReviewInfo::RS_ADOPTED) {
+            if ($newstatus >= ReviewInfo::RS_APPROVED) {
                 $tmpl = "@reviewapprove";
             } else if ($newstatus === ReviewInfo::RS_DELIVERED
                        && $oldstatus < ReviewInfo::RS_DELIVERED) {
@@ -795,7 +795,7 @@ class ReviewValues extends MessageSet {
             if ($approvable && !$user->isPC) {
                 $newstatus = max($oldstatus, ReviewInfo::RS_DELIVERED);
             } else if ($approvable && ($this->req["approvesubreview"] ?? null)) {
-                $newstatus = ReviewInfo::RS_ADOPTED;
+                $newstatus = ReviewInfo::RS_APPROVED;
             } else {
                 $newstatus = ReviewInfo::RS_COMPLETED;
             }
@@ -820,10 +820,10 @@ class ReviewValues extends MessageSet {
             && $rrow->timeApprovalRequested <= 0) {
             $rrow->set_prop("timeApprovalRequested", $now);
             $rflags |= ReviewInfo::RF_DELIVERED;
-        } else if ($newstatus === ReviewInfo::RS_ADOPTED
+        } else if ($newstatus === ReviewInfo::RS_APPROVED
                    && $rrow->timeApprovalRequested >= 0) {
             $rrow->set_prop("timeApprovalRequested", -$now);
-            $rflags |= ReviewInfo::RF_DELIVERED | ReviewInfo::RF_ADOPTED;
+            $rflags |= ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED;
         }
         if ($newstatus >= ReviewInfo::RS_COMPLETED
             && ($rrow->reviewSubmitted ?? 0) <= 0) {
@@ -834,7 +834,7 @@ class ReviewValues extends MessageSet {
             $rrow->set_prop("reviewSubmitted", null);
             $rflags &= ~ReviewInfo::RF_SUBMITTED;
         }
-        if ($newstatus >= ReviewInfo::RS_ADOPTED) {
+        if ($newstatus >= ReviewInfo::RS_APPROVED) {
             $rrow->set_prop("reviewNeedsSubmit", 0);
         }
         if ($rrow->reviewId && $newstatus !== $oldstatus) {
@@ -915,7 +915,7 @@ class ReviewValues extends MessageSet {
         }
         if ($newordinal
             || (($newsubmit
-                 || ($newstatus >= ReviewInfo::RS_ADOPTED && $oldstatus < ReviewInfo::RS_ADOPTED))
+                 || ($newstatus >= ReviewInfo::RS_APPROVED && $oldstatus < ReviewInfo::RS_APPROVED))
                 && !$rrow->timeDisplayed)) {
             $rrow->set_prop("timeDisplayed", $now);
         }
@@ -981,7 +981,7 @@ class ReviewValues extends MessageSet {
                 $statusword = " draft";
             } else if ($newstatus === ReviewInfo::RS_DELIVERED) {
                 $statusword = " approvable";
-            } else if ($newstatus === ReviewInfo::RS_ADOPTED) {
+            } else if ($newstatus === ReviewInfo::RS_APPROVED) {
                 $statusword = " adopted";
             } else {
                 $statusword = "";
@@ -1028,12 +1028,12 @@ class ReviewValues extends MessageSet {
         } else if ($newstatus === ReviewInfo::RS_DELIVERED
                    && $rrow->contactId === $user->contactId) {
             $this->approval_requested[] = $what;
-        } else if ($newstatus === ReviewInfo::RS_ADOPTED
+        } else if ($newstatus === ReviewInfo::RS_APPROVED
                    && $oldstatus < $newstatus
                    && $rrow->contactId !== $user->contactId) {
             $this->approved[] = $what;
         } else if ($diffinfo->is_viewable()) {
-            if ($newstatus >= ReviewInfo::RS_ADOPTED) {
+            if ($newstatus >= ReviewInfo::RS_APPROVED) {
                 $this->updated[] = $what;
             } else {
                 $this->saved_draft[] = $what;
@@ -1041,7 +1041,7 @@ class ReviewValues extends MessageSet {
             }
         } else {
             $this->unchanged[] = $what;
-            if ($newstatus < ReviewInfo::RS_ADOPTED) {
+            if ($newstatus < ReviewInfo::RS_APPROVED) {
                 $this->unchanged_draft[] = $what;
                 $this->single_approval = +$rrow->timeApprovalRequested;
             }

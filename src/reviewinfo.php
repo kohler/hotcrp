@@ -119,20 +119,25 @@ class ReviewInfo implements JsonSerializable {
     const RS_ACCEPTED = 1;
     const RS_DRAFTED = 2;
     const RS_DELIVERED = 3;
-    const RS_ADOPTED = 4;
+    const RS_APPROVED = 4;
     const RS_COMPLETED = 5;
 
     const RF_LIVE = 1;
-    const RFM_TYPES = 254;
+    const RFM_TYPES = 0xFE;
     const RF_ACCEPTED = 1 << 8;
     const RF_DRAFTED = 1 << 9;
     const RF_DELIVERED = 1 << 10;
-    const RF_ADOPTED = 1 << 11;
+    const RF_APPROVED = 1 << 11;
     const RF_SUBMITTED = 1 << 12;
     const RF_BLIND = 1 << 16;
     const RF_SELF_ASSIGNED = 1 << 17;
+    const RFM_NONDRAFT = 0x1C00; /* RF_DELIVERED | RF_APPROVED | RF_SUBMITTED */
     const RFM_NONEMPTY = 0x1F00; /* RF_ACCEPTED | RF_DRAFTED | RFM_NONDRAFT */
-    const RFM_NONDRAFT = 0x1C00; /* RF_DELIVERED | RF_ADOPTED | RF_SUBMITTED */
+
+    /** @deprecated */
+    const RS_ADOPTED = self::RS_APPROVED;
+    /** @deprecated */
+    const RF_ADOPTED = self::RF_APPROVED;
 
     const RATING_GOODMASK = 1;
     const RATING_BADMASK = 126;
@@ -204,6 +209,7 @@ class ReviewInfo implements JsonSerializable {
     /** @param int $rflags
      * @return int */
     static function rflags_type($rflags) {
+        // Returns $rtype so that ($rflags & RFM_TYPES) contains (1 << $rtype).
         return ($rflags & 0x30 ? 4 : 0) + ($rflags & 0x0C ? 2 : 0) + ($rflags & 0x2A ? 1 : 0);
     }
 
@@ -398,7 +404,7 @@ class ReviewInfo implements JsonSerializable {
             if ($this->timeApprovalRequested > 0) {
                 return self::RS_DELIVERED;
             } else {
-                return self::RS_ADOPTED;
+                return self::RS_APPROVED;
             }
         } else if ($this->reviewModified === 0) {
             return self::RS_EMPTY;
@@ -470,7 +476,7 @@ class ReviewInfo implements JsonSerializable {
             return "";
         } else if (($rflags & self::RF_LIVE) === 0) {
             return " rtghost";
-        } else if (($rflags & self::RF_ADOPTED) !== 0) {
+        } else if (($rflags & self::RF_APPROVED) !== 0) {
             return " rtsubrev";
         } else {
             return " rtinc";
@@ -539,7 +545,7 @@ class ReviewInfo implements JsonSerializable {
     function status_description() {
         if ($this->reviewStatus >= ReviewInfo::RS_COMPLETED) {
             return "complete";
-        } else if ($this->reviewStatus === ReviewInfo::RS_ADOPTED) {
+        } else if ($this->reviewStatus === ReviewInfo::RS_APPROVED) {
             return "approved";
         } else if ($this->reviewStatus === ReviewInfo::RS_DELIVERED) {
             return "pending approval";

@@ -157,7 +157,7 @@ class AssignmentCountSet {
                     && $this->user->can_view_review_identity($prow, null)) {
                     foreach ($prow->all_reviews() as $rrow) {
                         if ($rrow->reviewType >= REVIEW_PC
-                            && ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED || $prow->timeSubmitted > 0)
+                            && ($rrow->reviewStatus >= ReviewInfo::RS_APPROVED || $prow->timeSubmitted > 0)
                             && $this->user->can_view_review_assignment($prow, $rrow)
                             && $this->user->can_view_review_identity($prow, $rrow)) {
                             $ct = $this->ensure($rrow->contactId);

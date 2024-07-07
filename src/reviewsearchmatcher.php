@@ -383,7 +383,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
         }
         if ($this->status !== 0) {
             if ((($this->status & self::COMPLETE) !== 0
-                 && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED)
+                 && $rrow->reviewStatus < ReviewInfo::RS_APPROVED)
                 || (($this->status & self::SUBMITTED) !== 0
                     && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED)
                 || (($this->status & self::INCOMPLETE) !== 0
@@ -398,7 +398,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 || (($this->status & self::PENDINGAPPROVAL) !== 0
                     && $rrow->reviewStatus !== ReviewInfo::RS_DELIVERED)
                 || (($this->status & self::APPROVED) !== 0
-                    && $rrow->reviewStatus !== ReviewInfo::RS_ADOPTED)
+                    && $rrow->reviewStatus !== ReviewInfo::RS_APPROVED)
                 || (($this->status & self::MYREQUEST) !== 0
                     && $rrow->requestedBy != $user->contactId)) {
                 return false;
@@ -421,7 +421,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
                 return false;
             }
         } else if ($rrow->reviewType > 0
-                   && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED
+                   && $rrow->reviewStatus < ReviewInfo::RS_APPROVED
                    && $rrow->reviewNeedsSubmit <= 0
                    && ($this->sensitivity & (self::HAS_STATUS | self::HAS_RTYPE)) === 0) {
             // don't count delegated reviews unless contacts, status, or type given

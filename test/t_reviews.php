@@ -1444,10 +1444,12 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
     function test_rflags_type() {
         for ($i = 0; $i <= REVIEW_META; ++$i) {
             xassert_eqq(ReviewInfo::rflags_type(1 << $i), $i);
+            xassert_eqq(ReviewInfo::rflags_type((1 << $i) | ReviewInfo::RF_LIVE), $i);
+            xassert_eqq(ReviewInfo::rflags_type((1 << $i) | ReviewInfo::RF_LIVE | ReviewInfo::RF_BLIND), $i);
         }
         xassert_eqq(ReviewInfo::RF_LIVE, 1);
-        xassert_eqq(ReviewInfo::RFM_NONDRAFT, ReviewInfo::RF_DELIVERED | ReviewInfo::RF_ADOPTED | ReviewInfo::RF_SUBMITTED);
-        xassert_eqq(ReviewInfo::RFM_NONEMPTY, ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED | ReviewInfo::RF_DELIVERED | ReviewInfo::RF_ADOPTED | ReviewInfo::RF_SUBMITTED);
+        xassert_eqq(ReviewInfo::RFM_NONDRAFT, ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED | ReviewInfo::RF_SUBMITTED);
+        xassert_eqq(ReviewInfo::RFM_NONEMPTY, ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED | ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED | ReviewInfo::RF_SUBMITTED);
     }
 
     function test_ensure_full_reviews_preserves_prop_changes() {

@@ -433,8 +433,8 @@ Ready\n";
                 $buttons[] = [Ht::button("Save changes", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)"];
             }
         } else if (!$submitted && $rrow && $rrow->subject_to_approval()) {
-            assert($rrow->reviewStatus <= ReviewInfo::RS_ADOPTED);
-            if ($rrow->reviewStatus === ReviewInfo::RS_ADOPTED) {
+            assert($rrow->reviewStatus <= ReviewInfo::RS_APPROVED);
+            if ($rrow->reviewStatus === ReviewInfo::RS_APPROVED) {
                 $buttons[] = Ht::submit("update", "Update approved review", ["class" => "btn-primary btn-savereview need-clickthrough-enable", "disabled" => $disabled]);
             } else if ($my_review) {
                 if ($rrow->reviewStatus !== ReviewInfo::RS_DELIVERED) {
@@ -477,7 +477,7 @@ Ready\n";
 
         if ($rrow && $user->allow_administer($prow)) {
             $buttons[] = "";
-            if ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED) {
+            if ($rrow->reviewStatus >= ReviewInfo::RS_APPROVED) {
                 $buttons[] = [Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)"];
             }
             $buttons[] = [Ht::button("Delete review", ["class" => "ui js-delete-review"]), "(admin only)"];
@@ -668,9 +668,7 @@ Ready\n";
             if ($rrow->subject_to_approval()) {
                 if ($rrow->reviewStatus === ReviewInfo::RS_DELIVERED) {
                     $rj["needs_approval"] = true;
-                } else if ($rrow->reviewStatus === ReviewInfo::RS_ADOPTED) {
-                    $rj["approved"] = $rj["adopted"] = true;
-                } else if ($rrow->reviewStatus > ReviewInfo::RS_ADOPTED) {
+                } else if ($rrow->reviewStatus >= ReviewInfo::RS_APPROVED) {
                     $rj["approved"] = true;
                 }
             }

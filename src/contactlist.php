@@ -520,11 +520,11 @@ class ContactList {
             $this->_reord_data[$cid][] = [$rrow->paperId, $rrow->reviewId, $rrow->reviewOrdinal];
         }
         if ($review_limit
-            && ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED || $prow->timeSubmitted > 0 || $review_limit === "all")) {
+            && ($rrow->reviewStatus >= ReviewInfo::RS_APPROVED || $prow->timeSubmitted > 0 || $review_limit === "all")) {
             if ($this->limit === "re"
                 || ($this->limit === "req" && $rrow->reviewType === REVIEW_EXTERNAL && $rrow->requestedBy == $this->user->contactId)
                 || ($this->limit === "ext" && $rrow->reviewType === REVIEW_EXTERNAL)
-                || ($this->limit === "extsub" && $rrow->reviewType === REVIEW_EXTERNAL && $rrow->reviewStatus >= ReviewInfo::RS_ADOPTED)
+                || ($this->limit === "extsub" && $rrow->reviewType === REVIEW_EXTERNAL && $rrow->reviewStatus >= ReviewInfo::RS_APPROVED)
                 || ($this->limit === "extrev-not-accepted" && $rrow->reviewType === REVIEW_EXTERNAL && $rrow->reviewStatus === ReviewInfo::RS_EMPTY)) {
                 $this->_limit_cids[$cid] = true;
             }
@@ -532,11 +532,11 @@ class ContactList {
         if (!isset($this->_rect_data[$cid])) {
             $this->_rect_data[$cid] = [0, 0];
         }
-        if (($this->limit === "extsub" && $rrow->reviewStatus < ReviewInfo::RS_ADOPTED)
+        if (($this->limit === "extsub" && $rrow->reviewStatus < ReviewInfo::RS_APPROVED)
             || ($this->limit === "extrev-not-accepted" && $rrow->reviewStatus !== ReviewInfo::RS_EMPTY)) {
             return;
         }
-        if ($rrow->reviewStatus >= ReviewInfo::RS_ADOPTED) {
+        if ($rrow->reviewStatus >= ReviewInfo::RS_APPROVED) {
             $this->_rect_data[$cid][0] += 1;
             $this->_rect_data[$cid][1] += 1;
             if ($this->user->can_view_review($prow, $rrow)) {

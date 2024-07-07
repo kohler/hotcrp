@@ -2566,7 +2566,7 @@ class PaperTable {
             if ($rr->reviewOrdinal && !$isdelegate) {
                 $id .= " #" . $rr->unparse_ordinal_id();
             }
-            if ($rr->reviewStatus < ReviewInfo::RS_ADOPTED
+            if ($rr->reviewStatus < ReviewInfo::RS_APPROVED
                 && !$rr->is_ghost()) {
                 $d = $rr->status_description();
                 if ($d === "draft") {
@@ -2583,7 +2583,7 @@ class PaperTable {
                 $t .= $id;
             } else {
                 if ((!$this->can_view_reviews
-                     || $rr->reviewStatus < ReviewInfo::RS_ADOPTED)
+                     || $rr->reviewStatus < ReviewInfo::RS_APPROVED)
                     && $user->can_edit_review($prow, $rr)) {
                     $link = $prow->reviewurl(["r" => $rlink]);
                 } else if ($this->qreq->page() === "paper") {
@@ -2959,7 +2959,7 @@ class PaperTable {
         foreach ($rcs as $rc) {
             if (isset($rc->reviewId)) {
                 $rcj = $rf->unparse_review_json($this->user, $this->prow, $rc);
-                if (($any_submitted || $rc->reviewStatus === ReviewInfo::RS_ADOPTED)
+                if (($any_submitted || $rc->reviewStatus === ReviewInfo::RS_APPROVED)
                     && $rc->reviewStatus < ReviewInfo::RS_COMPLETED
                     && !$this->user->is_my_review($rc)) {
                     $rcj->collapsed = $rcj->folded /* XXX */ = true;

@@ -5760,7 +5760,7 @@ class Contact implements JsonSerializable {
                 $qtail .= ", timeRequested={$time}, requestedBy={$new_requester_cid}";
             }
             if ($type !== REVIEW_SECONDARY && $oldtype === REVIEW_SECONDARY) {
-                $rns = $rrow->reviewStatus < ReviewInfo::RS_ADOPTED ? 1 : 0;
+                $rns = $rrow->reviewStatus < ReviewInfo::RS_APPROVED ? 1 : 0;
                 $qtail .= ", reviewNeedsSubmit={$rns}";
             }
             $rflags = 1 << $type;
@@ -5848,7 +5848,7 @@ class Contact implements JsonSerializable {
                 $needsSubmit = -1;
             }
         }
-        $rsflags = ReviewInfo::RF_DELIVERED | ReviewInfo::RF_ADOPTED | ReviewInfo::RF_SUBMITTED;
+        $rsflags = ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED | ReviewInfo::RF_SUBMITTED;
         $result = $this->conf->qe("update PaperReview
             set reviewSubmitted=null, reviewNeedsSubmit=?,
                 timeApprovalRequested=0, rflags=rflags&~?
