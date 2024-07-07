@@ -74,7 +74,7 @@ class Text {
         if ($firstName !== "" && $lastName !== "") {
             if (($flags & (NAME_L | NAME_PARSABLE)) === NAME_PARSABLE
                 && substr_count($lastName, " ") !== 0
-                && !preg_match('/\A(?:v[oa]n |d[eu] |al )?\S+(?: jr\.?| sr\.?| i+v?i*)?\z/i', $lastName)) {
+                && !preg_match('/\A(?:v[oa]n |d[eu] |al )?\S+(?: jr\.?| sr\.?| i+| i*vi*)?\z/i', $lastName)) {
                 $flags |= NAME_L;
             }
             if (($flags & NAME_I) !== 0

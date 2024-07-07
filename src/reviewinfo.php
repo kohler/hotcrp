@@ -809,6 +809,7 @@ class ReviewInfo implements JsonSerializable {
             }
             $this->_sfields = $this->_tfields = null;
             $this->_assign_fields();
+            $this->_diff = null;
         }
     }
 

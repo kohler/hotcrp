@@ -4473,9 +4473,8 @@ class Contact implements JsonSerializable {
         return (!$submit
                 || $this->can_clickthrough("review", $prow))
             && ($rights->can_administer
-                || $this->is_owned_review($rrow))
-            && ($this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)
-                || $rights->can_administer);
+                || ($this->is_owned_review($rrow))
+                    && $this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true));
     }
 
     /** @param bool $submit
@@ -4504,12 +4503,13 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_approve_review(PaperInfo $prow, ReviewInfo $rrow) {
         $rights = $this->rights($prow);
-        return ($prow->timeSubmitted > 0 || $rights->can_administer)
-            && $rrow->subject_to_approval()
+        return $rrow->subject_to_approval()
             && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED
             && ($rights->can_administer
-                || ($this->isPC && $rrow->requestedBy === $this->contactXid))
-            && ($this->conf->time_review(null, true, true) || $rights->can_administer);
+                || ($this->isPC
+                    && $prow->timeSubmitted > 0
+                    && $rrow->requestedBy === $this->contactXid
+                    && $this->conf->time_review(null, true, true)));
     }
 
     /** @return bool */
