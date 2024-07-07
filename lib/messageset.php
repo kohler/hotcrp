@@ -224,6 +224,19 @@ class MessageSet {
         $this->problem_status = 0;
     }
 
+    /** @param int $message_count */
+    function clear_messages_since($message_count) {
+        assert($message_count >= 0 && $message_count <= count($this->msgs));
+        if ($message_count < count($this->msgs)) {
+            array_splice($this->msgs, $message_count);
+            $this->errf = [];
+            $this->problem_status = 0;
+            foreach ($this->msgs as $mi) {
+                $this->_account_item($mi);
+            }
+        }
+    }
+
     function clear() {
         $this->clear_messages();
     }
@@ -233,6 +246,7 @@ class MessageSet {
     private function change_ms_flags($clearf, $wantf) {
         $this->_ms_flags = ($this->_ms_flags & ~$clearf) | $wantf;
     }
+
     /** @param bool $x
      * @return bool */
     function swap_ignore_messages($x) {
@@ -240,6 +254,7 @@ class MessageSet {
         $this->change_ms_flags(self::IGNORE_MSGS, $x ? self::IGNORE_MSGS : 0);
         return $oim;
     }
+
     /** @param bool|0|2|6 $x
      * @return $this */
     function set_ignore_duplicates($x) {
@@ -247,6 +262,7 @@ class MessageSet {
         $this->change_ms_flags(self::IGNORE_DUPS | self::IGNORE_DUPS_FIELD_FLAG, $f);
         return $this;
     }
+
     /** @param bool $x
      * @param ?int $default_format
      * @return $this */
@@ -259,11 +275,13 @@ class MessageSet {
         }
         return $this;
     }
+
     /** @param string $field
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status */
     function set_status_for_problem_at($field, $status) {
         $this->pstatus_at[$field] = $status;
     }
+
     /** @return void */
     function clear_status_for_problem_at() {
         $this->pstatus_at = [];
@@ -288,6 +306,14 @@ class MessageSet {
                 return $i;
         }
         return false;
+    }
+
+    /** @param MessageItem $mi */
+    private function _account_item($mi) {
+        if ($mi->field !== null) {
+            $this->errf[$mi->field] = max($this->errf[$mi->field] ?? 0, $mi->status);
+        }
+        $this->problem_status = max($this->problem_status, $mi->status);
     }
 
     /** @param int $pos
@@ -319,10 +345,7 @@ class MessageSet {
                 array_splice($this->msgs, $pos, 0, [$mi]);
             }
         }
-        if ($mi->field !== null) {
-            $this->errf[$mi->field] = max($this->errf[$mi->field] ?? 0, $mi->status);
-        }
-        $this->problem_status = max($this->problem_status, $mi->status);
+        $this->_account_item($mi);
         return $mi;
     }
 
