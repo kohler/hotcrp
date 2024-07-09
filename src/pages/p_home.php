@@ -178,7 +178,10 @@ class Home_Page {
         }
     }
 
-    function print_welcome() {
+    function print_welcome(Contact $user) {
+        if ($user->isPC && $user->conf->has_any_submitted()) {
+            return;
+        }
         echo '<div class="homegrp">Welcome to the ', htmlspecialchars($this->conf->full_name()), " submissions site.";
         if (($site = $this->conf->opt("conferenceSite"))
             && $site !== $this->conf->opt("paperSite"))
@@ -247,7 +250,7 @@ class Home_Page {
     function print_reviews(Contact $user, Qrequest $qreq, $gx) {
         $conf = $user->conf;
         if (!$user->privChair
-            && !($user->is_reviewer() && $conf->has_any_submitted())) {
+            && (!$user->is_reviewer() || !$conf->has_any_submitted())) {
             return;
         }
 

@@ -92,7 +92,7 @@
 
     [   "home/main/message", 1100, "*Home_Page::print_message"   ],
     {
-        "name": "home/main/welcome", "order": 1200, "allow_if": "!pc",
+        "name": "home/main/welcome", "order": 1200, "allow_if": "!admin",
         "print_function": "*Home_Page::print_welcome"
     },
     [   "home/main/signin", 3000, "*Home_Page::print_signin"   ],
