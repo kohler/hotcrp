@@ -24,7 +24,7 @@ class Comments_Tester {
         $j = call_api("=comment", $this->u_floyd, ["response" => "1", "text" => "Hello"], $paper1);
         xassert(!$j->ok);
         if (!$j->ok) {
-            xassert_match($j->message_list[0]->message, '/not open for responses/');
+            xassert_match($j->message_list[0]->message, '/closed|not open/');
         }
 
         $sv = SettingValues::make_request($this->u_chair, [

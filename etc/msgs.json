@@ -27,7 +27,7 @@
 
     ["<0>A {submission} may have at most {max} authors", "<0>A {submission} may have at most one author", ["{max}=1"]],
 
-    ["{} papers accepted out of {} submitted.", "{} paper accepted out of {} submitted.", ["{0}=1"]],
+    ["{naccepted} of {nsubmitted} {submissions} accepted", "{naccepted} of {nsubmitted} {submission} accepted", ["{naccepted}=1", "{nsubmitted}=1"]],
 
     ["<5>{sclass} registration deadline", "<5>Registration deadline", ["!{sclass}"]],
     ["<5>You can register new {sclass} {submissions} until this deadline.", "<5>You can register new {submissions} until this deadline.", ["!{sclass}"]],
@@ -175,10 +175,10 @@
 
     {
         "context": "deadline_error", "in": "<0>Action not available", "m": [
-            ["<0>Authors can’t view reviews for {submission} #{pid} now", ["{deadline}=au_seerev"]],
-            ["<0>The site is not open for reviewing", ["{deadline}=rev_open"]],
-            ["<0>The site is not open for {submissions}", ["{deadline}=sub_open"]],
-            ["<0>The site is not open for responses", ["{deadline}^=response"]]
+            ["<0>Authors can’t currently view reviews for {submission} #{pid}", ["{deadline}=au_seerev"]],
+            ["<0>Reviewing is currently closed", ["{deadline}=rev_open"]],
+            ["<0>{Submissions} are currently closed", ["{deadline}=sub_open"]],
+            ["<0>Responses are currently closed", ["{deadline}^=response"]]
         ]
     },
     {

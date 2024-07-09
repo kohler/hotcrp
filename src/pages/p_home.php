@@ -166,7 +166,7 @@ class Home_Page {
         assert($user->conf->time_all_author_view_decision());
         if ($user->conf->time_all_author_view_decision()) {
             list($n, $nyes) = $user->conf->count_submitted_accepted();
-            echo '<li>', $user->conf->_("{} papers accepted out of {} submitted.", $nyes, $n), '</li>';
+            echo '<li>', $user->conf->_("{naccepted} of {nsubmitted} {submissions} accepted", new FmtArg("naccepted", $nyes), new FmtArg("nsubmitted", $n)), '</li>';
         }
     }
 
@@ -182,11 +182,11 @@ class Home_Page {
         if ($user->isPC && $user->conf->has_any_submitted()) {
             return;
         }
-        echo '<div class="homegrp">Welcome to the ', htmlspecialchars($this->conf->full_name()), " submissions site.";
+        echo '<div class="homegrp"><p>Welcome to the ', htmlspecialchars($this->conf->full_name()), " submissions site.";
         if (($site = $this->conf->opt("conferenceSite"))
             && $site !== $this->conf->opt("paperSite"))
-            echo " For general conference information, see ", Ht::link(htmlspecialchars($site), htmlspecialchars($site)), ".";
-        echo '</div>';
+            echo " For general information, see ", Ht::link(htmlspecialchars($site), htmlspecialchars($site)), ".";
+        echo '</p></div>';
     }
 
     function print_signin(Contact $user, Qrequest $qreq, $gx) {
@@ -357,7 +357,7 @@ class Home_Page {
         }
         if ($this->_r_num_submitted < $this->_r_num_needs_submit
             && !$conf->time_review_open()) {
-            echo ' <em class="deadline">The site is not open for reviewing.</em><br>', "\n";
+            echo ' <em class="deadline">Reviewing is currently closed.</em><br>', "\n";
         } else if ($this->_r_num_submitted < $this->_r_num_needs_submit) {
             sort($this->_r_unsubmitted_rounds, SORT_NUMERIC);
             foreach ($this->_r_unsubmitted_rounds as $round) {
@@ -552,7 +552,7 @@ class Home_Page {
             // Be careful not to refer to a future deadline; perhaps an admin
             // just turned off submissions.
             if (!$sr->submit || $sr->submit + $sr->grace > Conf::$now) {
-                $deadlines[] = "The site is not open for {$sr->title1}{$this->conf->snouns[1]} at the moment.";
+                $deadlines[] = "The site is currently closed for {$sr->title1}{$this->conf->snouns[1]}.";
             } else {
                 $deadlines[] = 'The <a href="' . $this->conf->hoturl("deadlines") . "\">{$sr->title1}{$this->conf->snouns[0]} deadline</a> has passed.";
             }
@@ -636,7 +636,7 @@ class Home_Page {
             if ($any_open) {
                 $deadlines[] = "The <a href=\"" . $conf->hoturl("deadlines") . "\">deadline</a> for registering {$conf->snouns[1]} has passed.";
             } else {
-                $deadlines[] = "The site is not open for {$conf->snouns[1]} at the moment.";
+                $deadlines[] = "{$conf->snouns[3]} are currently closed.";
             }
         }
         // NB only has("accepted") if author can see an accepted paper
