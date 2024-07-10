@@ -243,9 +243,9 @@ class UnicodeHelper {
     static function utf8_to_html_entities($str, $flag = ENT_NOQUOTES) {
         if ($flag & ENT_IGNORE) {
             $start = "";
-        } else if (($flag & ENT_QUOTES) == ENT_QUOTES) {
+        } else if (($flag & ENT_QUOTES) === ENT_QUOTES) {
             $start = "&<>\"'";
-        } else if (($flag & ENT_COMPAT) == ENT_COMPAT) {
+        } else if (($flag & ENT_COMPAT) === ENT_COMPAT) {
             $start = "&<>\"";
         } else {
             $start = "&<>";
@@ -280,9 +280,9 @@ class UnicodeHelper {
     static function utf8_to_xml_numeric_entities($str, $flag = ENT_NOQUOTES) {
         if ($flag & ENT_IGNORE) {
             $start = "";
-        } else if (($flag & ENT_QUOTES) == ENT_QUOTES) {
+        } else if (($flag & ENT_QUOTES) === ENT_QUOTES) {
             $start = "&<>\"'";
-        } else if (($flag & ENT_COMPAT) == ENT_COMPAT) {
+        } else if (($flag & ENT_COMPAT) === ENT_COMPAT) {
             $start = "&<>\"";
         } else {
             $start = "&<>";

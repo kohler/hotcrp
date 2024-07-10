@@ -319,12 +319,12 @@ class Reviews_Tester {
         xassert_search($this->u_chair, "comaut:pc", "");
         xassert_search($this->u_chair, "compc:author", "");
 
-        $tf = $this->conf->checked_review_field("t01");
-        xassert_eqq($tf->parse("Hi"), "Hi\n");
-        xassert_eqq($tf->parse_json("Hi"), "Hi\n");
-        xassert_eqq($tf->parse("Hi\n\n\n"), "Hi\n");
-        xassert_eqq($tf->parse("\n\n\n"), null);
-        xassert_eqq($tf->parse("\xA1\xC2ll\xF8!"), "¡Âllø!\n"); // ISO 8859-1 -> UTF-8
+        $f = $this->conf->checked_review_field("t01");
+        xassert_eqq($f->parse("Hi"), "Hi\n");
+        xassert_eqq($f->parse_json("Hi"), "Hi\n");
+        xassert_eqq($f->parse("Hi\n\n\n"), "Hi\n");
+        xassert_eqq($f->parse("\n\n\n"), null);
+        xassert_eqq($f->parse("\xA1\xC2ll\xF8!"), "¡Âllø!\n"); // ISO 8859-1 -> UTF-8
     }
 
     function test_many_fields() {
@@ -1310,95 +1310,6 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert(!$this->u_mjh->can_view_review($paper17, $rrow17m));
         $this->conf->save_refresh_setting("au_seerev", 2);
         xassert($this->u_mjh->can_view_review($paper17, $rrow17m));
-    }
-
-    function test_submission_fields() {
-        xassert_search($this->u_chair, "has:calories", "1 2 3 4 5");
-        xassert_search($this->u_mgbaker, "has:calories", "1 2 3 4 5");
-
-        // rename field
-        $sv = SettingValues::make_request($this->u_chair, [
-            "has_sf" => 1,
-            "sf/1/name" => "Fudge",
-            "sf/1/id" => 1,
-            "sf/1/order" => 100,
-            "sf/1/type" => "numeric"
-        ]);
-        xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), ["options"]);
-        xassert_search($this->u_chair, "has:fudge", "1 2 3 4 5");
-        xassert_search($this->u_mgbaker, "has:fudge", "1 2 3 4 5");
-
-        // retype field => fails
-        $sv = SettingValues::make_request($this->u_chair, [
-            "has_sf" => 1,
-            "sf/1/name" => "Fudge",
-            "sf/1/id" => 1,
-            "sf/1/order" => 100,
-            "sf/1/type" => "checkbox"
-        ]);
-        xassert(!$sv->execute());
-        xassert_search($this->u_mgbaker, "has:fudge", "1 2 3 4 5");
-
-        // delete old field, create new field with same name
-        $sv = SettingValues::make_request($this->u_chair, [
-            "has_sf" => 1,
-            "sf/1/name" => "Fudge",
-            "sf/1/id" => 1,
-            "sf/1/order" => 100,
-            "sf/1/delete" => 1,
-            "sf/2/name" => "Fudge",
-            "sf/2/id" => "new",
-            "sf/2/type" => "checkbox",
-            "sf/2/order" => 101
-        ]);
-        xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), ["options"]);
-        xassert_search($this->u_mgbaker, "has:fudge", "");
-
-        // new field
-        $sv = SettingValues::make_request($this->u_chair, [
-            "has_sf" => 1,
-            "sf/1/name" => "Brownies",
-            "sf/1/id" => "new",
-            "sf/1/order" => 102,
-            "sf/1/type" => "numeric"
-        ]);
-        xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), ["options"]);
-        xassert_search($this->u_mgbaker, "has:brownies", "");
-
-        // `order` is obeyed
-        $opts = array_values(Options_SettingParser::configurable_options($this->conf));
-        $names = array_map(function ($opt) { return $opt->name; }, $opts);
-        xassert_in_eqq("Fudge", $names);
-        xassert_in_eqq("Brownies", $names);
-        $fudgepos = array_search("Fudge", $names);
-        $browniespos = array_search("Brownies", $names);
-        xassert_lt($fudgepos, $browniespos);
-
-        // nonunique name => fail
-        $sv = SettingValues::make_request($this->u_chair, [
-            "has_sf" => 1,
-            "sf/1/name" => "Brownies",
-            "sf/1/id" => "new",
-            "sf/1/order" => 102,
-            "sf/1/type" => "numeric"
-        ]);
-        xassert(!$sv->execute());
-        xassert_str_contains($sv->full_feedback_text(), "is not unique");
-        xassert($sv->has_error_at("sf/1/name"));
-
-        // no name => fail
-        $sv = SettingValues::make_request($this->u_chair, [
-            "has_sf" => 1,
-            "sf/1/id" => "new",
-            "sf/1/order" => 103,
-            "sf/1/type" => "numeric"
-        ]);
-        xassert(!$sv->execute());
-        xassert_str_contains($sv->full_feedback_text(), "Entry required");
-        xassert($sv->has_error_at("sf/1/name"));
     }
 
     function test_review_symbols() {

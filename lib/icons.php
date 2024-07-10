@@ -82,16 +82,16 @@ class Icons {
     /** @param 0|1|2|3 $direction
      * @return string */
     static function ui_linkarrow($direction) {
-        $t = '<svg class="licon-s" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="';
-        if ($direction == 0)
-            $t .= 'M2 11L8 1L14 11';
-        else if ($direction == 1)
-            $t .= 'M5 3L15 9L5 15';
-        else if ($direction == 2)
-            $t .= 'M2 1L8 11L14 1';
-        else if ($direction == 3)
-            $t .= 'M11 3L1 9L11 15';
-        return $t . '" /></svg>';
+        if ($direction === 0) {
+            $t = 'M2 11L8 1L14 11';
+        } else if ($direction === 1) {
+            $t = 'M5 3L15 9L5 15';
+        } else if ($direction === 2) {
+            $t = 'M2 1L8 11L14 1';
+        } else { // $direction === 3
+            $t = 'M11 3L1 9L11 15';
+        }
+        return '<svg class="licon-s" width="0.75em" height="0.75em" viewBox="0 0 16 16" preserveAspectRatio="none"><path d="' . $t . '" /></svg>';
     }
     /** @param 0|2 $direction
      * @return string */

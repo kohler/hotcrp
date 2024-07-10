@@ -638,7 +638,7 @@ Ready\n";
         $editable = ($flags & self::RJ_NO_EDITABLE) === 0;
         $my_review = $viewer->is_my_review($rrow);
 
-        $rj = ["pid" => $prow->paperId, "rid" => (int) $rrow->reviewId];
+        $rj = ["pid" => $prow->paperId, "rid" => $rrow->reviewId];
         if ($rrow->reviewOrdinal) {
             $rj["ordinal"] = unparse_latin_ordinal($rrow->reviewOrdinal);
         }

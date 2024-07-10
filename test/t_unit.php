@@ -1223,19 +1223,19 @@ class Unit_Tester {
         foreach (["1,2,3,4,5", "1,2,3,5,5", "3,5,5", "3,3,5,5", "2,3,3,5,5"] as $st) {
             $s[] = new ScoreInfo($st);
         }
-        xassert($s[0]->compare_by($s[0], "counts") == 0);
+        xassert($s[0]->compare_by($s[0], "counts") === 0);
         xassert($s[0]->compare_by($s[1], "counts") < 0);
         xassert($s[0]->compare_by($s[2], "counts") < 0);
         xassert($s[0]->compare_by($s[3], "counts") < 0);
-        xassert($s[1]->compare_by($s[1], "counts") == 0);
+        xassert($s[1]->compare_by($s[1], "counts") === 0);
         xassert($s[1]->compare_by($s[2], "counts") < 0);
         xassert($s[1]->compare_by($s[3], "counts") < 0);
-        xassert($s[2]->compare_by($s[2], "counts") == 0);
+        xassert($s[2]->compare_by($s[2], "counts") === 0);
         xassert($s[2]->compare_by($s[3], "counts") < 0);
         xassert($s[3]->compare_by($s[0], "counts") > 0);
         xassert($s[3]->compare_by($s[1], "counts") > 0);
         xassert($s[3]->compare_by($s[2], "counts") > 0);
-        xassert($s[3]->compare_by($s[3], "counts") == 0);
+        xassert($s[3]->compare_by($s[3], "counts") === 0);
         xassert($s[3]->compare_by($s[4], "counts") > 0);
 
         xassert_eqq(ScoreInfo::parse_score_sort("avg"), "average");

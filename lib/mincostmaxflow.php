@@ -141,9 +141,9 @@ class MinCostMaxFlow_Edge {
      * @return bool */
     function is_distance_admissible_from($v) {
         if ($v === $this->src) {
-            return $this->flow < $this->cap && $v->distance == $this->dst->distance + 1;
+            return $this->flow < $this->cap && $v->distance === $this->dst->distance + 1;
         } else {
-            return $this->flow > $this->mincap && $v->distance == $this->src->distance + 1;
+            return $this->flow > $this->mincap && $v->distance === $this->src->distance + 1;
         }
     }
     /** @param MinCostMaxFlow_Node $v
@@ -459,7 +459,7 @@ class MinCostMaxFlow {
      * @param MinCostMaxFlow_Node $src */
     private function pushrelabel_push_from($e, $src) {
         $amt = min($src->excess, $e->residual_cap_from($src));
-        $amt = ($src == $e->dst ? -$amt : $amt);
+        $amt = ($src === $e->dst ? -$amt : $amt);
         //fwrite(STDERR, "push {$amt} {$e->src->name}@{$e->src->distance} -> {$e->dst->name}@{$e->dst->distance}\n");
         $e->update_flow($amt);
     }
@@ -533,7 +533,7 @@ class MinCostMaxFlow {
         while ($l) {
             // check progress
             ++$n;
-            if ($n % 32768 == 0) {
+            if ($n % 32768 === 0) {
                 foreach ($this->progressf as $progressf) {
                     call_user_func($progressf, $this, self::PMAXFLOW);
                 }
@@ -548,7 +548,7 @@ class MinCostMaxFlow {
                 }
                 // global relabeling heuristic is quite useful
                 ++$this->nrelabel;
-                if ($this->nrelabel % count($this->v) == 0) {
+                if ($this->nrelabel % count($this->v) === 0) {
                     $this->pushrelabel_make_distance();
                 }
                 // if relabeled, put back on front

@@ -167,11 +167,6 @@ class AbbreviationMatcher {
     }
     /** @param string $s
      * @return bool */
-    static function is_camel_word_old($s) {
-        return preg_match('/\A[-_.A-Za-z0-9]*(?:[A-Za-z](?=[-_.A-Z0-9])|[0-9](?=[-_.A-Za-z]))[-_.A-Za-z0-9]*\*?\z/', $s);
-    }
-    /** @param string $s
-     * @return bool */
     static function is_camel_word($s) {
         return preg_match('/\A[_.A-Za-z0-9~?!\'*]*(?:[A-Za-z][_.A-Z0-9]|[0-9][_.A-Za-z])[_.A-Za-z0-9~?!\'*]*\z/', $s);
     }

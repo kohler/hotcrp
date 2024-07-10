@@ -1091,7 +1091,7 @@ class PaperList {
     function sortdef($always = false) {
         $s0 = ($this->sorters())[0];
         if ($s0->sort_subset === null
-            && ($always || (string) $this->qreq->sort != "")
+            && ($always || (string) $this->qreq->sort !== "")
             && ($sn = $s0->full_sort_name()) !== "id") {
             return $sn;
         } else {

@@ -177,17 +177,19 @@ class ReviewValues extends MessageSet {
 
                 $anyDirectives++;
                 if (preg_match('/\A==\+==\s+(.*?)\s+(Paper Review(?: Form)?s?)\s*\z/', $line, $m)
-                    && $m[1] != $this->conf->short_name) {
+                    && $m[1] !== $this->conf->short_name) {
                     $this->check_garbage();
                     $this->rmsg("confid", "<0>Ignoring review form, which appears to be for a different conference.", self::ERROR);
                     $this->rmsg("confid", "<5>(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($this->conf->short_name) . " " . $m[2] . "</code>” and upload again.)", self::INFORM);
                     return false;
                 } else if (preg_match('/\A==\+== Begin Review/i', $line)) {
-                    if ($nfields > 0)
+                    if ($nfields > 0) {
                         break;
+                    }
                 } else if (preg_match('/\A==\+== Paper #?(\d+)/i', $line, $match)) {
-                    if ($nfields > 0)
+                    if ($nfields > 0) {
                         break;
+                    }
                     $this->paperId = intval($match[1]);
                     $this->req["blind"] = 1;
                     $this->first_lineno = $this->field_lineno["paperNumber"] = $this->lineno;
@@ -199,8 +201,9 @@ class ReviewValues extends MessageSet {
                     $this->req["reviewerLast"] = $user[1];
                     $this->req["reviewerEmail"] = $user[2];
                 } else if (preg_match('/\A==\+== Paper (Number|\#)\s*\z/i', $line)) {
-                    if ($nfields > 0)
+                    if ($nfields > 0) {
                         break;
+                    }
                     $field = "paperNumber";
                     $this->field_lineno[$field] = $this->lineno;
                     $mode = 1;
@@ -244,7 +247,7 @@ class ReviewValues extends MessageSet {
                     $field = null;
                     $mode = 1;
                 }
-            } else if ($mode < 2 && (substr($line, 0, 5) == "==-==" || ltrim($line) == "")) {
+            } else if ($mode < 2 && (str_starts_with($line, "==-==") || ltrim($line) === "")) {
                 /* ignore line */
             } else {
                 if ($mode === 0) {
@@ -263,7 +266,7 @@ class ReviewValues extends MessageSet {
             $text = (string) substr($text, strlen($line));
         }
 
-        if ($nfields == 0 && $this->first_lineno == 1) {
+        if ($nfields === 0 && $this->first_lineno === 1) {
             $this->rmsg(null, "<0>That didn’t appear to be a review form; I was not able to extract any information from it. Please check its formatting and try again.", self::ERROR);
         }
 
@@ -287,10 +290,10 @@ class ReviewValues extends MessageSet {
             $nfields = 0;
         }
 
-        if ($nfields == 0 && $text) { // try again
+        if ($nfields === 0 && $text) { // try again
             return $this->parse_text($override);
         } else {
-            return $nfields != 0;
+            return $nfields !== 0;
         }
     }
 
@@ -426,7 +429,7 @@ class ReviewValues extends MessageSet {
 
     /** @param ?string $msg */
     private function reviewer_error($msg) {
-        $msg = $msg ?? $this->conf->_("<0>Can’t submit a review for {}.", $this->req["reviewerEmail"]);
+        $msg = $msg ?? $this->conf->_("<0>Can’t submit a review for {}", $this->req["reviewerEmail"]);
         $this->rmsg("reviewerEmail", $msg, self::ERROR);
     }
 
@@ -456,11 +459,11 @@ class ReviewValues extends MessageSet {
         // look up reviewer
         $reviewer = $user;
         if ($rrow) {
-            if ($rrow->contactId != $user->contactId) {
+            if ($rrow->contactId !== $user->contactId) {
                 $reviewer = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
             }
         } else if (isset($this->req["reviewerEmail"])
-                   && strcasecmp($this->req["reviewerEmail"], $user->email) != 0) {
+                   && strcasecmp($this->req["reviewerEmail"], $user->email) !== 0) {
             if (!($reviewer = $this->conf->user_by_email($this->req["reviewerEmail"]))) {
                 $this->reviewer_error($user->privChair ? $this->conf->_("<0>User {} not found", $this->req["reviewerEmail"]) : null);
                 return false;
@@ -553,7 +556,7 @@ class ReviewValues extends MessageSet {
             }
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
             if ($fval === false) {
-                $this->rmsg($fid, $this->conf->_("<0>{} cannot be ‘{}’.", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$fid]), 100)), self::WARNING);
+                $this->rmsg($fid, $this->conf->_("<0>{} cannot be ‘{}’", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$fid]), 100)), self::WARNING);
                 unset($this->req[$fid]);
                 $unready = true;
                 continue;
@@ -583,7 +586,7 @@ class ReviewValues extends MessageSet {
                 && (!isset($this->req["reviewerFirst"])
                     || !isset($this->req["reviewerLast"])
                     || strcasecmp($this->req["reviewerFirst"], $reviewer->firstName) !== 0
-                    || strcasecmp($this->req["reviewerLast"], $reviewer->lastName) != 0)) {
+                    || strcasecmp($this->req["reviewerLast"], $reviewer->lastName) !== 0)) {
                 $name1 = Text::name($this->req["reviewerFirst"] ?? "", $this->req["reviewerLast"] ?? "", $this->req["reviewerEmail"], NAME_EB);
                 $name2 = Text::nameo($reviewer, NAME_EB);
                 $this->rmsg("reviewerEmail", "<0>The review form was meant for {$name1}, but this review belongs to {$name2}.", self::ERROR);
@@ -697,8 +700,8 @@ class ReviewValues extends MessageSet {
     }
 
     private function _do_save(Contact $user, PaperInfo $prow, ReviewInfo $rrow) {
-        assert($this->paperId == $prow->paperId);
-        assert($rrow->paperId == $prow->paperId);
+        assert($this->paperId === $prow->paperId);
+        assert($rrow->paperId === $prow->paperId);
         $old_reviewId = $rrow->reviewId;
         assert($rrow->reviewId > 0);
         $old_nonempty_view_score = $this->rf->nonempty_view_score($rrow);
@@ -729,8 +732,8 @@ class ReviewValues extends MessageSet {
         // XXX this seems weird; if usedReviewToken, then review row user
         // is never PC...
         if ($rrow->reviewId
-            && $rrow->reviewType == REVIEW_EXTERNAL
-            && $user->contactId == $rrow->contactId
+            && $rrow->reviewType === REVIEW_EXTERNAL
+            && $user->contactId === $rrow->contactId
             && $user->isPC
             && !$usedReviewToken) {
             $rrow->set_prop("reviewType", REVIEW_PC);
@@ -972,7 +975,7 @@ class ReviewValues extends MessageSet {
 
         // potentially email chair, reviewers, and authors
         $reviewer = $user;
-        if ($rrow->contactId != $user->contactId) {
+        if ($rrow->contactId !== $user->contactId) {
             $reviewer = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
         }
         if ($this->notify) {
@@ -1130,7 +1133,7 @@ class ReviewValues extends MessageSet {
             || !$this->has_message()) {
             if ($this->unchanged) {
                 $single = null;
-                if ($this->unchanged == $this->unchanged_draft) {
+                if ($this->unchanged === $this->unchanged_draft) {
                     $single = $this->_single_approval_state();
                 }
                 $this->_confirm_message(MessageSet::WARNING_NOTE, "<5>No changes to reviews {:list}", $this->unchanged, $single);

@@ -756,7 +756,7 @@ class Permission_Tester {
 
         $review2a = fresh_review($paper2, $user_jon);
         xassert(!$review2a->reviewSubmitted && !$review2a->reviewAuthorSeen);
-        xassert($review2a->reviewOrdinal == 0);
+        xassert($review2a->reviewOrdinal === 0);
         xassert($user_jon->can_view_review($paper2, $review2a));
         xassert(!$user_pdruschel->can_view_review($paper2, $review2a));
         xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
@@ -765,7 +765,7 @@ class Permission_Tester {
         $review2a = save_review(2, $user_jon, $revreq);
         MailChecker::check0();
         xassert($review2a->reviewSubmitted && !$review2a->reviewAuthorSeen);
-        xassert($review2a->reviewOrdinal == 1);
+        xassert($review2a->reviewOrdinal === 1);
         xassert($user_jon->can_view_review($paper2, $review2a));
         xassert(!$user_pdruschel->can_view_review($paper2, $review2a));
         xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
@@ -779,14 +779,14 @@ class Permission_Tester {
         self::run_assignment($this->u_chair, "paper,action,email\n2,secondary,mgbaker@cs.stanford.edu\n");
         $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert(!$review2d->reviewSubmitted);
-        xassert($review2d->reviewNeedsSubmit == 1);
+        xassert($review2d->reviewNeedsSubmit === 1);
         xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
 
         $user_external = Contact::make_keyed($this->conf, ["email" => "external@_.com", "name" => "External Reviewer"])->store();
         $this->u_mgbaker->assign_review(2, $user_external->contactId, REVIEW_EXTERNAL);
         $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert(!$review2d->reviewSubmitted);
-        xassert($review2d->reviewNeedsSubmit == -1);
+        xassert($review2d->reviewNeedsSubmit === -1);
         xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
         $review2c = fresh_review($paper2, $user_external);
         xassert(!$this->u_mgbaker->can_view_review($paper2, $review2c));
@@ -794,7 +794,7 @@ class Permission_Tester {
         MailChecker::check_db("test01-review2C");
         $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert(!$review2d->reviewSubmitted);
-        xassert($review2d->reviewNeedsSubmit == 0);
+        xassert($review2d->reviewNeedsSubmit === 0);
         xassert($this->u_mgbaker->can_view_review($paper2, $review2a));
         xassert($this->u_mgbaker->can_view_review($paper2, $review2c));
 
@@ -892,7 +892,7 @@ class Permission_Tester {
         $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert_eqq($review2d->reviewType, REVIEW_SECONDARY);
         xassert(!$review2d->reviewSubmitted);
-        xassert($review2d->reviewNeedsSubmit == 0);
+        xassert($review2d->reviewNeedsSubmit === 0);
 
         // mgbaker secondary -> primary
         $assignset = new AssignmentSet($this->u_chair);
@@ -905,7 +905,7 @@ class Permission_Tester {
         $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert_eqq($review2d->reviewType, REVIEW_PRIMARY);
         xassert(!$review2d->reviewSubmitted);
-        xassert($review2d->reviewNeedsSubmit == 1);
+        xassert($review2d->reviewNeedsSubmit === 1);
 
         // mgbaker primary -> secondary
         xassert_assign($this->u_chair, "action,paper,email,reviewtype\nreview,2,mgbaker@cs.stanford.edu,primary:secondary\n");
@@ -917,7 +917,7 @@ class Permission_Tester {
         $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert_eqq($review2d->reviewType, REVIEW_SECONDARY);
         xassert(!$review2d->reviewSubmitted);
-        xassert($review2d->reviewNeedsSubmit == 0);
+        xassert($review2d->reviewNeedsSubmit === 0);
 
         // no change to assignment
         $old_pcassignments = $this->get_pcassignment_csv();
@@ -926,7 +926,7 @@ class Permission_Tester {
         $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert_eqq($review2d->reviewType, REVIEW_SECONDARY);
         xassert(!$review2d->reviewSubmitted);
-        xassert($review2d->reviewNeedsSubmit == 0);
+        xassert($review2d->reviewNeedsSubmit === 0);
 
         // another secondary -> primary
         xassert_search($this->u_chair, "sec:any", "2");
@@ -1348,7 +1348,7 @@ class Permission_Tester {
             $paper = $this->u_chair->checked_paper_by_id($pid);
             foreach ([$this->u_marina, $this->u_estrin, $user_pfrancis, $user_floyd] as $cidx => $user) {
                 if ((!($cidx & 1) && (($pid - 1) & 2)) /* user not red && paper green */
-                    || (($cidx & 1) && ($pid == 1 || (($pid - 1) & 1))) /* user red && paper red or none */
+                    || (($cidx & 1) && ($pid === 1 || (($pid - 1) & 1))) /* user red && paper red or none */
                     || (($cidx & 2) && (($pid - 1) & 4))) /* user blue && paper blue */
                     xassert($user->can_view_paper($paper), "user {$user->email} can view paper $pid");
                 else

@@ -463,7 +463,7 @@ function xassert($x, $description = "") {
 /** @return void */
 function xassert_exit() {
     $ok = Xassert::$nsuccess
-        && Xassert::$nsuccess == Xassert::$n
+        && Xassert::$nsuccess === Xassert::$n
         && !Xassert::$nerror;
     echo ($ok ? "* " : "! "), plural(Xassert::$nsuccess, "test"), " succeeded out of ", Xassert::$n, " tried.\n";
     if (Xassert::$nerror > Xassert::$n - Xassert::$nsuccess) {
@@ -844,8 +844,8 @@ function tag_normalize_compare($a, $b) {
     $b_twiddle = strpos($b, "~");
     $ax = ($a_twiddle > 0 ? substr($a, $a_twiddle + 1) : $a);
     $bx = ($b_twiddle > 0 ? substr($b, $b_twiddle + 1) : $b);
-    if (($cmp = strcasecmp($ax, $bx)) == 0) {
-        if (($a_twiddle > 0) != ($b_twiddle > 0)) {
+    if (($cmp = strcasecmp($ax, $bx)) === 0) {
+        if (($a_twiddle > 0) !== ($b_twiddle > 0)) {
             $cmp = ($a_twiddle > 0 ? 1 : -1);
         } else {
             $cmp = strcasecmp($a, $b);
@@ -865,7 +865,7 @@ function paper_tag_normalize($prow) {
             $at = strpos($c->email, "@");
             $tag = ($at ? substr($c->email, 0, $at) : $c->email) . substr($tag, $twiddle);
         }
-        if (strlen($tag) > 2 && substr($tag, strlen($tag) - 2) == "#0") {
+        if (str_ends_with($tag, "#0")) {
             $tag = substr($tag, 0, strlen($tag) - 2);
         }
         if ($tag) {
@@ -1000,11 +1000,14 @@ function checked_fresh_review($prow, $user) {
     }
 }
 
-/** @param Contact $user
+/** @param int|PaperInfo $prow
+ * @param Contact $user
+ * @param ?ReviewInfo $rrow
  * @return ?ReviewInfo */
-function save_review($paper, $user, $revreq, $rrow = null) {
-    $pid = is_object($paper) ? $paper->paperId : $paper;
-    $prow = $user->conf->checked_paper_by_id($pid, $user);
+function save_review($prow, $user, $revreq, $rrow = null) {
+    if (is_int($prow)) {
+        $prow = $user->conf->checked_paper_by_id($prow, $user);
+    }
     $rf = Conf::$main->review_form();
     $tf = new ReviewValues($rf);
     $tf->parse_qreq(new Qrequest("POST", $revreq), false);
@@ -1013,7 +1016,7 @@ function save_review($paper, $user, $revreq, $rrow = null) {
         Xassert::will_print();
         fwrite(STDERR, "! {$mx->field}" . ($mx->message ? ": {$mx->message}\n" : "\n"));
     }
-    return fresh_review($prow, $user);
+    return $prow->fresh_review_by_user($user);
 }
 
 /** @return Contact */

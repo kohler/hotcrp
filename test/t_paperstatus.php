@@ -331,7 +331,7 @@ class PaperStatus_Tester {
         xassert_eqq($aus[0]->firstName, "Bobby");
         xassert_eqq($aus[0]->lastName, "Flay");
         xassert_eqq($aus[0]->email, "flay@_.com");
-        xassert($newpaper->timeSubmitted == 0);
+        xassert($newpaper->timeSubmitted === 0);
         xassert($newpaper->timeWithdrawn <= 0);
         xassert_eqq($newpaper->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
     }

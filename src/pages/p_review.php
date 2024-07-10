@@ -252,7 +252,7 @@ class Review_Page {
             if ($this->rrow->reviewToken !== 0) {
                 $this->conf->update_rev_tokens_setting(-1);
             }
-            if ($this->rrow->reviewType == REVIEW_META) {
+            if ($this->rrow->reviewType === REVIEW_META) {
                 $this->conf->update_metareviews_setting(-1);
             }
 
@@ -400,7 +400,7 @@ class Review_Page {
             $pp->handle_adopt();
         } else if ($qreq->upload && $qreq->valid_post()) {
             $pp->handle_upload_form();
-        } else if ($qreq->download || $qreq->downloadForm /* XXX */) {
+        } else if ($qreq->download) {
             $pp->handle_download_form();
         } else if ($qreq->text) {
             $pp->handle_download_text();

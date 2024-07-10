@@ -81,19 +81,20 @@ class Offline_Page {
         }
     }
 
+    /** @return bool */
     function handle_request() {
-        if ($this->qreq->download || $this->qreq->downloadForm /* XXX */) {
+        if ($this->qreq->download) {
             $this->handle_download();
             return true;
-        }
-        if (($this->qreq->upload || $this->qreq->uploadForm /* XXX */)
-            && $this->qreq->valid_post()) {
+        } else if ($this->qreq->upload
+                   && $this->qreq->valid_post()) {
             return $this->handle_upload();
-        }
-        if (($this->qreq->setvote || $this->qreq->setrank)
-            && $this->qreq->valid_post()
-            && $this->user->is_reviewer()) {
+        } else if (($this->qreq->setvote || $this->qreq->setrank)
+                   && $this->qreq->valid_post()
+                   && $this->user->is_reviewer()) {
             return $this->handle_tag_indexes();
+        } else {
+            return false;
         }
     }
 

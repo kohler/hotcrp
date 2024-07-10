@@ -387,7 +387,7 @@ class NavigationState {
         if ($this->path !== "") {
             $p = explode("/", substr($this->path, 1));
             if ($n + 1 < count($p)
-                || ($n + 1 == count($p) && $p[$n] !== "")) {
+                || ($n + 1 === count($p) && $p[$n] !== "")) {
                 return $decoded ? urldecode($p[$n]) : $p[$n];
             }
         }
