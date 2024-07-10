@@ -17,18 +17,10 @@ class ReviewValues extends MessageSet {
     /** @var bool */
     private $autosearch = true;
 
-    /** @var ?string */
-    public $text;
-    /** @var ?string */
-    public $filename;
-    /** @var ?int */
-    public $lineno;
-    /** @var ?int */
-    private $first_lineno;
-    /** @var ?array<string,int> */
-    private $field_lineno;
-    /** @var ?int */
-    private $garbage_lineno;
+    /** @var array<string,mixed> */
+    public $req;
+    /** @var ?bool */
+    public $req_json;
 
     /** @var int */
     public $paperId;
@@ -36,10 +28,21 @@ class ReviewValues extends MessageSet {
     public $reviewId;
     /** @var ?string */
     public $review_ordinal_id;
-    /** @var array<string,mixed> */
-    public $req;
-    /** @var ?bool */
-    public $req_json;
+
+    /** @var ?string */
+    private $text;
+    /** @var ?int */
+    private $textpos;
+    /** @var ?string */
+    private $filename;
+    /** @var ?int */
+    private $lineno;
+    /** @var ?int */
+    private $first_lineno;
+    /** @var ?array<string,int> */
+    private $field_lineno;
+    /** @var ?int */
+    private $garbage_lineno;
 
     /** @var 0|1|2|3 */
     private $finished = 0;
@@ -102,6 +105,7 @@ class ReviewValues extends MessageSet {
      * @return $this */
     function set_text($text, $filename = null) {
         $this->text = $text;
+        $this->textpos = 0;
         $this->filename = $filename;
         $this->lineno = 0;
         return $this;
@@ -144,10 +148,10 @@ class ReviewValues extends MessageSet {
         $this->garbage_lineno = null;
     }
 
+    /** @return bool */
     function parse_text($override) {
         assert($this->text !== null && $this->finished === 0);
 
-        $text = $this->text;
         $this->first_lineno = $this->lineno + 1;
         $this->field_lineno = [];
         $this->garbage_lineno = null;
@@ -158,15 +162,18 @@ class ReviewValues extends MessageSet {
             $this->req["override"] = $override;
         }
 
+        $pos = $this->textpos;
+        $len = strlen($this->text);
+
         $mode = 0;
         $nfields = 0;
         $field = null;
         $anyDirectives = 0;
 
-        while ($text !== "") {
-            $pos = strpos($text, "\n");
-            $line = ($pos === false ? $text : substr($text, 0, $pos + 1));
-            ++$this->lineno;
+        while ($pos !== $len) {
+            $x = strpos($this->text, "\n", $pos);
+            $epos = $x !== false ? $x + 1 : $len;
+            $line = substr($this->text, $pos, $epos - $pos);
 
             $linestart = substr($line, 0, 6);
             if ($linestart === "==+== " || $linestart === "==*== ") {
@@ -225,13 +232,15 @@ class ReviewValues extends MessageSet {
                     $field = "anonymity";
                     $mode = 1;
                 } else if (preg_match('/\A(?:==\+== [A-Z]\.|==\*== )\s*(.*?)\s*\z/', $line, $match)) {
-                    while (substr($text, strlen($line), 6) === $linestart) {
-                        $pos = strpos($text, "\n", strlen($line));
-                        $xline = ($pos === false ? substr($text, strlen($line)) : substr($text, strlen($line), $pos + 1 - strlen($line)));
+                    while (substr($this->text, $epos, 6) === $linestart) {
+                        $x = strpos($this->text, "\n", $epos + 6);
+                        $epos2 = $x !== false ? $x + 1 : $len;
+                        $xline = substr($this->text, $epos, $epos2 - $epos);
                         if (preg_match('/\A==[+*]==\s+(.*?)\s*\z/', $xline, $xmatch)) {
                             $match[1] .= " " . $xmatch[1];
                         }
                         $line .= $xline;
+                        $epos = $epos2;
                     }
                     if (($f = $this->conf->find_review_field($match[1]))) {
                         $field = $f->short_id;
@@ -263,15 +272,15 @@ class ReviewValues extends MessageSet {
                 $mode = 2;
             }
 
-            $text = (string) substr($text, strlen($line));
+            $pos = $epos;
+            ++$this->lineno;
         }
+
+        $this->textpos = $pos;
 
         if ($nfields === 0 && $this->first_lineno === 1) {
             $this->rmsg(null, "<0>That didn’t appear to be a review form; I was not able to extract any information from it. Please check its formatting and try again.", self::ERROR);
         }
-
-        $this->text = $text;
-        --$this->lineno;
 
         if (isset($this->req["readiness"])) {
             $this->req["ready"] = strcasecmp(trim($this->req["readiness"]), "Ready") === 0;
@@ -290,13 +299,17 @@ class ReviewValues extends MessageSet {
             $nfields = 0;
         }
 
-        if ($nfields === 0 && $text) { // try again
-            return $this->parse_text($override);
+        if ($nfields !== 0) {
+            return true;
+        } else if ($pos !== $len) { // try again
+            /** @phan-suppress-next-line PhanPossiblyInfiniteRecursionSameParams */
+            return $this->parse_text();
         } else {
-            return $nfields !== 0;
+            return false;
         }
     }
 
+    /** @return bool */
     function parse_json($j) {
         assert($this->text === null && $this->finished === 0);
         if (!is_object($j) && !is_array($j)) {
