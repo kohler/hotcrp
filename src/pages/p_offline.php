@@ -38,8 +38,9 @@ class Offline_Page {
         $tf = (new ReviewValues($this->conf))
             ->set_text($this->qreq->file_contents("file"),
                        $this->qreq->file_filename("file"));
-        while ($tf->parse_text($this->qreq->override)) {
+        while ($tf->set_req_override(!!$this->qreq->override)->parse_text()) {
             $tf->check_and_save($this->user, null, null);
+            $tf->clear_req();
         }
         $tf->report();
         $this->conf->redirect_self($this->qreq);

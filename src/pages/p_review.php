@@ -122,11 +122,11 @@ class Review_Page {
                         ? $this->user->perm_edit_review($this->prow, $this->rrow, true)
                         : $this->user->perm_create_review($this->prow)))) {
             $whynot->append_to($rv, null, MessageSet::ERROR);
-        } else if ($rv->parse_qreq($this->qreq, !!$this->qreq->override)) {
+        } else if ($rv->parse_qreq($this->qreq)) {
             if (isset($this->qreq->approvesubreview)
                 && $this->rrow
                 && $this->user->can_approve_review($this->prow, $this->rrow)) {
-                $rv->set_approved();
+                $rv->set_req_approved();
             }
             if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
                 $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
@@ -146,12 +146,13 @@ class Review_Page {
             return;
         }
         $rv = (new ReviewValues($this->conf))
-            ->set_text($this->qreq->file_contents("file"), $this->qreq->file_filename("file"));
-        if ($rv->parse_text($this->qreq->override)
+            ->set_text($this->qreq->file_contents("file"), $this->qreq->file_filename("file"))
+            ->set_req_override(!!$this->qreq->override);
+        if ($rv->parse_text()
             && $rv->check_and_save($this->user, $this->prow, $this->rrow)) {
             $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
         }
-        if (!$rv->has_error() && $rv->parse_text($this->qreq->override)) {
+        if (!$rv->has_error() && $rv->parse_text()) {
             $rv->msg_at(null, "<5>Only the first review form in the file was parsed. " . Ht::link("Upload multiple-review files here.", $this->conf->hoturl("offline")), MessageSet::WARNING);
         }
         $rv->report();
@@ -221,14 +222,14 @@ class Review_Page {
                         ? $this->user->perm_edit_review($this->prow, $my_rrow, true)
                         : $this->user->perm_create_review($this->prow)))) {
             $rv->msg_at(null, "<5>" . $whynot->unparse_html(), MessageSet::ERROR);
-        } else if ($rv->parse_qreq($this->qreq, !!$this->qreq->override)) {
-            $rv->set_ready($this->qreq->adoptsubmit);
+        } else if ($rv->parse_qreq($this->qreq)) {
+            $rv->set_req_ready(!!$this->qreq->adoptsubmit);
             if ($rv->check_and_save($this->user, $this->prow, $my_rrow)) {
                 $my_rid = $rv->review_ordinal_id;
                 if (!$rv->has_problem_at("ready")) {
                     // mark the source review as approved
                     $rvx = new ReviewValues($this->conf);
-                    $rvx->set_approved();
+                    $rvx->set_req_approved();
                     $rvx->check_and_save($this->user, $this->prow, $this->rrow);
                 }
             }
@@ -338,7 +339,7 @@ class Review_Page {
             $pt->set_review_values($this->rv);
         } else if ($this->qreq->has_annex("after_login")) {
             $rv = new ReviewValues($this->conf);
-            $rv->parse_qreq($this->qreq, !!$this->qreq->override);
+            $rv->parse_qreq($this->qreq);
             $pt->set_review_values($rv);
         }
 

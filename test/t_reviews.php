@@ -147,7 +147,7 @@ class Reviews_Tester {
 
         // correct update
         $tf = (new ReviewValues($this->conf))->set_text($this->review1A, "review1A.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert($tf->check_and_save($this->u_mgbaker));
 
         xassert_search($this->u_chair, "ovemer:4", "1");
@@ -156,12 +156,12 @@ class Reviews_Tester {
 
         // different-conference form fails
         $tf = (new ReviewValues($this->conf))->set_text(preg_replace('/Testconf I/', 'Testconf IIII', $this->review1A), "review1A-1.txt");
-        xassert(!$tf->parse_text(false));
+        xassert(!$tf->parse_text());
         xassert($tf->has_error_at("confid"));
 
         // invalid value fails
         $tf = (new ReviewValues($this->conf))->set_text(preg_replace('/^4/m', 'Mumps', $this->review1A), "review1A-2.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->unchanged), "#1A");
         xassert($tf->has_problem_at("s01"));
@@ -169,7 +169,7 @@ class Reviews_Tester {
         // invalid “No entry” fails
         //$this->print_review_history($rrow);
         $tf = (new ReviewValues($this->conf))->set_text(preg_replace('/^4/m', 'No entry', $this->review1A), "review1A-3.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->unchanged ?? []), "#1A");
         xassert($tf->has_problem_at("s01"));
@@ -180,12 +180,12 @@ class Reviews_Tester {
 
     function test_offline_review_different_reviewer() {
         $tf = (new ReviewValues($this->conf))->set_text(preg_replace('/Reviewer: .*/m', 'Reviewer: butt@butt.com', $this->review1A), "review1A-4.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert(!$tf->check_and_save($this->u_mgbaker));
         xassert($tf->has_problem_at("reviewerEmail"));
 
         $tf = (new ReviewValues($this->conf))->set_text(preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baaaker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5", $this->review1A)), "review1A-5.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         $paper1 = $this->conf->checked_paper_by_id(1);
         xassert(!$tf->check_and_save($this->u_mgbaker, $paper1, fresh_review($paper1, $this->u_mgbaker)));
         xassert($tf->has_problem_at("reviewerEmail"));
@@ -195,7 +195,7 @@ class Reviews_Tester {
         // it IS ok to save a form that's meant for a different EMAIL but same name
         // Also add a description of the field
         $tf = (new ReviewValues($this->conf))->set_text(preg_replace('/Reviewer: .*/m', 'Reviewer: Mary Baker <mgbaker193r8219@butt.com>', preg_replace('/^4/m', "5. Strong accept", $this->review1A)), "review1A-5.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert($tf->check_and_save($this->u_mgbaker, $paper1, fresh_review($paper1, $this->u_mgbaker)));
         xassert(!$tf->has_problem_at("reviewerEmail"));
         xassert_search($this->u_chair, "ovemer:4", "");
@@ -222,7 +222,7 @@ class Reviews_Tester {
 
         // now it's OK to save “no entry”
         $tf = (new ReviewValues($this->conf))->set_text(preg_replace('/^4/m', 'No entry', $this->review1A), "review1A-6.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->updated ?? []), "#1A");
         xassert(!$tf->has_problem_at("s01"));
@@ -231,7 +231,7 @@ class Reviews_Tester {
 
         // Restore review
         $tf = (new ReviewValues($this->conf))->set_text($this->review1A, "review1A-7.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert($tf->check_and_save($this->u_mgbaker));
         xassert_eqq(join(" ", $tf->updated), "#1A");
         xassert(!$tf->has_problem_at("s01"));
@@ -742,13 +742,13 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         $review18A = file_get_contents(SiteLoader::find("test/review18A.txt"));
         $tf = (new ReviewValues($conf))->set_text($review18A, "review18A.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert($tf->check_and_save($user_diot));
         xassert_eqq($tf->summary_status(), MessageSet::SUCCESS);
         xassert_eqq($tf->full_feedback_text(), "Updated review #18A\n");
 
         $tf = (new ReviewValues($conf))->set_text($review18A, "review18A.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert($tf->check_and_save($user_diot));
         xassert_eqq($tf->summary_status(), MessageSet::WARNING);
         xassert_eqq($tf->full_feedback_text(), "No changes to review #18A\n");
@@ -759,7 +759,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $review18A2 = str_replace("This is the stuff", "That was the stuff",
             str_replace("authors’ response\n", "authors' response\n", $review18A));
         $tf = (new ReviewValues($conf))->set_text($review18A2, "review18A2.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert($tf->check_and_save($user_diot));
 
         $rrow = fresh_review($paper18, $user_diot);
@@ -776,7 +776,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $review18A3 = str_replace("That was the stuff", "Whence the stuff",
             str_replace("authors' response\n", "authors' response (hidden from authors)\n", $review18A2));
         $tf = (new ReviewValues($conf))->set_text($review18A3, "review18A3.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert($tf->check_and_save($user_diot));
 
         $rrow = fresh_review($paper18, $user_diot);
@@ -784,7 +784,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         $review18A4 = file_get_contents(SiteLoader::find("test/review18A-4.txt"));
         $tf = (new ReviewValues($conf))->set_text($review18A4, "review18A-4.txt");
-        xassert($tf->parse_text(false));
+        xassert($tf->parse_text());
         xassert($tf->check_and_save($user_diot));
 
         $rrow = fresh_review($paper18, $user_diot);

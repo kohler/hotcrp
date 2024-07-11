@@ -1010,7 +1010,7 @@ function save_review($prow, $user, $revreq, $rrow = null) {
     }
     $rf = Conf::$main->review_form();
     $tf = new ReviewValues($rf);
-    $tf->parse_qreq(new Qrequest("POST", $revreq), false);
+    $tf->parse_qreq(new Qrequest("POST", $revreq));
     $tf->check_and_save($user, $prow, $rrow ?? fresh_review($prow, $user));
     foreach ($tf->problem_list() as $mx) {
         Xassert::will_print();

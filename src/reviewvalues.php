@@ -77,6 +77,7 @@ class ReviewValues extends MessageSet {
             $this->rf = $this->conf->review_form();
         }
         $this->set_want_ftext(true);
+        $this->clear_req();
     }
 
     /** @param bool $x
@@ -118,6 +119,32 @@ class ReviewValues extends MessageSet {
         return (new ReviewValues($rf))->set_text($text, $filename);
     }
 
+    function clear_req() {
+        $this->req = [];
+        $this->paperId = 0;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_req_override($x) {
+        $this->req["override"] = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_req_ready($x) {
+        $this->req["ready"] = $x;
+        return $this;
+    }
+
+    /** @return $this */
+    function set_req_approved() {
+        $this->req["approvesubreview"] = 1;
+        $this->req["ready"] = true;
+        return $this;
+    }
+
     /** @param int|string $field
      * @param string $msg
      * @param int $status
@@ -149,18 +176,13 @@ class ReviewValues extends MessageSet {
     }
 
     /** @return bool */
-    function parse_text($override) {
+    function parse_text() {
         assert($this->text !== null && $this->finished === 0);
+        $this->req_json = false;
 
         $this->first_lineno = $this->lineno + 1;
         $this->field_lineno = [];
         $this->garbage_lineno = null;
-        $this->req = [];
-        $this->req_json = false;
-        $this->paperId = 0;
-        if ($override !== null) {
-            $this->req["override"] = $override;
-        }
 
         $pos = $this->textpos;
         $len = strlen($this->text);
@@ -312,12 +334,11 @@ class ReviewValues extends MessageSet {
     /** @return bool */
     function parse_json($j) {
         assert($this->text === null && $this->finished === 0);
+        $this->req_json = true;
+
         if (!is_object($j) && !is_array($j)) {
             return false;
         }
-        $this->req = [];
-        $this->req_json = true;
-        $this->paperId = 0; // XXX annoying that this field exists
         // XXX validate more
         foreach ($j as $k => $v) {
             if ($k === "round") {
@@ -330,11 +351,11 @@ class ReviewValues extends MessageSet {
                 }
             } else if ($k === "submitted" || $k === "ready") {
                 if (is_bool($v)) {
-                    $this->req["ready"] = $v ? 1 : 0;
+                    $this->req["ready"] = $v;
                 }
             } else if ($k === "draft") {
                 if (is_bool($v)) {
-                    $this->req["ready"] = $v ? 0 : 1;
+                    $this->req["ready"] = !$v;
                 }
             } else if ($k === "name" || $k === "reviewer_name") {
                 if (is_string($v)) {
@@ -371,7 +392,7 @@ class ReviewValues extends MessageSet {
             }
         }
         if (!empty($this->req) && !isset($this->req["ready"])) {
-            $this->req["ready"] = 1;
+            $this->req["ready"] = true;
         }
         return !empty($this->req);
     }
@@ -384,14 +405,13 @@ class ReviewValues extends MessageSet {
         "approvesubreview" => true, "default" => true, "vtag" => true
     ];
 
-    /** @param bool $override
-     * @return bool */
-    function parse_qreq(Qrequest $qreq, $override) {
+    /** @return bool */
+    function parse_qreq(Qrequest $qreq) {
         assert($this->text === null && $this->finished === 0);
+        $this->req_json = false;
+
         $rf = $this->conf->review_form();
         $hasreqs = [];
-        $this->req = [];
-        $this->req_json = false;
         foreach ($qreq as $k => $v) {
             if (isset(self::$ignore_web_keys[$k]) || !is_scalar($v)) {
                 /* skip */
@@ -402,7 +422,7 @@ class ReviewValues extends MessageSet {
             } else if ($k === "edit_version") {
                 $this->req[$k] = stoi($v) ?? -1;
             } else if ($k === "blind" || $k === "ready") {
-                $this->req[$k] = is_bool($v) ? (int) $v : (stoi($v) ?? -1);
+                $this->req[$k] = is_bool($v) ? $v : (stoi($v) ?? -1) > 0;
             } else if (str_starts_with($k, "has_")) {
                 if ($k !== "has_blind" && $k !== "has_override" && $k !== "has_ready") {
                     $hasreqs[] = substr($k, 4);
@@ -423,21 +443,7 @@ class ReviewValues extends MessageSet {
         if ($qreq->has_blind) {
             $this->req["blind"] = $this->req["blind"] ?? 0;
         }
-        if ($override) {
-            $this->req["override"] = 1;
-        }
         return true;
-    }
-
-    /** @param bool $ready
-     * @return $this */
-    function set_ready($ready) {
-        $this->req["ready"] = $ready ? 1 : 0;
-        return $this;
-    }
-
-    function set_approved() {
-        $this->req["approvesubreview"] = $this->req["ready"] = 1;
     }
 
     /** @param ?string $msg */
@@ -551,11 +557,11 @@ class ReviewValues extends MessageSet {
 
     /** @return bool */
     private function check(ReviewInfo $rrow) {
-        $submit = $this->req["ready"] ?? null;
-        if (!$submit
+        $want_ready = $this->req["ready"] ?? false;
+        if (!$want_ready
             && !$this->allow_unsubmit
-            && $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
-            $submit = $this->req["ready"] = 1;
+            && $rrow->reviewStatus >= ReviewInfo::RS_DELIVERED) {
+            $want_ready = $this->req["ready"] = true;
         }
 
         $msgcount = $this->message_count();
@@ -564,7 +570,7 @@ class ReviewValues extends MessageSet {
 
         foreach ($this->rf->forder as $fid => $f) {
             if (!isset($this->req[$fid])
-                && (!$submit || !$f->test_exists($rrow))) {
+                && (!$want_ready || !$f->test_exists($rrow))) {
                 continue;
             }
             list($old_fval, $fval) = $this->fvalues($f, $rrow);
@@ -578,7 +584,7 @@ class ReviewValues extends MessageSet {
                 && !$f->value_present($fval)
                 && $f->view_score >= VIEWSCORE_PC) {
                 $missingfields[] = $f;
-                $unready = $unready || $submit;
+                $unready = $unready || $want_ready;
             }
             $anydiff = $anydiff
                 || ($old_fval !== $fval
@@ -587,7 +593,7 @@ class ReviewValues extends MessageSet {
                 || $f->value_present($fval);
         }
 
-        if ($missingfields && $submit && $anyvalues) {
+        if ($missingfields && $want_ready && $anyvalues) {
             foreach ($missingfields as $f) {
                 $this->rmsg($f->short_id, $this->conf->_("<0>{}: Entry required", $f->name), self::WARNING);
             }
@@ -618,11 +624,11 @@ class ReviewValues extends MessageSet {
         }
 
         if ($unready) {
-            if ($submit && $anyvalues) {
+            if ($want_ready && $anyvalues) {
                 $what = $this->req["approvesubreview"] ?? null ? "approved" : "submitted";
                 $this->rmsg("ready", $this->conf->_("<0>This review can’t be {$what} until entries are provided for all required fields."), self::WARNING);
             }
-            $this->req["ready"] = 0;
+            $this->req["ready"] = false;
         }
 
         if ($this->has_error_since($msgcount)) {

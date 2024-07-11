@@ -272,7 +272,7 @@ class SavePapers_Batch {
                            || !validate_email($this->tf->req["reviewerEmail"])) {
                     $this->tf->msg_at(null, "review #" . ($reviewindex + 1) . ": invalid reviewer email " . htmlspecialchars($this->tf->req["reviewerEmail"] ?? "<missing>"), MessageSet::ERROR);
                 } else {
-                    $this->tf->req["override"] = true;
+                    $this->tf->set_req_override(true);
                     $this->tf->paperId = $pid;
                     $user = Contact::make_keyed($this->conf, [
                         "firstName" => $this->tf->req["reviewerFirst"] ?? "",
@@ -283,6 +283,7 @@ class SavePapers_Batch {
                     ])->store();
                     $this->tf->check_and_save($this->user, $prow, null);
                 }
+                $this->tf->clear_req();
             }
             if (!$this->silent) {
                 foreach ($this->tf->message_list() as $mi) {
