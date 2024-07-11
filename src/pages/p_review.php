@@ -111,11 +111,6 @@ class Review_Page {
     }
 
     function handle_update() {
-        // do not unsubmit submitted review
-        if ($this->rrow && $this->rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
-            $this->qreq->ready = 1;
-        }
-
         $rv = new ReviewValues($this->conf);
         $rv->paperId = $this->prow->paperId;
         if (($whynot = ($this->rrow
@@ -123,11 +118,6 @@ class Review_Page {
                         : $this->user->perm_create_review($this->prow)))) {
             $whynot->append_to($rv, null, MessageSet::ERROR);
         } else if ($rv->parse_qreq($this->qreq)) {
-            if (isset($this->qreq->approvesubreview)
-                && $this->rrow
-                && $this->user->can_approve_review($this->prow, $this->rrow)) {
-                $rv->set_req_approved();
-            }
             if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
                 $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
             }
@@ -227,9 +217,9 @@ class Review_Page {
             if ($rv->check_and_save($this->user, $this->prow, $my_rrow)) {
                 $my_rid = $rv->review_ordinal_id;
                 if (!$rv->has_problem_at("ready")) {
-                    // mark the source review as approved
+                    // approve the source review
                     $rvx = new ReviewValues($this->conf);
-                    $rvx->set_req_approved();
+                    $rvx->set_req_approval("approved");
                     $rvx->check_and_save($this->user, $this->prow, $this->rrow);
                 }
             }
@@ -274,6 +264,25 @@ class Review_Page {
                 $this->conf->success_msg("<0>Review unsubmitted");
             }
             $this->conf->redirect_self($this->qreq);
+        }
+    }
+
+    function handle_valid_post() {
+        $qreq = $this->qreq;
+        if ($qreq->update
+            || $qreq->savedraft
+            || $qreq->submitreview
+            || $qreq->approvesubreview
+            || $qreq->approvesubmit) {
+            $this->handle_update();
+        } else if ($qreq->adoptreview) {
+            $this->handle_adopt();
+        } else if ($qreq->upload) {
+            $this->handle_upload_form();
+        } else if ($qreq->unsubmitreview) {
+            $this->handle_unsubmit();
+        } else if ($qreq->deletereview) {
+            $this->handle_delete();
         }
     }
 
@@ -376,11 +385,6 @@ class Review_Page {
             } else {
                 $qreq->update = 1;
             }
-        } else if ($qreq->submitreview) {
-            $qreq->update = $qreq->ready = 1;
-        } else if ($qreq->savedraft) {
-            $qreq->update = 1;
-            unset($qreq->ready);
         }
         if ($user->is_reviewer()) {
             $qreq->open_session();
@@ -395,20 +399,12 @@ class Review_Page {
         // action
         if ($qreq->cancel) {
             $pp->handle_cancel();
-        } else if ($qreq->update && $qreq->valid_post()) {
-            $pp->handle_update();
-        } else if ($qreq->adoptreview && $qreq->valid_post()) {
-            $pp->handle_adopt();
-        } else if ($qreq->upload && $qreq->valid_post()) {
-            $pp->handle_upload_form();
         } else if ($qreq->download) {
             $pp->handle_download_form();
         } else if ($qreq->text) {
             $pp->handle_download_text();
-        } else if ($qreq->unsubmitreview && $qreq->valid_post()) {
-            $pp->handle_unsubmit();
-        } else if ($qreq->deletereview && $qreq->valid_post()) {
-            $pp->handle_delete();
+        } else if ($qreq->valid_post()) {
+            $pp->handle_valid_post();
         }
 
         // capability may accept to different user

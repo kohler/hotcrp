@@ -138,10 +138,10 @@ class ReviewValues extends MessageSet {
         return $this;
     }
 
-    /** @return $this */
-    function set_req_approved() {
-        $this->req["approvesubreview"] = 1;
-        $this->req["ready"] = true;
+    /** @param false|'approved'|'submitted' $x
+     * @return $this */
+    function set_req_approval($x) {
+        $this->req["approval"] = $x;
         return $this;
     }
 
@@ -331,6 +331,46 @@ class ReviewValues extends MessageSet {
         }
     }
 
+    /** @param mixed $x
+     * @return ?bool */
+    static function parse_blind($x) {
+        if (($v = friendly_boolean($x)) !== null) {
+            return $v;
+        } else if ($x === "blind" || $x === "anonymous") {
+            return true;
+        } else if ($x === "nonblind" || $x === "nonanonymous") {
+            return false;
+        } else {
+            return null;
+        }
+    }
+
+    /** @param mixed $x
+     * @return ?bool */
+    static function parse_ready($x) {
+        if (($v = friendly_boolean($x)) !== null) {
+            return $v;
+        } else if ($x === "ready") {
+            return true;
+        } else if ($x === "unready" || $x === "draft") {
+            return false;
+        } else {
+            return null;
+        }
+    }
+
+    /** @param mixed $x
+     * @return null|false|'approved'|'submitted' */
+    static function parse_approval($x) {
+        if (($v = friendly_boolean($x)) !== null) {
+            return $v ? "approved" : false;
+        } else if ($x === "approved" || $x === "submitted") {
+            return $x;
+        } else {
+            return null;
+        }
+    }
+
     /** @return bool */
     function parse_json($j) {
         assert($this->text === null && $this->finished === 0);
@@ -346,12 +386,16 @@ class ReviewValues extends MessageSet {
                     $this->req["round"] = $v;
                 }
             } else if ($k === "blind") {
-                if (is_bool($v)) {
-                    $this->req["blind"] = $v ? 1 : 0;
+                if (($b = self::parse_blind($v)) !== null) {
+                    $this->req["blind"] = $b;
                 }
             } else if ($k === "submitted" || $k === "ready") {
-                if (is_bool($v)) {
-                    $this->req["ready"] = $v;
+                if (($b = self::parse_ready($v)) !== null) {
+                    $this->req["ready"] = $b;
+                }
+            } else if ($k === "approval") {
+                if (($b = self::parse_approval($v)) !== null) {
+                    $this->req["approval"] = $b;
                 }
             } else if ($k === "draft") {
                 if (is_bool($v)) {
@@ -397,12 +441,34 @@ class ReviewValues extends MessageSet {
         return !empty($this->req);
     }
 
-    static private $ignore_web_keys = [
-        "submitreview" => true, "savedraft" => true, "unsubmitreview" => true,
-        "deletereview" => true, "r" => true, "m" => true, "post" => true,
-        "forceShow" => true, "update" => true, "has_blind" => true,
-        "adoptreview" => true, "adoptsubmit" => true, "adoptdraft" => true,
-        "approvesubreview" => true, "default" => true, "vtag" => true
+    private const QREQ_IGNORE = 1;
+    private const QREQ_HAS = 2;
+    private const QREQ_BOOL = 3;
+    private const QREQ_BLIND = 4;
+    private const QREQ_READINESS = 5;
+    private const QREQ_APPROVAL = 6;
+    private const QREQ_UPDATE = 7;
+    private const QREQ_READY = 8;
+    private const QREQ_UNREADY = 9;
+    private const QREQ_APPROVED = 10;
+    private const QREQ_APPROVESUBMIT = 11;
+    static private $qreq_special = [
+        "r" => self::QREQ_IGNORE, "m" => self::QREQ_IGNORE,
+        "post" => self::QREQ_IGNORE, "vtag" => self::QREQ_IGNORE,
+        "forceShow" => self::QREQ_IGNORE, "default" => self::QREQ_IGNORE,
+        "deletereview" => self::QREQ_IGNORE,
+
+        "update" => self::QREQ_UPDATE, "savedraft" => self::QREQ_UNREADY,
+        "submitreview" => self::QREQ_READY, "unsubmitreview" => self::QREQ_UNREADY,
+        "approvesubreview" => self::QREQ_APPROVED,
+        "approvesubmit" => self::QREQ_APPROVESUBMIT,
+        "adoptreview" => self::QREQ_UPDATE, "adoptsubmit" => self::QREQ_UPDATE,
+        "adoptdraft" => self::QREQ_UPDATE,
+
+        "has_override" => self::QREQ_HAS, "override" => self::QREQ_BOOL,
+        "has_blind" => self::QREQ_HAS, "blind" => self::QREQ_BLIND,
+        "has_ready" => self::QREQ_HAS, "ready" => self::QREQ_READINESS,
+        "approval" => self::QREQ_APPROVAL
     ];
 
     /** @return bool */
@@ -413,20 +479,44 @@ class ReviewValues extends MessageSet {
         $rf = $this->conf->review_form();
         $hasreqs = [];
         foreach ($qreq as $k => $v) {
-            if (isset(self::$ignore_web_keys[$k]) || !is_scalar($v)) {
-                /* skip */
+            if (!is_scalar($v)) {
+                /* skip */;
+            } else if (($special = self::$qreq_special[$k] ?? 0) !== 0) {
+                if ($special === self::QREQ_HAS) {
+                    $this->req[substr($k, 4)] = $this->req[substr($k, 4)] ?? false;
+                } else if ($special === self::QREQ_BOOL) {
+                    if (($b = friendly_boolean($v)) !== null) {
+                        $this->req[$k] = $b;
+                    }
+                } else if ($special === self::QREQ_BLIND) {
+                    if (($b = self::parse_blind($v)) !== null) {
+                        $this->req["blind"] = $b;
+                    }
+                } else if ($special === self::QREQ_READINESS) {
+                    if (($b = self::parse_ready($v)) !== null) {
+                        $this->req["ready"] = $b;
+                    }
+                } else if ($special === self::QREQ_UNREADY) {
+                    $this->req["ready"] = false;
+                } else if ($special === self::QREQ_READY) {
+                    $this->req["ready"] = true;
+                } else if ($special === self::QREQ_APPROVAL) {
+                    if (($b = self::parse_approval($v)) !== null) {
+                        $this->req["approval"] = $b;
+                    }
+                } else if ($special === self::QREQ_APPROVED) {
+                    $this->req["approval"] = "approved";
+                } else if ($special === self::QREQ_APPROVESUBMIT) {
+                    $this->req["approval"] = "submitted";
+                } else if ($special === self::QREQ_UPDATE) {
+                    $this->req["ready"] = $this->req["ready"] ?? null;
+                }
             } else if ($k === "p") {
                 $this->paperId = stoi($v) ?? -1;
-            } else if ($k === "override") {
-                $this->req["override"] = !!$v;
             } else if ($k === "edit_version") {
                 $this->req[$k] = stoi($v) ?? -1;
-            } else if ($k === "blind" || $k === "ready") {
-                $this->req[$k] = is_bool($v) ? $v : (stoi($v) ?? -1) > 0;
             } else if (str_starts_with($k, "has_")) {
-                if ($k !== "has_blind" && $k !== "has_override" && $k !== "has_ready") {
-                    $hasreqs[] = substr($k, 4);
-                }
+                $hasreqs[] = substr($k, 4);
             } else if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))
                        && !isset($this->req[$f->short_id])) {
                 $this->req[$f->short_id] = $f->extract_qreq($qreq, $k);
@@ -437,13 +527,7 @@ class ReviewValues extends MessageSet {
                 $this->req[$f->short_id] = $this->req[$f->short_id] ?? "";
             }
         }
-        if (empty($this->req)) {
-            return false;
-        }
-        if ($qreq->has_blind) {
-            $this->req["blind"] = $this->req["blind"] ?? 0;
-        }
-        return true;
+        return !empty($this->req);
     }
 
     /** @param ?string $msg */
@@ -625,7 +709,7 @@ class ReviewValues extends MessageSet {
 
         if ($unready) {
             if ($want_ready && $anyvalues) {
-                $what = $this->req["approvesubreview"] ?? null ? "approved" : "submitted";
+                $what = $this->req["approval"] ?? null ? "approved" : "submitted";
                 $this->rmsg("ready", $this->conf->_("<0>This review can’t be {$what} until entries are provided for all required fields."), self::WARNING);
             }
             $this->req["ready"] = false;
@@ -633,7 +717,7 @@ class ReviewValues extends MessageSet {
 
         if ($this->has_error_since($msgcount)) {
             return false;
-        } else if ($anyvalues || ($this->req["approvesubreview"] ?? null)) {
+        } else if ($anyvalues) {
             return true;
         } else {
             $this->blank[] = "#" . $this->paperId;
@@ -803,20 +887,22 @@ class ReviewValues extends MessageSet {
         if ($view_score === VIEWSCORE_EMPTY) {
             // empty review: do not submit, adopt, or deliver
             $newstatus = max($oldstatus, ReviewInfo::RS_ACCEPTED);
-        } else if (!($this->req["ready"] ?? null)) {
+        } else if (!($this->req["ready"] ?? false)) {
             // unready nonempty review is at least drafted
             $newstatus = max($oldstatus, ReviewInfo::RS_DRAFTED);
-        } else if ($oldstatus < ReviewInfo::RS_COMPLETED) {
-            $approvable = $rrow->subject_to_approval();
-            if ($approvable && !$user->isPC) {
+        } else if ($oldstatus >= ReviewInfo::RS_COMPLETED) {
+            $newstatus = $oldstatus;
+        } else if ($rrow->subject_to_approval()) {
+            $approval = $user->can_approve_review($prow, $rrow) ? $this->req["approval"] ?? false : false;
+            if (!$approval) {
                 $newstatus = max($oldstatus, ReviewInfo::RS_DELIVERED);
-            } else if ($approvable && ($this->req["approvesubreview"] ?? null)) {
+            } else if ($approval === "approved") {
                 $newstatus = ReviewInfo::RS_APPROVED;
             } else {
                 $newstatus = ReviewInfo::RS_COMPLETED;
             }
         } else {
-            $newstatus = $oldstatus;
+            $newstatus = ReviewInfo::RS_COMPLETED;
         }
 
         // get the current time

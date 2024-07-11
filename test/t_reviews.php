@@ -1247,7 +1247,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         ]);
         MailChecker::check_db("test06-external2-approval17");
 
-        save_review(17, $this->u_lixia, ["ready" => true], fresh_review(17, $user_external2));
+        save_review(17, $this->u_lixia, ["approvesubmit" => true], fresh_review(17, $user_external2));
         MailChecker::check_db("test06-external2-submit17");
     }
 

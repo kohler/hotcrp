@@ -12956,7 +12956,7 @@ handle_ui.on("js-approve-review", function (evt) {
     grid.append($e("button", {type: "button", name: "approvesubreview", "class": "big" + subreviewClass}, "Approve subreview"),
         $e("p", null, "Approve this review as a subreview. It will not be shown to authors and its scores will not be counted in statistics."));
     if (hasClass(self, "can-approve-submit")) {
-        grid.append($e("button", {type: "button", name: "submitreview", "class": "big"}, "Submit as full review"),
+        grid.append($e("button", {type: "button", name: "approvesubmit", "class": "big"}, "Submit as full review"),
             $e("p", null, "Submit this review as an independent review. It will be shown to authors and its scores will be counted in statistics."));
     }
     const $pu = $popup({near: evt.sidebarTarget || self}).append(grid)
