@@ -23,7 +23,7 @@ class ReviewValues extends MessageSet {
     public $req_json;
 
     /** @var int */
-    public $paperId;
+    private $paperId;
     /** @var ?int */
     public $reviewId;
     /** @var ?string */
@@ -122,6 +122,12 @@ class ReviewValues extends MessageSet {
     function clear_req() {
         $this->req = [];
         $this->paperId = 0;
+    }
+
+    /** @return $this */
+    function set_prow(?PaperInfo $prow) {
+        $this->paperId = $prow ? $prow->paperId : 0;
+        return $this;
     }
 
     /** @param bool $x

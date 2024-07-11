@@ -111,8 +111,7 @@ class Review_Page {
     }
 
     function handle_update() {
-        $rv = new ReviewValues($this->conf);
-        $rv->paperId = $this->prow->paperId;
+        $rv = (new ReviewValues($this->conf))->set_prow($this->prow);
         if (($whynot = ($this->rrow
                         ? $this->user->perm_edit_review($this->prow, $this->rrow, true)
                         : $this->user->perm_create_review($this->prow)))) {
@@ -204,8 +203,7 @@ class Review_Page {
             return;
         }
 
-        $rv = new ReviewValues($this->conf);
-        $rv->paperId = $this->prow->paperId;
+        $rv = (new ReviewValues($this->conf))->set_prow($this->prow);
         $my_rrow = $this->prow->review_by_user($this->user);
         $my_rid = ($my_rrow ?? $this->rrow)->unparse_ordinal_id();
         if (($whynot = ($my_rrow
