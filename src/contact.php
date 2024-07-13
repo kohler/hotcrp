@@ -5775,7 +5775,8 @@ class Contact implements JsonSerializable {
 
         if ($type > 0 && $oldtype === 0) {
             $reviewId = $result->insert_id;
-            $msg = "Review {$reviewId} assigned: " . $this->review_explanation($type, $round);
+            $verb = ($rflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0 ? "self-assigned" : "assigned";
+            $msg = "Review {$reviewId} {$verb}: " . $this->review_explanation($type, $round);
         } else if ($type === 0) {
             $msg = "Review {$reviewId} removed";
             $reviewId = 0;
