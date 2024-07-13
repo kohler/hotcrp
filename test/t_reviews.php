@@ -1195,7 +1195,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $xqreq = new Qrequest("POST", ["email" => "external2@_.com", "name" => "Jo March", "affiliation" => "Concord"]);
         $paper17 = $this->conf->checked_paper_by_id(17);
         $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
-        MailChecker::check_db("test06-external2-request17");
+        MailChecker::check_db("t_review-external2-request17");
         xassert($result instanceof JsonResult);
         xassert($result->content["ok"]);
         $user_external2 = $this->conf->checked_user_by_email("external2@_.com");
@@ -1216,6 +1216,19 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $emptyuser->apply_capability_text($tok->salt); // had an infinite loop here
         assert(!!$emptyuser->can_view_paper($paper17));
         xassert_eqq($emptyuser->reviewer_capability_user(17)->contactId, $user_external2->contactId);
+
+        // confirm review
+        $xqreq = new Qrequest("POST", ["r" => $rrow->reviewId]);
+        $result = RequestReview_API::acceptreview($emptyuser, $xqreq, $paper17);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::check_db("t_review-external2-accept17");
+        $rrow = $paper17->fresh_review_by_user($user_external2);
+        xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_ACCEPTED);
+        xassert_eqq($rrow->reviewSubmitted, null);
+        xassert_eqq($rrow->reviewModified, 1);
+        xassert_eqq($rrow->timeRequestNotified, Conf::$now);
+        xassert_eqq($rrow->view_score(), VIEWSCORE_EMPTY);
 
         // check clickthrough
         assert($emptyuser->can_clickthrough("review", $paper17));
@@ -1245,10 +1258,10 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         save_review(17, $user_external2, [
             "ready" => true, "ovemer" => 3, "revexp" => 3
         ]);
-        MailChecker::check_db("test06-external2-approval17");
+        MailChecker::check_db("t_review-external2-approval17");
 
         save_review(17, $this->u_lixia, ["approvesubmit" => true], fresh_review(17, $user_external2));
-        MailChecker::check_db("test06-external2-submit17");
+        MailChecker::check_db("t_review-external2-submit17");
     }
 
     function test_review_proposal() {

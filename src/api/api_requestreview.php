@@ -279,12 +279,19 @@ class RequestReview_API {
      * @param Qrequest $qreq
      * @return ?PaperInfo */
     static private function review_refusal_paper($user, $qreq) {
-        if (ctype_digit($qreq->p ?? "X")
-            && ($prow = $user->conf->paper_by_id(intval($qreq->p), $user))
-            && $prow->review_refusals_by_user($user)) {
-            return $prow;
+        if (is_int($qreq->p)) {
+            $pid = $qreq->p;
+        } else if (ctype_digit($qreq->p ?? "X")) {
+            $pid = intval($qreq->p);
+        } else {
+            return null;
         }
-        return null;
+        $prow = $user->conf->paper_by_id($pid, $user);
+        if ($prow && $prow->review_refusals_by_user($user)) {
+            return $prow;
+        } else {
+            return null;
+        }
     }
 
     /** @param Contact $user
@@ -300,10 +307,13 @@ class RequestReview_API {
         }
 
         // check `r` parameter, set redirect
-        if (!ctype_digit($qreq->r ?? "X")) {
+        if (is_int($qreq->r)) {
+            $r = $qreq->r;
+        } else if (ctype_digit($qreq->r ?? "X")) {
+            $r = intval($qreq->r);
+        } else {
             return JsonResult::make_parameter_error("r");
         }
-        $r = intval($qreq->r);
         $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
         if ($qreq->redirect === "1") {
             $qreq->redirect = $review_site_relative;

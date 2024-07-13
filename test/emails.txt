@@ -1711,10 +1711,9 @@ Comments for authors
 --------------------
 Nonradical
 
-******** test06-external2-request17
+******** t_review-external2-request17
 To: Jo March <external2@_.com>
 Subject: [Testconf I] Review request for submission #17
-X-Landmark: test/test06.php:747
 
 Dear Jo March,
 
@@ -1743,11 +1742,24 @@ Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
 
 - Testconf I Submissions
-******** test06-external2-approval17
+******** t_review-external2-accept17
+To: Lixia Zhang <lixia@cs.ucla.edu>
+Subject: [Testconf I] Accepted review request for submission #17
+
+Dear Lixia Zhang,
+
+Jo March <external2@_.com> has confirmed their intention to complete the
+review you requested of Test Conference I (Testconf I) submission #17.
+
+* Title: Network Text Editor (NTE): A Scalable Shared Text Editor for
+  the MBone
+* Site: http://hotcrp.lcdf.org/test/paper/17
+
+- Testconf I Submissions
+******** t_review-external2-approval17
 To: Lixia Zhang <lixia@cs.ucla.edu>
 Subject: [Testconf I] Review approval requested for submission #17 "Network
  Text Editor (NTE): A Scalable..."
-X-Landmark: test/test06.php:755
 
 Greetings,
 
@@ -1777,11 +1789,10 @@ Reviewer expertise
 ------------------
 3. Knowledgeable
 
-******** test06-external2-submit17
+******** t_review-external2-submit17
 To: External Reviewer <external@_.com>
 Subject: [Testconf I] Submitted review #17E "Network Text Editor (NTE): A
  Scalable..."
-X-Landmark: test/test06.php:759
 
 Greetings,
 
@@ -1811,11 +1822,10 @@ Reviewer expertise
 ------------------
 3. Knowledgeable
 
-******** test06-external2-submit17
+******** t_review-external2-submit17
 To: Jo March <external2@_.com>
 Subject: [Testconf I] Submitted review #17E "Network Text Editor (NTE): A
  Scalable..."
-X-Landmark: test/test06.php:759
 
 Greetings,
 
@@ -1847,11 +1857,10 @@ Reviewer expertise
 ------------------
 3. Knowledgeable
 
-******** test06-external2-submit17
+******** t_review-external2-submit17
 To: Mary Baker <mgbaker@cs.stanford.edu>, Peter Druschel <pdruschel@cs.rice.edu>
 Subject: [Testconf I] Submitted review #17E "Network Text Editor (NTE): A
  Scalable..."
-X-Landmark: test/test06.php:759
 
 Greetings,
 
