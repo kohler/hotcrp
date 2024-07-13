@@ -360,7 +360,7 @@ class PermissionProblem extends Exception
      * @param 1|2|3 $status
      * @return Iterable<MessageItem> */
     function message_list($field, $status) {
-        return [new MessageItem(null, "<5>" . $this->unparse_html(), $status)];
+        return [new MessageItem($field, "<5>" . $this->unparse_html(), $status)];
     }
 
     /** @param ?string $field
