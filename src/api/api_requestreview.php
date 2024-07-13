@@ -351,24 +351,8 @@ class RequestReview_API {
         }
 
         if ($rrow->reviewStatus < ReviewInfo::RS_ACCEPTED) {
-            $prow->conf->qe("update PaperReview
-                set reviewModified=1,
-                    timeRequestNotified=greatest(?,timeRequestNotified),
-                    rflags=rflags|?
-                where paperId=? and reviewId=? and reviewModified<=0",
-                Conf::$now,
-                ReviewInfo::RF_ACCEPTED,
-                $prow->paperId, $rrow->reviewId); /* XXX PaperReviewHistory? */
-            $user->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} accepted", $prow);
-
-            // send mail to requesters
-            // XXX delay this mail by a couple minutes
-            if ($rrow->requestedBy > 0
-                && ($requser = $user->conf->user_by_id($rrow->requestedBy))) {
-                HotCRPMailer::send_to($requser, "@acceptreviewrequest", [
-                    "prow" => $prow, "reviewer_contact" => $rrow->reviewer()
-                ]);
-            }
+            $rv = (new ReviewValues($rrow->conf))->set_req_ready(false);
+            $rv->check_and_save($user, $prow, $rrow);
         }
 
         return new JsonResult([

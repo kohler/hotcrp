@@ -18,6 +18,8 @@ class ReviewDiffInfo {
     public $notify = false;
     /** @var bool */
     public $notify_author = false;
+    /** @var bool */
+    public $notify_requester = false;
     /** @var ?dmp\diff_match_patch */
     private $_dmp;
 

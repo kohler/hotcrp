@@ -59,6 +59,8 @@ class ReviewValues extends MessageSet {
     /** @var ?list<string> */
     private $author_notified;
     /** @var ?list<string> */
+    private $accepted;
+    /** @var ?list<string> */
     public $unchanged;
     /** @var ?list<string> */
     private $unchanged_draft;
@@ -906,14 +908,14 @@ class ReviewValues extends MessageSet {
         }
         if ($newstatus !== $oldstatus) {
             // Must mark view score to ensure database is modified
-            $rrow->mark_prop_view_score($old_nonempty_view_score);
+            $rrow->mark_prop_view_score(max($old_nonempty_view_score, VIEWSCORE_REVIEWERONLY));
         }
 
         // anonymity
         $reviewBlind = $this->conf->is_review_blind(!!($this->req["blind"] ?? null));
         if ($reviewBlind != $rrow->reviewBlind) {
             $rrow->set_prop("reviewBlind", $reviewBlind ? 1 : 0);
-            $rrow->mark_prop_view_score(VIEWSCORE_ADMINONLY);
+            $rrow->mark_prop_view_score(VIEWSCORE_REVIEWERONLY);
             $rflags = ($rflags & ~ReviewInfo::RF_BLIND) | ($reviewBlind ? ReviewInfo::RF_BLIND : 0);
         }
 
@@ -956,6 +958,13 @@ class ReviewValues extends MessageSet {
                     $diffinfo->notify_author = true;
                 }
             }
+        }
+        if ($rrow->requestedBy > 0
+            && $oldstatus < ReviewInfo::RS_ACCEPTED
+            && $newstatus >= ReviewInfo::RS_ACCEPTED
+            && $newstatus < ReviewInfo::RS_DELIVERED) {
+            $rrow->set_prop("timeRequestNotified", $now);
+            $diffinfo->notify_requester = true;
         }
 
         // potentially assign review ordinal (requires table locking since
@@ -1061,9 +1070,11 @@ class ReviewValues extends MessageSet {
         } else if ($diffinfo->is_viewable()) {
             if ($newstatus >= ReviewInfo::RS_APPROVED) {
                 $this->updated[] = $what;
-            } else {
+            } else if ($newstatus >= ReviewInfo::RS_DRAFTED) {
                 $this->saved_draft[] = $what;
                 $this->single_approval = +$rrow->timeApprovalRequested;
+            } else {
+                $this->accepted[] = $what;
             }
         } else {
             $this->unchanged[] = $what;
@@ -1101,8 +1112,8 @@ class ReviewValues extends MessageSet {
             }
             $always_combine = false;
             $diff_view_score = $diffinfo->view_score();
-        } else if ($newstatus < ReviewInfo::RS_COMPLETED
-                   && $newstatus >= ReviewInfo::RS_DELIVERED
+        } else if ($newstatus >= ReviewInfo::RS_DELIVERED
+                   && $newstatus < ReviewInfo::RS_COMPLETED
                    && ($diffinfo->fields() || $newstatus !== $oldstatus)) {
             if ($newstatus >= ReviewInfo::RS_APPROVED) {
                 $tmpl = "@reviewapprove";
@@ -1117,6 +1128,18 @@ class ReviewValues extends MessageSet {
             $always_combine = true;
             $diff_view_score = null;
             $info["rrow_unsubmitted"] = true;
+        } else if ($newstatus >= ReviewInfo::RS_ACCEPTED
+                   && $oldstatus < ReviewInfo::RS_ACCEPTED) {
+            if ($rrow->requestedBy > 0
+                && $rrow->requestedBy !== $rrow->contactId
+                && $rrow->requestedBy !== $user->contactId
+                && $rrow->reviewType <= REVIEW_PC
+                && ($requser = $user->conf->user_by_id($rrow->requestedBy))) {
+                HotCRPMailer::send_to($requser, "@acceptreviewrequest", [
+                    "prow" => $prow, "reviewer_contact" => $reviewer
+                ]);
+            }
+            return;
         } else {
             return;
         }
@@ -1177,12 +1200,15 @@ class ReviewValues extends MessageSet {
         } else if ($newstatus < ReviewInfo::RS_DELIVERED
                    && $oldstatus >= ReviewInfo::RS_DELIVERED) {
             $actions[] = "unsubmitted";
+        } else if ($newstatus === ReviewInfo::RS_ACCEPTED
+                   && $oldstatus < ReviewInfo::RS_ACCEPTED) {
+            $actions[] = "accepted";
         } else if (empty($log_actions)) {
             $actions[] = "updated";
         }
         $atext = join(", ", $actions);
 
-        $stext = $newstatus < ReviewInfo::RS_DELIVERED ? " draft" : "";
+        $stext = $newstatus === ReviewInfo::RS_DRAFTED ? " draft" : "";
 
         $fields = [];
         foreach ($diffinfo->fields() as $f) {
@@ -1258,6 +1284,10 @@ class ReviewValues extends MessageSet {
         if ($this->saved_draft) {
             $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Saved draft reviews for submissions {:list}", $this->saved_draft, $this->_single_approval_state());
         }
+        if ($this->accepted) {
+            $this->_confirm_message(MessageSet::SUCCESS, "<5>Accepted review requests {:list}", $this->accepted);
+            $confirm = true;
+        }
         if ($this->author_notified) {
             $this->_confirm_message(MessageSet::MARKED_NOTE, "<5>Authors were notified about updated reviews {:list}", $this->author_notified);
         }
@@ -1311,7 +1341,7 @@ class ReviewValues extends MessageSet {
 
     function json_report() {
         $j = [];
-        foreach (["submitted", "updated", "approval_requested", "saved_draft", "author_notified", "unchanged", "blank"] as $k) {
+        foreach (["submitted", "updated", "approval_requested", "saved_draft", "accepted", "author_notified", "unchanged", "blank"] as $k) {
             if ($this->$k)
                 $j[$k] = $this->$k;
         }

@@ -128,6 +128,8 @@
     ["<5>Updated reviews {:list}", "<5>Review updated", ["{single}"]],
     ["<5>Approved reviews {:list}", "<5>Approved review {:list}", ["#{0}=1"]],
     ["<5>Approved reviews {:list}", "<5>Review approved", ["{single}"]],
+    ["<5>Accepted review requests {:list}", "<5>Accepted review request {:list}", ["#{0}=1"]],
+    ["<5>Accepted review requests {:list}", "<5>Review request accepted", ["{single}"]],
     ["<5>Submitted reviews for approval {:list}", "<5>Submitted review for approval {:list}", ["#{0}=1"]],
     ["<5>Submitted reviews for approval {:list}", "<5>Review submitted for approval", ["{single}"]],
     ["<5>Saved draft reviews for submissions {:list}", "<5>Saved draft review for submission {:list}", ["#{0}=1"]],
