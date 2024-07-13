@@ -734,6 +734,7 @@ class ReviewValues extends MessageSet {
     /** @param int $newstatus
      * @param int $oldstatus */
     private function _do_notify(PaperInfo $prow, ReviewInfo $rrow,
+                                ReviewDiffInfo $diffinfo,
                                 $newstatus, $oldstatus,
                                 Contact $reviewer, Contact $user) {
         assert($this->notify);
@@ -743,7 +744,6 @@ class ReviewValues extends MessageSet {
             "reviewer_contact" => $reviewer,
             "combination_type" => 1
         ];
-        $diffinfo = $rrow->prop_diff();
         if ($newstatus >= ReviewInfo::RS_COMPLETED
             && ($diffinfo->notify || $diffinfo->notify_author)) {
             if ($oldstatus < ReviewInfo::RS_COMPLETED) {
@@ -1011,7 +1011,7 @@ class ReviewValues extends MessageSet {
                 && ($newsubmit || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED)
                 && ($diffinfo->view_score() >= VIEWSCORE_AUTHORDEC
                     || $this->rf->nonempty_view_score($rrow) >= VIEWSCORE_AUTHORDEC))) {
-            $result = $this->conf->qe_raw("lock tables PaperReview write");
+            $result = $this->conf->qe_raw("lock tables PaperReview write, PaperReviewHistory write");
             if (Dbl::is_error($result)) {
                 return false;
             }
@@ -1030,7 +1030,6 @@ class ReviewValues extends MessageSet {
 
         // actually affect database
         $rrow->set_prop("rflags", $rflags);
-        $no_attempt = $rrow->reviewId > 0 && !$diffinfo->is_viewable();
         $result = $rrow->save_prop();
 
         // unlock tables even if problem
@@ -1067,11 +1066,6 @@ class ReviewValues extends MessageSet {
             $user->log_activity_for($rrow->contactId, $this->_log_message($rrow, $old_reviewId, $oldstatus, $newstatus, $diffinfo), $prow);
         }
 
-        // log change
-        if ($old_reviewId > 0 && $diffinfo->is_viewable()) {
-            $diffinfo->save_history();
-        }
-
         // if external, forgive the requester from finishing their review
         if ($rrow->reviewType < REVIEW_SECONDARY
             && $rrow->requestedBy
@@ -1090,7 +1084,7 @@ class ReviewValues extends MessageSet {
             $reviewer = $this->conf->user_by_id($rrow->contactId, USER_SLICE);
         }
         if ($this->notify) {
-            $this->_do_notify($prow, $rrow, $newstatus, $oldstatus, $reviewer, $user);
+            $this->_do_notify($prow, $rrow, $diffinfo, $newstatus, $oldstatus, $reviewer, $user);
         }
 
         // record what happened

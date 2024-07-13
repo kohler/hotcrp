@@ -392,7 +392,6 @@ class ReviewForm_SettingParser extends SettingParser {
             }
             if ($rrow->prop_changed()) {
                 $rrow->save_prop($stager);
-                $rrow->prop_diff()->save_history($stager);
             }
         }
         $stager(null);

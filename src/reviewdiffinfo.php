@@ -151,6 +151,15 @@ class ReviewDiffInfo {
         }
     }
 
+    /** @param string $prop
+     * @return mixed */
+    private function base_prop($prop) {
+        if (array_key_exists($prop, $this->_old_prop)) {
+            return $this->_old_prop[$prop];
+        }
+        return $this->rrow->$prop;
+    }
+
     /** @param ?callable(?string,string|int|null...):void $stager */
     function save_history($stager = null) {
         assert($this->rrow->reviewId > 0);
@@ -166,20 +175,20 @@ class ReviewDiffInfo {
             reviewEditVersion=?, rflags=?,
             revdelta=?",
             $rrow->paperId, $rrow->reviewId,
-              $rrow->base_prop("reviewTime"), $rrow->reviewTime,
-            $rrow->base_prop("contactId"), $rrow->base_prop("reviewRound"),
-              $rrow->base_prop("reviewOrdinal"), $rrow->base_prop("reviewType"),
-              $rrow->base_prop("reviewBlind"),
-            $rrow->base_prop("reviewModified") ?? 0,
-              $rrow->base_prop("reviewSubmitted") ?? 0,
-              $rrow->base_prop("timeDisplayed") ?? 0,
-              $rrow->base_prop("timeApprovalRequested") ?? 0,
-            $rrow->base_prop("reviewAuthorSeen") ?? 0,
-              $rrow->base_prop("reviewAuthorModified") ?? 0,
-            $rrow->base_prop("reviewNotified") ?? 0,
-              $rrow->base_prop("reviewAuthorNotified") ?? 0,
-            $rrow->base_prop("reviewEditVersion") ?? 0,
-              $rrow->base_prop("rflags") ?? 0,
+              $this->base_prop("reviewTime"), $rrow->reviewTime,
+            $this->base_prop("contactId"), $this->base_prop("reviewRound"),
+              $this->base_prop("reviewOrdinal"), $this->base_prop("reviewType"),
+              $this->base_prop("reviewBlind"),
+            $this->base_prop("reviewModified") ?? 0,
+              $this->base_prop("reviewSubmitted") ?? 0,
+              $this->base_prop("timeDisplayed") ?? 0,
+              $this->base_prop("timeApprovalRequested") ?? 0,
+            $this->base_prop("reviewAuthorSeen") ?? 0,
+              $this->base_prop("reviewAuthorModified") ?? 0,
+            $this->base_prop("reviewNotified") ?? 0,
+              $this->base_prop("reviewAuthorNotified") ?? 0,
+            $this->base_prop("reviewEditVersion") ?? 0,
+              $this->base_prop("rflags") ?? 0,
             empty($patch) ? null : json_encode_db($patch));
         $result && $result->close();
     }

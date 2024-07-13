@@ -760,9 +760,10 @@ class ReviewInfo implements JsonSerializable {
         assert(!isset($this->_diff->_old_prop["reviewTime"]));
         $this->_seal_fstorage();
         if ($this->reviewId <= 0) {
-            foreach (["paperId", "contactId", "reviewType", "requestedBy", "reviewRound"] as $k) {
-                assert(!array_key_exists($k, $this->_diff->_old_prop));
-                $this->_diff->_old_prop[$k] = $this->$k;
+            foreach (["paperId", "contactId", "reviewType", "requestedBy", "reviewRound", "reviewBlind", "rflags"] as $k) {
+                if (!array_key_exists($k, $this->_diff->_old_prop)) {
+                    $this->_diff->_old_prop[$k] = $this->$k;
+                }
             }
             $this->set_prop("reviewTime", mt_rand(2000, 1000000));
         } else {
@@ -799,6 +800,10 @@ class ReviewInfo implements JsonSerializable {
             $r = self::SAVE_PROP_OK;
         }
         $result && $result->close();
+        if ($r >= 0) {
+            $this->_diff->save_history($stager);
+            $this->_diff = null;
+        }
         return $r;
     }
 
