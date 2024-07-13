@@ -170,9 +170,11 @@ class MailChecker {
             }
         }
 
+        Xassert::push_failure_group();
         foreach ($haves as $have) {
             Xassert::fail_with("Unexpected mail: " . $have);
         }
+        Xassert::pop_failure_group();
         self::$preps = [];
     }
 
@@ -262,6 +264,8 @@ class Xassert {
     static public $nerror = 0;
     /** @var int */
     static public $disabled = 0;
+    /** @var ?list<int> */
+    static private $group_stack = [];
     /** @var ?string */
     static public $context = null;
     /** @var bool */
@@ -290,6 +294,21 @@ class Xassert {
         }
     }
 
+    static function push_failure_group() {
+        self::$group_stack[] = self::$n;
+    }
+
+    static function pop_failure_group() {
+        assert(!empty(self::$group_stack));
+        $n = array_pop(self::$group_stack);
+        if (self::$n > $n) {
+            self::$n = $n + 1;
+        } else {
+            ++self::$n;
+            ++self::$nsuccess;
+        }
+    }
+
     static function will_print() {
         if (self::$test_runner) {
             self::$test_runner->will_print();
@@ -308,8 +327,8 @@ class Xassert {
         }
     }
 
-    /** @param string ...$sl */
-    static function fail_with(...$sl) {
+    /** @param list<string> $sl */
+    static private function fail_message($sl) {
         if (self::$test_runner) {
             self::$test_runner->will_fail();
         }
@@ -323,7 +342,18 @@ class Xassert {
             $x .= "\n";
         }
         fwrite(STDERR, $x);
+    }
+
+    /** @param string ...$sl */
+    static function fail_with(...$sl) {
+        self::fail_message($sl);
         self::fail();
+    }
+
+    /** @param string ...$sl */
+    static function error_with(...$sl) {
+        self::fail_message($sl);
+        ++self::$nerror;
     }
 
     /** @param string $xprefix
@@ -355,7 +385,7 @@ class Xassert {
      * @param string $aprefix
      * @param mixed $actual
      * @return void */
-    static function match_fail($location, $eprefix, $expected, $aprefix, $actual) {
+    static function fail_match($location, $eprefix, $expected, $aprefix, $actual) {
         if ($location === null) {
             list($location, $rest) = self::landmark(true);
         } else {
@@ -415,13 +445,14 @@ class Xassert {
  * @param string $file
  * @param int $line */
 function xassert_error_handler($errno, $emsg, $file, $line) {
-    if ((error_reporting() || $errno != E_NOTICE) && Xassert::$disabled <= 0) {
+    if ((error_reporting() || $errno != E_NOTICE)
+        && Xassert::$disabled <= 0) {
         if (($e = Xassert::$emap[$errno] ?? null)) {
             $emsg = "{$e}:  {$emsg}";
         } else {
             $emsg = "PHP Message {$errno}:  {$emsg}";
         }
-        Xassert::fail_with("!", "{$emsg} in {$file} on line {$line}\n");
+        Xassert::error_with("!", "{$emsg} in {$file} on line {$line}\n");
     }
 }
 
@@ -462,13 +493,12 @@ function xassert($x, $description = "") {
 
 /** @return void */
 function xassert_exit() {
-    $ok = Xassert::$nsuccess
+    $ok = Xassert::$nsuccess > 0
         && Xassert::$nsuccess === Xassert::$n
-        && !Xassert::$nerror;
+        && Xassert::$nerror === 0;
     echo ($ok ? "* " : "! "), plural(Xassert::$nsuccess, "test"), " succeeded out of ", Xassert::$n, " tried.\n";
-    if (Xassert::$nerror > Xassert::$n - Xassert::$nsuccess) {
-        $nerror = Xassert::$nerror - (Xassert::$n - Xassert::$nsuccess);
-        echo "! ", plural($nerror, "other error"), ".\n";
+    if (Xassert::$nerror !== 0) {
+        echo "! ", plural(Xassert::$nerror, "other error"), ".\n";
     }
     exit($ok ? 0 : 1);
 }
@@ -483,7 +513,7 @@ function xassert_eqq($actual, $expected, $location = null) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::match_fail($location, "expected === ", $expected, ", got ", $actual);
+        Xassert::fail_match($location, "expected === ", $expected, ", got ", $actual);
     }
     return $ok;
 }
@@ -517,7 +547,7 @@ function xassert_in_eqq($member, $list) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::match_fail(null, "expected ", $member, " ∈ ", $list);
+        Xassert::fail_match(null, "expected ", $member, " ∈ ", $list);
     }
     return $ok;
 }
@@ -537,7 +567,7 @@ function xassert_not_in_eqq($member, $list) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::match_fail(null, "expected ", $member, " ∉ ", $list);
+        Xassert::fail_match(null, "expected ", $member, " ∉ ", $list);
     }
     return $ok;
 }
@@ -550,7 +580,7 @@ function xassert_eq($actual, $expected) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::match_fail(null, "expected == ", $expected, ", got ", $actual);
+        Xassert::fail_match(null, "expected == ", $expected, ", got ", $actual);
     }
     return $ok;
 }
@@ -576,7 +606,7 @@ function xassert_lt($actual, $expected_bound) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::match_fail(null, "expected < ", $expected_bound, ", got ", $actual);
+        Xassert::fail_match(null, "expected < ", $expected_bound, ", got ", $actual);
     }
     return $ok;
 }
@@ -589,7 +619,7 @@ function xassert_le($actual, $expected_bound) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::match_fail(null, "expected <= ", $expected_bound, ", got ", $actual);
+        Xassert::fail_match(null, "expected <= ", $expected_bound, ", got ", $actual);
     }
     return $ok;
 }
@@ -602,7 +632,7 @@ function xassert_ge($actual, $expected_bound) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::match_fail(null, "expected >= ", $expected_bound, ", got ", $actual);
+        Xassert::fail_match(null, "expected >= ", $expected_bound, ", got ", $actual);
     }
     return $ok;
 }
@@ -615,7 +645,7 @@ function xassert_gt($actual, $expected_bound) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::match_fail(null, "expected > ", $expected_bound, ", got ", $actual);
+        Xassert::fail_match(null, "expected > ", $expected_bound, ", got ", $actual);
     }
     return $ok;
 }
@@ -680,7 +710,7 @@ function xassert_array_eqq($actual, $expected, $sort = false) {
             }
             for ($i = 0; $i < count($actual) && $i < count($expected); ++$i) {
                 if ($actual[$i] !== $expected[$i]) {
-                    $problem = rtrim(Xassert::match_failure_message("value {$i} differs: ", "expected === ", $expected[$i], ", got ", $actual[$i]));
+                    $problem = rtrim(Xassert::fail_matchure_message("value {$i} differs: ", "expected === ", $expected[$i], ", got ", $actual[$i]));
                     break;
                 }
             }
@@ -1350,19 +1380,32 @@ class TestRunner {
                     }
                     $this->verbose_test = $mpfx;
                     $this->need_newline = true;
-                    $before = Xassert::$nerror;
+                    $before_nfail = Xassert::$n - Xassert::$nsuccess;
+                    $before_nerror = Xassert::$nerror;
                     $testo->{$m->name}();
-                    $ok = Xassert::$nerror === $before;
+                    $fail = Xassert::$n - Xassert::$nsuccess > $before_nfail;
+                    $ok = !$fail && Xassert::$nerror === $before_nerror;
                     if ($this->verbose_test !== null) {
                         if ($this->color) {
-                            $pfx = $this->need_newline ? "\r" : "";
-                            $sfx = $ok ? "\x1b[01;32m OK\x1b[m\x1b[K" : "\x1b[01;31mFAIL\x1b[m";
-                            fwrite(STDERR, "{$pfx}{$mpfx} {$sfx}\n");
+                            $pfx = ($this->need_newline ? "\r" : "") . $mpfx;
+                            if ($ok) {
+                                $sfx = " \x1b[01;32m OK\x1b[m\x1b[K";
+                            } else if (!$fail) {
+                                $sfx = " \x1b[01;36mERROR\x1b[m\x1b[K";
+                            } else {
+                                $sfx = " \x1b[01;31mFAIL\x1b[m";
+                            }
                         } else {
                             $pfx = $this->need_newline ? "" : $mpfx;
-                            $sfx = $ok ? "OK" : "FAIL";
-                            fwrite(STDERR, "{$pfx}  {$sfx}\n");
+                            if ($ok) {
+                                $sfx = "  OK";
+                            } else if (!$fail) {
+                                $sfx = " ERROR";
+                            } else {
+                                $sfx = " FAIL";
+                            }
                         }
+                        fwrite(STDERR, "{$pfx}{$sfx}\n");
                     }
                     $this->verbose_test = null;
                     $this->need_newline = false;
