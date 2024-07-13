@@ -77,7 +77,7 @@ class Reviews_Tester {
     }
 
     function test_add_incomplete_review() {
-        save_review(1, $this->u_mgbaker, ["s01" => 5, "ready" => false]);
+        save_review(1, $this->u_mgbaker, ["s01" => 5, "ready" => false], null, ["quiet" => true]);
 
         xassert_search($this->u_chair, "re:3", "1-18");
         xassert_search($this->u_chair, "-re:3", "19-30");
@@ -1381,5 +1381,241 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $rrow2 = $prow->review_by_user($this->u_lixia);
         xassert_neqq($rrow, $rrow2);
         xassert_eqq($rrow->reviewSubmitted, $rrow2->reviewSubmitted);
+    }
+
+    /** @param bool $reset_fields
+     * @return ReviewInfo */
+    static function set_review_status(ReviewInfo $rrow, $status, $reset_fields = false) {
+        if ($reset_fields) {
+            if ($status >= ReviewInfo::RS_DELIVERED) {
+                $f = ", s01=3, s02=1, tfields=null";
+            } else if ($status >= ReviewInfo::RS_DRAFTED) {
+                $f = ", s01=3, s02=0, tfields=null";
+            } else {
+                $f = ", s01=0, s02=0, tfields=null";
+            }
+        } else {
+            $f = "";
+        }
+        $rrow->conf->qe("update PaperReview set reviewSubmitted=?, reviewModified=?, timeApprovalRequested=?, reviewNeedsSubmit=?{$f} where paperId=? and reviewId=?",
+            $status >= ReviewInfo::RS_COMPLETED ? Conf::$now : null,
+            $status >= ReviewInfo::RS_DRAFTED ? Conf::$now
+                : ($status >= ReviewInfo::RS_ACCEPTED ? 1 : 0),
+            $rrow->reviewType === REVIEW_EXTERNAL && $rrow->conf->ext_subreviews > 1
+                ? ($status >= ReviewInfo::RS_APPROVED ? -Conf::$now
+                        : ($status >= ReviewInfo::RS_DELIVERED ? Conf::$now : 0))
+                : 0,
+            $status >= ReviewInfo::RS_DELIVERED ? 0 : 1,
+            $rrow->paperId, $rrow->reviewId);
+        $rrow = $rrow->prow->fresh_review_by_id($rrow->reviewId);
+        assert($rrow->reviewStatus === $status);
+        return $rrow;
+    }
+
+    function test_external_review_update_matrix() {
+        $this->conf->save_refresh_setting("viewrevid_ext", null);
+        $this->conf->save_refresh_setting("pcrev_editdelegate", 2);
+        xassert_eqq($this->conf->setting("viewrev_ext"), null);
+        xassert_eqq($this->conf->setting("viewrevid_ext"), null);
+        xassert_eqq($this->conf->setting("pcrev_editdelegate"), 2);
+        xassert_eqq($this->conf->setting("extrev_chairreq"), 1);
+        xassert_gt($this->conf->ext_subreviews, 1);
+        MailChecker::clear();
+
+        // request review on paper 16
+        $u_floyd = $this->conf->checked_user_by_email("floyd@ee.lbl.gov");
+        $xqreq = new Qrequest("POST", ["email" => "external4@_.com", "name" => "Rrhea Bisers", "affiliation" => "Charli Fan Club"]);
+        $p16 = $this->conf->checked_paper_by_id(16);
+        $result = RequestReview_API::requestreview($u_floyd, $xqreq, $p16);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        xassert_eqq($result->content["action"], "propose");
+
+        // confirm proposal
+        $xqreq = new Qrequest("POST", ["email" => "external4@_.com"]);
+        $result = RequestReview_API::requestreview($this->u_chair, $xqreq, $p16);
+        xassert($result->content["ok"]);
+        xassert_eqq($result->content["action"], "request");
+
+        // check that new review exists
+        $u_ext4 = $this->conf->checked_user_by_email("external4@_.com");
+        xassert_eqq($u_ext4->firstName, "Rrhea");
+        xassert_eqq($u_ext4->lastName, "Bisers");
+        $p16->load_reviews(true);
+        $r16x = $p16->review_by_user($u_ext4);
+        xassert(!!$r16x);
+        xassert_eqq($r16x->reviewSubmitted, null);
+        xassert_eqq($r16x->reviewModified, 0);
+        xassert_eqq($r16x->timeApprovalRequested, 0);
+        xassert_eqq($r16x->reviewNeedsSubmit, 1);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_EMPTY);
+
+
+        // empty save moves to accepted
+        $r16x = save_review($p16, $u_ext4, ["update" => 1], $r16x, ["quiet" => true]);
+        // XXX xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_ACCEPTED);
+        // XXX should send acceptance email
+
+
+        // change a field => review becomes drafted
+        $revqreq = ["update" => 1, "ovemer" => 3];
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_EMPTY, true);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DRAFTED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DELIVERED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_APPROVED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_APPROVED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_COMPLETED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_COMPLETED);
+
+
+        // request readiness without completing required fields
+        $revqreq = ["ready" => 1, "ovemer" => 3];
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_EMPTY, true);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DRAFTED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DELIVERED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_APPROVED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_APPROVED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_COMPLETED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_COMPLETED);
+
+
+        // request readiness with all required fields
+        $revqreq = ["ready" => 1, "ovemer" => 3, "revexp" => 1];
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_EMPTY, true);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DRAFTED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DELIVERED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_APPROVED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_APPROVED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_COMPLETED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_COMPLETED);
+
+
+        // request unreadiness
+        $revqreq = ["ready" => 0, "ovemer" => 3, "revexp" => 1];
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_EMPTY, true);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DRAFTED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DELIVERED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_APPROVED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_APPROVED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_COMPLETED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_COMPLETED);
+
+
+        // external reviewer requests approval (ignored)
+        $revqreq = ["ready" => 1, "approval" => "approved", "ovemer" => 3, "revexp" => 1];
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_EMPTY, true);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DRAFTED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DELIVERED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_APPROVED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_APPROVED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_COMPLETED);
+        $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_COMPLETED);
+
+
+        // requester approval is not ignored
+        $revqreq = ["approval" => "approved"];
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_EMPTY, true);
+        $r16x = save_review($p16, $u_floyd, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_EMPTY);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED, true);
+        $r16x = save_review($p16, $u_floyd, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_ACCEPTED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DRAFTED, true);
+        $r16x = save_review($p16, $u_floyd, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_DELIVERED, true);
+        $r16x = save_review($p16, $u_floyd, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_APPROVED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_APPROVED, true);
+        $r16x = save_review($p16, $u_floyd, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_APPROVED);
+
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_COMPLETED, true);
+        $r16x = save_review($p16, $u_floyd, $revqreq, $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_COMPLETED);
     }
 }

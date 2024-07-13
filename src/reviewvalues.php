@@ -914,7 +914,7 @@ class ReviewValues extends MessageSet {
             $rrow->set_prop("reviewModified", 1);
             $rflags |= ReviewInfo::RF_LIVE | ReviewInfo::RF_ACCEPTED;
         } else if ($newstatus >= ReviewInfo::RS_DRAFTED
-                   && $any_fval_diffs) {
+                   && ($any_fval_diffs || $oldstatus <= ReviewInfo::RS_ACCEPTED)) {
             $rrow->set_prop("reviewModified", $now);
             $rflags |= ReviewInfo::RF_LIVE | ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED;
         }

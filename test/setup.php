@@ -163,7 +163,7 @@ class MailChecker {
                 }
                 Xassert::fail_with(...$ml);
             } else {
-                Xassert::fail_with("Mail `{$wtext}` not found");
+                Xassert::fail_with("Mail not found `{$wtext}`");
             }
             if ($index !== false) {
                 array_splice($haves, $index, 1);
@@ -1004,19 +1004,26 @@ function checked_fresh_review($prow, $user) {
  * @param Contact $user
  * @param ?ReviewInfo $rrow
  * @return ?ReviewInfo */
-function save_review($prow, $user, $revreq, $rrow = null) {
+function save_review($prow, $user, $revreq, $rrow = null, $args = []) {
     if (is_int($prow)) {
         $prow = $user->conf->checked_paper_by_id($prow, $user);
     }
     $rf = Conf::$main->review_form();
     $tf = new ReviewValues($rf);
     $tf->parse_qreq(new Qrequest("POST", $revreq));
-    $tf->check_and_save($user, $prow, $rrow ?? fresh_review($prow, $user));
-    foreach ($tf->problem_list() as $mx) {
-        Xassert::will_print();
-        fwrite(STDERR, "! {$mx->field}" . ($mx->message ? ": {$mx->message}\n" : "\n"));
+    $rrowx = $rrow ?? $prow->fresh_review_by_user($user);
+    $tf->check_and_save($user, $prow, $rrowx);
+    if (!($args["quiet"] ?? false)) {
+        foreach ($tf->problem_list() as $mx) {
+            Xassert::will_print();
+            fwrite(STDERR, "! {$mx->field}" . ($mx->message ? ": {$mx->message}\n" : "\n"));
+        }
     }
-    return $prow->fresh_review_by_user($user);
+    if ($rrowx) {
+        return $prow->fresh_review_by_id($rrowx->reviewId);
+    } else {
+        return $prow->fresh_review_by_user($user);
+    }
 }
 
 /** @return Contact */
