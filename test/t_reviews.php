@@ -1453,7 +1453,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         // empty save moves to accepted
         $r16x = save_review($p16, $u_ext4, ["update" => 1], $r16x, ["quiet" => true]);
-        // XXX xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_ACCEPTED);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_ACCEPTED);
         // XXX should send acceptance email
 
 
