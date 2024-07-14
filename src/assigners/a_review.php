@@ -365,7 +365,9 @@ class Review_Assigner extends Assigner {
         }
     }
     function add_locks(AssignmentSet $aset, &$locks) {
-        $locks["PaperReview"] = $locks["PaperReviewRefused"] = $locks["Settings"] = "write";
+        $locks["PaperReview"] = $locks["PaperReviewRefused"] =
+            $locks["PaperReviewHistory"] = $locks["ReviewRating"] =
+            $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
         $extra = ["no_autosearch" => true];
@@ -383,9 +385,13 @@ class Review_Assigner extends Assigner {
         $reviewId = $aset->user->assign_review($this->pid, $this->cid, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId) {
             assert($this->item->after !== null);
-            /** @phan-suppress-next-line PhanUndeclaredMethod */
-            $rrow = $this->item->after->make_reviewinfo($aset->conf, $reviewId);
-            $aset->user->unsubmit_review_row($rrow, ["no_autosearch" => true]);
+            $prow = $aset->prow($this->pid);
+            $rrow = $prow->fresh_review_by_id($reviewId);
+            $rv = (new ReviewValues($aset->conf))
+                ->set_autosearch(false)
+                ->set_can_unsubmit(true)
+                ->set_req_ready(false);
+            $rv->check_and_save($aset->user, $prow, $rrow);
         }
         if (($extra["token"] ?? false) && $reviewId) {
             $this->token = $aset->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=? and reviewId=?", $this->pid, $reviewId);

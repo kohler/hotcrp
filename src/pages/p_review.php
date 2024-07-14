@@ -261,7 +261,9 @@ class Review_Page {
         if ($this->rrow
             && $this->rrow->reviewStatus >= ReviewInfo::RS_DELIVERED
             && $this->user->can_administer($this->prow)) {
-            if ($this->user->unsubmit_review_row($this->rrow)) {
+            $rv = new ReviewValues($this->conf);
+            $rv->set_can_unsubmit(true)->set_req_ready(false);
+            if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
                 $this->conf->success_msg("<0>Review unsubmitted");
             }
             $this->conf->redirect_self($this->qreq);

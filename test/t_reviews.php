@@ -18,6 +18,9 @@ class Reviews_Tester {
     /** @var Contact
      * @readonly */
     public $u_mjh;
+    /** @var Contact
+     * @readonly */
+    public $u_floyd;
     /** @var string */
     private $review1A;
 
@@ -27,6 +30,7 @@ class Reviews_Tester {
         $this->u_mgbaker = $conf->checked_user_by_email("mgbaker@cs.stanford.edu");
         $this->u_lixia = $conf->checked_user_by_email("lixia@cs.ucla.edu");
         $this->u_mjh = $conf->checked_user_by_email("mjh@isi.edu");
+        $this->u_floyd = $conf->checked_user_by_email("floyd@ee.lbl.gov");
     }
 
     function save_round_settings($map) {
@@ -1436,7 +1440,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         MailChecker::clear();
 
         // request review on paper 16
-        $u_floyd = $this->conf->checked_user_by_email("floyd@ee.lbl.gov");
+        $u_floyd = $this->u_floyd;
         $xqreq = new Qrequest("POST", ["email" => "external4@_.com", "name" => "Rrhea Bisers", "affiliation" => "Charli Fan Club"]);
         $p16 = $this->conf->checked_paper_by_id(16);
         $result = RequestReview_API::requestreview($u_floyd, $xqreq, $p16);
@@ -1664,8 +1668,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $u_rguerin = $this->conf->checked_user_by_email("rguerin@ibm.com");
         $r16g = $p16->review_by_user($u_rguerin);
         xassert(!$r16g);
-        $u_floyd = $this->conf->checked_user_by_email("floyd@ee.lbl.gov");
-        $r16f = $p16->review_by_user($u_floyd);
+        $r16f = $p16->review_by_user($this->u_floyd);
         xassert(!!$r16f);
 
         // allow self assignment
@@ -1674,7 +1677,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert(!!$r16g);
         xassert_eqq($r16g->fidval("s01"), 3);
         xassert_eqq($r16g->fidval("s02"), 1);
-        $r16f = save_review($p16, $u_floyd, ["ovemer" => 1, "revexp" => 3]);
+        $r16f = save_review($p16, $this->u_floyd, ["ovemer" => 1, "revexp" => 3]);
         xassert(!!$r16f);
         xassert_eqq($r16f->fidval("s01"), 1);
         xassert_eqq($r16f->fidval("s02"), 3);
@@ -1692,9 +1695,46 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert(!$r16g);
         $r16g = $p16->fresh_review_by_user($u_rguerin);
         xassert(!$r16g);
-        $r16f = save_review($p16, $u_floyd, ["ovemer" => 4, "revexp" => 2]);
+        $r16f = save_review($p16, $this->u_floyd, ["ovemer" => 4, "revexp" => 2]);
         xassert(!!$r16f);
         xassert_eqq($r16f->fidval("s01"), 4);
         xassert_eqq($r16f->fidval("s02"), 2);
+    }
+
+    function test_rv_unsubmit() {
+        $p16 = $this->conf->checked_paper_by_id(16);
+        $r16f = $p16->review_by_user($this->u_floyd);
+        $r16f = save_review($p16, $this->u_floyd, ["ready" => true]);
+        xassert_gt($r16f->reviewSubmitted, 0);
+
+        // user cannot unsubmit their own review
+        $rv = new ReviewValues($this->conf);
+        $rv->set_can_unsubmit(true);
+        $rv->parse_qreq(new Qrequest("POST", ["ready" => false]));
+        $rv->check_and_save($this->u_floyd, $p16, $r16f);
+
+        $r16f = $p16->fresh_review_by_user($this->u_floyd);
+        xassert_gt($r16f->reviewSubmitted, 0);
+
+        // admin can unsubmit another review
+        $rv = new ReviewValues($this->conf);
+        $rv->set_can_unsubmit(true);
+        $rv->parse_qreq(new Qrequest("POST", ["ready" => false]));
+        $rv->check_and_save($this->u_chair, $p16, $r16f);
+
+        $r16f = $p16->fresh_review_by_user($this->u_floyd);
+        xassert_eqq($r16f->reviewSubmitted, null);
+    }
+
+    function test_bulk_unsubmit() {
+        $p16 = $this->conf->checked_paper_by_id(16);
+        $r16f = $p16->review_by_user($this->u_floyd);
+        $r16f = save_review($p16, $this->u_floyd, ["ready" => true]);
+        xassert_gt($r16f->reviewSubmitted, 0);
+
+        xassert_assign($this->u_chair, "paper,action,user\n16,unsubmitreview,floyd");
+
+        $r16f = $p16->fresh_review_by_user($this->u_floyd);
+        xassert_eqq($r16f->reviewSubmitted, null);
     }
 }

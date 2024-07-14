@@ -13,7 +13,7 @@ class ReviewValues extends MessageSet {
     /** @var bool */
     private $notify = true;
     /** @var bool */
-    private $allow_unsubmit = false;
+    private $can_unsubmit = false;
     /** @var bool */
     private $autosearch = true;
 
@@ -89,8 +89,8 @@ class ReviewValues extends MessageSet {
 
     /** @param bool $x
      * @return $this */
-    function set_allow_unsubmit($x) {
-        $this->allow_unsubmit = $x;
+    function set_can_unsubmit($x) {
+        $this->can_unsubmit = $x;
         return $this;
     }
 
@@ -659,9 +659,12 @@ class ReviewValues extends MessageSet {
                                          $allow_new_submit, $approvable) {
         $oldstatus = $rrow->reviewStatus;
         $minstatus = ReviewInfo::RS_EMPTY;
-        if (!$this->allow_unsubmit && $oldstatus >= ReviewInfo::RS_DELIVERED) {
+        if ($oldstatus >= ReviewInfo::RS_DELIVERED
+            && (!$this->can_unsubmit
+                || !$user->can_administer($prow))) {
             $minstatus = $oldstatus;
-        } else if ($view_score > VIEWSCORE_EMPTY) {
+        } else if ($view_score > VIEWSCORE_EMPTY
+                   || $rrow->reviewModified > 1) {
             $minstatus = ReviewInfo::RS_DRAFTED;
         } else if ($user->is_my_review($rrow)
                    || $oldstatus >= ReviewInfo::RS_ACCEPTED) { // XXX decline via this API?
@@ -840,7 +843,12 @@ class ReviewValues extends MessageSet {
         } else if (!($this->req["ready"] ?? $oldstatus >= ReviewInfo::RS_DELIVERED)
                    || ($oldstatus < ReviewInfo::RS_DELIVERED && !$allow_new_submit)) {
             // unready nonempty review is at least drafted
-            $newstatus = max($oldstatus, ReviewInfo::RS_DRAFTED);
+            if ($this->can_unsubmit
+                && $user->can_administer($prow)) {
+                $newstatus = ReviewInfo::RS_DRAFTED;
+            } else {
+                $newstatus = max($oldstatus, ReviewInfo::RS_DRAFTED);
+            }
         } else if ($oldstatus >= ReviewInfo::RS_COMPLETED) {
             $newstatus = $oldstatus;
         } else if ($rrow->subject_to_approval()) {
@@ -873,14 +881,21 @@ class ReviewValues extends MessageSet {
             $rrow->set_prop("reviewModified", $now);
             $rflags |= ReviewInfo::RF_LIVE | ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED;
         }
-        if ($newstatus === ReviewInfo::RS_DELIVERED
-            && $rrow->timeApprovalRequested <= 0) {
-            $rrow->set_prop("timeApprovalRequested", $now);
-            $rflags |= ReviewInfo::RF_DELIVERED;
-        } else if ($newstatus === ReviewInfo::RS_APPROVED
-                   && $rrow->timeApprovalRequested >= 0) {
-            $rrow->set_prop("timeApprovalRequested", -$now);
+        if ($newstatus === ReviewInfo::RS_APPROVED) {
+            if ($rrow->timeApprovalRequested >= 0) {
+                $rrow->set_prop("timeApprovalRequested", -$now);
+            }
             $rflags |= ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED;
+        } else if ($newstatus === ReviewInfo::RS_DELIVERED) {
+            if ($rrow->timeApprovalRequested <= 0) {
+                $rrow->set_prop("timeApprovalRequested", $now);
+            }
+            $rflags = ($rflags | ReviewInfo::RF_DELIVERED) & ~ReviewInfo::RF_APPROVED;
+        } else if ($newstatus < ReviewInfo::RS_DELIVERED) {
+            if ($rrow->timeApprovalRequested !== 0) {
+                $rrow->set_prop("timeApprovalRequested", 0);
+            }
+            $rflags &= ~(ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED);
         }
         if ($newstatus >= ReviewInfo::RS_COMPLETED
             && ($rrow->reviewSubmitted ?? 0) <= 0) {
@@ -893,6 +908,13 @@ class ReviewValues extends MessageSet {
         }
         if ($newstatus >= ReviewInfo::RS_APPROVED) {
             $rrow->set_prop("reviewNeedsSubmit", 0);
+        } else if ($oldstatus >= ReviewInfo::RS_APPROVED) {
+            if ($rrow->reviewType === REVIEW_SECONDARY) {
+                $rns = $this->conf->compute_secondary_review_needs_submit($rrow->paperId, $rrow->contactId);
+                $rrow->set_prop("reviewNeedsSubmit", $rns ?? 1);
+            } else {
+                $rrow->set_prop("reviewNeedsSubmit", 1);
+            }
         }
         if ($newstatus !== $oldstatus) {
             // Must mark view score to ensure database is modified
@@ -1022,9 +1044,25 @@ class ReviewValues extends MessageSet {
 
         // if external, forgive the requester from finishing their review
         if ($rrow->reviewType < REVIEW_SECONDARY
-            && $rrow->requestedBy
-            && $newstatus >= ReviewInfo::RS_COMPLETED) {
-            $this->conf->q_raw("update PaperReview set reviewNeedsSubmit=0 where paperId={$prow->paperId} and contactId={$rrow->requestedBy} and reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null");
+            && $newstatus !== $oldstatus
+            && $rrow->requestedBy > 0
+            && $prow->review_type($rrow->requestedBy) === REVIEW_SECONDARY) {
+            if ($newstatus >= ReviewInfo::RS_DELIVERED
+                && $oldstatus < ReviewInfo::RS_DELIVERED) {
+                $delta = 2;
+            } else if ($oldstatus >= ReviewInfo::RS_DELIVERED
+                       && $newstatus < ReviewInfo::RS_DELIVERED) {
+                $delta = -1;
+            } else if ($newstatus >= ReviewInfo::RS_ACCEPTED
+                       && $oldstatus === ReviewInfo::RS_EMPTY) {
+                $delta = 0;
+            } else {
+                $delta = null;
+            }
+            if ($delta !== null) {
+                $this->conf->update_review_delegation($rrow->paperId, $rrow->requestedBy, $delta);
+                $prow->invalidate_reviews();
+            }
         }
 
         // notify automatic tags

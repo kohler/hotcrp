@@ -5831,32 +5831,6 @@ class Contact implements JsonSerializable {
         $this->conf->update_review_delegation($pid, $cid, $direction);
     }
 
-    /** @param ReviewInfo $rrow
-     * @return bool */
-    function unsubmit_review_row($rrow, $extra = null) {
-        if ($rrow->reviewType === REVIEW_SECONDARY) {
-            $needsSubmit = $this->conf->compute_secondary_review_needs_submit($rrow->paperId, $rrow->contactId) ?? 1;
-        } else {
-            $needsSubmit = 1;
-        }
-        $rsflags = ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED | ReviewInfo::RF_SUBMITTED;
-        $result = $this->conf->qe("update PaperReview
-            set reviewSubmitted=null, reviewNeedsSubmit=?,
-                timeApprovalRequested=0, rflags=rflags&~?
-            where paperId=? and reviewId=?",
-            $needsSubmit, $rsflags, $rrow->paperId, $rrow->reviewId);
-        if ($result->affected_rows) {
-            if ($rrow->reviewType < REVIEW_SECONDARY) {
-                $this->conf->update_review_delegation($rrow->paperId, $rrow->requestedBy, -1);
-            }
-            $this->conf->log_for($this, $rrow->contactId, "Review {$rrow->reviewId} unsubmitted", $rrow->paperId);
-        }
-        if (!$extra || !($extra["no_autosearch"] ?? false)) {
-            $this->conf->update_automatic_tags($rrow->paperId, "review");
-        }
-        return $result->affected_rows > 0;
-    }
-
 
     /** @return array */
     #[\ReturnTypeWillChange]
