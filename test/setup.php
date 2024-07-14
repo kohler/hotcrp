@@ -695,9 +695,7 @@ function xassert_not_str_contains($haystack, $needle) {
  * @return bool */
 function xassert_array_eqq($actual, $expected, $sort = false) {
     $problem = "";
-    if ($actual === null && $expected === null) {
-        // OK
-    } else if (is_array($actual) && is_array($expected)) {
+    if (is_array($actual) && is_array($expected)) {
         if (count($actual) !== count($expected)
             && !$sort) {
             $problem = "expected size " . count($expected) . ", got " . count($actual);
@@ -710,7 +708,7 @@ function xassert_array_eqq($actual, $expected, $sort = false) {
             }
             for ($i = 0; $i < count($actual) && $i < count($expected); ++$i) {
                 if ($actual[$i] !== $expected[$i]) {
-                    $problem = rtrim(Xassert::fail_matchure_message("value {$i} differs: ", "expected === ", $expected[$i], ", got ", $actual[$i]));
+                    $problem = rtrim(Xassert::match_failure_message("value {$i} differs: ", "expected === ", $expected[$i], ", got ", $actual[$i]));
                     break;
                 }
             }
@@ -718,7 +716,7 @@ function xassert_array_eqq($actual, $expected, $sort = false) {
                 $problem = "expected size " . count($expected) . ", got " . count($actual);
             }
         }
-    } else {
+    } else if ($actual !== null || $expected !== null) {
         $problem = "different types";
     }
     if ($problem === "") {
@@ -1046,7 +1044,11 @@ function save_review($prow, $user, $revreq, $rrow = null, $args = []) {
     if (!($args["quiet"] ?? false)) {
         foreach ($tf->problem_list() as $mx) {
             Xassert::will_print();
-            fwrite(STDERR, "! {$mx->field}" . ($mx->message ? ": {$mx->message}\n" : "\n"));
+            if ($mx->field) {
+                fwrite(STDERR, "! {$mx->field}" . ($mx->message ? ": {$mx->message}\n" : "\n"));
+            } else if ($mx->message) {
+                fwrite(STDERR, "! {$mx->message}\n");
+            }
         }
     }
     if ($rrowx) {

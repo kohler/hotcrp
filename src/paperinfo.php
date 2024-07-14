@@ -2579,6 +2579,11 @@ class PaperInfo {
     }
 
 
+    function invalidate_reviews() {
+        $this->reviewSignatures = $this->_review_array = null;
+        ++$this->_review_array_version;
+    }
+
     /** @param bool $always */
     function load_reviews($always = false) {
         if ($this->reviewSignatures !== null

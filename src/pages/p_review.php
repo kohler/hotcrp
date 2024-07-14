@@ -112,14 +112,9 @@ class Review_Page {
 
     function handle_update() {
         $rv = (new ReviewValues($this->conf))->set_prow($this->prow);
-        if (($whynot = ($this->rrow
-                        ? $this->user->perm_edit_review($this->prow, $this->rrow, true)
-                        : $this->user->perm_create_review($this->prow)))) {
-            $whynot->append_to($rv, null, MessageSet::ERROR);
-        } else if ($rv->parse_qreq($this->qreq)) {
-            if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
-                $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
-            }
+        if ($rv->parse_qreq($this->qreq)
+            && $rv->check_and_save($this->user, $this->prow, $this->rrow)) {
+            $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
         }
         $rv->report();
         if (!$rv->has_error() && !$rv->has_problem_at("ready")) {
@@ -135,14 +130,26 @@ class Review_Page {
             return;
         }
         $rv = (new ReviewValues($this->conf))
-            ->set_text($this->qreq->file_contents("file"), $this->qreq->file_filename("file"))
-            ->set_req_override(!!$this->qreq->override);
-        if ($rv->parse_text()
-            && $rv->check_and_save($this->user, $this->prow, $this->rrow)) {
-            $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
+            ->set_text($this->qreq->file_contents("file"), $this->qreq->file_filename("file"));
+        $match = $other = false;
+        while ($rv->set_req_override(!!$this->qreq->override)->parse_text()) {
+            if ($rv->paperId === $this->prow->paperId) {
+                $match = true;
+                if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
+                    $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
+                }
+            } else {
+                $other = true;
+            }
+            $rv->clear_req();
         }
-        if (!$rv->has_error() && $rv->parse_text()) {
-            $rv->msg_at(null, "<5>Only the first review form in the file was parsed. " . Ht::link("Upload multiple-review files here.", $this->conf->hoturl("offline")), MessageSet::WARNING);
+        if (!$match && !$other) {
+            $rv->msg_at(null, "<0>Uploaded file had no valid review forms", MessageSet::ERROR);
+        } else if (!$match) {
+            $rv->msg_at(null, "<0>Uploaded form was not for this {submission}", MessageSet::ERROR);
+        } else if ($other) {
+            $rv->msg_at(null, "<0>Reviews for other {submissions} ignored", MessageSet::WARNING);
+            $rv->msg_at(null, "<5>Upload multiple-review files " . Ht::link("here", $this->conf->hoturl("offline")) . ".", MessageSet::INFORM);
         }
         $rv->report();
         if (!$rv->has_error()) {
@@ -206,11 +213,7 @@ class Review_Page {
         $rv = (new ReviewValues($this->conf))->set_prow($this->prow);
         $my_rrow = $this->prow->review_by_user($this->user);
         $my_rid = ($my_rrow ?? $this->rrow)->unparse_ordinal_id();
-        if (($whynot = ($my_rrow
-                        ? $this->user->perm_edit_review($this->prow, $my_rrow, true)
-                        : $this->user->perm_create_review($this->prow)))) {
-            $rv->msg_at(null, "<5>" . $whynot->unparse_html(), MessageSet::ERROR);
-        } else if ($rv->parse_qreq($this->qreq)) {
+        if ($rv->parse_qreq($this->qreq)) {
             $rv->set_req_ready(!!$this->qreq->adoptsubmit);
             if ($rv->check_and_save($this->user, $this->prow, $my_rrow)) {
                 $my_rid = $rv->review_ordinal_id;
@@ -245,7 +248,7 @@ class Review_Page {
                 $this->conf->update_metareviews_setting(-1);
             }
 
-            // perhaps a delegatee needs to redelegate
+            // perhaps a delegator needs to redelegate
             if ($this->rrow->reviewType < REVIEW_SECONDARY
                 && $this->rrow->requestedBy > 0) {
                 $this->conf->update_review_delegation($this->prow->paperId, $this->rrow->requestedBy, -1);

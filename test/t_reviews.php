@@ -1631,4 +1631,57 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $r16x = save_review($p16, $u_floyd, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_COMPLETED);
     }
+
+    function test_update_by_wrong_reviewer() {
+        $p16 = $this->conf->checked_paper_by_id(16);
+        $u_ext4 = $this->conf->checked_user_by_email("external4@_.com");
+        $r16x = $p16->review_by_user($u_ext4);
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_COMPLETED, true);
+        $r16x = save_review($p16, $u_ext4, ["ovemer" => 4, "revexp" => 1], $r16x);
+        xassert_eqq($r16x->fidval("s01"), 4);
+        xassert_eqq($r16x->fidval("s02"), 1);
+
+        $r16x = save_review($p16, $this->u_mgbaker, ["ovemer" => 3, "revexp" => 1], $r16x, ["quiet" => true]);
+        xassert_eqq($r16x->fidval("s01"), 4);
+        xassert_eqq($r16x->fidval("s02"), 1);
+    }
+
+    function test_rv_self_assignment() {
+        $p16 = $this->conf->checked_paper_by_id(16);
+        $u_rguerin = $this->conf->checked_user_by_email("rguerin@ibm.com");
+        $r16g = $p16->review_by_user($u_rguerin);
+        xassert(!$r16g);
+        $u_floyd = $this->conf->checked_user_by_email("floyd@ee.lbl.gov");
+        $r16f = $p16->review_by_user($u_floyd);
+        xassert(!!$r16f);
+
+        // allow self assignment
+        xassert_eqq($this->conf->setting("pcrev_any"), 1);
+        $r16g = save_review($p16, $u_rguerin, ["ovemer" => 3, "revexp" => 1]);
+        xassert(!!$r16g);
+        xassert_eqq($r16g->fidval("s01"), 3);
+        xassert_eqq($r16g->fidval("s02"), 1);
+        $r16f = save_review($p16, $u_floyd, ["ovemer" => 1, "revexp" => 3]);
+        xassert(!!$r16f);
+        xassert_eqq($r16f->fidval("s01"), 1);
+        xassert_eqq($r16f->fidval("s02"), 3);
+
+        // delete self-assigned review
+        $this->conf->qe("delete from PaperReview where paperId=? and reviewId=?", $r16g->paperId, $r16g->reviewId);
+        $p16->invalidate_reviews();
+        Contact::update_rights();
+        $r16g = $p16->review_by_user($u_rguerin);
+        xassert(!$r16g);
+
+        // deny self assignment
+        $this->conf->save_refresh_setting("pcrev_any", null);
+        $r16g = save_review($p16, $u_rguerin, ["ovemer" => 2, "revexp" => 4], null, ["quiet" => true]);
+        xassert(!$r16g);
+        $r16g = $p16->fresh_review_by_user($u_rguerin);
+        xassert(!$r16g);
+        $r16f = save_review($p16, $u_floyd, ["ovemer" => 4, "revexp" => 2]);
+        xassert(!!$r16f);
+        xassert_eqq($r16f->fidval("s01"), 4);
+        xassert_eqq($r16f->fidval("s02"), 2);
+    }
 }
