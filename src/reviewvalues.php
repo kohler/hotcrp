@@ -22,8 +22,6 @@ class ReviewValues extends MessageSet {
     /** @var ?bool */
     public $req_json;
 
-    /** @var int */
-    private $paperId;
     /** @var ?int */
     public $reviewId;
     /** @var ?string */
@@ -121,15 +119,19 @@ class ReviewValues extends MessageSet {
         return (new ReviewValues($rf))->set_text($text, $filename);
     }
 
+    /** @return $this */
     function clear_req() {
         $this->req = [];
-        $this->paperId = 0;
+        return $this;
     }
 
-    /** @return $this */
-    function set_prow(?PaperInfo $prow) {
-        $this->paperId = $prow ? $prow->paperId : 0;
-        return $this;
+    /** @return ?int */
+    function req_pid() {
+        $pid = $this->req["paperId"] ?? null;
+        if (is_string($pid)) {
+            $pid = stoi(trim($pid));
+        }
+        return $pid;
     }
 
     /** @param bool $x
@@ -169,8 +171,8 @@ class ReviewValues extends MessageSet {
         $mi = $this->msg_at($field, $msg, $status);
         if ($this->filename) {
             $mi->landmark = "{$this->filename}:{$lineno}";
-            if ($this->paperId) {
-                $mi->landmark .= " (paper #{$this->paperId})";
+            if (($pid = $this->req_pid()) > 0) {
+                $mi->landmark .= " (" . $this->conf->_("{submission} #{}", $pid) . ")";
             }
         }
         return $mi;
@@ -223,13 +225,13 @@ class ReviewValues extends MessageSet {
                     if ($nfields > 0) {
                         break;
                     }
-                } else if (preg_match('/\A==\+== Paper #?(\d+)/i', $line, $match)) {
+                } else if (preg_match('/\A==\+== (?:Paper|Submission) #?(\d+)/i', $line, $match)) {
                     if ($nfields > 0) {
                         break;
                     }
-                    $this->paperId = intval($match[1]);
+                    $this->req["paperId"] = intval($match[1]);
                     $this->req["blind"] = 1;
-                    $this->first_lineno = $this->field_lineno["paperNumber"] = $this->lineno;
+                    $this->first_lineno = $this->field_lineno["paperId"] = $this->lineno;
                 } else if (preg_match('/\A==\+== Reviewer:\s*(.*?)\s*\z/', $line, $match)
                            && ($user = Text::split_name($match[1], true))
                            && $user[2]) {
@@ -237,11 +239,11 @@ class ReviewValues extends MessageSet {
                     $this->req["reviewerFirst"] = $user[0];
                     $this->req["reviewerLast"] = $user[1];
                     $this->req["reviewerEmail"] = $user[2];
-                } else if (preg_match('/\A==\+== Paper (Number|\#)\s*\z/i', $line)) {
+                } else if (preg_match('/\A==\+== (?:Paper|Submission) (Number|\#)\s*\z/i', $line)) {
                     if ($nfields > 0) {
                         break;
                     }
-                    $field = "paperNumber";
+                    $field = "paperId";
                     $this->field_lineno[$field] = $this->lineno;
                     $mode = 1;
                     $this->req["blind"] = 1;
@@ -318,25 +320,7 @@ class ReviewValues extends MessageSet {
         if (isset($this->req["anonymity"])) {
             $this->req["blind"] = strcasecmp(trim($this->req["anonymity"]), "Open") !== 0;
         }
-
-        if ($this->paperId) {
-            /* OK */
-        } else if (isset($this->req["paperNumber"])
-                   && ($pid = stoi(trim($this->req["paperNumber"])) ?? -1) > 0) {
-            $this->paperId = $pid;
-        } else if ($nfields > 0) {
-            $this->rmsg("paperNumber", "<0>This review form doesn’t report which paper number it is for. Make sure you’ve entered the paper number in the right place and try again.", self::ERROR);
-            $nfields = 0;
-        }
-
-        if ($nfields !== 0) {
-            return true;
-        } else if ($pos !== $len) { // try again
-            /** @phan-suppress-next-line PhanPossiblyInfiniteRecursionSameParams */
-            return $this->parse_text();
-        } else {
-            return false;
-        }
+        return $nfields !== 0;
     }
 
     /** @param mixed $x
@@ -520,7 +504,9 @@ class ReviewValues extends MessageSet {
                     $this->req["ready"] = $this->req["ready"] ?? null;
                 }
             } else if ($k === "p") {
-                $this->paperId = stoi($v) ?? -1;
+                if (($pid = stoi($v) ?? -1) > 0) {
+                    $this->req["paperId"] = $pid;
+                }
             } else if ($k === "edit_version") {
                 $this->req[$k] = stoi($v) ?? -1;
             } else if (str_starts_with($k, "has_")) {
@@ -545,27 +531,29 @@ class ReviewValues extends MessageSet {
     }
 
     /** @return bool */
-    function check_and_save(Contact $user, ?PaperInfo $prow = null, ?ReviewInfo $rrow = null) {
+    function check_and_save(Contact $user, ?PaperInfo $prow, ?ReviewInfo $rrow = null) {
         assert(!$rrow || $rrow->paperId === $prow->paperId);
         $this->reviewId = $this->review_ordinal_id = null;
 
         // look up paper
         if (!$prow) {
-            if (!$this->paperId) {
-                $this->rmsg("paperNumber", "<0>This review form doesn’t report which paper number it is for.  Make sure you’ve entered the paper number in the right place and try again.", self::ERROR);
+            if (($pid = $this->req_pid()) === null) {
+                $this->rmsg("paperId", $this->conf->_("<0>{Submission} ID required"), self::ERROR);
+                $this->rmsg("paperId", $this->conf->_("<5>This review form doesn’t contain a valid {submission} ID. Enter the {submission} number in the right place and try again."), self::INFORM);
                 return false;
             }
-            $prow = $user->paper_by_id($this->paperId);
-            if (($whynot = $user->perm_view_paper($prow, false, $this->paperId))) {
-                $whynot->append_to($this, "paperNumber", self::ERROR);
+            $prow = $user->paper_by_id($pid);
+            if (($whynot = $user->perm_view_paper($prow, false, $pid))) {
+                $whynot->append_to($this, "paperId", self::ERROR);
                 return false;
             }
         }
-        if ($this->paperId && $prow->paperId !== $this->paperId) {
-            $this->rmsg("paperNumber", "<0>This review form is for paper #{$this->paperId}, not paper #{$prow->paperId}; did you mean to upload it here? I have ignored the form.", MessageSet::ERROR);
+        $this->req["paperId"] = $this->req_pid() ?? $prow->paperId;
+        if ($this->req["paperId"] !== $prow->paperId) {
+            $this->rmsg("paperId", $this->conf->_("<0>{Submission} mismatch: expected #{}, form is for #{}", $prow->paperId, $this->req["paperId"]), self::ERROR);
+            $this->rmsg("paperId", $this->conf->_("<0>It looks like you tried to upload a form intended for a different {submission}."), self::INFORM);
             return false;
         }
-        $this->paperId = $prow->paperId;
 
         // look up reviewer
         $reviewer = $user;
@@ -700,7 +688,7 @@ class ReviewValues extends MessageSet {
 
     /** @return bool */
     private function _apply_req(Contact $user, PaperInfo $prow, ReviewInfo $rrow, $new_rrid) {
-        assert($prow->paperId === $this->paperId && $rrow->paperId === $this->paperId);
+        assert($prow->paperId === $this->req["paperId"] && $rrow->paperId === $prow->paperId);
         $admin = $user->allow_administer($prow);
         $usedReviewToken = $user->active_review_token_for($prow, $rrow);
         $approvable = $user->can_approve_review($prow, $rrow);
@@ -788,7 +776,7 @@ class ReviewValues extends MessageSet {
 
         // blank uploaded forms are ignored
         if (!$any_fval && $this->text !== null) {
-            $this->blank[] = "#{$this->paperId}";
+            $this->blank[] = "#{$prow->paperId}";
             return false;
         }
 
@@ -815,7 +803,7 @@ class ReviewValues extends MessageSet {
             && $rrow->reviewEditVersion > ($this->req["edit_version"] ?? 0)) {
             $this->clear_messages_since($before_msgcount);
             $this->rmsg($this->first_lineno, "<5><strong>Edit conflict</strong>: This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.", self::ERROR);
-            $this->rmsg($this->first_lineno, "<5>To override your online edits, add a line “<code class=\"nw\">==+== Version {$rrow->reviewEditVersion}</code>” to your offline review form for paper #{$this->paperId} and upload the form again.", self::INFORM);
+            $this->rmsg($this->first_lineno, "<5>To override your online edits, add a line “<code class=\"nw\">==+== Version {$rrow->reviewEditVersion}</code>” to your offline review form for paper #{$prow->paperId} and upload the form again.", self::INFORM);
             return false;
         }
 

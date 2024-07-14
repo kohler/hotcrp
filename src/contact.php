@@ -5749,6 +5749,7 @@ class Contact implements JsonSerializable {
             }
         } else if ($type === 0) {
             $q = "delete from PaperReview where paperId={$pid} and reviewId={$reviewId}";
+            $rflags = 0;
         } else {
             $xflags = ReviewInfo::RFM_TYPES;
             $qtail = "";

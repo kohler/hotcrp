@@ -111,7 +111,7 @@ class Review_Page {
     }
 
     function handle_update() {
-        $rv = (new ReviewValues($this->conf))->set_prow($this->prow);
+        $rv = new ReviewValues($this->conf);
         if ($rv->parse_qreq($this->qreq)
             && $rv->check_and_save($this->user, $this->prow, $this->rrow)) {
             $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
@@ -133,7 +133,7 @@ class Review_Page {
             ->set_text($this->qreq->file_contents("file"), $this->qreq->file_filename("file"));
         $match = $other = false;
         while ($rv->set_req_override(!!$this->qreq->override)->parse_text()) {
-            if ($rv->paperId === $this->prow->paperId) {
+            if ($rv->req_pid() === $this->prow->paperId) {
                 $match = true;
                 if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
                     $this->qreq->r = $this->qreq->reviewId = $rv->review_ordinal_id;
@@ -210,7 +210,7 @@ class Review_Page {
             return;
         }
 
-        $rv = (new ReviewValues($this->conf))->set_prow($this->prow);
+        $rv = new ReviewValues($this->conf);
         $my_rrow = $this->prow->review_by_user($this->user);
         $my_rid = ($my_rrow ?? $this->rrow)->unparse_ordinal_id();
         if ($rv->parse_qreq($this->qreq)) {
