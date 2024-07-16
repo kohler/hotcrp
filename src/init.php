@@ -278,9 +278,12 @@ function initialize_request($kwarg = null) {
         exit();
     }
 
-    // mark as already expired to discourage caching, but allow the browser
-    // to cache for history buttons
-    header("Cache-Control: max-age=0,must-revalidate,private");
+    // GET and HEAD: mark as already expired to discourage caching, but allow
+    // the browser to cache for history buttons
+    // POST is not cacheable at all
+    if ($qreq->method() !== "POST") {
+        header("Cache-Control: max-age=0,must-revalidate,private");
+    }
 
     // set up Content-Security-Policy if appropriate
     $conf->prepare_security_headers();
