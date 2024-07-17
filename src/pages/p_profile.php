@@ -449,7 +449,7 @@ class Profile_Page {
 
     private function handle_save_bulk() {
         if ($this->qreq->has_file("bulk")) {
-            $text = $this->qreq->file_contents("bulk");
+            $text = $this->qreq->file_content("bulk");
             if ($text === false) {
                 $this->conf->error_msg("<0>Internal error: cannot read uploaded file");
                 return;

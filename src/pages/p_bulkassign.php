@@ -91,7 +91,7 @@ class BulkAssign_Page {
         }
 
         if ($this->qreq->has_file("file")) {
-            $text = $this->qreq->file_contents("file");
+            $text = $this->qreq->file_content("file");
             $filename = $this->qreq->file_filename("file");
         } else {
             $text = $this->qreq->data;

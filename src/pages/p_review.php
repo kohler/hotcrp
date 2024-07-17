@@ -130,7 +130,7 @@ class Review_Page {
             return;
         }
         $rv = (new ReviewValues($this->conf))
-            ->set_text($this->qreq->file_contents("file"), $this->qreq->file_filename("file"));
+            ->set_text($this->qreq->file_content("file"), $this->qreq->file_filename("file"));
         $match = $other = false;
         while ($rv->set_req_override(!!$this->qreq->override)->parse_text()) {
             if ($rv->req_pid() === $this->prow->paperId) {

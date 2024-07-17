@@ -152,7 +152,7 @@ class Revpref_ListAction extends ListAction {
         } else if ($qreq->file) {
             $csv = self::preference_file_csv($qreq->file, $qreq->filename);
         } else if ($qreq->has_file("fileupload")) {
-            $csv = self::preference_file_csv($qreq->file_contents("fileupload"), $qreq->file_filename("fileupload"));
+            $csv = self::preference_file_csv($qreq->file_content("fileupload"), $qreq->file_filename("fileupload"));
         } else {
             return MessageItem::error("<0>File upload required");
         }

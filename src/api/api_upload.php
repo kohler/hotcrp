@@ -679,7 +679,7 @@ class Upload_API {
             } else if ($offset + $length > $this->_capd->size) {
                 return $this->_make_error("<0>Uploaded segment bigger than claimed upload size");
             }
-            $data = $qreq->file_contents("blob", 0, $length);
+            $data = $qreq->file_content("blob", 0, $length);
             if ($data === false || strlen($data) !== $length) {
                 return $this->_make_error("<0>Problem reading uploaded file");
             }

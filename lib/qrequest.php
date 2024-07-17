@@ -412,41 +412,34 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this->_files[$name] ?? null;
     }
     /** @param string $name
-     * @return string|false */
+     * @return ?string */
     function file_filename($name) {
-        $fn = false;
-        if (array_key_exists($name, $this->_files)) {
-            $fn = $this->_files[$name]->name;
-        }
-        return $fn;
+        $f = $this->_files[$name] ?? null;
+        return $f ? $f->name : null;
     }
     /** @param string $name
      * @return int|false */
     function file_size($name) {
-        $sz = false;
-        if (array_key_exists($name, $this->_files)) {
-            $sz = $this->_files[$name]->size;
-        }
-        return $sz;
+        $f = $this->_files[$name] ?? null;
+        return $f ? $f->size : false;
     }
     /** @param string $name
      * @param int $offset
      * @param ?int $maxlen
      * @return string|false */
-    function file_contents($name, $offset = 0, $maxlen = null) {
-        $data = false;
-        if (array_key_exists($name, $this->_files)) {
-            $finfo = $this->_files[$name];
-            if (isset($finfo->content)) {
-                $data = substr($finfo->content, $offset, $maxlen ?? PHP_INT_MAX);
-            } else if ($maxlen === null) {
-                $data = @file_get_contents($finfo->tmp_name, false, null, $offset);
-            } else {
-                $data = @file_get_contents($finfo->tmp_name, false, null, $offset, $maxlen);
-            }
-        }
-        return $data;
+    function file_content($name, $offset = 0, $maxlen = null) {
+        $f = $this->_files[$name] ?? null;
+        return $f ? $f->content($offset, $maxlen) : false;
     }
+    /** @param string $name
+     * @param int $offset
+     * @param ?int $maxlen
+     * @return string|false
+     * @deprecated */
+    function file_contents($name, $offset = 0, $maxlen = null) {
+        return $this->file_content($name, $offset, $maxlen);
+    }
+    /** @return array<string,QrequestFile> */
     function files() {
         return $this->_files;
     }
@@ -828,5 +821,18 @@ class QrequestFile {
         $this->tmp_name = $a["tmp_name"] ?? null;
         $this->content = $a["content"] ?? null;
         $this->error = $a["error"] ?? 0;
+    }
+    /** @param int $offset
+     * @param ?int $maxlen
+     * @return string|false */
+    function content($offset = 0, $maxlen = null) {
+        if ($this->content !== null) {
+            $data = substr($this->content, $offset, $maxlen ?? PHP_INT_MAX);
+        } else if ($maxlen === null) {
+            $data = @file_get_contents($this->tmp_name, false, null, $offset);
+        } else {
+            $data = @file_get_contents($this->tmp_name, false, null, $offset, $maxlen);
+        }
+        return $data;
     }
 }

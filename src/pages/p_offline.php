@@ -36,7 +36,7 @@ class Offline_Page {
             return false;
         }
         $tf = (new ReviewValues($this->conf))
-            ->set_text($this->qreq->file_contents("file"),
+            ->set_text($this->qreq->file_content("file"),
                        $this->qreq->file_filename("file"));
         while ($tf->set_req_override(!!$this->qreq->override)->parse_text()) {
             $tf->check_and_save($this->user, null, null);
@@ -50,7 +50,7 @@ class Offline_Page {
     /** @return bool */
     function handle_tag_indexes() {
         if ($this->qreq->upload && $this->qreq->has_file("file")) {
-            if (($text = $this->qreq->file_contents("file")) === false) {
+            if (($text = $this->qreq->file_content("file")) === false) {
                 $this->conf->error_msg("<0>Internal error: cannot read uploaded file");
                 return false;
             }
