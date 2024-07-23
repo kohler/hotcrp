@@ -41,7 +41,7 @@ class ManualAssign_Page {
 
             $ct = $row->conflict_type($reviewer);
             $rt = $row->review_type($reviewer);
-            if (!$this->viewer->can_administer($row)
+            if (!$this->viewer->can_administer_r($row)
                 || Conflict::is_author($ct)) {
                 continue;
             }

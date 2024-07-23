@@ -34,7 +34,7 @@ class APIHelpers {
     static function parse_reviewer_for($text, Contact $viewer, $prow) {
         $u = self::parse_user($text, $viewer);
         if ($u->contactId === $viewer->contactId
-            || ($prow ? $viewer->can_administer($prow) : $viewer->privChair)) {
+            || ($prow ? $viewer->can_administer_r($prow) : $viewer->privChair)) {
             return $u;
         } else {
             JsonResult::make_permission_error()->complete();

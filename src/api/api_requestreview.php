@@ -39,7 +39,7 @@ class RequestReview_API {
 
         // - check for existing request
         $request = self::request_by_paper_email($prow, $email);
-        if ($request && !$user->allow_administer($prow)) {
+        if ($request && !$user->allow_administer_r($prow)) {
             return JsonResult::make_parameter_error("email", "<0>{$email} is already a requested reviewer");
         } else if ($request) {
             self::update_qreq_from_request($qreq, $request);
@@ -52,7 +52,7 @@ class RequestReview_API {
             $refusal = ($prow->review_refusals_by_email($email))[0] ?? null;
         }
         if ($refusal
-            && (!$user->can_administer($prow) || !$qreq->override)) {
+            && (!$user->can_administer_r($prow) || !$qreq->override)) {
             $ml = [];
             if ($reviewer
                 && ($refusal->refusedBy == $reviewer->contactId
@@ -64,7 +64,7 @@ class RequestReview_API {
             if ($refusal->reason !== "" && $refusal->reason !== "request denied by chair") {
                 $ml[] = new MessageItem("email", "<5>They offered this reason: “" . htmlspecialchars($refusal->reason) . "”", MessageSet::INFORM);
             }
-            if ($user->allow_administer($prow)) {
+            if ($user->allow_administer_r($prow)) {
                 $ml[] = new MessageItem("override", "", 2);
             }
             return new JsonResult(["ok" => false, "message_list" => $ml]);
@@ -91,7 +91,7 @@ class RequestReview_API {
         }
 
         // load requester, reason
-        if ($request && $user->can_administer($prow)) {
+        if ($request && $user->can_administer_r($prow)) {
             $requester = $user->conf->user_by_id($request->requestedBy, USER_SLICE) ?? $user;
         } else {
             $requester = $user;
@@ -103,7 +103,7 @@ class RequestReview_API {
 
         // check whether to make a proposal
         $extrev_chairreq = $user->conf->setting("extrev_chairreq");
-        if ($user->can_administer($prow)
+        if ($user->can_administer_r($prow)
             ? $potconf && !$qreq->override
             : $extrev_chairreq === 1
               || ($extrev_chairreq === 2 && $potconf)) {
@@ -111,7 +111,7 @@ class RequestReview_API {
                 $prow->paperId, $email, $xreviewer->firstName, $xreviewer->lastName,
                 $xreviewer->affiliation, $user->contactId, Conf::$now, $reason, $round);
             $ml = [];
-            if ($user->can_administer($prow)) {
+            if ($user->can_administer_r($prow)) {
                 $ml[] = new MessageItem("email", "<5>" . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so you must approve this request for it to take effect", MessageSet::WARNING_NOTE);
                 $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf), MessageSet::INFORM);
             } else if ($extrev_chairreq === 2) {
@@ -188,7 +188,7 @@ class RequestReview_API {
             || trim((string) $qreq->lastName) !== "") {
             return JsonResult::make_error(400, "<0>An email address is required to request a review");
         }
-        if (!$user->allow_administer($prow)) {
+        if (!$user->allow_administer_r($prow)) {
             return JsonResult::make_error(403, "<0>Only administrators can request anonymous reviews");
         }
         $aset = (new AssignmentSet($user))->set_override_conflicts(true);
@@ -212,7 +212,7 @@ class RequestReview_API {
      * @param PaperInfo $prow
      * @return JsonResult */
     static function denyreview($user, $qreq, $prow) {
-        if (!$user->allow_administer($prow)) {
+        if (!$user->allow_administer_r($prow)) {
             return JsonResult::make_permission_error();
         }
         $email = trim((string) $qreq->email);
@@ -264,7 +264,7 @@ class RequestReview_API {
      * @param ReviewInfo|ReviewRefusalInfo $remrow
      * @return bool */
     static function allow_accept_decline($user, $prow, $remrow) {
-        if ($user->can_administer($prow)) {
+        if ($user->can_administer_r($prow)) {
             return true;
         } else if ($remrow instanceof ReviewInfo) {
             return $user->is_my_review($remrow);
@@ -322,7 +322,7 @@ class RequestReview_API {
         $rrow = $prow->review_by_id($r);
         $refrow = $prow->review_refusal_by_id($r);
         if (!$rrow && !$refrow) {
-            if ($user->can_administer($prow)
+            if ($user->can_administer_r($prow)
                 || $user->can_view_review($prow, null)) {
                 return JsonResult::make_not_found_error("r", "<0>No such review");
             } else {
@@ -395,7 +395,7 @@ class RequestReview_API {
         $rrow = $prow->review_by_id($r);
         $refrow = $prow->review_refusal_by_id($r);
         if (!$rrow && !$refrow) {
-            if ($user->can_administer($prow)
+            if ($user->can_administer_r($prow)
                 || $user->can_view_review($prow, null)) {
                 return JsonResult::make_not_found_error("r", "<0>Review not found");
             } else {
@@ -488,7 +488,7 @@ class RequestReview_API {
 
         $rrow = $prow->review_by_id($r);
         if (!$rrow) {
-            if ($user->can_administer($prow)
+            if ($user->can_administer_r($prow)
                 || $user->can_view_review($prow, null)) {
                 return JsonResult::make_not_found_error("r", "<0>Review not found");
             } else {
@@ -556,17 +556,17 @@ class RequestReview_API {
 
         $rrows = array_filter($xrrows, function ($rrow) use ($user, $prow) {
             return $rrow->reviewStatus < ReviewInfo::RS_DRAFTED
-                && ($user->can_administer($prow)
+                && ($user->can_administer_r($prow)
                     || ($user->contactId && $user->contactId == $rrow->requestedBy));
         });
         $requests = array_filter($xrequests, function ($req) use ($user, $prow) {
-            return $user->can_administer($prow)
+            return $user->can_administer_r($prow)
                 || ($user->contactId && $user->contactId == $req->requestedBy);
         });
 
         if (empty($rrows) && empty($requests)) {
             if (!empty($xrrows)
-                && ($user->can_administer($prow)
+                && ($user->can_administer_r($prow)
                     || ($user->contactId && $user->contactId == $xrrows[0]->requestedBy))) {
                 return JsonResult::make_permission_error("r", "<0>This review can’t be retracted because the reviewer has already begun their work");
             } else {
@@ -637,7 +637,7 @@ class RequestReview_API {
         }
 
         // check permissions
-        if (!$user->can_administer($prow)
+        if (!$user->can_administer_r($prow)
             && strcasecmp($email, $user->email) !== 0) {
             return JsonResult::make_permission_error("email");
         }
@@ -647,7 +647,7 @@ class RequestReview_API {
             return JsonResult::make_not_found_error(null, "<0>No reviews declined");
         }
 
-        if (!$user->can_administer($prow)) {
+        if (!$user->can_administer_r($prow)) {
             $xrefusals = array_filter($refusals, function ($ref) use ($user) {
                 return $ref->contactId == $user->contactId;
             });

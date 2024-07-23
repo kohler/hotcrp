@@ -31,7 +31,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         $this->nonempty = false;
-        return !$pl->user->allow_administer($row);
+        return !$pl->user->allow_administer_s($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         $pf = $row->preference($this->contact);

@@ -2098,7 +2098,7 @@ class Assignment_PaperColumn extends PaperColumn {
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !isset($this->content[$row->paperId])
-            || !$pl->user->can_administer($row);
+            || !$pl->user->can_administer_some($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
         return $this->content[$row->paperId];

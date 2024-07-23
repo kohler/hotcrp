@@ -114,7 +114,7 @@ class Conflict_PaperColumn extends PaperColumn {
         }
     }
     function edit_content(PaperList $pl, PaperInfo $row) {
-        if (!$pl->user->allow_administer($row)) {
+        if (!$pl->user->allow_administer_s($row)) {
             return false;
         }
         $ct = $row->conflict_type($this->contact);

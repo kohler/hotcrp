@@ -79,7 +79,7 @@ class Paper_Page {
 
         $reason = (string) $this->qreq->reason;
         if ($reason === ""
-            && $this->user->can_administer($this->prow)
+            && $this->user->can_administer_s($this->prow)
             && $this->qreq["status:notify"] > 0) {
             $reason = (string) $this->qreq["status:notify_reason"];
         }
@@ -113,7 +113,7 @@ class Paper_Page {
     function handle_delete() {
         if ($this->prow->paperId <= 0) {
             $this->conf->success_msg("<0>{$this->conf->snouns[2]} deleted");
-        } else if (!$this->user->can_administer($this->prow)) {
+        } else if (!$this->user->can_administer_s($this->prow)) {
             $this->conf->feedback_msg(
                 MessageItem::error("<0>Only program chairs can permanently delete a {$this->conf->snouns[0]}"),
                 MessageItem::inform("<0>Authors can withdraw {$this->conf->snouns[1]}.")
@@ -313,9 +313,9 @@ class Paper_Page {
 
         // mail confirmation to all contact authors if changed
         if ($this->ps->has_change()) {
-            if (!$this->user->can_administer($new_prow) || $this->qreq["status:notify"]) {
+            if (!$this->user->can_administer_s($new_prow) || $this->qreq["status:notify"]) {
                 $options = [];
-                if ($this->user->can_administer($new_prow)) {
+                if ($this->user->can_administer_s($new_prow)) {
                     if (!$new_prow->has_author($this->user)) {
                         $options["confirm_message_for"] = $this->user;
                         $options["adminupdate"] = true;
@@ -364,7 +364,7 @@ class Paper_Page {
         $conf = $this->conf;
         $this->useRequest = true;
 
-        if (!$this->user->can_administer($this->prow)
+        if (!$this->user->can_administer_s($this->prow)
             && !$this->prow->has_author($this->user)) {
             $conf->error_msg("<5>" . $this->prow->make_whynot(["permission" => "contact:edit"])->unparse_html());
             return;

@@ -29,7 +29,7 @@ class AllTags_API {
         if ($twiddle === false
             || ($twiddle === 0
                 && $tag[1] === "~"
-                && ($prow ? $user->allow_administer($prow) : $user->privChair))) {
+                && ($prow ? $user->allow_administer_r($prow) : $user->privChair))) {
             return $tag;
         } else if ($twiddle > 0
                    && substr($tag, 0, $twiddle) == $user->contactId) {

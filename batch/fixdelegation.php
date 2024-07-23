@@ -47,7 +47,7 @@ class FixDelegation_Batch {
                 $proposals[$xuser->contactId] = true;
             } else if (preg_match('/\AAdded External review by (\S+)/', $row->action, $m)
                        && ($pc = $this->conf->pc_member_by_email($m[1]))
-                       && $pc->can_administer($prow)) {
+                       && $pc->can_administer_r($prow)) {
                 $confirmations[$row->contactId] = $pc->contactId;
             }
         }

@@ -60,7 +60,7 @@ class ResponseRound {
 
     /** @return bool */
     function relevant(Contact $user, ?PaperInfo $prow = null) {
-        if (($prow ? $user->allow_administer($prow) : $user->is_manager())
+        if (($prow ? $user->allow_administer_s($prow) : $user->is_manager())
             && ($this->done || $this->condition !== null || $this->name !== "1")) {
             return true;
         } else if ($user->isPC) {

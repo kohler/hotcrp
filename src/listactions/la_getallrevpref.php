@@ -26,7 +26,7 @@ class GetAllRevpref_ListAction extends ListAction {
         $csvg = $user->conf->make_csvg("allprefs")->set_header($headers);
         $pcm = $user->conf->pc_members();
         foreach ($ssel->paper_set($user, ["allReviewerPreference" => 1, "allConflictType" => 1, "topics" => 1]) as $prow) {
-            if (!$user->allow_administer($prow)) {
+            if (!$user->allow_administer_r($prow)) {
                 continue;
             }
             $ctypes = $prow->conflict_types();

@@ -681,7 +681,7 @@ class ContactList {
             $this->_rating_data = [];
             foreach ($prows as $prow) {
                 if ($this->user->can_view_review_ratings($prow)) {
-                    $allow_admin = $this->user->allow_administer($prow);
+                    $allow_admin = $this->user->allow_administer_r($prow);
                     foreach ($prow->all_reviews() as $rrow) {
                         if (isset($ratings[$prow->paperId][$rrow->reviewId])
                             && ($allow_admin

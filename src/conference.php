@@ -3452,7 +3452,7 @@ class Conf {
 
     /** @return bool */
     function has_any_manager() {
-        return ($this->_track_sensitivity & Track::BITS_ADMIN)
+        return ($this->_track_sensitivity & Track::BITS_ADMIN) !== 0
             || !!($this->settings["papermanager"] ?? false);
     }
 
@@ -3579,7 +3579,7 @@ class Conf {
             && $this->paper
             && Contact::$main_user
             && Contact::$main_user->conf === $this
-            && Contact::$main_user->can_administer($this->paper)
+            && Contact::$main_user->can_administer_some($this->paper)
             && $this->paper->has_conflict(Contact::$main_user)
             && preg_match("{$are}p={$this->paper->paperId}{$zre}", $param)
             && (is_array($params) ? !array_key_exists("forceShow", $params) : !preg_match($are . 'forceShow=/', $param))) {
@@ -4955,7 +4955,7 @@ class Conf {
             $hpcj["__tags__"] = $this->viewable_user_tags($viewer);
         }
         if ($this->paper
-            && ($viewer->privChair || $viewer->allow_administer($this->paper))) {
+            && ($viewer->privChair || $viewer->allow_administer_r($this->paper))) {
             $list = [];
             foreach ($this->pc_members() as $pcm) {
                 if ($pcm->can_accept_review_assignment($this->paper)) {

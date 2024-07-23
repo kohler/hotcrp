@@ -1077,7 +1077,7 @@ class TagMap {
 
         // preserve all tags/show no tags optimization
         $view_most = $user->can_view_most_tags($prow);
-        $allow_admin = $user->allow_administer($prow);
+        $allow_admin = $user->allow_administer_r($prow);
         $conflict_free = TagInfo::TF_CONFLICT_FREE | ($user->privChair ? TagInfo::TF_SITEWIDE : 0);
         if ($view_most) {
             if (($ctype === self::CENSOR_SEARCH && $allow_admin)

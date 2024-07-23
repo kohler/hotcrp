@@ -146,7 +146,7 @@ class ListAction {
 
         $texts = [];
         foreach ($user->paper_set(["paperId" => $pids, "reviewSignatures" => true]) as $prow) {
-            if (!$user->allow_administer($prow)) {
+            if (!$user->allow_administer_r($prow)) {
                 $texts[] = [];
                 $texts[] = ["paper" => $prow->paperId,
                             "action" => "none",

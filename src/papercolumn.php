@@ -357,7 +357,7 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         }
     }
     private function data(PaperInfo $row, Contact $user) {
-        $want_assigned = !$row->has_conflict($user) || $user->can_administer($row);
+        $want_assigned = !$row->has_conflict($user) || $user->can_administer_r($row);
         $done = $started = 0;
         foreach ($row->all_reviews() as $rrow) {
             if ($user->can_view_review_assignment($row, $rrow)

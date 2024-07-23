@@ -10,7 +10,7 @@ class UnsubmitReview_AssignmentParser extends AssignmentParser {
         Review_AssignmentParser::load_review_state($state);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        return $state->user->can_administer($prow);
+        return $state->user->can_administer_r($prow);
     }
     function user_universe($req, AssignmentState $state) {
         return "reviewers";

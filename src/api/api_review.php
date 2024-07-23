@@ -84,7 +84,7 @@ class Review_API {
         $rrow = $prow->full_review_by_ordinal_id($qreq->r);
         if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
             return JsonResult::make_error(400, "<0>Bad request");
-        } else if (!$user->can_administer($prow)) {
+        } else if (!$user->can_administer_r($prow)) {
             return JsonResult::make_permission_error();
         } else if (!$rrow) {
             return JsonResult::make_error(404, "<0>Review not found");

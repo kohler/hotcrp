@@ -1339,7 +1339,7 @@ class Limit_SearchTerm extends SearchTerm {
             }
             return false;
         case "reviewable":
-            if (($this->reviewer !== $user && !$user->allow_administer($row))
+            if (($this->reviewer !== $user && !$user->allow_administer_r($row))
                 || !$this->reviewer->can_accept_review_assignment_ignore_conflict($row)) {
                 return false;
             } else if ($row->has_active_reviewer($this->reviewer)) {
@@ -1368,7 +1368,7 @@ class Limit_SearchTerm extends SearchTerm {
             return $user->is_primary_administrator($row);
         case "alladmin":
         case "actadmin":
-            return $user->allow_administer($row);
+            return $user->allow_administer_r($row);
         case "req":
             foreach ($row->all_reviews() as $rrow) {
                 if ($rrow->reviewType == REVIEW_EXTERNAL

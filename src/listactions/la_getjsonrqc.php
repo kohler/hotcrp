@@ -21,7 +21,7 @@ class GetJsonRQC_ListAction extends ListAction {
         $pj = [];
         $pex = new PaperExport($user);
         foreach ($ssel->paper_set($user, ["topics" => true, "options" => true]) as $prow) {
-            if ($user->allow_administer($prow)) {
+            if ($user->allow_administer_r($prow)) {
                 $pj[] = $j = $pex->paper_json($prow);
                 $prow->ensure_full_reviews();
                 foreach ($prow->viewable_reviews_as_display($user) as $rrow) {

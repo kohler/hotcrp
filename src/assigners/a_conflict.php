@@ -45,7 +45,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
         self::load_conflict_state($state);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if ($state->user->can_administer($prow)) {
+        if ($state->user->can_administer_s($prow)) {
             return true;
         } else if ($prow->has_author($state->user)) {
             if ($this->iscontact || !($whyNot = $state->user->perm_edit_paper($prow))) {
@@ -95,7 +95,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $res = $state->remove(new Conflict_Assignable($prow->paperId, $contact->contactId));
         $old_ct = empty($res) ? 0 : $res[0]->_ctype;
-        $admin = $state->user->can_administer($prow);
+        $admin = $state->user->can_administer_s($prow);
         if ($this->remove) {
             $ct = 0;
         } else if ($this->iscontact) {
@@ -188,11 +188,11 @@ class Conflict_Assigner extends Assigner {
 
         if ($has_conflict
             && isset($item["_override"])
-            && $state->user->can_administer($prow)) {
+            && $state->user->can_administer_s($prow)) {
             $state->msg_near($item->landmark, "<0>Overriding conflict for #{$pid} {$type} assignment {$uname}", 1);
         } else if ($has_conflict) {
             $state->msg_near($item->landmark, "<0>{$uname} cannot {$type} #{$pid} because they are conflicted", 2);
-            if ($state->csv_context && $state->user->allow_administer($prow)) {
+            if ($state->csv_context && $state->user->allow_administer_s($prow)) {
                 $state->msg_near($item->landmark, "<0>Set an “override” column to “yes” to force this assignment.", MessageSet::INFORM);
             }
             throw new AssignmentError("");

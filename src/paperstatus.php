@@ -872,7 +872,7 @@ class PaperStatus extends MessageSet {
             || !$this->user->can_view_decision($this->prow)
             || /* XXX not exactly the same check as override_deadlines */
                (!$this->conf->time_edit_final_paper()
-                && !$this->user->allow_administer($this->prow))) {
+                && !$this->user->allow_administer_s($this->prow))) {
             return;
         }
 
@@ -1015,7 +1015,7 @@ class PaperStatus extends MessageSet {
         // if creating a paper, user becomes contact;
         // if user removes self from author list, user becomes contact
         if ($this->user->contactId > 0
-            && !$this->user->allow_administer($this->prow)) {
+            && !$this->user->allow_administer_s($this->prow)) {
             $cv = $this->_conflict_values[$this->user->contactId] ?? null;
             $ncv = self::new_conflict_value($cv);
             if (($ncv & CONFLICT_CONTACTAUTHOR) === 0
@@ -1478,7 +1478,7 @@ class PaperStatus extends MessageSet {
         }
         if ($need_mail) {
             $rest = ["prow" => $prow];
-            if ($this->user->can_administer($prow)
+            if ($this->user->can_administer_s($prow)
                 && !$prow->has_author($this->user)) {
                 $rest["adminupdate"] = true;
             }

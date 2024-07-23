@@ -103,7 +103,7 @@ class Review_AssignmentParser extends AssignmentParser {
         return ReviewAssigner_Data::make($req, $state, $this->rtype);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if ($state->user->can_administer($prow)) {
+        if ($state->user->can_administer_r($prow)) {
             if ($prow->timeWithdrawn <= 0 || $this->rtype === 0) {
                 return true;
             } else {

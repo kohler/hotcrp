@@ -23,7 +23,7 @@ class GetAuthors_ListAction extends ListAction {
         $texts = [];
         $has_iscontact = $has_country = false;
         foreach ($prows as $prow) {
-            $admin = $user->allow_administer($prow);
+            $admin = $user->allow_administer_s($prow);
             $aucid = [];
             foreach ($prow->author_list() as $au) {
                 $line = [

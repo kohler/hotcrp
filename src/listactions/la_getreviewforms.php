@@ -37,7 +37,7 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
                         $t .= prefix_word_wrap("==-== ", strtoupper($m) . "\n\n", "==-== ");
                     }
                 }
-                if (!$this->all || !$user->allow_administer($prow)) {
+                if (!$this->all || !$user->allow_administer_r($prow)) {
                     $rrows = $prow->full_reviews_by_user($user);
                 } else {
                     $prow->ensure_full_reviews();

@@ -168,12 +168,42 @@ final class PaperContactInfo {
     }
 
     /** @return bool */
+    function allow_administer_s() {
+        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
+    function allow_administer_r() {
+        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
+    function allow_administer_some() {
+        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
     function allow_administer_forced() {
         return ($this->ciflags & self::CIF_ALLOW_ADMINISTER_FORCED) !== 0;
     }
 
     /** @return bool */
     function can_administer() {
+        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
+    function can_administer_s() {
+        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
+    function can_administer_r() {
+        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
+    function can_administer_some() {
         return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
     }
 
@@ -1642,7 +1672,7 @@ class PaperInfo {
         foreach ($this->conf->pc_members() as $u) {
             if (($has_track_admin || $u->privChair)
                 && $u->is_primary_administrator($this)) {
-                if ($u->can_administer($this)) {
+                if ($u->can_administer_r($this)) {
                     $as[] = $u;
                 } else {
                     $cas[] = $u;
@@ -1667,7 +1697,7 @@ class PaperInfo {
             && (!$viewer || $viewer->can_view_review_assignment($this, $rrow))) {
             return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
         } else if (($p = $this->conf->pc_member_by_id($cid))
-                   && $p->allow_administer($this)) {
+                   && $p->allow_administer_some($this)) {
             return "Administrator";
         } else if ($rrow) {
             return "Reviewer";

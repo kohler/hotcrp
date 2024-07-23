@@ -62,7 +62,7 @@ class Revpref_ListAction extends ListAction {
         ];
         $texts = [];
         foreach ($ssel->paper_set($user, ["topics" => 1, "reviewerPreference" => 1]) as $prow) {
-            if ($not_me && !$user->allow_administer($prow)) {
+            if ($not_me && !$user->allow_administer_r($prow)) {
                 continue;
             }
             $item = ["paper" => $prow->paperId, "title" => $prow->title];

@@ -661,7 +661,7 @@ class ReviewValues extends MessageSet {
         $minstatus = ReviewInfo::RS_EMPTY;
         if ($oldstatus >= ReviewInfo::RS_DELIVERED
             && (!$this->can_unsubmit
-                || !$user->can_administer($prow))) {
+                || !$user->can_administer_r($prow))) {
             $minstatus = $oldstatus;
         } else if ($view_score > VIEWSCORE_EMPTY
                    || $rrow->reviewModified > 1) {
@@ -692,7 +692,7 @@ class ReviewValues extends MessageSet {
     /** @return bool */
     private function _apply_req(Contact $user, PaperInfo $prow, ReviewInfo $rrow, $new_rrid) {
         assert($prow->paperId === $this->req["paperId"] && $rrow->paperId === $prow->paperId);
-        $admin = $user->allow_administer($prow);
+        $admin = $user->allow_administer_r($prow);
         $usedReviewToken = $user->active_review_token_for($prow, $rrow);
         $approvable = $user->can_approve_review($prow, $rrow);
 
@@ -703,7 +703,7 @@ class ReviewValues extends MessageSet {
 
         // can only edit reviews you own or administer
         if (!$user->is_owned_review($rrow)
-            && !$user->can_administer($prow)) {
+            && !$user->can_administer_r($prow)) {
             $this->rmsg(null, "<0>You don’t have permission to edit this review", self::ERROR);
             return false;
         }
@@ -844,7 +844,7 @@ class ReviewValues extends MessageSet {
                    || ($oldstatus < ReviewInfo::RS_DELIVERED && !$allow_new_submit)) {
             // unready nonempty review is at least drafted
             if ($this->can_unsubmit
-                && $user->can_administer($prow)) {
+                && $user->can_administer_r($prow)) {
                 $newstatus = ReviewInfo::RS_DRAFTED;
             } else {
                 $newstatus = max($oldstatus, ReviewInfo::RS_DRAFTED);

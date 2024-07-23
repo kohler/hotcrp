@@ -74,7 +74,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
         $this->xtype = $aj->type;
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        return $state->user->can_administer($prow) || $prow->has_author($state->user);
+        return $state->user->can_administer_s($prow) || $prow->has_author($state->user);
     }
     static function load_status_state(AssignmentState $state) {
         if ($state->mark_type("status", ["pid"], "Status_Assigner::make")) {
@@ -124,7 +124,7 @@ class Status_AssignmentParser extends UserlessAssignmentParser {
             }
             if (isset($req["notify"])
                 && ($notify = friendly_boolean($req["notify"])) !== null
-                && $state->user->can_administer($prow)) {
+                && $state->user->can_administer_s($prow)) {
                 $res->_notify = $notify;
             }
         } else if ($this->xtype === "revive") {

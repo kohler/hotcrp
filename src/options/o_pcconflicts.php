@@ -120,7 +120,7 @@ class PCConflicts_PaperOption extends PaperOption {
         // do not mark diff (will be marked later)
         $pcm = $this->conf->pc_members();
         if ($ov->prow->paperId > 0
-            ? $ps->user->can_administer($ov->prow)
+            ? $ps->user->can_administer_s($ov->prow)
             : $ps->user->privChair) {
             $mask = CONFLICT_PCMASK;
         } else {
@@ -208,7 +208,7 @@ class PCConflicts_PaperOption extends PaperOption {
         return $pv;
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        $admin = $pt->user->can_administer($ov->prow);
+        $admin = $pt->user->can_administer_s($ov->prow);
         if (!$this->test_visible($ov->prow)
             && !$pt->settings_mode) {
             return;

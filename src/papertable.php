@@ -20,10 +20,16 @@ class PaperTable {
     public $mode;
     /** @var bool
      * @readonly */
-    private $allow_admin;
+    private $allow_administer_s;
     /** @var bool
      * @readonly */
-    private $admin;
+    private $allow_administer_r;
+    /** @var bool
+     * @readonly */
+    private $can_administer_s;
+    /** @var bool
+     * @readonly */
+    private $can_administer_r;
     /** @var bool
      * @readonly */
     private $allow_edit_final;
@@ -89,8 +95,11 @@ class PaperTable {
         $this->user = $user;
         $this->qreq = $qreq;
         $this->prow = $prow;
-        $this->allow_admin = $user->allow_administer($this->prow);
-        $this->admin = $user->can_administer($this->prow);
+        $rights = $user->__rights($this->prow);
+        $this->allow_administer_s = $rights->allow_administer_s();
+        $this->allow_administer_r = $rights->allow_administer_r();
+        $this->can_administer_s = $rights->can_administer_s();
+        $this->can_administer_r = $rights->can_administer_r();
         $this->allow_edit_final = $user->edit_paper_state($this->prow) === 2;
 
         if (!$this->prow->paperId) {
@@ -124,7 +133,7 @@ class PaperTable {
             $m = $this->qreq->m ?? $this->qreq->mode;
             if (($m === "edit" || $m === "pe")
                 && $page === "paper"
-                && ($this->allow_admin || $this->allow_edit())) {
+                && ($this->allow_administer_s || $this->allow_edit())) {
                 $this->mode = "edit";
             } else if (($m === "re" || $m === "rea")
                        && $page === "review"
@@ -139,7 +148,7 @@ class PaperTable {
 
     /** @return bool */
     private function allow_edit() {
-        return $this->admin || $this->prow->has_author($this->user);
+        return $this->allow_administer_s || $this->prow->has_author($this->user);
     }
 
     /** @return bool */
@@ -149,7 +158,7 @@ class PaperTable {
 
     /** @return bool */
     private function allow_assign() {
-        return $this->admin || $this->user->can_request_review($this->prow, null, true);
+        return $this->can_administer_r || $this->user->can_request_review($this->prow, null, true);
     }
 
     /** @return bool */
@@ -343,7 +352,7 @@ class PaperTable {
             $this->edit_mode = 2;
         } else if (($this->prow->has_author($this->user)
                     && $this->prow->paperId > 0)
-                   || $this->admin) {
+                   || $this->can_administer_s) {
             $this->edit_mode = 1;
         } else {
             $this->edit_mode = 0;
@@ -535,7 +544,7 @@ class PaperTable {
         echo '</h3>';
         $this->print_field_description($opt);
         if ((!$input && $this->edit_mode === 2)
-            || ($this->admin && !$opt->test_editable($this->prow))) {
+            || ($this->can_administer_s && !$opt->test_editable($this->prow))) {
             if ($input) {
                 $ml = [MessageItem::marked_note("<0>Only administrators can edit this field.")];
             } else if ($opt->required <= 0
@@ -1070,7 +1079,7 @@ class PaperTable {
         if ($vas === 1 || $this->allow_folds) {
             $fr->value .= '</button>';
         }
-        if ($this->admin) {
+        if ($this->can_administer_s) {
             $mailt = "s";
             if ($this->prow->timeSubmitted <= 0) {
                 $mailt = "all";
@@ -1192,7 +1201,7 @@ class PaperTable {
         if ($rrow->reviewId <= 0
             || $rrow->reviewType >= REVIEW_SECONDARY
             || $rrow->reviewStatus > ReviewInfo::RS_ACCEPTED
-            || (!$this->user->can_administer($this->prow)
+            || (!$this->user->can_administer_r($this->prow)
                 && (!$this->user->is_my_review($rrow)
                     || !$this->user->time_review($this->prow, $rrow)))) {
             return;
@@ -1514,7 +1523,7 @@ class PaperTable {
     }
 
     private function _papstripLeadShepherd($type, $name) {
-        $editable = $type === "manager" ? $this->user->privChair : $this->admin;
+        $editable = $type === "manager" ? $this->user->privChair : $this->can_administer_r;
         $extrev_shepherd = $type === "shepherd" && $this->conf->setting("extrev_shepherd");
 
         $field = $type . "ContactId";
@@ -1618,7 +1627,7 @@ class PaperTable {
             }
             if ($is_sitewide) {
                 echo "<p class=\"feedback is-warning\">You have a conflict with this {$this->conf->snouns[0]}, so you can only edit its ", Ht::link("site-wide tags", $this->conf->hoturl("settings", "group=tags#tag_sitewide")), '.';
-                if ($this->user->allow_administer($this->prow)) {
+                if ($this->allow_administer_r) {
                     echo ' ', Ht::link("Override your conflict", $this->conf->selfurl($this->qreq, ["forceShow" => 1])), ' to view and edit all tags.';
                 }
                 echo '</p>';
@@ -1876,7 +1885,7 @@ class PaperTable {
     }
 
     private function _deadline_override_message() {
-        if ($this->admin) {
+        if ($this->can_administer_s) {
             return " As an administrator, you can make changes anyway.";
         } else {
             return "";
@@ -1895,12 +1904,12 @@ class PaperTable {
         } else {
             $msg = '<5>The <a href="' . $this->conf->hoturl("deadlines") . "\">deadline</a> for registering {$this->conf->snouns[1]} has passed." . $this->deadline_is($sr->register) . $this->_deadline_override_message();
         }
-        $this->_main_message($msg, $this->admin ? 1 : 2);
+        $this->_main_message($msg, $this->can_administer_s ? 1 : 2);
     }
 
     private function _edit_message_new_paper() {
         $sr = $this->prow->submission_round();
-        if ($this->admin || $sr->time_register(true)) {
+        if ($this->can_administer_s || $sr->time_register(true)) {
             $mt = [
                 $this->conf->_("<5>Enter information about your {submission}."),
                 $this->conf->_("<5>{Submissions} must be registered by {register:time} and completed by {submit:time}.", new FmtArg("register", $sr->register), new FmtArg("submit", $sr->update))
@@ -1924,7 +1933,7 @@ class PaperTable {
         }
         if (!$sr->time_register(true)) {
             $this->_edit_message_new_paper_deadline($sr);
-            $this->quit = $this->quit || !$this->admin;
+            $this->quit = $this->quit || !$this->can_administer_s;
         }
     }
 
@@ -2116,7 +2125,7 @@ class PaperTable {
             $revivable = $this->prow->submission_round()->time_submit(true);
             if ($revivable) {
                 return [Ht::submit("revive", "Revive {$this->conf->snouns[0]}", ["class" => "btn-primary"])];
-            } else if ($this->admin) {
+            } else if ($this->can_administer_s) {
                 return [[Ht::button("Revive {$this->conf->snouns[0]}", ["class" => "ui js-override-deadlines", "data-override-text" => 'The <a href="' . $this->conf->hoturl("deadlines") . "\">deadline</a> for reviving withdrawn {$this->conf->snouns[1]} has passed. Are you sure you want to override it?", "data-override-submit" => "revive"]), "(admin only)"]];
             } else {
                 return [];
@@ -2138,7 +2147,7 @@ class PaperTable {
             $save_name = $this->_save_name();
             if (!$whyNot) {
                 $buttons[] = [Ht::submit("update", $save_name, ["class" => "btn-primary btn-savepaper uic js-mark-submit"]), ""];
-            } else if ($this->admin) {
+            } else if ($this->can_administer_s) {
                 $revWhyNot = $whyNot->filter(["deadline", "frozen"])->set("confirmOverride", true);
                 $buttons[] = [Ht::button($save_name, ["class" => "btn-primary btn-savepaper ui js-override-deadlines", "data-override-text" => $revWhyNot->unparse_html(), "data-override-submit" => "update"]), "(admin only)"];
             } else if (isset($whyNot["frozen"])
@@ -2151,7 +2160,7 @@ class PaperTable {
                 $buttons[] = Ht::submit("cancel", "Cancel", ["class" => "uic js-mark-submit"]);
                 $buttons[] = "";
             }
-            $want_override = $whyNot && !$this->admin;
+            $want_override = $whyNot && !$this->can_administer_s;
         }
 
         // withdraw button
@@ -2162,17 +2171,17 @@ class PaperTable {
             $b = Ht::submit("withdraw", "Withdraw", ["class" => "uic js-mark-submit"]);
         } else {
             $args = ["class" => "ui js-withdraw"];
-            if ($this->user->can_withdraw_paper($this->prow, !$this->admin)) {
+            if ($this->user->can_withdraw_paper($this->prow, !$this->can_administer_s)) {
                 $args["data-withdrawable"] = "true";
             }
-            if (($this->admin && !$this->prow->has_author($this->user))
+            if (($this->can_administer_s && !$this->prow->has_author($this->user))
                 || $this->prow->submission_round()->time_submit(true)) {
                 $args["data-revivable"] = "true";
             }
             $b = Ht::button("Withdraw", $args);
         }
         if ($b) {
-            if ($this->admin
+            if ($this->can_administer_s
                 && !$this->prow->author_user()->can_withdraw_paper($this->prow)) {
                 $b = [$b, "(admin only)"];
             }
@@ -2183,7 +2192,7 @@ class PaperTable {
     }
 
     private function print_actions() {
-        if ($this->admin) {
+        if ($this->can_administer_s) {
             $v = (string) $this->qreq["status:notify_reason"];
             echo '<div class="checki"><label><span class="checkc">', Ht::checkbox("status:notify", 1, true, ["class" => "ignore-diff"]), "</span>",
                 "Email authors, including:</label> ",
@@ -2192,7 +2201,7 @@ class PaperTable {
         }
 
         $buttons = $this->_collect_actions();
-        if ($this->admin && $this->prow->paperId) {
+        if ($this->can_administer_s && $this->prow->paperId) {
             $buttons[] = [Ht::button("Delete", ["class" => "ui js-delete-paper"]), "(admin only)"];
         }
         echo Ht::actions($buttons, ["class" => "aab aabig"]);
@@ -2262,7 +2271,7 @@ class PaperTable {
     /** @return string */
     private function _mode_nav() {
         $tx = [];
-        if (($allow = $this->allow_edit()) || $this->allow_admin) {
+        if (($allow = $this->allow_edit()) || $this->allow_administer_s) {
             $arg = ["m" => "edit", "p" => $this->prow->paperId];
             if (!$allow
                 && $this->mode !== "edit"
@@ -2275,7 +2284,7 @@ class PaperTable {
                 $this->mode === "edit", $allow || isset($arg["forceShow"])
             );
         }
-        if (($allow = $this->allow_review()) || $this->allow_admin) {
+        if (($allow = $this->allow_review()) || $this->allow_administer_r) {
             $arg = ["p" => $this->prow->paperId];
             if (!$allow) {
                 $arg["forceShow"] = 1;
@@ -2285,8 +2294,8 @@ class PaperTable {
                 $this->mode === "re" && (!$this->editrrow || $this->user->is_my_review($this->editrrow)), $allow
             );
         }
-        if (($allow = $this->allow_assign()) || $this->allow_admin) {
-            $name = $this->allow_admin ? "Assign" : "Invite";
+        if (($allow = $this->allow_assign()) || $this->allow_administer_r) {
+            $name = $this->allow_administer_r ? "Assign" : "Invite";
             $arg = ["p" => $this->prow->paperId];
             if (!$allow) {
                 $arg["forceShow"] = 1;
@@ -2455,8 +2464,8 @@ class PaperTable {
         }
         echo '</a>', $close, '</h4><ul class="pslcard"></ul></nav></div>';
 
-        if ($this->allow_admin && $this->prow->paperId > 0) {
-            if (!$this->admin) {
+        if ($this->allow_administer_s && $this->prow->paperId > 0) {
+            if (!$this->can_administer_s) {
                 echo '<div class="pcard notecard override-conflict off"><p class="sd">',
                     '<a class="noul" href="', $this->conf->selfurl($this->qreq, ["forceShow" => 1]), '">',
                     '🔒&nbsp;<u>Override conflict</u></a> for administrator view</p></div>';
@@ -2528,8 +2537,8 @@ class PaperTable {
         $conf = $prow->conf;
         $subrev = [];
         $cflttype = $user->view_conflict_type($prow);
-        $allow_actas = $user->privChair && $user->allow_administer($prow);
-        $hideUnviewable = ($cflttype > 0 && !$this->admin)
+        $allow_actas = $user->privChair && $user->allow_administer_r($prow);
+        $hideUnviewable = ($cflttype > 0 && !$this->can_administer_r)
             || (!$user->act_pc($prow) && ($conf->setting("viewrev_ext") ?? 0) < 0);
         $show_ratings = $user->can_view_review_ratings($prow);
         $want_scores = !in_array($this->mode, ["assign", "edit", "re"]);
@@ -2784,7 +2793,7 @@ class PaperTable {
         // edit paper
         if ($this->mode !== "edit"
             && $prow->has_author($this->user)
-            && !$this->user->can_administer($prow)) {
+            && !$this->user->can_administer_s($prow)) {
             $es = $this->conf->_c5("paper_edit", "<0>Edit {submission}");
             $t[] = '<a href="' . $prow->hoturl(["m" => "edit"]) . '" class="noul revlink">'
                 . Ht::img("edit48.png", "[Edit]", $dlimgjs) . "&nbsp;<u><strong>{$es}</strong></u></a>";
@@ -2813,7 +2822,7 @@ class PaperTable {
             && $this->mode !== "edit"
             && $this->user->can_request_review($prow, null, true)) {
             $t[] = '<a href="' . $this->conf->hoturl("assign", "p=$prow->paperId") . '" class="noul revlink">'
-                . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($this->admin ? "Assign reviews" : "External reviews") . "</u></a>";
+                . Ht::img("assign48.png", "[Assign]", $dlimgjs) . "&nbsp;<u>" . ($this->can_administer_r ? "Assign reviews" : "External reviews") . "</u></a>";
         }
 
         // new comment
@@ -2828,7 +2837,7 @@ class PaperTable {
 
         // new response
         if (!$nocmt
-            && ($prow->has_author($this->user) || $this->allow_admin)
+            && ($prow->has_author($this->user) || $this->allow_administer_s)
             && $this->conf->any_response_open) {
             foreach ($this->conf->response_rounds() as $rrd) {
                 $cr = $this->response_by_id($rrd->id)
@@ -2850,7 +2859,7 @@ class PaperTable {
         }
 
         // override conflict
-        if ($this->user->privChair && !$this->allow_admin) {
+        if ($this->user->privChair && !$this->allow_administer_r) {
             $t[] = "<span class=\"revlink\">You can’t override your conflict because this {$this->conf->snouns[0]} has an administrator.</span>";
         }
 
@@ -2978,7 +2987,7 @@ class PaperTable {
                 && $crow->commentType !== 0) {
                 $cs[] = $crow;
             }
-            if ($this->admin || $this->prow->has_author($this->user)) {
+            if ($this->can_administer_s || $this->prow->has_author($this->user)) {
                 foreach ($this->conf->response_rounds() as $rrd) {
                     if (!$this->response_by_id($rrd->id)
                         && $rrd->relevant($this->user, $this->prow)) {
@@ -3034,14 +3043,14 @@ class PaperTable {
     /** @param bool $editable
      * @return bool */
     private function _mark_review_messages($editable, ReviewInfo $rrow) {
-        if (($this->user->is_owned_review($rrow) || $this->admin)
+        if (($this->user->is_owned_review($rrow) || $this->can_administer_r)
             && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
             if ($this->conf->time_review_open()) {
                 $t = 'The <a href="' . $this->conf->hoturl("deadlines") . '">review deadline</a> has passed, so the review can no longer be changed.';
             } else {
                 $t = "The site is not open for reviewing, so the review cannot be changed.";
             }
-            if (!$this->admin) {
+            if (!$this->can_administer_r) {
                 $rrow->message_list[] = new MessageItem(null, $t, MessageSet::URGENT_NOTE);
                 return false;
             } else {
@@ -3055,7 +3064,7 @@ class PaperTable {
         if (!$this->user->is_my_review($rrow)) {
             if ($this->user->is_owned_review($rrow)) {
                 $rrow->message_list[] = new MessageItem(null, "This isn’t your review, but you can make changes since you requested it.", MessageSet::MARKED_NOTE);
-            } else if ($this->admin) {
+            } else if ($this->can_administer_r) {
                 $rrow->message_list[] = new MessageItem(null, "This isn’t your review, but as an administrator you can still make changes.", MessageSet::MARKED_NOTE);
             }
         }
@@ -3132,7 +3141,7 @@ class PaperTable {
         $this->all_rrows = $this->prow->reviews_as_display();
         $this->viewable_rrows = [];
         $rf = $this->conf->review_form();
-        $unneeded_fields = $this->admin ? [] : $rf->all_fields();
+        $unneeded_fields = $this->can_administer_r ? [] : $rf->all_fields();
         foreach ($this->all_rrows as $rrow) {
             if ($this->user->can_view_review($this->prow, $rrow)) {
                 $this->viewable_rrows[] = $rrow;
@@ -3169,7 +3178,7 @@ class PaperTable {
                 || (!$myrrow && $this->user->is_my_review($rrow))) {
                 $myrrow = $rrow;
             }
-            if (($rrow->requestedBy === $this->user->contactId || $this->admin)
+            if (($rrow->requestedBy === $this->user->contactId || $this->can_administer_r)
                 && $rrow->reviewStatus === ReviewInfo::RS_DELIVERED
                 && !$approvable_rrow) {
                 $approvable_rrow = $rrow;
@@ -3211,9 +3220,9 @@ class PaperTable {
             && $this->prow->paperId
             && empty($this->viewable_rrows)
             && empty($this->mycrows)
-            && !$this->allow_admin
+            && !$this->allow_administer_s
             && $this->qreq->page() === "paper"
-            && ($this->allow_admin || $this->allow_edit())
+            && $this->allow_edit()
             && ($this->prow->timeSubmitted <= 0
                 || $this->prow->submission_round()->time_submit(true))) {
             $this->mode = "edit";

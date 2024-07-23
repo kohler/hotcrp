@@ -422,7 +422,7 @@ Ready\n";
         $submitted = $rrow && $rrow->reviewStatus === ReviewInfo::RS_COMPLETED;
         $disabled = !$user->can_clickthrough("review", $prow);
         $my_review = !$rrow || $user->is_my_review($rrow);
-        $pc_deadline = $user->act_pc($prow) || $user->allow_administer($prow);
+        $pc_deadline = $user->act_pc($prow) || $user->allow_administer_r($prow);
         if (!$this->conf->time_review($rrow ? $rrow->reviewRound : null, $rrow ? $rrow->reviewType : $pc_deadline, true)) {
             $whyNot = new PermissionProblem($this->conf, ["deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"), "confirmOverride" => true]);
             $override_text = $whyNot->unparse_html();
@@ -456,7 +456,7 @@ Ready\n";
                         $text = "Approve/adopt review";
                     }
                 }
-                if ($user->allow_administer($prow)
+                if ($user->allow_administer_r($prow)
                     || $this->conf->ext_subreviews !== 3) {
                     $class .= " can-approve-submit";
                 }
@@ -475,7 +475,7 @@ Ready\n";
         }
         $buttons[] = Ht::submit("cancel", "Cancel");
 
-        if ($rrow && $user->allow_administer($prow)) {
+        if ($rrow && $user->allow_administer_r($prow)) {
             $buttons[] = "";
             if ($rrow->reviewStatus >= ReviewInfo::RS_APPROVED) {
                 $buttons[] = [Ht::submit("unsubmitreview", "Unsubmit review"), "(admin only)"];
@@ -591,7 +591,7 @@ Ready\n";
 
         // review card
         echo '<div class="revcard-form">';
-        $allow_admin = $viewer->allow_administer($prow);
+        $allow_admin = $viewer->allow_administer_r($prow);
 
         // blind?
         if ($this->conf->review_blindness() === Conf::BLIND_OPTIONAL) {
@@ -738,7 +738,7 @@ Ready\n";
                 if ($f->test_exists($rrow)) {
                     $rj[$f->uid()] = $f->unparse_json($fval);
                 } else if ($fval !== null
-                           && ($my_review || $viewer->can_administer($prow))) {
+                           && ($my_review || $viewer->can_administer_r($prow))) {
                     $hidden[] = $f->uid();
                 }
             }

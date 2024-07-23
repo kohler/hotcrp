@@ -48,7 +48,7 @@ class Lead_AssignmentParser extends AssignmentParser {
                 return new AssignmentError("<0>Only chairs and sysadmins can change paper administrators");
             }
         } else {
-            return $state->user->can_administer($prow);
+            return $state->user->can_administer_r($prow);
         }
     }
     function user_universe($req, AssignmentState $state) {

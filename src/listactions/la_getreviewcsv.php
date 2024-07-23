@@ -23,7 +23,7 @@ class GetReviewCSV_ListAction extends ListAction {
             }
             $viewer = $this->author_view ? $prow->author_user() : $user;
             $old_viewer_overrides = $viewer->overrides();
-            if ($this->author_view && $user->allow_administer($prow)) {
+            if ($this->author_view && $user->allow_administer_r($prow)) {
                 $viewer->add_overrides(Contact::OVERRIDE_AU_SEEREV);
             }
             $prow->ensure_full_reviews();
