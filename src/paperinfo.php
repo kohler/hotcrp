@@ -48,7 +48,7 @@ class PaperReviewPreference {
     }
 }
 
-class PaperContactInfo {
+final class PaperContactInfo {
     /** @var int
      * @readonly */
     public $paperId;
@@ -71,36 +71,30 @@ class PaperContactInfo {
     const CIRS_PROXIED = 3;       // review proxied (e.g., lead)
     const CIRS_SUBMITTED = 4;     // review submitted
 
-    /** @var ?bool */
-    public $rights_forced = null;
     /** @var ?PaperContactInfo */
     private $forced_rights_link = null;
 
     // set by Contact::rights()
-    /** @var bool */
-    public $allow_administer;
-    /** @var bool */
-    public $can_administer;
+    /** @var int */
+    public $ciflags = 0;
+    const CIF_SET0 = 0x1;
+    const CIF_ALLOW_ADMINISTER = 0x2;
+    const CIF_ALLOW_ADMINISTER_FORCED = 0x4;
+    const CIFM_SET0 = 0x7;
+    const CIF_SET1 = 0x8;
+    const CIF_CAN_ADMINISTER = 0x10;
+    const CIF_ALLOW_PC_BROAD = 0x20;
+    const CIF_ALLOW_PC = 0x40;
+    const CIF_POTENTIAL_REVIEWER = 0x80;
+    const CIF_ALLOW_REVIEW = 0x100;
+    const CIF_ALLOW_AUTHOR_EDIT = 0x200;
+    const CIF_ACT_AUTHOR_VIEW = 0x400;
+    const CIF_ALLOW_AUTHOR_VIEW = 0x800;
+    const CIF_CAN_VIEW_DECISION = 0x1000;
     /** @var bool */
     public $primary_administrator;
-    /** @var bool */
-    public $allow_pc_broad;
-    /** @var bool */
-    public $allow_pc;
-    /** @var bool */
-    public $potential_reviewer;
-    /** @var bool */
-    public $allow_review;
-    /** @var bool */
-    public $allow_author_edit;
     /** @var int */
     public $view_conflict_type;
-    /** @var bool */
-    public $act_author_view;
-    /** @var bool */
-    public $allow_author_view;
-    /** @var bool */
-    public $can_view_decision;
     /** @var 0|1|2 */
     public $view_authors_state;
 
@@ -168,9 +162,71 @@ class PaperContactInfo {
         return ($this->rflags & ReviewInfo::RF_SUBMITTED) !== 0;
     }
 
+    /** @return bool */
+    function allow_administer() {
+        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
+    function allow_administer_forced() {
+        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER_FORCED) !== 0;
+    }
+
+    /** @return bool */
+    function can_administer() {
+        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+    }
+
+    /** @return bool */
+    function allow_pc_broad() {
+        return ($this->ciflags & self::CIF_ALLOW_PC_BROAD) !== 0;
+    }
+
+    /** @return bool */
+    function allow_pc() {
+        return ($this->ciflags & self::CIF_ALLOW_PC) !== 0;
+    }
+
+    /** @return bool */
+    function potential_reviewer() {
+        return ($this->ciflags & self::CIF_POTENTIAL_REVIEWER) !== 0;
+    }
+
+    /** @return bool */
+    function allow_review() {
+        return ($this->ciflags & self::CIF_ALLOW_REVIEW) !== 0;
+    }
+
+    /** @return bool */
+    function allow_author_edit() {
+        return ($this->ciflags & self::CIF_ALLOW_AUTHOR_EDIT) !== 0;
+    }
+
+    /** @return bool */
+    function allow_author_view() {
+        return ($this->ciflags & self::CIF_ALLOW_AUTHOR_VIEW) !== 0;
+    }
+
+    /** @return bool */
+    function act_author_view() {
+        return ($this->ciflags & self::CIF_ACT_AUTHOR_VIEW) !== 0;
+    }
+
+    /** @return bool */
+    function can_view_decision() {
+        return ($this->ciflags & self::CIF_CAN_VIEW_DECISION) !== 0;
+    }
+
     /** @param int $ct */
     function mark_conflict($ct) {
         $this->conflictType = max($ct, $this->conflictType);
+    }
+
+    /** @param int $cif
+     * @suppress PhanDeprecatedProperty */
+    function __set_ciflags($cif) {
+        $this->ciflags = $cif;
+        assert(($cif & self::CIF_SET0) !== 0);
     }
 
     /** @param Conf $conf
@@ -272,9 +328,12 @@ class PaperContactInfo {
 
     /** @return PaperContactInfo */
     function get_forced_rights() {
+        assert(($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0);
         if (!$this->forced_rights_link) {
             $ci = $this->forced_rights_link = clone $this;
             $ci->vreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
+            $ci->ciflags = ($ci->ciflags & self::CIFM_SET0)
+                | self::CIF_ALLOW_ADMINISTER_FORCED;
         }
         return $this->forced_rights_link;
     }
