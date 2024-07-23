@@ -78,19 +78,23 @@ final class PaperContactInfo {
     /** @var int */
     public $ciflags = 0;
     const CIF_SET0 = 0x1;
-    const CIF_ALLOW_ADMINISTER = 0x2;
-    const CIF_ALLOW_ADMINISTER_FORCED = 0x4;
-    const CIFM_SET0 = 0x7;
-    const CIF_SET1 = 0x8;
-    const CIF_CAN_ADMINISTER = 0x10;
-    const CIF_ALLOW_PC_BROAD = 0x20;
-    const CIF_ALLOW_PC = 0x40;
-    const CIF_POTENTIAL_REVIEWER = 0x80;
-    const CIF_ALLOW_REVIEW = 0x100;
-    const CIF_ALLOW_AUTHOR_EDIT = 0x200;
-    const CIF_ACT_AUTHOR_VIEW = 0x400;
-    const CIF_ALLOW_AUTHOR_VIEW = 0x800;
-    const CIF_CAN_VIEW_DECISION = 0x1000;
+    const CIF_ALLOW_ADMINISTER_S = 0x2;
+    const CIF_ALLOW_ADMINISTER_R = 0x4;
+    const CIFM_ALLOW_ADMINISTER = 0x6;
+    const CIF_ALLOW_ADMINISTER_FORCED = 0x8;
+    const CIFM_SET0 = 0xF;
+    const CIF_SET1 = 0x10;
+    const CIF_CAN_ADMINISTER_S = 0x20; // === CIF_ALLOW_ADMINISTER_S << 4
+    const CIF_CAN_ADMINISTER_R = 0x40; // === CIF_ALLOW_ADMINISTER_R << 4
+    const CIFM_CAN_ADMINISTER = 0x60;  // === CIFM_ALLOW_ADMINISTER << 4
+    const CIF_ALLOW_PC_BROAD = 0x80;
+    const CIF_ALLOW_PC = 0x100;
+    const CIF_POTENTIAL_REVIEWER = 0x200;
+    const CIF_ALLOW_REVIEW = 0x400;
+    const CIF_ALLOW_AUTHOR_EDIT = 0x800;
+    const CIF_ACT_AUTHOR_VIEW = 0x1000;
+    const CIF_ALLOW_AUTHOR_VIEW = 0x2000;
+    const CIF_CAN_VIEW_DECISION = 0x4000;
     /** @var bool */
     public $primary_administrator;
     /** @var int */
@@ -164,22 +168,22 @@ final class PaperContactInfo {
 
     /** @return bool */
     function allow_administer() {
-        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIFM_ALLOW_ADMINISTER) === self::CIFM_ALLOW_ADMINISTER;
     }
 
     /** @return bool */
     function allow_administer_s() {
-        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER_S) !== 0;
     }
 
     /** @return bool */
     function allow_administer_r() {
-        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER_R) !== 0;
     }
 
     /** @return bool */
     function allow_administer_some() {
-        return ($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIFM_ALLOW_ADMINISTER) !== 0;
     }
 
     /** @return bool */
@@ -189,22 +193,22 @@ final class PaperContactInfo {
 
     /** @return bool */
     function can_administer() {
-        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIFM_CAN_ADMINISTER) === self::CIFM_CAN_ADMINISTER;
     }
 
     /** @return bool */
     function can_administer_s() {
-        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIF_CAN_ADMINISTER_S) !== 0;
     }
 
     /** @return bool */
     function can_administer_r() {
-        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIF_CAN_ADMINISTER_R) !== 0;
     }
 
     /** @return bool */
     function can_administer_some() {
-        return ($this->ciflags & self::CIF_CAN_ADMINISTER) !== 0;
+        return ($this->ciflags & self::CIFM_CAN_ADMINISTER) !== 0;
     }
 
     /** @return bool */
@@ -358,7 +362,7 @@ final class PaperContactInfo {
 
     /** @return PaperContactInfo */
     function get_forced_rights() {
-        assert(($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0);
+        assert(($this->ciflags & self::CIFM_ALLOW_ADMINISTER) !== 0);
         if (!$this->forced_rights_link) {
             $ci = $this->forced_rights_link = clone $this;
             $ci->vreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;

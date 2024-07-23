@@ -2967,7 +2967,7 @@ class Contact implements JsonSerializable {
                     && (!$prow->managerContactId || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED)
                     && $this->conf->check_admin_tracks($prow, $this))
                 || $this->_root_user) {
-                $ci->ciflags |= PaperContactInfo::CIF_ALLOW_ADMINISTER;
+                $ci->ciflags |= PaperContactInfo::CIFM_ALLOW_ADMINISTER;
             }
         }
 
@@ -2984,12 +2984,11 @@ class Contact implements JsonSerializable {
             $cif = $ci->ciflags | PaperContactInfo::CIF_SET1;
 
             // check current administration status
-            $allow_administer = ($cif & PaperContactInfo::CIF_ALLOW_ADMINISTER) !== 0;
-            $can_administer = $allow_administer
-                && ($ci->conflictType <= CONFLICT_MAXUNCONFLICTED || $forceShow);
-            if ($can_administer) {
-                $cif |= PaperContactInfo::CIF_CAN_ADMINISTER;
+            $allow_administer_m = $cif & PaperContactInfo::CIFM_ALLOW_ADMINISTER;
+            if ($ci->conflictType <= CONFLICT_MAXUNCONFLICTED || $forceShow) {
+                $cif |= $allow_administer_m << 4;
             }
+            $can_administer_m = $cif & PaperContactInfo::CIFM_CAN_ADMINISTER;
 
             // check PC tracking
             // (see also can_accept_review_assignment*)
@@ -3004,11 +3003,11 @@ class Contact implements JsonSerializable {
                     || $this->conf->check_tracks($prow, $this, Track::VIEW));
 
             // check whether PC privileges apply
-            $allow_pc_broad = $allow_administer || $isPC;
+            $allow_pc_broad = $allow_administer_m !== 0 || $isPC;
             if ($allow_pc_broad) {
                 $cif |= PaperContactInfo::CIF_ALLOW_PC_BROAD;
             }
-            $allow_pc = $can_administer
+            $allow_pc = ($can_administer_m & PaperContactInfo::CIF_CAN_ADMINISTER_R) !== 0
                 || ($isPC && $ci->conflictType <= CONFLICT_MAXUNCONFLICTED);
             if ($allow_pc) {
                 $cif |= PaperContactInfo::CIF_ALLOW_PC;
@@ -3030,21 +3029,24 @@ class Contact implements JsonSerializable {
             // (existing external reviewer or PC)
             if ($ci->reviewType > 0
                 || $am_lead
-                || (($allow_administer || $allow_pc)
+                || ((($allow_administer_m & PaperContactInfo::CIF_ALLOW_ADMINISTER_R) !== 0
+                     || $allow_pc)
                     && (!$tracks
                         || !$this->conf->check_track_review_sensitivity()
-                        || ($allow_administer
+                        || (($allow_administer_m & PaperContactInfo::CIF_ALLOW_ADMINISTER_R) !== 0
                             && ($this->dangerous_track_mask() & Track::BITS_REVIEW) === 0)
                         || ($this->conf->check_tracks($prow, $this, Track::ASSREV)
                             && $this->conf->check_tracks($prow, $this, Track::UNASSREV))))) {
                 $cif |= PaperContactInfo::CIF_POTENTIAL_REVIEWER;
-                if ($can_administer || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED) {
+                if (($can_administer_m & PaperContactInfo::CIF_CAN_ADMINISTER_R) !== 0
+                    || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED) {
                     $cif |= PaperContactInfo::CIF_ALLOW_REVIEW;
                 }
             }
 
             // check author allowance
-            if ($allow_administer || $ci->conflictType >= CONFLICT_AUTHOR) {
+            if (($allow_administer_m & PaperContactInfo::CIF_ALLOW_ADMINISTER_S) !== 0
+                || $ci->conflictType >= CONFLICT_AUTHOR) {
                 $cif |= PaperContactInfo::CIF_ALLOW_AUTHOR_EDIT;
             }
 
@@ -3062,7 +3064,9 @@ class Contact implements JsonSerializable {
                 $ci->view_conflict_type = CONFLICT_AUTHOR;
             }
             $act_author_view = $ci->view_conflict_type >= CONFLICT_AUTHOR && !$forceShow;
-            if ($allow_administer || $act_author_view) {
+            $allow_author_view = $act_author_view
+                || ($allow_administer_m & PaperContactInfo::CIF_ALLOW_ADMINISTER_S) !== 0;
+            if ($allow_author_view) {
                 $cif |= PaperContactInfo::CIF_ALLOW_AUTHOR_VIEW;
             }
             if ($act_author_view) {
@@ -3073,8 +3077,9 @@ class Contact implements JsonSerializable {
             $sdr = $allow_pc_broad
                 || ($ci->review_status > PaperContactInfo::CIRS_UNSUBMITTED
                     && ($this->conf->setting("viewrev_ext") ?? 0) >= 0);
-            $can_view_decision = $can_administer
-                || (($sdr || $act_author_view)
+            $can_view_decision =
+                ($can_administer_m & PaperContactInfo::CIF_CAN_ADMINISTER_R) !== 0
+                || (($sdr || $allow_author_view)
                     && $prow->can_author_view_decision())
                 || ($sdr
                     && ($sd = $this->conf->setting("seedec")) > 0
@@ -3084,7 +3089,7 @@ class Contact implements JsonSerializable {
             }
 
             // check view-authors state
-            if ($act_author_view && !$allow_administer) {
+            if ($act_author_view && $allow_administer_m === 0) {
                 $ci->view_authors_state = 2;
             } else if ($allow_pc_broad || $ci->review_status > 0) {
                 $bs = $prow->blindness_state($ci->review_status > PaperContactInfo::CIRS_PROXIED);
@@ -3096,7 +3101,7 @@ class Contact implements JsonSerializable {
                         $bs = 1;
                     }
                 }
-                if ($allow_administer) {
+                if ($allow_administer_m !== 0) {
                     $ci->view_authors_state = $bs < 0 ? 2 : 1;
                 } else if ($bs < 0
                            && ($prow->timeSubmitted != 0
