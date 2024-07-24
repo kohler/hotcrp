@@ -178,9 +178,10 @@ class Response_SettingParser extends SettingParser {
     }
 
     function print_wordlimit(SettingValues $sv) {
-        $sv->print_entry_group("response/{$this->ctr}/wordlimit", "Word limit", [
+        $sv->print_entry_group("response/{$this->ctr}/wordlimit", "Word limit", ["horizontal" => true]);
+        $sv->print_entry_group("response/{$this->ctr}/hard_wordlimit", "Hard word limit", [
             "horizontal" => true,
-            "hint" => is_int($this->ctr) && $this->ctr > 1 ? null : "This is a soft limit: authors may submit longer responses. 0 means no limit."
+            "hint" => is_int($this->ctr) && $this->ctr > 1 ? null : "Words beyond the soft limit are hidden from reviewers by default. Reviewers can’t see words beyond the hard limit."
         ]);
     }
 
