@@ -14,6 +14,7 @@ class Review_API {
                 return JsonResult::make_error(400, "<0>Bad request");
             }
             $rrows = $rrow ? [$rrow] : [];
+            $need_id = true;
         } else if (isset($qreq->u)) {
             $u = APIHelpers::parse_user($qreq->u, $user, "u");
             $rrows = $prow->full_reviews_by_user($u);
@@ -30,10 +31,10 @@ class Review_API {
                 $vrrows[] = $rf->unparse_review_json($user, $prow, $rrow);
             }
         }
-        if (!$vrrows && ($rrows || $need_id)) {
-            return JsonResult::make_permission_error();
-        } else {
+        if ($vrrows || (!$rrows && !$need_id)) {
             return new JsonResult(["ok" => true, "reviews" => $vrrows]);
+        } else {
+            return JsonResult::make_permission_error();
         }
     }
 

@@ -253,18 +253,14 @@ class PaperRequest {
             return null;
         } else if (isset($qreq->reviewId)) {
             $rrow = $this->prow->review_by_ordinal_id($qreq->reviewId);
-            if (!$rrow) {
-                if (($racid = $user->reviewer_capability($this->prow))) {
-                    // XXX @ra nonsense
-                    return null;
-                } else {
-                    throw new PermissionProblem($user->conf, ["invalidId" => "review"]);
-                }
-            } else if (($whynot = $user->perm_view_review($this->prow, $rrow))) {
-                $whynot2 = $user->perm_view_review($this->prow, null);
-                throw $whynot2 ?? $whynot;
+            $whynot = $rrow ? $user->perm_view_review($this->prow, $rrow) : null;
+            if ($rrow && !$whynot) {
+                return $rrow;
+            } else {
+                throw $user->perm_view_review($this->prow, null)
+                    ?? $whynot
+                    ?? new PermissionProblem($user->conf, ["invalidId" => "review"]);
             }
-            return $rrow;
         } else if (($racid = $user->reviewer_capability($this->prow))) {
             return $this->prow->review_by_user($racid);
         } else {
