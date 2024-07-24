@@ -377,7 +377,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @return $this */
     function set_file($name, $finfo) {
         if (is_array($finfo)) {
-            $this->_files[$name] = new QrequestFile($finfo);
+            $this->_files[$name] = QrequestFile::make_finfo($finfo);
         } else {
             $this->_files[$name] = $finfo;
         }
@@ -389,12 +389,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @param ?string $mimetype
      * @return $this */
     function set_file_content($name, $content, $filename = null, $mimetype = null) {
-        $this->_files[$name] = new QrequestFile([
-            "name" => $filename ?? "__set_file_content.{$name}",
-            "type" => $mimetype,
-            "size" => strlen($content),
-            "content" => $content
-        ]);
+        $this->_files[$name] = QrequestFile::make_string($content, $filename, $mimetype);
         return $this;
     }
     /** @return bool */
@@ -804,7 +799,7 @@ class QrequestFile {
     public $name;
     /** @var string */
     public $type;
-    /** @var int */
+    /** @var ?int */
     public $size;
     /** @var ?string */
     public $tmp_name;
@@ -813,15 +808,34 @@ class QrequestFile {
     /** @var int */
     public $error;
 
-    /** @param array{name?:string,type?:string,size?:int,tmp_name?:?string,content?:?string,error?:int} $a */
-    function __construct($a) {
-        $this->name = $a["name"] ?? "";
-        $this->type = $a["type"] ?? "application/octet-stream";
-        $this->size = $a["size"] ?? 0;
-        $this->tmp_name = $a["tmp_name"] ?? null;
-        $this->content = $a["content"] ?? null;
-        $this->error = $a["error"] ?? 0;
+    /** @param array{name?:string,type?:string,size?:?int,tmp_name?:?string,content?:?string,error?:int} $finfo
+     * @return QrequestFile */
+    static function make_finfo($finfo) {
+        $qf = new QrequestFile;
+        $qf->name = $finfo["name"] ?? "";
+        $qf->type = $finfo["type"] ?? "application/octet-stream";
+        $qf->size = $finfo["size"] ?? null;
+        $qf->tmp_name = $finfo["tmp_name"] ?? null;
+        $qf->content = $finfo["content"] ?? null;
+        $qf->error = $finfo["error"] ?? 0;
+        return $qf;
     }
+
+    /** @param string $content
+     * @param ?string $filename
+     * @param ?string $mimetype
+     * @return QrequestFile */
+    static function make_string($content, $filename = null, $mimetype = null) {
+        $qf = new QrequestFile;
+        $qf->name = $filename ?? "__content__";
+        $qf->type = $mimetype ?? "application/octet-stream";
+        $qf->size = strlen($content);
+        $qf->tmp_name = null;
+        $qf->content = $content;
+        $qf->error = 0;
+        return $qf;
+    }
+
     /** @param int $offset
      * @param ?int $maxlen
      * @return string|false */

@@ -116,7 +116,7 @@ class PaperStatus_Tester {
 
     function test_paper_save_document() {
         $ps = new PaperStatus($this->u_estrin);
-        $doc = DocumentInfo::make_uploaded_file(new QrequestFile([
+        $doc = DocumentInfo::make_uploaded_file(QrequestFile::make_finfo([
                 "error" => UPLOAD_ERR_OK, "name" => "amazing-sample.pdf",
                 "tmp_name" => SiteLoader::find("etc/sample.pdf"),
                 "type" => "application/pdf"

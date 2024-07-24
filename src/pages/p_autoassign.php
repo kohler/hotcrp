@@ -116,8 +116,8 @@ class Autoassign_Page {
             for ($i = 1; isset($qreq["bpa{$i}"]); ++$i) {
                 if ($qreq["bpa{$i}"]
                     && $qreq["bpb{$i}"]
-                    && ($pca = $this->conf->pc_member_by_email($qreq["bpa$i"]))
-                    && ($pcb = $this->conf->pc_member_by_email($qreq["bpb$i"]))) {
+                    && ($pca = $this->conf->pc_member_by_email($qreq["bpa{$i}"]))
+                    && ($pcb = $this->conf->pc_member_by_email($qreq["bpb{$i}"]))) {
                     $x[] = $pca->contactId;
                     $x[] = $pcb->contactId;
                 }
