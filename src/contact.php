@@ -2942,6 +2942,36 @@ class Contact implements JsonSerializable {
         return $this->_dangerous_track_mask;
     }
 
+    /** @param PaperInfo $prow
+     * @param PaperContactInfo $ci
+     * @return int */
+    private function _rights_allow_admin_ciflags($prow, $ci) {
+        if ($this->_root_user
+            || $prow->managerContactId === $this->contactXid) {
+            return PaperContactInfo::CIFM_ALLOW_ADMINISTER;
+        } else if (!$this->is_track_manager()
+                   || ($prow->managerContactId && $ci->conflictType > CONFLICT_MAXUNCONFLICTED)) {
+            return 0;
+        }
+        $dtm = $this->dangerous_track_mask();
+        if (($dtm & Track::BITS_VIEW) !== 0
+            && !$this->conf->check_tracks($prow, $this, Track::VIEW)) {
+            return 0;
+        } else if ($this->privChair && ($dtm & Track::BITS_ADMIN) === 0) {
+            return PaperContactInfo::CIFM_ALLOW_ADMINISTER;
+        }
+        $cif = 0;
+        if (($this->privChair && $this->conf->check_tracks($prow, $this, Track::ADMIN_S))
+            || $this->conf->check_required_tracks($prow, $this, Track::ADMIN_S)) {
+            $cif |= PaperContactInfo::CIF_ALLOW_ADMINISTER_S;
+        }
+        if (($this->privChair && $this->conf->check_tracks($prow, $this, Track::ADMIN_R))
+            || $this->conf->check_required_tracks($prow, $this, Track::ADMIN_R)) {
+            $cif |= PaperContactInfo::CIF_ALLOW_ADMINISTER_R;
+        }
+        return $cif;
+    }
+
     /** @return PaperContactInfo */
     private function rights(PaperInfo $prow) {
         // short-circuit lookup
@@ -2955,20 +2985,8 @@ class Contact implements JsonSerializable {
 
         // check first whether administration is allowed
         if (($ci->ciflags & PaperContactInfo::CIF_SET0) === 0) {
-            $ci->ciflags |= PaperContactInfo::CIF_SET0;
-            if ($prow->managerContactId === $this->contactXid
-                || ($this->privChair
-                    && (!$prow->managerContactId || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED)
-                    && (($this->dangerous_track_mask() & Track::BITS_VIEWADMIN) === 0
-                        || ($this->conf->check_tracks($prow, $this, Track::VIEW)
-                            && $this->conf->check_tracks($prow, $this, Track::ADMIN))))
-                || ($this->isPC
-                    && $this->is_track_manager()
-                    && (!$prow->managerContactId || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED)
-                    && $this->conf->check_admin_tracks($prow, $this))
-                || $this->_root_user) {
-                $ci->ciflags |= PaperContactInfo::CIFM_ALLOW_ADMINISTER;
-            }
+            $ci->ciflags |= PaperContactInfo::CIF_SET0
+                | $this->_rights_allow_admin_ciflags($prow, $ci);
         }
 
         // correct $forceShow
@@ -3246,7 +3264,7 @@ class Contact implements JsonSerializable {
                 && ($prow->managerContactId
                     ? $prow->managerContactId === $this->contactXid
                     : !$this->privChair
-                      || !$this->conf->check_paper_track_sensitivity($prow, Track::ADMIN));
+                      || !$this->conf->check_paper_track_sensitivity($prow, Track::ADMIN_R));
         }
         return $rights->primary_administrator;
     }

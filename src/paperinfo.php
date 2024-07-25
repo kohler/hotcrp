@@ -1664,7 +1664,7 @@ class PaperInfo {
         $has_track_admin = false;
         if ($this->conf->check_track_admin_sensitivity()) {
             foreach ($this->conf->track_tags() as $ttag) {
-                if ($this->conf->track_permission($ttag, Track::ADMIN)
+                if ($this->conf->track_permission($ttag, Track::ADMIN_R)
                     && $this->has_tag($ttag)) {
                     $has_track_admin = true;
                     break;

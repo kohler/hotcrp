@@ -90,8 +90,10 @@ class Track_SettingParser extends SettingParser {
             return "self-assignment";
         } else if ($perm === Track::VIEWTRACKER) {
             return "tracker visibility";
-        } else if ($perm === Track::ADMIN) {
-            return "administrator";
+        } else if ($perm === Track::ADMIN_S) {
+            return "submission administrator";
+        } else if ($perm === Track::ADMIN_R) {
+            return "review administrator";
         } else if ($perm === Track::HIDDENTAG) {
             return "hidden-tag visibility";
         } else if ($perm === Track::VIEWALLREV) {

@@ -568,6 +568,9 @@ class Conf {
             if (!isset($v->viewpdf) && isset($v->view)) {
                 $v->viewpdf = $v->view;
             }
+            if (isset($v->admin)) {
+                $v->admin_s = $v->admin_r = $v->admin;
+            }
             foreach (Track::$perm_name_map as $tname => $idx) {
                 if (isset($v->$tname)) {
                     $tr->perm[$idx] = $v->$tname;
@@ -1463,11 +1466,6 @@ class Conf {
         return false;
     }
 
-    /** @return bool */
-    function check_admin_tracks(PaperInfo $prow, Contact $user) {
-        return $this->check_required_tracks($prow, $user, Track::ADMIN);
-    }
-
     /** @param int $ttype
      * @return bool */
     function check_default_track(Contact $user, $ttype) {
@@ -1506,7 +1504,17 @@ class Conf {
 
     /** @return bool */
     function check_any_admin_tracks(Contact $user) {
-        return $this->check_any_required_tracks($user, Track::ADMIN);
+        if (($this->_track_sensitivity & Track::BITS_ADMIN) !== 0) {
+            foreach ($this->_tracks as $tr) {
+                if (($tr->perm[Track::ADMIN_S]
+                     && $user->has_permission($tr->perm[Track::ADMIN_S]))
+                    || ($tr->perm[Track::ADMIN_R]
+                        && $user->has_permission($tr->perm[Track::ADMIN_R]))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** @param int $ttype

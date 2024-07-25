@@ -206,7 +206,7 @@ class MeetingTracker {
                 } else if (!$permissionizer || !$permissionizer->check_admin_perm($user)) {
                     $my_tracks = [];
                     foreach ($user->conf->track_tags() as $tag) {
-                        if (($perm = $user->conf->track_permission($tag, Track::ADMIN))
+                        if (($perm = $user->conf->track_permission($tag, Track::ADMIN_R))
                             && $user->has_permission($perm))
                             $my_tracks[] = "#{$tag}";
                     }
@@ -1104,7 +1104,7 @@ class MeetingTracker_Permissionizer {
         foreach ($this->track_tag_combinations() as $ttcombo) {
             $perms = [];
             foreach (explode(",", $ttcombo) as $tt) {
-                if (($p = $this->conf->track_permission($tt, Track::ADMIN))) {
+                if (($p = $this->conf->track_permission($tt, Track::ADMIN_R))) {
                     $perms[] = $p;
                 }
             }
