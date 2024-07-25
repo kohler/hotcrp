@@ -3300,9 +3300,9 @@ class Contact implements JsonSerializable {
                 || $perm === "+none"
                 || $this->has_permission($perm))
             && (!$tracker_json
-                || ($tracker_json->visibility ?? "") === ""
-                || ($this->has_tag(substr($tracker_json->visibility, 1))
-                    === ($tracker_json->visibility[0] === "+")));
+                || ($vis = $tracker_json->visibility ?? "") === ""
+                || $vis === "+none"
+                || ($this->has_tag(substr($vis, 1)) === ($vis[0] === "+")));
     }
 
     /** @return int */
