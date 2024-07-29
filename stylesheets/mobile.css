@@ -119,6 +119,7 @@ h2.paptitle {
 .pspcard {
 	padding: 8px 16px;
 	border-bottom: 1px solid var(--brand-fg);
+	z-index: 0;
 }
 .pspcard-open {
 	padding-bottom: 4px;
