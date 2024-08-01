@@ -143,7 +143,7 @@ class CurlS3Result extends S3Result {
             $this->status = $this->s3->check_403();
         }
         if (curl_errno($this->curlh) !== 0) {
-            error_log($this->method . " " . $this->url . " -> " . $this->status . " " . $this->status_text . ": CURL error " . curl_errno($this->curlh) . "/" . curl_error($this->curlh));
+            error_log("{$this->method} {$this->url} -> {$this->status} {$this->status_text}: CURL error " . curl_errno($this->curlh) . "/" . curl_error($this->curlh));
             if ($this->status >= 200 && $this->status < 300) {
                 if (curl_errno($this->curlh) === CURLE_OPERATION_TIMEDOUT) {
                     $this->observed_success_timeout = true;
@@ -155,12 +155,12 @@ class CurlS3Result extends S3Result {
             $now = microtime(true);
             $this->tries[] = [$this->runindex, round(($now - $this->start) * 1000) / 1000, round(($now - $this->first_start) * 1000) / 1000, $this->status, curl_errno($this->curlh)];
             if (S3Client::$retry_timeout_allowance <= 0 || $this->runindex >= 5) {
-                trigger_error("S3 error: $this->method $this->skey: curl failed " . json_encode($this->tries), E_USER_WARNING);
+                trigger_error("S3 error: {$this->method} {$this->skey}: curl failed " . json_encode_db($this->tries), E_USER_WARNING);
                 $this->status = 598;
             }
         }
         if ($this->status !== null && S3Client::$verbose) {
-            error_log($this->method . " " . $this->url . " -> " . $this->status . " " . $this->status_text);
+            error_log("{$this->method} {$this->url} -> {$this->status} {$this->status_text}");
         }
         if ($this->status !== null && $this->status !== 500) {
             $this->close();

@@ -850,9 +850,9 @@ class DocumentInfo implements JsonSerializable {
         } else {
             $content = $this->content();
             if (file_put_contents("{$dspath}~", $content) === strlen($content)
-                && rename("{$dspath}~", $dspath))
+                && rename("{$dspath}~", $dspath)) {
                 $ok = true;
-            else {
+            } else {
                 @unlink("{$dspath}~");
                 $ok = false;
             }
@@ -1387,7 +1387,7 @@ class DocumentInfo implements JsonSerializable {
         assert($this->has_hash());
         if (strlen($this->sha1) === 20) {
             return "sha1";
-        } else if (substr($this->sha1, 0, 5) === "sha2-") {
+        } else if (str_starts_with($this->sha1, "sha2-")) {
             return "sha256";
         } else {
             return false;
