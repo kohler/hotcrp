@@ -8677,7 +8677,7 @@ hotcrp.suggest.add_builder("papersearch", function (elt) {
     if (x && (m = x[0].match(/.*?(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*(?:#|tag:|tagval:|tagvalue:))([^#\s()]*)$/))) {
         n = x[1].match(/^([^#\s()]*)/);
         return demand_load.tags().then(make_suggestions(m[2], n[1], {prefix: m[1]}));
-    } else if (x && (m = x[0].match(/.*?\b((?:[A-Za-z0-9]{3,10}):(?:[^"\s()]*|"[^"]*))$/))) {
+    } else if (x && (m = x[0].match(/.*?\b((?:[A-Za-z0-9]{1,10}):(?:[^"\s()]*|"[^"]*))$/))) {
         n = x[1].match(/^([^\s()]*)/);
         return demand_load.search_completion().then(make_suggestions(m[1], n[1], {ml: m[1].indexOf(":") + 1}));
     }
@@ -13098,10 +13098,10 @@ handle_ui.on("js-edit-namedsearches", function () {
         const nentry = $e("legend"), qentry = $e("div", "entry");
         if (f.editable) {
             nentry.className = "mb-1";
-            nentry.append($e("input", {
+            nentry.append("ss:", $e("input", {
                     id: "k-named_search/" + count + "/name",
                     type: "text", name: "named_search/" + count + "/name",
-                    "class": "editsearches-name need-autogrow",
+                    "class": "editsearches-name need-autogrow ml-1",
                     size: 30, value: f.name, placeholder: "Name of search"
                 }), $e("button", {
                     type: "button", "class": "ui btn-licon-s delete-link ml-2 need-tooltip",
