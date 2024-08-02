@@ -3683,9 +3683,9 @@ function display_tracker() {
 }
 
 function tracker_refresh() {
-    if (dl.tracker_here) {
-        var ts = wstor.site_json(true, "hotcrp-tracking"),
-            param = {track: ts[1]};
+    let ts = dl.tracker_here && wstor.site_json(true, "hotcrp-tracking");
+    if (ts) {
+        let param = {track: ts[1]};
         if (siteinfo.paperid) {
             param.track += " " + siteinfo.paperid;
             param.p = siteinfo.paperid;
