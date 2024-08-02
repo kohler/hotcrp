@@ -5836,7 +5836,7 @@ class Contact implements JsonSerializable {
             $this->conf->update_review_delegation($pid, $reviewer->contactId, 0);
         }
         if ($type === REVIEW_META || $oldtype === REVIEW_META) {
-            $this->conf->update_metareviews_setting($type == REVIEW_META ? 1 : -1);
+            $this->conf->update_metareviews_setting($type === REVIEW_META ? 1 : -1);
         }
 
         self::update_rights();
