@@ -2972,9 +2972,10 @@ class Contact implements JsonSerializable {
             $ci = $ci->get_forced_rights();
         }
 
-        // set other rights
+        // set main rights
         if (($ci->ciflags & PaperContactInfo::CIF_SET1) === 0) {
             assert(($ci->ciflags & ~PaperContactInfo::CIFM_SET0) === 0);
+            $ci->ciflags |= PaperContactInfo::CIF_RECURSION;
             $cif = $ci->ciflags | PaperContactInfo::CIF_SET1;
 
             // check current administration status
@@ -3075,34 +3076,6 @@ class Contact implements JsonSerializable {
                     && ($sd !== Conf::SEEDEC_NCREV || $ci->view_conflict_type <= 0));
             if ($can_view_decision) {
                 $cif |= PaperContactInfo::CIF_CAN_VIEW_DECISION;
-            }
-
-            // check view-authors state
-            if ($act_author_view && !$allow_administer) {
-                $ci->view_authors_state = 2;
-            } else if ($allow_pc_broad || $ci->review_status > 0) {
-                $bs = $prow->blindness_state($ci->review_status > PaperContactInfo::CIRS_PROXIED);
-                if ($bs === 0) {
-                    if ($can_view_decision
-                        && ($isPC || ($cif & PaperContactInfo::CIF_ALLOW_REVIEW) !== 0)) {
-                        $bs = -1;
-                    } else {
-                        $bs = 1;
-                    }
-                }
-                if ($allow_administer) {
-                    $ci->view_authors_state = $bs < 0 ? 2 : 1;
-                } else if ($bs < 0
-                           && ($prow->timeSubmitted != 0
-                               || ($allow_pc_broad
-                                   && $prow->timeWithdrawn <= 0
-                                   && $prow->submission_round()->incomplete_viewable))) {
-                    $ci->view_authors_state = 2;
-                } else {
-                    $ci->view_authors_state = 0;
-                }
-            } else {
-                $ci->view_authors_state = 0;
             }
 
             $ci->__set_ciflags($cif);
@@ -3763,10 +3736,49 @@ class Contact implements JsonSerializable {
         }
     }
 
+    /** @param PaperInfo $prow
+     * @param PaperContactInfo $ci
+     * @return 0|1|2 */
+    private function __view_authors_state($prow, $ci) {
+        if ($ci->__view_authors_state === null) {
+            $cif = $ci->ciflags;
+            $allow_administer = ($cif & PaperContactInfo::CIF_ALLOW_ADMINISTER) !== 0;
+            if (($cif & PaperContactInfo::CIF_ACT_AUTHOR_VIEW) !== 0
+                && !$allow_administer) {
+                $ci->__view_authors_state = 2;
+            } else if (($cif & PaperContactInfo::CIF_ALLOW_PC_BROAD) !== 0
+                       || $ci->review_status > 0) {
+                $bs = $prow->blindness_state($ci->review_status > PaperContactInfo::CIRS_PROXIED);
+                if ($bs === 0) {
+                    if (($cif & PaperContactInfo::CIF_CAN_VIEW_DECISION) !== 0
+                        && ($cif & (PaperContactInfo::CIF_ALLOW_PC_BROAD | PaperContactInfo::CIF_ALLOW_REVIEW)) !== 0) {
+                        $bs = -1;
+                    } else {
+                        $bs = 1;
+                    }
+                }
+                if ($allow_administer) {
+                    $ci->__view_authors_state = $bs < 0 ? 2 : 1;
+                } else if ($bs < 0
+                           && ($prow->timeSubmitted != 0
+                               || (($cif & PaperContactInfo::CIF_ALLOW_PC_BROAD) !== 0
+                                   && $prow->timeWithdrawn <= 0
+                                   && $prow->submission_round()->incomplete_viewable))) {
+                    $ci->__view_authors_state = 2;
+                } else {
+                    $ci->__view_authors_state = 0;
+                }
+            } else {
+                $ci->__view_authors_state = 0;
+            }
+        }
+        return $ci->__view_authors_state;
+    }
+
     /* NB caller must check can_view_paper() */
     /** @return 0|1|2 */
     function view_authors_state(PaperInfo $prow) {
-        return $this->rights($prow)->view_authors_state;
+        return $this->__view_authors_state($prow, $this->rights($prow));
     }
 
     /** @return bool */
@@ -3829,14 +3841,14 @@ class Contact implements JsonSerializable {
         $oview = $opt->visibility();
         if ($rights->allow_administer()) {
             if ($oview === PaperOption::VIS_AUTHOR) {
-                return $rights->view_authors_state;
+                return $this->__view_authors_state($prow, $rights);
             } else {
                 return 2;
             }
         } else if ($oview === PaperOption::VIS_SUB || $rights->act_author_view()) {
             return 2;
         } else if ($oview === PaperOption::VIS_AUTHOR) {
-            return $rights->view_authors_state;
+            return $this->__view_authors_state($prow, $rights);
         } else if ($oview === PaperOption::VIS_CONFLICT) {
             return $this->can_view_conflicts($prow) ? 2 : 0;
         } else if ($oview === PaperOption::VIS_REVIEW) {

@@ -81,22 +81,23 @@ final class PaperContactInfo {
     const CIF_ALLOW_ADMINISTER = 0x2;
     const CIF_ALLOW_ADMINISTER_FORCED = 0x4;
     const CIFM_SET0 = 0x7;
-    const CIF_SET1 = 0x8;
-    const CIF_CAN_ADMINISTER = 0x10;
-    const CIF_ALLOW_PC_BROAD = 0x20;
-    const CIF_ALLOW_PC = 0x40;
-    const CIF_POTENTIAL_REVIEWER = 0x80;
-    const CIF_ALLOW_REVIEW = 0x100;
-    const CIF_ALLOW_AUTHOR_EDIT = 0x200;
-    const CIF_ACT_AUTHOR_VIEW = 0x400;
-    const CIF_ALLOW_AUTHOR_VIEW = 0x800;
-    const CIF_CAN_VIEW_DECISION = 0x1000;
+    const CIF_RECURSION = 0x8;
+    const CIF_SET1 = 0x10;
+    const CIF_CAN_ADMINISTER = 0x20;
+    const CIF_ALLOW_PC_BROAD = 0x40;
+    const CIF_ALLOW_PC = 0x80;
+    const CIF_POTENTIAL_REVIEWER = 0x100;
+    const CIF_ALLOW_REVIEW = 0x200;
+    const CIF_ALLOW_AUTHOR_EDIT = 0x400;
+    const CIF_ACT_AUTHOR_VIEW = 0x800;
+    const CIF_ALLOW_AUTHOR_VIEW = 0x1000;
+    const CIF_CAN_VIEW_DECISION = 0x2000;
     /** @var bool */
     public $primary_administrator;
     /** @var int */
     public $view_conflict_type;
-    /** @var 0|1|2 */
-    public $view_authors_state;
+    /** @var null|0|1|2 */
+    public $__view_authors_state;
 
     // cached by PaperInfo methods
     /** @var ?list<ReviewInfo> */
@@ -331,7 +332,7 @@ final class PaperContactInfo {
         assert(($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0);
         if (!$this->forced_rights_link) {
             $ci = $this->forced_rights_link = clone $this;
-            $ci->vreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
+            $ci->__view_authors_state = $ci->vreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
             $ci->ciflags = ($ci->ciflags & self::CIFM_SET0)
                 | self::CIF_ALLOW_ADMINISTER_FORCED;
         }
