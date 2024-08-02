@@ -5810,6 +5810,7 @@ class Contact implements JsonSerializable {
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
         if ($type > 0 && $oldtype === 0) {
+            $reviewer->activate_placeholder(false);
             $this->conf->ql("delete from PaperReviewRefused where paperId={$pid} and contactId={$reviewer->contactId}");
             if (($req_email = $extra["requested_email"] ?? null)) {
                 $this->conf->qe("delete from ReviewRequest where paperId={$pid} and email=?", $req_email);

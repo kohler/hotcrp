@@ -1196,6 +1196,9 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         Contact::update_rights();
         MailChecker::clear();
 
+        $user_external2 = $this->conf->user_by_email("external2@_.com");
+        xassert(!$user_external2);
+
         $xqreq = new Qrequest("POST", ["email" => "external2@_.com", "name" => "Jo March", "affiliation" => "Concord"]);
         $paper17 = $this->conf->checked_paper_by_id(17);
         $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
@@ -1203,6 +1206,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($result instanceof JsonResult);
         xassert($result->content["ok"]);
         $user_external2 = $this->conf->checked_user_by_email("external2@_.com");
+        xassert(!$user_external2->is_placeholder());
         $this->conf->invalidate_user($user_external2);
         $user_external2 = $this->conf->user_by_email("external2@_.com"); // ensure cached user
         assert($user_external2 !== null);
@@ -1753,5 +1757,42 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         $r16f = $p16->fresh_review_by_user($this->u_floyd);
         xassert_eqq($r16f->reviewSubmitted, null);
+    }
+
+    function test_requested_reviewer_placeholder() {
+        if (!($cdb = $this->conf->contactdb())) {
+            return;
+        }
+
+        $this->conf->save_refresh_setting("extrev_chairreq", 2);
+        $this->conf->save_refresh_setting("pcrev_editdelegate", 2);
+        Contact::update_rights();
+        MailChecker::clear();
+
+        $u_ext2p = $this->conf->user_by_email("external2p@_.com");
+        xassert(!$u_ext2p);
+
+        $uc_ext2p = $this->conf->cdb_user_by_email("external2p@_.com");
+        xassert(!$uc_ext2p);
+        $result = Dbl::qe($cdb, "insert into ContactInfo set firstName='Thorsten', lastName='Gorsten', email='external2p@_.com', affiliation='Brandeis University', collaborators='German Strawberries', password='', cflags=2, disabled=2");
+        assert(!Dbl::is_error($result));
+        Dbl::free($result);
+
+        $uc_ext2p = $this->conf->fresh_cdb_user_by_email("external2p@_.com");
+        xassert(!!$uc_ext2p);
+        $this->conf->invalidate_user($uc_ext2p, true);
+
+        $xqreq = new Qrequest("POST", ["email" => "external2p@_.com", "name" => "Jo March", "affiliation" => "Concord"]);
+        $paper17 = $this->conf->checked_paper_by_id(17);
+        $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+
+        $u_ext2p = $this->conf->checked_user_by_email("external2p@_.com");
+        xassert(!$u_ext2p->is_placeholder());
+    }
+
+    function test_invariants_last() {
+        xassert(ConfInvariants::test_all($this->conf));
     }
 }
