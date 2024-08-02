@@ -589,7 +589,7 @@ class ReviewValues extends MessageSet {
                 $whynot->append_to($this, null, self::ERROR);
                 return false;
             }
-            $new_rrid = $user->assign_review($prow->paperId, $reviewer->contactId, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, [
+            $new_rrid = $user->assign_review($prow->paperId, $reviewer, $reviewer->isPC ? REVIEW_PC : REVIEW_EXTERNAL, [
                 "selfassign" => $reviewer === $user, "round_number" => $round
             ]);
             if (!$new_rrid) {
@@ -604,7 +604,7 @@ class ReviewValues extends MessageSet {
         if (!$ok) {
             $rrow->abort_prop();
             if ($new_rrid) {
-                $user->assign_review($prow->paperId, $reviewer->contactId, 0);
+                $user->assign_review($prow->paperId, $reviewer, 0);
             }
         }
         return $ok;

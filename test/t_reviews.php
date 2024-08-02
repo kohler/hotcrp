@@ -859,7 +859,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         // check some review visibility policies
         $user_external = Contact::make_keyed($conf, ["email" => "external@_.com", "name" => "External Reviewer"])->store();
         assert(!!$user_external);
-        $this->u_mgbaker->assign_review(17, $user_external->contactId, REVIEW_EXTERNAL,
+        $this->u_mgbaker->assign_review(17, $user_external, REVIEW_EXTERNAL,
             ["round_number" => $conf->round_number("R2")]);
         xassert(!$user_external->can_view_review($paper17, $rrow17m));
         xassert(!$user_external->can_view_review_identity($paper17, $rrow17m));

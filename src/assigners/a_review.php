@@ -229,7 +229,7 @@ class Review_AssignmentParser extends AssignmentParser {
             $rev->_rtype = REVIEW_EXTERNAL;
         }
         if ($rev->_rtype === REVIEW_EXTERNAL
-            && $state->conf->pc_member_by_id($rev->cid)) {
+            && ($contact->roles & Contact::ROLE_PC) !== 0) {
             $rev->_rtype = REVIEW_PC;
         }
         if ($rdata->newround !== null && $rdata->explicitround) {
@@ -382,7 +382,7 @@ class Review_Assigner extends Assigner {
                 $aset->conf->update_rev_tokens_setting(min($vals));
             }, $this->item->existed() ? 0 : 1);
         }
-        $reviewId = $aset->user->assign_review($this->pid, $this->cid, $this->rtype, $extra);
+        $reviewId = $aset->user->assign_review($this->pid, $this->contact, $this->rtype, $extra);
         if ($this->unsubmit && $reviewId) {
             assert($this->item->after !== null);
             $prow = $aset->prow($this->pid);
@@ -403,9 +403,8 @@ class Review_Assigner extends Assigner {
     }
     function cleanup(AssignmentSet $aset) {
         if ($this->notify) {
-            $reviewer = $aset->conf->user_by_id($this->cid);
-            $prow = $aset->conf->paper_by_id($this->pid, $reviewer);
-            HotCRPMailer::send_to($reviewer, $this->notify, [
+            $prow = $aset->conf->paper_by_id($this->pid, $this->contact);
+            HotCRPMailer::send_to($this->contact, $this->notify, [
                 "prow" => $prow, "rrow" => $prow->fresh_review_by_user($this->cid),
                 "requester_contact" => $aset->user, "reason" => $this->item["_reason"]
             ]);

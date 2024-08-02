@@ -5723,11 +5723,12 @@ class Contact implements JsonSerializable {
     }
 
     /** @param int $pid
-     * @param int $reviewer_cid
+     * @param Contact $reviewer
      * @param int $type
      * @return int|false */
-    function assign_review($pid, $reviewer_cid, $type, $extra = []) {
-        $result = $this->conf->qe("select * from PaperReview where paperId=? and contactId=?", $pid, $reviewer_cid);
+    function assign_review($pid, $reviewer, $type, $extra = []) {
+        assert($reviewer->contactId > 0);
+        $result = $this->conf->qe("select * from PaperReview where paperId=? and contactId=?", $pid, $reviewer->contactId);
         $rrow = ReviewInfo::fetch($result, null, $this->conf);
         Dbl::free($result);
         $reviewId = $rrow ? $rrow->reviewId : 0;
@@ -5750,7 +5751,7 @@ class Contact implements JsonSerializable {
 
         // PC members always get PC reviews
         if ($type === REVIEW_EXTERNAL
-            && $this->conf->pc_member_by_id($reviewer_cid)) {
+            && ($reviewer->roles & Contact::ROLE_PC) !== 0) {
             $type = REVIEW_PC;
         }
 
@@ -5767,7 +5768,7 @@ class Contact implements JsonSerializable {
             if ($extra["selfassign"] ?? false) {
                 $rflags |= ReviewInfo::RF_SELF_ASSIGNED;
             }
-            $q = "insert into PaperReview set paperId={$pid}, contactId={$reviewer_cid}, reviewType={$type}, reviewRound={$round}, timeRequested={$time}, requestedBy={$new_requester_cid}, reviewBlind={$reviewBlind}, rflags={$rflags}";
+            $q = "insert into PaperReview set paperId={$pid}, contactId={$reviewer->contactId}, reviewType={$type}, reviewRound={$round}, timeRequested={$time}, requestedBy={$new_requester_cid}, reviewBlind={$reviewBlind}, rflags={$rflags}";
             if ($extra["mark_notify"] ?? null) {
                 $q .= ", timeRequestNotified={$time}";
             }
@@ -5811,11 +5812,11 @@ class Contact implements JsonSerializable {
         } else {
             $msg = "Review {$reviewId} changed: " . $this->review_explanation($oldtype, $rrow->reviewRound) . " to " . $this->review_explanation($type, $round);
         }
-        $this->conf->log_for($this, $reviewer_cid, $msg, $pid);
+        $this->conf->log_for($this, $reviewer->contactId, $msg, $pid);
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
         if ($type > 0 && $oldtype === 0) {
-            $this->conf->ql("delete from PaperReviewRefused where paperId={$pid} and contactId={$reviewer_cid}");
+            $this->conf->ql("delete from PaperReviewRefused where paperId={$pid} and contactId={$reviewer->contactId}");
             if (($req_email = $extra["requested_email"] ?? null)) {
                 $this->conf->qe("delete from ReviewRequest where paperId={$pid} and email=?", $req_email);
             }
@@ -5837,7 +5838,7 @@ class Contact implements JsonSerializable {
         } else if ($type === REVIEW_SECONDARY
                    && $oldtype !== REVIEW_SECONDARY
                    && $rrow->reviewStatus < ReviewInfo::RS_COMPLETED) {
-            $this->conf->update_review_delegation($pid, $reviewer_cid, 0);
+            $this->conf->update_review_delegation($pid, $reviewer->contactId, 0);
         }
         if ($type === REVIEW_META || $oldtype === REVIEW_META) {
             $this->conf->update_metareviews_setting($type == REVIEW_META ? 1 : -1);

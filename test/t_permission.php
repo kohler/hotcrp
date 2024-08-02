@@ -783,7 +783,7 @@ class Permission_Tester {
         xassert(!$this->u_mgbaker->can_view_review($paper2, $review2a));
 
         $user_external = Contact::make_keyed($this->conf, ["email" => "external@_.com", "name" => "External Reviewer"])->store();
-        $this->u_mgbaker->assign_review(2, $user_external->contactId, REVIEW_EXTERNAL);
+        $this->u_mgbaker->assign_review(2, $user_external, REVIEW_EXTERNAL);
         $review2d = fresh_review($paper2, $this->u_mgbaker);
         xassert(!$review2d->reviewSubmitted);
         xassert($review2d->reviewNeedsSubmit === -1);
@@ -1830,7 +1830,7 @@ class Permission_Tester {
     }
 
     function test_withdraw_review_interaction() {
-        $this->u_chair->assign_review(16, $this->u_mgbaker->contactId, REVIEW_PC, []);
+        $this->u_chair->assign_review(16, $this->u_mgbaker, REVIEW_PC, []);
         // can withdraw because review not started
         xassert_assign($this->u_mogul, "paper,action,reason\n16,withdraw,Sucky\n");
         xassert_assign($this->u_mogul, "paper,action,reason\n16,revive,Sucky\n");

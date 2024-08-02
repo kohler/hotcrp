@@ -512,7 +512,7 @@ class Cdb_Tester {
 
         // Cengiz gets a review
         $user_cengiz = $this->conf->checked_user_by_email("cengiz@isi.edu");
-        $rrid = $this->user_chair->assign_review(3, $user_cengiz->contactId, REVIEW_EXTERNAL);
+        $rrid = $this->user_chair->assign_review(3, $user_cengiz, REVIEW_EXTERNAL);
         xassert($rrid > 0);
         $paper3 = $this->conf->checked_paper_by_id(3);
         $rrow = $paper3->fresh_review_by_id($rrid);

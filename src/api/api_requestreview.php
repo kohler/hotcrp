@@ -143,7 +143,7 @@ class RequestReview_API {
         }
 
         // assign review
-        $user->assign_review($prow->paperId, $reviewer->contactId, REVIEW_EXTERNAL,
+        $user->assign_review($prow->paperId, $reviewer, REVIEW_EXTERNAL,
                              ["mark_notify" => true,
                               "requester_contact" => $requester,
                               "requested_email" => $reviewer->email,
