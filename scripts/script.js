@@ -13849,24 +13849,29 @@ function load_more_events() {
 }
 
 function render_events(e, rows) {
-    var j = $(e).find("tbody");
-    if (!j.length) {
-        $(e).append("<div class=\"eventtable\"><table class=\"pltable\"><tbody class=\"pltable-tbody\"></tbody></table></div><div class=\"g eventtable-more\"><button type=\"button\">More</button></div>");
-        $(e).find("button").on("click", load_more_events);
-        j = $(e).find("tbody");
+    let tb = e.querySelector("tbody");
+    if (!tb) {
+        tb = $e("tbody", "pltable-tbody");
+        let button = $e("button", {type: "button"}, "More");
+        e.append($e("div", "eventtable", $e("table", "pltable", tb)),
+            $e("div", "g eventtable-more", button));
+        $(button).on("click", load_more_events);
     }
-    for (var i = 0; i < rows.length; ++i)
-        j.append(rows[i]);
-    if (events_more === false)
+    for (let i = 0; i !== rows.length; ++i) {
+        $(tb).append(rows[i]);
+    }
+    if (events_more === false) {
         $(e).find(".eventtable-more").addClass("hidden");
-    if (events_more === false && !events.length)
-        j.append("<tr><td>No recent activity in papers you’re following</td></tr>");
+        if (!events.length) {
+            tb.append($e("tr", null, $e("td", null, "No recent activity in papers you’re following")));
+        }
+    }
 }
 
 handle_ui.on("js-open-activity", function (evt) {
     if (evt.which.open) {
         removeClass(this, "js-open-activity");
-        $("<div class=\"fx20 has-events\"></div>").appendTo(this);
+        this.append($e("div", "fx20 has-events"));
         events ? render_events(this, events) : load_more_events();
     }
 });

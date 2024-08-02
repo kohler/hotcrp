@@ -678,17 +678,14 @@ Ready\n";
         }
 
         // identity
-        $showtoken = $editable && $viewer->active_review_token_for($prow, $rrow);
         if ($viewer->can_view_review_identity($prow, $rrow)) {
             $reviewer = $rrow->reviewer();
-            if (!$showtoken || !Contact::is_anonymous_email($reviewer->email)) {
-                $rj["reviewer"] = $viewer->reviewer_html_for($rrow);
-                if (!Contact::is_anonymous_email($reviewer->email)) {
-                    $rj["reviewer_email"] = $reviewer->email;
-                }
+            $rj["reviewer"] = $viewer->reviewer_html_for($rrow);
+            if (!Contact::is_anonymous_email($reviewer->email)) {
+                $rj["reviewer_email"] = $reviewer->email;
             }
         }
-        if ($showtoken) {
+        if ($editable && $viewer->active_review_token_for($prow, $rrow)) {
             $rj["review_token"] = encode_token((int) $rrow->reviewToken);
         }
         if ($my_review) {
@@ -755,7 +752,7 @@ Ready\n";
     }
 
 
-    function unparse_flow_entry(PaperInfo $prow, ReviewInfo $rrow, Contact $contact) {
+    function unparse_flow_entry(PaperInfo $prow, ReviewInfo $rrow, Contact $viewer) {
         // See also CommentInfo::unparse_flow_entry
         $barsep = ' <span class="barsep">·</span> ';
         $a = '<a href="' . $prow->hoturl(["#" => "r" . $rrow->unparse_ordinal_id()]) . '"';
@@ -767,15 +764,15 @@ Ready\n";
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($prow->title, 80))
             . "</a>";
         if ($rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
-            if ($contact->can_view_review_time($prow, $rrow)) {
+            if ($viewer->can_view_review_time($prow, $rrow)) {
                 $time = $this->conf->parseableTime($rrow->reviewModified, false);
             } else {
                 $time = $this->conf->unparse_time_obscure($this->conf->obscure_time($rrow->reviewModified));
             }
             $t .= $barsep . $time;
         }
-        if ($contact->can_view_review_identity($prow, $rrow)) {
-            $t .= $barsep . '<span class="hint">review by</span> ' . $contact->reviewer_html_for($rrow);
+        if ($viewer->can_view_review_identity($prow, $rrow)) {
+            $t .= $barsep . '<span class="hint">review by</span> ' . $viewer->reviewer_html_for($rrow);
         }
         $t .= "</small><br>";
 
@@ -785,7 +782,7 @@ Ready\n";
         } else {
             $xbarsep = "";
         }
-        foreach ($rrow->viewable_fields($contact) as $f) {
+        foreach ($rrow->viewable_fields($viewer) as $f) {
             if (($fh = $f->unparse_span_html($rrow->fields[$f->order])) !== "") {
                 $t = "{$t}{$xbarsep}{$f->name_html} {$fh}";
                 $xbarsep = $barsep;

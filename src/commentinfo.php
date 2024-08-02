@@ -582,70 +582,67 @@ class CommentInfo {
         $rrd = $this->response_round();
         assert(!$rrd === !($this->commentType & self::CT_RESPONSE));
 
+        $cj = ["pid" => $this->prow->paperId];
         if ($this->commentId !== 0) {
-            $cj = (object) [
-                "pid" => $this->prow->paperId,
-                "cid" => $this->commentId,
-                "ordinal" => $this->unparse_ordinal(),
-                "visibility" => self::$visibility_map[$this->commentType & self::CTVIS_MASK]
-            ];
+            $cj["cid"] = $this->commentId;
+            if (($o = $this->unparse_ordinal()) !== null) {
+                $cj["ordinal"] = $o;
+            }
+            $cj["visibility"] = self::$visibility_map[$this->commentType & self::CTVIS_MASK];
         } else {
             // placeholder for new comment
-            $cj = (object) [
-                "pid" => $this->prow->paperId,
-                "is_new" => true,
-                "editable" => true
-            ];
+            $cj["is_new"] = true;
+            $cj["editable"] = true;
             if ($rrd
                 && ($this->prow->timeSubmitted <= 0
                     || !$rrd->can_author_respond($this->prow, true))) {
-                $cj->author_editable = false;
+                $cj["author_editable"] = false;
             }
         }
 
         // blindness, draftness, authorness, format
         if (($this->commentType & self::CT_BLIND) !== 0) {
-            $cj->blind = true;
+            $cj["blind"] = true;
         }
         if (($this->commentType & self::CT_DRAFT) !== 0) {
-            $cj->draft = true;
+            $cj["draft"] = true;
             if (!$this->prow->has_author($viewer)) {
-                $cj->collapsed = $cj->folded /* XXX */ = true;
+                $cj["collapsed"] = true;
             }
         }
         if (($this->commentType & self::CT_RESPONSE) !== 0) {
-            $cj->response = $rrd->name;
+            $cj["response"] = $rrd->name;
         } else if (($this->commentType & self::CT_BYAUTHOR_MASK) !== 0) {
-            $cj->by_author = true;
+            $cj["by_author"] = true;
         } else if (($this->commentType & self::CT_BYSHEPHERD) !== 0) {
-            $cj->by_shepherd = true;
+            $cj["by_shepherd"] = true;
         }
         if (($this->commentType & (self::CT_TOPIC_REVIEW | self::CT_TOPIC_PAPER))
             === self::CT_TOPIC_PAPER) {
-            $cj->topic = "paper";
+            $cj["topic"] = "paper";
         }
         if (($fmt = $this->commentFormat ?? $this->conf->default_format)) {
-            $cj->format = $fmt;
+            $cj["format"] = $fmt;
         }
 
         // exit now if new-comment skeleton
         if ($this->commentId === 0) {
             if (($token = $viewer->active_review_token_for($this->prow))) {
-                $cj->review_token = encode_token($token);
+                $cj["review_token"] = encode_token($token);
             }
-            return $cj;
+            return (object) $cj;
         }
 
         // otherwise, viewable comment
         if ($viewer->can_edit_comment($this->prow, $this)) {
-            $cj->editable = true;
+            $cj["editable"] = true;
         }
 
         // tags
         if (($tags = $this->viewable_tags($viewer))) {
-            $cj->tags = Tagger::split($tags);
+            $cj["tags"] = Tagger::split($tags);
             if (($cc = $this->conf->tags()->color_classes($tags))) {
-                $cj->color_classes = $cc;
+                $cj["color_classes"] = $cc;
             }
         }
 
@@ -658,49 +655,48 @@ class CommentInfo {
             $cuser = $this->commenter();
             if (($this->commentType & self::CT_BYAUTHOR_MASK) === 0
                 && $viewer->can_view_user_tags()) {
-                $cj->author = $viewer->reviewer_html_for($cuser);
+                $cj["author"] = $viewer->reviewer_html_for($cuser);
             } else {
-                $cj->author = Text::nameo_h($cuser, NAME_P);
+                $cj["author"] = Text::nameo_h($cuser, NAME_P);
             }
             if (!$cuser->is_anonymous_user()) {
-                $cj->author_email = $cuser->email;
+                $cj["author_email"] = $cuser->email;
             } else if ($viewer->review_tokens()
                        && ($rrows = $this->prow->reviews_by_user(-1, $viewer->review_tokens()))) {
-                $cj->review_token = encode_token($rrows[0]->reviewToken);
+                $cj["review_token"] = encode_token($rrows[0]->reviewToken);
             }
             if (!$idable) {
-                $cj->author_hidden = true;
+                $cj["author_hidden"] = true;
             }
         }
         if (($p = $this->unparse_commenter_pseudonym($viewer))) {
-            $cj->author_pseudonym = $p;
+            $cj["author_pseudonym"] = $p;
         }
-        if ($idable
-            && $this->commenter_may_be_pseudonymous()) {
-            $cj->author_pseudonymous = true;
+        if ($idable && $this->commenter_may_be_pseudonymous()) {
+            $cj["author_pseudonymous"] = true;
         }
         if ($this->timeModified > 0) {
             if ($idable_override) {
-                $cj->modified_at = $this->timeModified;
+                $cj["modified_at"] = $this->timeModified;
             } else {
-                $cj->modified_at = $this->conf->obscure_time($this->timeModified);
-                $cj->modified_at_obscured = true;
+                $cj["modified_at"] = $this->conf->obscure_time($this->timeModified);
+                $cj["modified_at_obscured"] = true;
             }
-            $cj->modified_at_text = $this->conf->unparse_time_point($cj->modified_at);
+            $cj["modified_at_text"] = $this->conf->unparse_time_point($cj["modified_at"]);
         }
 
         // contents
         if ($viewer->can_view_comment_contents($this->prow, $this)) {
-            $cj->text = $this->contents($viewer, !$idable);
+            $cj["text"] = $this->contents($viewer, !$idable);
             if ($this->has_attachments()) {
-                $cj->docs = $this->attachments_json($cj->editable ?? false);
+                $cj["docs"] = $this->attachments_json($cj["editable"] ?? false);
             }
         } else {
-            $cj->text = false;
-            $cj->word_count = count_words($this->raw_contents());
+            $cj["text"] = false;
+            $cj["word_count"] = count_words($this->raw_contents());
         }
 
-        return $cj;
+        return (object) $cj;
     }
 
     /** @param int $flags
@@ -762,7 +758,7 @@ class CommentInfo {
     /** @return string */
     function unparse_flow_entry(Contact $viewer) {
         // See also ReviewForm::reviewFlowEntry
-        $a = '<a href="' . $this->conf->hoturl("paper", "p=$this->paperId#" . $this->unparse_html_id()) . '"';
+        $a = '<a href="' . $this->conf->hoturl("paper", "p={$this->paperId}#" . $this->unparse_html_id()) . '"';
         $t = '<tr class="pl"><td class="pl_eventicon">' . $a . ">"
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
             . '</a></td><td class="pl_eventid pl_rowclick">'
