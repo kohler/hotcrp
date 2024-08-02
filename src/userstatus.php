@@ -1062,7 +1062,6 @@ class UserStatus extends MessageSet {
         if (($cflags & Contact::CFM_DISABLEMENT) === Contact::CF_PLACEHOLDER) {
             $cflags &= ~Contact::CF_PLACEHOLDER;
         }
-        $user->set_prop("disabled", $cflags & Contact::CFM_DISABLEMENT);
         $user->set_prop("cflags", $cflags);
         if ($user->prop_changed("disabled") && isset($cj->disabled)) {
             $us->diffs[$cj->disabled ? "disabled" : "enabled"] = true;

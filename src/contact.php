@@ -970,10 +970,8 @@ class Contact implements JsonSerializable {
         }
         if (($this->cflags & self::CFM_DISABLEMENT) === 0) {
             $cdbux->set_prop("cflags", $cdbux->cflags & ~Contact::CF_PLACEHOLDER);
-            $cdbux->set_prop("disabled", $cdbux->cflags & Contact::CFM_DISABLEMENT & Contact::CFM_DB);
         } else if (!$cdbur) {
             $cdbux->set_prop("cflags", $cdbux->cflags | Contact::CF_PLACEHOLDER);
-            $cdbux->set_prop("disabled", $cdbux->cflags & Contact::CFM_DISABLEMENT & Contact::CFM_DB);
         }
         if (($this->cflags & self::CF_UNCONFIRMED) === 0) {
             $cdbux->set_prop("cflags", $cdbux->cflags & ~Contact::CF_UNCONFIRMED);
@@ -1853,7 +1851,6 @@ class Contact implements JsonSerializable {
         if (($shape & self::PROP_SIMPLIFY) !== 0 && is_string($value)) {
             $value = simplify_whitespace($value);
         }
-        // check for no change
         if ($value === "" && ($shape & self::PROP_NULL) !== 0) {
             $value = null;
         }
@@ -1895,6 +1892,7 @@ class Contact implements JsonSerializable {
         }
         if ($prop === "cflags") {
             $this->set_roles_properties();
+            $this->set_prop("disabled", $this->cflags & Contact::CFM_DISABLEMENT & Contact::CFM_DB);
         }
     }
 
@@ -1935,7 +1933,6 @@ class Contact implements JsonSerializable {
         $changed = false;
         if (($this->cflags & self::CF_PLACEHOLDER) !== 0) {
             $this->set_prop("cflags", $this->cflags & ~self::CF_PLACEHOLDER);
-            $this->set_prop("disabled", $this->cflags & self::CFM_DISABLEMENT & self::CFM_DB);
             $changed = true;
         }
         if (($this->cflags & self::CF_UNCONFIRMED) !== 0 && $confirm) {
@@ -2109,21 +2106,18 @@ class Contact implements JsonSerializable {
             && $this->cdb_confid !== 0
             && $this->contactDbId === 0) {
             $this->set_prop("cflags", $this->cflags | self::CF_PLACEHOLDER);
-            $this->set_prop("disabled", $this->cflags & self::CFM_DISABLEMENT & self::CFM_DB);
         }
         // source is non-disabled local user: this is not placeholder
         if ($src->cdb_confid === 0
             && $sdflags === 0
             && ($this->cflags & self::CF_PLACEHOLDER) !== 0) {
             $this->set_prop("cflags", $this->cflags & ~self::CF_PLACEHOLDER);
-            $this->set_prop("disabled", $this->cflags & self::CFM_DISABLEMENT & self::CFM_DB);
         }
         // source is globally disabled: this local user is disabled
         if (($sdflags & self::CF_GDISABLED) !== 0
             && $src->cdb_confid !== 0
             && $this->cdb_confid === 0) {
             $this->set_prop("cflags", $this->cflags | self::CF_GDISABLED);
-            $this->set_prop("disabled", $this->cflags & self::CFM_DISABLEMENT & self::CFM_DB);
         }
 
         // unconfirmed import is special
