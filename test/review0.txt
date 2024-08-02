@@ -1,0 +1,39 @@
+==+== =====================================================================
+==+== Begin Review #0
+
+==+== Paper #0
+
+==+== Review Readiness
+==-== Enter "Ready" if the review is ready for others to see:
+
+Ready
+
+==+== A. Overall merit
+==-== Choices:
+==-==    1. Reject
+==-==    2. Weak reject
+==-==    3. Weak accept
+==-==    No entry
+==-== Enter your choice:
+
+(Your choice here)
+
+==+== B. Reviewer expertise
+==-== Choices:
+==-==    1. No familiarity
+==-==    2. Some familiarity
+==-==    3. Knowledgeable
+==-==    4. Expert
+==-== Enter the number of your choice:
+
+(Your choice here)
+
+==+== C. Paper summary
+
+
+
+==+== D. Comments for authors
+
+==+== Scratchpad (for unsaved private notes)
+
+==+== End Review

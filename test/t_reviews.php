@@ -1722,10 +1722,30 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($r16f->fidval("s02"), 2);
     }
 
+    function test_empty_review_form() {
+        $p16 = $this->conf->checked_paper_by_id(16);
+        $r16f = save_review($p16, $this->u_floyd, ["ready" => true]);
+        $r16f_ts = $r16f->reviewSubmitted;
+        xassert_gt($r16f_ts, 0);
+        xassert_eqq($r16f->fidval("s01"), 4);
+        xassert_eqq($r16f->fidval("s02"), 2);
+
+        $emptyform = file_get_contents(SiteLoader::find("test/review0.txt"));
+        $s16 = str_replace("#0", "#16", $emptyform);
+        $rv = (new ReviewValues($this->conf))->set_text($s16, "review16.txt");
+        $rv->parse_text();
+        $rv->check_and_save($this->u_floyd, $p16);
+        xassert_eqq($rv->json_report(), ["blank" => ["#16"]]);
+
+        $r16f2 = $p16->fresh_review_by_user($this->u_floyd);
+        xassert_eqq($r16f2->reviewSubmitted, $r16f_ts);
+        xassert_eqq($r16f2->fidval("s01"), 4);
+        xassert_eqq($r16f2->fidval("s02"), 2);
+    }
+
     function test_rv_unsubmit() {
         $p16 = $this->conf->checked_paper_by_id(16);
         $r16f = $p16->review_by_user($this->u_floyd);
-        $r16f = save_review($p16, $this->u_floyd, ["ready" => true]);
         xassert_gt($r16f->reviewSubmitted, 0);
 
         // user cannot unsubmit their own review
