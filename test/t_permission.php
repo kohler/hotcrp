@@ -1917,9 +1917,28 @@ class Permission_Tester {
         }
     }
 
+    function test_rights_recursion() {
+        $this->conf->save_setting("au_seedec", 1, "#accept OR #reject");
+        $this->conf->save_setting("au_seerev", 3, "#accept OR #reject");
+        $this->conf->refresh_settings();
+        Contact::update_rights();
+
+        $p1 = $this->u_chair->checked_paper_by_id(1);
+        xassert_neqq($p1->outcome, 0);
+        xassert($this->u_chair->allow_view_authors($p1));
+
+        $this->conf->save_setting("au_seedec", null);
+        $this->conf->save_setting("au_seerev", null);
+        $this->conf->refresh_settings();
+    }
+
     function test_reset_deadlines() {
         $this->conf->save_setting("sub_reg", Conf::$now + 10);
         $this->conf->save_setting("sub_update", Conf::$now + 10);
         $this->conf->save_setting("sub_sub", Conf::$now + 10);
+    }
+
+    function test_invariants_last() {
+        ConfInvariants::test_all($this->conf);
     }
 }
