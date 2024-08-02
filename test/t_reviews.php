@@ -1414,7 +1414,23 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         } else {
             $f = "";
         }
-        $rrow->conf->qe("update PaperReview set reviewSubmitted=?, reviewModified=?, timeApprovalRequested=?, reviewNeedsSubmit=?{$f} where paperId=? and reviewId=?",
+        $rflags = $rrow->rflags & ~ReviewInfo::RFM_NONEMPTY;
+        if ($status >= ReviewInfo::RS_DRAFTED) {
+            $rflags |= ReviewInfo::RF_DRAFTED;
+        }
+        if ($status >= ReviewInfo::RS_ACCEPTED) {
+            $rflags |= ReviewInfo::RF_ACCEPTED;
+        }
+        if ($status >= ReviewInfo::RS_APPROVED) {
+            $rflags |= ReviewInfo::RF_APPROVED;
+        }
+        if ($status >= ReviewInfo::RS_DELIVERED) {
+            $rflags |= ReviewInfo::RF_DELIVERED;
+        }
+        if ($status >= ReviewInfo::RS_COMPLETED) {
+            $rflags |= ReviewInfo::RF_SUBMITTED;
+        }
+        $rrow->conf->qe("update PaperReview set reviewSubmitted=?, reviewModified=?, timeApprovalRequested=?, reviewNeedsSubmit=?, rflags=?{$f} where paperId=? and reviewId=?",
             $status >= ReviewInfo::RS_COMPLETED ? Conf::$now : null,
             $status >= ReviewInfo::RS_DRAFTED ? Conf::$now
                 : ($status >= ReviewInfo::RS_ACCEPTED ? 1 : 0),
@@ -1423,6 +1439,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
                         : ($status >= ReviewInfo::RS_DELIVERED ? Conf::$now : 0))
                 : 0,
             $status >= ReviewInfo::RS_DELIVERED ? 0 : 1,
+            $rflags,
             $rrow->paperId, $rrow->reviewId);
         $rrow = $rrow->prow->fresh_review_by_id($rrow->reviewId);
         assert($rrow->reviewStatus === $status);
