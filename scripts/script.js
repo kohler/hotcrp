@@ -263,34 +263,39 @@ function lower_bound_index(a, v) {
     return l;
 }
 
-function string_utf8_index(str, index) {
-    var r = 0, m, n;
-    while (str && index > 0) {
-        // eslint-disable-next-line no-control-regex
-        m = str.match(/^([\x00-\x7F]*)([\u0080-\u07FF]*)([\u0800-\uD7FF\uE000-\uFFFF]*)((?:[\uD800-\uDBFF][\uDC00-\uDFFF])*)/);
-        if (!m)
+// eslint-disable-next-line no-control-regex
+const string_utf8_index_re = /([\x00-\x7F]*)([\u0080-\u07FF]*)([\u0800-\uD7FF\uE000-\uFFFF]*)((?:[\uD800-\uDBFF][\uDC00-\uDFFF])*)/y;
+
+function string_utf8_index(str, index, pos) {
+    let r = 0;
+    const len = str.length;
+    string_utf8_index_re.lastIndex = pos = pos || 0;
+    while (pos < len && index > 0) {
+        const m = string_utf8_index_re.exec(str);
+        if (!m) {
             break;
+        }
         if (m[1].length) {
-            n = Math.min(index, m[1].length);
+            const n = Math.min(index, m[1].length);
             r += n;
             index -= n;
         }
         if (m[2].length) {
-            n = Math.min(index, m[2].length * 2);
+            const n = Math.min(index, m[2].length * 2);
             r += n / 2;
             index -= n;
         }
         if (m[3].length) {
-            n = Math.min(index, m[3].length * 3);
+            const n = Math.min(index, m[3].length * 3);
             r += n / 3;
             index -= n;
         }
         if (m[4].length) {
-            n = Math.min(index, m[4].length * 2);
+            const n = Math.min(index, m[4].length * 2);
             r += n / 2; // surrogate pairs
             index -= n;
         }
-        str = str.substring(m[0].length);
+        pos += m[0].length;
     }
     return r;
 }
@@ -1034,13 +1039,40 @@ try {
 }
 })();
 
+function apply_hcdiff(s, hcdiff) {
+    const hcre = /[-=](\d+)|\+([^|]*)|\|/y, hclen = hcdiff.length;
+    let hcpos = 0, spos = 0, r = "";
+    while (hcpos < hclen) {
+        hcre.lastIndex = hcpos;
+        const m = hcre.exec(hcdiff);
+        if (!m) {
+            return null;
+        } else if (m[1] != null) {
+            const slen = string_utf8_index(s, +m[1], spos);
+            if (hcdiff.charCodeAt(hcpos) === 61 /* `=` */) {
+                r += s.substr(spos, slen);
+            }
+            spos += slen;
+        } else if (m[2] != null) {
+            r += decodeURIComponent(m[2]);
+        }
+        hcpos += m[0].length;
+    }
+    if (spos < s.length) {
+        r += s.substr(spos);
+    }
+    return r;
+}
+
 Object.assign(hotcrp.text, {
+    apply_hcdiff: apply_hcdiff,
     escape_html: escape_html,
     plural: plural,
     plural_word: plural_word,
     pluralize: pluralize,
     sprintf: sprintf,
     strftime: strftime,
+    string_utf8_index: string_utf8_index,
     text_eq: text_eq,
     urldecode: urldecode,
     urlencode: urlencode
