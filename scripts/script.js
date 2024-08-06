@@ -6447,7 +6447,7 @@ function append_review_id(rrow, eheader) {
             xc = " rtghost"
         } else {
             xc = rrow.subreview ? " rtsubrev" : "";
-            if (!rrow.submitted && !rrow.approved) {
+            if (rrow.status !== "complete" && rrow.status !== "approved") {
                 xc += " rtinc";
             }
         }
@@ -6476,8 +6476,6 @@ hotcrp.add_review = function (rrow) {
         rdesc = "Draft " + rdesc;
     if (rrow.ordinal)
         rdesc += " #" + rid;
-    if (rrow.folded && rrow.collapsed == null) /* XXX */
-        rrow.collapsed = rrow.folded;
 
     earticle = document.createElement("article");
     earticle.id = "r" + rid;

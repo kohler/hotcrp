@@ -116,6 +116,7 @@ class ReviewInfo implements JsonSerializable {
     const VIEWSCORE_RECOMPUTE = -100;
 
     const RS_EMPTY = 0;
+    const RS_ACKNOWLEDGED = 1;
     const RS_ACCEPTED = 1;
     const RS_DRAFTED = 2;
     const RS_DELIVERED = 3;
@@ -124,6 +125,7 @@ class ReviewInfo implements JsonSerializable {
 
     const RF_LIVE = 1;
     const RFM_TYPES = 0xFE;
+    const RF_ACKNOWLEDGED = 1 << 8;
     const RF_ACCEPTED = 1 << 8;
     const RF_DRAFTED = 1 << 9;
     const RF_DELIVERED = 1 << 10;
@@ -132,7 +134,7 @@ class ReviewInfo implements JsonSerializable {
     const RF_BLIND = 1 << 16;
     const RF_SELF_ASSIGNED = 1 << 17;
     const RFM_NONDRAFT = 0x1C00; /* RF_DELIVERED | RF_APPROVED | RF_SUBMITTED */
-    const RFM_NONEMPTY = 0x1F00; /* RF_ACCEPTED | RF_DRAFTED | RFM_NONDRAFT */
+    const RFM_NONEMPTY = 0x1F00; /* RF_ACKNOWLEDGED | RF_DRAFTED | RFM_NONDRAFT */
 
     /** @deprecated */
     const RS_ADOPTED = self::RS_APPROVED;
@@ -182,6 +184,9 @@ class ReviewInfo implements JsonSerializable {
     ];
     // see also assign.php, script.js
     static private $type_revmap = ["none", "external", "pc", "secondary", "primary", "meta"];
+
+    /** @var list<string> */
+    static public $status_names = ["empty", "acknowledged", "draft", "delivered", "approved", "complete"];
 
     /** @param string $str
      * @param bool $required
@@ -409,9 +414,27 @@ class ReviewInfo implements JsonSerializable {
         } else if ($this->reviewModified === 0) {
             return self::RS_EMPTY;
         } else if ($this->reviewModified === 1) {
-            return self::RS_ACCEPTED;
+            return self::RS_ACKNOWLEDGED;
         } else {
             return self::RS_DRAFTED;
+        }
+    }
+
+    /** @param int $rflags
+     * @return int */
+    static function rflags_review_status($rflags) {
+        if (($rflags & self::RF_SUBMITTED) !== 0) {
+            return self::RS_COMPLETED;
+        } else if (($rflags & self::RF_APPROVED) !== 0) {
+            return self::RS_APPROVED;
+        } else if (($rflags & self::RF_DELIVERED) !== 0) {
+            return self::RS_DELIVERED;
+        } else if (($rflags & self::RF_DRAFTED) !== 0) {
+            return self::RS_DRAFTED;
+        } else if (($rflags & self::RF_ACKNOWLEDGED) !== 0) {
+            return self::RS_ACKNOWLEDGED;
+        } else {
+            return self::RS_EMPTY;
         }
     }
 
@@ -529,7 +552,7 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return string */
     function status_title($ucfirst = false) {
-        if ($this->reviewStatus <= ReviewInfo::RS_ACCEPTED
+        if ($this->reviewStatus <= ReviewInfo::RS_ACKNOWLEDGED
             && $this->reviewType < REVIEW_PC) {
             return $ucfirst ? "Request" : "request";
         } else if ($this->subject_to_approval()) {
@@ -555,7 +578,7 @@ class ReviewInfo implements JsonSerializable {
                    && $this->reviewNeedsSubmit <= 0
                    && $this->conf->ext_subreviews < 3) {
             return "delegated";
-        } else if ($this->reviewStatus === ReviewInfo::RS_ACCEPTED) {
+        } else if ($this->reviewStatus === ReviewInfo::RS_ACKNOWLEDGED) {
             return "accepted";
         } else if ($this->reviewType < REVIEW_PC) {
             return "outstanding";
@@ -1069,11 +1092,17 @@ class ReviewInfo implements JsonSerializable {
     /** @return list<ReviewHistoryInfo> */
     function load_history() {
         $this->_history = [];
-        $result = $this->conf->qe("select * from PaperReviewHistory where paperId=? and reviewId=? order by reviewTime asc", $this->paperId, $this->reviewId);
+        $result = $this->conf->qe("select * from PaperReviewHistory where paperId=? and reviewId=? and reviewTime<=? order by reviewTime asc", $this->paperId, $this->reviewId, $this->reviewTime);
         while (($rhrow = ReviewHistoryInfo::fetch($result))) {
             $this->_history[] = $rhrow;
         }
         Dbl::free($result);
+        return $this->_history;
+    }
+
+    /** @return list<ReviewInfo|ReviewHistoryInfo> */
+    function history() {
+        $this->_history = $this->_history ?? $this->load_history();
         return $this->_history;
     }
 

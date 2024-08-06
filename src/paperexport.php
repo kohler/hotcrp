@@ -254,40 +254,34 @@ class PaperExport {
         ReviewForm::check_review_author_seen($prow, $rrow, $this->viewer);
         $my_review = $this->viewer->is_my_review($rrow);
 
-        $rj = ["pid" => $prow->paperId, "rid" => $rrow->reviewId];
+        $rj = [
+            "pid" => $prow->paperId,
+            "rid" => $rrow->reviewId
+        ];
+        if ($rrow->reviewTime) {
+            $rj["version"] = $rrow->reviewTime;
+        }
         if ($rrow->reviewOrdinal) {
             $rj["ordinal"] = unparse_latin_ordinal($rrow->reviewOrdinal);
         }
         if ($this->viewer->can_view_review_meta($prow, $rrow)) {
-            $rj["rtype"] = (int) $rrow->reviewType;
+            $rj["rtype"] = $rrow->reviewType;
             if (($round = $this->conf->round_name($rrow->reviewRound))) {
                 $rj["round"] = $round;
             }
         }
+        $rj["status"] = ReviewInfo::$status_names[$rrow->reviewStatus];
+        if (!$rrow->reviewOrdinal && $rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
+            $rj["draft"] = true;
+        }
+        if ($rrow->is_ghost()) {
+            $rj["ghost"] = true;
+        }
+        if ($rrow->is_subreview()) {
+            $rj["subreview"] = true;
+        }
         if ($rrow->reviewBlind) {
             $rj["blind"] = true;
-        }
-        if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
-            $rj["submitted"] = true;
-        } else {
-            if ($rrow->is_ghost()) {
-                $rj["ghost"] = true;
-            }
-            if ($rrow->is_subreview()) {
-                $rj["subreview"] = true;
-            }
-            if (!$rrow->reviewOrdinal && $rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
-                $rj["draft"] = true;
-            } else {
-                $rj["ready"] = false;
-            }
-            if ($rrow->subject_to_approval()) {
-                if ($rrow->reviewStatus === ReviewInfo::RS_DELIVERED) {
-                    $rj["needs_approval"] = true;
-                } else if ($rrow->reviewStatus >= ReviewInfo::RS_APPROVED) {
-                    $rj["approved"] = true;
-                }
-            }
         }
 
         // identity
@@ -341,15 +335,16 @@ class PaperExport {
         $hidden = [];
         $rf = $this->_rf ?? $this->conf->review_form();
         foreach ($rf->all_fields() as $fid => $f) {
-            if ($f->view_score > $bound) {
-                $fval = $rrow->fields[$f->order];
-                if ($f->test_exists($rrow)) {
-                    $rj[$f->uid()] = $f->unparse_json($fval);
-                } else if ($fval !== null
-                           && $this->include_permissions
-                           && ($my_review || $this->viewer->can_administer($prow))) {
-                    $hidden[] = $f->uid();
-                }
+            if ($f->view_score <= $bound) {
+                continue;
+            }
+            $fval = $rrow->fields[$f->order];
+            if ($f->test_exists($rrow)) {
+                $rj[$f->uid()] = $f->unparse_json($fval);
+            } else if ($fval !== null
+                       && $this->include_permissions
+                       && ($my_review || $this->viewer->can_administer($prow))) {
+                $hidden[] = $f->uid();
             }
         }
         if (!empty($hidden)) {
@@ -363,6 +358,8 @@ class PaperExport {
         return (object) $rj;
     }
 
+    /** @param PaperInfo $prow
+     * @param ReviewInfo $rrow */
     private function _review_ratings_json($prow, $rrow, &$rj) {
         if ($rrow->has_ratings()
             && $this->viewer->can_view_review_ratings($prow, $rrow, $this->override_ratings)) {

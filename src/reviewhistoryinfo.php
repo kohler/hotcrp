@@ -40,7 +40,7 @@ class ReviewHistoryInfo implements JsonSerializable {
     /** @var ?int */
     public $reviewAuthorNotified;
     /** @var ?int */
-    public $reviewEditVersion;  // NB also used to check if `data` was loaded
+    public $reviewEditVersion;
     /** @var int */
     public $rflags;
     /** @var ?string */

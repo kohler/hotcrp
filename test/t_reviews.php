@@ -1232,7 +1232,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert($result->content["ok"]);
         MailChecker::check_db("t_review-external2-accept17");
         $rrow = $paper17->fresh_review_by_user($user_external2);
-        xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_ACCEPTED);
+        xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_ACKNOWLEDGED);
         xassert_eqq($rrow->reviewSubmitted, null);
         xassert_eqq($rrow->reviewModified, 1);
         xassert_eqq($rrow->timeRequestNotified, Conf::$now);
@@ -1388,7 +1388,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         }
         xassert_eqq(ReviewInfo::RF_LIVE, 1);
         xassert_eqq(ReviewInfo::RFM_NONDRAFT, ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED | ReviewInfo::RF_SUBMITTED);
-        xassert_eqq(ReviewInfo::RFM_NONEMPTY, ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED | ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED | ReviewInfo::RF_SUBMITTED);
+        xassert_eqq(ReviewInfo::RFM_NONEMPTY, ReviewInfo::RF_ACKNOWLEDGED | ReviewInfo::RF_DRAFTED | ReviewInfo::RF_DELIVERED | ReviewInfo::RF_APPROVED | ReviewInfo::RF_SUBMITTED);
     }
 
     function test_ensure_full_reviews_preserves_prop_changes() {
@@ -1422,8 +1422,8 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         if ($status >= ReviewInfo::RS_DRAFTED) {
             $rflags |= ReviewInfo::RF_DRAFTED;
         }
-        if ($status >= ReviewInfo::RS_ACCEPTED) {
-            $rflags |= ReviewInfo::RF_ACCEPTED;
+        if ($status >= ReviewInfo::RS_ACKNOWLEDGED) {
+            $rflags |= ReviewInfo::RF_ACKNOWLEDGED;
         }
         if ($status >= ReviewInfo::RS_APPROVED) {
             $rflags |= ReviewInfo::RF_APPROVED;
@@ -1437,7 +1437,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $rrow->conf->qe("update PaperReview set reviewSubmitted=?, reviewModified=?, timeApprovalRequested=?, reviewNeedsSubmit=?, rflags=?{$f} where paperId=? and reviewId=?",
             $status >= ReviewInfo::RS_COMPLETED ? Conf::$now : null,
             $status >= ReviewInfo::RS_DRAFTED ? Conf::$now
-                : ($status >= ReviewInfo::RS_ACCEPTED ? 1 : 0),
+                : ($status >= ReviewInfo::RS_ACKNOWLEDGED ? 1 : 0),
             $rrow->reviewType === REVIEW_EXTERNAL && $rrow->conf->ext_subreviews > 1
                 ? ($status >= ReviewInfo::RS_APPROVED ? -Conf::$now
                         : ($status >= ReviewInfo::RS_DELIVERED ? Conf::$now : 0))
@@ -1491,7 +1491,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         // empty save moves to accepted
         $r16x = save_review($p16, $u_ext4, ["update" => 1], $r16x, ["quiet" => true]);
-        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_ACCEPTED);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_ACKNOWLEDGED);
         // XXX should send acceptance email
 
 
@@ -1501,7 +1501,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
 
-        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED);
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACKNOWLEDGED);
         $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
 
@@ -1528,7 +1528,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
 
-        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED);
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACKNOWLEDGED);
         $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
 
@@ -1555,7 +1555,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
 
-        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED);
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACKNOWLEDGED);
         $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
 
@@ -1582,7 +1582,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
 
-        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED);
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACKNOWLEDGED);
         $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DRAFTED);
 
@@ -1609,7 +1609,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
 
-        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED);
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACKNOWLEDGED);
         $r16x = save_review($p16, $u_ext4, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_DELIVERED);
 
@@ -1636,9 +1636,9 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $r16x = save_review($p16, $u_floyd, $revqreq, $r16x, ["quiet" => true]);
         xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_EMPTY);
 
-        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACCEPTED, true);
+        $r16x = self::set_review_status($r16x, ReviewInfo::RS_ACKNOWLEDGED, true);
         $r16x = save_review($p16, $u_floyd, $revqreq, $r16x, ["quiet" => true]);
-        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_ACCEPTED);
+        xassert_eqq($r16x->reviewStatus, ReviewInfo::RS_ACKNOWLEDGED);
 
         $r16x = self::set_review_status($r16x, ReviewInfo::RS_DRAFTED, true);
         $r16x = save_review($p16, $u_floyd, $revqreq, $r16x, ["quiet" => true]);

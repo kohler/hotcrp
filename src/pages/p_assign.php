@@ -232,7 +232,7 @@ class Assign_Page {
             echo " by ", $this->user->reviewer_html_for($rrow->requestedBy);
         }
         echo '</li>';
-        if ($rrow->reviewStatus === ReviewInfo::RS_ACCEPTED) {
+        if ($rrow->reviewStatus === ReviewInfo::RS_ACKNOWLEDGED) {
             echo '<li>accepted';
             if ($time) {
                 echo ' ', $this->conf->unparse_time_relative($time);
@@ -387,7 +387,7 @@ class Assign_Page {
                 $buttons[] = Ht::submit("approvereview", "Approve proposal", ["class" => "btn-sm btn-success"]);
                 $buttons[] = Ht::submit("denyreview", "Deny proposal", ["class" => "btn-sm ui js-deny-review-request"]); // XXX reason
             }
-            if ($rrow->reviewType >= 0 && $rrow->reviewStatus > ReviewInfo::RS_ACCEPTED) {
+            if ($rrow->reviewType >= 0 && $rrow->reviewStatus > ReviewInfo::RS_ACKNOWLEDGED) {
                 $buttons[] = Ht::submit("retractreview", "Retract review", ["class" => "btn-sm"]);
             } else if ($rrow->reviewType >= 0) {
                 $buttons[] = Ht::submit("retractreview", "Retract review request", ["class" => "btn-sm"]);

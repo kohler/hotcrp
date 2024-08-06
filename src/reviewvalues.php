@@ -372,6 +372,7 @@ class ReviewValues extends MessageSet {
             return false;
         }
         // XXX validate more
+        // XXX status
         foreach ($j as $k => $v) {
             if ($k === "round") {
                 if ($v === null || is_string($v)) {
@@ -667,8 +668,8 @@ class ReviewValues extends MessageSet {
                    || $rrow->reviewModified > 1) {
             $minstatus = ReviewInfo::RS_DRAFTED;
         } else if ($user->is_my_review($rrow)
-                   || $oldstatus >= ReviewInfo::RS_ACCEPTED) { // XXX decline via this API?
-            $minstatus = ReviewInfo::RS_ACCEPTED;
+                   || $oldstatus >= ReviewInfo::RS_ACKNOWLEDGED) { // XXX decline via this API?
+            $minstatus = ReviewInfo::RS_ACKNOWLEDGED;
         }
         $ready = $this->req["ready"] ?? $oldstatus >= ReviewInfo::RS_DELIVERED;
         if (!$ready) {
@@ -836,7 +837,7 @@ class ReviewValues extends MessageSet {
         if ($view_score === VIEWSCORE_EMPTY) {
             // empty review: do not submit, adopt, or deliver
             if ($user->is_my_review($rrow)) {
-                $newstatus = max($oldstatus, ReviewInfo::RS_ACCEPTED);
+                $newstatus = max($oldstatus, ReviewInfo::RS_ACKNOWLEDGED);
             } else {
                 $newstatus = $oldstatus;
             }
@@ -872,14 +873,14 @@ class ReviewValues extends MessageSet {
         $now = max(time(), $rrow->reviewModified + 1);
 
         // set status-related fields
-        if ($newstatus === ReviewInfo::RS_ACCEPTED
+        if ($newstatus === ReviewInfo::RS_ACKNOWLEDGED
             && $rrow->reviewModified <= 0) {
             $rrow->set_prop("reviewModified", 1);
-            $rflags |= ReviewInfo::RF_LIVE | ReviewInfo::RF_ACCEPTED;
+            $rflags |= ReviewInfo::RF_LIVE | ReviewInfo::RF_ACKNOWLEDGED;
         } else if ($newstatus >= ReviewInfo::RS_DRAFTED
-                   && ($any_fdiff || $oldstatus <= ReviewInfo::RS_ACCEPTED)) {
+                   && ($any_fdiff || $oldstatus <= ReviewInfo::RS_ACKNOWLEDGED)) {
             $rrow->set_prop("reviewModified", $now);
-            $rflags |= ReviewInfo::RF_LIVE | ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED;
+            $rflags |= ReviewInfo::RF_LIVE | ReviewInfo::RF_ACKNOWLEDGED | ReviewInfo::RF_DRAFTED;
         }
         if ($newstatus === ReviewInfo::RS_APPROVED) {
             if ($rrow->timeApprovalRequested >= 0) {
@@ -970,8 +971,8 @@ class ReviewValues extends MessageSet {
             }
         }
         if ($rrow->requestedBy > 0
-            && $oldstatus < ReviewInfo::RS_ACCEPTED
-            && $newstatus >= ReviewInfo::RS_ACCEPTED
+            && $oldstatus < ReviewInfo::RS_ACKNOWLEDGED
+            && $newstatus >= ReviewInfo::RS_ACKNOWLEDGED
             && $newstatus < ReviewInfo::RS_DELIVERED) {
             $rrow->set_prop("timeRequestNotified", $now);
             $diffinfo->notify_requester = true;
@@ -1053,7 +1054,7 @@ class ReviewValues extends MessageSet {
             } else if ($oldstatus >= ReviewInfo::RS_DELIVERED
                        && $newstatus < ReviewInfo::RS_DELIVERED) {
                 $delta = -1;
-            } else if ($newstatus >= ReviewInfo::RS_ACCEPTED
+            } else if ($newstatus >= ReviewInfo::RS_ACKNOWLEDGED
                        && $oldstatus === ReviewInfo::RS_EMPTY) {
                 $delta = 0;
             } else {
@@ -1154,8 +1155,8 @@ class ReviewValues extends MessageSet {
             $always_combine = true;
             $diff_view_score = null;
             $info["rrow_unsubmitted"] = true;
-        } else if ($newstatus >= ReviewInfo::RS_ACCEPTED
-                   && $oldstatus < ReviewInfo::RS_ACCEPTED) {
+        } else if ($newstatus >= ReviewInfo::RS_ACKNOWLEDGED
+                   && $oldstatus < ReviewInfo::RS_ACKNOWLEDGED) {
             if ($rrow->requestedBy > 0
                 && $rrow->requestedBy !== $rrow->contactId
                 && $rrow->requestedBy !== $user->contactId
@@ -1226,8 +1227,8 @@ class ReviewValues extends MessageSet {
         } else if ($newstatus < ReviewInfo::RS_DELIVERED
                    && $oldstatus >= ReviewInfo::RS_DELIVERED) {
             $actions[] = "unsubmitted";
-        } else if ($newstatus === ReviewInfo::RS_ACCEPTED
-                   && $oldstatus < ReviewInfo::RS_ACCEPTED) {
+        } else if ($newstatus === ReviewInfo::RS_ACKNOWLEDGED
+                   && $oldstatus < ReviewInfo::RS_ACKNOWLEDGED) {
             $actions[] = "accepted";
         } else if (empty($log_actions)) {
             $actions[] = "updated";

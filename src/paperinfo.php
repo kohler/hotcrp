@@ -875,7 +875,7 @@ class PaperInfo {
         $prow->outcome = 1;
         $prow->outcome_sign = 1;
         $prow->conflictType = "0";
-        $rf = ReviewInfo::RF_LIVE | (1 << $rtype) | ReviewInfo::RF_ACCEPTED | ReviewInfo::RF_DRAFTED | ReviewInfo::RF_SUBMITTED;
+        $rf = ReviewInfo::RF_LIVE | (1 << $rtype) | ReviewInfo::RF_ACKNOWLEDGED | ReviewInfo::RF_DRAFTED | ReviewInfo::RF_SUBMITTED;
         $prow->myReviewPermissions = "{$rf} 0 0";
         $prow->_row_set->add_paper($prow);
         $prow->myContactXid = $user->contactXid;

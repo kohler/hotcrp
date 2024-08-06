@@ -1191,13 +1191,13 @@ class PaperTable {
         $rrow = $this->editrrow;
         if ($rrow->reviewId <= 0
             || $rrow->reviewType >= REVIEW_SECONDARY
-            || $rrow->reviewStatus > ReviewInfo::RS_ACCEPTED
+            || $rrow->reviewStatus > ReviewInfo::RS_ACKNOWLEDGED
             || (!$this->user->can_administer($this->prow)
                 && (!$this->user->is_my_review($rrow)
                     || !$this->user->time_review($this->prow, $rrow)))) {
             return;
         }
-        $acc = $rrow->reviewStatus === ReviewInfo::RS_ACCEPTED;
+        $acc = $rrow->reviewStatus === ReviewInfo::RS_ACKNOWLEDGED;
         echo Ht::form(["method" => "post", "class" => ($acc ? "msg" : "msg msg-warning") . ' d-flex demargin remargin-left remargin-right']),
             '<div class="flex-grow-1 align-self-center">';
         if ($acc) {
@@ -1243,7 +1243,7 @@ class PaperTable {
         // review accept/decline message
         if ($this->mode === "re"
             && $this->editrrow
-            && $this->editrrow->reviewStatus <= ReviewInfo::RS_ACCEPTED
+            && $this->editrrow->reviewStatus <= ReviewInfo::RS_ACKNOWLEDGED
             && $this->user->is_my_review($this->editrrow)) {
             $this->_print_accept_decline();
         } else if ($this->mode === "p"
@@ -2962,7 +2962,7 @@ class PaperTable {
                 if (($any_submitted || $rc->reviewStatus === ReviewInfo::RS_APPROVED)
                     && $rc->reviewStatus < ReviewInfo::RS_COMPLETED
                     && !$this->user->is_my_review($rc)) {
-                    $rcj->collapsed = $rcj->folded /* XXX */ = true;
+                    $rcj->collapsed = true;
                 }
                 $s .= "hotcrp.add_review(" . json_encode_browser($rcj) . ");\n";
             } else {

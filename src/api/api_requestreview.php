@@ -350,7 +350,7 @@ class RequestReview_API {
             $rrow = $prow->fresh_review_by_id($refrow->refusedReviewId);
         }
 
-        if ($rrow->reviewStatus < ReviewInfo::RS_ACCEPTED) {
+        if ($rrow->reviewStatus < ReviewInfo::RS_ACKNOWLEDGED) {
             $rv = (new ReviewValues($rrow->conf))->set_req_ready(false);
             $rv->check_and_save($user, $prow, $rrow);
         }
