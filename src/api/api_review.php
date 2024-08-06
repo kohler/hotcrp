@@ -11,7 +11,7 @@ class Review_API {
         if (isset($qreq->r)) {
             $rrow = $prow->full_review_by_ordinal_id($qreq->r);
             if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
-                return JsonResult::make_error(400, "<0>Bad request");
+                return JsonResult::make_parameter_error("r");
             }
             $rrows = $rrow ? [$rrow] : [];
             $need_id = true;
@@ -24,11 +24,12 @@ class Review_API {
             $rrows = $prow->reviews_as_display();
         }
         $vrrows = [];
+        $pex = new PaperExport($user);
         $rf = $user->conf->review_form();
         foreach ($rrows as $rrow) {
             if ($user->can_view_review($prow, $rrow)
                 && (!$need_id || $user->can_view_review_identity($prow, $rrow))) {
-                $vrrows[] = $rf->unparse_review_json($user, $prow, $rrow);
+                $vrrows[] = $pex->review_json($prow, $rrow);
             }
         }
         if ($vrrows || (!$rrows && !$need_id)) {

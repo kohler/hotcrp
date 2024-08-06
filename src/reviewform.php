@@ -264,8 +264,8 @@ class ReviewForm {
         }
     }
 
-    static private function check_review_author_seen($prow, $rrow, $contact,
-                                                     $no_update = false) {
+    static function check_review_author_seen($prow, $rrow, $contact,
+                                             $no_update = false) {
         if ($rrow
             && $rrow->reviewId
             && !$rrow->reviewAuthorSeen
@@ -631,124 +631,15 @@ Ready\n";
     const RJ_NO_REVIEWERONLY = 16;
 
     /** @param int $flags
-     * @return object */
+     * @return object
+     * @deprecated */
     function unparse_review_json(Contact $viewer, PaperInfo $prow,
                                  ReviewInfo $rrow, $flags = 0) {
-        self::check_review_author_seen($prow, $rrow, $viewer);
-        $editable = ($flags & self::RJ_NO_EDITABLE) === 0;
-        $my_review = $viewer->is_my_review($rrow);
-
-        $rj = ["pid" => $prow->paperId, "rid" => $rrow->reviewId];
-        if ($rrow->reviewOrdinal) {
-            $rj["ordinal"] = unparse_latin_ordinal($rrow->reviewOrdinal);
-        }
-        if ($viewer->can_view_review_meta($prow, $rrow)) {
-            $rj["rtype"] = (int) $rrow->reviewType;
-            if (($round = $this->conf->round_name($rrow->reviewRound))) {
-                $rj["round"] = $round;
-            }
-        }
-        if ($rrow->reviewBlind) {
-            $rj["blind"] = true;
-        }
-        if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
-            $rj["submitted"] = true;
-        } else {
-            if ($rrow->is_ghost()) {
-                $rj["ghost"] = true;
-            }
-            if ($rrow->is_subreview()) {
-                $rj["subreview"] = true;
-            }
-            if (!$rrow->reviewOrdinal && $rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
-                $rj["draft"] = true;
-            } else {
-                $rj["ready"] = false;
-            }
-            if ($rrow->subject_to_approval()) {
-                if ($rrow->reviewStatus === ReviewInfo::RS_DELIVERED) {
-                    $rj["needs_approval"] = true;
-                } else if ($rrow->reviewStatus >= ReviewInfo::RS_APPROVED) {
-                    $rj["approved"] = true;
-                }
-            }
-        }
-        if ($editable && $viewer->can_edit_review($prow, $rrow)) {
-            $rj["editable"] = true;
-        }
-
-        // identity
-        if ($viewer->can_view_review_identity($prow, $rrow)) {
-            $reviewer = $rrow->reviewer();
-            $rj["reviewer"] = $viewer->reviewer_html_for($rrow);
-            if (!Contact::is_anonymous_email($reviewer->email)) {
-                $rj["reviewer_email"] = $reviewer->email;
-            }
-        }
-        if ($editable && $viewer->active_review_token_for($prow, $rrow)) {
-            $rj["review_token"] = encode_token((int) $rrow->reviewToken);
-        }
-        if ($my_review) {
-            $rj["my_review"] = true;
-        }
-        if ($viewer->contactId == $rrow->requestedBy) {
-            $rj["my_request"] = true;
-        }
-
-        // time
-        $time = $rrow->mtime($viewer);
-        if ($time > 0 && $time > $rrow->timeRequested) {
-            $rj["modified_at"] = (int) $time;
-            $rj["modified_at_text"] = $this->conf->unparse_time_point($time);
-        }
-
-        // messages
-        if ($rrow->message_list) {
-            $rj["message_list"] = $rrow->message_list;
-        }
-
-        // ratings
-        if ($rrow->has_ratings()
-            && $viewer->can_view_review_ratings($prow, $rrow, ($flags & self::RJ_ALL_RATINGS) != 0)) {
-            $rj["ratings"] = array_values($rrow->ratings());
-            if ($flags & self::RJ_UNPARSE_RATINGS) {
-                $rj["ratings"] = array_map("ReviewInfo::unparse_rating", $rj["ratings"]);
-            }
-        }
-        if ($editable && $viewer->can_rate_review($prow, $rrow)) {
-            $rj["user_rating"] = $rrow->rating_by_rater($viewer);
-            if ($flags & self::RJ_UNPARSE_RATINGS) {
-                $rj["user_rating"] = ReviewInfo::unparse_rating($rj["user_rating"]);
-            }
-        }
-
-        // review text
-        // (field UIDs always are uppercase so can't conflict)
-        $bound = $viewer->view_score_bound($prow, $rrow);
-        if (($flags & self::RJ_NO_REVIEWERONLY) !== 0) {
-            $bound = max($bound, VIEWSCORE_REVIEWERONLY);
-        }
-        $hidden = [];
-        foreach ($this->all_fields() as $fid => $f) {
-            if ($f->view_score > $bound) {
-                $fval = $rrow->fields[$f->order];
-                if ($f->test_exists($rrow)) {
-                    $rj[$f->uid()] = $f->unparse_json($fval);
-                } else if ($fval !== null
-                           && ($my_review || $viewer->can_administer($prow))) {
-                    $hidden[] = $f->uid();
-                }
-            }
-        }
-        if (!empty($hidden)) {
-            $rj["hidden_fields"] = $hidden;
-        }
-
-        if (($fmt = $this->conf->default_format)) {
-            $rj["format"] = $fmt;
-        }
-
-        return (object) $rj;
+        $pex = new PaperExport($viewer);
+        $pex->set_include_permissions(($flags & self::RJ_NO_EDITABLE) === 0);
+        $pex->set_unparse_ratings(($flags & self::RJ_UNPARSE_RATINGS) !== 0);
+        $pex->set_override_ratings(($flags & self::RJ_ALL_RATINGS) !== 0);
+        return $pex->review_json($prow, $rrow);
     }
 
 

@@ -20,13 +20,16 @@ class GetJsonRQC_ListAction extends ListAction {
         $results["reviewform"] = $fj;
         $pj = [];
         $pex = new PaperExport($user);
+        $pex->set_include_permissions(false);
+        $pex->set_unparse_ratings(true);
+        $pex->set_override_ratings(true);
         foreach ($ssel->paper_set($user, ["topics" => true, "options" => true]) as $prow) {
             if ($user->allow_administer($prow)) {
                 $pj[] = $j = $pex->paper_json($prow);
                 $prow->ensure_full_reviews();
                 foreach ($prow->viewable_reviews_as_display($user) as $rrow) {
                     if ($rrow->reviewSubmitted) {
-                        $j->reviews[] = $rf->unparse_review_json($user, $prow, $rrow, ReviewForm::RJ_NO_EDITABLE | ReviewForm::RJ_UNPARSE_RATINGS | ReviewForm::RJ_ALL_RATINGS | ReviewForm::RJ_NO_REVIEWERONLY);
+                        $j->reviews[] = $pex->review_json($prow, $rrow);
                     }
                 }
             } else {

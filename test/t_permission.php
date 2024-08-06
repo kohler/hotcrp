@@ -1420,12 +1420,14 @@ class Permission_Tester {
         $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
         xassert($user_author2->can_view_review($paper2, $review2b));
 
-        $rjson = $this->conf->review_form()->unparse_review_json($this->u_chair, $paper2, $review2b);
+        $pex = new PaperExport($this->u_chair);
+        $rjson = $pex->review_json($paper2, $review2b);
         ReviewForm::update_review_author_seen();
         $review2b = fresh_review($paper2, $user_pdruschel);
         xassert(!$review2b->reviewAuthorSeen);
 
-        $rjson = $this->conf->review_form()->unparse_review_json($user_author2, $paper2, $review2b);
+        $pex = new PaperExport($user_author2);
+        $rjson = $pex->review_json($paper2, $review2b);
         ReviewForm::update_review_author_seen();
         $review2b = fresh_review($paper2, $user_pdruschel);
         xassert(!!$review2b->reviewAuthorSeen);

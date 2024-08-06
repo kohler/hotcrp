@@ -2955,10 +2955,10 @@ class PaperTable {
 
         $s = "";
         $ncmt = 0;
-        $rf = $this->conf->review_form();
+        $pex = new PaperExport($this->user);
         foreach ($rcs as $rc) {
             if (isset($rc->reviewId)) {
-                $rcj = $rf->unparse_review_json($this->user, $this->prow, $rc);
+                $rcj = $pex->review_json($this->prow, $rc);
                 if (($any_submitted || $rc->reviewStatus === ReviewInfo::RS_APPROVED)
                     && $rc->reviewStatus < ReviewInfo::RS_COMPLETED
                     && !$this->user->is_my_review($rc)) {

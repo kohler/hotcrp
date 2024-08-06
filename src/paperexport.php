@@ -7,8 +7,12 @@ class PaperExport {
      * @readonly */
     public $conf;
     /** @var Contact
+     * @deprecated
      * @readonly */
     public $user;
+    /** @var Contact
+     * @readonly */
+    public $viewer;
     /** @var bool
      * @readonly */
     public $use_ids = false;
@@ -18,14 +22,31 @@ class PaperExport {
     /** @var bool
      * @readonly */
     public $include_content = false;
+    /** @var bool
+     * @readonly */
+    public $include_permissions = true;
+    /** @var bool
+     * @readonly */
+    public $include_ratings = true;
+    /** @var bool
+     * @readonly */
+    public $override_ratings = false;
+    /** @var bool
+     * @readonly */
+    public $unparse_ratings = false;
     /** @var list<callable> */
     private $_on_document_export = [];
+
     /** @var ?CheckFormat */
     private $_cf;
+    /** @var ?ReviewForm */
+    private $_rf;
 
-    function __construct(Contact $user) {
-        $this->conf = $user->conf;
-        $this->user = $user;
+    function __construct(Contact $viewer) {
+        $this->conf = $viewer->conf;
+        $this->viewer = $viewer;
+        /** @phan-suppress-next-line PhanDeprecatedProperty */
+        $this->user = $viewer;
     }
 
     /** @param bool $x
@@ -49,6 +70,38 @@ class PaperExport {
      * @suppress PhanAccessReadOnlyProperty */
     function set_include_content($x) {
         $this->include_content = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_include_permissions($x) {
+        $this->include_permissions = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_include_ratings($x) {
+        $this->include_ratings = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_override_ratings($x) {
+        $this->override_ratings = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_unparse_ratings($x) {
+        $this->unparse_ratings = $x;
         return $this;
     }
 
@@ -120,12 +173,13 @@ class PaperExport {
         }
     }
 
-    /** @param int|PaperInfo $prow */
+    /** @param int|PaperInfo $prow
+     * @return ?object */
     function paper_json($prow) {
         if (is_int($prow)) {
-            $prow = $this->conf->paper_by_id($prow, $this->user, ["topics" => true, "options" => true]);
+            $prow = $this->conf->paper_by_id($prow, $this->viewer, ["topics" => true, "options" => true]);
         }
-        if (!$prow || !$this->user->can_view_paper($prow)) {
+        if (!$prow || !$this->viewer->can_view_paper($prow)) {
             return null;
         }
 
@@ -136,7 +190,7 @@ class PaperExport {
         }
 
         foreach ($prow->form_fields() as $opt) {
-            if ($this->user->can_view_option($prow, $opt)) {
+            if ($this->viewer->can_view_option($prow, $opt)) {
                 $ov = $prow->force_option($opt);
                 $oj = $opt->value_export_json($ov, $this);
                 if ($oj !== null) {
@@ -150,7 +204,7 @@ class PaperExport {
         }
 
         $submitted_status = "submitted";
-        $dec = $prow->viewable_decision($this->user);
+        $dec = $prow->viewable_decision($this->viewer);
         if ($dec->id !== 0) {
             $pj->decision = $dec->name;
             if (($dec->catbits & DecisionInfo::CAT_YES) !== 0) {
@@ -185,7 +239,7 @@ class PaperExport {
             $pj->final_submitted_at = $prow->timeFinalSubmitted;
         }
 
-        if (($tlist = $prow->sorted_viewable_tags($this->user))) {
+        if (($tlist = $prow->sorted_viewable_tags($this->viewer))) {
             $pj->tags = [];
             foreach (Tagger::split_unpack($tlist) as $tv) {
                 $pj->tags[] = (object) ["tag" => $tv[0], "value" => $tv[1]];
@@ -193,5 +247,136 @@ class PaperExport {
         }
 
         return $pj;
+    }
+
+    /** @return ?object */
+    function review_json(PaperInfo $prow, ReviewInfo $rrow) {
+        ReviewForm::check_review_author_seen($prow, $rrow, $this->viewer);
+        $my_review = $this->viewer->is_my_review($rrow);
+
+        $rj = ["pid" => $prow->paperId, "rid" => $rrow->reviewId];
+        if ($rrow->reviewOrdinal) {
+            $rj["ordinal"] = unparse_latin_ordinal($rrow->reviewOrdinal);
+        }
+        if ($this->viewer->can_view_review_meta($prow, $rrow)) {
+            $rj["rtype"] = (int) $rrow->reviewType;
+            if (($round = $this->conf->round_name($rrow->reviewRound))) {
+                $rj["round"] = $round;
+            }
+        }
+        if ($rrow->reviewBlind) {
+            $rj["blind"] = true;
+        }
+        if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {
+            $rj["submitted"] = true;
+        } else {
+            if ($rrow->is_ghost()) {
+                $rj["ghost"] = true;
+            }
+            if ($rrow->is_subreview()) {
+                $rj["subreview"] = true;
+            }
+            if (!$rrow->reviewOrdinal && $rrow->reviewStatus < ReviewInfo::RS_DELIVERED) {
+                $rj["draft"] = true;
+            } else {
+                $rj["ready"] = false;
+            }
+            if ($rrow->subject_to_approval()) {
+                if ($rrow->reviewStatus === ReviewInfo::RS_DELIVERED) {
+                    $rj["needs_approval"] = true;
+                } else if ($rrow->reviewStatus >= ReviewInfo::RS_APPROVED) {
+                    $rj["approved"] = true;
+                }
+            }
+        }
+
+        // identity
+        if ($this->viewer->can_view_review_identity($prow, $rrow)) {
+            $reviewer = $rrow->reviewer();
+            $rj["reviewer"] = $this->viewer->reviewer_html_for($rrow);
+            if (!Contact::is_anonymous_email($reviewer->email)) {
+                $rj["reviewer_email"] = $reviewer->email;
+            }
+        }
+
+        // permissions
+        if ($this->include_permissions) {
+            if ($this->viewer->can_edit_review($prow, $rrow)) {
+                $rj["editable"] = true;
+            }
+            if ($this->viewer->active_review_token_for($prow, $rrow)) {
+                $rj["review_token"] = encode_token((int) $rrow->reviewToken);
+            }
+            if ($my_review) {
+                $rj["my_review"] = true;
+            }
+            if ($this->viewer->contactId === $rrow->requestedBy) {
+                $rj["my_request"] = true;
+            }
+        }
+
+        // time
+        $time = $rrow->mtime($this->viewer);
+        if ($time > 0 && $time > $rrow->timeRequested) {
+            $rj["modified_at"] = (int) $time;
+            $rj["modified_at_text"] = $this->conf->unparse_time_point($time);
+        }
+
+        // messages
+        if ($rrow->message_list) {
+            $rj["message_list"] = $rrow->message_list;
+        }
+
+        // ratings
+        if ($this->include_ratings) {
+            $this->_review_ratings_json($prow, $rrow, $rj);
+        }
+
+        // review text
+        // (field UIDs always are uppercase so can't conflict)
+        $bound = $this->viewer->view_score_bound($prow, $rrow);
+        if (!$this->include_permissions) {
+            $bound = max($bound, VIEWSCORE_REVIEWERONLY);
+        }
+        $hidden = [];
+        $rf = $this->_rf ?? $this->conf->review_form();
+        foreach ($rf->all_fields() as $fid => $f) {
+            if ($f->view_score > $bound) {
+                $fval = $rrow->fields[$f->order];
+                if ($f->test_exists($rrow)) {
+                    $rj[$f->uid()] = $f->unparse_json($fval);
+                } else if ($fval !== null
+                           && $this->include_permissions
+                           && ($my_review || $this->viewer->can_administer($prow))) {
+                    $hidden[] = $f->uid();
+                }
+            }
+        }
+        if (!empty($hidden)) {
+            $rj["hidden_fields"] = $hidden;
+        }
+
+        if (($fmt = $this->conf->default_format)) {
+            $rj["format"] = $fmt;
+        }
+
+        return (object) $rj;
+    }
+
+    private function _review_ratings_json($prow, $rrow, &$rj) {
+        if ($rrow->has_ratings()
+            && $this->viewer->can_view_review_ratings($prow, $rrow, $this->override_ratings)) {
+            $rj["ratings"] = array_values($rrow->ratings());
+            if ($this->unparse_ratings) {
+                $rj["ratings"] = array_map("ReviewInfo::unparse_rating", $rj["ratings"]);
+            }
+        }
+        if ($this->include_permissions
+            && $this->viewer->can_rate_review($prow, $rrow)) {
+            $rj["user_rating"] = $rrow->rating_by_rater($this->viewer);
+            if ($this->unparse_ratings) {
+                $rj["user_rating"] = ReviewInfo::unparse_rating($rj["user_rating"]);
+            }
+        }
     }
 }

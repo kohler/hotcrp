@@ -58,7 +58,7 @@ class PCConflicts_PaperOption extends PaperOption {
     function value_export_json(PaperValue $ov, PaperExport $pex) {
         $pcm = $this->conf->pc_members();
         $confset = $this->conf->conflict_set();
-        $can_view_authors = $pex->user->allow_view_authors($ov->prow);
+        $can_view_authors = $pex->viewer->allow_view_authors($ov->prow);
         $pcc = [];
         foreach (self::value_map($ov) as $k => $v) {
             if (($pc = $pcm[$k] ?? null) && Conflict::is_conflicted((int) $v)) {
