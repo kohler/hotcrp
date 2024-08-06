@@ -530,22 +530,23 @@ class Mailer {
      * @return string */
     private function _lineexpand($line, $indent) {
         $text = "";
-        while (preg_match('/^(.*?)(%(#?[-a-zA-Z0-9!@_:.\/]+(?:|\([^\)]*\)))%)(.*)$/s', $line, $m)) {
+        $pos = 0;
+        while (preg_match('/\G(.*?)(%(#?[-a-zA-Z0-9!@_:.\/]+(?:|\([^\)]*\)))%)/s', $line, $m, 0, $pos)) {
             $text .= $m[1];
             // Don't expand keywords that look like they are coming from URLs
             if (strlen($m[3]) >= 2
                 && ctype_xdigit(substr($m[3], 0, 2))
-                && strlen($m[4]) >= 2
-                && ctype_xdigit(substr($m[4], 0, 2))
+                && strlen($line) >= $pos + strlen($m[0]) + 2
+                && ctype_xdigit(substr($line, $pos + strlen($m[0]), 2))
                 && preg_match('/\/\/\S+\z/', $text)) {
                 $s = null;
             } else {
                 $s = $this->expandvar($m[3], false);
             }
             $text .= $s ?? $m[2];
-            $line = $m[4];
+            $pos += strlen($m[0]);
         }
-        $text .= $line;
+        $text .= substr($line, $pos);
         return prefix_word_wrap($this->line_prefix ?? "", $text, $indent,
                                 $this->width, $this->flowed);
     }
