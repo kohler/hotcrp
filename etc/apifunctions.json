@@ -138,6 +138,10 @@
         "function": "Review_API::review"
     },
     {
+        "name": "reviewhistory", "paper": true, "get": true, "post": true,
+        "function": "Review_API::reviewhistory"
+    },
+    {
         "name": "reviewfieldlibrary", "get": true, "allow_if": "chair",
         "function": "Settings_API::reviewfieldlibrary"
     },

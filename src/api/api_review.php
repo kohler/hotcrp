@@ -39,6 +39,33 @@ class Review_API {
         }
     }
 
+    static function reviewhistory(Contact $user, Qrequest $qreq, PaperInfo $prow) {
+        if (!$user->can_view_review($prow, null)) {
+            return JsonResult::make_permission_error();
+        }
+        if (!isset($qreq->r)
+            || !($rrow = $prow->full_review_by_ordinal_id($qreq->r))) {
+            return JsonResult::make_parameter_error("r");
+        }
+        if (!$user->is_my_review($rrow)
+            && !$user->can_administer($prow)) {
+            return JsonResult::make_permission_error();
+        }
+        $pex = new PaperExport($user);
+        $pex->set_include_permissions(false);
+        $pex->set_include_ratings(false);
+        $vs = [$pex->review_json($prow, $rrow)];
+        $history = $rrow->history();
+        for ($i = count($history) - 1; $i >= 0; --$i) {
+            if ($history[$i] instanceof ReviewInfo) {
+                $vs[] = $pex->review_json($prow, $history[$i]);
+            } else {
+                $vs[] = $pex->review_history_json($prow, $rrow, $history[$i]);
+            }
+        }
+        return new JsonResult(["ok" => true, "versions" => $vs]);
+    }
+
     static function reviewrating(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         if (!$qreq->r) {
             return JsonResult::make_error(400, "<0>Bad request");

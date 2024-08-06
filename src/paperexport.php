@@ -376,4 +376,47 @@ class PaperExport {
             }
         }
     }
+
+    /** @return object */
+    function review_history_json(PaperInfo $prow, ReviewInfo $rrow, ReviewHistoryInfo $rhrow) {
+        $rj = [
+            "pid" => $prow->paperId,
+            "rid" => $rrow->reviewId,
+            "version" => $rhrow->reviewTime
+        ];
+        if ($this->viewer->can_view_review_meta($prow, $rrow)) {
+            if ($rrow->reviewType !== $rhrow->reviewType) {
+                $rj["rtype"] = $rhrow->reviewType;
+            }
+            if ($rrow->reviewRound !== $rhrow->reviewRound) {
+                $rj["round"] = $this->conf->round_name($rhrow->reviewRound);
+            }
+        }
+        $rstatus = ReviewInfo::rflags_review_status($rhrow->rflags);
+        $rj["status"] = ReviewInfo::$status_names[$rstatus];
+        // XXX modified_at
+        // XXX modified_at_text
+
+        if ($rhrow->revdelta === null
+            || !is_array(($revdelta = json_decode($rhrow->revdelta, true)))) {
+            return (object) $rj;
+        }
+
+        $bound = $this->viewer->view_score_bound($prow, $rrow);
+        if (!$this->include_permissions) {
+            $bound = max($bound, VIEWSCORE_REVIEWERONLY);
+        }
+        $rf = $this->_rf ?? $this->conf->review_form();
+        foreach ($rf->all_fields() as $fid => $f) {
+            if ($f->view_score <= $bound) {
+                continue;
+            }
+            if (array_key_exists($f->short_id, $revdelta)) {
+                $rj[$f->uid()] = $f->unparse_json($revdelta[$f->short_id]);
+            } else if (array_key_exists("{$f->short_id}:p", $revdelta)) {
+                $rj[$f->uid() . ":p"] = $revdelta["{$f->short_id}:p"];
+            }
+        }
+        return (object) $rj;
+    }
 }
