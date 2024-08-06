@@ -104,36 +104,26 @@ class ReviewDiffInfo {
     /** @param 0|1 $dir
      * @return array */
     function make_patch($dir) {
-        $use_xdiff = $this->rrow->conf->opt("diffMethod") === "xdiff";
         $sfields = json_decode($this->_old_prop["sfields"] ?? "{}", true) ?? [];
         $tfields = json_decode($this->_old_prop["tfields"] ?? "{}", true) ?? [];
         $patch = [];
         foreach ($this->_fields as $i => $f) {
             $sn = $f->short_id;
             if ($f->main_storage) {
-                $oldv = $this->_old_prop[$f->main_storage];
+                $oldv = (int) $this->_old_prop[$f->main_storage];
                 $oldv = $oldv > 0 ? $oldv : ($oldv < 0 ? 0 : null);
             } else {
                 $oldv = ($f->is_sfield ? $sfields : $tfields)[$f->json_storage] ?? null;
             }
             $v = [$oldv, $this->rrow->finfoval($f)];
-            if (!($f instanceof Text_ReviewField)) {
-                $v[$dir] = (int) $v[$dir];
-            } else if (is_string($v[0]) && is_string($v[1])) {
-                if ($use_xdiff) {
-                    $bdiff = xdiff_string_bdiff($v[1 - $dir], $v[$dir]);
-                    if (strlen($bdiff) < strlen($v[$dir]) - 32) {
-                        $patch["{$sn}:x"] = $bdiff;
-                        continue;
-                    }
-                } else {
-                    $hcdelta = $this->dmp_hcdelta($v[1 - $dir], $v[$dir], false);
-                    $hcdelta = $this->dmp_hcdelta($v[1 - $dir], $v[$dir], true);
-                    if ($hcdelta !== null
-                        && strlen($hcdelta) < strlen($v[$dir]) - 32) {
-                        $patch["{$sn}:p"] = $hcdelta;
-                        continue;
-                    }
+            if (is_string($v[0])
+                && is_string($v[1])
+                && $f instanceof Text_ReviewField) {
+                $hcdelta = $this->dmp_hcdelta($v[1 - $dir], $v[$dir], true);
+                if ($hcdelta !== null
+                    && strlen($hcdelta) < strlen($v[$dir]) - 32) {
+                    $patch["{$sn}:p"] = $hcdelta;
+                    continue;
                 }
             }
             $patch[$sn] = $v[$dir];
