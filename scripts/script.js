@@ -1040,15 +1040,15 @@ try {
 })();
 
 function apply_hcdiff(s, hcdiff) {
-    const hcre = /[-=](\d+)|\+([^|]*)|\|/y, hclen = hcdiff.length;
+    const hcre = /[-=](\d*)|\+([^|]*)|\|/y, hclen = hcdiff.length;
+    hcre.lastIndex = 0;
     let hcpos = 0, spos = 0, r = "";
     while (hcpos < hclen) {
-        hcre.lastIndex = hcpos;
         const m = hcre.exec(hcdiff);
         if (!m) {
             return null;
         } else if (m[1] != null) {
-            const slen = string_utf8_index(s, +m[1], spos);
+            const slen = string_utf8_index(s, m[1] === "" ? 1 : +m[1], spos);
             if (hcdiff.charCodeAt(hcpos) === 61 /* `=` */) {
                 r += s.substr(spos, slen);
             }
