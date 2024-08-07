@@ -1583,7 +1583,7 @@ class diff_match_patch {
 
     /** @param string $s
      * @return string */
-    static private function insert_hcdelta($s) {
+    static private function hcdelta_encode_insertion($s) {
         return str_replace(["%", "|"], ["%25", "%7C"], $s);
     }
 
@@ -1606,7 +1606,7 @@ class diff_match_patch {
      * @param bool $minimize
      * @return string Delta text.
      */
-    function diff_toHCDelta($diffs, $minimize = false) {
+    static function hcdelta_encode($diffs, $minimize = false) {
         $out = [];
         $sep = "";
         $ndiffs = count($diffs);
@@ -1614,7 +1614,7 @@ class diff_match_patch {
             $diff = $diffs[$i];
             if ($diff->op === DIFF_INSERT) {
                 $out[] = "{$sep}+";
-                $out[] = self::insert_hcdelta($diff->text);
+                $out[] = self::hcdelta_encode_insertion($diff->text);
                 $sep = "|";
                 ++$i;
             } else if (($n = strlen($diff->text)) === 0) {
@@ -1642,7 +1642,7 @@ class diff_match_patch {
                     ++$i;
                 }
                 $out[] = "{$sep}-" . ($n === 1 ? "" : $n) . "+";
-                $out[] = self::insert_hcdelta($insert);
+                $out[] = self::hcdelta_encode_insertion($insert);
                 $sep = "|";
             } else {
                 $s = $diff->op === DIFF_DELETE ? "{$sep}-" : "{$sep}=";
@@ -1662,7 +1662,7 @@ class diff_match_patch {
      * @return list<diff_obj> Array of diff tuples.
      * @throws diff_exception If invalid input.
      */
-    function diff_fromHCDelta($text1, $delta) {
+    static function hcdelta_decode($text1, $delta) {
         $diffs = [];
         $pos = 0;  // cursor in $text1
         $len = strlen($text1);
@@ -1689,7 +1689,7 @@ class diff_match_patch {
                 if (strpos("|-=+", $ech) === false
                     || $n <= 0
                     || $pos + $n > $len) {
-                    throw new diff_exception("Invalid syntax in diff_fromHCDelta {$ech} {$n} @{$pos}/{$len}:{$dpos}");
+                    throw new diff_exception("Invalid syntax in hcdelta_decode {$ech} {$n} @{$pos}/{$len}:{$dpos}");
                 }
                 $part = substr($text1, $pos, $n);
                 $pos += $n;
@@ -1697,11 +1697,11 @@ class diff_match_patch {
             } else if ($op === "|") {
                 ++$dpos;
             } else {
-                throw new diff_exception("Invalid operation `{$op}` in diff_fromHCDelta @{$pos}/{$len}:{$dpos}");
+                throw new diff_exception("Invalid operation `{$op}` in hcdelta_decode @{$pos}/{$len}:{$dpos}");
             }
         }
         if ($pos !== $len) {
-            throw new diff_exception("Invalid source length in diff_fromHCDelta @{$pos}/{$len}");
+            throw new diff_exception("Invalid source length in hcdelta_decode @{$pos}/{$len}");
         }
         return $diffs;
     }
@@ -1714,7 +1714,7 @@ class diff_match_patch {
      * @return string Transformed source string.
      * @throws diff_exception If invalid input.
      */
-    function diff_applyHCDelta($text1, $delta) {
+    static function hcdelta_apply($text1, $delta) {
         $out = [];
         $pos = 0;  // cursor in $text1
         $len = strlen($text1);
@@ -1738,7 +1738,7 @@ class diff_match_patch {
                 if (strpos("|-=+", $ech) === false
                     || $n <= 0
                     || $pos + $n > $len) {
-                    throw new diff_exception("Invalid syntax in diff_applyHCDelta @{$pos}/{$len}:{$dpos}");
+                    throw new diff_exception("Invalid syntax in hcdelta_apply @{$pos}/{$len}:{$dpos}");
                 }
                 if ($op === "=") {
                     $out[] = substr($text1, $pos, $n);
@@ -1747,13 +1747,162 @@ class diff_match_patch {
             } else if ($op === "|") {
                 ++$dpos;
             } else {
-                throw new diff_exception("Invalid operation in diff_applyHCDelta @{$pos}/{$len}:{$dpos}");
+                throw new diff_exception("Invalid operation in hcdelta_apply @{$pos}/{$len}:{$dpos}");
             }
         }
         if ($pos !== $len) {
-            throw new diff_exception("Invalid source length in diff_applyHCDelta @{$pos}/{$len}");
+            throw new diff_exception("Invalid source length in hcdelta_apply @{$pos}/{$len}");
         }
         return join("", $out);
+    }
+
+    /** @param string $hc
+     * @param int &$pos
+     * @param string &$op
+     * @param int &$a
+     * @param int &$n */
+    static private function hcdelta_extract($hc, &$pos, &$op, &$a, &$n) {
+        $op = $hc[$pos];
+        if ($op === "-" || $op === "=") {
+            $x = strspn($hc, "0123456789", $pos + 1);
+            $n = $x === 0 ? 1 : intval(substr($hc, $pos + 1, $x));
+            $pos += 1 + $x;
+        } else if ($op === "+") {
+            $x = strpos($hc, "|", $pos + 1);
+            $a = $pos + 1;
+            $n = ($x === false ? strlen($hc) : $x) - $a;
+            $pos += 1 + $n;
+        } else if ($op === "|") {
+            ++$pos;
+        } else {
+            throw new diff_exception("Invalid syntax in hcdelta_merge @{$pos}/" . strlen($hc));
+        }
+    }
+
+    /** @param string $hc
+     * @return int */
+    static function hcdelta_length1($hc) {
+        $pos = 0;
+        $len = strlen($hc);
+        $len1 = 0;
+        while ($pos < $len) {
+            self::hcdelta_extract($hc, $pos, $op, $a, $n);
+            if ($op === "-" || $op === "=") {
+                $len1 += $n;
+            }
+        }
+        return $len1;
+    }
+
+    /** @param string $hc
+     * @return int */
+    static function hcdelta_length2($hc) {
+        $pos = 0;
+        $len = strlen($hc);
+        $len2 = 0;
+        while ($pos < $len) {
+            self::hcdelta_extract($hc, $pos, $op, $a, $n);
+            if ($op === "=") {
+                $len2 += $n;
+            } else if ($op === "+") {
+                $len2 += $n - substr_count($hc, "%", $a, $n) * 2;
+            }
+        }
+        return $len2;
+    }
+
+    /**
+     * @param string $hc1
+     * @param string $hc2
+     * @return string
+     */
+    static function hcdelta_merge($hc1, $hc2) {
+        $op1 = $op2 = "x";
+        $n1 = $n2 = $a1 = $a2 = 0;
+        $delr = $samer = $n = 0;
+        $hcr = $sepr = $addr = $t = "";
+        $pos1 = $pos2 = 0;
+        $len1 = strlen($hc1);
+        $len2 = strlen($hc2);
+        $pct1 = strpos($hc1, "%");
+        while (true) {
+            while ($pos1 < $len1 && $n1 === 0) {
+                self::hcdelta_extract($hc1, $pos1, $op1, $a1, $n1);
+            }
+            while ($pos2 < $len2 && $n2 === 0) {
+                self::hcdelta_extract($hc2, $pos2, $op2, $a2, $n2);
+            }
+            //error_log(json_encode([$op1, $op1 === "+" ? [$a1, $n1] : $n1,
+            //                       $op2, $op2 === "+" ? [$a2, $n2] : $n2]));
+
+            if ($op2 === "+" && $n2 > 0) {
+                $op = "+";
+                $t = substr($hc2, $a2, $n2);
+                $n2 = 0;
+            } else if ($n1 === 0 || $n2 === 0) {
+                if ($n1 === 0 && $n2 === 0) {
+                    $op = "x";
+                } else {
+                    throw new diff_exception("hcdelta_merge arguments conflict");
+                }
+            } else if ($op1 === "-") {
+                $op = "-";
+                $n = $n1;
+                $n1 = 0;
+            } else if ($op1 === "=") {
+                $op = $op2; // either `-` or `=`
+                $n = min($n1, $n2);
+                $n1 -= $n;
+                $n2 -= $n;
+            } else { // $op1 === "+"
+                // must account for `%` encoding
+                $ab = $a1;
+                assert($pct1 === false || $pct1 >= $a1);
+                while ($pct1 !== false && $pct1 < $pos1 && $pct1 < $a1 + $n2) {
+                    $n2 -= $pct1 + 1 - $a1;
+                    $a1 = $pct1 + 3;
+                    $pct1 = strpos($hc1, "%", $a1);
+                }
+                if ($a1 < $pos1 && $n2 > 0) {
+                    $d = min($pos1 - $a1, $n2);
+                    $a1 += $d;
+                    $n2 -= $d;
+                }
+                $n1 = $pos1 - $a1;
+                if ($op2 === "-") {
+                    continue;
+                }
+                $op = "+";
+                $t = substr($hc1, $ab, $a1 - $ab);
+            }
+
+            if ($op !== "=" && $samer > 0) {
+                $hcr .= $sepr . "=" . ($samer === 1 ? "" : $samer);
+                $samer = 0;
+                $sepr = "";
+            }
+
+            if ($op === "-") {
+                $delr += $n;
+            } else if ($op === "+") {
+                $addr .= $t;
+            } else {
+                if ($delr > 0) {
+                    $hcr .= $sepr . "-" . ($delr === 1 ? "" : $delr);
+                    $delr = 0;
+                    $sepr = "";
+                }
+                if ($addr !== "") {
+                    $hcr .= $sepr . "+" . $addr;
+                    $addr = "";
+                    $sepr = "|";
+                }
+                if ($op === "x") {
+                    return $hcr;
+                }
+                $samer += $n;
+            }
+        }
     }
 
 

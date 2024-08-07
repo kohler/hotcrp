@@ -80,12 +80,12 @@ class ReviewDiffInfo {
         $this->_dmp->Line_Histogram = $line_histogram;
         try {
             $diffs = $this->_dmp->diff($s1, $s2);
-            $hcdelta = $this->_dmp->diff_toHCDelta($diffs, true);
+            $hcdelta = $this->_dmp->hcdelta_encode($diffs, true);
 
             if (self::VALIDATE_PATCH) {
                 // validate that applyHCDelta can create $s2
-                if ($this->_dmp->diff_applyHCDelta($s1, $hcdelta) !== $s2) {
-                    throw new dmp\diff_exception("incorrect diff_applyHCDelta");
+                if ($this->_dmp->hcdelta_apply($s1, $hcdelta) !== $s2) {
+                    throw new dmp\diff_exception("incorrect hcdelta_apply");
                 }
             }
 
@@ -254,7 +254,7 @@ class ReviewDiffInfo {
                 $oldv = $rrow->finfoval($fi) ?? "";
                 if ($n[$nl - 1] === "p") {
                     $dmp = $dmp ?? new dmp\diff_match_patch;
-                    $rrow->_set_finfoval($fi, $dmp->diff_applyHCDelta($oldv, $v));
+                    $rrow->_set_finfoval($fi, $dmp->hcdelta_apply($oldv, $v));
                     continue;
                 }
                 if (($has_xpatch = $has_xpatch ?? function_exists("xdiff_string_bpatch"))) {

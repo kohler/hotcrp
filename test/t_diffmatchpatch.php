@@ -532,30 +532,30 @@ class DiffMatchPatch_Tester {
         $dmp = new diff_match_patch;
 
         // Convert a diff into delta string.
-        $diffs = $dmp->diff_fromStringList(["=jump","-s","+ed","= over ","-the","+a","= lazy","+old dog"]);
+        $diffs = $dmp->diff_fromStringList(["=jump","-s","+ed","= over ","-the","+a","= lazy","+ old dog"]);
         $text1 = $dmp->diff_text1($diffs);
         $this->assertEquals('jumps over the lazy', $text1);
         $text2 = $dmp->diff_text2($diffs);
 
-        $delta = $dmp->diff_toHCDelta($diffs, false);
-        $this->assertEquals("=4-+ed|=6-3+a|=5+old dog", $delta);
+        $delta = $dmp->hcdelta_encode($diffs, false);
+        $this->assertEquals("=4-+ed|=6-3+a|=5+ old dog", $delta);
 
         // Convert delta string into a diff.
-        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
-        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, "=4|-1|+ed|=6|-3|+a|=5|+old dog"));
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, "=4|-1|+ed|=6|-3|+a|=5|+old dog"));
+        $this->assertEqualDiffs($diffs, $dmp->hcdelta_decode($text1, $delta));
+        $this->assertEqualDiffs($diffs, $dmp->hcdelta_decode($text1, "=4|-1|+ed|=6|-3|+a|=5|+ old dog"));
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, $delta));
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, "=4|-1|+ed|=6|-3|+a|=5|+ old dog"));
 
         // Test optimized hcdelta
-        $delta1 = $dmp->diff_toHCDelta($diffs, true);
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, "=4|-1|+ed|=6|-3|+a|=5|+old dog"));
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, "=4-1|+ed|=6-3+a|=5+old dog"));
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, "=4-+ed|=6-3+a|=5+old dog"));
+        $delta1 = $dmp->hcdelta_encode($diffs, true);
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, $delta));
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, "=4|-1|+ed|=6|-3|+a|=5|+ old dog"));
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, "=4-1|+ed|=6-3+a|=5+ old dog"));
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, "=4-+ed|=6-3+a|=5+ old dog"));
 
         // Generates error (19 != 20).
         try {
-            $dmp->diff_fromHCDelta($text1 . 'x', $delta);
+            $dmp->hcdelta_decode($text1 . 'x', $delta);
             $this->assertEquals(false, true);
         } catch (\Exception $e) {
             // Exception expected.
@@ -563,7 +563,7 @@ class DiffMatchPatch_Tester {
 
         // Generates error (19 != 18).
         try {
-            $dmp->diff_fromHCDelta(substr($text1, 1), $delta);
+            $dmp->hcdelta_decode(substr($text1, 1), $delta);
             $this->assertEquals(false, true);
         } catch (\Exception $e) {
             // Exception expected.
@@ -575,18 +575,18 @@ class DiffMatchPatch_Tester {
         $this->assertEquals("\xda\x80 \x00 \t %|\xda\x81 \x01 \n ^", $text1);
         $text2 = $dmp->diff_text2($diffs);
 
-        $delta = $dmp->diff_toHCDelta($diffs, false);
+        $delta = $dmp->hcdelta_encode($diffs, false);
         $this->assertEquals("=9-8+\xda\x82 \x02 \\ %7C%25", $delta);
 
         // Convert delta string into a diff.
-        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
-        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, "=9|-8|+\xda\x82 \x02 \\ %7C%25"));
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, "=9|-8|+\xda\x82 \x02 \\ %7C%25"));
+        $this->assertEqualDiffs($diffs, $dmp->hcdelta_decode($text1, $delta));
+        $this->assertEqualDiffs($diffs, $dmp->hcdelta_decode($text1, "=9|-8|+\xda\x82 \x02 \\ %7C%25"));
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, $delta));
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, "=9|-8|+\xda\x82 \x02 \\ %7C%25"));
 
         // Test optimized hcdelta
-        $delta1 = $dmp->diff_toHCDelta($diffs, true);
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta1));
+        $delta1 = $dmp->hcdelta_encode($diffs, true);
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, $delta1));
 
         // Test deltas for surrogate pairs.
         $diffs = $dmp->diff_fromStringList(["=😀Héló"]);
@@ -594,22 +594,22 @@ class DiffMatchPatch_Tester {
         $this->assertEquals("😀Héló", $text1);
         $text2 = $dmp->diff_text1($diffs);
 
-        $delta = $dmp->diff_toHCDelta($diffs, false);
+        $delta = $dmp->hcdelta_encode($diffs, false);
         $this->assertEquals("=10", $delta);
 
-        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+        $this->assertEqualDiffs($diffs, $dmp->hcdelta_decode($text1, $delta));
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, $delta));
 
         // Verify pool of unchanged characters.
         $diffs = $dmp->diff_fromStringList(['+A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ']);
         $text2 = $dmp->diff_text2($diffs);
         $this->assertEquals('A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ', $text2);
 
-        $delta = $dmp->diff_toHCDelta($diffs, false);
+        $delta = $dmp->hcdelta_encode($diffs, false);
         $this->assertEquals('+A-Z a-z 0-9 - _ . ! ~ * \' ( ) ; / ? : @ & = + $ , # ', $delta);
 
         // Convert delta string into a diff.
-        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta('', $delta));
+        $this->assertEqualDiffs($diffs, $dmp->hcdelta_decode('', $delta));
 
         // 160 kb string.
         $a = 'abcdefghij';
@@ -617,11 +617,11 @@ class DiffMatchPatch_Tester {
             $a .= $a;
         }
         $diffs = [new dmp\diff_obj(DIFF_INSERT, $a)];
-        $delta = $dmp->diff_toHCDelta($diffs, false);
+        $delta = $dmp->hcdelta_encode($diffs, false);
         $this->assertEquals('+' . $a, $delta);
 
         // Convert delta string into a diff.
-        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta('', $delta));
+        $this->assertEqualDiffs($diffs, $dmp->hcdelta_decode('', $delta));
 
         // Test one-character diffs.
         $diffs = $dmp->diff_fromStringList(["=A", "-B", "=C", "-D", "=E", "+F", "=G"]);
@@ -630,15 +630,69 @@ class DiffMatchPatch_Tester {
         $this->assertEquals('ABCDEG', $text1);
         $this->assertEquals('ACEFG', $text2);
 
-        $delta = $dmp->diff_toHCDelta($diffs, false);
+        $delta = $dmp->hcdelta_encode($diffs, false);
         $this->assertEquals("=-=-=+F|=", $delta);
-        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+        $this->assertEqualDiffs($diffs, $dmp->hcdelta_decode($text1, $delta));
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, $delta));
 
-        $delta = $dmp->diff_toHCDelta($diffs, true);
+        $delta = $dmp->hcdelta_encode($diffs, true);
         $this->assertEquals("=-=-=+F|=", $delta);
-        $this->assertEqualDiffs($diffs, $dmp->diff_fromHCDelta($text1, $delta));
-        $this->assertEquals($text2, $dmp->diff_applyHCDelta($text1, $delta));
+        $this->assertEqualDiffs($diffs, $dmp->hcdelta_decode($text1, $delta));
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, $delta));
+    }
+
+    function testMergeHCDelta() {
+        $dmp = new diff_match_patch;
+
+        $text1 = "jumps over the lazy";
+        $text2 = "jumped over a lazy old dog";
+        $text3 = "Jumping over an old doggo";
+
+        $hcd1 = "=4-+ed|=6-3+a|=5+ old dog";
+        $hcd2 = "-+J|=3+ing|--=7+n|-5=8+go";
+
+        $this->assertEquals($text2, $dmp->hcdelta_apply($text1, $hcd1));
+        $this->assertEquals($text3, $dmp->hcdelta_apply($text2, $hcd2));
+        $this->assertEquals($text3, $dmp->hcdelta_apply($text1, $dmp->hcdelta_merge($hcd1, $hcd2)));
+    }
+
+    function testHCDeltaLength() {
+        $dmp = new diff_match_patch;
+
+        $text1 = "I love you";
+        $text2 = "I and you l|ov|%e%25 you!";
+        $text3 = "I and you l|ov|%E%25 you!!";
+
+        $hcd1 = $dmp->hcdelta_encode($dmp->diff($text1, $text2));
+        $hcd2 = $dmp->hcdelta_encode($dmp->diff($text2, $text3));
+        $hcd3 = $dmp->hcdelta_encode($dmp->diff($text1, $text3));
+
+        $this->assertEquals(strlen($text1), $dmp->hcdelta_length1($hcd1));
+        $this->assertEquals(strlen($text2), $dmp->hcdelta_length2($hcd1));
+        $this->assertEquals(strlen($text2), $dmp->hcdelta_length1($hcd2));
+        $this->assertEquals(strlen($text3), $dmp->hcdelta_length2($hcd2));
+        $this->assertEquals(strlen($text1), $dmp->hcdelta_length1($hcd3));
+        $this->assertEquals(strlen($text3), $dmp->hcdelta_length2($hcd3));
+
+        $hcdm = $dmp->hcdelta_merge($hcd1, $hcd2);
+        $this->assertEquals(strlen($text1), $dmp->hcdelta_length1($hcdm));
+        $this->assertEquals(strlen($text3), $dmp->hcdelta_length2($hcdm));
+
+        $text1 = "jumps over the lazy";
+        $text2 = "jumped over a lazy old dog";
+        $text3 = "Jumping over an old doggo";
+
+        $hcd1 = "=4-+ed|=6-3+a|=5+ old dog";
+        $hcd2 = "-+J|=3+ing|--=7+n|-5=8+go";
+
+        $this->assertEquals(strlen($text1), $dmp->hcdelta_length1($hcd1));
+        $this->assertEquals(strlen($text2), $dmp->hcdelta_length2($hcd1));
+        $this->assertEquals(strlen($text2), $dmp->hcdelta_length1($hcd2));
+        $this->assertEquals(strlen($text3), $dmp->hcdelta_length2($hcd2));
+
+        $hcdm = $dmp->hcdelta_merge($hcd1, $hcd2);
+        $this->assertEquals(strlen($text1), $dmp->hcdelta_length1($hcdm));
+        $this->assertEquals(strlen($text3), $dmp->hcdelta_length2($hcdm));
     }
 
     function testDiffXIndex() {

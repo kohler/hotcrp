@@ -168,19 +168,19 @@ class DMPGitStress_Tester {
             $this->dmp->diff_validate($diffs, $a, $b);
 
             // validate that toHCDelta can create $b
-            $hcdelta = $this->dmp->diff_toHCDelta($diffs);
+            $hcdelta = $this->dmp->hcdelta_encode($diffs);
             if (!is_valid_utf8($hcdelta)
                 && is_valid_utf8($a)
                 && is_valid_utf8($b)) {
-                throw new dmp\diff_exception("diff_toHCDelta creates non-UTF-8");
+                throw new dmp\diff_exception("hcdelta_encode creates non-UTF-8");
             }
 
-            $xdiffs = $this->dmp->diff_fromHCDelta($a, $hcdelta);
+            $xdiffs = $this->dmp->hcdelta_decode($a, $hcdelta);
             $this->dmp->diff_validate($xdiffs, $a, $b);
 
             // validate that applyHCDelta can create $b
-            if (($x = $this->dmp->diff_applyHCDelta($a, $hcdelta)) !== $b) {
-                throw new dmp\diff_exception("incorrect diff_applyHCDelta", $b, $x);
+            if (($x = $this->dmp->hcdelta_apply($a, $hcdelta)) !== $b) {
+                throw new dmp\diff_exception("incorrect hcdelta_apply", $b, $x);
             }
 
             return true;
