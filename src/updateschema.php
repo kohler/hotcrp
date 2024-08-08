@@ -1189,6 +1189,56 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         return true;
     }
 
+    private function v297_rf_content_edited_auseen() {
+        $result = $this->conf->qe("select * from PaperReviewHistory order by paperId, reviewId, reviewTime");
+        $pid = $rid = $cetime = $auseentime = $praseen = $pranote = null;
+        $qstager = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_LOG);
+        while (($rh = $result->fetch_object())) {
+            $xrid = (int) $rh->reviewId;
+            if ($xrid !== $rid) {
+                $this->v297_helper_update_pid_rid($qstager, $pid, $rid, $cetime, $auseentime, $praseen, $pranote);
+                $pid = (int) $rh->paperId;
+                $rid = $xrid;
+                $cetime = $auseentime = $praseen = $pranote = null;
+            }
+            $rtime = (int) $rh->reviewTime;
+            if ($cetime === null
+                && $rh->revdelta !== null) {
+                $cetime = $rtime;
+            }
+            $raseen = (int) $rh->reviewAuthorSeen;
+            $ranote = (int) $rh->reviewAuthorNotified;
+            if (($raseen > 0 && $praseen !== null && $raseen !== $praseen)
+                || ($ranote > 0 && $pranote !== null && $ranote !== $pranote)) {
+                $qstager("update PaperReviewHistory set rflags=rflags|? where paperId=? and reviewId=? and reviewTime=?", ReviewInfo::RF_AUSEEN, $pid, $rid, $rtime);
+            }
+            if ($auseentime === null
+                && (($raseen > 0 && $raseen !== $praseen)
+                    || ($ranote > 0 && $ranote !== $pranote))) {
+                $auseentime = $rtime;
+            }
+            $praseen = $raseen;
+            $pranote = $ranote;
+        }
+        $this->v297_helper_update_pid_rid($qstager, $pid, $rid, $cetime, $auseentime, $praseen, $pranote);
+        $qstager(null);
+        return true;
+    }
+
+    private function v297_helper_update_pid_rid($qstager, $pid, $rid, $cetime, $auseentime, $praseen, $pranote) {
+        if ($cetime !== null) {
+            $qstager("update PaperReviewHistory set rflags=rflags|? where paperId=? and reviewId=? and reviewTime>?", ReviewInfo::RF_CONTENT_EDITED, $pid, $rid, $cetime);
+            $qstager("update PaperReview set rflags=rflags|? where paperId=? and reviewId=?", ReviewInfo::RF_CONTENT_EDITED, $pid, $rid);
+        }
+        if ($auseentime !== null) {
+            $qstager("update PaperReviewHistory set rflags=rflags|? where paperId=? and reviewId=? and reviewTime>?", ReviewInfo::RF_AUSEEN_PREVIOUS, $pid, $rid, $auseentime);
+            $qstager("update PaperReview set rflags=rflags|? where paperId=? and reviewId=?", ReviewInfo::RF_AUSEEN_PREVIOUS, $pid, $rid);
+        }
+        if ($praseen > 0 || $pranote > 0) {
+            $qstager("update PaperReview set rflags=rflags|? where paperId=? and reviewId=? and (reviewAuthorSeen>? or reviewAuthorNotified>?)", ReviewInfo::RF_AUSEEN, $pid, $rid, $praseen, $pranote);
+        }
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -3037,6 +3087,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 295
             && $conf->ql_ok("update Settings set value=-1 where name='rev_ratings' and value=2")) {
             $conf->update_schema_version(296);
+        }
+        if ($conf->sversion === 296
+            && $this->v297_rf_content_edited_auseen()) {
+            $conf->update_schema_version(297);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

@@ -247,43 +247,56 @@ class ReviewForm {
     static function update_review_author_seen() {
         while (self::$review_author_seen) {
             $conf = self::$review_author_seen[0][0];
-            $q = $qv = $next = [];
+            $qstager = Dbl::make_multi_qe_stager($conf->dblink);
+            $next = [];
             foreach (self::$review_author_seen as $x) {
                 if ($x[0] === $conf) {
-                    $q[] = $x[1];
-                    for ($i = 2; $i < count($x); ++$i) {
-                        $qv[] = $x[$i];
-                    }
+                    array_shift($x);
+                    /** @phan-suppress-next-line PhanParamTooFewUnpack */
+                    $qstager(...$x);
                 } else {
                     $next[] = $x;
                 }
             }
+            $qstager(null);
             self::$review_author_seen = $next;
-            $mresult = Dbl::multi_qe_apply($conf->dblink, join(";", $q), $qv);
-            $mresult->free_all();
         }
     }
 
-    static function check_review_author_seen($prow, $rrow, $contact,
+    /** @param PaperInfo $prow
+     * @param ?ReviewInfo $rrow
+     * @param Contact $viewer
+     * @param bool $no_update */
+    static function check_review_author_seen($prow, $rrow, $viewer,
                                              $no_update = false) {
-        if ($rrow
-            && $rrow->reviewId
-            && !$rrow->reviewAuthorSeen
-            && $contact->act_author_view($prow)
-            && !$contact->is_actas_user()) {
-            // XXX combination of review tokens & authorship gets weird
-            assert($rrow->reviewAuthorModified > 0);
+        if (!$rrow
+            || !$rrow->reviewId
+            || ($rrow->reviewAuthorSeen && ($rrow->rflags & ReviewInfo::RF_AUSEEN) !== 0)
+            || !$viewer->act_author_view($prow)
+            || $viewer->is_actas_user()) {
+            return;
+        }
+        // XXX combination of review tokens & authorship gets weird -- old comment
+        if (!$rrow->reviewAuthorSeen) {
             $rrow->reviewAuthorSeen = Conf::$now;
             if (!$no_update) {
-                if (!self::$review_author_seen) {
-                    register_shutdown_function("ReviewForm::update_review_author_seen");
-                    self::$review_author_seen = [];
-                }
-                self::$review_author_seen[] = [$contact->conf,
-                    "update PaperReview set reviewAuthorSeen=? where paperId=? and reviewId=?",
-                    $rrow->reviewAuthorSeen, $rrow->paperId, $rrow->reviewId];
+                self::add_review_author_seen_update($prow->conf, "update PaperReview set reviewAuthorSeen=? where paperId=? and reviewId=?", $rrow->reviewAuthorSeen, $rrow->paperId, $rrow->reviewId);
             }
         }
+        if (($rrow->rflags & ReviewInfo::RF_AUSEEN) === 0) {
+            $rrow->rflags |= ReviewInfo::RF_AUSEEN;
+            if (!$no_update) {
+                self::add_review_author_seen_update($prow->conf, "update PaperReview set rflags=rflags|? where paperId=? and reviewId=?", ReviewInfo::RF_AUSEEN, $rrow->paperId, $rrow->reviewId);
+            }
+        }
+    }
+
+    static private function add_review_author_seen_update(...$args) {
+        if (!self::$review_author_seen) {
+            register_shutdown_function("ReviewForm::update_review_author_seen");
+            self::$review_author_seen = [];
+        }
+        self::$review_author_seen[] = $args;
     }
 
 

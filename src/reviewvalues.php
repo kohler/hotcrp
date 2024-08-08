@@ -800,6 +800,11 @@ class ReviewValues extends MessageSet {
             }
         }
 
+        // record change to review content
+        if ($any_fdiff && $old_nonempty_view_score > VIEWSCORE_EMPTY) {
+            $rflags |= ReviewInfo::RF_CONTENT_EDITED;
+        }
+
         // upload must include all online edits
         if ($any_fdiff
             && $this->text !== null
@@ -976,6 +981,16 @@ class ReviewValues extends MessageSet {
             && $newstatus < ReviewInfo::RS_DELIVERED) {
             $rrow->set_prop("timeRequestNotified", $now);
             $diffinfo->notify_requester = true;
+        }
+
+        // viewing fields
+        if (($rflags & (ReviewInfo::RF_AUSEEN | ReviewInfo::RF_AUSEEN_PREVIOUS)) !== 0) {
+            $rflags |= ReviewInfo::RF_AUSEEN_PREVIOUS;
+        }
+        if ($diffinfo->notify_author) {
+            $rflags |= ReviewInfo::RF_AUSEEN;
+        } else {
+            $rflags &= ~ReviewInfo::RF_AUSEEN;
         }
 
         // potentially assign review ordinal (requires table locking since
@@ -1185,6 +1200,11 @@ class ReviewValues extends MessageSet {
                 && $rrow->contactId !== $minic->contactId
                 && $rrow->requestedBy !== $minic->contactId
                 && ($minic->review_watch($prow, 0) & Contact::WATCH_REVIEW_EXPLICIT) === 0) {
+                continue;
+            }
+            // if not notifying authors, skip authors
+            if (!$diffinfo->notify_author
+                && $prow->has_author($minic)) {
                 continue;
             }
             // prepare mail

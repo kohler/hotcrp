@@ -246,7 +246,7 @@ class ConfInvariants {
         }
 
         // rflags is defined correctly
-        $skipf = ReviewInfo::RF_SELF_ASSIGNED;
+        $skipf = ReviewInfo::RF_SELF_ASSIGNED | ReviewInfo::RF_CONTENT_EDITED | ReviewInfo::RF_AUSEEN | ReviewInfo::RF_AUSEEN_PREVIOUS;
         $any = $this->invariantq("select paperId, reviewId, rflags, concat(reviewType, ':', reviewModified, ':', timeApprovalRequested, ':', coalesce(reviewSubmitted,0), ':', reviewBlind) from PaperReview r
             where (rflags&~?)!=1|(1<<reviewType)|if(reviewModified>0,256,0)|if(reviewModified>1,512,0)|if(timeApprovalRequested!=0,1024,0)|if(timeApprovalRequested<0,2048,0)|if(coalesce(reviewSubmitted>0),4096,0)|if(reviewBlind!=0,65536,0)
             limit 1", $skipf);

@@ -117,7 +117,6 @@ class ReviewInfo implements JsonSerializable {
 
     const RS_EMPTY = 0;
     const RS_ACKNOWLEDGED = 1;
-    const RS_ACCEPTED = 1;
     const RS_DRAFTED = 2;
     const RS_DELIVERED = 3;
     const RS_APPROVED = 4;
@@ -126,16 +125,22 @@ class ReviewInfo implements JsonSerializable {
     const RF_LIVE = 1;
     const RFM_TYPES = 0xFE;
     const RF_ACKNOWLEDGED = 1 << 8;
-    const RF_ACCEPTED = 1 << 8;
     const RF_DRAFTED = 1 << 9;
     const RF_DELIVERED = 1 << 10;
     const RF_APPROVED = 1 << 11;
     const RF_SUBMITTED = 1 << 12;
-    const RF_BLIND = 1 << 16;
-    const RF_SELF_ASSIGNED = 1 << 17;
     const RFM_NONDRAFT = 0x1C00; /* RF_DELIVERED | RF_APPROVED | RF_SUBMITTED */
     const RFM_NONEMPTY = 0x1F00; /* RF_ACKNOWLEDGED | RF_DRAFTED | RFM_NONDRAFT */
+    const RF_BLIND = 1 << 16;
+    const RF_SELF_ASSIGNED = 1 << 17;
+    const RF_CONTENT_EDITED = 1 << 18;
+    const RF_AUSEEN = 1 << 19;
+    const RF_AUSEEN_PREVIOUS = 1 << 20;
 
+    /** @deprecated */
+    const RS_ACCEPTED = self::RS_ACKNOWLEDGED;
+    /** @deprecated */
+    const RF_ACCEPTED = self::RF_ACKNOWLEDGED;
     /** @deprecated */
     const RS_ADOPTED = self::RS_APPROVED;
     /** @deprecated */
