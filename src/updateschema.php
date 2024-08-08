@@ -3034,6 +3034,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $this->v295_unfuck_mentions()) {
             $conf->update_schema_version(295);
         }
+        if ($conf->sversion === 295
+            && $conf->ql_ok("update Settings set value=-1 where name='rev_ratings' and value=2")) {
+            $conf->update_schema_version(296);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

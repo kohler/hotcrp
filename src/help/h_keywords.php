@@ -119,11 +119,11 @@ class Keywords_HelpTopic {
         echo $hth->search_trow("re:me", "you are a reviewer");
         echo $hth->search_trow("re:fdabek", "“fdabek” in reviewer name/email");
         if ($retag) {
-            echo $hth->search_trow("re:#$retag", "has a reviewer tagged “#" . $retag . "”");
+            echo $hth->search_trow("re:#{$retag}", "has a reviewer tagged “#{$retag}”");
         }
         echo $hth->search_trow("re:4", "four reviewers (assigned and/or completed)");
         if ($retag) {
-            echo $hth->search_trow("re:#$retag>1", "at least two reviewers (assigned and/or completed) tagged “#" . $retag . "”");
+            echo $hth->search_trow("re:#{$retag}>1", "at least two reviewers (assigned and/or completed) tagged “#{$retag}”");
         }
         echo $hth->search_trow("re:complete<3", "less than three completed reviews<br><div class=\"hint\">Use “cre:<3” for short.</div>");
         echo $hth->search_trow("re:incomplete>0", "at least one incomplete review");
@@ -144,7 +144,7 @@ class Keywords_HelpTopic {
         if ($hth->conf->setting("rev_tokens")) {
             echo $hth->search_trow("retoken:J88ADNAB", "has a review with token J88ADNAB");
         }
-        if ($hth->conf->setting("rev_ratings") != REV_RATINGS_NONE) {
+        if ($hth->conf->review_ratings() >= 0) {
             echo $hth->search_trow("rate:good", "has a positively-rated review (“rate:bad”, “rate:biased”, etc. also work)");
             echo $hth->search_trow("rate:good:me", "has a positively-rated review by you");
         }

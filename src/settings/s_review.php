@@ -313,9 +313,9 @@ class Review_SettingParser extends SettingParser {
 
     static function print_ratings(SettingValues $sv) {
         $sv->print_radio_table("review_rating", [
-                REV_RATINGS_NONE => "No",
-                REV_RATINGS_PC => "Yes, PC members can rate reviews",
-                REV_RATINGS_PC_EXTERNAL => "Yes, PC members and external reviewers can rate reviews"
+                -1 => "No",
+                0 => "Yes, PC members can rate reviews",
+                1 => "Yes, PC members and external reviewers can rate reviews"
             ], 'Should HotCRP collect ratings of reviews?   <a class="hint" href="' . $sv->conf->hoturl("help", "t=revrate") . '">Learn more</a>');
     }
 

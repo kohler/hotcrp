@@ -356,7 +356,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 295) {
+        if ($this->sversion < 296) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -3421,6 +3421,12 @@ class Conf {
                 || ($this->settings["viewrevid_ext"] ?? 0) >= 0);
     }
 
+    /** @return 0|-1|1 */
+    function review_ratings() {
+        $rs = $this->settings["rev_ratings"] ?? 0;
+        return $rs > 1 ? -1 : $rs;
+    }
+
     /** @return bool */
     function has_any_submitted() {
         return !($this->settings["no_papersub"] ?? false);
@@ -3917,7 +3923,7 @@ class Conf {
 
     /** @return string */
     function rating_signature_query() {
-        if ($this->setting("rev_ratings") !== REV_RATINGS_NONE) {
+        if ($this->review_ratings() >= 0) {
             return "coalesce((select group_concat(contactId, ' ', rating) from ReviewRating force index (primary) where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId),'')";
         } else {
             return "''";

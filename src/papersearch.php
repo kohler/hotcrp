@@ -924,8 +924,7 @@ class PaperSearch extends MessageSet {
         // This query should return those reviewIds whose ratings
         // are not visible to the current querier:
         // reviews by `$user` on papers with <=2 reviews and <=2 ratings
-        $rateset = $user->conf->setting("rev_rating");
-        if ($rateset == REV_RATINGS_PC) {
+        if ($user->conf->review_ratings() === 0) {
             $npr_constraint = "reviewType>" . REVIEW_EXTERNAL;
         } else {
             $npr_constraint = "true";

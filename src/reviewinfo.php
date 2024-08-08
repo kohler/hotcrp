@@ -908,7 +908,7 @@ class ReviewInfo implements JsonSerializable {
 
     function ensure_ratings() {
         if ($this->ratingSignature === null) {
-            if ($this->conf->setting("rev_ratings") === REV_RATINGS_NONE) {
+            if ($this->conf->review_ratings() < 0) {
                 $this->ratingSignature = "";
             } else if ($this->prow) {
                 $this->prow->ensure_review_ratings($this);

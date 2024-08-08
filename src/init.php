@@ -19,10 +19,6 @@ const CONFLICT_PCMASK = 31;
 const CONFLICT_AUTHOR = 32;
 const CONFLICT_CONTACTAUTHOR = 64;
 
-const REV_RATINGS_PC = 0;
-const REV_RATINGS_PC_EXTERNAL = 1;
-const REV_RATINGS_NONE = 2;
-
 const DTYPE_SUBMISSION = 0;
 const DTYPE_FINAL = -1;
 const DTYPE_COMMENT = -2;
@@ -278,12 +274,9 @@ function initialize_request($kwarg = null) {
         exit();
     }
 
-    // GET and HEAD: mark as already expired to discourage caching, but allow
-    // the browser to cache for history buttons
-    // POST is not cacheable at all
-    if ($qreq->method() !== "POST") {
-        header("Cache-Control: max-age=0,must-revalidate,private");
-    }
+    // mark as already expired to discourage caching, but allow the browser
+    // to cache for history buttons
+    header("Cache-Control: max-age=0,must-revalidate,private");
 
     // set up Content-Security-Policy if appropriate
     $conf->prepare_security_headers();

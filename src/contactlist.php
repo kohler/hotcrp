@@ -243,7 +243,7 @@ class ContactList {
             return true;
         case self::FIELD_REVIEW_RATINGS:
             if (!$this->user->isPC
-                || $this->conf->setting("rev_ratings") == REV_RATINGS_NONE) {
+                || $this->conf->review_ratings() < 0) {
                 return false;
             }
             $this->qopt["revratings"] = $this->qopt["reviews"] = true;

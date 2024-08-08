@@ -425,8 +425,7 @@ class Home_Page {
             $sep = $xsep;
         }
 
-        if ($has_rinfo
-            && $conf->setting("rev_ratings") != REV_RATINGS_NONE) {
+        if ($has_rinfo && $conf->review_ratings() >= 0) {
             $badratings = PaperSearch::unusable_ratings($user);
             $qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");
             $result = $conf->qe_raw("select sum((rating&" . ReviewInfo::RATING_GOODMASK . ")!=0), sum((rating&" . ReviewInfo::RATING_BADMASK . ")!=0) from PaperReview join ReviewRating using (reviewId) where PaperReview.contactId={$user->contactId} $qx");

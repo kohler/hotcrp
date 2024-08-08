@@ -5,8 +5,9 @@
 class RevRate_HelpTopic {
     static function print(HelpRenderer $hth) {
         $what = "PC members";
-        if ($hth->conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
+        if ($hth->conf->review_ratings() > 0) {
             $what = "PC members and external reviewers";
+        }
         echo "<p>{$what} can anonymously rate one another’s
 reviews. We hope this feedback will help reviewers improve the quality of
 their reviews.</p>
@@ -40,12 +41,13 @@ $hth->search_link("search for “rate:good”", "rate:good"), ".
 You may also search for reviews with specific ratings; for instance, ",
 $hth->search_link("search for “rate:short”", "rate:short"), ".</p>";
 
-        if ($hth->conf->setting("rev_ratings") == REV_RATINGS_PC)
+        if ($hth->conf->review_ratings() === 0) {
             $what = "only PC members";
-        else if ($hth->conf->setting("rev_ratings") == REV_RATINGS_PC_EXTERNAL)
+        } else if ($hth->conf->review_ratings() > 0) {
             $what = "PC members and external reviewers";
-        else
+        } else {
             $what = "no one";
+        }
         echo $hth->subhead("Settings");
         echo "<p>Chairs set how ratings work on the ",
             $hth->setting_link("review settings page", "review_rating"), ".",

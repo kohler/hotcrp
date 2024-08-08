@@ -4564,11 +4564,11 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_view_review_ratings(PaperInfo $prow, ?ReviewInfo $rrow = null, $override_self = false) {
-        $rs = $this->conf->setting("rev_ratings");
+        $rs = $this->conf->review_ratings();
         $rights = $this->rights($prow);
-        if (!$this->can_view_review($prow, $rrow)
-            || (!$rights->allow_pc() && !$rights->allow_review())
-            || ($rs !== REV_RATINGS_PC && $rs !== REV_RATINGS_PC_EXTERNAL)) {
+        if ($rs < 0
+            || !$this->can_view_review($prow, $rrow)
+            || (!$rights->allow_pc() && !$rights->allow_review())) {
             return false;
         }
         if (!$rrow
@@ -4585,8 +4585,7 @@ class Contact implements JsonSerializable {
         foreach ($prow->all_reviews() as $rrow) {
             if ($rrow->reviewNeedsSubmit === 0
                 && $rrow->contactId !== $this->contactId
-                && ($rs === REV_RATINGS_PC_EXTERNAL
-                    || ($rs === REV_RATINGS_PC && $rrow->reviewType > REVIEW_EXTERNAL)))
+                && ($rs > 0 || $rrow->reviewType > REVIEW_EXTERNAL))
                 ++$nsubraters;
         }
         return $nsubraters >= 2;
@@ -4594,9 +4593,7 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_view_some_review_ratings() {
-        $rs = $this->conf->setting("rev_ratings");
-        return ($rs === REV_RATINGS_PC || $rs === REV_RATINGS_PC_EXTERNAL)
-            && $this->is_reviewer();
+        return $this->conf->review_ratings() >= 0 && $this->is_reviewer();
     }
 
     /** @param ?ReviewInfo $rrow
