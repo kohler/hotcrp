@@ -400,7 +400,7 @@ class Log_Page {
                 continue;
             }
             if ($all_pc
-                && (!isset($user->roles) || !($user->roles & Contact::ROLE_PCLIKE))) {
+                && (($user->roles ?? 0) & Contact::ROLE_PCLIKE) === 0) {
                 $all_pc = false;
             }
             if ($user->disabled_flags() & Contact::CF_DELETED) {
@@ -432,7 +432,7 @@ class Log_Page {
         if (count($ts) <= 3) {
             return join(", ", $ts);
         } else {
-            $fmt = $all_pc ? "%d PC users" : "%d users";
+            $fmt = $all_pc ? "{} PC users" : "{} users";
             return '<div class="has-fold foldc"><button type="button" class="q ui js-foldup">'
                 . expander(null, 0)
                 . '</button>'
