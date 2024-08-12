@@ -3117,16 +3117,6 @@ div:hover > span.hoveronly, tr:hover > td > span.hoveronly {
 	width: fit-content;
 }
 
-div.plsplit_col { /* NOT td */
-	padding-right: 1.5em;
-}
-.plsplit_col_ctr {
-	margin-right: -1.5em;
-}
-.plsplit_col_ctr_ctr {
-	overflow-x: hidden;
-}
-
 td.plheading, td.plheading-spacer {
 	font-weight: bold;
 	padding-top: 0.5ex;
