@@ -5705,12 +5705,12 @@ class Contact implements JsonSerializable {
     }
 
 
-    /** @return string */
+    /** @return int */
     private function unassigned_review_token() {
         while (true) {
             $token = mt_rand(1, 2000000000);
             if (!$this->conf->fetch_ivalue("select reviewId from PaperReview where reviewToken={$token}")) {
-                return ", reviewToken={$token}";
+                return $token;
             }
         }
     }
@@ -5765,22 +5765,28 @@ class Contact implements JsonSerializable {
         } else if ($oldtype === 0) {
             $round = $round ?? $this->conf->assignment_round($type === REVIEW_EXTERNAL);
             assert($round !== null); // `null` should not happen
-            $round = $round ?? 0;
             $reviewBlind = $this->conf->is_review_blind(null) ? 1 : 0;
             $rflags = ReviewInfo::RF_LIVE | (1 << $type) | ($reviewBlind ? ReviewInfo::RF_BLIND : 0);
             if ($extra["selfassign"] ?? false) {
                 $rflags |= ReviewInfo::RF_SELF_ASSIGNED;
             }
-            $q = "insert into PaperReview set paperId={$pid}, contactId={$reviewer->contactId}, reviewType={$type}, reviewRound={$round}, timeRequested={$time}, requestedBy={$new_requester_cid}, reviewBlind={$reviewBlind}, rflags={$rflags}";
+            $fields = [
+                "paperId" => $pid, "contactId" => $reviewer->contactId,
+                "reviewType" => $type, "reviewRound" => $round,
+                "timeRequested" => $time, "requestedBy" => $new_requester_cid,
+                "reviewBlind" => $reviewBlind, "rflags" => $rflags
+            ];
             if ($extra["mark_notify"] ?? null) {
-                $q .= ", timeRequestNotified={$time}";
+                $fields["timeRequestNotified"] = $time;
             }
             if ($extra["token"] ?? null) {
-                $q .= $this->unassigned_review_token();
+                $fields["reviewToken"] = $this->unassigned_review_token();
             }
+            $reviewId = $this->conf->id_randomizer()->insert("PaperReview", "reviewId", $fields, 5);
+            $result = Dbl_Result::make_empty();
         } else if ($type === 0) {
-            $q = "delete from PaperReview where paperId={$pid} and reviewId={$reviewId}";
             $rflags = 0;
+            $result = $this->conf->qe("delete from PaperReview where paperId=? and reviewId=?", $pid, $reviewId);
         } else {
             $xflags = ReviewInfo::RFM_TYPES;
             $qtail = "";
@@ -5797,16 +5803,14 @@ class Contact implements JsonSerializable {
                 $qtail .= ", reviewNeedsSubmit={$rns}";
             }
             $rflags = 1 << $type;
-            $q = "update PaperReview set reviewType={$type}, rflags=(rflags&~{$xflags})|{$rflags}{$qtail} where paperId={$pid} and reviewId={$reviewId}";
+            $result = $this->conf->qe_raw("update PaperReview set reviewType={$type}, rflags=(rflags&~{$xflags})|{$rflags}{$qtail} where paperId={$pid} and reviewId={$reviewId}");
         }
 
-        $result = $this->conf->qe_raw($q);
         if (Dbl::is_error($result)) {
             return false;
         }
 
         if ($type > 0 && $oldtype === 0) {
-            $reviewId = $result->insert_id;
             $verb = ($rflags & ReviewInfo::RF_SELF_ASSIGNED) !== 0 ? "self-assigned" : "assigned";
             $msg = "Review {$reviewId} {$verb}: " . $this->review_explanation($type, $round);
         } else if ($type === 0) {
