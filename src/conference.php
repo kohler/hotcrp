@@ -116,6 +116,8 @@ class Conf {
     private $_tag_map;
     /** @var bool */
     private $_maybe_automatic_tags;
+    /** @var bool */
+    private $_updating_automatic_tags = false;
     /** @var ?DecisionSet */
     private $_decision_set;
     /** @var DecisionInfo
@@ -175,8 +177,8 @@ class Conf {
     private $_fmt_override_names;
     /** @var ?array<int,TextFormat> */
     private $_format_info;
-    /** @var bool */
-    private $_updating_automatic_tags = false;
+    /** @var ?DatabaseIDRandomizer */
+    private $_id_randomizer;
 
     /** @var ?array<string,list<object>> */
     private $_xtbuild_map;
@@ -978,6 +980,12 @@ class Conf {
             error_log("{$landmark}: database error: {$dblink->error} in {$query}\n" . debug_string_backtrace());
             $this->error_msg("<5><p>" . htmlspecialchars($landmark) . ": database error: " . htmlspecialchars($this->dblink->error) . " in " . Ht::pre_text_wrap($query) . "</p>");
         }
+    }
+
+    /** @return DatabaseIDRandomizer */
+    function id_randomizer() {
+        $this->_id_randomizer = $this->_id_randomizer ?? new DatabaseIDRandomizer($this);
+        return $this->_id_randomizer;
     }
 
 

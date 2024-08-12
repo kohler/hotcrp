@@ -257,6 +257,7 @@ src/contactcountmatcher.php
 src/contactlist.php
 src/contactsearch.php
 src/contactset.php
+src/databaseidrandomizer.php
 src/decisioninfo.php
 src/decisionset.php
 src/documentfiletree.php

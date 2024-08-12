@@ -28,8 +28,6 @@ class PaperStatus extends MessageSet {
     public $paperId;
     /** @var ?string */
     public $title;
-    /** @var ?list<int> */
-    private $_potential_pids;
     /** @var ?list<string> */
     private $_unknown_fields;
     /** @var list<PaperOption> */
@@ -1059,54 +1057,13 @@ class PaperStatus extends MessageSet {
         $this->_update_pid_dids = $this->_joindocs = $this->_tags_changed = [];
         $this->_save_status = 0;
         if ($prow->is_new()) {
-            $this->allocate_pid($pid);
+            $pid = $this->conf->id_randomizer()->insert("Paper", "paperId", [
+                "paperId" => $pid, "title" => "", "abstract" => "", "authorInformation" => ""
+            ]);
+            $this->prow->set_prop("paperId", $pid);
             foreach (Tagger::split_unpack($prow->all_tags_text()) as $tv) {
                 $this->_tags_changed[] = $tv;
             }
-        }
-    }
-
-    /** @return int */
-    private function potential_random_pid() {
-        $this->_potential_pids = $this->_potential_pids ?? [];
-        while (true) {
-            if (!empty($this->_potential_pids)) {
-                return array_pop($this->_potential_pids);
-            }
-
-            $n = max(100, 3 * $this->conf->fetch_ivalue("select count(*) from Paper"));
-            for ($i = 0; $i !== 20; ++$i) {
-                $this->_potential_pids[] = mt_rand(1, $n);
-            }
-
-            $result = $this->conf->qe("select paperId from Paper where paperId?a", $this->_potential_pids);
-            while (($row = $result->fetch_row())) {
-                $pid = (int) $row[0];
-                while (($i = array_search($pid, $this->_potential_pids, true)) !== false) {
-                    array_splice($this->_potential_pids, $i, 1);
-                }
-            }
-            $result->close();
-        }
-    }
-
-    /** @param ?int $pid */
-    private function allocate_pid($pid) {
-        $random = $this->conf->setting("random_pids");
-        while (true) {
-            if ($pid === null && $random) {
-                $pid = $this->potential_random_pid();
-            }
-            if ($pid === null) {
-                $result = $this->conf->qe("insert into Paper set title='', abstract='', authorInformation=''");
-            } else {
-                $result = $this->conf->qe("insert into Paper set paperId=?, title='', abstract='', authorInformation='' on duplicate key update timeSubmitted=timeSubmitted", $pid);
-            }
-            if ($result->affected_rows > 0) {
-                $this->prow->set_prop("paperId", $result->insert_id);
-                return;
-            }
-            $pid = null;
         }
     }
 
