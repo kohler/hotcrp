@@ -696,7 +696,7 @@ class MeetingTracker_ConfigSet implements JsonSerializable {
     function update($new_eventid) {
         $new_data = json_encode_db($this);
         if ($this->_was_empty) {
-            $result = $this->conf->qe("insert ignore into Settings set name=?, value=?, data=?",
+            $result = $this->conf->qe("insert into Settings set name=?, value=?, data=? on duplicate key update value=value",
                     self::SNAME, $new_eventid, $new_data);
         } else if ($new_eventid !== $this->eventid) {
             $result = $this->conf->qe("update Settings set value=?, data=? where name=? and value=?",
