@@ -1189,7 +1189,15 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         return true;
     }
 
+    const RF_CONTENT_EDITED_v297 = 0x40000;
+    const RF_AUSEEN_v297 = 0x80000;
+    const RF_AUSEEN_PREVIOUS_v297 = 0x100000;
+
     private function v297_rf_content_edited_auseen() {
+        // These assertions are true at the time v297 should be applied.
+        // assert(self::RF_CONTENT_EDITED_v297 === ReviewInfo::RF_CONTENT_EDITED);
+        // assert(self::RF_AUSEEN_v297 === ReviewInfo::RF_AUSEEN);
+        // assert(self::RF_AUSEEN_PREVIOUS_v297 === ReviewInfo::RF_AUSEEN_PREVIOUS);
         $result = $this->conf->qe("select * from PaperReviewHistory order by paperId, reviewId, reviewTime");
         $pid = $rid = $cetime = $auseentime = $praseen = $pranote = null;
         $qstager = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_LOG);
@@ -1210,7 +1218,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $ranote = (int) $rh->reviewAuthorNotified;
             if (($raseen > 0 && $praseen !== null && $raseen !== $praseen)
                 || ($ranote > 0 && $pranote !== null && $ranote !== $pranote)) {
-                $qstager("update PaperReviewHistory set rflags=rflags|? where paperId=? and reviewId=? and reviewTime=?", ReviewInfo::RF_AUSEEN, $pid, $rid, $rtime);
+                $qstager("update PaperReviewHistory set rflags=rflags|? where paperId=? and reviewId=? and reviewTime=?", self::RF_AUSEEN_v297, $pid, $rid, $rtime);
             }
             if ($auseentime === null
                 && (($raseen > 0 && $raseen !== $praseen)
@@ -1227,15 +1235,15 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
 
     private function v297_helper_update_pid_rid($qstager, $pid, $rid, $cetime, $auseentime, $praseen, $pranote) {
         if ($cetime !== null) {
-            $qstager("update PaperReviewHistory set rflags=rflags|? where paperId=? and reviewId=? and reviewTime>?", ReviewInfo::RF_CONTENT_EDITED, $pid, $rid, $cetime);
-            $qstager("update PaperReview set rflags=rflags|? where paperId=? and reviewId=?", ReviewInfo::RF_CONTENT_EDITED, $pid, $rid);
+            $qstager("update PaperReviewHistory set rflags=rflags|? where paperId=? and reviewId=? and reviewTime>?", self::RF_CONTENT_EDITED_v297, $pid, $rid, $cetime);
+            $qstager("update PaperReview set rflags=rflags|? where paperId=? and reviewId=?", self::RF_CONTENT_EDITED_v297, $pid, $rid);
         }
         if ($auseentime !== null) {
-            $qstager("update PaperReviewHistory set rflags=rflags|? where paperId=? and reviewId=? and reviewTime>?", ReviewInfo::RF_AUSEEN_PREVIOUS, $pid, $rid, $auseentime);
-            $qstager("update PaperReview set rflags=rflags|? where paperId=? and reviewId=?", ReviewInfo::RF_AUSEEN_PREVIOUS, $pid, $rid);
+            $qstager("update PaperReviewHistory set rflags=rflags|? where paperId=? and reviewId=? and reviewTime>?", self::RF_AUSEEN_PREVIOUS_v297, $pid, $rid, $auseentime);
+            $qstager("update PaperReview set rflags=rflags|? where paperId=? and reviewId=?", self::RF_AUSEEN_PREVIOUS_v297, $pid, $rid);
         }
         if ($praseen > 0 || $pranote > 0) {
-            $qstager("update PaperReview set rflags=rflags|? where paperId=? and reviewId=? and (reviewAuthorSeen>? or reviewAuthorNotified>?)", ReviewInfo::RF_AUSEEN, $pid, $rid, $praseen, $pranote);
+            $qstager("update PaperReview set rflags=rflags|? where paperId=? and reviewId=? and (reviewAuthorSeen>? or reviewAuthorNotified>?)", self::RF_AUSEEN_v297, $pid, $rid, $praseen, $pranote);
         }
     }
 
@@ -3091,6 +3099,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 296
             && $this->v297_rf_content_edited_auseen()) {
             $conf->update_schema_version(297);
+        }
+        if ($conf->sversion === 297
+            && $conf->ql_ok("update PaperReview set rflags=rflags|? where (rflags&?)=0 and reviewAuthorSeen>0", self::RF_AUSEEN_v297, self::RF_AUSEEN_v297 | self::RF_AUSEEN_PREVIOUS_v297)) {
+            $conf->update_schema_version(298);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
