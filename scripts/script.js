@@ -10877,7 +10877,10 @@ function set_pidfield(f, elt, text, classes) {
     if (f.as_row) {
         elt.className = add_tokens("ple", f.className || "pl_" + f.name, "fx" + f.foldnum, classes);
         if (!elt.firstChild) {
-            elt.append($e("em", "plet", f.title ? f.title + ":" : null), $e("div", "pled"));
+            let em = $e("em", "plet");
+            if (f.title)
+                em.innerHTML = f.title + ":";
+            elt.append(em, $e("div", "pled"));
         }
         elt = elt.lastChild;
     } else if (classes) {
