@@ -1192,12 +1192,13 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
     const RF_CONTENT_EDITED_v297 = 0x40000;
     const RF_AUSEEN_v297 = 0x80000;
     const RF_AUSEEN_PREVIOUS_v297 = 0x100000;
+    const RF_AUSEEN_LIVE_v299 = 0x200000;
 
     private function v297_rf_content_edited_auseen() {
         // These assertions are true at the time v297 should be applied.
-        // assert(self::RF_CONTENT_EDITED_v297 === ReviewInfo::RF_CONTENT_EDITED);
-        // assert(self::RF_AUSEEN_v297 === ReviewInfo::RF_AUSEEN);
-        // assert(self::RF_AUSEEN_PREVIOUS_v297 === ReviewInfo::RF_AUSEEN_PREVIOUS);
+        assert(self::RF_CONTENT_EDITED_v297 === ReviewInfo::RF_CONTENT_EDITED);
+        assert(self::RF_AUSEEN_v297 === ReviewInfo::RF_AUSEEN);
+        assert(self::RF_AUSEEN_PREVIOUS_v297 === ReviewInfo::RF_AUSEEN_PREVIOUS);
         $result = $this->conf->qe("select * from PaperReviewHistory order by paperId, reviewId, reviewTime");
         $pid = $rid = $cetime = $auseentime = $praseen = $pranote = null;
         $qstager = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_LOG);
@@ -3103,6 +3104,12 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 297
             && $conf->ql_ok("update PaperReview set rflags=rflags|? where (rflags&?)=0 and reviewAuthorSeen>0", self::RF_AUSEEN_v297, self::RF_AUSEEN_v297 | self::RF_AUSEEN_PREVIOUS_v297)) {
             $conf->update_schema_version(298);
+        }
+        if ($conf->sversion === 298
+            && $conf->ql_ok("update PaperReview set rflags=rflags|? where reviewModified=reviewAuthorNotified", self::RF_AUSEEN_LIVE_v299)
+            && $conf->ql_ok("update PaperReviewHistory set rflags=rflags|? where reviewModified=reviewAuthorNotified", self::RF_AUSEEN_LIVE_v299)) {
+            assert(self::RF_AUSEEN_LIVE_v299 === ReviewInfo::RF_AUSEEN_LIVE);
+            $conf->update_schema_version(299);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

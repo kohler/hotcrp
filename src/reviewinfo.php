@@ -136,6 +136,7 @@ class ReviewInfo implements JsonSerializable {
     const RF_CONTENT_EDITED = 0x40000;
     const RF_AUSEEN = 0x80000;
     const RF_AUSEEN_PREVIOUS = 0x100000;
+    const RF_AUSEEN_LIVE = 0x200000;
 
     /** @deprecated */
     const RS_ACCEPTED = self::RS_ACKNOWLEDGED;

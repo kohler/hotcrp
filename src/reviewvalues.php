@@ -992,6 +992,11 @@ class ReviewValues extends MessageSet {
         } else {
             $rflags &= ~ReviewInfo::RF_AUSEEN;
         }
+        if ($newstatus >= ReviewInfo::RS_COMPLETED
+            && $diffinfo->view_score() >= $author_view_score
+            && $prow->can_author_view_submitted_review()) {
+            $rflags |= ReviewInfo::RF_AUSEEN_LIVE;
+        }
 
         // potentially assign review ordinal (requires table locking since
         // mySQL is stupid)
