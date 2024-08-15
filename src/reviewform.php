@@ -338,9 +338,10 @@ class ReviewForm {
                 $t[] = "==+== Reviewer: " . Text::nameo($contact, NAME_EB) . "\n";
             }
         }
-        $time = $rrow->mtime($contact);
-        if ($time > 0 && $time > $rrow->timeRequested) {
-            $t[] = "==-== Updated " . $this->conf->unparse_time($time) . "\n";
+        list($time, $obscured) = $rrow->mtime_info($contact);
+        if ($time > 0) {
+            $time_text = $obscured ? $this->conf->unparse_time_obscure($time) : $this->conf->unparse_time($time);
+            $t[] = "==-== Updated {$time_text}\n";
         }
 
         if ($prow->paperId > 0) {
@@ -412,9 +413,12 @@ Ready\n";
             $reviewer = $rrow->reviewer();
             $t[] = "* Reviewer: " . Text::nameo($reviewer, NAME_EB) . "\n";
         }
-        $time = $rrow->mtime($contact);
-        if ($time > 0 && $time > $rrow->timeRequested && $time > $rrow->reviewSubmitted) {
-            $t[] = "* Updated: " . $this->conf->unparse_time($time) . "\n";
+        if ($rrow->reviewModified > $rrow->reviewSubmitted) {
+            list($time, $obscured) = $rrow->mtime_info($contact);
+            if ($time > 0) {
+                $time_text = $obscured ? $this->conf->unparse_time_obscure($time) : $this->conf->unparse_time($time);
+                $t[] = "* Updated: {$time_text}\n";
+            }
         }
 
         $args = ["flowed" => ($flags & self::UNPARSE_FLOWED) !== 0];

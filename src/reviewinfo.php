@@ -462,27 +462,70 @@ class ReviewInfo implements JsonSerializable {
         return $this->conf->setting($this->deadline_name($hard));
     }
 
-    /** @return ?int */
+    /** @return int */
     function mtime(Contact $viewer) {
-        if (!$this->prow || !$viewer->can_view_review_time($this->prow, $this)) {
-            return null;
-        } else if ($viewer->view_score_bound($this->prow, $this) >= VIEWSCORE_AUTHORDEC - 1) {
-            if (isset($this->reviewAuthorModified)) {
-                return (int) $this->reviewAuthorModified;
-            } else {
-                $ran = (int) ($this->reviewAuthorNotified ?? 0);
-                $rm = $this->reviewModified;
-                if (!$ran || $rm - $ran <= ReviewForm::NOTIFICATION_DELAY) {
-                    return $rm;
-                } else {
-                    return $ran;
-                }
-            }
-        } else if ($this->reviewModified > 1) {
-            return $this->reviewModified;
-        } else {
-            return (int) $this->timeRequested;
+        return ($this->mtime_info($viewer))[0];
+    }
+
+    /** @return array{int,bool} */
+    function mtime_info(Contact $viewer) {
+        // Return the modification time of this review according to $viewer,
+        // plus a bool indicating whether the time was obscured.
+
+        // For the reviewer or an administrator, this is reviewModified.
+
+        // LOGICAL METHOD
+        // - Enumerate all visible versions of the review
+        // - For each version, the modification time is the earliest contiguous
+        //   time with the same review data and status
+
+        // EASIER METHOD FOR AUTHORS
+        // - If AUSEEN_LIVE, then precise time is visible
+        // - Otherwise, if AUSEEN_PREVIOUS, then obscure time is visible
+        // - Otherwise, no time is visible
+
+        // EASIER METHOD FOR REVIEWERS
+        // - If AUSEEN_LIVE, then precise time is visible
+        // - Otherwise, if viewer is reviewer and has an older review, then
+        //   precise time is visible
+        // - Otherwise, obscure time is visible
+
+        // We currently use the easier method even though it can expose
+        // information about otherwise-invisible modifications to reviews.
+
+        assert($this->prow);
+
+        if ($this->reviewModified <= 1
+            || $this->reviewModified <= $this->timeRequested) {
+            return [0, true];
         }
+
+        if (($this->rflags & self::RF_AUSEEN_LIVE) !== 0
+            || $viewer->can_administer($this->prow)
+            || $viewer->is_my_review($this)) {
+            return [$this->reviewModified, false];
+        }
+
+        $view_score_bound = $viewer->view_score_bound($this->prow, $this);
+        if ($this->view_score() <= $view_score_bound) {
+            return [0, true];
+        }
+
+        if ($view_score_bound >= VIEWSCORE_AUTHORDEC - 1) {
+            if (($this->rflags & self::RF_AUSEEN_PREVIOUS) === 0) {
+                return [0, true];
+            }
+        } else {
+            if ($viewer->can_view_review_identity($this->prow, $this)
+                || (($viewer_rrow = $this->prow->review_by_user($viewer))
+                    && $viewer_rrow->timeDisplayed > 0
+                    && $this->timeDisplayed > 0
+                    && $viewer_rrow->timeDisplayed < $this->timeDisplayed)) {
+                return [$this->reviewModified, false];
+            }
+        }
+
+        return [$this->conf->obscure_time($this->reviewModified), true];
     }
 
     /** @return bool */

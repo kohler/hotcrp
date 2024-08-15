@@ -310,10 +310,10 @@ class PaperExport {
         }
 
         // time
-        $time = $rrow->mtime($this->viewer);
-        if ($time > 0 && $time > $rrow->timeRequested) {
-            $rj["modified_at"] = (int) $time;
-            $rj["modified_at_text"] = $this->conf->unparse_time_point($time);
+        list($time, $obscured) = $rrow->mtime_info($this->viewer);
+        if ($time > 0) {
+            $rj["modified_at"] = $time;
+            $rj["modified_at_text"] = $obscured ? $this->conf->unparse_time_obscure($time) : $this->conf->unparse_time_point($time);
         }
 
         // messages
