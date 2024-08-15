@@ -2966,10 +2966,10 @@ class Conf {
         }
     }
 
-    /** @param string $type
-     * @param int|float $t
+    /** @param int|float $t
+     * @param 'zone'|'short'|'obscure'|'timestamp'|'long' $type
      * @return string */
-    private function _date_unparse($type, $t) {
+    private function _date_unparse($t, $type) {
         if (!$this->_date_format_initialized) {
             if (!isset($this->opt["time24hour"]) && isset($this->opt["time24Hour"])) {
                 $this->opt["time24hour"] = $this->opt["time24Hour"];
@@ -3013,7 +3013,7 @@ class Conf {
     private function _unparse_timezone($value) {
         $z = $this->opt["dateFormatTimezone"] ?? null;
         if ($z === null) {
-            $z = $this->_date_unparse("zone", $value);
+            $z = $this->_date_unparse($value, "zone");
             if ($z === "-12") {
                 $z = "AoE";
             } else if ($z && ($z[0] === "+" || $z[0] === "-")) {
@@ -3027,7 +3027,7 @@ class Conf {
      * @param bool $include_zone
      * @return string */
     function parseableTime($value, $include_zone) {
-        $d = $this->_date_unparse("short", $value);
+        $d = $this->_date_unparse($value, "short");
         if ($this->opt["dateFormatSimplifier"]) {
             $d = preg_replace($this->opt["dateFormatSimplifier"], "", $d);
         }
@@ -3083,12 +3083,13 @@ class Conf {
 
     // NB must return HTML-safe plaintext
     /** @param int $timestamp
+     * @param 'long'|'timestamp'|'obscure' $type
      * @return string */
-    private function _unparse_time($timestamp, $type) {
+    private function unparse_time_as($timestamp, $type) {
         if ($timestamp <= 0) {
             return "N/A";
         }
-        $t = $this->_date_unparse($type, $timestamp);
+        $t = $this->_date_unparse($timestamp, $type);
         if ($this->opt["dateFormatSimplifier"]) {
             $t = preg_replace($this->opt["dateFormatSimplifier"], "", $t);
         }
@@ -3117,27 +3118,27 @@ class Conf {
     /** @param int $timestamp
      * @return string */
     function unparse_time_long($timestamp) {
-        return $this->_unparse_time($timestamp, "long");
+        return $this->unparse_time_as($timestamp, "long");
     }
 
     /** @param int $timestamp
      * @param string $suffix
      * @return string */
     function unparse_time_with_local_span($timestamp, $suffix = "") {
-        $s = $this->_unparse_time($timestamp, "long");
+        $s = $this->unparse_time_as($timestamp, "long");
         return "<span class=\"need-usertime\" data-ts=\"{$timestamp}\">{$s}{$suffix}</span>";
     }
 
     /** @param int $timestamp
      * @return string */
     function unparse_time($timestamp) {
-        return $this->_unparse_time($timestamp, "timestamp");
+        return $this->unparse_time_as($timestamp, "timestamp");
     }
 
     /** @param int $timestamp
      * @return string */
     function unparse_time_obscure($timestamp) {
-        return $this->_unparse_time($timestamp, "obscure");
+        return $this->unparse_time_as($timestamp, "obscure");
     }
 
     /** @param int $timestamp
@@ -3171,7 +3172,7 @@ class Conf {
         $d = abs($timestamp - ($now ? : Conf::$now));
         if ($d >= 5227200) {
             if (!($format & 1)) {
-                return ($format & 8 ? "on " : "") . $this->_date_unparse("obscure", $timestamp);
+                return ($format & 8 ? "on " : "") . $this->_date_unparse($timestamp, "obscure");
             }
             $unit = 5;
         } else if ($d >= 259200) {
