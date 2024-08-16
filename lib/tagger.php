@@ -1443,13 +1443,6 @@ class Tagger {
     }
 
     /** @param string $tv
-     * @return string
-     * @deprecated */
-    static function base($tv) {
-        return self::tv_tag($tv);
-    }
-
-    /** @param string $tv
      * @return array{false|string,?float} */
     static function unpack($tv) {
         if (!$tv) {

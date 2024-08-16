@@ -827,40 +827,6 @@ function xassert_search_ignore_warnings($user, $query, $expected) {
     return xassert_int_list_eqq(array_keys(search_json($user, $query, "id", true)), $expected);
 }
 
-/** @param Contact $user
- * @param string|array $query
- * @param list<int|string>|string|int $expected
- * @return bool
- * @deprecated */
-function assert_search_papers($user, $query, $expected) {
-    return xassert_search($user, $query, $expected);
-}
-
-/** @param Contact $user
- * @param string|array $query
- * @param list<int|string>|string|int $expected
- * @return bool
- * @deprecated */
-function assert_search_all_papers($user, $query, $expected) {
-    return xassert_search_all($user, $query, $expected);
-}
-
-/** @param Contact $user
- * @param string|array $query
- * @param list<int|string>|string|int $expected
- * @return bool
- * @deprecated */
-function assert_search_papers_ignore_warnings($user, $query, $expected) {
-    return xassert_search_ignore_warnings($user, $query, $expected);
-}
-
-/** @param Contact $user
- * @return bool
- * @deprecated Use `xassert_search` instead. */
-function assert_search_ids($user, $query, $expected) {
-    return xassert_int_list_eqq((new PaperSearch($user, $query))->paper_ids(), $expected);
-}
-
 /** @return bool */
 function assert_query($q, $b) {
     return xassert_eqq(join("\n", Dbl::fetch_first_columns($q)), $b);

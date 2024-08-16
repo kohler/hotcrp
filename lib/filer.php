@@ -8,27 +8,6 @@ class Filer {
     /** @var ?bool */
     static public $no_touch;
 
-    /** @return bool
-     * @deprecated */
-    static function skip_content_length_header() {
-        return Downloader::skip_content_length_header();
-    }
-    /** @return non-empty-string|false
-     * @deprecated */
-    static function hash_as_text($hash) {
-        return HashAnalysis::hash_as_text($hash);
-    }
-    /** @return non-empty-string|false
-     * @deprecated */
-    static function hash_as_binary($hash) {
-        return HashAnalysis::hash_as_binary($hash);
-    }
-    /** @return non-empty-string|false
-     * @deprecated */
-    static function sha1_hash_as_text($hash) {
-        return HashAnalysis::sha1_hash_as_text($hash);
-    }
-
     /** @param ?string $pattern
      * @param null|true|Conf $conf
      * @return ?array{resource,string} */

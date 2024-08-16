@@ -121,13 +121,6 @@ class MessageItem implements JsonSerializable {
     }
 
     /** @param ?string $msg
-     * @return array{ok:false,message_list:list<MessageItem>}
-     * @deprecated */
-    static function make_error_json($msg) {
-        return ["ok" => false, "message_list" => [new MessageItem(null, $msg ?? "", 2)]];
-    }
-
-    /** @param ?string $msg
      * @return MessageItem */
     static function error($msg) {
         return new MessageItem(null, $msg, 2);
@@ -208,11 +201,6 @@ class MessageSet {
     const WARNING = 1;
     const ERROR = 2;
     const ESTOP = 3;
-
-    /** @deprecated */
-    const INFO = 0;
-    /** @deprecated */
-    const NOTE = -1;
 
     /** @param 0|1|2|3|6|7 $flags */
     function __construct($flags = 0) {

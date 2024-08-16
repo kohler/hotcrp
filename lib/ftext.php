@@ -66,15 +66,6 @@ class Ftext {
         }
     }
 
-    /** @param string $s
-     * @param ?int $from_format
-     * @param ?int $to_format
-     * @return string
-     * @deprecated */
-    static function convert($s, $from_format, $to_format) {
-        return self::convert_to($to_format, $from_format, $s);
-    }
-
     /** @param ?int $to_format
      * @param ?int $from_format
      * @param string $s
@@ -108,14 +99,6 @@ class Ftext {
         } else {
             return $s;
         }
-    }
-
-    /** @param string $ftext
-     * @param ?int $want_format
-     * @return string
-     * @deprecated */
-    static function unparse_as($ftext, $want_format) {
-        return self::as($want_format, $ftext);
     }
 
     /** @param ?int $to_format
@@ -156,11 +139,6 @@ class Ftext {
         } else {
             return join("", $ts);
         }
-    }
-
-    /** @deprecated */
-    static function join($separator, $ftexts) {
-        return self::join_nonempty($separator, $ftexts);
     }
 
     /** @param string $separator

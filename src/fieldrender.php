@@ -77,42 +77,6 @@ class FieldRender {
     function want($context) {
         return ($this->context & $context) === $context;
     }
-    /** @return bool
-     * @deprecated */
-    function for_page() {
-        return ($this->context & self::CFPAGE) !== 0;
-    }
-    /** @return bool
-     * @deprecated */
-    function for_form() {
-        return ($this->context & self::CFFORM) !== 0;
-    }
-    /** @return bool
-     * @deprecated */
-    function want_text() {
-        return ($this->context & self::CFHTML) === 0;
-    }
-    /** @return bool
-     * @deprecated */
-    function want_html() {
-        return ($this->context & self::CFHTML) !== 0;
-    }
-    /** @return bool
-     * @deprecated */
-    function want_list() {
-        return ($this->context & self::CFLIST) !== 0;
-    }
-    /** @return bool
-     * @deprecated */
-    function want_list_row() {
-        return ($this->context & (self::CFLIST | self::CFCOLUMN)) === self::CFLIST;
-    }
-    /** @return bool
-     * @deprecated */
-    function want_list_column() {
-        return ($this->context & (self::CFLIST | self::CFCOLUMN)) ===
-            (self::CFLIST | self::CFCOLUMN);
-    }
     /** @return bool */
     function verbose() {
         return ($this->context & self::CFVERBOSE) !== 0;
