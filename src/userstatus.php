@@ -208,12 +208,18 @@ class UserStatus extends MessageSet {
         }
     }
 
-    /** @return 0|1|2 */
+    /** @return 0|1|2
+     * @deprecated */
     function update_if_empty(Contact $user) {
+        assert($user === $this->user || $user === $this->user->cdb_user());
+        return $this->is_empty_code($user->is_cdb_user());
+    }
+
+    /** @param bool $cdb
+     * @return 0|1|2 */
+    function if_empty_code($cdb = false) {
         // CDB user profiles belong to their owners
-        if ($user->is_cdb_user()
-            && (strcasecmp($user->email, $this->viewer->email) !== 0
-                || $this->viewer->is_actas_user())) {
+        if ($cdb && !$this->is_auth_self()) {
             return 1;
         } else if (($this->jval->user_override ?? null) !== null) {
             return $this->jval->user_override ? 0 : 1;
@@ -1045,9 +1051,9 @@ class UserStatus extends MessageSet {
         $cj = $us->jval;
 
         // Profile properties
-        $us->set_profile_prop($user, $us->update_if_empty($user));
+        $us->set_profile_prop($user, $us->if_empty_code(false));
         if (($cdbu = $user->cdb_user())) {
-            $us->set_profile_prop($cdbu, $us->update_if_empty($cdbu));
+            $us->set_profile_prop($cdbu, $us->if_empty_code(true));
         }
 
         // Disabled
