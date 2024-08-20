@@ -410,7 +410,8 @@ class Users_Page {
                   "aff" => "Affiliations",
                   "collab" => "Collaborators",
                   "topics" => "Topics",
-                  "orcid" => "ORCID iD"] as $fold => $text) {
+                  "orcid" => "ORCID iD",
+                  "country" => "Country"] as $fold => $text) {
             if (($pl->have_folds[$fold] ?? null) !== null) {
                 $k = array_search($fold, ContactList::$folds) + 1;
                 echo Ht::checkbox("show{$fold}", 1, $pl->have_folds[$fold],

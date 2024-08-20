@@ -22,12 +22,13 @@ class ContactList {
     const FIELD_COLLABORATORS = 16;
     const FIELD_INCOMPLETE_REVIEWS = 17;
     const FIELD_ORCID = 18;
+    const FIELD_COUNTRY = 19;
     const FIELD_FIRST = 40;
     const FIELD_LAST = 41;
     const FIELD_SCORE = 50;
 
     /** @var list<string> */
-    public static $folds = ["topics", "aff", "tags", "collab", "orcid"];
+    public static $folds = ["topics", "aff", "tags", "collab", "orcid", "country"];
 
     /** @var Conf */
     public $conf;
@@ -145,6 +146,7 @@ class ContactList {
                 "aff" => self::FIELD_AFFILIATION,
                 "affrow" => self::FIELD_AFFILIATION_ROW,
                 "orcid" => self::FIELD_ORCID,
+                "country" => self::FIELD_COUNTRY,
                 "lastvisit" => self::FIELD_LASTVISIT,
                 "topicshi" => self::FIELD_HIGHTOPICS,
                 "topicslo" => self::FIELD_LOWTOPICS,
@@ -214,6 +216,8 @@ class ContactList {
             return new Column(["name" => "tags", "fold" => 3, "prefer_row" => true]);
         case self::FIELD_ORCID:
             return new Column(["name" => "orcid", "fold" => 5, "sort" => true]);
+        case self::FIELD_COUNTRY:
+            return new Column(["name" => "country", "fold" => 6, "sort" => true]);
         case self::FIELD_COLLABORATORS:
             return new Column(["name" => "collab", "fold" => 4, "prefer_row" => true]);
         }
@@ -253,6 +257,7 @@ class ContactList {
         case self::FIELD_AFFILIATION:
         case self::FIELD_AFFILIATION_ROW:
         case self::FIELD_ORCID:
+        case self::FIELD_COUNTRY:
             return true;
         case self::FIELD_SELECTOR:
         case self::FIELD_EMAIL:
@@ -368,6 +373,10 @@ class ContactList {
         return $this->_sort_string($a, $b, $a->affiliation, $b->affiliation, true);
     }
 
+    function _sortCountry($a, $b) {
+        return $this->_sort_string($a, $b, $a->country(), $b->country(), true);
+    }
+
     function _sortOrcid($a, $b) {
         return $this->_sort_string($a, $b, $a->orcid(), $b->orcid(), false);
     }
@@ -466,6 +475,9 @@ class ContactList {
         case self::FIELD_ORCID:
             usort($rows, [$this, "_sortOrcid"]);
             break;
+        case self::FIELD_COUNTRY:
+            usort($rows, [$this, "_sortCountry"]);
+            break;
         case self::FIELD_LASTVISIT:
             usort($rows, [$this, "_sortLastVisit"]);
             break;
@@ -524,6 +536,8 @@ class ContactList {
             return "Affiliation";
         case self::FIELD_ORCID:
             return "ORCID iD";
+        case self::FIELD_COUNTRY:
+            return "Country";
         case self::FIELD_LASTVISIT:
             return '<span class="hastitle" title="Includes paper changes, review updates, and profile changes">Last update</span>';
         case self::FIELD_HIGHTOPICS:
@@ -838,6 +852,8 @@ class ContactList {
             return htmlspecialchars($row->affiliation);
         case self::FIELD_ORCID:
             return htmlspecialchars($row->orcid());
+        case self::FIELD_COUNTRY:
+            return htmlspecialchars($row->country());
         case self::FIELD_LASTVISIT:
             if (!$row->activity_at) {
                 return "Never";
@@ -1039,25 +1055,25 @@ class ContactList {
         case "pc":
         case "admin":
         case "pcadmin":
-            return $this->_resolve_columns("sel name email aff orcid lastvisit tags collab topicshi topicslo reviews revratings lead shepherd scores");
+            return $this->_resolve_columns("sel name email aff orcid country lastvisit tags collab topicshi topicslo reviews revratings lead shepherd scores");
         case "pcadminx":
-            return $this->_resolve_columns("name email aff orcid lastvisit tags collab topicshi topicslo");
+            return $this->_resolve_columns("name email aff orcid country lastvisit tags collab topicshi topicslo");
         case "re":
-            return $this->_resolve_columns("sel name email aff orcid lastvisit tags collab topicshi topicslo reviews revratings scores");
+            return $this->_resolve_columns("sel name email aff orcid country lastvisit tags collab topicshi topicslo reviews revratings scores");
         case "ext":
         case "extsub":
-            return $this->_resolve_columns("sel name email aff orcid lastvisit collab topicshi topicslo reviews revratings repapers scores");
+            return $this->_resolve_columns("sel name email aff orcid country lastvisit collab topicshi topicslo reviews revratings repapers scores");
         case "extrev-not-accepted":
-            return $this->_resolve_columns("sel name email aff orcid lastvisit collab topicshi topicslo ire repapers scores");
+            return $this->_resolve_columns("sel name email aff orcid country lastvisit collab topicshi topicslo ire repapers scores");
         case "req":
-            return $this->_resolve_columns("sel name email aff orcid lastvisit tags collab topicshi topicslo reviews revratings repapers scores");
+            return $this->_resolve_columns("sel name email aff orcid country lastvisit tags collab topicshi topicslo reviews revratings repapers scores");
         case "au":
         case "aurej":
         case "auuns":
         case "auacc":
-            return $this->_resolve_columns("sel name email affrow orcid lastvisit tags papers collab");
+            return $this->_resolve_columns("sel name email affrow orcid country lastvisit tags papers collab");
         case "all":
-            return $this->_resolve_columns("sel name email affrow orcid lastvisit tags papers reviews collab");
+            return $this->_resolve_columns("sel name email affrow orcid country lastvisit tags papers reviews collab");
         default:
             return [];
         }
