@@ -353,21 +353,23 @@ class ContactList {
         return strnatcasecmp($a->email, $b->email);
     }
 
+    function _sort_string($a, $b, $as, $bs, $nat) {
+        $cmp = $nat ? strnatcasecmp($as, $bs) : strcmp($as, $bs);
+        if ($cmp === 0) {
+            return $this->_sortBase($a, $b);
+        } else if ($as === "" || $bs === "") {
+            return $as === "" ? 1 : -1;
+        } else {
+            return $cmp;
+        }
+    }
+
     function _sortAffiliation($a, $b) {
-        $x = strnatcasecmp($a->affiliation, $b->affiliation);
-        return $x ? : $this->_sortBase($a, $b);
+        return $this->_sort_string($a, $b, $a->affiliation, $b->affiliation, true);
     }
 
     function _sortOrcid($a, $b) {
-        $ax = $a->orcid();
-        $bx = $b->orcid();
-        if ($ax === $bx) {
-            return $this->_sortBase($a, $b);
-        } else if ($ax === "" || $bx === "") {
-            return $ax === "" ? 1 : -1;
-        } else {
-            return strcmp($ax, $bx);
-        }
+        return $this->_sort_string($a, $b, $a->orcid(), $b->orcid(), false);
     }
 
     function _sortLastVisit($a, $b) {
@@ -835,7 +837,7 @@ class ContactList {
         case self::FIELD_AFFILIATION_ROW:
             return htmlspecialchars($row->affiliation);
         case self::FIELD_ORCID:
-            return htmlspecialchars($row->orcid() ?? "");
+            return htmlspecialchars($row->orcid());
         case self::FIELD_LASTVISIT:
             if (!$row->activity_at) {
                 return "Never";

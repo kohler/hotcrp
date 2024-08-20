@@ -78,7 +78,6 @@ class Users_Page {
         $users = [];
         while (($user = Contact::fetch($result, $this->conf))) {
             $users[] = $user;
-            $this->conf->prefetch_cdb_user_by_email($user->email);
         }
         Dbl::free($result);
         usort($users, $this->conf->user_comparator());
@@ -115,7 +114,6 @@ class Users_Page {
         $users = [];
         while (($user = Contact::fetch($result, $this->conf))) {
             $users[] = $user;
-            $this->conf->prefetch_cdb_user_by_email($user->email);
         }
         Dbl::free($result);
         usort($users, $this->conf->user_comparator());
@@ -152,7 +150,7 @@ class Users_Page {
                 $has_tags = $has_tags || $row["tags"] !== "";
             }
             foreach ($user->topic_interest_map() as $t => $i) {
-                $row["topic$t"] = $i;
+                $row["topic{$t}"] = $i;
                 $has_topics = true;
             }
             $f = [];
@@ -210,7 +208,7 @@ class Users_Page {
         if ($has_topics) {
             foreach ($this->conf->topic_set() as $t => $tn) {
                 $header[] = "topic: " . $tn;
-                $selection[] = "topic$t";
+                $selection[] = "topic{$t}";
             }
         }
 
@@ -562,6 +560,9 @@ class Users_Page {
             Multiconference::fail($qreq, 403, ["title" => "Users"], "<0>User list not found");
             return;
         }
+
+        // update from contactdb
+        (new CdbUserUpdate($viewer->conf))->check();
 
         // handle request
         if (isset($qreq["default"]) && $qreq->defaultfn) {
