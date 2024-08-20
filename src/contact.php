@@ -2009,17 +2009,23 @@ class Contact implements JsonSerializable {
                 }
             }
         }
+        // check for errors
         if ($result->is_error()) {
             error_log("{$this->conf->dbname}: save {$this->email} fails {$result->errno} " . debug_string_backtrace());
             return false;
         } else if ($this->$idk <= 0) {
             return false;
-        } else {
-            // invalidate caches
-            $this->_mod_undo = null;
-            $this->conf->invalidate_user($this, true);
-            return true;
         }
+        // otherwise, success
+        // maybe mark CDB update
+        if ($this->cdb_confid !== 0
+            && array_key_exists("updateTime", $this->_mod_undo)) {
+            $this->conf->register_cdb_user_update($this->contactDbId, $this->updateTime);
+        }
+        // invalidate caches
+        $this->_mod_undo = null;
+        $this->conf->invalidate_user($this, true);
+        return true;
     }
 
     function abort_prop() {

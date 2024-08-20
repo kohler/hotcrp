@@ -1258,6 +1258,7 @@ class TestRunner {
         $timer->mark("papers");
 
         self::setup_assignments($json->assignments_1, $user_chair);
+        $conf->_save_cdb_user_updates();
         $timer->mark("assignment");
         MailChecker::clear();
     }

@@ -150,6 +150,8 @@ class Conf {
     private $_cdb_user_cache;
     /** @var ?list<int|string> */
     private $_cdb_user_cache_missing;
+    /** @var ?list<int> */
+    private $_cdb_user_update_list;
     /** @var ?Contact */
     private $_root_user;
     /** @var ?Author */
@@ -2725,6 +2727,33 @@ class Conf {
         return $acct;
     }
 
+    /** @param int $contactDbId
+     * @param int $when */
+    function register_cdb_user_update($contactDbId, $when) {
+        if (empty($this->_cdb_user_update_list)) {
+            register_shutdown_function([$this, "_save_cdb_user_updates"]);
+            $this->_cdb_user_update_list = [$when];
+        }
+        $this->_cdb_user_update_list[0] = max($this->_cdb_user_update_list[0], $when);
+        $this->_cdb_user_update_list[] = $contactDbId;
+    }
+
+    function _save_cdb_user_updates() {
+        if (($cdb = $this->contactdb())
+            && ($cdb_confid = $this->cdb_confid()) > 0
+            && isset($this->_cdb_user_update_list)
+            && count($this->_cdb_user_update_list) > 1) {
+            $when = array_shift($this->_cdb_user_update_list);
+            Dbl::qe($cdb, "insert into ConferenceUpdates (confid, user_update_at)
+                select confid, ? from Roles where contactDbId?a and confid!=?
+                on duplicate key update user_update_at=greatest(user_update_at,?)",
+                $when, $this->_cdb_user_update_list, $cdb_confid, $when);
+            $this->_cdb_user_update_list = null;
+        }
+    }
+
+
+    // settings
 
     /** @param string $name
      * @param string $existsq

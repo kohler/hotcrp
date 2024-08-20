@@ -493,7 +493,7 @@ class ReviewInfo implements JsonSerializable {
         // We currently use the easier method even though it can expose
         // information about otherwise-invisible modifications to reviews.
 
-        assert($this->prow);
+        assert(!!$this->prow);
 
         if ($this->reviewModified <= 1
             || $this->reviewModified <= $this->timeRequested) {

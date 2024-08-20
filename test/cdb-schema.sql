@@ -31,6 +31,18 @@ CREATE TABLE `Conferences` (
 
 
 --
+-- Table structure for table `ConferenceUpdates`
+--
+
+DROP TABLE IF EXISTS `ConferenceUpdates`;
+CREATE TABLE `ConferenceUpdates` (
+  `confid` int(11) NOT NULL,
+  `user_update_at` bigint(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`confid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+--
 -- Table structure for table `ContactInfo`
 --
 
