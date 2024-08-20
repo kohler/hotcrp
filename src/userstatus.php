@@ -22,8 +22,6 @@ class UserStatus extends MessageSet {
     public $viewer;
     /** @var Contact */
     public $user;
-    /** @var bool */
-    public $is_auth_user;
 
     /** @var bool */
     public $notify = false;
@@ -47,6 +45,11 @@ class UserStatus extends MessageSet {
     /** @var object */
     public $jval;
 
+    const AUTHF_USER = 1;
+    const AUTHF_SELF = 2;
+    const AUTHF_CDB = 4;
+    /** @var int */
+    private $_authf;
     /** @var ?bool */
     private $_req_security;
     /** @var bool */
@@ -124,15 +127,30 @@ class UserStatus extends MessageSet {
     }
 
     function set_user(Contact $user) {
-        if ($user !== $this->user) {
-            $this->user = $user;
-            $auth_user = $this->viewer->base_user();
-            $this->is_auth_user = $auth_user->has_email()
-                && strcasecmp($auth_user->email, $user->email) === 0;
-            if ($this->_cs) {
-                $this->_cs->reset_context();
-                $this->initialize_cs();
+        if ($user === $this->user) {
+            return;
+        }
+        $this->user = $user;
+
+        // set authentication flags
+        $this->_authf = 0;
+        $auth_viewer = $this->viewer->base_user();
+        if ($auth_viewer->has_email()
+            && strcasecmp($auth_viewer->email, $user->email) === 0) {
+            $this->_authf |= self::AUTHF_USER;
+            if (!$this->viewer->is_actas_user()) {
+                $this->_authf |= self::AUTHF_SELF | self::AUTHF_CDB;
             }
+        }
+        if (($this->_authf & self::AUTHF_CDB) === 0
+            && $auth_viewer->privChair
+            && $this->conf->opt("contactdbAdminUpdate")) {
+            $this->_authf |= self::AUTHF_CDB;
+        }
+
+        if ($this->_cs) {
+            $this->_cs->reset_context();
+            $this->initialize_cs();
         }
     }
 
@@ -144,23 +162,23 @@ class UserStatus extends MessageSet {
     /** Test if the edited user is the authenticated user.
      * @return bool */
     function is_auth_user() {
-        return $this->is_auth_user;
+        return ($this->_authf & self::AUTHF_USER) !== 0;
     }
 
     /** Test if the edited user is the authenticated user and same as the viewer.
      * @return bool */
     function is_auth_self() {
-        return $this->is_auth_user && !$this->viewer->is_actas_user();
+        return ($this->_authf & self::AUTHF_SELF) !== 0;
+    }
+
+    /** @return bool */
+    function can_update_cdb() {
+        return ($this->_authf & self::AUTHF_CDB) !== 0;
     }
 
     /** @return ?Contact */
     function cdb_user() {
         return $this->user->cdb_user();
-    }
-
-    /** @return ?Contact */
-    function actor() {
-        return $this->viewer->is_root_user() ? null : $this->viewer;
     }
 
     /** @param object $gj
@@ -212,14 +230,14 @@ class UserStatus extends MessageSet {
      * @deprecated */
     function update_if_empty(Contact $user) {
         assert($user === $this->user || $user === $this->user->cdb_user());
-        return $this->is_empty_code($user->is_cdb_user());
+        return $this->if_empty_code($user->is_cdb_user());
     }
 
     /** @param bool $cdb
      * @return 0|1|2 */
     function if_empty_code($cdb = false) {
         // CDB user profiles belong to their owners
-        if ($cdb && !$this->is_auth_self()) {
+        if ($cdb && !$this->can_update_cdb()) {
             return 1;
         } else if (($this->jval->user_override ?? null) !== null) {
             return $this->jval->user_override ? 0 : 1;
@@ -1767,7 +1785,8 @@ topics. We use this information to help match papers to reviewers.</p>',
             Ht::submit("save", $this->is_new_user() ? "Create account" : "Save changes", ["class" => "btn-primary"]),
             Ht::submit("cancel", "Cancel", ["formnovalidate" => true])
         ];
-        if ($this->is_auth_self() && $this->cs()->root === "main") {
+        if ($this->can_update_cdb()
+            && $this->cs()->root === "main") {
             if ($this->cdb_user()) {
                 echo '<label class="checki mt-7"><span class="checkc">',
                     Ht::hidden("has_update_global", 1),
