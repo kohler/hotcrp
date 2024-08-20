@@ -399,8 +399,10 @@ class Users_Page {
         echo '<table><tr><td><strong>Show:</strong> &nbsp;</td>
       <td class="pad">';
         foreach (["tags" => "Tags",
-                  "aff" => "Affiliations", "collab" => "Collaborators",
-                  "topics" => "Topics"] as $fold => $text) {
+                  "aff" => "Affiliations",
+                  "collab" => "Collaborators",
+                  "topics" => "Topics",
+                  "orcid" => "ORCID iD"] as $fold => $text) {
             if (($pl->have_folds[$fold] ?? null) !== null) {
                 $k = array_search($fold, ContactList::$folds) + 1;
                 echo Ht::checkbox("show{$fold}", 1, $pl->have_folds[$fold],

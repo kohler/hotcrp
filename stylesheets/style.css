@@ -3237,6 +3237,10 @@ th.plr, th.pl_sel {
 	text-align: right;
 }
 
+th.pl_orcid {
+	white-space: nowrap;
+}
+
 td.plr, td.plrd, td.pl_id, td.pl_sel,
 td.pl_revpref, td.pl_topicscore, td.pl_desirability,
 td.pl_tag, td.pl_tagval, td.pl_formula {
@@ -3251,7 +3255,8 @@ td.pl_uscores, td.pl_edittag {
 td.pl_id, td.pl_sel,
 td.pl_revtype, td.pl_assrev, td.pl_editrevpref,
 td.pl_score, td.pl_uscores, td.pl_formula,
-td.pl_tag, td.pl_edittag, td.pl_tagval, td.pl_edittagval {
+td.pl_tag, td.pl_edittag, td.pl_tagval, td.pl_edittagval,
+td.pl_orcid {
 	white-space: nowrap;
 }
 
