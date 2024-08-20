@@ -215,6 +215,8 @@ class Dbl {
     const F_THROW = 512;
 
     /** @var int */
+    static public $nqueries = 0;
+    /** @var int */
     static public $nerrors = 0;
     /** @var ?\mysqli */
     static public $default_dblink;
@@ -565,6 +567,7 @@ class Dbl {
         if ($flags & self::F_NOEXEC) {
             return null;
         }
+        ++self::$nqueries;
         if (self::$query_log_key !== false) {
             $time = microtime(true);
             $result = $dblink->$qfunc($qstr);

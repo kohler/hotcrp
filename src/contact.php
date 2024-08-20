@@ -1097,25 +1097,40 @@ class Contact implements JsonSerializable {
         return $name;
     }
 
+    /** @param string $firstName
+     * @param string $lastName
+     * @param string $affiliation
+     * @return string */
+    static function make_searchable_name($firstName, $lastName, $affiliation) {
+        if ($firstName !== "" && $lastName !== "") {
+            $s = "{$firstName} {$lastName}";
+        } else {
+            $s = $firstName . $lastName;
+        }
+        if ($affiliation !== "") {
+            $s = $s === "" ? "({$affiliation})" : "{$s} ({$affiliation})";
+        }
+        return $s;
+    }
+
+    /** @param string $firstName
+     * @param string $lastName
+     * @param string $affiliation
+     * @return string */
+    static function make_db_searchable_name($firstName, $lastName, $affiliation) {
+        $n = self::make_searchable_name($firstName, $lastName, $affiliation);
+        $n = strtolower(UnicodeHelper::deaccent($n));
+        return UnicodeHelper::utf8_truncate(simplify_whitespace($n), 2048);
+    }
+
     /** @return string */
     function searchable_name() {
-        if ($this->firstName !== "" && $this->lastName !== "") {
-            $name = "{$this->firstName} {$this->lastName}";
-        } else {
-            $name = $this->firstName . $this->lastName;
-        }
-        if ($name !== "" && $this->affiliation !== "") {
-            $name = "{$name} ({$this->affiliation})";
-        } else if ($this->affiliation !== "") {
-            $name = "({$this->affiliation})";
-        }
-        return $name;
+        return self::make_searchable_name($this->firstName, $this->lastName, $this->affiliation);
     }
 
     /** @return string */
     function db_searchable_name() {
-        $n = strtolower(UnicodeHelper::deaccent($this->searchable_name()));
-        return simplify_whitespace(substr($n, 0, 2048));
+        return self::make_db_searchable_name($this->firstName, $this->lastName, $this->affiliation);
     }
 
     /** @return array{email?:string,first?:string,last?:string,affiliation?:string} */

@@ -1,5 +1,5 @@
 <?php
-// conference.php -- HotCRP central helper class (singleton)
+// conference.php -- HotCRP central class representing a conference
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Conf {
@@ -2237,6 +2237,13 @@ class Conf {
             if ($this->_cdb_user_cache !== null) {
                 $this->invalidate_cdb_user($u, $saved);
             }
+        }
+    }
+
+    /** @param int $uid */
+    function invalidate_user_by_id($uid) {
+        if (($u = $this->_user_cache[$uid] ?? null)) {
+            $this->invalidate_local_user($u, false);
         }
     }
 
