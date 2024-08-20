@@ -41,40 +41,36 @@ class Column {
     /** @var ?list<string> */
     protected $decorations;
 
-    /** @param object $arg */
+    /** @param object|array $arg */
     function __construct($arg) {
-        $this->name = $arg->name;
-        if (isset($arg->title)) {
-            $this->title = $arg->title;
+        if (is_object($arg)) {
+            $arg = (array) $arg;
         }
-        if (isset($arg->title_html)) {
-            $this->title_html = $arg->title_html;
-        }
-        if (isset($arg->className)) {
-            $this->className = $arg->className;
+        $this->name = $arg["name"];
+        $this->title = $arg["title"] ?? null;
+        $this->title_html = $arg["title_html"] ?? null;
+        if (isset($arg["className"])) {
+            $this->className = $arg["className"];
         } else {
             $this->className = "pl_" . $this->name;
         }
-        if ($arg->prefer_row ?? false) {
+        if ($arg["prefer_row"] ?? false) {
             $this->prefer_row = true;
         }
         $this->as_row = $this->prefer_row;
-        $s = $arg->sort ?? false;
+        $s = $arg["sort"] ?? false;
         if ($s === "desc" || $s === "descending") {
             $this->sort = 2;
         } else if ($s) {
             $this->sort = 1;
         }
         $this->sort_descending = $this->default_sort_descending();
-        if (isset($arg->completion)) {
-            $this->completion = $arg->completion;
+        $this->fold = $arg["fold"] ?? null;
+        if (isset($arg["completion"])) {
+            $this->completion = $arg["completion"];
         }
-        if (isset($arg->order)) {
-            $this->order = $arg->order;
-        }
-        if (isset($arg->__source_order)) {
-            $this->__source_order = $arg->__source_order;
-        }
+        $this->order = $arg["order"] ?? null;
+        $this->__source_order = $arg["__source_order"] ?? null;
     }
 
     /** @return list<string> */
