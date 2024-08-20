@@ -84,20 +84,25 @@ class Users_Page {
         usort($users, $this->conf->user_comparator());
 
         $texts = [];
-        $has_country = false;
+        $has_country = $has_orcid = false;
         foreach ($users as $u) {
             $texts[] = $line = [
                 "first" => $u->firstName,
                 "last" => $u->lastName,
                 "email" => $u->email,
                 "affiliation" => $u->affiliation,
-                "country" => $u->country()
+                "country" => $u->country(),
+                "orcid" => $u->orcid()
             ];
+            $has_orcid = $has_orcid || $line["orcid"] !== "";
             $has_country = $has_country || $line["country"] !== "";
         }
         $header = ["first", "last", "email", "affiliation"];
         if ($has_country) {
             $header[] = "country";
+        }
+        if ($has_orcid) {
+            $header[] = "orcid";
         }
         $this->conf->make_csvg("users")->select($header)->append($texts)->emit();
         return true;
@@ -120,7 +125,7 @@ class Users_Page {
         $tagger = new Tagger($this->viewer);
         $people = [];
         $has_preferred_email = $has_tags = $has_topics =
-            $has_phone = $has_country = $has_disabled = false;
+            $has_phone = $has_country = $has_orcid = $has_disabled = false;
         $has = (object) [];
         foreach ($users as $user) {
             $row = [
@@ -129,11 +134,13 @@ class Users_Page {
                 "email" => $user->email,
                 "affiliation" => $user->affiliation,
                 "country" => $user->country(),
+                "orcid" => $user->orcid(),
                 "phone" => $user->phone(),
                 "disabled" => $user->is_disabled() ? "yes" : "",
                 "collaborators" => rtrim($user->collaborators())
             ];
             $has_country = $has_country || $row["country"] !== "";
+            $has_orcid = $has_orcid || $row["orcid"] !== "";
             $has_phone = $has_phone || ($row["phone"] ?? "") !== "";
             $has_disabled = $has_disabled || $user->is_disabled();
             if ($user->preferredEmail && $user->preferredEmail !== $user->email) {
@@ -180,6 +187,9 @@ class Users_Page {
         $header = ["first", "last", "email", "affiliation"];
         if ($has_country) {
             $header[] = "country";
+        }
+        if ($has_orcid) {
+            $header[] = "orcid";
         }
         if ($has_phone) {
             $header[] = "phone";
