@@ -120,7 +120,7 @@ class Offline_Page {
         }
         echo '<li><a href="', $conf->hoturl("offline", "download=1"), '">Blank form</a></li>',
             '</ul>
-<div class="f-h"><strong>Tip:</strong> Use <a href="', $conf->hoturl("search", "q="), '">Search</a> &gt; Download to choose individual papers.</div>',
+<div class="f-d"><strong>Tip:</strong> Use <a href="', $conf->hoturl("search", "q="), '">Search</a> &gt; Download to choose individual papers.</div>',
             "</fieldset>";
 
         $pastDeadline = !$conf->time_review(null, $this->user->isPC, true);
@@ -134,7 +134,7 @@ class Offline_Page {
         if ($pastDeadline && $this->user->privChair) {
             echo '<label class="checki"><span class="checkc">', Ht::checkbox("override"), '</span>Override deadlines</label>';
         }
-        echo '<div class="f-h"><strong>Tip:</strong> You may upload a file containing several forms.</div>';
+        echo '<div class="f-d"><strong>Tip:</strong> You may upload a file containing several forms.</div>';
         echo "</form></fieldset></div>";
 
         // Ranks
@@ -157,7 +157,7 @@ class Offline_Page {
             if ($pastDeadline && $this->user->privChair) {
                 echo '<label class="checki"><span class="checkc">', Ht::checkbox("override"), '</span>Override deadlines</label>';
             }
-            echo '<div class="f-h"><strong>Tip:</strong> Search “<a href="', $conf->hoturl("search", "q=" . urlencode("editsort:#~$ranktag")), '">editsort:#~', $ranktag, '</a>” to drag and drop your ranking.</span><br>',
+            echo '<div class="f-d"><strong>Tip:</strong> Search “<a href="', $conf->hoturl("search", "q=" . urlencode("editsort:#~$ranktag")), '">editsort:#~', $ranktag, '</a>” to drag and drop your ranking.</span><br>',
                 '“<a href="', $conf->hoturl("search", "q=order:%23%7E$ranktag"), '">order:#~', $ranktag, '</a>” searches by your ranking.</div>',
                 '</form></fieldset></div>';
         }

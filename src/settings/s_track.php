@@ -212,7 +212,7 @@ class Track_SettingParser extends SettingParser {
         $sv->print_feedback_at("{$pfx}/type");
         $sv->print_feedback_at("{$pfx}/tag");
         if ($hint) {
-            $klass = "f-h";
+            $klass = "f-d";
             if (str_starts_with($hint, '<div class="fx">')
                 && str_ends_with($hint, '</div>')
                 && strpos($hint, '<div', 16) === false) {

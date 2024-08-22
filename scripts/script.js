@@ -3777,7 +3777,7 @@ handle_ui.on("js-tracker", function (evt) {
                 gvist = "PC members without tag " + gvis.substring(1);
             $t.append($e("div", "entryi",
                 $e("label", null, "Global visibility"),
-                $e("div", "entry", gvist, $e("div", "f-h", "This ", $e("a", {href: hoturl("settings", "group=tracks")}, "setting"), " restricts all trackers."))));
+                $e("div", "entry", gvist, $e("div", "f-d", "This ", $e("a", {href: hoturl("settings", "group=tracks")}, "setting"), " restricts all trackers."))));
         }
         $t.append($e("div", "entryi", $e("label"),
             $e("div", "entry", $e("label", "checki",
@@ -6997,7 +6997,7 @@ function cmt_render_form(cj) {
         hc.push('<span class="select"><select id="' + cid + '-topic" name="topic">', '</select></span></span>');
         hc.push('<option value="paper">' + siteinfo.snouns[0] + '</option>');
         hc.push_pop('<option value="rev" selected>reviews</option>');
-        hc.push('<p class="visibility-hint f-h text-break-line"></p>');
+        hc.push('<p class="visibility-hint f-d text-break-line"></p>');
         if (!cj.by_author && hotcrp.status.rev.blind && hotcrp.status.rev.blind !== true) {
             hc.push('<div class="visibility-au-blind checki"><label><span class="checkc"><input type="checkbox" name="blind" value="1"></span>Anonymous to authors</label></div>');
         }
@@ -7025,7 +7025,7 @@ function cmt_render_form(cj) {
     // response ready
     if (cj.response) {
         x = !cj.is_new && !cj.draft;
-        hc.push('<div class="checki has-fold fold' + (x ? "o" : "c") + '"><label><span class="checkc"><input type="checkbox" class="uich js-foldup" name="ready" value="1"' + (x ? " checked" : "") + '></span><strong>The response is ready for review</strong><div class="f-h fx">Reviewers will be notified when you submit the response.</div></div>');
+        hc.push('<label class="checki has-fold fold' + (x ? "o" : "c") + '"><span class="checkc"><input type="checkbox" class="uich js-foldup" name="ready" value="1"' + (x ? " checked" : "") + '></span><strong>The response is ready for review</strong><div class="f-d fx">Reviewers will be notified when you submit the response.</div></label>');
         hc.push('<input type="hidden" name="response" value="' + cj.response + '">');
     }
 

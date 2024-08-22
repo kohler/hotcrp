@@ -1117,9 +1117,9 @@ handle_ui.on("input.js-settings-response-name", function () {
         return;
     }
     var helt = this.parentElement.lastChild, s = this.value.trim();
-    if (helt.nodeType !== 1 || helt.className !== "f-h") {
+    if (helt.nodeType !== 1 || helt.className !== "f-d") {
         helt = document.createElement("div");
-        helt.className = "f-h";
+        helt.className = "f-d";
         this.parentElement.appendChild(helt);
     }
     if (s === "") {

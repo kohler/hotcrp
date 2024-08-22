@@ -221,7 +221,7 @@ class Assign_Page {
             $rname = Ht::link($rname, $this->prow->reviewurl(["r" => $rrow->reviewId]));
         }
         echo $rname, ': ', $namex,
-            '</div><div class="f-h"><ul class="x mb-0">';
+            '</div><div class="f-d"><ul class="x mb-0">';
         echo '<li>requested';
         if ($rrow->timeRequested) {
             echo ' ', $this->conf->unparse_time_relative((int) $rrow->timeRequested);
@@ -244,7 +244,7 @@ class Assign_Page {
 
     /** @param ReviewRequestInfo $rrow */
     private function print_reqrev_proposal($rrow, $namex, $rrowid) {
-        echo "Review proposal: ", $namex, '</div><div class="f-h"><ul class="x mb-0">';
+        echo "Review proposal: ", $namex, '</div><div class="f-d"><ul class="x mb-0">';
         if ($rrow->timeRequested
             || $this->user->can_view_review_requester($this->prow, $rrow)) {
             echo '<li>proposed';
@@ -273,7 +273,7 @@ class Assign_Page {
     /** @param ReviewRefusalInfo $rrow */
     private function print_reqrev_denied($rrow, $namex) {
         echo "Declined request: ", $namex,
-            '</div><div class="f-h fx"><ul class="x mb-0">';
+            '</div><div class="f-d fx"><ul class="x mb-0">';
         if ($rrow->timeRequested
             || $this->user->can_view_review_requester($this->prow, $rrow)) {
             echo '<li>requested';

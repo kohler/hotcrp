@@ -76,7 +76,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
             . $sv->entry("review_visibility_author_condition", ["class" => "uii js-settings-radioitem-click papersearch need-suggest"])
             . "</div></div>";
 
-        $hint = '<div class="f-hx if-response-active';
+        $hint = '<p class="f-d mt-0 if-response-active';
         if (!$sv->conf->setting("resp_active")) {
             $hint .= ' hidden';
         }
@@ -86,7 +86,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
         } else {
             $hint .= 'Authors who can edit responses can see reviews independent of this setting.';
         }
-        $hint .= '</div>';
+        $hint .= '</p>';
 
         $sv->print_radio_table("review_visibility_author", $opts,
             'Can <strong>authors see reviews</strong> for their submissions?' . $hint);

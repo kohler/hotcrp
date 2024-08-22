@@ -1722,7 +1722,7 @@ class SettingValues extends MessageSet {
         echo '</span>', $this->label($name, $text, ["for" => $name, "class" => $js["label_class"] ?? null]);
         $this->print_feedback_at($name);
         if (($hint = $js["hint"] ?? "")) {
-            echo '<div class="', Ht::add_tokens("settings-ap f-hx", $js["hint_class"] ?? null), '">', $hint, '</div>';
+            echo '<p class="', Ht::add_tokens("f-d", $js["hint_class"] ?? null), '">', $hint, '</p>';
         }
         if (!($js["group_open"] ?? null)) {
             echo "</div>\n";
@@ -1847,7 +1847,7 @@ class SettingValues extends MessageSet {
         $hint = $js["hint"] ?? "";
         $thint = $this->type_hint($si->type);
         if ($hint || $thint) {
-            echo '<div class="f-h">';
+            echo '<div class="f-d">';
             if ($hint && $thint) {
                 echo '<div>', $hint, '</div><div>', $thint, '</div>';
             } else if ($hint || $thint) {

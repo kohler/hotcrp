@@ -33,7 +33,7 @@ class SubForm_SettingRenderer {
         echo '<div class="f-i">',
             $sv->label("sf_pdf_submission", "PDF requirement", ["class" => "n"]),
             $sv->select("sf_pdf_submission", $sel, ["class" => "uich js-settings-sf-wizard"]),
-            '<div class="f-h fx3">Registering a submission does not require a PDF upload.</div></div>';
+            '<p class="f-d fx3">Registering a submission does not require a PDF upload.</p></div>';
 
         if (is_executable("src/banal")) {
             echo '<div class="g fx2">';

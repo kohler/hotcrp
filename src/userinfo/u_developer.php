@@ -163,7 +163,7 @@ class Developer_UserInfo {
             Ht::entry("bearer_token/new/note", $us->qreq["bearer_token/new/note"] ?? "", [
                 "size" => 52, "id" => "bearer_token/new/note", "data-default-value" => "",
                 "class" => "want-focus"
-            ]) . '<div class="f-h">What’s this token for?</div>');
+            ]) . '<div class="f-d">What’s this token for?</div>');
 
         $us->print_field("bearer_token/new/expiration", "Expiration",
             Ht::select("bearer_token/new/expiration", [

@@ -43,10 +43,10 @@ select, button {
 	color: #b655e6;
 }
 
-.hint, .f-h, .f-hx, .field-d, .dlsize {
+.is-description, .hint, .f-h, .f-d, .f-hx, .field-d, .dlsize {
 	color: #555555;
 }
-.dark .hint, .dark .f-h, .dark .f-hx, .dark .field-d {
+.dark .is-description, .dark .hint, .dark .f-h, .dark .f-d, .dark .f-hx, .dark .field-d {
 	color: #bcbcbc;
 }
 
@@ -1821,13 +1821,6 @@ th.settings-simplehead {
 .settings-radioitem + .settings-radiohint {
 	margin-top: 0.35rem;
 }
-.settings-ap {
-	margin-top: 0.35em;
-}
-.settings-ap.f-hx {
-	margin-top: 0;
-	margin-bottom: 0;
-}
 .settings-xf {
 	position: relative;
 	border: 1px solid silver;
@@ -2305,14 +2298,21 @@ label.f-c, .f-i > label, .f-i > .label {
 .f-c.n, .f-i > label.n, .f-i > .label.n {
 	font-weight: normal;
 }
-.f-h, .f-hx, .field-d {
+.f-h, .f-hx, .f-d, .field-d {
 	font-size: 92%;
 }
 .f-h {
 	margin-top: 0.25rem;
 	margin-bottom: 0.25rem;
 }
-.f-h .feedback-list, .small .feedback-list {
+.f-d {
+	margin-top: 0.25rem;
+	margin-bottom: 0;
+}
+.checki > .f-d {
+	margin-top: 0;
+}
+.f-h .feedback-list, .f-d .feedback-list, .small .feedback-list {
 	font-size: 100%;
 }
 .entry > .f-h:last-child {
@@ -4421,7 +4421,7 @@ a:hover .t-editor,
 	content: "";
 	display: block;
 }
-.has-document > .f-h {
+.has-document > .f-h, .has-document > .f-d {
 	margin-top: 0.5rem;
 }
 @media screen and (min-width: 900px) {
