@@ -162,8 +162,8 @@ class ContactList {
                 "scores" => 0
             ];
         }
-        if (isset(self::$field_name_map[$name])) {
-            return self::$field_name_map[$name];
+        if (($fid = self::$field_name_map[$name] ?? null) !== null) {
+            return $fid;
         }
         $f = $this->conf->review_field($name) ?? $this->conf->find_review_field($name);
         if ($f && ($p = array_search($f, $this->_rfields)) !== false) {
@@ -1027,7 +1027,7 @@ class ContactList {
     }
 
     /** @param string $columnlist
-     * @return list<Columns> */
+     * @return list<Column> */
     function _resolve_columns($columnlist) {
         $uldisplay = self::uldisplay($this->qreq);
         $cols = [];
