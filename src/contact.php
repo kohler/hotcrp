@@ -2996,8 +2996,8 @@ class Contact implements JsonSerializable {
         // set main rights
         if (($ci->ciflags & PaperContactInfo::CIF_SET1) === 0) {
             assert(($ci->ciflags & ~PaperContactInfo::CIFM_SET0) === 0);
-            $ci->ciflags |= PaperContactInfo::CIF_RECURSION;
             $cif = $ci->ciflags | PaperContactInfo::CIF_SET1;
+            $ci->ciflags |= PaperContactInfo::CIF_RECURSION;
 
             // check current administration status
             $allow_administer = ($cif & PaperContactInfo::CIF_ALLOW_ADMINISTER) !== 0;
@@ -3761,39 +3761,41 @@ class Contact implements JsonSerializable {
      * @param PaperContactInfo $ci
      * @return 0|1|2 */
     private function __view_authors_state($prow, $ci) {
-        if ($ci->__view_authors_state === null) {
-            $cif = $ci->ciflags;
+        // 0: cannot see authors
+        // 1: can see authors if forced
+        // 2: can see authors
+        $cif = $ci->ciflags;
+        if (($cif & PaperContactInfo::CIF_SET2) === 0) {
+            assert(($cif & PaperContactInfo::CIF_RECURSION) === 0);
+            $ci->ciflags = $cif | PaperContactInfo::CIF_RECURSION;
             $allow_administer = ($cif & PaperContactInfo::CIF_ALLOW_ADMINISTER) !== 0;
-            if (($cif & PaperContactInfo::CIF_ACT_AUTHOR_VIEW) !== 0
-                && !$allow_administer) {
-                $ci->__view_authors_state = 2;
+            if ($this->_root_user
+                || (($cif & PaperContactInfo::CIF_ACT_AUTHOR_VIEW) !== 0
+                    && !$allow_administer)) {
+                // - root user can always see authors
+                // - author can always see authors, unless also admin
+                $cif |= PaperContactInfo::CIF_PREFER_VIEW_AUTHORS;
             } else if (($cif & PaperContactInfo::CIF_ALLOW_PC_BROAD) !== 0
                        || $ci->review_status > 0) {
                 $bs = $prow->blindness_state($ci->review_status > PaperContactInfo::CIRS_PROXIED);
-                if ($bs === 0) {
-                    if (($cif & PaperContactInfo::CIF_CAN_VIEW_DECISION) !== 0
-                        && ($cif & (PaperContactInfo::CIF_ALLOW_PC_BROAD | PaperContactInfo::CIF_ALLOW_REVIEW)) !== 0) {
-                        $bs = -1;
-                    } else {
-                        $bs = 1;
-                    }
+                if ($bs === 0
+                    && ($cif & (PaperContactInfo::CIF_CAN_VIEW_DECISION | PaperContactInfo::CIF_ALLOW_REVIEW)) === (PaperContactInfo::CIF_CAN_VIEW_DECISION | PaperContactInfo::CIF_ALLOW_REVIEW)) {
+                    $bs = -1;
                 }
-                if ($allow_administer) {
-                    $ci->__view_authors_state = $bs < 0 ? 2 : 1;
-                } else if ($bs < 0
-                           && ($prow->timeSubmitted != 0
-                               || (($cif & PaperContactInfo::CIF_ALLOW_PC_BROAD) !== 0
-                                   && $prow->timeWithdrawn <= 0
-                                   && $prow->submission_round()->incomplete_viewable))) {
-                    $ci->__view_authors_state = 2;
-                } else {
-                    $ci->__view_authors_state = 0;
+                if ($bs < 0
+                    && ($allow_administer
+                        || $prow->timeSubmitted != 0
+                        || (($cif & PaperContactInfo::CIF_ALLOW_PC_BROAD) !== 0
+                            && $prow->timeWithdrawn <= 0
+                            && $prow->submission_round()->incomplete_viewable))) {
+                    $cif |= PaperContactInfo::CIF_PREFER_VIEW_AUTHORS;
+                } else if ($allow_administer) {
+                    $cif |= PaperContactInfo::CIF_ALLOW_VIEW_AUTHORS;
                 }
-            } else {
-                $ci->__view_authors_state = 0;
             }
+            $ci->ciflags = $cif | PaperContactInfo::CIF_SET2;
         }
-        return $ci->__view_authors_state;
+        return ($ci->ciflags >> PaperContactInfo::CIFSHIFT_VIEW_AUTHORS_STATE) & 3;
     }
 
     /* NB caller must check can_view_paper() */

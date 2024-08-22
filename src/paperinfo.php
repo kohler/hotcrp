@@ -92,12 +92,14 @@ final class PaperContactInfo {
     const CIF_ACT_AUTHOR_VIEW = 0x800;
     const CIF_ALLOW_AUTHOR_VIEW = 0x1000;
     const CIF_CAN_VIEW_DECISION = 0x2000;
+    const CIF_SET2 = 0x4000;
+    const CIF_ALLOW_VIEW_AUTHORS = 0x8000;
+    const CIF_PREFER_VIEW_AUTHORS = 0x10000;
+    const CIFSHIFT_VIEW_AUTHORS_STATE = 15;
     /** @var bool */
     public $primary_administrator;
     /** @var int */
     public $view_conflict_type;
-    /** @var null|0|1|2 */
-    public $__view_authors_state;
 
     // cached by PaperInfo methods
     /** @var ?list<ReviewInfo> */
@@ -332,7 +334,7 @@ final class PaperContactInfo {
         assert(($this->ciflags & self::CIF_ALLOW_ADMINISTER) !== 0);
         if (!$this->forced_rights_link) {
             $ci = $this->forced_rights_link = clone $this;
-            $ci->__view_authors_state = $ci->vreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
+            $ci->vreviews_array = $ci->viewable_tags = $ci->searchable_tags = null;
             $ci->ciflags = ($ci->ciflags & self::CIFM_SET0)
                 | self::CIF_ALLOW_ADMINISTER_FORCED;
         }
