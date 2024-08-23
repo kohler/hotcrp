@@ -1415,4 +1415,10 @@ class Unit_Tester {
         xassert_eqq(SearchWord::unquote("\"abc”"), "abc");
         xassert_eqq(SearchWord::unquote("\"abc“"), "abc");
     }
+
+    function test_country_synonyms() {
+        foreach (Countries::$synonyms as $from => $to) {
+            xassert(in_array($to, Countries::$list));
+        }
+    }
 }

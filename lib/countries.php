@@ -259,10 +259,11 @@ class Countries {
 /*ZW*/ "Zimbabwe",
 "Other"];
 
+    /** @var array<string,string> */
     public static $synonyms = [
-        "united states" => "united states of america",
-        "us" => "united states of america",
-        "usa" => "united states of america"
+        "united states of america" => "United States",
+        "us" => "United States",
+        "usa" => "United States"
     ];
 
     /** @param string $name
