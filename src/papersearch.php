@@ -1164,7 +1164,7 @@ class PaperSearch extends MessageSet {
 
     /** @return ?Then_SearchTerm */
     function then_term() {
-        $this->_prepare();
+        $this->main_term();
         return $this->_then_term;
     }
 
@@ -1210,7 +1210,6 @@ class PaperSearch extends MessageSet {
 
     /** @return list<TagAnno> */
     function group_anno_list() {
-        $this->_prepare();
         if (($ng = $this->ngroups()) > 1) {
             $gs = [];
             for ($i = 0; $i !== $ng; ++$i) {
@@ -1225,8 +1224,7 @@ class PaperSearch extends MessageSet {
                 $gs[] = $ta;
             }
             return $gs;
-        }
-        if (($h = $this->_qe->get_float("legend"))) {
+        } else if (($h = $this->_qe->get_float("legend"))) {
             return [TagAnno::make_legend($h)];
         } else {
             return [];
@@ -1242,13 +1240,12 @@ class PaperSearch extends MessageSet {
 
     /** @return int */
     function ngroups() {
-        $this->_prepare();
-        return $this->_then_term ? $this->_then_term->ngroups() : 1;
+        $then = $this->then_term();
+        return $then ? $then->ngroups() : 1;
     }
 
     /** @return list<SearchTerm> */
     function group_slice_terms() {
-        $this->_prepare();
         if (($ng = $this->ngroups()) === 1) {
             return [$this->_qe];
         }
@@ -1529,7 +1526,6 @@ class PaperSearch extends MessageSet {
 
     /** @return list<string> */
     function highlight_tags() {
-        $this->_prepare();
         $ht = $this->main_term()->get_float("tags") ?? [];
         $tagger = null;
         foreach ($this->sort_field_list() as $s) {
