@@ -520,11 +520,20 @@ class Contact implements JsonSerializable {
     }
 
     /** @return string */
-    function orcid() {
+    function decorated_orcid() {
         if (($this->_slice & self::SLICEBIT_ORCID) !== 0) {
             $this->unslice();
         }
         return $this->orcid ?? "";
+    }
+
+    /** @return string */
+    function orcid() {
+        if (($this->_slice & self::SLICEBIT_ORCID) !== 0) {
+            $this->unslice();
+        }
+        $o = $this->orcid ?? "";
+        return strlen($o) > 19 ? substr($o, 0, 19) : $o;
     }
 
 
