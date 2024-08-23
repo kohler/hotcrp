@@ -1064,6 +1064,9 @@ class PaperSearch extends MessageSet {
         if ($sqi->query_options["pdfSize"] ?? false) {
             $sqi->add_column("size", "Paper.size");
         }
+        foreach ($this->conf->rights_terms() as $st) {
+            $st->sqlexpr($sqi);
+        }
 
         // create query
         $sqi->finish_reviewer_columns();

@@ -3992,6 +3992,12 @@ class Conf {
     }
 
 
+    /** @return list<SearchTerm> */
+    function rights_terms() {
+        return $this->_au_seedec ? [$this->_au_seedec] : [];
+    }
+
+
     /** @param array{paperId?:list<int>|PaperID_SearchTerm,where?:string} $options
      * @return \mysqli_result|Dbl_Result */
     function paper_result($options, ?Contact $user = null) {
