@@ -1311,21 +1311,8 @@ class UserStatus extends MessageSet {
     /** @param string $k
      * @return ?string */
     function field_label($k) {
-        if ($k === "firstName") {
-            return "First name";
-        } else if ($k === "lastName") {
-            return "Last name";
-        } else if ($k === "email" || $k === "uemail") {
-            return "Email";
-        } else if ($k === "affiliation") {
-            return "Affiliation";
-        } else if ($k === "collaborators") {
-            return "Collaborators";
-        } else if ($k === "topics") {
-            return "Topics";
-        } else {
-            return null;
-        }
+        $gj = $this->cs()->get("__field/{$k}");
+        return $gj->label ?? null;
     }
 
 
@@ -1641,7 +1628,7 @@ class UserStatus extends MessageSet {
         }
         $cd = $us->conf->_i("conflictdef");
         $us->cs()->add_section_class("w-text")->print_start_section();
-        echo '<h3 class="', $us->control_class("collaborators", "form-h"), '">Collaborators and other affiliations</h3>', "\n",
+        echo '<h3 class="', $us->control_class("collaborators", "form-h field-title"), '">Collaborators and other affiliations</h3>', "\n",
             "<p>List potential conflicts of interest one per line, using parentheses for affiliations and institutions. We may use this information when assigning reviews.<br>Examples: “Ping Yen Zhang (INRIA)”, “All (University College London)”</p>";
         if ($cd !== "" && preg_match('/<(?:p|div)[ >]/', $cd)) {
             echo $cd;
@@ -1649,7 +1636,7 @@ class UserStatus extends MessageSet {
             echo '<p>', $cd, '</p>';
         }
         echo $us->feedback_html_at("collaborators"),
-            '<textarea name="collaborators" rows="5" cols="80" class="',
+            '<textarea id="collaborators" name="collaborators" rows="5" cols="80" class="',
             $us->control_class("collaborators", "need-autogrow w-text"),
             "\" data-default-value=\"", htmlspecialchars($us->user->collaborators()), "\">",
             htmlspecialchars($us->qreq->collaborators ?? $us->user->collaborators()),

@@ -9,10 +9,19 @@
         "name": "__crosscheck/main", "order": 100,
         "crosscheck_function": "UserStatus::crosscheck_main"
     },
+    {   "name": "__field/firstName", "label": "First name", "page": "main"   },
+    {   "name": "__field/lastName", "label": "Last name", "page": "main"   },
+    {   "name": "__field/email", "label": "Email", "page": "main"   },
+    {   "name": "__field/uemail", "label": "Email", "page": "main"   },
+    {   "name": "__field/affiliation", "label": "Affiliation", "page": "main"   },
+    {   "name": "__field/collaborators", "label": "Collaborators", "page": "main"   },
+    {   "name": "__field/topics", "label": "Topics", "page": "main"   },
+
     [   "main/main", 1000, "UserStatus::print_main"   ],
     [   "main/country", 3000, "UserStatus::print_country"   ],
     [   "main/roles", 5000, "UserStatus::print_roles"   ],
     [   "main/collaborators", 6000, "UserStatus::print_collaborators"   ],
+
     {
         "name": "main/topics", "order": 7000, "allow_if": "conf.has_topics",
         "print_function": "UserStatus::print_topics"
