@@ -59,14 +59,16 @@ class Home_Page {
         if (!$user->is_empty() && $qreq->postlogin) {
             LoginHelper::check_postlogin($user, $qreq);
         }
-        if ($user->has_account_here()
-            && $qreq->csession("freshlogin") === true) {
-            if (!self::profilecheck($user, $gx)) {
-                $qreq->set_csession("freshlogin", "redirect");
-                $user->conf->redirect_hoturl("profile", "redirect=1");
-            } else {
-                $qreq->unset_csession("freshlogin");
-            }
+        if (!$user->has_account_here()) {
+            return;
+        }
+        if (self::profilecheck($user, $gx)) {
+            $qreq->unset_csession("freshlogin");
+        } else if ($qreq->csession("freshlogin") === true) {
+            $qreq->set_csession("freshlogin", "redirect");
+            $user->conf->redirect_hoturl("profile", "redirect=1");
+        } else {
+            $user->conf->feedback_msg([MessageItem::warning("<5>Please " . Ht::link("complete your profile", $user->conf->hoturl("profile")))]);
         }
     }
 
