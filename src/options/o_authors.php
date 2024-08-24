@@ -232,8 +232,14 @@ class Authors_PaperOption extends PaperOption {
             '</div></div>';
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        $sb = $this->conf->submission_blindness();
         $title = $pt->edit_title_html($this);
+        $sb = $this->conf->submission_blindness();
+        if ($sb !== Conf::BLIND_NEVER
+            && $pt->prow->outcome_sign > 0
+            && !$this->conf->setting("seedec_hideau")
+            && $pt->prow->can_author_view_decision()) {
+            $sb = Conf::BLIND_NEVER;
+        }
         if ($sb === Conf::BLIND_ALWAYS) {
             $title .= ' <span class="n">(anonymous)</span>';
         } else if ($sb === Conf::BLIND_UNTILREVIEW) {
