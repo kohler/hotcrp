@@ -236,6 +236,8 @@ class UserStatus extends MessageSet {
     /** @param bool $cdb
      * @return 0|1|2 */
     function if_empty_code($cdb = false) {
+        // 0: allow all changes
+        // 1: allow null -> non-null changes only
         // CDB user profiles belong to their owners
         if ($cdb && !$this->can_update_cdb()) {
             return 1;

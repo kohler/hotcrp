@@ -1838,11 +1838,10 @@ class Contact implements JsonSerializable {
      *
      * `$ifempty` is used to control whether updates are ignored. This
      * important when merging users from different sources.
-     * An update is ignored when:
-     * - `$ifempty !== 0`, AND
-     * - the current value of the property is not empty, AND
-     * - EITHER `$ifempty === 2`, OR the new value is empty, OR the current
-     *   user is not a placeholder. */
+     * 0: allow all updates
+     * 1: allow if current value is empty or (new value is nonempty and user
+     *    is placeholder)
+     * 2: allow if current value is empty */
     function set_prop($prop, $value, $ifempty = 0) {
         // validate argument
         $shape = self::$props[$prop] ?? 0;
