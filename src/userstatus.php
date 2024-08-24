@@ -1502,7 +1502,8 @@ class UserStatus extends MessageSet {
     }
 
     static function print_country(UserStatus $us) {
-        $t = Countries::selector("country", $us->qreq->country ?? $us->user->country(), ["id" => "country", "data-default-value" => $us->user->country(), "autocomplete" => $us->autocomplete("country")]) . $us->global_profile_difference("country");
+        $user_country = Countries::clean($us->user->country());
+        $t = Countries::selector("country", $us->qreq->country ?? $user_country, ["id" => "country", "data-default-value" => $user_country, "autocomplete" => $us->autocomplete("country")]) . $us->global_profile_difference("country");
         $us->print_field("country", "Country/region", $t);
     }
 

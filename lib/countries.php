@@ -266,15 +266,19 @@ class Countries {
         "usa" => "United States"
     ];
 
+    /** @param ?string $country
+     * @return ?string */
+    static function clean($country) {
+        return $country !== null ? self::$synonyms[strtolower($country)] ?? $country : null;
+    }
+
     /** @param string $name
      * @param string $country
      * @return string */
     static function selector($name, $country, $extra = []) {
+        $country = self::clean($country);
         $sel_country = "";
         $opts = ["<option" . ($country ? '' : ' selected') . ' value="">(select one)</option>'];
-        if (($x = self::$synonyms[strtolower($country ?? "")] ?? null)) {
-            $country = $x;
-        }
         foreach (self::$list as $c) {
             if ($country !== null && strcasecmp($country, $c) === 0) {
                 $sel_country = $c;
