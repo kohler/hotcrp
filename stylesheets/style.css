@@ -2445,6 +2445,7 @@ input[type=date].has-error,
 textarea.has-error,
 select.has-error {
 	border: 1px solid red;
+	background-color: rgba(255, 0, 0, 0.02);
 }
 .has-warning > .f-c,
 .has-warning > label,
@@ -2468,7 +2469,8 @@ input[type=password].has-warning,
 input[type=date].has-warning,
 textarea.has-warning,
 select.has-warning {
-	border: 1px solid #855c04;
+	border: 1px solid #c07700;
+	background-color: rgba(192, 119, 0, 0.02);
 }
 .is-success {
 	color: #006600;
