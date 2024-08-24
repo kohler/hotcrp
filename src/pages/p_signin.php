@@ -130,7 +130,7 @@ class Signin_Page {
     static function print_signin_head(Contact $user, Qrequest $qreq, $cs) {
         $st = $user->conf->saved_messages_status();
         $qreq->print_header("Sign in", "home", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
-        $cs->push_print_cleanup("__footer");
+        $cs->print_on_leave("__footer");
     }
 
     /** @param string $page
@@ -305,7 +305,7 @@ class Signin_Page {
                 Ht::submit("cancel", "Cancel", ["class" => "uic js-no-signin", "formnovalidate" => true]),
                 '</div></form>';
         }
-        $cs->push_print_cleanup("__footer");
+        $cs->print_on_leave("__footer");
     }
 
 
@@ -386,7 +386,7 @@ class Signin_Page {
     /** @param ComponentSet $cs */
     static function print_newaccount_head(Contact $user, Qrequest $qreq, $cs) {
         $qreq->print_header("New account", "newaccount", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
-        $cs->push_print_cleanup("__footer");
+        $cs->print_on_leave("__footer");
         if (!$user->conf->allow_user_self_register()) {
             $user->conf->error_msg("<0>User self-registration is disabled on this site.");
             echo '<p class="mb-5">', Ht::link("Return home", $user->conf->hoturl("index")), '</p>';
@@ -444,7 +444,7 @@ class Signin_Page {
     }
     static function print_forgot_head(Contact $user, Qrequest $qreq, $cs) {
         $qreq->print_header("Forgot password", "resetpassword", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
-        $cs->push_print_cleanup("__footer");
+        $cs->print_on_leave("__footer");
         if ($user->conf->login_type()) {
             return $cs->print("forgotpassword/__externallogin");
         }
@@ -603,7 +603,7 @@ class Signin_Page {
     }
     static function print_reset_head(Contact $user, Qrequest $qreq, $cs) {
         $qreq->print_header("Reset password", "resetpassword", ["action_bar" => "", "hide_title" => true, "body_class" => "body-signin"]);
-        $cs->push_print_cleanup("__footer");
+        $cs->print_on_leave("__footer");
         if ($user->conf->login_type()) {
             return $cs->print("forgotpassword/__externallogin");
         }

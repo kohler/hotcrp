@@ -85,19 +85,19 @@ class Home_Page {
         }
     }
 
-    function print_head(Contact $user, Qrequest $qreq, $gx) {
+    function print_head(Contact $user, Qrequest $qreq, ComponentSet $gx) {
         $qreq->print_header("Home", "home");
         if ($qreq->signedout && $user->is_empty()) {
             $user->conf->success_msg("<0>You have been signed out of the site");
         }
-        $gx->push_print_cleanup("__footer");
+        $gx->print_on_leave("__footer");
         echo '<noscript><div class="msg msg-error"><strong>This site requires JavaScript.</strong> Your browser does not support JavaScript.<br><a href="https://github.com/kohler/hotcrp/">Report bad compatibility problems</a></div></noscript>', "\n";
         if ($user->privChair) {
             echo '<div id="p-clock-drift" class="homegrp hidden"></div>';
         }
     }
 
-    function print_content(Contact $user, Qrequest $qreq, $gx) {
+    function print_content(Contact $user, Qrequest $qreq, ComponentSet $gx) {
         echo '<main class="home-content">';
         ob_start();
         $gx->print_members("home/sidebar");
@@ -115,7 +115,7 @@ class Home_Page {
         return "<h2 class=\"home\">" . $x . "</h2>";
     }
 
-    static function print_admin_sidebar(Contact $user, Qrequest $qreq, $gx) {
+    static function print_admin_sidebar(Contact $user, Qrequest $qreq, ComponentSet $gx) {
         echo '<div class="homegrp"><h2 class="home">Administration</h2><ul>';
         $gx->print_members("home/sidebar/admin");
         echo '</ul></div>';
@@ -137,7 +137,7 @@ class Home_Page {
         echo '<li>', Ht::link("Action log", $user->conf->hoturl("log")), '</li>';
     }
 
-    static function print_info_sidebar(Contact $user, Qrequest $qreq, $gx) {
+    static function print_info_sidebar(Contact $user, Qrequest $qreq, ComponentSet $gx) {
         ob_start();
         $gx->print_members("home/sidebar/info");
         if (($t = ob_get_clean())) {
@@ -189,13 +189,13 @@ class Home_Page {
         echo '</p></div>';
     }
 
-    function print_signin(Contact $user, Qrequest $qreq, $gx) {
+    function print_signin(Contact $user, Qrequest $qreq, ComponentSet $gx) {
         if (!$user->has_email() || $qreq->signin) {
             Signin_Page::print_signin_form($user, $qreq, $gx);
         }
     }
 
-    function print_search(Contact $user, Qrequest $qreq, $gx) {
+    function print_search(Contact $user, Qrequest $qreq, ComponentSet $gx) {
         if (!$user->privChair
             && ($user->isPC
                 ? !$this->conf->setting("pc_seeall") && !$this->conf->has_any_submitted()
@@ -247,7 +247,7 @@ class Home_Page {
         return $t > 0 ? $this->conf->unparse_time_with_local_span($t) : null;
     }
 
-    function print_reviews(Contact $user, Qrequest $qreq, $gx) {
+    function print_reviews(Contact $user, Qrequest $qreq, ComponentSet $gx) {
         $conf = $user->conf;
         if (!$user->privChair
             && (!$user->is_reviewer() || !$conf->has_any_submitted())) {
@@ -472,7 +472,7 @@ class Home_Page {
     }
 
     // Review token printing
-    function print_review_tokens(Contact $user, Qrequest $qreq, $gx) {
+    function print_review_tokens(Contact $user, Qrequest $qreq, ComponentSet $gx) {
         if (!$this->_tokens_done
             && $user->has_email()
             && $user->conf->setting("rev_tokens")
@@ -495,7 +495,7 @@ class Home_Page {
         }
     }
 
-    function print_review_requests(Contact $user, Qrequest $qreq, $gx) {
+    function print_review_requests(Contact $user, Qrequest $qreq, ComponentSet $gx) {
         $conf = $user->conf;
         if (!$user->is_requester()
             && !$user->has_review_pending_approval()
@@ -569,7 +569,7 @@ class Home_Page {
         }
     }
 
-    function print_submissions(Contact $user, Qrequest $qreq, $gx) {
+    function print_submissions(Contact $user, Qrequest $qreq, ComponentSet $gx) {
         $conf = $user->conf;
         $srlist = [];
         $any_open = false;
