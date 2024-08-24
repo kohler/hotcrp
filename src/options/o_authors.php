@@ -30,46 +30,94 @@ class Authors_PaperOption extends PaperOption {
         }
         return $au;
     }
+
     function value_check(PaperValue $ov, Contact $user) {
         $aulist = $this->author_list($ov);
         $nreal = 0;
+        $lemails = [];
         foreach ($aulist as $auth) {
             $nreal += $auth->is_empty() ? 0 : 1;
+            $lemails[] = strtolower($auth->email);
         }
-        if ($nreal === 0 && !$ov->prow->allow_absent()) {
-            $ov->estop($this->conf->_("<0>Entry required"));
-            $ov->msg_at("authors:1", null, MessageSet::ERROR);
+        if ($nreal === 0) {
+            if (!$ov->prow->allow_absent()) {
+                $ov->estop($this->conf->_("<0>Entry required"));
+                $ov->msg_at("authors:1", null, MessageSet::ERROR);
+            }
+            return;
         }
         if ($this->max_count > 0 && $nreal > $this->max_count) {
             $ov->estop($this->conf->_("<0>A {submission} may have at most {max} authors", new FmtArg("max", $this->max_count)));
         }
 
-        $msg1 = $msg2 = false;
-        foreach ($aulist as $n => $auth) {
+        $req_orcid = $this->conf->opt("requireOrcid") ?? 0;
+        if ($req_orcid === 2
+            && ($ov->prow->outcome_sign <= 0
+                || !$ov->prow->can_author_view_decision())) {
+            $req_orcid = 0;
+        }
+        $msg_bademail = $msg_missing = $msg_dupemail = false;
+        $msg_orcid = [];
+        $n = 0;
+        foreach ($aulist as $auth) {
+            ++$n;
+            if ($auth->firstName === ""
+                && $auth->lastName === ""
+                && $auth->email === ""
+                && $auth->affiliation !== "") {
+                $msg_missing = true;
+                $ov->msg_at("authors:{$n}", null, MessageSet::WARNING);
+                continue;
+            }
             if (strpos($auth->email, "@") === false
                 && strpos($auth->affiliation, "@") !== false) {
-                $msg1 = true;
-                $ov->msg_at("authors:" . ($n + 1), null, MessageSet::WARNING);
-            } else if ($auth->firstName === ""
-                       && $auth->lastName === ""
-                       && $auth->email === ""
-                       && $auth->affiliation !== "") {
-                $msg2 = true;
-                $ov->msg_at("authors:" . ($n + 1), null, MessageSet::WARNING);
-            } else if ($auth->email !== ""
-                       && !validate_email($auth->email)
-                       && !$ov->prow->author_by_email($auth->email)) {
+                $msg_bademail = true;
+                $ov->msg_at("authors:{$n}", null, MessageSet::WARNING);
+            }
+            if ($auth->email !== ""
+                && !validate_email($auth->email)
+                && !$ov->prow->author_by_email($auth->email)) {
                 $ov->estop(null);
-                $ov->msg_at("authors:" . ($n + 1), "<0>Invalid email address ‘{$auth->email}’", MessageSet::ESTOP);
+                $ov->msg_at("authors:{$n}", "<0>Invalid email address ‘{$auth->email}’", MessageSet::ESTOP);
+                continue;
+            }
+            if ($req_orcid > 0) {
+                if ($auth->email === "") {
+                    $msg_missing = true;
+                    $ov->msg_at("authors:{$n}:email", null, MessageSet::WARNING);
+                } else if (!($u = $this->conf->user_by_email($auth->email))
+                           || !$u->orcid()) {
+                    $msg_orcid[] = $auth->email;
+                    $ov->msg_at("authors:{$n}", null, MessageSet::WARNING);
+                }
+            }
+            if ($auth->email !== ""
+                && ($n2 = array_search(strtolower($auth->email), $lemails)) !== $n - 1) {
+                $msg_dupemail = true;
+                $ov->msg_at("authors:{$n}:email", null, MessageSet::WARNING);
+                $ov->msg_at("authors:" . ($n2 + 1) . ":email", null, MessageSet::WARNING);
             }
         }
-        if ($msg1) {
+
+        if ($msg_missing) {
+            if ($req_orcid > 0) {
+                $ov->warning("<0>Please enter a name and email address for every author");
+            } else {
+                $ov->warning("<0>Please enter a name and optional email address for every author");
+            }
+        }
+        if ($msg_bademail) {
             $ov->warning("<0>You may have entered an email address in the wrong place. The first author field is for email, the second for name, and the third for affiliation");
         }
-        if ($msg2) {
-            $ov->warning("<0>Please enter a name and optional email address for every author");
+        if ($msg_dupemail) {
+            $ov->warning("<0>The same email address has been used for different authors. This is usually an error");
+        }
+        if ($msg_orcid) {
+            $ov->warning($this->conf->_("<5>Some authors have not configured their <a href=\"https://orcid.org\">ORCID iDs</a>"));
+            $ov->msg($this->conf->_("<0>This site requests that authors provide their ORCID iDs. Please ask {0:list} to sign in and update their profiles.", new FmtArg(0, $msg_orcid, 0)), MessageSet::INFORM);
         }
     }
+
     function value_save(PaperValue $ov, PaperStatus $ps) {
         // set property
         $authlist = $this->author_list($ov);
