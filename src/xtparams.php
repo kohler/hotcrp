@@ -93,6 +93,8 @@ class XtParams {
             return !$user || $user->is_manager();
         } else if ($s === "pc") {
             return !$user || $user->isPC;
+        } else if ($s === "pc_member") {
+            return !$user || $user->is_pc_member();
         } else if ($s === "author") {
             return !$user || $user->is_author();
         } else if ($s === "reviewer") {

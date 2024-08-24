@@ -149,6 +149,7 @@ describing a condition. Examples include:
 * `manager`: The viewer is a manager (system administrator, track
   administrator, or paper administrator)
 * `pc`: The viewer is on the PC or a system administrator
+* `pc_member`: The viewer is on the PC
 * `author`: The viewer is an author
 * `reviewer`: The viewer is on the PC, a system administrator, or an assigned
   reviewer

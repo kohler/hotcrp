@@ -55,13 +55,13 @@ class Home_Page {
         }
     }
 
-    static function profile_redirect_request(Contact $user, Qrequest $qreq) {
+    static function profile_redirect_request(Contact $user, Qrequest $qreq, ComponentSet $gx) {
         if (!$user->is_empty() && $qreq->postlogin) {
             LoginHelper::check_postlogin($user, $qreq);
         }
         if ($user->has_account_here()
             && $qreq->csession("freshlogin") === true) {
-            if (self::need_profile_redirect($user)) {
+            if (!self::profilecheck($user, $gx)) {
                 $qreq->set_csession("freshlogin", "redirect");
                 $user->conf->redirect_hoturl("profile", "redirect=1");
             } else {
@@ -70,19 +70,13 @@ class Home_Page {
         }
     }
 
-    static function need_profile_redirect(Contact $user) {
-        if (!$user->firstName && !$user->lastName) {
-            return true;
-        } else if ($user->conf->opt("noProfileRedirect")) {
-            return false;
-        } else {
-            return !$user->affiliation
-                || ($user->is_pc_member()
-                    && !$user->has_review()
-                    && (!$user->collaborators()
-                        || ($user->conf->has_topics()
-                            && !$user->topic_interest_map())));
-        }
+    /** @param Contact $user
+     * @param ComponentSet $gx */
+    static function profilecheck($user, $gx) {
+        $gx->enter()->set_context_args($user);
+        $v = $gx->call_members("__profilecheck", "&&");
+        $gx->leave();
+        return $v;
     }
 
     function print_head(Contact $user, Qrequest $qreq, ComponentSet $gx) {

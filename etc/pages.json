@@ -16,6 +16,10 @@
     {   "name": "__profilemenu/assignments", "order": 470, "allow_if": "chair", "print_function": "*Conf::print_profilemenu_item", "separator_group": "overall"   },
     {   "name": "__profilemenu/signout", "order": 500, "allow_if": "!empty", "print_function": "*Conf::print_profilemenu_item", "separator_group": "close"   },
 
+    {   "name": "__profilecheck/name", "order": 1, "function": "Contact::profilecheck_name"   },
+    {   "name": "__profilecheck/affiliation", "order": 2, "function": "Contact::profilecheck_affiliation"   },
+    {   "name": "__profilecheck/pc", "order": 100, "function": "Contact::profilecheck_pc", "allow_if": "pc_member"   },
+
 
     {   "name": "index", "alias": "home"   },
 

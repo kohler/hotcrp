@@ -5467,6 +5467,26 @@ class Contact implements JsonSerializable {
     }
 
 
+    // profile check
+
+    /** @return bool */
+    static function profilecheck_name(Contact $user) {
+        return $user->firstName !== "" || $user->lastName !== "";
+    }
+
+    /** @return bool */
+    static function profilecheck_affiliation(Contact $user) {
+        return $user->affiliation !== "";
+    }
+
+    /** @return bool */
+    static function profilecheck_pc(Contact $user) {
+        return $user->has_review()
+            || ($user->collaborators()
+                && (!$user->conf->has_topics() || $user->topic_interest_map()));
+    }
+
+
     // deadlines
 
     /** @param ?list<PaperInfo> $prows */
