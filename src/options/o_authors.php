@@ -86,7 +86,7 @@ class Authors_PaperOption extends PaperOption {
                     $msg_missing = true;
                     $ov->msg_at("authors:{$n}:email", null, MessageSet::WARNING);
                 } else if (!($u = $this->conf->user_by_email($auth->email))
-                           || !$u->orcid()) {
+                           || !$u->confirmed_orcid()) {
                     $msg_orcid[] = $auth->email;
                     $ov->msg_at("authors:{$n}", null, MessageSet::WARNING);
                 }
@@ -114,7 +114,7 @@ class Authors_PaperOption extends PaperOption {
         }
         if ($msg_orcid) {
             $ov->warning($this->conf->_("<5>Some authors have not configured their <a href=\"https://orcid.org\">ORCID iDs</a>"));
-            $ov->msg($this->conf->_("<0>This site requests that authors provide their ORCID iDs. Please ask {0:list} to sign in and update their profiles.", new FmtArg(0, $msg_orcid, 0)), MessageSet::INFORM);
+            $ov->msg($this->conf->_("<0>This site requests that authors provide ORCID iDs. Please ask {0:list} to sign in and update their profiles.", new FmtArg(0, $msg_orcid, 0)), MessageSet::INFORM);
         }
     }
 
