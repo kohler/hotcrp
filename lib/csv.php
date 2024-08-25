@@ -722,7 +722,6 @@ class CsvGenerator {
     const FLAG_WILL_EMIT = 4096;
     const FLAG_COMPLETING = 8192;
 
-    const FLUSH_TRIGGER = 10000000;   // 10 MB
     const FLUSH_JOINLIMIT = 12000000; // 12 MB
 
     /** @var int */
@@ -735,6 +734,8 @@ class CsvGenerator {
     private $lines = [];
     /** @var int */
     private $lines_length = 0;
+    /** @var int */
+    private $buffer_size = 10000000; // 10 MB
     /** @var null|false|resource */
     private $stream;
     /** @var ?string */
@@ -852,6 +853,18 @@ class CsvGenerator {
         return $this;
     }
 
+    /** @param int $buffer_size
+     * @return $this */
+    function set_buffer_size($buffer_size) {
+        $this->buffer_size = $buffer_size;
+        if ($this->lines_length > 0
+            && $this->lines_length >= $this->buffer_size
+            && $this->stream !== false) {
+            $this->flush();
+        }
+        return $this;
+    }
+
     /** @param list<int|string> $fields
      * @return $this */
     function select($fields) {
@@ -951,7 +964,7 @@ class CsvGenerator {
             } else {
                 $s = "";
                 $j = 0;
-                while ($j !== count($this->lines) && strlen($s) < self::FLUSH_TRIGGER) {
+                while ($j !== count($this->lines) && strlen($s) < $this->buffer_size) {
                     $s .= $this->lines[$j];
                     ++$j;
                 }
@@ -976,11 +989,13 @@ class CsvGenerator {
     /** @param string $text
      * @return $this */
     function add_string($text) {
-        if ($this->lines_length >= self::FLUSH_TRIGGER && $this->stream !== false) {
-            $this->flush();
-        }
         $this->lines[] = $text;
         $this->lines_length += strlen($text);
+        if ($this->lines_length > 0
+            && $this->lines_length >= $this->buffer_size
+            && $this->stream !== false) {
+            $this->flush();
+        }
         return $this;
     }
 
