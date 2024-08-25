@@ -62,9 +62,10 @@ class CdbUserUpdate {
     /** @param string ...$fields
      * @return bool */
     function needed(...$fields) {
-        if ($this->cdb_confid <= 0
-            || (empty($this->cids) && empty($this->emails))) {
+        if ($this->cdb_confid <= 0) {
             return false;
+        } else if (empty($this->cids) && empty($this->emails)) {
+            return true;
         }
 
         $qf = $qv = $fc = [];
