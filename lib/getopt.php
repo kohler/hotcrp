@@ -21,6 +21,8 @@ class Getopt {
     private $dupopt = true;
     /** @var bool */
     private $interleave = false;
+    /** @var bool */
+    private $require_subcommand = false;
     /** @var ?int */
     private $minarg;
     /** @var ?int */
@@ -196,12 +198,13 @@ class Getopt {
         return $this;
     }
 
-    /** @param string|list<string> ...$subcommands
+    /** @param string|list<string>|true ...$subcommands
      * @return $this */
     function subcommand(...$subcommands) {
-        $this->subcommand = [];
         foreach ($subcommands as $s) {
-            if (is_array($s)) {
+            if ($s === true) {
+                $this->require_subcommand = true;
+            } else if (is_array($s)) {
                 array_push($this->subcommand, ...$s);
             } else {
                 $this->subcommand[] = $s;
@@ -249,6 +252,9 @@ class Getopt {
     /** @param null|string|array<string,mixed> $arg
      * @return string */
     function help($arg = null) {
+        if (($subcommand = $arg["_subcommand"] ?? "") === "{help}") {
+            $subcommand = "";
+        }
         if (is_string($arg)) {
             $subtype = $arg;
             $arg = null;
@@ -259,8 +265,8 @@ class Getopt {
         }
         if (($subtype === false || $subtype === "")
             && !empty($this->subcommand)
-            && isset($arg["_subcommand"])) {
-            $subtype = $arg["_subcommand"];
+            && $subcommand !== "") {
+            $subtype = $subcommand;
         }
         $s = [];
         if ($this->description) {
@@ -272,7 +278,7 @@ class Getopt {
             }
         }
         if (!empty($this->subcommand)
-            && !isset($arg["_subcommand"])) {
+            && $subcommand === "") {
             $s[] = "Subcommands:\n";
             foreach ($this->subcommand as $sc) {
                 if (($space = strpos($sc, " ")) !== false) {
@@ -430,7 +436,8 @@ class Getopt {
                 $odone = true;
                 continue;
             } else if ($arg[0] !== "-" || $arg === "-") { // non-option
-                if ($this->subcommand !== null
+                if ($arg !== "-"
+                    && $this->subcommand !== null
                     && !array_key_exists("_subcommand", $res)
                     && ($x = $this->find_subcommand($arg)) !== null) {
                     $res["_subcommand"] = $x;
@@ -554,6 +561,9 @@ class Getopt {
             && (isset($res[$this->helpopt]) || ($res["_subcommand"] ?? null) === "{help}")) {
             fwrite(STDOUT, $this->help($res));
             exit(0);
+        }
+        if ($this->require_subcommand && !isset($res["_subcommand"])) {
+            throw (new CommandLineException("Subcommand required", $this))->add_context("Subcommands are " . join(", ", $this->subcommand));
         }
         if ($this->maxarg !== null && count($rest) > $this->maxarg) {
             throw new CommandLineException("Too many arguments", $this);
