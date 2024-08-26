@@ -360,7 +360,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 299) {
+        if ($this->sversion < 300) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -2551,19 +2551,25 @@ class Conf {
 
     // contactdb
 
+    /** @param array<string,mixed> $opt
+     * @return ?Dbl_ConnectionParams */
+    static function contactdb_connection_params($opt) {
+        if (($dsn = $opt["contactdbDsn"] ?? null)) {
+            return Dbl::parse_connection_params([
+                "dsn" => $dsn,
+                "dbSocket" => $opt["contactdbSocket"] ?? $opt["dbSocket"] ?? null
+            ]);
+        } else {
+            return null;
+        }
+    }
+
     /** @return ?\mysqli */
     static function main_contactdb() {
         global $Opt;
         if (self::$_cdb === false) {
-            self::$_cdb = null;
-            $opt = Conf::$main ? Conf::$main->opt : $Opt;
-            if (($dsn = $opt["contactdbDsn"] ?? null)
-                && ($cp = Dbl::parse_connection_params([
-                        "dsn" => $dsn,
-                        "dbSocket" => $opt["contactdbSocket"] ?? $opt["dbSocket"] ?? null
-                    ]))) {
-                self::$_cdb = $cp->connect();
-            }
+            $cp = self::contactdb_connection_params(Conf::$main ? Conf::$main->opt : $Opt);
+            self::$_cdb = $cp ? $cp->connect() : null;
         }
         return self::$_cdb;
     }

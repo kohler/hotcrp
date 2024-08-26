@@ -3111,6 +3111,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             assert(self::RF_AUSEEN_LIVE_v299 === ReviewInfo::RF_AUSEEN_LIVE);
             $conf->update_schema_version(299);
         }
+        if ($conf->sversion === 299
+            && CleanCountries_Batch::clean($conf->dblink, true)) {
+            $conf->update_schema_version(300);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

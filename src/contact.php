@@ -504,11 +504,22 @@ class Contact implements JsonSerializable {
     }
 
     /** @return string */
-    function country() {
+    function country_code() {
         if (($this->_slice & self::SLICEBIT_COUNTRY) !== 0) {
             $this->unslice();
         }
         return $this->country ?? "";
+    }
+
+    /** @return string */
+    function country_name() {
+        return Countries::code_to_name($this->country_code());
+    }
+
+    /** @return string
+     * @deprecated */
+    function country() {
+        return $this->country_name();
     }
 
     /** @return ?string */

@@ -374,7 +374,7 @@ class ContactList {
     }
 
     function _sortCountry($a, $b) {
-        return $this->_sort_string($a, $b, $a->country(), $b->country(), true);
+        return $this->_sort_string($a, $b, $a->country_name(), $b->country_name(), true);
     }
 
     function _sortOrcid($a, $b) {
@@ -853,7 +853,7 @@ class ContactList {
         case self::FIELD_ORCID:
             return htmlspecialchars($row->orcid());
         case self::FIELD_COUNTRY:
-            return htmlspecialchars($row->country());
+            return htmlspecialchars($row->country_name());
         case self::FIELD_LASTVISIT:
             if (!$row->activity_at) {
                 return "Never";

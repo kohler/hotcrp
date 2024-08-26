@@ -72,8 +72,8 @@ class User_API {
             "lastName" => $found->lastName,
             "affiliation" => $found->affiliation
         ];
-        if ($found->country() !== "") {
-            $rj["country"] = $found->country();
+        if ($found->country_code() !== "") {
+            $rj["country"] = $found->country_code();
         }
         if ($found->orcid() !== "") {
             $rj["orcid"] = $found->orcid();
