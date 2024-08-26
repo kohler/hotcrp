@@ -390,7 +390,8 @@ function initialize_request($kwarg = null) {
 
     // look up and activate user
     $muser = ($conf->fresh_user_by_email($uemail)
-              ?? Contact::make_email($conf, $uemail))->activate($qreq, true, $uindex);
+              ?? Contact::make_email($conf, $uemail, true))
+        ->activate($qreq, true, $uindex);
     Contact::set_main_user($muser);
     $qreq->set_user($muser);
 

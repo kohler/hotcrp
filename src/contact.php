@@ -281,12 +281,13 @@ class Contact implements JsonSerializable {
     }
 
     /** @param ?string $email
+     * @param bool $confirmed
      * @return Contact */
-    static function make_email(Conf $conf, $email) {
+    static function make_email(Conf $conf, $email, $confirmed = false) {
         $u = new Contact($conf);
         $u->contactXid = self::$next_xid--;
         $u->email = $email ?? "";
-        $u->cflags = self::CF_UNCONFIRMED;
+        $u->cflags = $confirmed ? 0 : self::CF_UNCONFIRMED;
         $u->set_roles_properties();
         return $u;
     }
