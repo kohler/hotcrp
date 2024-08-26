@@ -80,7 +80,7 @@ class CleanCountries_Batch {
 
     /** @param \mysqli $dblink
      * @param bool $save
-     * @return list<string> */
+     * @return bool|list<string> */
     static function clean($dblink, $save) {
         // load countries
         $list = Dbl::fetch_first_columns($dblink, "select distinct country from ContactInfo");
@@ -107,13 +107,13 @@ class CleanCountries_Batch {
             }
             $updatef(null);
         }
-        return $list2;
+        return $list2 ? : true;
     }
 
     /** @return int */
     function run() {
         $list = self::clean($this->dblink, !$this->dry_run);
-        if ($list) {
+        if ($list !== true) {
             echo join("\n", $list), "\n";
         }
         return 0;
