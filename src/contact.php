@@ -1019,6 +1019,15 @@ class Contact implements JsonSerializable {
         }
     }
 
+    /** @return Contact */
+    function populated_user() {
+        if ($this->contactId <= 0 && $this->has_email()) {
+            return $this->cdb_user() ?? $this;
+        } else {
+            return $this;
+        }
+    }
+
 
     /** @return bool */
     function is_actas_user() {

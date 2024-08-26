@@ -29,7 +29,7 @@ class User_API {
         $found = null;
         if (strcasecmp($user->email, $email) >= 0
             && strcasecmp($user->email, "{$email}~") < 0) {
-            $found = $user;
+            $found = $user->populated_user();
         }
 
         if (($user->can_view_pc() || $broad_lookup)

@@ -259,8 +259,8 @@ class Authors_PaperOption extends PaperOption {
         if ($n === 1
             && !$au
             && !$pt->user->can_administer($pt->prow)
-            && (!$reqau || $reqau->nea_equals($pt->user))) {
-            $reqau = new Author($pt->user);
+            && (!$reqau || $reqau->nea_equals($pt->user->populated_user()))) {
+            $reqau = new Author($pt->user->populated_user());
             $ignore_diff = true;
         }
 
