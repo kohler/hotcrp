@@ -2398,7 +2398,7 @@ class Conf {
     private function _postprocess_pc_set() {
         $this->_pc_set = new ContactSet;
         foreach ($this->_user_cache as $u) {
-            if (($u->roles & Contact::ROLE_PCLIKE) !== 0) {
+            if ($u !== null && ($u->roles & Contact::ROLE_PCLIKE) !== 0) {
                 $this->_pc_set->add_user($u, true);
             }
         }
