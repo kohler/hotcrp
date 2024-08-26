@@ -25,6 +25,8 @@ class UpdateContactdb_Batch {
     /** @var bool */
     public $authors;
     /** @var bool */
+    public $import;
+    /** @var bool */
     public $metadata;
     /** @var bool */
     public $verbose;
@@ -39,6 +41,7 @@ class UpdateContactdb_Batch {
         $this->collaborators = isset($arg["collaborators"]);
         $this->authors = isset($arg["authors"]);
         $this->metadata = isset($arg["metadata"]);
+        $this->import = isset($arg["import"]);
         $this->verbose = isset($arg["V"]);
         if (!$this->papers && !$this->users && !$this->collaborators && !$this->authors && !$this->metadata) {
             $this->papers = $this->users = true;
@@ -271,6 +274,19 @@ class UpdateContactdb_Batch {
         }
     }
 
+    private function run_import() {
+        $result = $this->conf->qe("select * from ContactInfo where (firstName='' or lastName='' or affiliation='' or coalesce(collaborators,'')='' or coalesce(country,'')='' or coalesce(orcid,'')='')");
+        $uset = ContactSet::make_result($result, $this->conf);
+        foreach ($uset as $u) {
+            if (($cdbu = $u->cdb_user())) {
+                $u->import_prop($cdbu, 2);
+                if ($u->prop_changed()) {
+                    $u->save_prop();
+                }
+            }
+        }
+    }
+
     /** @return int */
     function run() {
         if ($this->metadata) {
@@ -288,6 +304,9 @@ class UpdateContactdb_Batch {
         if ($this->papers) {
             $this->run_papers();
         }
+        if ($this->import) {
+            $this->run_import();
+        }
         return 0;
     }
 
@@ -303,9 +322,10 @@ class UpdateContactdb_Batch {
             "collaborators",
             "authors",
             "metadata",
+            "import",
             "V,verbose"
         )->description("Update HotCRP contactdb for a conference.
-Usage: php batch/updatecontactdb.php [-n CONFID | --config CONFIG] [--papers] [--users] [--collaborators] [--authors]")
+Usage: php batch/updatecontactdb.php [-n CONFID | --config CONFIG] [--papers] [--users] [--collaborators] [--authors] [--import]")
          ->helpopt("help")
          ->maxarg(0)
          ->parse($argv);
