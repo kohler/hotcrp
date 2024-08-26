@@ -193,7 +193,7 @@ class Contact implements JsonSerializable {
     private $_aucollab_matchers;
     /** @var ?TextPregexes */
     private $_aucollab_general_pregexes;
-    /** @var ?list<PaperInfo> */
+    /** @var ?PaperInfoSet */
     private $_authored_papers;
 
     /** @var ?array */
@@ -2701,11 +2701,11 @@ class Contact implements JsonSerializable {
         return ($this->_session_roles & self::ROLE_AUTHOR) !== 0;
     }
 
-    /** @return list<PaperInfo> */
+    /** @return PaperInfoSet */
     function authored_papers() {
         $this->check_rights_version();
         if ($this->_authored_papers === null) {
-            $this->_authored_papers = $this->is_author() ? $this->paper_set(["author" => true, "tags" => true])->as_list() : [];
+            $this->_authored_papers = $this->is_author() ? $this->paper_set(["author" => true, "tags" => true]) : new PaperInfoSet;
         }
         return $this->_authored_papers;
     }
