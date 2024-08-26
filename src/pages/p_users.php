@@ -91,7 +91,7 @@ class Users_Page {
                 "email" => $u->email,
                 "affiliation" => $u->affiliation,
                 "country" => $u->country_code(),
-                "orcid" => $u->orcid()
+                "orcid" => $u->decorated_orcid()
             ];
             $has_orcid = $has_orcid || $line["orcid"] !== "";
             $has_country = $has_country || $line["country"] !== "";
@@ -132,7 +132,7 @@ class Users_Page {
                 "email" => $user->email,
                 "affiliation" => $user->affiliation,
                 "country" => $user->country_code(),
-                "orcid" => $user->orcid(),
+                "orcid" => $user->decorated_orcid(),
                 "phone" => $user->phone(),
                 "disabled" => $user->is_disabled() ? "yes" : "",
                 "collaborators" => rtrim($user->collaborators())

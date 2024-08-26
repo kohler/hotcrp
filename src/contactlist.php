@@ -378,7 +378,7 @@ class ContactList {
     }
 
     function _sortOrcid($a, $b) {
-        return $this->_sort_string($a, $b, $a->orcid(), $b->orcid(), false);
+        return $this->_sort_string($a, $b, $a->decorated_orcid(), $b->decorated_orcid(), false);
     }
 
     function _sortLastVisit($a, $b) {
