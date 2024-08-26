@@ -3999,8 +3999,9 @@ class Conf {
 
 
     /** @param array{paperId?:list<int>|PaperID_SearchTerm,where?:string} $options
-     * @return \mysqli_result|Dbl_Result */
-    function paper_result($options, ?Contact $user = null) {
+     * @param bool $want_set
+     * @return \mysqli_result|Dbl_Result|PaperInfoSet */
+    private function _paper_result($options, ?Contact $user, $want_set) {
         // Options:
         //   "paperId" => $pids Only papers in list<int> $pids
         //   "finalized"        Only submitted papers
@@ -4246,6 +4247,15 @@ class Conf {
             $where[] = $options["where"];
         }
 
+        // use authored papers has already been loaded
+        if ($author
+            && empty($where)
+            && $user->has_authored_papers()
+            && $want_set) {
+            /** @phan-suppress-next-line PhanTypeMismatchReturn */
+            return $user->authored_papers();
+        }
+
         $pq = "select " . join(",\n    ", $cols)
             . "\nfrom " . join("\n    ", $joins);
         if (!empty($where)) {
@@ -4266,10 +4276,20 @@ class Conf {
     }
 
     /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
+     * @return \mysqli_result|Dbl_Result */
+    function paper_result($options, ?Contact $user = null) {
+        return $this->_paper_result($options, $user, false);
+    }
+
+    /** @param array{paperId?:list<int>|PaperID_SearchTerm} $options
      * @return PaperInfoSet|Iterable<PaperInfo> */
     function paper_set($options, ?Contact $user = null) {
-        $result = $this->paper_result($options, $user);
-        return PaperInfoSet::make_result($result, $user, $this);
+        $v = $this->_paper_result($options, $user, true);
+        if ($v instanceof PaperInfoSet) {
+            return $v;
+        } else {
+            return PaperInfoSet::make_result($v, $user, $this);
+        }
     }
 
     /** @param int $pid

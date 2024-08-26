@@ -2710,6 +2710,12 @@ class Contact implements JsonSerializable {
         return $this->_authored_papers;
     }
 
+    /** @return bool */
+    function has_authored_papers() {
+        $this->check_rights_version();
+        return $this->_authored_papers !== null;
+    }
+
     /** @return associative-array<int,int> */
     function conflict_types() {
         $this->check_author_reviewer_status($this->_conflict_types === null ? -1 : 0);
