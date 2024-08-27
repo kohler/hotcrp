@@ -267,10 +267,10 @@ class SavePapers_Batch {
             $prow = $this->conf->paper_by_id($pid, $this->user);
             foreach ($j->reviews as $reviewindex => $reviewj) {
                 if (!$this->tf->parse_json($reviewj)) {
-                    $this->tf->msg_at(null, "review #" . ($reviewindex + 1) . ": invalid review", MessageSet::ERROR);
+                    $this->tf->msg_at(null, "<0>review #" . ($reviewindex + 1) . ": invalid review", MessageSet::ERROR);
                 } else if (!isset($this->tf->req["reviewerEmail"])
                            || !validate_email($this->tf->req["reviewerEmail"])) {
-                    $this->tf->msg_at(null, "review #" . ($reviewindex + 1) . ": invalid reviewer email " . htmlspecialchars($this->tf->req["reviewerEmail"] ?? "<missing>"), MessageSet::ERROR);
+                    $this->tf->msg_at(null, "<0>review #" . ($reviewindex + 1) . ": invalid reviewer email " . ($this->tf->req["reviewerEmail"] ?? "<missing>"), MessageSet::ERROR);
                 } else {
                     $this->tf->set_req_override(true);
                     $user = Contact::make_keyed($this->conf, [
