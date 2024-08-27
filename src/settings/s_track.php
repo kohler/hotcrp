@@ -212,14 +212,7 @@ class Track_SettingParser extends SettingParser {
         $sv->print_feedback_at("{$pfx}/type");
         $sv->print_feedback_at("{$pfx}/tag");
         if ($hint) {
-            $klass = "f-d";
-            if (str_starts_with($hint, '<div class="fx">')
-                && str_ends_with($hint, '</div>')
-                && strpos($hint, '<div', 16) === false) {
-                $hint = substr($hint, 16, -6);
-                $klass .= " fx";
-            }
-            echo '<div class="', $klass, '">', $hint, '</div>';
+            echo str_starts_with($hint, "<") ? $hint : "<div class=\"f-d\">{$hint}</div>";
         }
         echo "</div></div>";
     }
@@ -229,7 +222,7 @@ class Track_SettingParser extends SettingParser {
     }
 
     function print_viewrev_perm(SettingValues $sv, $gj) {
-        $hint = "<div class=\"fx\">This setting constrains all users including co-reviewers.</div>";
+        $hint = "<div class=\"f-d fx\">This setting constrains all users including co-reviewers.</div>";
         $this->print_perm($sv, "viewrev", ["Who can see reviews?", $hint]);
     }
 

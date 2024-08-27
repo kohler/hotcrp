@@ -4792,7 +4792,7 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
     // highlight destination
     if ((p = e.closest(".pfe, .rfe, .f-i, .form-g, .form-section, .entryi, .checki"))
         && hashjump_destination(e, p)) {
-        $(p).find("label, .field-title").first().addClass("hashtarget");
+        $(p).find("label, .field-title, .label").first().addClass("hashtarget");
         return true;
     }
 

@@ -43,10 +43,10 @@ select, button {
 	color: #b655e6;
 }
 
-.is-description, .hint, .f-h, .f-d, .f-hx, .field-d, .dlsize {
+.is-description, .hint, .f-d, .field-d, .dlsize {
 	color: #555555;
 }
-.dark .is-description, .dark .hint, .dark .f-h, .dark .f-d, .dark .f-hx, .dark .field-d {
+.dark .is-description, .dark .hint, .dark .f-d, .dark .field-d {
 	color: #bcbcbc;
 }
 
@@ -1071,7 +1071,7 @@ span.hastitle {
 	text-decoration: underline;
 }
 
-label.hashtarget, .field-title.hashtarget {
+label.hashtarget, .label.hashtarget, .field-title.hashtarget {
 	animation: 10s ease-in-out hashtarget-flash;
 }
 @keyframes hashtarget-flash {
@@ -1816,7 +1816,7 @@ th.settings-simplehead {
 }
 .settings-radio > .label {
 	max-width: 800px;
-	margin-bottom: 0.35em;
+	margin-bottom: 0.3em;
 }
 .settings-radioitem + .settings-radiohint {
 	margin-top: 0.35rem;
@@ -2285,7 +2285,7 @@ input.wide {
 }
 
 /* vertically arranged forms */
-.f-i, .f-checkbox, .f-m {
+.f-i {
 	margin-bottom: 1.25em;
 }
 label.f-c, .f-i > label, .f-i > .label {
@@ -2297,26 +2297,6 @@ label.f-c, .f-i > label, .f-i > .label {
 }
 .f-c.n, .f-i > label.n, .f-i > .label.n {
 	font-weight: normal;
-}
-.f-h, .f-hx, .f-d, .field-d {
-	font-size: 92%;
-}
-.f-h {
-	margin-top: 0.25rem;
-	margin-bottom: 0.25rem;
-}
-.f-d {
-	margin-top: 0.25rem;
-	margin-bottom: 0;
-}
-.checki > .f-d {
-	margin-top: 0;
-}
-.f-h .feedback-list, .f-d .feedback-list, .small .feedback-list {
-	font-size: 100%;
-}
-.entry > .f-h:last-child {
-	margin-bottom: 0;
 }
 .f-mcol, .f-eqcol {
 	display: flex;
@@ -2332,7 +2312,7 @@ label.f-c, .f-i > label, .f-i > .label {
 }
 
 
-.feedback, .feedback-group {
+.feedback, .feedback-group, .f-d, .field-d {
 	font-size: 92%;
 }
 .feedback-list {
@@ -2344,18 +2324,29 @@ label.f-c, .f-i > label, .f-i > .label {
 .feedback, .feedback-list, .field-d {
 	margin-bottom: 0.3rem;
 }
+.f-d {
+	margin-top: 0.25rem;
+	margin-bottom: 0;
+}
 .msg .feedback-list {
 	max-width: initial;
-}
-.feedback-list > li {
-	margin-bottom: 0.3rem;
-}
-.feedback-list > li:last-child {
-	margin-bottom: 0;
 }
 .feedback-list + input.has-error,
 .feedback-list + input.has-warning {
 	margin-top: -0.3rem;
+}
+.checki > .f-d {
+	margin-top: 0;
+}
+.f-d .feedback-list, .small .feedback-list {
+	font-size: 100%;
+}
+.feedback-list > li {
+	margin-bottom: 0.3rem;
+}
+.feedback-list > li:last-child,
+.feedback-list.f-d > li {
+	margin-bottom: 0;
 }
 
 .is-diagnostic.is-error::before, .feedback.is-error::before,
@@ -4423,7 +4414,7 @@ a:hover .t-editor,
 	content: "";
 	display: block;
 }
-.has-document > .f-h, .has-document > .f-d {
+.has-document > .f-d {
 	margin-top: 0.5rem;
 }
 @media screen and (min-width: 900px) {

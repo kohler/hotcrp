@@ -1748,9 +1748,9 @@ class SettingValues extends MessageSet {
             assert(is_array($fold_values));
         }
 
-        $this->print_group_open($name, "settings-radio", $rest + ["group_id" => $name]);
+        $this->print_group_open($name, "settings-radio f-i", $rest + ["group_id" => $name]);
         if ($heading) {
-            echo '<div class="label">', $heading, '</div>';
+            echo '<div class="label n">', $heading, '</div>';
         }
         foreach ($varr as $k => $item) {
             if (is_string($item)) {

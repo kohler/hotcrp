@@ -226,7 +226,7 @@ class Review_SettingParser extends SettingParser {
         $hint = "";
         if ($sv->conf->check_track_sensitivity(Track::VIEWREV)
             || $sv->conf->check_track_sensitivity(Track::VIEWALLREV)) {
-            $hint = '<p class="settings-radiohint f-d">' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict review visibility.</p>';
+            $hint = '<p class="settings-radiohint f-d">' . $sv->setting_group_link("Current track settings", "tracks") . ' may restrict review visibility.</p>';
         }
         echo '<hr class="form-sep">';
         $sv->print_radio_table("review_visibility_pc", [
