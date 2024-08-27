@@ -7585,9 +7585,11 @@ function overlong_truncation_site(e) {
         while (ch && ch.nodeType === 3 && ch.data.trimEnd() === "") {
             ch = ch.previousSibling;
         }
-        if (ch && ch.nodeName === "P") {
+        const nn = ch ? ch.nodeName : null;
+        if (nn === "P"
+            || (nn === "LI" && ch.lastChild.nodeType === 3)) {
             return ch;
-        } else if (ch && ch.nodeName === "DIV") {
+        } else if (nn === "DIV" || nn === "BLOCKQUOTE" || nn === "UL" || nn === "OL") {
             t = ch;
         } else {
             break;
@@ -7611,7 +7613,7 @@ function cmt_render_text(format, value, response, texte, article) {
             && !hotcrp.status.myperm.allow_administer) {
             const wcx = count_words_split(value, rrd.hwl);
             value = wcx[0].trimEnd() + "… ";
-            aftertexte = $e("span", {class: "color-red d-inline-block ml-1", title: "Truncated for length"}, "✖");
+            aftertexte = $e("span", {class: "overlong-truncation", title: "Truncated for length"}, "✖");
         }
         if (wc > rrd.wl
             && ((rrd.hwl || 0) <= 0
