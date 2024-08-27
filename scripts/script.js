@@ -7609,16 +7609,14 @@ function cmt_render_text(format, value, response, texte, article) {
             cth.append($e("div", "cmtwords words" + (wc > rrd.wl ? " wordsover" : ""), plural(wc, "word")));
         }
         if ((rrd.hwl || 0) > 0
-            && wc > rrd.hwl
-            && !hotcrp.status.myperm.allow_administer) {
+            && wc > rrd.hwl) {
             const wcx = count_words_split(value, rrd.hwl);
             value = wcx[0].trimEnd() + "… ";
             aftertexte = $e("span", {class: "overlong-truncation", title: "Truncated for length"}, "✖");
         }
         if (wc > rrd.wl
             && ((rrd.hwl || 0) <= 0
-                || rrd.wl < rrd.hwl
-                || hotcrp.status.myperm.allow_administer)) {
+                || rrd.wl < rrd.hwl)) {
             const wcx = count_words_split(value, rrd.wl),
                 allowede = $e("div", "overlong-allowed"),
                 dividere = $e("div", "overlong-divider",
