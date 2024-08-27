@@ -291,17 +291,32 @@ class CommentInfo {
         }
     }
 
-    /** @return string */
+    /** @return string
+     * @deprecated */
     function raw_contents() {
+        return $this->raw_content();
+    }
+
+    /** @return string */
+    function raw_content() {
         return $this->commentOverflow ?? $this->comment ?? "";
     }
 
     /** @param ?Contact $viewer
      * @param bool $censor_mentions
      * @param ?int $censor_mentions_after
-     * @return string */
+     * @return string
+     * @deprecated */
     function contents($viewer = null, $censor_mentions = false, $censor_mentions_after = null) {
-        $t = $this->raw_contents();
+        return $this->content($viewer, $censor_mentions, $censor_mentions_after);
+    }
+
+    /** @param ?Contact $viewer
+     * @param bool $censor_mentions
+     * @param ?int $censor_mentions_after
+     * @return string */
+    function content($viewer = null, $censor_mentions = false, $censor_mentions_after = null) {
+        $t = $this->raw_content();
         if ($t === ""
             || !$censor_mentions
             || !($mx = $this->data("mentions"))
@@ -687,13 +702,13 @@ class CommentInfo {
 
         // contents
         if ($viewer->can_view_comment_contents($this->prow, $this)) {
-            $cj["text"] = $this->contents($viewer, !$idable);
+            $cj["text"] = $this->content($viewer, !$idable);
             if ($this->has_attachments()) {
                 $cj["docs"] = $this->attachments_json($cj["editable"] ?? false);
             }
         } else {
             $cj["text"] = false;
-            $cj["word_count"] = count_words($this->raw_contents());
+            $cj["word_count"] = count_words($this->raw_content());
         }
 
         return (object) $cj;
@@ -725,7 +740,7 @@ class CommentInfo {
         } else if ($p && ($p !== "Author" || ($this->commentType & self::CT_RESPONSE) !== 0)) {
             $x .= " by {$p}";
         }
-        $ctext = $this->contents($viewer, !$idable);
+        $ctext = $this->content($viewer, !$idable);
         if ($rrd && $rrd->wordlimit > 0) {
             $nwords = count_words($ctext);
             $x .= " (" . plural($nwords, "word") . ")";
@@ -778,7 +793,7 @@ class CommentInfo {
             $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . $viewer->reviewer_html_for($this->contactId);
         }
         return $t . "</small><br>"
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->contents($viewer, !$idable, 300), 300))
+            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->content($viewer, !$idable, 300), 300))
             . "</td></tr>";
     }
 
@@ -984,7 +999,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             }
             $ch = [];
             if ($this->commentId
-                && $text !== $this->raw_contents()) {
+                && $text !== $this->raw_content()) {
                 $ch[] = "text";
             }
             if ($this->commentId
@@ -1121,7 +1136,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             ]);
             $notification->sent = true;
             if (!$mxm[3]) {
-                $n = substr($this->raw_contents(), $mxm[1] + 1, $mxm[2] - $mxm[1] - 1);
+                $n = substr($this->raw_content(), $mxm[1] + 1, $mxm[2] - $mxm[1] - 1);
                 $notification->user_html = htmlspecialchars($n);
             }
         }

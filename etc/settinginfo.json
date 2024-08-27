@@ -305,7 +305,7 @@
         "type": "string", "subtype": "condition", "size": 30, "placeholder": "Search",
         "parse_order": 3
     },
-    {   "name_pattern": "sf/$/editcondition", "alias_pattern": "rf/$/edit_condition"   },
+    {   "name_pattern": "sf/$/editcondition", "alias_pattern": "sf/$/edit_condition"   },
     {
         "name_pattern": "sf/$/min",
         "title": "/Minimum value count",
@@ -314,6 +314,16 @@
     {
         "name_pattern": "sf/$/max",
         "title": "/Maximum value count",
+        "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
+    },
+    {
+        "name_pattern": "sf/$/wordlimit",
+        "title": "/Word limit",
+        "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
+    },
+    {
+        "name_pattern": "sf/$/hard_wordlimit",
+        "title": "/Hard word limit",
         "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
     },
     {

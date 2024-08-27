@@ -7578,6 +7578,24 @@ function cmt_render(cj, editing) {
     return $(article);
 }
 
+function overlong_truncation_site(e) {
+    let t = e;
+    while (t.nodeType === 1) {
+        let ch = t.lastChild;
+        while (ch && ch.nodeType === 3 && ch.data.trimEnd() === "") {
+            ch = ch.previousSibling;
+        }
+        if (ch && ch.nodeName === "P") {
+            return ch;
+        } else if (ch && ch.nodeName === "DIV") {
+            t = ch;
+        } else {
+            break;
+        }
+    }
+    return e;
+}
+
 function cmt_render_text(format, value, response, texte, article) {
     const rrd = response && resp_rounds[response];
     let aftertexte = null;
@@ -7592,9 +7610,8 @@ function cmt_render_text(format, value, response, texte, article) {
             && wc > rrd.hwl
             && !hotcrp.status.myperm.allow_administer) {
             const wcx = count_words_split(value, rrd.hwl);
-            value = wcx[0].trimEnd() + "…";
-            aftertexte = $e("div", "overlong-expander",
-                $e("button", {type: "button", "class": "ui js-overlong-expand", disabled: true}, "Truncated for length"));
+            value = wcx[0].trimEnd() + "… ";
+            aftertexte = $e("span", {class: "color-red d-inline-block ml-1", title: "Truncated for length"}, "✖");
         }
         if (wc > rrd.wl
             && ((rrd.hwl || 0) <= 0
@@ -7616,7 +7633,7 @@ function cmt_render_text(format, value, response, texte, article) {
         }
     }
     render_text.onto(texte, format, value);
-    aftertexte && texte.append(aftertexte);
+    aftertexte && overlong_truncation_site(texte).append(aftertexte);
     toggleClass(texte, "emoji-only", emojiregex.test(value));
 }
 

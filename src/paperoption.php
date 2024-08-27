@@ -874,7 +874,9 @@ class PaperOption implements JsonSerializable {
                 "rows" => max($extra["rows"] ?? 1, 1),
                 "cols" => 60,
                 "spellcheck" => ($extra["no_spellcheck"] ?? null ? null : "true"),
-                "data-default-value" => $default_value
+                "data-default-value" => $default_value,
+                "data-wordlimit" => ($extra["wordlimit"] ?? 0) > 0 ? $extra["wordlimit"] : null,
+                "data-hard-wordlimit" => ($extra["hard_wordlimit"] ?? 0) > 0 ? $extra["hard_wordlimit"] : null
             ]),
             "</div></div>\n\n";
     }
@@ -1657,11 +1659,17 @@ class Document_PaperOption extends PaperOption {
 class Text_PaperOption extends PaperOption {
     /** @var int */
     public $display_space;
+    /** @var int */
+    public $wordlimit;
+    /** @var int */
+    public $hard_wordlimit;
 
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args, "prefer-row pl_text");
         $bspace = $this->type === "mtext" ? 5 : 0;
         $this->display_space = $args->display_space ?? $bspace;
+        $this->wordlimit = $args->wordlimit ?? 0;
+        $this->hard_wordlimit = $args->hard_wordlimit ?? 0;
     }
 
     function value_present(PaperValue $ov) {
@@ -1688,15 +1696,23 @@ class Text_PaperOption extends PaperOption {
         return $this->parse_json_string($prow, $j);
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        $this->print_web_edit_text($pt, $ov, $reqov, ["rows" => $this->display_space]);
+        $this->print_web_edit_text($pt, $ov, $reqov, [
+            "rows" => $this->display_space,
+            "wordlimit" => $this->wordlimit,
+            "hard_wordlimit" => $this->hard_wordlimit
+        ]);
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
         $d = $ov->data();
-        if ($d !== null && $d !== "") {
-            $fr->value = $d;
-            $fr->value_format = $ov->prow->format_of($d);
-            $fr->value_long = true;
+        if ($d === null || $d === "") {
+            return;
+        }
+        $fr->value = $d;
+        $fr->value_format = $ov->prow->format_of($d);
+        $fr->value_long = true;
+        if ($this->wordlimit > 0) {
+            $fr->apply_wordlimit($this->wordlimit, $this->hard_wordlimit);
         }
     }
 
@@ -1719,12 +1735,24 @@ class Text_PaperOption extends PaperOption {
         if ($this->display_space !== ($this->type === "mtext" ? 5 : 0)) {
             $j->display_space = $this->display_space;
         }
+        if ($this->wordlimit > 0) {
+            $j->wordlimit = $this->wordlimit;
+        }
+        if ($this->hard_wordlimit > 0) {
+            $j->hard_wordlimit = $this->hard_wordlimit;
+        }
         return $j;
     }
     function export_setting() {
         $sfs = parent::export_setting();
         if ($this->display_space > 3) {
             $sfs->type = "mtext";
+        }
+        if ($this->wordlimit > 0) {
+            $sfs->wordlimit = $this->wordlimit;
+        }
+        if ($this->hard_wordlimit > 0) {
+            $sfs->hard_wordlimit = $this->hard_wordlimit;
         }
         return $sfs;
     }

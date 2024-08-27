@@ -1,6 +1,6 @@
 <?php
 // settings/s_sf.php -- HotCRP submission field setting object
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Sf_Setting {
     /** @var int|string */
@@ -19,6 +19,8 @@ class Sf_Setting {
     public $ids;
     public $min;
     public $max;
+    public $wordlimit;
+    public $hard_wordlimit;
 
     /** @var ?int */
     public $option_id;
