@@ -152,7 +152,7 @@ class FieldRender {
         }
         if ($hwl > 0 && $wc > $hwl) {
             list($prefix, $suffix) = count_words_split($this->value, $hwl);
-            $this->data = rtrim($prefix) . "… ⫻";
+            $this->value = rtrim($prefix) . "… ✖";
         }
         if ($wl > 0 && $wc > $wl && ($hwl <= 0 || $wl < $hwl)) {
             list($prefix, $suffix) = count_words_split($this->value, $wl);
