@@ -3129,121 +3129,6 @@ function $popup(options) {
     return self;
 }
 
-function popup_skeleton(options) {
-    var hc = new HtmlCollector,
-        $d = null,
-        form = null,
-        prior_focus = null;
-    options = options || {};
-    var near = options.near || options.anchor;
-    hc.push('<div class="modal hidden" role="dialog"><div class="modal-dialog'.concat(
-        !near || near === window ? " modal-dialog-centered" : "",
-        options.className ? " " + options.className : "",
-        options.style ? '" style="' + escape_html(options.style) : "",
-        '" role="document"><div class="modal-content"><form enctype="multipart/form-data" accept-charset="UTF-8"',
-        options.form_class ? ' class="' + options.form_class + '"' : '',
-        '>'), '</form></div></div></div>');
-    hc.push_actions = function (actions) {
-        hc.push('<div class="popup-actions">', '</div>');
-        if (actions)
-            hc.push(actions.join("")).pop();
-        return hc;
-    };
-    function show_errors(data) {
-        var dbody = $d.find(".popup-body"),
-            i, mlist = data.message_list, gmlist = [], mx, e, x;
-        $d.find(".msg-error, .feedback, .feedback-list").remove();
-        for (i in mlist || []) {
-            mx = mlist[i];
-            if (mx.field && (e = form.elements[mx.field])) {
-                if (feedback.append_item_near(e, mx)) {
-                    continue;
-                }
-            }
-            gmlist.push(mx);
-        }
-        if (gmlist.length) {
-            x = feedback.render_alert(gmlist);
-            dbody.length ? dbody.prepend(x) : $d.find("h2").after(x);
-        }
-        return $d;
-    }
-    function close() {
-        removeClass(document.body, "modal-open");
-        document.body.removeEventListener("keydown", dialog_keydown);
-        if (document.activeElement
-            && $d[0].contains(document.activeElement)) {
-            document.activeElement.blur();
-        }
-        hotcrp.tooltip.close();
-        $d.find("textarea, input").unautogrow();
-        $d.trigger("closedialog");
-        $d.remove();
-        if (prior_focus) {
-            prior_focus.focus({preventScroll: true});
-        }
-    }
-    function dialog_click(evt) {
-        if (evt.target === $d[0]
-            && evt.button === 0
-            && (!form || !form_differs(form))) {
-            close();
-        }
-    }
-    function dialog_keydown(evt) {
-        if (event_key(evt) === "Escape"
-            && event_key.modcode(evt) === 0
-            && (!form || !form_differs(form))) {
-            close();
-            evt.preventDefault();
-        }
-    }
-    function show() {
-        $d = $(hc.render()).appendTo(document.body);
-        form = $d[0].querySelector("form");
-        $d.on("click", dialog_click);
-        $d.find("button[name=cancel]").on("click", close);
-        document.body.addEventListener("keydown", dialog_keydown);
-        if (options.action && form) {
-            if (options.action instanceof HTMLFormElement) {
-                form.setAttribute("action", options.action.action);
-                form.setAttribute("method", options.action.method);
-            } else {
-                form.setAttribute("action", options.action);
-                form.setAttribute("method", options.method || "post");
-            }
-            if (form.getAttribute("method") === "post"
-                && !/post=/.test(form.getAttribute("action"))
-                && !/^(?:[a-z][-a-z0-9+.]*:|\/\/)/i.test(form.getAttribute("action"))) {
-                form.prepend(hidden_input("post", siteinfo.postvalue));
-            }
-        }
-        for (var k in {minWidth: 1, maxWidth: 1, width: 1}) {
-            if (options[k] != null)
-                $d.children().css(k, options[k]);
-        }
-        $d.show_errors = show_errors;
-        $d.close = close;
-    }
-    hc.show = function (visible) {
-        if (!$d) {
-            show();
-        }
-        if (visible !== false) {
-            var e = document.activeElement;
-            $d.awaken();
-            popup_near($d, near || window);
-            if (e && document.activeElement !== e) {
-                prior_focus = e;
-            }
-            hotcrp.tooltip.close();
-            // XXX also close down suggestions
-        }
-        return $d;
-    };
-    return hc;
-}
-
 function popup_near(elt, near) {
     hotcrp.tooltip.close();
     if (elt.jquery)
@@ -14202,7 +14087,6 @@ Object.assign(window.hotcrp, {
     // monitor_autoassignment
     // monitor_job
     // onload
-    popup_skeleton: popup_skeleton,
     // render_list
     render_text: render_text,
     render_text_page: render_text.on_page,
