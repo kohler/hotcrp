@@ -1484,8 +1484,10 @@ class Conf {
     /** @param int $ttype
      * @return bool */
     function check_default_track(Contact $user, $ttype) {
-        return !$this->_tracks
-            || $user->has_permission($this->_tracks[count($this->_tracks) - 1]->perm[$ttype]);
+        if ($this->_tracks === null) {
+            return (Track::BITS_REQUIRED & (1 << $ttype)) === 0;
+        }
+        return $user->has_permission($this->_tracks[count($this->_tracks) - 1]->perm[$ttype]);
     }
 
     /** @param int $ttype

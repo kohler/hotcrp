@@ -5130,7 +5130,8 @@ class Contact implements JsonSerializable {
             return $rights->can_administer()
                 || $this->conf->check_required_tracks($prow, $this, Track::HIDDENTAG);
         } else {
-            return $this->privChair;
+            return $this->privChair
+                || $this->conf->check_default_track($this, Track::HIDDENTAG);
         }
     }
 
