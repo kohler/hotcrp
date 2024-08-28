@@ -4385,12 +4385,8 @@ a:hover .t-editor,
 	width: 248px;
 	max-width: 600px;
 }
-.has-document {
-	margin-top: 0.25rem;
-	margin-bottom: 0.5rem;
-}
-.has-document.compact {
-	margin-bottom: 0.25rem;
+.has-document + .has-document {
+	margin-top: 0.35rem;
 }
 .document-replacer {
 	margin-top: 0.5rem;

@@ -165,9 +165,9 @@ class Attachments_PaperOption extends PaperOption {
             }
             echo '</div><div class="document-actions">', Ht::button("Delete", ["class" => "link ui js-remove-document"]), '</div></div>';
         }
-        echo '</div>',
+        echo '</div><div class="mt-2">',
             Ht::button("Add attachment", ["class" => "ui js-add-attachment", "data-editable-attachments" => "{$this->formid}:attachments"]),
-            "</div>\n\n";
+            "</div></div>\n\n";
     }
 
     function render(FieldRender $fr, PaperValue $ov) {

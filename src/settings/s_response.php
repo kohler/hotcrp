@@ -303,7 +303,7 @@ class Response_SettingParser extends SettingParser {
     function store_value(Si $si, SettingValues $sv) {
         if (!empty($this->round_delete)) {
             $sv->conf->qe("update PaperComment set commentRound=0, commentType=(commentType&~?)|? where commentType>=? and (commentType&?)!=0 and commentRound?a",
-                CommentInfo::CT_RESPONSE | CommentInfo::CTVIS_MASK,
+                CommentInfo::CT_RESPONSE | CommentInfo::CTM_VIS,
                 CommentInfo::CT_FROZEN | CommentInfo::CTVIS_ADMINONLY,
                 CommentInfo::CTVIS_AUTHOR,
                 CommentInfo::CT_RESPONSE,

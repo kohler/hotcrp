@@ -4898,7 +4898,7 @@ class Contact implements JsonSerializable {
                 && ($ctype >= CommentInfo::CTVIS_AUTHOR
                     || $rights->potential_reviewer()))
             || ($rights->act_author_view()
-                && (($ctype & CommentInfo::CT_BYAUTHOR_MASK) !== 0
+                && (($ctype & CommentInfo::CTM_BYAUTHOR) !== 0
                     || ($ctype >= CommentInfo::CTVIS_AUTHOR
                         && ($ctype & CommentInfo::CT_DRAFT) === 0
                         && (($ctype & CommentInfo::CT_TOPIC_PAPER) !== 0
@@ -4941,7 +4941,7 @@ class Contact implements JsonSerializable {
      * @return bool */
     function can_view_comment_identity(PaperInfo $prow, $crow) {
         $ct = $crow ? $crow->commentType : CommentInfo::CT_BLIND;
-        if (($ct & CommentInfo::CT_BYAUTHOR_MASK) !== 0) {
+        if (($ct & CommentInfo::CTM_BYAUTHOR) !== 0) {
             return $this->can_view_authors($prow);
         }
         if (($crow
@@ -4988,7 +4988,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_view_author_comment_topic_paper(PaperInfo $prow) {
         return $prow->has_viewable_comment_type($this,
-            CommentInfo::CT_BYAUTHOR_MASK | CommentInfo::CT_TOPIC_PAPER | CommentInfo::CTVIS_MASK,
+            CommentInfo::CTM_BYAUTHOR | CommentInfo::CTM_TOPIC | CommentInfo::CTM_VIS,
             CommentInfo::CT_TOPIC_PAPER | CommentInfo::CTVIS_AUTHOR);
     }
 
@@ -5734,18 +5734,7 @@ class Contact implements JsonSerializable {
                 }
                 if ($this->isPC
                     && !$this->conf->time_some_external_reviewer_view_comment()) {
-                    $perm->default_comment_visibility = "pc";
-                }
-                $found = false;
-                foreach ($prow->all_reviews() as $rrow) {
-                    if ($rrow->reviewStatus >= ReviewInfo::RS_DELIVERED
-                        && $this->can_view_review($prow, $rrow)) {
-                        $found = true;
-                        break;
-                    }
-                }
-                if (!$found) {
-                    $perm->default_comment_topic = "paper";
+                    $perm->some_external_reviewer_can_view_comment = false;
                 }
                 if ($this->_review_tokens) {
                     $tokens = [];

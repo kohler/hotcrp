@@ -172,11 +172,15 @@ class Icons {
     }
     /** @param string $name */
     static function stash_licon($name) {
-        if (Ht::mark_stash("i-{$name}")) {
-            $xname = str_replace("_", "-", $name);
-            if (str_starts_with($xname, "ui-")) {
-                $xname = substr($xname, 3);
-            }
+        if (!Ht::mark_stash("i-{$name}")) {
+            return;
+        }
+        $xname = str_replace("_", "-", $name);
+        if (str_starts_with($xname, "ui-")) {
+            $xname = substr($xname, 3);
+            self::stash_defs($xname);
+            Ht::stash_html("<div id=\"i-{$xname}\" class=\"hidden\">" . self::ui_use($xname) . "</div>");
+        } else {
             $body = Icons::$name();
             Ht::stash_html("<div id=\"i-{$xname}\" class=\"hidden\">{$body}</div>");
         }

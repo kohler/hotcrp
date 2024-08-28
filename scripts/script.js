@@ -5720,7 +5720,7 @@ $(function () {
 
 
 function minifeedback(e, rv) {
-    var ul = document.createElement("ul"), status = 0, i, mx;
+    var ul = document.createElement("ul"), status = 0;
     ul.className = "feedback-list";
     if (rv && rv.message_list) {
         for (let mx of rv.message_list) {
@@ -6355,7 +6355,6 @@ function append_review_id(rrow, eheader) {
 
 hotcrp.add_review = function (rrow) {
     var rid = rrow.pid + (rrow.ordinal || "r" + rrow.rid), rlink, rdesc,
-        has_user_rating = false,
         e, earticle, eheader;
 
     // review link and description
@@ -6701,18 +6700,18 @@ hotcrp.set_review_form = function (j) {
 
 // comments
 (function ($) {
-var vismap = {
+const vismap = {
         rev: "hidden from authors",
         pc: "hidden from authors and external reviewers",
         admin: "shown only to administrators"
     },
     emojiregex = /^(?:(?:\ud83c[\udde6-\uddff]\ud83c[\udde6-\uddff]|(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?(?:\u200d(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?)*)*[ \t]*){1,3}$/,
-    cmts = {}, has_unload = false, resp_rounds = {},
-    editor_observer, editing_list,
+    cmts = {}, resp_rounds = {},
     twiddle_start = siteinfo.user && siteinfo.user.uid ? siteinfo.user.uid + "~" : "###";
+let has_unload = false, editor_observer, editing_list;
 
 function unparse_tag(tag, strip_value) {
-    var pos;
+    let pos;
     if (tag.startsWith(twiddle_start)) {
         tag = tag.substring(twiddle_start.length - 1);
     }
@@ -6818,6 +6817,10 @@ function cmt_identity_time(frag, cj, editing) {
             cmt_header_dotsep(frag);
             frag.appendChild($e("div", "cmtvis", v));
         }
+        if (cj.topic === "paper") {
+            cmt_header_dotsep(frag);
+            frag.appendChild($e("div", {"class": "cmtvis", title: "Visible when reviews are hidden"}, "submission thread"));
+        }
         if (cj.tags) {
             const tage = $e("div", "cmttags");
             for (let t of cj.tags) {
@@ -6831,107 +6834,130 @@ function cmt_identity_time(frag, cj, editing) {
 }
 
 function cmt_is_editable(cj, override) {
-    var p = hotcrp.status.myperm;
-    if (cj.response)
-        p = p.can_responds && p.can_responds[cj.response];
-    else
+    let p = hotcrp.status.myperm;
+    if (cj.response) {
+        p = p.can_responds
+            && p.can_responds[cj.response]
+            && (override || cj.author_editable !== false);
+    } else {
         p = p.can_comment;
+    }
     return override ? !!p : p === true;
 }
 
-
 function cmt_render_form(cj) {
-    var x, btnbox = [], cid = cj_cid(cj), bnote, hc = new HtmlCollector;
+    const cid = cj_cid(cj),
+        btnbox = $e("div", "btnbox"),
+        eform = $e("form", "cmtform");
+    cj.review_token && eform.append(hidden_input("review_token", cj.review_token));
+    cj.by_author && eform.append(hidden_input("by_author", 1));
+    cj.response && eform.append(hidden_input("response", cj.response));
 
-    hc.push('<form class="cmtform">', '</form>');
-    if (cj.review_token) {
-        hc.push('<input type="hidden" name="review_token" value="' + escape_html(cj.review_token) + '">');
+    const fmt = render_text.format(cj.format);
+    let efmtdesc = null;
+    if (fmt.description || fmt.has_preview) {
+        efmtdesc = $e("div", "formatdescription");
+        if (fmt.description) {
+            efmtdesc.innerHTML = fmt.description;
+            fmt.has_preview && efmtdesc.append(" ", $e("span", "barsep", "·"), " ");
+        }
+        if (fmt.has_preview) {
+            efmtdesc.append($e("button", {type: "button", "class": "link ui js-togglepreview", "data-format": fmt.format || 0}, "Preview"));
+        }
     }
-    if (cj.by_author) {
-        hc.push('<input type="hidden" name="by_author" value="1">');
-    }
-    hc.push('<div class="f-i">', '</div>');
-    var fmt = render_text.format(cj.format), fmtnote = fmt.description || "";
-    if (fmt.has_preview) {
-        fmtnote += (fmtnote ? ' <span class="barsep">·</span> ' : "") + '<button type="button" class="link ui js-togglepreview" data-format="' + (fmt.format || 0) + '">Preview</button>';
-    }
-    fmtnote && hc.push('<div class="formatdescription">' + fmtnote + '</div>');
-    hc.push_pop('<textarea name="text" class="w-text cmttext suggest-emoji mentions need-suggest c" rows="5" cols="60" placeholder="Leave a comment"></textarea>');
+    eform.append($e("div", "f-i", efmtdesc, $e("textarea", {
+        name: "text", "class": "w-text cmttext suggest-emoji mentions need-suggest c",
+        rows: 5, cols: 60, placeholder: "Leave a comment"
+    })));
 
-    hc.push('<div class="cmteditinfo fold3c">', '</div>');
+    // attachments, visibility, tags, readiness
+    eform.append(cmt_render_form_prop(cj, cid, btnbox));
+
+    // actions: [btnbox], [wordcount] || cancel, save/submit
+    const eaa = $e("div", "w-text aabig aab mt-3");
+    btnbox.firstChild && eaa.append($e("div", "aabut", btnbox));
+    if (cj.response && resp_rounds[cj.response].wl > 0) {
+        eaa.append($e("div", "aabut", $e("div", "words")));
+    }
+    const btext = cj.response ? "Submit" : "Save",
+        bnote = cmt_is_editable(cj) ? null : $e("div", "hint", "(admin only)");
+    eaa.append($e("div", "aabr",
+        $e("div", "aabut", $e("button", {type: "button", name: "cancel"}, "Cancel")),
+        $e("div", "aabut", $e("button", {type: "button", name: "bsubmit", "class": "btn-primary"}, btext), bnote)));
+    eform.append(eaa);
+
+    return eform;
+}
+
+function cmt_render_form_prop(cj, cid, btnbox) {
+    const einfo = $e("div", "cmteditinfo fold3c");
 
     // attachments
-    hc.push('<div class="entryi has-editable-attachments hidden" id="'.concat(cid, '-attachments" data-dtype="-2" data-document-prefix="attachment"><span class="label">Attachments</span></div>'));
-    btnbox.push('<button type="button" name="attach" class="btn-licon need-tooltip ui js-add-attachment" aria-label="Attach file" data-editable-attachments="'.concat(cid, '-attachments">', $("#i-attachment").html(), '</button>'));
+    einfo.append($e("div", {id: cid + "-attachments", "class": "entryi has-editable-attachments hidden", "data-dtype": -2, "data-document-prefix": "attachment"}, $e("span", "label", "Attachments")));
+    btnbox.append($e("button", {type: "button", name: "attach", "class": "btn-licon need-tooltip ui js-add-attachment", "aria-label": "Attach file", "data-editable-attachments": cid + "-attachments"}, svge_use_licon("attachment")));
 
     // visibility
     if (!cj.response && (!cj.by_author || cj.by_author_visibility)) {
-        hc.push('<div class="entryi"><label for="' + cid + '-visibility">Visibility</label><div class="entry">', '</div></div>');
-        hc.push('<span class="select"><select id="' + cid + '-visibility" name="visibility">', '</select></span>');
-        if (!cj.by_author) {
-            hc.push('<option value="au">Author discussion</option>');
-            hc.push('<option value="rev">Reviewer discussion</option>');
-            hc.push('<option value="pc">PC discussion</option>');
-            hc.push_pop('<option value="admin">Administrators only</option>');
+        const evsel = $e("select", {id: cid + "-visibility", name: "visibility"});
+        if (cj.by_author) {
+            evsel.append($e("option", {value: "au"}, "Reviewer discussion"));
         } else {
-            hc.push('<option value="au">Reviewer discussion</option>');
-            hc.push_pop('<option value="admin">Administrators only</option>');
+            evsel.append($e("option", {value: "au"}, "Author discussion"),
+                $e("option", {value: "rev"}, "Reviewer discussion"),
+                $e("option", {value: "pc"}, "PC discussion"));
         }
-        hc.push('<span class="visibility-topic"><span class="d-inline-block ml-2 mr-2">about</span>');
-        hc.push('<span class="select"><select id="' + cid + '-topic" name="topic">', '</select></span></span>');
-        hc.push('<option value="paper">' + siteinfo.snouns[0] + '</option>');
-        hc.push_pop('<option value="rev" selected>reviews</option>');
-        hc.push('<p class="visibility-hint f-d text-break-line"></p>');
+        evsel.append($e("option", {value: "admin"}, "Administrators only"));
+
+        const evis = $e("div", "entry",
+            $e("span", "select", evsel),
+            $e("span", "visibility-topic",
+                $e("span", "d-inline-block ml-2 mr-2", "about"),
+                $e("span", "select",
+                    $e("select", {id: cid + "-topic", name: "topic"},
+                        $e("option", {value: "paper"}, siteinfo.snouns[0]),
+                        $e("option", {value: "rev", selected: true}, "reviews")))),
+            $e("p", "visibility-hint f-d text-break-line"));
         if (!cj.by_author && hotcrp.status.rev.blind && hotcrp.status.rev.blind !== true) {
-            hc.push('<div class="visibility-au-blind checki"><label><span class="checkc"><input type="checkbox" name="blind" value="1"></span>Anonymous to authors</label></div>');
+            evis.push($e("div", "visibility-au-blind checki",
+                $e("label", null,
+                    $e("span", "checkc", $e("input", {type: "checkbox", name: "blind", value: 1})),
+                    "Anonymous to authors")));
         }
-        hc.pop();
+        einfo.append($e("div", "entryi",
+            $e("label", {"for": cid + "-visibility"}, "Visibility"),
+            evis));
     }
 
     // tags
     if (!cj.response && !cj.by_author) {
-        hc.push('<div class="entryi fx3"><label for="' + cid + '-tags">Tags</label>', '</div>')
-        hc.push_pop('<input id="' + cid + '-tags" name="tags" type="text" size="50" placeholder="Comment tags">');
-        btnbox.push('<button type="button" name="showtags" class="btn-licon need-tooltip" aria-label="Tags">' + $("#i-tag").html() + '</button>');
+        einfo.append($e("div", "entryi fx3",
+            $e("label", {"for": cid + "-tags"}, "Tags"),
+            $e("input", {id: cid + "-tags", name: "tags", type: "text", size: 50, placeholder: "Comment tags"})));
+        btnbox.append($e("button", {type: "button", name: "showtags", "class": "btn-licon need-tooltip", "aria-label": "Tags"}, svge_use_licon("tag")));
     }
 
     // delete
     if (!cj.is_new) {
-        x = cj.response ? "response" : "comment";
+        const x = cj.response ? "response" : "comment";
+        let bnote;
         if (cmt_is_editable(cj)) {
             bnote = "Are you sure you want to delete this " + x + "?";
         } else {
             bnote = "Are you sure you want to override the deadline and delete this " + x + "?";
         }
-        btnbox.push('<button type="button" name="delete" class="btn-licon need-tooltip" aria-label="Delete ' + x + '" data-override-text="' + bnote + '">' + $("#i-trash").html() + '</button>');
+        btnbox.append($e("button", {type: "button", name: "delete", "class": "btn-licon need-tooltip", "aria-label": "Delete " + x, "data-override-text": bnote}, svge_use_licon("trash")));
     }
 
     // response ready
     if (cj.response) {
-        x = !cj.is_new && !cj.draft;
-        hc.push('<label class="checki has-fold fold' + (x ? "o" : "c") + '"><span class="checkc"><input type="checkbox" class="uich js-foldup" name="ready" value="1"' + (x ? " checked" : "") + '></span><strong>The response is ready for review</strong><div class="f-d fx">Reviewers will be notified when you submit the response.</div></label>');
-        hc.push('<input type="hidden" name="response" value="' + cj.response + '">');
+        const ready = !cj.is_new && !cj.draft;
+        einfo.append($e("label", "checki has-fold fold" + (ready ? "o" : "c"),
+            $e("span", "checkc", $e("input", {type: "checkbox", "class": "uich js-foldup", name: "ready", value: 1, checked: ready})),
+            $e("strong", null, "The response is ready for review"),
+            $e("div", "f-d fx", "Reviewers will be notified when you submit the response.")));
     }
 
-    // close .cmteditinfo
-    hc.pop();
-
-    // actions: [btnbox], [wordcount] || cancel, save/submit
-    hc.push('<div class="w-text aabig aab mt-3">', '</div>');
-    bnote = cmt_is_editable(cj) ? "" : '<div class="hint">(admin only)</div>';
-    if (btnbox.length)
-        hc.push('<div class="aabut"><div class="btnbox">' + btnbox.join("") + '</div></div>');
-    if (cj.response && resp_rounds[cj.response].wl > 0)
-        hc.push('<div class="aabut"><div class="words"></div></div>');
-    hc.push('<div class="aabr">', '</div>');
-    hc.push('<div class="aabut"><button type="button" name="cancel">Cancel</button></div>');
-    if (cj.response) {
-        // XXX allow_administer
-        hc.push('<div class="aabut"><button type="button" name="bsubmit" class="btn-primary">Submit</button>' + bnote + "</div>");
-    } else {
-        hc.push('<div class="aabut"><button type="button" name="bsubmit" class="btn-primary">Save</button>' + bnote + "</div>");
-    }
-    return $(hc.render())[0];
+    return einfo;
 }
 
 function cmt_visibility_change() {
@@ -6966,7 +6992,8 @@ function cmt_visibility_change() {
         } else if (vis.value === "pc") {
             m.length && m.push("\n");
             m.push('The comment will be hidden from authors and external reviewers.');
-        } else if (vis.value === "rev" && hotcrp.status.myperm.default_comment_visibility === "pc") {
+        } else if (vis.value === "rev"
+                   && hotcrp.status.myperm.some_external_reviewer_can_view_comment === false) {
             m.length && m.push("\n");
             m.push($e("span", "is-diagnostic is-warning", "External reviewers cannot view comments at this time."));
         }
@@ -7057,7 +7084,8 @@ function cmt_start_edit(celt, cj) {
         .attr("data-default-value", vis)
         .on("change", cmt_visibility_change);
 
-    var topic = (cj.is_new ? cj.topic || hotcrp.status.myperm.default_comment_topic : cj.topic) || "rev";
+    var topic = cj.topic
+        || (document.querySelector(".revcard") ? "rev" : "paper");
     $(form.elements.topic).val(topic)
         .attr("data-default-value", topic)
         .on("change", cmt_visibility_change);
@@ -7070,14 +7098,15 @@ function cmt_start_edit(celt, cj) {
         tags.push(unparse_tag(cj.tags[i]));
     }
     if (tags.length) {
-        fold($(celt).find(".cmteditinfo")[0], false, 3);
+        fold(celt.querySelector(".cmteditinfo"), false, 3);
     }
     $(form.elements.tags).val(tags.join(" ")).autogrow();
 
     if (cj.docs && cj.docs.length) {
-        $(celt).find(".has-editable-attachments").removeClass("hidden").append('<div class="entry"></div>');
+        const entry = $e("div", "entry");
+        $(celt).find(".has-editable-attachments").removeClass("hidden").append(entry);
         for (i in cj.docs || [])
-            $(celt).find(".has-editable-attachments .entry").append(cmt_render_attachment_input(+i + 1, cj.docs[i]));
+            entry.append(cmt_render_attachment_input(+i + 1, cj.docs[i]));
     }
 
     if (!cj.visibility || cj.blind) {
@@ -7103,7 +7132,7 @@ function cmt_start_edit(celt, cj) {
 }
 
 function cmt_render_attachment_input(ctr, doc) {
-    return $e("div", {"class": "has-document compact", "data-dtype": "-2", "data-document-name": "attachment:" + ctr},
+    return $e("div", {"class": "has-document", "data-dtype": "-2", "data-document-name": "attachment:" + ctr},
         $e("div", "document-file", cmt_render_attachment(doc)),
         $e("div", "document-actions",
             $e("button", {type: "button", "class": "link ui js-remove-document"}, "Delete"),
@@ -7217,7 +7246,7 @@ function cmt_toggle_editing(celt, editing) {
 }
 
 function cmt_save_callback(cj) {
-    var cid = cj_cid(cj), celt = $$(cid), form = $(celt).find("form")[0];
+    var cid = cj_cid(cj), celt = $$(cid), form = celt.querySelector("form");
     return function (data) {
         if (!data.ok) {
             if (data.loggedout) {
@@ -7234,7 +7263,7 @@ function cmt_save_callback(cj) {
             return;
         }
         cmt_toggle_editing(celt, false);
-        var editing_response = cj.response
+        const editing_response = cj.response
             && cmt_is_editable(cj, true)
             && (!data.cmt || data.cmt.draft);
         if (!data.cmt && editing_response) {
@@ -7255,7 +7284,7 @@ function cmt_save_callback(cj) {
                 navsidebar.redisplay(celt);
             } else {
                 celt.removeAttribute("id");
-                celt.innerHTML = '<div class="cmtmsg"></div>';
+                celt.replaceChildren($e("div", "cmtmsg"));
                 removeClass(celt, "cmtid");
                 navsidebar.remove(celt);
             }
@@ -7270,7 +7299,7 @@ function cmt_save_callback(cj) {
 }
 
 function cmt_save(elt, action, really) {
-    var cj = cj_find(elt), cid = cj_cid(cj), form = $("#" + cid).find("form")[0];
+    var cj = cj_find(elt), cid = cj_cid(cj), form = $$(cid).querySelector("form");
     if (!really) {
         if (!cmt_is_editable(cj)) {
             var submitter = form.elements.bsubmit || elt;
@@ -7304,7 +7333,7 @@ function cmt_save(elt, action, really) {
     really && (arg.override = 1);
     siteinfo.want_override_conflict && (arg.forceShow = 1);
     action === "delete" && (arg.delete = 1);
-    var url = hoturl("=api/comment", arg),
+    const url = hoturl("=api/comment", arg),
         callback = cmt_save_callback(cj);
     if (window.FormData) {
         $.ajax(url, {

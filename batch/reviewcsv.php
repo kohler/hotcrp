@@ -180,7 +180,7 @@ class ReviewCSV_Batch {
         $rs = $crow->commentType & CommentInfo::CT_DRAFT ? "draft " : "";
         if (($crow->commentType & CommentInfo::CT_RESPONSE) !== 0) {
             $rs .= "response";
-        } else if (($crow->commentType & CommentInfo::CT_BYAUTHOR_MASK) !== 0) {
+        } else if (($crow->commentType & CommentInfo::CTM_BYAUTHOR) !== 0) {
             $rs .= "author comment";
         } else {
             $rs .= "comment";
