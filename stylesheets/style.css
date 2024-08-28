@@ -1739,6 +1739,10 @@ td.rxcaption {
 	text-align: right;
 	padding: 3px 0.5em 3px 0;
 }
+th.sentry {
+	padding: 3px 0.75em;
+	text-align: left;
+}
 td.sentry {
 	padding: 3px 0.75em;
 }
@@ -2978,7 +2982,7 @@ tr.pl_statheadrow {
 	background: #eeeeee;
 	font-weight: bold;
 }
-tr.pl_statheadrow > td.plstat {
+tr.pl_statheadrow > td.plstat, .pl-border-top {
 	border-top: 1px solid #cccccc;
 }
 .pl_footselector, .pl-footer-desc {

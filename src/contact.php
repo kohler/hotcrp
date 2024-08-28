@@ -4106,7 +4106,7 @@ class Contact implements JsonSerializable {
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
      * @param PaperContactInfo $rights
      * @return -1|0|1|3|4 */
-    private function seerev_setting(PaperInfo $prow, $rbase, $rights) {
+    private function viewrev_setting(PaperInfo $prow, $rbase, $rights) {
         if ($rights->view_conflict_type
             || (!$rights->allow_pc() && !$rights->reviewType)
             || !$this->conf->check_reviewer_tracks($prow, $this, Track::VIEWREV)) {
@@ -4169,7 +4169,7 @@ class Contact implements JsonSerializable {
         if ($viewscore < ($rights->allow_pc() ? VIEWSCORE_PC : VIEWSCORE_REVIEWER)) {
             return false;
         }
-        $seerev = $this->seerev_setting($prow, $rrow, $rights);
+        $seerev = $this->viewrev_setting($prow, $rrow, $rights);
         if ($seerev < 0) {
             return false;
         }
@@ -4207,12 +4207,12 @@ class Contact implements JsonSerializable {
         } else if ($rights->view_conflict_type) {
             $whyNot["conflict"] = true;
         } else if ($rights->reviewType === REVIEW_EXTERNAL
-                   && $this->seerev_setting($prow, $rrow, $rights) < 0) {
+                   && $this->viewrev_setting($prow, $rrow, $rights) < 0) {
             $whyNot["externalReviewer"] = true;
         } else if (!$rrowSubmitted) {
             $whyNot["reviewNotSubmitted"] = true;
         } else if ($rights->allow_pc()
-                   && $this->seerev_setting($prow, $rrow, $rights) == Conf::VIEWREV_UNLESSANYINCOMPLETE
+                   && $this->viewrev_setting($prow, $rrow, $rights) == Conf::VIEWREV_UNLESSANYINCOMPLETE
                    && $this->has_outstanding_review()) {
             $whyNot["reviewsOutstanding"] = true;
         } else if (!$this->conf->time_review_open()) {

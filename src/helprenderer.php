@@ -161,7 +161,7 @@ class HelpRenderer extends Ht {
         if (($si = $this->conf->si($siname))) {
             $param = $si->hoturl_param();
         } else {
-            error_log("missing setting information for $siname\n" . debug_string_backtrace());
+            error_log("missing setting information for {$siname}\n" . debug_string_backtrace());
             $param = [];
         }
         $url = $this->conf->hoturl("settings", $param);
