@@ -165,6 +165,11 @@ class Track_SettingParser extends SettingParser {
         }
     }
 
+    /** @return ?Track_Setting */
+    function current_track_setting() {
+        return $this->cur_trx;
+    }
+
     const PERM_DEFAULT_UNFOLDED = 1;
 
     /** @param SettingValues $sv
@@ -174,7 +179,7 @@ class Track_SettingParser extends SettingParser {
     function print_perm($sv, $permname, $label, $flags = 0) {
         $perm = Track::$perm_name_map[$permname];
         $deftype = Track::perm_required($perm) ? "none" : "all";
-        $trx = $sv->oldv("track/{$this->ctr}");
+        $trx = $this->cur_trx;
         $pfx = "track/{$this->ctr}/perm/{$permname}";
         $p = $sv->reqstr($pfx) ?? $trx->perms[$perm];
         $reqtype = $sv->reqstr("{$pfx}/type") ?? Track_Setting::perm_type($p);
@@ -228,8 +233,8 @@ class Track_SettingParser extends SettingParser {
 
     private function print_track(SettingValues $sv, $ctr) {
         $this->ctr = $ctr;
+        $this->cur_trx = $trx = $sv->oldv("track/{$ctr}");
         $this->nfolded = 0;
-        $trx = $sv->oldv("track/{$ctr}");
         echo '<fieldset id="track/', $ctr, '" class="settings-tracks has-fold ',
             $trx->is_new ? "fold3o" : "fold3c", '">',
             '<legend class="mb-1">';
@@ -258,11 +263,13 @@ class Track_SettingParser extends SettingParser {
                 '</button></div></div>';
         }
         echo "</div></fieldset>\n\n";
+        $this->cur_trx = null;
     }
 
     private function print_cross_track(SettingValues $sv) {
         echo "<fieldset class=\"settings-tracks\"><legend class=\"mb-1\">General permissions</legend>";
         $this->ctr = $sv->search_oblist("track", "id", "any");
+        $this->cur_trx = $sv->oldv("track/{$this->ctr}");
         $this->print_perm($sv, "viewtracker", "Who can see the <a href=\"" . $sv->conf->hoturl("help", "t=chair#meeting") . "\">meeting tracker</a>?", self::PERM_DEFAULT_UNFOLDED);
         echo "</fieldset>\n\n";
     }
