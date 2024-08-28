@@ -1093,8 +1093,9 @@ class TagMap {
         // go tag by tag
         $strip_hidden = ($this->flags & TagInfo::TF_HIDDEN) !== 0
             && !$user->can_view_hidden_tags($prow);
-        $mine_tw = $user->contactId > 0 ? strlen((string) $user->contactId) : 0;
-        $p = 0;
+        $my_uid = $user->contactId > 0 ? (string) $user->contactId : "";
+        $my_tw = strlen($my_uid);
+        $p = $ip = 0;
         $l = strlen($tags);
         while ($p < $l) {
             $np = strpos($tags, " ", $p + 1) ? : $l;
@@ -1110,8 +1111,8 @@ class TagMap {
                     $ok = $dt && ($dt->flags & $conflict_free) !== 0;
                 }
             } else if ($tw !== false) {
-                if ($tw === $mine_tw
-                    && str_starts_with($t, (string) $user->contactId)) {
+                if ($tw === $my_tw
+                    && str_starts_with($t, $my_uid)) {
                     $ok = true;
                 } else if ($ctype === self::CENSOR_VIEW) {
                     $ok = false;
@@ -1137,15 +1138,17 @@ class TagMap {
             } else {
                 $ok = true;
             }
-            if ($ok) {
-                $p = $np;
+            if ($ok && $ip < $p) {
+                $tags = substr($tags, 0, $ip) . substr($tags, $p);
+                $l -= $p - $ip;
+                $p = $ip = $np - ($p - $ip);
+            } else if ($ok) {
+                $p = $ip = $np;
             } else {
-                $tags = substr($tags, 0, $p) . substr($tags, $np);
-                $l -= $np - $p;
+                $p = $np;
             }
         }
-
-        return $tags;
+        return $ip < $p ? substr($tags, 0, $ip) : $tags;
     }
 
     /** @param array<string,mixed> &$tagmap */

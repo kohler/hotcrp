@@ -331,4 +331,8 @@ class Tags_Tester {
         $p7 = $this->conf->checked_paper_by_id(7);
         xassert_eqq($p7->tag_value("order"), 5.0);
     }
+
+    function test_track_data() {
+        xassert_eqq(Track::BITS_REQUIRED, (1 << Track::HIDDENTAG) | (1 << Track::ADMIN));
+    }
 }

@@ -1217,7 +1217,7 @@ class Contact implements JsonSerializable {
             $dt = $this->conf->tags();
             $ctflags = ($dt->has_role_decoration ? self::CTFLAG_ROLES : 0)
                 | ($pfx !== "rn" ? self::CTFLAG_DISABLED : 0);
-            $act = self::all_contact_tags_for($user, $ctflags);
+            $act = self::all_user_tags_for($user, $ctflags);
             if ($act !== ""
                 && $this->can_view_user_tags()
                 && ($viewable = $dt->censor(TagMap::CENSOR_VIEW, $act, $this, null))) {
@@ -1450,7 +1450,7 @@ class Contact implements JsonSerializable {
     /** @param Contact|Author $x
      * @param 0|1|2|3 $ctags
      * @return string */
-    static function all_contact_tags_for($x, $ctags) {
+    static function all_user_tags_for($x, $ctags) {
         $tags = $x->contactTags ?? "";
         if (($ctags & self::CTFLAG_ROLES) !== 0
             && ($x->roles & self::ROLE_PC) !== 0) {
@@ -1464,15 +1464,29 @@ class Contact implements JsonSerializable {
     }
 
     /** @return string */
+    function all_user_tags() {
+        return self::all_user_tags_for($this, self::CTFLAG_ROLES);
+    }
+
+    /** @param Contact|Author $x
+     * @param 0|1|2|3 $ctags
+     * @return string
+     * @deprecated */
+    static function all_contact_tags_for($x, $ctags) {
+        return self::all_user_tags_for($x, $ctags);
+    }
+
+    /** @return string
+     * @deprecated */
     function all_contact_tags() {
-        return self::all_contact_tags_for($this, self::CTFLAG_ROLES);
+        return $this->all_user_tags();
     }
 
     /** @return string */
     function viewable_tags(Contact $viewer) {
         // see also Contact::calculate_name_for
         if ($viewer->can_view_user_tags() || $viewer->contactXid === $this->contactXid) {
-            $tags = $this->all_contact_tags();
+            $tags = $this->all_user_tags();
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $tags, $viewer, null);
         } else {
             return "";
@@ -4129,7 +4143,7 @@ class Contact implements JsonSerializable {
             return false;
         }
         // can view if is metareviewer, own review
-        if ($rights->reviewType == REVIEW_META
+        if ($rights->reviewType === REVIEW_META
             || ($rrow
                 && $this->is_owned_review($rrow)
                 && $viewscore >= VIEWSCORE_REVIEWERONLY)) {

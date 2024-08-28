@@ -30,6 +30,7 @@ class Track {
     const BITS_REVIEW = 0x30;     // (1 << ASSREV) | (1 << UNASSREV)
     const BITS_ADMIN = 0x80;      // 1 << ADMIN
     const BITS_VIEWADMIN = 0x81;  // (1 << VIEW) | (1 << ADMIN)
+    const BITS_REQUIRED = 0x180;  // (1 << HIDDENTAG) | (1 << ADMIN)
 
     /** @readonly */
     static public $perm_name_map = [
