@@ -6267,54 +6267,6 @@ function ratings_counts(ratings) {
     return ct;
 }
 
-function unparse_ratings(ratings, user_rating, editable) {
-    if (!editable && !ratings.length) {
-        return "";
-    }
-    var ct = ratings_counts(ratings);
-
-    var rating_names = ["Good review", "Needs work", "Too short", "Too vague",
-                        "Too narrow", "Disrespectful", "Not correct"];
-    var t = [];
-    t.push('<span class="revrating-flag fn">');
-    if (editable)
-        t.push('<button type="button" class="q ui js-revrating-unfold">&#x2691;</button>');
-    else
-        t.push('<a href="'.concat(hoturl("help", {t: "revrate"}), '" class="q">&#x2691;</a>'));
-    t.push('</span>');
-    for (var i = 0; i < rating_names.length; ++i) {
-        if (editable) {
-            var klass = "revrating-choice", bklass = "";
-            if (!ct[i] && (i >= 2 || ratings.length))
-                klass += " fx";
-            if (ct[i])
-                klass += " revrating-used";
-            else
-                klass += " revrating-unused";
-            if (user_rating && (user_rating & (1 << i)))
-                klass += " revrating-active";
-            if (user_rating
-                ? (user_rating & ((1 << (i + 1)) - 1)) === (1 << i)
-                : !i)
-                bklass += " want-focus";
-            t.push('<span class="' + klass + '" data-revrating-bit="' + i + '"><button class="ui js-revrating' + bklass + '">' + rating_names[i] + '</button><span class="ct">' + (ct[i] ? ' ' + ct[i] : '') + '</span></span>');
-        } else if (ct[i]) {
-            t.push('<span class="revrating-group">' + rating_names[i] + '<span class="ct"> ' + ct[i] + '</span></span>');
-        }
-    }
-
-    if (editable) {
-        t.push('<span class="revrating-group fn"><button class="ui js-foldup">…</button></span>');
-        return '<div class="revrating editable has-fold foldc ui js-revrating-unfold' + (user_rating === 2 ? ' want-revrating-generalize' : '') + '">'
-            + '<div class="f-c fx"><a href="' + hoturl("help", {t: "revrate"}) + '" class="q">Review ratings <span class="n">(anonymous reviewer feedback)</span></a></div>'
-            + t.join(" ") + '</div>';
-    } else if (t) {
-        return '<div class="revrating">' + t.join(" ") + '</div>';
-    } else {
-        return "";
-    }
-}
-
 handle_ui.on("js-revrating-unfold", function (evt) {
     if (evt.target === this)
         foldup.call(this, null, {open: true});
@@ -6394,6 +6346,60 @@ function revrating_key(evt) {
         }
         evt.preventDefault();
     }
+}
+
+function render_ratings(ratings, user_rating, editable) {
+    if (!editable && !ratings.length) {
+        return null;
+    }
+
+    const ct = ratings_counts(ratings),
+        rating_names = ["Good review", "Needs work", "Too short", "Too vague",
+                        "Too narrow", "Disrespectful", "Not correct"];
+    let flage;
+    if (editable) {
+        flage = $e("button", {type: "button", "class": "q ui js-revrating-unfold"}, "⚑");
+    } else {
+        flage = $e("a", {href: hoturl("help", {t: "revrate"}), "class": "q"}, "⚑");
+    }
+    const es = [$e("span", "revrating-flag fn", flage)];
+
+    for (let i = 0; i < rating_names.length; ++i) {
+        if (editable) {
+            let klass = "revrating-choice", bklass = "";
+            if (!ct[i] && (i >= 2 || ratings.length))
+                klass += " fx";
+            if (ct[i])
+                klass += " revrating-used";
+            else
+                klass += " revrating-unused";
+            if (user_rating && (user_rating & (1 << i)))
+                klass += " revrating-active";
+            if (user_rating
+                ? (user_rating & ((1 << (i + 1)) - 1)) === (1 << i)
+                : !i)
+                bklass += " want-focus";
+            es.push(" ", $e("span", {"class": klass, "data-revrating-bit": i},
+                $e("button", {type: "button", "class": "ui js-revrating" + bklass}, rating_names[i]),
+                $e("span", "ct", ct[i] ? " " + ct[i] : "")));
+        } else if (ct[i]) {
+            es.push(" ", $e("span", "revrating_group",
+                rating_names[i],
+                $e("span", "ct", ct[i])));
+        }
+    }
+
+    let ex;
+    if (editable) {
+        es.push(" ", $e("span", "revrating-group fn", $e("button", {type: "button", "class": "ui js-foldup"}, "…")));
+        ex = $e("div", "revrating editable has-fold foldc ui js-revrating-unfold" + (user_rating === 2 ? " want-revrating-generalize" : ""),
+            $e("div", "f-c fx", $e("a", {href: hoturl("help", {t: "revrate"}), "class": "q"}, "Review ratings ", $e("span", "n", "(anonymous reviewer feedback)"))),
+            ...es);
+        $(ex).on("keydown", "button.js-revrating", revrating_key);
+    } else {
+        ex = $e("div", "revrating", ...es);
+    }
+    return $e("div", "revcard-rating fx20", ex);
 }
 
 function make_review_h2(rrow, rlink, rdesc) {
@@ -6507,18 +6513,11 @@ hotcrp.add_review = function (rrow) {
     }
 
     // ratings
-    has_user_rating = "user_rating" in rrow;
-    if ((rrow.ratings && rrow.ratings.length) || has_user_rating) {
-        e = document.createElement("div");
-        e.className = "revcard-rating fx20";
+    if ((e = render_ratings(rrow.ratings || [], rrow.user_rating || 0, "user_rating" in rrow))) {
         earticle.appendChild(e);
-        e.innerHTML = unparse_ratings(rrow.ratings || [], rrow.user_rating || 0, has_user_rating);
     }
 
     // complete render
-    if (has_user_rating) {
-        $(earticle).find(".revrating.editable").on("keydown", "button.js-revrating", revrating_key);
-    }
     score_header_tooltips($(earticle));
     navsidebar.set("r" + rid, rdesc);
 };
