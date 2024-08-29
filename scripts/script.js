@@ -6708,7 +6708,8 @@ const vismap = {
     emojiregex = /^(?:(?:\ud83c[\udde6-\uddff]\ud83c[\udde6-\uddff]|(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?(?:\u200d(?:(?:[\u231a\u231b\u23e9-\u23ec\u23f0\u23f3\u25fd\u25fe\u2614\u2615\u2648-\u2653\u267f\u2693\u26a1\u26aa\u26ab\u26bd\u26be\u26c4\u26c5\u26ce\u26d4\u26ea\u26f2\u26f3\u26f5\u26fa\u26fd\u2705\u270a\u270b\u2728\u274c\u274e\u2753-\u2755\u2757\u2795-\u2797\u27b0\u27bf\u2b1b\u2b1c\u2b50\u2b55]|\ud83c[\udc04\udccf\udd8e\udd91-\udd9a\udde6-\uddff\ude01\ude1a\ude2f\ude32-\ude36\ude38-\ude3a\ude50\ude51\udf00-\udf20\udf2d-\udf35\udf37-\udf7c\udf7e-\udf93\udfa0-\udfca\udfcf-\udfd3\udfe0-\udff0\udff4\udff8-\udfff]|\ud83d[\udc00-\udc3e\udc40\udc42-\udcfc\udcff-\udd3d\udd4b-\udd4e\udd50-\udd67\udd7a\udd95\udd96\udda4\uddfb-\ude4f\ude80-\udec5\udecc\uded0-\uded2\uded5-\uded7\udedd-\udedf\udeeb\udeec\udef4-\udefc\udfe0-\udfeb\udff0]|\ud83e[\udd0c-\udd3a\udd3c-\udd45\udd47-\uddff\ude70-\ude74\ude78-\ude7c\ude80-\ude86\ude90-\udeac\udeb0-\udeba\udec0-\udec5\uded0-\uded9\udee0-\udee7\udef0-\udef6])\ufe0f?|(?:[\u0023\u002a\u0030-\u0039\u00a9\u00ae\u203c\u2049\u2122\u2139\u2194-\u2199\u21a9\u21aa\u2328\u23cf\u23ed-\u23ef\u23f1\u23f2\u23f8-\u23fa\u24c2\u25aa\u25ab\u25b6\u25c0\u25fb\u25fc\u2600-\u2604\u260e\u2611\u2618\u261d\u2620\u2622\u2623\u2626\u262a\u262e\u262f\u2638-\u263a\u2640\u2642\u265f\u2660\u2663\u2665\u2666\u2668\u267b\u267e\u2692\u2694-\u2697\u2699\u269b\u269c\u26a0\u26a7\u26b0\u26b1\u26c8\u26cf\u26d1\u26d3\u26e9\u26f0\u26f1\u26f4\u26f7-\u26f9\u2702\u2708\u2709\u270c\u270d\u270f\u2712\u2714\u2716\u271d\u2721\u2733\u2734\u2744\u2747\u2763\u2764\u27a1\u2934\u2935\u2b05-\u2b07\u3030\u303d\u3297\u3299]|\ud83c[\udd70\udd71\udd7e\udd7f\ude02\ude37\udf21\udf24-\udf2c\udf36\udf7d\udf96\udf97\udf99-\udf9b\udf9e\udf9f\udfcb-\udfce\udfd4-\udfdf\udff3\udff5\udff7]|\ud83d[\udc3f\udc41\udcfd\udd49\udd4a\udd6f\udd70\udd73-\udd79\udd87\udd8a-\udd8d\udd90\udda5\udda8\uddb1\uddb2\uddbc\uddc2-\uddc4\uddd1-\uddd3\udddc-\uddde\udde1\udde3\udde8\uddef\uddf3\uddfa\udecb\udecd-\udecf\udee0-\udee5\udee9\udef0\udef3])\ufe0f)\u20e3?(?:\ud83c[\udffb-\udfff]|(?:\udb40[\udc20-\udc7e])+\udb40\udc7f)?)*)*[ \t]*){1,3}$/,
     cmts = {}, resp_rounds = {},
     twiddle_start = siteinfo.user && siteinfo.user.uid ? siteinfo.user.uid + "~" : "###";
-let has_unload = false, editor_observer, editing_list;
+let has_unload = false, last_visibility = null, last_topic = null,
+    editor_observer, editing_list;
 
 function unparse_tag(tag, strip_value) {
     let pos;
@@ -6890,33 +6891,35 @@ function cmt_render_form(cj) {
 }
 
 function cmt_render_form_prop(cj, cid, btnbox) {
-    const einfo = $e("div", "cmteditinfo fold3c");
+    const einfo = $e("div", "cmteditinfo fold3c fold4c");
 
     // attachments
     einfo.append($e("div", {id: cid + "-attachments", "class": "entryi has-editable-attachments hidden", "data-dtype": -2, "data-document-prefix": "attachment"}, $e("span", "label", "Attachments")));
     btnbox.append($e("button", {type: "button", name: "attach", "class": "btn-licon need-tooltip ui js-add-attachment", "aria-label": "Attach file", "data-editable-attachments": cid + "-attachments"}, svge_use_licon("attachment")));
 
+    // tags
+    if (!cj.response && !cj.by_author) {
+        einfo.append($e("div", "entryi fx3",
+            $e("label", {"for": cid + "-tags"}, "Tags"),
+            $e("input", {id: cid + "-tags", name: "tags", type: "text", size: 50, placeholder: "Comment tags"})));
+        btnbox.append($e("button", {type: "button", name: "showtags", "class": "btn-licon need-tooltip", "aria-label": "Tags"}, svge_use_licon("tag")));
+    }
+
     // visibility
     if (!cj.response && (!cj.by_author || cj.by_author_visibility)) {
         const evsel = $e("select", {id: cid + "-visibility", name: "visibility"});
         if (cj.by_author) {
-            evsel.append($e("option", {value: "au"}, "Reviewer discussion"));
+            evsel.append($e("option", {value: "au"}, "Reviewers and PC"));
         } else {
-            evsel.append($e("option", {value: "au"}, "Author discussion"),
-                $e("option", {value: "rev"}, "Reviewer discussion"),
-                $e("option", {value: "pc"}, "PC discussion"));
+            evsel.append($e("option", {value: "au"}, "Authors and reviewers"),
+                $e("option", {value: "rev"}, "Reviewers"),
+                $e("option", {value: "pc"}, "PC only"));
         }
         evsel.append($e("option", {value: "admin"}, "Administrators only"));
 
         const evis = $e("div", "entry",
             $e("span", "select", evsel),
-            $e("span", "visibility-topic",
-                $e("span", "d-inline-block ml-2 mr-2", "about"),
-                $e("span", "select",
-                    $e("select", {id: cid + "-topic", name: "topic"},
-                        $e("option", {value: "paper"}, siteinfo.snouns[0]),
-                        $e("option", {value: "rev", selected: true}, "reviews")))),
-            $e("p", "visibility-hint f-d text-break-line"));
+            $e("p", "f-d text-break-line"));
         if (!cj.by_author && hotcrp.status.rev.blind && hotcrp.status.rev.blind !== true) {
             evis.push($e("div", "visibility-au-blind checki",
                 $e("label", null,
@@ -6926,14 +6929,16 @@ function cmt_render_form_prop(cj, cid, btnbox) {
         einfo.append($e("div", "entryi",
             $e("label", {"for": cid + "-visibility"}, "Visibility"),
             evis));
-    }
 
-    // tags
-    if (!cj.response && !cj.by_author) {
-        einfo.append($e("div", "entryi fx3",
-            $e("label", {"for": cid + "-tags"}, "Tags"),
-            $e("input", {id: cid + "-tags", name: "tags", type: "text", size: 50, placeholder: "Comment tags"})));
-        btnbox.append($e("button", {type: "button", name: "showtags", "class": "btn-licon need-tooltip", "aria-label": "Tags"}, svge_use_licon("tag")));
+        einfo.append($e("div", "entryi fx4",
+            $e("label", {"for": cid + "-thread"}, "Thread"),
+            $e("div", "entry",
+                $e("span", "select",
+                    $e("select", {id: cid + "-thread", name: "topic"},
+                        $e("option", {value: "paper"}, siteinfo.snouns[2] + " (not reviews)"),
+                        $e("option", {value: "rev", selected: true}, "Reviews"))),
+                $e("p", "f-d text-break-line"))));
+        btnbox.append($e("button", {type: "button", name: "showthread", "class": "btn-licon need-tooltip", "aria-label": "Thread", "data-editable-attachments": cid + "-attachments"}, svge_use_licon("thread")));
     }
 
     // delete
@@ -6964,16 +6969,17 @@ function cmt_visibility_change() {
     var form = this.closest("form"),
         vis = form.elements.visibility,
         topic = form.elements.topic,
-        entryi = vis.closest(".entryi"),
-        hint = entryi.querySelector(".visibility-hint"),
-        blind = entryi.querySelector(".visibility-au-blind"),
-        topicspan = entryi.querySelector(".visibility-topic"),
+        visentryi = vis.closest(".entryi"),
+        hint = visentryi.querySelector(".f-d"),
+        blind = visentryi.querySelector(".visibility-au-blind"),
+        topicentryi = topic.closest(".entryi"),
+        topichint = topicentryi.querySelector(".f-d"),
         is_paper = topic && topic.value === "paper" && vis.value !== "admin",
         would_auvis = is_paper || hotcrp.status.myperm.some_author_can_view_review;
     if (would_auvis) {
-        vis.firstChild.textContent = "Author discussion";
+        vis.firstChild.textContent = "Authors and reviewers";
     } else {
-        vis.firstChild.textContent = "Future author discussion";
+        vis.firstChild.textContent = "Authors (eventually) and reviewers";
     }
     if (hint) {
         var m = [];
@@ -6997,13 +7003,15 @@ function cmt_visibility_change() {
             m.length && m.push("\n");
             m.push($e("span", "is-diagnostic is-warning", "External reviewers cannot view comments at this time."));
         }
-        if (is_paper) {
-            m.length && m.push("\n");
-            m.push('The comment will be visible independent of the reviews.');
-        }
-        hint.replaceChildren.apply(hint, m);
+        hint.replaceChildren(...m);
         toggleClass(hint, "hidden", m.length === 0);
-        topicspan && toggleClass(topicspan, "hidden", vis.value === "admin");
+    }
+    if (topichint) {
+        if (is_paper) {
+            topichint.replaceChildren("The comment will appear even when reviews are hidden.");
+        } else {
+            topichint.replaceChildren("The comment will appear when reviews are visible.");
+        }
     }
     blind && toggleClass(blind, "hidden", vis.value !== "au");
 }
@@ -7013,7 +7021,7 @@ function cmt_ready_change() {
 }
 
 function make_update_words(celt, wlimit) {
-    var wce = $(celt).find(".words")[0];
+    var wce = celt.querySelector(".words");
     function setwc() {
         var wc = count_words(this.value);
         wce.className = "words" + (wlimit < wc ? " wordsover" :
@@ -7078,14 +7086,20 @@ function cmt_start_edit(celt, cj) {
         .autogrow();
 
     var vis = cj.visibility
-        || hotcrp.status.myperm.default_comment_visibility
-        || (cj.by_author ? "au" : "rev");
+        || last_visibility
+        || (cj.by_author && "au")
+        || (hotcrp.status.myperm.some_external_reviewer_can_view_comment === false && "pc")
+        || "rev";
     $(form.elements.visibility).val(vis)
         .attr("data-default-value", vis)
         .on("change", cmt_visibility_change);
 
-    var topic = cj.topic
+    const topic = cj.topic
+        || last_topic
         || (document.querySelector(".revcard") ? "rev" : "paper");
+    if (topic !== "rev") {
+        fold(celt.querySelector(".cmteditinfo"), false, 4);
+    }
     $(form.elements.topic).val(topic)
         .attr("data-default-value", topic)
         .on("change", cmt_visibility_change);
@@ -7282,6 +7296,8 @@ function cmt_save_callback(cj) {
             if (new_cid) {
                 celt.id = new_cid;
                 navsidebar.redisplay(celt);
+                last_visibility = data.cmt.visibility;
+                last_topic = data.cmt.topic || "rev";
             } else {
                 celt.removeAttribute("id");
                 celt.replaceChildren($e("div", "cmtmsg"));
@@ -7369,8 +7385,11 @@ function cmt_button_click(evt) {
             cmt_save(self, self.name, true);
         });
     } else if (this.name === "showtags") {
-        fold($(this.form).find(".cmteditinfo")[0], false, 3);
+        fold(this.form.querySelector(".cmteditinfo"), false, 3);
         this.form.elements.tags.focus();
+    } else if (this.name === "showthread") {
+        fold(this.form.querySelector(".cmteditinfo"), false, 4);
+        this.form.elements.topic.focus();
     }
 }
 
@@ -7611,6 +7630,14 @@ function add_new_comment(cj, cid) {
     document.querySelector(".pcontainer").insertBefore($e("article", {
         id: cid, "class": "pcard cmtcard cmtid comment need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
     }), $$("k-comment-actions"));
+    if (!cj.is_new) {
+        if (cj.response || cj.visibility === "admin") {
+            last_visibility = null;
+        } else {
+            last_visibility = cj.visibility;
+            last_topic = cj.topic || "rev";
+        }
+    }
 }
 
 function cmt_sidebar_content(item) {

@@ -222,7 +222,7 @@ class CommentInfo {
                 }
                 $t[] = "hotcrp.set_response_round(" . json_encode_browser($rrd->name) . "," . json_encode_browser($j) . ")";
             }
-            Icons::stash_defs("tag", "attachment", "trash");
+            Icons::stash_defs("tag", "attachment", "trash", "thread");
             Icons::stash_licon("ui_tag");  // XXX backward compat
             Icons::stash_licon("ui_attachment");   // XXX backward compat
             Icons::stash_licon("ui_trash");   // XXX backward compat
