@@ -60,9 +60,10 @@ class CommentInfo {
     const CT_HASDOC = 0x20;
     const CT_TOPIC_PAPER = 0x40;
     const CT_TOPIC_REVIEW = 0x80; // only used internally, not in database
-    const CTM_TOPIC = 0xC0;
-    const CTM_TOPIC_NONREVIEW = 0x40;
+    const CTM_TOPIC = 0x2C0;
+    const CTM_TOPIC_NONREVIEW = 0x240;
     const CT_BYADMINISTRATOR = 0x100;
+    const CT_TOPIC_DECISION = 0x200;
     const CT_FROZEN = 0x4000;
     const CT_SUBMIT = 0x8000; // only used internally, not in database
     const CTVIS_ADMINONLY = 0x00000;
@@ -645,6 +646,8 @@ class CommentInfo {
         }
         if (($this->commentType & self::CTM_TOPIC) === self::CT_TOPIC_PAPER) {
             $cj["topic"] = "paper";
+        } else if (($this->commentType & self::CTM_TOPIC) === self::CT_TOPIC_DECISION) {
+            $cj["topic"] = "dec";
         }
         if (($fmt = $this->commentFormat ?? $this->conf->default_format)) {
             $cj["format"] = $fmt;
@@ -992,7 +995,13 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             $x = $response_name == "1" ? "" : " ({$response_name})";
             $log = "Response {$cmtid}{$x}";
         } else {
-            $x = ($ctype & self::CT_TOPIC_PAPER) !== 0 ? " on submission" : "";
+            if (($ctype & self::CT_TOPIC_PAPER) !== 0) {
+                $x = " on submission thread";
+            } else if (($ctype & self::CT_TOPIC_DECISION) !== 0) {
+                $x = " on decision thread";
+            } else {
+                $x = "";
+            }
             $log = "Comment {$cmtid}{$x}";
         }
         if ($text === false) {

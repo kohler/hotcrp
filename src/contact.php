@@ -4893,27 +4893,36 @@ class Contact implements JsonSerializable {
     function can_view_comment(PaperInfo $prow, $crow, $textless = false) {
         $ctype = $crow ? $crow->commentType : CommentInfo::CTVIS_AUTHOR;
         $rights = $this->rights($prow);
-        return ($crow && $this->is_my_comment($prow, $crow))
+        if (($crow && $this->is_my_comment($prow, $crow))
             || ($rights->can_administer()
                 && ($ctype >= CommentInfo::CTVIS_AUTHOR
-                    || $rights->potential_reviewer()))
-            || ($rights->act_author_view()
-                && (($ctype & CommentInfo::CTM_BYAUTHOR) !== 0
-                    || ($ctype >= CommentInfo::CTVIS_AUTHOR
-                        && ($ctype & CommentInfo::CT_DRAFT) === 0
-                        && (($ctype & CommentInfo::CT_TOPIC_PAPER) !== 0
-                            || $this->can_view_submitted_review_as_author($prow)))))
-            || (!$rights->view_conflict_type
-                && (($ctype & CommentInfo::CT_DRAFT) === 0
-                    || ($textless && ($ctype & CommentInfo::CT_RESPONSE)))
-                && ($rights->allow_pc()
-                    ? $ctype >= CommentInfo::CTVIS_PCONLY
-                    : $ctype >= CommentInfo::CTVIS_REVIEWER)
-                && (($ctype & CommentInfo::CT_TOPIC_PAPER) !== 0
-                    || $this->can_view_review($prow, null))
-                && ($ctype >= CommentInfo::CTVIS_AUTHOR
-                    || $this->conf->setting("cmt_revid")
-                    || $this->can_view_comment_identity($prow, $crow)));
+                    || $rights->potential_reviewer()))) {
+            return true;
+        }
+        if ($rights->act_author_view()
+            && (($ctype & CommentInfo::CTM_BYAUTHOR) !== 0
+                || ($ctype >= CommentInfo::CTVIS_AUTHOR
+                    && ($ctype & CommentInfo::CT_DRAFT) === 0
+                    && (($ctype & CommentInfo::CT_TOPIC_PAPER) !== 0
+                        || (($ctype & CommentInfo::CT_TOPIC_DECISION) !== 0
+                            ? $rights->can_view_decision()
+                            : $this->can_view_submitted_review_as_author($prow)))))) {
+            return true;
+        }
+        if (!$rights->view_conflict_type
+            && $ctype >= ($rights->allow_pc() ? CommentInfo::CTVIS_PCONLY : CommentInfo::CTVIS_REVIEWER)
+            && (($ctype & CommentInfo::CT_DRAFT) === 0
+                || ($textless && ($ctype & CommentInfo::CT_RESPONSE)) !== 0)
+            && ($ctype >= CommentInfo::CTVIS_AUTHOR
+                || $this->conf->setting("cmt_revid")
+                || $this->can_view_comment_identity($prow, $crow))
+            && (($ctype & CommentInfo::CT_TOPIC_PAPER) !== 0
+                || (($ctype & CommentInfo::CT_TOPIC_DECISION) !== 0
+                    ? $rights->can_view_decision()
+                    : $this->can_view_review($prow, null)))) {
+            return true;
+        }
+        return false;
     }
 
     /** @param ?CommentInfo $crow

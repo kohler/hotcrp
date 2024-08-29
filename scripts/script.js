@@ -6821,6 +6821,9 @@ function cmt_identity_time(frag, cj, editing) {
         if (cj.topic === "paper") {
             cmt_header_dotsep(frag);
             frag.appendChild($e("div", {"class": "cmtvis", title: "Visible when reviews are hidden"}, "submission thread"));
+        } else if (cj.topic === "dec") {
+            cmt_header_dotsep(frag);
+            frag.appendChild($e("div", {"class": "cmtvis", title: "Visible when decision is visible"}, "decision thread"));
         }
         if (cj.tags) {
             const tage = $e("div", "cmttags");
