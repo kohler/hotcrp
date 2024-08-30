@@ -3,8 +3,6 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class DecisionSet implements IteratorAggregate, Countable {
-    /** @var Conf */
-    public $conf;
     /** @var array<int,DecisionInfo> */
     private $_decision_map = [];
     /** @var ?AbbreviationMatcher */
@@ -16,7 +14,6 @@ class DecisionSet implements IteratorAggregate, Countable {
 
 
     function __construct(Conf $conf, $j = null) {
-        $this->conf = $conf;
         if (is_object($j)) {
             foreach ((array) $j as $decid => $dj) {
                 if (is_numeric($decid) && (is_string($dj) || is_object($dj))) {
@@ -184,22 +181,25 @@ class DecisionSet implements IteratorAggregate, Countable {
     }
 
     /** @param string $word
-     * @param bool $list
+     * @param bool $prefer_list
      * @return string|list<int> */
-    function matchexpr($word, $list = false) {
-        if (strcasecmp($word, "yes") === 0) {
-            return $list ? $this->cat_ids(DecisionInfo::CAT_YES) : ">0";
-        } else if (strcasecmp($word, "no") === 0) {
-            return $list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_NO) : "<0";
-        } else if (strcasecmp($word, "maybe") === 0 || $word === "?") {
-            return $list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER) : "=0";
-        } else if (strcasecmp($word, "active") === 0) {
-            return $list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER | DecisionInfo::CAT_YES) : ">=0";
-        } else if (strcasecmp($word, "any") === 0) {
-            return $list ? array_values(array_diff($this->ids(), [0])) : "!=0";
-        } else {
-            return $this->abbrev_matcher()->find_all($word);
+    function matchexpr($word, $prefer_list = false) {
+        foreach ($this->_decision_map as $dinfo) {
+            if ($word === $dinfo->name)
+                return $prefer_list ? [$dinfo->id] : "={$dinfo->id}";
         }
+        if (strcasecmp($word, "yes") === 0) {
+            return $prefer_list ? $this->cat_ids(DecisionInfo::CAT_YES) : ">0";
+        } else if (strcasecmp($word, "no") === 0) {
+            return $prefer_list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_NO) : "<0";
+        } else if (strcasecmp($word, "maybe") === 0 || $word === "?") {
+            return $prefer_list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER) : "=0";
+        } else if (strcasecmp($word, "active") === 0) {
+            return $prefer_list || $this->_has_other ? $this->cat_ids(DecisionInfo::CAT_OTHER | DecisionInfo::CAT_YES) : ">=0";
+        } else if (strcasecmp($word, "any") === 0) {
+            return $prefer_list ? array_values(array_diff($this->ids(), [0])) : "!=0";
+        }
+        return $this->abbrev_matcher()->find_all($word);
     }
 
     /** @param string $word

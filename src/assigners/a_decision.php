@@ -49,28 +49,18 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
         $removepred = null;
         $dec = null;
         if (isset($req["decision"])) {
-            $matchexpr = $state->conf->decision_set()->matchexpr($req["decision"]);
+            $dlist = $state->conf->decision_set()->matchexpr($req["decision"], true);
             if (!$this->remove) {
-                if (is_string($matchexpr)) {
-                    $cm = new CountMatcher($matchexpr);
-                    $dec = [];
-                    foreach ($state->conf->decision_set() as $di) {
-                        if ($cm->test($di->id))
-                            $dec[] = $di->id;
-                    }
-                } else {
-                    $dec = $matchexpr;
-                }
-                if (count($dec) === 1) {
-                    $dec = $dec[0];
-                } else if (empty($dec)) {
+                if (count($dlist) === 1) {
+                    $dec = $dlist[0];
+                } else if (empty($dlist)) {
                     return new AssignmentError("<0>No decisions match ‘" . $req["decision"] . "’");
                 } else {
                     return new AssignmentError("<0>More than one decision matches ‘" . $req["decision"]);
                 }
             } else {
-                $removepred = function ($item) use ($matchexpr) {
-                    return CountMatcher::compare_using($item->_decision, $matchexpr);
+                $removepred = function ($item) use ($dlist) {
+                    return in_array($item->_decision, $dlist);
                 };
             }
         } else if (!$this->remove) {
