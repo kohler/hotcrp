@@ -6922,7 +6922,7 @@ function cmt_render_form_prop(cj, cid, btnbox) {
             $e("span", "select", evsel),
             $e("p", "f-d text-break-line"));
         if (!cj.by_author && hotcrp.status.rev.blind && hotcrp.status.rev.blind !== true) {
-            evis.push($e("div", "visibility-au-blind checki",
+            evis.append($e("div", "visibility-au-blind checki",
                 $e("label", null,
                     $e("span", "checkc", $e("input", {type: "checkbox", name: "blind", value: 1})),
                     "Anonymous to authors")));
