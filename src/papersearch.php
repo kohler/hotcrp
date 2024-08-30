@@ -270,8 +270,10 @@ class PaperSearch extends MessageSet {
         }
 
         // paper selection
-        $limit = self::canonical_limit($options["t"] ?? "") ?? "";
-        if ($limit === "") {
+        if (isset($options["t"]) && $options["t"] !== "") {
+            $lnames = Limit_SearchTerm::canonical_names($this->conf, $options["t"]);
+            $limit = $lnames[0] ?? "none";
+        } else {
             // Empty limit should be the plausible limit for a default search,
             // as in entering text into a quicksearch box.
             if ($user->privChair
@@ -348,7 +350,7 @@ class PaperSearch extends MessageSet {
     }
     /** @return bool */
     function show_submitted_status() {
-        return in_array($this->_limit_qe->limit, ["a", "active", "all"])
+        return in_array($this->limit(), ["a", "active", "all"])
             && $this->q !== "re:me";
     }
     /** @return bool */
@@ -884,9 +886,10 @@ class PaperSearch extends MessageSet {
     static function canonical_query($qa, $qo, $qx, $qt, Conf $conf, $t = null) {
         $qt = self::_canonical_qt($qt);
         $x = [];
-        if (($t ?? "") !== ""
-            && ($t = self::long_canonical_limit($t)) !== null) {
-            $qa = ($qa ?? "") !== "" ? "({$qa}) in:{$t}" : "in:{$t}";
+        if ($t !== ""
+            && $t !== null
+            && ($tn = Limit_SearchTerm::canonical_names($conf, $t)) !== null) {
+            $qa = ($qa ?? "") !== "" ? "({$qa}) in:{$tn[1]}" : "in:{$tn[1]}";
         }
         if (($qa = self::_canonical_expression($qa, "all", $qt, $conf)) !== "") {
             $x[] = $qa;
@@ -1011,7 +1014,7 @@ class PaperSearch extends MessageSet {
         assert(!$this->_has_qe || $this->_qe);
         // returns SearchTerm that includes effect of the limit
         $this->_has_qe || $this->main_term();
-        if ($this->_limit_qe->limit === "all") {
+        if ($this->limit() === "all") {
             return $this->_qe;
         } else {
             return SearchTerm::combine("and", $this->_limit_qe, $this->_qe);
@@ -1573,32 +1576,10 @@ class PaperSearch extends MessageSet {
     }
 
     /** @param ?string $reqtype
-     * @return ?string */
-    static function canonical_limit($reqtype) {
-        if ($reqtype !== null
-            && ($x = Limit_SearchTerm::$reqtype_map[$reqtype] ?? null) !== null) {
-            return is_array($x) ? $x[0] : $x;
-        } else {
-            return null;
-        }
-    }
-
-    /** @param ?string $reqtype
-     * @return ?string */
-    static function long_canonical_limit($reqtype) {
-        if ($reqtype !== null
-            && ($x = Limit_SearchTerm::$reqtype_map[$reqtype] ?? null) !== null) {
-            return is_array($x) ? $x[1] : $x;
-        } else {
-            return null;
-        }
-    }
-
-    /** @param ?string $reqtype
      * @return list<string> */
     static function viewable_limits(Contact $user, $reqtype = null) {
         if ($reqtype !== null && $reqtype !== "") {
-            $reqtype = self::canonical_limit($reqtype);
+            $reqtype = (Limit_SearchTerm::canonical_names($user->conf, $reqtype))[0] ?? null;
         }
         $ts = [];
         if ($reqtype === "viewable") {
