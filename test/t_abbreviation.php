@@ -392,4 +392,15 @@ class Abbreviation_Tester {
         xassert_eqq($dm->matchexpr("yes", true), [1]);
         xassert_eqq($dm->matchexpr("no", true), [-1]);
     }
+
+    function test_japanese() {
+        $dm = new DecisionSet($this->conf, [1 => "採択-10分枠", 2 => "採択-15分枠", 3 => "採択-20分枠", 4 => "採択-30分枠", -1 => "不採択"]);
+        xassert_eqq($dm->matchexpr("採択", true), [1, 2, 3, 4]);
+        xassert_eqq($dm->matchexpr("採択-10分枠", true), [1]);
+        xassert_eqq($dm->matchexpr("採択-15分枠", true), [2]);
+        xassert_eqq($dm->matchexpr("採択-20分枠", true), [3]);
+        xassert_eqq($dm->matchexpr("採択-30分枠", true), [4]);
+        xassert_eqq($dm->matchexpr("不採択", true), [-1]);
+        xassert_eqq($dm->matchexpr("不採", true), [-1]);
+    }
 }
