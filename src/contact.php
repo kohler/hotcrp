@@ -4715,15 +4715,18 @@ class Contact implements JsonSerializable {
                 || $rights->allow_administer_forced())
             && ($time || $rights->allow_administer())) {
             $ctype |= CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_TOPIC_REVIEW;
-        }
-        if ($rights->conflictType >= CONFLICT_AUTHOR
-            && $this->conf->setting("cmt_author") > 0
-            && $time) {
+        } else if ($rights->conflictType >= CONFLICT_AUTHOR
+                   && $this->conf->setting("cmt_author") > 0
+                   && $time) {
             if ($this->can_view_submitted_review_as_author($prow)) {
                 $ctype |= CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_TOPIC_REVIEW;
             } else if ($this->can_view_author_comment_topic_paper($prow)) {
                 $ctype |= CommentInfo::CT_TOPIC_PAPER;
             }
+        }
+        if ($ctype !== 0
+            && $rights->can_view_decision()) {
+            $ctype |= CommentInfo::CT_TOPIC_DECISION;
         }
         if ($ctype !== 0) {
             if ($time) {
@@ -5485,7 +5488,7 @@ class Contact implements JsonSerializable {
         // if administrator AND reviewer, but viewing submitted reviews would
         // require administrator privilege, remove REVIEW bit
         if (($w & self::WATCH_REVIEW) !== 0
-            && ($topic & CommentInfo::CT_TOPIC_PAPER) === 0
+            && ($topic & CommentInfo::CTM_TOPIC_NONREVIEW) === 0
             && $this->can_administer($prow)
             && $prow->has_reviewer($this)
             && !$this->can_view_submitted_review_without_administer($prow)) {
@@ -5713,6 +5716,15 @@ class Contact implements JsonSerializable {
                         $perm->can_comment = true;
                     } else {
                         $perm->can_comment = "override";
+                    }
+                    if (($caddf & CommentInfo::CT_TOPIC_PAPER) !== 0) {
+                        $perm->comment_topics[] = "paper";
+                    }
+                    if (($caddf & CommentInfo::CT_TOPIC_REVIEW) !== 0) {
+                        $perm->comment_topics[] = "rev";
+                    }
+                    if (($caddf & CommentInfo::CT_TOPIC_DECISION) !== 0) {
+                        $perm->comment_topics[] = "dec";
                     }
                 }
                 if (isset($dl->resps)) {

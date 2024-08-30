@@ -6931,13 +6931,21 @@ function cmt_render_form_prop(cj, cid, btnbox) {
             $e("label", {"for": cid + "-visibility"}, "Visibility"),
             evis));
 
+        const etsel = $e("select", {id: cid + "-thread", name: "topic"}),
+            tlist = hotcrp.status.myperm.comment_topics || ["paper", "rev"];
+        if (tlist.indexOf("paper") >= 0) {
+            etsel.append($e("option", {value: "paper"}, siteinfo.snouns[2] + " (not reviews)"));
+        }
+        if (tlist.indexOf("rev") >= 0) {
+            etsel.append($e("option", {value: "rev", selected: true}, "Reviews"));
+        }
+        /*if (tlist.indexOf("dec") >= 0) {
+            etsel.append($e("option", {value: "dec"}, "Decision"));
+        }*/
         einfo.append($e("div", "entryi fx4",
             $e("label", {"for": cid + "-thread"}, "Thread"),
             $e("div", "entry",
-                $e("span", "select",
-                    $e("select", {id: cid + "-thread", name: "topic"},
-                        $e("option", {value: "paper"}, siteinfo.snouns[2] + " (not reviews)"),
-                        $e("option", {value: "rev", selected: true}, "Reviews"))),
+                $e("span", "select", etsel),
                 $e("p", "f-d text-break-line"))));
         btnbox.append($e("button", {type: "button", name: "showthread", "class": "btn-licon need-tooltip", "aria-label": "Thread", "data-editable-attachments": cid + "-attachments"}, svge_use_licon("thread")));
     }
@@ -6967,49 +6975,54 @@ function cmt_render_form_prop(cj, cid, btnbox) {
 }
 
 function cmt_visibility_change() {
-    var form = this.closest("form"),
+    const form = this.closest("form"),
         vis = form.elements.visibility,
         topic = form.elements.topic,
         visentryi = vis.closest(".entryi"),
-        hint = visentryi.querySelector(".f-d"),
+        vishint = visentryi.querySelector(".f-d"),
         blind = visentryi.querySelector(".visibility-au-blind"),
-        topicentryi = topic.closest(".entryi"),
-        topichint = topicentryi.querySelector(".f-d"),
-        is_paper = topic && topic.value === "paper" && vis.value !== "admin",
-        would_auvis = is_paper || hotcrp.status.myperm.some_author_can_view_review;
+        topichint = topic.closest(".entryi").querySelector(".f-d"),
+        is_paper = topic.value === "paper" && vis.value !== "admin",
+        would_auvis = is_paper
+            || hotcrp.status.myperm[topic.value === "dec" ? "some_author_can_view_decision" : "some_author_can_view_review"];
     if (would_auvis) {
         vis.firstChild.textContent = "Authors and reviewers";
     } else {
         vis.firstChild.textContent = "Authors (eventually) and reviewers";
     }
-    if (hint) {
+    if (vishint) {
         var m = [];
         if (vis.value === "au" && !form.elements.by_author) {
             if (would_auvis) {
                 m.length && m.push("\n");
                 m.push($e("span", "is-diagnostic is-warning", "Authors will be notified immediately."));
+            } else if (topic.value === "dec") {
+                m.length && m.push("\n");
+                m.push("Authors cannot currently view the decision or comments about the decision.");
             } else {
                 m.length && m.push("\n");
-                m.push('Authors cannot currently view reviews or comments about reviews.');
+                m.push("Authors cannot currently view reviews or comments about reviews.");
             }
             if (hotcrp.status.rev.blind === true) {
                 m.length && m.push("\n");
-                m.push(would_auvis ? 'The comment will be anonymous to authors.' : 'When visible, the comment will be anonymous to authors.');
+                m.push(would_auvis ? "The comment will be anonymous to authors." : "When visible, the comment will be anonymous to authors.");
             }
         } else if (vis.value === "pc") {
             m.length && m.push("\n");
-            m.push('The comment will be hidden from authors and external reviewers.');
+            m.push("The comment will be hidden from authors and external reviewers.");
         } else if (vis.value === "rev"
                    && hotcrp.status.myperm.some_external_reviewer_can_view_comment === false) {
             m.length && m.push("\n");
             m.push($e("span", "is-diagnostic is-warning", "External reviewers cannot view comments at this time."));
         }
-        hint.replaceChildren(...m);
-        toggleClass(hint, "hidden", m.length === 0);
+        vishint.replaceChildren(...m);
+        toggleClass(vishint, "hidden", m.length === 0);
     }
     if (topichint) {
         if (is_paper) {
             topichint.replaceChildren("The comment will appear even when reviews are hidden.");
+        } else if (topic.value === "dec") {
+            topichint.replaceChildren("The comment will appear when the decision is visible.");
         } else {
             topichint.replaceChildren("The comment will appear when reviews are visible.");
         }
