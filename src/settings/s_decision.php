@@ -150,6 +150,7 @@ class Decision_SettingParser extends SettingParser {
                 $djs[] = $dsr;
             }
         }
+        $sv->error_if_match_ambiguous("decision", "name", "Decision name");
 
         // name reuse, new ids
         foreach ($djs as $dj) {

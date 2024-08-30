@@ -1056,6 +1056,47 @@ class SettingValues extends MessageSet {
         }
     }
 
+    /** @param string $pfx
+     * @param string $sfx
+     * @param string $description
+     * @return bool */
+    function error_if_match_ambiguous($pfx, $sfx, $description) {
+        // NB: $pfx may or may not end with `/`; $sfx may or may not begin with `/`
+        if (!str_ends_with($pfx, "/")) {
+            $pfx .= "/";
+        }
+        if (!str_starts_with($sfx, "/")) {
+            $sfx = "/{$sfx}";
+        }
+        $am = new AbbreviationMatcher;
+        $strs = [];
+        $ctrs = [];
+        for ($ctr = 1; array_key_exists("{$pfx}{$ctr}/id", $this->req); ++$ctr) {
+            if (!$this->reqstr("{$pfx}{$ctr}/delete")
+                && ($v = $this->base_parse_req("{$pfx}{$ctr}{$sfx}"))) {
+                $strs[] = $v;
+                $ctrs[] = $ctr;
+                $am->add_phrase($v, $ctr);
+            }
+        }
+        $errored = false;
+        foreach ($ctrs as $i => $ctr) {
+            $fval = $am->find_all($strs[$i]);
+            if ($fval === [$ctr]) {
+                continue;
+            }
+            if (!$errored) {
+                $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} settings are ambiguous");
+                $this->msg_at("{$pfx}{$ctr}{$sfx}", "<0>Values should differ substantively, not just in punctuation, case, or spacing.", MessageSet::INFORM);
+                $errored = true;
+            }
+            foreach ($fval as $ctr1) {
+                $this->error_at("{$pfx}{$ctr1}{$sfx}");
+            }
+        }
+        return $errored;
+    }
+
     /** @param list<string> $list1
      * @param list<string> $list2
      * @return array<int,int> */

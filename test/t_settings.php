@@ -323,6 +323,18 @@ class Settings_Tester {
         $this->conf->save_refresh_setting("outcome_map", 1, $x);
     }
 
+    function test_ambiguous_decisions() {
+        // near-duplicate decision names are rejected
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_decision" => 1,
+            "decision/1/id" => "2",
+            "decision/1/name" => "Rejected.",
+            "decision/1/name_force" => "1"
+        ]);
+        xassert(!$sv->execute());
+        xassert_str_contains($sv->full_feedback_text(), "ambiguous");
+    }
+
     /** @param ReviewField $rf
      * @param int|string $fval
      * @return string */
