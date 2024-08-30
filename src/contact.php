@@ -4750,7 +4750,7 @@ class Contact implements JsonSerializable {
      * @return bool */
     function can_edit_comment(PaperInfo $prow, CommentInfo $crow, $newctype = null) {
         if (($crow->commentType & CommentInfo::CT_RESPONSE) !== 0) {
-            return $this->can_edit_response($prow, $crow, $newctype);
+            return $this->can_edit_response($prow, $crow);
         }
         $rights = $this->rights($prow);
         $author = $rights->conflictType >= CONFLICT_AUTHOR
@@ -4769,8 +4769,7 @@ class Contact implements JsonSerializable {
                     || $rights->review_status > 0
                     || $rights->allow_administer_forced())
                 && ($time
-                    || ($rights->allow_administer()
-                        && ($newctype === null || $rights->can_administer())));
+                    || $rights->can_administer());
         } else if ($author && $time) {
             if ((($newctype ?? $crow->commentType) & CommentInfo::CT_TOPIC_PAPER) !== 0) {
                 return $crow->commentId !== 0
@@ -4787,7 +4786,7 @@ class Contact implements JsonSerializable {
      * @return ?PermissionProblem */
     function perm_edit_comment(PaperInfo $prow, CommentInfo $crow, $newctype = null) {
         if (($crow->commentType & CommentInfo::CT_RESPONSE) !== 0) {
-            return $this->perm_edit_response($prow, $crow, $newctype);
+            return $this->perm_edit_response($prow, $crow);
         } else if ($this->can_edit_comment($prow, $crow, $newctype)) {
             return null;
         }
@@ -4822,9 +4821,8 @@ class Contact implements JsonSerializable {
         return $whyNot;
     }
 
-    /** @param ?int $newctype
-     * @return bool */
-    function can_edit_response(PaperInfo $prow, CommentInfo $crow, $newctype = null) {
+    /** @return bool */
+    function can_edit_response(PaperInfo $prow, CommentInfo $crow) {
         if ($prow->timeSubmitted <= 0
             || ($crow->commentType & CommentInfo::CT_RESPONSE) === 0
             || !($rrd = $prow->conf->response_round_by_id($crow->commentRound))) {
@@ -4832,18 +4830,15 @@ class Contact implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         return ($rights->can_administer()
-                || $rights->conflictType >= CONFLICT_AUTHOR)
-            && (($rights->allow_administer()
-                 && ($newctype === null || $rights->can_administer()))
-                || ($rrd->time_allowed(true)
+                || ($rights->conflictType >= CONFLICT_AUTHOR
+                    && $rrd->time_allowed(true)
                     && ($crow->commentType & CommentInfo::CT_FROZEN) === 0))
             && $rrd->test_condition($prow);
     }
 
-    /** @param ?int $newctype
-     * @return ?PermissionProblem */
-    function perm_edit_response(PaperInfo $prow, CommentInfo $crow, $newctype = null) {
-        if ($this->can_edit_response($prow, $crow, $newctype)) {
+    /** @return ?PermissionProblem */
+    function perm_edit_response(PaperInfo $prow, CommentInfo $crow) {
+        if ($this->can_edit_response($prow, $crow)) {
             return null;
         }
         $rights = $this->rights($prow);
@@ -5723,15 +5718,13 @@ class Contact implements JsonSerializable {
                 if (isset($dl->resps)) {
                     foreach ($this->conf->response_rounds() as $rrd) {
                         $crow = CommentInfo::make_response_template($rrd, $prow);
-                        $v = false;
-                        if ($this->can_edit_response($prow, $crow, CommentInfo::CT_SUBMIT)) {
-                            $v = true;
-                        } else if ($admin && $this->can_edit_response($prow, $crow)) {
+                        $v = $this->can_edit_response($prow, $crow);
+                        if ($v && $admin && !$prow->author_user()->can_edit_response($prow, $crow)) {
                             $v = "override";
                         }
                         if ($v) {
-                            $perm->can_responds = $perm->can_responds ?? [];
-                            $perm->can_responds[$rrd->name] = $v;
+                            $perm->can_respond = true;
+                            $perm->response_rounds[$rrd->name] = $v;
                         }
                     }
                 }

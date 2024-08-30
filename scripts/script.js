@@ -6840,9 +6840,7 @@ function cmt_identity_time(frag, cj, editing) {
 function cmt_is_editable(cj, override) {
     let p = hotcrp.status.myperm;
     if (cj.response) {
-        p = p.can_responds
-            && p.can_responds[cj.response]
-            && (override || cj.author_editable !== false);
+        p = p.can_respond && p.response_rounds[cj.response];
     } else {
         p = p.can_comment;
     }
