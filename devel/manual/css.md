@@ -32,7 +32,7 @@ Generic values
 * `.overlong-content`: 1
 * `.overlong-collapsed > .overlong-content`: 0
 * `.overlong-collapsed > .overlong-divider > .overlong-mark`: 2
-* `.cmtcard.is-editing.popout`: 4
+* `.cmtcard.edit.popout`: 4
 
 ## `id`
 

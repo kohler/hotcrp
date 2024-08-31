@@ -462,14 +462,6 @@ span.barsep {
 	opacity: 0.8;
 	padding: 0 0.5em;
 }
-.editor {
-	background: url(../images/edit48.png) 0px 50% no-repeat;
-	background-size: 16px 16px;
-	display: inline-block;
-	text-indent: 0;
-	margin: -2px 0 -2px 0;
-	padding: 2px 0 2px 19px;
-}
 span.sep {
 	padding-right: 1em;
 }
@@ -4459,20 +4451,15 @@ a:hover .t-editor,
 .cmtcard.response:last-child {
 	border-bottom: 5px solid #ffddc1;
 }
-.cmtcard.comment.is-editing {
+.cmtcard.comment.edit {
 	background: #fdfdfa;
 }
-.cmtcard.comment + .cmtcard.comment {
+.cmtcard.comment.view + .cmtcard.comment.view {
 	border-top: 0 none;
 	padding-top: 0;
 	margin-top: -0.5rem;
 }
-.cmtcard.comment.is-editing, .cmtcard.is-editing + .cmtcard.comment {
-	border-top: 5px solid #e6e1cf !important;
-	padding-top: 1.25rem !important;
-}
-.revcard.hashtarget header::before,
-.cmtcard.hashtarget header::before {
+.cmtcard.comment.view.hashtarget header::before {
 	width: 1rem;
 	margin-left: -1.25rem;
 	position: absolute;

@@ -7264,7 +7264,8 @@ function cmt_toggle_editing(celt, editing) {
         editor_observer.observe(e);
         editor_observer.observe(celt);
     }
-    toggleClass(celt, "is-editing", !!editing);
+    toggleClass(celt, "view", !editing);
+    toggleClass(celt, "edit", !!editing);
     if (!editing) {
         removeClass(celt, "popout");
     } else if (editing === 2) {
@@ -7642,7 +7643,7 @@ function add_new_comment_button(cj, cid) {
 
 function add_new_comment(cj, cid) {
     document.querySelector(".pcontainer").insertBefore($e("article", {
-        id: cid, "class": "pcard cmtcard cmtid comment need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
+        id: cid, "class": "pcard cmtcard cmtid comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
     }), $$("k-comment-actions"));
     if (!cj.is_new) {
         if (cj.response || cj.visibility === "admin") {
@@ -14076,7 +14077,7 @@ $(function () {
         return p.join(">");
     }
     var err = [], elt = [];
-    $(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea,button.btn-link,button.btn-qlink,button.btn-qolink,.btn-xlink,.btn-disabled,a.btn[href=''],.p,.mg").each(function () {
+    $(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea,a.btn[href=''],.p,.mg,.editor").each(function () {
         err.push(locator(this));
         elt.push(this);
     });
