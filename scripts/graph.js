@@ -6,7 +6,7 @@ hotcrp.graph = (function ($, d3) {
 const $$ = hotcrp.$$,
     $e = hotcrp.$e,
     $frag = hotcrp.$frag,
-    svge = hotcrp.svge,
+    $svg = hotcrp.$svg,
     ensure_pattern = hotcrp.ensure_pattern,
     feedback = hotcrp.feedback,
     handle_ui = hotcrp.handle_ui,
@@ -897,12 +897,12 @@ function scatter_create(svg, data, klass) {
 
 function scatter_highlight(svg, data, klass) {
     if (!$$("svggpat_dot_highlight")) {
-        $$("p-body").prepend(svge("svg", "width", 0, "height", 0, "class", "position-absolute",
-            svge("defs",
-                svge("radialGradient", "id", "svggpat_dot_highlight",
-                    svge("stop", "offset", "50%", "stop-opacity", "0"),
-                    svge("stop", "offset", "50%", "stop-color", "#ffff00", "stop-opacity", "0.5"),
-                    svge("stop", "offset", "100%", "stop-color", "#ffff00", "stop-opacity", "0")))));
+        $$("p-body").prepend($svg("svg", {width: 0, height: 0, "class": "position-absolute"},
+            $svg("defs", null,
+                $svg("radialGradient", {id: "svggpat_dot_highlight"},
+                    $svg("stop", {offset: "50%", "stop-opacity": 0}),
+                    $svg("stop", {offset: "50%", "stop-color": "#ffff00", "stop-opacity": 0.5}),
+                    $svg("stop", {offset: "100%", "stop-color": "#ffff00", "stop-opacity": 0})))));
     }
 
     var sel = svg.selectAll(".ghighlight");

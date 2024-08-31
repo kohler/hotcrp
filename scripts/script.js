@@ -4431,6 +4431,31 @@ $(function () {
 });
 
 
+function $svg(tag, attr) {
+    const e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    if (!attr) {
+        // nothing
+    } else if (typeof attr === "string") {
+        e.setAttribute("class", attr);
+    } else {
+        for (const i in attr) {
+            if (attr[i] == null) {
+                // skip
+            } else if (typeof attr[i] === "boolean") {
+                e[i] = attr[i];
+            } else {
+                e.setAttribute(i, attr[i]);
+            }
+        }
+    }
+    for (let i = 2; i < arguments.length; ++i) {
+        if (arguments[i] != null) {
+            e.append(arguments[i]);
+        }
+    }
+    return e;
+}
+
 function svge() {
     var e = document.createElementNS("http://www.w3.org/2000/svg", arguments[0]), i, t;
     for (i = 1; i < arguments.length; ) {
@@ -4447,10 +4472,8 @@ function svge() {
 }
 
 function svge_use_licon(name) {
-    var e = svge("svg", "class", "licon", "width", "1em", "height", "1em",
-                 "viewBox", "0 0 64 64", "preserveAspectRatio", "none");
-    e.appendChild(svge("use", "href", "#i-def-" + name));
-    return e;
+    return $svg("svg", {"class": "licon", width: "1em", height: "1em", viewBox: "0 0 64 64", preserveAspectRatio: "none"},
+        $svg("use", {href: "#i-def-" + name}));
 }
 
 function $e(tag, attr) {
@@ -4490,10 +4513,7 @@ function $frag() {
 
 function make_expander_element(foldnum) {
     function mksvgp(d) {
-        var sv = svge("svg", "class", "licon", "width", "0.75em", "height", "0.75em", "viewBox", "0 0 16 16", "preserveAspectRatio", "none"),
-            p = svge("path", "d", d);
-        sv.appendChild(p);
-        return sv;
+        return $svg("svg", {"class": "licon", width: "0.75em", height: "0.75em", viewBox: "0 0 16 16", preserveAspectRatio: "none"}, $svg("path", {d: d}));
     }
     return $e("span", "expander",
         $e("span", "in0 fx" + foldnum, mksvgp("M1 1L8 15L15 1z")),
@@ -11610,15 +11630,14 @@ return function (classes, type) {
     }
     if (param.type === 1) {
         if (svgdef === null) {
-            var svg = svge("svg", "width", 0, "height", 0);
+            svgdef = $svg("defs");
+            let svg = $svg("svg", {width: 0, height: 0}, svgdef);
             svg.style.position = "absolute";
             document.body.insertBefore(svg, document.body.firstChild);
-            svgdef = svge("defs");
-            svg.appendChild(svgdef);
         }
-        pelt = svge("pattern", "id", id, "patternUnits", "userSpaceOnUse", "width", size, "height", size);
+        pelt = $svg("pattern", {id: id, patternUnits: "userSpaceOnUse", width: size, height: size});
         for (i = 0; i !== dxs.length; i += 2) {
-            pelt.appendChild(svge("path", "d", dxs[i], "fill", dxs[i + 1]));
+            pelt.appendChild($svg("path", {d: dxs[i], fill: dxs[i + 1]}));
         }
         svgdef.appendChild(pelt);
     } else if (window.btoa) {
@@ -13754,20 +13773,14 @@ function scorechart1_s1(sc) {
         cheight = blockfull * Math.max(anal.max, 1) + blockpad + 1,
         gray = color_unparse(graycolor);
 
-    var svg = svge("svg", "class", "scorechart-s1", "width", cwidth, "height", cheight),
-        path = svge("path", "stroke", gray, "fill", "none", "d", "M0.5 ".concat(cheight - blockfull - 1, "v", blockfull + 0.5, "h", cwidth - 1, "v", -(blockfull + 0.5))),
-        text;
-    svg.appendChild(path);
+    var svg = $svg("svg", {"class": "scorechart-s1", width: cwidth, height: cheight},
+        $svg("path", {stroke: gray, fill: "none", d: "M0.5 ".concat(cheight - blockfull - 1, "v", blockfull + 0.5, "h", cwidth - 1, "v", -(blockfull + 0.5))}));
 
     if (!anal.v[anal.flip ? n - 1 : 0]) {
-        text = svge("text", "x", blockpad, "y", cheight - 2, "fill", gray);
-        text.append(anal.lo);
-        svg.appendChild(text);
+        svg.appendChild($svg("text", {x: blockpad, y: cheight - 2, fill: gray}, anal.lo));
     }
     if (!anal.v[anal.flip ? 0 : n - 1]) {
-        text = svge("text", "x", cwidth - 1.75, "y", cheight - 2, "text-anchor", "end", "fill", gray);
-        text.append(anal.hi);
-        svg.appendChild(text);
+        svg.appendChild($svg("text", {x: cwidth - 1.75, y: cheight - 2, fill: gray, "text-anchor": "end"}, anal.hi));
     }
 
     function rectd(x, y) {
@@ -13781,12 +13794,12 @@ function scorechart1_s1(sc) {
         var color = anal.fx.rgb_array(vindex + 1), t,
             y = anal.h && anal.h.indexOf(vindex + 1) >= 0 ? 2 : 1;
         if (y === 2)
-            svg.appendChild(svge("path", "fill", color_unparse(rgb_interp(blackcolor, color, 0.5)), "d", rectd(x, 1)));
+            svg.appendChild($svg("path", {d: rectd(x, 1), fill: color_unparse(rgb_interp(blackcolor, color, 0.5))}));
         if (y <= anal.v[vindex]) {
             t = "";
             for (; y <= anal.v[vindex]; ++y)
                 t += rectd(x, y);
-            svg.appendChild(svge("path", "fill", color_unparse(color), "d", t));
+            svg.appendChild($svg("path", {d: t, fill: color_unparse(color)}));
         }
     }
 
@@ -14123,6 +14136,7 @@ Object.assign(window.hotcrp, {
     $e: $e,
     $frag: $frag,
     $popup: $popup,
+    $svg: $svg,
     // add_comment
     // add_diff_check
     // add_review
