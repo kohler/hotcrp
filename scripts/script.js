@@ -7622,23 +7622,28 @@ function add_comment(cj, editing) {
 }
 
 function add_new_comment_button(cj, cid) {
-    var actions = $$("k-comment-actions");
-    if (!actions) {
-        actions = $e("div", "pcard cmtcard", $e("div", "aab aabig"));
-        actions.id = "k-comment-actions";
-        $(".pcontainer").append(actions);
+    if ($$("k-comment-edit-" + cid)) {
+        return;
     }
-    if (!$(actions).find("a[href='#" + cid + "']").length) {
-        var rname = cj.response && (cj.response == "1" ? "response" : cj.response + " response"),
-            $b = $('<div class="aabut"><a href="#'.concat(cid, '" class="uic js-edit-comment btn">Add ', rname || "comment", '</a></div>'));
-        if (cj.response && cj.author_editable === false) {
-            if (!hasClass(actions, "has-fold")) {
-                $(actions).addClass("has-fold foldc").find(".aabig").append('<div class="aabut fn"><button type="button" class="link ui js-foldup ulh need-tooltip" aria-label="Show more comment options">…</button></div>');
-            }
-            $b.addClass("fx").append('<div class="hint">(admin only)</div>');
+    let eactions = $$("k-comment-actions");
+    if (!eactions) {
+        eactions = $e("div", {id: "k-comment-actions", "class": "pcard cmtcard"}, $e("div", "aab aabig"));
+        $(".pcontainer").append(eactions);
+    }
+    const rname = cj.response && (cj.response == "1" ? "response" : cj.response + " response"),
+        ebutton = $e("div", "aabut",
+            $e("a", {href: "#" + cid, id: "k-comment-edit-" + cid, "class": "uic js-edit-comment btn"}, "Add " + (rname || "comment")));
+    if (cj.response && cj.author_editable === false) {
+        if (!hasClass(eactions, "has-fold")) {
+            addClass(eactions, "has-fold");
+            addClass(eactions, "foldc");
+            eactions.firstChild.append($e("div", "aabut fn",
+                $e("button", {type: "button", "class": "link ui js-foldup ulh need-tooltip", "aria-label": "Show more comment options"}, "…")));
         }
-        $b.appendTo($(actions).find(".aabig"));
+        addClass(ebutton, "fx");
+        ebutton.append($e("div", "hint", "(admin only)"));
     }
+    eactions.firstChild.append(ebutton);
 }
 
 function add_new_comment(cj, cid) {
