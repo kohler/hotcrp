@@ -2284,7 +2284,7 @@ input.wide {
 .f-i {
 	margin-bottom: 1.25em;
 }
-.f-i + .f-i-nearby {
+.f-i + .f-i-nearby, .f-mcol + .f-i-nearby, .f-eqcol + .f-i-nearby {
 	margin-top: -1.25em;
 }
 label.f-c, .f-i > label, .f-i > .label {
