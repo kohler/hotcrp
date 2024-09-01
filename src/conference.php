@@ -4697,28 +4697,6 @@ class Conf {
         return (($this->settings["__tracker"] ?? 0) & 1) !== 0;
     }
 
-    /** @return bool */
-    function has_interesting_deadline($my_deadlines) {
-        if ($my_deadlines->sub->open ?? false) {
-            if (Conf::$now <= ($my_deadlines->sub->reg ?? 0)
-                || Conf::$now <= ($my_deadlines->sub->update ?? 0)
-                || Conf::$now <= ($my_deadlines->sub->sub ?? 0)
-                || ($my_deadlines->sub->reg_ingrace ?? false)
-                || ($my_deadlines->sub->update_ingrace ?? false)
-                || ($my_deadlines->sub->sub_ingrace ?? false)) {
-                return true;
-            }
-        }
-        if (($my_deadlines->is_author ?? false)
-            && ($my_deadlines->resps ?? false)) {
-            foreach ($my_deadlines->resps as $r) {
-                if ($r->open && (Conf::$now <= $r->done || ($r->ingrace ?? false)))
-                    return true;
-            }
-        }
-        return false;
-    }
-
     /** @param Contact $user
      * @param string $html
      * @param string $page
@@ -4922,7 +4900,7 @@ class Conf {
         // deadlines settings
         $my_deadlines = null;
         if ($user) {
-            $my_deadlines = $user->my_deadlines($this->paper ? [$this->paper] : []);
+            $my_deadlines = $user->status_json($this->paper ? [$this->paper] : []);
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
 

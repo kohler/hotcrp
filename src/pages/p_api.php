@@ -81,7 +81,7 @@ class API_Page {
      * @return JsonResult */
     static private function status_api($fn, $user, $qreq) {
         $prow = $user->conf->paper;
-        $jr = new JsonResult($user->my_deadlines($prow ? [$prow] : []));
+        $jr = new JsonResult($user->status_json($prow ? [$prow] : []));
         $jr["ok"] = true;
         if ($fn === "track" && ($new_trackerid = $qreq->annex("new_trackerid"))) {
             $jr["new_trackerid"] = $new_trackerid;

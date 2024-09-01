@@ -1000,7 +1000,7 @@ class ReviewInfo implements JsonSerializable {
     function rating_by_rater($user) {
         $this->ensure_ratings();
         $cid = is_object($user) ? $user->contactId : $user;
-        $str = ",$cid ";
+        $str = ",{$cid} ";
         $pos = strpos("," . $this->ratingSignature, $str);
         if ($pos !== false) {
             return intval(substr($this->ratingSignature, $pos + strlen($str) - 1));

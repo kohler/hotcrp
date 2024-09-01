@@ -1,6 +1,6 @@
 <?php
 // pages/deadlines.php -- HotCRP deadline reporting page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Deadlines_Page {
     /** @var Conf */
@@ -34,7 +34,7 @@ class Deadlines_Page {
 
     function run(Qrequest $qreq) {
         $conf = $this->conf;
-        $dl = $this->user->my_deadlines();
+        $dl = $this->user->status_json();
 
         $qreq->print_header("Deadlines", "deadlines");
 

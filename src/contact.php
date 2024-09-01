@@ -5546,8 +5546,16 @@ class Contact implements JsonSerializable {
 
     // deadlines
 
-    /** @param ?list<PaperInfo> $prows */
+    /** @param ?list<PaperInfo> $prows
+     * @return object
+     * @deprecated */
     function my_deadlines($prows = null) {
+        return $this->status_json($prows);
+    }
+
+    /** @param ?list<PaperInfo> $prows
+     * @return object */
+    function status_json($prows = null) {
         // Return cleaned deadline-relevant settings that this user can see.
         $dl = (object) ["now" => Conf::$unow, "email" => $this->email ? : null];
         if (($disabled = $this->is_disabled())) {
@@ -5596,20 +5604,16 @@ class Contact implements JsonSerializable {
         }
 
         // responses
-        if ($this->conf->setting("resp_active") > 0
-            && !$disabled
-            && ($this->isPC || $this->is_author())) {
-            $dlresps = [];
-            foreach ($this->relevant_response_rounds() as $rrd) {
-                $dlresp = (object) ["open" => $rrd->open, "done" => $rrd->done];
-                $dlresps[$rrd->name] = $dlresp;
-                if ($rrd->grace) {
-                    array_push($graces, $dlresp, $rrd->grace, ["done"]);
-                }
+        $dlresps = [];
+        foreach ($this->reportable_response_rounds(true) as $rrd) {
+            $dlresp = (object) ["open" => $rrd->open, "done" => $rrd->done];
+            $dlresps[$rrd->name] = $dlresp;
+            if ($rrd->grace) {
+                array_push($graces, $dlresp, $rrd->grace, ["done"]);
             }
-            if (!empty($dlresps)) {
-                $dl->resps = $dlresps;
-            }
+        }
+        if (!empty($dlresps)) {
+            $dl->resps = $dlresps;
         }
 
         // final copy deadlines
@@ -5640,8 +5644,8 @@ class Contact implements JsonSerializable {
         if (isset($dl->rev)) {
             $dl->revs = [];
             $k = $this->isPC ? "pcrev" : "extrev";
-            foreach ($this->conf->defined_rounds() as $i => $round_name) {
-                $isuf = $i ? "_$i" : "";
+            foreach ($this->reportable_review_rounds() as $i => $round_name) {
+                $isuf = $i ? "_{$i}" : "";
                 $s = +$this->conf->setting("{$k}_soft{$isuf}");
                 $h = +$this->conf->setting("{$k}_hard{$isuf}");
                 $dl->revs[$round_name] = $dlround = (object) [];
@@ -5689,77 +5693,11 @@ class Contact implements JsonSerializable {
         }
 
         // permissions
-        if ($prows
-            && !$disabled) {
+        if ($prows && !$disabled) {
             $dl->perm = [];
             foreach ($prows as $prow) {
-                if (!$this->can_view_paper($prow)) {
-                    continue;
-                }
-                $perm = $dl->perm[$prow->paperId] = (object) [];
-                $rights = $this->rights($prow);
-                $admin = $rights->allow_administer();
-                if ($admin) {
-                    $perm->allow_administer = true;
-                }
-                if ($rights->conflictType >= CONFLICT_AUTHOR) {
-                    $perm->is_author = true;
-                }
-                if ($rights->act_author_view()) {
-                    $perm->act_author_view = true;
-                }
-                if ($this->can_edit_some_review($prow)) {
-                    $perm->can_review = true;
-                }
-                if (($caddf = $this->add_comment_state($prow)) !== 0) {
-                    if (($caddf & CommentInfo::CT_SUBMIT) !== 0) {
-                        $perm->can_comment = true;
-                    } else {
-                        $perm->can_comment = "override";
-                    }
-                    if (($caddf & CommentInfo::CT_TOPIC_PAPER) !== 0) {
-                        $perm->comment_topics[] = "paper";
-                    }
-                    if (($caddf & CommentInfo::CT_TOPIC_REVIEW) !== 0) {
-                        $perm->comment_topics[] = "rev";
-                    }
-                    if (($caddf & CommentInfo::CT_TOPIC_DECISION) !== 0) {
-                        $perm->comment_topics[] = "dec";
-                    }
-                }
-                if (isset($dl->resps)) {
-                    foreach ($this->conf->response_rounds() as $rrd) {
-                        $crow = CommentInfo::make_response_template($rrd, $prow);
-                        $v = $this->can_edit_response($prow, $crow);
-                        if ($v && $admin && !$prow->author_user()->can_edit_response($prow, $crow)) {
-                            $v = "override";
-                        }
-                        if ($v) {
-                            $perm->can_respond = true;
-                            $perm->response_rounds[$rrd->name] = $v;
-                        }
-                    }
-                }
-                if ($prow->can_author_view_submitted_review()) {
-                    $perm->some_author_can_view_review = true;
-                }
-                if ($prow->can_author_view_decision()) {
-                    $perm->some_author_can_view_decision = true;
-                }
-                if ($this->isPC
-                    && !$this->conf->time_some_external_reviewer_view_comment()) {
-                    $perm->some_external_reviewer_can_view_comment = false;
-                }
-                if ($this->_review_tokens) {
-                    $tokens = [];
-                    foreach ($prow->all_reviews() as $rrow) {
-                        if ($rrow->reviewToken !== 0
-                            && in_array($rrow->reviewToken, $this->_review_tokens, true))
-                            $tokens[$rrow->reviewToken] = true;
-                    }
-                    if (!empty($tokens)) {
-                        $perm->review_tokens = array_map("encode_token", array_keys($tokens));
-                    }
+                if (($perm = $this->paper_permission_json($prow))) {
+                    $dl->perm[$prow->paperId] = $perm;
                 }
             }
         }
@@ -5767,9 +5705,104 @@ class Contact implements JsonSerializable {
         return $dl;
     }
 
+    /** @return ?object */
+    private function paper_permission_json(PaperInfo $prow) {
+        if (!$this->can_view_paper($prow)) {
+            return null;
+        }
+        $perm = (object) [];
+        $rights = $this->rights($prow);
+        if ($rights->allow_administer()) {
+            $perm->allow_administer = true;
+        }
+        if (($admin = $rights->can_administer())) {
+            $perm->can_administer = true;
+        }
+        if ($rights->conflictType >= CONFLICT_AUTHOR) {
+            $perm->is_author = true;
+        }
+        if ($rights->act_author_view()) {
+            $perm->act_author_view = true;
+        }
+        if ($this->can_edit_some_review($prow)) {
+            $perm->can_review = true;
+        }
+        if (($caddf = $this->add_comment_state($prow)) !== 0) {
+            if (($caddf & CommentInfo::CT_SUBMIT) !== 0) {
+                $perm->can_comment = true;
+            } else {
+                $perm->can_comment = "override";
+            }
+            if (($caddf & CommentInfo::CT_TOPIC_PAPER) !== 0) {
+                $perm->comment_topics[] = "paper";
+            }
+            if (($caddf & CommentInfo::CT_TOPIC_REVIEW) !== 0) {
+                $perm->comment_topics[] = "rev";
+            }
+            if (($caddf & CommentInfo::CT_TOPIC_DECISION) !== 0) {
+                $perm->comment_topics[] = "dec";
+            }
+        }
+        foreach ($this->reportable_response_rounds(false) as $rrd) {
+            $crow = CommentInfo::make_response_template($rrd, $prow);
+            $v = $this->can_edit_response($prow, $crow);
+            if ($v && $admin && !$prow->author_user()->can_edit_response($prow, $crow)) {
+                $v = "override";
+            }
+            if ($v) {
+                $perm->can_respond = true;
+                $perm->response_rounds[$rrd->name] = $v;
+            }
+        }
+        if ($prow->can_author_view_submitted_review()) {
+            $perm->some_author_can_view_review = true;
+        }
+        if ($prow->can_author_view_decision()) {
+            $perm->some_author_can_view_decision = true;
+        }
+        if ($this->isPC
+            && !$this->conf->time_some_external_reviewer_view_comment()) {
+            $perm->some_external_reviewer_can_view_comment = false;
+        }
+        if ($this->_review_tokens) {
+            $tokens = [];
+            foreach ($prow->all_reviews() as $rrow) {
+                if ($rrow->reviewToken !== 0
+                    && in_array($rrow->reviewToken, $this->_review_tokens, true))
+                    $tokens[$rrow->reviewToken] = true;
+            }
+            if (!empty($tokens)) {
+                $perm->review_tokens = array_map("encode_token", array_keys($tokens));
+            }
+        }
+        return $perm;
+    }
+
+    /** @param bool $relevant
+     * @return list<ResponseRound> */
+    function reportable_response_rounds($relevant) {
+        if (($this->conf->setting("resp_active") ?? 0) <= 0
+            || (!$this->isPC && !$this->is_author())
+            || $this->is_disabled()) {
+            return [];
+        }
+        return $relevant ? $this->relevant_response_rounds() : $this->conf->response_rounds();
+    }
+
+    /** @return array<int,string> */
+    function reportable_review_rounds() {
+        if (!$this->conf->time_review_open()
+            || !$this->is_reviewer()
+            || $this->is_disabled()) {
+            return [];
+        }
+        return $this->conf->defined_rounds();
+    }
+
     /** @return bool */
     function has_reportable_deadline() {
-        $dl = $this->my_deadlines();
+        $dl = $this->status_json();
+        // XXX multiple submission rounds
         if (isset($dl->sub->reg) || isset($dl->sub->update) || isset($dl->sub->sub)) {
             return true;
         }
