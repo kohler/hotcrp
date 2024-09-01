@@ -93,13 +93,12 @@ class Review_API {
             }
             $rrow = $prow->fresh_review_by_id($rrow->reviewId);
         }
-        $rating = $rrow->rating_by_rater($user);
-        $jr = new JsonResult(["ok" => true, "user_rating" => $rating]);
-        if ($editable) {
-            $jr->content["editable"] = true;
-        }
+        $jr = new JsonResult(["ok" => true]);
         if ($user->can_view_review_ratings($prow, $rrow)) {
-            $jr->content["ratings"] = array_values($rrow->ratings());
+            $jr->content["ratings"] = ReviewInfo::unparse_rating_json(...$rrow->ratings());
+        }
+        if ($editable) {
+            $jr->content["user_rating"] = ReviewInfo::unparse_rating_json($rrow->rating_by_rater($user));
         }
         return $jr;
     }

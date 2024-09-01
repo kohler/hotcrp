@@ -654,7 +654,6 @@ Ready\n";
                                  ReviewInfo $rrow, $flags = 0) {
         $pex = new PaperExport($viewer);
         $pex->set_include_permissions(($flags & self::RJ_NO_EDITABLE) === 0);
-        $pex->set_unparse_ratings(($flags & self::RJ_UNPARSE_RATINGS) !== 0);
         $pex->set_override_ratings(($flags & self::RJ_ALL_RATINGS) !== 0);
         return $pex->review_json($prow, $rrow);
     }

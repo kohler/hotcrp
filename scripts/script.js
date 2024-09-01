@@ -6162,12 +6162,48 @@ function render_review_body_in(rrow, bodye) {
     }
 }
 
-function ratings_counts(ratings) {
-    var ct = [0, 0, 0, 0, 0, 0, 0];
-    for (var i = 0; i < ratings.length; ++i) {
-        for (var j = 0; ratings[i] >= (1 << j); ++j) {
-            ct[j] += ratings[i] & (1 << j) ? 1 : 0;
+const ratings_info = [
+    {index: 0, bit: 1, name: "good", title: "Good review", sign: 1},
+    {index: 1, bit: 2, name: "needswork", title: "Needs work", sign: -1, want_expand: true},
+    {index: 2, bit: 4, name: "short", title: "Too short", sign: -1, collapse: true},
+    {index: 3, bit: 8, name: "vague", title: "Too vague", sign: -1, collapse: true},
+    {index: 4, bit: 16, name: "narrow", title: "Too narrow", sign: -1, collapse: true},
+    {index: 5, bit: 32, name: "disrespectful", title: "Disrespectful", sign: -1, collapse: true},
+    {index: 6, bit: 64, name: "wrong", title: "Not correct", sign: -1, collapse: true}
+];
+
+function rating_info_by_name(name) {
+    for (const ri of ratings_info) {
+        if (ri.name === name)
+            return ri;
+    }
+    return null;
+}
+
+function rating_compatibility(r) {
+    if (r == null || r === 0 || r === "none") {
+        return [];
+    }
+    if (typeof r !== "object") {
+        r = [r];
+    }
+    if (r.length === 0 || typeof r[0] === "string") {
+        return r;
+    }
+    const x = [];
+    for (const rb of r) {
+        for (const ri of ratings_info) {
+            if ((rb & ri.bit) !== 0)
+                x.push(ri.name);
         }
+    }
+    return x;
+}
+
+function rating_counts(ratings) {
+    const ct = {};
+    for (const r of ratings) {
+        ct[r] = (ct[r] || 0) + 1;
     }
     return ct;
 }
@@ -6178,89 +6214,108 @@ handle_ui.on("js-revrating-unfold", function (evt) {
 });
 
 handle_ui.on("js-revrating", function () {
-    var off = 0, on = 0, current = 0, $rr = $(this).closest(".revrating");
-    $rr.find(".revrating-choice").each(function () {
-        if (hasClass(this, "revrating-active"))
-            current |= 1 << this.getAttribute("data-revrating-bit");
-    });
-    var mygrp = this.parentNode;
-    if (hasClass(mygrp, "revrating-active")) {
-        off = 1 << mygrp.getAttribute("data-revrating-bit");
-    } else {
-        on = 1 << mygrp.getAttribute("data-revrating-bit");
-        off = on === 1 ? 126 : 1;
-        if (on >= 4 && $rr.hasClass("want-revrating-generalize"))
-            off |= 2;
+    // modified rating
+    const modrrg = this.parentNode,
+        modri = rating_info_by_name(modrrg.getAttribute("data-revrating-name")),
+        modon = !hasClass(modrrg, "revrating-active");
+    // current ratings
+    const rre = this.closest(".revrating");
+    let haveri = [];
+    for (const rrg of rre.querySelectorAll(".revrating-choice.revrating-active")) {
+        if (rrg !== modrrg)
+            haveri.push(rating_info_by_name(rrg.getAttribute("data-revrating-name")));
     }
-    if (current <= 1 && on === 2)
-        $rr.addClass("want-revrating-generalize");
-    else
-        $rr.removeClass("want-revrating-generalize");
-    if (on === 2) {
-        $rr.find(".want-focus").removeClass("want-focus");
-        addClass(mygrp, "want-focus");
-        fold($rr[0], false);
+    // if turning on a rating, maybe turn off others
+    if (modon) {
+        if (modri.sign) {
+            haveri = haveri.filter(function (ri) {
+                return !ri.sign || ri.sign === modri.sign;
+            });
+        }
+        if (haveri.length === 1
+            && modri.collapse
+            && haveri[0].sign
+            && !haveri[0].collapse) {
+            haveri = [];
+        }
+        haveri.push(modri);
+    }
+    // maybe expand to all ratings
+    if (modon && haveri.length === 1 && modri.want_expand) {
+        $(rre).find(".want-focus").removeClass("want-focus");
+        addClass(modrrg, "want-focus");
+        fold(rre, false);
     }
     var $card = $(this).closest(".revcard");
     $.post(hoturl("=api", {p: $card.attr("data-pid"), r: $card.data("rid"),
                            fn: "reviewrating"}),
-        {user_rating: (current & ~off) | on},
-        function (data) {
-            if (data && "user_rating" in data) {
-                $rr.find(".revrating-choice").each(function () {
-                    var bit = this.getAttribute("data-revrating-bit");
-                    toggleClass(this, "revrating-active", (data.user_rating & (1 << bit)) !== 0);
-                    if (bit < 2 && data.user_rating <= 2)
-                        removeClass(this, "fx");
-                });
-            }
-            if (data && "ratings" in data) {
-                var ct = ratings_counts(data.ratings);
-                $rr.find(".revrating-choice").each(function () {
-                    var bit = this.getAttribute("data-revrating-bit");
-                    if (ct[bit]) {
-                        this.lastChild.textContent = " " + ct[bit];
-                        removeClass(this, "fx");
-                        removeClass(this, "revrating-unused");
-                        addClass(this, "revrating-used");
-                    } else {
-                        this.lastChild.textContent = "";
-                        bit >= 2 && addClass(this, "fx");
-                        addClass(this, "revrating-unused");
-                        removeClass(this, "revrating-used");
-                    }
-                });
-            }
+        {user_rating: haveri.map(function (ri) { return ri.name; }).join(" ")},
+        function (rv) {
+            apply_review_ratings(rre, rv);
         });
 });
 
-function revrating_key(evt) {
-    var k = event_key(evt);
-    if ((k === "ArrowLeft" || k === "ArrowRight") && event_key.modcode(evt) === 0) {
-        foldup.call(this, null, {open: true});
-        var wantbit = $(this).closest(".revrating-choice").attr("data-revrating-bit");
-        if (wantbit != null) {
-            if (k === "ArrowLeft" && wantbit > 0)
-                --wantbit;
-            else if (k === "ArrowRight" && wantbit < 6)
-                ++wantbit;
-            $(this).closest(".revrating").find(".revrating-choice").each(function () {
-                if (this.getAttribute("data-revrating-bit") == wantbit)
-                    this.firstChild.focus();
-            });
+function apply_review_ratings(rre, rv) {
+    if (rv && "user_rating" in rv) {
+        const user_rating = rating_compatibility(rv.user_rating),
+            simple = user_rating.length === 0
+                || (user_rating.length === 1 && !rating_info_by_name(user_rating[0]).collapse);
+        for (let rrg = rre.firstChild; rrg; rrg = rrg.nextSibling) {
+            if (rrg.nodeType !== 1 || !hasClass(rrg, "revrating-choice"))
+                continue;
+            const ri = rating_info_by_name(rrg.getAttribute("data-revrating-name"));
+            toggleClass(rrg, "revrating-active", user_rating.indexOf(ri.name) >= 0);
+            !ri.collapse && simple && removeClass(rrg, "fx");
         }
-        evt.preventDefault();
     }
+    if (rv && "ratings" in rv) {
+        const ct = rating_counts(rating_compatibility(rv.ratings));
+        for (let rrg = rre.firstChild; rrg; rrg = rrg.nextSibling) {
+            if (rrg.nodeType !== 1 || !hasClass(rrg, "revrating-choice"))
+                continue;
+            const rn = rrg.getAttribute("data-revrating-name"),
+                ri = rating_info_by_name(rn);
+            if (ct[rn]) {
+                rrg.lastChild.textContent = " " + ct[rn];
+                removeClass(rrg, "fx");
+            } else {
+                rrg.lastChild.textContent = "";
+                ri.collapse && addClass(rrg, "fx");
+            }
+            toggleClass(rrg, "revrating-used", ct[rn] > 0);
+            toggleClass(rrg, "revrating-unused", !ct[rn]);
+        }
+    }
+
+}
+
+function revrating_key(evt) {
+    const k = event_key(evt);
+    if ((k !== "ArrowLeft" && k !== "ArrowRight")
+        || event_key.modcode(evt) !== 0) {
+        return;
+    }
+    foldup.call(this, null, {open: true});
+    let rrg = this.closest(".revrating-choice");
+    if (rrg) {
+        const direction = k === "ArrowLeft" ? "previousSibling" : "nextSibling";
+        rrg = rrg[direction];
+        while (rrg && (rrg.nodeType !== 1 || !hasClass(rrg, "revrating-choice"))) {
+            rrg = rrg[direction];
+        }
+        rrg && rrg.firstChild.focus();
+    }
+    evt.preventDefault();
 }
 
 function render_ratings(ratings, user_rating, editable) {
-    if (!editable && !ratings.length) {
+    ratings = rating_compatibility(ratings || 0);
+    if (!editable && ratings.length === 0) {
         return null;
     }
+    user_rating = rating_compatibility(user_rating || 0);
+    const ct = rating_counts(ratings);
 
-    const ct = ratings_counts(ratings),
-        rating_names = ["Good review", "Needs work", "Too short", "Too vague",
-                        "Too narrow", "Disrespectful", "Not correct"];
     let flage;
     if (editable) {
         flage = $e("button", {type: "button", "class": "q ui js-revrating-unfold"}, "⚑");
@@ -6269,28 +6324,29 @@ function render_ratings(ratings, user_rating, editable) {
     }
     const es = [$e("span", "revrating-flag fn", flage)];
 
-    for (let i = 0; i < rating_names.length; ++i) {
+    let focused = false;
+    for (const ri of ratings_info) {
         if (editable) {
             let klass = "revrating-choice", bklass = "";
-            if (!ct[i] && (i >= 2 || ratings.length))
+            if (!ct[ri.name] && (ri.collapse || ratings.length)) {
                 klass += " fx";
-            if (ct[i])
-                klass += " revrating-used";
-            else
-                klass += " revrating-unused";
-            if (user_rating && (user_rating & (1 << i)))
+            }
+            klass += ct[ri.name] ? " revrating-used" : " revrating-unused";
+            const active = user_rating.indexOf(ri.name) >= 0;
+            if (active) {
                 klass += " revrating-active";
-            if (user_rating
-                ? (user_rating & ((1 << (i + 1)) - 1)) === (1 << i)
-                : !i)
+            }
+            if (!focused && (user_rating.length === 0 || active)) {
                 bklass += " want-focus";
-            es.push(" ", $e("span", {"class": klass, "data-revrating-bit": i},
-                $e("button", {type: "button", "class": "ui js-revrating" + bklass}, rating_names[i]),
-                $e("span", "ct", ct[i] ? " " + ct[i] : "")));
-        } else if (ct[i]) {
-            es.push(" ", $e("span", "revrating_group",
-                rating_names[i],
-                $e("span", "ct", ct[i])));
+                focused = true;
+            }
+            es.push($e("span", {"class": klass, "data-revrating-name" : ri.name},
+                $e("button", {type: "button", "class": "ui js-revrating" + bklass}, ri.title),
+                $e("span", "ct", ct[ri.name] ? " " + ct[ri.name] : "")));
+        } else if (ct[ri.name]) {
+            es.push($e("span", "revrating-group",
+                ri.title,
+                $e("span", "ct", ct[ri.name])));
         }
     }
 
@@ -6417,7 +6473,7 @@ hotcrp.add_review = function (rrow) {
     }
 
     // ratings
-    if ((e = render_ratings(rrow.ratings || [], rrow.user_rating || 0, "user_rating" in rrow))) {
+    if ((e = render_ratings(rrow.ratings, rrow.user_rating, "user_rating" in rrow))) {
         earticle.appendChild(e);
     }
 

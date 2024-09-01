@@ -31,9 +31,6 @@ class PaperExport {
     /** @var bool
      * @readonly */
     public $override_ratings = false;
-    /** @var bool
-     * @readonly */
-    public $unparse_ratings = false;
     /** @var list<callable> */
     private $_on_document_export = [];
 
@@ -94,14 +91,6 @@ class PaperExport {
      * @suppress PhanAccessReadOnlyProperty */
     function set_override_ratings($x) {
         $this->override_ratings = $x;
-        return $this;
-    }
-
-    /** @param bool $x
-     * @return $this
-     * @suppress PhanAccessReadOnlyProperty */
-    function set_unparse_ratings($x) {
-        $this->unparse_ratings = $x;
         return $this;
     }
 
@@ -363,17 +352,11 @@ class PaperExport {
     private function _review_ratings_json($prow, $rrow, &$rj) {
         if ($rrow->has_ratings()
             && $this->viewer->can_view_review_ratings($prow, $rrow, $this->override_ratings)) {
-            $rj["ratings"] = array_values($rrow->ratings());
-            if ($this->unparse_ratings) {
-                $rj["ratings"] = array_map("ReviewInfo::unparse_rating", $rj["ratings"]);
-            }
+            $rj["ratings"] = ReviewInfo::unparse_rating_json(...$rrow->ratings());
         }
         if ($this->include_permissions
             && $this->viewer->can_rate_review($prow, $rrow)) {
-            $rj["user_rating"] = $rrow->rating_by_rater($this->viewer);
-            if ($this->unparse_ratings) {
-                $rj["user_rating"] = ReviewInfo::unparse_rating($rj["user_rating"]);
-            }
+            $rj["user_rating"] = ReviewInfo::unparse_rating_json($rrow->rating_by_rater($this->viewer));
         }
     }
 

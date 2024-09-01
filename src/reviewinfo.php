@@ -150,7 +150,7 @@ class ReviewInfo implements JsonSerializable {
     const RATING_GOODMASK = 1;
     const RATING_BADMASK = 126;
     const RATING_ANYMASK = 127;
-    // See also script.js:unparse_ratings
+    // See also script.js:ratings_info
     /** @var array<int,string>
      * @readonly */
     static public $rating_options = [
@@ -1026,10 +1026,38 @@ class ReviewInfo implements JsonSerializable {
         }
     }
 
-    /** @param string $s
+    /** @param int ...$ratings
+     * @return string|list<string> */
+    static function unparse_rating_json(...$ratings) {
+        $n = [];
+        foreach ($ratings as $r) {
+            if (($r ?? 0) === 0) {
+                continue;
+            } else if (isset(self::$rating_bits[$r])) {
+                $n[] = self::$rating_bits[$r];
+            } else {
+                foreach (self::$rating_bits as $k => $v) {
+                    if (($r & $k) !== 0)
+                        $n[] = $v;
+                }
+            }
+        }
+        if (empty($n)) {
+            return "none";
+        } else if (count($n) === 1) {
+            return $n[0];
+        } else {
+            sort($n);
+            return $n;
+        }
+    }
+
+    /** @param ?string $s
      * @return ?int */
     static function parse_rating($s) {
-        if (ctype_digit($s)) {
+        if ($s === null) {
+            return null;
+        } else if (ctype_digit($s)) {
             $n = intval($s);
             return $n >= 0 && $n <= 127 ? $n : null;
         } else {
