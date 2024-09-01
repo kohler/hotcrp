@@ -6208,6 +6208,11 @@ function rating_counts(ratings) {
     return ct;
 }
 
+function closest_rating_url(e) {
+    const card = e.closest(".revcard");
+    return hoturl("=api", {p: card.getAttribute("data-pid"), r: card.getAttribute("data-rid"), fn: "reviewrating"});
+}
+
 handle_ui.on("js-revrating-unfold", function (evt) {
     if (evt.target === this)
         foldup.call(this, null, {open: true});
@@ -6246,13 +6251,27 @@ handle_ui.on("js-revrating", function () {
         addClass(modrrg, "want-focus");
         fold(rre, false);
     }
-    var $card = $(this).closest(".revcard");
-    $.post(hoturl("=api", {p: $card.attr("data-pid"), r: $card.data("rid"),
-                           fn: "reviewrating"}),
+    $.post(closest_rating_url(rre),
         {user_rating: haveri.map(function (ri) { return ri.name; }).join(" ")},
         function (rv) {
             apply_review_ratings(rre, rv);
         });
+});
+
+handle_ui.on("js-revrating-clearall", function (evt) {
+    const rre = this.closest(".revrating");
+    function go() {
+        $.post(closest_rating_url(rre), {user_rating: "clearall"},
+            function (rv) {
+                apply_review_ratings(rre, rv);
+            });
+    }
+    if (evt.shiftKey) {
+        go();
+    } else {
+        this.setAttribute("data-override-text", "Are you sure you want to reset all ratings for this review?");
+        override_deadlines.call(this, go);
+    }
 });
 
 function apply_review_ratings(rre, rv) {
@@ -6350,10 +6369,18 @@ function render_ratings(ratings, user_rating, editable) {
         }
     }
 
+    let edit_fold = editable;
+    if (hotcrp.status.myperm.can_administer
+        && ratings.length > user_rating.length) {
+        edit_fold = true;
+        es.push($e("span", "revrating-group revrating-admin fx",
+            $e("button", {type: "button", "class": "ui js-revrating-clearall"}, "Clear all")));
+    }
+
     let ex;
-    if (editable) {
-        es.push(" ", $e("span", "revrating-group fn", $e("button", {type: "button", "class": "ui js-foldup"}, "…")));
-        ex = $e("div", "revrating editable has-fold foldc ui js-revrating-unfold" + (user_rating === 2 ? " want-revrating-generalize" : ""),
+    if (edit_fold) {
+        es.push($e("span", "revrating-group fn", $e("button", {type: "button", "class": "ui js-foldup"}, "…")));
+        ex = $e("div", "revrating has-fold foldc" + (editable ? " ui js-revrating-unfold" : ""),
             $e("div", "f-c fx", $e("a", {href: hoturl("help", {t: "revrate"}), "class": "q"}, "Review ratings ", $e("span", "n", "(anonymous reviewer feedback)"))),
             ...es);
         $(ex).on("keydown", "button.js-revrating", revrating_key);

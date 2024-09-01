@@ -2643,6 +2643,10 @@ textarea[name=comment] {
 .revrating-unused > button {
 	color: #e35f5f;
 }
+.revrating-admin > button {
+	border-color: #666666;
+	color: #666666;
+}
 .revrating-active > button {
 	border: 1px solid #cc0000;
 	background: #ff0000;
@@ -2655,6 +2659,9 @@ textarea[name=comment] {
 }
 .revrating-choice.revrating-unused:hover > button {
 	background: #fff2f3;
+}
+.revrating-admin:hover > button {
+	background: #e2e2e2;
 }
 .revrating-active:hover > button {
 	color: #ffe080;

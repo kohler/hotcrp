@@ -80,13 +80,23 @@ class Review_API {
         }
         $editable = $user->can_rate_review($prow, $rrow);
         if ($qreq->method() !== "GET") {
-            if (!isset($qreq->user_rating)
-                || ($rating = ReviewInfo::parse_rating($qreq->user_rating)) === null) {
-                return JsonResult::make_error(400, "<0>Bad request");
-            } else if (!$editable) {
-                return JsonResult::make_permission_error();
+            if ($qreq->user_rating === "clearall") {
+                if (!$user->can_administer($prow)) {
+                    return JsonResult::make_permission_error();
+                }
+                $rating = -1;
+            } else {
+                if (!$editable) {
+                    return JsonResult::make_permission_error();
+                }
+                $rating = ReviewInfo::parse_rating($qreq->user_rating);
             }
-            if ($rating === 0) {
+            if ($rating === null) {
+                return JsonResult::make_parameter_error("user_rating");
+            }
+            if ($rating < 0) {
+                $user->conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $prow->paperId, $rrow->reviewId);
+            } else if ($rating === 0) {
                 $user->conf->qe("delete from ReviewRating where paperId=? and reviewId=? and contactId=?", $prow->paperId, $rrow->reviewId, $user->contactId);
             } else {
                 $user->conf->qe("insert into ReviewRating set paperId=?, reviewId=?, contactId=?, rating=? on duplicate key update rating=?", $prow->paperId, $rrow->reviewId, $user->contactId, $rating, $rating);
