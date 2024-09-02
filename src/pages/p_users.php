@@ -388,7 +388,7 @@ class Users_Page {
     private function print_query_form(ContactList $pl) {
         echo '<div class="tlcontainer mb-3">';
 
-        echo '<div class="tld is-tla active" id="default" role="tabpanel" aria-labelledby="tab-default">',
+        echo '<div class="tld is-tla active" id="default" role="tabpanel" aria-labelledby="k-default-tab">',
             Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
         if (isset($this->qreq->sort)) {
             echo Ht::hidden("sort", $this->qreq->sort);
@@ -397,7 +397,7 @@ class Users_Page {
             " &nbsp;", Ht::submit("Go"), "</form></div>";
 
         // Display options
-        echo '<div class="tld is-tla" id="view" role="tabpanel" aria-labelledby="tab-view">',
+        echo '<div class="tld is-tla" id="view" role="tabpanel" aria-labelledby="k-view-tab">',
             Ht::form($this->conf->hoturl("users"), ["method" => "get"]);
         foreach (["t", "sort"] as $x) {
             if (isset($this->qreq[$x]))
@@ -457,8 +457,8 @@ class Users_Page {
 
         // Tab selectors
         echo '<div class="tllx" role="tablist">',
-            '<div class="tll active" role="tab" id="tab-default" aria-controls="default" aria-selected="true"><a class="ui tla" href="">User selection</a></div>',
-            '<div class="tll" role="tab" id="tab-view" aria-controls="view" aria-selected="false"><a class="ui tla" href="#view">View options</a></div>',
+            '<div class="tll active" role="tab" id="k-default-tab" aria-controls="default" aria-selected="true"><a class="ui tla" href="">User selection</a></div>',
+            '<div class="tll" role="tab" id="k-view-tab" aria-controls="view" aria-selected="false"><a class="ui tla" href="#view">View options</a></div>',
             '</div></div>', "\n\n";
     }
 

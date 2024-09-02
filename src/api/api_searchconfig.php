@@ -114,7 +114,7 @@ class SearchConfig_API {
             $name = simplify_whitespace($name ?? "");
             $lname = strtolower($name);
             $expr = simplify_whitespace($expr ?? "");
-            $pfx = $name === "" ? "" : htmlspecialchars($name) . ": ";
+            $pfx = $name === "" ? "" : "{$name}: ";
 
             if ($id === "new") {
                 if (($name === "" && $expr === "") || $deleted) {
@@ -125,7 +125,7 @@ class SearchConfig_API {
             } else {
                 $id = (int) $id;
                 if (!($fdef = $formula_by_id[$id] ?? null)) {
-                    $msgset->error_at("formula/{$fidx}", "{$pfx}This formula has been deleted.");
+                    $msgset->error_at("formula/{$fidx}", "<0>{$pfx}This formula has been deleted");
                     continue;
                 }
             }
@@ -133,7 +133,7 @@ class SearchConfig_API {
 
             if (!$user->can_edit_formula($fdef)
                 && (!$fdef || $name !== $fdef->name || $expr !== $fdef->expression || $deleted)) {
-                $msgset->error_at("formula/{$fidx}", $fdef ? "{$pfx}You can’t change this named formula." : "You can’t create named formulas.");
+                $msgset->error_at("formula/{$fidx}", $fdef ? "<0>{$pfx}You can’t change this named formula" : "<0>You can’t create named formulas");
                 continue;
             }
 
@@ -141,16 +141,12 @@ class SearchConfig_API {
                 unset($new_formula_by_id[$id]);
                 continue;
             } else if ($expr === "") {
-                $msgset->error_at("formula/{$fidx}/expression", "{$pfx}Expression required.");
+                $msgset->error_at("formula/{$fidx}/expression", "<0>{$pfx}Expression required");
                 continue;
             }
 
-            if ($lname === "") {
-                $msgset->error_at("formula/{$fidx}/name", "Missing formula name.");
-            } else if (preg_match('/\A(?:formula[:\d].*|f:.*|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d*)?|none|any|all|unknown)\z/', $lname)) {
-                $msgset->error_at("formula/{$fidx}/name", "{$pfx}This formula name is reserved. Please pick another name.");
-            } else if (preg_match_all('/[()\[\]\{\}\\\\\"\']/', $lname, $m)) {
-                $msgset->error_at("formula/{$fidx}/name", "{$pfx}Characters like “" . htmlspecialchars(join("", $m[0])) . "” cannot be used in formula names. Please pick another name.");
+            if (($error = self::name_error($name, "formula"))) {
+                $msgset->error_at("formula/{$fidx}/name", "<0>{$pfx}{$error}");
             }
 
             $f = new Formula($expr);
@@ -164,7 +160,7 @@ class SearchConfig_API {
         foreach ($new_formula_by_id as $f) {
             $lname = strtolower($f->name);
             if (isset($lnames_used[$lname]))  {
-                $msgset->error_at("formula/" . $id2idx[$f->formulaId] . "/name", htmlspecialchars($f->name ? $f->name . ": " : "") . "Formula names must be distinct");
+                $msgset->error_at("formula/" . $id2idx[$f->formulaId] . "/name", "<0>" . ($f->name ? $f->name . ": " : "") . "Formula names must be distinct");
             }
             $lnames_used[$lname] = true;
         }
@@ -177,7 +173,7 @@ class SearchConfig_API {
             if ($f->check($user)) {
                 if ((!$fdef || $fdef->expression !== $f->expression)
                     && !$user->can_view_formula($f))  {
-                    $msgset->error_at("formula/" . $id2idx[$f->formulaId] . "/expression", $pfx . "This expression refers to properties you can’t access");
+                    $msgset->error_at("formula/" . $id2idx[$f->formulaId] . "/expression", "<0>{$pfx}This expression refers to properties you can’t access");
                 }
             } else {
                 foreach ($f->message_list() as $mi) {
@@ -220,6 +216,57 @@ class SearchConfig_API {
         }
     }
 
+
+    static function namedsearch(Contact $user, Qrequest $qreq) {
+        $fjs = [];
+        $ms = new MessageSet;
+        foreach ($user->viewable_named_searches(false) as $sj) {
+            $q = $sj->q;
+            if ($q !== "" && ($sj->t ?? "") !== "" && $sj->t !== "s") {
+                $q = "({$sj->q}) in:{$sj->t}";
+            }
+            $nsj = ["name" => $sj->name, "q" => $q];
+            if (isset($sj->display)) {
+                $nsj["display"] = $sj->display;
+            }
+            if (isset($sj->description)) {
+                $nsj["description"] = $sj->description;
+            }
+            if (self::can_edit_search($user, $sj)) {
+                $nsj["editable"] = true;
+            }
+            $fjs[] = $nsj;
+            self::append_search_messages($user, $sj->name, $q, count($fjs), $ms);
+        }
+        $j = ["ok" => true, "searches" => $fjs];
+        if ($ms->has_message()) {
+            $j["message_list"] = $ms->message_list();
+        }
+        return new JsonResult($j);
+    }
+
+    /** @param Contact $user
+     * @param string $name
+     * @param string $q
+     * @param int $ctr
+     * @param MessageSet $ms */
+    static function append_search_messages($user, $name, $q, $ctr, $ms) {
+        $ps = new PaperSearch($user, $q);
+        if (strpos($name, "~") === false && $user->privChair) {
+            $ps->main_term()->visit(function (SearchTerm $qe, ...$args) use ($ps) {
+                if ($qe instanceof Tag_SearchTerm
+                    && ($single_tag = $qe->tsm->single_tag()) !== false
+                    && $ps->conf->tags()->is_chair($single_tag)) {
+                    $ps->lwarning($qe, "<0>Some parts of this PC-visible search only work for chairs");
+                }
+                return null;
+            });
+        }
+        foreach ($ps->message_list() as $mi) {
+            $ms->append_item_at("named_search/{$ctr}/search", $mi);
+        }
+    }
+
     /** @param object $v
      * @return bool */
     static function can_edit_search(Contact $user, $v) {
@@ -228,33 +275,40 @@ class SearchConfig_API {
             || $v->owner === $user->contactId;
     }
 
-    static function namedsearch(Contact $user, Qrequest $qreq) {
-        $fjs = [];
-        $ms = new MessageSet;
-        foreach ($user->conf->named_searches() as $sj) {
-            if (($sj->qt ?? "n") === "n" && ($sj->t ?? "s") === "s") {
-                $q = $sj->q;
-            } else {
-                $q = PaperSearch::canonical_query($sj->q, "", "", $sj->qt ?? "n", $user->conf, $sj->t ?? "s");
-            }
-            $nsj = ["name" => $sj->name, "q" => $q];
-            if (self::can_edit_search($user, $sj)) {
-                $nsj["editable"] = true;
-            }
-            $fjs[] = $nsj;
-            $ps = new PaperSearch($user, $q);
-            foreach ($ps->message_list() as $mi) {
-                $ms->append_item_at("named_search/" . count($fjs) . "/search", $mi);
-            }
+    /** @param string $name
+     * @param 'search'|'formula' $type
+     * @return ?string */
+    static function name_error($name, $type) {
+        if ($name === "") {
+            return "Name required";
+        } else if (preg_match('/\A(?:formula[:\d].*|[fs]:.*|ss:.*|search:.*|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d*)?|none|any|all|unknown|new)\z|[()\[\]\{\}\\\\"\'\#]|\A(?:~.|\d+~|(?=[^~\d])).*~|~\z|\pZ/u', $name)) {
+            return "Name reserved";
+        } else {
+            return null;
         }
-        usort($fjs, function ($a, $b) {
-            return strnatcasecmp($a["name"], $b["name"]);
-        });
-        $j = ["ok" => true, "searches" => $fjs];
-        if ($ms->has_message()) {
-            $j["message_list"] = $ms->message_list();
+    }
+
+    /** @param string $name
+     * @param Contact $user
+     * @param string $field
+     * @param MessageSet $ms
+     * @return string */
+    static private function _resolve_named_search_name($name, $user, $field, $ms) {
+        $twiddle = strpos($name, "~");
+        if ($twiddle === false) {
+            /* ok */
+        } else if ($twiddle === 0 && str_starts_with($name, "~~")) {
+            if (!$user->privChair) {
+                $ms->error_at($field, "<0>Search reserved for chairs");
+            }
+        } else if ($twiddle === 0) {
+            $name = $user->contactId . $name;
+        } else if (str_starts_with($name, $user->contactId . "~")) {
+            /* ok */
+        } else {
+            $ms->error_at($field, "<0>Search name reserved");
         }
-        return new JsonResult($j);
+        return $name;
     }
 
     static function save_namedsearch(Contact $user, Qrequest $qreq) {
@@ -264,17 +318,19 @@ class SearchConfig_API {
         $ssjs = $user->conf->named_searches();
         foreach ($ssjs as $sj) {
             $sj->id = $sj->name;
-            $sj->fidx = null;
+            $sj->ctr = null;
         }
         $tagger = new Tagger($user);
 
         // determine new formula set from request
-        $msgset = new MessageSet;
-        for ($fidx = 1; isset($qreq["named_search/{$fidx}/id"]); ++$fidx) {
-            $id = $qreq["named_search/{$fidx}/id"];
-            $name = $qreq["named_search/{$fidx}/name"];
-            $q = $qreq["named_search/{$fidx}/search"];
-            $deleted = $qreq["named_search/{$fidx}/delete"];
+        $ms = new MessageSet;
+        $ctr = max(stoi($qreq["named_search/first_index"]) ?? 1, 1);
+        for (; isset($qreq["named_search/{$ctr}/id"]); ++$ctr) {
+            $kpfx = "named_search/{$ctr}";
+            $id = $qreq["{$kpfx}/id"];
+            $name = $qreq["{$kpfx}/name"];
+            $q = $qreq["{$kpfx}/search"];
+            $deleted = $qreq["{$kpfx}/delete"];
             if ($id === "" || (!isset($name) && !isset($q) && !isset($deleted))) {
                 continue;
             }
@@ -282,6 +338,10 @@ class SearchConfig_API {
             $name = simplify_whitespace($name ?? "");
             $q = simplify_whitespace($q ?? "");
             $pfx = $name === "" ? "" : "{$name}: ";
+
+            // fix name and id
+            $id = self::_resolve_named_search_name($id, $user, "{$kpfx}/name", $ms);
+            $name = self::_resolve_named_search_name($name, $user, "{$kpfx}/name", $ms);
 
             // find matching search
             if ($id === "new") {
@@ -297,20 +357,20 @@ class SearchConfig_API {
                 if ($deleted || ($name === "" && $q === "")) {
                     continue;
                 } else if ($id !== "new") {
-                    $msgset->error_at("named_search/{$fidx}/name", "<0>{$pfx}This search has been deleted");
+                    $ms->error_at("{$kpfx}/name", "<0>{$pfx}This search has been deleted");
                     continue;
                 }
             }
 
             // check if search is editable
             $fdef = $ssjs[$sidx] ?? null;
-            if (!self::can_edit_search($user, $fdef)
-                && (!$fdef
-                    || strcasecmp($name, $fdef->name) !== 0
+            $editable = !$fdef || self::can_edit_search($user, $fdef);
+            if (!$editable
+                && !$ms->has_error_at("{$kpfx}/name")
+                && (strcasecmp($name, $fdef->name) !== 0
                     || $q !== $fdef->q
                     || $deleted)) {
-                $msgset->error_at("named_search/{$fidx}/name", $fdef ? "<0>{$pfx}You can’t change this named search" : "<0>You can’t create named searches");
-                continue;
+                $ms->error_at("{$kpfx}/name", "<0>{$pfx}You can’t change this named search");
             }
 
             // maybe delete search
@@ -319,53 +379,73 @@ class SearchConfig_API {
                 continue;
             }
 
-            // check for errors or create
+            // check name
+            if (!$ms->has_error_at("{$kpfx}/name")
+                && ($error = self::name_error($name, "search"))) {
+                $ms->error_at("{$kpfx}/name", "<0>{$pfx}{$error}");
+            }
+
+            // check search
             if ($q === "") {
-                $msgset->error_at("named_search/{$fidx}/search", "<0>{$pfx}Search required");
-            } else if ($name === "") {
-                $msgset->error_at("named_search/{$fidx}/name", "<0>Search name required");
-            } else if (preg_match('/\A(?:formula[:\d].*|f:.*|ss:.*|search:.*|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d*)?|none|any|all|unknown|new)\z/', $name)) {
-                $msgset->error_at("named_search/{$fidx}/name", "<0>{$pfx}Search name reserved; please pick another name");
-            } else if (!$tagger->check($name, Tagger::NOPRIVATE | Tagger::NOCHAIR | Tagger::NOVALUE)) {
-                $msgset->error_at("named_search/{$fidx}/name", "<0>‘{$name}’ contains characters not allowed in search names. Stick to letters, digits, and simple punctuation.");
+                $ms->error_at("{$kpfx}/search", "<0>{$pfx}Search required");
             } else {
-                if (!$fdef) {
-                    $ssjs[] = $fdef = (object) ["id" => ""];
+                self::append_search_messages($user, $name, $q, $ctr, $ms);
+            }
+
+            if (!$fdef) {
+                $ssjs[] = $fdef = (object) ["id" => ""];
+            }
+            $fdef->name = $name;
+            $fdef->q = $q;
+            $fdef->owner = $user->privChair ? "chair" : $user->contactId;
+            $fdef->ctr = $ctr;
+            if ($qreq["{$kpfx}/highlight"]) {
+                $fdef->display = "highlight";
+            } else if ($qreq["has-{$kpfx}/highlight"]) {
+                unset($fdef->display);
+            }
+            if (($description = $qreq["{$kpfx}/description"]) !== null) {
+                $description = cleannl($description);
+                if ($description !== "") {
+                    $fdef->description = $description;
+                } else {
+                    unset($fdef->description);
                 }
-                $fdef->name = $name;
-                $fdef->q = $q;
-                $fdef->owner = $user->privChair ? "chair" : $user->contactId;
-                $fdef->fidx = $fidx;
             }
         }
 
-        // check for duplicate names
-        $fidx_by_name = [];
+        // exit on errors
+        if ($ms->has_error()) {
+            return ["ok" => false, "message_list" => $ms->message_list()];
+        }
+
+        // no other errors: check for duplicate names
+        $ctr_by_name = [];
         foreach ($ssjs as $sj) {
             $name = strtolower($sj->name);
-            if (array_key_exists($name, $fidx_by_name)) {
-                if (isset($sj->fidx)) {
-                    $msgset->error_at("named_search/{$sj->fidx}/name", "<0>Search name ‘{$sj->name}’ is not unique");
+            if (array_key_exists($name, $ctr_by_name)) {
+                if (isset($sj->ctr)) {
+                    $ms->error_at("named_search/{$sj->ctr}/name", "<0>Search name ‘{$sj->name}’ is not unique");
                 }
-                if (isset($fidx_by_name[$name])) {
-                    $msgset->error_at("named_search/{$fidx_by_name[$name]}/name", "<0>Search name ‘{$sj->name}’ is not unique");
+                if (isset($ctr_by_name[$name])) {
+                    $ms->error_at("named_search/{$ctr_by_name[$name]}/name", "<0>Search name ‘{$sj->name}’ is not unique");
                 }
             } else {
-                $fidx_by_name[$name] = $sj->fidx;
+                $ctr_by_name[$name] = $sj->ctr;
             }
         }
 
         // XXX should validate saved searches using new search set
 
-        if ($msgset->has_error()) {
-            return ["ok" => false, "message_list" => $msgset->message_list()];
+        if ($ms->has_error()) {
+            return ["ok" => false, "message_list" => $ms->message_list()];
         }
 
         // save result
         foreach ($ssjs as $sj) {
-            unset($sj->id, $sj->fidx);
+            unset($sj->id, $sj->ctr);
         }
-        usort($ssjs, "NamedSearch_Setting::compare");
+        usort($ssjs, [$user->conf, "named_search_compare"]);
         if (!empty($ssjs)) {
             $user->conf->save_setting("named_searches", 1, json_encode_db($ssjs));
         } else {

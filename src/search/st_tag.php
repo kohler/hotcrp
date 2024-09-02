@@ -35,11 +35,11 @@ class Tag_SearchTerm extends SearchTerm {
 
         // check value matchers
         $tsm = new TagSearchMatcher($srch->user);
-        if (preg_match('/\A([^#=!<>\x80-\xFF]+)(?:#|=)(-?(?:\.\d+|\d+\.?\d*))(?:\.\.\.?|-|–|—)(-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)) {
+        if (preg_match('/\A([^\#=!<>\x80-\xFF]+)(?:\#|=)(-?(?:\.\d+|\d+\.?\d*))(?:\.\.\.?|-|–|—)(-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)) {
             $tagword = $m[1];
             $tsm->add_value_matcher(new CountMatcher(">={$m[2]}"));
             $tsm->add_value_matcher(new CountMatcher("<={$m[3]}"));
-        } else if (preg_match('/\A([^#=!<>\x80-\xFF]+)(#?)([=!<>]=?|≠|≤|≥|)(-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)
+        } else if (preg_match('/\A([^\#=!<>\x80-\xFF]+)(\#?)([=!<>]=?|≠|≤|≥|)(-?(?:\.\d+|\d+\.?\d*))\z/s', $word, $m)
                    && $m[1] !== "any"
                    && $m[1] !== "none"
                    && ($m[2] !== "" || $m[3] !== "")) {

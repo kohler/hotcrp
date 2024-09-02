@@ -218,8 +218,12 @@ class Home_Page {
         if ($user->isPC) {
             $hs = [];
             foreach ($user->conf->named_searches() as $sj) {
-                if (($sj->display ?? null) === "highlight")
-                    $hs[] = '<li>⭐️ ' . Ht::link("ss:" . htmlspecialchars($sj->name), $this->conf->hoturl("search", ["q" => "ss:{$sj->name}"])) . '</li>';
+                if (($sj->display ?? null) === "highlight"
+                    && $user->can_view_named_search($sj, false)) {
+                    $tw = strpos($sj->name, "~");
+                    $name = $tw > 0 ? substr($sj->name, $tw) : $sj->name;
+                    $hs[] = '<li><span class="mr-1">⭐️</span>' . Ht::link("ss:" . htmlspecialchars($name), $this->conf->hoturl("search", ["q" => "ss:{$name}"])) . '</li>';
+                }
             }
             if (!empty($hs)) {
                 echo '<div class="mt-1 font-weight-semibold"><ul class="inline">',

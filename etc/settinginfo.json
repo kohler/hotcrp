@@ -1156,11 +1156,11 @@
         "title_pattern": "${sv named_search/$/title}",
         "parser_class": "NamedSearch_SettingParser"
     },
-    {   "name_pattern": "named_search/$/id", "internal": true, "type": "string"   },
+    {   "name_pattern": "named_search/$/id", "internal": true, "json": true, "type": "string"   },
     {
         "name_pattern": "named_search/$/name",
         "title": "Search name",
-        "type": "tag", "size": 20, "autogrow": true
+        "type": "string", "subtype": "simple", "size": 30, "autogrow": true
     },
     {   "name_pattern": "named_search/$/title", "internal": true, "parser_class": "NamedSearch_SettingParser"   },
     {
@@ -1169,6 +1169,11 @@
         "type": "string", "subtype": "search", "storage": "member.q"
     },
     {   "name_pattern": "named_search/$/q", "alias_pattern": "named_search/$/search"   },
+    {
+        "name_pattern": "named_search/$/description",
+        "title": "Search description",
+        "type": "string", "subtype": "simple", "size": 50, "autogrow": true
+    },
     {
         "name_pattern": "named_search/$/display",
         "title": "/Display",

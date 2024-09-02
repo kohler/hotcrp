@@ -112,6 +112,10 @@ class ReviewSearchMatcher extends ContactCountMatcher {
     function review_type() {
         return $this->review_type;
     }
+    /** @return ?ReviewFieldSearch<ReviewField> */
+    function field_search() {
+        return $this->rfsrch;
+    }
     /** @return array */
     function unparse_json(Conf $conf) {
         $j = [];

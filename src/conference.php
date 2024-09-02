@@ -1884,6 +1884,21 @@ class Conf {
         return is_array($j) ? $j : [];
     }
 
+    /** @param NamedSearch_Setting|object $a
+     * @param NamedSearch_Setting|object $b
+     * @return int */
+    function named_search_compare($a, $b) {
+        $ad = $a->display ?? "default";
+        $bd = $b->display ?? "default";
+        if ($ad === "highlight" && $bd !== "highlight") {
+            return -1;
+        } else if ($bd === "highlight" && $ad !== "highlight") {
+            return 1;
+        } else {
+            return $this->collator()->compare($a->name, $b->name);
+        }
+    }
+
 
     /** @return null|'ldap'|'htauth'|'none'|'oauth' */
     function login_type() {

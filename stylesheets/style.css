@@ -443,6 +443,9 @@ div.js-assignment-fold:hover a.js-assignment-fold,
 a:hover u.x {
 	text-decoration: underline;
 }
+button.link.noul {
+	text-decoration: inherit;
+}
 a.pnum, a.ptitle {
 	-webkit-text-decoration-line: inherit;
 	text-decoration-line: inherit;
@@ -816,6 +819,9 @@ label.checki {
 	column-width: auto !important;
 	column-count: 1 !important;
 }
+.column-count-2 {
+	column-count: 2 !important;
+}
 .column-count-3 {
 	column-count: 3 !important;
 }
@@ -984,16 +990,16 @@ span.hastitle {
 .spinner {
 	display: inline-block;
 	text-indent: 0;
-	margin-left: 0.5em;
+	margin-left: 1em;
+	padding-left: 0.5em;
 	min-width: 1em;
 	min-height: 1em;
 	position: relative;
-	bottom: -0.3em;
 }
 .spinner::before {
 	position: absolute;
-	top: 50%;
-	left: 50%;
+	top: 75%;
+	right: 100%;
 	width: 0.8em;
 	height: 0.8em;
 	margin-top: -0.7em;
@@ -1508,12 +1514,16 @@ button.disabled, button.disabled:hover {
 	cursor: default;
 }
 button.link, button.q, button.qo {
+	display: inline;
+	text-align: inherit;
 	font-weight: inherit;
 	font-style: inherit;
 	padding: 0;
 	border-style: none;
 	background: initial;
 	cursor: pointer;
+	max-width: 100%;
+	white-space: normal;
 }
 button.link:hover, button.q:hover, button.qo:hover {
 	background: initial;
@@ -2792,6 +2802,7 @@ ul.ctable {
 	column-width: 150px;
 	max-width: 800px;
 	margin: 0 -6px -6px;
+	overflow-wrap: break-word;
 }
 .ctelt {
 	-webkit-column-break-inside: avoid;
@@ -3362,7 +3373,7 @@ button.draghandle.disabled:hover, button.draghandle:disabled:hover {
 	opacity: 0.25 !important;
 }
 
-.editformulas-formula, .editsearches-search {
+.editformulas-formula {
 	margin: 1em 0 2em;
 }
 
@@ -4250,6 +4261,10 @@ h3.pavfn, h3.psfn {
 	display: inline-block;
 	transform: scale(-1, 1);
 	transition: color 0.25s ease;
+}
+.t-editor.transparent {
+	color: rgba(0, 0, 0, 0);
+	transition: color 0.35s ease;
 }
 a:hover .t-editor,
 .js-foldup:hover .t-editor,

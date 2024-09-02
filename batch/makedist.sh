@@ -455,6 +455,7 @@ src/search/st_documentname.php
 src/search/st_editfinal.php
 src/search/st_emoji.php
 src/search/st_formula.php
+src/search/st_namedsearch.php
 src/search/st_option.php
 src/search/st_optionpresent.php
 src/search/st_optiontext.php

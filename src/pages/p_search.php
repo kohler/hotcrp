@@ -172,47 +172,9 @@ class Search_Page {
         return $qt;
     }
 
-    /** @param bool $always
-     * @return bool */
-    private function print_saved_searches($always) {
-        $ss = $this->conf->named_searches();
-        if (empty($ss) && !$always) {
-            return false;
-        }
-        echo '<div class="tld is-tla pb-2" id="saved-searches" role="tabpanel" aria-labelledby="tab-saved-searches">';
-        $any = false;
-        foreach ($ss as $sj) {
-            if (($sj->display ?? null) === "none") {
-                continue;
-            }
-            if (!$any) {
-                Icons::stash_defs("solid_question");
-                echo Ht::unstash(), '<div class="ctable search-ctable column-count-3 mb-1">';
-                $any = true;
-            }
-            $q = $sj->q ?? "";
-            if (isset($sj->t) && $sj->t !== "s") {
-                $q = "({$q}) in:{$sj->t}";
-            }
-            echo '<div class="ctelt has-fold foldc">';
-            if (($sj->display ?? null) === "highlight") {
-                echo '⭐️ ';
-            }
-            echo Ht::link("ss:" . htmlspecialchars($sj->name), $this->conf->hoturl("search", ["q" => "ss:{$sj->name}"])),
-                ' <a href="" class="ui js-foldup small" title="Show expansion">', Icons::ui_use("solid_question"), '</a>',
-                '<div class="small fx ml-4">', htmlspecialchars($sj->q), '</div></div>';
-        }
-        if ($any) {
-            echo '</div>';
-        }
-        Icons::stash_defs("trash");
-        echo '<p class="mt-1 mb-0 text-end"><button class="small ui js-edit-namedsearches" type="button">Edit named searches</button></p></div>';
-        return true;
-    }
-
     /** @param Qrequest $qreq */
     private function print_display_options($qreq) {
-        echo '<div class="tld is-tla pb-2" id="view" role="tabpanel" aria-labelledby="tab-view">',
+        echo '<div class="tld is-tla pb-2" id="view" role="tabpanel" aria-labelledby="k-view-tab">',
             Ht::form($this->conf->hoturl("=search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
         foreach (["q", "qa", "qo", "qx", "qt", "t", "sort"] as $x) {
             if (isset($qreq[$x]) && ($x !== "q" || !isset($qreq->qa)))
@@ -342,7 +304,7 @@ class Search_Page {
         $qtOpt = $this->field_search_types();
 
         // Basic search tab
-        echo '<div class="tld is-tla active" id="default" role="tabpanel" aria-labelledby="tab-default">',
+        echo '<div class="tld is-tla active" id="default" role="tabpanel" aria-labelledby="k-default-tab">',
             Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
             Ht::entry("q", (string) $qreq->q, [
                 "size" => 40, "tabindex" => 1,
@@ -356,7 +318,7 @@ class Search_Page {
             '</div></form></div>';
 
         // Advanced search tab
-        echo '<div class="tld is-tla" id="advanced" role="tabpanel" aria-labelledby="tab-advanced">',
+        echo '<div class="tld is-tla" id="advanced" role="tabpanel" aria-labelledby="k-advanced-tab">',
             Ht::form($this->conf->hoturl("search"), ["method" => "get"]),
             '<div class="d-inline-block">',
             '<div class="entryi medium"><label for="k-advanced-qt">Search</label><div class="entry">',
@@ -387,7 +349,9 @@ class Search_Page {
             '</div></form></div>';
 
         // Saved searches tab
-        $has_ss = $user->isPC && $this->print_saved_searches($pl_text !== null);
+        if ($user->isPC) {
+            echo '<div class="tld is-tla pb-2 ui-fold js-named-search-tabpanel" id="saved-searches" role="tabpanel" aria-labelledby="k-saved-searches-tab"></div>';
+        }
 
         // Display options tab
         if (!$this->pl->is_empty()) {
@@ -396,13 +360,13 @@ class Search_Page {
 
         // Tab selectors
         echo '<div class="tllx" role="tablist">',
-            '<div class="tll active" role="tab" id="tab-default" aria-controls="default" aria-selected="true"><a class="ui tla" href="">Search</a></div>',
-            '<div class="tll" role="tab" id="tab-advanced" aria-controls="advanced" aria-selected="false"><a class="ui tla nw" href="#advanced">Advanced search</a></div>';
-        if ($has_ss) {
-            echo '<div class="tll" role="tab" id="tab-saved-searches" aria-controls="saved-searches" aria-selected="false"><a class="ui tla nw" href="#saved-searches">Saved searches</a></div>';
+            '<div class="tll active" role="tab" id="k-default-tab" aria-controls="default" aria-selected="true"><a class="ui tla" href="">Search</a></div>',
+            '<div class="tll" role="tab" id="k-advanced-tab" aria-controls="advanced" aria-selected="false"><a class="ui tla nw" href="#advanced">Advanced search</a></div>';
+        if ($user->isPC) {
+            echo '<div class="tll" role="tab" id="k-saved-searches-tab" aria-controls="saved-searches" aria-selected="false"><a class="ui tla nw" href="#saved-searches">Saved searches</a></div>';
         }
         if (!$this->pl->is_empty()) {
-            echo '<div class="tll" role="tab" id="tab-view" aria-controls="view" aria-selected="false"><a class="ui tla nw" href="#view">View options</a></div>';
+            echo '<div class="tll" role="tab" id="k-view-tab" aria-controls="view" aria-selected="false"><a class="ui tla nw" href="#view">View options</a></div>';
         }
         echo '</div></div>', Ht::unstash(), "\n\n";
 

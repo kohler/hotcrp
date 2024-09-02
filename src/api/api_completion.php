@@ -102,10 +102,10 @@ class Completion_API {
 
         self::has_search_completion($user, $comp);
 
-        if ((!$category || $category === "ss")
-            && $user->isPC) {
-            foreach ($conf->named_searches() as $sj) {
-                $comp[] = "ss:" . $sj->name;
+        if (!$category || $category === "ss") {
+            foreach ($user->viewable_named_searches(false) as $sj) {
+                $twiddle = strpos($sj->name, "~");
+                $comp[] = "ss:" . ($twiddle > 0 ? substr($sj->name, $twiddle) : $sj->name);
             }
         }
 

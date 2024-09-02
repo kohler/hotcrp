@@ -1506,7 +1506,7 @@ class Tagger {
             if ($this->contact->privChair) {
                 return "<0>Invalid tag{$t} (chair tags aren’t allowed here)";
             } else {
-                return "<0>Invalid tag{$t} (tag reserved for chair)";
+                return "<0>Tag{$t} reserved for chairs";
             }
         case self::NOPRIVATE:
             return "<0>Private tags aren’t allowed here";

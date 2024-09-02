@@ -55,6 +55,8 @@ Generic values
     * `#h-right`
     * `#h-deadline`
     * `#h-messages`
+    * `#h-usermenu`
+    * `#h-usermenubutton`
 * `id^=n-` is for navigation elements (quicklinks)
     * `#n-next`
     * `#n-prev`

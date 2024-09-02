@@ -414,7 +414,7 @@ class PaperSearch extends MessageSet {
         return $mis;
     }
 
-    /** @param SearchWord $sw
+    /** @param SearchWord|SearchTerm $sw
      * @param string $message
      * @return MessageItem */
     function lwarning($sw, $message) {
@@ -537,52 +537,24 @@ class PaperSearch extends MessageSet {
         return new True_SearchTerm;
     }
 
-    /** @param string $word
-     * @return ?object */
-    private function _find_named_search($word) {
-        foreach ($this->conf->named_searches() as $sj) {
-            if (strcasecmp($sj->name, $word) === 0)
-                return $sj;
-        }
-        return null;
-    }
-
-    /** @param string $word
-     * @param object $sj
-     * @return ?string */
-    private function _expand_named_search($word, $sj) {
-        $q = $sj->q ?? null;
-        if ($q && ($sj->t ?? "") !== "" && $sj->t !== "s") {
-            $q = "({$q}) in:{$sj->t}";
-        }
-        return $q;
-    }
-
-    /** @param string $word
+    /** @param string $body
+     * @param SearchWord $sword
      * @return ?SearchTerm */
-    static function parse_named_search($word, SearchWord $sword, PaperSearch $srch) {
-        if (!$srch->user->isPC) {
+    function parse_named_search_body($body, $sword) {
+        if ($this->_string_context && $this->_string_context->depth >= 10) {
+            $this->lwarning($sword, "<0>Circular reference in named search definitions");
             return null;
         }
-        $qe = null;
-        if (!($sj = $srch->_find_named_search($word))) {
-            $srch->lwarning($sword, "<0>Named search not found");
-        } else if (!($nextq = $srch->_expand_named_search($word, $sj))) {
-            $srch->lwarning($sword, "<0>Named search defined incorrectly");
-        } else if ($srch->_string_context && $srch->_string_context->depth >= 10) {
-            $srch->lwarning($sword, "<0>Circular reference in named search definitions");
-        } else {
-            $context = new SearchStringContext;
-            $context->q = $nextq;
-            $context->ppos1 = $sword->kwpos1;
-            $context->ppos2 = $sword->pos2;
-            $context->depth = $srch->_string_context ? $srch->_string_context->depth + 1 : 1;
-            $context->parent = $srch->_string_context;
-            $srch->_string_context = $context;
-            $qe = $srch->_search_expression($nextq);
-            $srch->_string_context = $context->parent;
-        }
-        return $qe ?? new False_SearchTerm;
+        $context = new SearchStringContext;
+        $context->q = $body;
+        $context->ppos1 = $sword->kwpos1;
+        $context->ppos2 = $sword->pos2;
+        $context->depth = $this->_string_context ? $this->_string_context->depth + 1 : 1;
+        $context->parent = $this->_string_context;
+        $this->_string_context = $context;
+        $qe = $this->_search_expression($body);
+        $this->_string_context = $context->parent;
+        return $qe;
     }
 
     /** @param string $kw

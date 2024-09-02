@@ -3029,15 +3029,13 @@ function $popup(options) {
     document.body.addEventListener("keydown", dialog_keydown);
     let prior_focus, actionse;
 
-    function show_errors(data) {
+    function show_errors(data, filter_fields) {
         $(forme).find(".msg-error, .feedback, .feedback-list").remove();
         const gmlist = [];
-        let e;
-        for (let mx of data.message_list || []) {
-            if (!mx.field
-                || !(e = forme.elements[mx.field])
-                || !feedback.append_item_near(e, mx)) {
-                gmlist.push(mx);
+        for (const mi of data.message_list || []) {
+            const e = mi.field && forme.elements[mi.field];
+            if (e ? !feedback.append_item_near(e, mi) : !filter_fields || !mi.field) {
+                gmlist.push(mi);
             }
         }
         if (gmlist.length) {
@@ -13207,97 +13205,214 @@ handle_ui.on("js-edit-view-options", function () {
     });
 });
 
-handle_ui.on("js-edit-namedsearches", function () {
-    let $pu, count = 0;
-    function render1(f) {
-        ++count;
-        const nentry = $e("legend"), qentry = $e("div", "entry");
-        if (f.editable) {
-            nentry.className = "mb-1";
-            nentry.append("ss:", $e("input", {
-                    id: "k-named_search/" + count + "/name",
-                    type: "text", name: "named_search/" + count + "/name",
-                    class: "editsearches-name need-autogrow ml-1",
-                    size: 30, value: f.name, placeholder: "Name of search"
-                }), $e("button", {
-                    type: "button", class: "ui btn-licon-s delete-link ml-2 need-tooltip",
-                    "aria-label": "Delete search"
-                }));
-            qentry.append($e("textarea", {
-                    id: "k-named_search/" + count + "/search",
-                    name: "named_search/" + count + "/search",
-                    class: "editsearches-query need-autogrow w-99",
-                    rows: 1, cols: 64, placeholder: "(All)"
-                }, f.q))
-        } else {
-            nentry.append(f.name);
-            qentry.append(f.q);
-        }
-        return $e("fieldset", {class: "editsearches-search", "data-search-number": count},
-            nentry,
-            $e("div", "entryi",
-                $e("label", {for: "k-named_search/" + count + "/search"}, "Search"),
-                qentry),
-            hidden_input("named_search/" + count + "/id", f.id || f.name));
+
+// named searches
+
+(function ($) {
+let named_search_info = null;
+
+function visible_name(si) {
+    const name = si.name || "", tw = name.indexOf("~");
+    if (tw <= 0) {
+        return name;
     }
+    const uidpfx = siteinfo.user.uid + "~";
+    return name.startsWith(uidpfx) ? name.substring(tw) : "";
+}
+
+function render_named_searches(data) {
+    named_search_info = data;
+    const es = [];
+    let i = 0, maxnamelen = 0;
+    for (const si of data.searches || []) {
+        const name = visible_name(si);
+        if (name === ""
+            || (si.display === "none" && !si.editable)) {
+            continue;
+        }
+        ++i;
+        const linke = $e("a", {href: hoturl("search", {q: "ss:" + name}), class: "noul uic js-named-search", "data-search-name": si.name}),
+            edite = $e("button", {type: "button", class: "ml-1 link noul ui js-named-search need-tooltip", "data-search-name": si.name, "aria-label": si.editable ? "Edit search" : "Expand search"}, $e("span", "t-editor transparent", "✎")),
+            status = feedback.list_status(data.message_list, "named_search/" + i + "/search");
+        if (si.display === "highlight") {
+            linke.append($e("span", "mr-1", "⭐️"));
+        }
+        linke.append($e("u", null, "ss:" + name));
+        if (status > 0 && si.editable) {
+            addClass(linke, status > 1 ? "is-error" : "is-warning");
+            edite.prepend($e("span", status > 1 ? "error-mark mr-1" : "warning-mark mr-1"));
+        }
+        es.push($e("div", "ctelt pb-0 js-click-child", linke, edite,
+            si.description ? $e("div", "hint", si.description) : null));
+        maxnamelen = Math.max(maxnamelen, name.length);
+    }
+    const sstab = $$("saved-searches");
+    if (es.length) {
+        sstab.replaceChildren($e("div", "ctable search-ctable column-count-" + (maxnamelen > 35 ? "2" : "3"), ...es));
+    } else {
+        sstab.replaceChildren();
+    }
+    sstab.append($e("button", {type: "button", class: "ui js-named-search mt-3 small", "data-search-name": "new"}, "Add named search"));
+    $(sstab).awaken();
+}
+
+handle_ui.on("js-named-search", function (evt) {
+    let self = this, si, $pu;
     function click() {
-        if (this.name === "add") {
-            const q = $$("f-search");
-            $.get(hoturl("=api/viewoptions", {q: q ? q.getAttribute("data-lquery") : ""}), function (data) {
-                const a = [];
-                if (q && q.getAttribute("data-lquery")) {
-                    a.push(q.getAttribute("data-lquery"));
-                }
-                if (data && data.ok && data.display_difference) {
-                    a.push(data.display_difference);
-                }
-                const div = render1({name: "", q: a.join(" "), editable: true, id: "new"});
-                $(div).appendTo($pu.find(".editsearches")).awaken();
-                div.setAttribute("data-search-new", "");
-                focus_at($(div).find(".editsearches-name"));
-                $pu.find(".modal-dialog").scrollIntoView({atBottom: true, marginBottom: "auto"});
-            });
-        } else if (hasClass(this, "delete-link")) {
-            ondelete.call(this);
+        if (this.name === "delete") {
+            $.post(hoturl("=api/namedsearch"),
+                {"named_search/1/id": si.id || si.name, "named_search/1/delete": true},
+                postresult);
         }
-    }
-    function ondelete() {
-        var fs = this.closest("fieldset");
-        if (fs.hasAttribute("data-search-new")) {
-            addClass(fs, "hidden");
-        } else {
-            $(fs).find(".editsearches-query").closest(".entryi").addClass("hidden");
-            $(fs).find(".editsearches-name").prop("disabled", true).css("text-decoration", "line-through");
-            $(fs).find(".delete-link").prop("disabled", true);
-            fs.append(feedback.render_list([{status: 1, message: "<0>This named search will be deleted."}]));
-        }
-        fs.append(hidden_input("named_search/" + fs.getAttribute("data-search-number") + "/delete", 1));
     }
     function submit(evt) {
         evt.preventDefault();
-        $.post(hoturl("=api/namedsearch"),
-            $($pu.form()).serialize(),
-            function (data) {
-                data.ok ? location.reload(true) : $pu.show_errors(data);
+        if (si && si.editable) {
+            $.post(hoturl("=api/namedsearch"),
+                $($pu.form()).serialize(),
+                postresult);
+        } else {
+            $pu.close();
+        }
+    }
+    function postresult(data) {
+        if (data.ok) {
+            $pu.close();
+            render_named_searches(data);
+        } else {
+            $pu.show_errors(data);
+        }
+    }
+    function create1(ctr, data) {
+        $pu = $popup({className: "modal-dialog-w40", form_class: "need-diff-check"})
+            .append(hidden_input("named_search/first_index", ctr));
+        if (si.editable) {
+            const namee = $e("input", {
+                id: "k-named_search/" + ctr + "/name",
+                type: "text", name: "named_search/" + ctr + "/name",
+                class: "editsearches-name need-autogrow ml-1",
+                size: 30, value: visible_name(si), placeholder: "Name of search"
             });
+            if (si.id === "new") {
+                $pu.append($e("h2", null, "New named search"),
+                    $e("p", "w-text", "Save a search for later, then refer to it with a query such as “ss:NAME”. You can combine named searches with other search queries (e.g., “ss:NAME OR #tag”) and highlight named searches on the home page. Named searches are visible to the whole PC."),
+                    $e("div", "f-i",
+                        $e("label", {for: "k-named_search/" + ctr + "/name"}, "Name"),
+                        "ss:", namee,
+                        $e("div", "f-d w-text",
+                            "Searches named like “ss:~NAME” are visible only to you.",
+                            hotcrp.status.is_admin ? " Searches named like “ss:~~NAME” are visible only to site administrators." : null)));
+            } else {
+                $pu.append($e("h2", null, "Search ss:", namee));
+            }
+            $pu.append(hidden_input("named_search/" + ctr + "/id", si.id || si.name));
+        } else {
+            $pu.append($e("h2", null,
+                si.display === "highlight" ? $e("span", "mr-1", "⭐️") : null,
+                "Search ss:" + si.name));
+        }
+        $pu.append($e("div", "f-i",
+                    $e("label", {for: "k-named_search/" + ctr + "/search"}, "Search"),
+                    $e("textarea", {
+                        id: "k-named_search/" + ctr + "/search",
+                        name: "named_search/" + ctr + "/search",
+                        class: "need-autogrow w-99" + (si.id === "new" ? "" : " want-focus"),
+                        rows: 1, cols: 64, placeholder: "(All)",
+                        readonly: !si.editable
+                    }, si.q)));
+        if (si.editable) {
+            $pu.append($e("div", "f-i",
+                    $e("label", {for: "k-named_search/" + ctr + "/description"}, "Description"),
+                    $e("textarea", {
+                        id: "k-named_search/" + ctr + "/description",
+                        name: "named_search/" + ctr + "/description",
+                        class: "need-autogrow w-99",
+                        rows: 1, cols: 64, placeholder: "Optional description"
+                    }, si.description || "")),
+                $e("div", "f-i",
+                    $e("label", "checki",
+                        $e("span", "checkc",
+                            $e("input", {
+                                type: "checkbox",
+                                name: "named_search/" + ctr + "/highlight",
+                                value: 1,
+                                checked: si.display === "highlight"
+                            })),
+                        "Highlight on home page ⭐️"),
+                    hidden_input("has-named_search/" + ctr + "/highlight", 1)))
+                .append_actions($e("button", {type: "submit", name: "savesearches", value: 1, class: "btn-primary"}, "Save"), "Cancel");
+            if (si.id !== "new") {
+                $pu.append_actions($e("button", {type: "button", name: "delete", class: "btn-danger float-left"}, "Delete search"));
+            }
+        } else if (si.description) {
+            $pu.append($e("div", "f-i",
+                    $e("label", {for: "k-named_search/" + ctr + "/description"}, "Description"),
+                    $e("div", {id: "k-named_search/" + ctr + "/description"}, si.description)))
+                .append_actions($e("button", {type: "submit", class: "btn-primary"}, "OK"));
+        }
+        $pu.show().on("click", "button", click).on("submit", submit);
+        si.id === "new" || $pu.show_errors(data, true);
+    }
+    function create_new() {
+        const qe = $$("f-search");
+        $.get(hoturl("=api/viewoptions", {q: qe ? qe.getAttribute("data-lquery") : ""}), function (data) {
+            const a = [];
+            if (qe && qe.getAttribute("data-lquery")) {
+                a.push(qe.getAttribute("data-lquery"));
+            }
+            if (data && data.ok && data.display_difference) {
+                a.push(data.display_difference);
+            }
+            si = {id: "new", editable: true, name: "", q: a.join(" ")};
+            create1(1, {});
+        });
     }
     function create(data) {
-        $pu = $popup({className: "modal-dialog-w40", form_class: "need-diff-check"})
-            .append($e("h2", null, "Named searches"),
-                $e("p", null, "Invoke a named search with “ss:NAME”. Named searches are shared with the PC."),
-                $e("div", "editsearches"),
-                $e("button", {type: "button", name: "add"}, "Add named search"))
-            .append_actions($e("button", {type: "submit", name: "savesearches", value: 1, class: "btn-primary"}, "Save"), "Cancel");
-        const ns = $pu.querySelector(".editsearches");
-        for (const s of data.searches || []) {
-            ns.append(render1(s));
+        const want = self.getAttribute("data-search-name");
+        if (want === "new") {
+            return create_new();
         }
-        $pu.show().on("click", "button", click).on("submit", submit).show_errors(data);
+        let i = 0;
+        for (const xsi of data.searches || []) {
+            ++i;
+            if (xsi.name === want) {
+                si = xsi;
+                return create1(i, data);
+            }
+        }
+        $pu = $popup({near: evt.target});
+        $pu.append($e("p", null, "That search has been deleted."))
+            .append_actions($e("button", {type: "button", class: "btn-primary"}, "OK"))
+            .on("click", "button", $pu.close)
+            .on("closedialog", function () { render_named_searches(data); })
+            .show();
     }
+    if (this.tagName === "BUTTON" || evt.shiftKey || evt.metaKey) {
+        named_search_info ? create(named_search_info) : $.get(hoturl("=api/namedsearch"), function (data) {
+            data.ok && create(data);
+        });
+        evt.preventDefault();
+    }
+});
+
+handle_ui.on("foldtoggle.js-named-search-tabpanel", function (evt) {
+    const self = this;
+    if (!evt.which.open) {
+        return;
+    }
+    removeClass(this, "js-named-search-tabpanel");
+    self.replaceChildren($e("span", "spinner", "Loading…"));
     $.get(hoturl("=api/namedsearch"), function (data) {
-        data.ok && create(data);
+        if (data.ok) {
+            render_named_searches(data);
+        } else {
+            self.replaceChildren(feedback.render_list(data.message_list));
+        }
     });
 });
+
+})(jQuery);
+
 
 handle_ui.on("js-select-all", function () {
     const tbl = this.closest(".pltable"), time = now_msec();
@@ -13306,7 +13421,6 @@ handle_ui.on("js-select-all", function () {
         handle_ui.trigger.call(this, "js-range-click", new CustomEvent("updaterange", {detail: time}));
     });
 });
-
 
 handle_ui.on("js-tag-list-action", function (evt) {
     if (evt.type === "foldtoggle" && !evt.which.open)
