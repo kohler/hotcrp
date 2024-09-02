@@ -4805,9 +4805,9 @@ class Conf {
         $old_separator = $pagecs->swap_separator('<li class="separator"></li>');
         echo '<details class="dropmenu-details', $details_class, '" role="menu">',
             '<summary class="profile-dropmenu-summary">',
-            '<button type="button" class="ui js-dropmenu-open ', $button_class, '">',
+            '<button type="button" id="h-usermenubutton" class="ui js-dropmenu-open ', $button_class, '" aria-haspopup="menu" aria-controls="h-usermenu">',
             $details_prefix, $user_html, $details_suffix,
-            '</button></summary><div class="dropmenu-container dropmenu-sw"><ul class="uic dropmenu">';
+            '</button></summary><div class="dropmenu-container dropmenu-sw"><ul id="h-usermenu" class="uic dropmenu" role="menu" aria-label=>';
         $pagecs->print_members("__profilemenu");
         $pagecs->swap_separator($old_separator);
         echo '</ul></div></details>';

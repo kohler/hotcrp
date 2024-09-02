@@ -1748,14 +1748,13 @@ return {
 
 const feedback = (function () {
 
-function message_list_status(ml) {
-    let i, status = 0;
-    for (i = 0; i !== (ml || []).length; ++i) {
-        if (ml[i].status === -3 /*MessageSet::SUCCESS*/ && status === 0) {
-            status = -3 /*MessageSet::SUCCESS*/;
-        } else if (ml[i].status >= 1 && ml[i].status > status) {
-            status = ml[i].status;
-        }
+function message_list_status(ml, field) {
+    let status = 0;
+    for (const mi of ml || []) {
+        if (((mi.status === -3 /*MessageSet::SUCCESS*/ && status === 0)
+             || (mi.status >= 1 && mi.status > status))
+            && (!field || mi.field === field))
+            status = mi.status;
     }
     return status;
 }
@@ -1822,6 +1821,9 @@ function append_item(ul, mi) {
 }
 
 function append_item_near(elt, mi) {
+    if (elt instanceof RadioNodeList) {
+        elt = elt.item(0);
+    }
     if (mi.status === 1 && !hasClass(elt, "has-error")) {
         addClass(elt, "has-warning");
     } else if (mi.status >= 2) {
@@ -1831,15 +1833,14 @@ function append_item_near(elt, mi) {
     if (mi.message == null || mi.message === "") {
         return true;
     }
-    var ctr = elt.closest(".entry, .entryi, fieldset"), fl, owner;
-    if (ctr && hasClass(ctr, "entryi")) {
-        ctr = ctr.querySelector(".entry");
+    let owner = elt && elt.closest(".f-i, .entry, .entryi, fieldset");
+    if (owner && hasClass(owner, "entryi")) {
+        owner = owner.querySelector(".entry");
     }
-    if (!ctr) {
+    if (!owner) {
         return false;
     }
-    owner = ctr;
-    fl = owner.firstElementChild;
+    let fl = owner.firstElementChild;
     while (fl && (fl.tagName === "LABEL" || fl.tagName === "LEGEND" || hasClass(fl, "feedback"))) {
         fl = fl.nextElementSibling;
     }
@@ -1852,12 +1853,12 @@ function append_item_near(elt, mi) {
 }
 
 return {
-    list_status: message_list_status,
-    render_alert: render_alert,
-    render_list: render_list,
-    maybe_render_list: maybe_render_list,
     append_item: append_item,
-    append_item_near: append_item_near
+    append_item_near: append_item_near,
+    list_status: message_list_status,
+    maybe_render_list: maybe_render_list,
+    render_alert: render_alert,
+    render_list: render_list
 };
 
 })();
@@ -3001,9 +3002,9 @@ return function () {
 function $popup(options) {
     options = options || {};
     const near = options.near || options.anchor || window,
-        forme = $e("form", {enctype: "multipart/form-data", "accept-charset": "UTF-8", "class": options.form_class || null}),
-        modale = $e("div", {"class": "modal hidden", role: "dialog"},
-            $e("div", {"class": "modal-dialog".concat(near === window ? " modal-dialog-centered" : "", options.className ? " " + options.className : ""), role: "document"},
+        forme = $e("form", {enctype: "multipart/form-data", "accept-charset": "UTF-8", class: options.form_class || null}),
+        modale = $e("div", {class: "modal hidden", role: "dialog"},
+            $e("div", {class: "modal-dialog".concat(near === window ? " modal-dialog-centered" : "", options.className ? " " + options.className : ""), role: "document"},
                 $e("div", "modal-content", forme)));
     if (options.action) {
         if (options.action instanceof HTMLFormElement) {
@@ -3052,7 +3053,7 @@ function $popup(options) {
         }
         hotcrp.tooltip.close();
         $(modale).find("textarea, input").unautogrow();
-        $(modale).trigger("closedialog");
+        $(forme).trigger("closedialog");
         modale.remove();
         if (prior_focus) {
             prior_focus.focus({preventScroll: true});
@@ -3187,7 +3188,7 @@ function override_deadlines(callback) {
     }
     const p = $e("p");
     p.innerHTML = this.getAttribute("data-override-text") || "Are you sure you want to override the deadline?";
-    const bu = $e("button", {type: "button", name: "bsubmit", "class": "btn-primary"});
+    const bu = $e("button", {type: "button", name: "bsubmit", class: "btn-primary"});
     if (this.getAttribute("aria-label")) {
         bu.textContent = this.getAttribute("aria-label");
     } else if (this.innerHTML) {
@@ -3218,7 +3219,7 @@ handle_ui.on("js-confirm-override-conflict", function () {
     const self = this;
     $popup({near: this})
         .append($e("p", null, "Are you sure you want to override your conflict?"))
-        .append_actions($e("button", {type: "button", name: "bsubmit", "class": "btn-primary"}, "Override conflict"), "Cancel")
+        .append_actions($e("button", {type: "button", name: "bsubmit", class: "btn-primary"}, "Override conflict"), "Cancel")
         .show().on("click", "button", function () {
             if (this.name === "bsubmit") {
                 document.location = self.href;
@@ -3622,9 +3623,9 @@ handle_ui.on("js-tracker", function (evt) {
     let $pu, trno = 1, elapsed_timer;
     function make_tracker(tr) {
         const trp = "tr" + trno, ktrp = "k-tr" + trno,
-            $t = $e("fieldset", {"class": "tracker-group", "data-index": trno, "data-trackerid": tr.trackerid},
+            $t = $e("fieldset", {class: "tracker-group", "data-index": trno, "data-trackerid": tr.trackerid},
                 $e("legend", "mb-1",
-                    $e("input", {id: ktrp + "-name", type: "text", name: trp + "-name", size: 24, "class": "want-focus need-autogrow", value: tr.name || "", placeholder: tr.is_new ? "New tracker" : "Unnamed tracker"})),
+                    $e("input", {id: ktrp + "-name", type: "text", name: trp + "-name", size: 24, class: "want-focus need-autogrow", value: tr.name || "", placeholder: tr.is_new ? "New tracker" : "Unnamed tracker"})),
                 hidden_input(trp + "-id", tr.trackerid));
         if (tr.trackerid === "new" && siteinfo.paperid)
             $t.append(hidden_input(trp + "-p", siteinfo.paperid));
@@ -3641,17 +3642,17 @@ handle_ui.on("js-tracker", function (evt) {
         }
         const gvis = (dl.tracker && dl.tracker.global_visibility) || "",
             vismap = [["", "Whole PC"], ["+", "PC members with tag"], ["-", "PC members without tag"]],
-            vissel = $e("select", {id: ktrp + "-vistype", name: trp + "-vistype", "class": "uich js-foldup", "data-default-value": vistype});
+            vissel = $e("select", {id: ktrp + "-vistype", name: trp + "-vistype", class: "uich js-foldup", "data-default-value": vistype});
         if (hotcrp.status.is_admin) {
             vismap.push(["none", "Administrators only"]);
         }
         for (const v of vismap) {
             vissel.append($e("option", {value: v[0], selected: v[0] === vistype, disabled: gvis === "+none" && v[0] !== "none"}, v[1]));
         }
-        $t.append($e("div", {"class": "entryi has-fold fold" + (vistype === "+" || vistype === "-" ? "o" : "c"), "data-fold-values": "+ -"},
-            $e("label", {"for": ktrp + "-vistype"}, "PC visibility"),
+        $t.append($e("div", {class: "entryi has-fold fold" + (vistype === "+" || vistype === "-" ? "o" : "c"), "data-fold-values": "+ -"},
+            $e("label", {for: ktrp + "-vistype"}, "PC visibility"),
             $e("div", "entry", $e("span", "select", vissel),
-                $e("input", {type: "text", name: trp + "-vis", value: vis.substring(1), placeholder: "(tag)", "class": "need-suggest need-autogrow pc-tags fx ml-2"}))));
+                $e("input", {type: "text", name: trp + "-vis", value: vis.substring(1), placeholder: "(tag)", class: "need-suggest need-autogrow pc-tags fx ml-2"}))));
         if (gvis) {
             let gvist;
             if (gvis === "+none")
@@ -3671,7 +3672,7 @@ handle_ui.on("js-tracker", function (evt) {
                 "Hide conflicted papers"))));
         if (tr.start_at) {
             $t.append($e("div", "entryi", $e("label", null, "Elapsed time"),
-                $e("span", {"class": "trackerdialog-elapsed", "data-start-at": tr.start_at})));
+                $e("span", {class: "trackerdialog-elapsed", "data-start-at": tr.start_at})));
         }
         try {
             let j = JSON.parse(tr.listinfo || "null"), a = [], ids, pos;
@@ -3771,7 +3772,7 @@ handle_ui.on("js-tracker", function (evt) {
                 trd[m[1]] = true;
         });
         for (var i in trd) {
-            f.appendChild(hidden_input("tr" + i + "-changed", "1", {"class": "tracker-changemark"}));
+            f.appendChild(hidden_input("tr" + i + "-changed", "1", {class: "tracker-changemark"}));
         }
 
         $.post(hoturl("=api/trackerconfig"),
@@ -3806,15 +3807,15 @@ handle_ui.on("js-tracker", function (evt) {
             if (!hotcrp.status.tracker_here) {
                 $pu.append($e("div", "lg", $e("button", {type: "button", name: "new"}, "Start new tracker")));
             } else {
-                $pu.append($e("div", "lg", $e("button", {type: "button", "class": "need-tooltip disabled", tabindex: -1, "aria-label": "This browser tab is already running a tracker."}, "Start new tracker")));
+                $pu.append($e("div", "lg", $e("button", {type: "button", class: "need-tooltip disabled", tabindex: -1, "aria-label": "This browser tab is already running a tracker."}, "Start new tracker")));
             }
         } else {
-            $pu.append($e("div", "lg", $e("button", {type: "button", "class": "need-tooltip disabled", tabindex: -1, "aria-label": "To start a new tracker, open a tab on a submission page."}, "Start new tracker")));
+            $pu.append($e("div", "lg", $e("button", {type: "button", class: "need-tooltip disabled", tabindex: -1, "aria-label": "To start a new tracker, open a tab on a submission page."}, "Start new tracker")));
         }
-        $pu.append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save changes"), "Cancel");
+        $pu.append_actions($e("button", {type: "submit", name: "save", class: "btn-primary"}, "Save changes"), "Cancel");
         if (nshown) {
-            $pu.append_actions($e("button", {type: "button", name: "stopall", "class": "btn-danger float-left"}, "Stop all"),
-                $e("a", {"class": "btn float-left", target: "_blank", rel: "noopener", href: hoturl("buzzer")}, "Tracker status page"));
+            $pu.append_actions($e("button", {type: "button", name: "stopall", class: "btn-danger float-left"}, "Stop all"),
+                $e("a", {class: "btn float-left", target: "_blank", rel: "noopener", href: hoturl("buzzer")}, "Tracker status page"));
         }
         $pu.show();
         show_elapsed();
@@ -4442,7 +4443,7 @@ function $svg(tag, attr) {
             if (attr[i] == null) {
                 // skip
             } else if (typeof attr[i] === "boolean") {
-                e[i] = attr[i];
+                attr[i] ? e.setAttribute(i, "") : e.removeAttribute(i);
             } else {
                 e.setAttribute(i, attr[i]);
             }
@@ -4472,7 +4473,7 @@ function svge() {
 }
 
 function svge_use_licon(name) {
-    return $svg("svg", {"class": "licon", width: "1em", height: "1em", viewBox: "0 0 64 64", preserveAspectRatio: "none"},
+    return $svg("svg", {class: "licon", width: "1em", height: "1em", viewBox: "0 0 64 64", preserveAspectRatio: "none"},
         $svg("use", {href: "#i-def-" + name}));
 }
 
@@ -4487,7 +4488,7 @@ function $e(tag, attr) {
             if (attr[i] == null) {
                 // skip
             } else if (typeof attr[i] === "boolean") {
-                e[i] = attr[i];
+                attr[i] ? e.setAttribute(i, "") : e.removeAttribute(i);
             } else {
                 e.setAttribute(i, attr[i]);
             }
@@ -4513,7 +4514,7 @@ function $frag() {
 
 function make_expander_element(foldnum) {
     function mksvgp(d) {
-        return $svg("svg", {"class": "licon", width: "0.75em", height: "0.75em", viewBox: "0 0 16 16", preserveAspectRatio: "none"}, $svg("path", {d: d}));
+        return $svg("svg", {class: "licon", width: "0.75em", height: "0.75em", viewBox: "0 0 16 16", preserveAspectRatio: "none"}, $svg("path", {d: d}));
     }
     return $e("span", "expander",
         $e("span", "in0 fx" + foldnum, mksvgp("M1 1L8 15L15 1z")),
@@ -4593,22 +4594,32 @@ handle_ui.on("lla", function () {
 });
 
 $(function () {
-    $(".linelink.active").trigger($.Event("foldtoggle", {which: {open: true, linelink: true}}));
+    $(".linelink.active").trigger($.Event("foldtoggle", {which: {open: true}}));
 });
 
 
 // tla, focus history
 
-handle_ui.on("tla", function () {
-    var hash = this.href.replace(/^[^#]*#*/, "");
-    var e = $$(hash || "default");
-    $(".is-tla, .tll, .papmode").removeClass("active");
-    $(".tll").removeClass("active").attr("aria-selected", "false");
+function tla_select(self, focus) {
+    const e = $$(this.getAttribute("aria-controls")
+        || (this.nodeName === "A" && this.hash.replace(/^#/, ""))
+        || "default");
+    if (!e) {
+        return;
+    }
+    $(".is-tla, .tll").removeClass("active");
+    $(".tll").attr("aria-selected", "false");
     addClass(e, "active");
-    $(this).closest(".papmode").addClass("active");
-    $(this).closest(".tll").addClass("active").attr("aria-selected", "true");
+    const tll = this.closest(".tll");
+    addClass(tll, "active");
+    tll.setAttribute("aria-selected", "true");
     push_history_state(this.href);
-    focus_within(e);
+    $(e).trigger($.Event("foldtoggle", {which: {open: true}}));
+    focus && focus_within(e);
+}
+
+handle_ui.on("tla", function () {
+    tla_select.call(this, true);
 });
 
 function jump_hash(hash, focus) {
@@ -4679,16 +4690,8 @@ handle_ui.on("hashjump.js-hash", function (hashc, focus) {
     // tabbed UI
     if (hasClass(e, "is-tla")) {
         if (!hasClass(e, "active")) {
-            $(".is-tla, .papmode").removeClass("active");
-            $(".tll").removeClass("active").attr("aria-selected", "false");
-            addClass(e, "active");
-            $(".tla").each(function () {
-                if ((hash === "" && this.href.indexOf("#") === -1)
-                    || this.href.endsWith("#" + hash)) {
-                    $(this).closest(".papmode").addClass("active");
-                    $(this).closest(".tll").addClass("active").attr("aria-selected", "true");
-                }
-            });
+            const tab = $$(e.getAttribute("aria-labelledby"));
+            tab && tla_select.call(tab, false);
         }
         focus && focus_within(e);
         return true;
@@ -4741,25 +4744,26 @@ $(function () {
 // dropdown menus
 
 (function ($) {
-var builders = {};
+const builders = {};
 
 function dropmenu_close() {
-    var modal = $$("dropmenu-modal");
+    const modal = $$("dropmenu-modal");
     modal && modal.remove();
     $("details.dropmenu-details").each(function () { this.open = false; });
 }
 
 handle_ui.on("click.js-dropmenu-open", function (evt) {
-    var modal = $$("dropmenu-modal"), esummary = this, edetails;
+    let modal = $$("dropmenu-modal"), esummary = this;
     if (hasClass(esummary, "need-dropmenu")) {
         $.each(classList(esummary), function (i, c) {
             if (builders[c])
                 builders[c].call(esummary, evt);
         });
     }
-    if (esummary.nodeName === "BUTTON")
+    if (esummary.nodeName === "BUTTON") {
         esummary = esummary.closest("summary");
-    edetails = esummary.parentElement;
+    }
+    const edetails = esummary.parentElement;
     hotcrp.tooltip.close();
     if (!edetails.open) {
         if (!modal) {
@@ -5236,7 +5240,7 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
             if (data.ok && data.subject && data.body) {
                 const mp = $e("div", "mail-preview");
                 const $pu = $popup().append($e("h2", null, "External review request email preview"), mp)
-                    .append_actions($e("button", {type: "button", "class": "btn-primary no-focus", name: "cancel"}, "Close"));
+                    .append_actions($e("button", {type: "button", class: "btn-primary no-focus", name: "cancel"}, "Close"));
                 render_mail_preview(mp, data, ["subject", "body"]);
                 $pu.show();
             }
@@ -5375,7 +5379,7 @@ handle_ui.on("js-mail-set-template", function () {
             .append($e("h2", null, "Mail templates"));
         templatelist = tl;
         if (tl.length) {
-            const tmpl = $e("select", {name: "template", "class": "w-100 want-focus ignore-diff", size: 5});
+            const tmpl = $e("select", {name: "template", class: "w-100 want-focus ignore-diff", size: 5});
             for (let i = 0; tl[i]; ++i) {
                 tmpl.append($e("option", {value: tl[i].name, selected: !i}, tl[i].title));
             }
@@ -5387,7 +5391,7 @@ handle_ui.on("js-mail-set-template", function () {
             preview = $e("div", "mail-preview");
             $(tmpl).on("input", render);
             $pu.append(tmpl, $e("fieldset", "mt-4 modal-demo-fieldset", preview))
-                .append_actions($e("button", {type: "submit", name: "go", "class": "btn-primary"}, "Use template"), "Cancel")
+                .append_actions($e("button", {type: "submit", name: "go", class: "btn-primary"}, "Use template"), "Cancel")
                 .on("submit", submitter);
             render();
         } else {
@@ -6018,7 +6022,7 @@ function update_time_points() {
 hotcrp.make_time_point = function (ts, ttext, className) {
     const tsdate = new Date(ts * 1000), nowdate = new Date, nowts = nowdate.getTime() / 1000,
         e = $e("time", {
-            "class": className, datetime: tsdate.toISOString(),
+            class: className, datetime: tsdate.toISOString(),
             "data-ts": ts,
             title: strftime("%b %#e, %Y " + (strftime.is24 ? "%H:%M" : "%#l:%M %p"), tsdate)
         }, ttext);
@@ -6039,8 +6043,8 @@ hotcrp.make_time_point = function (ts, ttext, className) {
 handle_ui.on("js-review-tokens", function () {
     const $pu = $popup().append($e("h2", null, "Review tokens"),
             $e("p", null, "Review tokens implement fully anonymous reviewing. If you have been given review tokens, enter them here to view the corresponding papers and edit the reviews."),
-            $e("input", {type: "text", size: 60, name: "token", value: this.getAttribute("data-review-tokens"), placeholder: "Review tokens", "class": "w-99"}))
-        .append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save tokens"), "Cancel")
+            $e("input", {type: "text", size: 60, name: "token", value: this.getAttribute("data-review-tokens"), placeholder: "Review tokens", class: "w-99"}))
+        .append_actions($e("button", {type: "submit", name: "save", class: "btn-primary"}, "Save tokens"), "Cancel")
         .on("submit", function (evt) {
             $pu.find(".msg").remove();
             $.post(hoturl("=api/reviewtoken"), $($pu.form()).serialize(),
@@ -6337,9 +6341,9 @@ function render_ratings(ratings, user_rating, editable) {
 
     let flage;
     if (editable) {
-        flage = $e("button", {type: "button", "class": "q ui js-revrating-unfold"}, "⚑");
+        flage = $e("button", {type: "button", class: "q ui js-revrating-unfold"}, "⚑");
     } else {
-        flage = $e("a", {href: hoturl("help", {t: "revrate"}), "class": "q"}, "⚑");
+        flage = $e("a", {href: hoturl("help", {t: "revrate"}), class: "q"}, "⚑");
     }
     const es = [$e("span", "revrating-flag fn", flage)];
 
@@ -6359,8 +6363,8 @@ function render_ratings(ratings, user_rating, editable) {
                 bklass += " want-focus";
                 focused = true;
             }
-            es.push($e("span", {"class": klass, "data-revrating-name" : ri.name},
-                $e("button", {type: "button", "class": "ui js-revrating" + bklass}, ri.title),
+            es.push($e("span", {class: klass, "data-revrating-name" : ri.name},
+                $e("button", {type: "button", class: "ui js-revrating" + bklass}, ri.title),
                 $e("span", "ct", ct[ri.name] ? " " + ct[ri.name] : "")));
         } else if (ct[ri.name]) {
             es.push($e("span", "revrating-group",
@@ -6374,14 +6378,14 @@ function render_ratings(ratings, user_rating, editable) {
         && ratings.length > user_rating.length) {
         edit_fold = true;
         es.push($e("span", "revrating-group revrating-admin fx",
-            $e("button", {type: "button", "class": "ui js-revrating-clearall"}, "Clear all")));
+            $e("button", {type: "button", class: "ui js-revrating-clearall"}, "Clear all")));
     }
 
     let ex;
     if (edit_fold) {
-        es.push($e("span", "revrating-group fn", $e("button", {type: "button", "class": "ui js-foldup"}, "…")));
+        es.push($e("span", "revrating-group fn", $e("button", {type: "button", class: "ui js-foldup"}, "…")));
         ex = $e("div", "revrating has-fold foldc" + (editable ? " ui js-revrating-unfold" : ""),
-            $e("div", "f-c fx", $e("a", {href: hoturl("help", {t: "revrate"}), "class": "q"}, "Review ratings ", $e("span", "n", "(anonymous reviewer feedback)"))),
+            $e("div", "f-c fx", $e("a", {href: hoturl("help", {t: "revrate"}), class: "q"}, "Review ratings ", $e("span", "n", "(anonymous reviewer feedback)"))),
             ...es);
         $(ex).on("keydown", "button.js-revrating", revrating_key);
     } else {
@@ -6393,9 +6397,9 @@ function render_ratings(ratings, user_rating, editable) {
 function make_review_h2(rrow, rlink, rdesc) {
     let h2 = $e("h2"), ma, rd = $e("span");
     if (rrow.collapsed) {
-        ma = $e("button", {type: "button", "class": "qo ui js-foldup", "data-fold-target": 20}, make_expander_element(20));
+        ma = $e("button", {type: "button", class: "qo ui js-foldup", "data-fold-target": 20}, make_expander_element(20));
     } else {
-        ma = $e("a", {href: hoturl("review", rlink), "class": "qo"});
+        ma = $e("a", {href: hoturl("review", rlink), class: "qo"});
     }
     rd.className = "revcard-header-name";
     rd.append(rdesc);
@@ -6403,7 +6407,7 @@ function make_review_h2(rrow, rlink, rdesc) {
     h2.append(ma);
     if (rrow.editable) {
         if (rrow.collapsed) {
-            ma = $e("a", {href: hoturl("review", rlink), "class": "qo"});
+            ma = $e("a", {href: hoturl("review", rlink), class: "qo"});
             h2.append(" ", ma);
         } else {
             ma.append(" ");
@@ -6425,7 +6429,7 @@ function append_review_id(rrow, eheader) {
     }
     function add_ad(s) {
         if (!ad) {
-            ad = $e("address", {"class": "revname", itemprop: "author"});
+            ad = $e("address", {class: "revname", itemprop: "author"});
             add_rth(ad);
         }
         ad.append(s);
@@ -6448,7 +6452,7 @@ function append_review_id(rrow, eheader) {
         ad && ad.append(" ");
         add_ad(review_types.make_icon(rrow.rtype, xc));
         if (rrow.round) {
-            ad.append($e("span", {"class": "revround", title: "Review round"}, rrow.round));
+            ad.append($e("span", {class: "revround", title: "Review round"}, rrow.round));
         }
     }
     if (rrow.modified_at) {
@@ -6869,7 +6873,7 @@ function cmt_identity_time(frag, cj, editing) {
     } else if (cj.is_new) {
         // no identity
     } else if (cj.editable) {
-        const ae = $e("a", {href: "#" + cj_cid(cj), "class": "qo ui hover-child cmteditor"});
+        const ae = $e("a", {href: "#" + cj_cid(cj), class: "qo ui hover-child cmteditor"});
         if (cj.ordinal) {
             ae.append($e("div", "cmtnum", $e("span", "cmtnumat", "@"),
                 $e("span", "cmtnumnum", cj.ordinal)), " ");
@@ -6880,11 +6884,11 @@ function cmt_identity_time(frag, cj, editing) {
         frag.appendChild($e("div", "cmtnumid", ae));
     } else if (cj.ordinal) {
         frag.appendChild($e("div", "cmtnumid cmtnum",
-            $e("a", {href: "#" + cj_cid(cj), "class": "q"},
+            $e("a", {href: "#" + cj_cid(cj), class: "q"},
                 $e("span", "cmtnumat", "@"), $e("span", "cmtnumnum", cj.ordinal))));
     }
     if (cj.author && cj.author_hidden) {
-        const aue = $e("span", {"class": "fx9", title: cj.author_email});
+        const aue = $e("span", {class: "fx9", title: cj.author_email});
         aue.innerHTML = cj.author + " (deanonymized)";
         const ane = $e("span", "fn9");
         if (cj.author_pseudonym) {
@@ -6892,8 +6896,8 @@ function cmt_identity_time(frag, cj, editing) {
         } else {
             ane.append("+ ", $e("i", null, "Hidden"));
         }
-        frag.appendChild($e("address", {"class": "has-fold cmtname fold9c", itemprop: "author"},
-            $e("button", {type: "button", "class": "q ui js-foldup", "data-fold-target": 9, "title": "Toggle author"},
+        frag.appendChild($e("address", {class: "has-fold cmtname fold9c", itemprop: "author"},
+            $e("button", {type: "button", class: "q ui js-foldup", "data-fold-target": 9, "title": "Toggle author"},
                 ane, aue)));
     } else if (cj.author) {
         let x = cj.author;
@@ -6904,12 +6908,12 @@ function cmt_identity_time(frag, cj, editing) {
         } else if (cj.author_pseudonymous) {
             x = "[".concat(cj.author, "]");
         }
-        const aue = $e("address", {"class": "cmtname", itemprop: "author", title: cj.author_email});
+        const aue = $e("address", {class: "cmtname", itemprop: "author", title: cj.author_email});
         aue.innerHTML = x;
         frag.appendChild(aue);
     } else if (cj.author_pseudonym
                && (!cj.response || cj.text === false || cj.author_pseudonym !== "Author")) {
-        frag.appendChild($e("address", {"class": "cmtname", itemprop: "author"}, cj.author_pseudonym));
+        frag.appendChild($e("address", {class: "cmtname", itemprop: "author"}, cj.author_pseudonym));
     }
     if (cj.modified_at) {
         cmt_header_dotsep(frag);
@@ -6923,16 +6927,16 @@ function cmt_identity_time(frag, cj, editing) {
         }
         if (cj.topic === "paper") {
             cmt_header_dotsep(frag);
-            frag.appendChild($e("div", {"class": "cmtvis", title: "Visible when reviews are hidden"}, "submission thread"));
+            frag.appendChild($e("div", {class: "cmtvis", title: "Visible when reviews are hidden"}, "submission thread"));
         } else if (cj.topic === "dec") {
             cmt_header_dotsep(frag);
-            frag.appendChild($e("div", {"class": "cmtvis", title: "Visible when decision is visible"}, "decision thread"));
+            frag.appendChild($e("div", {class: "cmtvis", title: "Visible when decision is visible"}, "decision thread"));
         }
         if (cj.tags) {
             const tage = $e("div", "cmttags");
             for (let t of cj.tags) {
                 tage.firstChild && tage.append(" ");
-                tage.appendChild($e("a", {href: hoturl("search", {q: "cmt:#" + unparse_tag(t, true)}), "class": "q"}, "#" + unparse_tag(t)));
+                tage.appendChild($e("a", {href: hoturl("search", {q: "cmt:#" + unparse_tag(t, true)}), class: "q"}, "#" + unparse_tag(t)));
             }
             cmt_header_dotsep(frag);
             frag.appendChild(tage);
@@ -6967,11 +6971,11 @@ function cmt_render_form(cj) {
             fmt.has_preview && efmtdesc.append(" ", $e("span", "barsep", "·"), " ");
         }
         if (fmt.has_preview) {
-            efmtdesc.append($e("button", {type: "button", "class": "link ui js-togglepreview", "data-format": fmt.format || 0}, "Preview"));
+            efmtdesc.append($e("button", {type: "button", class: "link ui js-togglepreview", "data-format": fmt.format || 0}, "Preview"));
         }
     }
     eform.append($e("div", "f-i", efmtdesc, $e("textarea", {
-        name: "text", "class": "w-text cmttext suggest-emoji mentions need-suggest c",
+        name: "text", class: "w-text cmttext suggest-emoji mentions need-suggest c",
         rows: 5, cols: 60, placeholder: "Leave a comment"
     })));
 
@@ -6988,7 +6992,7 @@ function cmt_render_form(cj) {
         bnote = cmt_is_editable(cj) ? null : $e("div", "hint", "(admin only)");
     eaa.append($e("div", "aabr",
         $e("div", "aabut", $e("button", {type: "button", name: "cancel"}, "Cancel")),
-        $e("div", "aabut", $e("button", {type: "button", name: "bsubmit", "class": "btn-primary"}, btext), bnote)));
+        $e("div", "aabut", $e("button", {type: "button", name: "bsubmit", class: "btn-primary"}, btext), bnote)));
     eform.append(eaa);
 
     return eform;
@@ -6998,15 +7002,15 @@ function cmt_render_form_prop(cj, cid, btnbox) {
     const einfo = $e("div", "cmteditinfo fold3c fold4c");
 
     // attachments
-    einfo.append($e("div", {id: cid + "-attachments", "class": "entryi has-editable-attachments hidden", "data-dtype": -2, "data-document-prefix": "attachment"}, $e("span", "label", "Attachments")));
-    btnbox.append($e("button", {type: "button", name: "attach", "class": "btn-licon need-tooltip ui js-add-attachment", "aria-label": "Attach file", "data-editable-attachments": cid + "-attachments"}, svge_use_licon("attachment")));
+    einfo.append($e("div", {id: cid + "-attachments", class: "entryi has-editable-attachments hidden", "data-dtype": -2, "data-document-prefix": "attachment"}, $e("span", "label", "Attachments")));
+    btnbox.append($e("button", {type: "button", name: "attach", class: "btn-licon need-tooltip ui js-add-attachment", "aria-label": "Attach file", "data-editable-attachments": cid + "-attachments"}, svge_use_licon("attachment")));
 
     // tags
     if (!cj.response && !cj.by_author) {
         einfo.append($e("div", "entryi fx3",
-            $e("label", {"for": cid + "-tags"}, "Tags"),
+            $e("label", {for: cid + "-tags"}, "Tags"),
             $e("input", {id: cid + "-tags", name: "tags", type: "text", size: 50, placeholder: "Comment tags"})));
-        btnbox.append($e("button", {type: "button", name: "showtags", "class": "btn-licon need-tooltip", "aria-label": "Tags"}, svge_use_licon("tag")));
+        btnbox.append($e("button", {type: "button", name: "showtags", class: "btn-licon need-tooltip", "aria-label": "Tags"}, svge_use_licon("tag")));
     }
 
     // visibility
@@ -7031,7 +7035,7 @@ function cmt_render_form_prop(cj, cid, btnbox) {
                     "Anonymous to authors")));
         }
         einfo.append($e("div", "entryi",
-            $e("label", {"for": cid + "-visibility"}, "Visibility"),
+            $e("label", {for: cid + "-visibility"}, "Visibility"),
             evis));
 
         const etsel = $e("select", {id: cid + "-thread", name: "topic"}),
@@ -7046,11 +7050,11 @@ function cmt_render_form_prop(cj, cid, btnbox) {
             etsel.append($e("option", {value: "dec"}, "Decision"));
         }*/
         einfo.append($e("div", "entryi fx4",
-            $e("label", {"for": cid + "-thread"}, "Thread"),
+            $e("label", {for: cid + "-thread"}, "Thread"),
             $e("div", "entry",
                 $e("span", "select", etsel),
                 $e("p", "f-d text-break-line"))));
-        btnbox.append($e("button", {type: "button", name: "showthread", "class": "btn-licon need-tooltip", "aria-label": "Thread", "data-editable-attachments": cid + "-attachments"}, svge_use_licon("thread")));
+        btnbox.append($e("button", {type: "button", name: "showthread", class: "btn-licon need-tooltip", "aria-label": "Thread", "data-editable-attachments": cid + "-attachments"}, svge_use_licon("thread")));
     }
 
     // delete
@@ -7062,14 +7066,14 @@ function cmt_render_form_prop(cj, cid, btnbox) {
         } else {
             bnote = "Are you sure you want to override the deadline and delete this " + x + "?";
         }
-        btnbox.append($e("button", {type: "button", name: "delete", "class": "btn-licon need-tooltip", "aria-label": "Delete " + x, "data-override-text": bnote}, svge_use_licon("trash")));
+        btnbox.append($e("button", {type: "button", name: "delete", class: "btn-licon need-tooltip", "aria-label": "Delete " + x, "data-override-text": bnote}, svge_use_licon("trash")));
     }
 
     // response ready
     if (cj.response) {
         const ready = !cj.is_new && !cj.draft;
         einfo.append($e("label", "checki has-fold fold" + (ready ? "o" : "c"),
-            $e("span", "checkc", $e("input", {type: "checkbox", "class": "uich js-foldup", name: "ready", value: 1, checked: ready})),
+            $e("span", "checkc", $e("input", {type: "checkbox", class: "uich js-foldup", name: "ready", value: 1, checked: ready})),
             $e("strong", null, "The response is ready for review"),
             $e("div", "f-d fx", "Reviewers will be notified when you submit the response.")));
     }
@@ -7263,19 +7267,19 @@ function cmt_start_edit(celt, cj) {
 }
 
 function cmt_render_attachment_input(ctr, doc) {
-    return $e("div", {"class": "has-document", "data-dtype": "-2", "data-document-name": "attachment:" + ctr},
+    return $e("div", {class: "has-document", "data-dtype": "-2", "data-document-name": "attachment:" + ctr},
         $e("div", "document-file", cmt_render_attachment(doc)),
         $e("div", "document-actions",
-            $e("button", {type: "button", "class": "link ui js-remove-document"}, "Delete"),
+            $e("button", {type: "button", class: "link ui js-remove-document"}, "Delete"),
             hidden_input("attachment:" + ctr, doc.docid)));
 }
 
 function cmt_render_attachment(doc) {
-    const a = $e("a", {href: siteinfo.site_relative + doc.siteurl, "class": "qo"});
+    const a = $e("a", {href: siteinfo.site_relative + doc.siteurl, class: "qo"});
     if (doc.mimetype === "application/pdf") {
-        a.append($e("img", {src: siteinfo.assets + "images/pdf.png", alt: "[PDF]", "class": "sdlimg"}));
+        a.append($e("img", {src: siteinfo.assets + "images/pdf.png", alt: "[PDF]", class: "sdlimg"}));
     } else {
-        a.append($e("img", {src: siteinfo.assets + "images/generic.png", alt: "[Attachment]", "class": "sdlimg"}));
+        a.append($e("img", {src: siteinfo.assets + "images/generic.png", alt: "[Attachment]", class: "sdlimg"}));
     }
     a.append(" ", $e("u", "x", doc.unique_filename || doc.filename || "Attachment"));
     if (doc.size != null) {
@@ -7559,15 +7563,15 @@ function cmt_render(cj, editing) {
         const h2 = $e("h2");
         let cnc = h2;
         if (cj.collapsed && !editing) {
-            cnc = $e("button", {type: "button", "class": "qo ui js-foldup", "data-fold-target": 20}, make_expander_element(20));
+            cnc = $e("button", {type: "button", class: "qo ui js-foldup", "data-fold-target": 20}, make_expander_element(20));
         } else if (cj.editable && !editing) {
-            cnc = $e("button", {type: "button", "class": "qo ui cmteditor"});
+            cnc = $e("button", {type: "button", class: "qo ui cmteditor"});
         }
         h2 === cnc || h2.append(cnc);
         cnc.append($e("span", "cmtcard-header-name", cj_name(cj)));
         if (cj.editable && !editing) {
             if (cj.collapsed) {
-                cnc = $e("button", {type: "button", "class": "qo ui cmteditor"});
+                cnc = $e("button", {type: "button", class: "qo ui cmteditor"});
                 h2.append(" ", cnc);
             }
             cnc.append(" ", $e("span", "t-editor", "✎"));
@@ -7673,7 +7677,7 @@ function cmt_render_text(format, value, response, texte, article) {
                     allowede,
                     $e("div", "overlong-mark",
                         $e("div", "overlong-expander",
-                            $e("button", {type: "button", "class": "ui js-overlong-expand", "aria-expanded": "false"}, "Show more")))),
+                            $e("button", {type: "button", class: "ui js-overlong-expand", "aria-expanded": "false"}, "Show more")))),
                 contente = $e("div", "overlong-content");
             addClass(texte, "has-overlong");
             addClass(texte, "overlong-collapsed");
@@ -7730,18 +7734,18 @@ function add_new_comment_button(cj, cid) {
     }
     let eactions = $$("k-comment-actions");
     if (!eactions) {
-        eactions = $e("div", {id: "k-comment-actions", "class": "pcard cmtcard"}, $e("div", "aab aabig"));
+        eactions = $e("div", {id: "k-comment-actions", class: "pcard cmtcard"}, $e("div", "aab aabig"));
         $(".pcontainer").append(eactions);
     }
     const rname = cj.response && (cj.response == "1" ? "response" : cj.response + " response"),
         ebutton = $e("div", "aabut",
-            $e("a", {href: "#" + cid, id: "k-comment-edit-" + cid, "class": "uic js-edit-comment btn"}, "Add " + (rname || "comment")));
+            $e("a", {href: "#" + cid, id: "k-comment-edit-" + cid, class: "uic js-edit-comment btn"}, "Add " + (rname || "comment")));
     if (cj.response && cj.author_editable === false) {
         if (!hasClass(eactions, "has-fold")) {
             addClass(eactions, "has-fold");
             addClass(eactions, "foldc");
             eactions.firstChild.append($e("div", "aabut fn",
-                $e("button", {type: "button", "class": "link ui js-foldup ulh need-tooltip", "aria-label": "Show more comment options"}, "…")));
+                $e("button", {type: "button", class: "link ui js-foldup ulh need-tooltip", "aria-label": "Show more comment options"}, "…")));
         }
         addClass(ebutton, "fx");
         ebutton.append($e("div", "hint", "(admin only)"));
@@ -7751,7 +7755,7 @@ function add_new_comment_button(cj, cid) {
 
 function add_new_comment(cj, cid) {
     document.querySelector(".pcontainer").insertBefore($e("article", {
-        id: cid, "class": "pcard cmtcard cmtid comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
+        id: cid, class: "pcard cmtcard cmtid comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
     }), $$("k-comment-actions"));
     if (!cj.is_new) {
         if (cj.response || cj.visibility === "admin") {
@@ -9278,11 +9282,11 @@ $(function () {
                 && (pos = $.inArray(siteinfo.paperid, ids)) >= 0) {
                 if (pos > 0) {
                     mode.p = ids[pos - 1];
-                    this.prepend($e("a", {id: "n-prev", "class": "ulh", href: hoturl(page, mode)}, "< #" + ids[pos - 1]), " ");
+                    this.prepend($e("a", {id: "n-prev", class: "ulh", href: hoturl(page, mode)}, "< #" + ids[pos - 1]), " ");
                 }
                 if (pos < ids.length - 1) {
                     mode.p = ids[pos + 1];
-                    this.append(" ", $e("a", {id: "n-next", "class": "ulh", href: hoturl(page, mode)}, "#" + ids[pos + 1] + " >"));
+                    this.append(" ", $e("a", {id: "n-next", class: "ulh", href: hoturl(page, mode)}, "#" + ids[pos + 1] + " >"));
                 }
             }
         });
@@ -9524,31 +9528,31 @@ function tagannorow_add(tfacet, tbody, before, anno) {
     let tr;
     if (anno.blank) {
         tr = $e("tr", "plheading-blank",
-            $e("td", {"class": "plheading", colspan: ncol}));
+            $e("td", {class: "plheading", colspan: ncol}));
     } else {
         tr = $e("tr", {
-            "class": "plheading",
+            class: "plheading",
             "data-anno-tag": anno.tag || null,
             "data-anno-id": anno.annoid || null,
             "data-tags": anno.tag && anno.annoid ? anno.tag + "#" + anno.tagval : null
         });
         if (selcol > 0) {
-            tr.appendChild($e("td", {"class": "plheading-spacer", colspan: selcol}));
+            tr.appendChild($e("td", {class: "plheading-spacer", colspan: selcol}));
         }
         if (selcol >= 0) {
             tr.appendChild($e("td", "pl plheading pl_sel",
                 $e("input", {
                     type: "checkbox",
-                    "class": "uic uikd js-range-click ignore-diff is-range-group",
+                    class: "uic uikd js-range-click ignore-diff is-range-group",
                     "data-range-type": "pap[]",
                     "data-range-group": "auto",
                     "aria-label": "Select group"
                 })));
         }
         if (titlecol > 0 && titlecol > selcol + 1) {
-            tr.appendChild($e("td", {"class": "plheading-spacer", colspan: titlecol - selcol - 1}));
+            tr.appendChild($e("td", {class: "plheading-spacer", colspan: titlecol - selcol - 1}));
         }
-        tr.appendChild($e("td", {"class": "plheading", colspan: ncol - Math.max(0, titlecol)},
+        tr.appendChild($e("td", {class: "plheading", colspan: ncol - Math.max(0, titlecol)},
             $e("span", "plheading-group"),
             $e("span", "plheading-count")));
     }
@@ -9847,7 +9851,7 @@ function add_draghandle(tr) {
     var td = tr.cells[0], e;
     if (!td.firstChild || !hasClass(td.firstChild, "draghandle")) {
         addClass(tr, "has-draghandle");
-        e = $e("button", {"type": "button", "class": "uimd draghandle js-drag-tag mr-1", title: "Drag to change order"});
+        e = $e("button", {"type": "button", class: "uimd draghandle js-drag-tag mr-1", title: "Drag to change order"});
         td.insertBefore(e, td.firstElementChild);
     }
 }
@@ -10031,7 +10035,7 @@ handle_ui.on("js-annotate-order", function () {
             ide.id = HtmlCollector.next_input_id();
         }
         return $e("div", ide && hasClass(ide, "if-session") ? "entryi if-session hidden" : "entryi",
-            $e("label", {"for": ide ? ide.id : null}, label),
+            $e("label", {for: ide ? ide.id : null}, label),
             $e("div", "entry", entry));
     }
     function add_anno(anno) {
@@ -10068,14 +10072,14 @@ handle_ui.on("js-annotate-order", function () {
             }
             return e;
         }
-        let tagval = inpute("tagval", {size: 5, placeholder: "(value)", "class": "ml-1", value: tagvalue_unparse(anno.tagval)}),
+        let tagval = inpute("tagval", {size: 5, placeholder: "(value)", class: "ml-1", value: tagvalue_unparse(anno.tagval)}),
             legend = inpute("legend", {placeholder: "none"}),
             session_title = inpute("session_title", null, "session"),
             time = inpute("time", null, "session"),
-            session_chair = $e("span", "select", inpute("session_chair", {type: "select", "class": "need-pcselector", "data-pcselector-options": "0 *", "data-default-value": anno.session_chair || "none"}, "session")),
+            session_chair = $e("span", "select", inpute("session_chair", {type: "select", class: "need-pcselector", "data-pcselector-options": "0 *", "data-default-value": anno.session_chair || "none"}, "session")),
             deleter = $e("button", {
                 type: "button",
-                "class": "ml-2 need-tooltip js-delete-ta",
+                class: "ml-2 need-tooltip js-delete-ta",
                 "aria-label": "Delete annotation"
             }, svge_use_licon("trash")),
             fieldset = $e("fieldset", "mt-3 mb-2",
@@ -10104,7 +10108,7 @@ handle_ui.on("js-annotate-order", function () {
                 $e("p", null, $e("span", "select", $e("select", {name: "ta/type"}, $e("option", {value: "generic", selected: true}, "Generic order"), $e("option", {value: "session"}, "Session order")))),
                 $e("div", "tagannos"),
                 $e("div", "mt-3", $e("button", {type: "button", name: "add"}, "Add group")))
-            .append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save changes"), "Cancel");
+            .append_actions($e("button", {type: "submit", name: "save", class: "btn-primary"}, "Save changes"), "Cancel");
         form = $pu.form();
         etagannos = form.querySelector(".tagannos");
         annos = rv.anno;
@@ -10985,9 +10989,9 @@ handle_ui.on("js-plinfo-edittags", function () {
             return;
         const elt = $e("div", "d-inline-flex",
             $e("div", "mf mf-text w-text",
-                $e("textarea", {name: "tags " + rv.pid, cols: 120, rows: 1, "class": "want-focus need-suggest tags w-text", style: "vertical-align:-0.5rem", "data-tooltip-anchor": "v", "id": "tags " + rv.pid, "spellcheck": "false"})),
-            $e("button", {type: "button", name: "tagsave " + rv.pid, "class": "btn-primary ml-2"}, "Save"),
-            $e("button", {type: "button", name: "tagcancel " + rv.pid, "class": "ml-2"}, "Cancel"));
+                $e("textarea", {name: "tags " + rv.pid, cols: 120, rows: 1, class: "want-focus need-suggest tags w-text", style: "vertical-align:-0.5rem", "data-tooltip-anchor": "v", "id": "tags " + rv.pid, "spellcheck": "false"})),
+            $e("button", {type: "button", name: "tagsave " + rv.pid, class: "btn-primary ml-2"}, "Save"),
+            $e("button", {type: "button", name: "tagcancel " + rv.pid, class: "ml-2"}, "Cancel"));
         set_pidfield(plistui.fields.tags, pidfe, elt);
         ta = pidfe.querySelector("textarea");
         hotcrp.suggest.call(ta);
@@ -11077,7 +11081,7 @@ function render_row_tags(pidfe) {
         }
         t.append(" ", $e("span", "hoveronly",
             $e("span", "barsep", "·"), " ",
-            $e("button", {type: "button", "class": "link ui js-plinfo-edittags"}, "Edit")));
+            $e("button", {type: "button", class: "link ui js-plinfo-edittags"}, "Edit")));
     }
     $(pidfe).find("textarea").unautogrow();
     set_pidfield(plistui.fields.tags, pidfe, t, t && !ct ? "fx5" : null);
@@ -11917,7 +11921,7 @@ handle_ui.on("js-add-attachment", function () {
     // this hidden_input cannot be in the document-uploader: the uploader
     // might be removed later, but we need to hold the place
     if (!f.elements[name]) {
-        f.appendChild(hidden_input(name, "new", {"class": "ignore-diff"}));
+        f.appendChild(hidden_input(name, "new", {class: "ignore-diff"}));
     }
     filee.click();
 });
@@ -11943,7 +11947,7 @@ handle_ui.on("js-replace-document", function () {
         $(u).trigger("hotcrp-change-document");
     }
     if (!actions.querySelector(".js-cancel-document")) {
-        actions.append($e("button", {type: "button", "class": "link ui js-cancel-document hidden"}, "Cancel"));
+        actions.append($e("button", {type: "button", class: "link ui js-cancel-document hidden"}, "Cancel"));
     }
     u.click();
 });
@@ -12027,7 +12031,7 @@ handle_ui.on("document-uploader", function (event) {
     var self = {cancel: cancel},
         token = false, cancelled = false, size = file.size,
         pos = 0, uploading = 0, sprogress0 = 0, sprogress1 = size,
-        progresselt = $e("progress", {"class": "mr-2", max: size + sprogress1, value: "0"});
+        progresselt = $e("progress", {class: "mr-2", max: size + sprogress1, value: "0"});
     that.hotcrpUploader = self;
     that.after(progresselt, $e("span", null, "Uploading" + (file.name ? " " + escape_html(file.name) : "") + "…"));
 
@@ -12107,7 +12111,7 @@ handle_ui.on("document-uploader", function (event) {
                 fn = that.name.replace(/:file$/, "");
             e.className = "is-success";
             e.textContent = "NEW ";
-            that.after(hidden_input(fn + ":upload", token, {"data-default-value": "", "class": "document-upload-helper"}), e, file.name);
+            that.after(hidden_input(fn + ":upload", token, {"data-default-value": "", class: "document-upload-helper"}), e, file.name);
         }
     }
 
@@ -12149,7 +12153,7 @@ handle_ui.on("js-remove-document", function () {
         $doc.find(".document-stamps, .document-shortformat").removeClass("hidden");
         $(this).removeClass("undelete").html("Delete");
     } else {
-        $(hidden_input(doce.getAttribute("data-document-name") + ":delete", "1", {"class": "document-remover", "data-default-value": ""})).appendTo($doc.find(".document-actions")).trigger("change");
+        $(hidden_input(doce.getAttribute("data-document-name") + ":delete", "1", {class: "document-remover", "data-default-value": ""})).appendTo($doc.find(".document-actions")).trigger("change");
         if (!$en.find("del").length)
             $en.wrapInner("<del></del>");
         $doc.find(".document-uploader").trigger("hotcrp-change-document");
@@ -12160,12 +12164,12 @@ handle_ui.on("js-remove-document", function () {
 
 handle_ui.on("js-withdraw", function () {
     const f = this.form, $pu = $popup({near: this, action: f});
-    $pu.append($e("p", null, "Are you sure you want to with draw this " + siteinfo.snouns[0] + " from consideration and/or publication?" + (this.hasAttribute("data-revivable") ? "" : " Only administrators can undo this step.")),
-        $e("textarea", {name: "reason", rows: 3, cols: 40, placeholder: "Optional explanation", spellcheck: "true", "class": "w-99 need-autogrow"}));
+    $pu.append($e("p", null, "Are you sure you want to withdraw this " + siteinfo.snouns[0] + " from consideration and/or publication?" + (this.hasAttribute("data-revivable") ? "" : " Only administrators can undo this step.")),
+        $e("textarea", {name: "reason", rows: 3, cols: 40, placeholder: "Optional explanation", spellcheck: "true", class: "w-99 need-autogrow"}));
     if (!this.hasAttribute("data-withdrawable")) {
         $pu.append($e("label", "checki", $e("span", "checkc", $e("input", {type: "checkbox", name: "override", value: 1})), "Override deadlines"));
     }
-    $pu.append_actions($e("button", {type: "submit", name: "withdraw", value: 1, "class": "btn-danger"}, "Withdraw"), "Cancel");
+    $pu.append_actions($e("button", {type: "submit", name: "withdraw", value: 1, class: "btn-danger"}, "Withdraw"), "Cancel");
     $pu.show();
     transfer_form_values($pu.form(), f, ["status:notify", "status:notify_reason"]);
     $pu.on("submit", function () { addClass(f, "submitting"); });
@@ -12174,7 +12178,7 @@ handle_ui.on("js-withdraw", function () {
 handle_ui.on("js-delete-paper", function () {
     const f = this.form, $pu = $popup({near: this, action: f});
     $pu.append($e("p", null, "Be careful: This will permanently delete all information about this " + siteinfo.snouns[0] + " from the database and ", $e("strong", null, "cannot be undone"), "."));
-    $pu.append_actions($e("button", {type: "submit", name: "delete", value: 1, "class": "btn-danger"}, "Delete"), "Cancel");
+    $pu.append_actions($e("button", {type: "submit", name: "delete", value: 1, class: "btn-danger"}, "Delete"), "Cancel");
     $pu.show();
     transfer_form_values($pu.form(), f, ["status:notify", "status:notify_reason"]);
     $pu.on("submit", function () { addClass(f, "submitting"); });
@@ -12861,7 +12865,7 @@ function set_tag_index(e, taglist) {
     let a = e.lastChild;
     if (!a || a.nodeName !== "A") {
         const sort = vtype === "rank" ? "#" : "-#";
-        a = $e("a", {"class": "q", href: hoturl("search", {q: "show:#".concat(btag, " sort:", sort, btag)})});
+        a = $e("a", {class: "q", href: hoturl("search", {q: "show:#".concat(btag, " sort:", sort, btag)})});
         e.appendChild(a);
         if (hasClass(e, "is-tag-report")) {
             e.setAttribute("data-tooltip-anchor", "h");
@@ -12932,7 +12936,7 @@ handle_ui.on("js-delete-user", function () {
         $pu.append($e("p", null, "Deleting this account will also delete:"), ul);
     }
     $pu.append($e("p", null, "Be careful: Account deletion ", $e("strong", null, "cannot be undone"), "."))
-        .append_actions($e("button", {type: "submit", name: "delete", value: 1, "class": "btn-danger"}, "Delete user"), "Cancel")
+        .append_actions($e("button", {type: "submit", name: "delete", value: 1, class: "btn-danger"}, "Delete user"), "Cancel")
         .on("submit", function () { addClass(f, "submitting"); }).show();
 });
 
@@ -13036,8 +13040,8 @@ handle_ui.on("js-acceptish-review", function (evt) {
 handle_ui.on("js-deny-review-request", function () {
     const f = this.form, $pu = $popup({near: this, action: f})
         .append($e("p", null, "Select “Deny request” to deny this review request."),
-            $e("textarea", {name: "reason", rows: 3, cols: 60, placeholder: "Optional explanation", spellcheck: "true", "class": "w-99 need-autogrow"}))
-        .append_actions($e("button", {type: "submit", name: "denyreview", value: 1, "class": "btn-danger"}, "Deny request"), "Cancel")
+            $e("textarea", {name: "reason", rows: 3, cols: 60, placeholder: "Optional explanation", spellcheck: "true", class: "w-99 need-autogrow"}))
+        .append_actions($e("button", {type: "submit", name: "denyreview", value: 1, class: "btn-danger"}, "Deny request"), "Cancel")
         .show();
     transfer_form_values($pu.form(), f, ["firstName", "lastName", "affiliation", "reason"]);
 });
@@ -13045,7 +13049,7 @@ handle_ui.on("js-deny-review-request", function () {
 handle_ui.on("js-delete-review", function () {
     $popup({near: this, action: this.form})
         .append($e("p", null, "Be careful: This will permanently delete all information about this review assignment from the database and ", $e("strong", null, "cannot be undone"), "."))
-        .append_actions($e("button", {type: "submit", name: "deletereview", value: 1, "class": "btn-danger"}, "Delete review"), "Cancel")
+        .append_actions($e("button", {type: "submit", name: "deletereview", value: 1, class: "btn-danger"}, "Delete review"), "Cancel")
         .show();
 });
 
@@ -13053,22 +13057,22 @@ handle_ui.on("js-approve-review", function (evt) {
     const self = this, grid = $e("div", "grid-btn-explanation");
     let subreviewClass = "";
     if (hasClass(self, "can-adopt")) {
-        grid.append($e("button", {type: "button", name: "adoptsubmit", "class": "btn-primary big"}, "Adopt and submit"),
+        grid.append($e("button", {type: "button", name: "adoptsubmit", class: "btn-primary big"}, "Adopt and submit"),
             $e("p", null, "Submit a copy of this review under your own name. You can make changes afterwards."),
-            $e("button", {type: "button", name: "adoptdraft", "class": "bug"}, "Adopt as draft"),
+            $e("button", {type: "button", name: "adoptdraft", class: "bug"}, "Adopt as draft"),
             $e("p", null, "Save a copy of this review as a draft review under your name."));
     } else if (hasClass(self, "can-adopt-replace")) {
-        grid.append($e("button", {type: "button", name: "adoptsubmit", "class": "btn-primary big"}, "Adopt and submit"),
+        grid.append($e("button", {type: "button", name: "adoptsubmit", class: "btn-primary big"}, "Adopt and submit"),
             $e("p", null, "Replace your draft review with a copy of this review and submit it. You can make changes afterwards."),
-            $e("button", {type: "button", name: "adoptdraft", "class": "big"}, "Adopt as draft"),
+            $e("button", {type: "button", name: "adoptdraft", class: "big"}, "Adopt as draft"),
             $e("p", null, "Replace your draft review with a copy of this review."));
     } else {
         subreviewClass = " btn-primary";
     }
-    grid.append($e("button", {type: "button", name: "approvesubreview", "class": "big" + subreviewClass}, "Approve subreview"),
+    grid.append($e("button", {type: "button", name: "approvesubreview", class: "big" + subreviewClass}, "Approve subreview"),
         $e("p", null, "Approve this review as a subreview. It will not be shown to authors and its scores will not be counted in statistics."));
     if (hasClass(self, "can-approve-submit")) {
-        grid.append($e("button", {type: "button", name: "approvesubmit", "class": "big"}, "Submit as full review"),
+        grid.append($e("button", {type: "button", name: "approvesubmit", class: "big"}, "Submit as full review"),
             $e("p", null, "Submit this review as an independent review. It will be shown to authors and its scores will be counted in statistics."));
     }
     const $pu = $popup({near: evt.sidebarTarget || self}).append(grid)
@@ -13094,16 +13098,16 @@ handle_ui.on("js-edit-formulas", function () {
         const nei = $e("legend"), xei = $e("div", "entry");
         if (f.editable) {
             nei.className = "mb-1";
-            nei.append($e("input", {type: "text", id: "k-formula/" + count + "/name", "class": "editformulas-name need-autogrow", name: "formula/" + count + "/name", size: 30, value: f.name, placeholder: "Formula name"}),
-                $e("button", {type: "button", "class": "ml-2 delete-link need-tooltip btn-licon-s", "aria-label": "Delete formula"}, svge_use_licon("trash")));
-            xei.append($e("textarea", {"class": "editformulas-expression need-autogrow w-99", id: "k-formula/" + count + "/expression", name: "formula/" + count + "/expression", rows: 1, cols: 64, placeholder: "Formula definition"}, f.expression));
+            nei.append($e("input", {type: "text", id: "k-formula/" + count + "/name", class: "editformulas-name need-autogrow", name: "formula/" + count + "/name", size: 30, value: f.name, placeholder: "Formula name"}),
+                $e("button", {type: "button", class: "ml-2 delete-link need-tooltip btn-licon-s", "aria-label": "Delete formula"}, svge_use_licon("trash")));
+            xei.append($e("textarea", {class: "editformulas-expression need-autogrow w-99", id: "k-formula/" + count + "/expression", name: "formula/" + count + "/expression", rows: 1, cols: 64, placeholder: "Formula definition"}, f.expression));
         } else {
             nei.append(f.name);
             xei.append(f.expression);
         }
-        const e = $e("fieldset", {"class": "editformulas-formula", "data-formula-number": count},
+        const e = $e("fieldset", {class: "editformulas-formula", "data-formula-number": count},
             nei,
-            $e("div", "entryi", $e("label", {"for": "k-formula/" + count + "/expression"}, "Expression"), xei),
+            $e("div", "entryi", $e("label", {for: "k-formula/" + count + "/expression"}, "Expression"), xei),
             hidden_input("formula/" + count + "/id", f.id));
         if (f.message_list) {
             e.append(feedback.render_list(f.message_list));
@@ -13154,7 +13158,7 @@ handle_ui.on("js-edit-formulas", function () {
             .append($e("h2", null, "Named formulas"),
                 $e("p", null, $e("a", {href: hoturl("help", "t=formulas"), target: "_blank", rel: "noopener"}, "Formulas"), ", such as “sum(OveMer)”, are calculated from review statistics and paper information. Named formulas are shared with the PC and can be used in other formulas. To view an unnamed formula, use a search term like “show:(sum(OveMer))”."),
                 ef, $e("button", {type: "button", name: "add"}, "Add named formula"))
-            .append_actions($e("button", {type: "submit", name: "saveformulas", value: 1, "class": "btn-primary"}, "Save"), "Cancel")
+            .append_actions($e("button", {type: "submit", name: "saveformulas", value: 1, class: "btn-primary"}, "Save"), "Cancel")
             .on("click", "button", click).on("submit", submit).show();
     }
     $.get(hoturl("=api/namedformula"), function (data) {
@@ -13194,8 +13198,8 @@ handle_ui.on("js-edit-view-options", function () {
                     $e("div", "reportdisplay-default", data.display_default || "(none)")),
                 $e("div", "f-i", $e("div", "f-c", "Current view options"),
                     feedback.maybe_render_list(data.message_list),
-                    $e("textarea", {"class": "reportdisplay-current w-99 need-autogrow uikd js-keydown-enter-submit", name: "display", rows: 1, cols: 60}, data.display_current || "")))
-            .append_actions($e("button", {type: "submit", name: "save", "class": "btn-primary"}, "Save options as default"), "Cancel")
+                    $e("textarea", {class: "reportdisplay-current w-99 need-autogrow uikd js-keydown-enter-submit", name: "display", rows: 1, cols: 60}, data.display_current || "")))
+            .append_actions($e("button", {type: "submit", name: "save", class: "btn-primary"}, "Save options as default"), "Cancel")
             .on("submit", submit).show();
     }
     $.get(hoturl("=api/viewoptions", {q: $$("f-search").getAttribute("data-lquery")}), function (data) {
@@ -13213,26 +13217,26 @@ handle_ui.on("js-edit-namedsearches", function () {
             nentry.append("ss:", $e("input", {
                     id: "k-named_search/" + count + "/name",
                     type: "text", name: "named_search/" + count + "/name",
-                    "class": "editsearches-name need-autogrow ml-1",
+                    class: "editsearches-name need-autogrow ml-1",
                     size: 30, value: f.name, placeholder: "Name of search"
                 }), $e("button", {
-                    type: "button", "class": "ui btn-licon-s delete-link ml-2 need-tooltip",
+                    type: "button", class: "ui btn-licon-s delete-link ml-2 need-tooltip",
                     "aria-label": "Delete search"
-                }, svge_use_licon("trash")));
+                }));
             qentry.append($e("textarea", {
                     id: "k-named_search/" + count + "/search",
                     name: "named_search/" + count + "/search",
-                    "class": "editsearches-query need-autogrow w-99",
+                    class: "editsearches-query need-autogrow w-99",
                     rows: 1, cols: 64, placeholder: "(All)"
                 }, f.q))
         } else {
             nentry.append(f.name);
             qentry.append(f.q);
         }
-        return $e("fieldset", {"class": "editsearches-search", "data-search-number": count},
+        return $e("fieldset", {class: "editsearches-search", "data-search-number": count},
             nentry,
             $e("div", "entryi",
-                $e("label", {"for": "k-named_search/" + count + "/search"}, "Search"),
+                $e("label", {for: "k-named_search/" + count + "/search"}, "Search"),
                 qentry),
             hidden_input("named_search/" + count + "/id", f.id || f.name));
     }
@@ -13283,7 +13287,7 @@ handle_ui.on("js-edit-namedsearches", function () {
                 $e("p", null, "Invoke a named search with “ss:NAME”. Named searches are shared with the PC."),
                 $e("div", "editsearches"),
                 $e("button", {type: "button", name: "add"}, "Add named search"))
-            .append_actions($e("button", {type: "submit", name: "savesearches", value: 1, "class": "btn-primary"}, "Save"), "Cancel");
+            .append_actions($e("button", {type: "submit", name: "savesearches", value: 1, class: "btn-primary"}, "Save"), "Cancel");
         const ns = $pu.querySelector(".editsearches");
         for (const s of data.searches || []) {
             ns.append(render1(s));
@@ -13351,7 +13355,7 @@ function handle_list_submit_bulkwarn(table, chkval, bgform, evt) {
     if (n >= 4) {
         const ctr = $e("div", "container"),
             $pu = $popup({near: evt.target}).append(ctr)
-                .append_actions($e("button", {type: "button", name: "bsubmit", "class": "btn-primary"}, "Download"), "Cancel");
+                .append_actions($e("button", {type: "button", name: "bsubmit", class: "btn-primary"}, "Download"), "Cancel");
         let m = table.getAttribute("data-bulkwarn-ftext");
         if (m === null || m === "") {
             m = "<5><p>Some program committees discourage reviewers from downloading " + siteinfo.snouns[1] + " in bulk. Are you sure you want to continue?</p>";
@@ -13856,7 +13860,7 @@ function scorechart1_s1(sc) {
         cheight = blockfull * Math.max(anal.max, 1) + blockpad + 1,
         gray = color_unparse(graycolor);
 
-    var svg = $svg("svg", {"class": "scorechart-s1", width: cwidth, height: cheight},
+    var svg = $svg("svg", {class: "scorechart-s1", width: cwidth, height: cheight},
         $svg("path", {stroke: gray, fill: "none", d: "M0.5 ".concat(cheight - blockfull - 1, "v", blockfull + 0.5, "h", cwidth - 1, "v", -(blockfull + 0.5))}));
 
     if (!anal.v[anal.flip ? n - 1 : 0]) {
