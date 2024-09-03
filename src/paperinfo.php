@@ -3310,6 +3310,7 @@ class PaperInfo {
 
     function load_comments() {
         foreach ($this->_row_set as $prow) {
+            $prow->_comment_skeleton_array = null;
             $prow->_comment_array = [];
         }
         $result = $this->conf->qe("select * from PaperComment where paperId?a order by paperId, commentId", $this->_row_set->paper_ids());
@@ -3397,18 +3398,6 @@ class PaperInfo {
             if ($crow->contactId == $cid) {
                 return true;
             }
-        }
-        return false;
-    }
-
-    /** @param int $checkflags
-     * @param int $wantflags
-     * @return bool */
-    function has_viewable_comment_type(Contact $user, $checkflags, $wantflags) {
-        foreach ($this->all_comment_skeletons() as $crow) {
-            if (($crow->commentType & $checkflags) === $wantflags
-                && $user->can_view_comment($this, $crow))
-                return true;
         }
         return false;
     }

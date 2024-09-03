@@ -4704,6 +4704,20 @@ class Contact implements JsonSerializable {
     }
 
     /** @return int */
+    function author_viewable_comment_flags(PaperInfo $prow) {
+        $r = 0;
+        foreach ($prow->all_comment_skeletons() as $crow) {
+            $ctype = CommentInfo::fix_type_topic($crow->commentType);
+            if (($r | $ctype) !== $r
+                && ($ctype & (CommentInfo::CTM_VIS | CommentInfo::CTM_BYAUTHOR)) === CommentInfo::CTVIS_AUTHOR
+                && $this->can_view_comment($prow, $crow)) {
+                $r |= $ctype;
+            }
+        }
+        return $r;
+    }
+
+    /** @return int */
     function add_comment_state(PaperInfo $prow) {
         $rights = $this->rights($prow);
         $time = $this->conf->setting("cmt_always") > 0
@@ -4718,11 +4732,7 @@ class Contact implements JsonSerializable {
         } else if ($rights->conflictType >= CONFLICT_AUTHOR
                    && $this->conf->setting("cmt_author") > 0
                    && $time) {
-            if ($this->can_view_submitted_review_as_author($prow)) {
-                $ctype |= CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_TOPIC_REVIEW;
-            } else if ($this->can_view_author_comment_topic_paper($prow)) {
-                $ctype |= CommentInfo::CT_TOPIC_PAPER;
-            }
+            $ctype |= $this->author_viewable_comment_flags($prow) & CommentInfo::CTM_TOPIC;
         }
         if ($ctype !== 0
             && $rights->can_view_decision()) {
@@ -4773,15 +4783,14 @@ class Contact implements JsonSerializable {
                     || $rights->allow_administer_forced())
                 && ($time
                     || $rights->can_administer());
-        } else if ($author && $time) {
-            if ((($newctype ?? $crow->commentType) & CommentInfo::CT_TOPIC_PAPER) !== 0) {
-                return $crow->commentId !== 0
-                    || $this->can_view_author_comment_topic_paper($prow);
-            } else {
-                return $this->can_view_submitted_review_as_author($prow);
-            }
         } else {
-            return false;
+            $oldctype = CommentInfo::fix_type_topic($crow->commentType);
+            $newctype = CommentInfo::fix_type_topic($newctype ?? $oldctype);
+            return $author
+                && $time
+                && (($crow->commentId !== 0
+                     && (($newctype ^ $crow->commentType) & CommentInfo::CTM_TOPIC) === 0)
+                    || ($this->author_viewable_comment_flags($prow) & $newctype & CommentInfo::CTM_TOPIC) !== 0);
         }
     }
 
@@ -4924,8 +4933,15 @@ class Contact implements JsonSerializable {
     }
 
     /** @param ?CommentInfo $crow
-     * @return bool */
+     * @return bool
+     * @deprecated */
     function can_view_comment_contents(PaperInfo $prow, $crow) {
+        return $this->can_view_comment_content($prow, $crow);
+    }
+
+    /** @param ?CommentInfo $crow
+     * @return bool */
+    function can_view_comment_content(PaperInfo $prow, $crow) {
         // assume can_view_comment is true
         if (!$crow
             || ($crow->commentType & (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT)) !== (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT)) {
@@ -4990,13 +5006,6 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_view_some_draft_response() {
         return $this->is_manager() || $this->is_author();
-    }
-
-    /** @return bool */
-    function can_view_author_comment_topic_paper(PaperInfo $prow) {
-        return $prow->has_viewable_comment_type($this,
-            CommentInfo::CTM_BYAUTHOR | CommentInfo::CTM_TOPIC | CommentInfo::CTM_VIS,
-            CommentInfo::CT_TOPIC_PAPER | CommentInfo::CTVIS_AUTHOR);
     }
 
 

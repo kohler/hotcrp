@@ -278,12 +278,16 @@ class Permission_Tester {
         $comment1 = new CommentInfo($paper1);
         $c1ok = $comment1->save_comment(["text" => "test", "visibility" => "a", "blind" => false], $user_mgbaker);
         xassert($c1ok);
+        $paper1->load_comments();
         xassert(!$user_van->can_view_comment($paper1, $comment1));
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
         xassert_eqq($user_van->add_comment_state($paper1), 0);
         $this->conf->save_refresh_setting("cmt_author", 1);
+        xassert(!$user_van->can_view_comment($paper1, $comment1));
         xassert_eqq($user_van->add_comment_state($paper1), 0);
+        // can exchange comments with reviewers only when there are author-viewable comments
         $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
+        xassert($user_van->can_view_comment($paper1, $comment1));
         xassert_neqq($user_van->add_comment_state($paper1), 0);
         $this->conf->save_refresh_setting("cmt_author", null);
         xassert_eqq($user_van->add_comment_state($paper1), 0);

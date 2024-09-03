@@ -172,6 +172,15 @@ class CommentInfo {
 
     /** @param int $ctype
      * @return int */
+    static function fix_type_topic($ctype) {
+        if (($ctype & self::CTM_TOPIC_NONREVIEW) === 0) {
+            $ctype |= self::CT_TOPIC_REVIEW;
+        }
+        return $ctype;
+    }
+
+    /** @param int $ctype
+     * @return int */
     function fix_type($ctype) {
         if (($ctype & self::CT_RESPONSE) !== 0) {
             return self::CT_RESPONSE
@@ -723,7 +732,7 @@ class CommentInfo {
         }
 
         // contents
-        if ($viewer->can_view_comment_contents($this->prow, $this)) {
+        if ($viewer->can_view_comment_content($this->prow, $this)) {
             $cj["text"] = $this->content($viewer, !$idable);
             if ($this->has_attachments()) {
                 $cj["docs"] = $this->attachments_json($cj["editable"] ?? false);
