@@ -602,13 +602,14 @@ class CommentInfo {
     /** @return ?object */
     function unparse_json(Contact $viewer) {
         if ($this->commentId !== 0
-            ? !$viewer->can_view_comment($this->prow, $this, true)
-            : !$viewer->can_edit_comment($this->prow, $this)) {
+            && !$viewer->can_view_comment($this->prow, $this, true)) {
             return null;
         }
 
-        $rrd = $this->response_round();
-        assert(!$rrd === !($this->commentType & self::CT_RESPONSE));
+        $editable = $viewer->can_edit_comment($this->prow, $this);
+        if ($this->commentId === 0 && !$editable) {
+            return null;
+        }
 
         $cj = ["pid" => $this->prow->paperId];
         if ($this->commentId !== 0) {
@@ -616,11 +617,27 @@ class CommentInfo {
             if (($o = $this->unparse_ordinal()) !== null) {
                 $cj["ordinal"] = $o;
             }
-            $cj["visibility"] = self::$visibility_map[$this->commentType & self::CTM_VIS];
         } else {
             // placeholder for new comment
             $cj["is_new"] = true;
+        }
+
+        // editability
+        if ($editable) {
             $cj["editable"] = true;
+            if ($viewer->is_my_comment($this->prow, $this)) {
+                $cj["viewer_owned"] = true;
+            }
+        }
+
+        // visibility, topic
+        if ($this->commentId !== 0) {
+            $cj["visibility"] = self::$visibility_map[$this->commentType & self::CTM_VIS];
+        }
+        if (($this->commentType & self::CTM_TOPIC) === self::CT_TOPIC_PAPER) {
+            $cj["topic"] = "paper";
+        } else if (($this->commentType & self::CTM_TOPIC) === self::CT_TOPIC_DECISION) {
+            $cj["topic"] = "dec";
         }
 
         // blindness, draftness, authorness, format
@@ -634,6 +651,7 @@ class CommentInfo {
             }
         }
         if (($this->commentType & self::CT_RESPONSE) !== 0) {
+            $rrd = $this->response_round();
             $cj["response"] = $rrd->name;
             if ($this->prow->timeSubmitted <= 0
                 || !$rrd->can_author_respond($this->prow, true)) {
@@ -643,11 +661,6 @@ class CommentInfo {
             $cj["by_author"] = true;
         } else if (($this->commentType & self::CT_BYSHEPHERD) !== 0) {
             $cj["by_shepherd"] = true;
-        }
-        if (($this->commentType & self::CTM_TOPIC) === self::CT_TOPIC_PAPER) {
-            $cj["topic"] = "paper";
-        } else if (($this->commentType & self::CTM_TOPIC) === self::CT_TOPIC_DECISION) {
-            $cj["topic"] = "dec";
         }
         if (($fmt = $this->commentFormat ?? $this->conf->default_format)) {
             $cj["format"] = $fmt;
@@ -662,10 +675,6 @@ class CommentInfo {
         }
 
         // otherwise, viewable comment
-        if ($viewer->can_edit_comment($this->prow, $this)) {
-            $cj["editable"] = true;
-        }
-
         // tags
         if (($tags = $this->viewable_tags($viewer))) {
             $cj["tags"] = Tagger::split($tags);

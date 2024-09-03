@@ -7755,13 +7755,9 @@ function add_new_comment(cj, cid) {
     document.querySelector(".pcontainer").insertBefore($e("article", {
         id: cid, class: "pcard cmtcard cmtid comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
     }), $$("k-comment-actions"));
-    if (!cj.is_new) {
-        if (cj.response || cj.visibility === "admin") {
-            last_visibility = null;
-        } else {
-            last_visibility = cj.visibility;
-            last_topic = cj.topic || "rev";
-        }
+    if (cj.viewer_owned && !cj.response) {
+        last_visibility = cj.visibility;
+        last_topic = cj.topic || "rev";
     }
 }
 
