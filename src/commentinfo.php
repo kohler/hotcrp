@@ -1118,17 +1118,25 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
     }
 
     /** @param Contact $user
+     * @param PaperInfo $prow
+     * @param string $text
+     * @param int $ctype
+     * @return list<MentionPhrase>|\Generator<MentionPhrase> */
+    static function parse_mentions($user, $prow, $text, $ctype) {
+        if (strpos($text, "@") === false) {
+            return [];
+        }
+        return MentionParser::parse($text, ...Completion_API::mention_lists($user, $prow, $ctype & self::CTM_VIS, Completion_API::MENTION_PARSE));
+    }
+
+    /** @param Contact $user
      * @param string $text
      * @param int $ctype
      * @return list<array{int,int,int,bool}> */
     private function analyze_mentions($user, $text, $ctype) {
-        if (strpos($text, "@") === false) {
-            return [];
-        }
         $dm = [];
-        foreach (MentionParser::parse($text, ...Completion_API::mention_lists($user, $this->prow, $ctype & self::CTM_VIS, Completion_API::MENTION_PARSE)) as $mpx) {
-            $named = $mpx[0] instanceof Contact || $mpx[0]->status !== Author::STATUS_ANONYMOUS_REVIEWER;
-            $dm[] = [$mpx[0]->contactId, $mpx[1], $mpx[2], $named];
+        foreach (self::parse_mentions($user, $this->prow, $text, $ctype) as $mpx) {
+            $dm[] = [$mpx->user->contactId, $mpx->pos1, $mpx->pos2, $mpx->named()];
         }
         return $dm;
     }

@@ -411,6 +411,7 @@ class TagStyle {
         }
         if ($allow_name) {
             $srch = " " . substr($color, $pfxlen) . ":";
+            /** @phan-suppress-next-line PhanParamSuspiciousOrder */
             if (($p = strpos(self::KNOWN_COLORS, $srch)) !== false) {
                 return substr($color, 0, $pfxlen) . "rgb-" . substr(self::KNOWN_COLORS, $p + strlen($srch), 6);
             }

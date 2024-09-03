@@ -2,10 +2,37 @@
 // mentionparser.php -- HotCRP helper class for parsing mentions
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
+class MentionPhrase {
+    /** @var Contact|Author
+     * @readonly */
+    public $user;
+    /** @var int
+     * @readonly */
+    public $pos1;
+    /** @var int
+     * @readonly */
+    public $pos2;
+
+    /** @param Contact|Author $user
+     * @param int $pos1
+     * @param int $pos2 */
+    function __construct($user, $pos1, $pos2) {
+        $this->user = $user;
+        $this->pos1 = $pos1;
+        $this->pos2 = $pos2;
+    }
+
+    /** @return bool */
+    function named() {
+        return $this->user instanceof Contact
+            || $this->user->status !== Author::STATUS_ANONYMOUS_REVIEWER;
+    }
+}
+
 class MentionParser {
     /** @param string $s
      * @param array<Contact|Author> ...$user_lists
-     * @return \Generator<array{Contact|Author,int,int}> */
+     * @return \Generator<MentionPhrase> */
     static function parse($s, ...$user_lists) {
         // filter out empty user lists
         $ulists = [];
@@ -43,7 +70,7 @@ class MentionParser {
                     foreach ($ulist as $u) {
                         if (strcasecmp($u->email, $email) === 0
                             && self::mention_ends_at($s, $pos + 1 + strlen($email))) {
-                            yield [$u, $pos, $pos + 1 + strlen($email)];
+                            yield new MentionPhrase($u, $pos, $pos + 1 + strlen($email));
                             $pos += 1 + strlen($email);
                             continue 3;
                         }
@@ -146,7 +173,7 @@ class MentionParser {
                     && strpos($ux->firstName . $ux->lastName, substr($s, $endpos - 1, 2)) !== false) {
                     ++$endpos;
                 }
-                yield [$ux, $pos, $endpos];
+                yield new MentionPhrase($ux, $pos, $endpos);
             }
 
             $pos = $pos2;

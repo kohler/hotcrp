@@ -3250,7 +3250,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function act_pc(PaperInfo $prow = null) {
+    function act_pc(?PaperInfo $prow = null) {
         if ($prow) {
             return $this->rights($prow)->allow_pc();
         } else {
@@ -4309,7 +4309,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_review_time(PaperInfo $prow, ReviewInfo $rrow = null) {
+    function can_view_review_time(PaperInfo $prow, ?ReviewInfo $rrow = null) {
         $rights = $this->rights($prow);
         return !$rights->act_author_view()
             || ($rrow
