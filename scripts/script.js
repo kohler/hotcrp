@@ -7122,6 +7122,13 @@ function cmt_visibility_change() {
         }
         vishint.replaceChildren(...m);
         toggleClass(vishint, "hidden", m.length === 0);
+        if (!form.elements.by_author) {
+            if (vis.value === "au" && would_auvis) {
+                form.elements.bsubmit.textContent = "Save and notify authors";
+            } else {
+                form.elements.bsubmit.textContent = "Save";
+            }
+        }
     }
     if (topichint) {
         if (is_paper) {
