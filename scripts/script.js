@@ -13344,11 +13344,13 @@ handle_ui.on("js-named-search", function (evt) {
             if (si.id !== "new") {
                 $pu.append_actions($e("button", {type: "button", name: "delete", class: "btn-danger float-left"}, "Delete search"));
             }
-        } else if (si.description) {
-            $pu.append($e("div", "f-i",
+        } else {
+            if (si.description) {
+                $pu.append($e("div", "f-i",
                     $e("label", {for: "k-named_search/" + ctr + "/description"}, "Description"),
-                    $e("div", {id: "k-named_search/" + ctr + "/description"}, si.description)))
-                .append_actions($e("button", {type: "submit", class: "btn-primary"}, "OK"));
+                    $e("div", {id: "k-named_search/" + ctr + "/description"}, si.description)));
+            }
+            $pu.append_actions($e("button", {type: "submit", class: "btn-primary"}, "OK"));
         }
         $pu.show().on("click", "button", click).on("submit", submit);
         si.id === "new" || $pu.show_errors(data, true);

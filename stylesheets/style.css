@@ -4264,7 +4264,7 @@ h3.pavfn, h3.psfn {
 }
 .t-editor.transparent {
 	color: rgba(0, 0, 0, 0);
-	transition: color 0.35s ease;
+	transition: color 0.25s ease;
 }
 a:hover .t-editor,
 .js-foldup:hover .t-editor,
