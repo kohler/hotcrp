@@ -11729,12 +11729,13 @@ return function (classes, type) {
         dxs.push("M".concat(sw * i, pathsfx, "M", sw * i + size, pathsfx), paramcolor(param, colors[i]));
     }
     if (dots.length > 0) {
-        const d = size * 0.125, r = d * 0.75, pds = [], nd = dots.length / 8,
-            offs = [1, 5, 5, 1, 7, 3, 7, 3, 1, 5, 1, 5, 7, 3, 3, 7];
+        const d = size * 0.125, r = d * 0.75, pds = [],
+            dither = [0, 10, 8, 2, 5, 15, 7, 13, 1, 11, 3, 9, 4, 14, 6, 12],
+            max = dots.length === 1 ? 8 : 16;
         let pd = "";
-        for (let i = 0; i < 8; ++i) {
-            const ci = Math.floor(i * nd);
-            pds[ci] = (pds[ci] || "") + `M${d*offs[i]},${d*offs[8+i]-r}a${r},${r} 0,0,1 ${r},${r} ${r},${r} 0,1,1 ${-r},${-r}z`;
+        for (let i = 0; i !== max; ++i) {
+            const ci = (i * dots.length) >> 4, x = dither[i] % 4, y = dither[i] >> 2;
+            pds[ci] = (pds[ci] || "") + `M${(2*x+1)*d},${(2*y+1)*d-r}a${r},${r} 0,0,1 ${r},${r} ${r},${r} 0,1,1 ${-r},${-r}z`;
         }
         for (let i = 0; i < pds.length; ++i) {
             dxs.push(pds[i], paramcolor(param, dots[i]));
