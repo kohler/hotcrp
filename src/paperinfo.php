@@ -1663,6 +1663,8 @@ class PaperInfo {
             return "Author";
         } else if ($cid > 0 && $this->managerContactId === $cid) {
             return "Administrator";
+        } else if ($cid > 0 && $this->shepherdContactId === $cid) {
+            return "Shepherd";
         }
         $rrow = $this->review_by_user($cid);
         if ($rrow
