@@ -377,6 +377,7 @@ class TagStyle {
     const BG = 8;
     const TEXT = 16;
     const STYLE = 24; // BG | TEXT
+    const PATTERN = 32;
 
     // see also style.css
     const KNOWN_COLORS = " red:ffd8d8 orange:fdebcc yellow:fdffcb green:d8ffd8 blue:d8d8ff purple:f2d8f8 gray:e2e2e2 white:ffffff";
@@ -384,28 +385,46 @@ class TagStyle {
     /** @param string $s
      * @return ?string */
     static function dynamic_style($s) {
-        if (str_starts_with($s, "rgb-")
-            && (strlen($s) === 7 || strlen($s) === 10)
-            && ctype_xdigit(substr($s, 4))) {
-            if (strlen($s) === 7) {
-                return "rgb-{$s[4]}{$s[4]}{$s[5]}{$s[5]}{$s[6]}{$s[6]}";
-            } else {
-                return $s;
-            }
-        } else if (str_starts_with($s, "text-rgb-")
-                   && (strlen($s) === 12 || strlen($s) === 15)
-                   && ctype_xdigit(substr($s, 9))) {
-            if (strlen($s) === 12) {
-                return "text-rgb-{$s[9]}{$s[9]}{$s[10]}{$s[10]}{$s[11]}{$s[11]}";
-            } else {
-                return $s;
-            }
+        $len = strlen($s);
+        if (str_starts_with($s, "rgb-")) {
+            return self::expand_color($s, 4, false);
+        } else if (str_starts_with($s, "text-rgb-")) {
+            return self::expand_color($s, 9, false);
+        } else if (str_starts_with($s, "dot-")) {
+            return self::expand_color($s, 4, true);
         } else if (str_starts_with($s, "font-")
                    || str_starts_with($s, "weight-")) {
             return $s;
         } else {
             return null;
         }
+    }
+
+    /** @param string $color
+     * @param int $pfxlen
+     * @param bool $allow_name
+     * @return string */
+    static function expand_color($color, $pfxlen, $allow_name) {
+        if ($allow_name && substr($color, $pfxlen, 4) === "rgb-") {
+            $allow_name = false;
+            $pfxlen += 4;
+        }
+        if ($allow_name) {
+            $srch = " " . substr($color, $pfxlen) . ":";
+            if (($p = strpos(self::KNOWN_COLORS, $srch)) !== false) {
+                return substr($color, 0, $pfxlen) . "rgb-" . substr(self::KNOWN_COLORS, $p + strlen($srch), 6);
+            }
+        } else if (ctype_xdigit(substr($color, $pfxlen))) {
+            if (strlen($color) === $pfxlen + 3) {
+                $r = $color[$pfxlen];
+                $g = $color[$pfxlen + 1];
+                $b = $color[$pfxlen + 2];
+                return substr($color, 0, $pfxlen) . "{$r}{$r}{$g}{$g}{$b}{$b}";
+            } else if (strlen($color) === $pfxlen + 6) {
+                return $color;
+            }
+        }
+        return null;
     }
 
     /** @param string $text */
@@ -444,8 +463,13 @@ class TagStyle {
             && ($dstyle = self::dynamic_style($this->style)) !== null) {
             $this->style = $dstyle;
             $sclass |= self::DYNAMIC;
-            if ($dstyle[0] === "r") { // `rgb-`
-                $sclass |= self::BG | self::BADGE;
+            $first = $dstyle[0];
+            if ($first === "r") { // `rgb-`
+                $sclass |= self::BG;
+            } else if ($first === "d") { // `dot-`
+                $sclass |= self::BG | self::PATTERN;
+            } else if ($first === "b") { // `badge-`
+                $sclass |= self::BADGE;
             } else {
                 $sclass |= self::TEXT;
             }
@@ -455,7 +479,7 @@ class TagStyle {
         }
         $this->sclass = $sclass;
         if ($this->dark === null
-            && (($sclass & self::DYNAMIC) === 0 || ($sclass & self::BG) === 0)) {
+            && ($sclass & (self::DYNAMIC | self::BG | self::PATTERN)) !== (self::DYNAMIC | self::BG)) {
             $this->dark = false;
         }
     }
@@ -609,10 +633,7 @@ class TagMap {
             && $ltag !== ""
             && (($ltag[0] === ":" && $this->check_emoji_code($ltag))
                 || isset($this->style_lmap[$ltag])
-                || (str_starts_with($ltag, "rgb-") && ctype_xdigit(substr($ltag, 4)))
-                || (str_starts_with($ltag, "text-rgb-") && ctype_xdigit(substr($ltag, 9)))
-                || str_starts_with($ltag, "font-")
-                || str_starts_with($ltag, "weight-"))) {
+                || TagStyle::dynamic_style($ltag))) {
             $ti = $this->ensure($tag);
         }
         if ($this->pattern_version > 0
@@ -890,7 +911,7 @@ class TagMap {
     private function color_regex() {
         if (!$this->color_re) {
             $rex = [
-                "{(?:\\A| )(?:(?:\\d*~|~~|)(font-[^\s#]+|weight-(?:[a-z]+|\d+)|(?:text-|)rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})"
+                "{(?:\\A| )(?:(?:\\d*~|~~|)(font-[^\s#]+|weight-(?:[a-z]+|\d+)|dot-[-0-9a-z]+|(?:text-|)rgb-[0-9a-f]{3}(?:|[0-9a-f]{3})"
             ];
             foreach ($this->style_lmap as $style => $ks) {
                 if (($ks->sclass & TagStyle::STYLE) !== 0)

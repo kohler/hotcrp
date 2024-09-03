@@ -11547,6 +11547,18 @@ function make_color(k, r, g, b, a) {
         type: null
     };
 }
+function color_compare(a, b) {
+    if (a.s < 0.1 && b.s >= 0.1)
+        return a.l >= 0.9 ? -1 : 1;
+    else if (b.s < 0.1 && a.s >= 0.1)
+        return b.l >= 0.9 ? 1 : -1;
+    else if (a.h != b.h)
+        return a.h < b.h ? -1 : 1;
+    else if (a.l != b.l)
+        return a.l < b.l ? 1 : -1;
+    else
+        return a.s < b.s ? 1 : (a.s == b.s ? 0 : -1);
+}
 const class_analyses = {tagbg: null, dark: null, badge: null};
 function store_class_analysis(k, anal) {
     class_analyses[k] = anal;
@@ -11572,6 +11584,10 @@ function analyze_class(k) {
         const c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
         ensure_stylesheet().insertRule(".".concat(k, " { color: rgb(", c.r, ", ", c.g, ", ", c.b, "); }"), 0);
         return set("text", c);
+    }
+    if (k.startsWith("tag-dot-rgb-")
+        && (m = k.match(/^tag-dot-rgb-([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/))) {
+        return set("dot", make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0));
     }
     if (k.startsWith("tag-font-")) {
         m = k.substring(9).replace(/_/g, " ");
@@ -11645,16 +11661,19 @@ function gfillcolor(color) {
     return color.gfill;
 }
 function fillcolor(color) {
-    var gf = gfillcolor(color);
+    const gf = gfillcolor(color);
     return "rgba(".concat(gf[0], ", ", gf[1], ", ", gf[2], ", ", gf[3], ")");
 }
 function strokecolor(color) {
-    var gf = gfillcolor(color);
+    let gf = gfillcolor(color);
     if (color.l > 0.75) {
-        var f = 0.75 / color.l;
+        const f = 0.75 / color.l;
         gf = [gf[0] * f, gf[1] * f, gf[2] * f, gf[3]];
     }
     return "rgba(".concat(gf[0], ", ", gf[1], ", ", gf[2], ", 0.8)");
+}
+function paramcolor(param, color) {
+    return (param.type === 1 ? fillcolor : bgcolor)(color);
 }
 function ensure_graph_rules(color) {
     if (!color.has_graph) {
@@ -11674,46 +11693,52 @@ return function (classes, type) {
     if (index in fmap)
         return fmap[index];
     // canonicalize classes, sort by color and luminance
-    const xtags = classes.split(/\s+/), colors = [];
+    const xtags = classes.split(/\s+/), colors = [], dots = [];
     for (const k of xtags) {
         const ka = analyze_class(k);
         if (ka && ka.type === "bg" && colors.indexOf(ka) < 0) {
             colors.push(ka);
             param.type === 1 && ensure_graph_rules(ka);
+        } else if (ka && ka.type === "dot" && dots.indexOf(ka) < 0) {
+            dots.push(ka);
         }
     }
-    colors.sort(function (a, b) {
-        if (a.s < 0.1 && b.s >= 0.1)
-            return a.l >= 0.9 ? -1 : 1;
-        else if (b.s < 0.1 && a.s >= 0.1)
-            return b.l >= 0.9 ? 1 : -1;
-        else if (a.h != b.h)
-            return a.h < b.h ? -1 : 1;
-        else if (a.l != b.l)
-            return a.l < b.l ? 1 : -1;
-        else
-            return a.s < b.s ? 1 : (a.s == b.s ? 0 : -1);
-    });
+    colors.sort(color_compare);
+    dots.sort(color_compare);
     // check on classes in canonical order
     const tags = [];
     for (const c of colors) {
         tags.push(c.k);
     }
+    for (const c of dots) {
+        tags.push(c.k);
+    }
     const cindex = param.prefix + tags.join(" ");
-    if (cindex in fmap || tags.length < 2) {
+    if (cindex in fmap || (tags.length < 2 && dots.length === 0)) {
         fmap[index] = fmap[cindex] || null;
         return fmap[index];
     }
     // create pattern
     const id = "svgpat__" + cindex.replace(/\s+/g, "__"),
-        size = param.size + Math.max(0, tags.length - 2) * param.incr,
-        sw = size / tags.length,
+        size = param.size + Math.max(0, colors.length - 2) * param.incr,
+        sw = size / colors.length,
         svgns = "http://www.w3.org/2000/svg",
         pathsfx = " 0l".concat(-size, " ", size, "l", sw, " 0l", size, " ", -size, "z"),
         dxs = [];
     for (let i = 0; i !== colors.length; ++i) {
-        const k = param.type === 1 ? fillcolor(colors[i]) : bgcolor(colors[i]);
-        dxs.push("M".concat(sw * i, pathsfx), k, "M".concat(sw * i + size, pathsfx), k);
+        dxs.push("M".concat(sw * i, pathsfx, "M", sw * i + size, pathsfx), paramcolor(param, colors[i]));
+    }
+    if (dots.length > 0) {
+        const d = size * 0.125, r = d * 0.75, pds = [], nd = dots.length / 8,
+            offs = [1, 5, 5, 1, 7, 3, 7, 3, 1, 5, 1, 5, 7, 3, 3, 7];
+        let pd = "";
+        for (let i = 0; i < 8; ++i) {
+            const ci = Math.floor(i * nd);
+            pds[ci] = (pds[ci] || "") + `M${d*offs[i]},${d*offs[8+i]-r}a${r},${r} 0,0,1 ${r},${r} ${r},${r} 0,1,1 ${-r},${-r}z`;
+        }
+        for (let i = 0; i < pds.length; ++i) {
+            dxs.push(pds[i], paramcolor(param, dots[i]));
+        }
     }
     if (param.type === 1) {
         if (svgdef === null) {
