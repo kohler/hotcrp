@@ -1029,19 +1029,22 @@ class Options_SettingParser extends SettingParser {
             call_user_func($conv[0], $this->_new_options[$conv[1]->id], $conv[1]);
         }
         foreach ($this->_value_renumberings as $oid => $renumberings) {
-            $delete = $modify = [];
+            $ndelete = 0;
             foreach ($renumberings as $old => $new) {
-                if ($new === 0) {
-                    $delete[] = $old;
-                } else {
-                    $modify[] = "when {$old} then {$new} ";
+                $ndelete += $new === 0 ? 1 : 0;
+            }
+            $updates = [];
+            if (count($renumberings) > $ndelete) {
+                $result = $sv->conf->qe("select paperId, value, data, dataOverflow from PaperOption where optionId=? and value?a", $oid, array_keys($renumberings));
+                while (($row = $result->fetch_row())) {
+                    if (($newvalue = $renumberings[(int) $row[1]]) !== 0)
+                        $updates[] = [(int) $row[0], $oid, $newvalue, $row[2], $row[3]];
                 }
+                $result->close();
             }
-            if (!empty($delete)) {
-                $sv->conf->qe("delete from PaperOption where optionId=? and value?a", $oid, $delete);
-            }
-            if (!empty($modify)) {
-                $sv->conf->qe("update PaperOption set value=case value " . join("", $modify) . "else value end where optionId=?", $oid);
+            $sv->conf->qe("delete from PaperOption where optionId=? and value?a", $oid, array_keys($renumberings));
+            if (!empty($updates)) {
+                $sv->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $updates);
             }
         }
         $sv->mark_invalidate_caches(["autosearch" => true]);
