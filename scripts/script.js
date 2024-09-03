@@ -11500,6 +11500,7 @@ var fmap = {},
     stylesheet = null,
     svgdef = null,
     testdiv = null;
+
 function ensure_stylesheet() {
     if (stylesheet === null) {
         var selt = document.createElement("style");
@@ -11542,41 +11543,49 @@ function make_color(k, r, g, b, a) {
         s: s,
         l: l,
         has_graph: false,
-        gfill: null
+        gfill: null,
+        type: null
     };
 }
-function class_color(k) {
-    var value, m, c;
-    if (k in colormap) {
-        return colormap[k];
+const class_analyses = {tagbg: null, dark: null, badge: null};
+function store_class_analysis(k, anal) {
+    class_analyses[k] = anal;
+    return anal;
+}
+function analyze_class(k) {
+    if (k in class_analyses) {
+        return class_analyses[k];
     }
+    function set(type, c) {
+        type && (c.type = type);
+        return (class_analyses[k] = type ? c : null);
+    }
+    let m;
     if (k.startsWith("tag-rgb-")
         && (m = k.match(/^tag-rgb-([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/))) {
-        colormap[k] = c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
+        const c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
         ensure_stylesheet().insertRule(".".concat(k, " { background-color: rgb(", c.r, ", ", c.g, ", ", c.b, "); }"), 0);
-        return c;
+        return set("bg", c);
     }
     if (k.startsWith("tag-text-rgb-")
         && (m = k.match(/^tag-text-rgb-([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/))) {
-        colormap[k] = c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
+        const c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
         ensure_stylesheet().insertRule(".".concat(k, " { color: rgb(", c.r, ", ", c.g, ", ", c.b, "); }"), 0);
-        return c;
+        return set("text", c);
     }
     if (k.startsWith("tag-font-")) {
         m = k.substring(9).replace(/_/g, " ");
-        c = /^(?:serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-(?:serif|sans-serif|monospace|rounded)|math|emoji|fangsong)$/.test(m) ? "" : "\"";
-        ensure_stylesheet().insertRule(".".concat(k, ".taghh, .", k, " .taghl { font-family: ", c, m, c, "; }"), 0);
-        colormap[k] = null;
-        return null;
+        const ff = /^(?:serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-(?:serif|sans-serif|monospace|rounded)|math|emoji|fangsong)$/.test(m) ? "" : "\"";
+        ensure_stylesheet().insertRule(".".concat(k, ".taghh, .", k, " .taghl { font-family: ", ff, m, ff, "; }"), 0);
+        return set();
     }
     if (k.startsWith("tag-weight-")) {
         ensure_stylesheet().insertRule(".".concat(k, ".taghh, .", k, " .taghl { font-weight: ", k.substring(11), "; }"), 0);
-        colormap[k] = null;
-        return null;
+        return set();
     }
     if (k.startsWith("badge-rgb-")
         && (m = k.match(/^badge-rgb-([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/))) {
-        colormap[k] = c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
+        const c = make_color(k, parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), 1.0);
         var rules = ["background-color: rgb(".concat(c.r, ", ", c.g, ", ", c.b, ");")];
         if (c.l < 0.3)
             rules.push("color: white;");
@@ -11590,7 +11599,7 @@ function class_color(k) {
         ensure_stylesheet().insertRule(".".concat(k, " { ", rules.join(" "), " }"), 0);
         if (c.l >= 0.3)
             ensure_stylesheet().insertRule("a.".concat(k, ":hover { color: #c45500; border-color: #c45500; }"), 0);
-        return c;
+        return set("badge", c);
     }
     if (testdiv === null) {
         testdiv = document.createElement("div");
@@ -11598,17 +11607,15 @@ function class_color(k) {
         document.body.appendChild(testdiv);
     }
     testdiv.className = k;
-    value = window.getComputedStyle(testdiv).backgroundColor;
+    const value = window.getComputedStyle(testdiv).backgroundColor;
     if ((m = value.match(/^rgb\(([\d.]+), ([\d.]+), ([\d.]+)\)$/))) {
-        c = make_color(k, +m[1], +m[2], +m[3], 1.0);
+        return set("bg", make_color(k, +m[1], +m[2], +m[3], 1.0));
     } else if ((m = value.match(/^rgba\(([\d.]+), ([\d.]+), ([\d.]+), ([\d.]+)\)$/))
                && +m[4] > 0) {
-        c = make_color(k, +m[1], +m[2], +m[3], +m[4]);
+        return set("bg", make_color(k, +m[1], +m[2], +m[3], +m[4]));
     } else {
-        c = null;
+        return set();
     }
-    colormap[k] = c;
-    return c;
 }
 function bgcolor(color) {
     return "rgba(".concat(color.r, ", ", color.g, ", ", color.b, ", ", color.a, ")");
@@ -11662,21 +11669,17 @@ return function (classes, type) {
         || (type === "" && classes.endsWith(" tagbg") && knownmap[classes.substr(0, -6)]))
         return null;
     // quick check on classes in input order
-    var param = params[type || ""] || params[""],
+    const param = params[type || ""] || params[""],
         index = param.prefix + classes;
     if (index in fmap)
         return fmap[index];
     // canonicalize classes, sort by color and luminance
-    var xtags = classes.split(/\s+/), i, k, color, colors = [];
-    for (i = 0; i !== xtags.length; ++i) {
-        k = xtags[i];
-        if (k !== "tagbg"
-            && k !== "dark"
-            && k !== "badge"
-            && (color = class_color(k))
-            && colors.indexOf(color) < 0) {
-            colors.push(color);
-            param.type === 1 && ensure_graph_rules(color);
+    const xtags = classes.split(/\s+/), colors = [];
+    for (const k of xtags) {
+        const ka = analyze_class(k);
+        if (ka && ka.type === "bg" && colors.indexOf(ka) < 0) {
+            colors.push(ka);
+            param.type === 1 && ensure_graph_rules(ka);
         }
     }
     colors.sort(function (a, b) {
@@ -11692,25 +11695,24 @@ return function (classes, type) {
             return a.s < b.s ? 1 : (a.s == b.s ? 0 : -1);
     });
     // check on classes in canonical order
-    var tags = [];
-    for (i = 0; i !== colors.length; ++i) {
-        tags.push(colors[i].k);
+    const tags = [];
+    for (const c of colors) {
+        tags.push(c.k);
     }
-    var cindex = param.prefix + tags.join(" ");
+    const cindex = param.prefix + tags.join(" ");
     if (cindex in fmap || tags.length < 2) {
         fmap[index] = fmap[cindex] || null;
         return fmap[index];
     }
     // create pattern
-    var id = "svgpat__" + cindex.replace(/\s+/g, "__"),
+    const id = "svgpat__" + cindex.replace(/\s+/g, "__"),
         size = param.size + Math.max(0, tags.length - 2) * param.incr,
         sw = size / tags.length,
         svgns = "http://www.w3.org/2000/svg",
         pathsfx = " 0l".concat(-size, " ", size, "l", sw, " 0l", size, " ", -size, "z"),
-        dxs = [],
-        pelt;
-    for (i = 0; i !== colors.length; ++i) {
-        k = param.type === 1 ? fillcolor(colors[i]) : bgcolor(colors[i]);
+        dxs = [];
+    for (let i = 0; i !== colors.length; ++i) {
+        const k = param.type === 1 ? fillcolor(colors[i]) : bgcolor(colors[i]);
         dxs.push("M".concat(sw * i, pathsfx), k, "M".concat(sw * i + size, pathsfx), k);
     }
     if (param.type === 1) {
@@ -11720,14 +11722,14 @@ return function (classes, type) {
             svg.style.position = "absolute";
             document.body.insertBefore(svg, document.body.firstChild);
         }
-        pelt = $svg("pattern", {id: id, patternUnits: "userSpaceOnUse", width: size, height: size});
-        for (i = 0; i !== dxs.length; i += 2) {
+        const pelt = $svg("pattern", {id: id, patternUnits: "userSpaceOnUse", width: size, height: size});
+        for (let i = 0; i !== dxs.length; i += 2) {
             pelt.appendChild($svg("path", {d: dxs[i], fill: dxs[i + 1]}));
         }
         svgdef.appendChild(pelt);
     } else if (window.btoa) {
-        var t = ['<svg xmlns="', svgns, '" width="', size, '" height="', size, '">'];
-        for (i = 0; i !== dxs.length; i += 2) {
+        const t = ['<svg xmlns="', svgns, '" width="', size, '" height="', size, '">'];
+        for (let i = 0; i !== dxs.length; i += 2) {
             t.push('<path d="', dxs[i], '" fill="', dxs[i + 1], '"></path>');
         }
         t.push('</svg>');
