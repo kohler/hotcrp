@@ -149,13 +149,10 @@ class Completion_API {
 
         if ((!$category || $category === "style")
             && $user->can_view_tags()) {
-            $comp[] = ["pri" => -1, "nosort" => true, "i" => ["style:any", "style:none", "color:any", "color:none"]];
+            $comp[] = ["pri" => -1, "nosort" => true, "i" => ["style:any", "style:none"]];
             $tagmap = $conf->tags();
-            foreach ($tagmap->canonical_listed_styles(TagStyle::BG | TagStyle::TEXT) as $ks) {
-                $comp[] = "style:{$ks->style}";
-                if (($ks->sclass & TagStyle::BG) !== 0) {
-                    $comp[] = "color:{$ks->style}";
-                }
+            foreach ($tagmap->listed_style_names(TagStyle::BG | TagStyle::TEXT) as $name) {
+                $comp[] = "style:{$name}";
             }
         }
 
