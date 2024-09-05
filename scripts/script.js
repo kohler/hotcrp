@@ -14246,7 +14246,7 @@ function make_input_autogrower(e) {
             sh = make_shadow(e),
             ws = sh.scrollWidth + borderPadding;
         if (Math.max(e.scrollWidth, ws) > Math.min(minWidth, ww)) {
-            e.style.width = Math.min(ww, Math.max(ws, minWidth)) + "px";
+            e.style.width = Math.min(ww, Math.max(minWidth, ws)) + "px";
         }
     }
     return f;

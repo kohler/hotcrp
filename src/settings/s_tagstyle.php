@@ -93,7 +93,7 @@ class TagStyle_SettingParser extends SettingParser {
     static function print(SettingValues $sv) {
         echo Ht::hidden("has_tag_style", 1),
             "<p>Submissions and PC members tagged with a style name, or with an associated tag, appear in that style in lists.</p>",
-            '<table class="demargin"><tr><th></th><th class="settings-simplehead" style="min-width:8rem">Style name</th><th class="settings-simplehead">Tags</th><th></th></tr>';
+            '<table class="demargin"><thead><tr><th></th><th class="settings-simplehead" style="min-width:8rem">Style name</th><th class="settings-simplehead">Tags</th><th></th></tr></thead><tbody class="settings-tag-style-table">';
         $dt = $sv->conf->tags();
         foreach ($sv->oblist_keys("tag_style") as $ctr) {
             $style = $sv->oldv("tag_style/{$ctr}/style");
@@ -107,7 +107,7 @@ class TagStyle_SettingParser extends SettingParser {
                 '</td><td class="remargin-right"></td></tr>';
             TagMap::stash_ensure_pattern("tag-{$style}");
         }
-        echo Ht::unstash(), '</table>';
+        echo Ht::unstash(), '</tbody></table>';
     }
 
     private function _apply_tag_style_req(Si $si, SettingValues $sv) {

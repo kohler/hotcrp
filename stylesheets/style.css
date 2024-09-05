@@ -1905,6 +1905,9 @@ th.settings-simplehead {
 .settings-draghandle:hover {
 	opacity: 1 !important;
 }
+.settings-tag-style-table input.tags {
+	width: 25rem;
+}
 hr.dropmark {
 	/* Do not use borders and margin, because margin isn't included in parent's
 	   getBorderClientRect */
