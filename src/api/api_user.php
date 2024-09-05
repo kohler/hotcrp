@@ -21,7 +21,10 @@ class User_API {
         if (($email = trim($qreq->email ?? "")) === "") {
             return JsonResult::make_missing_error("email");
         }
-        if (!is_valid_utf8($email)) {
+        if (!is_valid_utf8($email)
+            || ($at = strpos($email, "@")) === false
+            || $at === 0
+            || ($dot = strpos($email, ".", $at + 1)) === false) {
             return JsonResult::make_parameter_error("email");
         }
 

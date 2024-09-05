@@ -464,7 +464,7 @@ function check_sessioninfo(data, options) {
 $(document).ajaxError(function (evt, jqxhr, options, httperror) {
     if (jqxhr.readyState != 4)
         return;
-    var data;
+    let data;
     if (jqxhr.responseText && jqxhr.responseText.charAt(0) === "{") {
         try {
             data = JSON.parse(jqxhr.responseText);
