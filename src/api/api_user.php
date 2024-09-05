@@ -21,9 +21,12 @@ class User_API {
         if (($email = trim($qreq->email ?? "")) === "") {
             return JsonResult::make_missing_error("email");
         }
+        if (!is_valid_utf8($email)) {
+            return JsonResult::make_parameter_error("email");
+        }
 
-        $slice = Contact::SLICE_MINIMAL - Contact::SLICEBIT_COLLABORATORS
-            - Contact::SLICEBIT_COUNTRY - Contact::SLICEBIT_ORCID;
+        $slice = Contact::SLICE_MINIMAL & ~(Contact::SLICEBIT_COLLABORATORS
+            | Contact::SLICEBIT_COUNTRY | Contact::SLICEBIT_ORCID);
         $broad_lookup = $user->conf->opt("allowLookupUser");
 
         $found = null;
