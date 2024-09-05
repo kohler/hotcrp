@@ -110,7 +110,7 @@ class Keywords_HelpTopic {
             if (($cx->styleflags & TagStyle::BG) !== 0) {
                 $klass .= $cx->dark() ? " dark tagbg" : " tagbg";
             }
-            echo $hth->search_trow("style:{$cx->style}", "tagged to appear <span class=\"{$klass}\">{$cx->name}</span> (tagged " . commajoin($cm, "or") . ")");
+            echo $hth->search_trow("style:{$cx->style}", "tagged to appear <span class=\"{$klass}\">{$cx->style}</span> (tagged " . commajoin($cm, "or") . ")");
         }
 
         $roundname = $hth->meaningful_review_round_name();

@@ -21,11 +21,14 @@ class User_API {
         if (($email = trim($qreq->email ?? "")) === "") {
             return JsonResult::make_missing_error("email");
         }
-        if (!is_valid_utf8($email)
-            || ($at = strpos($email, "@")) === false
-            || $at === 0
-            || ($dot = strpos($email, ".", $at + 1)) === false) {
+        if (!is_valid_utf8($email)) {
             return JsonResult::make_parameter_error("email");
+        }
+        if (strlen($email) < 8
+            && (($at = strpos($email, "@")) === false
+                || $at === 0
+                || ($dot = strpos($email, ".", $at + 1)) === false)) {
+            return new JsonResult(["ok" => false]);
         }
 
         $slice = Contact::SLICE_MINIMAL & ~(Contact::SLICEBIT_COLLABORATORS
@@ -67,12 +70,13 @@ class User_API {
         }
 
         if (!$found) {
-            return new JsonResult(["ok" => false]);
+            return new JsonResult(["ok" => true, "found" => false]);
         }
 
         $ok = strcasecmp($found->email, $email) === 0;
         $rj = [
             "ok" => $ok,
+            "found" => true,
             "email" => $found->email,
             "firstName" => $found->firstName,
             "lastName" => $found->lastName,
