@@ -4860,7 +4860,7 @@ class Conf {
             echo '<div id="h-site" class="header-site-page">',
                 '<a class="q" href="', $this->hoturl("index", ["cap" => null]),
                 '"><span class="header-site-name">', htmlspecialchars($this->short_name),
-                '</span> Home</a></div>';
+                '</span></a></div>';
         }
 
         echo '<div id="h-right">';
