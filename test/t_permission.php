@@ -281,16 +281,16 @@ class Permission_Tester {
         $paper1->load_comments();
         xassert(!$user_van->can_view_comment($paper1, $comment1));
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
-        xassert_eqq($user_van->add_comment_state($paper1), 0);
+        xassert_eqq($user_van->new_comment_flags($paper1), 0);
         $this->conf->save_refresh_setting("cmt_author", 1);
         xassert(!$user_van->can_view_comment($paper1, $comment1));
-        xassert_eqq($user_van->add_comment_state($paper1), 0);
+        xassert_eqq($user_van->new_comment_flags($paper1), 0);
         // can exchange comments with reviewers only when there are author-viewable comments
         $this->conf->save_refresh_setting("au_seerev", Conf::AUSEEREV_YES);
         xassert($user_van->can_view_comment($paper1, $comment1));
-        xassert_neqq($user_van->add_comment_state($paper1), 0);
+        xassert_neqq($user_van->new_comment_flags($paper1), 0);
         $this->conf->save_refresh_setting("cmt_author", null);
-        xassert_eqq($user_van->add_comment_state($paper1), 0);
+        xassert_eqq($user_van->new_comment_flags($paper1), 0);
         xassert($user_van->can_view_comment($paper1, $comment1));
         xassert(!$user_van->can_view_comment_identity($paper1, $comment1));
         $this->conf->save_refresh_setting("rev_blind", Conf::BLIND_OPTIONAL);
@@ -685,10 +685,10 @@ class Permission_Tester {
         $paper1 = $this->u_chair->checked_paper_by_id(1);
         $paper2 = $this->u_chair->checked_paper_by_id(2);
         $paper18 = $this->u_chair->checked_paper_by_id(18);
-        xassert($this->u_mgbaker->add_comment_state($paper2) !== 0);
-        xassert($this->u_mgbaker->add_comment_state($paper18) === 0);
-        xassert($this->u_marina->add_comment_state($paper1) !== 0);
-        xassert($this->u_marina->add_comment_state($paper18) !== 0);
+        xassert($this->u_mgbaker->new_comment_flags($paper2) !== 0);
+        xassert($this->u_mgbaker->new_comment_flags($paper18) === 0);
+        xassert($this->u_marina->new_comment_flags($paper1) !== 0);
+        xassert($this->u_marina->new_comment_flags($paper18) !== 0);
         xassert_search($this->u_chair, "cmt:any", "1");
         xassert_search($this->u_chair, "has:comment", "1");
         xassert_search($this->u_chair, "has:response", "");

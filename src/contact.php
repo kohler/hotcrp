@@ -4704,57 +4704,66 @@ class Contact implements JsonSerializable {
     }
 
     /** @return int */
-    function author_viewable_comment_flags(PaperInfo $prow) {
-        $r = 0;
-        foreach ($prow->all_comment_skeletons() as $crow) {
-            $ctype = CommentInfo::fix_type_topic($crow->commentType);
-            if (($r | $ctype) !== $r
-                && ($ctype & (CommentInfo::CTM_VIS | CommentInfo::CTM_BYAUTHOR)) === CommentInfo::CTVIS_AUTHOR
-                && $this->can_view_comment($prow, $crow)) {
-                $r |= $ctype;
-            }
-        }
-        return $r;
-    }
-
-    /** @return int */
-    function add_comment_state(PaperInfo $prow) {
-        $rights = $this->rights($prow);
+    private function new_comment_topics(PaperInfo $prow, PaperContactInfo $rights) {
         $time = $this->conf->setting("cmt_always") > 0
             || $this->conf->time_review_open();
         $ctype = 0;
         if ($rights->allow_review()
+            && ($time || $rights->allow_administer())
             && ($prow->timeSubmitted > 0
                 || $rights->review_status > 0
-                || $rights->allow_administer_forced())
-            && ($time || $rights->allow_administer())) {
+                || $rights->allow_administer_forced())) {
             $ctype |= CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_TOPIC_REVIEW;
-        } else if ($rights->conflictType >= CONFLICT_AUTHOR
-                   && $this->conf->setting("cmt_author") > 0
-                   && $time) {
-            $ctype |= $this->author_viewable_comment_flags($prow) & CommentInfo::CTM_TOPIC;
-        }
-        if ($ctype !== 0
-            && $rights->can_view_decision()) {
-            $ctype |= CommentInfo::CT_TOPIC_DECISION;
-        }
-        if ($ctype !== 0) {
-            if ($time) {
-                $ctype |= CommentInfo::CT_SUBMIT;
+            if ($rights->can_view_decision()) {
+                $ctype |= CommentInfo::CT_TOPIC_DECISION;
             }
-            if ($prow->has_author($this)) {
-                $ctype |= CommentInfo::CT_BYAUTHOR;
-            } else if ($prow->shepherdContactId > 0) {
-                if ($this->contactId === $prow->shepherdContactId
-                    || ($this->contactId === 0
-                        && ($reviewer = $this->reviewer_capability_user($prow->paperId))
-                        && $reviewer->contactId === $prow->shepherdContactId)) {
-                    $ctype |= CommentInfo::CT_BYSHEPHERD;
+        } else if ($rights->conflictType >= CONFLICT_AUTHOR
+                   && $time
+                   && ($cas = $this->conf->setting("cmt_author")) > 0) {
+            if ($cas > 1) {
+                $ctype |= CommentInfo::CT_TOPIC_PAPER;
+                if ($this->can_view_submitted_review_as_author($prow)) {
+                    $ctype |= CommentInfo::CT_TOPIC_REVIEW;
+                }
+                if ($rights->can_view_decision()) {
+                    $ctype |= CommentInfo::CT_TOPIC_DECISION;
+                }
+            } else {
+                foreach ($prow->all_comment_skeletons() as $crow) {
+                    $vct = CommentInfo::fix_type_topic($crow->commentType);
+                    if (($vct & ~$ctype & CommentInfo::CTM_TOPIC) !== 0
+                        && ($vct & (CommentInfo::CTM_VIS | CommentInfo::CTM_BYAUTHOR)) === CommentInfo::CTVIS_AUTHOR
+                        && $this->can_view_comment($prow, $crow)) {
+                        $ctype |= $vct & CommentInfo::CTM_TOPIC;
+                    }
                 }
             }
-            if ($rights->can_administer()) {
-                $ctype |= CommentInfo::CT_BYADMINISTRATOR;
+        }
+        if ($ctype !== 0 && $time) {
+            $ctype |= CommentInfo::CT_SUBMIT;
+        }
+        return $ctype;
+    }
+
+    /** @return int */
+    function new_comment_flags(PaperInfo $prow) {
+        $rights = $this->rights($prow);
+        $ctype = $this->new_comment_topics($prow, $rights);
+        if ($ctype === 0) {
+            return $ctype;
+        }
+        if ($prow->has_author($this)) {
+            $ctype |= CommentInfo::CT_BYAUTHOR;
+        } else if ($prow->shepherdContactId > 0) {
+            if ($this->contactId === $prow->shepherdContactId
+                || ($this->contactId === 0
+                    && ($reviewer = $this->reviewer_capability_user($prow->paperId))
+                    && $reviewer->contactId === $prow->shepherdContactId)) {
+                $ctype |= CommentInfo::CT_BYSHEPHERD;
             }
+        }
+        if ($rights->can_administer()) {
+            $ctype |= CommentInfo::CT_BYADMINISTRATOR;
         }
         return $ctype;
     }
@@ -4789,8 +4798,8 @@ class Contact implements JsonSerializable {
             return $author
                 && $time
                 && (($crow->commentId !== 0
-                     && (($newctype ^ $crow->commentType) & CommentInfo::CTM_TOPIC) === 0)
-                    || ($this->author_viewable_comment_flags($prow) & $newctype & CommentInfo::CTM_TOPIC) !== 0);
+                     && (($newctype ^ $oldctype) & CommentInfo::CTM_TOPIC) === 0)
+                    || ($this->new_comment_topics($prow, $rights) & $newctype & CommentInfo::CTM_TOPIC) !== 0);
         }
     }
 
@@ -5769,7 +5778,7 @@ class Contact implements JsonSerializable {
         if ($this->can_edit_some_review($prow)) {
             $perm->can_review = true;
         }
-        if (($caddf = $this->add_comment_state($prow)) !== 0) {
+        if (($caddf = $this->new_comment_topics($prow, $rights)) !== 0) {
             if (($caddf & CommentInfo::CT_SUBMIT) !== 0) {
                 $perm->can_comment = true;
             } else {

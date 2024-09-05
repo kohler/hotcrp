@@ -399,8 +399,8 @@
     {
         "name": "decisions/author-exchange-comments", "order": 120,
         "separator_before": true,
-        "print_function": "ReviewVisibility_SettingParser::print_author_exchange_comments",
-        "settings": ["comment_allow_author"]
+        "print_function": "Comment_SettingParser::print_author_exchange_comments",
+        "settings": ["comment_author", "comment_author_initiate"]
     },
     {
         "name": "__crosscheck/review-visibility", "order": 800,

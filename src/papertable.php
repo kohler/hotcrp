@@ -2820,7 +2820,7 @@ class PaperTable {
         $nocmt = in_array($this->mode, ["assign", "contact", "edit", "re"]);
         if (!$this->allreviewslink
             && !$nocmt
-            && $this->user->add_comment_state($prow) !== 0) {
+            && $this->user->new_comment_flags($prow) !== 0) {
             $img = Ht::img("comment48.png", "[Add comment]", $dlimgjs);
             $t[] = "<a class=\"uic js-edit-comment noul revlink\" href=\"#cnew\">{$img} <u>Add comment</u></a>";
             $any_comments = true;
@@ -2891,7 +2891,7 @@ class PaperTable {
     private function include_comments() {
         return !$this->allreviewslink
             && (!empty($this->mycrows)
-                || $this->user->add_comment_state($this->prow) !== 0
+                || $this->user->new_comment_flags($this->prow) !== 0
                 || $this->conf->any_response_open);
     }
 

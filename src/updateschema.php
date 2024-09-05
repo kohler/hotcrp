@@ -3115,6 +3115,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && CleanCountries_Batch::clean($conf->dblink, true)) {
             $conf->update_schema_version(300);
         }
+        if ($conf->sversion === 300
+            && $conf->ql_ok("update Settings set value=2 where name='cmt_author' and value=1")) {
+            $conf->update_schema_version(301);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

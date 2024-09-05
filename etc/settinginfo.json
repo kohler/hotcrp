@@ -18,9 +18,16 @@
         "type": "checkbox"
     },
     {
-        "name": "comment_allow_author", "storage": "cmt_author",
-        "title": "Allow authors to post comments",
-        "type": "checkbox"
+        "name": "comment_author", "storage": "cmt_author",
+        "title": "Allow authors to respond to reviewer comments",
+        "type": "checkbox", "default_value": 0,
+        "parser_class": "Comment_SettingParser"
+    },
+    {
+        "name": "comment_author_initiate", "storage": "none",
+        "title": "Allow authors to initiate comment exchanges",
+        "type": "checkbox",
+        "parser_class": "Comment_SettingParser"
     },
     {
         "name": "comment_visibility_reviewer", "storage": "cmt_revid",
@@ -1207,5 +1214,6 @@
     {   "name": "pcrev_assigntime", "internal": true   },
     {   "name": "pcrev_informtime", "internal": true   },
     {   "name": "has_colontag", "internal": true   },
-    {   "name": "no_papersub", "internal": true   }
+    {   "name": "no_papersub", "internal": true   },
+    {   "name": "cmt_author", "internal": true, "default_value": 0   }
 ]

@@ -1,6 +1,6 @@
 <?php
 // settings/s_reviewvisibility.php -- HotCRP settings > decisions page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class ReviewVisibility_SettingParser extends SettingParser {
     function set_oldv(Si $si, SettingValues $sv) {
@@ -91,21 +91,6 @@ class ReviewVisibility_SettingParser extends SettingParser {
         $sv->print_radio_table("review_visibility_author", $opts,
             'Can <strong>authors see reviews</strong> for their submissions?' . $hint);
         echo Ht::hidden("has_review_visibility_author_condition", 1);
-    }
-
-    static function print_author_exchange_comments(SettingValues $sv) {
-        echo '<div class="has-fold fold', $sv->vstr("comment_allow_author") ? "o" : "c", '">';
-        if ((int) $sv->vstr("review_blind") === Conf::BLIND_NEVER) {
-            $hint = "";
-        } else {
-            $hint = "Visible reviewer comments will be identified by “Reviewer A”, “Reviewer B”, etc.";
-        }
-        $sv->print_checkbox("comment_allow_author", "Authors can <strong>exchange comments</strong> with reviewers", [
-            "class" => "uich js-foldup",
-            "hint_class" => "fx",
-            "hint" => $hint
-        ]);
-        echo "</div>\n";
     }
 
     static function crosscheck(SettingValues $sv) {

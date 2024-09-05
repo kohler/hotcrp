@@ -151,7 +151,7 @@ class CommentInfo {
     /** @return CommentInfo */
     static function make_new_template(Contact $user, PaperInfo $prow) {
         $cinfo = new CommentInfo($prow);
-        if (($ct = $user->add_comment_state($prow)) !== 0) {
+        if (($ct = $user->new_comment_flags($prow)) !== 0) {
             $ct |= $ct & self::CT_BYAUTHOR ? self::CTVIS_AUTHOR : self::CTVIS_REVIEWER;
             if (($ct & self::CT_TOPIC_REVIEW) !== 0) {
                 $ct &= ~self::CTM_TOPIC_NONREVIEW;

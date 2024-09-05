@@ -120,7 +120,7 @@ class Checkbox_Sitype extends Sitype {
         return 0;
     }
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
-        return $vstr !== "" ? 1 : 0;
+        return $vstr !== "" && $vstr !== "0" ? 1 : 0;
     }
     function unparse_reqv($v, Si $si, SettingValues $sv) {
         return $v ? "1" : "";

@@ -489,6 +489,7 @@ src/settingparser.php
 src/settings/s_automatictag.php
 src/settings/s_banal.php
 src/settings/s_basics.php
+src/settings/s_comment.php
 src/settings/s_decision.php
 src/settings/s_decisionvisibility.php
 src/settings/s_finalversions.php
