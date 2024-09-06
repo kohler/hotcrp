@@ -175,11 +175,11 @@ class Search_Tester {
     function test_search_overflow() {
         $s = join(" AND ", array_fill(0, 1024, "a"));
         $splitter = new SearchSplitter($s);
-        xassert_neqq($splitter->parse_expression("SPACE", 1024), null);
+        xassert_neqq($splitter->parse_expression(null, "SPACE", 1024), null);
 
         $s = join(" AND ", array_fill(0, 1026, "a"));
         $splitter = new SearchSplitter($s);
-        xassert_eqq($splitter->parse_expression("SPACE", 1024), null);
+        xassert_eqq($splitter->parse_expression(null, "SPACE", 1024), null);
 
         $s = "ti:x";
         for ($i = 0; $i < 500; ++$i) {

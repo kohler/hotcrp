@@ -7,14 +7,14 @@ class SearchScope {
     public $pos1;
     /** @var int */
     public $pos2;
-    /** @var ?SearchAtom */
+    /** @var ?SearchExpr */
     public $defkw;
     /** @var bool */
     public $defkw_error = false;
 
     /** @param int $pos1
      * @param int $pos2
-     * @param ?SearchAtom $defkw */
+     * @param ?SearchExpr $defkw */
     function __construct($pos1, $pos2, $defkw) {
         $this->pos1 = $pos1;
         $this->pos2 = $pos2;
@@ -709,7 +709,7 @@ class PaperSearch extends MessageSet {
         }
     }
 
-    /** @param ?SearchAtom $sa
+    /** @param ?SearchExpr $sa
      * @param string $str
      * @param SearchScope $scope
      * @param int $depth
@@ -763,7 +763,7 @@ class PaperSearch extends MessageSet {
         }
     }
 
-    /** @param ?SearchAtom $sa
+    /** @param ?SearchExpr $sa
      * @param string $type
      * @param string $qt
      * @param Conf $conf
@@ -840,9 +840,10 @@ class PaperSearch extends MessageSet {
             return "";
         }
         $splitter = new SearchSplitter($str);
-        $sa = $splitter->parse_expression($type === "all" ? "SPACE" : "SPACEOR");
+        $sa = $splitter->parse_expression(null, $type === "all" ? "SPACE" : "SPACEOR");
         if ($type === "none" && $sa) {
-            $sax = SearchAtom::make_op(SearchOperator::get("NOT"), 0, strlen($str), null);
+            $op = SearchOperatorSet::paper_search_operators()->lookup("NOT");
+            $sax = SearchExpr::make_op($op, 0, strlen($str), null);
             $sax->child[] = $sa;
             $sa = $sax;
         }
@@ -1146,7 +1147,7 @@ class PaperSearch extends MessageSet {
         return $this->_then_term;
     }
 
-    /** @param ?SearchAtom $a
+    /** @param ?SearchExpr $a
      * @param bool $top
      * @return array{int,int} */
     private static function strip_show_atom($a, $top) {
@@ -1157,7 +1158,7 @@ class PaperSearch extends MessageSet {
         if ($a->op && $a->op->type === "(" && $top && ($ch = $a->child[0] ?? null)) {
             return self::strip_show_atom($ch, true);
         }
-        if (!$a->kword && $a->op && !$a->op->unary) {
+        if (!$a->kword && $a->op && !$a->op->unary()) {
             $pos1 = $pos2 = null;
             foreach ($a->child as $ch) {
                 $span = self::strip_show_atom($ch, false);

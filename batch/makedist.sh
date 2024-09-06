@@ -475,9 +475,10 @@ src/search/st_revpref.php
 src/search/st_sclass.php
 src/search/st_tag.php
 src/search/st_topic.php
-src/searchatom.php
 src/searchexample.php
+src/searchexpr.php
 src/searchoperator.php
+src/searchoperatorset.php
 src/searchselection.php
 src/searchsplitter.php
 src/searchterm.php

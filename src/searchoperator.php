@@ -9,46 +9,38 @@ class SearchOperator {
     /** @var ?string
      * @readonly */
     public $subtype;
-    /** @var bool
-     * @readonly */
-    public $unary;
     /** @var int
      * @readonly */
     public $precedence;
+    /** @var int
+     * @readonly */
+    public $flags;
 
-    /** @var ?array<string,SearchOperator> */
-    static private $list = null;
+    const F_UNARY = 1;
+    const F_ALLOW_SUBTYPE = 2;
+    const F_SUBTYPE = 4;
+    const F_UNNAMED = 8;
 
     /** @param string $type
-     * @param bool $unary
      * @param int $precedence
+     * @param int $flags
      * @param ?string $subtype */
-    function __construct($type, $unary, $precedence, $subtype = null) {
+    function __construct($type, $precedence, $flags, $subtype = null) {
         $this->type = $type;
         $this->subtype = $subtype;
-        $this->unary = $unary;
         $this->precedence = $precedence;
+        $this->flags = $flags;
     }
 
-    /** @return ?SearchOperator */
-    static function get($name) {
-        if (!self::$list) {
-            self::$list["("] = new SearchOperator("(", true, 0);
-            self::$list[")"] = new SearchOperator(")", true, 0);
-            self::$list["NOT"] = self::$list["-"] = self::$list["!"] =
-                new SearchOperator("not", true, 8);
-            self::$list["+"] = new SearchOperator("+", true, 8);
-            self::$list["SPACE"] = new SearchOperator("space", false, 7);
-            self::$list["AND"] = self::$list["&&"] =
-                new SearchOperator("and", false, 6);
-            self::$list["XOR"] = self::$list["^^"] =
-                new SearchOperator("xor", false, 5);
-            self::$list["OR"] = self::$list["||"] =
-                new SearchOperator("or", false, 4);
-            self::$list["SPACEOR"] = new SearchOperator("or", false, 3);
-            self::$list["THEN"] = new SearchOperator("then", false, 2);
-            self::$list["HIGHLIGHT"] = new SearchOperator("highlight", false, 1);
-        }
-        return self::$list[$name] ?? null;
+    /** @return bool */
+    function unary() {
+        return ($this->flags & self::F_UNARY) !== 0;
+    }
+
+    /** @param string $subtype
+     * @return SearchOperator */
+    function make_subtype($subtype) {
+        assert(($this->flags & self::F_ALLOW_SUBTYPE) !== 0);
+        return new SearchOperator($this->type, $this->precedence, ($this->flags & ~self::F_ALLOW_SUBTYPE) | self::F_SUBTYPE, $subtype);
     }
 }
