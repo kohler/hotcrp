@@ -604,7 +604,7 @@ class PaperStatus extends MessageSet {
             if (isset($xpj->$k)
                 || isset($ikeys[$k])
                 || isset($xstatus->$k)
-                || in_array($k, ["pid", "id", "options", "status", "decision", "reviews", "comments", "tags", "submission_class"])
+                || in_array($k, ["object", "pid", "id", "options", "status", "decision", "reviews", "comments", "tags", "submission_class"])
                 || $k[0] === "_"
                 || $k[0] === "\$") {
                 continue;
@@ -1120,6 +1120,10 @@ class PaperStatus extends MessageSet {
     function prepare_save_paper_json($pj) {
         assert(is_object($pj));
 
+        if (($pj->object ?? "paper") !== "paper") {
+            $this->error_at("object", $this->_("<0>JSON does not represent a {submission}"));
+            return false;
+        }
         $pid = $pj->pid ?? $pj->id ?? null;
         if ($pid !== null && !is_int($pid) && $pid !== "new") {
             $key = isset($pj->pid) ? "pid" : "id";

@@ -172,8 +172,10 @@ class PaperExport {
             return null;
         }
 
-        $pj = (object) [];
-        $pj->pid = (int) $prow->paperId;
+        $pj = (object) [
+            "object" => "paper",
+            "pid" => (int) $prow->paperId
+        ];
         if (($sr = $prow->submission_round()) && !$sr->unnamed) {
             $pj->submission_class = $sr->tag;
         }
@@ -244,6 +246,7 @@ class PaperExport {
         $my_review = $this->viewer->is_my_review($rrow);
 
         $rj = [
+            "object" => "review",
             "pid" => $prow->paperId,
             "rid" => $rrow->reviewId
         ];
@@ -363,6 +366,7 @@ class PaperExport {
     /** @return object */
     function review_history_json(PaperInfo $prow, ReviewInfo $rrow, ReviewHistoryInfo $rhrow) {
         $rj = [
+            "object" => "review_delta",
             "pid" => $prow->paperId,
             "rid" => $rrow->reviewId,
             "version" => $rhrow->reviewTime

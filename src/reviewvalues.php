@@ -374,7 +374,12 @@ class ReviewValues extends MessageSet {
         // XXX validate more
         // XXX status
         foreach ($j as $k => $v) {
-            if ($k === "round") {
+            if ($k === "object") {
+                if (($v ?? "review") !== "review") {
+                    $this->rmsg("object", "<0>JSON does not represent a review", self::ERROR);
+                    return false;
+                }
+            } else if ($k === "round") {
                 if ($v === null || is_string($v)) {
                     $this->req["round"] = $v;
                 }
