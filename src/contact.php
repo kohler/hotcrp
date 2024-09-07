@@ -3212,27 +3212,6 @@ class Contact implements JsonSerializable {
         return $this->rights($prow)->can_administer();
     }
 
-    /** @param PaperContactInfo $rights
-     * @return bool */
-    private function _can_administer_for_track(PaperInfo $prow, $rights, $ttype) {
-        return $rights->can_administer()
-            && (($this->dangerous_track_mask() & (1 << $ttype)) === 0
-                || $this->conf->check_tracks($prow, $this, $ttype));
-    }
-
-    /** @param PaperContactInfo $rights
-     * @return bool */
-    private function _allow_administer_for_track(PaperInfo $prow, $rights, $ttype) {
-        return $rights->allow_administer()
-            && (($this->dangerous_track_mask() & (1 << $ttype)) === 0
-                || $this->conf->check_tracks($prow, $this, $ttype));
-    }
-
-    /** @return bool */
-    function can_administer_for_track(PaperInfo $prow, $ttype) {
-        return $this->_can_administer_for_track($prow, $this->rights($prow), $ttype);
-    }
-
     /** @return bool */
     function is_primary_administrator(PaperInfo $prow) {
         // - Assigned administrator is primary
@@ -4134,7 +4113,7 @@ class Contact implements JsonSerializable {
         $viewscore = $viewscore ?? VIEWSCORE_AUTHOR;
         $rights = $this->rights($prow);
         // can always view if can administer
-        if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREV)
+        if ($rights->can_administer()
             && ($flags & self::CAN_VIEW_REVIEW_NO_ADMINISTER) === 0) {
             return true;
         }
@@ -4249,7 +4228,7 @@ class Contact implements JsonSerializable {
         // See also PaperInfo::can_view_review_identity_of.
         // See also ReviewerFexpr.
         // See also can_view_comment_identity.
-        if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)) {
+        if ($rights->can_administer()) {
             return true;
         }
         if ($rbase && $rbase->is_ghost()) {
@@ -4321,7 +4300,7 @@ class Contact implements JsonSerializable {
      * @return bool */
     function can_view_review_requester(PaperInfo $prow, $rbase = null) {
         $rights = $this->rights($prow);
-        return $this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
+        return $rights->can_administer()
             || ($rbase && $rbase->requestedBy == $this->contactId && $rights->allow_pc())
             || ($rbase && $this->is_owned_review($rbase))
             || ($rights->allow_pc() && $this->can_view_review_identity($prow, $rbase));
@@ -4983,7 +4962,7 @@ class Contact implements JsonSerializable {
             return true;
         }
         $rights = $this->rights($prow);
-        if ($this->_can_administer_for_track($prow, $rights, Track::VIEWREVID)
+        if ($rights->can_administer()
             || ($rights->reviewType === REVIEW_META
                 && $this->conf->check_tracks($prow, $this, Track::VIEWREVID))
             || ($rights->act_author_view()
