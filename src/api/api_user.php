@@ -78,8 +78,8 @@ class User_API {
             "ok" => $ok,
             "found" => true,
             "email" => $found->email,
-            "firstName" => $found->firstName,
-            "lastName" => $found->lastName,
+            "given_name" => $found->firstName,
+            "family_name" => $found->lastName,
             "affiliation" => $found->affiliation
         ];
         if ($found->country_code() !== "") {

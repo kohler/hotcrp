@@ -86,6 +86,12 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
         return $this->a;
     }
 
+    /** @param int $i
+     * @return ?string */
+    function item($i) {
+        return $this->a[$i] ?? null;
+    }
+
     /** @return array<int|string,string> */
     function as_map() {
         return $this->csvp->as_map($this->a);

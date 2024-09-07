@@ -5130,15 +5130,17 @@ handle_ui.on("input.js-email-populate", function () {
             && self.getAttribute("data-populated-email") === v) {
             return;
         }
-        fn && populate(fn, data.firstName || "", placeholder);
-        ln && populate(ln, data.lastName || "", placeholder);
-        if (nn && !data.name) {
-            if (data.firstName && data.lastName) {
-                data.name = data.firstName + " " + data.lastName;
-            } else if (data.lastName) {
-                data.name = data.lastName;
+        if (data.given_name == null && data.family_name == null) { // XXX backward compat
+            data.given_name = data.firstName;
+            data.family_name = data.lastName;
+        }
+        fn && populate(fn, data.given_name || "", placeholder);
+        ln && populate(ln, data.last_name || "", placeholder);
+        if (nn && data.name == null) {
+            if (data.given_name && data.family_name) {
+                data.name = data.given_name + " " + data.family_name;
             } else {
-                data.name = data.firstName;
+                data.name = data.family_name || data.given_name;
             }
         }
         nn && populate(nn, data.name || "", placeholder);
