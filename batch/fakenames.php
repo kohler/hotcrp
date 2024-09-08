@@ -76,8 +76,8 @@ class FakeNames_Batch {
         return $this->random("a");
     }
     function country() {
-        $n = mt_rand(0, count(Countries::$list) - 1);
-        return Countries::$list[$n];
+        $n = mt_rand(0, count(Countries::$map) - 1);
+        return (array_keys(Countries::$map))[$n];
     }
 
     function new_fake_email() {
