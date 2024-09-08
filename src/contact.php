@@ -4889,9 +4889,7 @@ class Contact implements JsonSerializable {
         $ctype = $crow ? $crow->commentType : CommentInfo::CTVIS_AUTHOR;
         $rights = $this->rights($prow);
         if (($crow && $this->is_my_comment($prow, $crow))
-            || ($rights->can_administer()
-                && ($ctype >= CommentInfo::CTVIS_AUTHOR
-                    || $rights->potential_reviewer()))) {
+            || $rights->can_administer()) {
             return true;
         }
         if ($rights->act_author_view()
