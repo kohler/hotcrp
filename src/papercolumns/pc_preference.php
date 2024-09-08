@@ -64,39 +64,30 @@ class Preference_PaperColumn extends PaperColumn {
         }
         return true;
     }
+    /** @return PaperReviewPreference */
     private function sortable_preference(PaperInfo $row) {
         if ($this->not_me
             && ($this->editable
                 ? !$this->viewer->allow_view_preference($row)
                 : !$this->viewer->can_view_preference($row))) {
-            return [-PHP_INT_MAX, null];
-        } else {
-            $pv = $row->preference($this->user)->as_list();
-            if ($pv[0] === 0 && $pv[1] === null) {
-                if (!$this->viewer->can_edit_preference_for($this->user, $row)) {
-                    $pv[0] = -PHP_INT_MAX;
-                } else if ($row->has_conflict($this->user)) {
-                    $pv[0] = $this->editable ? -0.00001 : -PHP_INT_MAX;
-                }
-            }
-            return $pv;
+            return PaperReviewPreference::make_sentinel();
         }
+        $pf = $row->preference($this->user);
+        if (!$pf->exists()) {
+            if (!$this->viewer->can_edit_preference_for($this->user, $row)) {
+                return PaperReviewPreference::make_sentinel();
+            } else if ($row->has_conflict($this->user)) {
+                return new PaperReviewPreference($this->editable ? -0.00001 : -PHP_INT_MAX, null);
+            }
+        }
+        return $pf;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        list($ap, $ae) = $this->sortable_preference($a);
-        list($bp, $be) = $this->sortable_preference($b);
-        if ($ap !== $bp) {
-            return $ap <=> $bp;
-        } else if ($ae !== $be) {
-            if (($ae === null) !== ($be === null)) {
-                return $ae === null ? 1 : -1;
-            }
-            return (int) $ae <=> (int) $be;
-        } else if ($this->secondary_sort_topic_score) {
-            return $a->topic_interest_score($this->user) <=> $b->topic_interest_score($this->user);
-        } else {
-            return 0;
+        $cmp = PaperReviewPreference::compare($this->sortable_preference($a), $this->sortable_preference($b));
+        if ($cmp === 0 && $this->secondary_sort_topic_score) {
+            $cmp = $a->topic_interest_score($this->user) <=> $b->topic_interest_score($this->user);
         }
+        return $cmp;
     }
     function reset(PaperList $pl) {
         if ($this->show_conflict === null) {

@@ -17,6 +17,11 @@ class PaperReviewPreference {
         $this->expertise = $expertise;
     }
 
+    /** @return PaperReviewPreference */
+    static function make_sentinel() {
+        return new PaperReviewPreference(-PHP_INT_MAX, null);
+    }
+
     /** @return bool */
     function exists() {
         return $this->preference !== 0 || $this->expertise !== null;
@@ -25,6 +30,23 @@ class PaperReviewPreference {
     /** @return string */
     function unparse() {
         return ($this->preference ?? "0") . unparse_expertise($this->expertise);
+    }
+
+    /** @param PaperReviewPreference $a
+     * @param PaperReviewPreference $b
+     * @return -1|0|1 */
+    static function compare($a, $b) {
+        if ($a->preference !== $b->preference) {
+            return $a->preference <=> $b->preference;
+        } else if ($a->expertise !== $b->expertise) {
+            $anull = $a->expertise === null;
+            if ($anull || $b->expertise === null) {
+                return $anull ? 1 : -1;
+            }
+            return $a->expertise <=> $b->expertise;
+        } else {
+            return 0;
+        }
     }
 
     /** @param ?int $tv
