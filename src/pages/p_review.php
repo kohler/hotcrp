@@ -60,7 +60,7 @@ class Review_Page {
             }
         } catch (Redirection $redir) {
             throw $redir;
-        } catch (PermissionProblem $perm) {
+        } catch (FailureReason $perm) {
             $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
             if (!$perm->secondary || $this->conf->saved_messages_status() < 2) {
                 $this->conf->error_msg("<5>" . $perm->unparse_html());

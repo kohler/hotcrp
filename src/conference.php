@@ -5515,7 +5515,7 @@ class Conf {
             }
         }
     }
-    /** @param ?PermissionProblem $whynot
+    /** @param ?FailureReason $whynot
      * @return JsonResult */
     static function paper_error_json_result($whynot) {
         $result = ["ok" => false, "message_list" => []];

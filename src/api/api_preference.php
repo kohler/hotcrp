@@ -42,7 +42,7 @@ class Preference_API {
             $jr->content["topic_score"] = $prow->topic_interest_score($u);
         }
         if ($qreq->method() === "POST" && $prow->timeWithdrawn > 0) {
-            foreach ($prow->make_whynot(["withdrawn" => 1])->message_list(null, 1) as $mi) {
+            foreach ($prow->failure_reason(["withdrawn" => 1])->message_list(null, 1) as $mi) {
                 $jr->content["message_list"][] = $mi;
             }
         }

@@ -758,9 +758,9 @@ class AssignmentCsv {
 }
 
 class AssignmentError extends Exception {
-    /** @param string|PermissionProblem $message */
+    /** @param string|FailureReason $message */
     function __construct($message) {
-        if ($message instanceof PermissionProblem) {
+        if ($message instanceof FailureReason) {
             $message = "<5>" . $message->unparse_html();
         } else if ($message !== "" && !Ftext::is_ftext($message)) {
             error_log("not ftext {$message}: " . debug_string_backtrace());
@@ -1689,7 +1689,7 @@ class AssignmentSet {
     private function apply_paper(PaperInfo $prow, $contacts, AssignmentParser $aparser, $req) {
         $allow = $aparser->allow_paper($prow, $this->astate);
         if ($allow !== true) {
-            $allow = $allow ? : new AssignmentError($prow->make_whynot(["administer" => true]));
+            $allow = $allow ? : new AssignmentError($prow->failure_reason(["administer" => true]));
             $this->astate->paper_error($allow->getMessage());
             return 0;
         }

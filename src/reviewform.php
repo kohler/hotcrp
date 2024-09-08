@@ -441,7 +441,7 @@ Ready\n";
         $my_review = !$rrow || $user->is_my_review($rrow);
         $pc_deadline = $user->act_pc($prow) || $user->allow_administer($prow);
         if (!$this->conf->time_review($rrow ? $rrow->reviewRound : null, $rrow ? $rrow->reviewType : $pc_deadline, true)) {
-            $whyNot = new PermissionProblem($this->conf, ["deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"), "confirmOverride" => true]);
+            $whyNot = new FailureReason($this->conf, ["deadline" => ($rrow && $rrow->reviewType < REVIEW_PC ? "extrev_hard" : "pcrev_hard"), "confirmOverride" => true]);
             $override_text = $whyNot->unparse_html();
             if (!$submitted) {
                 $buttons[] = [Ht::button("Submit review", ["class" => "btn-primary btn-savereview ui js-override-deadlines", "data-override-text" => $override_text, "data-override-submit" => "submitreview"]), "(admin only)"];

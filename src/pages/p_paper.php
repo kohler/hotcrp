@@ -38,7 +38,7 @@ class Paper_Page {
         PaperTable::print_header($pt, $this->qreq, $error);
     }
 
-    /** @param ?PermissionProblem $perm */
+    /** @param ?FailureReason $perm */
     function error_exit($perm = null) {
         if ($perm) {
             $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
@@ -59,7 +59,7 @@ class Paper_Page {
             $this->prow = $this->conf->paper = $pr->prow;
         } catch (Redirection $redir) {
             throw $redir;
-        } catch (PermissionProblem $perm) {
+        } catch (FailureReason $perm) {
             $this->error_exit($perm);
         }
     }
@@ -366,7 +366,7 @@ class Paper_Page {
 
         if (!$this->user->can_administer($this->prow)
             && !$this->prow->has_author($this->user)) {
-            $conf->error_msg("<5>" . $this->prow->make_whynot(["permission" => "contact:edit"])->unparse_html());
+            $conf->error_msg("<5>" . $this->prow->failure_reason(["permission" => "contact:edit"])->unparse_html());
             return;
         }
 

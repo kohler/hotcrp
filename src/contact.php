@@ -3396,20 +3396,20 @@ class Contact implements JsonSerializable {
     }
 
     /** @param bool $allow_no_email
-     * @return ?PermissionProblem */
+     * @return ?FailureReason */
     function perm_start_paper(PaperInfo $prow, $allow_no_email = false) {
         if (($sl = $this->conf->site_lock("paper:start")) > 0
             && ($sl > 1 || !$this->can_administer($prow))) {
-            return new PermissionProblem($this->conf, ["site_lock" => "paper:start"]);
+            return new FailureReason($this->conf, ["site_lock" => "paper:start"]);
         }
         if ($this->can_administer($prow)) {
             return null;
         }
         $sr = $prow->submission_round();
         if (!$sr->time_register(true)) {
-            return new PermissionProblem($this->conf, ["deadline" => "sub_reg", "override" => $this->privChair]);
+            return new FailureReason($this->conf, ["deadline" => "sub_reg", "override" => $this->privChair]);
         } else if (!$this->email && !$allow_no_email) {
-            return new PermissionProblem($this->conf, ["signin" => "paper:start"]);
+            return new FailureReason($this->conf, ["signin" => "paper:start"]);
         } else {
             return null;
         }
@@ -3450,9 +3450,9 @@ class Contact implements JsonSerializable {
         return $this->edit_paper_state($prow) !== 0;
     }
 
-    /** @return PermissionProblem */
+    /** @return FailureReason */
     private function perm_edit_paper_failure(PaperInfo $prow, PaperContactInfo $rights, $kind = "") {
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         if (!$rights->allow_author_edit()) {
             if ($rights->allow_author_view()) {
                 $whyNot["signin"] = "paper:edit";
@@ -3475,7 +3475,7 @@ class Contact implements JsonSerializable {
         return $whyNot;
     }
 
-    /** @return ?PermissionProblem */
+    /** @return ?FailureReason */
     function perm_edit_paper(PaperInfo $prow) {
         if ($this->can_edit_paper($prow)) {
             return null;
@@ -3509,7 +3509,7 @@ class Contact implements JsonSerializable {
             || $rights->can_administer();
     }
 
-    /** @return ?PermissionProblem */
+    /** @return ?FailureReason */
     function perm_finalize_paper(PaperInfo $prow) {
         if ($this->can_finalize_paper($prow)) {
             return null;
@@ -3541,7 +3541,7 @@ class Contact implements JsonSerializable {
                 || ($display_only && !$prow->can_author_view_decision()));
     }
 
-    /** @return ?PermissionProblem */
+    /** @return ?FailureReason */
     function perm_withdraw_paper(PaperInfo $prow, $display_only = false) {
         if ($this->can_withdraw_paper($prow, $display_only)) {
             return null;
@@ -3569,7 +3569,7 @@ class Contact implements JsonSerializable {
                 || $prow->submission_round()->time_submit(true));
     }
 
-    /** @return ?PermissionProblem */
+    /** @return ?FailureReason */
     function perm_revive_paper(PaperInfo $prow) {
         if ($this->can_revive_paper($prow)) {
             return null;
@@ -3611,9 +3611,9 @@ class Contact implements JsonSerializable {
             || ($this->isPC && $this->conf->can_pc_view_all_incomplete());
     }
 
-    /** @return PermissionProblem */
+    /** @return FailureReason */
     function no_paper_whynot($pid) {
-        $whynot = new PermissionProblem($this->conf, ["paperId" => $pid]);
+        $whynot = new FailureReason($this->conf, ["paperId" => $pid]);
         if (!ctype_digit((string) $pid)) {
             $whynot["invalidId"] = "paper";
         } else if ($this->can_view_missing_papers()) {
@@ -3660,7 +3660,7 @@ class Contact implements JsonSerializable {
                 && (!$pdf || $this->conf->check_tracks($prow, $this, Track::VIEWPDF)));
     }
 
-    /** @return ?PermissionProblem */
+    /** @return ?FailureReason */
     function perm_view_paper(?PaperInfo $prow, $pdf = false, $pid = null) {
         if (!$prow) {
             return $this->no_paper_whynot($pid);
@@ -3668,7 +3668,7 @@ class Contact implements JsonSerializable {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         $base_count = count($whyNot);
         if (!$rights->allow_author_view()
             && $rights->review_status == 0
@@ -3697,7 +3697,7 @@ class Contact implements JsonSerializable {
         return $this->can_view_paper($prow, true);
     }
 
-    /** @return ?PermissionProblem */
+    /** @return ?FailureReason */
     function perm_view_pdf(PaperInfo $prow) {
         return $this->perm_view_paper($prow, true);
     }
@@ -3959,14 +3959,14 @@ class Contact implements JsonSerializable {
     }
 
     /** @param PaperOption $opt
-     * @return ?PermissionProblem */
+     * @return ?FailureReason */
     function perm_view_option(PaperInfo $prow, $opt) {
         if ($this->can_view_option($prow, $opt)) {
             return null;
         } else if (($whyNot = $this->perm_view_paper($prow, $opt->has_document()))) {
             return $whyNot;
         }
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         $rights = $this->rights($prow);
         $oview = $opt->visibility();
         if ($rights->allow_administer()
@@ -4162,14 +4162,14 @@ class Contact implements JsonSerializable {
 
     /** @param ?ReviewInfo $rrow
      * @param ?int $viewscore
-     * @return ?PermissionProblem */
+     * @return ?FailureReason */
     function perm_view_review(PaperInfo $prow, $rrow, $viewscore = null) {
         if ($this->can_view_review($prow, $rrow, $viewscore)) {
             return null;
         }
         $rrowSubmitted = !$rrow || $rrow->reviewStatus >= ReviewInfo::RS_COMPLETED;
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         if ($rights->allow_pc()
             ? !$this->conf->check_tracks($prow, $this, Track::VIEWREV)
             : !$rights->act_author_view() && $rights->review_status == 0) {
@@ -4319,13 +4319,13 @@ class Contact implements JsonSerializable {
                 || $rights->can_administer());
     }
 
-    /** @return ?PermissionProblem */
+    /** @return ?FailureReason */
     function perm_request_review(PaperInfo $prow, $round, $check_time) {
         if ($this->can_request_review($prow, $round, $check_time)) {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         if (!$rights->allow_administer()
             && (($rights->reviewType < REVIEW_PC
                  && (!$this->isPC
@@ -4437,12 +4437,12 @@ class Contact implements JsonSerializable {
         }
     }
 
-    /** @return ?PermissionProblem */
+    /** @return ?FailureReason */
     function perm_edit_preference_for(Contact $u, PaperInfo $prow) {
         if ($this->can_edit_preference_for($u, $prow)) {
             return null;
         }
-        $whynot = $prow->make_whynot();
+        $whynot = $prow->failure_reason();
         if (!$u->isPC) {
             $whynot["nonPC"] = true;
         } else if ($u->contactId !== $this->contactId
@@ -4469,7 +4469,7 @@ class Contact implements JsonSerializable {
                 && $this->conf->time_review(null, true, true));
     }
 
-    /** @return ?PermissionProblem */
+    /** @return ?FailureReason */
     function perm_edit_some_review(PaperInfo $prow) {
         if ($this->can_edit_some_review($prow)) {
             return null;
@@ -4477,7 +4477,7 @@ class Contact implements JsonSerializable {
         $rights = $this->rights($prow);
         // The "reviewNotAssigned" and "deadline" failure reasons are special.
         // If either is set, the system will still allow review form download.
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         if ($rights->allow_administer() && !$rights->can_administer()) {
             $whyNot["conflict"] = true;
             $whyNot["forceShow"] = true;
@@ -4515,14 +4515,14 @@ class Contact implements JsonSerializable {
     }
 
     /** @param ?int $round
-     * @return ?PermissionProblem */
+     * @return ?FailureReason */
     function perm_create_review(PaperInfo $prow, ?Contact $reviewer = null, $round = null) {
         $reviewer = $reviewer ?? $this;
         if ($this->can_create_review($prow, $reviewer, $round)) {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         if ($rights->can_administer()) {
             if ($reviewer->isPC
                 && !$reviewer->can_accept_review_assignment_ignore_conflict($prow)) {
@@ -4572,13 +4572,13 @@ class Contact implements JsonSerializable {
     }
 
     /** @param bool $submit
-     * @return ?PermissionProblem */
+     * @return ?FailureReason */
     function perm_edit_review(PaperInfo $prow, ReviewInfo $rrow, $submit = false) {
         if ($this->can_edit_review($prow, $rrow, $submit)) {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         if (!$this->can_clickthrough("review", $prow)
             && $this->can_edit_review($prow, $rrow, false)) {
             $whyNot["clickthrough"] = true;
@@ -4783,7 +4783,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @param ?int $newctype
-     * @return ?PermissionProblem */
+     * @return ?FailureReason */
     function perm_edit_comment(PaperInfo $prow, CommentInfo $crow, $newctype = null) {
         if (($crow->commentType & CommentInfo::CT_RESPONSE) !== 0) {
             return $this->perm_edit_response($prow, $crow);
@@ -4791,7 +4791,7 @@ class Contact implements JsonSerializable {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         if ($crow->contactId !== $this->contactXid
             && !$rights->allow_administer()) {
             $whyNot["differentReviewer"] = true;
@@ -4836,13 +4836,13 @@ class Contact implements JsonSerializable {
             && $rrd->test_condition($prow);
     }
 
-    /** @return ?PermissionProblem */
+    /** @return ?FailureReason */
     function perm_edit_response(PaperInfo $prow, CommentInfo $crow) {
         if ($this->can_edit_response($prow, $crow)) {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         if (!$rights->allow_administer()
             && $rights->conflictType < CONFLICT_AUTHOR) {
             $whyNot["permission"] = "response:edit";
@@ -5324,13 +5324,13 @@ class Contact implements JsonSerializable {
     }
 
     /** @param string $tag
-     * @return ?PermissionProblem */
+     * @return ?FailureReason */
     function perm_edit_tag(PaperInfo $prow, $tag, $previndex, $index) {
         if ($this->can_edit_tag($prow, $tag, $previndex, $index)) {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         $whyNot["tag"] = $tag;
         if (!$this->isPC) {
             $whyNot["permission"] = "tag:edit";
@@ -5383,13 +5383,13 @@ class Contact implements JsonSerializable {
         }
     }
 
-    /** @return ?PermissionProblem */
+    /** @return ?FailureReason */
     function perm_edit_some_tag(PaperInfo $prow) {
         if ($this->can_edit_some_tag($prow)) {
             return null;
         }
         $rights = $this->rights($prow);
-        $whyNot = $prow->make_whynot();
+        $whyNot = $prow->failure_reason();
         if (!$this->isPC) {
             $whyNot["permission"] = "tag:edit";
         } else if ($rights->conflictType > CONFLICT_MAXUNCONFLICTED) {

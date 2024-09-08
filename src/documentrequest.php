@@ -243,7 +243,7 @@ class DocumentRequest implements JsonSerializable {
             $vis = $this->opt->visibility();
             if (($vis === PaperOption::VIS_ADMIN && !$user->privChair)
                 || ($vis !== PaperOption::VIS_SUB && !$user->isPC)) {
-                return $this->prow->make_whynot(["permission" => "field:view", "option" => $this->opt]);
+                return $this->prow->failure_reason(["permission" => "field:view", "option" => $this->opt]);
             } else {
                 return null;
             }
@@ -276,7 +276,7 @@ class DocumentRequest implements JsonSerializable {
             $this->docid = $xdoc->paperStorageId;
             return null;
         } else {
-            return $this->prow->make_whynot(["documentNotFound" => $this->req_filename]);
+            return $this->prow->failure_reason(["documentNotFound" => $this->req_filename]);
         }
     }
 

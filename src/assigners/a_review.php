@@ -107,7 +107,7 @@ class Review_AssignmentParser extends AssignmentParser {
             if ($prow->timeWithdrawn <= 0 || $this->rtype === 0) {
                 return true;
             } else {
-                return new AssignmentError($prow->make_whynot(["withdrawn" => true]));
+                return new AssignmentError($prow->failure_reason(["withdrawn" => 1]));
             }
         } else {
             return false;

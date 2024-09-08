@@ -266,6 +266,7 @@ src/documentinfo.php
 src/documentinfoset.php
 src/documenthashmatcher.php
 src/documentrequest.php
+src/failurereason.php
 src/fieldchangeset.php
 src/fieldrender.php
 src/filefilter.php
@@ -423,7 +424,6 @@ src/paperstatus.php
 src/papertable.php
 src/paperrank.php
 src/papervalue.php
-src/permissionproblem.php
 src/quicklinksrenderer.php
 src/responseround.php
 src/reviewdiffinfo.php

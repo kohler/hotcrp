@@ -148,7 +148,7 @@ class Preference_AssignmentParser extends AssignmentParser {
         $prefv = (int) round($ppref[0]);
 
         if ($prow->timeWithdrawn > 0) {
-            $state->warning("<5>" . $prow->make_whynot(["withdrawn" => 1])->unparse_html());
+            $state->warning("<5>" . $prow->failure_reason(["withdrawn" => 1])->unparse_html());
         }
 
         $exp = $req["expertise"];

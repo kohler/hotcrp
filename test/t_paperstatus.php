@@ -1374,7 +1374,7 @@ Phil Porras.");
         xassert($pr instanceof Redirection);
         xassert_eqq($pr->url, "/paper/14?r={$estrin_14_rid}");
         $pr = PaperRequest::make(TestRunner::make_qreq($this->u_nobody, "/paper?r={$estrin_14_rid}"), false);
-        xassert($pr instanceof PermissionProblem);
+        xassert($pr instanceof FailureReason);
         xassert($pr["missingId"]);
     }
 

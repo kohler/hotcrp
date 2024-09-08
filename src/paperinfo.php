@@ -919,10 +919,9 @@ class PaperInfo {
         return "group_concat({$prefix}rflags, ' ', {$prefix}reviewNeedsSubmit, ' ', {$prefix}reviewRound)";
     }
 
-    /** @return PermissionProblem */
-    function make_whynot($rest = []) {
-        $pp = new PermissionProblem($this->conf, ["paperId" => $this->paperId]);
-        return $pp->merge($rest);
+    /** @return FailureReason */
+    function failure_reason($rest = null) {
+        return (new FailureReason($this->conf, $rest))->set_prow($this);
     }
 
     /** @param array $param
