@@ -532,13 +532,13 @@ class AssignmentState extends MessageSet {
     }
     /** @param string $msg
      * @return void */
-    function warning($msg) {
-        $this->msg_near($this->landmark, $msg, 1);
+    function error($msg) {
+        $this->msg_near($this->landmark, $msg, 2);
     }
     /** @param string $msg
      * @return void */
-    function error($msg) {
-        $this->msg_near($this->landmark, $msg, 2);
+    function warning($msg) {
+        $this->msg_near($this->landmark, $msg, 1);
     }
     /** @param string $msg
      * @return void */

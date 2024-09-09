@@ -3815,7 +3815,7 @@ class Contact implements JsonSerializable {
                        || $ci->review_status > 0) {
                 $bs = $prow->blindness_state($ci->review_status > PaperContactInfo::CIRS_PROXIED);
                 if ($bs === 0
-                    && ($cif & (PaperContactInfo::CIF_CAN_VIEW_DECISION | PaperContactInfo::CIF_ALLOW_REVIEW)) === (PaperContactInfo::CIF_CAN_VIEW_DECISION | PaperContactInfo::CIF_ALLOW_REVIEW)) {
+                    && ($cif & (PaperContactInfo::CIF_CAN_VIEW_DECISION | PaperContactInfo::CIF_ALLOW_REVIEWER)) === (PaperContactInfo::CIF_CAN_VIEW_DECISION | PaperContactInfo::CIF_ALLOW_REVIEWER)) {
                     $bs = -1;
                 }
                 if ($bs < 0
@@ -4351,21 +4351,6 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function time_review(PaperInfo $prow, ?ReviewInfo $rrow = null) {
-        $rights = $this->rights($prow);
-        if ($rrow) {
-            return ($rights->allow_administer() || $this->is_owned_review($rrow))
-                && $this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true);
-        } else if ($rights->is_reviewer()) {
-            return $this->conf->time_review($rights->reviewRound, $rights->reviewType, true);
-        } else {
-            return $rights->allow_reviewer()
-                && $this->conf->setting("pcrev_any") > 0
-                && $this->conf->time_review(null, true, true);
-        }
-    }
-
-    /** @return bool */
     function pc_track_assignable(PaperInfo $prow) {
         return ($this->roles & self::ROLE_PC) !== 0
             && $this->conf->check_tracks($prow, $this, Track::ASSREV);
@@ -4505,25 +4490,24 @@ class Contact implements JsonSerializable {
 
     /** @param ?int $round
      * @return bool */
-    function can_create_review(PaperInfo $prow, ?Contact $reviewer = null, $round = null) {
-        $reviewer = $reviewer ?? $this;
+    function can_create_review(PaperInfo $prow, Contact $reviewer, $round = null) {
         $rights = $this->rights($prow);
         if ($rights->can_administer()) {
             return !$reviewer->isPC
-                || $reviewer->can_accept_review_assignment_ignore_conflict($prow);
-        } else {
-            return !$rights->is_reviewer()
-                && $rights->allow_reviewer()
-                && $reviewer->contactId === $this->contactId
-                && $this->conf->setting("pcrev_any") > 0
-                && $this->conf->time_review($round, $rights->allow_pc(), true);
+                || $reviewer->allow_administer($prow)
+                || $reviewer->pc_track_assignable($prow);
         }
+        return $reviewer->contactId === $this->contactId
+            && !$rights->is_reviewer()
+            && $this->pc_assignable($prow)
+            && $this->conf->check_tracks($prow, $this, Track::SELFASSREV)
+            && $this->conf->setting("pcrev_any") > 0
+            && $this->conf->time_review($round, $rights->allow_pc(), true);
     }
 
     /** @param ?int $round
      * @return ?FailureReason */
-    function perm_create_review(PaperInfo $prow, ?Contact $reviewer = null, $round = null) {
-        $reviewer = $reviewer ?? $this;
+    function perm_create_review(PaperInfo $prow, Contact $reviewer, $round = null) {
         if ($this->can_create_review($prow, $reviewer, $round)) {
             return null;
         }
@@ -4542,13 +4526,14 @@ class Contact implements JsonSerializable {
                 $whyNot["differentReviewer"] = true;
             } else if ($rights->is_reviewer()) {
                 $whyNot["alreadyReviewed"] = true;
-            } else if (!$rights->allow_reviewer()) {
+            } else {
                 $whyNot["permission"] = "review:edit";
+                if ($this->conf->setting("pcrev_any") <= 0) {
+                    $whyNot["reviewNotAssigned"] = true;
+                }
                 if ($rights->conflicted()) {
                     $whyNot["conflict"] = true;
                 }
-            } else if ($this->conf->setting("pcrev_any") <= 0) {
-                $whyNot["reviewNotAssigned"] = true;
             }
         }
         if (count($whyNot) === 0) {
@@ -4567,26 +4552,32 @@ class Contact implements JsonSerializable {
         return $whyNot;
     }
 
-    /** @return bool */
-    function can_edit_review(PaperInfo $prow, ReviewInfo $rrow, $submit = false) {
+    const EDIT_REVIEW_SUBMIT = 1;
+
+    /** @param 0|1 $erflags
+     * @return bool */
+    function can_edit_review(PaperInfo $prow, ReviewInfo $rrow, $erflags = 0) {
+        if (($erflags & self::EDIT_REVIEW_SUBMIT) !== 0
+            && !$this->can_clickthrough("review", $prow)) {
+            return false;
+        }
         $rights = $this->rights($prow);
-        return (!$submit
-                || $this->can_clickthrough("review", $prow))
-            && ($rights->can_administer()
-                || ($this->is_owned_review($rrow))
-                    && $this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true));
+        return $rights->can_administer()
+            || ($this->is_owned_review($rrow)
+                && $this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true));
     }
 
-    /** @param bool $submit
+    /** @param 0|1 $erflags
      * @return ?FailureReason */
-    function perm_edit_review(PaperInfo $prow, ReviewInfo $rrow, $submit = false) {
-        if ($this->can_edit_review($prow, $rrow, $submit)) {
+    function perm_edit_review(PaperInfo $prow, ReviewInfo $rrow, $erflags = 0) {
+        if ($this->can_edit_review($prow, $rrow, $erflags)) {
             return null;
         }
         $rights = $this->rights($prow);
         $whyNot = $prow->failure_reason();
         if (!$this->can_clickthrough("review", $prow)
-            && $this->can_edit_review($prow, $rrow, false)) {
+            && ($erflags & self::EDIT_REVIEW_SUBMIT) !== 0
+            && $this->can_edit_review($prow, $rrow, $erflags & ~self::EDIT_REVIEW_SUBMIT)) {
             $whyNot["clickthrough"] = true;
         } else if (!$rights->can_administer()
                    && !$this->is_owned_review($rrow)) {

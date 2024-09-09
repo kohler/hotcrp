@@ -1192,9 +1192,7 @@ class PaperTable {
         if ($rrow->reviewId <= 0
             || $rrow->reviewType >= REVIEW_SECONDARY
             || $rrow->reviewStatus > ReviewInfo::RS_ACKNOWLEDGED
-            || (!$this->user->can_administer($this->prow)
-                && (!$this->user->is_my_review($rrow)
-                    || !$this->user->time_review($this->prow, $rrow)))) {
+            || !$this->user->can_edit_review($this->prow, $rrow)) {
             return;
         }
         $acc = $rrow->reviewStatus === ReviewInfo::RS_ACKNOWLEDGED;
@@ -3190,15 +3188,15 @@ class PaperTable {
 
         if ($want_review
             && ($this->editrrow
-                ? $this->user->can_edit_review($this->prow, $this->editrrow, false)
-                : $this->user->can_create_review($this->prow))) {
+                ? $this->user->can_edit_review($this->prow, $this->editrrow)
+                : $this->user->can_create_review($this->prow, $this->user))) {
             $this->mode = "re";
         }
 
         // fix mode
         if ($this->mode === "re"
             && $this->rrow
-            && !$this->user->can_edit_review($this->prow, $this->rrow, false)
+            && !$this->user->can_edit_review($this->prow, $this->rrow)
             && ($this->rrow->contactId != $this->user->contactId
                 || $this->rrow->reviewStatus >= ReviewInfo::RS_COMPLETED)) {
             $this->mode = "p";

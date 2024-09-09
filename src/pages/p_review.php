@@ -362,7 +362,7 @@ class Review_Page {
         if (!$this->user->can_view_review($this->prow, $this->rrow)
             && !($this->rrow
                  ? $this->user->can_edit_review($this->prow, $this->rrow)
-                 : $this->user->can_create_review($this->prow))) {
+                 : $this->user->can_create_review($this->prow, $this->user))) {
             $pt->paptabEndWithReviewMessage();
         } else {
             if ($pt->mode === "re" || $this->rrow) {

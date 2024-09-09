@@ -791,13 +791,13 @@ class ReviewValues extends MessageSet {
 
         // check editing allowed
         if ($any_fdiff || !$approvable) {
-            if (($whynot = $user->perm_edit_review($prow, $rrow, true))) {
+            if (($whynot = $user->perm_edit_review($prow, $rrow, Contact::EDIT_REVIEW_SUBMIT))) {
                 $this->clear_messages_since($before_msgcount);
                 $whynot->append_to($this, null, self::ERROR);
                 return false;
             } else if ($admin
                        && !($this->req["override"] ?? false)
-                       && !$user->time_review($prow, $rrow)) {
+                       && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
                 $this->clear_messages_since($before_msgcount);
                 $this->rmsg(null, "<5>The <a href=\"" . $this->conf->hoturl("deadlines") . "\">deadline</a> for editing this review has passed", self::ERROR);
                 $this->rmsg(null, "<0>Select “Override deadlines” and try again if you need to override the deadline.", self::INFORM);

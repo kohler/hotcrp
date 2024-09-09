@@ -114,19 +114,19 @@ class RequestReview_API {
             $ml = [];
             if ($user->can_administer($prow)) {
                 if ($potconf) {
-                    $ml[] = new MessageItem("email", $this->conf->_("<0>{} has a potential conflict with this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
+                    $ml[] = new MessageItem("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
                     $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf), MessageSet::INFORM);
                 } else {
-                    $ml[] = new MessageItem("email", $this->conf->_("<0>{} could not normally be assigned to review this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
+                    $ml[] = new MessageItem("email", $prow->conf->_("<0>{} could not normally be assigned to review this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
                 }
             } else if ($extrev_chairreq === 2) {
                 if ($potconf || !$user->can_view_pc()) {
-                    $ml[] = new MessageItem("email", $this->conf->_("<0>{} has a potential conflict with this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
+                    $ml[] = new MessageItem("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
                     if ($potconf && $user->can_view_authors($prow)) {
                         $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf), MessageSet::INFORM);
                     }
                 } else {
-                    $ml[] = new MessageItem("email", $this->conf->_("<0>{} could not normally be assigned to review this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
+                    $ml[] = new MessageItem("email", $prow->conf->_("<0>{} could not normally be assigned to review this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
                 }
             } else {
                 $ml[] = new MessageItem("email", "<5>Proposed an external review from " . $xreviewer->name_h(NAME_E), MessageSet::WARNING_NOTE);

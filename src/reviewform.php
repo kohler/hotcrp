@@ -625,7 +625,7 @@ Ready\n";
         $this->print_web_edit($prow, $rrow, $viewer, $rvalues);
 
         // review actions
-        if ($viewer->time_review($prow, $rrow) || $allow_admin) {
+        if ($viewer->can_edit_review($prow, $rrow)) {
             if ($prow->can_author_view_submitted_review()
                 && (!$rrow->subject_to_approval()
                     || !$viewer->is_my_review($rrow))) {
