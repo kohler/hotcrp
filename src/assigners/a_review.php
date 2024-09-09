@@ -181,12 +181,14 @@ class Review_AssignmentParser extends AssignmentParser {
             return true;
         }
         // Check whether review assignments are acceptable
+        // (conflicts are checked later)
         if ($contact->is_pc_member()
-            && !$contact->can_accept_review_assignment_ignore_conflict($prow)) {
+            && !$contact->pc_track_assignable($prow)
+            && !$contact->allow_administer($prow)
+            && $prow->review_type($contact) <= 0) {
             $uname = $contact->name(NAME_E);
             return new AssignmentError("<0>{$uname} cannot be assigned to review #{$prow->paperId}.");
         }
-        // Conflicts are checked later
         return true;
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
@@ -266,6 +268,9 @@ class Review_Assigner extends Assigner {
     static function make(AssignmentItem $item, AssignmentState $state) {
         if (!$item->pre("_rtype") && $item->post("_rtype")) {
             Conflict_Assigner::check_unconflicted($item, $state);
+            // XXX check self assignment. Not necessary rn because the
+            // assignment parser doesn't work for self-assignment (it requires
+            // admin)
         } else if ($item->pre("_rtype")
                    && !$item->post("_rtype")
                    && ($item->pre_i("_rflags") & ReviewInfo::RFM_NONDRAFT) !== 0) {

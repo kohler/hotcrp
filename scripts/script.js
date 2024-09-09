@@ -10915,24 +10915,31 @@ function render_allpref() {
 }
 
 function render_assignment_selector() {
-    var prow = prownear(this),
-        conflict = hasClass(this, "conflict"),
-        sel = document.createElement("select"),
+    const prow = prownear(this),
         rts = ["none", "primary", "secondary", "pc", "meta", "conflict"],
         asstext = this.getAttribute("data-assignment"),
-        m = asstext.match(/^(\S+) (\S+)(.*)$/);
-    m[2] = review_types.parse(m[2]);
-    sel.name = "assrev" + prow.getAttribute("data-pid") + "u" + m[1];
-    sel.setAttribute("data-default-value", m[2]);
+        words = asstext.split(/\s+/),
+        rt = review_types.parse(words[1]);
+    let rsub = false, assignable = true;
+    for (let i = 2; i < words.length; ++i) {
+        if (words[i] === "rs") {
+            rsub = true;
+        } else if (words[i] === "na" && (rt === "none" || rt === "conflict")) {
+            assignable = false;
+        }
+    }
+    const sel = document.createElement("select");
+    sel.name = "assrev" + prow.getAttribute("data-pid") + "u" + words[0];
+    sel.setAttribute("data-default-value", rt);
     sel.className = "uich js-assign-review";
     sel.tabIndex = 2;
-    for (var i = 0; i < rts.length; ++i) {
-        if (!conflict || rts[i] === "none" || rts[i] === "conflict") {
-            var opt = document.createElement("option");
-            opt.value = rts[i];
-            opt.text = review_types.unparse_selector(rts[i]);
-            opt.defaultSelected = opt.selected = m[2] === rts[i];
-            if (m[3] && rts[i] === "none")
+    for (const rtopt of rts) {
+        if (assignable || rtopt === "none" || rtopt === "conflict") {
+            const opt = document.createElement("option");
+            opt.value = rtopt;
+            opt.text = review_types.unparse_selector(rtopt);
+            opt.defaultSelected = opt.selected = rtopt === rt;
+            if (rsub && rtopt === "none")
                 opt.disabled = true;
             sel.add(opt, null);
         }
@@ -11495,7 +11502,6 @@ var fmap = {},
         "badge-green": true, "badge-blue": true, "badge-purple": true, "badge-gray": true,
         "badge-pink": true
     },
-    colormap = {},
     params = {
         "": {prefix: "", size: 34, incr: 8, type: 0},
         "gdot": {prefix: "gdot ", size: 12, incr: 3, type: 1},
@@ -11566,10 +11572,6 @@ function color_compare(a, b) {
         return a.s < b.s ? 1 : (a.s == b.s ? 0 : -1);
 }
 const class_analyses = {tagbg: null, dark: null, badge: null};
-function store_class_analysis(k, anal) {
-    class_analyses[k] = anal;
-    return anal;
-}
 function analyze_class(k) {
     if (k in class_analyses) {
         return class_analyses[k];
@@ -11738,7 +11740,6 @@ return function (classes, type) {
         const d = size * 0.125, r = d * 0.75, pds = [],
             dither = [0, 10, 8, 2, 5, 15, 7, 13, 1, 11, 3, 9, 4, 14, 6, 12],
             max = dots.length === 1 ? 8 : 16;
-        let pd = "";
         for (let i = 0; i !== max; ++i) {
             const ci = (i * dots.length) >> 4, x = dither[i] % 4, y = dither[i] >> 2;
             pds[ci] = (pds[ci] || "") + `M${(2*x+1)*d},${(2*y+1)*d-r}a${r},${r} 0,0,1 ${r},${r} ${r},${r} 0,1,1 ${-r},${-r}z`;

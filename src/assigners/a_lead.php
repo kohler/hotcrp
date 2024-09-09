@@ -70,19 +70,20 @@ class Lead_AssignmentParser extends AssignmentParser {
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
     }
-    function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
+    function allow_user(PaperInfo $prow, Contact $user, $req, AssignmentState $state) {
         if ($this->remove
-            || !$contact->contactId
-            || $contact->can_accept_review_assignment_ignore_conflict($prow)
-            || ($this->key === "shepherd"
-                && $state->conf->setting("extrev_shepherd")
-                && $prow->review_type($contact) == REVIEW_EXTERNAL)) {
+            || !$user->contactId
+            || $user->pc_track_assignable($prow)
+            || $user->allow_administer($prow)
+            || ($rt = $prow->review_type($user)) >= REVIEW_PC
+            || ($rt === REVIEW_EXTERNAL
+                && $this->key === "shepherd"
+                && $state->conf->setting("extrev_shepherd"))) {
             return true;
-        } else {
-            $uname = $contact->name(NAME_E);
-            $verb = $this->key === "manager" ? "administer" : $this->key;
-            return new AssignmentError("<0>{$uname} can’t $verb #{$prow->paperId}");
         }
+        $uname = $user->name(NAME_E);
+        $verb = $this->key === "manager" ? "administer" : $this->key;
+        return new AssignmentError("<0>{$uname} can’t {$verb} #{$prow->paperId}");
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $remcid = null;

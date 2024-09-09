@@ -5042,7 +5042,7 @@ class Conf {
             && ($viewer->privChair || $viewer->allow_administer($this->paper))) {
             $list = [];
             foreach ($this->pc_members() as $pcm) {
-                if ($pcm->can_accept_review_assignment($this->paper)) {
+                if ($pcm->pc_assignable($this->paper)) {
                     $list[] = $pcm->contactId;
                 }
             }

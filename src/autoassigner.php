@@ -802,7 +802,7 @@ abstract class Autoassigner extends MessageSet {
             $a->topicscore = $prow->topic_interest_score($ac->user);
             if ($a->eass < self::ENOASSIGN
                 && ($prow->has_conflict($ac->user)
-                    || !$ac->user->can_accept_review_assignment($prow))) {
+                    || !$ac->user->pc_track_assignable($prow))) {
                 $a->eass = self::ENOASSIGN;
             }
             $a->cpref = max($a->pref, -1000) + ((float) $a->topicscore / 100.0);

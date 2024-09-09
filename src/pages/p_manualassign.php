@@ -62,8 +62,7 @@ class ManualAssign_Page {
             }
 
             $newrt = max($assrev, 0);
-            if ($rt !== $newrt
-                && ($newrt == 0 || $reviewer->can_accept_review_assignment_ignore_conflict($row))) {
+            if ($rt !== $newrt) {
                 $assignments[] = [
                     $row->paperId,
                     $reviewer->email,
@@ -81,6 +80,9 @@ class ManualAssign_Page {
             $aset = new AssignmentSet($this->viewer);
             $aset->parse($text);
             $aset->execute(true);
+            if ($aset->has_error()) {
+                error_log($aset->full_feedback_text());
+            }
         }
 
         $this->conf->redirect_self($this->qreq);

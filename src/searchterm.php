@@ -1382,18 +1382,18 @@ class Limit_SearchTerm extends SearchTerm {
             }
             return false;
         case "reviewable":
-            if (($this->reviewer !== $user && !$user->allow_administer($row))
-                || !$this->reviewer->can_accept_review_assignment_ignore_conflict($row)) {
+            if ($this->reviewer !== $user && !$user->allow_administer($row)) {
                 return false;
             } else if ($row->has_active_reviewer($this->reviewer)) {
                 return true;
-            } else {
-                return ($row->timeSubmitted > 0
-                        || ($row->timeWithdrawn <= 0
-                            && $row->submission_round()->incomplete_viewable))
-                    && ($row->outcome_sign !== -2
-                        || !$user->can_view_decision($row));
             }
+            return $this->reviewer->pc_track_assignable($row)
+                && !$row->has_conflict($this->reviewer)
+                && ($row->timeSubmitted > 0
+                    || ($row->timeWithdrawn <= 0
+                        && $row->submission_round()->incomplete_viewable))
+                && ($row->outcome_sign !== -2
+                    || !$user->can_view_decision($row));
         case "active":
             return $row->outcome_sign !== -2
                 || !$user->can_view_decision($row);

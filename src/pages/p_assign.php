@@ -565,7 +565,8 @@ class Assign_Page {
 
             $this->conf->ensure_cached_user_collaborators();
             foreach ($this->conf->pc_members() as $pc) {
-                if ($pc->can_accept_review_assignment_ignore_conflict($prow)) {
+                if ($pc->pc_track_assignable($prow)
+                    || $prow->has_reviewer($pc)) {
                     $this->print_pc_assignment($pc, $acs);
                 }
             }

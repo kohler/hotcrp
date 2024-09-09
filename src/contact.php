@@ -4366,9 +4366,18 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_accept_some_review_assignment() {
-        return $this->isPC
-            && $this->conf->check_any_tracks($this, Track::ASSREV);
+    function pc_track_assignable(PaperInfo $prow) {
+        return ($this->roles & self::ROLE_PC) !== 0
+            && $this->conf->check_tracks($prow, $this, Track::ASSREV);
+    }
+
+    /** @return bool */
+    function pc_assignable(PaperInfo $prow) {
+        $rights = $this->rights($prow);
+        return ($this->roles & self::ROLE_PC) !== 0
+            && ($rights->is_reviewer()
+                || ($rights->unconflicted()
+                    && $this->conf->check_tracks($prow, $this, Track::ASSREV)));
     }
 
     /** @return bool */

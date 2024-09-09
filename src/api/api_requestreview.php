@@ -71,9 +71,7 @@ class RequestReview_API {
         }
 
         // - check for conflict
-        if ($reviewer
-            && ($prow->has_conflict($reviewer)
-                || ($reviewer->isPC && !$reviewer->can_accept_review_assignment($prow)))) {
+        if ($reviewer && $prow->has_conflict($reviewer)) {
             return JsonResult::make_parameter_error("email", "<0>{$email} cannot be asked to review this submission");
         }
 
@@ -100,24 +98,35 @@ class RequestReview_API {
 
         // load potential conflict
         $potconf = $prow->potential_conflict_html($xreviewer);
+        $notrack = $reviewer
+            && $reviewer->is_pc_member()
+            && !$reviewer->pc_track_assignable($prow);
 
         // check whether to make a proposal
         $extrev_chairreq = $user->conf->setting("extrev_chairreq");
         if ($user->can_administer($prow)
-            ? $potconf && !$qreq->override
+            ? ($potconf || $notrack) && !$qreq->override
             : $extrev_chairreq === 1
-              || ($extrev_chairreq === 2 && $potconf)) {
+              || ($extrev_chairreq === 2 && ($potconf || $notrack))) {
             $prow->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
                 $prow->paperId, $email, $xreviewer->firstName, $xreviewer->lastName,
                 $xreviewer->affiliation, $user->contactId, Conf::$now, $reason, $round);
             $ml = [];
             if ($user->can_administer($prow)) {
-                $ml[] = new MessageItem("email", "<5>" . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so you must approve this request for it to take effect", MessageSet::WARNING_NOTE);
-                $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf), MessageSet::INFORM);
-            } else if ($extrev_chairreq === 2) {
-                $ml[] = new MessageItem("email", "<5>" . $xreviewer->name_h(NAME_E) . " has a potential conflict with this submission, so an administrator must approve your proposed external review before it can take effect", MessageSet::WARNING_NOTE);
-                if ($user->can_view_authors($prow)) {
+                if ($potconf) {
+                    $ml[] = new MessageItem("email", $this->conf->_("<0>{} has a potential conflict with this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
                     $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf), MessageSet::INFORM);
+                } else {
+                    $ml[] = new MessageItem("email", $this->conf->_("<0>{} could not normally be assigned to review this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
+                }
+            } else if ($extrev_chairreq === 2) {
+                if ($potconf || !$user->can_view_pc()) {
+                    $ml[] = new MessageItem("email", $this->conf->_("<0>{} has a potential conflict with this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
+                    if ($potconf && $user->can_view_authors($prow)) {
+                        $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf), MessageSet::INFORM);
+                    }
+                } else {
+                    $ml[] = new MessageItem("email", $this->conf->_("<0>{} could not normally be assigned to review this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
                 }
             } else {
                 $ml[] = new MessageItem("email", "<5>Proposed an external review from " . $xreviewer->name_h(NAME_E), MessageSet::WARNING_NOTE);
@@ -155,7 +164,7 @@ class RequestReview_API {
             "requester_contact" => $requester, "reason" => $reason
         ]);
 
-        $mi = new MessageItem("email", "<5>Requested an external review from " . $reviewer->name_h(NAME_E), MessageSet::SUCCESS);
+        $mi = new MessageItem("email", "<0>Requested a review from " . $reviewer->name(NAME_E), MessageSet::SUCCESS);
         return new JsonResult(["ok" => true, "action" => "request", "message_list" => [$mi]]);
     }
 
