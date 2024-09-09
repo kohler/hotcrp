@@ -1,8 +1,8 @@
 <?php
 // paperevents.php -- HotCRP paper events
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
-class PaperEvent {
+class PaperEvent implements JsonSerializable {
     /** @var PaperInfo */
     public $prow;
     /** @var ReviewInfo */
@@ -24,6 +24,21 @@ class PaperEvent {
             $this->eventTime = (int) $crow->timeModified;
         }
     }
+
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        $j = [
+            "object" => "event",
+            "pid" => $this->prow->paperId,
+            "time" => $this->eventTime
+        ];
+        if ($this->rrow) {
+            $j["review"] = $this->rrow;
+        } else if ($this->crow) {
+            $j["comment"] = $this->crow;
+        }
+        return $j;
+    }
 }
 
 class PaperEvents {
@@ -36,20 +51,18 @@ class PaperEvents {
     /** @var PaperInfoSet */
     private $prows;
 
+    /** @var float */
+    private $start;
     /** @var int */
     private $limit;
-    /** @var null|false|float|array{int|float,int|float,int|float} */
-    private $rposition;
     /** @var list<ReviewInfo> */
     private $rrows = [];
-    /** @var ?PaperEvent */
-    private $cur_rrow;
-    /** @var null|false|float|array{int|float,int|float,int|float} */
-    private $cposition;
+    /** @var int */
+    private $ridx;
     /** @var list<CommentInfo> */
     private $crows = [];
-    /** @var ?PaperEvent */
-    private $cur_crow;
+    /** @var int */
+    private $cidx;
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -67,105 +80,59 @@ class PaperEvents {
         }
     }
 
-    private function initial_wheres($pos, $key) {
+    /** @param ReviewInfo|CommentInfo $xrow */
+    private function initial_wheres($xrow, $key) {
         $where = $qv = [];
         if (!$this->all_papers) {
             $where[] = "paperId?a";
             $qv[] = $this->prows->paper_ids();
         }
-        if (is_array($pos)) {
+        if ($xrow) {
             $where[] = "({$key}<? or ({$key}=? and (paperId>? or (paperId=? and contactId>?))))";
-            array_push($qv, $pos[0], $pos[0], $pos[1], $pos[1], $pos[2]);
+            array_push($qv, $xrow->$key, $xrow->$key, $xrow->paperId, $xrow->paperId, $xrow->contactId);
         } else {
             $where[] = "{$key}<?";
-            $qv[] = $pos;
+            $qv[] = $this->start;
         }
         return [$where, $qv];
     }
 
     private function more_reviews() {
-        list($where, $qv) = $this->initial_wheres($this->rposition, "reviewModified");
+        $rrow = $this->rrows[$this->ridx - 1] ?? null;
+        list($where, $qv) = $this->initial_wheres($rrow, "reviewModified");
         $where[] = "reviewSubmitted>0";
         $q = "select * from PaperReview where " . join(" and ", $where) . " order by reviewModified desc, paperId asc, contactId asc limit {$this->limit}";
 
-        $last = null;
+        $this->rrows = [];
         $result = $this->conf->qe_apply($q, $qv);
         while (($rrow = ReviewInfo::fetch($result, null, $this->conf))) {
-            $this->rrows[] = $last = $rrow;
+            $this->rrows[] = $rrow;
         }
         Dbl::free($result);
-        $this->rrows = array_reverse($this->rrows);
-
-        $this->rposition = false;
-        if ($last) {
-            $this->rposition = [+$last->reviewModified, +$last->paperId, +$last->contactId];
-        }
-    }
-
-    /** @return ?PaperEvent */
-    private function next_review() {
-        while (true) {
-            if (empty($this->rrows) && $this->rposition !== false) {
-                $this->more_reviews();
-                $this->load_papers();
-            }
-            $rrow = array_pop($this->rrows);
-            if (!$rrow) {
-                return null;
-            }
-            if (($prow = $this->prows->get($rrow->paperId))
-                && $this->user->can_view_paper($prow)
-                && !$this->user->act_author_view($prow)
-                && $this->user->following_reviews($prow, 0)) {
-                $rrow->set_prow($prow);
-                if ($this->user->can_view_review($prow, $rrow)) {
-                    return new PaperEvent($prow, $rrow, null);
-                }
-            }
-        }
+        $this->ridx = empty($this->rrows) ? -1 : 0;
     }
 
     private function more_comments() {
-        list($where, $qv) = $this->initial_wheres($this->cposition, "timeModified");
+        $crow = $this->crows[$this->cidx - 1] ?? null;
+        list($where, $qv) = $this->initial_wheres($crow, "timeModified");
         $q = "select * from PaperComment where " . join(" and ", $where) . " order by timeModified desc, paperId asc, contactId asc limit {$this->limit}";
 
-        $last = null;
+        $this->crows = [];
         $result = $this->conf->qe_apply($q, $qv);
         while (($crow = CommentInfo::fetch($result, null, $this->conf))) {
-            $this->crows[] = $last = $crow;
+            $this->crows[] = $crow;
         }
         Dbl::free($result);
-        $this->crows = array_reverse($this->crows);
-
-        $this->cposition = false;
-        if ($last) {
-            $this->cposition = [+$last->timeModified, +$last->paperId, +$last->contactId];
-        }
+        $this->cidx = empty($this->crows) ? -1 : 0;
     }
 
-    /** @return ?PaperEvent */
-    private function next_comment() {
-        while (true) {
-            if (empty($this->crows) && $this->cposition !== false) {
-                $this->more_comments();
-                $this->load_papers();
-            }
-            $crow = array_pop($this->crows);
-            if (!$crow) {
-                return null;
-            }
-            if (($prow = $this->prows->get($crow->paperId))
-                && $this->user->can_view_paper($prow)
-                && !$this->user->act_author_view($prow)
-                && $this->user->following_reviews($prow, $crow->commentType)
-                && $this->user->can_view_comment($prow, $crow)) {
-                $crow->set_prow($prow);
-                return new PaperEvent($prow, null, $crow);
-            }
+    private function refresh() {
+        if ($this->ridx === count($this->rrows)) {
+            $this->more_reviews();
         }
-    }
-
-    private function load_papers() {
+        if ($this->cidx === count($this->crows)) {
+            $this->more_comments();
+        }
         $need = [];
         foreach ($this->rrows as $rrow) {
             if (!$this->prows->get($rrow->paperId))
@@ -180,58 +147,88 @@ class PaperEvents {
         }
     }
 
-    /** @param ?PaperEvent $a
-     * @param ?PaperEvent $b */
-    static function _activity_compar($a, $b) {
-        if (!$a || !$b) {
-            return !$a && !$b ? 0 : ($a ? -1 : 1);
-        } else if ($a->eventTime != $b->eventTime) {
-            return $a->eventTime > $b->eventTime ? -1 : 1;
-        } else if ($a->prow->paperId != $b->prow->paperId) {
-            return $a->prow->paperId < $b->prow->paperId ? -1 : 1;
-        } else if (!$a->rrow !== !$b->rrow) {
-            return $a->rrow ? -1 : 1;
-        } else if ($a->rrow) {
-            return $a->rrow->reviewId <=> $b->rrow->reviewId;
-        } else {
-            return $a->crow->commentId <=> $b->crow->commentId;
+    /** @return ?PaperEvent */
+    private function make_revt(ReviewInfo $rrow) {
+        if (($prow = $this->prows->get($rrow->paperId))
+            && $this->user->can_view_paper($prow)
+            && !$this->user->act_author_view($prow)
+            && $this->user->following_reviews($prow, 0)) {
+            $rrow->set_prow($prow);
+            if ($this->user->can_view_review($prow, $rrow)) {
+                return new PaperEvent($prow, $rrow, null);
+            }
+        }
+        return null;
+    }
+
+    /** @return ?PaperEvent */
+    private function make_cevt(CommentInfo $crow) {
+        if (($prow = $this->prows->get($crow->paperId))
+            && $this->user->can_view_paper($prow)
+            && !$this->user->act_author_view($prow)
+            && $this->user->following_reviews($prow, $crow->commentType)
+            && $this->user->can_view_comment($prow, $crow)) {
+            $crow->set_prow($prow);
+            return new PaperEvent($prow, null, $crow);
+        }
+        return null;
+    }
+
+    /** @param ReviewInfo $rrow
+     * @param CommentInfo $crow
+     * @return bool */
+    static private function revt_precedes_cevt($rrow, $crow) {
+        $tcmp = $rrow->reviewModified <=> $crow->timeModified;
+        return $tcmp > 0 || ($tcmp === 0 && $rrow->paperId <= $crow->paperId);
+    }
+
+    /** @param int|float $start */
+    function reset($start) {
+        $this->rrows = $this->crows = [];
+        $this->ridx = $this->cidx = 0;
+        $this->start = $start;
+        $this->limit = 25;
+    }
+
+    /** @return ?PaperEvent */
+    function next_event() {
+        while (true) {
+            if ($this->ridx === count($this->rrows)
+                || $this->cidx === count($this->crows)) {
+                $this->refresh();
+            }
+            $rrow = $this->rrows[$this->ridx] ?? null;
+            $crow = $this->crows[$this->cidx] ?? null;
+            if (!$rrow && !$crow) {
+                return null;
+            }
+            if ($rrow && (!$crow || self::revt_precedes_cevt($rrow, $crow))) {
+                ++$this->ridx;
+                if (($revt = $this->make_revt($rrow))) {
+                    return $revt;
+                }
+            } else {
+                ++$this->cidx;
+                if (($cevt = $this->make_cevt($crow))) {
+                    return $cevt;
+                }
+            }
         }
     }
 
-    /** @param int $limit
+    /** @param int|float $start
+     * @param int $limit
      * @return list<PaperEvent> */
-    function events($starting, $limit) {
-        $this->rrows = $this->crows = [];
-        $this->cur_rrow = $this->cur_crow = null;
-        $this->rposition = $this->cposition = (float) $starting;
+    function events($start, $limit) {
+        $this->reset($start);
         $this->limit = $limit;
-        $this->more_reviews();
-        $this->more_comments();
-        $this->load_papers();
         $last_time = null;
-        $events = [];
-        while (true) {
-            if (!$this->cur_rrow) {
-                $this->cur_rrow = $this->next_review();
-            }
-            if (!$this->cur_crow) {
-                $this->cur_crow = $this->next_comment();
-            }
-            if (!$this->cur_rrow && !$this->cur_crow) {
-                return $events;
-            }
-            if (self::_activity_compar($this->cur_rrow, $this->cur_crow) < 0) {
-                $key = "cur_rrow";
-            } else {
-                $key = "cur_crow";
-            }
-            $erow = $this->$key;
-            if (count($events) >= $limit && $erow->eventTime < $last_time) {
-                return $events;
-            }
-            $events[] = $erow;
-            $last_time = $erow->eventTime;
-            $this->$key = null;
+        $evts = [];
+        while (($evt = $this->next_event())
+               && (count($evts) < $limit || $evt->eventTime === $last_time)) {
+            $evts[] = $evt;
+            $last_time = $evt->eventTime;
         }
+        return $evts;
     }
 }

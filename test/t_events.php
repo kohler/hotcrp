@@ -18,6 +18,9 @@ class Events_Tester {
 
         $u_diot = $this->conf->checked_user_by_email("christophe.diot@sophia.inria.fr");
         $evs = new PaperEvents($u_diot);
+        foreach ($evs->events(Conf::$now, 10) as $x) {
+            error_log(Conf::$now . " " . json_encode($x));
+        }
         xassert_eqq(count($evs->events(Conf::$now, 10)), 0);
     }
 }
