@@ -3110,7 +3110,7 @@ class Contact implements JsonSerializable {
                         || ($allow_administer
                             && ($this->dangerous_track_mask() & Track::BITS_REVIEW) === 0)
                         || ($this->conf->check_tracks($prow, $this, Track::ASSREV)
-                            && $this->conf->check_tracks($prow, $this, Track::UNASSREV))))) {
+                            && $this->conf->check_tracks($prow, $this, Track::SELFASSREV))))) {
                 $cif |= PaperContactInfo::CIF_POTENTIAL_REVIEWER;
                 if ($can_administer || $ci->conflictType <= CONFLICT_MAXUNCONFLICTED) {
                     $cif |= PaperContactInfo::CIF_ALLOW_REVIEW;
@@ -4348,7 +4348,7 @@ class Contact implements JsonSerializable {
             && $this->conf->setting("pcrev_any") > 0
             && $this->conf->time_review(null, true, true)
             && $this->conf->check_any_tracks($this, Track::ASSREV)
-            && $this->conf->check_any_tracks($this, Track::UNASSREV);
+            && $this->conf->check_any_tracks($this, Track::SELFASSREV);
     }
 
     /** @return bool */

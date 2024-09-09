@@ -204,7 +204,7 @@ class Review_SettingParser extends SettingParser {
         echo '<div class="form-g has-fold foldo">';
         $sv->print_checkbox("review_self_assign", "PC members can self-assign reviews", ["class" => "uich js-foldup"]);
         if ($sv->conf->setting("pcrev_any")
-            && $sv->conf->check_track_sensitivity(Track::UNASSREV)) {
+            && $sv->conf->check_track_sensitivity(Track::SELFASSREV)) {
             echo '<p class="f-d fx">', $sv->setting_group_link("Current track settings", "tracks"), ' may restrict self-assigned reviews.</p>';
         }
         echo "</div>\n";
