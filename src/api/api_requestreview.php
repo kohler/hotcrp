@@ -331,8 +331,7 @@ class RequestReview_API {
         $rrow = $prow->review_by_id($r);
         $refrow = $prow->review_refusal_by_id($r);
         if (!$rrow && !$refrow) {
-            if ($user->can_administer($prow)
-                || $user->can_view_review($prow, null)) {
+            if ($user->can_view_submitted_review($prow)) {
                 return JsonResult::make_not_found_error("r", "<0>No such review");
             } else {
                 return JsonResult::make_permission_error("r");
@@ -404,8 +403,7 @@ class RequestReview_API {
         $rrow = $prow->review_by_id($r);
         $refrow = $prow->review_refusal_by_id($r);
         if (!$rrow && !$refrow) {
-            if ($user->can_administer($prow)
-                || $user->can_view_review($prow, null)) {
+            if ($user->can_view_submitted_review($prow)) {
                 return JsonResult::make_not_found_error("r", "<0>Review not found");
             } else {
                 return JsonResult::make_permission_error("r");
@@ -497,8 +495,7 @@ class RequestReview_API {
 
         $rrow = $prow->review_by_id($r);
         if (!$rrow) {
-            if ($user->can_administer($prow)
-                || $user->can_view_review($prow, null)) {
+            if ($user->can_view_submitted_review($prow)) {
                 return JsonResult::make_not_found_error("r", "<0>Review not found");
             } else {
                 return JsonResult::make_permission_error("r");

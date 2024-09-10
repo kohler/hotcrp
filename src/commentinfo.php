@@ -202,6 +202,12 @@ class CommentInfo {
         }
     }
 
+    /** @param int $ctype
+     * @return bool */
+    function has_topic($ctype) {
+        return (self::fix_type_topic($this->commentType) & $ctype & self::CTM_TOPIC) !== 0;
+    }
+
     function set_prow(PaperInfo $prow) {
         assert(!$this->prow && $this->paperId === $prow->paperId && $this->conf === $prow->conf);
         /** @phan-suppress-next-line PhanAccessReadOnlyProperty */

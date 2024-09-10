@@ -119,15 +119,16 @@ final class PaperContactInfo {
     const CIF_CAN_ADMINISTER = 0x20;
     const CIF_ALLOW_PC_BROAD = 0x40;
     const CIF_ALLOW_PC = 0x80;
-    const CIF_ALLOW_REVIEWER = 0x100;
-    const CIF_ALLOW_AUTHOR_EDIT = 0x200;
-    const CIF_ACT_AUTHOR_VIEW = 0x400;
-    const CIF_ALLOW_AUTHOR_VIEW = 0x800;
-    const CIF_CAN_VIEW_DECISION = 0x1000;
-    const CIF_SET2 = 0x4000;
-    const CIF_ALLOW_VIEW_AUTHORS = 0x8000;
-    const CIF_PREFER_VIEW_AUTHORS = 0x10000;
-    const CIFSHIFT_VIEW_AUTHORS_STATE = 15;
+    const CIF_ALLOW_AUTHOR_EDIT = 0x100;
+    const CIF_ACT_AUTHOR_VIEW = 0x200;
+    const CIF_ALLOW_AUTHOR_VIEW = 0x400;
+    const CIF_CAN_VIEW_DECISION = 0x800;
+    const CIF_SET2 = 0x1000;
+    const CIF_ALLOW_VIEW_AUTHORS = 0x2000;
+    const CIF_PREFER_VIEW_AUTHORS = 0x4000;
+    const CIFSHIFT_VIEW_AUTHORS_STATE = 13;
+    const CIF_SET3 = 0x8000;
+    const CIF_CAN_VIEW_SUBMITTED_REVIEW = 0x10000;
     /** @var bool */
     public $primary_administrator;
     /** @var int */
@@ -240,11 +241,6 @@ final class PaperContactInfo {
     /** @return bool */
     function allow_pc() {
         return ($this->ciflags & self::CIF_ALLOW_PC) !== 0;
-    }
-
-    /** @return bool */
-    function allow_reviewer() {
-        return ($this->ciflags & self::CIF_ALLOW_REVIEWER) !== 0;
     }
 
     /** @return bool */

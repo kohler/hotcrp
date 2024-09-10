@@ -99,7 +99,7 @@ class PaperTable {
             return;
         }
 
-        $this->can_view_reviews = $user->can_view_review($prow, null);
+        $this->can_view_reviews = $user->can_view_submitted_review($prow);
         if (!$this->can_view_reviews && $prow->has_active_reviewer($user)) {
             foreach ($prow->reviews_by_user($user) as $rrow) {
                 if ($rrow->reviewStatus >= ReviewInfo::RS_COMPLETED) {

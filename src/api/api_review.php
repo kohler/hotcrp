@@ -4,7 +4,7 @@
 
 class Review_API {
     static function review(Contact $user, Qrequest $qreq, PaperInfo $prow) {
-        if (!$user->can_view_review($prow, null)) {
+        if (!$user->can_view_submitted_review($prow)) {
             return JsonResult::make_permission_error();
         }
         $need_id = false;
@@ -40,7 +40,7 @@ class Review_API {
     }
 
     static function reviewhistory(Contact $user, Qrequest $qreq, PaperInfo $prow) {
-        if (!$user->can_view_review($prow, null)) {
+        if (!$user->can_view_submitted_review($prow)) {
             return JsonResult::make_permission_error();
         }
         if (!isset($qreq->r)

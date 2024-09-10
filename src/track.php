@@ -25,7 +25,8 @@ class Track {
     const ADMIN = 7;
     const HIDDENTAG = 8;
     const VIEWALLREV = 9;
-    const NPERM = 10;
+    const COMMENT = 10;
+    const NPERM = 11;
 
     const BITS_VIEW = 0x1;        // 1 << VIEW
     const BITS_REVIEW = 0x30;     // (1 << ASSREV) | (1 << SELFASSREV)
@@ -37,14 +38,14 @@ class Track {
     static public $perm_name_map = [
         "view" => 0, "viewpdf" => 1, "viewrev" => 2, "viewrevid" => 3,
         "assrev" => 4, "unassrev" => 5, "viewtracker" => 6, "admin" => 7,
-        "hiddentag" => 8, "viewallrev" => 9
+        "hiddentag" => 8, "viewallrev" => 9, "comment" => 10
     ];
 
     /** @param ?string $tag */
     function __construct($tag = null) {
         $this->tag = $tag ?? "";
         $this->ltag = strtolower($this->tag);
-        $this->perm = [null, null, null, null, null, null, null, null, null, null];
+        $this->perm = [null, null, null, null, null, null, null, null, null, null, null];
         $this->is_default = $tag === "";
     }
 

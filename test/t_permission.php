@@ -682,6 +682,9 @@ class Permission_Tester {
     }
 
     function test_comment_search() {
+        $this->conf->save_refresh_setting("viewrevid", 1);
+        Contact::update_rights();
+
         $paper1 = $this->u_chair->checked_paper_by_id(1);
         $paper2 = $this->u_chair->checked_paper_by_id(2);
         $paper18 = $this->u_chair->checked_paper_by_id(18);
@@ -709,9 +712,6 @@ class Permission_Tester {
     }
 
     function test_comment_notification() {
-        $this->conf->save_refresh_setting("viewrevid", 1);
-        Contact::update_rights();
-
         $paper2 = $this->u_chair->checked_paper_by_id(2);
         xassert($paper2->has_reviewer($this->u_chair));
         $comment4 = new CommentInfo($paper2);

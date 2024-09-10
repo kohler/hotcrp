@@ -231,7 +231,7 @@
             "review_identity_visibility_pc",
             "review_visibility_pc",
             "review_visibility_lead",
-            "comment_visibility_anonymous"
+            "comment_visibility_reviewer"
         ]
     },
     {

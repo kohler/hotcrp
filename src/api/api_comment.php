@@ -254,7 +254,7 @@ class Comment_API {
 
         // check comment view permission
         if ($crow && !$this->user->can_view_comment($this->prow, $crow, true)) {
-            if ($this->user->can_view_review($this->prow, null)) {
+            if ($this->user->can_view_submitted_review($this->prow)) {
                 return JsonResult::make_error(403, "<0>You aren’t allowed to view that {$lccmttype}");
             } else {
                 return JsonResult::make_error(404, "<0>{$uccmttype} not found");
