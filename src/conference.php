@@ -573,7 +573,7 @@ class Conf {
                 $v->viewpdf = $v->view;
             }
             foreach (Track::$perm_name_map as $tname => $idx) {
-                if (isset($v->$tname)) {
+                if (isset($v->$tname) && $v->$tname !== "") {
                     $tr->perm[$idx] = $v->$tname;
                     $this->_track_sensitivity |= 1 << $idx;
                 }
@@ -1423,7 +1423,7 @@ class Conf {
     /** @param int $ttype
      * @return bool */
     function check_tracks(PaperInfo $prow, Contact $user, $ttype) {
-        if ($this->_tracks === null) {
+        if (($this->_track_sensitivity & (1 << $ttype)) === 0) {
             return true;
         }
         $unmatched = true;
@@ -1484,22 +1484,24 @@ class Conf {
     /** @param int $ttype
      * @return bool */
     function check_default_track(Contact $user, $ttype) {
-        if ($this->_tracks === null) {
-            return (Track::BITS_REQUIRED & (1 << $ttype)) === 0;
+        $required = Track::perm_required($ttype);
+        if (($this->_track_sensitivity & (1 << $ttype)) === 0) {
+            return !$required;
         }
-        return $user->has_permission($this->_tracks[count($this->_tracks) - 1]->perm[$ttype]);
+        /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
+        $tr = $this->_tracks[count($this->_tracks) - 1];
+        return (!$required || $tr->perm[$ttype]) && $user->has_permission($tr->perm[$ttype]);
     }
 
     /** @param int $ttype
      * @return bool */
     function check_any_tracks(Contact $user, $ttype) {
-        if ($this->_tracks === null) {
+        if (($this->_track_sensitivity & (Track::BITS_VIEW | (1 << $ttype))) === 0) {
             return true;
         }
         foreach ($this->_tracks as $tr) {
-            if (($ttype === Track::VIEW
-                 || $user->has_permission($tr->perm[Track::VIEW]))
-                && $user->has_permission($tr->perm[$ttype])) {
+            if ($user->has_permission($tr->perm[Track::VIEW])
+                && ($ttype === Track::VIEW || $user->has_permission($tr->perm[$ttype]))) {
                 return true;
             }
         }
@@ -1513,8 +1515,7 @@ class Conf {
             return false;
         }
         foreach ($this->_tracks as $tr) {
-            if ($tr->perm[$ttype]
-                && $user->has_permission($tr->perm[$ttype])) {
+            if ($tr->perm[$ttype] && $user->has_permission($tr->perm[$ttype])) {
                 return true;
             }
         }
