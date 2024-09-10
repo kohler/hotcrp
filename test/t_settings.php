@@ -1359,12 +1359,13 @@ class Settings_Tester {
         xassert_eqq($this->conf->_i("clickthrough_submit"), null);
     }
 
+    #[SkipLandmark]
     static function unexpected_unified_diff($x, $y) {
         $dmp = new dmp\diff_match_patch;
         $diff = $dmp->line_diff($x, $y);
         $udiff = $dmp->line_diff_toUnified($diff, 10, 50);
         fwrite(STDERR, $udiff);
-        xassert_eqq($udiff, "", caller_landmark());
+        xassert_eqq($udiff, "");
     }
 
     function test_json_settings_roundtrip() {

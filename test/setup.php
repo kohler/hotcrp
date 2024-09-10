@@ -254,6 +254,9 @@ class ProfileTimer {
     }
 }
 
+#[Attribute]
+class SkipLandmark {
+}
 
 class Xassert {
     /** @var int */
@@ -379,19 +382,15 @@ class Xassert {
         }
     }
 
-    /** @param ?string $location
-     * @param string $eprefix
+    /** @param string $eprefix
      * @param mixed $expected
      * @param string $aprefix
      * @param mixed $actual
+     * @param string $rest
      * @return void */
-    static function fail_match($location, $eprefix, $expected, $aprefix, $actual) {
-        if ($location === null) {
-            list($location, $rest) = self::landmark(true);
-        } else {
-            $rest = "";
-        }
-        self::fail_with("!", self::match_failure_message($location, $eprefix, $expected, $aprefix, $actual), $rest);
+    static function fail_match($eprefix, $expected, $aprefix, $actual, $rest = "") {
+        list($location, $xrest) = self::landmark(true);
+        self::fail_with("!", self::match_failure_message($location, $eprefix, $expected, $aprefix, $actual), $xrest, $rest);
     }
 
     /** @param bool $want_color
@@ -405,6 +404,10 @@ class Xassert {
             $tr = $trace[$pos];
             $fname = (isset($tr["class"]) ? $tr["class"] . "::" : "") . $tr["function"];
             if (preg_match('/\A[Xx]?assert|\AMailChecker::check|::x?assert/s', $fname)) {
+                continue;
+            }
+            $refl = isset($tr["class"]) ? new ReflectionMethod($tr["class"], $tr["function"]) : new ReflectionFunction($tr["function"]);
+            if ($refl->getAttributes("SkipLandmark")) {
                 continue;
             }
             $loc = $fname;
@@ -503,9 +506,9 @@ function xassert_exit() {
     exit($ok ? 0 : 1);
 }
 
-/** @param ?string $location
+/** @param string $rest
  * @return bool */
-function xassert_eqq($actual, $expected, $location = null) {
+function xassert_eqq($actual, $expected, $rest = "") {
     $ok = $actual === $expected;
     if (!$ok && is_float($expected) && is_nan($expected) && is_float($actual) && is_nan($actual)) {
         $ok = true;
@@ -513,7 +516,7 @@ function xassert_eqq($actual, $expected, $location = null) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_match($location, "expected === ", $expected, ", got ", $actual);
+        Xassert::fail_match("expected === ", $expected, ", got ", $actual, $rest);
     }
     return $ok;
 }
@@ -547,7 +550,7 @@ function xassert_in_eqq($member, $list) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_match(null, "expected ", $member, " ∈ ", $list);
+        Xassert::fail_match("expected ", $member, " ∈ ", $list);
     }
     return $ok;
 }
@@ -567,7 +570,7 @@ function xassert_not_in_eqq($member, $list) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_match(null, "expected ", $member, " ∉ ", $list);
+        Xassert::fail_match("expected ", $member, " ∉ ", $list);
     }
     return $ok;
 }
@@ -580,7 +583,7 @@ function xassert_eq($actual, $expected) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_match(null, "expected == ", $expected, ", got ", $actual);
+        Xassert::fail_match("expected == ", $expected, ", got ", $actual);
     }
     return $ok;
 }
@@ -606,7 +609,7 @@ function xassert_lt($actual, $expected_bound) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_match(null, "expected < ", $expected_bound, ", got ", $actual);
+        Xassert::fail_match("expected < ", $expected_bound, ", got ", $actual);
     }
     return $ok;
 }
@@ -619,7 +622,7 @@ function xassert_le($actual, $expected_bound) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_match(null, "expected <= ", $expected_bound, ", got ", $actual);
+        Xassert::fail_match("expected <= ", $expected_bound, ", got ", $actual);
     }
     return $ok;
 }
@@ -632,7 +635,7 @@ function xassert_ge($actual, $expected_bound) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_match(null, "expected >= ", $expected_bound, ", got ", $actual);
+        Xassert::fail_match("expected >= ", $expected_bound, ", got ", $actual);
     }
     return $ok;
 }
@@ -645,7 +648,7 @@ function xassert_gt($actual, $expected_bound) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_match(null, "expected > ", $expected_bound, ", got ", $actual);
+        Xassert::fail_match("expected > ", $expected_bound, ", got ", $actual);
     }
     return $ok;
 }
