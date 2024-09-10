@@ -1492,7 +1492,8 @@ class PaperTable {
         $pcconf = [];
         $this->conf->pc_members(); // to ensure pc_index is set
         foreach ($this->prow->conflict_list() as $cu) {
-            if (!$cu->user->is_pc_member()
+            if (!$cu->user // XXX should never happen
+                || !$cu->user->is_pc_member()
                 || !Conflict::is_conflicted($cu->conflictType)) {
                 continue;
             }
