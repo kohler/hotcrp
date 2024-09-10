@@ -68,15 +68,15 @@ class Review_API {
 
     static function reviewrating(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         if (!$qreq->r) {
-            return JsonResult::make_error(400, "<0>Bad request");
+            return JsonResult::make_parameter_error("r");
         }
         $rrow = $prow->full_review_by_ordinal_id($qreq->r);
         if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
-            return JsonResult::make_error(400, "<0>Bad request");
+            return JsonResult::make_parameter_error("r");
         } else if (!$user->can_view_review($prow, $rrow)) {
-            return JsonResult::make_permission_error();
+            return JsonResult::make_permission_error("r");
         } else if (!$rrow) {
-            return JsonResult::make_error(404, "<0>Review not found");
+            return JsonResult::make_not_found_error("r", "<0>Review not found");
         }
         $editable = $user->can_rate_review($prow, $rrow);
         if ($qreq->method() !== "GET") {
@@ -116,21 +116,21 @@ class Review_API {
     /** @param PaperInfo $prow */
     static function reviewround(Contact $user, $qreq, $prow) {
         if (!$qreq->r) {
-            return JsonResult::make_error(400, "<0>Bad request");
+            return JsonResult::make_missing_error("r");
         }
         $rrow = $prow->full_review_by_ordinal_id($qreq->r);
         if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
-            return JsonResult::make_error(400, "<0>Bad request");
+            return JsonResult::make_parameter_error("r");
         } else if (!$user->can_administer($prow)) {
-            return JsonResult::make_permission_error();
+            return JsonResult::make_permission_error("r");
         } else if (!$rrow) {
-            return JsonResult::make_error(404, "<0>Review not found");
+            return JsonResult::make_not_found_error("r", "<0>Review not found");
         }
         $rname_in = trim((string) $qreq->round);
         if (($rname = $user->conf->sanitize_round_name($rname_in)) === false) {
-            return JsonResult::make_error(400, "<0>" . Conf::round_name_error($rname_in));
+            return JsonResult::make_parameter_error("round", "<0>" . Conf::round_name_error($rname_in));
         } else if (($rnum = $user->conf->round_number($rname)) === null) {
-            return JsonResult::make_error(400, "<0>Review round not found");
+            return JsonResult::make_parameter_error("round", "<0>Review round not found");
         }
         $user->conf->qe("update PaperReview set reviewRound=? where paperId=? and reviewId=?", $rnum, $prow->paperId, $rrow->reviewId);
         return ["ok" => true];

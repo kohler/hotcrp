@@ -35,10 +35,14 @@
         "parameters": ["accept", "clickthrough_id"]
     },
     {
-        "name": "comment", "paper": true, "get": true, "post": true,
+        "name": "comment", "paper": true, "get": true,
         "function": "Comment_API::run",
-        "get_parameters": ["c"],
-        "post_parameters": ["c", "text", "topic", "draft", "blind", "tags", "visibility"]
+        "parameters": ["c"]
+    },
+    {
+        "name": "comment", "paper": true, "post": true,
+        "function": "Comment_API::run",
+        "parameters": ["c", "text", "topic", "draft", "blind", "tags", "visibility"]
     },
     {
         "name": "declinereview", "post": true, "redirect": true,
@@ -90,9 +94,14 @@
         "function": "Mail_API::mailtext"
     },
     {
-        "name": "manager", "paper": true, "get": true, "post": true,
+        "name": "manager", "paper": true, "get": true,
         "function": "PaperPC_API::manager_api",
-        "post_parameters": ["manager"]
+        "parameters": []
+    },
+    {
+        "name": "manager", "paper": true, "post": true,
+        "function": "PaperPC_API::manager_api",
+        "parameters": ["manager"]
     },
     {
         "name": "administrator", "alias": "manager"
@@ -158,8 +167,14 @@
         "function": "ReviewToken_API::run"
     },
     {
-        "name": "revpref", "get": true, "post": true,
-        "function": "Preference_API::pref_api"
+        "name": "revpref", "get": true,
+        "function": "Preference_API::pref_api",
+        "parameters": ["p", "?u"]
+    },
+    {
+        "name": "revpref", "post": true,
+        "function": "Preference_API::pref_api",
+        "parameters": ["p", "?u", "pref"]
     },
     {
         "name": "reviewpref", "alias": "revpref"

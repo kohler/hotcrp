@@ -6,13 +6,13 @@ class SearchConfig_API {
     static function viewoptions(Contact $user, Qrequest $qreq) {
         $report = $qreq->report ?? "pl";
         if ($report !== "pl" && $report !== "pf") {
-            return JsonResult::make_error(404, "<0>Report not found");
+            return JsonResult::make_not_found_error("report", "<0>Report not found");
         }
         $search = new PaperSearch($user, "NONE");
 
         if ($qreq->method() === "POST" && $user->privChair) {
             if (!isset($qreq->display)) {
-                return JsonResult::make_error(400, "<0>Bad request");
+                return JsonResult::make_missing_error("display");
             }
 
             $pl = new PaperList($report, $search, ["sort" => true]);

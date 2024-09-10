@@ -5527,7 +5527,7 @@ class Conf {
             }
         } else {
             $status = 400;
-            $result["message_list"][] = MessageItem::error("<0>Bad request, missing submission");
+            $result["message_list"][] = MessageItem::error_at("p", "<0>Parameter missing");
         }
         return new JsonResult($status, $result);
     }

@@ -180,7 +180,7 @@ class Settings_API {
             "ok" => true,
             "samples" => $samples,
             "types" => Options_SettingParser::make_types_json($otmap)
-        ]))->pretty_print(true);
+        ]))->set_pretty_print(true);
     }
 
     static function reviewfieldlibrary(Contact $user, Qrequest $qreq) {

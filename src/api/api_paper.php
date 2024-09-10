@@ -38,7 +38,7 @@ class Paper_API extends MessageSet {
             ]);
             $ml = $srch->message_list();
         } else {
-            return JsonResult::make_error(400, "<0>Bad request");
+            return JsonResult::make_parameter_error("p");
         }
 
         $pex = new PaperExport($user);

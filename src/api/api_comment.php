@@ -284,9 +284,10 @@ class Comment_API {
 
     static function run(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         // check parameters
-        if ((!isset($qreq->text) && !isset($qreq->delete) && $qreq->is_post())
-            || ($qreq->c === "new" && !$qreq->is_post())) {
-            return JsonResult::make_error(400, "<0>Bad request");
+        if (!isset($qreq->text) && !isset($qreq->delete) && $qreq->is_post()) {
+            return JsonResult::make_parameter_error("text");
+        } else if ($qreq->c === "new" && !$qreq->is_post()) {
+            return JsonResult::make_parameter_error("c");
         } else {
             return (new Comment_API($user, $prow))->run_qreq($qreq);
         }

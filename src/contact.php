@@ -3093,7 +3093,7 @@ class Contact implements JsonSerializable {
                 && $this->_capabilities !== null
                 && ($ru = $this->reviewer_capability_user($prow->paperId))
                 && ($rci = $prow->contact_info($ru))) {
-                if ($rci->review_status == 0) {
+                if ($rci->review_status === 0) {
                     $rci->review_status = PaperContactInfo::CIRS_DECLINED;
                 }
                 $ci->reviewType = $rci->reviewType;
@@ -3131,7 +3131,7 @@ class Contact implements JsonSerializable {
             if ($this->_capabilities !== null
                 && ($this->_capabilities["@av{$prow->paperId}"] ?? null)
                 && !$isPC
-                && $ci->review_status == 0) {
+                && $ci->review_status === 0) {
                 $ci->view_conflict_type = CONFLICT_AUTHOR;
             }
             $act_author_view = $ci->view_conflict_type >= CONFLICT_AUTHOR && !$forceShow;

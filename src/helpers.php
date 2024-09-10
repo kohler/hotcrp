@@ -193,7 +193,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
 
     /** @param bool $pp
      * @return $this */
-    function pretty_print($pp) {
+    function set_pretty_print($pp) {
         $this->pretty_print = $pp;
         return $this;
     }

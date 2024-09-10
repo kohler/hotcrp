@@ -114,8 +114,7 @@ class APISpec_Batch {
         if ($j->paper ?? false) {
             $params[] = $this->resolve_common_param("p");
         }
-        $mparameters = strtolower($method) . "_parameters";
-        foreach ($j->$mparameters ?? $j->parameters ?? [] as $p) {
+        foreach ($j->parameters ?? [] as $p) {
             $optional = str_starts_with($p, "?");
             $name = $optional ? substr($p, 1) : $p;
             $params[] = [
