@@ -68,6 +68,17 @@ class PaperReviewPreference {
     function as_list() {
         return [$this->preference, $this->expertise];
     }
+
+    /** @param int $pid
+     * @param int $cid
+     * @param callable(string,...) $stagef */
+    function save($pid, $cid, $stagef) {
+        if ($this->exists()) {
+            $stagef("insert into PaperReviewPreference set paperId=?, contactId=?, preference=?, expertise=? on duplicate key update preference=?, expertise=?", $pid, $cid, $this->preference, $this->expertise, $this->preference, $this->expertise);
+        } else {
+            $stagef("delete from PaperReviewPreference where paperId=? and contactId=?", $pid, $cid);
+        }
+    }
 }
 
 final class PaperContactInfo {

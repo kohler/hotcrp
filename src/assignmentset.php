@@ -540,9 +540,9 @@ class AssignmentState extends MessageSet {
     function warning($msg) {
         $this->msg_near($this->landmark, $msg, 1);
     }
-    /** @param string $msg
+    /** @param ?string $msg
      * @return void */
-    function user_error($msg) {
+    function user_error($msg = null) {
         $this->has_user_error = true;
         $this->error($msg);
     }

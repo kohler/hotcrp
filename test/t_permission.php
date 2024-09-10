@@ -419,8 +419,6 @@ class Permission_Tester {
         xassert(!$paper13->has_reviewer($user_jon));
         xassert(!$this->conf->check_tracks($paper13, $user_jon, Track::ASSREV));
         xassert($user_jon->can_view_paper($paper13));
-        xassert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper13));
-        xassert(!$user_jon->can_accept_review_assignment($paper13));
         xassert(!$user_jon->pc_track_assignable($paper13));
         xassert(!$user_jon->pc_assignable($paper13));
 
@@ -1237,8 +1235,6 @@ class Permission_Tester {
         xassert(!$user_jon->can_view_pdf($paper13));
         xassert(!$user_jon->can_view_review($paper13, null));
         xassert(!$user_jon->can_view_review_identity($paper13, null));
-        xassert($user_jon->can_accept_review_assignment_ignore_conflict($paper13));
-        xassert($user_jon->can_accept_review_assignment($paper13));
         xassert($user_jon->pc_track_assignable($paper13));
         xassert($user_jon->pc_assignable($paper13));
         xassert(!$user_jon->can_edit_some_review($paper13));
@@ -1246,8 +1242,6 @@ class Permission_Tester {
         xassert($this->u_marina->can_view_pdf($paper13));
         xassert($this->u_marina->can_view_review($paper13, null));
         xassert($this->u_marina->can_view_review_identity($paper13, null));
-        xassert($this->u_marina->can_accept_review_assignment_ignore_conflict($paper13));
-        xassert($this->u_marina->can_accept_review_assignment($paper13));
         xassert($this->u_marina->pc_track_assignable($paper13));
         xassert($this->u_marina->pc_assignable($paper13));
         xassert($this->u_marina->can_edit_some_review($paper13));
@@ -1281,8 +1275,6 @@ class Permission_Tester {
         xassert($user_jon->can_view_pdf($paper14));
         xassert($user_jon->can_view_review($paper14, null));
         xassert($user_jon->can_view_review_identity($paper14, null));
-        xassert($user_jon->can_accept_review_assignment_ignore_conflict($paper14));
-        xassert($user_jon->can_accept_review_assignment($paper14));
         xassert($user_jon->pc_track_assignable($paper14));
         xassert($user_jon->pc_assignable($paper14));
         xassert($user_jon->can_edit_some_review($paper14));
@@ -1290,8 +1282,6 @@ class Permission_Tester {
         xassert(!$this->u_marina->can_view_pdf($paper14));
         xassert(!$this->u_marina->can_view_review($paper14, null));
         xassert(!$this->u_marina->can_view_review_identity($paper14, null));
-        xassert($this->u_marina->can_accept_review_assignment_ignore_conflict($paper14));
-        xassert($this->u_marina->can_accept_review_assignment($paper14));
         xassert($this->u_marina->pc_track_assignable($paper14));
         xassert($this->u_marina->pc_assignable($paper14));
         xassert(!$this->u_marina->can_edit_some_review($paper14));
@@ -1308,8 +1298,6 @@ class Permission_Tester {
         xassert(!$user_jon->can_view_pdf($paper13));
         xassert(!$user_jon->can_view_review($paper13, null));
         xassert(!$user_jon->can_view_review_identity($paper13, null));
-        xassert(!$user_jon->can_accept_review_assignment_ignore_conflict($paper13));
-        xassert(!$user_jon->can_accept_review_assignment($paper13));
         xassert(!$user_jon->pc_track_assignable($paper13));
         xassert(!$user_jon->pc_assignable($paper13));
         xassert(!$user_jon->can_edit_some_review($paper13));
@@ -1317,8 +1305,6 @@ class Permission_Tester {
         xassert($this->u_marina->can_view_pdf($paper13));
         xassert($this->u_marina->can_view_review($paper13, null));
         xassert($this->u_marina->can_view_review_identity($paper13, null));
-        xassert($this->u_marina->can_accept_review_assignment_ignore_conflict($paper13));
-        xassert($this->u_marina->can_accept_review_assignment($paper13));
         xassert($this->u_marina->pc_track_assignable($paper13));
         xassert($this->u_marina->pc_assignable($paper13));
         xassert($this->u_marina->can_edit_some_review($paper13));
@@ -1327,8 +1313,6 @@ class Permission_Tester {
         xassert($user_jon->can_view_pdf($paper14));
         xassert($user_jon->can_view_review($paper14, null));
         xassert($user_jon->can_view_review_identity($paper14, null));
-        xassert($user_jon->can_accept_review_assignment_ignore_conflict($paper14));
-        xassert($user_jon->can_accept_review_assignment($paper14));
         xassert($user_jon->pc_track_assignable($paper14));
         xassert($user_jon->pc_assignable($paper14));
         xassert($user_jon->can_edit_some_review($paper14));
@@ -1336,8 +1320,6 @@ class Permission_Tester {
         xassert(!$this->u_marina->can_view_pdf($paper14));
         xassert(!$this->u_marina->can_view_review($paper14, null));
         xassert(!$this->u_marina->can_view_review_identity($paper14, null));
-        xassert(!$this->u_marina->can_accept_review_assignment_ignore_conflict($paper14));
-        xassert(!$this->u_marina->can_accept_review_assignment($paper14));
         xassert(!$this->u_marina->pc_track_assignable($paper14));
         xassert(!$this->u_marina->pc_assignable($paper14));
         xassert(!$this->u_marina->can_edit_some_review($paper14));

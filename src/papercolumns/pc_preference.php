@@ -11,10 +11,12 @@ class Preference_PaperColumn extends PaperColumn {
     private $user;
     /** @var bool */
     private $not_me;
-    /** @var bool */
-    private $show_conflict;
     /** @var string */
     private $prefix;
+    /** @var bool */
+    private $show_conflict;
+    /** @var bool */
+    private $all = false;
     /** @var bool */
     private $secondary_sort_topic_score = false;
     /** @var ScoreInfo */
@@ -37,6 +39,9 @@ class Preference_PaperColumn extends PaperColumn {
             return $this->__add_decoration($decor);
         } else if ($decor === "edit") {
             $this->mark_editable();
+            return $this->__add_decoration($decor);
+        } else if ($decor === "all") {
+            $this->all = true;
             return $this->__add_decoration($decor);
         } else {
             return parent::add_decoration($decor);
@@ -74,7 +79,7 @@ class Preference_PaperColumn extends PaperColumn {
         }
         $pf = $row->preference($this->user);
         if (!$pf->exists()) {
-            if (!$this->viewer->can_edit_preference_for($this->user, $row)) {
+            if ($this->not_me && !$this->user->can_view_paper($row)) {
                 return PaperReviewPreference::make_sentinel();
             } else if ($row->has_conflict($this->user)) {
                 return new PaperReviewPreference($this->editable ? -0.00001 : -PHP_INT_MAX, null);
@@ -122,8 +127,10 @@ class Preference_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $pf = $row->preference($this->user);
         $pf_exists = $pf->exists();
-        $editable = $this->editable && $this->viewer->can_edit_preference_for($this->user, $row, true);
-        $has_conflict = $row->has_conflict($this->user);
+        $conflicted = $row->has_conflict($this->user);
+        $editable = $this->editable
+            && (!$this->not_me || $this->user->can_view_paper($row))
+            && ($this->all || $this->user->pc_track_assignable($row));
 
         // compute HTML
         $t = "";
@@ -138,10 +145,10 @@ class Preference_PaperColumn extends PaperColumn {
             }
             $pft = $pf_exists ? $pf->unparse() : "";
             $t = "<input name=\"{$iname}\" class=\"uikd uich revpref\" value=\"{$pft}\" type=\"text\" size=\"4\" tabindex=\"2\" placeholder=\"0\">";
-            if ($has_conflict && $this->show_conflict) {
+            if ($conflicted && $this->show_conflict) {
                 $t .= " " . review_type_icon(-1);
             }
-        } else if (!$has_conflict || $pf_exists) {
+        } else if (!$conflicted || $pf_exists) {
             $t = str_replace("-", "−" /* U+2212 */, $pf->unparse());
         } else if ($this->show_conflict) {
             $t = review_type_icon(-1);

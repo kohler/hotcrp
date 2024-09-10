@@ -380,9 +380,10 @@ class FailureReason extends Exception
         return [new MessageItem($field, "<5>" . $this->unparse_html(), $status)];
     }
 
-    /** @param ?string $field
+    /** @param MessageSet|JsonResult $ms
+     * @param ?string $field
      * @param 1|2|3 $status */
-    function append_to(MessageSet $ms, $field, $status) {
+    function append_to($ms, $field, $status) {
         foreach ($this->message_list($field, $status) as $mi) {
             $ms->append_item($mi);
         }

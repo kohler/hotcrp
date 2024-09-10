@@ -3066,7 +3066,7 @@ class Contact implements JsonSerializable {
             }
 
             // check PC tracking
-            // (see also can_accept_review_assignment*)
+            // (see also pc_assignable*)
             $tracks = $this->conf->has_tracks();
             $am_lead = $this->isPC
                 && $prow->leadContactId === $this->contactXid;
@@ -3668,25 +3668,24 @@ class Contact implements JsonSerializable {
         }
         $rights = $this->rights($prow);
         $whyNot = $prow->failure_reason();
-        $base_count = count($whyNot);
         if (!$rights->allow_author_view()
-            && $rights->review_status == 0
+            && $rights->review_status === 0
             && !$rights->allow_pc_broad()) {
             $whyNot["permission"] = "paper:view";
             if ($this->is_empty()) {
                 $whyNot["signin"] = "paper";
             }
+        } else if ($pdf
+                   && $this->can_view_paper($prow)) {
+            $whyNot["permission"] = "document:view";
+        } else if (!$this->can_view_missing_papers()
+                   || $prow->timeSubmitted > 0) {
+            $whyNot["permission"] = "paper:view";
+        } else if ($prow->timeWithdrawn > 0) {
+            $whyNot["withdrawn"] = true;
         } else {
-            if ($prow->timeWithdrawn > 0) {
-                $whyNot["withdrawn"] = true;
-            } else if ($prow->timeSubmitted <= 0) {
-                $whyNot["notSubmitted"] = true;
-            }
-            if ($pdf
-                && count($whyNot) === $base_count
-                && $this->can_view_paper($prow)) {
-                $whyNot["permission"] = "document:view";
-            }
+            assert($prow->timeSubmitted <= 0);
+            $whyNot["notSubmitted"] = true;
         }
         return $whyNot;
     }
@@ -3814,8 +3813,7 @@ class Contact implements JsonSerializable {
             } else if (($cif & PaperContactInfo::CIF_ALLOW_PC_BROAD) !== 0
                        || $ci->review_status > 0) {
                 $bs = $prow->blindness_state($ci->review_status > PaperContactInfo::CIRS_PROXIED);
-                if ($bs === 0
-                    && ($cif & (PaperContactInfo::CIF_CAN_VIEW_DECISION | PaperContactInfo::CIF_ALLOW_REVIEWER)) === (PaperContactInfo::CIF_CAN_VIEW_DECISION | PaperContactInfo::CIF_ALLOW_REVIEWER)) {
+                if ($bs === 0 && ($cif & PaperContactInfo::CIF_CAN_VIEW_DECISION) !== 0) {
                     $bs = -1;
                 }
                 if ($bs < 0
@@ -4366,26 +4364,6 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_accept_review_assignment_ignore_conflict(PaperInfo $prow) {
-        if ($this->isPC
-            && $this->conf->check_tracks($prow, $this, Track::ASSREV)) {
-            return true;
-        }
-        $rights = $this->rights($prow);
-        return $rights->allow_administer() || $rights->is_reviewer();
-    }
-
-    /** @return bool */
-    function can_accept_review_assignment(PaperInfo $prow) {
-        $rights = $this->rights($prow);
-        return ($rights->allow_pc()
-                || ($this->isPC && $rights->unconflicted()))
-            && ($rights->allow_administer()
-                || $rights->is_reviewer()
-                || $this->conf->check_tracks($prow, $this, Track::ASSREV));
-    }
-
-    /** @return bool */
     function allow_view_preference(?PaperInfo $prow = null, $aggregate = false) {
         if ($prow) {
             $rights = $this->rights($prow);
@@ -4404,49 +4382,8 @@ class Contact implements JsonSerializable {
             return $aggregate
                 ? $rights->allow_pc() && $this->can_view_pc()
                 : $rights->can_administer();
-        } else {
-            return $this->is_manager();
         }
-    }
-
-    /** @return bool */
-    function can_edit_preference_for(Contact $u, PaperInfo $prow, $careful = false) {
-        // Can enter a preference iff you can be assigned a PC review
-        if ($u->contactId === $this->contactId) {
-            return $u->isPC
-                && ($careful
-                    ? $u->can_accept_review_assignment($prow)
-                    : $u->can_accept_review_assignment_ignore_conflict($prow))
-                && ($u->can_view_paper($prow)
-                    || (!$careful
-                        && $prow->timeWithdrawn > 0
-                        && ($prow->timeSubmitted < 0
-                            || $prow->submission_round()->incomplete_viewable)));
-        } else {
-            return $u->isPC
-                && $this->can_administer($prow)
-                && $u->can_accept_review_assignment_ignore_conflict($prow);
-        }
-    }
-
-    /** @return ?FailureReason */
-    function perm_edit_preference_for(Contact $u, PaperInfo $prow) {
-        if ($this->can_edit_preference_for($u, $prow)) {
-            return null;
-        }
-        $whynot = $prow->failure_reason();
-        if (!$u->isPC) {
-            $whynot["nonPC"] = true;
-        } else if ($u->contactId !== $this->contactId
-                   && !$this->can_administer($prow)) {
-            $whynot["administer"] = true;
-        } else if ($u->contactId === $this->contactId
-                   && !$u->can_view_paper($prow)) {
-            $whynot["permission"] = "paper:view";
-        } else {
-            $whynot["unacceptableReviewer"] = true;
-        }
-        return $whynot;
+        return $this->is_manager();
     }
 
     /** @return bool */
@@ -4455,8 +4392,10 @@ class Contact implements JsonSerializable {
         return $rights->can_administer()
             || ($rights->is_reviewer()
                 ? $this->conf->time_review($rights->reviewRound, $rights->reviewType, true)
-                : $rights->allow_reviewer()
+                : $rights->allow_pc()
                   && $this->conf->setting("pcrev_any") > 0
+                  && $this->conf->check_tracks($prow, $this, Track::ASSREV)
+                  && $this->conf->check_tracks($prow, $this, Track::SELFASSREV)
                   && $this->conf->time_review(null, true, true));
     }
 
@@ -4480,7 +4419,8 @@ class Contact implements JsonSerializable {
             $whyNot["withdrawn"] = true;
         } else if ($prow->timeSubmitted <= 0) {
             $whyNot["notSubmitted"] = true;
-        } else if ($rights->allow_reviewer() && !$rights->is_reviewer()) {
+        } else if (!$rights->is_reviewer()
+                   && (!$rights->allow_pc() || $this->conf->time_review(null, true, true))) {
             $whyNot["reviewNotAssigned"] = true;
         } else {
             $whyNot["deadline"] = $rights->allow_pc() ? "pcrev_hard" : "extrev_hard";
@@ -4515,7 +4455,7 @@ class Contact implements JsonSerializable {
         $whyNot = $prow->failure_reason();
         if ($rights->can_administer()) {
             if ($reviewer->isPC
-                && !$reviewer->can_accept_review_assignment_ignore_conflict($prow)) {
+                && !$reviewer->pc_track_assignable($prow)) {
                 $whyNot["unacceptableReviewer"] = true;
             }
         } else if ($rights->allow_administer()) {

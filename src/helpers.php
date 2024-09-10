@@ -199,6 +199,14 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     }
 
 
+    /** @param MessageItem $mi
+     * @return $this */
+    function append_item($mi) {
+        $this->content["message_list"][] = $mi;
+        return $this;
+    }
+
+
     #[\ReturnTypeWillChange]
     /** @param string $offset
      * @return bool */

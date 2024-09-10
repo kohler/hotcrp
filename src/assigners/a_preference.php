@@ -1,6 +1,6 @@
 <?php
 // a_preference.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class Preference_Assignable extends Assignable {
     /** @var int */
@@ -44,10 +44,11 @@ class Preference_AssignmentParser extends AssignmentParser {
         return true;
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
-        return array_filter($state->pc_users(),
-            function ($u) use ($prow, $state) {
-                return $state->user->can_edit_preference_for($u, $prow);
-            });
+        if ($state->user->can_administer($prow)) {
+            return $state->pc_users();
+        } else {
+            return [$state->user];
+        }
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $state->reviewer->isPC ? [$state->reviewer] : null;
@@ -55,16 +56,15 @@ class Preference_AssignmentParser extends AssignmentParser {
     function allow_user(PaperInfo $prow, Contact $user, $req, AssignmentState $state) {
         if (!$user->contactId) {
             return false;
-        } else if (!$state->user->can_edit_preference_for($user, $prow)) {
-            if ($user->contactId !== $state->user->contactId) {
-                $m = "<5>Can’t enter a preference for " . $user->name_h(NAME_E) . " on #{$prow->paperId}. ";
-            } else {
-                $m = "<5>Can’t enter a preference on #{$prow->paperId}. ";
-            }
-            return new AssignmentError($m . $state->user->perm_edit_preference_for($user, $prow)->unparse_html());
-        } else {
-            return true;
         }
+        if ($state->user->contactId !== $user->contactId) {
+            if (!$state->user->can_administer($prow)) {
+                return new AssignmentError($prow->failure_reason(["administer" => true]));
+            } else if (!$user->isPC) {
+                return new AssignmentError("<0>User {$user->email} is not a PC member");
+            }
+        }
+        return true;
     }
     static private function make_exp($exp) {
         return $exp === null ? "N" : +$exp;
@@ -113,14 +113,25 @@ class Preference_AssignmentParser extends AssignmentParser {
             return null;
         }
     }
-    /** @return ?array{int,?int} */
-    static function parse($str) {
-        $x = self::parsef($str);
-        if ($x !== null && $x[0] > -1000000.5 && $x[0] < 1000000.5) {
-            return [(int) round($x[0]), $x[1]];
-        } else {
-            return null;
+    /** @return PaperReviewPreference|string */
+    static function parse_check($str, Conf $conf) {
+        $ppref = self::parsef($str);
+        if ($ppref === null) {
+            if (preg_match('/([-+]?)\s*(\d+)\s*([xyz]?)/i', $str, $m)) {
+                return $conf->_("<0>Invalid preference ‘{}’. Did you mean ‘{}’?", $str, $m[1] . $m[2] . strtoupper($m[3]));
+            } else {
+                return $conf->_("<0>Invalid preference ‘{}’", $str);
+            }
         }
+
+        $min = $conf->setting("pref_min") ?? -1000000;
+        $max = $conf->setting("pref_max") ?? 1000000;
+        $prefv = round($ppref[0]);
+        if ($ppref[0] !== -100.0 && ($prefv < $min || $prefv > $max)) {
+            return $conf->_("<0>Preference ‘{}’ out of range (must be between {} and {})", $ppref[0], $min, $max);
+        }
+
+        return new PaperReviewPreference((int) $prefv, $ppref[1]);
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $pref = $req["preference"];
@@ -128,43 +139,24 @@ class Preference_AssignmentParser extends AssignmentParser {
             return new AssignmentError("<0>Preference missing");
         }
 
-        $ppref = self::parsef($pref);
-        if ($ppref === null) {
-            if (preg_match('/([+-]?)\s*(\d+)\s*([xyz]?)/i', $pref, $m)) {
-                $msg = $state->conf->_("<0>Invalid preference ‘{}’. Did you mean ‘{}’?", $pref, $m[1] . $m[2] . strtoupper($m[3]));
-            } else {
-                $msg = $state->conf->_("<0>Invalid preference ‘{}’", $pref);
-            }
-            $state->user_error($msg);
+        $ppref = self::parse_check($pref, $prow->conf);
+        if (is_string($ppref)) {
+            $state->user_error($ppref);
             return false;
-        }
-
-        $min = $prow->conf->setting("pref_min") ?? -1000000;
-        $max = $prow->conf->setting("pref_max") ?? 1000000;
-        if ($ppref[0] !== -100.0 && ($ppref[0] < $min || $ppref[0] > $max)) {
-            $state->user_error($state->conf->_("<0>Preference ‘{}’ out of range (must be between {} and {})", $ppref[0], $min, $max));
-            return false;
-        }
-        $prefv = (int) round($ppref[0]);
-
-        if ($prow->timeWithdrawn > 0) {
-            $state->warning("<5>" . $prow->failure_reason(["withdrawn" => 1])->unparse_html());
         }
 
         $exp = $req["expertise"];
         if ($exp && ($exp = trim($exp)) !== "") {
-            if (($pexp = self::parse($exp)) === null || $pexp[0]) {
+            if (($pexp = self::parsef($exp)) === null || $pexp[0]) {
                 $state->user_error($state->conf->_("<0>Invalid expertise ‘{}’", $exp));
                 return false;
             }
-            $expv = $pexp[1];
-        } else {
-            $expv = $ppref[1];
+            $ppref = new PaperReviewPreference($ppref->preference, $pexp[1]);
         }
 
         $state->remove(new Preference_Assignable($prow->paperId, $contact->contactId));
-        if ($prefv !== 0 || $expv !== null) {
-            $state->add(new Preference_Assignable($prow->paperId, $contact->contactId, $prefv, self::make_exp($expv)));
+        if ($ppref->exists()) {
+            $state->add(new Preference_Assignable($prow->paperId, $contact->contactId, $ppref->preference, self::make_exp($ppref->expertise)));
         }
         return true;
     }
@@ -180,24 +172,26 @@ class Preference_Assigner extends Assigner {
     function unparse_description() {
         return "preference";
     }
-    /** @return ?PaperReviewPreference */
+    /** @return PaperReviewPreference */
     private function preference_data($before) {
         $pref = $this->item->get($before, "_pref");
         $exp = $this->item->get($before, "_exp");
         if ($exp === "N") {
             $exp = null;
         }
-        return $pref || $exp !== null ? new PaperReviewPreference($pref, $exp) : null;
+        return new PaperReviewPreference($pref, $exp);
     }
     function unparse_display(AssignmentSet $aset) {
         if (!$this->cid) {
             return "remove all preferences";
         }
         $t = $aset->user->reviewer_html_for($this->contact);
-        if (($pf = $this->preference_data(true))) {
+        $pf = $this->preference_data(true);
+        if ($pf->exists()) {
             $t .= " <del>" . $pf->unparse_span() . "</del>";
         }
-        if (($pf = $this->preference_data(false))) {
+        $pf = $this->preference_data(false);
+        if ($pf->exists()) {
             $t .= " <ins>" . $pf->unparse_span() . "</ins>";
         }
         return $t;
@@ -207,21 +201,13 @@ class Preference_Assigner extends Assigner {
         $acsv->add([
             "pid" => $this->pid, "action" => "preference",
             "email" => $this->contact->email, "name" => $this->contact->name(),
-            "preference" => $pf ? $pf->unparse() : "none"
+            "preference" => $pf->exists() ? $pf->unparse() : "none"
         ]);
     }
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperReviewPreference"] = "write";
     }
     function execute(AssignmentSet $aset) {
-        if (($pf = $this->preference_data(false))) {
-            $aset->stage_qe("insert into PaperReviewPreference
-                set paperId=?, contactId=?, preference=?, expertise=?
-                on duplicate key update preference=?, expertise=?",
-                    $this->pid, $this->cid, $pf->preference, $pf->expertise,
-                    $pf->preference, $pf->expertise);
-        } else {
-            $aset->stage_qe("delete from PaperReviewPreference where paperId=? and contactId=?", $this->pid, $this->cid);
-        }
+        $this->preference_data(false)->save($this->pid, $this->cid, [$aset, "stage_qe"]);
     }
 }

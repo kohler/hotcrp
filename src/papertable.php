@@ -2234,9 +2234,8 @@ class PaperTable {
         if ($this->user->can_view_shepherd($this->prow)) {
             $this->papstripShepherd();
         }
-        if ($this->user->can_edit_preference_for($this->user, $this->prow, true)
-            && $this->conf->timePCReviewPreferences()
-            && ($this->user->roles & (Contact::ROLE_PC | Contact::ROLE_CHAIR))) {
+        if (($this->user->roles & Contact::ROLE_PC) !== 0
+            && $this->user->pc_assignable($this->prow)) {
             $this->papstripReviewPreference();
         }
     }

@@ -813,7 +813,7 @@ class ReviewValues extends MessageSet {
         // upload must include all online edits
         if ($any_fdiff
             && $this->text !== null
-            && $rrow->reviewId > 0
+            && $rrow->reviewId
             && $rrow->reviewEditVersion > ($this->req["edit_version"] ?? 0)) {
             $this->clear_messages_since($before_msgcount);
             $this->rmsg($this->first_lineno, "<5><strong>Edit conflict</strong>: This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.", self::ERROR);
