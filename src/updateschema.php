@@ -1248,6 +1248,22 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
     }
 
+    private function v302_update_comment_tracks() {
+        if (($tj = $this->conf->setting_json("tracks"))) {
+            $changed = false;
+            foreach ((array) $tj as $tag => $v) {
+                if (isset($v->unassrev) && !isset($v->comment)) {
+                    $v->comment = $v->unassrev;
+                    $changed = true;
+                }
+            }
+            if ($changed) {
+                $this->conf->save_setting("tracks", $this->conf->setting("tracks"), json_encode_db($tj));
+            }
+        }
+        return true;
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -3118,6 +3134,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 300
             && $conf->ql_ok("update Settings set value=2 where name='cmt_author' and value=1")) {
             $conf->update_schema_version(301);
+        }
+        if ($conf->sversion === 301
+            && $this->v302_update_comment_tracks()) {
+            $conf->update_schema_version(302);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
