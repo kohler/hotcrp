@@ -191,6 +191,13 @@ class JsonResult implements JsonSerializable, ArrayAccess {
     }
 
 
+    /** @param int $status
+     * @return $this */
+    function set_status($status) {
+        $this->status = $status;
+        return $this;
+    }
+
     /** @param bool $pp
      * @return $this */
     function set_pretty_print($pp) {

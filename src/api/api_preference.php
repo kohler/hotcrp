@@ -15,11 +15,11 @@ class Preference_API {
         $postpref = null;
         if ($qreq->method() === "POST") {
             if (!isset($qreq->pref)) {
-                return JsonResult::make_missing_error("pref");
+                return JsonResult::make_missing_error("pref")->set_status(200);
             }
             $postpref = Preference_AssignmentParser::parse_check($qreq->pref, $user->conf);
             if (is_string($postpref)) {
-                return JsonResult::make_parameter_error("pref", $postpref);
+                return JsonResult::make_parameter_error("pref", $postpref)->set_status(200);
             }
         }
 
