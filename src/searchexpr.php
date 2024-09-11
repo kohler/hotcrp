@@ -52,24 +52,34 @@ class SearchExpr {
     }
 
     /** @param SearchOperator $op
-     * @param int $kwpos1
-     * @param int $kwpos2
+     * @param int $pos1
+     * @param int $pos2
      * @param ?SearchExpr $reference
      * @return SearchExpr */
-    static function make_op($op, $kwpos1, $kwpos2, $reference) {
+    static function make_op_start($op, $pos1, $pos2, $reference) {
         $sa = new SearchExpr;
         $sa->op = $op;
         if ($op->unary()) {
-            $sa->kwpos1 = $sa->pos1 = $kwpos1;
-            $sa->pos2 = $kwpos2;
+            $sa->kwpos1 = $sa->pos1 = $pos1;
+            $sa->pos2 = $pos2;
             $sa->child = [];
             $sa->parent = $reference;
         } else {
             $sa->kwpos1 = $sa->pos1 = $reference->pos1;
-            $sa->pos2 = $kwpos2;
+            $sa->pos2 = $pos2;
             $sa->child = [$reference];
             $sa->parent = $reference->parent;
         }
+        return $sa;
+    }
+
+    /** @param 'and'|'or'|'xor'|'not' $opname
+     * @param SearchExpr ...$child
+     * @return SearchExpr */
+    static function combine($opname, ...$child) {
+        $sa = new SearchExpr;
+        $sa->op = SearchOperatorSet::simple_operator($opname);
+        $sa->child = $child;
         return $sa;
     }
 
@@ -178,5 +188,35 @@ class SearchExpr {
             }
             return (object) $a;
         }
+    }
+
+    /** @param callable(SearchExpr):bool $f
+     * @return bool
+     * @suppress PhanTypeArraySuspiciousNullable */
+    function evaluate_simple($f) {
+        if (!$this->op) {
+            $ok = $f($this);
+        } else if (($this->op->flags & SearchOperator::F_AND) !== 0) {
+            $ok = true;
+            foreach ($this->child as $ch) {
+                $ok = $ok && $ch->evaluate_simple($f);
+            }
+        } else if (($this->op->flags & SearchOperator::F_OR) !== 0) {
+            $ok = false;
+            foreach ($this->child as $ch) {
+                $ok = $ok || $ch->evaluate_simple($f);
+            }
+        } else if (($this->op->flags & SearchOperator::F_XOR) !== 0) {
+            $ok = false;
+            foreach ($this->child as $ch) {
+                if ($ch->evaluate_simple($f))
+                    $ok = !$ok;
+            }
+        } else if (($this->op->flags & SearchOperator::F_NOT) !== 0) {
+            $ok = !$this->child[0] || !$this->child[0]->evaluate_simple($f);
+        } else {
+            throw new ErrorException("unknown operator");
+        }
+        return $ok;
     }
 }

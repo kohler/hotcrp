@@ -27,6 +27,8 @@ class Si {
     /** @var ?Sitype
      * @readonly */
     private $_tclass;
+    /** @var ?list<string> */
+    private $tags;
     /** @var string
      * @readonly */
     private $title;
@@ -121,6 +123,7 @@ class Si {
         "size" => "is_int",
         "subtype" => "is_string",
         "summary" => "is_string",
+        "tags" => "is_string_list",
         "title" => "is_string",
         "title_pattern" => "is_string",
         "type" => "is_string",
@@ -434,6 +437,22 @@ class Si {
         } else {
             return $this->_expand_pattern($this->storage, null);
         }
+    }
+
+    /** @param SearchExpr $expr
+     * @return bool */
+    function expr_matches($expr) {
+        if ($expr->kword) {
+            return false;
+        }
+        if (str_starts_with($expr->text, "#")) {
+            return $this->tags !== null && in_array(substr($expr->text, 1), $this->tags);
+        }
+        $f = str_replace("\\*", ".*", preg_quote($expr->text, "/"));
+        if (!str_starts_with($f, ".*")) {
+            $f = "\\A" . $f;
+        }
+        return preg_match("/{$f}/", $this->name);
     }
 
     /** @return bool */

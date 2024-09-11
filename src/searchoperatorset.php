@@ -10,6 +10,8 @@ class SearchOperatorSet {
 
     /** @var ?SearchOperatorSet */
     static private $psops = null;
+    /** @var ?SearchOperatorSet */
+    static private $simpleops = null;
 
 
     /** @param string $name
@@ -78,33 +80,53 @@ class SearchOperatorSet {
             return self::$psops;
         }
         $psops = new SearchOperatorSet;
-        $psops->define("(", new SearchOperator("(", 0, SearchOperator::F_UNARY));
+        $psops->define("(", new SearchOperator("(", 0, SearchOperator::F_UNARY | SearchOperator::F_AND));
         $psops->define(")", new SearchOperator(")", 0, SearchOperator::F_UNARY));
-        $op = new SearchOperator("not", 8, SearchOperator::F_UNARY);
+        $op = new SearchOperator("not", 8, SearchOperator::F_UNARY | SearchOperator::F_NOT);
         $psops->define("NOT", $op);
         $psops->define("not", $op);
         $psops->define("-", $op);
         $psops->define("!", $op);
-        $psops->define("+", new SearchOperator("+", 8, SearchOperator::F_UNARY));
-        $psops->define("SPACE", new SearchOperator("space", 7, SearchOperator::F_UNNAMED));
-        $op = new SearchOperator("and", 6, 0);
+        $psops->define("+", new SearchOperator("+", 8, SearchOperator::F_UNARY | SearchOperator::F_AND));
+        $psops->define("SPACE", new SearchOperator("space", 7, SearchOperator::F_UNNAMED | SearchOperator::F_AND));
+        $op = new SearchOperator("and", 6, SearchOperator::F_AND);
         $psops->define("AND", $op);
         $psops->define("and", $op);
         $psops->define("&&", $op);
-        $op = new SearchOperator("xor", 5, 0);
+        $op = new SearchOperator("xor", 5, SearchOperator::F_XOR);
         $psops->define("XOR", $op);
         $psops->define("xor", $op);
         $psops->define("^^", $op);
-        $op = new SearchOperator("or", 4, 0);
+        $op = new SearchOperator("or", 4, SearchOperator::F_OR);
         $psops->define("OR", $op);
         $psops->define("or", $op);
         $psops->define("||", $op);
-        $psops->define("SPACEOR", new SearchOperator("or", 3, SearchOperator::F_UNNAMED));
-        $op = new SearchOperator("then", 2, 0);
+        $psops->define("SPACEOR", new SearchOperator("or", 3, SearchOperator::F_UNNAMED | SearchOperator::F_OR));
+        $op = new SearchOperator("then", 2, SearchOperator::F_OR);
         $psops->define("THEN", $op);
         $psops->define("then", $op);
         $psops->define("HIGHLIGHT", new SearchOperator("highlight", 1, SearchOperator::F_ALLOW_SUBTYPE));
         self::$psops = $psops;
         return $psops;
+    }
+
+    /** @return SearchOperatorSet */
+    static function simple_operators() {
+        if (self::$simpleops !== null) {
+            return self::$simpleops;
+        }
+        $psops = self::paper_search_operators();
+        $ops = new SearchOperatorSet;
+        foreach (["(", ")", "NOT", "-", "!", "SPACE", "AND", "&&", "XOR", "^^", "OR", "||"] as $op) {
+            $ops->define($op, $psops->lookup($op));
+        }
+        self::$simpleops = $ops;
+        return $ops;
+    }
+
+    /** @param 'and'|'or'|'not'|'xor' $name
+     * @return SearchOperator */
+    static function simple_operator($name) {
+        return self::paper_search_operators()->lookup($name);
     }
 }

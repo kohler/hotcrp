@@ -24,6 +24,8 @@ class Settings_Batch {
     public $dry_run;
     /** @var bool */
     public $diff;
+    /** @var ?SearchExpr */
+    private $filter;
 
     function __construct(Contact $user, $arg) {
         $this->conf = $user->conf;
@@ -40,23 +42,44 @@ class Settings_Batch {
         }
         $this->dry_run = isset($arg["dry-run"]);
         $this->diff = isset($arg["diff"]);
+        $filter = $exclude = null;
+        foreach ($arg["filter"] ?? [] as $s) {
+            $ss = new SearchSplitter($s);
+            if (($expr = $ss->parse_expression(SearchOperatorSet::simple_operators()))) {
+                $filter = $filter ? SearchExpr::combine("or", $filter, $expr) : $expr;
+            }
+        }
+        foreach ($arg["exclude"] ?? [] as $s) {
+            $ss = new SearchSplitter($s);
+            if (($expr = $ss->parse_expression(SearchOperatorSet::simple_operators()))) {
+                $exclude = $exclude ? SearchExpr::combine("or", $exclude, $expr) : $expr;
+            }
+        }
+        if ($exclude) {
+            $exclude = SearchExpr::combine("not", $exclude);
+            $filter = $filter ? SearchExpr::combine("and", $filter, $exclude) : $exclude;
+        }
+        $this->filter = $filter;
+        if ($this->filter && ($this->filename || $this->expr)) {
+            throw new CommandLineException("`--filter` and `--exclude` are incompatible with changing settings");
+        }
     }
 
     /** @param bool $new
      * @return string */
-    static function output(SettingValues $sv, $new) {
-        return json_encode($sv->all_jsonv(["new" => $new]), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+    function output(SettingValues $sv, $new) {
+        return json_encode($sv->all_jsonv(["new" => $new, "filter" => $this->filter]), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
     }
 
     /** @return int */
     function run() {
         if ($this->filename === null && $this->expr === null) {
-            fwrite(STDOUT, self::output($this->sv, false));
+            fwrite(STDOUT, $this->output($this->sv, false));
             return 0;
         }
 
         if ($this->diff) {
-            $old_jsonstr = self::output(new SettingValues($this->user), false);
+            $old_jsonstr = $this->output(new SettingValues($this->user), false);
         } else {
             $old_jsonstr = null;
         }
@@ -95,10 +118,10 @@ class Settings_Batch {
             $dmp = new dmp\diff_match_patch;
             $dmp->Line_Histogram = true;
             if ($this->dry_run) {
-                assert(self::output($this->sv, false) === $old_jsonstr);
-                $new_jsonstr = self::output($this->sv, true);
+                assert($this->output($this->sv, false) === $old_jsonstr);
+                $new_jsonstr = $this->output($this->sv, true);
             } else {
-                $new_jsonstr = self::output(new SettingValues($this->user), false);
+                $new_jsonstr = $this->output(new SettingValues($this->user), false);
             }
             $diff = $dmp->line_diff($old_jsonstr, $new_jsonstr);
             fwrite(STDOUT, $dmp->line_diff_toUnified($diff));
@@ -115,7 +138,9 @@ class Settings_Batch {
             "dry-run,d Do not modify settings",
             "diff Write unified settings diff of changes",
             "expr:,e: =JSON Change settings via JSON",
-            "file:,f: =FILE Change settings via FILE"
+            "file:,f: =FILE Change settings via FILE",
+            "filter[] =EXPR Only include settings matching EXPR",
+            "exclude[] =EXPR Exclude settings matching EXPR"
         )->description("Query or modify HotCRP settings in JSON format.
 Usage: php batch/settings.php > JSONFILE
        php batch/settings.php FILE

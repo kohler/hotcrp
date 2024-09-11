@@ -252,7 +252,7 @@ class SearchSplitter {
                 return null;
             }
 
-            $cura = SearchExpr::make_op($op, $pos1, $pos2, $cura);
+            $cura = SearchExpr::make_op_start($op, $pos1, $pos2, $cura);
             if ($op->type === "(") {
                 ++$parens;
             }

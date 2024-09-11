@@ -779,7 +779,7 @@ class SettingValues extends MessageSet {
         return $si->base_unparse_jsonv($this->choosev($si, $new), $this);
     }
 
-    /** @param array{new?:bool,reset?:?bool} $args
+    /** @param array{new?:bool,reset?:?bool,filter?:SearchExpr} $args
      * @return object */
     function all_jsonv($args = []) {
         $new = $args["new"] ?? false;
@@ -787,8 +787,10 @@ class SettingValues extends MessageSet {
         if ($args["reset"] ?? false) {
             $j["reset"] = true;
         }
+        $include = $args["filter"] ?? null;
         foreach ($this->conf->si_set()->top_list() as $si) {
             if ($si->json_export()
+                && (!$include || $include->evaluate_simple([$si, "expr_matches"]))
                 && ($v = $this->json_choosev($si, $new)) !== null) {
                 $j[$si->name] = $v;
             }

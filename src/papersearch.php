@@ -842,10 +842,7 @@ class PaperSearch extends MessageSet {
         $splitter = new SearchSplitter($str);
         $sa = $splitter->parse_expression(null, $type === "all" ? "SPACE" : "SPACEOR");
         if ($type === "none" && $sa) {
-            $op = SearchOperatorSet::paper_search_operators()->lookup("NOT");
-            $sax = SearchExpr::make_op($op, 0, strlen($str), null);
-            $sax->child[] = $sa;
-            $sa = $sax;
+            $sa = SearchExpr::combine("not", $sa);
         }
         return self::_canonicalize_atom($sa, $type, $qt, $conf, $depth);
     }
