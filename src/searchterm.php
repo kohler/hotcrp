@@ -533,7 +533,8 @@ abstract class Op_SearchTerm extends SearchTerm {
         foreach ($this->child as $ch) {
             $sexprs[] = $ch->script_expression($row, $about);
         }
-        return self::combine_script_expressions($this->type, $sexprs);
+        $type = $this->type === "space" ? "and" : $type;
+        return self::combine_script_expressions($type, $sexprs);
     }
 }
 
