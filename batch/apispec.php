@@ -94,11 +94,17 @@ class APISpec_Batch {
     private function resolve_common_param($name) {
         if (!isset($this->parameters[$name])) {
             if ($name === "p") {
-                $this->parameters[$name] = (object) [
+                $this->parameters["p"] = (object) [
                     "name" => "p",
                     "in" => "path",
                     "required" => true,
                     "schema" => $this->resolve_common_schema("pid")
+                ];
+            } else if ($name === "redirect") {
+                $this->parameters["redirect"] = (object) [
+                    "name" => "redirect",
+                    "in" => "path",
+                    "required" => false
                 ];
             } else {
                 assert(false);
@@ -114,6 +120,9 @@ class APISpec_Batch {
         $has_file = false;
         if ($j->paper ?? false) {
             $params[] = $this->resolve_common_param("p");
+        }
+        If ($j->redirect ?? false) {
+            $params[] = $this->resolve_common_param("redirect");
         }
         foreach ($j->parameters ?? [] as $p) {
             $required = true;

@@ -40,6 +40,7 @@ class SpecValidator_API {
             if (($t = self::lookup_param_type($n, $known, $has_suffix)) === null) {
                 if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_"])
                     && ($n !== "p" || !($uf->paper ?? false))
+                    && ($n !== "redirect" || !($uf->redirect ?? false))
                     && !isset($known["*"])) {
                     self::error($qreq, "query param `{$n}` unknown");
                 }

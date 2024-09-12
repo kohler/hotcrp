@@ -21,7 +21,7 @@
     {
         "name": "assign", "post": true, "redirect": true,
         "function": "Assign_API::assign",
-        "parameters": ["assignments"]
+        "parameters": ["=assignments"]
     },
     {
         "name": "claimreview", "paper": true, "post": true, "redirect": true,
