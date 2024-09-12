@@ -110,21 +110,50 @@ class APISpec_Batch {
     /** @return object */
     private function expand1($fn, $method, $j) {
         $x = (object) [];
-        $params = [];
+        $params = $body_properties = $body_required = [];
         if ($j->paper ?? false) {
             $params[] = $this->resolve_common_param("p");
         }
         foreach ($j->parameters ?? [] as $p) {
-            $optional = str_starts_with($p, "?");
-            $name = $optional ? substr($p, 1) : $p;
-            $params[] = [
-                "name" => $name,
-                "in" => "query",
-                "required" => !$optional
-            ];
+            $required = true;
+            $in = "query";
+            for ($i = 0; $i !== strlen($p); ++$i) {
+                if ($p[$i] === "?") {
+                    $required = false;
+                } else if ($p[$i] === "=") {
+                    $in = "body";
+                } else {
+                    break;
+                }
+            }
+            $name = substr($p, $i);
+            if ($in === "query") {
+                $params[] = ["name" => $name, "in" => $in, "required" => $required];
+            } else {
+                $body_properties[] = ["name" => $name];
+                if ($required) {
+                    $body_required[] = $name;
+                }
+            }
         }
         if (!empty($params)) {
             $x->parameters = $params;
+        }
+        if (!empty($body_properties)) {
+            $schema = (object) [
+                "type" => "object",
+                "properties" => $body_properties
+            ];
+            if (!empty($body_required)) {
+                $schema->required = $body_required;
+            }
+            $x->requestBody = (object) [
+                "content" => (object) [
+                    "application/x-www-form-urlencoded" => (object) [
+                        "schema" => $schema
+                    ]
+                ]
+            ];
         }
         return $x;
     }

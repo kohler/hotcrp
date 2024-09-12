@@ -16,8 +16,7 @@
     },
     {
         "name": "alltags", "get": true,
-        "function": "AllTags_API::run",
-        "parameters": []
+        "function": "AllTags_API::run"
     },
     {
         "name": "assign", "post": true, "redirect": true,
@@ -42,12 +41,12 @@
     {
         "name": "comment", "paper": true, "post": true,
         "function": "Comment_API::run",
-        "parameters": ["c", "text", "topic", "draft", "blind", "tags", "visibility"]
+        "parameters": ["c", "?override", "=text", "=topic", "?=draft", "?=blind", "=tags", "=visibility"]
     },
     {
         "name": "declinereview", "post": true, "redirect": true,
         "function": "RequestReview_API::declinereview",
-        "parameters": ["r", "?reason"]
+        "parameters": ["r", "?=reason"]
     },
     {
         "name": "decision", "paper": true, "get": true, "post": true,
@@ -95,8 +94,7 @@
     },
     {
         "name": "manager", "paper": true, "get": true,
-        "function": "PaperPC_API::manager_api",
-        "parameters": []
+        "function": "PaperPC_API::manager_api"
     },
     {
         "name": "manager", "paper": true, "post": true,
@@ -202,8 +200,13 @@
         "name": "settags", "alias": "tags"
     },
     {
-        "name": "tags", "get": true, "post": true,
+        "name": "tags", "get": true, "paper": true,
         "function": "Tags_API::run"
+    },
+    {
+        "name": "tags", "post": true,
+        "function": "Tags_API::run",
+        "parameters": ["?p", "?forceShow", "?=tags", "?=addtags", "?=deltags", "?=tagassignment", "?=search"]
     },
     {
         "name": "settingdescriptions", "get": true,
@@ -237,6 +240,10 @@
         "name": "tagreport", "alias": "tagmessages"
     },
     {
+        "name": "track", "post": true,
+        "parameters": ["track", "?tracker_start_at", "?p", "?=hotlist-info"]
+    },
+    {
         "name": "trackerconfig", "post": true,
         "function": "MeetingTracker::trackerconfig_api"
     },
@@ -266,7 +273,6 @@
     },
     {
         "name": "whoami", "get": true,
-        "function": "User_API::whoami",
-        "parameters": []
+        "function": "User_API::whoami"
     }
 ]

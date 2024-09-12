@@ -7489,8 +7489,7 @@ function cmt_save(elt, action, really) {
         if (this.files.length === 0)
             this.disabled = true;
     });
-    var arg = {p: siteinfo.paperid};
-    cj.cid && (arg.c = cj.cid);
+    var arg = {p: siteinfo.paperid, c: cj.cid || "new"};
     really && (arg.override = 1);
     siteinfo.want_override_conflict && (arg.forceShow = 1);
     action === "delete" && (arg.delete = 1);
@@ -11045,7 +11044,7 @@ handle_ui.on("js-plinfo-edittags", function () {
         if (focused)
             focus_within(pidfe.closest("tr"));
     }
-    $.post(hoturl("=api/tags", {p: pid, forceShow: 1}), start); // XXX should be GET
+    $.get(hoturl("api/tags", {p: pid, forceShow: 1}), start);
 });
 
 

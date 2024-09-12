@@ -65,6 +65,9 @@ class API_Page {
         JsonCompletion::$allow_short_circuit = true;
         $conf = $user->conf;
         $uf = $conf->api($fn, $user, $qreq->method());
+        if ($conf->opt("validateApiSpec")) {
+            SpecValidator_API::run($uf, $qreq);
+        }
         $jr = $conf->call_api_on($uf, $fn, $user, $qreq, $conf->paper);
         if ($uf
             && ($uf->redirect ?? false)
