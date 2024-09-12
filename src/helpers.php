@@ -267,12 +267,10 @@ class JsonResult implements JsonSerializable, ArrayAccess {
             }
         }
         header("Content-Type: application/json; charset=utf-8");
-        if ($qreq && isset($qreq->pprint)) {
-            $pprint = friendly_boolean($qreq->pprint);
-        } else if ($this->pretty_print !== null) {
-            $pprint = $this->pretty_print;
+        if ($qreq && isset($qreq->pretty)) {
+            $pprint = friendly_boolean($qreq->pretty);
         } else {
-            $pprint = $qreq && $qreq->user() && $qreq->user()->is_bearer_authorized();
+            $pprint = $this->pretty_print ?? true;
         }
         echo json_encode_browser($this->content, $pprint ? JSON_PRETTY_PRINT : 0), "\n";
     }

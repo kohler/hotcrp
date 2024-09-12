@@ -81,7 +81,9 @@ class API_Page {
      * @return JsonResult */
     static private function status_api($fn, $user, $qreq) {
         $prow = $user->conf->paper;
-        $jr = new JsonResult($user->status_json($prow ? [$prow] : []));
+        // default status API to not being pretty printed; it's frequently called
+        $jr = (new JsonResult($user->status_json($prow ? [$prow] : [])))
+            ->set_pretty_print(false);
         $jr["ok"] = true;
         if ($fn === "track" && ($new_trackerid = $qreq->annex("new_trackerid"))) {
             $jr["new_trackerid"] = $new_trackerid;
