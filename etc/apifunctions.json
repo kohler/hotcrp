@@ -2,7 +2,7 @@
     {
         "name": "acceptreview", "post": true, "redirect": true,
         "function": "RequestReview_API::acceptreview",
-        "parameters": ["r"]
+        "parameters": ["p", "r"]
     },
     {
         "name": "account", "get": true,
@@ -46,15 +46,21 @@
     {
         "name": "declinereview", "post": true, "redirect": true,
         "function": "RequestReview_API::declinereview",
-        "parameters": ["r", "?=reason"]
+        "parameters": ["p", "r", "?=reason"]
     },
     {
-        "name": "decision", "paper": true, "get": true, "post": true,
+        "name": "decision", "paper": true, "get": true,
         "function": "Decision_API::run"
     },
     {
+        "name": "decision", "paper": true, "post": true,
+        "function": "Decision_API::run",
+        "parameters": ["=decision"]
+    },
+    {
         "name": "events", "get": true,
-        "function": "Events_API::run"
+        "function": "Events_API::run",
+        "parameters": ["?events_at"]
     },
     {
         "name": "fieldtext", "get": true,
@@ -62,7 +68,8 @@
     },
     {
         "name": "fieldhtml", "get": true,
-        "function": "Search_API::fieldhtml"
+        "function": "Search_API::fieldhtml",
+        "parameters": ["f", "?aufull", "?session", "q", "?t", "?sort"]
     },
     {
         "name": "follow", "paper": true, "post": true, "xxx": true,
@@ -87,8 +94,13 @@
         "function": "Error_API::jserror"
     },
     {
-        "name": "lead", "paper": true, "get": true, "post": true,
+        "name": "lead", "paper": true, "get": true,
         "function": "PaperPC_API::lead_api"
+    },
+    {
+        "name": "lead", "paper": true, "post": true,
+        "function": "PaperPC_API::lead_api",
+        "parameters": ["=lead"]
     },
     {
         "name": "mailtext", "get": true, "post": true,
@@ -101,7 +113,7 @@
     {
         "name": "manager", "paper": true, "post": true,
         "function": "PaperPC_API::manager_api",
-        "parameters": ["manager"]
+        "parameters": ["=manager"]
     },
     {
         "name": "administrator", "alias": "manager"
@@ -124,7 +136,8 @@
     },
     {
         "name": "mentioncompletion", "get": true, "post": true,
-        "function": "Completion_API::mentioncompletion_api"
+        "function": "Completion_API::mentioncompletion_api",
+        "parameters": ["?p"]
     },
     {
         "name": "oauthtoken", "post": true, "allow_disabled": true, "check_token": false,
@@ -197,7 +210,8 @@
     },
     {
         "name": "session", "post": true,
-        "function": "Session_API::setsession"
+        "function": "Session_API::setsession",
+        "parameters": ["v"]
     },
     {
         "name": "settags", "alias": "tags"
@@ -220,8 +234,13 @@
         "function": "Settings_API::run"
     },
     {
-        "name": "shepherd", "paper": true, "get": true, "post": true,
+        "name": "shepherd", "paper": true, "get": true,
         "function": "PaperPC_API::shepherd_api"
+    },
+    {
+        "name": "shepherd", "paper": true, "post": true,
+        "function": "PaperPC_API::shepherd_api",
+        "parameters": ["=shepherd"]
     },
     {
         "name": "submissionfieldlibrary", "get": true, "allow_if": "chair",
@@ -229,11 +248,13 @@
     },
     {
         "name": "taganno", "get": true,
-        "function": "TagAnno_API::get"
+        "function": "TagAnno_API::get",
+        "parameters": ["tag"]
     },
     {
         "name": "taganno", "post": true,
-        "function": "TagAnno_API::set"
+        "function": "TagAnno_API::set",
+        "parameters": ["tag"]
     },
     {
         "name": "tagmessages", "paper": true, "get": true,
@@ -257,7 +278,7 @@
     {
         "name": "upload", "post": true,
         "function": "Upload_API::run",
-        "parameters": ["dtype", "?start", "offset", "?finish", "?token", "?cancel", "?=size", "?=mimetype", "?=filename"]
+        "parameters": ["?p", "?dtype", "?start", "offset", "?finish", "?token", "?cancel", "?=size", "?=mimetype", "?=filename", "?!blob"]
     },
     {
         "name": "user", "get": true,

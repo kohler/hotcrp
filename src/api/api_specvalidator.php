@@ -5,6 +5,7 @@
 class SpecValidator_API {
     const F_REQUIRED = 1;
     const F_BODY = 2;
+    const F_FILE = 4;
 
     static function run($uf, Qrequest $qreq) {
         $known = [];
@@ -15,6 +16,8 @@ class SpecValidator_API {
                     $flags &= ~self::F_REQUIRED;
                 } else if ($p[$i] === "=") {
                     $flags |= self::F_BODY;
+                } else if ($p[$i] === "!") {
+                    $flags |= self::F_FILE;
                 } else {
                     break;
                 }
@@ -22,14 +25,15 @@ class SpecValidator_API {
             $n = substr($p, $i);
             $known[$n] = $flags;
             if (($flags & self::F_REQUIRED) !== 0
-                && !$qreq->has($n)) {
-                self::error($qreq, "required parameter `{$n}` missing");
+                && !(($flags & self::F_FILE) !== 0 ? $qreq->has_file($n) : $qreq->has($n))) {
+                $type = self::unparse_param_type($n, $flags);
+                self::error($qreq, "required {$type} `{$n}` missing");
             }
         }
         $param = [];
         foreach (array_keys($_GET) as $n) {
             if (!isset($known[$n])) {
-                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "_"])
+                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_"])
                     && ($n !== "p" || !($uf->paper ?? false))
                     && !isset($known["*"])) {
                     self::error($qreq, "query param `{$n}` unknown");
@@ -47,6 +51,23 @@ class SpecValidator_API {
                        && ($known[$n] & self::F_BODY) === 0) {
                 self::error($qreq, "post param `{$n}` should be in query");
             }
+        }
+        foreach (array_keys($_FILES) as $n) {
+            if (!isset($known[$n])) {
+                if (!isset($known["*"])) {
+                    self::error($qreq, "file param `{$n}` unknown");
+                }
+            }
+        }
+    }
+
+    static function unparse_param_type($n, $flags) {
+        if (($flags & self::F_FILE) !== 0) {
+            return "file param";
+        } else if (($flags & self::F_BODY) !== 0) {
+            return "post param";
+        } else {
+            return "query param";
         }
     }
 
