@@ -66,7 +66,7 @@ class SpecValidator_API {
                 }
             }
         }
-        foreach ($parameters as $n => $t) {
+        foreach ($known as $n => $t) {
             if (($t & (self::F_REQUIRED | self::F_PRESENT)) === self::F_REQUIRED) {
                 $type = self::unparse_param_type($n, $t);
                 self::error($qreq, "required {$type} `{$n}` missing");
