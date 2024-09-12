@@ -41,7 +41,7 @@
     {
         "name": "comment", "paper": true, "post": true,
         "function": "Comment_API::run",
-        "parameters": ["c", "?override", "=text", "=topic", "?=draft", "?=blind", "=tags", "=visibility"]
+        "parameters": ["c", "?override", "?=text", "?=response", "?=ready", "?=topic", "?=draft", "?=blind", "?=tags", "?=visibility"]
     },
     {
         "name": "declinereview", "post": true, "redirect": true,
@@ -70,7 +70,8 @@
     },
     {
         "name": "formatcheck", "get": true, "post": true,
-        "function": "FormatCheck_API::run"
+        "function": "FormatCheck_API::run",
+        "parameters": ["?p", "?doc", "?soft", "?dt", "?docid"]
     },
     {
         "name": "graphdata", "get": true,
@@ -78,7 +79,8 @@
     },
     {
         "name": "job", "get": true,
-        "function": "Job_API::job"
+        "function": "Job_API::job",
+        "parameters": ["job"]
     },
     {
         "name": "jserror", "get": true,
@@ -172,7 +174,7 @@
     {
         "name": "revpref", "post": true,
         "function": "Preference_API::pref_api",
-        "parameters": ["p", "?u", "pref"]
+        "parameters": ["p", "?u", "=pref"]
     },
     {
         "name": "reviewpref", "alias": "revpref"
@@ -182,7 +184,8 @@
     },
     {
         "name": "search", "get": true,
-        "function": "Search_API::search"
+        "function": "Search_API::search",
+        "parameters": ["q", "t", "?sort", "?report"]
     },
     {
         "name": "searchcompletion", "get": true,
@@ -253,7 +256,8 @@
     },
     {
         "name": "upload", "post": true,
-        "function": "Upload_API::run"
+        "function": "Upload_API::run",
+        "parameters": ["dtype", "?start", "offset", "?finish", "?token", "?cancel", "?=size", "?=mimetype", "?=filename"]
     },
     {
         "name": "user", "get": true,
