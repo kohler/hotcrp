@@ -93,8 +93,8 @@ class SpecValidator_API {
         }
         $known = [];
         $has_suffix = false;
-        foreach ($response as $i => $p) {
-            $t = $i < $nmandatory ? self::F_REQUIRED : self::F_DEPRECATED;
+        foreach ($response as $ri => $p) {
+            $t = $ri < $nmandatory ? self::F_REQUIRED : self::F_DEPRECATED;
             for ($i = 0; $i !== strlen($p); ++$i) {
                 if ($p[$i] === "?") {
                     $t &= ~self::F_REQUIRED;
