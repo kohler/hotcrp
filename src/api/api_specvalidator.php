@@ -29,7 +29,7 @@ class SpecValidator_API {
         $param = [];
         foreach (array_keys($_GET) as $n) {
             if (!isset($known[$n])) {
-                if (!in_array($n, ["post", "base", "fn", "_"])
+                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "_"])
                     && ($n !== "p" || !($uf->paper ?? false))
                     && !isset($known["*"])) {
                     self::error($qreq, "query param `{$n}` unknown");
