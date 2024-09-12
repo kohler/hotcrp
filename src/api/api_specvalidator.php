@@ -72,18 +72,20 @@ class SpecValidator_API {
         if (isset($known[$n])) {
             return $known[$n];
         }
-        if (!$has_suffix
-            || (($colon = strpos($n, ":")) === false
-                && ($slash = strpos($n, "/")) === false)) {
+        if (!$has_suffix) {
             return null;
         }
+        $colon = strpos($n, ":");
+        $slash = strpos($n, "/");
         if ($colon === false || ($slash !== false && $colon > $slash)) {
             $colon = $slash;
         }
-        $x = substr($n, $colon);
-        $t = $known[$x] ?? null;
-        if ($t !== null && ($t & self::F_SUFFIX) !== 0) {
-            return $t;
+        if ($colon !== false) {
+            $x = substr($n, $colon);
+            $t = $known[$x] ?? null;
+            if ($t !== null && ($t & self::F_SUFFIX) !== 0) {
+                return $t;
+            }
         }
         return null;
     }
