@@ -9825,7 +9825,7 @@ function search_sort_click(evt) {
 
 function scoresort_change() {
     var tbl = mainlist();
-    $.post(hoturl("=api/session"), {v: "scoresort=" + this.value});
+    $.post(hoturl("=api/session", {v: "scoresort=" + this.value}));
     tbl && tablelist_load(tbl, "scoresort", this.value);
 }
 

@@ -205,7 +205,7 @@
     {
         "name": "search", "get": true,
         "function": "Search_API::search",
-        "parameters": ["q", "t", "?sort", "?report"]
+        "parameters": ["q", "t", "?sort", "?report", "?scoresort"]
     },
     {
         "name": "searchcompletion", "get": true,
