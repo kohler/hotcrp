@@ -8,6 +8,7 @@ class SpecValidator_API {
     const F_FILE = 4;
     const F_SUFFIX = 8;
     const F_PRESENT = 16;
+    const F_DEPRECATED = 32;
 
     static function request($uf, Qrequest $qreq) {
         $parameters = $uf->parameters ?? [];
@@ -82,10 +83,18 @@ class SpecValidator_API {
         if ($response === ["*"]) {
             return;
         }
+        $response_deprecated = $uf->response_deprecated ?? [];
+        if (is_string($response_deprecated)) {
+            $response_deprecated = explode(" ", trim($response_deprecated));
+        }
+        $nmandatory = count($response);
+        if (!empty($response_deprecated)) {
+            array_push($response, ...$response_deprecated);
+        }
         $known = [];
         $has_suffix = false;
-        foreach ($response as $p) {
-            $t = self::F_REQUIRED;
+        foreach ($response as $i => $p) {
+            $t = $i < $nmandatory ? self::F_REQUIRED : self::F_DEPRECATED;
             for ($i = 0; $i !== strlen($p); ++$i) {
                 if ($p[$i] === "?") {
                     $t &= ~self::F_REQUIRED;
@@ -109,10 +118,18 @@ class SpecValidator_API {
         if (!$jr->content["ok"]) {
             return;
         }
+        $missing = [];
         foreach ($known as $n => $t) {
             if (($t & (self::F_REQUIRED | self::F_PRESENT)) === self::F_REQUIRED) {
-                self::error($qreq, "response component `{$n}` missing");
+                $missing[] = $n;
+            } else if (($t & (self::F_DEPRECATED | self::F_PRESENT)) === (self::F_DEPRECATED | self::F_PRESENT)) {
+                // if a deprecated response component is present,
+                // ignore required response component errors
+                return;
             }
+        }
+        foreach ($missing as $n) {
+            self::error($qreq, "response component `{$n}` missing");
         }
     }
 

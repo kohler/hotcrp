@@ -12287,10 +12287,10 @@ function prepare_paper_select() {
         return function (data) {
             minifeedback(ctl, data);
             if (data.ok) {
-                ctl.setAttribute("data-default-value", data.value);
+                ctl.setAttribute("data-default-value", data[ctl.name] || data.value);
                 close && foldup.call(self, null, {open: false});
                 var $p = $(self).find(".js-psedit-result").first();
-                $p.html(data.result || ctl.options[ctl.selectedIndex].innerHTML);
+                $p.html(data[ctl.name + "_html"] || data.result || ctl.options[ctl.selectedIndex].innerHTML);
                 if (data.color_classes) {
                     ensure_pattern(data.color_classes);
                     $p.html('<span class="taghh ' + data.color_classes + '">' + $p.html() + '</span>');

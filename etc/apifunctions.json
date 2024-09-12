@@ -18,7 +18,7 @@
     {
         "name": "alltags", "get": true,
         "function": "AllTags_API::run",
-        "response": "tags readonly_tagmap sitewide_tagmap"
+        "response": "tags ?readonly_tagmap ?sitewide_tagmap"
     },
     {
         "name": "assign", "post": true, "redirect": true,
@@ -39,7 +39,8 @@
         "name": "comment", "paper": true, "get": true,
         "function": "Comment_API::run",
         "parameters": "c",
-        "response": "cmt ?XXX"
+        "response": "comment",
+        "response_deprecated": "cmt"
     },
     {
         "name": "comment", "paper": true, "post": true,
@@ -53,12 +54,15 @@
     },
     {
         "name": "decision", "paper": true, "get": true,
-        "function": "Decision_API::run"
+        "function": "Decision_API::run",
+        "response": "decision decision_html ?editable"
     },
     {
         "name": "decision", "paper": true, "post": true,
         "function": "Decision_API::run",
-        "parameters": "=decision"
+        "parameters": "=decision",
+        "response": "decision decision_html ?editable",
+        "response_deprecated": "value result"
     },
     {
         "name": "events", "get": true,
@@ -104,12 +108,15 @@
     },
     {
         "name": "lead", "paper": true, "get": true,
-        "function": "PaperPC_API::lead_api"
+        "function": "PaperPC_API::lead_api",
+        "response": "lead lead_html ?color_classes"
     },
     {
         "name": "lead", "paper": true, "post": true,
         "function": "PaperPC_API::lead_api",
-        "parameters": "=lead"
+        "parameters": "=lead",
+        "response": "lead lead_html ?color_classes",
+        "response_deprecated": "value result"
     },
     {
         "name": "mailtext", "get": true, "post": true,
@@ -118,12 +125,15 @@
     },
     {
         "name": "manager", "paper": true, "get": true,
-        "function": "PaperPC_API::manager_api"
+        "function": "PaperPC_API::manager_api",
+        "response": "manager manager_html ?color_classes",
+        "response_deprecated": "value result"
     },
     {
         "name": "manager", "paper": true, "post": true,
         "function": "PaperPC_API::manager_api",
-        "parameters": "=manager"
+        "parameters": "=manager",
+        "response": "manager manager_html ?color_classes"
     },
     {
         "name": "administrator", "alias": "manager"
@@ -167,7 +177,8 @@
     },
     {
         "name": "pc", "get": true, "post": true,
-        "function": "PaperPC_API::pc_api"
+        "function": "PaperPC_API::pc_api",
+        "response": "pc"
     },
     {
         "name": "requestreview", "paper": true, "post": true,
@@ -248,12 +259,14 @@
     },
     {
         "name": "tags", "get": true, "paper": true,
-        "function": "Tags_API::run"
+        "function": "Tags_API::run",
+        "response": "pid tags tags_edit_text tags_view_html tag_decoration_html color_classes"
     },
     {
         "name": "tags", "post": true,
         "function": "Tags_API::run",
-        "parameters": "?p ?forceShow ?=tags ?=addtags ?=deltags ?=tagassignment ?=search"
+        "parameters": "?p ?forceShow ?=tags ?=addtags ?=deltags ?=tagassignment ?=search",
+        "response": "?pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?p"
     },
     {
         "name": "settingdescriptions", "get": true,
@@ -266,12 +279,15 @@
     },
     {
         "name": "shepherd", "paper": true, "get": true,
-        "function": "PaperPC_API::shepherd_api"
+        "function": "PaperPC_API::shepherd_api",
+        "response": "shepherd shepherd_html ?color_classes"
     },
     {
         "name": "shepherd", "paper": true, "post": true,
         "function": "PaperPC_API::shepherd_api",
-        "parameters": "=shepherd"
+        "parameters": "=shepherd",
+        "response": "shepherd shepherd_html ?color_classes",
+        "response_deprecated": "value result"
     },
     {
         "name": "submissionfieldlibrary", "get": true, "allow_if": "chair",
@@ -289,7 +305,8 @@
     },
     {
         "name": "tagmessages", "paper": true, "get": true,
-        "function": "Tags_API::tagmessages_api"
+        "function": "Tags_API::tagmessages_api",
+        "response": "pid"
     },
     {
         "name": "tagreport", "alias": "tagmessages"
@@ -317,11 +334,19 @@
         "name": "user", "get": true,
         "function": "User_API::user",
         "parameters": "email ?p ?potential_conflict",
-        "response": "found ?email ?given_name ?family_name ?affiliation ?potential_conflict"
+        "response": "found ?email ?given_name ?family_name ?affiliation ?potential_conflict ?orcid ?country"
     },
     {
-        "name": "viewoptions", "get": true, "post": true,
-        "function": "SearchConfig_API::viewoptions"
+        "name": "viewoptions", "get": true,
+        "function": "SearchConfig_API::viewoptions",
+        "parameters": "?report ?q",
+        "response": "report display_current display_default display_difference display_default_message_list"
+    },
+    {
+        "name": "viewoptions", "post": true,
+        "function": "SearchConfig_API::viewoptions",
+        "parameters": "?report ?q =display",
+        "response": "report display_current display_default display_difference display_default_message_list"
     },
     {
         "name": "listreport", "alias": "viewoptions"
