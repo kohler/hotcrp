@@ -89,7 +89,7 @@ class Review_API {
                 $vs[] = $pex->review_history_json($prow, $rrow, $h);
             }
         }
-        return new JsonResult(["ok" => true, "versions" => $vs]);
+        return new JsonResult(["ok" => true, "pid" => $prow->paperId, "rid" => $rrow->reviewId, "versions" => $vs]);
     }
 
     static function reviewrating(Contact $user, Qrequest $qreq, PaperInfo $prow) {
