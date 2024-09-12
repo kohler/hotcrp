@@ -39,44 +39,63 @@ class Review_API {
         }
     }
 
+    /** @return JsonResult|ReviewInfo */
+    static function lookup_review(Contact $user, PaperInfo $prow, $r) {
+        if ($r === null) {
+            return JsonResult::make_missing_error("r");
+        }
+        if (($rrow = $prow->full_review_by_ordinal_id($r))) {
+            if ($user->can_view_review($prow, $rrow)) {
+                return $rrow;
+            } else if ($user->can_view_review_assignment($prow, $rrow)) {
+                return JsonResult::make_permission_error("r");
+            }
+        }
+        if (!$prow->parse_ordinal_id($r)) {
+            return JsonResult::make_parameter_error("r", "<0>Invalid review");
+        } else {
+            return JsonResult::make_not_found_error("r", "<0>Review not found");
+        }
+    }
+
     static function reviewhistory(Contact $user, Qrequest $qreq, PaperInfo $prow) {
         if (!$user->can_view_submitted_review($prow)) {
             return JsonResult::make_permission_error();
         }
-        if (!isset($qreq->r)
-            || !($rrow = $prow->full_review_by_ordinal_id($qreq->r))) {
-            return JsonResult::make_parameter_error("r");
+        $rrow = self::lookup_review($user, $prow, $qreq->r);
+        if ($rrow instanceof JsonResult) {
+            return $rrow;
         }
         if (!$user->is_my_review($rrow)
             && !$user->can_administer($prow)) {
-            return JsonResult::make_permission_error();
+            return JsonResult::make_permission_error("r");
         }
         $pex = new PaperExport($user);
         $pex->set_include_permissions(false);
         $pex->set_include_ratings(false);
+        $fullh = $rrow;
         $vs = [$pex->review_json($prow, $rrow)];
         $history = $rrow->history();
+        $expand = isset($qreq->expand) && friendly_boolean($qreq->expand);
         for ($i = count($history) - 1; $i >= 0; --$i) {
-            if ($history[$i] instanceof ReviewInfo) {
-                $vs[] = $pex->review_json($prow, $history[$i]);
+            $h = $history[$i];
+            if ($expand && $h instanceof ReviewHistoryInfo) {
+                $h = $fullh->apply_history($h);
+            }
+            if ($h instanceof ReviewInfo) {
+                $vs[] = $pex->review_json($prow, $h);
+                $fullh = $h;
             } else {
-                $vs[] = $pex->review_history_json($prow, $rrow, $history[$i]);
+                $vs[] = $pex->review_history_json($prow, $rrow, $h);
             }
         }
         return new JsonResult(["ok" => true, "versions" => $vs]);
     }
 
     static function reviewrating(Contact $user, Qrequest $qreq, PaperInfo $prow) {
-        if (!$qreq->r) {
-            return JsonResult::make_parameter_error("r");
-        }
-        $rrow = $prow->full_review_by_ordinal_id($qreq->r);
-        if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
-            return JsonResult::make_parameter_error("r");
-        } else if (!$user->can_view_review($prow, $rrow)) {
-            return JsonResult::make_permission_error("r");
-        } else if (!$rrow) {
-            return JsonResult::make_not_found_error("r", "<0>Review not found");
+        $rrow = self::lookup_review($user, $prow, $qreq->r);
+        if ($rrow instanceof JsonResult) {
+            return $rrow;
         }
         $editable = $user->can_rate_review($prow, $rrow);
         if ($qreq->method() !== "GET") {
@@ -115,16 +134,12 @@ class Review_API {
 
     /** @param PaperInfo $prow */
     static function reviewround(Contact $user, $qreq, $prow) {
-        if (!$qreq->r) {
-            return JsonResult::make_missing_error("r");
+        if (!$user->can_administer($prow)) {
+            return JsonResult::make_permission_error();
         }
-        $rrow = $prow->full_review_by_ordinal_id($qreq->r);
-        if (!$rrow && $prow->parse_ordinal_id($qreq->r) === false) {
-            return JsonResult::make_parameter_error("r");
-        } else if (!$user->can_administer($prow)) {
-            return JsonResult::make_permission_error("r");
-        } else if (!$rrow) {
-            return JsonResult::make_not_found_error("r", "<0>Review not found");
+        $rrow = self::lookup_review($user, $prow, $qreq->r);
+        if ($rrow instanceof JsonResult) {
+            return $rrow;
         }
         $rname_in = trim((string) $qreq->round);
         if (($rname = $user->conf->sanitize_round_name($rname_in)) === false) {
