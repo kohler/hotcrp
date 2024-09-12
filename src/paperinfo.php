@@ -1750,8 +1750,7 @@ class PaperInfo {
     /** @return bool */
     function can_author_view_submitted_review() {
         $ausr = $this->conf->_au_seerev;
-        return $ausr === true
-            || ($ausr && $ausr->test($this, null))
+        return ($ausr && $ausr->test($this, null))
             || $this->can_author_respond();
     }
 
