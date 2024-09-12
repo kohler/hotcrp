@@ -152,9 +152,9 @@ class SpecValidator_API {
         $url = substr($nav->self(), 0, 100);
         $out = $qreq->conf()->opt("validateApiSpec");
         if (is_string($out)) {
-            @file_put_contents($out, "{$url}: {$error}\n", FILE_APPEND);
+            @file_put_contents($out, "{$qreq->method()} {$url}: {$error}\n", FILE_APPEND);
         } else {
-            error_log("{$url}: {$error}");
+            error_log("{$qreq->method()} {$url}: {$error}");
         }
     }
 }

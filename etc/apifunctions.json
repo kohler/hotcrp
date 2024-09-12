@@ -41,7 +41,7 @@
     {
         "name": "comment", "paper": true, "post": true,
         "function": "Comment_API::run",
-        "parameters": "c ?override ?=text ?=response ?=ready ?=topic ?=draft ?=blind ?=tags ?=visibility ?=:attachment ?=by_author ?=review_token"
+        "parameters": "c ?override ?=text ?=response ?=ready ?=topic ?=draft ?=blind ?=tags ?=visibility ?=:attachment ?=by_author ?=review_token ?delete"
     },
     {
         "name": "declinereview", "post": true, "redirect": true,
@@ -221,12 +221,14 @@
     },
     {
         "name": "session", "get": true, "allow_disabled": true,
-        "function": "Session_API::getsession"
+        "function": "Session_API::getsession",
+        "response": "postvalue sessioninfo"
     },
     {
         "name": "session", "post": true,
         "function": "Session_API::setsession",
-        "parameters": "v"
+        "parameters": "v",
+        "response": "postvalue sessioninfo"
     },
     {
         "name": "settags", "alias": "tags"
