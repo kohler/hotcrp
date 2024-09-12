@@ -7,41 +7,37 @@ class SpecValidator_API {
     const F_BODY = 2;
     const F_FILE = 4;
     const F_SUFFIX = 8;
+    const F_PRESENT = 16;
 
-    static function run($uf, Qrequest $qreq) {
-        $known = [];
-        $has_suffix = false;
+    static function request($uf, Qrequest $qreq) {
         $parameters = $uf->parameters ?? [];
         if (is_string($parameters)) {
             $parameters = explode(" ", trim($parameters));
         }
+        $known = [];
+        $has_suffix = false;
         foreach ($parameters as $p) {
-            $flags = self::F_REQUIRED;
+            $t = self::F_REQUIRED;
             for ($i = 0; $i !== strlen($p); ++$i) {
                 if ($p[$i] === "?") {
-                    $flags &= ~self::F_REQUIRED;
+                    $t &= ~self::F_REQUIRED;
                 } else if ($p[$i] === "=") {
-                    $flags |= self::F_BODY;
+                    $t |= self::F_BODY;
                 } else if ($p[$i] === "@") {
-                    $flags |= self::F_FILE;
+                    $t |= self::F_FILE;
                 } else if ($p[$i] === ":") {
-                    $flags |= self::F_SUFFIX;
+                    $t |= self::F_SUFFIX;
                     $has_suffix = true;
                 } else {
                     break;
                 }
             }
             $n = substr($p, $i);
-            $known[$n] = $flags;
-            if (($flags & self::F_REQUIRED) !== 0
-                && !(($flags & self::F_FILE) !== 0 ? $qreq->has_file($n) : $qreq->has($n))) {
-                $type = self::unparse_param_type($n, $flags);
-                self::error($qreq, "required {$type} `{$n}` missing");
-            }
+            $known[$n] = $t;
         }
         $param = [];
         foreach (array_keys($_GET) as $n) {
-            if (($t = self::lookup_param_type($n, $known, $has_suffix)) === null) {
+            if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
                 if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_"])
                     && ($n !== "p" || !($uf->paper ?? false))
                     && ($n !== "redirect" || !($uf->redirect ?? false))
@@ -53,7 +49,7 @@ class SpecValidator_API {
             }
         }
         foreach (array_keys($_POST) as $n) {
-            if (($t = self::lookup_param_type($n, $known, $has_suffix)) === null) {
+            if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
                 if (!isset($known["*"])) {
                     self::error($qreq, "post param `{$n}` unknown");
                 }
@@ -63,17 +59,63 @@ class SpecValidator_API {
             }
         }
         foreach (array_keys($_FILES) as $n) {
-            if (($t = self::lookup_param_type($n, $known, $has_suffix)) === null
+            if (($t = self::lookup_type($n, $known, $has_suffix)) === null
                 || ($t & (self::F_FILE | self::F_BODY)) === 0) {
                 if (!isset($known["*"])) {
                     self::error($qreq, "file param `{$n}` unknown");
                 }
             }
         }
+        foreach ($parameters as $n => $t) {
+            if (($t & (self::F_REQUIRED | self::F_PRESENT)) === self::F_REQUIRED) {
+                $type = self::unparse_param_type($n, $t);
+                self::error($qreq, "required {$type} `{$n}` missing");
+            }
+        }
     }
 
-    static function lookup_param_type($n, &$known, $has_suffix) {
+    static function response($uf, Qrequest $qreq, JsonResult $jr) {
+        $response = $uf->response ?? [];
+        if (is_string($response)) {
+            $response = explode(" ", trim($response));
+        }
+        if ($response === ["*"]) {
+            return;
+        }
+        $known = [];
+        $has_suffix = false;
+        foreach ($response as $p) {
+            $t = self::F_REQUIRED;
+            for ($i = 0; $i !== strlen($p); ++$i) {
+                if ($p[$i] === "?") {
+                    $t &= ~self::F_REQUIRED;
+                } else if ($p[$i] === ":") {
+                    $t |= self::F_SUFFIX;
+                    $has_suffix = true;
+                } else {
+                    break;
+                }
+            }
+            $n = substr($p, $i);
+            $known[$n] = $t;
+        }
+        foreach (array_keys($jr->content) as $n) {
+            if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
+                if (!in_array($n, ["ok", "message_list"])) {
+                    self::error($qreq, "response component `{$n}` unknown");
+                }
+            }
+        }
+        foreach ($known as $n => $t) {
+            if (($t & (self::F_REQUIRED | self::F_PRESENT)) === self::F_REQUIRED) {
+                self::error($qreq, "response component `{$n}` missing");
+            }
+        }
+    }
+
+    static function lookup_type($n, &$known, $has_suffix) {
         if (isset($known[$n])) {
+            $known[$n] |= self::F_PRESENT;
             return $known[$n];
         }
         if (!$has_suffix) {
@@ -85,18 +127,20 @@ class SpecValidator_API {
             $colon = $slash;
         }
         if ($colon !== false) {
-            $t = $known[substr($n, 0, $colon)] ?? 0;
+            $pfx = substr($n, 0, $colon);
+            $t = $known[$pfx] ?? 0;
             if (($t & self::F_SUFFIX) !== 0) {
+                $known[$pfx] |= self::F_PRESENT;
                 return $t;
             }
         }
         return null;
     }
 
-    static function unparse_param_type($n, $flags) {
-        if (($flags & self::F_FILE) !== 0) {
+    static function unparse_param_type($n, $t) {
+        if (($t & self::F_FILE) !== 0) {
             return "file param";
-        } else if (($flags & self::F_BODY) !== 0) {
+        } else if (($t & self::F_BODY) !== 0) {
             return "post param";
         } else {
             return "query param";
