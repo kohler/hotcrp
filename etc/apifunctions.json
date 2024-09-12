@@ -2,7 +2,8 @@
     {
         "name": "acceptreview", "post": true, "redirect": true,
         "function": "RequestReview_API::acceptreview",
-        "parameters": "p r"
+        "parameters": "p r",
+        "response": "action review_site_relative"
     },
     {
         "name": "account", "get": true,
@@ -16,7 +17,8 @@
     },
     {
         "name": "alltags", "get": true,
-        "function": "AllTags_API::run"
+        "function": "AllTags_API::run",
+        "response": "tags readonly_tagmap sitewide_tagmap"
     },
     {
         "name": "assign", "post": true, "redirect": true,
@@ -36,7 +38,8 @@
     {
         "name": "comment", "paper": true, "get": true,
         "function": "Comment_API::run",
-        "parameters": "c"
+        "parameters": "c",
+        "response": "cmt ?XXX"
     },
     {
         "name": "comment", "paper": true, "post": true,
@@ -60,7 +63,8 @@
     {
         "name": "events", "get": true,
         "function": "Events_API::run",
-        "parameters": "?from"
+        "parameters": "?from",
+        "response": "from to rows more"
     },
     {
         "name": "fieldtext", "get": true,
@@ -69,17 +73,20 @@
     {
         "name": "fieldhtml", "get": true,
         "function": "Search_API::fieldhtml",
-        "parameters": "f ?aufull ?session q ?t ?sort"
+        "parameters": "f ?aufull ?session q ?t ?sort",
+        "response": "fields data"
     },
     {
         "name": "follow", "paper": true, "post": true, "xxx": true,
         "function": "Follow_API::run",
-        "parameters": "?u =following"
+        "parameters": "?u =following",
+        "response": "following"
     },
     {
         "name": "formatcheck", "get": true, "post": true,
         "function": "FormatCheck_API::run",
-        "parameters": "?p ?doc ?soft ?dt ?docid"
+        "parameters": "?p ?doc ?soft ?dt ?docid",
+        "response": "npages nwords result problem_fields has_error docid"
     },
     {
         "name": "graphdata", "get": true,
@@ -132,16 +139,19 @@
     },
     {
         "name": "namedsearch", "get": true, "allow_if": "pc",
-        "function": "SearchConfig_API::namedsearch"
+        "function": "SearchConfig_API::namedsearch",
+        "response": "searches"
     },
     {
         "name": "namedsearch", "post": true,
-        "function": "SearchConfig_API::save_namedsearch"
+        "function": "SearchConfig_API::save_namedsearch",
+        "response": "searches"
     },
     {
         "name": "mentioncompletion", "get": true, "post": true,
         "function": "Completion_API::mentioncompletion_api",
-        "parameters": "?p"
+        "parameters": "?p",
+        "response": "mentioncompletion"
     },
     {
         "name": "oauthtoken", "post": true, "allow_disabled": true, "check_token": false,
@@ -197,7 +207,8 @@
     {
         "name": "revpref", "get": true,
         "function": "Preference_API::pref_api",
-        "parameters": "p ?u"
+        "parameters": "p ?u",
+        "response": "value pref ?prefexp ?topic_score"
     },
     {
         "name": "revpref", "post": true,
@@ -213,11 +224,13 @@
     {
         "name": "search", "get": true,
         "function": "Search_API::search",
-        "parameters": "q t ?sort ?report ?scoresort"
+        "parameters": "q t ?sort ?report ?scoresort",
+        "response": "ids groups hotlist search_params"
     },
     {
         "name": "searchcompletion", "get": true,
-        "function": "Completion_API::searchcompletion_api"
+        "function": "Completion_API::searchcompletion_api",
+        "response": "searchcompletion"
     },
     {
         "name": "session", "get": true, "allow_disabled": true,
@@ -296,12 +309,15 @@
     {
         "name": "upload", "post": true,
         "function": "Upload_API::run",
-        "parameters": "?p ?dtype ?start ?offset ?finish ?token ?cancel ?=size ?=mimetype ?=filename ?@blob"
+        "parameters": "?p ?dtype ?start ?offset ?finish ?token ?cancel ?=size ?=mimetype ?=filename ?@blob",
+        "response": "token dtype filename mimetype size ranges hash server_progress_loaded server_progress_max"
+
     },
     {
         "name": "user", "get": true,
         "function": "User_API::user",
-        "parameters": "email ?p ?potential_conflict"
+        "parameters": "email ?p ?potential_conflict",
+        "response": "found ?email ?given_name ?family_name ?affiliation ?potential_conflict"
     },
     {
         "name": "viewoptions", "get": true, "post": true,

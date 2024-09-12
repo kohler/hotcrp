@@ -106,6 +106,9 @@ class SpecValidator_API {
                 }
             }
         }
+        if (!$jr->content["ok"]) {
+            return;
+        }
         foreach ($known as $n => $t) {
             if (($t & (self::F_REQUIRED | self::F_PRESENT)) === self::F_REQUIRED) {
                 self::error($qreq, "response component `{$n}` missing");

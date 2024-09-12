@@ -7422,17 +7422,18 @@ function cmt_save_callback(cj) {
             return;
         }
         cmt_toggle_editing(celt, false);
+        if (!data.comment && data.cmt) {
+            data.comment = data.cmt;
+        }
         const editing_response = cj.response
             && cmt_is_editable(cj, true)
-            && (!data.cmt || data.cmt.draft);
-        if (!data.cmt && editing_response) {
-            data.cmt = {is_new: true, response: cj.response, editable: true};
+            && (!data.comment || data.comment.draft);
+        if (!data.comment && editing_response) {
+            data.comment = {is_new: true, response: cj.response, editable: true};
         }
-        if (data.cmt && data.cmt.folded && data.cmt.collapsed == null) /* XXX */
-            data.cmt.collapsed = data.cmt.folded;
-        var new_cid = data.cmt ? cj_cid(data.cmt) : null;
+        var new_cid = data.comment ? cj_cid(data.comment) : null;
         if (new_cid) {
-            cmts[new_cid] = data.cmt;
+            cmts[new_cid] = data.comment;
         }
         if (new_cid !== cid) {
             if (!cj.is_new) {
@@ -7441,8 +7442,8 @@ function cmt_save_callback(cj) {
             if (new_cid) {
                 celt.id = new_cid;
                 navsidebar.redisplay(celt);
-                last_visibility = data.cmt.visibility;
-                last_topic = data.cmt.topic || "rev";
+                last_visibility = data.comment.visibility;
+                last_topic = data.comment.topic || "rev";
             } else {
                 celt.removeAttribute("id");
                 celt.replaceChildren($e("div", "cmtmsg"));
@@ -7450,8 +7451,8 @@ function cmt_save_callback(cj) {
                 navsidebar.remove(celt);
             }
         }
-        if (data.cmt) {
-            cmt_render(data.cmt, editing_response);
+        if (data.comment) {
+            cmt_render(data.comment, editing_response);
         }
         if (data.message_list) {
             $(celt).find(".cmtmsg").html(feedback.render_alert(data.message_list));
@@ -7721,8 +7722,6 @@ function cmt_render_preview(evt, format, value, dest) {
 
 function add_comment(cj, editing) {
     var cid = cj_cid(cj), celt = $$(cid);
-    if (cj.folded && cj.collapsed == null) /* XXX */
-        cj.collapsed = cj.folded;
     cmts[cid] = cj;
     if (editing == null
         && cj.response
