@@ -60,7 +60,7 @@ class SpecValidator_API {
         }
         foreach (array_keys($_FILES) as $n) {
             if (($t = self::lookup_param_type($n, $known, $has_suffix)) === null
-                || ($t & self::F_FILE) === 0) {
+                || ($t & (self::F_FILE | self::F_BODY)) === 0) {
                 if (!isset($known["*"])) {
                     self::error($qreq, "file param `{$n}` unknown");
                 }

@@ -238,7 +238,8 @@
     },
     {
         "name": "settings", "get": true, "post": true,
-        "function": "Settings_API::run"
+        "function": "Settings_API::run",
+        "parameters": ["?=settings", "?dryrun"]
     },
     {
         "name": "shepherd", "paper": true, "get": true,
