@@ -1001,6 +1001,8 @@ class ReviewValues extends MessageSet {
             && $diffinfo->view_score() >= $author_view_score
             && $prow->can_author_view_submitted_review()) {
             $rflags |= ReviewInfo::RF_AUSEEN_LIVE;
+        } else {
+            $rflags &= ~ReviewInfo::RF_AUSEEN_LIVE;
         }
 
         // potentially assign review ordinal (requires table locking since
