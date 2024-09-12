@@ -81,9 +81,8 @@ class SpecValidator_API {
             $colon = $slash;
         }
         if ($colon !== false) {
-            $x = substr($n, $colon);
-            $t = $known[$x] ?? null;
-            if ($t !== null && ($t & self::F_SUFFIX) !== 0) {
+            $t = $known[substr($n, 0, $colon)] ?? 0;
+            if (($t & self::F_SUFFIX) !== 0) {
                 return $t;
             }
         }

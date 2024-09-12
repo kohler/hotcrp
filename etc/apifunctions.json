@@ -21,7 +21,7 @@
     {
         "name": "assign", "post": true, "redirect": true,
         "function": "Assign_API::assign",
-        "parameters": ["=assignments"]
+        "parameters": ["?p", "=assignments"]
     },
     {
         "name": "claimreview", "paper": true, "post": true, "redirect": true,
@@ -286,7 +286,7 @@
     {
         "name": "upload", "post": true,
         "function": "Upload_API::run",
-        "parameters": ["?p", "?dtype", "?start", "offset", "?finish", "?token", "?cancel", "?=size", "?=mimetype", "?=filename", "?@blob"]
+        "parameters": ["?p", "?dtype", "?start", "?offset", "?finish", "?token", "?cancel", "?=size", "?=mimetype", "?=filename", "?@blob"]
     },
     {
         "name": "user", "get": true,
