@@ -3635,15 +3635,15 @@ function tracker_refresh() {
 handle_ui.on("js-tracker", function (evt) {
     let $pu, trno = 1, elapsed_timer;
     function make_tracker(tr) {
-        const trp = "tr" + trno, ktrp = "k-tr" + trno,
+        const trp = "tr/" + trno, ktrp = "k-tr/" + trno,
             $t = $e("fieldset", {class: "tracker-group", "data-index": trno, "data-trackerid": tr.trackerid},
                 $e("legend", "mb-1",
-                    $e("input", {id: ktrp + "-name", type: "text", name: trp + "-name", size: 24, class: "want-focus need-autogrow", value: tr.name || "", placeholder: tr.is_new ? "New tracker" : "Unnamed tracker"})),
-                hidden_input(trp + "-id", tr.trackerid));
+                    $e("input", {id: ktrp + "/name", type: "text", name: trp + "/name", size: 24, class: "want-focus need-autogrow", value: tr.name || "", placeholder: tr.is_new ? "New tracker" : "Unnamed tracker"})),
+                hidden_input(trp + "/id", tr.trackerid));
         if (tr.trackerid === "new" && siteinfo.paperid)
-            $t.append(hidden_input(trp + "-p", siteinfo.paperid));
+            $t.append(hidden_input(trp + "/p", siteinfo.paperid));
         if (tr.listinfo)
-            $t.append(hidden_input(trp + "-listinfo", tr.listinfo));
+            $t.append(hidden_input(trp + "/listinfo", tr.listinfo));
         let vis = tr.visibility || "", vistype;
         if (vis === "+none" || vis === "none") {
             vistype = "none";
@@ -3655,7 +3655,7 @@ handle_ui.on("js-tracker", function (evt) {
         }
         const gvis = (dl.tracker && dl.tracker.global_visibility) || "",
             vismap = [["", "Whole PC"], ["+", "PC members with tag"], ["-", "PC members without tag"]],
-            vissel = $e("select", {id: ktrp + "-vistype", name: trp + "-vistype", class: "uich js-foldup", "data-default-value": vistype});
+            vissel = $e("select", {id: ktrp + "/visibility_type", name: trp + "/visibility_type", class: "uich js-foldup", "data-default-value": vistype});
         if (hotcrp.status.is_admin) {
             vismap.push(["none", "Administrators only"]);
         }
@@ -3663,9 +3663,9 @@ handle_ui.on("js-tracker", function (evt) {
             vissel.append($e("option", {value: v[0], selected: v[0] === vistype, disabled: gvis === "+none" && v[0] !== "none"}, v[1]));
         }
         $t.append($e("div", {class: "entryi has-fold fold" + (vistype === "+" || vistype === "-" ? "o" : "c"), "data-fold-values": "+ -"},
-            $e("label", {for: ktrp + "-vistype"}, "PC visibility"),
+            $e("label", {for: ktrp + "/visibility_type"}, "PC visibility"),
             $e("div", "entry", $e("span", "select", vissel),
-                $e("input", {type: "text", name: trp + "-vis", value: vis.substring(1), placeholder: "(tag)", class: "need-suggest need-autogrow pc-tags fx ml-2"}))));
+                $e("input", {type: "text", name: trp + "/visibility", value: vis.substring(1), placeholder: "(tag)", class: "need-suggest need-autogrow pc-tags fx ml-2"}))));
         if (gvis) {
             let gvist;
             if (gvis === "+none")
@@ -3680,8 +3680,8 @@ handle_ui.on("js-tracker", function (evt) {
         }
         $t.append($e("div", "entryi", $e("label"),
             $e("div", "entry", $e("label", "checki",
-                $e("span", "checkc", hidden_input("has_" + trp + "-hideconflicts", 1),
-                    $e("input", {name: trp + "-hideconflicts", value: 1, type: "checkbox", checked: !!tr.hide_conflicts})),
+                $e("span", "checkc", hidden_input("has_" + trp + "/hideconflicts", 1),
+                    $e("input", {name: trp + "/hideconflicts", value: 1, type: "checkbox", checked: !!tr.hide_conflicts})),
                 "Hide conflicted papers"))));
         if (tr.start_at) {
             $t.append($e("div", "entryi", $e("label", null, "Elapsed time"),
@@ -3701,7 +3701,7 @@ handle_ui.on("js-tracker", function (evt) {
                     a.push(ids.join(" "));
                 }
                 $t.append($e("div", "entryi", $e("label", null, "Order"),
-                    $e("div", "entry", hidden_input(trp + "-p", "", {disabled: true}), ...a)));
+                    $e("div", "entry", hidden_input(trp + "/p", "", {disabled: true}), ...a)));
             }
         } catch (e) {
         }
@@ -3709,10 +3709,10 @@ handle_ui.on("js-tracker", function (evt) {
             $t.append($e("div", "entryi", $e("label"),
                 $e("div", "entry",
                     $e("label", "checki d-inline-block mr-3",
-                        $e("span", "checkc", $e("input", {name: trp + "-hide", value: 1, type: "checkbox", checked: !!wstor.site(true, "hotcrp-tracking-hide-" + tr.trackerid)})),
+                        $e("span", "checkc", $e("input", {name: trp + "/hide", value: 1, type: "checkbox", checked: !!wstor.site(true, "hotcrp-tracking-hide-" + tr.trackerid)})),
                         "Hide on this tab"),
                     $e("label", "checki d-inline-block",
-                        $e("span", "checkc", $e("input", {name: trp + "-stop", value: 1, type: "checkbox"})),
+                        $e("span", "checkc", $e("input", {name: trp + "/stop", value: 1, type: "checkbox"})),
                         "Stop"))));
         }
         ++trno;
@@ -3772,7 +3772,7 @@ handle_ui.on("js-tracker", function (evt) {
         $pu.find(".tracker-group").each(function () {
             var trno = this.getAttribute("data-index"),
                 id = this.getAttribute("data-trackerid"),
-                e = f["tr" + trno + "-hide"];
+                e = f["tr/" + trno + "/hide"];
             if (e)
                 hiding[id] = e.checked;
         });
@@ -3780,12 +3780,12 @@ handle_ui.on("js-tracker", function (evt) {
         // mark differences
         var trd = {};
         $pu.find("input, select, textarea").each(function () {
-            var m = this.name.match(/^tr(\d+)/);
+            var m = this.name.match(/^tr\/(\d+)/);
             if (m && input_differs(this))
                 trd[m[1]] = true;
         });
         for (var i in trd) {
-            f.appendChild(hidden_input("tr" + i + "-changed", "1", {class: "tracker-changemark"}));
+            f.appendChild(hidden_input("tr/" + i + "/changed", "1", {class: "tracker-changemark"}));
         }
 
         $.post(hoturl("=api/trackerconfig"),
@@ -3846,7 +3846,7 @@ handle_ui.on("js-tracker", function (evt) {
         start();
     } else {
         $.post(hoturl("=api/trackerconfig"),
-               {"tr1-id": "new", "tr1-listinfo": document.body.getAttribute("data-hotlist"), "tr1-p": siteinfo.paperid, "tr1-vis": wstor.site(false, "hotcrp-tracking-visibility")},
+               {"tr/1/id": "new", "tr/1/listinfo": document.body.getAttribute("data-hotlist"), "tr/1/p": siteinfo.paperid, "tr/1/visibility": wstor.site(false, "hotcrp-tracking-visibility")},
                make_submit_success({}, "new"));
     }
 });

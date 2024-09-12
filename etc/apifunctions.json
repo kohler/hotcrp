@@ -320,7 +320,7 @@
     },
     {
         "name": "trackerconfig", "post": true,
-        "function": "MeetingTracker::trackerconfig_api"
+        "function": "TrackerConfig_API::run"
     },
     {
         "name": "trackerstatus", "get": true, "post": true,
