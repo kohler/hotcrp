@@ -726,12 +726,14 @@ class MessageSet {
     static function feedback_html_items($message_list) {
         $ts = [];
         $t = "";
-        $last_landmark = null;
+        $last_mi = $last_landmark = null;
         foreach ($message_list as $mi) {
             if ($mi->message === ""
                 && ($mi->pos1 === null || $mi->context === null)) {
                 continue;
             }
+
+            // render message
             $s = $mi->message_as(5);
             $pstart = $pstartclass = "";
             if (str_starts_with($s, "<p")) {
@@ -744,6 +746,23 @@ class MessageSet {
                     $s = substr($s, strlen($m[0]));
                 }
             }
+
+            // close previous message
+            // (special case: avoid duplicate messages if adding context)
+            if ($last_mi
+                && $last_mi->status === $mi->status
+                && $last_mi->message === $mi->message
+                && ($last_mi->landmark ?? "") === ""
+                && ($mi->landmark ?? "") === ""
+                && $mi->pos1 !== null
+                && $mi->context !== null) {
+                $s = "";
+            } else if ($mi->status !== self::INFORM && $t !== "") {
+                $ts[] = $t;
+                $t = "";
+            }
+
+            // render landmark
             if ($mi->landmark !== null
                 && $mi->landmark !== ""
                 && ($mi->status !== self::INFORM || $mi->landmark !== $last_landmark)) {
@@ -763,10 +782,8 @@ class MessageSet {
             } else {
                 $lm = "";
             }
-            if ($mi->status !== self::INFORM && $t !== "") {
-                $ts[] = $t;
-                $t = "";
-            }
+
+            // add message
             if ($s === "") {
                 // Do not report message
             } else if ($mi->status !== self::INFORM) {
@@ -780,11 +797,16 @@ class MessageSet {
             } else {
                 $t .= "<div class=\"msg-inform\">{$pstart}{$lm}{$s}</div>";
             }
+
+            // add context
             if ($mi->pos1 !== null && $mi->context !== null) {
                 $mark = Ht::mark_substring($mi->context, $mi->pos1, $mi->pos2, $mi->status);
                 $lmx = $s === "" ? $lm : "";
                 $t .= "<div class=\"msg-context\">{$lmx}{$mark}</div>";
             }
+
+            // cleanup
+            $last_mi = $mi;
             if ($mi->status !== self::INFORM) {
                 $last_landmark = $mi->landmark;
             }

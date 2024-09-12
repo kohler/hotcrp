@@ -1789,9 +1789,18 @@ function render_alert(ml) {
     return div;
 }
 
+function redundant_item(mi, ul) {
+    let xm;
+    return mi.message == null
+        || mi.message === ""
+        || (!mi.landmark
+            && mi.context
+            && ul.getAttribute("data-last-mi") === mi.status + " " + mi.message);
+}
+
 function append_item(ul, mi) {
     let li, div;
-    if (mi.message != null && mi.message !== "") {
+    if (!redundant_item(mi, ul)) {
         let sklass = "";
         if (mi.status != null && mi.status >= -4 /*MessageSet::MARKED_NOTE*/ && mi.status <= 3)
             sklass = ["note", "success", "warning-note", "urgent-note", "", "warning", "error", "error"][mi.status + 4];
@@ -1806,6 +1815,11 @@ function append_item(ul, mi) {
         }
         li.appendChild(div);
         render_text.ftext_onto(div, mi.message, 5);
+        if (!mi.landmark) {
+            ul.setAttribute("data-last-mi", mi.status + " " + mi.message);
+        } else {
+            ul.removeAttribute("data-last-mi");
+        }
     }
     if (mi.context) {
         const s = mi.context[0],
@@ -1844,11 +1858,12 @@ function append_item_near(elt, mi) {
     while (fl && (fl.tagName === "LABEL" || fl.tagName === "LEGEND" || hasClass(fl, "feedback"))) {
         fl = fl.nextElementSibling;
     }
-    if (fl && hasClass(fl, "feedback-list")) {
-        append_item(fl, mi);
-    } else {
-        owner.insertBefore(render_list([mi]), fl);
+    if (!fl || !hasClass(fl, "feedback-list")) {
+        let nfl = render_list();
+        owner.insertBefore(nfl, fl);
+        fl = nfl;
     }
+    append_item(fl, mi);
     return true;
 }
 
