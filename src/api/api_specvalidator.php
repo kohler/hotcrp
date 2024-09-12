@@ -11,7 +11,11 @@ class SpecValidator_API {
     static function run($uf, Qrequest $qreq) {
         $known = [];
         $has_suffix = false;
-        foreach ($uf->parameters ?? [] as $p) {
+        $parameters = $uf->parameters ?? [];
+        if (is_string($parameters)) {
+            $parameters = explode(" ", trim($parameters));
+        }
+        foreach ($parameters as $p) {
             $flags = self::F_REQUIRED;
             for ($i = 0; $i !== strlen($p); ++$i) {
                 if ($p[$i] === "?") {

@@ -124,7 +124,11 @@ class APISpec_Batch {
         If ($j->redirect ?? false) {
             $params[] = $this->resolve_common_param("redirect");
         }
-        foreach ($j->parameters ?? [] as $p) {
+        $parameters = $j->parameters ?? [];
+        if (is_string($parameters)) {
+            $parameters = explode(" ", trim($parameters));
+        }
+        foreach ($parameters as $p) {
             $required = true;
             $in = "query";
             for ($i = 0; $i !== strlen($p); ++$i) {

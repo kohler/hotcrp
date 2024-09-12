@@ -79,8 +79,8 @@ class RequestReview_API {
         $xreviewer = $reviewer ?? $user->conf->cdb_user_by_email($email);
         if (!$xreviewer) {
             $name_args = Author::make_keyed([
-                "firstName" => $qreq->firstName,
-                "lastName" => $qreq->lastName,
+                "firstName" => $qreq->given_name ?? $qreq->firstName,
+                "lastName" => $qreq->family_name ?? $qreq->lastName,
                 "name" => $qreq->name,
                 "affiliation" => $qreq->affiliation,
                 "email" => $email
@@ -177,11 +177,11 @@ class RequestReview_API {
     }
 
     static private function update_qreq_from_request(Qrequest $qreq, ReviewRequestInfo $request) {
-        if (!isset($qreq->firstName) && !isset($qreq->name)) {
-            $qreq->firstName = $request->firstName;
+        if (!isset($qreq->given_name) && !isset($qreq->firstName) && !isset($qreq->name)) {
+            $qreq->given_name = $request->firstName;
         }
-        if (!isset($qreq->lastName) && !isset($qreq->name)) {
-            $qreq->lastName = $request->lastName;
+        if (!isset($qreq->family_name) && !isset($qreq->lastName) && !isset($qreq->name)) {
+            $qreq->family_name = $request->lastName;
         }
         if (!isset($qreq->affiliation)) {
             $qreq->affiliation = $request->affiliation;

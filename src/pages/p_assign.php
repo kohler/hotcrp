@@ -114,11 +114,16 @@ class Assign_Page {
         $ok = $aset->execute();
         if ($this->qreq->ajax) {
             json_exit($aset->json_result());
-        } else {
-            $ok && $aset->prepend_msg("<0>Assignments saved", MessageSet::SUCCESS);
-            $this->conf->feedback_msg($aset->message_list());
-            $ok && $this->conf->redirect_self($this->qreq);
         }
+        $ok && $aset->prepend_msg("<0>Assignments saved", MessageSet::SUCCESS);
+        $this->conf->feedback_msg($aset->message_list());
+        $ok && $this->conf->redirect_self($this->qreq);
+    }
+
+    /** @return never
+     * @throws Redirection */
+    private function redirect_requestreview() {
+        $this->conf->redirect_self($this->qreq, ["email" => null, "given_name" => null, "family_name" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "denyreview" => null, "retractreview" => null, "undeclinereview" => null]);
     }
 
     function handle_requestreview() {
@@ -126,31 +131,29 @@ class Assign_Page {
         if ($result->content["ok"]) {
             assert(is_array($result->content["message_list"]));
             $this->conf->feedback_msg($result->content["message_list"]);
-            $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null]);
-        } else {
-            $emx = null;
-            foreach ($result->content["message_list"] ?? [] as $mx) {
-                '@phan-var-force MessageItem $mx';
-                if ($mx->field === "email") {
-                    $emx = $mx;
-                } else if ($mx->field === "override" && $emx) {
-                    $emx->message .= "<p>To request a review anyway, either retract the refusal or submit again with “Override” checked.</p>";
-                }
-            }
-            $this->ms->append_list($result->content["message_list"] ?? []);
-            $this->assign_load();
+            $this->redirect_requestreview();
         }
+        $emx = null;
+        foreach ($result->content["message_list"] ?? [] as $mx) {
+            '@phan-var-force MessageItem $mx';
+            if ($mx->field === "email") {
+                $emx = $mx;
+            } else if ($mx->field === "override" && $emx) {
+                $emx->message .= "<p>To request a review anyway, either retract the refusal or submit again with “Override” checked.</p>";
+            }
+        }
+        $this->ms->append_list($result->content["message_list"] ?? []);
+        $this->assign_load();
     }
 
     function handle_denyreview() {
         $result = RequestReview_API::denyreview($this->user, $this->qreq, $this->prow);
         if ($result->content["ok"]) {
             $this->conf->success_msg("<0>Proposed reviewer denied");
-            $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "deny" => null, "denyreview" => null]);
-        } else {
-            $this->ms->append_list($result->content["message_list"] ?? []);
-            $this->assign_load();
+            $this->redirect_requestreview();
         }
+        $this->ms->append_list($result->content["message_list"] ?? []);
+        $this->assign_load();
     }
 
     function handle_retractreview() {
@@ -164,11 +167,10 @@ class Assign_Page {
             } else {
                 $this->conf->success_msg("<0>Review request retracted");
             }
-            $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "retractreview" => null]);
-        } else {
-            $this->ms->append_list($result->content["message_list"] ?? []);
-            $this->assign_load();
+            $this->redirect_requestreview();
         }
+        $this->ms->append_list($result->content["message_list"] ?? []);
+        $this->assign_load();
     }
 
     function handle_undeclinereview() {
@@ -179,11 +181,10 @@ class Assign_Page {
                 MessageItem::success("<0>Review refusal removed"),
                 MessageItem::inform("<0>{$email} may now be asked again to review this submission.")
             );
-            $this->conf->redirect_self($this->qreq, ["email" => null, "firstName" => null, "lastName" => null, "affiliation" => null, "round" => null, "reason" => null, "override" => null, "undeclinereview" => null]);
-        } else {
-            $this->ms->append_list($result->content["message_list"] ?? []);
-            $this->assign_load();
+            $this->redirect_requestreview();
         }
+        $this->ms->append_list($result->content["message_list"] ?? []);
+        $this->assign_load();
     }
 
     function handle_request() {
@@ -373,8 +374,8 @@ class Assign_Page {
                     "email" => $rrowid->email, "round" => $rrow->reviewRound
                 ]), ["class" => "fx"]);
             if (!isset($rrow->contactId) || !$rrow->contactId) {
-                echo Ht::hidden("firstName", $rrowid->firstName),
-                    Ht::hidden("lastName", $rrowid->lastName),
+                echo Ht::hidden("given_name", $rrowid->firstName),
+                    Ht::hidden("family_name", $rrowid->lastName),
                     Ht::hidden("affiliation", $rrowid->affiliation);
             }
             $buttons = [];
@@ -586,7 +587,7 @@ class Assign_Page {
             $req = "Propose external review";
         }
         echo '<div class="pcard revcard">',
-            Ht::form($this->conf->hoturl("=assign", "p=$prow->paperId"), ["novalidate" => true]),
+            Ht::form($this->conf->hoturl("=assign", "p={$prow->paperId}"), ["novalidate" => true]),
             "<h2 class=\"revcard-head\" id=\"external-reviews\">", $req, "</h2><div class=\"revcard-body\">";
 
         echo '<p class="w-text">', $this->conf->_i("external_review_request_description");
@@ -614,14 +615,14 @@ class Assign_Page {
             Ht::entry("email", (string) $this->qreq->email, ["id" => "revreq_email", "size" => 52, "class" => $email_class, "autocomplete" => "off", "type" => "email"]),
             '</div>',
             '<div class="f-mcol">',
-            '<div class="', $this->ms->control_class("firstName", "f-i"), '">',
-            Ht::label("First name (given name)", "revreq_firstName"),
-            $this->ms->feedback_html_at("firstName"),
-            Ht::entry("firstName", (string) $this->qreq->firstName, ["id" => "revreq_firstName", "size" => 24, "class" => "fullw", "autocomplete" => "off"]),
-            '</div><div class="', $this->ms->control_class("lastName", "f-i"), '">',
-            Ht::label("Last name (family name)", "revreq_lastName"),
-            $this->ms->feedback_html_at("lastName"),
-            Ht::entry("lastName", (string) $this->qreq->lastName, ["id" => "revreq_lastName", "size" => 24, "class" => "fullw", "autocomplete" => "off"]),
+            '<div class="', $this->ms->control_class("given_name", "f-i"), '">',
+            Ht::label("First name (given name)", "revreq_given_name"),
+            $this->ms->feedback_html_at("given_name"),
+            Ht::entry("given_name", (string) $this->qreq->given_name, ["id" => "revreq_given_name", "size" => 24, "class" => "fullw", "autocomplete" => "off"]),
+            '</div><div class="', $this->ms->control_class("family_name", "f-i"), '">',
+            Ht::label("Last name (family name)", "revreq_family_name"),
+            $this->ms->feedback_html_at("family_name"),
+            Ht::entry("family_name", (string) $this->qreq->family_name, ["id" => "revreq_family_name", "size" => 24, "class" => "fullw", "autocomplete" => "off"]),
             '</div></div>',
             '<div class="', $this->ms->control_class("affiliation", "f-i"), '">',
             Ht::label("Affiliation", "revreq_affiliation"),
@@ -635,7 +636,7 @@ class Assign_Page {
         // reason area
         $null_mailer = new HotCRPMailer($this->conf);
         $reqbody = $null_mailer->expand_template("requestreview");
-        if ($reqbody && strpos($reqbody["body"], "%REASON%") !== false) {
+        if ($reqbody && strpos($reqbody["body"], "REASON") !== false) {
             echo '<div class="f-i">',
                 Ht::label('Note to reviewer <span class="n">(optional)</span>', "revreq_reason"),
                 Ht::textarea("reason", $this->qreq->reason,

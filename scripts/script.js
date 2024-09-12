@@ -5233,10 +5233,10 @@ function render_mail_preview(e, mp, fields) {
 }
 
 handle_ui.on("js-request-review-preview-email", function (evt) {
-    var f = this.closest("form"),
-        a = {p: siteinfo.paperid, template: "requestreview"};
+    const f = this.closest("form"),
+        a = {template: "requestreview", p: siteinfo.paperid};
     function fv(field, defaultv) {
-        var x = f.elements[field] && f.elements[field].value.trim();
+        let x = f.elements[field] && f.elements[field].value.trim();
         if (x === "")
             x = f.elements[field].getAttribute("placeholder");
         if (x === false || x === "" || x == null)
@@ -5245,12 +5245,12 @@ handle_ui.on("js-request-review-preview-email", function (evt) {
             a[field] = x;
     }
     fv("email", "<EMAIL>");
-    fv("firstName", "");
-    fv("lastName", "");
+    fv("given_name", "");
+    fv("family_name", "");
     fv("affiliation", "Affiliation");
     fv("reason", "");
-    if (a.firstName == null && a.lastName == null)
-        a.lastName = "<NAME>";
+    if (a.given_name == null && a.family_name == null)
+        a.family_name = "<NAME>";
     $.ajax(hoturl("api/mailtext", a), {
         method: "GET", success: function (data) {
             if (data.ok && data.subject && data.body) {

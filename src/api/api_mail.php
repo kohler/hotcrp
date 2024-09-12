@@ -10,7 +10,7 @@ class Mail_API {
         }
 
         $recipient = null;
-        if (($args = $qreq->subset_as_array("firstName", "first", "lastName", "last", "affiliation", "email"))) {
+        if (($args = $qreq->subset_as_array("given_name", "firstName", "first", "family_name", "lastName", "last", "affiliation", "email"))) {
             $recipient = Contact::make_keyed($user->conf, $args);
         }
 

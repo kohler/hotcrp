@@ -327,7 +327,7 @@ class Contact implements JsonSerializable {
         return $u;
     }
 
-    /** @param array{contactId?:int,email?:string,firstName?:string,first?:string,lastName?:string,last?:string,name?:string,affiliation?:string,disabled?:void,disablement?:int} $args
+    /** @param array{contactId?:int,email?:string,given_name?:string,firstName?:string,first?:string,family_name?:string,lastName?:string,last?:string,name?:string,affiliation?:string,disabled?:void,disablement?:int} $args
      * @return Contact */
     static function make_keyed(Conf $conf, $args) {
         // email, firstName, lastName, affiliation, disablement, contactId, first, last:
@@ -336,8 +336,8 @@ class Contact implements JsonSerializable {
         $u->contactId = $args["contactId"] ?? 0;
         $u->contactXid = $u->contactId > 0 ? $u->contactId : self::$next_xid--;
         $u->email = trim($args["email"] ?? "");
-        $u->firstName = $args["firstName"] ?? $args["first"] ?? "";
-        $u->lastName = $args["lastName"] ?? $args["last"] ?? "";
+        $u->firstName = $args["given_name"] ?? $args["firstName"] ?? $args["first"] ?? "";
+        $u->lastName = $args["family_name"] ?? $args["lastName"] ?? $args["last"] ?? "";
         if (isset($args["name"]) && $u->firstName === "" && $u->lastName === "") {
             list($u->firstName, $u->lastName, $unused) = Text::split_name($args["name"]);
         }

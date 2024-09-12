@@ -2,17 +2,17 @@
     {
         "name": "acceptreview", "post": true, "redirect": true,
         "function": "RequestReview_API::acceptreview",
-        "parameters": ["p", "r"]
+        "parameters": "p r"
     },
     {
         "name": "account", "get": true,
         "function": "User_API::account",
-        "parameters": ["email"]
+        "parameters": "email"
     },
     {
         "name": "account", "post": true,
         "function": "User_API::account",
-        "parameters": ["email", "?disable", "?enable", "?sendinfo"]
+        "parameters": "email ?disable ?enable ?sendinfo"
     },
     {
         "name": "alltags", "get": true,
@@ -21,32 +21,32 @@
     {
         "name": "assign", "post": true, "redirect": true,
         "function": "Assign_API::assign",
-        "parameters": ["?p", "=assignments"]
+        "parameters": "?p =assignments"
     },
     {
         "name": "claimreview", "paper": true, "post": true, "redirect": true,
         "function": "RequestReview_API::claimreview",
-        "parameters": ["r", "email"]
+        "parameters": "r email"
     },
     {
         "name": "clickthrough", "post": true,
         "function": "User_API::clickthrough",
-        "parameters": ["accept", "clickthrough_id"]
+        "parameters": "accept clickthrough_id"
     },
     {
         "name": "comment", "paper": true, "get": true,
         "function": "Comment_API::run",
-        "parameters": ["c"]
+        "parameters": "c"
     },
     {
         "name": "comment", "paper": true, "post": true,
         "function": "Comment_API::run",
-        "parameters": ["c", "?override", "?=text", "?=response", "?=ready", "?=topic", "?=draft", "?=blind", "?=tags", "?=visibility", "?=:attachment", "?=by_author", "?=review_token"]
+        "parameters": "c ?override ?=text ?=response ?=ready ?=topic ?=draft ?=blind ?=tags ?=visibility ?=:attachment ?=by_author ?=review_token"
     },
     {
         "name": "declinereview", "post": true, "redirect": true,
         "function": "RequestReview_API::declinereview",
-        "parameters": ["p", "r", "?=reason"]
+        "parameters": "p r ?=reason"
     },
     {
         "name": "decision", "paper": true, "get": true,
@@ -55,12 +55,12 @@
     {
         "name": "decision", "paper": true, "post": true,
         "function": "Decision_API::run",
-        "parameters": ["=decision"]
+        "parameters": "=decision"
     },
     {
         "name": "events", "get": true,
         "function": "Events_API::run",
-        "parameters": ["?from"]
+        "parameters": "?from"
     },
     {
         "name": "fieldtext", "get": true,
@@ -69,17 +69,17 @@
     {
         "name": "fieldhtml", "get": true,
         "function": "Search_API::fieldhtml",
-        "parameters": ["f", "?aufull", "?session", "q", "?t", "?sort"]
+        "parameters": "f ?aufull ?session q ?t ?sort"
     },
     {
         "name": "follow", "paper": true, "post": true, "xxx": true,
         "function": "Follow_API::run",
-        "parameters": ["?u", "=following"]
+        "parameters": "?u =following"
     },
     {
         "name": "formatcheck", "get": true, "post": true,
         "function": "FormatCheck_API::run",
-        "parameters": ["?p", "?doc", "?soft", "?dt", "?docid"]
+        "parameters": "?p ?doc ?soft ?dt ?docid"
     },
     {
         "name": "graphdata", "get": true,
@@ -88,11 +88,12 @@
     {
         "name": "job", "get": true,
         "function": "Job_API::job",
-        "parameters": ["job"]
+        "parameters": "job"
     },
     {
         "name": "jserror", "get": true,
-        "function": "Error_API::jserror"
+        "function": "Error_API::jserror",
+        "parameters": "=error"
     },
     {
         "name": "lead", "paper": true, "get": true,
@@ -101,11 +102,12 @@
     {
         "name": "lead", "paper": true, "post": true,
         "function": "PaperPC_API::lead_api",
-        "parameters": ["=lead"]
+        "parameters": "=lead"
     },
     {
         "name": "mailtext", "get": true, "post": true,
-        "function": "Mail_API::mailtext"
+        "function": "Mail_API::mailtext",
+        "parameters": "?template ?p ?r ?email ?given_name ?family_name ?affiliation ?reason ?width ?text ?subject ?body"
     },
     {
         "name": "manager", "paper": true, "get": true,
@@ -114,7 +116,7 @@
     {
         "name": "manager", "paper": true, "post": true,
         "function": "PaperPC_API::manager_api",
-        "parameters": ["=manager"]
+        "parameters": "=manager"
     },
     {
         "name": "administrator", "alias": "manager"
@@ -125,7 +127,8 @@
     },
     {
         "name": "namedformula", "post": true,
-        "function": "SearchConfig_API::save_namedformula"
+        "function": "SearchConfig_API::save_namedformula",
+        "parameters": "=:formula"
     },
     {
         "name": "namedsearch", "get": true, "allow_if": "pc",
@@ -138,7 +141,7 @@
     {
         "name": "mentioncompletion", "get": true, "post": true,
         "function": "Completion_API::mentioncompletion_api",
-        "parameters": ["?p"]
+        "parameters": "?p"
     },
     {
         "name": "oauthtoken", "post": true, "allow_disabled": true, "check_token": false,
@@ -157,6 +160,11 @@
         "function": "PaperPC_API::pc_api"
     },
     {
+        "name": "requestreview", "paper": true, "post": true,
+        "function": "RequestReview_API::requestreview",
+        "parameters": "?round =email ?=given_name ?=family_name ?=name ?=affiliation ?=override ?=reason"
+    },
+    {
         "name": "review", "paper": true, "get": true, "post": true,
         "function": "Review_API::review"
     },
@@ -171,12 +179,12 @@
     {
         "name": "reviewrating", "paper": true, "get": true,
         "function": "Review_API::reviewrating",
-        "parameters": ["r"]
+        "parameters": "r"
     },
     {
         "name": "reviewrating", "paper": true, "post": true,
         "function": "Review_API::reviewrating",
-        "parameters": ["r", "=user_rating"]
+        "parameters": "r =user_rating"
     },
     {
         "name": "reviewround", "paper": true, "post": true, "xxx": true,
@@ -189,12 +197,12 @@
     {
         "name": "revpref", "get": true,
         "function": "Preference_API::pref_api",
-        "parameters": ["p", "?u"]
+        "parameters": "p ?u"
     },
     {
         "name": "revpref", "post": true,
         "function": "Preference_API::pref_api",
-        "parameters": ["p", "?u", "=pref"]
+        "parameters": "p ?u =pref"
     },
     {
         "name": "reviewpref", "alias": "revpref"
@@ -205,7 +213,7 @@
     {
         "name": "search", "get": true,
         "function": "Search_API::search",
-        "parameters": ["q", "t", "?sort", "?report", "?scoresort"]
+        "parameters": "q t ?sort ?report ?scoresort"
     },
     {
         "name": "searchcompletion", "get": true,
@@ -218,7 +226,7 @@
     {
         "name": "session", "post": true,
         "function": "Session_API::setsession",
-        "parameters": ["v"]
+        "parameters": "v"
     },
     {
         "name": "settags", "alias": "tags"
@@ -230,7 +238,7 @@
     {
         "name": "tags", "post": true,
         "function": "Tags_API::run",
-        "parameters": ["?p", "?forceShow", "?=tags", "?=addtags", "?=deltags", "?=tagassignment", "?=search"]
+        "parameters": "?p ?forceShow ?=tags ?=addtags ?=deltags ?=tagassignment ?=search"
     },
     {
         "name": "settingdescriptions", "get": true,
@@ -239,7 +247,7 @@
     {
         "name": "settings", "get": true, "post": true,
         "function": "Settings_API::run",
-        "parameters": ["?=settings", "?dryrun"]
+        "parameters": "?=settings ?dryrun"
     },
     {
         "name": "shepherd", "paper": true, "get": true,
@@ -248,7 +256,7 @@
     {
         "name": "shepherd", "paper": true, "post": true,
         "function": "PaperPC_API::shepherd_api",
-        "parameters": ["=shepherd"]
+        "parameters": "=shepherd"
     },
     {
         "name": "submissionfieldlibrary", "get": true, "allow_if": "chair",
@@ -257,12 +265,12 @@
     {
         "name": "taganno", "get": true,
         "function": "TagAnno_API::get",
-        "parameters": ["tag"]
+        "parameters": "tag"
     },
     {
         "name": "taganno", "post": true,
         "function": "TagAnno_API::set",
-        "parameters": ["tag"]
+        "parameters": "tag"
     },
     {
         "name": "tagmessages", "paper": true, "get": true,
@@ -273,7 +281,7 @@
     },
     {
         "name": "track", "post": true,
-        "parameters": ["track", "?tracker_start_at", "?p", "?=hotlist-info"]
+        "parameters": "track ?tracker_start_at ?p ?=hotlist-info"
     },
     {
         "name": "trackerconfig", "post": true,
@@ -286,12 +294,12 @@
     {
         "name": "upload", "post": true,
         "function": "Upload_API::run",
-        "parameters": ["?p", "?dtype", "?start", "?offset", "?finish", "?token", "?cancel", "?=size", "?=mimetype", "?=filename", "?@blob"]
+        "parameters": "?p ?dtype ?start ?offset ?finish ?token ?cancel ?=size ?=mimetype ?=filename ?@blob"
     },
     {
         "name": "user", "get": true,
         "function": "User_API::user",
-        "parameters": ["email"]
+        "parameters": "email ?p ?potential_conflict"
     },
     {
         "name": "viewoptions", "get": true, "post": true,
