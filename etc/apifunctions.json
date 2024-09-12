@@ -41,7 +41,7 @@
     {
         "name": "comment", "paper": true, "post": true,
         "function": "Comment_API::run",
-        "parameters": ["c", "?override", "?=text", "?=response", "?=ready", "?=topic", "?=draft", "?=blind", "?=tags", "?=visibility"]
+        "parameters": ["c", "?override", "?=text", "?=response", "?=ready", "?=topic", "?=draft", "?=blind", "?=tags", "?=visibility", "?=:attachment", "?=by_author", "?=review_token"]
     },
     {
         "name": "declinereview", "post": true, "redirect": true,
@@ -60,7 +60,7 @@
     {
         "name": "events", "get": true,
         "function": "Events_API::run",
-        "parameters": ["?events_at"]
+        "parameters": ["?from"]
     },
     {
         "name": "fieldtext", "get": true,
@@ -73,7 +73,8 @@
     },
     {
         "name": "follow", "paper": true, "post": true, "xxx": true,
-        "function": "Follow_API::run"
+        "function": "Follow_API::run",
+        "parameters": ["?u", "=following"]
     },
     {
         "name": "formatcheck", "get": true, "post": true,
@@ -168,8 +169,14 @@
         "function": "Settings_API::reviewfieldlibrary"
     },
     {
-        "name": "reviewrating", "paper": true, "get": true, "post": true,
-        "function": "Review_API::reviewrating"
+        "name": "reviewrating", "paper": true, "get": true,
+        "function": "Review_API::reviewrating",
+        "parameters": ["r"]
+    },
+    {
+        "name": "reviewrating", "paper": true, "post": true,
+        "function": "Review_API::reviewrating",
+        "parameters": ["r", "=user_rating"]
     },
     {
         "name": "reviewround", "paper": true, "post": true, "xxx": true,
@@ -278,7 +285,7 @@
     {
         "name": "upload", "post": true,
         "function": "Upload_API::run",
-        "parameters": ["?p", "?dtype", "?start", "offset", "?finish", "?token", "?cancel", "?=size", "?=mimetype", "?=filename", "?!blob"]
+        "parameters": ["?p", "?dtype", "?start", "offset", "?finish", "?token", "?cancel", "?=size", "?=mimetype", "?=filename", "?@blob"]
     },
     {
         "name": "user", "get": true,

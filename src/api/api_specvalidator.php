@@ -6,9 +6,11 @@ class SpecValidator_API {
     const F_REQUIRED = 1;
     const F_BODY = 2;
     const F_FILE = 4;
+    const F_SUFFIX = 8;
 
     static function run($uf, Qrequest $qreq) {
         $known = [];
+        $has_suffix = false;
         foreach ($uf->parameters ?? [] as $p) {
             $flags = self::F_REQUIRED;
             for ($i = 0; $i !== strlen($p); ++$i) {
@@ -16,8 +18,11 @@ class SpecValidator_API {
                     $flags &= ~self::F_REQUIRED;
                 } else if ($p[$i] === "=") {
                     $flags |= self::F_BODY;
-                } else if ($p[$i] === "!") {
+                } else if ($p[$i] === "@") {
                     $flags |= self::F_FILE;
+                } else if ($p[$i] === ":") {
+                    $flags |= self::F_SUFFIX;
+                    $has_suffix = true;
                 } else {
                     break;
                 }
@@ -32,33 +37,54 @@ class SpecValidator_API {
         }
         $param = [];
         foreach (array_keys($_GET) as $n) {
-            if (!isset($known[$n])) {
+            if (($t = self::lookup_param_type($n, $known, $has_suffix)) === null) {
                 if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_"])
                     && ($n !== "p" || !($uf->paper ?? false))
                     && !isset($known["*"])) {
                     self::error($qreq, "query param `{$n}` unknown");
                 }
-            } else if (($known[$n] & self::F_BODY) !== 0) {
+            } else if (($t & self::F_BODY) !== 0) {
                 self::error($qreq, "query param `{$n}` should be in body");
             }
         }
         foreach (array_keys($_POST) as $n) {
-            if (!isset($known[$n])) {
+            if (($t = self::lookup_param_type($n, $known, $has_suffix)) === null) {
                 if (!isset($known["*"])) {
                     self::error($qreq, "post param `{$n}` unknown");
                 }
             } else if (!isset($_GET[$n])
-                       && ($known[$n] & self::F_BODY) === 0) {
+                       && ($t & self::F_BODY) === 0) {
                 self::error($qreq, "post param `{$n}` should be in query");
             }
         }
         foreach (array_keys($_FILES) as $n) {
-            if (!isset($known[$n])) {
+            if (($t = self::lookup_param_type($n, $known, $has_suffix)) === null
+                || ($t & self::F_FILE) === 0) {
                 if (!isset($known["*"])) {
                     self::error($qreq, "file param `{$n}` unknown");
                 }
             }
         }
+    }
+
+    static function lookup_param_type($n, &$known, $has_suffix) {
+        if (isset($known[$n])) {
+            return $known[$n];
+        }
+        if (!$has_suffix
+            || (($colon = strpos($n, ":")) === false
+                && ($slash = strpos($n, "/")) === false)) {
+            return null;
+        }
+        if ($colon === false || ($slash !== false && $colon > $slash)) {
+            $colon = $slash;
+        }
+        $x = substr($n, $colon);
+        $t = $known[$x] ?? null;
+        if ($t !== null && ($t & self::F_SUFFIX) !== 0) {
+            return $t;
+        }
+        return null;
     }
 
     static function unparse_param_type($n, $flags) {

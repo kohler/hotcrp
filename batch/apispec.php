@@ -111,6 +111,7 @@ class APISpec_Batch {
     private function expand1($fn, $method, $j) {
         $x = (object) [];
         $params = $body_properties = $body_required = [];
+        $has_file = false;
         if ($j->paper ?? false) {
             $params[] = $this->resolve_common_param("p");
         }
@@ -122,6 +123,10 @@ class APISpec_Batch {
                     $required = false;
                 } else if ($p[$i] === "=") {
                     $in = "body";
+                } else if ($p[$i] === "@") {
+                    $in = "file";
+                } else if ($p[$i] === ":") {
+                    // suffixed parameter
                 } else {
                     break;
                 }
@@ -133,6 +138,9 @@ class APISpec_Batch {
                 $body_properties[] = ["name" => $name];
                 if ($required) {
                     $body_required[] = $name;
+                }
+                if ($in === "file") {
+                    $has_file = true;
                 }
             }
         }
@@ -147,9 +155,10 @@ class APISpec_Batch {
             if (!empty($body_required)) {
                 $schema->required = $body_required;
             }
+            $formtype = $has_file ? "multipart/form-data" : "application/x-www-form-urlencoded";
             $x->requestBody = (object) [
                 "content" => (object) [
-                    "application/x-www-form-urlencoded" => (object) [
+                    $formtype => (object) [
                         "schema" => $schema
                     ]
                 ]

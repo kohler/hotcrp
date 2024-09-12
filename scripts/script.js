@@ -12252,9 +12252,11 @@ handle_ui.on("js-clickthrough", function () {
 
 handle_ui.on("js-follow-change", function () {
     var self = this;
-    $.post(hoturl("=api/follow",
-        {p: $(self).attr("data-pid") || siteinfo.paperid}),
-        {following: this.checked, reviewer: $(self).data("reviewer") || siteinfo.user.email},
+    $.post(hoturl("=api/follow", {
+            p: this.getAttribute("data-pid") || siteinfo.paperid,
+            u: this.getAttribute("data-reviewer") || siteinfo.user.email
+        }),
+        {following: this.checked},
         function (rv) {
             minifeedback(self, rv);
             rv.ok && (self.checked = rv.following);
