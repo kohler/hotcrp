@@ -61,6 +61,9 @@ class Authors_PaperOption extends PaperOption {
         $n = 0;
         foreach ($aulist as $auth) {
             ++$n;
+            if ($auth->is_empty()) {
+                continue;
+            }
             if ($auth->firstName === ""
                 && $auth->lastName === ""
                 && $auth->email === ""
