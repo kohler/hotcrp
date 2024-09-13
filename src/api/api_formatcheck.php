@@ -16,14 +16,16 @@ class FormatCheck_API {
             $runflag = $qreq->soft ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_ALWAYS;
             $cf = new CheckFormat($user->conf, $runflag);
             $cf->check_document($doc);
+            $ms = $cf->document_messages($doc);
             return [
                 "ok" => $cf->check_ok(),
                 "npages" => $cf->npages,
                 "nwords" => $cf->nwords,
-                "result" => $cf->document_report($doc),
+                "result" => $ms->has_message() ? Ht::feedback_msg($ms) : "",
                 "problem_fields" => $cf->problem_fields(),
                 "has_error" => $cf->has_error(),
-                "docid" => $doc->paperStorageId
+                "docid" => $doc->paperStorageId,
+                "message_list" => $ms->message_list()
             ];
         } else {
             return JsonResult::make_error(404, "<0>Document not found");

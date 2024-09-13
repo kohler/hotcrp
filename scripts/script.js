@@ -8289,7 +8289,7 @@ hotcrp.tooltip.add_builder("votereport", function (info) {
     if (pid && tag)
         info.content = demand_load.make(function (resolve) {
             $.get(hoturl("api/votereport", {p: pid, tag: tag}), function (rv) {
-                resolve(rv.ok ? rv.result || "" : rv.error);
+                resolve(rv.vote_report || "");
             });
         })();
 });
@@ -11857,8 +11857,8 @@ handle_ui.on("js-check-format", function () {
         },
         success: function (data) {
             clearTimeout(running);
-            if (data.ok || data.result)
-                $cf.html(data.result);
+            if (data.message_list && data.message_list.length)
+                $cf.html(feedback.render_alert(data.message_list));
         }
     });
 });
@@ -12235,15 +12235,15 @@ handle_ui.on("js-clickthrough", function () {
         $container = $(this).closest(".js-clickthrough-container");
     if (!$container.length)
         $container = $(this).closest(".pcontainer");
-    $.post(hoturl("=api/clickthrough", {accept: 1, p: siteinfo.paperid}),
-        $(this.form).serialize(),
+    $.post(hoturl("=api/clickthrough", {p: siteinfo.paperid}),
+        $(this.form).serialize() + "&accept=1",
         function (data) {
             if (data && data.ok) {
                 $container.find(".need-clickthrough-show").removeClass("need-clickthrough-show hidden");
                 $container.find(".need-clickthrough-enable").prop("disabled", false).removeClass("need-clickthrough-enable");
                 $container.find(".js-clickthrough-terms").slideUp();
             } else {
-                make_bubble((data && data.error) || "You can’t continue to review until you accept these terms.", "errorbubble")
+                make_bubble("You can’t continue to review until you accept these terms.", "errorbubble")
                     .anchor("w").near(self);
             }
         });

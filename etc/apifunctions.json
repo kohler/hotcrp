@@ -33,7 +33,7 @@
     {
         "name": "clickthrough", "post": true,
         "function": "User_API::clickthrough",
-        "parameters": "accept clickthrough_id"
+        "parameters": "?p ?=accept =clickthrough_id =clickthrough_type =clickthrough_time"
     },
     {
         "name": "comment", "paper": true, "get": true,
@@ -92,7 +92,8 @@
         "name": "formatcheck", "get": true, "post": true,
         "function": "FormatCheck_API::run",
         "parameters": "?p ?doc ?soft ?dt ?docid",
-        "response": "npages nwords result problem_fields has_error docid"
+        "response": "npages nwords problem_fields has_error docid",
+        "response_deprecated": "result"
     },
     {
         "name": "graphdata", "get": true,
@@ -125,7 +126,7 @@
         "name": "mailtext", "get": true, "post": true,
         "function": "Mail_API::mailtext",
         "parameters": "?template ?p ?r ?email ?given_name ?family_name ?affiliation ?reason ?width ?text ?subject ?body",
-        "response": "?templates"
+        "response": "?templates ?subject ?body"
     },
     {
         "name": "manager", "paper": true, "get": true,
@@ -201,7 +202,8 @@
     },
     {
         "name": "reviewfieldlibrary", "get": true, "allow_if": "chair",
-        "function": "Settings_API::reviewfieldlibrary"
+        "function": "Settings_API::reviewfieldlibrary",
+        "response": "samples types"
     },
     {
         "name": "reviewrating", "paper": true, "get": true,
@@ -277,12 +279,14 @@
     },
     {
         "name": "settingdescriptions", "get": true,
-        "function": "Settings_API::descriptions"
+        "function": "Settings_API::descriptions",
+        "response": "setting_descriptions"
     },
     {
         "name": "settings", "get": true, "post": true,
         "function": "Settings_API::run",
-        "parameters": "?=settings ?dryrun"
+        "parameters": "?=settings ?dryrun",
+        "response": "?dry_run ?changes"
     },
     {
         "name": "shepherd", "paper": true, "get": true,
@@ -298,7 +302,8 @@
     },
     {
         "name": "submissionfieldlibrary", "get": true, "allow_if": "chair",
-        "function": "Settings_API::submissionfieldlibrary"
+        "function": "Settings_API::submissionfieldlibrary",
+        "response": "samples types"
     },
     {
         "name": "taganno", "get": true,
@@ -325,7 +330,7 @@
     {
         "name": "trackerconfig", "post": true,
         "function": "TrackerConfig_API::run",
-        "parameters": "=:tr ?=:has_tr",
+        "parameters": "?=stopall ?=:tr ?=:has_tr",
         "response": "?tracker ?tracker_recent ?tracker_status ?now tracker_status_at tracker_eventid ?new_trackerid ?tracker_site"
     },
     {
@@ -362,10 +367,13 @@
     },
     {
         "name": "votereport", "paper": true, "get": true, "post": true,
-        "function": "Tags_API::votereport_api"
+        "function": "Tags_API::votereport_api",
+        "parameters": "tag",
+        "response": "tag report"
     },
     {
         "name": "whoami", "get": true,
-        "function": "User_API::whoami"
+        "function": "User_API::whoami",
+        "response": "?email ?given_name ?family_name ?affiliation"
     }
 ]

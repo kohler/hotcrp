@@ -373,14 +373,21 @@ class CheckFormat extends MessageSet {
         }
     }
 
+    /** @return MessageSet */
+    function document_messages(DocumentInfo $doc) {
+        $spec = $doc->conf->format_spec($doc->documentType);
+        $ms = new MessageSet;
+        foreach ($this->spec_checkers($spec) as $checker) {
+            if ($checker->append_report($this, $spec, $doc, $ms))
+                break;
+        }
+        return $ms;
+    }
+
     /** @return string */
     function document_report(DocumentInfo $doc) {
-        $spec = $doc->conf->format_spec($doc->documentType);
-        $report = null;
-        foreach ($this->spec_checkers($spec) as $checker) {
-            $report = $report ?? $checker->report($this, $spec, $doc);
-        }
-        return $report ?? "";
+        $ms = $this->document_messages($doc);
+        return $ms->has_message() ? Ht::feedback_msg($ms) : "";
     }
 
     /** @param int $dtype
@@ -789,16 +796,27 @@ class Default_FormatChecker implements FormatChecker {
         return $xj;
     }
 
+    /** @return bool */
+    function append_report(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc,
+                           MessageSet $ms) {
+        if (!$ms->has_message()) {
+            $mi = $cf->front_report_item();
+            if ($cf->has_error()) {
+                $mi->message = "<5><strong>" . $mi->message_as(5) . ".</strong> The most serious errors are marked with <span class=\"error-mark\"></span>.";
+            }
+            $ms->append_item($mi);
+        }
+        if ($cf->has_problem()) {
+            $ms->append_item(new MessageItem(null, "<5>Submissions that violate the requirements will not be considered. However, some violation reports may be false positives (for instance, the checker can miscalculate margins and text sizes for figures). If you are confident that the current document respects all format requirements, keep it as is.", MessageSet::INFORM));
+        }
+        $ms->append_list($cf->message_list());
+        return true;
+    }
 
     /** @return string */
     function report(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc) {
-        $msgs = [$cf->front_report_item()];
-        if ($cf->has_error()) {
-            $msgs[0]->message = "<5><strong>" . $msgs[0]->message_as(5) . ".</strong> The most serious errors are marked with <span class=\"error-mark\"></span>.";
-        }
-        if ($cf->has_problem()) {
-            $msgs[] = new MessageItem(null, "<5>Submissions that violate the requirements will not be considered. However, some violation reports may be false positives (for instance, the checker can miscalculate margins and text sizes for figures). If you are confident that the current document respects all format requirements, keep it as is.", MessageSet::INFORM);
-        }
-        return Ht::feedback_msg(array_merge($msgs, $cf->message_list()));
+        $ms = new MessageSet;
+        $this->append_report($cf, $spec, $doc, $ms);
+        return Ht::feedback_msg($ms);
     }
 }
