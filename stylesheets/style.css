@@ -4656,7 +4656,7 @@ a:hover .cmtnum,
 	height: 1rem;
 }
 @media screen and (min-width: 1024px) {
-.cmtcard.is-editing.popout {
+.cmtcard.edit.popout {
 	position: fixed;
 	right: 0;
 	bottom: 0;
@@ -4669,7 +4669,7 @@ a:hover .cmtnum,
 	z-index: 4;
 	overflow: auto;
 }
-.cmtcard.is-editing.popout .cmttext {
+.cmtcard.edit.popout .cmttext {
 	max-height: 50vh;
 }
 }
