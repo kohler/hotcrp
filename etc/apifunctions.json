@@ -80,7 +80,7 @@
         "name": "fieldhtml", "get": true,
         "function": "Search_API::fieldhtml",
         "parameters": "f ?aufull ?session q ?t ?sort",
-        "response": "fields data"
+        "response": "fields data ?stat"
     },
     {
         "name": "follow", "paper": true, "post": true, "xxx": true,
@@ -101,7 +101,8 @@
     {
         "name": "job", "get": true,
         "function": "Job_API::job",
-        "parameters": "job"
+        "parameters": "job",
+        "response": "status update_at *"
     },
     {
         "name": "jserror", "get": true,
@@ -123,7 +124,8 @@
     {
         "name": "mailtext", "get": true, "post": true,
         "function": "Mail_API::mailtext",
-        "parameters": "?template ?p ?r ?email ?given_name ?family_name ?affiliation ?reason ?width ?text ?subject ?body"
+        "parameters": "?template ?p ?r ?email ?given_name ?family_name ?affiliation ?reason ?width ?text ?subject ?body",
+        "response": "?templates"
     },
     {
         "name": "manager", "paper": true, "get": true,
@@ -142,12 +144,14 @@
     },
     {
         "name": "namedformula", "get": true,
-        "function": "SearchConfig_API::namedformula"
+        "function": "SearchConfig_API::namedformula",
+        "response": "formulas"
     },
     {
         "name": "namedformula", "post": true,
         "function": "SearchConfig_API::save_namedformula",
-        "parameters": "=:formula"
+        "parameters": "=:formula",
+        "response": "formulas"
     },
     {
         "name": "namedsearch", "get": true, "allow_if": "pc",
@@ -320,7 +324,9 @@
     },
     {
         "name": "trackerconfig", "post": true,
-        "function": "TrackerConfig_API::run"
+        "function": "TrackerConfig_API::run",
+        "parameters": "=:tr ?=:has_tr",
+        "response": "?tracker ?tracker_recent ?tracker_status ?now tracker_status_at tracker_eventid ?new_trackerid ?tracker_site"
     },
     {
         "name": "trackerstatus", "get": true, "post": true,
