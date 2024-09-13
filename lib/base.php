@@ -746,6 +746,16 @@ function tempdir($mode = 0700) {
 }
 
 
+/** @param string $filename
+ * @return string */
+function safe_filename($filename) {
+    $colon = strpos($filename, ":");
+    if ($colon !== false && ctype_alnum(substr($filename, 0, $colon))) {
+        return "file://{$filename}";
+    }
+    return $filename;
+}
+
 /** @return Exception */
 function error_get_last_as_exception($prefix) {
     $msg = preg_replace('/.*: /', "", error_get_last()["message"]);

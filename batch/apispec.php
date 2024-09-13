@@ -1,6 +1,6 @@
 <?php
 // apispec.php -- HotCRP script for generating OpenAPI specification
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -22,12 +22,29 @@ class APISpec_Batch {
     private $schemas;
     /** @var ?object */
     private $parameters;
+    /** @var string */
+    private $output_file = "-";
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
         $this->user = $conf->root_user();
         $this->api_map = $conf->api_map();
         $this->j = (object) [];
+
+        if (isset($arg["i"])) {
+            if ($arg["i"] === "-") {
+                $s = stream_get_contents(STDIN);
+            } else {
+                $s = file_get_contents_throw(safe_filename($arg["i"]));
+            }
+            if ($s === false || !is_object($this->j = json_decode($s))) {
+                throw new CommandLineException($arg["i"] . ": Invalid input");
+            }
+            $this->output_file = $arg["i"];
+        }
+        if (isset($arg["o"])) {
+            $this->output_file = $arg["o"];
+        }
     }
 
     /** @return int */
@@ -52,7 +69,18 @@ class APISpec_Batch {
             }
         }
 
-        fwrite(STDOUT, json_encode($this->j, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . "\n");
+        if (($this->output_file ?? "-") === "-") {
+            $out = STDOUT;
+        } else {
+            $out = @fopen(safe_filename($this->output_file), "wb");
+            if (!$out) {
+                throw error_get_last_as_exception("{$this->output_file}: ");
+            }
+        }
+        fwrite($out, json_encode($this->j, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . "\n");
+        if ($out !== STDOUT) {
+            fclose($out);
+        }
         return 0;
     }
 
@@ -124,7 +152,7 @@ class APISpec_Batch {
         $pathj = $this->paths->$path = $this->paths->$path ?? (object) [];
         $lmethod = strtolower($method);
         $xj = $pathj->$lmethod = $pathj->$lmethod ?? (object) [];
-        $this->expand_request($xj, $known, $j);
+        $this->expand_request($xj, $known, $j, "{$path}.{$lmethod}");
         $this->expand_response($xj, $j);
     }
 
@@ -199,19 +227,20 @@ class APISpec_Batch {
 
     /** @param object $x
      * @param array<string,int> $known
-     * @param object $j */
-    private function expand_request($x, $known, $j) {
+     * @param object $j
+     * @param string $path */
+    private function expand_request($x, $known, $j, $path) {
         $params = $body_properties = $body_required = [];
         $has_file = false;
         foreach ($known as $name => $f) {
             if ($name === "*") {
                 // skip
             } else if ($name === "p" && $f === (self::F_REQUIRED | self::F_PATH)) {
-                $params[] = $this->resolve_common_param("p");
+                $params["p"] = $this->resolve_common_param("p");
             } else if ($name === "redirect" && $f === 0) {
-                $params[] = $this->resolve_common_param("redirect");
+                $params["redirect"] = $this->resolve_common_param("redirect");
             } else if (($f & (self::F_BODY | self::F_FILE)) === 0) {
-                $params[] = (object) [
+                $params[$name] = (object) [
                     "name" => $name,
                     "in" => "query",
                     "required" => ($f & self::F_REQUIRED) !== 0,
@@ -230,7 +259,39 @@ class APISpec_Batch {
             }
         }
         if (!empty($params)) {
-            $x->parameters = $params;
+            $x->parameters = $x->parameters ?? [];
+            $xparams = [];
+            foreach ($x->parameters as $i => $pj) {
+                if (isset($pj->name) && is_string($pj->name)) {
+                    $xparams[$pj->name] = $i;
+                } else if (isset($pj->{"\$ref"}) && is_string($pj->{"\$ref"})
+                           && preg_match('/\A\#\/components\/parameters\/([^+]*)/', $pj->{"\$ref"}, $m)) {
+                    $xparams[$m[1]] = $i;
+                }
+            }
+            foreach ($params as $n => $npj) {
+                $i = $xparams[$n] ?? null;
+                if ($i === null) {
+                    $x->parameters[] = $npj;
+                    continue;
+                }
+                $xpj = $x->parameters[$i];
+                if (isset($xpj->{"\$ref"}) !== isset($npj->{"\$ref"})) {
+                    fwrite(STDERR, "{$path}.param[{$n}]: \$ref status differs\n");
+                } else if (isset($xpj->{"\$ref"})) {
+                    if ($xpj->{"\$ref"} !== $npj->{"\$ref"}) {
+                        fwrite(STDERR, "{$path}.param[{$n}]: \$ref destination differs\n");
+                    }
+                } else {
+                    foreach ((array) $npj as $k => $v) {
+                        if (!isset($xpj->$k)) {
+                            $xpj->$k = $v;
+                        } else if (is_scalar($v) && $xpj->$k !== $v) {
+                            fwrite(STDERR, "{$path}.param[{$n}]: {$k} differs\n");
+                        }
+                    }
+                }
+            }
         }
         if (!empty($body_properties)) {
             $schema = (object) [
@@ -303,7 +364,9 @@ class APISpec_Batch {
         $arg = (new Getopt)->long(
             "name:,n: !",
             "config: !",
-            "help,h !"
+            "help,h !",
+            "i:,input: =FILE Modify existing specification in FILE",
+            "o:,output: =FILE Write specification to FILE"
         )->description("Generate an OpenAPI specification.
 Usage: php batch/apispec.php")
          ->helpopt("help")
