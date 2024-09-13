@@ -1262,7 +1262,7 @@ class AssignmentSet {
     }
 
     private static function req_user_text($req) {
-        return Text::name($req["firstName"], $req["lastName"], $req["email"], NAME_E);
+        return Text::name($req["firstName"] ?? "", $req["lastName"] ?? "", $req["email"] ?? "", NAME_E);
     }
 
     private static function apply_user_parts($req, $a) {
@@ -1368,12 +1368,12 @@ class AssignmentSet {
         if ($cset) {
             $text = "";
             if ($first && $last) {
-                $text = "$last, $first";
+                $text = "{$last}, {$first}";
             } else if ($first || $last) {
-                $text = "$last$first";
+                $text = $first . $last;
             }
             if ($email) {
-                $text .= " <$email>";
+                $text = $text ? "{$text} <{$email}>" : "<{$email}>";
             }
             $ret = ContactSearch::make_cset($text, $this->astate->user, $cset);
             if (count($ret->user_ids()) === 1) {

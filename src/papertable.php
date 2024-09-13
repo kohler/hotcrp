@@ -1653,9 +1653,6 @@ class PaperTable {
         echo $this->papt("decision", Ht::label("Decision", $id),
                 ["type" => "ps", "fold" => "decision"]),
             '<form class="ui-submit uin fx">';
-        if (isset($this->qreq->forceShow)) {
-            echo Ht::hidden("forceShow", $this->qreq->forceShow ? 1 : 0);
-        }
         $opts = [];
         foreach ($this->conf->decision_set() as $dec) {
             $opts[$dec->id] = $dec->name_as(5);

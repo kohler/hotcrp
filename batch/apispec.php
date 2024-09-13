@@ -101,8 +101,7 @@ class APISpec_Batch {
         return $known;
     }
 
-    /** @param string $fn
-     * @return mixed */
+    /** @param string $fn */
     private function expand_paths($fn) {
         foreach (["GET", "POST"] as $method) {
             if (!($j = $this->conf->api($fn, null, $method))) {
@@ -124,19 +123,16 @@ class APISpec_Batch {
     /** @param string $path
      * @param 'GET'|'POST' $method
      * @param array<string,int> $known
-     * @param object $j
-     * @param array &$x
-     * @return object */
+     * @param object $j */
     private function expand_path_method($path, $method, $known, $j) {
         $this->paths[$path] = $this->paths[$path] ?? [];
         $this->paths[$path][strtolower($method)] = $x = (object) [];
         $this->expand_request($x, $known, $j);
         $this->expand_response($x, $j);
-        return $x;
     }
 
     /** @param string $name
-     * @return array */
+     * @return object */
     private function resolve_common_schema($name) {
         if (!isset($this->schemas[$name])) {
             if ($name === "pid") {
@@ -168,11 +164,11 @@ class APISpec_Batch {
                 assert(false);
             }
         }
-        return ["\$ref" => "#/components/schemas/{$name}"];
+        return (object) ["\$ref" => "#/components/schemas/{$name}"];
     }
 
     /** @param string $name
-     * @return array */
+     * @return object */
     private function resolve_common_param($name) {
         if (!isset($this->parameters[$name])) {
             if ($name === "p") {
@@ -193,13 +189,12 @@ class APISpec_Batch {
                 assert(false);
             }
         }
-        return ["\$ref" => "#/components/parameters/{$name}"];
+        return (object) ["\$ref" => "#/components/parameters/{$name}"];
     }
 
     /** @param object $x
      * @param array<string,int> $known
-     * @param object $j
-     * @return object */
+     * @param object $j */
     private function expand_request($x, $known, $j) {
         $params = $body_properties = $body_required = [];
         $has_file = false;
@@ -211,14 +206,14 @@ class APISpec_Batch {
             } else if ($name === "redirect" && $f === 0) {
                 $params[] = $this->resolve_common_param("redirect");
             } else if (($f & (self::F_BODY | self::F_FILE)) === 0) {
-                $params[] = [
+                $params[] = (object) [
                     "name" => $name,
                     "in" => "query",
                     "required" => ($f & self::F_REQUIRED) !== 0,
                     "schema" => (object) []
                 ];
             } else {
-                $body_properties[$name] = [
+                $body_properties[$name] = (object) [
                     "schema" => (object) []
                 ];
                 if (($f & self::F_REQUIRED) !== 0) {
@@ -253,8 +248,7 @@ class APISpec_Batch {
     }
 
     /** @param object $x
-     * @param object $j
-     * @return object */
+     * @param object $j */
     private function expand_response($x, $j) {
         $body_properties = $body_required = [];
         $response = $j->response ?? [];

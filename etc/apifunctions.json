@@ -8,12 +8,14 @@
     {
         "name": "account", "get": true,
         "function": "User_API::account",
-        "parameters": "email"
+        "parameters": "email",
+        "response": "email disabled placeholder"
     },
     {
         "name": "account", "post": true,
         "function": "User_API::account",
-        "parameters": "email ?disable ?enable ?sendinfo"
+        "parameters": "email ?disable ?enable ?sendinfo",
+        "response": "email disabled placeholder"
     },
     {
         "name": "alltags", "get": true,
@@ -28,7 +30,8 @@
     {
         "name": "claimreview", "paper": true, "post": true, "redirect": true,
         "function": "RequestReview_API::claimreview",
-        "parameters": "r email"
+        "parameters": "r email",
+        "response": "action review_site_relative"
     },
     {
         "name": "clickthrough", "post": true,
@@ -39,20 +42,21 @@
         "name": "comment", "paper": true, "get": true,
         "function": "Comment_API::run",
         "parameters": "c",
-        "response": "comment",
+        "response": "?comment",
         "response_deprecated": "cmt"
     },
     {
         "name": "comment", "paper": true, "post": true,
         "function": "Comment_API::run",
         "parameters": "c ?override ?=text ?=response ?=ready ?=topic ?=draft ?=blind ?=tags ?=visibility ?=:attachment ?=by_author ?=review_token ?delete",
-        "response": "comment",
+        "response": "?comment ?conflict",
         "response_deprecated": "cmt"
     },
     {
         "name": "declinereview", "post": true, "redirect": true,
         "function": "RequestReview_API::declinereview",
-        "parameters": "p r ?=reason"
+        "parameters": "p r ?=reason",
+        "response": "action ?reason review_site_relative"
     },
     {
         "name": "decision", "paper": true, "get": true,
@@ -108,7 +112,7 @@
     {
         "name": "jserror", "get": true,
         "function": "Error_API::jserror",
-        "parameters": "=error"
+        "parameters": "=error ?=url ?=lineno ?=colno ?=stack"
     },
     {
         "name": "lead", "paper": true, "get": true,
@@ -276,7 +280,7 @@
     {
         "name": "tags", "post": true,
         "function": "Tags_API::run",
-        "parameters": "?p ?forceShow ?=tags ?=addtags ?=deltags ?=tagassignment ?=search",
+        "parameters": "?p ?=tags ?=addtags ?=deltags ?=tagassignment ?=search",
         "response": "?pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?p"
     },
     {

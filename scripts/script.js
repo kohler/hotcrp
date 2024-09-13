@@ -12991,8 +12991,9 @@ handle_ui.on("js-delete-user", function () {
 handle_ui.on("js-disable-user", function () {
     var disabled = hasClass(this, "btn-success"), self = this;
     self.disabled = true;
-    $.post(hoturl("=api/account", {u: this.getAttribute("data-user") || this.form.getAttribute("data-user")}),
-        disabled ? {enable: 1} : {disable: 1},
+    const param = {email: this.getAttribute("data-user") || this.form.getAttribute("data-user")};
+    param[disabled ? "enable" : "disable"] = 1;
+    $.post(hoturl("=api/account", param), {},
         function (data) {
             self.disabled = false;
             if (data.ok) {
@@ -13023,8 +13024,7 @@ handle_ui.on("js-disable-user", function () {
 handle_ui.on("js-send-user-accountinfo", function () {
     var self = this;
     self.disabled = true;
-    $.post(hoturl("=api/account", {u: this.getAttribute("data-user") || this.form.getAttribute("data-user")}),
-        {sendinfo: 1},
+    $.post(hoturl("=api/account", {email: this.getAttribute("data-user") || this.form.getAttribute("data-user"), sendinfo: 1}), {},
         function (data) {
             minifeedback(self, data);
         });
