@@ -84,7 +84,7 @@
         "name": "fieldhtml", "get": true,
         "function": "Search_API::fieldhtml",
         "parameters": "f ?aufull ?session q ?t ?sort",
-        "response": "fields data ?stat ?classes"
+        "response": "fields data ?stat ?classes ?attr"
     },
     {
         "name": "follow", "paper": true, "post": true, "xxx": true,
@@ -107,7 +107,7 @@
         "name": "job", "get": true,
         "function": "Job_API::job",
         "parameters": "job",
-        "response": "status update_at *"
+        "response": "update_at ?status *"
     },
     {
         "name": "jserror", "get": true,
@@ -281,7 +281,7 @@
         "name": "tags", "post": true,
         "function": "Tags_API::run",
         "parameters": "?p ?=tags ?=addtags ?=deltags ?=tagassignment ?=search",
-        "response": "?pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?p"
+        "response": "?pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?p ?ids ?groups ?hotlist ?search_params"
     },
     {
         "name": "settingdescriptions", "get": true,
