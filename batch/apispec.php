@@ -14,21 +14,31 @@ class APISpec_Batch {
     public $user;
     /** @var array<string,list<object>> */
     public $api_map;
-    /** @var array<string,array> */
-    public $paths = [];
-    /** @var array<string,object> */
-    public $schemas = [];
-    /** @var array<string,object> */
-    public $parameters = [];
+    /** @var object */
+    private $j;
+    /** @var object */
+    private $paths;
+    /** @var ?object */
+    private $schemas;
+    /** @var ?object */
+    private $parameters;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
         $this->user = $conf->root_user();
         $this->api_map = $conf->api_map();
+        $this->j = (object) [];
     }
 
     /** @return int */
     function run() {
+        $mj = $this->j;
+        $mj->openapi = "3.1.0";
+        $info = $mj->info = $mj->info ?? (object) [];
+        $info->title = $info->title ?? "HotCRP";
+        $info->version = $info->version ?? "0.1";
+
+        $this->paths = $mj->paths = $mj->paths ?? (object) [];
         $fns = array_keys($this->api_map);
         sort($fns);
         foreach ($fns as $fn) {
@@ -41,22 +51,8 @@ class APISpec_Batch {
                 $this->expand_paths($fn);
             }
         }
-        $j = [
-            "openapi" => "3.1.0",
-            "info" => [
-                "title" => "HotCRP",
-                "version" => "0.1"
-            ],
-            "paths" => $this->paths,
-            "components" => []
-        ];
-        if (!empty($this->schemas)) {
-            $j["components"]["schemas"] = $this->schemas;
-        }
-        if (!empty($this->parameters)) {
-            $j["components"]["parameters"] = $this->parameters;
-        }
-        fwrite(STDOUT, json_encode($j, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) . "\n");
+
+        fwrite(STDOUT, json_encode($this->j, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . "\n");
         return 0;
     }
 
@@ -125,30 +121,35 @@ class APISpec_Batch {
      * @param array<string,int> $known
      * @param object $j */
     private function expand_path_method($path, $method, $known, $j) {
-        $this->paths[$path] = $this->paths[$path] ?? [];
-        $this->paths[$path][strtolower($method)] = $x = (object) [];
-        $this->expand_request($x, $known, $j);
-        $this->expand_response($x, $j);
+        $pathj = $this->paths->$path = $this->paths->$path ?? (object) [];
+        $lmethod = strtolower($method);
+        $xj = $pathj->$lmethod = $pathj->$lmethod ?? (object) [];
+        $this->expand_request($xj, $known, $j);
+        $this->expand_response($xj, $j);
     }
 
     /** @param string $name
      * @return object */
     private function resolve_common_schema($name) {
-        if (!isset($this->schemas[$name])) {
+        if ($this->schemas === null) {
+            $compj = $this->j->components = $this->j->components ?? (object) [];
+            $this->schemas = $compj->schemas = $compj->schemas ?? (object) [];
+        }
+        if (!isset($this->schemas->$name)) {
             if ($name === "pid") {
-                $this->schemas[$name] = (object) [
+                $this->schemas->$name = (object) [
                     "type" => "integer",
                     "minimum" => 1
                 ];
             } else if ($name === "ok") {
                 return (object) ["type" => "boolean"];
             } else if ($name === "message_list") {
-                $this->schemas[$name] = (object) [
+                $this->schemas->$name = (object) [
                     "type" => "list",
                     "items" => $this->resolve_common_schema("message")
                 ];
             } else if ($name === "message") {
-                $this->schemas[$name] = (object) [
+                $this->schemas->$name = (object) [
                     "type" => "object",
                     "required" => ["status"],
                     "properties" => (object) [
@@ -170,16 +171,20 @@ class APISpec_Batch {
     /** @param string $name
      * @return object */
     private function resolve_common_param($name) {
-        if (!isset($this->parameters[$name])) {
+        if ($this->parameters === null) {
+            $compj = $this->j->components = $this->j->components ?? (object) [];
+            $this->parameters = $compj->parameters = $compj->parameters ?? (object) [];
+        }
+        if (!isset($this->parameters->$name)) {
             if ($name === "p") {
-                $this->parameters["p"] = (object) [
+                $this->parameters->p = (object) [
                     "name" => "p",
                     "in" => "path",
                     "required" => true,
                     "schema" => $this->resolve_common_schema("pid")
                 ];
             } else if ($name === "redirect") {
-                $this->parameters["redirect"] = (object) [
+                $this->parameters->redirect = (object) [
                     "name" => "redirect",
                     "in" => "query",
                     "required" => false,

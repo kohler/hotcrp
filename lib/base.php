@@ -498,7 +498,7 @@ if (defined("JSON_UNESCAPED_LINE_TERMINATORS")) {
 
 /** @return string */
 function json_encode_db($x, $flags = 0) {
-    return json_encode($x, $flags | JSON_UNESCAPED_UNICODE);
+    return json_encode($x, $flags | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
 /** @param ?string $x
