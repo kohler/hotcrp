@@ -80,7 +80,7 @@
         "name": "fieldhtml", "get": true,
         "function": "Search_API::fieldhtml",
         "parameters": "f ?aufull ?session q ?t ?sort",
-        "response": "fields data ?stat"
+        "response": "fields data ?stat ?classes"
     },
     {
         "name": "follow", "paper": true, "post": true, "xxx": true,
@@ -208,12 +208,14 @@
     {
         "name": "reviewrating", "paper": true, "get": true,
         "function": "Review_API::reviewrating",
-        "parameters": "r"
+        "parameters": "r",
+        "response": "?ratings ?user_rating"
     },
     {
         "name": "reviewrating", "paper": true, "post": true,
         "function": "Review_API::reviewrating",
-        "parameters": "r =user_rating"
+        "parameters": "r =user_rating",
+        "response": "?ratings ?user_rating"
     },
     {
         "name": "reviewround", "paper": true, "post": true, "xxx": true,

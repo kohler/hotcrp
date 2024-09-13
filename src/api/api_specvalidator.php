@@ -29,6 +29,9 @@ class SpecValidator_API {
                 } else if ($p[$i] === ":") {
                     $t |= self::F_SUFFIX;
                     $has_suffix = true;
+                } else if ($p[$i] === "*") {
+                    $t &= ~self::F_REQUIRED;
+                    break;
                 } else {
                     break;
                 }
@@ -41,8 +44,7 @@ class SpecValidator_API {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
                 if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_"])
                     && ($n !== "p" || !($uf->paper ?? false))
-                    && ($n !== "redirect" || !($uf->redirect ?? false))
-                    && !isset($known["*"])) {
+                    && ($n !== "redirect" || !($uf->redirect ?? false))) {
                     self::error($qreq, "query param `{$n}` unknown");
                 }
             } else if (($t & self::F_BODY) !== 0) {
@@ -51,9 +53,7 @@ class SpecValidator_API {
         }
         foreach (array_keys($_POST) as $n) {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
-                if (!isset($known["*"])) {
-                    self::error($qreq, "post param `{$n}` unknown");
-                }
+                self::error($qreq, "post param `{$n}` unknown");
             } else if (!isset($_GET[$n])
                        && ($t & self::F_BODY) === 0) {
                 self::error($qreq, "post param `{$n}` should be in query");
@@ -62,9 +62,7 @@ class SpecValidator_API {
         foreach (array_keys($_FILES) as $n) {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null
                 || ($t & (self::F_FILE | self::F_BODY)) === 0) {
-                if (!isset($known["*"])) {
-                    self::error($qreq, "file param `{$n}` unknown");
-                }
+                self::error($qreq, "file param `{$n}` unknown");
             }
         }
         foreach ($known as $n => $t) {
@@ -101,6 +99,9 @@ class SpecValidator_API {
                 } else if ($p[$i] === ":") {
                     $t |= self::F_SUFFIX;
                     $has_suffix = true;
+                } else if ($p[$i] === "*") {
+                    $t &= ~self::F_REQUIRED;
+                    break;
                 } else {
                     break;
                 }
@@ -138,23 +139,22 @@ class SpecValidator_API {
             $known[$n] |= self::F_PRESENT;
             return $known[$n];
         }
-        if (!$has_suffix) {
-            return null;
-        }
-        $colon = strpos($n, ":");
-        $slash = strpos($n, "/");
-        if ($colon === false || ($slash !== false && $colon > $slash)) {
-            $colon = $slash;
-        }
-        if ($colon !== false) {
-            $pfx = substr($n, 0, $colon);
-            $t = $known[$pfx] ?? 0;
-            if (($t & self::F_SUFFIX) !== 0) {
-                $known[$pfx] |= self::F_PRESENT;
-                return $t;
+        if ($has_suffix) {
+            $colon = strpos($n, ":");
+            $slash = strpos($n, "/");
+            if ($colon === false || ($slash !== false && $colon > $slash)) {
+                $colon = $slash;
+            }
+            if ($colon !== false) {
+                $pfx = substr($n, 0, $colon);
+                $t = $known[$pfx] ?? 0;
+                if (($t & self::F_SUFFIX) !== 0) {
+                    $known[$pfx] |= self::F_PRESENT;
+                    return $t;
+                }
             }
         }
-        return null;
+        return $known["*"] ?? null;
     }
 
     static function unparse_param_type($n, $t) {
