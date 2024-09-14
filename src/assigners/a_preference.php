@@ -174,7 +174,7 @@ class Preference_Assigner extends Assigner {
     }
     /** @return PaperReviewPreference */
     private function preference_data($before) {
-        $pref = $this->item->get($before, "_pref");
+        $pref = $this->item->get($before, "_pref") ?? 0;
         $exp = $this->item->get($before, "_exp");
         if ($exp === "N") {
             $exp = null;

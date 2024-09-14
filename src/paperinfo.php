@@ -13,7 +13,7 @@ class PaperReviewPreference {
     /** @param int $preference
      * @param ?int $expertise */
     function __construct($preference = 0, $expertise = null) {
-        $this->preference = $preference;
+        $this->preference = $preference ?? 0;
         $this->expertise = $expertise;
     }
 
@@ -29,7 +29,7 @@ class PaperReviewPreference {
 
     /** @return string */
     function unparse() {
-        return ($this->preference ?? "0") . unparse_expertise($this->expertise);
+        return $this->preference . unparse_expertise($this->expertise);
     }
 
     /** @param PaperReviewPreference $a
