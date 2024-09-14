@@ -11,6 +11,10 @@ class SpecValidator_API {
     const F_DEPRECATED = 32;
 
     static function request($uf, Qrequest $qreq) {
+        if ($qreq->is_post() && !($uf->post ?? false)) {
+            self::error($qreq, "POST request handled by get handler");
+        }
+
         $parameters = $uf->parameters ?? [];
         if (is_string($parameters)) {
             $parameters = explode(" ", trim($parameters));
@@ -39,6 +43,7 @@ class SpecValidator_API {
             $n = substr($p, $i);
             $known[$n] = $t;
         }
+
         $param = [];
         foreach (array_keys($_GET) as $n) {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
