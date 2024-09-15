@@ -22,14 +22,53 @@ class APISpec_Batch {
     private $schemas;
     /** @var ?object */
     private $parameters;
+    /** @var object */
+    private $setj;
+    /** @var object */
+    private $setj_schemas;
+    /** @var object */
+    private $setj_parameters;
     /** @var string */
     private $output_file = "-";
+    /** @var bool */
+    private $batch = false;
+    /** @var bool */
+    private $override_ref;
+    /** @var bool */
+    private $override_tags;
+    /** @var bool */
+    private $override_schema;
+    /** @var bool */
+    private $sort;
+    /** @var array<string,int> */
+    private $tag_order;
+
+    static private $default_tag_order = [
+        "Submissions", "Documents", "Submission administration",
+        "Search", "Tags", "Review preferences", "Reviews", "Comments",
+        "Meeting tracker", "Users", "Profile", "Notifications",
+        "Site information", "Site administration", "Settings",
+        "Session"
+    ];
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
+        if (isset($arg["x"])) {
+            $conf->set_opt("apiFunctions", null);
+        }
         $this->user = $conf->root_user();
-        $this->api_map = $conf->api_map();
+
+        $this->api_map = $conf->expanded_api_map();
         $this->j = (object) [];
+        $this->setj = (object) [
+            "paths" => (object) [],
+            "components" => (object) [
+                "schemas" => (object) [],
+                "parameters" => (object) []
+            ]
+        ];
+        $this->setj_schemas = $this->setj->components->schemas;
+        $this->setj_parameters = $this->setj->components->parameters;
 
         if (isset($arg["i"])) {
             if ($arg["i"] === "-") {
@@ -41,10 +80,16 @@ class APISpec_Batch {
                 throw new CommandLineException($arg["i"] . ": Invalid input");
             }
             $this->output_file = $arg["i"];
+            $this->batch = true;
         }
         if (isset($arg["o"])) {
             $this->output_file = $arg["o"];
         }
+
+        $this->override_ref = isset($arg["override-ref"]);
+        $this->override_tags = isset($arg["override-tags"]);
+        $this->override_schema = isset($arg["override-schema"]);
+        $this->sort = isset($arg["sort"]);
     }
 
     /** @return int */
@@ -55,7 +100,13 @@ class APISpec_Batch {
         $info->title = $info->title ?? "HotCRP";
         $info->version = $info->version ?? "0.1";
 
+        // initialize paths
         $this->paths = $mj->paths = $mj->paths ?? (object) [];
+        foreach ($this->paths as $name => $pj) {
+            $pj->__path = $name;
+        }
+
+        // expand paths
         $fns = array_keys($this->api_map);
         sort($fns);
         foreach ($fns as $fn) {
@@ -69,6 +120,33 @@ class APISpec_Batch {
             }
         }
 
+        // warn about unreferenced paths
+        if ($this->batch) {
+            foreach ($this->paths as $name => $pj) {
+                if (!isset($this->setj->paths->$name)) {
+                    fwrite(STDERR, "warning: input path {$name} unknown\n");
+                } else {
+                    foreach ($pj as $method => $x) {
+                        if ($method !== "__path"
+                            && !isset($this->setj->paths->$name->$method)) {
+                            fwrite(STDERR, "warning: input operation {$method} {$name} unknown\n");
+                        }
+                    }
+                }
+            }
+        }
+
+        // maybe sort
+        if ($this->sort || !$this->batch) {
+            $this->sort();
+        }
+
+        // erase unwanted keys
+        foreach ($this->paths as $pj) {
+            unset($pj->__path);
+        }
+
+        // print
         if (($this->output_file ?? "-") === "-") {
             $out = STDOUT;
         } else {
@@ -84,6 +162,15 @@ class APISpec_Batch {
         return 0;
     }
 
+    static function path_first_tag($pj) {
+        foreach ($pj as $name => $oj) {
+            if (is_object($oj) && !empty($oj->tags)) {
+                return $oj->tags[0];
+            }
+        }
+        return null;
+    }
+
     const F_REQUIRED = 1;
     const F_BODY = 2;
     const F_FILE = 4;
@@ -96,9 +183,6 @@ class APISpec_Batch {
         $known = [];
         if ($j->paper ?? false) {
             $known["p"] = self::F_REQUIRED;
-        }
-        if ($j->redirect ?? false) {
-            $known["redirect"] = 0;
         }
         $parameters = $j->parameters ?? [];
         if (is_string($parameters)) {
@@ -122,24 +206,29 @@ class APISpec_Batch {
             $name = substr($p, $i);
             $known[$name] = $flags;
         }
+        if ($j->redirect ?? false) {
+            $known["redirect"] = 0;
+        }
         return $known;
     }
 
     /** @param string $fn */
     private function expand_paths($fn) {
+        $getj = null;
         foreach (["GET", "POST"] as $method) {
-            if (!($j = $this->conf->api($fn, null, $method))) {
+            if (!($uf = $this->conf->api($fn, null, $method))) {
                 continue;
             }
-            $known = self::parse_parameters($j);
-            $p = $known["p"] ?? null;
-            if ($p !== null) {
-                $known["p"] = self::F_REQUIRED | self::F_PATH;
-                $this->expand_path_method("/{p}/{$fn}", $method, $known, $j);
+            if ($method === "POST" && !($uf->post ?? false) && ($uf->get ?? false)) {
+                continue;
             }
-            if ($p !== self::F_REQUIRED) {
-                unset($known["p"]);
-                $this->expand_path_method("/{$fn}", $method, $known, $j);
+            $known = self::parse_parameters($uf);
+            $p = $known["p"] ?? 0;
+            if (($p & self::F_REQUIRED) !== 0) {
+                $known["p"] |= self::F_PATH;
+                $this->expand_path_method("/{p}/{$fn}", $method, $known, $uf);
+            } else {
+                $this->expand_path_method("/{$fn}", $method, $known, $uf);
             }
         }
     }
@@ -147,13 +236,40 @@ class APISpec_Batch {
     /** @param string $path
      * @param 'GET'|'POST' $method
      * @param array<string,int> $known
-     * @param object $j */
-    private function expand_path_method($path, $method, $known, $j) {
+     * @param object $uf */
+    private function expand_path_method($path, $method, $known, $uf) {
         $pathj = $this->paths->$path = $this->paths->$path ?? (object) [];
+        $pathj->__path = $path;
+        $this->setj->paths->$path = $this->setj->paths->$path ?? (object) [];
         $lmethod = strtolower($method);
         $xj = $pathj->$lmethod = $pathj->$lmethod ?? (object) [];
-        $this->expand_request($xj, $known, $j, "{$path}.{$lmethod}");
-        $this->expand_response($xj, $j);
+        $this->setj->paths->$path->$lmethod = true;
+        $this->expand_metadata($xj, $uf, "{$path}.{$lmethod}");
+        $this->expand_request($xj, $known, $uf, "{$path}.{$lmethod}");
+        $this->expand_response($xj, $uf);
+    }
+
+    /** @param object $x
+     * @param object $uf
+     * @param string $path */
+    private function expand_metadata($xj, $uf, $path) {
+        if (isset($uf->tags) && (!isset($xj->tags) || $this->override_tags)) {
+            $xj->tags = $uf->tags;
+        } else if (isset($uf->tags) && $uf->tags !== $xj->tags) {
+            fwrite(STDERR, "{$path}: tags differ, expected " . json_encode($xj->tags) . "\n");
+        }
+        foreach ($xj->tags ?? [] as $tag) {
+            $tags = $this->j->tags = $this->j->tags ?? [];
+            $i = 0;
+            while ($i !== count($tags) && $tags[$i]->name !== $tag) {
+                ++$i;
+            }
+            if ($i === count($tags)) {
+                $this->j->tags[] = (object) [
+                    "name" => $tag
+                ];
+            }
+        }
     }
 
     /** @param string $name
@@ -163,12 +279,15 @@ class APISpec_Batch {
             $compj = $this->j->components = $this->j->components ?? (object) [];
             $this->schemas = $compj->schemas = $compj->schemas ?? (object) [];
         }
-        if (!isset($this->schemas->$name)) {
+        if (!isset($this->schemas->$name)
+            || ($this->override_schema && !isset($this->setj_schemas->$name))) {
             if ($name === "pid") {
                 $this->schemas->$name = (object) [
                     "type" => "integer",
+                    "description" => "Submission ID",
                     "minimum" => 1
                 ];
+                $this->setj_schemas->$name = true;
             } else if ($name === "ok") {
                 return (object) ["type" => "boolean"];
             } else if ($name === "message_list") {
@@ -176,6 +295,7 @@ class APISpec_Batch {
                     "type" => "list",
                     "items" => $this->resolve_common_schema("message")
                 ];
+                $this->setj_schemas->$name = true;
             } else if ($name === "message") {
                 $this->schemas->$name = (object) [
                     "type" => "object",
@@ -189,6 +309,28 @@ class APISpec_Batch {
                         "pos2" => (object) ["type" => "integer"]
                     ]
                 ];
+                $this->setj_schemas->$name = true;
+            } else if ($name === "minimal_response") {
+                $this->schemas->$name = (object) [
+                    "type" => "object",
+                    "required" => ["ok"],
+                    "properties" => (object) [
+                        "ok" => (object) ["type" => "boolean"],
+                        "message_list" => $this->resolve_common_schema("message_list")
+                    ]
+                ];
+                $this->setj_schemas->$name = true;
+            } else if ($name === "error_response") {
+                $this->schemas->$name = (object) [
+                    "type" => "object",
+                    "required" => ["ok"],
+                    "properties" => (object) [
+                        "ok" => (object) ["type" => "boolean", "description" => "always false"],
+                        "message_list" => $this->resolve_common_schema("message_list"),
+                        "status_code" => (object) ["type" => "integer"]
+                    ]
+                ];
+                $this->setj_schemas->$name = true;
             } else {
                 assert(false);
             }
@@ -204,13 +346,22 @@ class APISpec_Batch {
             $this->parameters = $compj->parameters = $compj->parameters ?? (object) [];
         }
         if (!isset($this->parameters->$name)) {
-            if ($name === "p") {
-                $this->parameters->p = (object) [
+            if ($name === "p.path") {
+                $this->parameters->{"p.path"} = (object) [
                     "name" => "p",
                     "in" => "path",
                     "required" => true,
                     "schema" => $this->resolve_common_schema("pid")
                 ];
+                $this->setj_parameters->{"p.path"} = true;
+            } else if ($name === "p") {
+                $this->parameters->p = (object) [
+                    "name" => "p",
+                    "in" => "query",
+                    "required" => false,
+                    "schema" => $this->resolve_common_schema("pid")
+                ];
+                $this->setj_parameters->p = true;
             } else if ($name === "redirect") {
                 $this->parameters->redirect = (object) [
                     "name" => "redirect",
@@ -218,6 +369,7 @@ class APISpec_Batch {
                     "required" => false,
                     "schema" => (object) ["type" => "string"]
                 ];
+                $this->setj_parameters->redirect = true;
             } else {
                 assert(false);
             }
@@ -227,15 +379,17 @@ class APISpec_Batch {
 
     /** @param object $x
      * @param array<string,int> $known
-     * @param object $j
+     * @param object $uf
      * @param string $path */
-    private function expand_request($x, $known, $j, $path) {
-        $params = $body_properties = $body_required = [];
+    private function expand_request($x, $known, $uf, $path) {
+        $params = $bprop = $breq = [];
         $has_file = false;
         foreach ($known as $name => $f) {
             if ($name === "*") {
                 // skip
             } else if ($name === "p" && $f === (self::F_REQUIRED | self::F_PATH)) {
+                $params["p"] = $this->resolve_common_param("p.path");
+            } else if ($name === "p") {
                 $params["p"] = $this->resolve_common_param("p");
             } else if ($name === "redirect" && $f === 0) {
                 $params["redirect"] = $this->resolve_common_param("redirect");
@@ -247,11 +401,11 @@ class APISpec_Batch {
                     "schema" => (object) []
                 ];
             } else {
-                $body_properties[$name] = (object) [
+                $bprop[$name] = (object) [
                     "schema" => (object) []
                 ];
                 if (($f & self::F_REQUIRED) !== 0) {
-                    $body_required[] = $name;
+                    $breq[] = $name;
                 }
                 if (($f & self::F_FILE) !== 0) {
                     $has_file = true;
@@ -276,7 +430,9 @@ class APISpec_Batch {
                     continue;
                 }
                 $xpj = $x->parameters[$i];
-                if (isset($xpj->{"\$ref"}) !== isset($npj->{"\$ref"})) {
+                if ($this->override_ref && isset($npj->{"\$ref"})) {
+                    $x->parameters[$i] = $npj;
+                } else if (isset($xpj->{"\$ref"}) !== isset($npj->{"\$ref"})) {
                     fwrite(STDERR, "{$path}.param[{$n}]: \$ref status differs\n");
                 } else if (isset($xpj->{"\$ref"})) {
                     if ($xpj->{"\$ref"} !== $npj->{"\$ref"}) {
@@ -293,13 +449,13 @@ class APISpec_Batch {
                 }
             }
         }
-        if (!empty($body_properties)) {
+        if (!empty($bprop)) {
             $schema = (object) [
                 "type" => "object",
-                "properties" => $body_properties
+                "properties" => $bprop
             ];
-            if (!empty($body_required)) {
-                $schema->required = $body_required;
+            if (!empty($breq)) {
+                $schema->required = $breq;
             }
             $formtype = $has_file ? "multipart/form-data" : "application/x-www-form-urlencoded";
             $x->requestBody = (object) [
@@ -314,16 +470,13 @@ class APISpec_Batch {
     }
 
     /** @param object $x
-     * @param object $j */
-    private function expand_response($x, $j) {
-        $body_properties = $body_required = [];
-        $response = $j->response ?? [];
+     * @param object $uf */
+    private function expand_response($x, $uf) {
+        $bprop = $breq = [];
+        $response = $uf->response ?? [];
         if (is_string($response)) {
             $response = explode(" ", trim($response));
         }
-        $body_properties["ok"] = $this->resolve_common_schema("ok");
-        $body_required[] = "ok";
-        $body_properties["message_list"] = $this->resolve_common_schema("message_list");
         foreach ($response as $p) {
             $required = true;
             for ($i = 0; $i !== strlen($p); ++$i) {
@@ -337,26 +490,94 @@ class APISpec_Batch {
             if ($name === "*") {
                 // skip
             } else {
-                $body_properties[$name] = (object) [];
+                $bprop[$name] = (object) [];
                 if ($required) {
-                    $body_required[] = $name;
+                    $breq[] = $name;
                 }
             }
         }
+
+        $rschema = $this->resolve_common_schema("minimal_response");
+        if (!empty($bprop)) {
+            $restschema = ["type" => "object"];
+            if (!empty($breq))  {
+                $restschema["required"] = $breq;
+            }
+            $restschema["properties"] = $bprop;
+            $rschema = (object) [
+                "allOf" => [$rschema, (object) $restschema]
+            ];
+        }
+
         $x->responses = (object) [
+            "200" => (object) [
+                "description" => "",
+                "content" => (object) [
+                    "application/json" => (object) [
+                        "schema" => $rschema
+                    ]
+                ]
+            ],
             "default" => (object) [
                 "description" => "",
                 "content" => (object) [
                     "application/json" => (object) [
-                        "schema" => (object) [
-                            "type" => "object",
-                            "required" => $body_required,
-                            "properties" => $body_properties
-                        ]
+                        "schema" => $this->resolve_common_schema("error_response")
                     ]
                 ]
             ]
         ];
+    }
+
+    private function sort() {
+        $this->tag_order = [];
+        foreach ($this->j->tags ?? [] as $i => $x) {
+            if (isset($x->name) && is_string($x->name)) {
+                $p = array_search(self::$default_tag_order, $x->name);
+                if ($p === false) {
+                    $p = count(self::$default_tag_order) + $i;
+                }
+                $this->tag_order[$x->name] = $p;
+            }
+        }
+        if (isset($this->j->tags)) {
+            usort($this->j->tags, function ($a, $b) {
+                return $this->tag_order[$a->name] <=> $this->tag_order[$b->name];
+            });
+        }
+
+        $paths = (array) $this->j->paths;
+        uasort($paths, [$this, "compare_paths"]);
+        $this->j->paths = (object) $paths;
+    }
+
+    function compare_paths($a, $b) {
+        $atag = self::path_first_tag($a);
+        $btag = self::path_first_tag($b);
+        if ($atag !== $btag) {
+            if ($atag === null || $btag === null) {
+                return $atag === null ? 1 : -1;
+            }
+            $ato = $this->tag_order[$atag] ?? PHP_INT_MAX;
+            $bto = $this->tag_order[$btag] ?? PHP_INT_MAX;
+            return $ato <=> $bto ? : strcmp($atag, $btag);
+        }
+        $an = substr($a->__path, strrpos($a->__path, "/") + 1);
+        $bn = substr($b->__path, strrpos($b->__path, "/") + 1);
+        $auf = $this->conf->api($an, null, null);
+        $buf = $this->conf->api($bn, null, null);
+        if ($auf === null || $buf === null) {
+            if ($auf !== null || $buf !== null) {
+                return $auf === null ? 1 : -1;
+            }
+        } else {
+            $ao = $auf->order ?? PHP_INT_MAX;
+            $bo = $buf->order ?? PHP_INT_MAX;
+            if ($ao !== $bo) {
+                return $ao <=> $bo;
+            }
+        }
+        return strcmp($an, $bn);
     }
 
     /** @return APISpec_Batch */
@@ -365,7 +586,12 @@ class APISpec_Batch {
             "name:,n: !",
             "config: !",
             "help,h !",
+            "x,no-extensions Ignore extensions",
             "i:,input: =FILE Modify existing specification in FILE",
+            "override-ref Overwrite conflicting \$refs in input",
+            "override-tags",
+            "override-schema",
+            "sort",
             "o:,output: =FILE Write specification to FILE"
         )->description("Generate an OpenAPI specification.
 Usage: php batch/apispec.php")

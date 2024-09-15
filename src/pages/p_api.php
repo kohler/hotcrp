@@ -172,7 +172,7 @@ class API_Page {
             } else if (isset($_GET["track"])) {
                 $_GET["fn"] = "track";
             } else {
-                http_response_code(404);
+                http_response_code(400);
                 header("Content-Type: application/json; charset=utf-8");
                 echo '{"ok": false, "message_list": [{"field": "fn", "message": "<0>Parameter missing", "status": 2}]}', "\n";
                 exit();

@@ -434,7 +434,7 @@ function check_message_list(data, options) {
 }
 
 function check_sessioninfo(data, options) {
-    if (siteinfo.user.uid == data.sessioninfo.uid) {
+    if (siteinfo.user.email == data.sessioninfo.email) {
         siteinfo.postvalue = data.sessioninfo.postvalue;
         let myuri = hoturl_absolute_base();
         $("form").each(function () {

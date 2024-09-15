@@ -1,0 +1,4168 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "HotCRP",
+        "version": "0.1"
+    },
+    "paths": {
+        "/paper": {
+            "get": {
+                "tags": [
+                    "Submissions"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Submissions"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/formatcheck": {
+            "get": {
+                "tags": [
+                    "Documents"
+                ],
+                "parameters": [
+                    {
+                        "name": "doc",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "soft",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "dt",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "docid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "npages",
+                                                "nwords",
+                                                "problem_fields",
+                                                "has_error",
+                                                "docid"
+                                            ],
+                                            "properties": {
+                                                "npages": {},
+                                                "nwords": {},
+                                                "problem_fields": {},
+                                                "has_error": {},
+                                                "docid": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/upload": {
+            "post": {
+                "tags": [
+                    "Documents"
+                ],
+                "parameters": [
+                    {
+                        "name": "dtype",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "finish",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "cancel",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "size": {
+                                        "schema": {}
+                                    },
+                                    "mimetype": {
+                                        "schema": {}
+                                    },
+                                    "filename": {
+                                        "schema": {}
+                                    },
+                                    "blob": {
+                                        "schema": {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "token"
+                                            ],
+                                            "properties": {
+                                                "token": {},
+                                                "dtype": {},
+                                                "filename": {},
+                                                "mimetype": {},
+                                                "size": {},
+                                                "ranges": {},
+                                                "hash": {},
+                                                "server_progress_loaded": {},
+                                                "server_progress_max": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/assign": {
+            "post": {
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/redirect"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "assignments": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "assignments"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/decision": {
+            "get": {
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "decision",
+                                                "decision_html"
+                                            ],
+                                            "properties": {
+                                                "decision": {},
+                                                "decision_html": {},
+                                                "editable": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "decision": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "decision"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "decision",
+                                                "decision_html"
+                                            ],
+                                            "properties": {
+                                                "decision": {},
+                                                "decision_html": {},
+                                                "editable": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/lead": {
+            "get": {
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "lead",
+                                                "lead_html"
+                                            ],
+                                            "properties": {
+                                                "lead": {},
+                                                "lead_html": {},
+                                                "color_classes": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "lead": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "lead"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "lead",
+                                                "lead_html"
+                                            ],
+                                            "properties": {
+                                                "lead": {},
+                                                "lead_html": {},
+                                                "color_classes": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/manager": {
+            "get": {
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "manager",
+                                                "manager_html"
+                                            ],
+                                            "properties": {
+                                                "manager": {},
+                                                "manager_html": {},
+                                                "color_classes": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "manager": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "manager"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "manager",
+                                                "manager_html"
+                                            ],
+                                            "properties": {
+                                                "manager": {},
+                                                "manager_html": {},
+                                                "color_classes": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/reviewround": {
+            "post": {
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/shepherd": {
+            "get": {
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "shepherd",
+                                                "shepherd_html"
+                                            ],
+                                            "properties": {
+                                                "shepherd": {},
+                                                "shepherd_html": {},
+                                                "color_classes": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "shepherd": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "shepherd"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "shepherd",
+                                                "shepherd_html"
+                                            ],
+                                            "properties": {
+                                                "shepherd": {},
+                                                "shepherd_html": {},
+                                                "color_classes": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/search": {
+            "get": {
+                "tags": [
+                    "Search"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "name": "t",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "report",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "scoresort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "ids",
+                                                "groups",
+                                                "hotlist",
+                                                "search_params"
+                                            ],
+                                            "properties": {
+                                                "ids": {},
+                                                "groups": {},
+                                                "hotlist": {},
+                                                "search_params": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/fieldhtml": {
+            "get": {
+                "tags": [
+                    "Search"
+                ],
+                "parameters": [
+                    {
+                        "name": "f",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "name": "aufull",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "session",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "name": "t",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "fields",
+                                                "data"
+                                            ],
+                                            "properties": {
+                                                "fields": {},
+                                                "data": {},
+                                                "stat": {},
+                                                "classes": {},
+                                                "attr": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/fieldtext": {
+            "get": {
+                "tags": [
+                    "Search"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/graphdata": {
+            "get": {
+                "tags": [
+                    "Search"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/namedsearch": {
+            "get": {
+                "tags": [
+                    "Search"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "searches"
+                                            ],
+                                            "properties": {
+                                                "searches": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Search"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "searches"
+                                            ],
+                                            "properties": {
+                                                "searches": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/searchcompletion": {
+            "get": {
+                "tags": [
+                    "Search"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "searchcompletion"
+                                            ],
+                                            "properties": {
+                                                "searchcompletion": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/viewoptions": {
+            "get": {
+                "tags": [
+                    "Search"
+                ],
+                "parameters": [
+                    {
+                        "name": "report",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "report",
+                                                "display_current",
+                                                "display_default",
+                                                "display_difference",
+                                                "display_default_message_list"
+                                            ],
+                                            "properties": {
+                                                "report": {},
+                                                "display_current": {},
+                                                "display_default": {},
+                                                "display_difference": {},
+                                                "display_default_message_list": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Search"
+                ],
+                "parameters": [
+                    {
+                        "name": "report",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "display": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "display"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "report",
+                                                "display_current",
+                                                "display_default",
+                                                "display_difference",
+                                                "display_default_message_list"
+                                            ],
+                                            "properties": {
+                                                "report": {},
+                                                "display_current": {},
+                                                "display_default": {},
+                                                "display_difference": {},
+                                                "display_default_message_list": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/tags": {
+            "get": {
+                "tags": [
+                    "Tags"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "pid",
+                                                "tags",
+                                                "tags_edit_text",
+                                                "tags_view_html",
+                                                "tag_decoration_html",
+                                                "color_classes"
+                                            ],
+                                            "properties": {
+                                                "pid": {},
+                                                "tags": {},
+                                                "tags_edit_text": {},
+                                                "tags_view_html": {},
+                                                "tag_decoration_html": {},
+                                                "color_classes": {},
+                                                "tags_conflicted": {},
+                                                "color_classes_conflicted": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tags": {
+            "post": {
+                "tags": [
+                    "Tags"
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "tags": {
+                                        "schema": {}
+                                    },
+                                    "addtags": {
+                                        "schema": {}
+                                    },
+                                    "deltags": {
+                                        "schema": {}
+                                    },
+                                    "tagassignment": {
+                                        "schema": {}
+                                    },
+                                    "search": {
+                                        "schema": {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "pid": {},
+                                                "tags": {},
+                                                "tags_edit_text": {},
+                                                "tags_view_html": {},
+                                                "tag_decoration_html": {},
+                                                "color_classes": {},
+                                                "tags_conflicted": {},
+                                                "color_classes_conflicted": {},
+                                                "p": {},
+                                                "ids": {},
+                                                "groups": {},
+                                                "hotlist": {},
+                                                "search_params": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p"
+                    }
+                ]
+            }
+        },
+        "/alltags": {
+            "get": {
+                "tags": [
+                    "Tags"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "tags"
+                                            ],
+                                            "properties": {
+                                                "tags": {},
+                                                "readonly_tagmap": {},
+                                                "sitewide_tagmap": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/taganno": {
+            "get": {
+                "tags": [
+                    "Tags"
+                ],
+                "parameters": [
+                    {
+                        "name": "tag",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Tags"
+                ],
+                "parameters": [
+                    {
+                        "name": "tag",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/tagmessages": {
+            "get": {
+                "tags": [
+                    "Tags"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "pid"
+                                            ],
+                                            "properties": {
+                                                "pid": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/votereport": {
+            "get": {
+                "tags": [
+                    "Tags"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "tag",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "tag",
+                                                "report"
+                                            ],
+                                            "properties": {
+                                                "tag": {},
+                                                "report": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/revpref": {
+            "get": {
+                "tags": [
+                    "Review preferences"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "u",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "value",
+                                                "pref"
+                                            ],
+                                            "properties": {
+                                                "value": {},
+                                                "pref": {},
+                                                "prefexp": {},
+                                                "topic_score": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Review preferences"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "u",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "pref": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "pref"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "value",
+                                                "pref"
+                                            ],
+                                            "properties": {
+                                                "value": {},
+                                                "pref": {},
+                                                "prefexp": {},
+                                                "topic_score": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/review": {
+            "get": {
+                "tags": [
+                    "Reviews"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Reviews"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/reviewhistory": {
+            "get": {
+                "tags": [
+                    "Reviews"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/acceptreview": {
+            "post": {
+                "tags": [
+                    "Reviews"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/redirect"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "r",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "action",
+                                                "review_site_relative"
+                                            ],
+                                            "properties": {
+                                                "action": {},
+                                                "review_site_relative": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/claimreview": {
+            "post": {
+                "tags": [
+                    "Reviews"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/redirect"
+                    },
+                    {
+                        "name": "r",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "action",
+                                                "review_site_relative"
+                                            ],
+                                            "properties": {
+                                                "action": {},
+                                                "review_site_relative": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/declinereview": {
+            "post": {
+                "tags": [
+                    "Reviews"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/redirect"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "r",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reason": {
+                                        "schema": {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "action",
+                                                "review_site_relative"
+                                            ],
+                                            "properties": {
+                                                "action": {},
+                                                "reason": {},
+                                                "review_site_relative": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/requestreview": {
+            "post": {
+                "tags": [
+                    "Reviews"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "round",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "schema": {}
+                                    },
+                                    "given_name": {
+                                        "schema": {}
+                                    },
+                                    "family_name": {
+                                        "schema": {}
+                                    },
+                                    "name": {
+                                        "schema": {}
+                                    },
+                                    "affiliation": {
+                                        "schema": {}
+                                    },
+                                    "override": {
+                                        "schema": {}
+                                    },
+                                    "reason": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "email"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/reviewrating": {
+            "get": {
+                "tags": [
+                    "Reviews"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "r",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "ratings": {},
+                                                "user_rating": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Reviews"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "r",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "user_rating": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "user_rating"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "ratings": {},
+                                                "user_rating": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reviewtoken": {
+            "get": {
+                "tags": [
+                    "Reviews"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Reviews"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/comment": {
+            "get": {
+                "tags": [
+                    "Comments"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "c",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "comment": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Comments"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "c",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "name": "override",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "delete",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "text": {
+                                        "schema": {}
+                                    },
+                                    "response": {
+                                        "schema": {}
+                                    },
+                                    "ready": {
+                                        "schema": {}
+                                    },
+                                    "topic": {
+                                        "schema": {}
+                                    },
+                                    "draft": {
+                                        "schema": {}
+                                    },
+                                    "blind": {
+                                        "schema": {}
+                                    },
+                                    "tags": {
+                                        "schema": {}
+                                    },
+                                    "visibility": {
+                                        "schema": {}
+                                    },
+                                    "attachment": {
+                                        "schema": {}
+                                    },
+                                    "by_author": {
+                                        "schema": {}
+                                    },
+                                    "review_token": {
+                                        "schema": {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "comment": {},
+                                                "conflict": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/mentioncompletion": {
+            "get": {
+                "tags": [
+                    "Comments"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "mentioncompletion"
+                                            ],
+                                            "properties": {
+                                                "mentioncompletion": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p"
+                    }
+                ]
+            }
+        },
+        "/track": {
+            "post": {
+                "tags": [
+                    "Meeting tracker"
+                ],
+                "parameters": [
+                    {
+                        "name": "track",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "name": "tracker_start_at",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "hotlist-info": {
+                                        "schema": {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/trackerstatus": {
+            "get": {
+                "tags": [
+                    "Meeting tracker"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/trackerconfig": {
+            "post": {
+                "tags": [
+                    "Meeting tracker"
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "stopall": {
+                                        "schema": {}
+                                    },
+                                    "tr": {
+                                        "schema": {}
+                                    },
+                                    "has_tr": {
+                                        "schema": {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "tracker_status_at",
+                                                "tracker_eventid"
+                                            ],
+                                            "properties": {
+                                                "tracker": {},
+                                                "tracker_recent": {},
+                                                "tracker_status": {},
+                                                "now": {},
+                                                "tracker_status_at": {},
+                                                "tracker_eventid": {},
+                                                "new_trackerid": {},
+                                                "tracker_site": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "name": "potential_conflict",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "found"
+                                            ],
+                                            "properties": {
+                                                "found": {},
+                                                "email": {},
+                                                "given_name": {},
+                                                "family_name": {},
+                                                "affiliation": {},
+                                                "potential_conflict": {},
+                                                "orcid": {},
+                                                "country": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/pc": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "pc"
+                                            ],
+                                            "properties": {
+                                                "pc": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/clickthrough": {
+            "post": {
+                "tags": [
+                    "Profile"
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "accept": {
+                                        "schema": {}
+                                    },
+                                    "clickthrough_id": {
+                                        "schema": {}
+                                    },
+                                    "clickthrough_type": {
+                                        "schema": {}
+                                    },
+                                    "clickthrough_time": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "clickthrough_id",
+                                    "clickthrough_type",
+                                    "clickthrough_time"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p"
+                    }
+                ]
+            }
+        },
+        "/events": {
+            "get": {
+                "tags": [
+                    "Notifications"
+                ],
+                "parameters": [
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "from",
+                                                "to",
+                                                "rows",
+                                                "more"
+                                            ],
+                                            "properties": {
+                                                "from": {},
+                                                "to": {},
+                                                "rows": {},
+                                                "more": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/follow": {
+            "post": {
+                "tags": [
+                    "Notifications"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "u",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "following": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "following"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "following"
+                                            ],
+                                            "properties": {
+                                                "following": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/mailtext": {
+            "get": {
+                "tags": [
+                    "Site information"
+                ],
+                "parameters": [
+                    {
+                        "name": "template",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "r",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "given_name",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "family_name",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "affiliation",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "reason",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "width",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "text",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "subject",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "body",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "templates": {},
+                                                "subject": {},
+                                                "body": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/account": {
+            "get": {
+                "tags": [
+                    "Site administration"
+                ],
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "email",
+                                                "disabled",
+                                                "placeholder"
+                                            ],
+                                            "properties": {
+                                                "email": {},
+                                                "disabled": {},
+                                                "placeholder": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Site administration"
+                ],
+                "parameters": [
+                    {
+                        "name": "email",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "name": "disable",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "enable",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "sendinfo",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "email",
+                                                "disabled",
+                                                "placeholder"
+                                            ],
+                                            "properties": {
+                                                "email": {},
+                                                "disabled": {},
+                                                "placeholder": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/namedformula": {
+            "get": {
+                "tags": [
+                    "Site administration"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "formulas"
+                                            ],
+                                            "properties": {
+                                                "formulas": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Site administration"
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "formula": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "formula"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "formulas"
+                                            ],
+                                            "properties": {
+                                                "formulas": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings": {
+            "get": {
+                "tags": [
+                    "Settings"
+                ],
+                "parameters": [
+                    {
+                        "name": "dryrun",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "settings": {
+                                        "schema": {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "dry_run": {},
+                                                "changes": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Settings"
+                ],
+                "parameters": [
+                    {
+                        "name": "dryrun",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "settings": {
+                                        "schema": {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "dry_run": {},
+                                                "changes": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reviewfieldlibrary": {
+            "get": {
+                "tags": [
+                    "Settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "samples",
+                                                "types"
+                                            ],
+                                            "properties": {
+                                                "samples": {},
+                                                "types": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settingdescriptions": {
+            "get": {
+                "tags": [
+                    "Settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "setting_descriptions"
+                                            ],
+                                            "properties": {
+                                                "setting_descriptions": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/submissionfieldlibrary": {
+            "get": {
+                "tags": [
+                    "Settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "samples",
+                                                "types"
+                                            ],
+                                            "properties": {
+                                                "samples": {},
+                                                "types": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/job": {
+            "get": {
+                "tags": [
+                    "Session"
+                ],
+                "parameters": [
+                    {
+                        "name": "job",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "update_at"
+                                            ],
+                                            "properties": {
+                                                "update_at": {},
+                                                "status": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/jserror": {
+            "post": {
+                "tags": [
+                    "Session"
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "error": {
+                                        "schema": {}
+                                    },
+                                    "url": {
+                                        "schema": {}
+                                    },
+                                    "lineno": {
+                                        "schema": {}
+                                    },
+                                    "colno": {
+                                        "schema": {}
+                                    },
+                                    "stack": {
+                                        "schema": {}
+                                    }
+                                },
+                                "required": [
+                                    "error"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/oauthtoken": {
+            "post": {
+                "tags": [
+                    "Session"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/session": {
+            "get": {
+                "tags": [
+                    "Session"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "sessioninfo"
+                                            ],
+                                            "properties": {
+                                                "sessioninfo": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Session"
+                ],
+                "parameters": [
+                    {
+                        "name": "v",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "sessioninfo"
+                                            ],
+                                            "properties": {
+                                                "sessioninfo": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/whoami": {
+            "get": {
+                "tags": [
+                    "Session"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "email": {},
+                                                "given_name": {},
+                                                "family_name": {},
+                                                "affiliation": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "parameters": {
+            "redirect": {
+                "name": "redirect",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "p.path": {
+                "name": "p",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/pid"
+                }
+            },
+            "p": {
+                "name": "p",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/pid"
+                }
+            }
+        },
+        "schemas": {
+            "pid": {
+                "type": "integer",
+                "minimum": 1
+            },
+            "message": {
+                "type": "object",
+                "required": [
+                    "status"
+                ],
+                "properties": {
+                    "field": {
+                        "type": "string"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "minimum": -5,
+                        "maximum": 3
+                    },
+                    "context": {
+                        "type": "string"
+                    },
+                    "pos1": {
+                        "type": "integer"
+                    },
+                    "pos2": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "message_list": {
+                "type": "list",
+                "items": {
+                    "$ref": "#/components/schemas/message"
+                }
+            },
+            "minimal_response": {
+                "type": "object",
+                "required": [
+                    "ok"
+                ],
+                "properties": {
+                    "ok": {
+                        "type": "boolean"
+                    },
+                    "message_list": {
+                        "$ref": "#/components/schemas/message_list"
+                    }
+                }
+            },
+            "error_response": {
+                "type": "object",
+                "required": [
+                    "ok"
+                ],
+                "properties": {
+                    "ok": {
+                        "type": "boolean",
+                        "description": "always false"
+                    },
+                    "message_list": {
+                        "$ref": "#/components/schemas/message_list"
+                    },
+                    "status_code": {
+                        "type": "integer"
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Submissions"
+        },
+        {
+            "name": "Documents"
+        },
+        {
+            "name": "Submission administration"
+        },
+        {
+            "name": "Search"
+        },
+        {
+            "name": "Tags"
+        },
+        {
+            "name": "Review preferences"
+        },
+        {
+            "name": "Reviews"
+        },
+        {
+            "name": "Comments"
+        },
+        {
+            "name": "Meeting tracker"
+        },
+        {
+            "name": "Users"
+        },
+        {
+            "name": "Profile"
+        },
+        {
+            "name": "Notifications"
+        },
+        {
+            "name": "Site information"
+        },
+        {
+            "name": "Site administration"
+        },
+        {
+            "name": "Settings"
+        },
+        {
+            "name": "Session"
+        }
+    ]
+}

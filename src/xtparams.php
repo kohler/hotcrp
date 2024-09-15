@@ -324,6 +324,7 @@ class XtParams {
                 if ($reqkey !== null && !($list[$i]->{$reqkey} ?? null)) {
                     continue;
                 }
+                // apply overlay ($xt) to new base ($nxt)
                 $nxt = clone $list[$i];
                 foreach (get_object_vars($xt) as $k => $v) {
                     if ($k === "merge" || $k === "__source_order") {
@@ -336,6 +337,7 @@ class XtParams {
                         object_replace_recursive($nxt->{$k}, $v);
                     }
                 }
+                // replace base
                 $xt = $nxt;
             }
             if (isset($xt->deprecated) && $xt->deprecated) {

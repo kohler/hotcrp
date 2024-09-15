@@ -246,15 +246,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
 
     /** @param ?Qrequest $qreq */
     function emit($qreq = null) {
-        if ($this->status && !$this->minimal) {
-            if (!isset($this->content["ok"])) {
-                $this->content["ok"] = $this->status <= 299;
-            }
-            if (!isset($this->content["status"])) {
-                $this->content["status"] = $this->status;
-            }
-        } else if (isset($this->content["status"])) {
-            $this->status = $this->content["status"];
+        if ($this->status && !$this->minimal && !isset($this->content["ok"])) {
+            $this->content["ok"] = $this->status <= 299;
         }
         if ($qreq && $qreq->valid_token()) {
             // Don’t set status on unvalidated requests, since that can leak
@@ -265,6 +258,8 @@ class JsonResult implements JsonSerializable, ArrayAccess {
             if (($origin = $qreq->header("Origin"))) {
                 header("Access-Control-Allow-Origin: {$origin}");
             }
+        } else if ($this->status > 299 && !isset($this->content["status_code"])) {
+            $this->content["status_code"] = $this->status;
         }
         header("Content-Type: application/json; charset=utf-8");
         if ($qreq && isset($qreq->pretty)) {

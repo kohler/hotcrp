@@ -5,11 +5,16 @@
 class Session_API {
     static private function session_result(Contact $user, Qrequest $qreq, $ok) {
         $si = ["postvalue" => $qreq->post_value()];
+        if ($user->email) {
+            $si["email"] = $user->email;
+        }
         if ($user->contactId) {
-            $si["cid"] = $user->contactId; // XXX backward compat
             $si["uid"] = $user->contactId;
         }
-        return ["ok" => $ok, "postvalue" => $qreq->post_value(), "sessioninfo" => $si];
+        return [
+            "ok" => $ok,
+            "sessioninfo" => $si
+        ];
     }
 
     static function getsession(Contact $user, Qrequest $qreq) {
@@ -81,7 +86,7 @@ class Session_API {
     }
 
     /** @param Qrequest $qreq
-     * @return array{ok:bool,postvalue:string} */
+     * @return array{ok:bool,sessioninfo:array} */
     static function setsession(Contact $user, $qreq) {
         assert($user === $qreq->user());
         $qreq->open_session();

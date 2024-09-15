@@ -5364,7 +5364,7 @@ class Conf {
     /** @param list<string> $defaults
      * @param ?string $optname
      * @return array{array<string,list<object>>,list<object>} */
-    private function _xtbuild($defaults, $optname) {
+    function _xtbuild($defaults, $optname) {
         $this->_xtbuild_map = $this->_xtbuild_factories = [];
         expand_json_includes_callback($defaults, [$this, "_xtbuild_add"]);
         if ($optname && ($olist = $this->opt($optname))) {
@@ -5466,6 +5466,12 @@ class Conf {
             list($this->_api_map, $unused) =
                 $this->_xtbuild(["etc/apifunctions.json"], "apiFunctions");
         }
+        return $this->_api_map;
+    }
+    /** @return array<string,list<object>> */
+    function expanded_api_map() {
+        list($this->_api_map, $unused) =
+            $this->_xtbuild(["etc/apifunctions.json", "etc/apiexpansions.json"], "apiFunctions");
         return $this->_api_map;
     }
     function has_api($fn, ?Contact $user = null, $method = null) {
