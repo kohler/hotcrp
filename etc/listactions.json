@@ -39,7 +39,7 @@
         "function": "+GetPcassignments_ListAction"
     },
     {
-        "name": "get/revform", "get": true, "paper_optional": true,
+        "name": "get/revform", "get": true,
         "title": "Review assignments/Your review forms",
         "order": 20000,
         "allow_if": "reviewer",
@@ -47,7 +47,7 @@
         "zip": false, "all": false
     },
     {
-        "name": "get/revformz", "get": true, "paper_optional": true,
+        "name": "get/revformz", "get": true,
         "title": "Review assignments/Your review forms (zip)",
         "order": 20001,
         "allow_if": "reviewer",
@@ -55,7 +55,7 @@
         "zip": true, "all": false
     },
     {
-        "name": "get/allrevform", "get": true, "paper_optional": true,
+        "name": "get/allrevform", "get": true,
         "title": "Review assignments/All review forms",
         "order": 20002,
         "allow_if": "manager",
@@ -63,7 +63,7 @@
         "zip": false, "all": true
     },
     {
-        "name": "get/allrevformz", "get": true, "paper_optional": true,
+        "name": "get/allrevformz", "get": true,
         "title": "Review assignments/All review forms (zip)",
         "order": 20003,
         "allow_if": "manager",

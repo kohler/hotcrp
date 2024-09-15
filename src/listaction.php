@@ -21,25 +21,25 @@ class ListAction {
     }
 
     /** @return ComponentSet */
-    static function grouped_extensions(Contact $user) {
-        $gex = new ComponentSet($user, ["etc/listactions.json"], $user->conf->opt("listActions"));
-        foreach ($gex->members("__expand") as $gj) {
-            if (!isset($gj->allow_if) || $gex->allowed($gj->allow_if, $gj)) {
+    static function components(Contact $user) {
+        $cs = new ComponentSet($user, ["etc/listactions.json"], $user->conf->opt("listActions"));
+        foreach ($cs->members("__expand") as $gj) {
+            if (!isset($gj->allow_if) || $cs->allowed($gj->allow_if, $gj)) {
                 Conf::xt_resolve_require($gj);
-                call_user_func($gj->expand_function, $gex, $gj);
+                call_user_func($gj->expand_function, $cs, $gj);
             }
         }
-        return $gex;
+        return $cs;
     }
 
-    /** @param ComponentSet $gex
+    /** @param ComponentSet $cs
      * @param string $group
      * @return list */
-    static function members_selector_options($gex, $group) {
+    static function members_selector_options($cs, $group) {
         $last_group = null;
         $sel_opt = [];
         $p = strlen($group) + 1;
-        foreach ($gex->members($group) as $rf) {
+        foreach ($cs->members($group) as $rf) {
             if (!str_starts_with($rf->name, "__")) {
                 $as = strpos($rf->title, "/");
                 if ($as === false) {
@@ -78,16 +78,24 @@ class ListAction {
             return JsonResult::make_error(403, "<0>Missing credentials");
         }
         $conf = $user->conf;
-        $gex = self::grouped_extensions($user);
-        $gex->xtp->add_allow_checker_method($qreq->method());
-        $uf = $gex->get($name);
-        if (!$uf && ($slash = strpos($name, "/"))) {
-            $uf = $gex->get(substr($name, 0, $slash));
+        $cs = self::components($user);
+        $slash = strpos($name, "/");
+        $cs->xtp->set_require_key_for_method($qreq->method());
+        $uf = $cs->get($name);
+        if (!$uf && $slash > 0) {
+            $uf = $cs->get(substr($name, 0, $slash));
+        }
+        // XXX allow `POST` requests to `get`
+        if (!$uf && $qreq->is_post()) {
+            $cs->xtp->set_require_key_for_method("GET");
+            $uf = $cs->get($name);
+            if (!$uf && $slash > 0) {
+                $uf = $cs->get(substr($name, 0, $slash));
+            }
         }
         if (!$uf) {
-            $gex->reset_context();
-            $gex->xtp->allow_checkers = [];
-            $uf1 = $gex->get($name);
+            $cs->reset_context()->set_require_key_for_method(null);
+            $uf1 = $cs->get($name);
             if ($uf1) {
                 return JsonResult::make_error(405, "<0>Method not supported");
             }

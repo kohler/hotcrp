@@ -28,7 +28,7 @@
         "parameters": "?p =assignments"
     },
     {
-        "name": "claimreview", "paper": true, "post": true, "redirect": true,
+        "name": "claimreview", "post": true, "paper": true, "redirect": true,
         "function": "RequestReview_API::claimreview",
         "parameters": "r email",
         "response": "action review_site_relative"
@@ -39,14 +39,14 @@
         "parameters": "?p ?=accept =clickthrough_id =clickthrough_type =clickthrough_time"
     },
     {
-        "name": "comment", "paper": true, "get": true,
+        "name": "comment", "get": true, "paper": true,
         "function": "Comment_API::run",
         "parameters": "c",
         "response": "?comment",
         "response_deprecated": "cmt"
     },
     {
-        "name": "comment", "paper": true, "post": true,
+        "name": "comment", "post": true, "paper": true,
         "function": "Comment_API::run",
         "parameters": "c ?override ?=text ?=response ?=ready ?=topic ?=draft ?=blind ?=tags ?=visibility ?=:attachment ?=by_author ?=review_token ?delete",
         "response": "?comment ?conflict",
@@ -59,12 +59,12 @@
         "response": "action ?reason review_site_relative"
     },
     {
-        "name": "decision", "paper": true, "get": true,
+        "name": "decision", "get": true, "paper": true,
         "function": "Decision_API::run",
         "response": "decision decision_html ?editable"
     },
     {
-        "name": "decision", "paper": true, "post": true,
+        "name": "decision", "post": true, "paper": true,
         "function": "Decision_API::run",
         "parameters": "=decision",
         "response": "decision decision_html ?editable",
@@ -87,13 +87,13 @@
         "response": "fields data ?stat ?classes ?attr"
     },
     {
-        "name": "follow", "paper": true, "post": true, "xxx": true,
+        "name": "follow", "post": true, "paper": true, "xxx": true,
         "function": "Follow_API::run",
         "parameters": "?u =following",
         "response": "following"
     },
     {
-        "name": "formatcheck", "get": true, "post": true,
+        "name": "formatcheck", "get": true,
         "function": "FormatCheck_API::run",
         "parameters": "?p ?doc ?soft ?dt ?docid",
         "response": "npages nwords problem_fields has_error docid",
@@ -110,42 +110,42 @@
         "response": "update_at ?status *"
     },
     {
-        "name": "jserror", "get": true,
+        "name": "jserror", "post": true,
         "function": "Error_API::jserror",
         "parameters": "=error ?=url ?=lineno ?=colno ?=stack"
     },
     {
-        "name": "lead", "paper": true, "get": true,
+        "name": "lead", "get": true, "paper": true,
         "function": "PaperPC_API::lead_api",
         "response": "lead lead_html ?color_classes"
     },
     {
-        "name": "lead", "paper": true, "post": true,
+        "name": "lead", "post": true, "paper": true,
         "function": "PaperPC_API::lead_api",
         "parameters": "=lead",
         "response": "lead lead_html ?color_classes",
         "response_deprecated": "value result"
     },
     {
-        "name": "mailtext", "get": true, "post": true,
+        "name": "mailtext", "get": true,
         "function": "Mail_API::mailtext",
         "parameters": "?template ?p ?r ?email ?given_name ?family_name ?affiliation ?reason ?width ?text ?subject ?body",
         "response": "?templates ?subject ?body"
     },
     {
-        "name": "manager", "paper": true, "get": true,
+        "name": "manager", "get": true, "paper": true,
         "function": "PaperPC_API::manager_api",
         "response": "manager manager_html ?color_classes",
         "response_deprecated": "value result"
     },
     {
-        "name": "manager", "paper": true, "post": true,
+        "name": "manager", "post": true, "paper": true,
         "function": "PaperPC_API::manager_api",
         "parameters": "=manager",
         "response": "manager manager_html ?color_classes"
     },
     {
-        "name": "administrator", "alias": "manager"
+        "name": "administrator", "alias": "manager", "get": true, "post": true
     },
     {
         "name": "namedformula", "get": true,
@@ -169,7 +169,7 @@
         "response": "searches"
     },
     {
-        "name": "mentioncompletion", "get": true, "post": true,
+        "name": "mentioncompletion", "get": true,
         "function": "Completion_API::mentioncompletion_api",
         "parameters": "?p",
         "response": "mentioncompletion"
@@ -187,21 +187,21 @@
         "function": "Paper_API::run"
     },
     {
-        "name": "pc", "get": true, "post": true,
+        "name": "pc", "get": true,
         "function": "PaperPC_API::pc_api",
         "response": "pc"
     },
     {
-        "name": "requestreview", "paper": true, "post": true,
+        "name": "requestreview", "post": true, "paper": true,
         "function": "RequestReview_API::requestreview",
         "parameters": "?round =email ?=given_name ?=family_name ?=name ?=affiliation ?=override ?=reason"
     },
     {
-        "name": "review", "paper": true, "get": true, "post": true,
+        "name": "review", "get": true, "post": true, "paper": true,
         "function": "Review_API::review"
     },
     {
-        "name": "reviewhistory", "paper": true, "get": true, "post": true,
+        "name": "reviewhistory", "get": true, "paper": true,
         "function": "Review_API::reviewhistory"
     },
     {
@@ -210,19 +210,19 @@
         "response": "samples types"
     },
     {
-        "name": "reviewrating", "paper": true, "get": true,
+        "name": "reviewrating", "get": true, "paper": true,
         "function": "Review_API::reviewrating",
         "parameters": "r",
         "response": "?ratings ?user_rating"
     },
     {
-        "name": "reviewrating", "paper": true, "post": true,
+        "name": "reviewrating", "post": true, "paper": true,
         "function": "Review_API::reviewrating",
         "parameters": "r =user_rating",
         "response": "?ratings ?user_rating"
     },
     {
-        "name": "reviewround", "paper": true, "post": true, "xxx": true,
+        "name": "reviewround", "post": true, "xxx": true, "paper": true,
         "function": "Review_API::reviewround"
     },
     {
@@ -242,10 +242,10 @@
         "response": "value pref ?prefexp ?topic_score"
     },
     {
-        "name": "reviewpref", "alias": "revpref"
+        "name": "reviewpref", "alias": "revpref", "get": true, "post": true
     },
     {
-        "name": "pref", "alias": "revpref"
+        "name": "pref", "alias": "revpref", "get": true, "post": true
     },
     {
         "name": "search", "get": true,
@@ -270,18 +270,15 @@
         "response": "postvalue sessioninfo"
     },
     {
-        "name": "settags", "alias": "tags"
-    },
-    {
         "name": "tags", "get": true, "paper": true,
         "function": "Tags_API::run",
-        "response": "pid tags tags_edit_text tags_view_html tag_decoration_html color_classes"
+        "response": "pid tags tags_edit_text tags_view_html tag_decoration_html color_classes ?tags_conflicted ?color_classes_conflicted"
     },
     {
         "name": "tags", "post": true,
         "function": "Tags_API::run",
         "parameters": "?p ?=tags ?=addtags ?=deltags ?=tagassignment ?=search",
-        "response": "?pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?p ?ids ?groups ?hotlist ?search_params"
+        "response": "?pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?tags_conflicted ?color_classes_conflicted ?p ?ids ?groups ?hotlist ?search_params"
     },
     {
         "name": "settingdescriptions", "get": true,
@@ -295,12 +292,12 @@
         "response": "?dry_run ?changes"
     },
     {
-        "name": "shepherd", "paper": true, "get": true,
+        "name": "shepherd", "get": true, "paper": true,
         "function": "PaperPC_API::shepherd_api",
         "response": "shepherd shepherd_html ?color_classes"
     },
     {
-        "name": "shepherd", "paper": true, "post": true,
+        "name": "shepherd", "post": true, "paper": true,
         "function": "PaperPC_API::shepherd_api",
         "parameters": "=shepherd",
         "response": "shepherd shepherd_html ?color_classes",
@@ -322,12 +319,9 @@
         "parameters": "tag"
     },
     {
-        "name": "tagmessages", "paper": true, "get": true,
+        "name": "tagmessages", "get": true, "paper": true,
         "function": "Tags_API::tagmessages_api",
         "response": "pid"
-    },
-    {
-        "name": "tagreport", "alias": "tagmessages"
     },
     {
         "name": "track", "post": true,
@@ -340,14 +334,14 @@
         "response": "?tracker ?tracker_recent ?tracker_status ?now tracker_status_at tracker_eventid ?new_trackerid ?tracker_site"
     },
     {
-        "name": "trackerstatus", "get": true, "post": true,
+        "name": "trackerstatus", "get": true,
         "function": "MeetingTracker::trackerstatus_api"
     },
     {
         "name": "upload", "post": true,
         "function": "Upload_API::run",
         "parameters": "?p ?dtype ?start ?offset ?finish ?token ?cancel ?=size ?=mimetype ?=filename ?@blob",
-        "response": "token dtype filename mimetype size ranges hash server_progress_loaded server_progress_max"
+        "response": "token ?dtype ?filename ?mimetype ?size ?ranges ?hash ?server_progress_loaded ?server_progress_max"
 
     },
     {
@@ -369,10 +363,7 @@
         "response": "report display_current display_default display_difference display_default_message_list"
     },
     {
-        "name": "listreport", "alias": "viewoptions"
-    },
-    {
-        "name": "votereport", "paper": true, "get": true, "post": true,
+        "name": "votereport", "get": true, "paper": true,
         "function": "Tags_API::votereport_api",
         "parameters": "tag",
         "response": "tag report"

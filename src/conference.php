@@ -5472,8 +5472,12 @@ class Conf {
         return !!$this->api($fn, $user, $method);
     }
     function api($fn, ?Contact $user = null, $method = null) {
-        $xtp = (new XtParams($this, $user))->add_allow_checker_method($method);
+        $xtp = (new XtParams($this, $user))->set_require_key_for_method($method);
         $uf = $xtp->search_name($this->api_map(), $fn);
+        if (!$uf && $method === "POST") {
+            $xtp->set_require_key_for_method("GET"); // XXX should not do this
+            $uf = $xtp->search_name($this->api_map(), $fn);
+        }
         return self::xt_enabled($uf) ? $uf : null;
     }
     /** @return JsonResult */

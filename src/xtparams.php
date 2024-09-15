@@ -11,8 +11,8 @@ class XtParams {
     public $alias = true;
     /** @var string */
     public $reflags = "";
-    /** @var ?list<callable(object,XtParams):(?bool)> */
-    public $allow_checkers;
+    /** @var ?string */
+    public $require_key;
     /** @var ?list<callable(string,object,XtParams):(?bool)> */
     public $primitive_checkers;
     /** @var ?object */
@@ -31,37 +31,15 @@ class XtParams {
         $this->user = $user;
     }
 
-    /** @param object $xt
-     * @param XtParams $xtp
-     * @return ?bool */
-    static function allow_checker_GET($xt, $xtp) {
-        return isset($xt->alias) ? null : $xt->get ?? false;
-    }
-
-    /** @param object $xt
-     * @param XtParams $xtp
-     * @return ?bool */
-    static function allow_checker_HEAD($xt, $xtp) {
-        return isset($xt->alias) ? null : $xt->head ?? $xt->get ?? false;
-    }
-
-    /** @param object $xt
-     * @param XtParams $xtp
-     * @return ?bool */
-    static function allow_checker_POST($xt, $xtp) {
-        return isset($xt->alias) ? null : $xt->post ?? $xt->get ?? false;
-    }
-
     /** @param ?string $method
      * @return $this */
-    function add_allow_checker_method($method) {
-        if ($method === "GET" || $method === "HEAD" || $method === "POST") {
-            $this->allow_checkers[] = "XtParams::allow_checker_{$method}";
-        } else if ($method !== null && $method !== "") {
-            $method = strtolower($method);
-            $this->allow_checkers[] = function ($xt, $xtp) use ($method) {
-                return isset($xt->alias) ? null : $xt->$method ?? false;
-            };
+    function set_require_key_for_method($method) {
+        if ($method === null || $method === "") {
+            $this->require_key = null;
+        } else if ($method === "GET" || $method === "HEAD") {
+            $this->require_key = "get";
+        } else {
+            $this->require_key = strtolower($method);
         }
         return $this;
     }
@@ -69,16 +47,7 @@ class XtParams {
     /** @param object $xt
      * @return bool */
     function checkf($xt) {
-        if (isset($xt->allow_if) && !$this->check($xt->allow_if, $xt)) {
-            return false;
-        }
-        if ($this->allow_checkers !== null) {
-            foreach ($this->allow_checkers as $checker) {
-                if (($x = $checker($xt, $this)) !== null)
-                    return $x;
-            }
-        }
-        return true;
+        return !isset($xt->allow_if) || $this->check($xt->allow_if, $xt);
     }
 
     /** @param string $s
@@ -344,25 +313,30 @@ class XtParams {
         if ($nlist > 1) {
             usort($list, "Conf::xt_priority_compare");
         }
+        $reqkey = $this->require_key;
         for ($i = 0; $i < $nlist; ++$i) {
             $xt = $list[$i];
+            if ($reqkey !== null && !($xt->{$reqkey} ?? null)) {
+                continue;
+            }
             while ($i + 1 < $nlist && ($xt->merge ?? false)) {
                 ++$i;
-                $overlay = $xt;
-                $xt = clone $list[$i];
-                foreach (get_object_vars($overlay) as $k => $v) {
+                if ($reqkey !== null && !($list[$i]->{$reqkey} ?? null)) {
+                    continue;
+                }
+                $nxt = clone $list[$i];
+                foreach (get_object_vars($xt) as $k => $v) {
                     if ($k === "merge" || $k === "__source_order") {
                         // skip
-                    } else if ($v === null) {
-                        unset($xt->{$k});
-                    } else if (!property_exists($xt, $k)
+                    } else if (!property_exists($nxt, $k)
                                || !is_object($v)
-                               || !is_object($xt->{$k})) {
-                        $xt->{$k} = $v;
+                               || !is_object($nxt->{$k})) {
+                        $nxt->{$k} = $v;
                     } else {
-                        object_replace_recursive($xt->{$k}, $v);
+                        object_replace_recursive($nxt->{$k}, $v);
                     }
                 }
+                $xt = $nxt;
             }
             if (isset($xt->deprecated) && $xt->deprecated) {
                 $name = $xt->name ?? "<unknown>";

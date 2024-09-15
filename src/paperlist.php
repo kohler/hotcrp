@@ -1986,19 +1986,19 @@ class PaperList {
             $atab = $qreq->fn ?? $qreq->atab;
         }
 
-        $gex = ListAction::grouped_extensions($this->user);
-        $gex->add_xt_checker([$this, "list_checker"]);
-        $gex->apply_key_filter("display_if");
+        $cs = ListAction::components($this->user);
+        $cs->add_xt_checker([$this, "list_checker"]);
+        $cs->apply_key_filter("display_if");
         if ($this->_footer_filter) {
-            $gex->apply_filter($this->_footer_filter);
+            $cs->apply_filter($this->_footer_filter);
         }
         $lllgroups = [];
         $whichlll = -1;
-        foreach ($gex->members("") as $rf) {
+        foreach ($cs->members("") as $rf) {
             if (isset($rf->render_function)
                 && !str_starts_with($rf->name, "__")
                 && Conf::xt_resolve_require($rf)
-                && ($lllg = call_user_func($rf->render_function, $this, $qreq, $gex, $rf))) {
+                && ($lllg = call_user_func($rf->render_function, $this, $qreq, $cs, $rf))) {
                 if (is_string($lllg)) {
                     $lllg = [$lllg];
                 }
