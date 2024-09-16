@@ -26,12 +26,13 @@ class AdminHome_Page {
         if (PHP_VERSION_ID <= 70200) {
             $ml[] = new MessageItem(null, "<0>HotCRP requires PHP version 7.2 or higher.  You are running PHP version " . phpversion(), 2);
         }
-        $result = Dbl::qx($conf->dblink, "show variables like 'max_allowed_packet'");
         $max_file_size = ini_get_bytes("upload_max_filesize");
-        if (($row = $result->fetch_row())
-            && $row[1] < $max_file_size
-            && !$conf->opt("dbNoPapers")) {
-            $ml[] = new MessageItem(null, "<5>MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is {$max_file_size}&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers", MessageSet::URGENT_NOTE);
+        if (!$conf->opt("dbNoPapers")) {
+            $result = Dbl::qx($conf->dblink, "show variables like 'max_allowed_packet'");
+            if (($row = $result->fetch_row())
+                && $row[1] < $max_file_size) {
+                $ml[] = new MessageItem(null, "<5>MySQL’s <code>max_allowed_packet</code> setting, which is " . htmlspecialchars($row[1]) . "&nbsp;bytes, is less than the PHP upload file limit, which is {$max_file_size}&nbsp;bytes.  You should update <code>max_allowed_packet</code> in the system-wide <code>my.cnf</code> file or the system may not be able to handle large papers", MessageSet::URGENT_NOTE);
+            }
         }
         if ($max_file_size < ini_get_bytes(null, "10M")
             && $max_file_size < $conf->upload_max_filesize()) {
@@ -121,6 +122,11 @@ class AdminHome_Page {
         if (!empty($ml)) {
             $ml[] = new MessageItem(null, "", MessageSet::WARNING);
             $conf->feedback_msg($ml);
+        }
+
+        // Help message
+        if (!$conf->has_any_submitted()) {
+            $conf->feedback_msg([MessageItem::success("<5>For help setting up the site, see " . Ht::link("Help &gt; Chair’s guide", $conf->hoturl("help", "t=chair")))]);
         }
     }
 }
