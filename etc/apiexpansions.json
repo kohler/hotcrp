@@ -1,0 +1,270 @@
+[
+  {
+    "name": "paper", "get": true, "merge": true,
+    "tags": ["Submissions"], "order": 0
+  },
+  {
+    "name": "paper", "post": true, "merge": true,
+    "tags": ["Submissions"], "order": 0
+  },
+  {
+    "name": "formatcheck", "get": true, "merge": true,
+    "tags": ["Documents"]
+  },
+  {
+    "name": "upload", "post": true, "merge": true,
+    "tags": ["Documents"]
+  },
+  {
+    "name": "assign", "post": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
+    "name": "decision", "get": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
+    "name": "decision", "post": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
+    "name": "lead", "get": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
+    "name": "lead", "post": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
+    "name": "manager", "get": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
+    "name": "manager", "post": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
+    "name": "reviewround", "post": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
+    "name": "shepherd", "get": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
+    "name": "shepherd", "post": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
+    "name": "search", "get": true, "merge": true,
+    "tags": ["Search"], "order": 0
+  },
+  {
+    "name": "fieldhtml", "get": true, "merge": true,
+    "tags": ["Search"], "order": 1
+  },
+  {
+    "name": "fieldtext", "get": true, "merge": true,
+    "tags": ["Search"]
+  },
+  {
+    "name": "graphdata", "get": true, "merge": true,
+    "tags": ["Search"]
+  },
+  {
+    "name": "namedsearch", "get": true, "merge": true,
+    "tags": ["Search"]
+  },
+  {
+    "name": "namedsearch", "post": true, "merge": true,
+    "tags": ["Search"]
+  },
+  {
+    "name": "searchcompletion", "get": true, "merge": true,
+    "tags": ["Search"]
+  },
+  {
+    "name": "viewoptions", "get": true, "merge": true,
+    "tags": ["Search"]
+  },
+  {
+    "name": "viewoptions", "post": true, "merge": true,
+    "tags": ["Search"]
+  },
+  {
+    "name": "tags", "get": true, "merge": true,
+    "tags": ["Tags"], "order": 0
+  },
+  {
+    "name": "tags", "post": true, "merge": true,
+    "tags": ["Tags"], "order": 0
+  },
+  {
+    "name": "alltags", "get": true, "merge": true,
+    "tags": ["Tags"]
+  },
+  {
+    "name": "taganno", "get": true, "merge": true,
+    "tags": ["Tags"]
+  },
+  {
+    "name": "taganno", "post": true, "merge": true,
+    "tags": ["Tags"]
+  },
+  {
+    "name": "tagmessages", "get": true, "merge": true,
+    "tags": ["Tags"]
+  },
+  {
+    "name": "votereport", "get": true, "merge": true,
+    "tags": ["Tags"]
+  },
+  {
+    "name": "revpref", "get": true, "merge": true,
+    "tags": ["Review preferences"]
+  },
+  {
+    "name": "revpref", "post": true, "merge": true,
+    "tags": ["Review preferences"]
+  },
+  {
+    "name": "review", "get": true, "post": true, "merge": true,
+    "tags": ["Reviews"], "order": 0
+  },
+  {
+    "name": "reviewhistory", "get": true, "merge": true,
+    "tags": ["Reviews"], "order": 1
+  },
+  {
+    "name": "acceptreview", "post": true, "merge": true,
+    "tags": ["Reviews"]
+  },
+  {
+    "name": "claimreview", "post": true, "merge": true,
+    "tags": ["Reviews"]
+  },
+  {
+    "name": "declinereview", "post": true, "merge": true,
+    "tags": ["Reviews"]
+  },
+  {
+    "name": "requestreview", "post": true, "merge": true,
+    "tags": ["Reviews"]
+  },
+  {
+    "name": "reviewrating", "get": true, "merge": true,
+    "tags": ["Reviews"]
+  },
+  {
+    "name": "reviewrating", "post": true, "merge": true,
+    "tags": ["Reviews"]
+  },
+  {
+    "name": "reviewtoken", "get": true, "post": true, "merge": true,
+    "tags": ["Reviews"]
+  },
+  {
+    "name": "comment", "get": true, "merge": true,
+    "tags": ["Comments"], "order": 0
+  },
+  {
+    "name": "comment", "post": true, "merge": true,
+    "tags": ["Comments"], "order": 0
+  },
+  {
+    "name": "mentioncompletion", "get": true, "merge": true,
+    "tags": ["Comments"]
+  },
+  {
+    "name": "track", "post": true, "merge": true,
+    "tags": ["Meeting tracker"], "order": 0
+  },
+  {
+    "name": "trackerstatus", "get": true, "merge": true,
+    "tags": ["Meeting tracker"], "order": 1
+  },
+  {
+    "name": "trackerconfig", "post": true, "merge": true,
+    "tags": ["Meeting tracker"]
+  },
+  {
+    "name": "user", "get": true, "merge": true,
+    "tags": ["Users"], "order": 0
+  },
+  {
+    "name": "pc", "get": true, "merge": true,
+    "tags": ["Users"]
+  },
+  {
+    "name": "clickthrough", "post": true, "merge": true,
+    "tags": ["Profile"]
+  },
+  {
+    "name": "events", "get": true, "merge": true,
+    "tags": ["Notifications"]
+  },
+  {
+    "name": "follow", "post": true, "merge": true,
+    "tags": ["Notifications"]
+  },
+  {
+    "name": "mailtext", "get": true, "merge": true,
+    "tags": ["Site information"]
+  },
+  {
+    "name": "settings", "get": true, "post": true, "merge": true,
+    "tags": ["Settings"], "order": 0
+  },
+  {
+    "name": "reviewfieldlibrary", "get": true, "merge": true,
+    "tags": ["Settings"]
+  },
+  {
+    "name": "settingdescriptions", "get": true, "merge": true,
+    "tags": ["Settings"]
+  },
+  {
+    "name": "submissionfieldlibrary", "get": true, "merge": true,
+    "tags": ["Settings"]
+  },
+  {
+    "name": "account", "get": true, "merge": true,
+    "tags": ["Site administration"]
+  },
+  {
+    "name": "account", "post": true, "merge": true,
+    "tags": ["Site administration"]
+  },
+  {
+    "name": "namedformula", "get": true, "merge": true,
+    "tags": ["Site administration"]
+  },
+  {
+    "name": "namedformula", "post": true, "merge": true,
+    "tags": ["Site administration"]
+  },
+  {
+    "name": "job", "get": true, "merge": true,
+    "tags": ["Session"]
+  },
+  {
+    "name": "jserror", "post": true, "merge": true,
+    "tags": ["Session"]
+  },
+  {
+    "name": "oauthtoken", "post": true, "merge": true,
+    "tags": ["Session"]
+  },
+  {
+    "name": "session", "get": true, "merge": true,
+    "tags": ["Session"]
+  },
+  {
+    "name": "session", "post": true, "merge": true,
+    "tags": ["Session"]
+  },
+  {
+    "name": "whoami", "get": true, "merge": true,
+    "tags": ["Session"]
+  }
+]
