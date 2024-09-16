@@ -614,8 +614,9 @@ class CommentInfo {
         return $docs;
     }
 
-    /** @return ?object */
-    function unparse_json(Contact $viewer) {
+    /** @param bool $no_content
+     * @return ?object */
+    function unparse_json(Contact $viewer, $no_content = false) {
         if ($this->commentId !== 0
             && !$viewer->can_view_comment($this->prow, $this, true)) {
             return null;
@@ -626,7 +627,7 @@ class CommentInfo {
             return null;
         }
 
-        $cj = ["pid" => $this->prow->paperId];
+        $cj = ["object" => "comment", "pid" => $this->prow->paperId];
         if ($this->commentId !== 0) {
             $cj["cid"] = $this->commentId;
             if (($o = $this->unparse_ordinal()) !== null) {
@@ -737,14 +738,15 @@ class CommentInfo {
             $cj["modified_at_text"] = $this->conf->unparse_time_point($cj["modified_at"]);
         }
 
-        // contents
-        if ($viewer->can_view_comment_content($this->prow, $this)) {
+        // content
+        if ($no_content) {
+            // do not include content
+        } else if ($viewer->can_view_comment_content($this->prow, $this)) {
             $cj["text"] = $this->content($viewer, !$idable);
             if ($this->has_attachments()) {
                 $cj["docs"] = $this->attachments_json($cj["editable"] ?? false);
             }
         } else {
-            $cj["text"] = false;
             $cj["word_count"] = count_words($this->raw_content());
         }
 

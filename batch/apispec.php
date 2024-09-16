@@ -364,6 +364,11 @@ class APISpec_Batch {
                     "type" => "integer",
                     "description" => "Review ID"
                 ];
+            } else if ($name === "cid") {
+                $nj = (object) [
+                    "type" => "integer",
+                    "description" => "Comment ID"
+                ];
             } else if ($name === "ok") {
                 $nj = (object) [
                     "type" => "boolean",
@@ -450,6 +455,13 @@ class APISpec_Batch {
                     "required" => $name === "r",
                     "schema" => $this->resolve_common_schema("rid")
                 ];
+            } else if ($name === "c" || $name === "c.opt") {
+                $nj = (object) [
+                    "name" => "c",
+                    "in" => "query",
+                    "required" => $name === "c",
+                    "schema" => $this->resolve_common_schema("cid")
+                ];
             } else if ($name === "redirect") {
                 $nj = (object) [
                     "name" => "redirect",
@@ -489,6 +501,9 @@ class APISpec_Batch {
             } else if ($name === "r") {
                 $pn = $f & self::F_REQUIRED ? "r" : "r.opt";
                 $params["r"] = $this->resolve_common_param($pn);
+            } else if ($name === "c") {
+                $pn = $f & self::F_REQUIRED ? "c" : "c.opt";
+                $params["c"] = $this->resolve_common_param($pn);
             } else if ($name === "redirect" && $f === 0) {
                 $params["redirect"] = $this->resolve_common_param("redirect");
             } else if (($f & (self::F_BODY | self::F_FILE)) === 0) {

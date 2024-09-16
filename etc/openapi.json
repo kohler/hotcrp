@@ -3,8 +3,8 @@
     "info": {
         "title": "HotCRP",
         "version": "0.1",
-        "description": "[HotCRP](https://github.com/kohler/hotcrp/) is open-source conference review\nsoftware, and runs [hotcrp.com](https://hotcrp.com/).\n",
-        "summary": "HotCRP conference view software API"
+        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\n\nWe welcome [pull requests](https://github.com/kohler/hotcrp/pulls) that fill\nout this documentation. To request documentation for an API method, please\nopen a [GitHub issue](https://github.com/kohler/hotcrp/issues).\n",
+        "summary": "HotCRP conference management software API"
     },
     "paths": {
         "/paper": {
@@ -2332,9 +2332,12 @@
                         "$ref": "#/components/parameters/p.path"
                     },
                     {
-                        "name": "c",
+                        "$ref": "#/components/parameters/c.opt"
+                    },
+                    {
+                        "name": "content",
                         "in": "query",
-                        "required": true,
+                        "required": false,
                         "schema": {}
                     }
                 ],
@@ -2380,10 +2383,7 @@
                         "$ref": "#/components/parameters/p.path"
                     },
                     {
-                        "name": "c",
-                        "in": "query",
-                        "required": true,
-                        "schema": {}
+                        "$ref": "#/components/parameters/c"
                     },
                     {
                         "name": "override",
@@ -3892,6 +3892,22 @@
                 "schema": {
                     "$ref": "#/components/schemas/rid"
                 }
+            },
+            "c.opt": {
+                "name": "c",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/cid"
+                }
+            },
+            "c": {
+                "name": "c",
+                "in": "query",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/cid"
+                }
             }
         },
         "schemas": {
@@ -3971,6 +3987,10 @@
             "rid": {
                 "type": "integer",
                 "description": "Review ID"
+            },
+            "cid": {
+                "type": "integer",
+                "description": "Comment ID"
             }
         },
         "securitySchemes": {

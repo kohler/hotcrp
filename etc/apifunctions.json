@@ -41,7 +41,7 @@
     {
         "name": "comment", "get": true, "paper": true,
         "function": "Comment_API::run",
-        "parameters": "c",
+        "parameters": "?c ?content",
         "response": "?comment",
         "response_deprecated": "cmt"
     },

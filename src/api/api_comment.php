@@ -186,6 +186,16 @@ class Comment_API {
 
     /** @return JsonResult */
     private function run_qreq(Qrequest $qreq) {
+        // check for all-comments request
+        $content = $qreq->is_post() || friendly_boolean($qreq->content ?? "1");
+        if (!isset($qreq->c) && !$qreq->is_post()) {
+            $comments = [];
+            foreach ($this->prow->viewable_comments($this->user) as $crow) {
+                $comments[] = $crow->unparse_json($this->user, !$content);
+            }
+            return new JsonResult(200, ["ok" => true, "comments" => $comments]);
+        }
+
         // analyze response parameter
         $c = $qreq->c ?? "";
         if ($c === "response") {
@@ -277,7 +287,8 @@ class Comment_API {
             }
         }
         if ($crow && $crow->commentId > 0) {
-            $jr["cmt"] = $crow->unparse_json($this->user);
+            $jr["comment"] = $crow->unparse_json($this->user, !$content);
+            $jr["cmt"] = $jr["comment"]; // XXX backward compat
         }
         return $jr;
     }
