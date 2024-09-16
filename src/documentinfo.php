@@ -356,8 +356,7 @@ class DocumentInfo implements JsonSerializable {
      * @return bool */
     static function has_request_for(Qrequest $qreq, $name) {
         return $qreq["{$name}:upload"]
-            || $qreq->has_file("{$name}:file")
-            || $qreq->has_file($name) /* XXX obsolete */;
+            || $qreq->has_file("{$name}:file");
     }
 
     /** @return bool */

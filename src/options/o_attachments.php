@@ -94,7 +94,7 @@ class Attachments_PaperOption extends PaperOption {
                     }
                 }
             }
-            if ($qreq["{$name}:delete"] || $qreq["{$name}:remove"] /* compat */) {
+            if ($qreq["{$name}:delete"]) {
                 continue;
             }
             if (DocumentInfo::has_request_for($qreq, $name)) {
@@ -109,7 +109,7 @@ class Attachments_PaperOption extends PaperOption {
                 $dxlist[] = $thisdoc;
             }
         }
-        return $dxlist;
+        return array_merge($dlist, $dxlist);
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
