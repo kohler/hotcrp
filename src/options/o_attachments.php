@@ -82,8 +82,8 @@ class Attachments_PaperOption extends PaperOption {
             $name = "{$prefix}:{$ctr}";
             $did = $qreq[$name];
             $thisdoc = null;
-            if (ctype_digit($did)) {
-                $did = intval($did);
+            if (is_int($did) || ctype_digit($did)) {
+                $did = is_int($did) ? $did : intval($did);
                 for ($idx = 0; $idx !== count($dlist); ++$idx) {
                     $d = $dlist[$idx];
                     if ($d === $did

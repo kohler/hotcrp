@@ -188,7 +188,7 @@ class Comment_API {
     private function run_qreq(Qrequest $qreq) {
         // check for all-comments request
         $content = $qreq->is_post() || friendly_boolean($qreq->content ?? "1");
-        if (!isset($qreq->c) && !$qreq->is_post()) {
+        if (!isset($qreq->c) && !isset($qreq->response) && !$qreq->is_post()) {
             $comments = [];
             foreach ($this->prow->viewable_comments($this->user) as $crow) {
                 $comments[] = $crow->unparse_json($this->user, !$content);
@@ -228,8 +228,9 @@ class Comment_API {
             $crow = $rcrow;
         } else if ($c === "new" || $c === "response") {
             $crow = null;
-        } else if (ctype_digit($c)) {
-            $crow = $this->find_comment("commentId=" . intval($c));
+        } else if (is_int($c) || ctype_digit($c)) {
+            $cn = is_int($c) ? $c : intval($c);
+            $crow = $this->find_comment("commentId={$cn}");
         } else if ($c === "" && $qreq->is_post()) {
             $c = "new";
             $crow = null;
