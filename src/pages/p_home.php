@@ -165,6 +165,11 @@ class Home_Page {
             echo '<li>', $user->conf->_("{naccepted} of {nsubmitted} {submissions} accepted", new FmtArg("naccepted", $nyes), new FmtArg("nsubmitted", $n)), '</li>';
         }
     }
+    static function print_info_help(Contact $user) {
+        if ($user->isPC) {
+            echo '<li class="mt-2">', Ht::link("?⃝ <u>Help</u>", $user->conf->hoturl("help"), ["class" => "noul"]), '</li>';
+        }
+    }
 
     function print_message() {
         if (($t = $this->conf->_i("home"))) {

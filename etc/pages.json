@@ -92,6 +92,7 @@
         "allow_if": "conf.time_all_author_view_decision",
         "print_function": "Home_Page::print_info_accepted"
     },
+    [   "home/sidebar/info/help", 100, "Home_Page::print_info_help"   ],
 
 
     [   "home/main/message", 1100, "*Home_Page::print_message"   ],
