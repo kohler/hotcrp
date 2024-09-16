@@ -28,6 +28,10 @@ class APISpec_Batch {
     private $setj_schemas;
     /** @var object */
     private $setj_parameters;
+    /** @var object */
+    private $setj_tags;
+    /** @var array<string,list<object>> */
+    public $description_map;
     /** @var string */
     private $output_file = "-";
     /** @var bool */
@@ -38,6 +42,8 @@ class APISpec_Batch {
     private $override_tags;
     /** @var bool */
     private $override_schema;
+    /** @var bool */
+    private $override_description;
     /** @var bool */
     private $sort;
     /** @var array<string,int> */
@@ -55,6 +61,7 @@ class APISpec_Batch {
         $this->conf = $conf;
         if (isset($arg["x"])) {
             $conf->set_opt("apiFunctions", null);
+            $conf->set_opt("apiDescriptions", null);
         }
         $this->user = $conf->root_user();
 
@@ -65,10 +72,17 @@ class APISpec_Batch {
             "components" => (object) [
                 "schemas" => (object) [],
                 "parameters" => (object) []
-            ]
+            ],
+            "tags" => (object) []
         ];
         $this->setj_schemas = $this->setj->components->schemas;
         $this->setj_parameters = $this->setj->components->parameters;
+        $this->setj_tags = $this->setj->tags;
+
+        $this->description_map = [];
+        foreach ([["?devel/apidoc/*.md"], $conf->opt("apiDescriptions")] as $desc) {
+            expand_json_includes_callback($desc, [$this, "_add_description_item"], "APISpec_Batch::parse_description_markdown");
+        }
 
         if (isset($arg["i"])) {
             if ($arg["i"] === "-") {
@@ -89,7 +103,38 @@ class APISpec_Batch {
         $this->override_ref = isset($arg["override-ref"]);
         $this->override_tags = isset($arg["override-tags"]);
         $this->override_schema = isset($arg["override-schema"]);
+        $this->override_description = !isset($arg["no-override-description"]);
         $this->sort = isset($arg["sort"]);
+    }
+
+    function _add_description_item($xt) {
+        if (isset($xt->name) && is_string($xt->name)) {
+            $this->description_map[$xt->name][] = $xt;
+            return true;
+        }
+        return false;
+    }
+
+    static function parse_description_markdown($s) {
+        if (!str_starts_with($s, "#")) {
+            return null;
+        }
+        $m = preg_split('/^\#\s+([^\n]*?)\s*\n/m', $s, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $xs = [];
+        for ($i = 1; $i < count($m); $i += 2) {
+            $x = ["name" => simplify_whitespace($m[$i])];
+            $d = cleannl(ltrim($m[$i + 1]));
+            if (str_starts_with($d, "> ")) {
+                preg_match('/\A(?:^> .*?\n)+/m', $d, $mx);
+                $x["summary"] = simplify_whitespace(str_replace("\n> ", "", substr($mx[0], 2)));
+                $d = ltrim(substr($d, strlen($mx[0])));
+            }
+            if ($d !== "") {
+                $x["description"] = $d;
+            }
+            $xs[] = (object) $x;
+        }
+        return $xs;
     }
 
     /** @return int */
@@ -99,6 +144,7 @@ class APISpec_Batch {
         $info = $mj->info = $mj->info ?? (object) [];
         $info->title = $info->title ?? "HotCRP";
         $info->version = $info->version ?? "0.1";
+        $this->merge_description("info", $info);
 
         // initialize paths
         $this->paths = $mj->paths = $mj->paths ?? (object) [];
@@ -214,7 +260,6 @@ class APISpec_Batch {
 
     /** @param string $fn */
     private function expand_paths($fn) {
-        $getj = null;
         foreach (["GET", "POST"] as $method) {
             if (!($uf = $this->conf->api($fn, null, $method))) {
                 continue;
@@ -240,11 +285,14 @@ class APISpec_Batch {
     private function expand_path_method($path, $method, $known, $uf) {
         $pathj = $this->paths->$path = $this->paths->$path ?? (object) [];
         $pathj->__path = $path;
-        $this->setj->paths->$path = $this->setj->paths->$path ?? (object) [];
+        if (!isset($this->setj->paths->$path)) {
+            $this->merge_description($path, $pathj);
+            $this->setj->paths->$path = (object) [];
+        }
         $lmethod = strtolower($method);
         $xj = $pathj->$lmethod = $pathj->$lmethod ?? (object) [];
         $this->setj->paths->$path->$lmethod = true;
-        $this->expand_metadata($xj, $uf, "{$path}.{$lmethod}");
+        $this->expand_metadata($xj, $uf, "{$lmethod} {$path}");
         $this->expand_request($xj, $known, $uf, "{$path}.{$lmethod}");
         $this->expand_response($xj, $uf);
     }
@@ -253,12 +301,16 @@ class APISpec_Batch {
      * @param object $uf
      * @param string $path */
     private function expand_metadata($xj, $uf, $path) {
+        $this->merge_description($path, $xj);
         if (isset($uf->tags) && (!isset($xj->tags) || $this->override_tags)) {
             $xj->tags = $uf->tags;
         } else if (isset($uf->tags) && $uf->tags !== $xj->tags) {
             fwrite(STDERR, "{$path}: tags differ, expected " . json_encode($xj->tags) . "\n");
         }
         foreach ($xj->tags ?? [] as $tag) {
+            if (isset($this->setj_tags->$tag)) {
+                continue;
+            }
             $tags = $this->j->tags = $this->j->tags ?? [];
             $i = 0;
             while ($i !== count($tags) && $tags[$i]->name !== $tag) {
@@ -269,6 +321,26 @@ class APISpec_Batch {
                     "name" => $tag
                 ];
             }
+            $this->merge_description($tag, $this->j->tags[$i]);
+            $this->setj_tags->$tag = true;
+        }
+    }
+
+    private function merge_description($name, $xj) {
+        if (!isset($this->description_map[$name])) {
+            return;
+        }
+        $xtp = new XtParams($this->conf, null);
+        $dj = $xtp->search_name($this->description_map, $name);
+        if ($dj
+            && isset($dj->summary)
+            && ($this->override_description || ($xj->summary ?? "") === "")) {
+            $xj->summary = $dj->summary;
+        }
+        if ($dj
+            && isset($dj->description)
+            && ($this->override_description || ($xj->description ?? "") === "")) {
+            $xj->description = $dj->description;
         }
     }
 
@@ -279,29 +351,34 @@ class APISpec_Batch {
             $compj = $this->j->components = $this->j->components ?? (object) [];
             $this->schemas = $compj->schemas = $compj->schemas ?? (object) [];
         }
-        if (!isset($this->schemas->$name)
-            || ($this->override_schema && !isset($this->setj_schemas->$name))) {
+        $nj = $this->schemas->$name ?? null;
+        if (!$nj || ($this->override_schema && !isset($this->setj_schemas->$name))) {
             if ($name === "pid") {
-                $this->schemas->$name = (object) [
+                $nj = (object) [
                     "type" => "integer",
                     "description" => "Submission ID",
                     "minimum" => 1
                 ];
             } else if ($name === "rid") {
-                $this->schemas->$name = (object) [
+                $nj = (object) [
                     "type" => "integer",
                     "description" => "Review ID"
                 ];
             } else if ($name === "ok") {
-                return (object) ["type" => "boolean"];
+                $nj = (object) [
+                    "type" => "boolean",
+                    "description" => "Success marker"
+                ];
             } else if ($name === "message_list") {
-                $this->schemas->$name = (object) [
+                $nj = (object) [
                     "type" => "list",
+                    "description" => "Diagnostic list",
                     "items" => $this->resolve_common_schema("message")
                 ];
             } else if ($name === "message") {
-                $this->schemas->$name = (object) [
+                $nj = (object) [
                     "type" => "object",
+                    "description" => "Diagnostic",
                     "required" => ["status"],
                     "properties" => (object) [
                         "field" => (object) ["type" => "string"],
@@ -313,7 +390,7 @@ class APISpec_Batch {
                     ]
                 ];
             } else if ($name === "minimal_response") {
-                $this->schemas->$name = (object) [
+                $nj = (object) [
                     "type" => "object",
                     "required" => ["ok"],
                     "properties" => (object) [
@@ -322,7 +399,7 @@ class APISpec_Batch {
                     ]
                 ];
             } else if ($name === "error_response") {
-                $this->schemas->$name = (object) [
+                $nj = (object) [
                     "type" => "object",
                     "required" => ["ok"],
                     "properties" => (object) [
@@ -334,6 +411,10 @@ class APISpec_Batch {
             } else {
                 assert(false);
             }
+            $this->schemas->$name = $nj;
+        }
+        if (!isset($this->setj_schemas->$name)) {
+            $this->merge_description("schema {$name}", $nj);
             $this->setj_schemas->$name = true;
         }
         return (object) ["\$ref" => "#/components/schemas/{$name}"];
@@ -346,31 +427,31 @@ class APISpec_Batch {
             $compj = $this->j->components = $this->j->components ?? (object) [];
             $this->parameters = $compj->parameters = $compj->parameters ?? (object) [];
         }
-        if (!isset($this->parameters->$name)
-            || ($this->override_schema && !isset($this->setj_parameters->$name))) {
+        $nj = $this->parameters->$name ?? null;
+        if ($nj === null || ($this->override_schema && !isset($this->setj_parameters->$name))) {
             if ($name === "p.path") {
-                $this->parameters->$name = (object) [
+                $nj = (object) [
                     "name" => "p",
                     "in" => "path",
                     "required" => true,
                     "schema" => $this->resolve_common_schema("pid")
                 ];
             } else if ($name === "p" || $name === "p.opt") {
-                $this->parameters->$name = (object) [
+                $nj = (object) [
                     "name" => "p",
                     "in" => "query",
                     "required" => $name === "p",
                     "schema" => $this->resolve_common_schema("pid")
                 ];
             } else if ($name === "r" || $name === "r.opt") {
-                $this->parameters->$name = (object) [
+                $nj = (object) [
                     "name" => "r",
                     "in" => "query",
                     "required" => $name === "r",
                     "schema" => $this->resolve_common_schema("rid")
                 ];
             } else if ($name === "redirect") {
-                $this->parameters->$name = (object) [
+                $nj = (object) [
                     "name" => "redirect",
                     "in" => "query",
                     "required" => false,
@@ -379,6 +460,10 @@ class APISpec_Batch {
             } else {
                 assert(false);
             }
+            $this->parameters->$name = $nj;
+        }
+        if (!isset($this->setj_parameters->$name)) {
+            $this->merge_description("parameter {$name}", $nj);
             $this->setj_parameters->$name = true;
         }
         return (object) ["\$ref" => "#/components/parameters/{$name}"];
@@ -604,6 +689,7 @@ class APISpec_Batch {
             "override-ref Overwrite conflicting \$refs in input",
             "override-tags",
             "override-schema",
+            "no-override-description",
             "sort",
             "o:,output: =FILE Write specification to FILE"
         )->description("Generate an OpenAPI specification.

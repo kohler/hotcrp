@@ -2,7 +2,9 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP",
-        "version": "0.1"
+        "version": "0.1",
+        "description": "[HotCRP](https://github.com/kohler/hotcrp/) is open-source conference review\nsoftware, and runs [hotcrp.com](https://hotcrp.com/).\n",
+        "summary": "HotCRP conference view software API"
     },
     "paths": {
         "/paper": {
@@ -3900,6 +3902,7 @@
             },
             "message": {
                 "type": "object",
+                "description": "Diagnostic",
                 "required": [
                     "status"
                 ],
@@ -3928,6 +3931,7 @@
             },
             "message_list": {
                 "type": "list",
+                "description": "Diagnostic list",
                 "items": {
                     "$ref": "#/components/schemas/message"
                 }
@@ -3968,7 +3972,26 @@
                 "type": "integer",
                 "description": "Review ID"
             }
-        }
+        },
+        "securitySchemes": {
+            "apiToken": {
+                "type": "http",
+                "scheme": "bearer",
+                "description": "API token created via Profile > Developer"
+            },
+            "session": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "hotcrpsession",
+                "description": "Web sessions use a cookie. The name of the cookie varies by installation; `hotcrpcookie` is used on hotcrp.com. Operations other than GET and HEAD also require a `post` query parameter"
+            }
+        },
+        "security": [
+            {
+                "apiToken": [],
+                "session": []
+            }
+        ]
     },
     "tags": [
         {

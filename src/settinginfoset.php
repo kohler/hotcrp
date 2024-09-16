@@ -363,28 +363,27 @@ class SettingInfoSet {
     }
 
     static function parse_description_markdown($s) {
-        if (str_starts_with($s, "#")) {
-            $m = preg_split('/^#\s+([\w$\/]+)\s*\n/m', $s, -1, PREG_SPLIT_DELIM_CAPTURE);
-            $xs = [];
-            for ($i = 1; $i < count($m); $i += 2) {
-                $x = [];
-                $key = $m[$i];
-                $x[strpos($key, "\$") === false ? "name" : "name_pattern"] = $key;
-                $d = cleannl(ltrim($m[$i + 1]));
-                if (str_starts_with($d, "> ")) {
-                    preg_match('/\A(?:^> .*?\n)+/m', $d, $mx);
-                    $x["summary"] = "<3>" . simplify_whitespace(str_replace("\n> ", "", substr($mx[0], 2)));
-                    $d = ltrim(substr($d, strlen($mx[0])));
-                }
-                if ($d !== "") {
-                    $x["description"] = "<3>" . $d;
-                }
-                $xs[] = (object) $x;
-            }
-            return $xs;
-        } else {
+        if (!str_starts_with($s, "#")) {
             return null;
         }
+        $m = preg_split('/^#\s+([\w$\/]+)\s*\n/m', $s, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $xs = [];
+        for ($i = 1; $i < count($m); $i += 2) {
+            $x = [];
+            $key = $m[$i];
+            $x[strpos($key, "\$") === false ? "name" : "name_pattern"] = $key;
+            $d = cleannl(ltrim($m[$i + 1]));
+            if (str_starts_with($d, "> ")) {
+                preg_match('/\A(?:^> .*?\n)+/m', $d, $mx);
+                $x["summary"] = "<3>" . simplify_whitespace(str_replace("\n> ", "", substr($mx[0], 2)));
+                $d = ltrim(substr($d, strlen($mx[0])));
+            }
+            if ($d !== "") {
+                $x["description"] = "<3>" . $d;
+            }
+            $xs[] = (object) $x;
+        }
+        return $xs;
     }
 
     function ensure_descriptions() {
