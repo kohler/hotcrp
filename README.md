@@ -16,10 +16,11 @@ up your own server, use hotcrp.com.
 Getting help
 ------------
 
-To learn more about configuring and using HotCRP, first check the extensive
-online help once you set it up. To learn about advanced configuration,
-software internals, and developing extensions, check the [HotCRP development
-manual](./devel/manual/index.md) in `devel/manual`.
+Extensive online help has more on configuring and using HotCRP. See also:
+
+* [The HotCRP development manual](./devel/manual/index.md) to learn about
+  advanced configuration, software internals, and developing extensions.
+* [The OpenAPI specification](./etc/openapi.json) for API information.
 
 
 Prerequisites
