@@ -287,7 +287,11 @@ class APISpec_Batch {
                     "description" => "Submission ID",
                     "minimum" => 1
                 ];
-                $this->setj_schemas->$name = true;
+            } else if ($name === "rid") {
+                $this->schemas->$name = (object) [
+                    "type" => "integer",
+                    "description" => "Review ID"
+                ];
             } else if ($name === "ok") {
                 return (object) ["type" => "boolean"];
             } else if ($name === "message_list") {
@@ -295,7 +299,6 @@ class APISpec_Batch {
                     "type" => "list",
                     "items" => $this->resolve_common_schema("message")
                 ];
-                $this->setj_schemas->$name = true;
             } else if ($name === "message") {
                 $this->schemas->$name = (object) [
                     "type" => "object",
@@ -309,7 +312,6 @@ class APISpec_Batch {
                         "pos2" => (object) ["type" => "integer"]
                     ]
                 ];
-                $this->setj_schemas->$name = true;
             } else if ($name === "minimal_response") {
                 $this->schemas->$name = (object) [
                     "type" => "object",
@@ -319,7 +321,6 @@ class APISpec_Batch {
                         "message_list" => $this->resolve_common_schema("message_list")
                     ]
                 ];
-                $this->setj_schemas->$name = true;
             } else if ($name === "error_response") {
                 $this->schemas->$name = (object) [
                     "type" => "object",
@@ -330,10 +331,10 @@ class APISpec_Batch {
                         "status_code" => (object) ["type" => "integer"]
                     ]
                 ];
-                $this->setj_schemas->$name = true;
             } else {
                 assert(false);
             }
+            $this->setj_schemas->$name = true;
         }
         return (object) ["\$ref" => "#/components/schemas/{$name}"];
     }
@@ -345,34 +346,40 @@ class APISpec_Batch {
             $compj = $this->j->components = $this->j->components ?? (object) [];
             $this->parameters = $compj->parameters = $compj->parameters ?? (object) [];
         }
-        if (!isset($this->parameters->$name)) {
+        if (!isset($this->parameters->$name)
+            || ($this->override_schema && !isset($this->setj_parameters->$name))) {
             if ($name === "p.path") {
-                $this->parameters->{"p.path"} = (object) [
+                $this->parameters->$name = (object) [
                     "name" => "p",
                     "in" => "path",
                     "required" => true,
                     "schema" => $this->resolve_common_schema("pid")
                 ];
-                $this->setj_parameters->{"p.path"} = true;
-            } else if ($name === "p") {
-                $this->parameters->p = (object) [
+            } else if ($name === "p" || $name === "p.opt") {
+                $this->parameters->$name = (object) [
                     "name" => "p",
                     "in" => "query",
-                    "required" => false,
+                    "required" => $name === "p",
                     "schema" => $this->resolve_common_schema("pid")
                 ];
-                $this->setj_parameters->p = true;
+            } else if ($name === "r" || $name === "r.opt") {
+                $this->parameters->$name = (object) [
+                    "name" => "r",
+                    "in" => "query",
+                    "required" => $name === "r",
+                    "schema" => $this->resolve_common_schema("rid")
+                ];
             } else if ($name === "redirect") {
-                $this->parameters->redirect = (object) [
+                $this->parameters->$name = (object) [
                     "name" => "redirect",
                     "in" => "query",
                     "required" => false,
                     "schema" => (object) ["type" => "string"]
                 ];
-                $this->setj_parameters->redirect = true;
             } else {
                 assert(false);
             }
+            $this->setj_parameters->$name = true;
         }
         return (object) ["\$ref" => "#/components/parameters/{$name}"];
     }
@@ -387,10 +394,16 @@ class APISpec_Batch {
         foreach ($known as $name => $f) {
             if ($name === "*") {
                 // skip
-            } else if ($name === "p" && $f === (self::F_REQUIRED | self::F_PATH)) {
-                $params["p"] = $this->resolve_common_param("p.path");
             } else if ($name === "p") {
-                $params["p"] = $this->resolve_common_param("p");
+                if ($f === (self::F_REQUIRED | self::F_PATH)) {
+                    $pn = "p.path";
+                } else {
+                    $pn = $f & self::F_REQUIRED ? "p" : "p.opt";
+                }
+                $params["p"] = $this->resolve_common_param($pn);
+            } else if ($name === "r") {
+                $pn = $f & self::F_REQUIRED ? "r" : "r.opt";
+                $params["r"] = $this->resolve_common_param($pn);
             } else if ($name === "redirect" && $f === 0) {
                 $params["redirect"] = $this->resolve_common_param("redirect");
             } else if (($f & (self::F_BODY | self::F_FILE)) === 0) {
@@ -419,7 +432,7 @@ class APISpec_Batch {
                 if (isset($pj->name) && is_string($pj->name)) {
                     $xparams[$pj->name] = $i;
                 } else if (isset($pj->{"\$ref"}) && is_string($pj->{"\$ref"})
-                           && preg_match('/\A\#\/components\/parameters\/([^+]*)/', $pj->{"\$ref"}, $m)) {
+                           && preg_match('/\A\#\/components\/parameters\/([^.]*)/', $pj->{"\$ref"}, $m)) {
                     $xparams[$m[1]] = $i;
                 }
             }

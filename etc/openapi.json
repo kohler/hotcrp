@@ -92,7 +92,7 @@
                         "schema": {}
                     },
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "responses": {
@@ -183,7 +183,7 @@
                         "schema": {}
                     },
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "requestBody": {
@@ -262,10 +262,10 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/redirect"
+                        "$ref": "#/components/parameters/p.opt"
                     },
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/redirect"
                     }
                 ],
                 "requestBody": {
@@ -318,12 +318,6 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -370,12 +364,6 @@
                     "Submission administration"
                 ],
                 "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
                     {
                         "$ref": "#/components/parameters/p.path"
                     }
@@ -446,12 +434,6 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -498,12 +480,6 @@
                     "Submission administration"
                 ],
                 "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
                     {
                         "$ref": "#/components/parameters/p.path"
                     }
@@ -574,12 +550,6 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -626,12 +596,6 @@
                     "Submission administration"
                 ],
                 "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
                     {
                         "$ref": "#/components/parameters/p.path"
                     }
@@ -702,12 +666,6 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -740,12 +698,6 @@
                     "Submission administration"
                 ],
                 "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
                     {
                         "$ref": "#/components/parameters/p.path"
                     }
@@ -794,12 +746,6 @@
                     "Submission administration"
                 ],
                 "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
                     {
                         "$ref": "#/components/parameters/p.path"
                     }
@@ -1361,12 +1307,6 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -1496,7 +1436,7 @@
                 },
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p.opt"
                     }
                 ]
             }
@@ -1625,12 +1565,6 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -1684,12 +1618,6 @@
                         "in": "query",
                         "required": true,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -1745,12 +1673,6 @@
                         "in": "query",
                         "required": false,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -1806,12 +1728,6 @@
                         "in": "query",
                         "required": false,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "requestBody": {
@@ -1881,12 +1797,6 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -1917,12 +1827,6 @@
                     "Reviews"
                 ],
                 "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
                     {
                         "$ref": "#/components/parameters/p.path"
                     }
@@ -1959,12 +1863,6 @@
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -1998,22 +1896,13 @@
                 ],
                 "parameters": [
                     {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/r"
+                    },
+                    {
                         "$ref": "#/components/parameters/redirect"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "name": "r",
-                        "in": "query",
-                        "required": true,
-                        "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -2065,13 +1954,7 @@
                         "$ref": "#/components/parameters/p.path"
                     },
                     {
-                        "$ref": "#/components/parameters/redirect"
-                    },
-                    {
-                        "name": "r",
-                        "in": "query",
-                        "required": true,
-                        "schema": {}
+                        "$ref": "#/components/parameters/r"
                     },
                     {
                         "name": "email",
@@ -2080,10 +1963,7 @@
                         "schema": {}
                     },
                     {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/redirect"
                     }
                 ],
                 "responses": {
@@ -2132,22 +2012,13 @@
                 ],
                 "parameters": [
                     {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "$ref": "#/components/parameters/r"
+                    },
+                    {
                         "$ref": "#/components/parameters/redirect"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "name": "r",
-                        "in": "query",
-                        "required": true,
-                        "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "requestBody": {
@@ -2219,12 +2090,6 @@
                         "in": "query",
                         "required": false,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "requestBody": {
@@ -2297,16 +2162,7 @@
                         "$ref": "#/components/parameters/p.path"
                     },
                     {
-                        "name": "r",
-                        "in": "query",
-                        "required": true,
-                        "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/r"
                     }
                 ],
                 "responses": {
@@ -2352,16 +2208,7 @@
                         "$ref": "#/components/parameters/p.path"
                     },
                     {
-                        "name": "r",
-                        "in": "query",
-                        "required": true,
-                        "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
+                        "$ref": "#/components/parameters/r"
                     }
                 ],
                 "requestBody": {
@@ -2487,12 +2334,6 @@
                         "in": "query",
                         "required": true,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "responses": {
@@ -2553,12 +2394,6 @@
                         "in": "query",
                         "required": false,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "requestBody": {
@@ -2683,7 +2518,7 @@
                 },
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p.opt"
                     }
                 ]
             }
@@ -2707,7 +2542,7 @@
                         "schema": {}
                     },
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "requestBody": {
@@ -2868,7 +2703,7 @@
                         "schema": {}
                     },
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "responses": {
@@ -3015,7 +2850,7 @@
                 },
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p.opt"
                     }
                 ]
             }
@@ -3090,12 +2925,6 @@
                         "in": "query",
                         "required": false,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.path"
                     }
                 ],
                 "requestBody": {
@@ -3166,10 +2995,7 @@
                         "schema": {}
                     },
                     {
-                        "name": "r",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
+                        "$ref": "#/components/parameters/r.opt"
                     },
                     {
                         "name": "email",
@@ -3226,7 +3052,7 @@
                         "schema": {}
                     },
                     {
-                        "$ref": "#/components/parameters/p"
+                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "responses": {
@@ -4040,11 +3866,36 @@
                 "schema": {
                     "$ref": "#/components/schemas/pid"
                 }
+            },
+            "r": {
+                "name": "r",
+                "in": "query",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/rid"
+                }
+            },
+            "p.opt": {
+                "name": "p",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/pid"
+                }
+            },
+            "r.opt": {
+                "name": "r",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/rid"
+                }
             }
         },
         "schemas": {
             "pid": {
                 "type": "integer",
+                "description": "Submission ID",
                 "minimum": 1
             },
             "message": {
@@ -4112,6 +3963,10 @@
                         "type": "integer"
                     }
                 }
+            },
+            "rid": {
+                "type": "integer",
+                "description": "Review ID"
             }
         }
     },
