@@ -165,11 +165,27 @@
   },
   {
     "name": "comment", "get": true, "merge": true,
-    "tags": ["Comments"], "order": 0
+    "tags": ["Comments"], "order": 0,
+    "parameter_info": {"content": {"type": "boolean", "description": "False omits comment content from response"}},
+    "response_info": {"comment": {"$ref": "#/components/schemas/comment"},
+      "comments": {"type": "list", "items": {"$ref": "#/components/schemas/comment"}}}
   },
   {
     "name": "comment", "post": true, "merge": true,
-    "tags": ["Comments"], "order": 0
+    "tags": ["Comments"], "order": 0,
+    "parameter_info": {"override": {"type": "boolean"},
+      "delete": {"type": "boolean"},
+      "text": {"type": "string"},
+      "tags": {"type": "string"},
+      "topic": {"$ref": "#/components/schemas/comment_topic"},
+      "visibility": {"$ref": "#/components/schemas/comment_visibility"},
+      "response": {"type": "string"},
+      "ready": {"type": "boolean"},
+      "draft": {"type": "boolean"},
+      "blind": {"type": "boolean"},
+      "by_author": {"type": "boolean"},
+      "review_token": {"type": "string"}},
+    "response_info": {"comment": {"$ref": "#/components/schemas/comment"}}
   },
   {
     "name": "mentioncompletion", "get": true, "merge": true,

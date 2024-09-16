@@ -3,7 +3,7 @@
     "info": {
         "title": "HotCRP",
         "version": "0.1",
-        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\n\nWe welcome [pull requests](https://github.com/kohler/hotcrp/pulls) that fill\nout this documentation. To request documentation for an API method, please\nopen a [GitHub issue](https://github.com/kohler/hotcrp/issues).\n",
+        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\n\nWe welcome [pull requests](https://github.com/kohler/hotcrp/pulls) that fill\nout this documentation. To request documentation for an API method, please\nopen a [GitHub issue](https://github.com/kohler/hotcrp/issues).\n\n## Basics\n\nHotCRP reads parameters using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),\neither in query strings or in the request body. Complex requests either use\nstructured keys, such as `named_search/1/q`, or, occasionally, JSON encoding.\n`multipart/form-data` is used for requests that include file data.\n\nThe `p` parameter, which defines a submission ID, can appear either in the\nquery string or immediately following `api/` in the query path.\n`api/comment?p=1` and `api/1/comment` are the same API call.\n\nResponses are formatted as JSON.\n",
         "summary": "HotCRP conference management software API"
     },
     "paths": {
@@ -144,6 +144,7 @@
         },
         "/upload": {
             "post": {
+                "operationId": "upload",
                 "tags": [
                     "Documents"
                 ],
@@ -195,18 +196,10 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "size": {
-                                        "schema": {}
-                                    },
-                                    "mimetype": {
-                                        "schema": {}
-                                    },
-                                    "filename": {
-                                        "schema": {}
-                                    },
-                                    "blob": {
-                                        "schema": {}
-                                    }
+                                    "size": {},
+                                    "mimetype": {},
+                                    "filename": {},
+                                    "blob": {}
                                 }
                             }
                         }
@@ -254,7 +247,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "/upload"
             }
         },
         "/assign": {
@@ -277,9 +271,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "assignments": {
-                                        "schema": {}
-                                    }
+                                    "assignments": {}
                                 },
                                 "required": [
                                     "assignments"
@@ -377,9 +369,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "decision": {
-                                        "schema": {}
-                                    }
+                                    "decision": {}
                                 },
                                 "required": [
                                     "decision"
@@ -493,9 +483,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "lead": {
-                                        "schema": {}
-                                    }
+                                    "lead": {}
                                 },
                                 "required": [
                                     "lead"
@@ -609,9 +597,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "manager": {
-                                        "schema": {}
-                                    }
+                                    "manager": {}
                                 },
                                 "required": [
                                     "manager"
@@ -759,9 +745,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "shepherd": {
-                                        "schema": {}
-                                    }
+                                    "shepherd": {}
                                 },
                                 "required": [
                                     "shepherd"
@@ -1245,9 +1229,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "display": {
-                                        "schema": {}
-                                    }
+                                    "display": {}
                                 },
                                 "required": [
                                     "display"
@@ -1372,21 +1354,11 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "tags": {
-                                        "schema": {}
-                                    },
-                                    "addtags": {
-                                        "schema": {}
-                                    },
-                                    "deltags": {
-                                        "schema": {}
-                                    },
-                                    "tagassignment": {
-                                        "schema": {}
-                                    },
-                                    "search": {
-                                        "schema": {}
-                                    }
+                                    "tags": {},
+                                    "addtags": {},
+                                    "deltags": {},
+                                    "tagassignment": {},
+                                    "search": {}
                                 }
                             }
                         }
@@ -1739,9 +1711,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "pref": {
-                                        "schema": {}
-                                    }
+                                    "pref": {}
                                 },
                                 "required": [
                                     "pref"
@@ -2030,9 +2000,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "reason": {
-                                        "schema": {}
-                                    }
+                                    "reason": {}
                                 }
                             }
                         }
@@ -2101,27 +2069,13 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "email": {
-                                        "schema": {}
-                                    },
-                                    "given_name": {
-                                        "schema": {}
-                                    },
-                                    "family_name": {
-                                        "schema": {}
-                                    },
-                                    "name": {
-                                        "schema": {}
-                                    },
-                                    "affiliation": {
-                                        "schema": {}
-                                    },
-                                    "override": {
-                                        "schema": {}
-                                    },
-                                    "reason": {
-                                        "schema": {}
-                                    }
+                                    "email": {},
+                                    "given_name": {},
+                                    "family_name": {},
+                                    "name": {},
+                                    "affiliation": {},
+                                    "override": {},
+                                    "reason": {}
                                 },
                                 "required": [
                                     "email"
@@ -2220,9 +2174,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "user_rating": {
-                                        "schema": {}
-                                    }
+                                    "user_rating": {}
                                 },
                                 "required": [
                                     "user_rating"
@@ -2338,7 +2290,10 @@
                         "name": "content",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean",
+                            "description": "False omits comment content from response"
+                        }
                     }
                 ],
                 "responses": {
@@ -2354,7 +2309,15 @@
                                         {
                                             "type": "object",
                                             "properties": {
-                                                "comment": {}
+                                                "comment": {
+                                                    "$ref": "#/components/schemas/comment"
+                                                },
+                                                "comments": {
+                                                    "type": "list",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/comment"
+                                                    }
+                                                }
                                             }
                                         }
                                     ]
@@ -2372,7 +2335,9 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "Return the JSON representation of a comment.\n\nThe `c` parameter specifies the comment to return. If the comment exists and\nthe user can view it, it will be returned in the `comment` component of the\nresponse. Otherwise, an error response is returned.\n\nIf `c` is omitted, all viewable comments are returned in a `comments` list.\n\n\n",
+                "summary": "/{p}/comment"
             },
             "post": {
                 "tags": [
@@ -2389,13 +2354,17 @@
                         "name": "override",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean"
+                        }
                     },
                     {
                         "name": "delete",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -2406,37 +2375,35 @@
                                 "type": "object",
                                 "properties": {
                                     "text": {
-                                        "schema": {}
+                                        "type": "string"
                                     },
-                                    "response": {
-                                        "schema": {}
-                                    },
-                                    "ready": {
-                                        "schema": {}
+                                    "attachment": {},
+                                    "tags": {
+                                        "type": "string"
                                     },
                                     "topic": {
-                                        "schema": {}
-                                    },
-                                    "draft": {
-                                        "schema": {}
-                                    },
-                                    "blind": {
-                                        "schema": {}
-                                    },
-                                    "tags": {
-                                        "schema": {}
+                                        "$ref": "#/components/schemas/comment_topic"
                                     },
                                     "visibility": {
-                                        "schema": {}
+                                        "$ref": "#/components/schemas/comment_visibility"
                                     },
-                                    "attachment": {
-                                        "schema": {}
+                                    "ready": {
+                                        "type": "boolean"
+                                    },
+                                    "draft": {
+                                        "type": "boolean"
+                                    },
+                                    "blind": {
+                                        "type": "boolean"
+                                    },
+                                    "response": {
+                                        "type": "string"
                                     },
                                     "by_author": {
-                                        "schema": {}
+                                        "type": "boolean"
                                     },
                                     "review_token": {
-                                        "schema": {}
+                                        "type": "string"
                                     }
                                 }
                             }
@@ -2456,7 +2423,9 @@
                                         {
                                             "type": "object",
                                             "properties": {
-                                                "comment": {},
+                                                "comment": {
+                                                    "$ref": "#/components/schemas/comment"
+                                                },
                                                 "conflict": {}
                                             }
                                         }
@@ -2475,7 +2444,9 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "Create, modify, or delete a comment.\n\nThe `c` parameter specifies the comment to modify. It can be a numeric comment\nID; `new`, to create a new comment; or `response` (or a compound like\n`R2response`), to create or modify a named response.\n\nSetting `delete=1` deletes the specified comment, and the response does not\ncontain a `comment` component. Otherwise the comment is created or modified,\nand the response `comment` component contains the new comment.\n\nComment attachments may be uploaded as files (requiring a request body in\n`multipart/form-data` encoding), or using the [upload API](#operation/upload).\nTo upload a single new attachment:\n\n* Set `attachment:1` to `new`\n* Either:\n\t* Set `attachment:1:file` as a uploaded file containing the relevant data\n\t* Or use the [upload API](#operation/upload) to upload the file,\n\t  and supply the upload token in `attachment:1:upload`\n\nTo upload multiple attachments, number them sequentially (`attachment:2`,\n`attachment:3`, and so forth). To delete an existing attachment, supply its\n`docid` in `attachment:N`, and set `attachment:N:delete` to 1.\n",
+                "summary": "/{p}/comment"
             }
         },
         "/mentioncompletion": {
@@ -2554,9 +2525,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "hotlist-info": {
-                                        "schema": {}
-                                    }
+                                    "hotlist-info": {}
                                 }
                             }
                         }
@@ -2627,15 +2596,9 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "stopall": {
-                                        "schema": {}
-                                    },
-                                    "tr": {
-                                        "schema": {}
-                                    },
-                                    "has_tr": {
-                                        "schema": {}
-                                    }
+                                    "stopall": {},
+                                    "tr": {},
+                                    "has_tr": {}
                                 }
                             }
                         }
@@ -2806,18 +2769,10 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "accept": {
-                                        "schema": {}
-                                    },
-                                    "clickthrough_id": {
-                                        "schema": {}
-                                    },
-                                    "clickthrough_type": {
-                                        "schema": {}
-                                    },
-                                    "clickthrough_time": {
-                                        "schema": {}
-                                    }
+                                    "accept": {},
+                                    "clickthrough_id": {},
+                                    "clickthrough_type": {},
+                                    "clickthrough_time": {}
                                 },
                                 "required": [
                                     "clickthrough_id",
@@ -2936,9 +2891,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "following": {
-                                        "schema": {}
-                                    }
+                                    "following": {}
                                 },
                                 "required": [
                                     "following"
@@ -3269,9 +3222,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "formula": {
-                                        "schema": {}
-                                    }
+                                    "formula": {}
                                 },
                                 "required": [
                                     "formula"
@@ -3337,9 +3288,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "settings": {
-                                        "schema": {}
-                                    }
+                                    "settings": {}
                                 }
                             }
                         }
@@ -3398,9 +3347,7 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "settings": {
-                                        "schema": {}
-                                    }
+                                    "settings": {}
                                 }
                             }
                         }
@@ -3634,21 +3581,11 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "error": {
-                                        "schema": {}
-                                    },
-                                    "url": {
-                                        "schema": {}
-                                    },
-                                    "lineno": {
-                                        "schema": {}
-                                    },
-                                    "colno": {
-                                        "schema": {}
-                                    },
-                                    "stack": {
-                                        "schema": {}
-                                    }
+                                    "error": {},
+                                    "url": {},
+                                    "lineno": {},
+                                    "colno": {},
+                                    "stack": {}
                                 },
                                 "required": [
                                     "error"
@@ -3985,12 +3922,154 @@
                 }
             },
             "rid": {
-                "type": "integer",
+                "oneOf": [
+                    {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    {
+                        "type": "string"
+                    }
+                ],
                 "description": "Review ID"
             },
             "cid": {
-                "type": "integer",
+                "oneOf": [
+                    {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    {
+                        "type": "string",
+                        "examples": [
+                            "new",
+                            "response",
+                            "R2response"
+                        ]
+                    }
+                ],
                 "description": "Comment ID"
+            },
+            "comment_topic": {
+                "type": "string",
+                "enum": [
+                    "paper",
+                    "rev",
+                    "dec"
+                ]
+            },
+            "comment_visibility": {
+                "type": "string",
+                "enum": [
+                    "admin",
+                    "pc",
+                    "rev",
+                    "au"
+                ]
+            },
+            "comment": {
+                "type": "object",
+                "required": [
+                    "object",
+                    "pid",
+                    "cid"
+                ],
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "const": "comment"
+                    },
+                    "pid": {
+                        "$ref": "#/components/schemas/pid"
+                    },
+                    "cid": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "ordinal": {
+                        "type": "string"
+                    },
+                    "editable": {
+                        "type": "boolean"
+                    },
+                    "viewer_owned": {
+                        "type": "boolean"
+                    },
+                    "visibility": {
+                        "$ref": "#/components/schemas/comment_visibility"
+                    },
+                    "topic": {
+                        "$ref": "#/components/schemas/comment_topic"
+                    },
+                    "blind": {
+                        "type": "boolean"
+                    },
+                    "draft": {
+                        "type": "boolean"
+                    },
+                    "collapsed": {
+                        "type": "boolean"
+                    },
+                    "response": {
+                        "type": "string"
+                    },
+                    "author_editable": {
+                        "type": "boolean"
+                    },
+                    "by_author": {
+                        "type": "boolean"
+                    },
+                    "by_shepherd": {
+                        "type": "boolean"
+                    },
+                    "format": {
+                        "type": "integer"
+                    },
+                    "review_token": {
+                        "type": "string"
+                    },
+                    "tags": {
+                        "type": "string"
+                    },
+                    "color_classes": {
+                        "type": "string"
+                    },
+                    "author": {
+                        "type": "string"
+                    },
+                    "author_email": {
+                        "type": "string"
+                    },
+                    "author_hidden": {
+                        "type": "boolean"
+                    },
+                    "author_pseudonym": {
+                        "type": "string"
+                    },
+                    "author_pseudonymous": {
+                        "type": "boolean"
+                    },
+                    "modified_at": {
+                        "type": "int"
+                    },
+                    "modified_at_obscured": {
+                        "type": "boolean"
+                    },
+                    "modified_at_text": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "docs": {
+                        "type": "list",
+                        "items": {}
+                    },
+                    "word_count": {
+                        "type": "int"
+                    }
+                },
+                "description": "Comment representation"
             }
         },
         "securitySchemes": {
@@ -4005,13 +4084,7 @@
                 "name": "hotcrpsession",
                 "description": "Web sessions use a cookie. The name of the cookie varies by installation; `hotcrpcookie` is used on hotcrp.com. Operations other than GET and HEAD also require a `post` query parameter"
             }
-        },
-        "security": [
-            {
-                "apiToken": [],
-                "session": []
-            }
-        ]
+        }
     },
     "tags": [
         {
@@ -4036,7 +4109,8 @@
             "name": "Reviews"
         },
         {
-            "name": "Comments"
+            "name": "Comments",
+            "description": "These endpoints query and modify submission comments.\n\nEach comment has a *visibility* and a *topic* (which in the UI is called a\n*thread*). These values control who can see the comment.\n\nThe default comment visibility is `\"rev\"`, which makes the comment visible to\nPC and external reviewers. Other values are `\"admin\"` (visible only to\nsubmission administrators and the comment author), `\"pc\"` (visible to PC\nreviewers, but not external reviewers), and `\"au\"` (visible to authors and\nreviewers).\n\nThe default comment topic is `\"rev\"`, the review thread. Comments on the\nreview thread are visible to users who can see reviews; if you can’t see\nreviews, you can’t see the review thread. Other comment topics are `\"paper\"`,\nthe submission thread (visible to anyone who can see the submission), and\n`\"dec\"`, the decision thread (visible to users who can see the submission’s\ndecision).\n\n\n"
         },
         {
             "name": "Meeting tracker"
@@ -4061,6 +4135,12 @@
         },
         {
             "name": "Session"
+        }
+    ],
+    "security": [
+        {
+            "apiToken": [],
+            "session": []
         }
     ]
 }

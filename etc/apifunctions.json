@@ -42,13 +42,13 @@
         "name": "comment", "get": true, "paper": true,
         "function": "Comment_API::run",
         "parameters": "?c ?content",
-        "response": "?comment",
+        "response": "?comment ?comments",
         "response_deprecated": "cmt"
     },
     {
         "name": "comment", "post": true, "paper": true,
         "function": "Comment_API::run",
-        "parameters": "c ?override ?=text ?=response ?=ready ?=topic ?=draft ?=blind ?=tags ?=visibility ?=:attachment ?=by_author ?=review_token ?delete",
+        "parameters": "c ?override ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=ready ?=draft ?=blind ?=response ?=by_author ?=review_token ?delete",
         "response": "?comment ?conflict",
         "response_deprecated": "cmt"
     },

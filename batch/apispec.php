@@ -39,6 +39,8 @@ class APISpec_Batch {
     /** @var bool */
     private $override_ref;
     /** @var bool */
+    private $override_param;
+    /** @var bool */
     private $override_tags;
     /** @var bool */
     private $override_schema;
@@ -101,6 +103,7 @@ class APISpec_Batch {
         }
 
         $this->override_ref = isset($arg["override-ref"]);
+        $this->override_param = isset($arg["override-param"]);
         $this->override_tags = isset($arg["override-tags"]);
         $this->override_schema = isset($arg["override-schema"]);
         $this->override_description = !isset($arg["no-override-description"]);
@@ -189,7 +192,20 @@ class APISpec_Batch {
 
         // erase unwanted keys
         foreach ($this->paths as $pj) {
+            foreach ($pj as $xj) {
+                if (!is_object($xj)) {
+                    continue;
+                }
+                if ($xj->summary === $pj->__path
+                    && !isset($xj->description)
+                    && !isset($xj->operationId)) {
+                    unset($xj->summary);
+                }
+            }
             unset($pj->__path);
+        }
+        foreach ($this->j->tags as $tj) {
+            unset($tj->summary);
         }
 
         // print
@@ -291,7 +307,12 @@ class APISpec_Batch {
         }
         $lmethod = strtolower($method);
         $xj = $pathj->$lmethod = $pathj->$lmethod ?? (object) [];
-        $this->setj->paths->$path->$lmethod = true;
+        if (!isset($this->setj->paths->$path->$lmethod)) {
+            if ($this->override_description || ($xj->summary ?? "") === "") {
+                $xj->summary = $path;
+            }
+            $this->setj->paths->$path->$lmethod = true;
+        }
         $this->expand_metadata($xj, $uf, "{$lmethod} {$path}");
         $this->expand_request($xj, $known, $uf, "{$path}.{$lmethod}");
         $this->expand_response($xj, $uf);
@@ -332,13 +353,14 @@ class APISpec_Batch {
         }
         $xtp = new XtParams($this->conf, null);
         $dj = $xtp->search_name($this->description_map, $name);
-        if ($dj
-            && isset($dj->summary)
+        if (!$dj) {
+            return;
+        }
+        if (isset($dj->summary)
             && ($this->override_description || ($xj->summary ?? "") === "")) {
             $xj->summary = $dj->summary;
         }
-        if ($dj
-            && isset($dj->description)
+        if (isset($dj->description)
             && ($this->override_description || ($xj->description ?? "") === "")) {
             $xj->description = $dj->description;
         }
@@ -361,12 +383,18 @@ class APISpec_Batch {
                 ];
             } else if ($name === "rid") {
                 $nj = (object) [
-                    "type" => "integer",
+                    "oneOf" => [
+                        (object) ["type" => "integer", "minimum" => 1],
+                        (object) ["type" => "string"]
+                    ],
                     "description" => "Review ID"
                 ];
             } else if ($name === "cid") {
                 $nj = (object) [
-                    "type" => "integer",
+                    "oneOf" => [
+                        (object) ["type" => "integer", "minimum" => 1],
+                        (object) ["type" => "string", "examples" => ["new", "response", "R2response"]]
+                    ],
                     "description" => "Comment ID"
                 ];
             } else if ($name === "ok") {
@@ -507,16 +535,16 @@ class APISpec_Batch {
             } else if ($name === "redirect" && $f === 0) {
                 $params["redirect"] = $this->resolve_common_param("redirect");
             } else if (($f & (self::F_BODY | self::F_FILE)) === 0) {
+                $ps = $uf->parameter_info->$name ?? null;
                 $params[$name] = (object) [
                     "name" => $name,
                     "in" => "query",
                     "required" => ($f & self::F_REQUIRED) !== 0,
-                    "schema" => (object) []
+                    "schema" => $ps ?? (object) []
                 ];
             } else {
-                $bprop[$name] = (object) [
-                    "schema" => (object) []
-                ];
+                $ps = $uf->parameter_info->$name ?? null;
+                $bprop[$name] = $ps ?? (object) [];
                 if (($f & self::F_REQUIRED) !== 0) {
                     $breq[] = $name;
                 }
@@ -526,59 +554,75 @@ class APISpec_Batch {
             }
         }
         if (!empty($params)) {
-            $x->parameters = $x->parameters ?? [];
-            $xparams = [];
-            foreach ($x->parameters as $i => $pj) {
-                if (isset($pj->name) && is_string($pj->name)) {
-                    $xparams[$pj->name] = $i;
-                } else if (isset($pj->{"\$ref"}) && is_string($pj->{"\$ref"})
-                           && preg_match('/\A\#\/components\/parameters\/([^.]*)/', $pj->{"\$ref"}, $m)) {
-                    $xparams[$m[1]] = $i;
-                }
+            $this->apply_parameters($x, $params, $path);
+        }
+        if (!empty($bprop)) {
+            $rbj = $x->requestBody = $x->requestBody ?? (object) ["description" => ""];
+            $cj = $rbj->content = $rbj->content ?? (object) [];
+            $bodyj = $cj->{"multipart/form-data"}
+                ?? $cj->{"application/x-www-form-urlencoded"}
+                ?? (object) [];
+            unset($cj->{"multipart/form-data"}, $cj->{"application/x-www-form-urlencoded"}, $cj->schema);
+            $formtype = $has_file ? "multipart/form-data" : "application/x-www-form-urlencoded";
+            $cj->{$formtype} = $bodyj;
+            $xbschema = $bodyj->schema = $bodyj->schema ?? (object) [];
+            $xbschema->type = "object";
+            $xbschema->properties = $xbschema->properties ?? (object) [];
+            $this->apply_body_parameters($xbschema->properties, $bprop, $path);
+            if (!empty($breq)) {
+                $xbschema->required = $breq;
+            } else {
+                unset($xbschema->required);
             }
-            foreach ($params as $n => $npj) {
-                $i = $xparams[$n] ?? null;
-                if ($i === null) {
-                    $x->parameters[] = $npj;
-                    continue;
+        }
+    }
+
+    private function apply_parameters($x, $params, $path) {
+        $x->parameters = $x->parameters ?? [];
+        $xparams = [];
+        foreach ($x->parameters as $i => $pj) {
+            if (isset($pj->name) && is_string($pj->name)) {
+                $xparams[$pj->name] = $i;
+            } else if (isset($pj->{"\$ref"}) && is_string($pj->{"\$ref"})
+                       && preg_match('/\A\#\/components\/parameters\/([^.]*)/', $pj->{"\$ref"}, $m)) {
+                $xparams[$m[1]] = $i;
+            }
+        }
+        foreach ($params as $n => $npj) {
+            $i = $xparams[$n] ?? null;
+            if ($i === null) {
+                $x->parameters[] = $npj;
+                continue;
+            }
+            $xpj = $x->parameters[$i];
+            if ($this->override_param || ($this->override_ref && isset($npj->{"\$ref"}))) {
+                $x->parameters[$i] = $npj;
+            } else if (isset($xpj->{"\$ref"}) !== isset($npj->{"\$ref"})) {
+                fwrite(STDERR, "{$path}.param[{$n}]: \$ref status differs\n");
+            } else if (isset($xpj->{"\$ref"})) {
+                if ($xpj->{"\$ref"} !== $npj->{"\$ref"}) {
+                    fwrite(STDERR, "{$path}.param[{$n}]: \$ref destination differs\n");
                 }
-                $xpj = $x->parameters[$i];
-                if ($this->override_ref && isset($npj->{"\$ref"})) {
-                    $x->parameters[$i] = $npj;
-                } else if (isset($xpj->{"\$ref"}) !== isset($npj->{"\$ref"})) {
-                    fwrite(STDERR, "{$path}.param[{$n}]: \$ref status differs\n");
-                } else if (isset($xpj->{"\$ref"})) {
-                    if ($xpj->{"\$ref"} !== $npj->{"\$ref"}) {
-                        fwrite(STDERR, "{$path}.param[{$n}]: \$ref destination differs\n");
-                    }
-                } else {
-                    foreach ((array) $npj as $k => $v) {
-                        if (!isset($xpj->$k)) {
-                            $xpj->$k = $v;
-                        } else if (is_scalar($v) && $xpj->$k !== $v) {
-                            fwrite(STDERR, "{$path}.param[{$n}]: {$k} differs\n");
-                        }
+            } else {
+                foreach ((array) $npj as $k => $v) {
+                    if (!isset($xpj->$k)) {
+                        $xpj->$k = $v;
+                    } else if (is_scalar($v) && $xpj->$k !== $v) {
+                        fwrite(STDERR, "{$path}.param[{$n}]: {$k} differs\n");
                     }
                 }
             }
         }
-        if (!empty($bprop)) {
-            $schema = (object) [
-                "type" => "object",
-                "properties" => $bprop
-            ];
-            if (!empty($breq)) {
-                $schema->required = $breq;
+    }
+
+    private function apply_body_parameters($x, $bprop, $path) {
+        foreach ($bprop as $n => $npj) {
+            $xpj = $x->{$n} ?? null;
+            if ($xpj === null
+                || $this->override_param
+                || ($this->override_ref && isset($npj->{"\$ref"}))) {
+                $x->{$n} = $npj;
             }
-            $formtype = $has_file ? "multipart/form-data" : "application/x-www-form-urlencoded";
-            $x->requestBody = (object) [
-                "description" => "",
-                "content" => (object) [
-                    $formtype => (object) [
-                        "schema" => (object) $schema
-                    ]
-                ]
-            ];
         }
     }
 
@@ -603,7 +647,8 @@ class APISpec_Batch {
             if ($name === "*") {
                 // skip
             } else {
-                $bprop[$name] = (object) [];
+                $ps = $uf->response_info->$name ?? null;
+                $bprop[$name] = $ps ?? (object) [];
                 if ($required) {
                     $breq[] = $name;
                 }
@@ -702,6 +747,7 @@ class APISpec_Batch {
             "x,no-extensions Ignore extensions",
             "i:,input: =FILE Modify existing specification in FILE",
             "override-ref Overwrite conflicting \$refs in input",
+            "override-param",
             "override-tags",
             "override-schema",
             "no-override-description",
