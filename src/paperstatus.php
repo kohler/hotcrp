@@ -1213,7 +1213,8 @@ class PaperStatus extends MessageSet {
         // don't save if transaction required
         if (isset($pj->status->if_unmodified_since)
             && $pj->status->if_unmodified_since < $this->prow->timeModified) {
-            $this->estop_at("status:if_unmodified_since", $this->_("<5><strong>Edit conflict</strong>: You were editing an old version of the {submission}, so your changes have not been saved."));
+            $this->estop_at("status:if_unmodified_since", $this->_("<5><strong>Edit conflict</strong>: The {submission} changed since you last loaded this page"));
+            $this->inform_at("status:if_unmodified_since", $this->_("<0>Your changes were not saved, but you can check the form and save again."));
         }
 
         // don't save if not allowed

@@ -527,7 +527,8 @@ Ready\n";
             ]),
             Ht::hidden_default_submit("default", "");
         if ($rrow->reviewId) {
-            echo Ht::hidden("edit_version", ($rrow->reviewEditVersion ?? 0) + 1);
+            echo Ht::hidden("edit_version", ($rrow->reviewEditVersion ?? 0) + 1),
+                Ht::hidden("if_vtag_match", $rrow->reviewTime);
         }
         echo '<div class="revcard-head">';
 

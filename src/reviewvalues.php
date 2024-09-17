@@ -411,11 +411,11 @@ class ReviewValues extends MessageSet {
                 if (is_string($v)) {
                     $this->req["reviewerAffiliation"] = $v;
                 }
-            } else if ($k === "first" || $k === "firstName") {
+            } else if ($k === "given_name" || $k === "first" || $k === "firstName") {
                 if (is_string($v)) {
                     $this->req["reviewerFirst"] = simplify_whitespace($v);
                 }
-            } else if ($k === "last" || $k === "lastName") {
+            } else if ($k === "family_name" || $k === "last" || $k === "lastName") {
                 if (is_string($v)) {
                     $this->req["reviewerLast"] = simplify_whitespace($v);
                 }
@@ -515,6 +515,10 @@ class ReviewValues extends MessageSet {
                 }
             } else if ($k === "edit_version") {
                 $this->req[$k] = stoi($v) ?? -1;
+            } else if ($k === "if_vtag_match") {
+                if (ctype_digit($v)) {
+                    $this->req[$k] = intval($v);
+                }
             } else if (str_starts_with($k, "has_")) {
                 $hasreqs[] = substr($k, 4);
             } else if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))
@@ -723,7 +727,8 @@ class ReviewValues extends MessageSet {
         // version tag must match if provided
         if (isset($this->req["if_vtag_match"])
             && $this->req["if_vtag_match"] !== $rrow->reviewTime) {
-            $this->rmsg("if_vtag_match", "<5><strong>Edit conflict</strong>: You were editing an old version of the review, so your changes have not been saved", self::ERROR);
+            $this->rmsg("if_vtag_match", "<5><strong>Edit conflict</strong>: The review changed since you last loaded this page", self::ERROR);
+            $this->rmsg("if_vtag_match", "<0>Your changes were not saved, but you can check the form and save again.", self::INFORM);
             return false;
         }
 
