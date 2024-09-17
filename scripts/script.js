@@ -7043,9 +7043,9 @@ function cmt_render_form_prop(cj, cid, btnbox) {
 
         const evis = $e("div", "entry",
             $e("span", "select", evsel),
-            $e("p", "f-d text-break-line"));
+            $e("p", "f-d text-break-line hidden"));
         if (!cj.by_author && hotcrp.status.rev.blind && hotcrp.status.rev.blind !== true) {
-            evis.append($e("div", "visibility-au-blind checki",
+            evis.append($e("div", "checki",
                 $e("label", null,
                     $e("span", "checkc", $e("input", {type: "checkbox", name: "blind", value: 1})),
                     "Anonymous to authors")));
@@ -7053,7 +7053,10 @@ function cmt_render_form_prop(cj, cid, btnbox) {
         einfo.append($e("div", "entryi",
             $e("label", {for: cid + "-visibility"}, "Visibility"),
             evis));
+    }
 
+    // topic/thread
+    if (!cj.response) {
         const etsel = $e("select", {id: cid + "-thread", name: "topic"}),
             tlist = hotcrp.status.myperm.comment_topics || ["paper", "rev"];
         if (tlist.indexOf("paper") >= 0) {
@@ -7101,21 +7104,13 @@ function cmt_visibility_change() {
     const form = this.closest("form"),
         vis = form.elements.visibility,
         topic = form.elements.topic,
-        visentryi = vis.closest(".entryi"),
-        vishint = visentryi.querySelector(".f-d"),
-        blind = visentryi.querySelector(".visibility-au-blind"),
-        topichint = topic.closest(".entryi").querySelector(".f-d"),
-        is_paper = topic.value === "paper" && vis.value !== "admin",
-        would_auvis = is_paper
-            || hotcrp.status.myperm[topic.value === "dec" ? "some_author_can_view_decision" : "some_author_can_view_review"];
-    if (would_auvis) {
-        vis.firstChild.textContent = "Authors and reviewers";
-    } else {
-        vis.firstChild.textContent = "Authors (eventually) and reviewers";
-    }
-    if (vishint) {
-        var m = [];
-        if (vis.value === "au" && !form.elements.by_author) {
+        is_paper = topic && topic.value === "paper" && (!vis || vis.value !== "admin");
+    if (vis && vis.type === "select" && !form.elements.by_author) {
+        const vishint = vis.closest(".entryi").querySelector(".f-d"),
+            would_auvis = is_paper
+                || hotcrp.status.myperm[topic && topic.value === "dec" ? "some_author_can_view_decision" : "some_author_can_view_review"],
+            m = [];
+        if (vis.value === "au") {
             if (would_auvis) {
                 m.length && m.push("\n");
                 m.push($e("span", "is-diagnostic is-warning", "Authors will be notified immediately."));
@@ -7140,15 +7135,22 @@ function cmt_visibility_change() {
         }
         vishint.replaceChildren(...m);
         toggleClass(vishint, "hidden", m.length === 0);
-        if (!form.elements.by_author) {
-            if (vis.value === "au" && would_auvis) {
-                form.elements.bsubmit.textContent = "Save and notify authors";
-            } else {
-                form.elements.bsubmit.textContent = "Save";
-            }
+        if (would_auvis) {
+            vis.firstChild.textContent = "Authors and reviewers";
+        } else {
+            vis.firstChild.textContent = "Authors (eventually) and reviewers";
+        }
+        if (vis.value === "au" && would_auvis) {
+            form.elements.bsubmit.textContent = "Save and notify authors";
+        } else {
+            form.elements.bsubmit.textContent = "Save";
+        }
+        if (form.elements.blind) {
+            toggleClass(form.elements.blind.closest(".checki"), "hidden", vis.value !== "au");
         }
     }
-    if (topichint) {
+    if (topic) {
+        const topichint = topic.closest(".entryi").querySelector(".f-d");
         if (is_paper) {
             topichint.replaceChildren("The comment will appear even when reviews are hidden.");
         } else if (topic.value === "dec") {
@@ -7157,7 +7159,6 @@ function cmt_visibility_change() {
             topichint.replaceChildren("The comment will appear when reviews are visible.");
         }
     }
-    blind && toggleClass(blind, "hidden", vis.value !== "au");
 }
 
 function cmt_ready_change() {
