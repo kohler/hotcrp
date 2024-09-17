@@ -7230,7 +7230,7 @@ function cmt_start_edit(celt, cj) {
         .on("hotcrprenderpreview", cmt_render_preview)
         .autogrow();
 
-    var vis = cj.visibility
+    const vis = cj.visibility
         || last_visibility
         || (cj.by_author && "au")
         || (hotcrp.status.myperm.some_external_reviewer_can_view_comment === false && "pc")
@@ -7239,10 +7239,9 @@ function cmt_start_edit(celt, cj) {
         .attr("data-default-value", vis)
         .on("change", cmt_visibility_change);
 
-    const topic = cj.topic
-        || last_topic
-        || (document.querySelector(".revcard") ? "rev" : "paper");
-    if (topic !== "rev") {
+    const new_topic = last_topic || (document.querySelector(".revcard") ? "rev" : "paper"),
+        topic = cj.is_new ? new_topic : cj.topic || "rev";
+    if (topic !== "rev" || new_topic !== "rev") {
         fold(celt.querySelector(".cmteditinfo"), false, 4);
     }
     $(form.elements.topic).val(topic)
