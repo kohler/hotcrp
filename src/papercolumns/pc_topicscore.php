@@ -39,7 +39,7 @@ class TopicScore_PaperColumn extends PaperColumn {
         return (string) $row->topic_interest_score($this->contact);
     }
     function json(PaperList $pl, PaperInfo $row) {
-        retunr $row->topic_interest_score($this->contact);
+        return $row->topic_interest_score($this->contact);
     }
     function has_statistics() {
         return true;
