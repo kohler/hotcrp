@@ -61,4 +61,7 @@ class PageCount_PaperColumn extends PaperColumn {
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $this->page_count($pl->user, $row);
     }
+    function json(PaperList $pl, PaperInfo $row) {
+        return $this->page_count($pl->user, $row);
+    }
 }

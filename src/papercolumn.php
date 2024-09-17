@@ -151,6 +151,10 @@ class PaperColumn extends Column {
     function text(PaperList $pl, PaperInfo $row) {
         return "";
     }
+    /** @return mixed */
+    function json(PaperList $pl, PaperInfo $row) {
+        return null;
+    }
 
     /** @return bool */
     function has_statistics() {
@@ -175,6 +179,9 @@ class Id_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $row->paperId;
+    }
+    function json(PaperList $pl, PaperInfo $row) {
+        return $row->paperId;
     }
 }
 
@@ -247,12 +254,13 @@ class Title_PaperColumn extends PaperColumn {
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $collator = $a->conf->collator();
-        return $collator->compare($a->title, $b->title);
+        return $collator->compare($a->title(), $b->title());
     }
     function content(PaperList $pl, PaperInfo $row) {
-        if ($row->title !== "") {
+        $title = $row->title();
+        if ($title !== "") {
             $regex = $this->highlight ? $pl->search->field_highlighter("ti", $row->_search_group) : null;
-            $highlight_text = Text::highlight($row->title, $regex, $highlight_count);
+            $highlight_text = Text::highlight($title, $regex, $highlight_count);
         } else {
             $highlight_text = "[No title]";
             $highlight_count = 0;
@@ -260,7 +268,7 @@ class Title_PaperColumn extends PaperColumn {
 
         if (!$highlight_count && ($format = $row->title_format())) {
             $pl->need_render = true;
-            $th = htmlspecialchars($row->title);
+            $th = htmlspecialchars($title);
             $klass_extra = " need-format\" data-format=\"{$format}\" data-title=\"{$th}";
         } else {
             $klass_extra = "";
@@ -278,7 +286,10 @@ class Title_PaperColumn extends PaperColumn {
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $row->title;
+        return $row->title();
+    }
+    function json(PaperList $pl, PaperInfo $row) {
+        return $row->title();
     }
 }
 
@@ -620,6 +631,9 @@ class Abstract_PaperColumn extends PaperColumn {
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
+        return $row->abstract();
+    }
+    function json(PaperList $pl, PaperInfo $row) {
         return $row->abstract();
     }
 }

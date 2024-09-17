@@ -83,7 +83,7 @@
     {
         "name": "fieldhtml", "get": true,
         "function": "Search_API::fieldhtml",
-        "parameters": "f ?aufull ?session q ?t ?sort",
+        "parameters": "f ?aufull ?session q ?t ?sort ?qt",
         "response": "fields data ?stat ?classes ?attr"
     },
     {
@@ -251,7 +251,7 @@
     {
         "name": "search", "get": true,
         "function": "Search_API::search",
-        "parameters": "q t ?sort ?report ?scoresort",
+        "parameters": "q t ?sort ?report ?scoresort ?reviewer",
         "response": "ids groups hotlist search_params"
     },
     {

@@ -22,4 +22,7 @@ class Desirability_PaperColumn extends PaperColumn {
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $row->desirability();
     }
+    function json(PaperList $pl, PaperInfo $row) {
+        return $row->desirability();
+    }
 }
