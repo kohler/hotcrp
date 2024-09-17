@@ -649,11 +649,13 @@ class CommentInfo {
         // visibility, topic
         if ($this->commentId !== 0) {
             $cj["visibility"] = self::$visibility_map[$this->commentType & self::CTM_VIS];
-        }
-        if (($this->commentType & self::CTM_TOPIC) === self::CT_TOPIC_PAPER) {
-            $cj["topic"] = "paper";
-        } else if (($this->commentType & self::CTM_TOPIC) === self::CT_TOPIC_DECISION) {
-            $cj["topic"] = "dec";
+            if (($this->commentType & self::CTM_TOPIC) === self::CT_TOPIC_PAPER) {
+                $cj["topic"] = "paper";
+            } else if (($this->commentType & self::CTM_TOPIC) === self::CT_TOPIC_DECISION) {
+                $cj["topic"] = "dec";
+            } else {
+                $cj["topic"] = "rev";
+            }
         }
 
         // blindness, draftness, authorness, format
