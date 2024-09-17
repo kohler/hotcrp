@@ -289,10 +289,18 @@ procrastination_seq.label = function (dl) {
 };
 
 function max_procrastination_seq(ri, dl) {
-    var seq = [], i, dlx = Math.max.apply(null, dl);
-    for (i in ri)
-        if (ri[i][0] > 0)
-            seq.push((ri[i][0] - dlx) / 86400);
+    const now = now_sec();
+    let dlx;
+    for (const d of dl) {
+        if (dlx == null
+            || (d > now ? d < dlx || dlx < now : d > dlx))
+            dlx = d;
+    }
+    const seq = [];
+    for (const r of ri) {
+        if (r[0] > 0)
+            seq.push((r[0] - dlx) / 86400);
+    }
     seq.ntotal = ri.length;
     return seq;
 }
