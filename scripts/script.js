@@ -8079,9 +8079,28 @@ demand_load.make = function (executor) {
 };
 
 demand_load.pc = demand_load.make(function (resolve, reject) {
-    $.get(hoturl("api/pc", {p: siteinfo.paperid}), null, function (v) {
-        var pc = v && v.ok && v.pc;
+    $.get(hoturl("api/pc", {p: siteinfo.paperid, ui: 1}), null, function (v) {
+        const pc = v && v.ok ? v : null;
         (pc ? resolve : reject)(pc);
+    });
+});
+
+demand_load.pc_map = demand_load.make(function (resolve) {
+    demand_load.pc().then(function (v) {
+        v.umap = {};
+        v.pc_uids = [];
+        for (const u of v.pc) {
+            if (u.uid) {
+                v.umap[u.uid] = u;
+                v.pc_uids.push(u.uid);
+            }
+        }
+        for (const pid in v.p || {}) {
+            for (const u of v.p[pid].extrev || []) {
+                u.uid && (v.umap[u.uid] = u);
+            }
+        }
+        resolve(v);
     });
 });
 
@@ -8819,7 +8838,7 @@ hotcrp.suggest.add_builder("pc-tags", function (elt) {
     if (x && (m = x[0].match(/(?:^|\s)(#?)([^#\s]*)$/))) {
         n = x[1].match(/^(\S*)/);
         return demand_load.pc().then(function (pc) {
-            return make_suggestions(m[2], n[1])(pc.__tags__ || []);
+            return make_suggestions(m[2], n[1])(pc.tags || []);
         });
     }
 });
@@ -10891,12 +10910,12 @@ function pattrnear(e, attr) {
 
 function render_allpref() {
     var pctr = this;
-    demand_load.pc().then(function (pcs) {
+    demand_load.pc_map().then(function (pcs) {
         var allpref = pattrnear(pctr, "data-allpref") || "",
             atomre = /(\d+)([PT])(\S+)/g, t = [], m, pref, ul, i, e, u;
         while ((m = atomre.exec(allpref)) !== null) {
             pref = parseInt(m[3]);
-            t.push([m[2] === "P" ? pref : 0, pref, t.length, pcs[m[1]], m[2]]);
+            t.push([m[2] === "P" ? pref : 0, pref, t.length, pcs.umap[m[1]], m[2]]);
         }
         if (t.length === 0) {
             pctr.closest(".ple, .pl").replaceChildren();
@@ -13786,66 +13805,72 @@ $(".js-radio-focus").on("click keypress", "input, select", function () {
 function populate_pcselector() {
     const self = this;
     removeClass(self, "need-pcselector");
-    let optids = self.getAttribute("data-pcselector-options") || "*";
-    optids = optids.startsWith("[") ? JSON.parse(optids) : optids.split(/[\s,]+/);
-    let selected, selindex = -1;
+    let options = self.getAttribute("data-pcselector-options") || "*";
+    options = options.startsWith("[") ? JSON.parse(options) : options.split(/[\s,]+/);
+    let selected;
     if (self.hasAttribute("data-pcselector-selected")) {
         selected = self.getAttribute("data-pcselector-selected");
     } else {
         selected = self.getAttribute("data-default-value");
     }
 
-    demand_load.pc().then(function (pcs) {
-        let last_first = pcs.__sort__ === "last", used = {}, opt, p, curgroup = self;
+    demand_load.pc_map().then(function (pcs) {
+        const last_first = pcs.sort === "last", used = {}, optids = [];
+        let selindex = -1, noptions = 0;
 
-        for (let i = 0; i < optids.length; ++i) {
-            let cid = optids[i];
-            if (cid === "" || cid === "*") {
-                optids.splice.apply(optids, [i + 1, 0].concat(pcs.__order__));
-            } else if (cid === "assignable") {
-                optids.splice.apply(optids, [i + 1, 0].concat(pcs.__assignable__[siteinfo.paperid] || []));
-            } else if (cid === "selected") {
-                if (selected != null)
-                    optids.splice.apply(optids, [i + 1, 0, selected]);
-            } else if (cid === "extrev") {
-                let extrevs = pcs.__extrev__ ? pcs.__extrev__[siteinfo.paperid] : null;
-                if (extrevs && extrevs.length) {
-                    optids.splice.apply(optids, [i + 1, 0].concat(extrevs));
-                    optids.splice(i + 1 + extrevs.length, 0, "endgroup");
-                    curgroup = document.createElement("optgroup");
-                    curgroup.setAttribute("label", "External reviewers");
-                    self.appendChild(curgroup);
+        for (const opt of options) {
+            let want, mygroup = self;
+            if (opt === "" || opt === "*") {
+                want = pcs.pc_uids;
+            } else if (opt === "assignable") {
+                want = pcs.p[siteinfo.paperid].assignable;
+            } else if (opt === "selected") {
+                want = selected != null ? [selected] : [];
+            } else if (opt === "extrev") {
+                mygroup = document.createElement("optgroup");
+                mygroup.setAttribute("label", "External reviewers");
+                want = [];
+                for (const u of pcs.p[siteinfo.paperid].extrev || []) {
+                    want.push(u.uid);
                 }
-            } else if (cid === "endgroup") {
-                curgroup = self;
             } else {
-                cid = +cid;
+                want = [+opt || 0];
+            }
+            for (const uid of want) {
+                if (used[uid]) {
+                    continue;
+                }
+                const p = pcs.umap[uid];
                 let email, name;
-                if (!cid) {
-                    email = "none";
-                    name = optids[i];
-                    if (name === "" || name === 0 || name === "0")
-                        name = "None";
-                } else if ((p = pcs[cid])
-                           || (pcs.__other__ && (p = pcs.__other__[cid]))) {
+                if (p) {
                     email = p.email;
                     name = p.name;
                     if (last_first && p.lastpos) {
-                        var nameend = p.emailpos ? p.emailpos - 1 : name.length;
+                        const nameend = p.emailpos ? p.emailpos - 1 : name.length;
                         name = name.substring(p.lastpos, nameend) + ", " + name.substring(0, p.lastpos - 1) + name.substring(nameend);
+                    }
+                } else if (!uid) {
+                    email = "none";
+                    if (opt === "" || opt === 0 || opt === "0") {
+                        name = "None";
+                    } else {
+                        name = opt;
                     }
                 } else {
                     continue;
                 }
-                if (!used[email]) {
-                    used[email] = true;
-                    opt = document.createElement("option");
-                    opt.setAttribute("value", email);
-                    opt.text = name;
-                    curgroup.appendChild(opt);
-                    if (email === selected || (email !== "none" && cid == selected))
-                        selindex = self.options.length - 1;
+                used[uid] = true;
+                const e = document.createElement("option");
+                e.setAttribute("value", email);
+                e.text = name;
+                mygroup.appendChild(e);
+                if (email === selected || (uid && uid == selected)) {
+                    selindex = noptions;
                 }
+                ++noptions;
+            }
+            if (mygroup !== self && mygroup.firstChild) {
+                self.appendChild(mygroup);
             }
         }
 
@@ -13854,11 +13879,11 @@ function populate_pcselector() {
                 selindex = 0;
             } else {
                 opt = document.createElement("option");
-                const p = pcs[selected];
+                const p = pcs.umap[selected];
                 opt.setAttribute("value", p ? p.email : selected);
                 opt.text = p ? p.name + " (not assignable)" : "[removed from PC]";
                 self.appendChild(opt);
-                selindex = self.options.length - 1;
+                selindex = noptions;
             }
         }
         self.selectedIndex = selindex;

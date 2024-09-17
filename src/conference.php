@@ -4983,97 +4983,109 @@ class Conf {
         return count($args) == 2 ? $args : null;
     }
 
+    const PCJ_EMAIL = 0x1;
+    const PCJ_AFFILIATION = 0x2;
+    const PCJ_ORCID = 0x4;
+    const PCJ_UID = 0x8;
+    const PCJM_DEFAULT = 0x7;
+    const PCJM_UI = 0x9;
+
+    /** @param ?Contact $viewer
+     * @param Contact $user
+     * @param int $flags
+     * @return object */
+    private function user_json($viewer, $user, $flags) {
+        $name = $viewer ? $viewer->name_text_for($user) : Text::nameo($user, NAME_P);
+        if ($name === "" && ($flags & self::PCJ_EMAIL) !== 0) {
+            $name = $user->email;
+        }
+        $j = (object) ["name" => $name];
+        if (($flags & self::PCJ_EMAIL) !== 0) {
+            $j->email = $user->email;
+        }
+        if ($this->sort_by_last && $user->lastName !== "") {
+            if (strlen($user->lastName) !== strlen($name)) {
+                $j->lastpos = UnicodeHelper::utf16_strlen($user->firstName) + 1;
+            }
+            if (($user->nameAmbiguous ?? false) && $name !== "" && ($j->email ?? "") !== "") {
+                $j->emailpos = UnicodeHelper::utf16_strlen($name) + 1;
+            }
+        }
+        if (($flags & self::PCJ_AFFILIATION) !== 0) {
+            $j->affiliation = $user->affiliation;
+        }
+        if (($flags & self::PCJ_ORCID) !== 0 && ($orcid = $user->orcid())) {
+            $j->orcid = $orcid;
+        }
+        if (($flags & self::PCJ_UID) !== 0) {
+            $j->uid = $user->contactId;
+        }
+        return $j;
+    }
+
     /** @param Contact $viewer
-     * @param Contact $user */
-    private function pc_json_item($viewer, $user) {
-        $name = $viewer->name_text_for($user);
-        $j = (object) [
-            "name" => $name !== "" ? $name : $user->email,
-            "email" => $user->email
-        ];
+     * @param Contact $user
+     * @param int $flags
+     * @return object */
+    private function pc_json_item($viewer, $user, $flags) {
+        $j = $this->user_json($viewer, $user, $flags);
         if (($color_classes = $user->viewable_color_classes($viewer))) {
             $j->color_classes = $color_classes;
         }
-        if ($this->sort_by_last && $user->lastName !== "") {
-            self::pc_json_sort_by_last($j, $user);
+        if (($user->roles & Contact::ROLE_CHAIR) !== 0) {
+            $j->roles = "chair";
         }
         return $j;
     }
 
-    /** @param Contact $viewer
-     * @param ReviewInfo $rrow
-     * @return stdClass */
-    private function pc_json_reviewer_item($viewer, $rrow) {
-        $user = $rrow->reviewer();
-        $j = (object) [
-            "name" => Text::nameo($user, NAME_P),
-            "email" => $user->email
-        ];
-        if ($this->sort_by_last && $user->lastName !== "") {
-            self::pc_json_sort_by_last($j, $user);
+    /** @param int $flags
+     * @return array<string,mixed> */
+    function hotcrp_pc_json(Contact $viewer, $flags) {
+        if (!$viewer->isPC) {
+            $flags &= ~(self::PCJ_EMAIL | self::PCJ_UID);
         }
-        return $j;
-    }
-
-    /** @param Contact|ReviewInfo $r */
-    static private function pc_json_sort_by_last($j, $r) {
-        if (strlen($r->lastName) !== strlen($j->name)) {
-            $j->lastpos = UnicodeHelper::utf16_strlen($r->firstName) + 1;
-        }
-        if (($r->nameAmbiguous ?? false) && $j->name !== "" && $r->email !== "") {
-            $j->emailpos = UnicodeHelper::utf16_strlen($j->name) + 1;
-        }
-    }
-
-    /** @return array<string,mixed> */
-    function hotcrp_pc_json(Contact $viewer) {
-        $hpcj = $list = $otherj = [];
+        $pcj = $otherj = [];
         foreach ($this->pc_members() as $pcm) {
-            $hpcj[$pcm->contactId] = $this->pc_json_item($viewer, $pcm);
-            $list[] = $pcm->contactId;
+            $pcj[] = $this->pc_json_item($viewer, $pcm, $flags);
         }
-        $hpcj["__order__"] = $list;
+        $rj = ["ok" => true, "pc" => $pcj];
         if ($this->sort_by_last) {
-            $hpcj["__sort__"] = "last";
+            $rj["sort"] = "last";
         }
         if ($viewer->can_view_user_tags()) {
-            $hpcj["__tags__"] = $this->viewable_user_tags($viewer);
+            $rj["tags"] = $this->viewable_user_tags($viewer);
         }
-        if ($this->paper
-            && ($viewer->privChair || $viewer->allow_administer($this->paper))) {
-            $list = [];
+        if ($this->paper && $viewer->allow_administer($this->paper)) {
+            $assignable = $erlist = [];
             foreach ($this->pc_members() as $pcm) {
                 if ($pcm->pc_assignable($this->paper)) {
-                    $list[] = $pcm->contactId;
+                    $assignable[] = $pcm->contactId;
                 }
             }
-            $hpcj["__assignable__"] = [$this->paper->paperId => $list];
             if ($this->setting("extrev_shepherd")) {
                 $this->paper->ensure_reviewer_names();
-                $erlist = [];
                 foreach ($this->paper->reviews_as_display() as $rrow) {
-                    if ($rrow->reviewType == REVIEW_EXTERNAL
+                    if ($rrow->reviewType === REVIEW_EXTERNAL
                         && !$rrow->reviewToken
                         && !in_array($rrow->contactId, $erlist)) {
-                        $otherj[$rrow->contactId] = $this->pc_json_reviewer_item($viewer, $rrow);
-                        $erlist[] = $rrow->contactId;
+                        $erlist[] = $this->user_json(null, $rrow->reviewer(), $flags);
                     }
                 }
-                if (!empty($erlist)) {
-                    $hpcj["__extrev__"] = [$this->paper->paperId => $erlist];
-                }
             }
+            $pj = ["assignable" => $assignable];
+            if (!empty($erlist)) {
+                $pj["extrev"] = $erlist;
+            }
+            $rj["p"] = [$this->paper->paperId => $pj];
         }
-        if (!empty($otherj)) {
-            $hpcj["__other__"] = $otherj;
-        }
-        return $hpcj;
+        return (object) $rj;
     }
 
     function stash_hotcrp_pc(Contact $viewer, $always = false) {
         if (($always || !$this->opt("largePC"))
+            && $viewer->can_view_pc()
             && Ht::mark_stash("hotcrp_pc")) {
-            Ht::stash_script("hotcrp.demand_load.pc(" . json_encode_browser($this->hotcrp_pc_json($viewer)) . ");");
+            Ht::stash_script("hotcrp.demand_load.pc(" . json_encode_browser($this->hotcrp_pc_json($viewer, self::PCJM_UI)) . ");");
         }
     }
 

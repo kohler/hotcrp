@@ -189,7 +189,8 @@
     {
         "name": "pc", "get": true,
         "function": "PaperPC_API::pc_api",
-        "response": "pc"
+        "parameters": "?ui",
+        "response": "pc ?tags ?sort ?p"
     },
     {
         "name": "requestreview", "post": true, "paper": true,

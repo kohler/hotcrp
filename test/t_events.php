@@ -16,7 +16,7 @@ class Events_Tester {
         $evs = new PaperEvents($u_mgbaker);
         xassert_gt(count($evs->events(Conf::$now, 10)), 0);
 
-        $u_diot = $this->conf->checked_user_by_email("christophe.diot@sophia.inria.fr");
+        $u_diot = $this->conf->checked_user_by_email("ojuelegba@gmail.com");
         $evs = new PaperEvents($u_diot);
         foreach ($evs->events(Conf::$now, 10) as $x) {
             error_log(Conf::$now . " " . json_encode($x));

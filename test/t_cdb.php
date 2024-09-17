@@ -433,16 +433,17 @@ class Cdb_Tester {
     }
 
     function test_pc_json() {
-        $pc_json = $this->conf->hotcrp_pc_json($this->user_chair);
-        xassert_eqq($pc_json[$pc_json["__order__"][0]]->email, "anne1@dudfield.org");
+        $pc_json = $this->conf->hotcrp_pc_json($this->user_chair, Conf::PCJM_UI);
+        xassert_eqq($pc_json->pc[0]->email, "anne1@dudfield.org");
         $this->conf->sort_by_last = true;
         $this->conf->invalidate_caches(["pc" => true]);
-        $pc_json = $this->conf->hotcrp_pc_json($this->user_chair);
-        xassert_eqq($pc_json[$pc_json["__order__"][0]]->email, "mgbaker@cs.stanford.edu");
-        xassert_eqq($pc_json["12"]->email, "mgbaker@cs.stanford.edu");
-        xassert_eqq($pc_json["12"]->lastpos, 5);
-        xassert_eqq($pc_json["21"]->email, "vera@bombay.com");
-        xassert_eqq($pc_json["21"]->lastpos, 5);
+        $pc_json = $this->conf->hotcrp_pc_json($this->user_chair, Conf::PCJM_UI);
+        xassert_eqq($pc_json->pc[0]->email, "mgbaker@cs.stanford.edu");
+        xassert_eqq($pc_json->pc[0]->uid, 12);
+        xassert_eqq($pc_json->pc[0]->lastpos, 5);
+        xassert_eqq($pc_json->pc[5]->email, "vera@bombay.com");
+        xassert_eqq($pc_json->pc[5]->uid, 21);
+        xassert_eqq($pc_json->pc[5]->lastpos, 5);
     }
 
     function test_cdb_update() {

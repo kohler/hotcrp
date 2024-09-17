@@ -837,15 +837,14 @@ class ContactList {
             }
             return $t;
         case self::FIELD_EMAIL:
-            if ($this->user->isPC) {
-                $e = htmlspecialchars($row->email);
-                if (strpos($row->email, "@") === false) {
-                    return $e;
-                } else {
-                    return "<a href=\"mailto:$e\" class=\"q\">$e</a>";
-                }
-            } else {
+            if (!$this->user->isPC) {
                 return "";
+            }
+            $e = htmlspecialchars($row->email);
+            if (strpos($row->email, "@") === false) {
+                return $e;
+            } else {
+                return "<a href=\"mailto:{$e}\" class=\"q\">{$e}</a>";
             }
         case self::FIELD_AFFILIATION:
         case self::FIELD_AFFILIATION_ROW:
