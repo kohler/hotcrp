@@ -105,6 +105,7 @@ class ComponentSet {
         $this->reset_context();
     }
 
+    /** @return $this */
     function reset_context() {
         assert(empty($this->_ctxstack) && empty($this->_ctx->cleanup));
         $this->root = null;
@@ -112,6 +113,7 @@ class ComponentSet {
         $this->_callables = ["Conf" => $this->conf];
         $this->_next_section_class = $this->_section_class;
         $this->_section_closer = null;
+        return $this;
     }
 
     /** @return Contact */
