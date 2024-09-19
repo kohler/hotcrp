@@ -701,7 +701,7 @@ class PaperSearch extends MessageSet {
     /** @param string $str
      * @return string */
     static function escape_word($str) {
-        $pos = SearchSplitter::span_balanced_parens($str, 0, null, true);
+        $pos = SearchParser::span_balanced_parens($str, 0, null, true);
         if ($pos === strlen($str)) {
             return $str;
         } else {
@@ -750,7 +750,7 @@ class PaperSearch extends MessageSet {
             return null;
         }
         $scope = $scope ?? new SearchScope(0, strlen($str), null);
-        $splitter = new SearchSplitter($str, $scope->pos1, $scope->pos2);
+        $splitter = new SearchParser($str, $scope->pos1, $scope->pos2);
         return $this->_parse_atom($splitter->parse_expression(), $str, $scope, $depth);
     }
 
@@ -839,7 +839,7 @@ class PaperSearch extends MessageSet {
         if ($depth >= 512) {
             return "";
         }
-        $splitter = new SearchSplitter($str);
+        $splitter = new SearchParser($str);
         $sa = $splitter->parse_expression(null, $type === "all" ? "SPACE" : "SPACEOR");
         if ($type === "none" && $sa) {
             $sa = SearchExpr::combine("not", $sa);
@@ -1179,7 +1179,7 @@ class PaperSearch extends MessageSet {
     /** @param string $q
      * @return string */
     private static function strip_show($q) {
-        $splitter = new SearchSplitter($q, 0, strlen($q));
+        $splitter = new SearchParser($q, 0, strlen($q));
         $span = self::strip_show_atom($splitter->parse_expression(), true);
         return $span[0] < $span[1] ? substr($q, $span[0], $span[1] - $span[0]) : "";
     }
@@ -1272,7 +1272,7 @@ class PaperSearch extends MessageSet {
             $action = $action ? "show" : "hide";
         }
         if (!ctype_alnum($keyword)
-            && SearchSplitter::span_balanced_parens($keyword) !== strlen($keyword)) {
+            && SearchParser::span_balanced_parens($keyword) !== strlen($keyword)) {
             $keyword = "\"" . $keyword . "\"";
         }
         if ($decorations) {

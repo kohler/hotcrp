@@ -71,7 +71,7 @@ class Log_Page {
 
     private function add_user_clause() {
         $ids = [];
-        $accts = new SearchSplitter($this->qreq->u);
+        $accts = new SearchParser($this->qreq->u);
         while (($word = $accts->shift_balanced_parens()) !== "") {
             $flags = ContactSearch::F_TAG | ContactSearch::F_USER | ContactSearch::F_ALLOW_DELETED;
             if (substr($word, 0, 1) === "\"") {

@@ -364,7 +364,7 @@ class Mailer {
             return null;
         }
         if ($s[$xp] === "(") {
-            $yp = SearchSplitter::span_balanced_parens($s, $xp + 1) + 1;
+            $yp = SearchParser::span_balanced_parens($s, $xp + 1) + 1;
             if ($yp >= $len || $s[$yp - 1] !== ")") {
                 return null;
             }

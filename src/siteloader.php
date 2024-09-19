@@ -30,6 +30,7 @@ class SiteLoader {
         "Present_ReviewFieldSearch" => "src/reviewfieldsearch.php",
         "QrequestFile" => "lib/qrequest.php",
         "ReviewFieldInfo" => "src/reviewfield.php",
+        "SearchSplitter" => "src/searchparser.php",
         "StreamS3Result" => "lib/s3result.php",
         "TagAnno" => "lib/tagger.php",
         "TagInfo" => "lib/tagger.php",

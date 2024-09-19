@@ -481,8 +481,8 @@ src/searchexample.php
 src/searchexpr.php
 src/searchoperator.php
 src/searchoperatorset.php
+src/searchparser.php
 src/searchselection.php
-src/searchsplitter.php
 src/searchterm.php
 src/searchviewcommand.php
 src/searchword.php

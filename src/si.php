@@ -281,7 +281,7 @@ class Si {
         while ($p0 < $l && ($p1 = strpos($s, '$', $p0)) !== false) {
             $n = strspn($s, '$', $p1);
             if ($n === 1 && $p1 + 1 < $l && $s[$p1 + 1] === "{") {
-                $rb = SearchSplitter::span_balanced_parens($s, $p1 + 2, "", true);
+                $rb = SearchParser::span_balanced_parens($s, $p1 + 2, "", true);
                 if ($sv
                     && $rb < $l
                     && $s[$rb] === "}"

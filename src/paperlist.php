@@ -760,7 +760,7 @@ class PaperList {
     /** @param ?string $str
      * @param 0|1|2|3|4|5 $origin */
     function parse_view($str, $origin) {
-        $groups = SearchSplitter::split_balanced_parens($str ?? "");
+        $groups = SearchParser::split_balanced_parens($str ?? "");
         foreach (SearchViewCommand::analyze($groups) as $sve) {
             if (($show_action = $sve->show_action())) {
                 $this->set_view($sve->keyword, $show_action, $origin, $sve->decorations);

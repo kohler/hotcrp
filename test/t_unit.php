@@ -783,16 +783,16 @@ class Unit_Tester {
     }
 
     function test_span_balanced_parens() {
-        xassert_eqq(SearchSplitter::span_balanced_parens("abc def"), 3);
-        xassert_eqq(SearchSplitter::span_balanced_parens("abc() def"), 5);
-        xassert_eqq(SearchSplitter::span_balanced_parens("abc()def ghi"), 8);
-        xassert_eqq(SearchSplitter::span_balanced_parens("abc(def g)hi"), 12);
-        xassert_eqq(SearchSplitter::span_balanced_parens("abc(def g)hi jk"), 12);
-        xassert_eqq(SearchSplitter::span_balanced_parens("abc(def g)h)i jk"), 11);
-        xassert_eqq(SearchSplitter::span_balanced_parens("abc(def [g)h)i jk"), 12);
-        xassert_eqq(SearchSplitter::span_balanced_parens("abc(def sajf"), 12);
+        xassert_eqq(SearchParser::span_balanced_parens("abc def"), 3);
+        xassert_eqq(SearchParser::span_balanced_parens("abc() def"), 5);
+        xassert_eqq(SearchParser::span_balanced_parens("abc()def ghi"), 8);
+        xassert_eqq(SearchParser::span_balanced_parens("abc(def g)hi"), 12);
+        xassert_eqq(SearchParser::span_balanced_parens("abc(def g)hi jk"), 12);
+        xassert_eqq(SearchParser::span_balanced_parens("abc(def g)h)i jk"), 11);
+        xassert_eqq(SearchParser::span_balanced_parens("abc(def [g)h)i jk"), 12);
+        xassert_eqq(SearchParser::span_balanced_parens("abc(def sajf"), 12);
 
-        $m = SearchSplitter::split_balanced_parens(" a(b) )c");
+        $m = SearchParser::split_balanced_parens(" a(b) )c");
         xassert_array_eqq($m, ["a(b)", ")c"]);
     }
 

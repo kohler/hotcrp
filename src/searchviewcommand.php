@@ -114,7 +114,7 @@ class SearchViewCommand {
         }
 
         if ($d !== "") {
-            $splitter = new SearchSplitter($d);
+            $splitter = new SearchParser($d);
             while ($splitter->skip_span(" \n\r\t\v\f,")) {
                 $this->decorations[] = $splitter->shift_balanced_parens(" \n\r\t\v\f,");
             }

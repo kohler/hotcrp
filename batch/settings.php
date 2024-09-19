@@ -44,13 +44,13 @@ class Settings_Batch {
         $this->diff = isset($arg["diff"]);
         $filter = $exclude = null;
         foreach ($arg["filter"] ?? [] as $s) {
-            $ss = new SearchSplitter($s);
+            $ss = new SearchParser($s);
             if (($expr = $ss->parse_expression(SearchOperatorSet::simple_operators()))) {
                 $filter = $filter ? SearchExpr::combine("or", $filter, $expr) : $expr;
             }
         }
         foreach ($arg["exclude"] ?? [] as $s) {
-            $ss = new SearchSplitter($s);
+            $ss = new SearchParser($s);
             if (($expr = $ss->parse_expression(SearchOperatorSet::simple_operators()))) {
                 $exclude = $exclude ? SearchExpr::combine("or", $exclude, $expr) : $expr;
             }

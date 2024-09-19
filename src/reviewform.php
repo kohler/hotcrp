@@ -171,7 +171,7 @@ class ReviewForm {
             return $f ? [$f] : [];
         }
         $fs = [];
-        foreach (SearchViewCommand::analyze(SearchSplitter::split_balanced_parens($s)) as $sve) {
+        foreach (SearchViewCommand::analyze(SearchParser::split_balanced_parens($s)) as $sve) {
             if ($sve->show_action() === "show"
                 && ($x = $this->conf->find_all_fields($sve->keyword))
                 && count($x) === 1

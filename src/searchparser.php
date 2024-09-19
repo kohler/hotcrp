@@ -1,8 +1,8 @@
 <?php
-// searchsplitter.php -- HotCRP helper class for splitting search strings
+// searchparser.php -- HotCRP helper class for splitting search strings
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
-class SearchSplitter {
+class SearchParser {
     /** @var string */
     private $str;
     /** @var bool */
@@ -192,7 +192,7 @@ class SearchSplitter {
     static function split_balanced_parens($s) {
         $w = [];
         if ($s !== "") {
-            $splitter = new SearchSplitter($s);
+            $splitter = new SearchParser($s);
             while ($splitter->skip_whitespace()) {
                 $w[] = $splitter->shift_balanced_parens();
             }
@@ -266,3 +266,5 @@ class SearchSplitter {
         return $cura;
     }
 }
+
+class_alias("SearchParser", "SearchSplitter"); // XXX compat
