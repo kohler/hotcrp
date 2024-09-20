@@ -94,7 +94,8 @@ class ListAction {
             }
         }
         if (!$uf) {
-            $cs->reset_context()->set_require_key_for_method(null);
+            $cs->reset_context();
+            $cs->xtp->set_require_key_for_method(null);
             $uf1 = $cs->get($name);
             if ($uf1) {
                 return JsonResult::make_error(405, "<0>Method not supported");

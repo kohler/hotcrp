@@ -69,17 +69,17 @@ class APISpec_Batch {
 
         $this->api_map = $conf->expanded_api_map();
         $this->j = (object) [];
+        $this->setj_schemas = (object) [];
+        $this->setj_parameters = (object) [];
+        $this->setj_tags = (object) [];
         $this->setj = (object) [
             "paths" => (object) [],
             "components" => (object) [
-                "schemas" => (object) [],
-                "parameters" => (object) []
+                "schemas" => $this->setj_schemas,
+                "parameters" => $this->setj_parameters
             ],
-            "tags" => (object) []
+            "tags" => $this->setj_tags
         ];
-        $this->setj_schemas = $this->setj->components->schemas;
-        $this->setj_parameters = $this->setj->components->parameters;
-        $this->setj_tags = $this->setj->tags;
 
         $this->description_map = [];
         foreach ([["?devel/apidoc/*.md"], $conf->opt("apiDescriptions")] as $desc) {
@@ -318,7 +318,7 @@ class APISpec_Batch {
         $this->expand_response($xj, $uf);
     }
 
-    /** @param object $x
+    /** @param object $xj
      * @param object $uf
      * @param string $path */
     private function expand_metadata($xj, $uf, $path) {
@@ -691,7 +691,7 @@ class APISpec_Batch {
         $this->tag_order = [];
         foreach ($this->j->tags ?? [] as $i => $x) {
             if (isset($x->name) && is_string($x->name)) {
-                $p = array_search(self::$default_tag_order, $x->name);
+                $p = array_search($x->name, self::$default_tag_order);
                 if ($p === false) {
                     $p = count(self::$default_tag_order) + $i;
                 }

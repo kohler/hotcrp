@@ -5039,7 +5039,7 @@ class Conf {
     }
 
     /** @param int $flags
-     * @return array<string,mixed> */
+     * @return object */
     function hotcrp_pc_json(Contact $viewer, $flags) {
         if (!$viewer->isPC) {
             $flags &= ~(self::PCJ_EMAIL | self::PCJ_UID);
