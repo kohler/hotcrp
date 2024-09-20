@@ -1773,20 +1773,25 @@ function maybe_render_list(ml) {
     return ul.firstChild ? ul : null;
 }
 
-function render_alert(ml) {
-    const status = message_list_status(ml),
-        div = document.createElement("div");
+function render_alert_onto(elt, ml) {
+    addClass(elt, "msg");
+    elt.className = elt.className.replace(/(?:^| )msg-(?:success|error|warning|info)(?= |$)/, "");
+    const status = message_list_status(ml);
     if (status === -3 /*MessageSet::SUCCESS*/) {
-        div.className = "msg msg-success";
+        addClass(elt, "msg-success");
     } else if (status >= 2) {
-        div.className = "msg msg-error";
+        addClass(elt, "msg-error");
     } else if (status === 1) {
-        div.className = "msg msg-warning";
+        addClass(elt, "msg-warning");
     } else {
-        div.className = "msg msg-info";
+        addClass(elt, "msg-info");
     }
-    div.appendChild(render_list(ml));
-    return div;
+    elt.replaceChildren(render_list(ml));
+    return elt;
+}
+
+function render_alert(ml) {
+    return render_alert_onto(document.createElement("div"), ml);
 }
 
 function redundant_item(mi, ul) {
@@ -1871,9 +1876,10 @@ return {
     append_item: append_item,
     append_item_near: append_item_near,
     list_status: message_list_status,
+    render_list: render_list,
     maybe_render_list: maybe_render_list,
     render_alert: render_alert,
-    render_list: render_list
+    render_alert_onto: render_alert_onto
 };
 
 })();
