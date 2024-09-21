@@ -2252,14 +2252,14 @@ class Conf {
     function invalidate_user($u, $saved = false) {
         if ($u === null) {
             return;
-        } else if ($u->cdb_confid === 0) {
+        } else if ($u->is_cdb_user()) {
+            if ($this->_cdb_user_cache !== null) {
+                $this->invalidate_cdb_user($u, $saved);
+            }
+        } else {
             if ($this->_user_email_cache !== null
                 || $this->_user_cache !== null) {
                 $this->invalidate_local_user($u, $saved);
-            }
-        } else {
-            if ($this->_cdb_user_cache !== null) {
-                $this->invalidate_cdb_user($u, $saved);
             }
         }
     }
@@ -2380,7 +2380,7 @@ class Conf {
             $this_redirect = [];
             foreach ($redirect as $i => $u) {
                 if (!$u->is_explicitly_disabled()) {
-                    if ($u->cdb_confid !== 0) {
+                    if ($u->is_cdb_user()) {
                         $this->prefetch_cdb_user_by_id($u->primaryContactId);
                     } else {
                         $this->prefetch_user_by_id($u->primaryContactId);
@@ -2391,7 +2391,7 @@ class Conf {
 
             $redirect = [];
             foreach ($this_redirect as $i => $u) {
-                if ($u->cdb_confid !== 0) {
+                if ($u->is_cdb_user()) {
                     $u2 = $this->cdb_user_by_id($u->primaryContactId);
                 } else {
                     $u2 = $this->user_by_id($u->primaryContactId, USER_SLICE);
