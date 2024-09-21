@@ -570,6 +570,20 @@ class ConfInvariants {
     }
 
     /** @return $this */
+    function check_cdb() {
+        $cdb = Conf::main_contactdb();
+        if (!$cdb) {
+            return $this;
+        }
+
+        $confid = $this->conf->cdb_confid();
+        if ($confid < 0) {
+            $this->invariant_error("cdb_confid", "Conf::cdb_confid is -1");
+        }
+        return $this;
+    }
+
+    /** @return $this */
     function check_all() {
         $ro = new ReflectionObject($this);
         foreach ($ro->getMethods() as $m) {
