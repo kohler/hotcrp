@@ -21,6 +21,14 @@ class SearchParser {
         $this->str = $str;
         $this->pos = $pos1;
         $this->len = $pos2 ?? strlen($str);
+
+        // unlikely: passed a substring that ends mid-word; need to be careful
+        if ($this->len < strlen($str)
+            && !SearchOperatorSet::safe_terminator($str, $this->len)
+            && ($this->len === 0 || !SearchOperatorSet::safe_terminator($str, $this->len - 1))) {
+            $this->str = substr($str, 0, $this->len);
+        }
+
         $this->utf8q = strpos($str, chr(0xE2)) !== false && is_valid_utf8($str);
         $this->set_span_and_pos(0);
     }

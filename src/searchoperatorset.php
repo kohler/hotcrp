@@ -73,10 +73,17 @@ class SearchOperatorSet {
             $br[] = "[{$ch}]";
         }
         if (!empty($alnum)) {
-            $br[] = '(?:' . join("|", $alnum) . ')(?=[\s\(\)]|\z)';
+            $br[] = '(?:' . join("|", $alnum) . ')(?=[\s\(\)\[\]\{\}]|\z)';
         }
         $this->regex = '/\G(?:' . join("|", $br) . ')/s';
         return $this->regex;
+    }
+
+    /** @param string $str
+     * @param int $pos
+     * @return bool */
+    static function safe_terminator($str, $pos = 0) {
+        return preg_match('/\G[\s\(\)\[\]\{\}]/', $str, $m, 0, $pos);
     }
 
 

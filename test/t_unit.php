@@ -802,6 +802,18 @@ class Unit_Tester {
         $sp = new SearchParser("a(b(c(d(e", 1, 5);
         $x = $sp->shift_balanced_parens();
         xassert_eqq($x, "(b(c");
+
+        $sp = new SearchParser("HIGHLIGHT:foobar");
+        $pe = $sp->parse_expression();
+        xassert_neqq($pe->op, null);
+        xassert_eqq($pe->op->type, "highlight");
+        xassert_eqq($pe->op->subtype, "foobar");
+
+        $sp = new SearchParser("HIGHLIGHT:foobar", 0, 11);
+        $pe = $sp->parse_expression();
+        xassert_neqq($pe->op, null);
+        xassert_eqq($pe->op->type, "highlight");
+        xassert_eqq($pe->op->subtype, "f");
     }
 
     function test_unpack_comparison() {
