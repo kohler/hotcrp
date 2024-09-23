@@ -794,6 +794,14 @@ class Unit_Tester {
 
         $m = SearchParser::split_balanced_parens(" a(b) )c");
         xassert_array_eqq($m, ["a(b)", ")c"]);
+
+        $sp = new SearchParser("a(b(c(d(e) ) ) ) ", 1);
+        $x = $sp->shift_balanced_parens();
+        xassert_eqq($x, "(b(c(d(e) ) ) )");
+
+        $sp = new SearchParser("a(b(c(d(e", 1, 5);
+        $x = $sp->shift_balanced_parens();
+        xassert_eqq($x, "(b(c");
     }
 
     function test_unpack_comparison() {
