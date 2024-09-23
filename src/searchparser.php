@@ -96,7 +96,7 @@ class SearchParser {
         $pos0 = $this->pos;
         $pos1 = self::span_balanced_parens($this->str, $pos0, $endchars, $allow_empty);
         $this->set_span_and_pos($pos1 - $pos0);
-        return substr($this->str, $pos0, $pos1 - $pos0);
+        return substr($this->str, $pos0, $this->last_pos - $pos0);
     }
 
     /** @param string $re
