@@ -140,7 +140,7 @@ function settings_disable_children(e) {
         this.removeAttribute("name"); // do not submit with form
         if (this.type === "checkbox" || this.type === "radio" || this.type === "button")
             this.disabled = true;
-        else if (this.type !== "select")
+        else if (this.type !== "select-one")
             this.readonly = true;
         removeClass(this, "ui");
         this.removeAttribute("draggable");

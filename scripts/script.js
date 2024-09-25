@@ -1795,7 +1795,6 @@ function render_alert(ml) {
 }
 
 function redundant_item(mi, ul) {
-    let xm;
     return mi.message == null
         || mi.message === ""
         || (!mi.landmark
@@ -7112,7 +7111,7 @@ function cmt_visibility_change() {
         vis = form.elements.visibility,
         topic = form.elements.topic,
         is_paper = topic && topic.value === "paper" && (!vis || vis.value !== "admin");
-    if (vis && vis.type === "select" && !form.elements.by_author) {
+    if (vis && vis.type === "select-one" && !form.elements.by_author) {
         const vishint = vis.closest(".entryi").querySelector(".f-d"),
             would_auvis = is_paper
                 || hotcrp.status.myperm[topic && topic.value === "dec" ? "some_author_can_view_decision" : "some_author_can_view_review"],
