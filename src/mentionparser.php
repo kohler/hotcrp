@@ -29,6 +29,31 @@ class MentionPhrase {
     }
 }
 
+class PossibleMentionParse {
+    /** @var Contact|Author */
+    public $user;
+    /** @var string */
+    public $text;
+    /** @var int */
+    public $matchpos;
+    /** @var int */
+    public $breakpos;
+    /** @var int */
+    public $priority;
+
+    /** @param Contact|Author $user
+     * @param string $text
+     * @param int $breakpos
+     * @param int $priority */
+    function __construct($user, $text, $breakpos, $priority) {
+        $this->user = $user;
+        $this->text = $text;
+        $this->matchpos = 0;
+        $this->breakpos = $breakpos;
+        $this->priority = $priority;
+    }
+}
+
 class MentionParser {
     /** @param string $s
      * @param array<Contact|Author> ...$user_lists
@@ -89,9 +114,13 @@ class MentionParser {
             self::set_strength($collator, $strength, $isascii || is_usascii($w) ? Collator::PRIMARY : Collator::SECONDARY);
 
             // Match the first word
-            $uset = [];
+            $uset = $matchuids = [];
             foreach ($ulists as $listindex => $ulist) {
                 foreach ($ulist as $u) {
+                    if (in_array($u->contactId, $matchuids)) {
+                        continue;
+                    }
+                    // check name
                     if ($u->firstName === "" && $u->lastName === "") {
                         continue;
                     }
@@ -101,10 +130,10 @@ class MentionParser {
                         $fn = preg_replace('/\.\s*/', " ", $fn);
                         $n = preg_replace('/\.\s*/', " ", $n);
                     }
-                    $ux = [$u, $n, 0, strlen($fn === "" ? $n : $fn), $listindex];
-                    if (self::match_word($ux, $w, $collator)
-                        && !self::matches_contain($uset, $u->contactId)) {
+                    $ux = new PossibleMentionParse($u, $n, strlen($fn === "" ? $n : $fn), $listindex);
+                    if (self::match_word($ux, $w, $collator)) {
                         $uset[] = $ux;
+                        $matchuids[] = $u->contactId;
                     }
                 }
             }
@@ -117,12 +146,12 @@ class MentionParser {
             while (count($uset) > 1 && self::word_at($s, $pos2, $isascii, $m)) {
                 if (count($ulists) > 1) {
                     usort($uset, function ($a, $b) {
-                        return $a[4] <=> $b[4];
+                        return $a->priority <=> $b->priority;
                     });
                     // One of the remaining matches has higher priority than the others.
                     // Remember it in case the next word fails to match anything.
-                    if ($uset[0][4] < $uset[1][4]) {
-                        $best_ux = $uset[0][0];
+                    if ($uset[0]->priority < $uset[1]->priority) {
+                        $best_ux = $uset[0];
                         $best_pos2 = $pos2;
                         $best_endpos = $endpos;
                     } else {
@@ -157,7 +186,7 @@ class MentionParser {
             // If we ended with no matches but there was one best match at some
             // point, select that
             if (count($uset) === 0 && $best_ux !== null) {
-                $uset = [[$best_ux]];
+                $uset = [$best_ux];
                 $pos2 = $best_pos2;
                 $endpos = $best_endpos;
             }
@@ -165,7 +194,7 @@ class MentionParser {
             // Yield result if any
             if (count($uset) === 1
                 && self::mention_ends_at($s, $endpos)) {
-                $ux = $uset[0][0];
+                $ux = $uset[0]->user;
                 // Heuristic to include the period after an initial
                 if ($endpos < $len
                     && $s[$endpos] === "."
@@ -203,29 +232,31 @@ class MentionParser {
             || preg_match('/\G(?!@)[\p{Po}\p{Pd}\p{Pe}\p{Pf}\pS\pZ]/u', $s, $m, 0, $pos);
     }
 
-    /** @param array{Contact|Author,string,int,int,int} &$ux
+    /** @param PossibleMentionParse $ux
      * @param string $w
      * @param Collator $collator
      * @return bool */
-    static function match_word(&$ux, $w, $collator) {
-        $sp = strpos($ux[1], " ", $ux[2]);
-        if ($sp !== false) {
-            $substr = substr($ux[1], $ux[2], $sp - $ux[2]);
-            if ($collator->compare($w, $substr) === 0) {
-                $ux[2] = $sp + 1;
-                return true;
-            } else if ($ux[2] >= $ux[3]) {
-                return false;
-            } else {
-                $sp = strpos($ux[1], " ", $ux[3]);
-                if ($sp !== false) {
-                    $substr = substr($ux[1], $ux[3], $sp - $ux[3]);
-                    if ($collator->compare($w, $substr) === 0) {
-                        $ux[2] = $sp + 1;
-                        return true;
-                    }
-                }
-            }
+    static function match_word($ux, $w, $collator) {
+        $sp = strpos($ux->text, " ", $ux->matchpos);
+        if ($sp === false) {
+            return false;
+        }
+        $substr = substr($ux->text, $ux->matchpos, $sp - $ux->matchpos);
+        if ($collator->compare($w, $substr) === 0) {
+            $ux->matchpos = $sp + 1;
+            return true;
+        }
+        if ($ux->matchpos >= $ux->breakpos) {
+            return false;
+        }
+        $sp = strpos($ux->text, " ", $ux->breakpos);
+        if ($sp === false) {
+            return false;
+        }
+        $substr = substr($ux->text, $ux->breakpos, $sp - $ux->breakpos);
+        if ($collator->compare($w, $substr) === 0) {
+            $ux->matchpos = $sp + 1;
+            return true;
         }
         return false;
     }
@@ -238,16 +269,5 @@ class MentionParser {
             $collator->setStrength($xstrength);
             $strength = $xstrength;
         }
-    }
-
-    /** @param list<array{Contact|Author,string,int,int,int}> $uxs
-     * @param int $cid
-     * @return bool */
-    static private function matches_contain($uxs, $cid) {
-        foreach ($uxs as $ux) {
-            if ($ux[0]->contactId === $cid)
-                return true;
-        }
-        return false;
     }
 }
