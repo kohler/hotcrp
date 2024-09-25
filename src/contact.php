@@ -4916,7 +4916,9 @@ class Contact implements JsonSerializable {
         if (($crow
              && $crow->contactId === $this->contactId)
             || (($ct & CommentInfo::CT_BYSHEPHERD) !== 0
-                && $this->can_view_shepherd($prow))) {
+                && $this->can_view_shepherd($prow))
+            || (($ct & CommentInfo::CT_BYADMINISTRATOR) !== 0
+                && $this->can_view_manager($prow))) {
             return true;
         }
         $rights = $this->rights($prow);
