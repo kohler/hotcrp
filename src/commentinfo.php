@@ -50,6 +50,8 @@ class CommentInfo {
     public $message_list;
     /** @var ?Contact */
     private $_commenter;
+    /** @var ?bool */
+    private $_recently_censored;
 
     const CT_DRAFT = 0x01;
     const CT_BLIND = 0x02;
@@ -319,12 +321,6 @@ class CommentInfo {
         }
     }
 
-    /** @return string
-     * @deprecated */
-    function raw_contents() {
-        return $this->raw_content();
-    }
-
     /** @return string */
     function raw_content() {
         return $this->commentOverflow ?? $this->comment ?? "";
@@ -394,6 +390,7 @@ class CommentInfo {
                 $r = $this->prow->unparse_pseudonym($viewer, $mn[0]) ?? "Anonymous";
                 $t = substr_replace($t, "@{$r}", $mn[1] + $delta, $mn[2] - $mn[1]);
                 $delta += strlen($r) - ($mn[2] - $mn[1] - 1);
+                $this->_recently_censored = true;
             }
         }
         return $t;
@@ -1170,7 +1167,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
     private function notification($user, $types) {
         foreach ($this->notifications as $n) {
             if ($n->user->contactId === $user->contactId) {
-                $n->types |= $types;
+                $n->flags |= $types;
                 return $n;
             }
         }
@@ -1213,19 +1210,23 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 continue;
             }
             $notification = $this->notification($mentionee, NotificationInfo::MENTION);
-            if ($notification->sent
+            if ($notification->sent()
                 || $mentionee->is_dormant()
                 || !$mentionee->can_view_comment($this->prow, $this)) {
                 continue;
             }
+            $this->_recently_censored = false;
             HotCRPMailer::send_to($mentionee, "@mentionnotify", [
                 "prow" => $this->prow,
                 "comment_row" => $this
             ]);
-            $notification->sent = true;
             if (!$mxm[3]) {
                 $n = substr($this->raw_content(), $mxm[1] + 1, $mxm[2] - $mxm[1] - 1);
                 $notification->user_html = htmlspecialchars($n);
+            }
+            $notification->flags |= NotificationInfo::SENT;
+            if ($this->_recently_censored) {
+                $notification->flags |= NotificationInfo::CENSORED;
             }
         }
     }
@@ -1286,10 +1287,11 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             }
             $is_author = $this->prow->has_author($minic);
             $notification = $this->notification($minic, $is_author ? NotificationInfo::CONTACT : NotificationInfo::FOLLOW);
-            if ($notification->sent) {
+            if ($notification->sent()) {
                 continue;
             }
             // prepare mail
+            $this->_recently_censored = false;
             $p = HotCRPMailer::prepare_to($minic, $tmpl, $info);
             if (!$p) {
                 continue;
@@ -1302,7 +1304,10 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 $p->unique_preparation = true;
             }
             $preps[] = $p;
-            $notification->sent = true;
+            $notification->flags |= NotificationInfo::SENT;
+            if ($this->_recently_censored) {
+                $notification->flags |= NotificationInfo::CENSORED;
+            }
         }
         HotCRPMailer::send_combined_preparations($preps);
     }

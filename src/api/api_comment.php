@@ -155,17 +155,20 @@ class Comment_API {
         $this->ms->append_item(self::save_success_message($xcrow));
 
         $aunames = $mentions = [];
-        $mentions_missing = false;
+        $mentions_missing = $mentions_censored = false;
         foreach ($xcrow->notifications ?? [] as $n) {
-            if (($n->types & NotificationInfo::CONTACT) !== 0 && $n->sent) {
+            if ($n->has(NotificationInfo::CONTACT | NotificationInfo::SENT)) {
                 $aunames[] = $n->user->name_h(NAME_EB);
             }
-            if (($n->types & NotificationInfo::MENTION) !== 0) {
-                if ($n->sent) {
+            if ($n->has(NotificationInfo::MENTION)) {
+                if ($n->sent()) {
                     $mentions[] = $n->user_html ?? $suser->reviewer_html_for($n->user);
                 } else if ($xcrow->timeNotified === $xcrow->timeModified) {
                     $mentions_missing = true;
                 }
+            }
+            if ($n->has(NotificationInfo::CENSORED)) {
+                $mentions_censored = true;
             }
         }
         if ($aunames && !$this->prow->has_author($suser)) {
@@ -180,6 +183,9 @@ class Comment_API {
         }
         if ($mentions_missing) {
             $this->ms->msg_at(null, $this->conf->_("<0>Some mentioned users cannot currently see this comment, so they were not notified."), MessageSet::WARNING_NOTE);
+        }
+        if ($mentions_censored) {
+            $this->ms->msg_at(null, $this->conf->_("<0>Some notifications were censored to anonymize mentioned users."), MessageSet::WARNING_NOTE);
         }
         return $xcrow;
     }

@@ -6,20 +6,31 @@ class NotificationInfo {
     /** @var Contact */
     public $user;
     /** @var int */
-    public $types = 0;
-    /** @var bool */
-    public $sent = false;
+    public $flags = 0;
     /** @var ?string */
     public $user_html;
 
     const CONTACT = 1;
     const FOLLOW = 2;
     const MENTION = 4;
+    const SENT = 8;
+    const CENSORED = 16;
 
     /** @param Contact $user
-     * @param 0|1|2|4 $types */
-    function __construct($user, $types) {
+     * @param int $flags */
+    function __construct($user, $flags) {
         $this->user = $user;
-        $this->types = $types;
+        $this->flags = $flags;
+    }
+
+    /** @param int $flags
+     * @return bool */
+    function has($flags) {
+        return ($this->flags & $flags) === $flags;
+    }
+
+    /** @return bool */
+    function sent() {
+        return ($this->flags & self::SENT) !== 0;
     }
 }
