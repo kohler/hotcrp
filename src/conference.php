@@ -5056,25 +5056,27 @@ class Conf {
             $rj["tags"] = $this->viewable_user_tags($viewer);
         }
         if ($this->paper && $viewer->allow_administer($this->paper)) {
-            $assignable = $erlist = [];
+            $assignable = [];
             foreach ($this->pc_members() as $pcm) {
                 if ($pcm->pc_assignable($this->paper)) {
                     $assignable[] = $pcm->contactId;
                 }
             }
+            $pj = ["assignable" => $assignable];
             if ($this->setting("extrev_shepherd")) {
                 $this->paper->ensure_reviewer_names();
+                $erlist = $ercids = [];
                 foreach ($this->paper->reviews_as_display() as $rrow) {
                     if ($rrow->reviewType === REVIEW_EXTERNAL
                         && !$rrow->reviewToken
-                        && !in_array($rrow->contactId, $erlist)) {
+                        && !in_array($rrow->contactId, $ercids)) {
                         $erlist[] = $this->user_json(null, $rrow->reviewer(), $flags);
+                        $ercids[] = $rrow->contactId;
                     }
                 }
-            }
-            $pj = ["assignable" => $assignable];
-            if (!empty($erlist)) {
-                $pj["extrev"] = $erlist;
+                if (!empty($erlist)) {
+                    $pj["extrev"] = $erlist;
+                }
             }
             $rj["p"] = [$this->paper->paperId => $pj];
         }
