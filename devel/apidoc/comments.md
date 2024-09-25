@@ -54,4 +54,4 @@ To upload a single new attachment:
 
 To upload multiple attachments, number them sequentially (`attachment:2`,
 `attachment:3`, and so forth). To delete an existing attachment, supply its
-`docid` in `attachment:N`, and set `attachment:N:delete` to 1.
+`docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.
