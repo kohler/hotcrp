@@ -33,7 +33,7 @@ class Autoassign_Tester {
                     $this->cflts[$prow->paperId][$cflt->contactId] = true;
             }
         }
-        assert(count($this->pcc) === 16);
+        assert(count($this->pcc) === 17);
     }
 
     function setup() {
@@ -216,7 +216,7 @@ class Autoassign_Tester {
 
         $prows = $this->conf->paper_set(["paperId" => $this->cur_pids]);
         foreach ($prows as $prow) {
-            xassert_le(count($prow->reviews_as_list()), 5);
+            xassert_le(count($prow->reviews_as_list()), 6);
         }
 
         $rbu = $this->reviews_by_user($prows);

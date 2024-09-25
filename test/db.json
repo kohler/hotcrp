@@ -20,7 +20,8 @@
     {"name": "Van Jacobson", "email": "van@ee.lbl.gov", "affiliation": "Lawrence Berkeley National Laboratory"},
     {"name": "Wilma Ojuelegba", "email": "ojuelegba@gmail.com", "affiliation": "INRIA", "roles": ["pc"]},
     {"name": "Véra Djükuba", "email": "vera@bombay.com", "affiliation": "Bombay Institute", "roles": ["pc"]},
-    {"name": "Randy H. Katz", "email": "randy@cs.berkeley.edu", "affiliation": "University of California, Berkeley"}
+    {"name": "Randy H. Katz", "email": "randy@cs.berkeley.edu", "affiliation": "University of California, Berkeley"},
+    {"name": "Dottie Francis", "email": "d.francis2@place.edu", "affiliation": "Place Investigations", "roles": ["pc"]}
 ],
 "papers": [{
     "_id_": 1,

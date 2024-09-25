@@ -472,6 +472,32 @@ concerns.
 - Testconf I Submissions
 ******** create-randy@cs.berkeley.edu
 
+******** create-d.francis2@place.edu
+To: Dottie Francis <d.francis2@place.edu>
+Subject: [Testconf I] Welcome to the program committee
+
+Greetings,
+
+You have been added to the program committee on the Test Conference I
+(Testconf I) submission site.
+
+* Site: http://hotcrp.lcdf.org/test/
+* Email: d.francis2@place.edu
+
+You will need a password to sign in. Use this link to set one up:
+
+http://hotcrp.lcdf.org/test/resetpassword/{{}}
+
+Should the link expire, obtain a new one using "Forgot my password".
+
+If you already have an account under a different email address, you may
+merge this new account into that one. Go to your profile page and select
+"Merge with another account".
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
 ******** create-micke@cdt.luth.se
 To: Mikael Degermark <micke@cdt.luth.se>
 Subject: [Testconf I] Account information
@@ -2178,6 +2204,126 @@ Comment @2 by Jane Chair <chair@_.com> (Administrator)
 You’re following comments for Test Conference I (Testconf I) submission
 #1. For the most up-to-date comments, or to unsubscribe from email
 notification, see the submission site.
+
+* Title: Scalable Timers for Soft State Protocols
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** t_comments-email-mentions
+To: Mary Baker <mgbaker@cs.stanford.edu>, Lixia Zhang <lixia@cs.ucla.edu>, George Varghese <varghese@ccrc.wustl.edu>
+Subject: [Testconf I] Comment for #1 "Scalable Timers for Soft State
+ Protocols"
+
+Comment @3 by Jane Chair <chair@_.com> (Administrator)
+---------------------------------------------------------------------------
+@Christian Huitema @rguerin @christophe.diot @d.francis2 @veraxx
+
+
+\***************************************************************************
+
+
+You’re following comments for Test Conference I (Testconf I) submission
+#1. For the most up-to-date comments, or to unsubscribe from email
+notification, see the submission site.
+
+* Title: Scalable Timers for Soft State Protocols
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** t_comments-email-mentions
+To: Christian Huitema <huitema@bellcore.com>
+Subject: [Testconf I] Mentioned for #1 "Scalable Timers for Soft State
+ Protocols"
+
+Comment @3 by Jane Chair <chair@_.com> (Administrator)
+---------------------------------------------------------------------------
+@Christian Huitema @rguerin @christophe.diot @d.francis2 @veraxx
+
+
+\***************************************************************************
+
+
+You were mentioned in this comment for Test Conference I (Testconf I)
+submission #1. For the most up-to-date comments, see the submission
+site.
+
+* Title: Scalable Timers for Soft State Protocols
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** t_comments-email-mentions
+To: Roch Guerin <rguerin@ibm.com>
+Subject: [Testconf I] Mentioned for #1 "Scalable Timers for Soft State
+ Protocols"
+
+Comment @3 by Jane Chair <chair@_.com> (Administrator)
+---------------------------------------------------------------------------
+@Christian Huitema @rguerin @christophe.diot @d.francis2 @veraxx
+
+
+\***************************************************************************
+
+
+You were mentioned in this comment for Test Conference I (Testconf I)
+submission #1. For the most up-to-date comments, see the submission
+site.
+
+* Title: Scalable Timers for Soft State Protocols
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** t_comments-email-mentions
+To: Christophe Diot <christophe.diot@sophia.inria.fr>
+Subject: [Testconf I] Mentioned for #1 "Scalable Timers for Soft State
+ Protocols"
+
+Comment @3 by Jane Chair <chair@_.com> (Administrator)
+---------------------------------------------------------------------------
+@Christian Huitema @rguerin @christophe.diot @d.francis2 @veraxx
+
+
+\***************************************************************************
+
+
+You were mentioned in this comment for Test Conference I (Testconf I)
+submission #1. For the most up-to-date comments, see the submission
+site.
+
+* Title: Scalable Timers for Soft State Protocols
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** t_comments-email-mentions
+To: Dottie Francis <d.francis2@place.edu>
+Subject: [Testconf I] Mentioned for #1 "Scalable Timers for Soft State
+ Protocols"
+
+Comment @3 by Jane Chair <chair@_.com> (Administrator)
+---------------------------------------------------------------------------
+@Christian Huitema @rguerin @christophe.diot @d.francis2 @veraxx
+
+
+\***************************************************************************
+
+
+You were mentioned in this comment for Test Conference I (Testconf I)
+submission #1. For the most up-to-date comments, see the submission
+site.
 
 * Title: Scalable Timers for Soft State Protocols
 * Site: http://hotcrp.lcdf.org/test/paper/1

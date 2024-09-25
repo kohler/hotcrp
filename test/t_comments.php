@@ -150,6 +150,16 @@ class Comments_Tester {
         MailChecker::check_db("t_comments-multiple-mentions");
     }
 
+    function test_email_mentions() {
+        xassert_eqq($this->conf->setting("viewrev"), null);
+        $this->conf->save_refresh_setting("viewrev", 1);
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "@Christian Huitema @rguerin @christophe.diot @d.francis2 @veraxx"], $paper1);
+        xassert($j->ok);
+        MailChecker::check_db("t_comments-email-mentions");
+        $this->conf->save_refresh_setting("viewrev", null);
+    }
+
     function test_attachments() {
         $paper1 = $this->conf->checked_paper_by_id(1);
         $qreq = new Qrequest("POST", ["c" => "new", "text" => "Hello", "attachment:1" => "new"]);

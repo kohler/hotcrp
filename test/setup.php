@@ -1239,7 +1239,7 @@ class TestRunner {
             if ($user) {
                 MailChecker::check_db("create-{$c->email}");
             } else {
-                fwrite(STDERR, "* failed to create user $c->email\n");
+                fwrite(STDERR, "* failed to create user {$c->email}\n");
                 $ok = false;
             }
         }

@@ -120,6 +120,15 @@ class MentionParser {
                     if (in_array($u->contactId, $matchuids)) {
                         continue;
                     }
+                    // check email prefix (require 2 or more letters)
+                    $at = (int) strpos($u->email, "@");
+                    if ($at > 1
+                        && substr_compare($s, $u->email, $pos + 1, $at, true) === 0
+                        && self::mention_ends_at($s, $pos + 1 + $at)) {
+                        $uset[] = new PossibleMentionParse($u, substr($u->email, 0, $at) . " ", $at + 1, $listindex);
+                        $matchuids[] = $u->contactId;
+                        continue;
+                    }
                     // check name
                     if ($u->firstName === "" && $u->lastName === "") {
                         continue;
