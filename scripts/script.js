@@ -7148,6 +7148,8 @@ function cmt_visibility_change() {
         }
         if (vis.value === "au" && would_auvis) {
             form.elements.bsubmit.textContent = "Save and notify authors";
+        } else if (vis.value === "au") {
+            form.elements.bsubmit.textContent = "Save for authors";
         } else {
             form.elements.bsubmit.textContent = "Save";
         }
@@ -7788,10 +7790,16 @@ function add_new_comment(cj, cid) {
     document.querySelector(".pcontainer").insertBefore($e("article", {
         id: cid, class: "pcard cmtcard cmtid comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
     }), $$("k-comment-actions"));
-    if (!cj.is_new && !cj.response && (!my_last_topic || cj.viewer_owned)) {
-        last_visibility = cj.visibility;
-        last_topic = cj.topic || "rev";
-        my_last_topic = cj.viewer_owned;
+    if (!cj.is_new && !cj.response) {
+        if (!my_last_topic || cj.viewer_owned) {
+            last_topic = cj.topic || "rev";
+            my_last_topic = cj.viewer_owned;
+        }
+        if (cj.viewer_owned) {
+            last_visibility = cj.visibility;
+        } else if (cj.visibility !== "au") {
+            last_visibility = cj.visibility === "admin" ? "rev" : cj.visibility;
+        }
     }
 }
 
