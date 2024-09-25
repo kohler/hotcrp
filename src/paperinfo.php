@@ -1795,7 +1795,8 @@ class PaperInfo {
     }
 
 
-    /** @return int */
+    /** @param int|Contact $contact
+     * @return int */
     function review_type($contact) {
         $this->check_rights_version();
         if (is_object($contact) && $contact->has_capability()) {
@@ -1811,12 +1812,14 @@ class PaperInfo {
         return $rrow ? $rrow->reviewType : 0;
     }
 
-    /** @return bool */
+    /** @param int|Contact $contact
+     * @return bool */
     function has_reviewer($contact) {
         return $this->review_type($contact) > 0;
     }
 
-    /** @return bool */
+    /** @param int|Contact $contact
+     * @return bool */
     function has_active_reviewer($contact) {
         $ci = $this->optional_contact_info($contact);
         return $ci

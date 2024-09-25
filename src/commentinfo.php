@@ -330,37 +330,70 @@ class CommentInfo {
         return $this->commentOverflow ?? $this->comment ?? "";
     }
 
-    /** @param ?Contact $viewer
-     * @param bool $censor_mentions
-     * @param ?int $censor_mentions_after
-     * @return string
-     * @deprecated */
-    function contents($viewer = null, $censor_mentions = false, $censor_mentions_after = null) {
-        return $this->content($viewer, $censor_mentions, $censor_mentions_after);
+    /** @param Contact $viewer
+     * @param array{int,int,int,?bool} $mn
+     * @param int $censor_until
+     * @return bool */
+    private function _mention_censor($viewer, $mn, $censor_until) {
+        // skip bogus, already-pseudonymous, and self mentions
+        if (!is_array($mn)
+            || count($mn) < 4
+            || !$mn[3]
+            || $mn[0] === $viewer->contactId) {
+            return false;
+        }
+        // skip mentions beyond boundary
+        if ($mn[1] >= $censor_until) {
+            return false;
+        }
+        // do not censor visible shepherd
+        if ($mn[0] === $this->prow->shepherdContactId
+            && $viewer->can_view_shepherd($this->prow)) {
+            return false;
+        }
+        // do not censor visible reviewer identity
+        if ($this->prow->can_view_review_identity_of($mn[0], $viewer)) {
+            return false;
+        }
+        // do not censor fellow author
+        if ($this->prow->has_author($viewer)
+            && $this->prow->has_author($mn[0])) {
+            return false;
+        }
+        // look up mentionee
+        $u = $this->conf->user_by_id($mn[0]);
+        if (!$u) {
+            return true;
+        }
+        // do not censor visible administrator
+        if ($u->allow_administer($this->prow)
+            && $viewer->can_view_manager($this->prow)) {
+            return false;
+        }
+        // censor everyone else
+        return true;
     }
 
     /** @param ?Contact $viewer
-     * @param bool $censor_mentions
-     * @param ?int $censor_mentions_after
+     * @param ?int $censor_until
      * @return string */
-    function content($viewer = null, $censor_mentions = false, $censor_mentions_after = null) {
+    function content($viewer = null, $censor_until = null) {
         $t = $this->raw_content();
         if ($t === ""
-            || !$censor_mentions
-            || !($mx = $this->data("mentions"))
-            || !is_array($mx)) {
+            || !$viewer
+            || !($mns = $this->data("mentions"))
+            || !is_array($mns)
+            || $viewer->is_my_comment($this->prow, $this)
+            || $viewer->can_view_review_identity($this->prow, null)) {
             return $t;
         }
         $delta = 0;
-        foreach ($mx as $m) {
-            if (is_array($m)
-                && count($m) >= 4
-                && $m[3]
-                && (!$viewer || $m[0] !== $viewer->contactId)
-                && ($censor_mentions_after === null || $m[1] + $delta < $censor_mentions_after)) {
-                $r = $this->prow->unparse_pseudonym($viewer, $m[0]) ?? "Anonymous";
-                $t = substr_replace($t, "@{$r}", $m[1] + $delta, $m[2] - $m[1]);
-                $delta += strlen($r) - ($m[2] - $m[1] - 1);
+        $censor_until = $censor_until ?? PHP_INT_MAX;
+        foreach ($mns as $mn) {
+            if ($this->_mention_censor($viewer, $mn, $censor_until - $delta)) {
+                $r = $this->prow->unparse_pseudonym($viewer, $mn[0]) ?? "Anonymous";
+                $t = substr_replace($t, "@{$r}", $mn[1] + $delta, $mn[2] - $mn[1]);
+                $delta += strlen($r) - ($mn[2] - $mn[1] - 1);
             }
         }
         return $t;
@@ -744,7 +777,7 @@ class CommentInfo {
         if ($no_content) {
             // do not include content
         } else if ($viewer->can_view_comment_content($this->prow, $this)) {
-            $cj["text"] = $this->content($viewer, !$idable);
+            $cj["text"] = $this->content($viewer);
             if ($this->has_attachments()) {
                 $cj["docs"] = $this->attachments_json($cj["editable"] ?? false);
             }
@@ -781,7 +814,7 @@ class CommentInfo {
         } else if ($p && ($p !== "Author" || ($this->commentType & self::CT_RESPONSE) !== 0)) {
             $x .= " by {$p}";
         }
-        $ctext = $this->content($viewer, !$idable);
+        $ctext = $this->content($viewer);
         if ($rrd && $rrd->wordlimit > 0) {
             $nwords = count_words($ctext);
             $x .= " (" . plural($nwords, "word") . ")";
@@ -834,7 +867,7 @@ class CommentInfo {
             $t .= ' <span class="barsep">·</span> <span class="hint">comment by</span> ' . $viewer->reviewer_html_for($this->contactId);
         }
         return $t . "</small><br>"
-            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->content($viewer, !$idable, 300), 300))
+            . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->content($viewer, 300), 300))
             . "</td></tr>";
     }
 
