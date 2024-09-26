@@ -1,3 +1,7 @@
+apis:
+  core@v1:
+    root: ../../etc/openapi.json
+
 theme:
   openapi:
     schemaExpansionLevel: 3

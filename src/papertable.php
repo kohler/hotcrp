@@ -272,8 +272,7 @@ class PaperTable {
         if (($list = $this->qreq->active_list())
             && $list->highlight
             && preg_match('/\Ap\/([^\/]*)\/([^\/]*)(?:\/|\z)/', $list->listid, $m)) {
-            $hlquery = is_string($list->highlight) ? $list->highlight : urldecode($m[2]);
-            $ps = new PaperSearch($this->user, ["t" => $m[1], "q" => $hlquery]);
+            $ps = new PaperSearch($this->user, ["t" => $m[1], "q" => urldecode($m[2])]);
             $this->matchPreg = $ps->field_highlighters();
         }
         if (empty($this->matchPreg)) {

@@ -339,7 +339,7 @@
     {
         "name": "upload", "post": true,
         "function": "Upload_API::run",
-        "parameters": "?p ?dtype ?start ?offset ?finish ?token ?cancel ?=size ?=mimetype ?=filename ?@blob",
+        "parameters": "?p ?dtype ?start ?offset ?size ?finish ?token ?cancel ?=mimetype ?=filename ?@blob",
         "response": "token ?dtype ?filename ?mimetype ?size ?ranges ?hash ?server_progress_loaded ?server_progress_max"
 
     },

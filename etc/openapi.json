@@ -73,25 +73,33 @@
                         "name": "doc",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/document_name"
+                        }
                     },
                     {
                         "name": "soft",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean"
+                        }
                     },
                     {
                         "name": "dt",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/document_type"
+                        }
                     },
                     {
                         "name": "docid",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/document_id"
+                        }
                     },
                     {
                         "$ref": "#/components/parameters/p.opt"
@@ -140,7 +148,7 @@
                         }
                     }
                 },
-                "summary": "Check PDF format for a document"
+                "summary": "Check PDF format"
             }
         },
         "/upload": {
@@ -154,37 +162,61 @@
                         "name": "dtype",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/document_type"
+                        }
                     },
                     {
                         "name": "start",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean"
+                        }
                     },
                     {
                         "name": "offset",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "description": "Offset of `blob` in uploaded file",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0
+                        }
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "required": false,
+                        "description": "Size of uploaded file",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0
+                        }
                     },
                     {
                         "name": "finish",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean"
+                        }
                     },
                     {
                         "name": "token",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/upload_token"
+                        }
                     },
                     {
                         "name": "cancel",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean"
+                        }
                     },
                     {
                         "$ref": "#/components/parameters/p.opt"
@@ -197,10 +229,15 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "size": {},
-                                    "mimetype": {},
-                                    "filename": {},
-                                    "blob": {}
+                                    "mimetype": {
+                                        "$ref": "#/components/schemas/mimetype"
+                                    },
+                                    "filename": {
+                                        "type": "string"
+                                    },
+                                    "blob": {
+                                        "type": "binary"
+                                    }
                                 }
                             }
                         }
@@ -222,15 +259,47 @@
                                                 "token"
                                             ],
                                             "properties": {
-                                                "token": {},
-                                                "dtype": {},
-                                                "filename": {},
-                                                "mimetype": {},
-                                                "size": {},
-                                                "ranges": {},
-                                                "hash": {},
-                                                "server_progress_loaded": {},
-                                                "server_progress_max": {}
+                                                "token": {
+                                                    "$ref": "#/components/schemas/upload_token"
+                                                },
+                                                "dtype": {
+                                                    "$ref": "#/components/schemas/document_type"
+                                                },
+                                                "filename": {
+                                                    "type": "string"
+                                                },
+                                                "mimetype": {
+                                                    "$ref": "#/components/schemas/mimetype"
+                                                },
+                                                "size": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                },
+                                                "ranges": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "array",
+                                                        "prefixItems": [
+                                                            {
+                                                                "type": "integer",
+                                                                "description": "First offset"
+                                                            },
+                                                            {
+                                                                "type": "integer",
+                                                                "description": "Last offset"
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                "hash": {
+                                                    "type": "string"
+                                                },
+                                                "server_progress_loaded": {
+                                                    "type": "integer"
+                                                },
+                                                "server_progress_max": {
+                                                    "type": "integer"
+                                                }
                                             }
                                         }
                                     ]
@@ -249,7 +318,8 @@
                         }
                     }
                 },
-                "summary": "Upload support for large documents"
+                "summary": "Upload file",
+                "description": "This endpoint uploads documents to the server. It is intended for large\ndocuments, and can upload a file over multiple requests, each containing a\nslice of the data.\n\nAn upload is identified by a `token`. To start an upload, set `start=1` and do\nnot include a `token` parameter. All subsequent requests must include the\n`token` returned by the server in response to the `start=1` request.\n"
             }
         },
         "/assign": {
@@ -303,7 +373,7 @@
                         }
                     }
                 },
-                "summary": "Perform bulk assignments"
+                "summary": "Bulk assignments"
             }
         },
         "/{p}/decision": {
@@ -354,7 +424,7 @@
                         }
                     }
                 },
-                "summary": "Return decision for submission"
+                "summary": "Retrieve submission decision"
             },
             "post": {
                 "tags": [
@@ -419,7 +489,7 @@
                         }
                     }
                 },
-                "summary": "Change decision for submission"
+                "summary": "Change submission decision"
             }
         },
         "/{p}/lead": {
@@ -470,7 +540,7 @@
                         }
                     }
                 },
-                "summary": "Return discussion lead for submission"
+                "summary": "Retrieve submission discussion lead"
             },
             "post": {
                 "tags": [
@@ -535,7 +605,7 @@
                         }
                     }
                 },
-                "summary": "Change decision lead for submission"
+                "summary": "Change submission discussion lead"
             }
         },
         "/{p}/manager": {
@@ -586,7 +656,7 @@
                         }
                     }
                 },
-                "summary": "Return submission administrator for submission"
+                "summary": "Retrieve submission administrator"
             },
             "post": {
                 "tags": [
@@ -651,7 +721,7 @@
                         }
                     }
                 },
-                "summary": "Change submission administrator for submission"
+                "summary": "Change submission administrator"
             }
         },
         "/{p}/reviewround": {
@@ -686,7 +756,7 @@
                         }
                     }
                 },
-                "summary": "Change round for review"
+                "summary": "Change review round"
             }
         },
         "/{p}/shepherd": {
@@ -737,7 +807,7 @@
                         }
                     }
                 },
-                "summary": "Return shepherd for submission"
+                "summary": "Retrieve submission shepherd"
             },
             "post": {
                 "tags": [
@@ -802,7 +872,7 @@
                         }
                     }
                 },
-                "summary": "Change shepherd for submission"
+                "summary": "Change submission shepherd"
             }
         },
         "/search": {
@@ -875,8 +945,12 @@
                                             "properties": {
                                                 "ids": {},
                                                 "groups": {},
-                                                "hotlist": {},
-                                                "search_params": {}
+                                                "hotlist": {
+                                                    "$ref": "#/components/schemas/hotlist"
+                                                },
+                                                "search_params": {
+                                                    "$ref": "#/components/schemas/search_params"
+                                                }
                                             }
                                         }
                                     ]
@@ -1375,7 +1449,7 @@
                         }
                     }
                 },
-                "summary": "Return tags for submission"
+                "summary": "Retrieve submission tags"
             }
         },
         "/tags": {
@@ -1424,8 +1498,12 @@
                                                 "p": {},
                                                 "ids": {},
                                                 "groups": {},
-                                                "hotlist": {},
-                                                "search_params": {}
+                                                "hotlist": {
+                                                    "$ref": "#/components/schemas/hotlist"
+                                                },
+                                                "search_params": {
+                                                    "$ref": "#/components/schemas/search_params"
+                                                }
                                             }
                                         }
                                     ]
@@ -1449,7 +1527,7 @@
                         "$ref": "#/components/parameters/p.opt"
                     }
                 ],
-                "summary": "Change tags for submission(s)"
+                "summary": "Change submission tags"
             }
         },
         "/alltags": {
@@ -1494,7 +1572,7 @@
                         }
                     }
                 },
-                "summary": "Return all visible tags"
+                "summary": "Retrieve all visible tags"
             }
         },
         "/taganno": {
@@ -1539,8 +1617,12 @@
                                                 "anno": {},
                                                 "ids": {},
                                                 "groups": {},
-                                                "hotlist": {},
-                                                "search_params": {}
+                                                "hotlist": {
+                                                    "$ref": "#/components/schemas/hotlist"
+                                                },
+                                                "search_params": {
+                                                    "$ref": "#/components/schemas/search_params"
+                                                }
                                             }
                                         }
                                     ]
@@ -1559,7 +1641,7 @@
                         }
                     }
                 },
-                "summary": "Return annotations for tag"
+                "summary": "Retrieve tag annotations"
             },
             "post": {
                 "tags": [
@@ -1602,8 +1684,12 @@
                                                 "anno": {},
                                                 "ids": {},
                                                 "groups": {},
-                                                "hotlist": {},
-                                                "search_params": {}
+                                                "hotlist": {
+                                                    "$ref": "#/components/schemas/hotlist"
+                                                },
+                                                "search_params": {
+                                                    "$ref": "#/components/schemas/search_params"
+                                                }
                                             }
                                         }
                                     ]
@@ -1622,7 +1708,7 @@
                         }
                     }
                 },
-                "summary": "Change annotations for tag",
+                "summary": "Change tag annotations",
                 "requestBody": {
                     "description": "",
                     "content": {
@@ -1686,7 +1772,7 @@
                         }
                     }
                 },
-                "summary": "Return messages related to editing tags for submission"
+                "summary": "Retrieve tag edit messages"
             }
         },
         "/{p}/votereport": {
@@ -1742,7 +1828,7 @@
                         }
                     }
                 },
-                "summary": "Return vote analysis for submission voting tag"
+                "summary": "Retrieve vote analysis"
             }
         },
         "/{p}/revpref": {
@@ -2449,7 +2535,7 @@
                     }
                 },
                 "description": "The `c` parameter specifies the comment to return. If the comment exists and\nthe user can view it, it will be returned in the `comment` component of the\nresponse. Otherwise, an error response is returned.\n\nIf `c` is omitted, all viewable comments are returned in a `comments` list.\n\n\n",
-                "summary": "Return the JSON representation of a comment"
+                "summary": "Retrieve comment"
             },
             "post": {
                 "tags": [
@@ -2558,7 +2644,7 @@
                     }
                 },
                 "description": "The `c` parameter specifies the comment to modify. It can be a numeric comment\nID; `new`, to create a new comment; or `response` (or a compound like\n`R2response`), to create or modify a named response.\n\nSetting `delete=1` deletes the specified comment, and the response does not\ncontain a `comment` component. Otherwise the comment is created or modified,\nand the response `comment` component contains the new comment.\n\nComment attachments may be uploaded as files (requiring a request body in\n`multipart/form-data` encoding), or using the [upload API](#operation/upload).\nTo upload a single new attachment:\n\n* Set the `attachment:1` body parameter to `new`\n* Either:\n\t* Set `attachment:1:file` as a uploaded file containing the relevant data\n\t* Or use the [upload API](#operation/upload) to upload the file,\n\t  and supply the upload token in the `attachment:1:upload` body parameter\n\nTo upload multiple attachments, number them sequentially (`attachment:2`,\n`attachment:3`, and so forth). To delete an existing attachment, supply its\n`docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.\n",
-                "summary": "Create, modify, or delete a comment"
+                "summary": "Create, modify, or delete comment"
             }
         },
         "/mentioncompletion": {
@@ -3878,10 +3964,18 @@
                                         {
                                             "type": "object",
                                             "properties": {
-                                                "email": {},
-                                                "given_name": {},
-                                                "family_name": {},
-                                                "affiliation": {}
+                                                "email": {
+                                                    "type": "string"
+                                                },
+                                                "given_name": {
+                                                    "type": "string"
+                                                },
+                                                "family_name": {
+                                                    "type": "string"
+                                                },
+                                                "affiliation": {
+                                                    "type": "string"
+                                                }
                                             }
                                         }
                                     ]
@@ -3971,6 +4065,14 @@
             }
         },
         "schemas": {
+            "mimetype": {
+                "type": "string",
+                "description": "MIME type",
+                "examples": [
+                    "application/pdf",
+                    "image/png"
+                ]
+            },
             "pid": {
                 "type": "integer",
                 "description": "Submission ID",
@@ -4090,6 +4192,73 @@
                     }
                 ],
                 "description": "Comment ID"
+            },
+            "document_name": {
+                "type": "string",
+                "examples": [
+                    "testconf-paper1.pdf"
+                ]
+            },
+            "document_type": {
+                "type": "integer"
+            },
+            "document_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Document ID"
+            },
+            "upload_token": {
+                "type": "string",
+                "description": "Token for file upload",
+                "examples": [
+                    "hcupwhvGDVmHNYyDKdqeqA"
+                ]
+            },
+            "hotlist": {
+                "type": "object",
+                "description": "Properties of submission list or user list",
+                "properties": {
+                    "listid": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "urlbase": {
+                        "type": "string"
+                    },
+                    "highlight": {
+                        "type": "boolean"
+                    },
+                    "digest": {
+                        "type": "string"
+                    },
+                    "ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "curid": {
+                        "type": "integer"
+                    },
+                    "previd": {
+                        "type": "integer"
+                    },
+                    "nextid": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "search_params": {
+                "type": "string",
+                "description": "URL-encoded search parameters",
+                "examples": [
+                    "q=&t=s&sort=id&forceShow=&report=pl"
+                ]
             },
             "comment_topic": {
                 "type": "string",

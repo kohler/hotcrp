@@ -1,33 +1,33 @@
 # get /{p}/tags
 
-> Return tags for submission
+> Retrieve submission tags
 
 
 # post /tags
 
-> Change tags for submission(s)
+> Change submission tags
 
 
 # get /alltags
 
-> Return all visible tags
+> Retrieve all visible tags
 
 
 # get /taganno
 
-> Return annotations for tag
+> Retrieve tag annotations
 
 
 # post /taganno
 
-> Change annotations for tag
+> Change tag annotations
 
 
 # get /{p}/tagmessages
 
-> Return messages related to editing tags for submission
+> Retrieve tag edit messages
 
 
 # get /{p}/votereport
 
-> Return vote analysis for submission voting tag
+> Retrieve vote analysis

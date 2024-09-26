@@ -13,7 +13,7 @@ class FormatCheck_API {
             return JsonResult::make_error(isset($whynot["permission"]) ? 403 : 404, "<5>" . $whynot->unparse_html());
         }
         if (($doc = $docreq->prow->document($docreq->dtype, $docreq->docid, true))) {
-            $runflag = $qreq->soft ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_ALWAYS;
+            $runflag = friendly_boolean($qreq->soft) ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_ALWAYS;
             $cf = new CheckFormat($user->conf, $runflag);
             $cf->check_document($doc);
             $ms = $cf->document_messages($doc);

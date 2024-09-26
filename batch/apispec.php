@@ -41,6 +41,8 @@ class APISpec_Batch {
     /** @var bool */
     private $override_param;
     /** @var bool */
+    private $override_response;
+    /** @var bool */
     private $override_tags;
     /** @var bool */
     private $override_schema;
@@ -93,7 +95,13 @@ class APISpec_Batch {
                 $s = file_get_contents_throw(safe_filename($arg["i"]));
             }
             if ($s === false || !is_object($this->j = json_decode($s))) {
-                throw new CommandLineException($arg["i"] . ": Invalid input");
+                $msg = $arg["i"] . ": Invalid input";
+                if ($this->j === null
+                    && Json::decode($s) === null
+                    && Json::last_error()) {
+                    $msg .= ": " . Json::last_error_msg();
+                }
+                throw new CommandLineException($msg);
             }
             $this->output_file = $arg["i"];
             $this->batch = true;
@@ -104,6 +112,7 @@ class APISpec_Batch {
 
         $this->override_ref = isset($arg["override-ref"]);
         $this->override_param = isset($arg["override-param"]);
+        $this->override_response = isset($arg["override-response"]);
         $this->override_tags = isset($arg["override-tags"]);
         $this->override_schema = isset($arg["override-schema"]);
         $this->override_description = !isset($arg["no-override-description"]);
@@ -655,36 +664,93 @@ class APISpec_Batch {
             }
         }
 
-        $rschema = $this->resolve_common_schema("minimal_response");
-        if (!empty($bprop)) {
-            $restschema = ["type" => "object"];
-            if (!empty($breq))  {
-                $restschema["required"] = $breq;
-            }
-            $restschema["properties"] = $bprop;
-            $rschema = (object) [
-                "allOf" => [$rschema, (object) $restschema]
-            ];
-        }
+        $this->apply_response($x, $bprop, $breq);
+    }
 
-        $x->responses = (object) [
-            "200" => (object) [
-                "description" => "",
-                "content" => (object) [
-                    "application/json" => (object) [
-                        "schema" => $rschema
-                    ]
-                ]
-            ],
-            "default" => (object) [
+    private function apply_response($x, $bprop, $breq) {
+        $x->responses = $x->responses ?? (object) [];
+        $resp200 = $x->responses->{"200"} = $x->responses->{"200"} ?? (object) [];
+        if (!isset($x->responses->default)) {
+            $x->responses->default = (object) [
                 "description" => "",
                 "content" => (object) [
                     "application/json" => (object) [
                         "schema" => $this->resolve_common_schema("error_response")
                     ]
                 ]
-            ]
-        ];
+            ];
+        }
+
+        $resp200->description = $resp200->description ?? "";
+        $respc = $resp200->content = $resp200->content ?? (object) [];
+        $respj = $respc->{"application/json"} = $respc->{"application/json"} ?? (object) [];
+        $resps = $respj->{"schema"} = $respj->{"schema"} ?? $this->resolve_common_schema("minimal_response");
+
+        if (($resps->{"\$ref"} ?? null) === "#/components/schemas/minimal_response") {
+            $respstype = 0;
+        } else if (is_array($resps->allOf ?? null)
+                   && count($resps->allOf) === 2
+                   && ($resps->allof[1]->type ?? null) === "object") {
+            $respstype = 1;
+        } else {
+            $respstype = -1;
+        }
+
+        if (!$this->override_response
+            && ($respstype < 0 || ($respstype > 0 && !$bprop))) {
+            return;
+        }
+
+        if (!$bprop) {
+            if ($respstype !== 0) {
+                $respj->{"schema"} = $this->resolve_common_schema("minimal_response");
+            }
+            return;
+        }
+
+        if ($respstype <= 0) {
+            $resps = $respj->{"schema"} = (object) [
+                "allOf" => [
+                    $this->resolve_common_schema("minimal_response"),
+                    (object) ["type" => "object"]
+                ]
+            ];
+        }
+        $respb = $resps->allOf[1];
+
+        // required properties
+        if ($this->override_response) {
+            if ($breq) {
+                $respb->required = $breq;
+            } else {
+                unset($respb->required);
+            }
+        } else if ($breq) {
+            $respb->required = $respb->required ?? [];
+            foreach ($breq as $p) {
+                if (!in_array($p, $respb->required)) {
+                    $respb->required[] = $p;
+                }
+            }
+        }
+
+        // property list
+        if ($this->override_response) {
+            $respprop = $respb->properties = (object) [];
+        } else {
+            $respprop = $respb->properties = $respb->properties ?? (object) [];
+        }
+        foreach ($bprop as $k => $v) {
+            if (!isset($respprop->{$k})
+                || empty((array) $respprop->{$k})) {
+                $respprop->$k = $v;
+            } else {
+                if (($v->description ?? "") !== ""
+                    && ($respprop->{$k}->description ?? "") === "") {
+                    $respprop->{$k}->description = $v->description;
+                }
+            }
+        }
     }
 
     private function sort() {
@@ -748,6 +814,7 @@ class APISpec_Batch {
             "i:,input: =FILE Modify existing specification in FILE",
             "override-ref Overwrite conflicting \$refs in input",
             "override-param",
+            "override-response",
             "override-tags",
             "override-schema",
             "no-override-description",

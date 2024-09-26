@@ -1487,12 +1487,9 @@ class PaperSearch extends MessageSet {
         }
 
         $args["q"] = null;
-        $l = (new SessionList($listid, $ids, $this->description($listname)))
-            ->set_urlbase($this->url_site_relative_raw($args));
-        if ($this->field_highlighters()) {
-            $l->highlight = true;
-        }
-        return $l;
+        return (new SessionList($listid, $ids, $this->description($listname)))
+            ->set_urlbase($this->url_site_relative_raw($args))
+            ->set_highlight(!!$this->field_highlighters());
     }
 
     /** @return SessionList */

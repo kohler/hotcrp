@@ -1,48 +1,48 @@
 # post /assign
 
-> Perform bulk assignments
+> Bulk assignments
 
 
 # get /{p}/decision
 
-> Return decision for submission
+> Retrieve submission decision
 
 
 # post /{p}/decision
 
-> Change decision for submission
+> Change submission decision
 
 
 # get /{p}/lead
 
-> Return discussion lead for submission
+> Retrieve submission discussion lead
 
 
 # post /{p}/lead
 
-> Change decision lead for submission
+> Change submission discussion lead
 
 
 # get /{p}/manager
 
-> Return submission administrator for submission
+> Retrieve submission administrator
 
 
 # post /{p}/manager
 
-> Change submission administrator for submission
+> Change submission administrator
 
 
 # post /{p}/reviewround
 
-> Change round for review
+> Change review round
 
 
 # get /{p}/shepherd
 
-> Return shepherd for submission
+> Retrieve submission shepherd
 
 
 # post /{p}/shepherd
 
-> Change shepherd for submission
+> Change submission shepherd

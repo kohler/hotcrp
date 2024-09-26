@@ -13,6 +13,7 @@ class SessionList {
     public $url;
     /** @var ?string */
     public $urlbase;
+    /** @var ?bool */
     public $highlight;
     /** @var ?string */
     public $digest;
@@ -46,6 +47,13 @@ class SessionList {
      * @return $this */
     function set_urlbase($urlbase) {
         $this->urlbase = $urlbase;
+        return $this;
+    }
+
+    /** @param bool $highlight
+     * @return $this */
+    function set_highlight($highlight) {
+        $this->highlight = !!$highlight;
         return $this;
     }
 
@@ -289,8 +297,8 @@ class SessionList {
                 } else if (isset($j->urlbase) && is_string($j->urlbase)) {
                     $list->urlbase = $j->urlbase;
                 }
-                if (isset($j->highlight)) {
-                    $list->highlight = $j->highlight;
+                if ($j->highlight ?? false) {
+                    $list->highlight = true;
                 }
                 $list->digest = $digest;
                 if (isset($j->curid) && is_int($j->curid)) {
@@ -363,7 +371,7 @@ class SessionList {
         } else if ($this->urlbase !== null) {
             $j["urlbase"] = $this->urlbase;
         }
-        if ($this->highlight !== null) {
+        if ($this->highlight) {
             $j["highlight"] = $this->highlight;
         }
         if ($this->digest !== null) {
