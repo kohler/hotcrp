@@ -373,11 +373,6 @@ class SessionList {
         // of the sessionlist object, currently `ids` and `sorted_ids`.
         if ($this->ids !== null) {
             $j["ids"] = self::encode_ids($this->ids);
-            if (strlen($j["ids"]) > 160) {
-                $x = $this->ids;
-                sort($x);
-                $j["sorted_ids"] = self::encode_ids($x);
-            }
         }
         return json_encode_browser($j);
     }

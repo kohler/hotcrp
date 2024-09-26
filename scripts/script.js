@@ -8979,19 +8979,21 @@ function encode_session_list_ids(ids) {
 }
 
 function decode_session_list_ids(str) {
-    if ($.isArray(str))
+    if ($.isArray(str)) {
         return str;
-    var a = [], l = str.length, next = null, sign = 1, include_after = false;
-    for (var i = 0; i !== l; ) {
-        var ch = str.charCodeAt(i);
+    }
+    const a = [], l = str.length;
+    let next = null, sign = 1, include_after = false;
+    for (let i = 0; i !== l; ) {
+        let ch = str.charCodeAt(i);
         if (ch >= 48 && ch <= 57) {
-            var n1 = 0;
+            let n1 = 0;
             while (ch >= 48 && ch <= 57) {
                 n1 = 10 * n1 + ch - 48;
                 ++i;
                 ch = i !== l ? str.charCodeAt(i) : 0;
             }
-            var n2 = n1;
+            let n2 = n1;
             if (ch === 45
                 && i + 1 < l
                 && (ch = str.charCodeAt(i + 1)) >= 48
@@ -9014,7 +9016,7 @@ function decode_session_list_ids(str) {
         }
 
         ++i;
-        var add0 = 0, skip = 0;
+        let add0 = 0, skip = 0;
         if (ch >= 97 && ch <= 104) {
             add0 = ch - 96;
         } else if (ch >= 105 && ch <= 112) {
@@ -9023,7 +9025,7 @@ function decode_session_list_ids(str) {
             next += (ch - 116) * 8 * sign;
             continue;
         } else if (ch === 113 || ch === 114 || ch === 116) {
-            var j = 0, ch2;
+            let j = 0, ch2;
             while (i !== l && (ch2 = str.charCodeAt(i)) >= 48 && ch2 <= 57) {
                 j = 10 * j + ch2 - 48;
                 ++i;
@@ -9169,10 +9171,14 @@ Hotlist.prototype.cookie_at = function (pid) {
 Hotlist.prototype.reorder = function (tbody) {
     if (this.obj) {
         this.resolve();
-        var p0 = -100, p1 = -100, pid, l = [];
-        for (var cur = tbody.firstChild; cur; cur = cur.nextSibling)
-            if (cur.nodeName === "TR" && /^pl(?:\s|$)/.test(cur.className)
-                && (pid = +cur.getAttribute("data-pid"))) {
+        let p0 = -100, p1 = -100;
+        const l = [];
+        for (let cur = tbody.firstChild; cur; cur = cur.nextSibling) {
+            if (cur.nodeName !== "TR" || !/^pl(?:\s|$)/.test(cur.className)) {
+                continue;
+            }
+            const pid = +cur.getAttribute("data-pid");
+            if (pid) {
                 if (pid != p1 + 1) {
                     if (p0 > 0)
                         l.push(p0 == p1 ? p0 : p0 + "-" + p1);
@@ -9180,11 +9186,32 @@ Hotlist.prototype.reorder = function (tbody) {
                 }
                 p1 = pid;
             }
-        if (p0 > 0)
+        }
+        if (p0 > 0) {
             l.push(p0 == p1 ? p0 : p0 + "-" + p1);
+        }
         this.obj.ids = l.join("'");
         this.str = JSON.stringify(this.obj);
     }
+};
+Hotlist.prototype.id_search = function () {
+    if (this.obj.sorted_ids) {
+        return "pidcode:" + this.obj.sorted_ids;
+    }
+    if (typeof this.obj.ids === "string") {
+        if (this.obj.ids.length <= 200) {
+            return "pidcode:" + this.obj.ids;
+        }
+    } else if (this.obj.ids.length <= 60) {
+        return this.obj.ids.join(" ");
+    }
+    let ids = this.ids();
+    if (ids === this.obj.ids) {
+        ids = ids.slice();
+    }
+    ids.sort(function (a, b) { return a - b; });
+    this.obj.sorted_ids = encode_session_list_ids(ids);
+    return "pidcode:" + this.obj.sorted_ids;
 };
 function set_cookie(info, pid) {
     let p = siteinfo.cookie_params, m;
@@ -9202,7 +9229,7 @@ function is_listable(sitehref) {
     return /^(?:paper|review|assign|profile)(?:|\.php)\//.test(sitehref);
 }
 function handle_list(e, href) {
-    var hl, sitehref, info;
+    let sitehref, hl, info;
     if (href
         && href.substring(0, siteinfo.site_relative.length) === siteinfo.site_relative
         && is_listable((sitehref = href.substring(siteinfo.site_relative.length)))
@@ -9214,12 +9241,12 @@ function handle_list(e, href) {
             && document.getElementById("footer"))
             // Existence of `#footer` checks that the table is fully loaded
             info.reorder(hl.tBodies[0]);
-        var m = /^[^/]*\/(\d+)(?:$|[a-zA-Z]*\/|\?)/.exec(sitehref);
+        let m = /^[^/]*\/(\d+)(?:$|[a-zA-Z]*\/|\?)/.exec(sitehref);
         set_cookie(info, m ? +m[1] : null);
     }
 }
 function unload_list() {
-    var hl = Hotlist.at(document.body);
+    let hl = Hotlist.at(document.body);
     if (hl.str && (!cookie_set_at || cookie_set_at + 3 < now_msec()))
         set_cookie(hl);
 }
@@ -9351,26 +9378,17 @@ $(function () {
 
 function hotlist_search_params(x, ids) {
     x = x instanceof HTMLElement ? Hotlist.at(x) : new Hotlist(x);
-    var m;
-    if (!x || !x.obj || !x.obj.ids || !(m = x.obj.listid.match(/^p\/(.*?)\/(.*?)(?:$|\/)(.*)/)))
+    let m;
+    if (!x || !x.obj || !x.obj.ids
+        || !(m = x.obj.listid.match(/^p\/(.*?)\/(.*?)(?:$|\/)(.*)/))) {
         return false;
-    var idv;
-    if (ids) {
-        if (x.obj.sorted_ids)
-            idv = "pidcode:" + x.obj.sorted_ids;
-        else if ($.isArray(x.obj.ids))
-            idv = x.obj.ids.join(" ");
-        else
-            idv = "pidcode:" + x.obj.ids;
-    } else {
-        idv = urldecode(m[2]);
     }
-    var q = {q: idv, t: m[1] || "s"};
+
+    const q = {q: ids ? x.id_search() : urldecode(m[2]), t: m[1] || "s"};
     if (m[3]) {
-        var args = m[3].split(/[&;]/);
-        for (var i = 0; i < args.length; ++i) {
-            var pos = args[i].indexOf("=");
-            q[args[i].substr(0, pos)] = urldecode(args[i].substr(pos + 1));
+        for (const arg of m[3].split(/[&;]/)) {
+            const pos = arg.indexOf("=");
+            q[arg.substr(0, pos)] = urldecode(arg.substr(pos + 1));
         }
     }
     return q;
@@ -12163,7 +12181,6 @@ handle_ui.on("document-uploader", function (event) {
             }
         } else if (!r.hash) {
             var fd = new FormData, myxhr;
-            fd.append("size", size);
             fd.append("mimetype", file.type);
             fd.append("filename", file.name);
             var endpos = Math.min(size, pos + blob_limit);
@@ -12172,6 +12189,7 @@ handle_ui.on("document-uploader", function (event) {
                 args.offset = pos;
                 fd.append("blob", file.slice(pos, endpos), "blob");
             }
+            args.size = size;
             if (endpos === size)
                 args.finish = 1;
             pos = endpos;
@@ -13834,7 +13852,7 @@ function populate_pcselector() {
     }
 
     demand_load.pc_map().then(function (pcs) {
-        const last_first = pcs.sort === "last", used = {}, optids = [];
+        const last_first = pcs.sort === "last", used = {};
         let selindex = -1, noptions = 0;
 
         for (const opt of options) {
@@ -13897,8 +13915,8 @@ function populate_pcselector() {
             if (selected == 0 || selected == null) {
                 selindex = 0;
             } else {
-                opt = document.createElement("option");
-                const p = pcs.umap[selected];
+                const p = pcs.umap[selected],
+                    opt = document.createElement("option");
                 opt.setAttribute("value", p ? p.email : selected);
                 opt.text = p ? p.name + " (not assignable)" : "[removed from PC]";
                 self.appendChild(opt);
