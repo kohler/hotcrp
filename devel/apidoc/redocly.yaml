@@ -1,0 +1,17 @@
+theme:
+  openapi:
+    schemaExpansionLevel: 3
+    theme:
+      sidebar:
+        backgroundColor: 'ivory'
+      rightPanel:
+        textColor: 'ivory'
+        backgroundColor: '#001036'
+      typography:
+        fontFamily: 'sans-serif'
+        links:
+          color: '#0090cc'
+        headings:
+          fontFamily: 'sans-serif'
+        code:
+          fontFamily: 'SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace'

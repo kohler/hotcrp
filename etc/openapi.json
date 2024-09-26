@@ -3,7 +3,7 @@
     "info": {
         "title": "HotCRP",
         "version": "0.1",
-        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\n\nWe welcome [pull requests](https://github.com/kohler/hotcrp/pulls) that fill\nout this documentation. To request documentation for an API method, please\nopen a [GitHub issue](https://github.com/kohler/hotcrp/issues).\n\n## Basics\n\nHotCRP reads parameters using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),\neither in query strings or in the request body. Complex requests either use\nstructured keys, such as `named_search/1/q`, or, occasionally, JSON encoding.\n`multipart/form-data` is used for requests that include file data.\n\nThe `p` parameter, which defines a submission ID, can appear either in the\nquery string or immediately following `api/` in the query path.\n`api/comment?p=1` and `api/1/comment` are the same API call.\n\nResponses are formatted as JSON.\n",
+        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\n\nWe welcome [pull requests](https://github.com/kohler/hotcrp/pulls) that fill\nout this documentation. To request documentation for an API method, please\nopen a [GitHub issue](https://github.com/kohler/hotcrp/issues).\n\n## Basics\n\nHotCRP reads parameters using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),\neither in query strings or in the request body. Complex requests either use\nstructured keys, such as `named_search/1/q`, or, occasionally, JSON encoding.\n`multipart/form-data` is used for requests that include file data.\n\nThe `p` parameter, which defines a submission ID, can appear either in the\nquery string or immediately following `api/` in the query path.\n`api/comment?p=1` and `api/1/comment` are the same API call.\n\nResponses are formatted as JSON.\n\n\n",
         "summary": "HotCRP conference management software API"
     },
     "paths": {
@@ -139,7 +139,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Check PDF format for a document"
             }
         },
         "/upload": {
@@ -248,7 +249,7 @@
                         }
                     }
                 },
-                "summary": "/upload"
+                "summary": "Upload support for large documents"
             }
         },
         "/assign": {
@@ -301,7 +302,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Perform bulk assignments"
             }
         },
         "/{p}/decision": {
@@ -351,7 +353,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Return decision for submission"
             },
             "post": {
                 "tags": [
@@ -415,7 +418,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Change decision for submission"
             }
         },
         "/{p}/lead": {
@@ -465,7 +469,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Return discussion lead for submission"
             },
             "post": {
                 "tags": [
@@ -529,7 +534,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Change decision lead for submission"
             }
         },
         "/{p}/manager": {
@@ -579,7 +585,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Return submission administrator for submission"
             },
             "post": {
                 "tags": [
@@ -643,7 +650,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Change submission administrator for submission"
             }
         },
         "/{p}/reviewround": {
@@ -677,7 +685,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Change round for review"
             }
         },
         "/{p}/shepherd": {
@@ -727,7 +736,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Return shepherd for submission"
             },
             "post": {
                 "tags": [
@@ -791,7 +801,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Change shepherd for submission"
             }
         },
         "/search": {
@@ -826,6 +837,18 @@
                     },
                     {
                         "name": "scoresort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "reviewer",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "qt",
                         "in": "query",
                         "required": false,
                         "schema": {}
@@ -912,6 +935,18 @@
                     },
                     {
                         "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "qt",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "reviewer",
                         "in": "query",
                         "required": false,
                         "schema": {}
@@ -1339,7 +1374,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Return tags for submission"
             }
         },
         "/tags": {
@@ -1412,7 +1448,8 @@
                     {
                         "$ref": "#/components/parameters/p.opt"
                     }
-                ]
+                ],
+                "summary": "Change tags for submission(s)"
             }
         },
         "/alltags": {
@@ -1456,7 +1493,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Return all visible tags"
             }
         },
         "/taganno": {
@@ -1470,6 +1508,12 @@
                         "in": "query",
                         "required": true,
                         "schema": {}
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
                     }
                 ],
                 "responses": {
@@ -1478,7 +1522,28 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "tag",
+                                                "editable",
+                                                "anno"
+                                            ],
+                                            "properties": {
+                                                "tag": {},
+                                                "editable": {},
+                                                "anno": {},
+                                                "ids": {},
+                                                "groups": {},
+                                                "hotlist": {},
+                                                "search_params": {}
+                                            }
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -1493,7 +1558,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Return annotations for tag"
             },
             "post": {
                 "tags": [
@@ -1505,6 +1571,12 @@
                         "in": "query",
                         "required": true,
                         "schema": {}
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
                     }
                 ],
                 "responses": {
@@ -1513,7 +1585,28 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "tag",
+                                                "editable",
+                                                "anno"
+                                            ],
+                                            "properties": {
+                                                "tag": {},
+                                                "editable": {},
+                                                "anno": {},
+                                                "ids": {},
+                                                "groups": {},
+                                                "hotlist": {},
+                                                "search_params": {}
+                                            }
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -1525,6 +1618,23 @@
                                 "schema": {
                                     "$ref": "#/components/schemas/error_response"
                                 }
+                            }
+                        }
+                    }
+                },
+                "summary": "Change annotations for tag",
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "anno": {}
+                                },
+                                "required": [
+                                    "anno"
+                                ]
                             }
                         }
                     }
@@ -1575,7 +1685,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Return messages related to editing tags for submission"
             }
         },
         "/{p}/votereport": {
@@ -1630,7 +1741,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Return vote analysis for submission voting tag"
             }
         },
         "/{p}/revpref": {
@@ -2336,8 +2448,8 @@
                         }
                     }
                 },
-                "description": "Return the JSON representation of a comment.\n\nThe `c` parameter specifies the comment to return. If the comment exists and\nthe user can view it, it will be returned in the `comment` component of the\nresponse. Otherwise, an error response is returned.\n\nIf `c` is omitted, all viewable comments are returned in a `comments` list.\n\n\n",
-                "summary": "/{p}/comment"
+                "description": "The `c` parameter specifies the comment to return. If the comment exists and\nthe user can view it, it will be returned in the `comment` component of the\nresponse. Otherwise, an error response is returned.\n\nIf `c` is omitted, all viewable comments are returned in a `comments` list.\n\n\n",
+                "summary": "Return the JSON representation of a comment"
             },
             "post": {
                 "tags": [
@@ -2445,8 +2557,8 @@
                         }
                     }
                 },
-                "description": "Create, modify, or delete a comment.\n\nThe `c` parameter specifies the comment to modify. It can be a numeric comment\nID; `new`, to create a new comment; or `response` (or a compound like\n`R2response`), to create or modify a named response.\n\nSetting `delete=1` deletes the specified comment, and the response does not\ncontain a `comment` component. Otherwise the comment is created or modified,\nand the response `comment` component contains the new comment.\n\nComment attachments may be uploaded as files (requiring a request body in\n`multipart/form-data` encoding), or using the [upload API](#operation/upload).\nTo upload a single new attachment:\n\n* Set `attachment:1` to `new`\n* Either:\n\t* Set `attachment:1:file` as a uploaded file containing the relevant data\n\t* Or use the [upload API](#operation/upload) to upload the file,\n\t  and supply the upload token in `attachment:1:upload`\n\nTo upload multiple attachments, number them sequentially (`attachment:2`,\n`attachment:3`, and so forth). To delete an existing attachment, supply its\n`docid` in `attachment:N`, and set `attachment:N:delete` to 1.\n",
-                "summary": "/{p}/comment"
+                "description": "The `c` parameter specifies the comment to modify. It can be a numeric comment\nID; `new`, to create a new comment; or `response` (or a compound like\n`R2response`), to create or modify a named response.\n\nSetting `delete=1` deletes the specified comment, and the response does not\ncontain a `comment` component. Otherwise the comment is created or modified,\nand the response `comment` component contains the new comment.\n\nComment attachments may be uploaded as files (requiring a request body in\n`multipart/form-data` encoding), or using the [upload API](#operation/upload).\nTo upload a single new attachment:\n\n* Set the `attachment:1` body parameter to `new`\n* Either:\n\t* Set `attachment:1:file` as a uploaded file containing the relevant data\n\t* Or use the [upload API](#operation/upload) to upload the file,\n\t  and supply the upload token in the `attachment:1:upload` body parameter\n\nTo upload multiple attachments, number them sequentially (`attachment:2`,\n`attachment:3`, and so forth). To delete an existing attachment, supply its\n`docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.\n",
+                "summary": "Create, modify, or delete a comment"
             }
         },
         "/mentioncompletion": {
@@ -2736,7 +2848,10 @@
                                                 "pc"
                                             ],
                                             "properties": {
-                                                "pc": {}
+                                                "pc": {},
+                                                "tags": {},
+                                                "sort": {},
+                                                "p": {}
                                             }
                                         }
                                     ]
@@ -2754,7 +2869,15 @@
                             }
                         }
                     }
-                }
+                },
+                "parameters": [
+                    {
+                        "name": "ui",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ]
             }
         },
         "/clickthrough": {
@@ -3855,35 +3978,36 @@
             },
             "message": {
                 "type": "object",
-                "description": "Diagnostic",
                 "required": [
                     "status"
                 ],
                 "properties": {
+                    "status": {
+                        "type": "integer",
+                        "minimum": -5,
+                        "maximum": 3
+                    },
                     "field": {
                         "type": "string"
                     },
                     "message": {
                         "type": "string"
                     },
-                    "status": {
-                        "type": "integer",
-                        "minimum": -5,
-                        "maximum": 3
-                    },
                     "context": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/message_context"
                     },
                     "pos1": {
+                        "title": "start position",
                         "type": "integer"
                     },
                     "pos2": {
+                        "title": "end position",
                         "type": "integer"
                     }
                 }
             },
             "message_list": {
-                "type": "list",
+                "type": "array",
                 "description": "Diagnostic list",
                 "items": {
                     "$ref": "#/components/schemas/message"
@@ -3902,6 +4026,23 @@
                         "$ref": "#/components/schemas/message_list"
                     }
                 }
+            },
+            "message_context": {
+                "type": "array",
+                "prefixItems": [
+                    {
+                        "title": "substring",
+                        "type": "string"
+                    },
+                    {
+                        "title": "start position",
+                        "type": "integer"
+                    },
+                    {
+                        "title": "end position",
+                        "type": "integer"
+                    }
+                ]
             },
             "error_response": {
                 "type": "object",
@@ -4062,7 +4203,7 @@
                         "type": "string"
                     },
                     "docs": {
-                        "type": "list",
+                        "type": "array",
                         "items": {}
                     },
                     "word_count": {

@@ -3868,7 +3868,7 @@ handle_ui.on("js-tracker-stop", function (evt) {
     var e = evt.target.closest(".has-tracker");
     if (e && e.hasAttribute("data-trackerid"))
         $.post(hoturl("=api/trackerconfig"),
-            {"tr1-id": e.getAttribute("data-trackerid"), "tr1-stop": 1},
+            {"tr/1/id": e.getAttribute("data-trackerid"), "tr/1/stop": 1},
             streload);
 });
 

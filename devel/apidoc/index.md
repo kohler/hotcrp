@@ -22,3 +22,8 @@ query string or immediately following `api/` in the query path.
 `api/comment?p=1` and `api/1/comment` are the same API call.
 
 Responses are formatted as JSON.
+
+
+# schema message
+
+Fart fart

@@ -67,8 +67,7 @@
         "name": "decision", "post": true, "paper": true,
         "function": "Decision_API::run",
         "parameters": "=decision",
-        "response": "decision decision_html ?editable",
-        "response_deprecated": "value result"
+        "response": "decision decision_html ?editable"
     },
     {
         "name": "events", "get": true,
@@ -83,7 +82,7 @@
     {
         "name": "fieldhtml", "get": true,
         "function": "Search_API::fieldhtml",
-        "parameters": "f ?aufull ?session q ?t ?sort ?qt",
+        "parameters": "f ?aufull ?session q ?t ?sort ?qt ?reviewer",
         "response": "fields data ?stat ?classes ?attr"
     },
     {
@@ -123,8 +122,7 @@
         "name": "lead", "post": true, "paper": true,
         "function": "PaperPC_API::lead_api",
         "parameters": "=lead",
-        "response": "lead lead_html ?color_classes",
-        "response_deprecated": "value result"
+        "response": "lead lead_html ?color_classes"
     },
     {
         "name": "mailtext", "get": true,
@@ -135,8 +133,7 @@
     {
         "name": "manager", "get": true, "paper": true,
         "function": "PaperPC_API::manager_api",
-        "response": "manager manager_html ?color_classes",
-        "response_deprecated": "value result"
+        "response": "manager manager_html ?color_classes"
     },
     {
         "name": "manager", "post": true, "paper": true,
@@ -251,7 +248,7 @@
     {
         "name": "search", "get": true,
         "function": "Search_API::search",
-        "parameters": "q t ?sort ?report ?scoresort ?reviewer",
+        "parameters": "q t ?qt ?sort ?report ?scoresort ?reviewer",
         "response": "ids groups hotlist search_params"
     },
     {
@@ -301,8 +298,7 @@
         "name": "shepherd", "post": true, "paper": true,
         "function": "PaperPC_API::shepherd_api",
         "parameters": "=shepherd",
-        "response": "shepherd shepherd_html ?color_classes",
-        "response_deprecated": "value result"
+        "response": "shepherd shepherd_html ?color_classes"
     },
     {
         "name": "submissionfieldlibrary", "get": true, "allow_if": "chair",
@@ -312,12 +308,14 @@
     {
         "name": "taganno", "get": true,
         "function": "TagAnno_API::get",
-        "parameters": "tag"
+        "parameters": "tag ?search",
+        "response": "tag editable anno ?ids ?groups ?hotlist ?search_params"
     },
     {
         "name": "taganno", "post": true,
         "function": "TagAnno_API::set",
-        "parameters": "tag"
+        "parameters": "tag ?search =anno",
+        "response": "tag editable anno ?ids ?groups ?hotlist ?search_params"
     },
     {
         "name": "tagmessages", "get": true, "paper": true,

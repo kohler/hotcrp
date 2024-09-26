@@ -24,10 +24,7 @@ class PaperPC_API {
         $j = [
             "ok" => true,
             $type => $pcu ? $pcu->email : "none",
-            "{$type}_html" => $pcu ? $user->name_html_for($pcu) : "None",
-            /* XXX backward compat */
-            "value" => $pcu ? $pcu->email : "none",
-            "result" => $pcu ? $user->name_html_for($pcu) : "None"
+            "{$type}_html" => $pcu ? $user->name_html_for($pcu) : "None"
         ];
         if ($user->can_view_user_tags()) {
             $j["color_classes"] = $pcu ? $pcu->viewable_color_classes($user) : "";
