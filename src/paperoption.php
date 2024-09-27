@@ -568,7 +568,7 @@ class PaperOption implements JsonSerializable {
         } else if ($this->_exists_state !== 0) {
             return $this->_exists_state > 0;
         } else if (++$this->_recursion > 5) {
-            throw new ErrorException("Recursion in {$this->name}::test_exists");
+            throw new ErrorException("Recursion in {$this->name}::test_exists [{$this->exists_if}]");
         } else {
             if ($use_script_expression) {
                 $x = !!($this->exists_script_expression($prow) ?? true);
