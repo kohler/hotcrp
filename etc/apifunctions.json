@@ -28,6 +28,12 @@
         "parameters": "?p =assignments"
     },
     {
+        "name": "assigntags", "post": true,
+        "function": "Tags_API::assigntags",
+        "parameters": "=tagassignment ?=search",
+        "response": "p ?ids ?groups ?hotlist ?search_params"
+    },
+    {
         "name": "claimreview", "post": true, "paper": true, "redirect": true,
         "function": "RequestReview_API::claimreview",
         "parameters": "r email",
@@ -273,10 +279,10 @@
         "response": "pid tags tags_edit_text tags_view_html tag_decoration_html color_classes ?tags_conflicted ?color_classes_conflicted"
     },
     {
-        "name": "tags", "post": true,
+        "name": "tags", "post": true, "paper": true,
         "function": "Tags_API::run",
-        "parameters": "?p ?=tags ?=addtags ?=deltags ?=tagassignment ?=search",
-        "response": "?pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?tags_conflicted ?color_classes_conflicted ?p ?ids ?groups ?hotlist ?search_params"
+        "parameters": "?=tags ?=addtags ?=deltags ?=search",
+        "response": "pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?tags_conflicted ?color_classes_conflicted ?ids ?groups ?hotlist ?search_params"
     },
     {
         "name": "settingdescriptions", "get": true,

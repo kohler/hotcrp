@@ -3,9 +3,14 @@
 > Retrieve submission tags
 
 
-# post /tags
+# post /{p}/tags
 
 > Change submission tags
+
+
+# post /assigntags
+
+> Change several tags
 
 
 # get /alltags

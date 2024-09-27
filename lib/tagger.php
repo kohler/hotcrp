@@ -329,7 +329,9 @@ class TagAnno implements JsonSerializable {
         if ($this->pos !== null) {
             $j["pos"] = $this->pos;
         }
-        $j["annoid"] = $this->annoId;
+        if ($this->annoId !== null) {
+            $j["annoid"] = $this->annoId;
+        }
         if ($this->tag) {
             $j["tag"] = $this->tag;
         }

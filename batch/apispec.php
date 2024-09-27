@@ -205,7 +205,7 @@ class APISpec_Batch {
                 if (!is_object($xj)) {
                     continue;
                 }
-                if ($xj->summary === $pj->__path
+                if (($xj->summary ?? "") === $pj->__path
                     && !isset($xj->description)
                     && !isset($xj->operationId)) {
                     unset($xj->summary);
@@ -377,7 +377,7 @@ class APISpec_Batch {
 
     /** @param string $name
      * @return object */
-    private function resolve_common_schema($name) {
+    private function reference_common_schema($name) {
         if ($this->schemas === null) {
             $compj = $this->j->components = $this->j->components ?? (object) [];
             $this->schemas = $compj->schemas = $compj->schemas ?? (object) [];
@@ -415,7 +415,7 @@ class APISpec_Batch {
                 $nj = (object) [
                     "type" => "list",
                     "description" => "Diagnostic list",
-                    "items" => $this->resolve_common_schema("message")
+                    "items" => $this->reference_common_schema("message")
                 ];
             } else if ($name === "message") {
                 $nj = (object) [
@@ -437,7 +437,7 @@ class APISpec_Batch {
                     "required" => ["ok"],
                     "properties" => (object) [
                         "ok" => (object) ["type" => "boolean"],
-                        "message_list" => $this->resolve_common_schema("message_list")
+                        "message_list" => $this->reference_common_schema("message_list")
                     ]
                 ];
             } else if ($name === "error_response") {
@@ -446,7 +446,7 @@ class APISpec_Batch {
                     "required" => ["ok"],
                     "properties" => (object) [
                         "ok" => (object) ["type" => "boolean", "description" => "always false"],
-                        "message_list" => $this->resolve_common_schema("message_list"),
+                        "message_list" => $this->reference_common_schema("message_list"),
                         "status_code" => (object) ["type" => "integer"]
                     ]
                 ];
@@ -464,7 +464,7 @@ class APISpec_Batch {
 
     /** @param string $name
      * @return object */
-    private function resolve_common_param($name) {
+    private function reference_common_param($name) {
         if ($this->parameters === null) {
             $compj = $this->j->components = $this->j->components ?? (object) [];
             $this->parameters = $compj->parameters = $compj->parameters ?? (object) [];
@@ -476,28 +476,28 @@ class APISpec_Batch {
                     "name" => "p",
                     "in" => "path",
                     "required" => true,
-                    "schema" => $this->resolve_common_schema("pid")
+                    "schema" => $this->reference_common_schema("pid")
                 ];
             } else if ($name === "p" || $name === "p.opt") {
                 $nj = (object) [
                     "name" => "p",
                     "in" => "query",
                     "required" => $name === "p",
-                    "schema" => $this->resolve_common_schema("pid")
+                    "schema" => $this->reference_common_schema("pid")
                 ];
             } else if ($name === "r" || $name === "r.opt") {
                 $nj = (object) [
                     "name" => "r",
                     "in" => "query",
                     "required" => $name === "r",
-                    "schema" => $this->resolve_common_schema("rid")
+                    "schema" => $this->reference_common_schema("rid")
                 ];
             } else if ($name === "c" || $name === "c.opt") {
                 $nj = (object) [
                     "name" => "c",
                     "in" => "query",
                     "required" => $name === "c",
-                    "schema" => $this->resolve_common_schema("cid")
+                    "schema" => $this->reference_common_schema("cid")
                 ];
             } else if ($name === "redirect") {
                 $nj = (object) [
@@ -518,6 +518,31 @@ class APISpec_Batch {
         return (object) ["\$ref" => "#/components/parameters/{$name}"];
     }
 
+    /** @param object $ref
+     * @param ?string $component
+     * @return ?object */
+    private function resolve_reference($ref, $component = null) {
+        if (!is_object($ref)
+            || !isset($ref->{"\$ref"})
+            || !is_string($ref->{"\$ref"})
+            || !str_starts_with($ref->{"\$ref"}, "#/")) {
+            return null;
+        }
+        if ($component !== null
+            && !str_starts_with($ref->{"\$ref"}, "#/components/{$component}/")) {
+            return null;
+        }
+        $j = $this->j;
+        foreach (explode("/", substr($ref->{"\$ref"}, 2)) as $pathpart) {
+            if (!is_object($j)
+                || !isset($j->{$pathpart})) {
+                return null;
+            }
+            $j = $j->{$pathpart};
+        }
+        return $j;
+    }
+
     /** @param object $x
      * @param array<string,int> $known
      * @param object $uf
@@ -534,15 +559,15 @@ class APISpec_Batch {
                 } else {
                     $pn = $f & self::F_REQUIRED ? "p" : "p.opt";
                 }
-                $params["p"] = $this->resolve_common_param($pn);
+                $params["p"] = $this->reference_common_param($pn);
             } else if ($name === "r") {
                 $pn = $f & self::F_REQUIRED ? "r" : "r.opt";
-                $params["r"] = $this->resolve_common_param($pn);
+                $params["r"] = $this->reference_common_param($pn);
             } else if ($name === "c") {
                 $pn = $f & self::F_REQUIRED ? "c" : "c.opt";
-                $params["c"] = $this->resolve_common_param($pn);
+                $params["c"] = $this->reference_common_param($pn);
             } else if ($name === "redirect" && $f === 0) {
-                $params["redirect"] = $this->resolve_common_param("redirect");
+                $params["redirect"] = $this->reference_common_param("redirect");
             } else if (($f & (self::F_BODY | self::F_FILE)) === 0) {
                 $ps = $uf->parameter_info->$name ?? null;
                 $params[$name] = (object) [
@@ -675,7 +700,7 @@ class APISpec_Batch {
                 "description" => "",
                 "content" => (object) [
                     "application/json" => (object) [
-                        "schema" => $this->resolve_common_schema("error_response")
+                        "schema" => $this->reference_common_schema("error_response")
                     ]
                 ]
             ];
@@ -684,13 +709,12 @@ class APISpec_Batch {
         $resp200->description = $resp200->description ?? "";
         $respc = $resp200->content = $resp200->content ?? (object) [];
         $respj = $respc->{"application/json"} = $respc->{"application/json"} ?? (object) [];
-        $resps = $respj->{"schema"} = $respj->{"schema"} ?? $this->resolve_common_schema("minimal_response");
+        $resps = $respj->{"schema"} = $respj->{"schema"} ?? $this->reference_common_schema("minimal_response");
 
         if (($resps->{"\$ref"} ?? null) === "#/components/schemas/minimal_response") {
             $respstype = 0;
         } else if (is_array($resps->allOf ?? null)
-                   && count($resps->allOf) === 2
-                   && ($resps->allof[1]->type ?? null) === "object") {
+                   && self::allOf_object_position($resps->allOf) >= 0) {
             $respstype = 1;
         } else {
             $respstype = -1;
@@ -703,7 +727,7 @@ class APISpec_Batch {
 
         if (!$bprop) {
             if ($respstype !== 0) {
-                $respj->{"schema"} = $this->resolve_common_schema("minimal_response");
+                $respj->{"schema"} = $this->reference_common_schema("minimal_response");
             }
             return;
         }
@@ -711,12 +735,25 @@ class APISpec_Batch {
         if ($respstype <= 0) {
             $resps = $respj->{"schema"} = (object) [
                 "allOf" => [
-                    $this->resolve_common_schema("minimal_response"),
+                    $this->reference_common_schema("minimal_response"),
                     (object) ["type" => "object"]
                 ]
             ];
         }
-        $respb = $resps->allOf[1];
+        $respb = $resps->allOf[self::allOf_object_position($resps->allOf)];
+
+        // referenced properties
+        $knownparam = $knownreq = [];
+        foreach ($resps->allOf as $respx) {
+            if (($j = $this->resolve_reference($respx, "schemas"))
+                && is_object($j)
+                && ($j->type ?? null) === "object") {
+                foreach ($j->properties as $k => $v) {
+                    $knownparam[$k] = true;
+                }
+                $knownreq = array_merge($knownreq, $j->required ?? []);
+            }
+        }
 
         // required properties
         if ($this->override_response) {
@@ -728,7 +765,8 @@ class APISpec_Batch {
         } else if ($breq) {
             $respb->required = $respb->required ?? [];
             foreach ($breq as $p) {
-                if (!in_array($p, $respb->required)) {
+                if (!in_array($p, $respb->required)
+                    && !in_array($p, $knownreq)) {
                     $respb->required[] = $p;
                 }
             }
@@ -741,8 +779,10 @@ class APISpec_Batch {
             $respprop = $respb->properties = $respb->properties ?? (object) [];
         }
         foreach ($bprop as $k => $v) {
-            if (!isset($respprop->{$k})
-                || empty((array) $respprop->{$k})) {
+            if (isset($knownparam[$k])) {
+                continue;
+            } else if (!isset($respprop->{$k})
+                       || empty((array) $respprop->{$k})) {
                 $respprop->$k = $v;
             } else {
                 if (($v->description ?? "") !== ""
@@ -751,6 +791,19 @@ class APISpec_Batch {
                 }
             }
         }
+    }
+
+    static private function allOf_object_position($j) {
+        $found = -1;
+        foreach ($j as $i => $jx) {
+            if (($jx->type ?? null) === "object") {
+                if ($found >= 0) {
+                    return -1;
+                }
+                $found = $i;
+            }
+        }
+        return $found;
     }
 
     private function sort() {

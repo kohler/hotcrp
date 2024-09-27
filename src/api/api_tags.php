@@ -80,13 +80,16 @@ class Tags_API {
      * @param ?PaperInfo $prow
      * @return JsonResult */
     static function run(Contact $user, $qreq, $prow) {
-        if ($prow && ($whyNot = $user->perm_view_paper($prow))) {
+        if (!$prow && $qreq->is_post() && isset($qreq->tagassignment)) {
+            return self::assigntags($user, $qreq);
+        }
+        if (!$prow) {
+            return JsonResult::make_missing_error("p");
+        }
+        if (($whyNot = $user->perm_view_paper($prow))) {
             return Conf::paper_error_json_result($whyNot);
         }
-        if ($qreq->is_get() || $qreq->cancel) {
-            if (!$prow) {
-                return JsonResult::make_error(400, "<0>Missing parameter");
-            }
+        if ($qreq->is_get() || friendly_boolean($qreq->cancel)) {
             $taginfo = self::tagmessages($user, $prow, null);
             $prow->add_tag_info_json($taginfo, $user);
             return new JsonResult($taginfo);
@@ -94,29 +97,17 @@ class Tags_API {
 
         // save tags using assigner
         $x = ["paper,action,tag"];
-        $interestall = !$prow || isset($qreq->tags);
-        if ($prow) {
-            if (isset($qreq->tags)) {
-                $x[] = "{$prow->paperId},tag,all#clear";
-                foreach (Tagger::split($qreq->tags) as $t) {
-                    $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t);
-                }
-            }
-            foreach (Tagger::split((string) $qreq->addtags) as $t) {
+        if (isset($qreq->tags)) {
+            $x[] = "{$prow->paperId},tag,all#clear";
+            foreach (Tagger::split($qreq->tags) as $t) {
                 $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t);
             }
-            foreach (Tagger::split((string) $qreq->deltags) as $t) {
-                $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t . "#clear");
-            }
-        } else if (isset($qreq->tagassignment)) {
-            $pid = -1;
-            foreach (preg_split('/[\s,]+/', $qreq->tagassignment) as $w) {
-                if ($w !== "" && ctype_digit($w)) {
-                    $pid = intval($w);
-                } else if ($w !== "" && $pid > 0) {
-                    $x[] = "{$pid},tag," . CsvGenerator::quote($w);
-                }
-            }
+        }
+        foreach (Tagger::split((string) $qreq->addtags) as $t) {
+            $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t);
+        }
+        foreach (Tagger::split((string) $qreq->deltags) as $t) {
+            $x[] = "{$prow->paperId},tag," . CsvGenerator::quote($t . "#clear");
         }
 
         $assigner = new AssignmentSet($user);
@@ -128,9 +119,9 @@ class Tags_API {
         $ok = $assigner->execute();
 
         // execute
-        if ($ok && $prow) {
+        if ($ok) {
             $prow->load_tags();
-            if ($interestall) {
+            if (isset($qreq->tags)) {
                 $interest = null;
             } else {
                 $interest = [];
@@ -143,7 +134,43 @@ class Tags_API {
             $prow->add_tag_info_json($taginfo, $user);
             $taginfo->message_list = self::combine_message_lists($mlist, $taginfo->message_list);
             $jr = new JsonResult($taginfo);
-        } else if ($ok) {
+        } else {
+            $jr = new JsonResult(["ok" => false, "message_list" => $mlist]);
+        }
+        if ($qreq->search) {
+            Search_API::apply_search($jr, $user, $qreq, $qreq->search);
+        }
+        return $jr;
+    }
+
+    /** @param Qrequest $qreq
+     * @param ?PaperInfo $prow
+     * @return JsonResult */
+    static function assigntags(Contact $user, $qreq, $prow) {
+        if (!isset($qreq->tagassignment)) {
+            return JsonResult::make_missing_error("tagassignment");
+        }
+        // save tags using assigner
+        $x = ["paper,action,tag"];
+        $pid = -1;
+        foreach (preg_split('/[\s,]+/', $qreq->tagassignment) as $w) {
+            if ($w !== "" && ctype_digit($w)) {
+                $pid = intval($w);
+            } else if ($w !== "" && $pid > 0) {
+                $x[] = "{$pid},tag," . CsvGenerator::quote($w);
+            }
+        }
+
+        $assigner = new AssignmentSet($user);
+        if ($prow) {
+            $assigner->enable_papers($prow);
+        }
+        $assigner->parse(join("\n", $x));
+        $mlist = $assigner->message_list();
+        $ok = $assigner->execute();
+
+        // execute
+        if ($ok) {
             $jr = new JsonResult([
                 "ok" => true,
                 "p" => Assign_API::assigned_paper_info($user, $assigner)

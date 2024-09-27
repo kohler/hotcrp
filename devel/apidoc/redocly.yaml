@@ -1,6 +1,16 @@
 apis:
   core@v1:
     root: ../../etc/openapi.json
+    rules:
+      operation-4xx-response: off
+      operation-operationId: off
+      no-empty-servers: off
+      operation-summary: off
+      tag-description: off
+      info-license: off
+
+extends:
+  - recommended
 
 theme:
   openapi:

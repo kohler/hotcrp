@@ -10160,7 +10160,7 @@ handle_ui.on("js-annotate-order", function () {
                     "#" + dtag + "#",
                     tagval,
                     deleter),
-                hidden_input(namepfx + "id", anno.annoid == null ? "new" : anno.annoid),
+                hidden_input(namepfx + "id", anno.annoid || "new"),
                 $e("div", "taganno-content",
                     entryi("Legend", legend),
                     entryi("Session title", session_title),
@@ -10451,7 +10451,7 @@ Tagval_DraggableTable.prototype.commit = function () {
     }
     if (saves.length) {
         e = srcra.front.querySelector("input[name='tag:".concat(this.dragtag, " ", srcra.id, "']"));
-        $.post(hoturl("=api/tags", {forceShow: 1}),
+        $.post(hoturl("=api/assigntags", {forceShow: 1}),
             {tagassignment: saves.join(","), search: tablelist_search(this.tablelist)},
             make_tag_save_callback(e));
     }

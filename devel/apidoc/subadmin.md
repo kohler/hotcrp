@@ -1,6 +1,6 @@
 # post /assign
 
-> Bulk assignments
+> Assignments
 
 
 # get /{p}/decision
