@@ -674,13 +674,6 @@ class Conf {
             $dpath = $docstore;
         } else if ($docstore === true) {
             $dpath = "docs";
-        } else if ($docstore === null && isset($this->opt["filestore"])) {
-            if (is_string($this->opt["filestore"])) {
-                $dpath = $this->opt["filestore"];
-            } else if ($this->opt["filestore"] === true) {
-                $dpath = "filestore";
-            }
-            $dpsubdir = $this->opt["filestoreSubdir"] ?? null;
         }
         if ($dpath !== "") {
             if ($dpath[0] !== "/") {

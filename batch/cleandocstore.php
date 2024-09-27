@@ -30,6 +30,8 @@ class CleanDocstore_Batch {
     public $dry_run;
     /** @var bool */
     public $keep_temp;
+    /** @var bool */
+    public $only_temp;
     /** @var int */
     public $cutoff;
     /** @var DocumentHashMatcher */
@@ -49,8 +51,15 @@ class CleanDocstore_Batch {
         $this->verbose = isset($arg["verbose"]);
         $this->dry_run = isset($arg["dry-run"]);
         $this->keep_temp = isset($arg["keep-temp"]);
+        $this->only_temp = isset($arg["only-temp"]) || !$conf->s3_client();
         $this->cutoff = isset($arg["all"]) ? Conf::$now + 86400 : Conf::$now - 86400;
         $this->hash_matcher = new DocumentHashMatcher($arg["match"] ?? null);
+    }
+
+    /** @param DocumentFileTreeMatch $fm
+     * @return bool */
+    static function is_temp($fm) {
+        return $fm->tree->treeid === 1;
     }
 
     /** @return ?DocumentFileTreeMatch */
@@ -66,7 +75,7 @@ class CleanDocstore_Batch {
                  ++$j) {
                 $fm = $ftree->random_match();
                 if ($fm->is_complete()
-                    && (($fm->treeid & 1) === 0
+                    && (!self::is_temp($fm)
                         || max($fm->atime(), $fm->mtime()) < $this->cutoff)) {
                     ++$n;
                     $fmatches[] = $fm;
@@ -75,7 +84,8 @@ class CleanDocstore_Batch {
                 }
             }
             if ($n === 0) {
-                $this->ftrees[$i] = null;
+                array_splice($this->ftrees, $i, 1);
+                --$i;
             }
         }
         usort($fmatches, function ($a, $b) {
@@ -86,11 +96,11 @@ class CleanDocstore_Batch {
                 return $at ? -1 : ($bt ? 1 : 0);
             }
             $aage = Conf::$now - $at;
-            if ($a->treeid & 1) {
+            if (self::is_temp($a)) {
                 $aage = $aage > 604800 ? 100000000 : $aage * 2;
             }
             $bage = Conf::$now - $bt;
-            if ($b->treeid & 1) {
+            if (self::is_temp($b)) {
                 $bage = $bage > 604800 ? 100000000 : $bage * 2;
             }
             return $bage <=> $aage;
@@ -99,7 +109,7 @@ class CleanDocstore_Batch {
             return null;
         } else {
             $fm = $fmatches[0];
-            $this->ftrees[$fm->treeid]->hide($fm);
+            $fm->tree->hide($fm);
             return $fm;
         }
     }
@@ -142,7 +152,7 @@ class CleanDocstore_Batch {
         }
 
         if (empty($this->docstores) || !$this->conf->docstore()) {
-            throw new ErrorException("No docstore to clean");
+            throw new CommandLineException("No docstore to clean");
         }
 
         preg_match('/\A((?:\/[^\/%]*(?=\/|\z))+)/', $this->docstores[0], $m);
@@ -153,7 +163,7 @@ class CleanDocstore_Batch {
             $ts = disk_total_space($usage_directory);
             $fs = disk_free_space($usage_directory);
             if ($ts === false || $fs === false) {
-                throw new ErrorException("{$usage_directory}: Cannot evaluate free space");
+                throw new CommandLineException("{$usage_directory}: Cannot evaluate free space");
             } else if ($fs >= $ts * (1 - ($this->max_usage ?? $this->min_usage))) {
                 if (!$this->quiet) {
                     fwrite(STDOUT, "{$usage_directory}: free space sufficient\n");
@@ -170,13 +180,13 @@ class CleanDocstore_Batch {
 
         foreach ($this->docstores as $i => $dp) {
             if (!str_starts_with($dp, "/") || strpos($dp, "%") === false) {
-                throw new ErrorException("{$dp}: Bad docstore pattern");
+                throw new CommandLineException("{$dp}: Bad docstore pattern");
             }
-            $this->ftrees[] = new DocumentFileTree($dp, $this->hash_matcher, count($this->ftrees));
+            if (!$this->only_temp) {
+                $this->ftrees[] = new DocumentFileTree($dp, $this->hash_matcher, 0);
+            }
             if (!$this->keep_temp) {
-                $this->ftrees[] = new DocumentFileTree(Filer::docstore_fixed_prefix($dp) . "tmp/%w", $this->hash_matcher, count($this->ftrees));
-            } else {
-                $this->ftrees[] = null;
+                $this->ftrees[] = new DocumentFileTree(Filer::docstore_fixed_prefix($dp) . "tmp/%w", $this->hash_matcher, 1);
             }
         }
 
@@ -185,8 +195,7 @@ class CleanDocstore_Batch {
         while ($count > 0
                && ($usage_threshold === null || $bytesremoved < $usage_threshold)
                && ($fm = $this->fparts_random_match())) {
-            if (($fm->treeid & 1) !== 0
-                || $this->check_match($fm)) {
+            if (self::is_temp($fm) || $this->check_match($fm)) {
                 $size = filesize($fm->fname);
                 if ($this->dry_run || unlink($fm->fname)) {
                     if ($this->verbose) {
@@ -205,10 +214,10 @@ class CleanDocstore_Batch {
         if (!$this->quiet) {
             fwrite(STDOUT, $usage_directory . ": " . ($this->dry_run ? "would remove " : "removed ") . plural($nsuccess, "file") . ", " . plural($bytesremoved, "byte") . "\n");
         }
-        if ($nsuccess == 0) {
-            fwrite(STDERR, "Nothing to delete\n");
+        if ($nsuccess === 0 && !$this->quiet) {
+            fwrite(STDERR, "Nothing to clean\n");
         }
-        return $nsuccess && $nsuccess == $ndone ? 0 : 1;
+        return $nsuccess > 0 && $nsuccess === $ndone ? 0 : 1;
     }
 
     /** @return CleanDocstore_Batch */
@@ -216,19 +225,20 @@ class CleanDocstore_Batch {
         $arg = (new Getopt)->long(
             "name:,n: !",
             "config: !",
-            "help,h",
             "count:,c: {n} =COUNT Clean up to COUNT files",
             "match:,m: =MATCH Clean files matching MATCH",
-            "verbose,V",
             "dry-run,d Do not remove files",
             "max-usage:,u: {f} =FRAC Clean until usage is below FRAC",
             "min-usage:,U: {f} =FRAC Do not clean if usage is below FRAC",
             "all Clean all files, including files recently modified",
-            "quiet,silent,q",
-            "keep-temp",
-            "docstore"
+            "quiet,silent,q Be quiet",
+            "keep-temp Keep temporary files",
+            "only-temp Only clean temporary files",
+            "help,h",
+            "verbose,V Be more verbose",
+            "docstore Output docstore patterns and exit"
         )->helpopt("help")
-         ->description("Remove files from HotCRP docstore that are on S3.
+         ->description("Remove old files from HotCRP docstore
 Usage: php batch/cleandocstore.php [-c COUNT|-u FRAC] [-V] [-d] [DOCSTORES...]\n")
          ->parse($argv);
 

@@ -1,14 +1,12 @@
-# HotCRP session data
+# HotCRP sessions
 
-This page describes the format of HotCRP session data.
-
-HotCRP sessions contain both **global** data, relevant for all conferences
-attached to a session, and **conference** data, which is relevant to a single
-conference. Conferences are distinguished by their **session keys**, which are
-`@` followed by the conference’s database name.
+Each HotCRP session contains both **global** data, relevant for all
+conferences attached to a session, and **conference** data relevant to a
+single conference. Session data is stored in PHP’s native [session
+encoding](https://www.php.net/manual/en/function.session-encode.php).
 
 
-## Global keys
+## Global session data
 
 ### Session version and expiration
 
@@ -87,7 +85,7 @@ conference. Conferences are distinguished by their **session keys**, which are
 * `login_bounce`
 
 
-## Conference keys
+## Conference session data
 
 Session data relevant to one conference is stored in the session element named
 by the conference’s session key, e.g., `@db-sigcomm23`. This element is

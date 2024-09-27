@@ -277,7 +277,7 @@ class DocumentFileTree implements JsonSerializable {
     /** @return DocumentFileTreeMatch */
     function first_match(?DocumentFileTreeMatch $after = null) {
         $this->clear();
-        $fm = new DocumentFileTreeMatch($this->treeid);
+        $fm = new DocumentFileTreeMatch($this);
         for ($i = 0; $i < $this->_n; ++$i) {
             if ($i % 2 === 0) {
                 $fm->fname .= $this->_components[$i];
@@ -297,7 +297,7 @@ class DocumentFileTree implements JsonSerializable {
     /** @return DocumentFileTreeMatch */
     function random_match() {
         $this->clear();
-        $fm = new DocumentFileTreeMatch($this->treeid);
+        $fm = new DocumentFileTreeMatch($this);
         for ($i = 0; $i < $this->_n; ++$i) {
             if ($i % 2 === 0) {
                 $fm->fname .= $this->_components[$i];
@@ -316,7 +316,7 @@ class DocumentFileTree implements JsonSerializable {
 
     function hide(DocumentFileTreeMatch $fm) {
         // account for removal
-        assert($fm->treeid === $this->treeid);
+        assert($fm->tree === $this);
         for ($i = count($fm->idxes) - 1; $i >= 0; --$i) {
             $this->_dirinfo[$fm->bdirs[$i]]->hide_component_index($fm->idxes[$i]);
         }
@@ -342,8 +342,9 @@ class DocumentFileTree implements JsonSerializable {
 }
 
 class DocumentFileTreeMatch {
-    /** @var int */
-    public $treeid;
+    /** @var DocumentFileTree
+     * @readonly */
+    public $tree;
     /** @var list<string> */
     public $bdirs = [];
     /** @var list<int> */
@@ -359,9 +360,9 @@ class DocumentFileTreeMatch {
     /** @var null|int|false */
     private $_mtime;
 
-    /** @param int $treeid */
-    function __construct($treeid) {
-        $this->treeid = $treeid;
+    /** @param DocumentFileTree $tree */
+    function __construct($tree) {
+        $this->tree = $tree;
     }
     /** @param int $idx
      * @param string $suffix */

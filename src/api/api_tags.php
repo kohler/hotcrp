@@ -111,9 +111,7 @@ class Tags_API {
         }
 
         $assigner = new AssignmentSet($user);
-        if ($prow) {
-            $assigner->enable_papers($prow);
-        }
+        $assigner->enable_papers($prow);
         $assigner->parse(join("\n", $x));
         $mlist = $assigner->message_list();
         $ok = $assigner->execute();
@@ -144,9 +142,8 @@ class Tags_API {
     }
 
     /** @param Qrequest $qreq
-     * @param ?PaperInfo $prow
      * @return JsonResult */
-    static function assigntags(Contact $user, $qreq, $prow) {
+    static function assigntags(Contact $user, $qreq) {
         if (!isset($qreq->tagassignment)) {
             return JsonResult::make_missing_error("tagassignment");
         }
@@ -162,9 +159,6 @@ class Tags_API {
         }
 
         $assigner = new AssignmentSet($user);
-        if ($prow) {
-            $assigner->enable_papers($prow);
-        }
         $assigner->parse(join("\n", $x));
         $mlist = $assigner->message_list();
         $ok = $assigner->execute();

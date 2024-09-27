@@ -115,15 +115,13 @@ $Opt["emailSender"] = null;
 //   docstore        Set to true to serve papers and other downloads from a
 //                   cache on the local filesystem. By default this cache is
 //                   created in the "docs" directory. You can also set
-//                   $Opt["docstore"] to a directory name.
-//   docstoreSubdir  Set to true (or a small number, like 3) if the document
-//                   store should use subdirectories. This can be useful if
-//                   you expect thousands of submissions.
+//                   $Opt["docstore"] to a directory name, or to a directory
+//                   pattern such as "docs/%2H/%h%x".
 //   s3_bucket       Amazon S3 bucket name to store paper submissions.
 //   s3_key          Amazon AWS access key ID (used for S3).
 //   s3_secret       Amazon AWS secret access key (used for S3).
 //   dbNoPapers      Set to true to not store papers in the database.
-//                   Requires filestore, S3 storage, or both.
+//                   Requires docstore, S3 storage, or both.
 
 
 // TIMES AND DATES
