@@ -317,7 +317,7 @@
                     }
                 },
                 "summary": "Upload file",
-                "description": "This endpoint uploads documents to the server. It is intended for large\ndocuments, and can upload a file over multiple requests, each containing a\nslice of the data.\n\nAn upload is identified by a `token`. To start an upload, set `start=1` and do\nnot include a `token` parameter. All subsequent requests must include the\n`token` returned by the server in response to the `start=1` request.\n"
+                "description": "This endpoint uploads documents to the server. It is intended for large\ndocuments, and can upload a file over multiple requests, each containing a\nslice of the data.\n\nThe `token` parameter identifies an upload. To start an upload, set `start=1`,\ninclude the `size` of the whole uploaded file, and do not include a `token`\nparameter. The response to this request includes a `token` identifying the\nupload; all subsequent requests must include this `token`. To complete an\nupload, set `finish=1`.\n\nThe upload is completed one chunk at a time. The `offset` parameter is the\ninitial byte offset of the uploaded chunk; the `blob` attachment parameter\ncontains the chunk itself. A `finish=1` request fails unless all chunks have\nbeen received. The `ranges` response parameter represents the ranges of bytes\nreceived so far.\n\nThe upload API is only available on sites that have enabled the document\nstore.\n"
             }
         },
         "/assign": {
@@ -1407,35 +1407,7 @@
                                             "$ref": "#/components/schemas/minimal_response"
                                         },
                                         {
-                                            "type": "object",
-                                            "required": [
-                                                "pid",
-                                                "tags",
-                                                "tags_edit_text",
-                                                "tags_view_html",
-                                                "tag_decoration_html",
-                                                "color_classes"
-                                            ],
-                                            "properties": {
-                                                "pid": {
-                                                    "$ref": "#/components/schemas/pid"
-                                                },
-                                                "tags": {
-                                                    "$ref": "#/components/schemas/tag_value_list"
-                                                },
-                                                "tags_edit_text": {},
-                                                "tags_view_html": {},
-                                                "tag_decoration_html": {},
-                                                "color_classes": {
-                                                    "$ref": "#/components/schemas/style_classes"
-                                                },
-                                                "tags_conflicted": {
-                                                    "$ref": "#/components/schemas/tag_value_list"
-                                                },
-                                                "color_classes_conflicted": {
-                                                    "$ref": "#/components/schemas/style_classes"
-                                                }
-                                            }
+                                            "$ref": "#/components/schemas/tag_response"
                                         }
                                     ]
                                 }
@@ -1494,31 +1466,7 @@
                                             "$ref": "#/components/schemas/minimal_response"
                                         },
                                         {
-                                            "type": "object",
-                                            "properties": {
-                                                "pid": {
-                                                    "$ref": "#/components/schemas/pid"
-                                                },
-                                                "tags": {
-                                                    "$ref": "#/components/schemas/tag_value_list"
-                                                },
-                                                "tags_edit_text": {},
-                                                "tags_view_html": {},
-                                                "tag_decoration_html": {},
-                                                "color_classes": {
-                                                    "$ref": "#/components/schemas/style_classes"
-                                                },
-                                                "tags_conflictec": {
-                                                    "$ref": "#/components/schemas/tag_value_list"
-                                                },
-                                                "color_classes_conflicted": {
-                                                    "$ref": "#/components/schemas/style_classes"
-                                                },
-                                                "tags_conflicted": {}
-                                            },
-                                            "required": [
-                                                "pid"
-                                            ]
+                                            "$ref": "#/components/schemas/tag_response"
                                         },
                                         {
                                             "$ref": "#/components/schemas/search_response"
@@ -1554,7 +1502,13 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "tagassignment": {},
+                                    "tagassignment": {
+                                        "type": "string",
+                                        "description": "Comma-separated list of paper IDs and tag assignments",
+                                        "examples": [
+                                            "1 foo#clear,2 ~discuss#1 discuss"
+                                        ]
+                                    },
                                     "search": {
                                         "$ref": "#/components/schemas/search_parameter_specification"
                                     }
@@ -4446,6 +4400,7 @@
             "tag": {
                 "type": "string",
                 "description": "Tag",
+                "pattern": "^~?~?[a-zA-Z@*_:.][-+a-zA-Z0-9?!@*_:.\\/]*$",
                 "examples": [
                     "discuss",
                     "For_Evaluation",
@@ -4456,11 +4411,19 @@
                 "type": "array",
                 "items": {
                     "$ref": "#/components/schemas/tag"
-                }
+                },
+                "examples": [
+                    [
+                        "discuss",
+                        "~mine"
+                    ],
+                    []
+                ]
             },
             "tag_value": {
                 "type": "string",
                 "description": "Tag with value",
+                "pattern": "^~?~?[a-zA-Z@*_:.][-+a-zA-Z0-9?!@*_:.\\/]*#\\d+\\.?\\d*$",
                 "examples": [
                     "discuss#0",
                     "For_Evaluation#2.1",
@@ -4471,14 +4434,61 @@
                 "type": "array",
                 "items": {
                     "$ref": "#/components/schemas/tag_value"
+                },
+                "examples": [
+                    [
+                        "discuss#0",
+                        "~mine#1"
+                    ],
+                    []
+                ]
+            },
+            "tag_response": {
+                "type": "object",
+                "required": [
+                    "pid",
+                    "tags",
+                    "tags_edit_text",
+                    "tags_view_html",
+                    "tag_decoration_html",
+                    "color_classes"
+                ],
+                "properties": {
+                    "pid": {
+                        "$ref": "#/components/schemas/pid"
+                    },
+                    "tags": {
+                        "$ref": "#/components/schemas/tag_value_list"
+                    },
+                    "tags_edit_text": {
+                        "type": "string",
+                        "description": "Textual representation for editing"
+                    },
+                    "tags_view_html": {
+                        "type": "string",
+                        "description": "HTML representation for display"
+                    },
+                    "tag_decoration_html": {
+                        "type": "string",
+                        "description": "HTML representation of badges and emoji"
+                    },
+                    "color_classes": {
+                        "$ref": "#/components/schemas/style_classes"
+                    },
+                    "tags_conflicted": {
+                        "$ref": "#/components/schemas/tag_value_list"
+                    },
+                    "color_classes_conflicted": {
+                        "$ref": "#/components/schemas/style_classes"
+                    }
                 }
             },
             "style_classes": {
                 "type": "string",
                 "description": "Space-separated list of tag style classes",
                 "examples": [
-                    "",
                     "tag-red tagbg",
+                    "",
                     "tag-rgb-000000 tag-bold dark tagbg"
                 ]
             },
