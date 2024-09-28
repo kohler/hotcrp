@@ -1861,4 +1861,21 @@ class Settings_Tester {
         xassert_eqq($this->conf->option_by_id(DTYPE_SUBMISSION)->edit_title(), "Subterranean");
         xassert_eqq($this->conf->option_by_id(PaperOption::ABSTRACTID)->edit_title(), "Blabstract");
     }
+
+    function test_sf_condition_recursion_live() {
+        $old_options = $this->conf->setting_data("options");
+        $j = json_decode($this->conf->setting_data("options"));
+        xassert_eqq($j[3]->id, 1);
+        xassert_eqq($j[3]->name, "Brownies");
+        xassert_eqq($j[3]->exists_if ?? null, null);
+
+        $j[3]->exists_if = "#foobar && !has:brownies";
+        $this->conf->save_refresh_setting("options", $this->conf->setting("options") + 1, json_encode_db($j));
+
+        $pa = PaperInfo::make_new($this->u_chair, null);
+        $pa->set_prop("paperTags", " foobar#0");
+        xassert($this->u_chair->can_view_option($pa, $this->conf->option_by_id(1)));
+
+        $this->conf->save_refresh_setting("options", $this->conf->setting("options") + 1, $old_options);
+    }
 }
