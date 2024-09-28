@@ -1846,4 +1846,19 @@ class Settings_Tester {
         xassert_str_contains($sv->full_feedback_text(), "Entry required");
         xassert($sv->has_error_at("sf/1/name"));
     }
+
+    function test_ioptions_title() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => "submission",
+            "sf/1/name" => "Subterranean",
+            "sf/2/id" => "abstract",
+            "sf/2/name" => "Blabstract",
+            "sf/2/required" => "no"
+        ]);
+        xassert($sv->execute());
+
+        xassert_eqq($this->conf->option_by_id(DTYPE_SUBMISSION)->edit_title(), "Subterranean");
+        xassert_eqq($this->conf->option_by_id(PaperOption::ABSTRACTID)->edit_title(), "Blabstract");
+    }
 }

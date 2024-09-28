@@ -15,7 +15,7 @@
         "form_order": 1001, "required": "submit",
         "display": "top",
         "function": "+Document_PaperOption",
-        "configurable": true, "properties": ["title", "description", "condition", "exists_if", "edit_condition", "editable_if", "required"]
+        "configurable": true, "properties": ["name", "description", "condition", "exists_if", "edit_condition", "editable_if", "required"]
     },
     {
         "name": "Final version", "id": -1,
