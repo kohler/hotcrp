@@ -1868,6 +1868,7 @@ class Settings_Tester {
         xassert_eqq($j[3]->id, 1);
         xassert_eqq($j[3]->name, "Brownies");
         xassert_eqq($j[3]->exists_if ?? null, null);
+        xassert_eqq($this->conf->setting("__sf_condition_recursion"), null);
 
         $j[3]->exists_if = "#foobar && !has:brownies";
         $this->conf->save_refresh_setting("options", $this->conf->setting("options") + 1, json_encode_db($j));
@@ -1875,7 +1876,9 @@ class Settings_Tester {
         $pa = PaperInfo::make_new($this->u_chair, null);
         $pa->set_prop("paperTags", " foobar#0");
         xassert($this->u_chair->can_view_option($pa, $this->conf->option_by_id(1)));
+        xassert_eqq($this->conf->setting("__sf_condition_recursion"), 1);
 
         $this->conf->save_refresh_setting("options", $this->conf->setting("options") + 1, $old_options);
+        $this->conf->save_setting("__sf_condition_recursion", null);
     }
 }

@@ -1051,6 +1051,7 @@ class Options_SettingParser extends SettingParser {
                 $sv->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $updates);
             }
         }
+        $sv->conf->save_setting("__sf_condition_recursion", null);
         $sv->mark_invalidate_caches(["autosearch" => true]);
     }
 

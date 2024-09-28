@@ -1,6 +1,6 @@
 <?php
 // paperoption.php -- HotCRP helper class for paper options
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class PaperOption implements JsonSerializable {
     const TITLEID = -1000;
@@ -564,7 +564,9 @@ class PaperOption implements JsonSerializable {
         } else if ($this->_exists_state !== 0) {
             return $this->_exists_state > 0;
         } else if (++$this->_recursion > 5) {
-            throw new ErrorException("Recursion in {$this->name}::test_exists [{$this->exists_if}]");
+            $this->mark_condition_recursion("exists_if");
+            $this->_exists_state = -1;
+            return false;
         } else {
             if ($use_script_expression) {
                 $x = !!($this->exists_script_expression($prow) ?? true);
@@ -580,6 +582,18 @@ class PaperOption implements JsonSerializable {
             return null;
         } else {
             return $this->exists_term()->script_expression($prow, SearchTerm::ABOUT_PAPER);
+        }
+    }
+    private function mark_condition_recursion($name) {
+        $scr = $this->conf->setting("__sf_condition_recursion") ?? 0;
+        if ($scr < 0) {
+            $this->conf->change_setting("__sf_condition_recursion", $this->id, $name);
+        } else if ($scr === 0) {
+            $this->conf->save_setting("__sf_condition_recursion", $this->id, $name);
+        }
+        if ($scr >= 0 && !defined("HOTCRP_TESTHARNESS")) {
+            $prop = property_exists($this, $name) ? " [{$this->$name}]" : "";
+            error_log("Recursion in {$this->name}::{$name}{$prop}");
         }
     }
 
@@ -607,12 +621,12 @@ class PaperOption implements JsonSerializable {
             $this->_editable_term = $s->full_term();
         }
         if (++$this->_recursion > 5) {
-            throw new ErrorException("Recursion in {$this->name}::test_editable");
-        } else {
-            $x = $this->_editable_term->test($prow, null);
-            --$this->_recursion;
-            return $x;
+            $this->_editable_term = new False_SearchTerm;
+            $this->mark_condition_recursion("editable_if");
         }
+        $x = $this->_editable_term->test($prow, null);
+        --$this->_recursion;
+        return $x;
     }
 
     /** @return bool */

@@ -1,6 +1,6 @@
 <?php
 // settings/s_subfieldcondition.php -- HotCRP submission field conditions
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class SubFieldCondition_SettingParser extends SettingParser {
     function print(SettingValues $sv) {
@@ -34,36 +34,45 @@ class SubFieldCondition_SettingParser extends SettingParser {
     }
 
     /** @param SettingValues $sv
-     * @param string $siname
+     * @param int $ctr
+     * @param 'exists_if'|'editable_if' $type
      * @param PaperOption $field
-     * @param string $q
-     * @param 1|2 $status */
-    static function validate1($sv, $siname, $field, $q, $status) {
+     * @param 1|2 $status
+     * @param PaperInfo $prow */
+    static private function validate1($sv, $ctr, $type, $field, $status, $prow) {
+        $q = $type === "exists_if" ? $field->exists_condition() : $field->editable_condition();
         if ($q === null || $q === "NONE" || $q === "phase:final") {
             return;
         }
+        $siname = "sf/{$ctr}/" . ($type === "exists_if" ? "condition" : "edit_condition");
+
         $ps = new PaperSearch($sv->conf->root_user(), $q);
         foreach ($ps->message_list() as $mi) {
             $sv->append_item_at($siname, $mi);
         }
-        try {
-            $fake_prow = PaperInfo::make_placeholder($sv->conf, -1);
-            if ($ps->main_term()->script_expression($fake_prow, SearchTerm::ABOUT_PAPER) === null) {
-                $sv->msg_at($siname, "<0>Invalid search in field condition", $status);
-                $sv->inform_at($siname, "<0>Field conditions are limited to simple search keywords.");
-            }
-        } catch (ErrorException $e) {
-            $sv->msg_at($siname, "<0>Field condition is defined in terms of itself", 2);
+
+        $scr = $sv->conf->setting("__sf_condition_recursion");
+        $scrd = $sv->conf->setting_data("__sf_condition_recursion");
+        $sv->conf->change_setting("__sf_condition_recursion", -1);
+        if ($ps->main_term()->script_expression($prow, SearchTerm::ABOUT_PAPER) === null) {
+            $sv->msg_at($siname, "<0>Invalid search in field condition", $status);
+            $sv->inform_at($siname, "<0>Field conditions are limited to simple search keywords.");
         }
+        if ($sv->conf->setting("__sf_condition_recursion") > 0
+            || ($status === 1 && $scr === $field->id && $scrd === $type)) {
+            $sv->msg_at($siname, "<0>Self-referential search in field condition", 2);
+        }
+        $sv->conf->change_setting("__sf_condition_recursion", $scr, $scrd);
     }
 
     static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("sf")) {
             $opts = Options_SettingParser::configurable_options($sv->conf);
+            $prow = PaperInfo::make_placeholder($sv->conf, -1);
             foreach ($opts as $ctrz => $f) {
                 $ctr = $ctrz + 1;
-                self::validate1($sv, "sf/{$ctr}/condition", $f, $f->exists_condition(), 1);
-                self::validate1($sv, "sf/{$ctr}/edit_condition", $f, $f->editable_condition(), 1);
+                self::validate1($sv, $ctr, "exists_if", $f, 1, $prow);
+                self::validate1($sv, $ctr, "editable_if", $f, 1, $prow);
             }
         }
     }
@@ -71,10 +80,11 @@ class SubFieldCondition_SettingParser extends SettingParser {
     static function validate(SettingValues $sv) {
         $opts = Options_SettingParser::configurable_options($sv->conf);
         $osp = $sv->cs()->callable("Options_SettingParser");
+        $prow = PaperInfo::make_placeholder($sv->conf, -1);
         foreach ($opts as $f) {
             if (($ctr = $osp->option_id_to_ctr[$f->id] ?? null) !== null) {
-                self::validate1($sv, "sf/{$ctr}/condition", $f, $f->exists_condition(), 2);
-                self::validate1($sv, "sf/{$ctr}/edit_condition", $f, $f->editable_condition(), 2);
+                self::validate1($sv, $ctr, "exists_if", $f, 2, $prow);
+                self::validate1($sv, $ctr, "editable_if", $f, 2, $prow);
             }
         }
     }

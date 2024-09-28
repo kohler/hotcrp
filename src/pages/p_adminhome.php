@@ -118,6 +118,11 @@ class AdminHome_Page {
                 }
             }
         }
+        // Condition recursion?
+        if ($conf->setting("__sf_condition_recursion") > 0)  {
+            $ml[] = MessageItem::error("<0>Self-referential search in submission field conditions");
+            $ml[] = new MessageItem(null, "<5>Some presence conditions in submission fields appear to be circularly defined. The fields involved will never appear. You should <a href=\"" . $conf->hoturl("settings", "group=subform") . "\">update the submission form settings</a> to fix this problem.", MessageSet::INFORM);
+        }
 
         if (!empty($ml)) {
             $ml[] = new MessageItem(null, "", MessageSet::WARNING);
