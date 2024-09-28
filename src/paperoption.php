@@ -334,10 +334,6 @@ class PaperOption implements JsonSerializable {
     function title_html(...$context) {
         return htmlspecialchars($this->title(...$context));
     }
-    /** @return string */
-    function plural_title() {
-        return $this->title(new FmtArg("plural", true));
-    }
     /** @param ?PaperInfo $prow
      * @return string */
     function edit_title($prow = null) {
@@ -682,7 +678,7 @@ class PaperOption implements JsonSerializable {
             && !$this->value_present($ov)
             && !$ov->prow->allow_absent()) {
             if ($this->required === self::REQ_SUBMIT) {
-                $m = $this->conf->_("<0>Entry required to complete submission");
+                $m = $this->conf->_("<0>Entry required to complete {submission}");
                 $ov->msg($m, $ov->prow->want_submitted() ? MessageSet::ERROR : MessageSet::WARNING);
             } else {
                 $ov->error("<0>Entry required");
@@ -952,7 +948,7 @@ class PaperOption implements JsonSerializable {
         assert($this->search_keyword() !== false);
         return new SearchExample(
             $this, "has:" . $this->search_keyword(),
-            "<0>submission’s {title} field is set"
+            "<0>{submission}’s {title} field is set"
         );
     }
     /** @return SearchExample */
@@ -960,7 +956,7 @@ class PaperOption implements JsonSerializable {
         assert($this->search_keyword() !== false);
         return new SearchExample(
             $this, $this->search_keyword() . ":{text}",
-            "<0>submission’s {title} field contains ‘{text}’",
+            "<0>{submission}’s {title} field contains ‘{text}’",
             new FmtArg("text", "words")
         );
     }
@@ -1308,7 +1304,7 @@ class Selector_PaperOption extends PaperOption {
             if (($q = $this->value_search_keyword(2))) {
                 $a[] = new SearchExample(
                     $this, $this->search_keyword() . ":{value}",
-                    "<0>submission’s {title} field has value ‘{value}’",
+                    "<0>{submission}’s {title} field has value ‘{value}’",
                     new FmtArg("value", $this->values[1])
                 );
             }

@@ -12,7 +12,7 @@ class GetDocument_ListAction extends ListAction {
             "name" => "get/" . $opt->dtype_name(),
             "get" => true,
             "dtype" => $opt->id,
-            "title" => "Documents/" . $opt->plural_title(),
+            "title" => "Documents/" . $opt->title(),
             "order" => $opt->page_order(),
             "display_if" => "listhas:" . $opt->field_key(),
             "data-bulkwarn" => $user->needs_some_bulk_download_warning() ? "" : null,

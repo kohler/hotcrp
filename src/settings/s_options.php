@@ -544,7 +544,8 @@ class Options_SettingParser extends SettingParser {
         $typelist = [];
         foreach ($tmap as $sf) {
             $j = [
-                "name" => $sf->name, "title" => $sf->title,
+                "name" => $sf->name,
+                "title" => $sf->title,
                 "convertible_to" => $cvts[$sf->name]
             ];
             if (!empty($sf->placeholders)) {
