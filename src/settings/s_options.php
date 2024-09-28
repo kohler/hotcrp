@@ -871,6 +871,9 @@ class Options_SettingParser extends SettingParser {
             if (($ij->$prop ?? null) !== ($nj->$prop ?? null))
                 $dj[$prop] = $nj->$prop ?? null;
         }
+        if (isset($dj["name"])) { // Override message special cases
+            $dj["title"] = $dj["name"];
+        }
         if ($form_order <= $last_form_order) {
             ++$last_form_order;
             $dj["form_order"] = $form_order = $last_form_order;
