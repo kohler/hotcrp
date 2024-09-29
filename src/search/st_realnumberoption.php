@@ -24,7 +24,7 @@ class RealNumberOption_SearchTerm extends Option_SearchTerm {
             && CountMatcher::compare(floatval($ov->data()), $this->compar, $this->value);
     }
     function script_expression(PaperInfo $row, $about) {
-        if ($about !== self::ABOUT_PAPER) {
+        if (($about & self::ABOUT_PAPER) === 0) {
             return parent::script_expression($row, $about);
         } else if ($this->user->can_view_option($row, $this->option)) {
             if (($se = $this->option->value_script_expression())) {

@@ -58,7 +58,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
         }
 
         // check script expression
-        if ($ps->main_term()->script_expression($prow, SearchTerm::ABOUT_PAPER) === null) {
+        if ($ps->main_term()->script_expression($prow, SearchTerm::ABOUT_PAPER | SearchTerm::ABOUT_NO_SHORT_CIRCUIT) === null) {
             $sv->msg_at($siname, "<0>Invalid search in field condition", $status);
             $sv->inform_at($siname, "<0>Field conditions are limited to simple search keywords.");
         }

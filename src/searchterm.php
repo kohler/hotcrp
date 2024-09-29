@@ -297,17 +297,19 @@ abstract class SearchTerm {
         return null;
     }
 
-    const ABOUT_PAPER = 0;
-    const ABOUT_UNKNOWN = 1;
-    const ABOUT_REVIEW = 2;
-    const ABOUT_REVIEW_SET = 3;
-    /** @return 0|1|2|3 */
+    const ABOUT_PAPER = 1;
+    const ABOUT_UNKNOWN = 2;
+    const ABOUT_REVIEW = 4;
+    const ABOUT_REVIEW_SET = 8;
+    const ABOUT_NO_SHORT_CIRCUIT = 16;
+
+    /** @return 1|2|4|8 */
     function about() {
         return self::ABOUT_PAPER;
     }
 
 
-    /** @param 0|2 $about
+    /** @param int $about
      * @return null|bool|array{type:string} */
     function script_expression(PaperInfo $row, $about) {
         return $this->test($row, null);
@@ -502,10 +504,12 @@ abstract class Op_SearchTerm extends SearchTerm {
 
     /** @param 'and'|'or'|'not'|'xor' $op
      * @param list<null|bool|array{type:string}> $sexprs
+     * @param int $about
      * @return null|bool|array{type:string} */
-    static function combine_script_expressions($op, $sexprs) {
+    static function combine_script_expressions($op, $sexprs, $about = 0) {
         $ok = true;
         $bresult = $op === "and";
+        $xresult = null;
         $any = false;
         $ch = [];
         foreach ($sexprs as $sexpr) {
@@ -514,7 +518,7 @@ abstract class Op_SearchTerm extends SearchTerm {
             } else if (is_bool($sexpr)) {
                 $any = true;
                 if ($sexpr ? $op === "or" : $op === "and") {
-                    return $sexpr;
+                    $xresult = $sexpr;
                 } else if ($sexpr ? $op === "xor" : $op === "not") {
                     $bresult = !$bresult;
                 }
@@ -522,8 +526,10 @@ abstract class Op_SearchTerm extends SearchTerm {
                 $ch[] = $sexpr;
             }
         }
-        if (!$ok) {
+        if (!$ok && ($xresult === null || ($about & self::ABOUT_NO_SHORT_CIRCUIT) !== 0)) {
             return null;
+        } else if ($xresult !== null) {
+            return $xresult;
         } else if (empty($ch)) {
             return $any && $bresult;
         } else if ($op === "not" || ($bresult && $op === "xor" && count($ch) === 1)) {

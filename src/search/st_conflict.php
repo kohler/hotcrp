@@ -83,7 +83,7 @@ final class Conflict_SearchTerm extends SearchTerm {
         return $this->ccm->test($n);
     }
     function script_expression(PaperInfo $row, $about) {
-        if ($about !== self::ABOUT_PAPER) {
+        if (($about & self::ABOUT_PAPER) === 0) {
             return $this->test($row, null);
         } else if (!$this->ispc) {
             return null;
