@@ -1,6 +1,6 @@
 <?php
 // formulas/f_realnumberoption.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
 
 class RealNumberOption_Fexpr extends Fexpr {
     /** @var PaperOption */
@@ -8,6 +8,9 @@ class RealNumberOption_Fexpr extends Fexpr {
     function __construct(PaperOption $option) {
         parent::__construct("realnumberoption");
         $this->option = $option;
+    }
+    function paper_options(&$oids) {
+        $oids[$this->option->id] = true;
     }
     function viewable_by(Contact $user) {
         return $user->can_view_some_option($this->option);

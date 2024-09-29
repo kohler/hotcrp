@@ -29,6 +29,9 @@ class Topic_Fexpr extends Fexpr {
             return false;
         }
     }
+    function paper_options(&$oids) {
+        $oids[PaperOption::TOPICSID] = true;
+    }
     function compile(FormulaCompiler $state) {
         $state->queryOptions["topics"] = true;
         $texpr = $state->_prow() . "->topic_list()";

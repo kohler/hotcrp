@@ -59,6 +59,7 @@ class Author_SearchTerm extends SearchTerm {
             && !$this->csm->test(0);
     }
     function test(PaperInfo $row, $xinfo) {
+        // XXX presence condition
         $n = 0;
         $can_view = $this->user->allow_view_authors($row);
         if ($this->csm->has_contacts()) {

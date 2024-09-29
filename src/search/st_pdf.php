@@ -95,6 +95,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
         return $this->dtype === DTYPE_SUBMISSION && $this->format_problem === null;
     }
     function test(PaperInfo $row, $xinfo) {
+        // XXX presence condition
         $dtype = $this->dtype;
         if ($dtype === null) {
             if ($row->finalPaperStorageId > 1

@@ -1864,7 +1864,7 @@ class Settings_Tester {
 
     function test_sf_condition_recursion_live() {
         $old_options = $this->conf->setting_data("options");
-        $j = json_decode($this->conf->setting_data("options"));
+        $j = json_decode($this->conf->setting_data("options")) ?? [];
         xassert_eqq($j[3]->id, 1);
         xassert_eqq($j[3]->name, "Brownies");
         xassert_eqq($j[3]->exists_if ?? null, null);

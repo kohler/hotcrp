@@ -48,6 +48,7 @@ class AuthorMatch_SearchTerm extends SearchTerm {
         }
     }
     function test(PaperInfo $row, $xinfo) {
+        // XXX presence condition
         if (!$this->user->allow_view_authors($row)) {
             return false;
         }

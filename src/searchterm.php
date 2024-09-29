@@ -61,20 +61,20 @@ abstract class SearchTerm {
 
     /** @param bool $negate
      * @return SearchTerm */
-    function negate_if($negate) {
+    final function negate_if($negate) {
         return $negate ? $this->negate() : $this;
     }
 
     /** @param string $command
      * @param SearchWord $sword
      * @return $this */
-    function add_view_anno($command, $sword) {
+    final function add_view_anno($command, $sword) {
         $this->float["view"][] = new SearchViewCommand($command, $sword);
         return $this;
     }
 
     /** @return list<SearchViewCommand> */
-    function view_commands() {
+    final function view_commands() {
         $v = $this->float["view"] ?? [];
         if (!empty($v)) {
             $v = SearchViewCommand::analyze($v);
@@ -84,7 +84,7 @@ abstract class SearchTerm {
 
     /** @param string $field
      * @return ?SearchViewCommand */
-    function find_view_command($field) {
+    final function find_view_command($field) {
         foreach ($this->view_commands() as $svc) {
             if ($svc->keyword === $field)
                 return $svc;
@@ -140,7 +140,7 @@ abstract class SearchTerm {
 
     /** @param ?SearchStringContext $context
      * @return ?array{int,int} */
-    function strspan_in($context) {
+    final function strspan_in($context) {
         if ($this->pos1 === null) {
             return null;
         }
@@ -182,6 +182,10 @@ abstract class SearchTerm {
 
     /** @param array<string,mixed> &$options */
     function paper_requirements(&$options) {
+    }
+
+    /** @param array<int,true> &$oids */
+    function paper_options(&$oids) {
     }
 
 
@@ -459,6 +463,11 @@ abstract class Op_SearchTerm extends SearchTerm {
     function paper_requirements(&$options) {
         foreach ($this->child as $ch) {
             $ch->paper_requirements($options);
+        }
+    }
+    function paper_options(&$oids) {
+        foreach ($this->child as $ch) {
+            $ch->paper_options($oids);
         }
     }
     function is_sqlexpr_precise() {
@@ -848,6 +857,7 @@ class Then_SearchTerm extends Op_SearchTerm {
         }
         return $this;
     }
+
     function visit($visitor) {
         // Only visit non-highlight terms
         $x = [];
@@ -855,6 +865,12 @@ class Then_SearchTerm extends Op_SearchTerm {
             $x[] = $this->child[$i]->visit($visitor);
         }
         return $visitor($this, ...$x);
+    }
+
+    function paper_options(&$oids) {
+        for ($i = 0; $i !== $this->nthen; ++$i) {
+            $this->child[$i]->paper_options($oids);
+        }
     }
 
     /** @return int */
@@ -1489,6 +1505,7 @@ class TextMatch_SearchTerm extends SearchTerm {
         return $this->trivial && !$this->authorish;
     }
     function test(PaperInfo $row, $xinfo) {
+        // XXX presence conditions
         $data = $row->{$this->field}();
         if ($this->authorish && !$this->user->allow_view_authors($row)) {
             $data = "";

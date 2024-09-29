@@ -46,19 +46,37 @@ class SubFieldCondition_SettingParser extends SettingParser {
         }
         $siname = "sf/{$ctr}/" . ($type === "exists_if" ? "condition" : "edit_condition");
 
+        // save recursion state
+        $scr = $sv->conf->setting("__sf_condition_recursion");
+        $scrd = $sv->conf->setting_data("__sf_condition_recursion");
+        $sv->conf->change_setting("__sf_condition_recursion", -1);
+
+        // make search
         $ps = new PaperSearch($sv->conf->root_user(), $q);
         foreach ($ps->message_list() as $mi) {
             $sv->append_item_at($siname, $mi);
         }
 
-        $scr = $sv->conf->setting("__sf_condition_recursion");
-        $scrd = $sv->conf->setting_data("__sf_condition_recursion");
-        $sv->conf->change_setting("__sf_condition_recursion", -1);
+        // check script expression
         if ($ps->main_term()->script_expression($prow, SearchTerm::ABOUT_PAPER) === null) {
             $sv->msg_at($siname, "<0>Invalid search in field condition", $status);
             $sv->inform_at($siname, "<0>Field conditions are limited to simple search keywords.");
         }
+
+        // check recursion (catches more cases than script expression alone)
+        $pos = 0;
+        $oids = [];
+        $ps->main_term()->paper_options($oids);
+        while (count($oids) > $pos) {
+            $check = array_keys($oids);
+            while ($pos !== count($check)) {
+                $sv->conf->option_by_id($check[$pos])->exists_term()->paper_options($oids);
+                ++$pos;
+            }
+        }
+
         if ($sv->conf->setting("__sf_condition_recursion") > 0
+            || isset($oids[$field->id])
             || ($status === 1 && $scr === $field->id && $scrd === $type)) {
             $sv->msg_at($siname, "<0>Self-referential search in field condition", 2);
         }

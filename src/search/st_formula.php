@@ -52,6 +52,9 @@ class Formula_SearchTerm extends SearchTerm {
         }
         return null;
     }
+    function paper_options(&$oids) {
+        $this->formula->paper_options($oids);
+    }
     function sqlexpr(SearchQueryInfo $sqi) {
         $this->formula->add_query_options($sqi->query_options);
         return "true";

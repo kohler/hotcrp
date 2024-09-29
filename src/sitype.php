@@ -143,7 +143,7 @@ class Checkbox_Sitype extends Sitype {
 
 class Radio_Sitype extends Sitype {
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
-        $values = $si->values($sv);
+        $values = $si->values($sv) ?? [];
         foreach ($values as $allowedv) {
             if ((string) $allowedv === $vstr)
                 return $allowedv;

@@ -28,6 +28,10 @@ abstract class Option_SearchTerm extends SearchTerm {
         }
     }
 
+    function paper_options(&$oids) {
+        $oids[$this->option->id] = true;
+    }
+
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->option->id > 0) {
             $sqi->add_options_columns();

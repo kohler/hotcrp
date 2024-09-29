@@ -531,13 +531,18 @@ class PaperOption implements JsonSerializable {
         }
     }
     /** @return SearchTerm */
-    private function exists_term() {
-        if ($this->_exists_state === 0 && $this->_exists_term === null) {
+    final function exists_term() {
+        if ($this->_exists_term !== null) {
+            return $this->_exists_term;
+        }
+        if ($this->_exists_state === 0) {
             $s = new PaperSearch($this->conf->root_user(), $this->exists_if);
             $s->set_expand_automatic(true);
             $this->_exists_term = $s->full_term();
             /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->_phase = Phase_SearchTerm::term_phase($this->_exists_term);
+        } else {
+            $this->_exists_term = new True_SearchTerm;
         }
         return $this->_exists_term;
     }
@@ -552,7 +557,9 @@ class PaperOption implements JsonSerializable {
     /** @return bool */
     final function is_final() {
         // compute phase of complex exists condition
-        $this->exists_term();
+        if ($this->_exists_state === 0 && $this->_exists_term === null) {
+            $this->exists_term();
+        }
         return $this->_phase === PaperInfo::PHASE_FINAL;
     }
     /** @param bool $use_script_expression
@@ -757,7 +764,9 @@ class PaperOption implements JsonSerializable {
         if ($this->configurable !== true) {
             $j->configurable = $this->configurable;
         }
-        $this->exists_term(); // to set `_phase`
+        if ($this->_exists_state === 0 && $this->_exists_term === null) {
+            $this->exists_term(); // to set `_phase`
+        }
         if ($this->_phase === PaperInfo::PHASE_FINAL) {
             $j->final = true;
         }

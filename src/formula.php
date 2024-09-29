@@ -155,34 +155,34 @@ abstract class Fexpr implements JsonSerializable {
     }
 
     /** @return bool */
-    function has_format() {
+    final function has_format() {
         return $this->_format !== Fexpr::FUNKNOWN;
     }
 
     /** @return bool */
-    function math_format() {
+    final function math_format() {
         return $this->_format !== Fexpr::FREVIEWER
             && $this->_format !== Fexpr::FSUBFIELD;
     }
 
     /** @return bool */
-    function nonnullable_format() {
+    final function nonnullable_format() {
         return $this->_format === Fexpr::FNUMERIC
             || $this->_format === Fexpr::FBOOL;
     }
 
     /** @return bool */
-    function nonnull_format() {
+    final function nonnull_format() {
         return $this->nonnullable_format() && $this->_format_detail;
     }
 
     /** @return mixed */
-    function format_detail() {
+    final function format_detail() {
         return $this->_format_detail;
     }
 
     /** @return string */
-    function format_description() {
+    final function format_description() {
         if ($this->_format === Fexpr::FREVIEWFIELD) {
             return $this->_format_detail->name;
         } else if ($this->_format === Fexpr::FSUBFIELD) {
@@ -194,7 +194,7 @@ abstract class Fexpr implements JsonSerializable {
 
     /** @param int $format
      * @param mixed $format_detail */
-    function set_format($format, $format_detail = null) {
+    final function set_format($format, $format_detail = null) {
         assert($this->_format === Fexpr::FUNKNOWN);
         $this->_format = $format;
         $this->_format_detail = $format_detail;
@@ -346,6 +346,13 @@ abstract class Fexpr implements JsonSerializable {
             return CountMatcher::flip_unparsed_relation($cmp);
         }
         return $cmp;
+    }
+
+    /** @param array<int,true> &$oids */
+    function paper_options(&$oids) {
+        foreach ($this->args as $a) {
+            $a->paper_options($oids);
+        }
     }
 
     #[\ReturnTypeWillChange]
@@ -2868,6 +2875,13 @@ class Formula implements JsonSerializable {
             if ($this->_parse->indexed) {
                 $state->loop_variable($this->_parse->index_type);
             }
+        }
+    }
+
+    /** @var array<int,true> &$ods */
+    function paper_options(&$oids) {
+        if ($this->check()) {
+            $this->_parse->fexpr->paper_options($oids);
         }
     }
 
