@@ -192,7 +192,10 @@ class PaperSearch extends MessageSet {
     private $_urlbase_args;
     /** @var ?string
      * @readonly */
-    private $_default_sort; // XXX should be used more often
+    private $_req_sort; // XXX should be used more often maybe
+    /** @var ?string
+     * @readonly */
+    private $_req_scoresort;
 
     /** @var ?list<ContactSearch> */
     private $_contact_searches;
@@ -248,7 +251,8 @@ class PaperSearch extends MessageSet {
 
         // the query itself
         $this->q = trim($options["q"] ?? "");
-        $this->_default_sort = $options["sort"] ?? null;
+        $this->_req_sort = $options["sort"] ?? null;
+        $this->_req_scoresort = $options["scoresort"] ?? null;
         $this->set_want_ftext(true);
 
         // reviewer
@@ -1127,12 +1131,29 @@ class PaperSearch extends MessageSet {
         return $this->_matches;
     }
 
+    /** @return bool */
+    private function nontrivial_sort() {
+        return $this->_req_sort
+            || $this->_req_scoresort
+            || $this->sort_field_list()
+            || $this->_then_term;
+    }
+
+    /** @return ?string */
+    function requested_sort() {
+        return $this->_req_sort;
+    }
+
+    /** @return ?string */
+    function requested_score_sort() {
+        return $this->_req_scoresort;
+    }
+
     /** @return list<int> */
     function sorted_paper_ids() {
         $this->_prepare();
-        if (($this->_default_sort || $this->sort_field_list() || $this->_then_term)
-            && $this->_sorted_matches === null) {
-            $pl = new PaperList("empty", $this, ["sort" => $this->_default_sort]);
+        if ($this->_sorted_matches === null && $this->nontrivial_sort()) {
+            $pl = new PaperList("empty", $this, ["sort" => true]);
             $this->_sorted_matches = $pl->paper_ids();
         }
         return $this->_sorted_matches ?? $this->_matches;
@@ -1291,9 +1312,8 @@ class PaperSearch extends MessageSet {
     private function sort_field_list() {
         $r = [];
         foreach ($this->main_term()->view_commands() as $svc) {
-            if ($svc->sort_action()) {
+            if ($svc->sort_action())
                 $r[] = $svc->keyword;
-            }
         }
         return $r;
     }
@@ -1303,19 +1323,11 @@ class PaperSearch extends MessageSet {
     function restrict_match($callback) {
         $m = [];
         foreach ($this->paper_ids() as $pid) {
-            if (call_user_func($callback, $pid)) {
+            if (call_user_func($callback, $pid))
                 $m[] = $pid;
-            }
         }
         $this->_matches = $m;
-        if ($this->_default_sort || $this->sort_field_list()) {
-            $m = [];
-            foreach ($this->sorted_paper_ids() as $pid) {
-                if (call_user_func($callback, $pid))
-                    $m[] = $pid;
-            }
-            $this->_sorted_matches = $m;
-        }
+        $this->_sorted_matches = null;
     }
 
     /** @return bool */
@@ -1478,9 +1490,13 @@ class PaperSearch extends MessageSet {
             && $this->_reviewer_user->contactXid !== $this->user->contactXid) {
             $rest[] = "reviewer=" . urlencode($this->_reviewer_user->email);
         }
-        $sort = $args["sort"] ?? $this->_default_sort ?? "";
+        $sort = $args["sort"] ?? $this->_req_sort ?? "";
         if ($sort !== "") {
             $rest[] = "sort=" . urlencode($sort);
+        }
+        $scoresort = $args["scoresort"] ?? $this->_req_scoresort ?? "";
+        if ($scoresort !== "") {
+            $rest[] = "scoresort=" . urlencode($scoresort);
         }
         if (!empty($rest)) {
             $listid .= "/" . join("&", $rest);

@@ -328,7 +328,7 @@ class PaperList {
 
     static private $stats = [ScoreInfo::SUM, ScoreInfo::MEAN, ScoreInfo::MEDIAN, ScoreInfo::STDDEV_P, ScoreInfo::COUNT];
 
-    /** @param array{sort?:true|string} $args
+    /** @param array{sort?:true,sortable?:true} $args
      * @param null|array|Qrequest $qreq */
     function __construct(string $report, PaperSearch $search, $args = [], $qreq = null) {
         $this->conf = $search->conf;
@@ -361,23 +361,19 @@ class PaperList {
         $this->_report_id = $report;
         $this->parse_view($this->_list_columns(), self::VIEWORIGIN_REPORT);
 
-        $sortarg = $args["sort"] ?? false;
-        if (($this->_sortable = $sortarg !== false)) {
-            // XXX `"sort" => true` imports sort information from qreq
-            if (is_string($sortarg)) {
-                $st = trim($sortarg);
-            } else if ($sortarg === true) {
-                if (isset($qreq->scoresort)
-                    && ($ss = ScoreInfo::parse_score_sort($qreq->scoresort))) {
-                    $this->parse_view("sort:score[{$ss}]", self::VIEWORIGIN_REQUEST);
-                }
-                $st = trim($qreq->sort ?? "");
-            } else {
-                $st = "";
+        assert(is_bool($args["sort"] ?? false));
+        if ($args["sort"] ?? false) {
+            if (($s = $search->requested_sort()) !== null
+                && trim($s) !== "") {
+                $this->parse_view("sort:[{$s}]", self::VIEWORIGIN_REQUEST);
             }
-            if ($st !== "") {
-                $this->parse_view("sort:[{$st}]", self::VIEWORIGIN_REQUEST);
+            if (($s = $search->requested_score_sort()) !== null
+                && ($ss = ScoreInfo::parse_score_sort($s))) {
+                $this->parse_view("sort:score[{$ss}]", self::VIEWORIGIN_REQUEST);
             }
+            $this->_sortable = true;
+        } else {
+            $this->_sortable = !!($args["sortable"] ?? false);
         }
 
         if ($this->search->then_term()) {

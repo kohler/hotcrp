@@ -13307,8 +13307,8 @@ handle_ui.on("js-edit-view-options", function () {
             .on("submit", submit).show();
     }
     $.get(hoturl("=api/viewoptions", {q: $$("f-search").getAttribute("data-lquery")}), function (data) {
-        data.ok && create(data);
-    });
+            data.ok && create(data);
+        });
 });
 
 

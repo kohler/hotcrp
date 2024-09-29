@@ -38,13 +38,14 @@ class SearchConfig_API {
             }
         }
 
-        $pl = new PaperList($report, $search, ["sort" => ""], $qreq);
+        $pl = new PaperList($report, $search, ["sortable" => true], $qreq);
         $pl->set_report_view_errors(true);
         $pl->apply_view_report_default();
         $vd = $pl->unparse_view(PaperList::VIEWORIGIN_REPORT, true);
         $dml = $pl->prepare_table_view()->message_list();
 
-        $search = new PaperSearch($user, $qreq->q ?? "NONE");
+        $qreq->q = $qreq->q ?? "NONE";
+        $search = new PaperSearch($user, $qreq);
         $pl = new PaperList($report, $search, ["sort" => true], $qreq);
         $pl->set_report_view_errors(true);
         $pl->apply_view_report_default();

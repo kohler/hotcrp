@@ -17,7 +17,14 @@ class Search_API {
             return JsonResult::make_missing_error("q");
         }
 
-        $search = new PaperSearch($user, ["t" => $qreq->t ?? "", "q" => $q, "qt" => $qreq->qt, "reviewer" => $qreq->reviewer]);
+        $search = new PaperSearch($user, [
+            "t" => $qreq->t ?? "",
+            "q" => $q,
+            "qt" => $qreq->qt,
+            "reviewer" => $qreq->reviewer,
+            "sort" => $qreq->sort,
+            "scoresort" => $qreq->scoresort
+        ]);
         $pl = new PaperList($qreq->report ? : "pl", $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default();
         $pl->apply_view_session($qreq);
