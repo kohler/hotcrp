@@ -1860,6 +1860,9 @@ class Settings_Tester {
 
         xassert_eqq($this->conf->option_by_id(DTYPE_SUBMISSION)->edit_title(), "Subterranean");
         xassert_eqq($this->conf->option_by_id(PaperOption::ABSTRACTID)->edit_title(), "Blabstract");
+
+        $this->conf->save_setting("ioptions", null);
+        $this->conf->save_refresh_setting("opt.noAbstract", null);
     }
 
     function test_sf_condition_recursion_live() {

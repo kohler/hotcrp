@@ -407,7 +407,7 @@ class Xassert {
                 continue;
             }
             $refl = isset($tr["class"]) ? new ReflectionMethod($tr["class"], $tr["function"]) : new ReflectionFunction($tr["function"]);
-            if ($refl->getAttributes("SkipLandmark")) {
+            if (PHP_MAJOR_VERSION >= 8 && $refl->getAttributes("SkipLandmark")) {
                 continue;
             }
             $loc = $fname;
