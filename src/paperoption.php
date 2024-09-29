@@ -659,9 +659,9 @@ class PaperOption implements JsonSerializable {
     function allow_empty_document() {
         return false;
     }
-    /** @return ?list<Mimetype|string> */
+    /** @return list<Mimetype> */
     function mimetypes() {
-        return null;
+        return [];
     }
     /** @return bool */
     function has_attachments() {
@@ -1385,7 +1385,7 @@ class Document_PaperOption extends PaperOption {
             return [Mimetype::checked_lookup(".mp4"),
                     Mimetype::checked_lookup(".avi")];
         } else {
-            return null;
+            return [];
         }
     }
 
@@ -1588,8 +1588,8 @@ class Document_PaperOption extends PaperOption {
         if (empty($mimetypes)) {
             return true;
         }
-        for ($i = 0; $i < count($mimetypes); ++$i) {
-            if ($mimetypes[$i]->matches($doc->mimetype))
+        foreach ($mimetypes as $mt) {
+            if ($mt->matches($doc->mimetype))
                 return true;
         }
         $desc = Mimetype::list_description($mimetypes);
