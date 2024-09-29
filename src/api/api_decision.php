@@ -21,10 +21,7 @@ class Decision_API {
         $jr = new JsonResult([
             "ok" => true,
             "decision" => $dec->id,
-            "decision_html" => $dec->name_as(5),
-            /* XXX backward compat */
-            "value" => $dec->id,
-            "result" => $dec->name_as(5)
+            "decision_html" => $dec->name_as(5)
         ]);
         if ($user->can_set_decision($prow)) {
             $jr->content["editable"] = true;
