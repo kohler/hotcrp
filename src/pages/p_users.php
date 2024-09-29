@@ -86,8 +86,8 @@ class Users_Page {
         $has_country = $has_orcid = false;
         foreach ($users as $u) {
             $texts[] = $line = [
-                "first" => $u->firstName,
-                "last" => $u->lastName,
+                "given_name" => $u->firstName,
+                "family_name" => $u->lastName,
                 "email" => $u->email,
                 "affiliation" => $u->affiliation,
                 "country" => $u->country_code(),
@@ -96,7 +96,7 @@ class Users_Page {
             $has_orcid = $has_orcid || $line["orcid"] !== "";
             $has_country = $has_country || $line["country"] !== "";
         }
-        $header = ["first", "last", "email", "affiliation"];
+        $header = ["given_name", "family_name", "email", "affiliation"];
         if ($has_country) {
             $header[] = "country";
         }
@@ -127,12 +127,12 @@ class Users_Page {
         $has = (object) [];
         foreach ($users as $user) {
             $row = [
-                "first" => $user->firstName,
-                "last" => $user->lastName,
+                "given_name" => $user->firstName,
+                "family_name" => $user->lastName,
                 "email" => $user->email,
                 "affiliation" => $user->affiliation,
-                "country" => $user->country_code(),
                 "orcid" => $user->decorated_orcid(),
+                "country" => $user->country_code(),
                 "phone" => $user->phone(),
                 "disabled" => $user->is_disabled() ? "yes" : "",
                 "collaborators" => rtrim($user->collaborators())
@@ -182,12 +182,12 @@ class Users_Page {
             $people[] = $row;
         }
 
-        $header = ["first", "last", "email", "affiliation"];
-        if ($has_country) {
-            $header[] = "country";
-        }
+        $header = ["given_name", "family_name", "email", "affiliation"];
         if ($has_orcid) {
             $header[] = "orcid";
+        }
+        if ($has_country) {
+            $header[] = "country";
         }
         if ($has_phone) {
             $header[] = "phone";

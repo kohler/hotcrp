@@ -29,8 +29,8 @@ class GetAuthors_ListAction extends ListAction {
                 $line = [
                     "paper" => $prow->paperId,
                     "title" => $prow->title,
-                    "first" => $au->firstName,
-                    "last" => $au->lastName,
+                    "given_name" => $au->firstName,
+                    "family_name" => $au->lastName,
                     "email" => $au->email,
                     "affiliation" => $au->affiliation
                 ];
@@ -57,8 +57,8 @@ class GetAuthors_ListAction extends ListAction {
                     $texts[] = $line = [
                         "paper" => $prow->paperId,
                         "title" => $prow->title,
-                        "first" => $u->firstName,
-                        "last" => $u->lastName,
+                        "given_name" => $u->firstName,
+                        "family_name" => $u->lastName,
                         "email" => $u->email,
                         "affiliation" => $u->affiliation,
                         "orcid" => $u->decorated_orcid(),
@@ -71,7 +71,7 @@ class GetAuthors_ListAction extends ListAction {
                 }
             }
         }
-        $header = ["paper", "title", "first", "last", "email", "affiliation"];
+        $header = ["paper", "title", "given_name", "family_name", "email", "affiliation"];
         if ($has_orcid) {
             $header[] = "orcid";
         }

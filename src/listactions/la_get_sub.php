@@ -52,7 +52,7 @@ class GetPcconflicts_ListAction extends ListAction {
         $confset = $user->conf->conflict_set();
         $pcm = $user->conf->pc_members();
         $csvg = $user->conf->make_csvg("pcconflicts")
-            ->select(["paper", "title", "first", "last", "email", "conflicttype"]);
+            ->select(["paper", "title", "given_name", "family_name", "email", "conflicttype"]);
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         foreach ($ssel->paper_set($user, ["allConflictType" => 1]) as $prow) {
             if (!$user->can_view_conflicts($prow)) {

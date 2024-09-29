@@ -569,12 +569,12 @@ class Contact implements JsonSerializable {
         while (!empty($args)) {
             $w = array_shift($args);
             if ($w === "name") {
-                array_unshift($args, $conf->sort_by_last ? "first" : "last");
-                $w = $conf->sort_by_last ? "last" : "first";
+                array_unshift($args, $conf->sort_by_last ? "given_name" : "family_name");
+                $w = $conf->sort_by_last ? "family_name" : "given_name";
             }
-            if ($w === "first" || $w === "firstName") {
+            if ($w === "given_name" || $w === "first" || $w === "firstName") {
                 $bit = 1;
-            } else if ($w === "last" || $w === "lastName") {
+            } else if ($w === "family_name" || $w === "last" || $w === "lastName") {
                 $bit = 2;
             } else if ($w === "email") {
                 $bit = 3;
@@ -605,14 +605,14 @@ class Contact implements JsonSerializable {
      * @return string */
     static function unparse_sortspec($sortspec) {
         if ($sortspec === 0321 || $sortspec === 0312) {
-            return $sortspec === 0321 ? "first" : "last";
+            return $sortspec === 0321 ? "given_name" : "family_name";
         } else {
             $r = [];
             while ($sortspec !== 0 && ($sortspec !== 03 || empty($r))) {
                 $bit = $sortspec & 7;
                 $sortspec >>= 3;
                 if ($bit >= 1 && $bit <= 4) {
-                    $r[] = (["first", "last", "email", "affiliation"])[$bit - 1];
+                    $r[] = (["given_name", "family_name", "email", "affiliation"])[$bit - 1];
                 }
             }
             return join(" ", $r);

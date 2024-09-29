@@ -43,7 +43,7 @@ class PaperColumn extends Column {
 
 
     final function add_user_sort_decoration($decor) {
-        if (in_array($decor, ["name", "last", "first", "email", "affiliation"])) {
+        if (in_array($decor, ["name", "family_name", "last", "given_name", "first", "email", "affiliation"])) {
             return $this->__add_decoration($decor);
         } else {
             return false;

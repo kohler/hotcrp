@@ -141,7 +141,9 @@ class ContactList {
                 "sel" => self::FIELD_SELECTOR,
                 "name" => self::FIELD_NAME,
                 "first" => self::FIELD_FIRST,
+                "given_name" => self::FIELD_FIRST,
                 "last" => self::FIELD_LAST,
+                "family_name" => self::FIELD_LAST,
                 "email" => self::FIELD_EMAIL,
                 "aff" => self::FIELD_AFFILIATION,
                 "affrow" => self::FIELD_AFFILIATION_ROW,
@@ -181,9 +183,9 @@ class ContactList {
         case self::FIELD_NAME:
             return new Column(["name" => "name", "sort" => true]);
         case self::FIELD_FIRST:
-            return new Column(["name" => "first", "sort" => true]);
+            return new Column(["name" => "given_name", "sort" => true]);
         case self::FIELD_LAST:
-            return new Column(["name" => "last", "sort" => true]);
+            return new Column(["name" => "family_name", "sort" => true]);
         case self::FIELD_EMAIL:
             return new Column(["name" => "email", "sort" => true]);
         case self::FIELD_AFFILIATION:

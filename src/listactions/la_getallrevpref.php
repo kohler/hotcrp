@@ -13,7 +13,7 @@ class GetAllRevpref_ListAction extends ListAction {
 
         $headers = [
             "paper", "title",
-            "first", "last", "email",
+            "given_name", "family_name", "email",
             "conflict", "preference"
         ];
         if ($has_expertise) {
