@@ -42,22 +42,22 @@ class Assign_ListAction extends ListAction {
         } else if (($pc = $user->conf->user_by_email($mpc, USER_SLICE))) {
             $mpc = $pc->email;
         } else {
-            return MessageItem::error("<0>‘{$mpc}’ is not a PC member");
+            return JsonResult::make_parameter_error("markpc", "<0>‘{$mpc}’ is not a PC member");
         }
         if ($mpc === "none" && $mt !== "lead" && $mt !== "shepherd") {
-            return MessageItem::error("<0>PC member required");
+            return JsonResult::make_parameter_error("markpc", "<0>PC member required");
         }
         $mpc = CsvGenerator::quote($mpc);
 
         if (!in_array($mt, ["lead", "shepherd", "conflict", "clearconflict",
                             "optionalreview", "pcreview" /* backward compat */,
                             "secondaryreview", "primaryreview", "clearreview"])) {
-            return MessageItem::error("<0>Unknown assignment type");
+            return JsonResult::make_parameter_error("assignfn", "<0>Unknown assignment type");
         }
 
         $text = "paper,action,user\n";
         foreach ($ssel->selection() as $pid) {
-            $text .= "$pid,$mt,$mpc\n";
+            $text .= "{$pid},{$mt},{$mpc}\n";
         }
         $assignset = new AssignmentSet($user);
         $assignset->set_override_conflicts(true);

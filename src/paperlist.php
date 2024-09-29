@@ -1991,21 +1991,22 @@ class PaperList {
         $lllgroups = [];
         $whichlll = -1;
         foreach ($cs->members("") as $rf) {
-            if (isset($rf->render_function)
-                && !str_starts_with($rf->name, "__")
-                && Conf::xt_resolve_require($rf)
-                && ($lllg = call_user_func($rf->render_function, $this, $qreq, $cs, $rf))) {
-                if (is_string($lllg)) {
-                    $lllg = [$lllg];
-                }
-                array_unshift($lllg, $rf->name, $rf->title);
-                if ($selfhref) {
-                    $lllg[0] = $this->conf->selfurl($qreq, ["atab" => $lllg[0], "#" => "plact"]);
-                }
-                $lllgroups[] = $lllg;
-                if ($atab === $rf->name) {
-                    $whichlll = count($lllgroups) - 1;
-                }
+            if (str_starts_with($rf->name, "__")
+                || !isset($rf->render_function)
+                || !Conf::xt_resolve_require($rf)
+                || !($lllg = call_user_func($rf->render_function, $this, $qreq, $cs, $rf))) {
+                continue;
+            }
+            if (is_string($lllg)) {
+                $lllg = [$lllg];
+            }
+            array_unshift($lllg, $rf->name, $rf->title);
+            if ($selfhref) {
+                $lllg[0] = $this->conf->selfurl($qreq, ["atab" => $lllg[0], "#" => "plact"]);
+            }
+            $lllgroups[] = $lllg;
+            if ($atab === $rf->name) {
+                $whichlll = count($lllgroups) - 1;
             }
         }
 

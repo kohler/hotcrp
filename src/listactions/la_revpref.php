@@ -36,9 +36,9 @@ class Revpref_ListAction extends ListAction {
         // maybe download preferences for someone else
         $reviewer = self::lookup_reviewer($user, $qreq->reviewer);
         if (!$reviewer) {
-            return $user->conf->error_msg("<0>Reviewer ‘{$qreq->reviewer}’ not found");
+            return JsonResult::make_not_found_error("reviewer", "<0>Reviewer ‘{$qreq->reviewer}’ not found");
         } else if (!$reviewer->isPC) {
-            return self::eperm();
+            return JsonResult::make_permission_error();
         } else if ($this->name === "get/revpref") {
             return $this->run_get($user, $qreq, $ssel, $reviewer, false);
         } else if ($this->name === "get/revprefx") {
@@ -50,7 +50,7 @@ class Revpref_ListAction extends ListAction {
                    || $this->name === "applyuploadpref") {
             return $this->run_uploadpref($user, $qreq, $ssel, $reviewer);
         } else {
-            return self::enoent();
+            return parent::run($user, $qreq, $ssel);
         }
     }
     function run_get(Contact $user, Qrequest $qreq, SearchSelection $ssel,
