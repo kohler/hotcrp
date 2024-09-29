@@ -244,7 +244,7 @@ class Multiconference {
                     }
                 }, $missing));
             } else if ($invalid) {
-                $errors[] = "Invalid conference specified with `-n`.";
+                $errors[] = "Invalid conference specified with `-n`";
             } else if ($multiconference && $confid === "__nonexistent__") {
                 $errors[] = self::nonexistence_error();
             } else {
@@ -263,9 +263,8 @@ class Multiconference {
             } else {
                 if ($multiconference) {
                     $errors[] = "The “{$confid}” conference does not exist. Check your URL to make sure you spelled it correctly.";
-                }
-                if (!empty($missing)) {
-                    $errors[] = "Unable to load " . plural_word(count($missing), "configuration file") . " " . commajoin($missing) . ".";
+                } else if (!empty($missing)) {
+                    $errors[] = "Unable to load configuration file";
                 }
             }
         }
