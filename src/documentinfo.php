@@ -898,7 +898,8 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return string|false */
     function s3_accel_redirect() {
-        if (($s3as = $this->conf->opt("s3AccelRedirectThreshold"))
+        $s3as = $this->conf->opt("s3AccelRedirectThreshold") ?? 0;
+        if ($s3as !== false
             && $this->size >= $s3as
             && $this->conf->s3_client()
             && $this->s3_key()
@@ -1943,18 +1944,16 @@ class DocumentInfo implements JsonSerializable {
         return $this->height >= 0 ? $this->height : null;
     }
 
-    /** @param ?Downloader $dopt
-     * @return bool */
-    function emit($dopt = null) {
+    /** @return bool */
+    function prepare_download(Downloader $dopt) {
         if ($this->size() <= 0) {
             $this->message_set()->warning_at(null, "<0>Empty file");
             return false;
         }
 
-        $dopt = $dopt ?? new Downloader;
         if ($this->has_hash()) {
             $dopt->etag = "\"{$this->text_hash()}\"";
-            if ($dopt->run_match()) {
+            if (!$dopt->check_match()) {
                 return true;
             }
         }
@@ -1967,25 +1966,22 @@ class DocumentInfo implements JsonSerializable {
         }
         if (!$s3_accel && !$this->ensure_content()) {
             if (!$this->has_error()) {
-                $this->error("Document cannot be prepared for download");
+                $this->error("<0>Document cannot be prepared for download");
             }
             return false;
         }
 
         // Print headers
-        $dopt->mimetype = Mimetype::type_with_charset($this->mimetype);
-        $attachment = $dopt->attachment ?? !Mimetype::disposition_inline($this->mimetype);
+        $dopt->set_mimetype(Mimetype::type_with_charset($this->mimetype));
         $downloadname = $this->export_filename();
         if (($slash = strrpos($downloadname, "/")) !== false) {
             $downloadname = substr($downloadname, $slash + 1);
         }
-        header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($downloadname));
+        $dopt->set_filename($downloadname);
         if ($dopt->cacheable) {
-            header("Cache-Control: max-age=315576000, private");
-            header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
+            $dopt->header("Cache-Control: max-age=315576000, private");
+            $dopt->header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
         }
-        // reduce likelihood of XSS attacks in IE
-        header("X-Content-Type-Options: nosniff");
 
         // Maybe log
         if ($dopt->log_user && $dopt->range_overlaps(0, 4096)) {
@@ -1994,14 +1990,24 @@ class DocumentInfo implements JsonSerializable {
 
         // Download or redirect
         if ($s3_accel) {
-            header("Content-Type: {$dopt->mimetype}");
-            header("ETag: {$dopt->etag}");
-            $this->conf->s3_client()->get_accel_redirect($this->s3_key(), $s3_accel);
+            $dopt->set_content_length($this->size());
+            $this->conf->s3_client()->apply_content_redirect($dopt, $this->s3_key(), $s3_accel);
         } else if (($path = $this->available_content_file())) {
-            $dopt->output_file($path);
+            $dopt->set_content_file($path);
         } else {
-            $dopt->output_string($this->content);
+            $dopt->set_content($this->content);
         }
+        return true;
+    }
+
+    /** @param ?Downloader $dopt
+     * @return bool */
+    function emit($dopt = null) {
+        $dopt = $dopt ?? new Downloader;
+        if (!$this->prepare_download($dopt)) {
+            return false;
+        }
+        $dopt->emit();
         return true;
     }
 

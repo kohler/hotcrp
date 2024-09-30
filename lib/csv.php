@@ -890,7 +890,8 @@ class CsvGenerator {
     }
 
     /** @param bool $inline
-     * @return $this */
+     * @return $this
+     * @deprecated */
     function set_inline($inline) {
         $this->inline = $inline;
         return $this;
@@ -1175,22 +1176,34 @@ class CsvGenerator {
         header("X-Content-Type-Options: nosniff");
     }
 
-    function emit() {
-        $this->flags |= self::FLAG_COMPLETING;
-        if (($this->flags & self::FLAG_HTTP_HEADERS) === 0) {
-            $this->export_headers();
+    /** @return bool */
+    function prepare_download(Downloader $dopt) {
+        if (($this->flags & (self::FLAG_HTTP_HEADERS | self::FLAG_COMPLETING)) !== 0
+            || ($this->stream && !$this->stream_filename)) {
+            throw new ErrorException("Bad CsvGenerator::prepare_download");
+            return false;
         }
-        $dopt = new Downloader;
-        $dopt->mimetype = $this->mimetype_with_charset();
+        $this->flags |= self::FLAG_COMPLETING;
+        $dopt->set_mimetype($this->mimetype_with_charset())
+            ->set_filename($this->filename());
         if ($this->stream) {
             $this->flush();
-            if ($this->stream_filename) {
-                $dopt->output_file($this->stream_filename);
-            } else {
-                assert(($this->flags & self::FLAG_EMIT_LIVE) !== 0);
-            }
+            $dopt->set_content_file($this->stream_filename);
         } else {
-            $dopt->output_string($this->unparse());
+            $dopt->set_content($this->unparse());
+        }
+        return true;
+    }
+
+    function emit() {
+        if ($this->stream && !$this->stream_filename) {
+            // emitted as we went along
+            assert(($this->flags & self::FLAG_EMIT_LIVE) !== 0);
+            $this->flush();
+        } else {
+            $dopt = new Downloader;
+            $this->prepare_download($dopt);
+            $dopt->emit();
         }
     }
 }

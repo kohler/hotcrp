@@ -466,6 +466,16 @@ class S3Client {
 
     /** @param string $skey
      * @param string $accel */
+    function apply_content_redirect(Downloader $dl, $skey, $accel) {
+        list($url, $hdr) = $this->signed_headers($skey, "GET", []);
+        $dl->set_content_redirect($accel . $url);
+        foreach ($hdr as $h) {
+            $dl->header($h);
+        }
+    }
+
+    /** @param string $skey
+     * @param string $accel */
     function get_accel_redirect($skey, $accel) {
         list($url, $hdr) = $this->signed_headers($skey, "GET", []);
         header("X-Accel-Redirect: {$accel}{$url}");

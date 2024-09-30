@@ -44,23 +44,18 @@ class GetDocument_ListAction extends ListAction {
         }
         $user->set_overrides($old_overrides);
         if ($docset->is_empty()) {
-            $user->conf->feedback_msg(
-                new MessageItem(null, "Nothing to download", MessageSet::MARKED_NOTE),
-                $docset->message_list()
-            );
-        } else {
-            $qreq->qsession()->commit();
-            $dopt = Downloader::make_server_request();
-            $dopt->attachment = true;
-            $dopt->single = true;
-            $dopt->log_user = $user;
-            if ($docset->emit($dopt)) {
-                exit();
-            } else {
-                $user->conf->feedback_msg($docset->message_list());
-            }
+            return JsonResult::make_message_list($docset->message_set(),
+                new MessageItem(null, "<0>Nothing to download", MessageSet::MARKED_NOTE));
         }
-        // XXX how to return errors?
-        return null;
+        $qreq->qsession()->commit();
+        $dopt = new Downloader;
+        $dopt->parse_qreq($qreq);
+        $dopt->set_attachment(true);
+        $dopt->single = true;
+        $dopt->log_user = $user;
+        if ($docset->prepare_download($dopt)) {
+            return $dopt;
+        }
+        return JsonResult::make_message_list(400, $docset->message_list());
     }
 }

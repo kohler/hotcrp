@@ -8,7 +8,7 @@ class ListAction {
         return true;
     }
 
-    /** @return null|JsonResult|CsvGenerator|Redirection */
+    /** @return null|JsonResult|CsvGenerator|Downloader|DocumentInfo|DocumentInfoSet|Redirection */
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         return JsonResult::make_not_found_error(null, "<0>Action not found");
     }
@@ -117,15 +117,24 @@ class ListAction {
         if ($res instanceof ListAction) {
             $res = $res->run($user, $qreq, $selection);
         }
-        if ($res instanceof JsonResult) {
-            if ($res->status >= 300 && !$qreq->ajax) {
-                if (isset($res->content["message_list"])) {
-                    $user->conf->feedback_msg($res->content["message_list"]);
-                }
+        if ($res instanceof DocumentInfoSet || $res instanceof DocumentInfo) {
+            $dopt = new Downloader;
+            $dopt->parse_qreq($qreq);
+            $dopt->set_attachment(true);
+            if ($res->prepare_download($dopt)) {
+                $res = $dopt;
             } else {
+                $res = JsonResult::make_message_list(400, $res->message_list());
+            }
+        }
+        if ($res instanceof JsonResult) {
+            if (isset($res->content["message_list"]) && !$qreq->ajax) {
+                $user->conf->feedback_msg($res->content["message_list"]);
+            }
+            if ($qreq->ajax) {
                 json_exit($res);
             }
-        } else if ($res instanceof CsvGenerator) {
+        } else if ($res instanceof CsvGenerator || $res instanceof Downloader) {
             $res->emit();
             exit();
         } else if ($res instanceof Redirection) {

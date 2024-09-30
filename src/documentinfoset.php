@@ -372,12 +372,14 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             0                 // .ZIP file comment length
         );
     }
+
     /** @return int */
     private function _hotzip_filesize() {
         $nz = count($this->_zipi);
         assert($nz === count($this->docs) + 1);
         return $this->_zipi[$nz - 1]->central_end_offset();
     }
+
     private function _hotzip_make() {
         $this->_hotzip_progress();
         if ($this->has_error()) {
@@ -386,6 +388,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         $this->_hotzip_final();
     }
+
     /** @return string */
     private function content_signature() {
         if ($this->_signature === null) {
@@ -476,7 +479,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @param resource $out
      * @param int $r0
      * @param int $r1 */
-    private function _write_range($out, $r0, $r1) {
+    function write_range($out, $r0, $r1) {
         $d0 = 0;
         while ($d0 !== count($this->docs)
                && $this->_zipi[$d0]->local_end_offset() <= $r0) {
@@ -516,18 +519,34 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
     }
 
-    /** @param Downloader $dopt
-     * @return bool */
-    private function _download_directly($dopt) {
+    /** @return bool */
+    function prepare_download(Downloader $dopt) {
+        if (!$this->_filename) {
+            throw new Exception("trying to download blank-named DocumentInfoSet");
+        }
+
+        if (count($this->docs) === 1
+            && !$this->has_error()
+            && $dopt->single) {
+            $doc = $this->docs[0];
+            if ($doc->prepare_download($dopt)) {
+                return true;
+            }
+            foreach ($doc->message_list() as $mi) {
+                $this->message_set()->append_item($mi->with_landmark($doc->export_filename()));
+            }
+            return false;
+        }
+
         $dopt->etag = "\"" . $this->content_signature() . "\"";
-        if ($dopt->run_match()) {
+        if (!$dopt->check_match()) {
             return true;
         }
 
         $this->_hotzip_make();
-        $dopt->content_length = $this->_hotzip_filesize();
-        $dopt->mimetype = Mimetype::type_with_charset($this->_mimetype);
-        if ($dopt->run_range_check()) {
+        $dopt->set_content_length($this->_hotzip_filesize());
+        $dopt->set_mimetype(Mimetype::type_with_charset($this->_mimetype));
+        if (!$dopt->check_ranges()) {
             return true;
         }
 
@@ -536,48 +555,28 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             ini_set("zlib.output_compression", "0");
         }
         if ($dopt->range === null) {
-            $attachment = $dopt->attachment ?? !Mimetype::disposition_inline($this->_mimetype);
-            header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($this->_filename));
-            // reduce likelihood of XSS attacks in IE
-            header("X-Content-Type-Options: nosniff");
+            $dopt->set_filename($this->_filename);
         }
         if ($dopt->cacheable) {
-            header("Cache-Control: max-age=315576000, private");
-            header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
+            $dopt->header("Cache-Control: max-age=315576000, private");
+            $dopt->header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
         }
         if ($dopt->log_user && $dopt->range_overlaps(0, 4096)) {
             DocumentInfo::log_download_activity($this->as_list(), $dopt->log_user);
         }
-        $out = fopen("php://output", "wb");
-        foreach ($dopt->run_output_ranges() as $r) {
-            $this->_write_range($out, $r[0], $r[1]);
-        }
-        fclose($out);
+        $dopt->set_content_function([$this, "write_range"]);
         return true;
     }
 
     /** @param ?Downloader $dopt
      * @return bool */
     function emit($dopt = null) {
-        if (!$this->_filename) {
-            throw new Exception("trying to download blank-named DocumentInfoSet");
-        }
         $dopt = $dopt ?? new Downloader;
-        if (count($this->docs) === 1
-            && !$this->has_error()
-            && $dopt->single) {
-            $doc = $this->docs[0];
-            if ($doc->emit($dopt)) {
-                return true;
-            } else {
-                foreach ($doc->message_list() as $mi) {
-                    $this->message_set()->append_item($mi->with_landmark($doc->export_filename()));
-                }
-                return false;
-            }
-        } else {
-            return $this->_download_directly($dopt);
+        if (!$this->prepare_download($dopt)) {
+            return false;
         }
+        $dopt->emit();
+        return true;
     }
 
     /** @param ?Downloader $dopt

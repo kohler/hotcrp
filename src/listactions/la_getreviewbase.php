@@ -49,18 +49,17 @@ class GetReviewBase_ListAction extends ListAction {
             foreach ($texts as $pt) {
                 $text .= $pt[1];
             }
-            return $user->conf->make_csvg($rfname, CsvGenerator::TYPE_STRING)
-                ->set_inline(false)->add_string($text);
-        } else {
-            $zip = new DocumentInfoSet($user->conf->download_prefix . "reviews.zip");
-            foreach ($texts as $pt) {
-                $zip->add_string_as($header . $pt[1], $user->conf->download_prefix . $rfname . $pt[0] . ".txt", null, $pt[2]);
-            }
-            foreach ($ms->message_list() as $mi) {
-                $zip->message_set()->append_item($mi);
-            }
-            $zip->emit();
-            exit();
+            return $user->conf->make_text_downloader($rfname)
+                ->set_content($text);
         }
+
+        $zip = new DocumentInfoSet($user->conf->download_prefix . "reviews.zip");
+        foreach ($texts as $pt) {
+            $zip->add_string_as($header . $pt[1], $user->conf->download_prefix . $rfname . $pt[0] . ".txt", null, $pt[2]);
+        }
+        foreach ($ms->message_list() as $mi) {
+            $zip->message_set()->append_item($mi);
+        }
+        return $zip;
     }
 }

@@ -56,9 +56,8 @@ class GetRank_ListAction extends ListAction {
                 $lastIndex = $tv;
             }
         }
-        return $user->conf->make_csvg("rank", CsvGenerator::TYPE_STRING)
-            ->set_inline(false)
-            ->add_string("action,paper,title
+        return $user->conf->make_text_downloader("rank")
+            ->set_content("action,paper,title
 tag," . CsvGenerator::quote(trim($qreq->tag)) . "
 
 # Edit the rank order by rearranging the following lines.

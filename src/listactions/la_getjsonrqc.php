@@ -37,9 +37,11 @@ class GetJsonRQC_ListAction extends ListAction {
         }
         $user->set_overrides($old_overrides);
         $results["papers"] = $pj;
-        header("Content-Type: application/json; charset=utf-8");
-        header("Content-Disposition: attachment; filename=" . mime_quote_string($user->conf->download_prefix . "rqc.json"));
-        echo json_encode($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
-        exit();
+        $dopt = new Downloader;
+        $dopt->set_attachment(true);
+        $dopt->set_filename($user->conf->download_prefix . "rqc.json");
+        $dopt->set_mimetype(Mimetype::JSON_UTF8_TYPE);
+        $dopt->set_content(json_encode($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n");
+        return $dopt;
     }
 }

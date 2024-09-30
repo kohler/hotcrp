@@ -18,6 +18,9 @@ class Mimetype {
     const RAR_TYPE = "application/x-rar-compressed";
     const KEYNOTE_TYPE = "application/vnd.apple.keynote";
 
+    const TXT_UTF8_TYPE = "text/plain; charset=utf-8";
+    const JSON_UTF8_TYPE = "application/json; charset=utf-8";
+
     const FLAG_INLINE = 1;
     const FLAG_UTF8 = 2;
     const FLAG_COMPRESSIBLE = 4;

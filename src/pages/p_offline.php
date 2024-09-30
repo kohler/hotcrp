@@ -21,9 +21,8 @@ class Offline_Page {
 
     function handle_download() {
         $rf = $this->conf->review_form();
-        $this->conf->make_csvg("review", CsvGenerator::TYPE_STRING)
-            ->set_inline(false)
-            ->add_string($rf->text_form_header(false)
+        $this->conf->make_text_downloader("review")
+            ->set_content($rf->text_form_header(false)
                 . $rf->text_form(null, null, $this->user) . "\n")
             ->emit();
     }

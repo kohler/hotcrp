@@ -34,26 +34,32 @@ class GetJson_ListAction extends ListAction {
             } else {
                 $pj[] = (object) ["pid" => $prow->paperId, "error" => "You don’t have permission to administer this submission"];
                 if ($this->iszip) {
-                    $mi = $this->zipdoc->error("You don’t have permission to administer this submission");
+                    $mi = $this->zipdoc->error("<0>You don’t have permission to administer this submission");
                     $mi->landmark = "#{$prow->paperId}";
                 }
             }
         }
         $user->set_overrides($old_overrides);
-        if (count($pj) == 1) {
+        if (count($pj) === 1) {
             $pj = $pj[0];
             $pj_filename = $user->conf->download_prefix . "paper" . $ssel->selection_at(0) . "-data.json";
         } else {
             $pj_filename = $user->conf->download_prefix . "data.json";
         }
+        $dopt = new Downloader;
+        $dopt->parse_qreq($qreq);
+        $dopt->set_attachment(true);
         if ($this->iszip) {
             $this->zipdoc->add_string_as(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n", $pj_filename);
-            $this->zipdoc->emit();
+            if ($this->zipdoc->prepare_download($dopt)) {
+                return $dopt;
+            }
+            return JsonResult::make_message_list(400, $this->zipdoc->message_list());
         } else {
-            header("Content-Type: application/json; charset=utf-8");
-            header("Content-Disposition: attachment; filename=" . mime_quote_string($pj_filename));
-            echo json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+            $dopt->set_mimetype(Mimetype::JSON_UTF8_TYPE)
+                ->set_filename($pj_filename)
+                ->set_content(json_encode($pj, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n");
+            return $dopt;
         }
-        exit();
     }
 }

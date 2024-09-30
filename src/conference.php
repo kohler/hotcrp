@@ -3977,6 +3977,15 @@ class Conf {
         return $csv;
     }
 
+    /** @param string $basename
+     * @return Downloader */
+    function make_text_downloader($basename) {
+        return (new Downloader)
+            ->set_filename($this->download_prefix . $basename . ".txt")
+            ->set_mimetype(Mimetype::TXT_UTF8_TYPE)
+            ->set_attachment(true);
+    }
+
 
     /** @return 'sha1'|'sha256' */
     function content_hash_algorithm() {

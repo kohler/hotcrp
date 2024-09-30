@@ -161,10 +161,9 @@ class Review_Page {
     function handle_download_form() {
         $filename = "review-" . ($this->rrow ? $this->rrow->unparse_ordinal_id() : $this->prow->paperId);
         $rf = $this->conf->review_form();
-        $this->conf->make_csvg($filename, CsvGenerator::TYPE_STRING)
-            ->set_inline(false)
-            ->add_string($rf->text_form_header(false)
-                         . $rf->text_form($this->prow, $this->rrow, $this->user))
+        $this->conf->make_text_downloader($filename)
+            ->set_content($rf->text_form_header(false)
+                . $rf->text_form($this->prow, $this->rrow, $this->user))
             ->emit();
         throw new PageCompletion;
     }
