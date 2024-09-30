@@ -895,31 +895,41 @@
                         "name": "q",
                         "in": "query",
                         "required": true,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/search_string"
+                        }
                     },
                     {
                         "name": "t",
                         "in": "query",
                         "required": true,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/search_collection"
+                        }
+                    },
+                    {
+                        "name": "qt",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_qt"
+                        }
                     },
                     {
                         "name": "sort",
                         "in": "query",
                         "required": false,
-                        "schema": {}
-                    },
-                    {
-                        "name": "report",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/search_sort"
+                        }
                     },
                     {
                         "name": "scoresort",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/search_scoresort"
+                        }
                     },
                     {
                         "name": "reviewer",
@@ -928,7 +938,7 @@
                         "schema": {}
                     },
                     {
-                        "name": "qt",
+                        "name": "report",
                         "in": "query",
                         "required": false,
                         "schema": {}
@@ -993,25 +1003,41 @@
                         "name": "q",
                         "in": "query",
                         "required": true,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/search_string"
+                        }
                     },
                     {
                         "name": "t",
                         "in": "query",
-                        "required": false,
-                        "schema": {}
-                    },
-                    {
-                        "name": "sort",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_collection"
+                        }
                     },
                     {
                         "name": "qt",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/search_qt"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_sort"
+                        }
+                    },
+                    {
+                        "name": "scoresort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_scoresort"
+                        }
                     },
                     {
                         "name": "reviewer",
@@ -1260,7 +1286,9 @@
                         "name": "q",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/search_string"
+                        }
                     }
                 ],
                 "responses": {
@@ -1322,7 +1350,9 @@
                         "name": "q",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/components/schemas/search_string"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -4047,6 +4077,106 @@
                     }
                 }
             }
+        },
+        "/searchaction": {
+            "get": {
+                "tags": [
+                    "Search"
+                ],
+                "parameters": [
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_string"
+                        }
+                    },
+                    {
+                        "name": "t",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_collection"
+                        }
+                    },
+                    {
+                        "name": "qt",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_qt"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_sort"
+                        }
+                    },
+                    {
+                        "name": "scoresort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_scoresort"
+                        }
+                    },
+                    {
+                        "name": "report",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "reviewer",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "pap[]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/pid"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -4335,6 +4465,41 @@
                     "q=&t=s&sort=id&forceShow=&report=pl"
                 ]
             },
+            "search_string": {
+                "type": "string",
+                "description": "Search string",
+                "examples": [
+                    "1-10 OR #ready"
+                ]
+            },
+            "search_collection": {
+                "type": "string",
+                "description": "Submission universe for search",
+                "examples": [
+                    "s",
+                    "all"
+                ]
+            },
+            "search_qt": {
+                "type": "string",
+                "description": "Search fields"
+            },
+            "search_sort": {
+                "type": "string",
+                "description": "Sort order",
+                "examples": [
+                    "id",
+                    "-title"
+                ]
+            },
+            "search_scoresort": {
+                "type": "string",
+                "description": "Sort order for scores",
+                "examples": [
+                    "counts",
+                    "average"
+                ]
+            },
             "search_parameters": {
                 "type": "object",
                 "description": "Search parameters",
@@ -4343,16 +4508,19 @@
                 ],
                 "properties": {
                     "q": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/search_string"
                     },
                     "t": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/search_collection"
                     },
                     "qt": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/search_qt"
                     },
                     "sort": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/search_sort"
+                    },
+                    "scoresort": {
+                        "$ref": "#/components/schemas/search_scoresort"
                     },
                     "reviewer": {
                         "type": "string"

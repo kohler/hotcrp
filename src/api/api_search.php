@@ -3,8 +3,8 @@
 // Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
 
 class Search_API {
-    /** @return JsonResult */
-    static function search(Contact $user, Qrequest $qreq) {
+    /** @return JsonResult|PaperList */
+    static function make_list(Contact $user, Qrequest $qreq) {
         $q = $qreq->q;
         if (isset($q)) {
             $q = trim($q);
@@ -28,6 +28,15 @@ class Search_API {
         $pl = new PaperList($qreq->report ? : "pl", $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default();
         $pl->apply_view_session($qreq);
+        return $pl;
+    }
+
+    /** @return JsonResult */
+    static function search(Contact $user, Qrequest $qreq) {
+        $pl = self::make_list($user, $qreq);
+        if ($pl instanceof JsonResult) {
+            return $pl;
+        }
         $ih = $pl->ids_and_groups();
         return new JsonResult([
             "ok" => true,
@@ -112,5 +121,50 @@ class Search_API {
             "message_list" => $pl->message_set()->message_list(),
             "data" => $response
         ];
+    }
+
+    static function searchaction(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
+        if ($qreq->is_get() && ($qreq->action ?? "") === "") {
+            return self::searchaction_list($user);
+        } else if (($qreq->action ?? "") === "") {
+            return JsonResult::make_missing_error("action");
+        }
+        $qreq->p = $qreq->p ?? "all";
+        $ssel = SearchSelection::make($qreq, $user, "p");
+        $action = ListAction::lookup($qreq->action, $user, $qreq, $ssel, ListAction::LOOKUP_API);
+        if ($action instanceof ListAction) {
+            $action = $action->run($user, $qreq, $ssel);
+        }
+        return ListAction::resolve_document($action, $qreq);
+    }
+
+    static function searchaction_list(Contact $user) {
+        $fjs = [];
+        $cs = ListAction::components($user);
+        foreach ($cs->members("") as $rf) {
+            if (str_starts_with($rf->name, "__")) {
+                continue;
+            }
+            foreach ($cs->members($rf->name) as $uf) {
+                if (str_starts_with($uf->name, "__")
+                    || !($uf->allow_api ?? false)
+                    || (isset($uf->allow_if) && !$cs->allowed($uf->allow_if, $uf))
+                    || !isset($uf->function)) {
+                    continue;
+                }
+                $fj = ["action" => $uf->name];
+                if (isset($uf->description)) {
+                    $fj["description"] = $uf->description;
+                }
+                if ($uf->get ?? false) {
+                    $fj["get"] = true;
+                }
+                if ($uf->post ?? false) {
+                    $fj["post"] = true;
+                }
+                $fjs[] = $fj;
+            }
+        }
+        return new JsonResult(["ok" => true, "actions" => $fjs]);
     }
 }

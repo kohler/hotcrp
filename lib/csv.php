@@ -1206,4 +1206,9 @@ class CsvGenerator {
             $dopt->emit();
         }
     }
+
+    /** @return list<MessageItem> */
+    function message_list() {
+        return [];
+    }
 }

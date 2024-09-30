@@ -258,6 +258,11 @@
         "response": "ids groups hotlist search_params"
     },
     {
+        "name": "searchaction", "get": true,
+        "function": "Search_API::searchaction",
+        "parameters": "?action q t ?qt ?sort ?report ?scoresort ?reviewer ?pap[]"
+    },
+    {
         "name": "searchcompletion", "get": true,
         "function": "Completion_API::searchcompletion_api",
         "response": "searchcompletion"

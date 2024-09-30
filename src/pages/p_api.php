@@ -72,6 +72,10 @@ class API_Page {
         if ($validate) {
             SpecValidator_API::response($uf, $qreq, $jr);
         }
+        if ($jr instanceof Downloader) {
+            $jr->emit();
+            exit();
+        }
         if ($uf
             && ($uf->redirect ?? false)
             && ($url = $conf->qreq_redirect_url($qreq))) {

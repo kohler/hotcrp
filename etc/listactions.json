@@ -13,6 +13,7 @@
         "title": "Paper information/JSON",
         "order": 10090,
         "allow_if": "manager",
+        "allow_api": true,
         "function": "+GetJson_ListAction",
         "has_attachments": false
     },
@@ -21,6 +22,7 @@
         "title": "Paper information/JSON with attachments",
         "order": 10091,
         "allow_if": "manager",
+        "allow_api": true,
         "function": "+GetJson_ListAction",
         "has_attachments": true
     },
@@ -29,6 +31,7 @@
         "title": "Paper information/JSON for reviewqualitycollector.org",
         "order": 10092,
         "allow_if": "manager",
+        "allow_api": true,
         "function": "+GetJsonRQC_ListAction"
     },
     {
@@ -36,6 +39,7 @@
         "title": "Review assignments/PC assignments",
         "order": 20099,
         "allow_if": "manager",
+        "allow_api": true,
         "function": "+GetPcassignments_ListAction"
     },
     {
@@ -43,6 +47,7 @@
         "title": "Review assignments/Your review forms",
         "order": 20000,
         "allow_if": "reviewer",
+        "allow_api": true,
         "function": "+GetReviewForms_ListAction",
         "zip": false, "all": false
     },
@@ -51,6 +56,7 @@
         "title": "Review assignments/Your review forms (zip)",
         "order": 20001,
         "allow_if": "reviewer",
+        "allow_api": true,
         "function": "+GetReviewForms_ListAction",
         "zip": true, "all": false
     },
@@ -59,6 +65,7 @@
         "title": "Review assignments/All review forms",
         "order": 20002,
         "allow_if": "manager",
+        "allow_api": true,
         "function": "+GetReviewForms_ListAction",
         "zip": false, "all": true
     },
@@ -67,6 +74,7 @@
         "title": "Review assignments/All review forms (zip)",
         "order": 20003,
         "allow_if": "manager",
+        "allow_api": true,
         "function": "+GetReviewForms_ListAction",
         "zip": true, "all": true
     },
@@ -75,6 +83,7 @@
         "title": "Reviews/Reviews with paper info",
         "order": 30050,
         "allow_if": "view_review",
+        "allow_api": true,
         "function": "+GetReviews_ListAction",
         "zip": false, "abstract": true, "author_view": false, "submitted": true
     },
@@ -83,6 +92,7 @@
         "title": "Reviews/Reviews (text)",
         "order": 30100,
         "allow_if": "view_review",
+        "allow_api": true,
         "function": "+GetReviews_ListAction",
         "zip": false, "abstract": false, "author_view": false, "submitted": true
     },
@@ -91,6 +101,7 @@
         "title": "Reviews/Reviews (zip)",
         "order": 30105,
         "allow_if": "view_review",
+        "allow_api": true,
         "function": "+GetReviews_ListAction",
         "zip": true, "abstract": false, "author_view": false, "submitted": true
     },
@@ -99,6 +110,7 @@
         "title": "Reviews/Reviews (text, include drafts)",
         "order": 30150,
         "allow_if": "view_review && admin",
+        "allow_api": true,
         "function": "+GetReviews_ListAction",
         "zip": false, "abstract": false, "author_view": false, "submitted": false
     },
@@ -107,6 +119,7 @@
         "title": "Reviews/Reviews (zip, include drafts)",
         "order": 30151,
         "allow_if": "view_review && admin",
+        "allow_api": true,
         "function": "+GetReviews_ListAction",
         "zip": true, "abstract": false, "author_view": false, "submitted": false
     },
@@ -115,6 +128,7 @@
         "title": "Reviews/Reviews (text, author view)",
         "order": 30200,
         "allow_if": "view_review && admin",
+        "allow_api": true,
         "function": "+GetReviews_ListAction",
         "zip": false, "abstract": false, "author_view": true, "submitted": true
     },
@@ -123,6 +137,7 @@
         "title": "Reviews/Reviews (zip, author view)",
         "order": 30205,
         "allow_if": "view_review && admin",
+        "allow_api": true,
         "function": "+GetReviews_ListAction",
         "zip": true, "abstract": false, "author_view": true, "submitted": true
     },
@@ -131,6 +146,7 @@
         "title": "Reviews/Reviews (CSV)",
         "order": 30110,
         "allow_if": "view_review",
+        "allow_api": true,
         "function": "+GetReviewCSV_ListAction"
     },
     {
@@ -138,6 +154,7 @@
         "title": "Reviews/Reviews (CSV, author view)",
         "order": 30210,
         "allow_if": "view_review && admin",
+        "allow_api": true,
         "function": "+GetReviewCSV_ListAction",
         "author_view": true
     },
@@ -146,6 +163,7 @@
         "title": "Reviews/Scores (CSV)",
         "order": 30400,
         "allow_if": "view_review",
+        "allow_api": true,
         "function": "+GetScores_ListAction"
     },
     {
@@ -156,14 +174,18 @@
     {
         "name": "get/lead", "get": true,
         "title": "Reviews/Discussion leads (CSV)", "order": 30600,
-        "allow_if": "pc", "display_if": "conf.has_any_lead_or_shepherd",
+        "allow_if": "pc",
+        "allow_api": true,
+        "display_if": "conf.has_any_lead_or_shepherd",
         "function": "+GetLead_ListAction",
         "type": "lead"
     },
     {
         "name": "get/shepherd", "get": true,
         "title": "Reviews/Shepherds (CSV)", "order": 30650,
-        "allow_if": "pc", "display_if": "conf.has_any_lead_or_shepherd",
+        "allow_if": "pc",
+        "allow_api": true,
+        "display_if": "conf.has_any_lead_or_shepherd",
         "function": "+GetLead_ListAction",
         "type": "shepherd"
     },
@@ -171,14 +193,18 @@
         "name": "get/revpref", "get": true,
         "title": "Preference file",
         "order": 1,
-        "allow_if": "pc", "display_if": "listreport:pf",
+        "allow_if": "pc",
+        "allow_api": true,
+        "display_if": "listreport:pf",
         "function": "+Revpref_ListAction"
     },
     {
         "name": "get/revprefx", "get": true,
         "title": "Preference file with abstracts",
         "order": 2,
-        "allow_if": "pc", "display_if": "listreport:pf",
+        "allow_if": "pc",
+        "allow_api": true,
+        "display_if": "listreport:pf",
         "function": "+Revpref_ListAction"
     },
     {
@@ -186,6 +212,7 @@
         "title": "Review assignments/PC review preferences",
         "order": 20060,
         "allow_if": "manager",
+        "allow_api": true,
         "function": "+GetAllRevpref_ListAction"
     },
     {
@@ -193,31 +220,39 @@
         "title": "Documents/Format check",
         "order": 9999, "display_if": "listhas:paper",
         "allow_if": "manager",
+        "allow_api": true,
         "require": "src/listactions/la_get_sub.php",
         "function": "+GetCheckFormat_ListAction"
     },
     {
         "name": "get/abstract", "get": true,
-        "title": "Paper information/Text with abstracts", "display_if": "listhas:abstract",
+        "title": "Paper information/Text with abstracts",
+        "allow_api": true,
+        "display_if": "listhas:abstract",
         "order": 10000,
         "function": "+GetAbstracts_ListAction"
     },
     {
         "name": "get/abstract", "get": true,
-        "title": "Paper information/Text", "display_if": "!listhas:abstract",
+        "title": "Paper information/Text",
+        "display_if": "!listhas:abstract",
         "order": 10000,
         "function": "+GetAbstracts_ListAction"
     },
     {
         "name": "get/authors", "get": true,
         "title": "Paper information/Authors",
-        "order": 10001, "display_if": "listhas:authors",
+        "order": 10001,
+        "allow_api": true,
+        "display_if": "listhas:authors",
         "require": "src/listactions/la_get_sub.php",
         "function": "+GetAuthors_ListAction"
     },
     {
         "name": "get/topics", "get": true,
-        "title": "Paper information/Topics", "display_if": "conf.has_topics",
+        "title": "Paper information/Topics",
+        "allow_api": true,
+        "display_if": "conf.has_topics",
         "order": 10050,
         "require": "src/listactions/la_get_sub.php",
         "function": "+GetTopics_ListAction"
@@ -225,6 +260,7 @@
     {
         "name": "get/pcconf", "get": true,
         "title": "Paper information/PC conflicts",
+        "allow_api": true,
         "order": 10060,
         "require": "src/listactions/la_get_sub.php",
         "function": "+GetPcconflicts_ListAction"
@@ -232,6 +268,7 @@
     {
         "name": "get/csv", "get": true,
         "title": "Paper information/CSV",
+        "allow_api": true,
         "order": 10089,
         "require": "src/listactions/la_get_sub.php",
         "function": "+GetCSV_ListAction"
