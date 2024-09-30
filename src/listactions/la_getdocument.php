@@ -54,7 +54,7 @@ class GetDocument_ListAction extends ListAction {
             $dopt->attachment = true;
             $dopt->single = true;
             $dopt->log_user = $user;
-            if ($docset->download($dopt)) {
+            if ($docset->emit($dopt)) {
                 exit();
             } else {
                 $user->conf->feedback_msg($docset->message_list());

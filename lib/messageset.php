@@ -703,6 +703,26 @@ class MessageSet {
         }
     }
 
+    /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
+     * @return list<MessageItem> */
+    static function make_list(...$mls) {
+        $mlx = [];
+        foreach ($mls as $ml) {
+            if ($ml instanceof MessageItem) {
+                $mlx[] = $ml;
+            } else if ($ml instanceof MessageSet) {
+                if ($ml->has_message()) { // old PHPs require at least 2 args
+                    array_push($mlx, ...$ml->message_list());
+                }
+            } else {
+                foreach ($ml as $mi) {
+                    $mlx[] = $mi;
+                }
+            }
+        }
+        return $mlx;
+    }
+
     /** @param iterable<MessageItem> $message_list
      * @return int */
     static function list_status($message_list) {

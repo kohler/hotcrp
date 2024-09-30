@@ -59,7 +59,7 @@ class GetReviewBase_ListAction extends ListAction {
             foreach ($ms->message_list() as $mi) {
                 $zip->message_set()->append_item($mi);
             }
-            $zip->download();
+            $zip->emit();
             exit();
         }
     }

@@ -194,7 +194,7 @@ class Log_Page {
         assert(Contact::ROLE_PC === 1 && Contact::ROLE_ADMIN === 2 && Contact::ROLE_CHAIR === 4);
         $role_map = ["", "pc", "sysadmin", "pc sysadmin", "chair", "chair", "chair", "chair"];
 
-        $csvg = $this->conf->make_csvg("log")->set_will_emit(true);
+        $csvg = $this->conf->make_csvg("log")->set_emit_live(true);
         $narrow = true;
         $headers = ["date", "ipaddr", "email"];
         if ($narrow) {

@@ -725,7 +725,7 @@ class CsvGenerator {
     const FLAG_HTTP_HEADERS = 512;
     const FLAG_FLUSHED = 1024;
     const FLAG_ERROR = 2048;
-    const FLAG_WILL_EMIT = 4096;
+    const FLAG_EMIT_LIVE = 4096;
     const FLAG_COMPLETING = 8192;
 
     const FLUSH_JOINLIMIT = 12000000; // 12 MB
@@ -854,7 +854,7 @@ class CsvGenerator {
     /** @param resource $stream
      * @return $this */
     function set_stream($stream) {
-        assert($this->stream === null && ($this->flags & self::FLAG_WILL_EMIT) === 0);
+        assert($this->stream === null && ($this->flags & self::FLAG_EMIT_LIVE) === 0);
         $this->stream = $stream;
         return $this;
     }
@@ -877,6 +877,11 @@ class CsvGenerator {
         return $this->set_keys($fields)->set_header($fields);
     }
 
+    /** @return string */
+    function filename() {
+        return $this->filename ? : "data" . $this->extension();
+    }
+
     /** @param string $filename
      * @return $this */
     function set_filename($filename) {
@@ -893,9 +898,9 @@ class CsvGenerator {
 
     /** @param bool $emit
      * @return $this */
-    function set_will_emit($emit) {
+    function set_emit_live($emit) {
         assert($this->stream === null);
-        $this->flags = ($this->flags & ~self::FLAG_WILL_EMIT) | ($emit ? self::FLAG_WILL_EMIT : 0);
+        $this->flags = ($this->flags & ~self::FLAG_EMIT_LIVE) | ($emit ? self::FLAG_EMIT_LIVE : 0);
         return $this;
     }
 
@@ -937,7 +942,7 @@ class CsvGenerator {
     function flush() {
         if ($this->stream === null) {
             $this->stream = false;
-            if (($this->flags & self::FLAG_WILL_EMIT) !== 0) {
+            if (($this->flags & self::FLAG_EMIT_LIVE) !== 0) {
                 $this->stream = fopen("php://output", "wb");
             } else if (($x = Filer::tempfile("csvtmp-" . time() . "-%08d.csv", Conf::$main))) {
                 $this->stream = $x[0];
@@ -947,7 +952,7 @@ class CsvGenerator {
         if ($this->stream === false) {
             return;
         }
-        if (($this->flags & (self::FLAG_WILL_EMIT | self::FLAG_HTTP_HEADERS)) === self::FLAG_WILL_EMIT) {
+        if (($this->flags & (self::FLAG_EMIT_LIVE | self::FLAG_HTTP_HEADERS)) === self::FLAG_EMIT_LIVE) {
             $this->export_headers();
             header("Content-Type: " . $this->mimetype_with_charset());
             if (($this->flags & self::FLAG_COMPLETING) === 0) {
@@ -987,7 +992,7 @@ class CsvGenerator {
             error_log("failed to write CSV: " . debug_string_backtrace());
             $this->flags |= self::FLAG_ERROR;
         }
-        if (($this->flags & (self::FLAG_WILL_EMIT | self::FLAG_COMPLETING)) === self::FLAG_WILL_EMIT) {
+        if (($this->flags & (self::FLAG_EMIT_LIVE | self::FLAG_COMPLETING)) === self::FLAG_EMIT_LIVE) {
             fflush($this->stream);
         }
     }
@@ -1165,11 +1170,7 @@ class CsvGenerator {
         assert(($this->flags & self::FLAG_HTTP_HEADERS) === 0);
         $this->flags |= self::FLAG_HTTP_HEADERS;
         $inline = $this->inline ?? !$this->is_csv();
-        $filename = $this->filename;
-        if (!$filename) {
-            $filename = "data" . $this->extension();
-        }
-        header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=" . mime_quote_string($filename));
+        header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=" . mime_quote_string($this->filename()));
         // reduce likelihood of XSS attacks in IE
         header("X-Content-Type-Options: nosniff");
     }
@@ -1186,7 +1187,7 @@ class CsvGenerator {
             if ($this->stream_filename) {
                 $dopt->output_file($this->stream_filename);
             } else {
-                assert(($this->flags & self::FLAG_WILL_EMIT) !== 0);
+                assert(($this->flags & self::FLAG_EMIT_LIVE) !== 0);
             }
         } else {
             $dopt->output_string($this->unparse());

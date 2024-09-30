@@ -734,20 +734,7 @@ class Ht {
     /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
      * @return array{string,int} */
     static function feedback_msg_content(...$mls) {
-        $mlx = [];
-        foreach ($mls as $ml) {
-            if ($ml instanceof MessageItem) {
-                $mlx[] = $ml;
-            } else if ($ml instanceof MessageSet) {
-                if ($ml->has_message()) { // old PHPs require at least 2 args
-                    array_push($mlx, ...$ml->message_list());
-                }
-            } else {
-                foreach ($ml as $mi) {
-                    $mlx[] = $mi;
-                }
-            }
-        }
+        $mlx = MessageSet::make_list(...$mls);
         if (($h = MessageSet::feedback_html($mlx)) !== "") {
             return [$h, MessageSet::list_status($mlx)];
         } else {

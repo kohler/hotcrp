@@ -158,6 +158,17 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         ]);
     }
 
+    /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
+     * @return JsonResult */
+    static function make_message_list(...$mls) {
+        $mlx = MessageSet::make_list($mls);
+        $status = MessageSet::list_status($mlx);
+        return new JsonResult($status > 1 ? 400 : 200, [
+            "ok" => $status <= 1,
+            "message_list" => $mlx
+        ]);
+    }
+
     /** @param ?string $param
      * @param ?string $ftext
      * @return JsonResult */

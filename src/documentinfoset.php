@@ -558,7 +558,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
 
     /** @param ?Downloader $dopt
      * @return bool */
-    function download($dopt = null) {
+    function emit($dopt = null) {
         if (!$this->_filename) {
             throw new Exception("trying to download blank-named DocumentInfoSet");
         }
@@ -567,7 +567,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             && !$this->has_error()
             && $dopt->single) {
             $doc = $this->docs[0];
-            if ($doc->download($dopt)) {
+            if ($doc->emit($dopt)) {
                 return true;
             } else {
                 foreach ($doc->message_list() as $mi) {
@@ -578,5 +578,12 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         } else {
             return $this->_download_directly($dopt);
         }
+    }
+
+    /** @param ?Downloader $dopt
+     * @return bool
+     * @deprecated */
+    function download($dopt = null) {
+        return $this->emit($dopt);
     }
 }

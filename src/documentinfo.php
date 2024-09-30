@@ -1945,7 +1945,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @param ?Downloader $dopt
      * @return bool */
-    function download($dopt = null) {
+    function emit($dopt = null) {
         if ($this->size() <= 0) {
             $this->message_set()->warning_at(null, "<0>Empty file");
             return false;
@@ -2003,6 +2003,13 @@ class DocumentInfo implements JsonSerializable {
             $dopt->output_string($this->content);
         }
         return true;
+    }
+
+    /** @param ?Downloader $dopt
+     * @return bool
+     * @deprecated */
+    function download($dopt = null) {
+        return $this->emit($dopt);
     }
 
     function unparse_json() {
