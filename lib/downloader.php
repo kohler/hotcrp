@@ -351,6 +351,7 @@ class Downloader {
             self::emit_header("Content-Type: {$this->mimetype}");
             self::emit_header("Content-Length: {$clen}");
             self::emit_header("Accept-Ranges: bytes");
+            $this->emit_main_headers();
             return;
         } else if (!isset($range)) {
             $outsize = $clen;
