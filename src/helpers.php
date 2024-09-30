@@ -165,7 +165,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         if (!empty($mls) && is_int($mls[0])) {
             $status = array_shift($mls);
         }
-        $mlx = MessageSet::make_list($mls);
+        $mlx = MessageSet::make_list(...$mls);
         $status = $status ?? (MessageSet::list_status($mlx) > 1 ? 400 : 200);
         return new JsonResult($status, [
             "ok" => $status < 300,
