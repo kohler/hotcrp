@@ -1177,9 +1177,9 @@ class PaperStatus extends MessageSet {
         if ($this->has_error()) {
             return false;
         }
-        $this->prow->set_want_submitted($pj->status->submitted && !$pj->status->withdrawn);
 
         // check fields
+        $this->prow->set_updating($pj->status->submitted && !$pj->status->withdrawn);
         foreach ($this->prow->form_fields() as $opt) {
             $this->_check_field($pj, $opt);
         }
@@ -1188,6 +1188,7 @@ class PaperStatus extends MessageSet {
             $this->warning_at("options", $this->_("<0>Ignoring unknown fields {:list}", $this->_unknown_fields));
         }
         if ($this->problem_status() >= MessageSet::ESTOP) {
+            $this->prow->clear_updating();
             return false;
         }
 
@@ -1200,6 +1201,7 @@ class PaperStatus extends MessageSet {
         $this->_prepare_status($pj);
         $this->_prepare_decision($pj);
         $this->_prepare_final_status($pj);
+        $this->prow->clear_updating();
 
         // correct blindness setting
         if ($this->conf->submission_blindness() !== Conf::BLIND_OPTIONAL) {

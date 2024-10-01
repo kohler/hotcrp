@@ -776,8 +776,8 @@ class PaperInfo {
     const MARK_INACTIVE_PAUSE = 0x300;
     const ALLOW_ABSENT = 0x400;
     const IS_NEW = 0x800;
-    const HAS_WANT_SUBMITTED = 0x1000;
-    const WANT_SUBMITTED = 0x2000;
+    const IS_UPDATING = 0x1000;
+    const UPDATING_WANT_SUBMITTED = 0x2000;
     const HAS_PHASE = 0x8000;
     const PHASE_MASK = 0xF0000;
     const PHASE_SHIFT = 16;
@@ -1079,18 +1079,40 @@ class PaperInfo {
         return ($this->_flags & self::IS_NEW) !== 0;
     }
 
-    /** @param bool $is_new */
+    /** @return bool */
+    function is_updating() {
+        return ($this->_flags & self::IS_UPDATING) !== 0;
+    }
+
+    /** @param bool $want_submitted
+     * @return $this */
+    function set_updating($want_submitted) {
+        assert(($this->_flags & self::IS_UPDATING) === 0);
+        $this->_flags |= self::IS_UPDATING
+            | ($want_submitted ? self::UPDATING_WANT_SUBMITTED : 0);
+        return $this;
+    }
+
+    /** @return $this */
+    function clear_updating() {
+        $this->_flags &= ~(self::IS_UPDATING | self::UPDATING_WANT_SUBMITTED);
+        return $this;
+    }
+
+    /** @param bool $is_new
+     * @return $this */
     function set_is_new($is_new) {
         $this->_flags &= ~self::IS_NEW;
         if ($is_new) {
             $this->_flags |= self::IS_NEW;
         }
+        return $this;
     }
 
     /** @return bool */
     function want_submitted() {
-        if (($this->_flags & self::HAS_WANT_SUBMITTED) !== 0) {
-            return ($this->_flags & self::WANT_SUBMITTED) !== 0;
+        if (($this->_flags & self::IS_UPDATING) !== 0) {
+            return ($this->_flags & self::UPDATING_WANT_SUBMITTED) !== 0;
         } else {
             return $this->timeSubmitted > 0;
         }
