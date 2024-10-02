@@ -69,21 +69,19 @@ abstract class SearchTerm {
      * @param SearchWord $sword
      * @return $this */
     final function add_view_anno($command, $sword) {
-        $this->float["view"][] = new SearchViewCommand($command, $sword);
+        foreach (ViewCommand::parse($command, ViewCommand::ORIGIN_SEARCH, $sword) as $svc) {
+            $this->float["view"][] = $svc;
+        }
         return $this;
     }
 
-    /** @return list<SearchViewCommand> */
+    /** @return list<ViewCommand> */
     final function view_commands() {
-        $v = $this->float["view"] ?? [];
-        if (!empty($v)) {
-            $v = SearchViewCommand::analyze($v);
-        }
-        return $v;
+        return $this->float["view"] ?? [];
     }
 
     /** @param string $field
-     * @return ?SearchViewCommand */
+     * @return ?ViewCommand */
     final function find_view_command($field) {
         foreach ($this->view_commands() as $svc) {
             if ($svc->keyword === $field)
@@ -386,7 +384,7 @@ abstract class Op_SearchTerm extends SearchTerm {
         foreach ($term->float as $k => $v) {
             if ($k === "view") {
                 if ($this->type === "then") {
-                    $v = SearchViewCommand::strip_sorts($v);
+                    $v = ViewCommand::strip_sorts($v);
                 }
                 $this->float[$k] = array_merge($this->float[$k] ?? [], $v);
             } else if ($k === "tags") {

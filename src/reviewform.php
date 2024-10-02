@@ -171,9 +171,9 @@ class ReviewForm {
             return $f ? [$f] : [];
         }
         $fs = [];
-        foreach (SearchViewCommand::analyze(SearchParser::split_balanced_parens($s)) as $sve) {
-            if ($sve->show_action() === "show"
-                && ($x = $this->conf->find_all_fields($sve->keyword))
+        foreach (ViewCommand::split_parse($s, 0) as $svc) {
+            if ($svc->is_show()
+                && ($x = $this->conf->find_all_fields($svc->keyword))
                 && count($x) === 1
                 && $x[0] instanceof Score_ReviewField
                 && $x[0]->view_score >= VIEWSCORE_PC

@@ -1277,33 +1277,7 @@ class PaperSearch extends MessageSet {
         return $this->_highlight_map;
     }
 
-    /** @param iterable<string>|iterable<array{string,?int,?int,?int,?SearchStringContext}> $words
-     * @return list<SearchViewCommand>
-     * @deprecated */
-    static function view_generator($words) {
-        return SearchViewCommand::analyze($words);
-    }
-
-    /** @param string|bool $action
-     * @param string $keyword
-     * @param ?list<string> $decorations
-     * @return string */
-    static function unparse_view($action, $keyword, $decorations) {
-        if (is_bool($action)) {
-            $action = $action ? "show" : "hide";
-        }
-        if (!ctype_alnum($keyword)
-            && SearchParser::span_balanced_parens($keyword) !== strlen($keyword)) {
-            $keyword = "\"" . $keyword . "\"";
-        }
-        if ($decorations) {
-            return "{$action}:{$keyword}[" . join(" ", $decorations) . "]";
-        } else {
-            return "{$action}:{$keyword}";
-        }
-    }
-
-    /** @return list<SearchViewCommand> */
+    /** @return list<ViewCommand> */
     function view_commands() {
         return $this->main_term()->view_commands();
     }
@@ -1312,7 +1286,7 @@ class PaperSearch extends MessageSet {
     private function sort_field_list() {
         $r = [];
         foreach ($this->main_term()->view_commands() as $svc) {
-            if ($svc->sort_action())
+            if ($svc->is_sort())
                 $r[] = $svc->keyword;
         }
         return $r;
@@ -1518,7 +1492,7 @@ class PaperSearch extends MessageSet {
         $ht = $this->main_term()->get_float("tags") ?? [];
         $tagger = null;
         foreach ($this->sort_field_list() as $s) {
-            if (preg_match('/\A(?:#|tag:\s*|tagval:\s*)(\S+)\z/', $s, $m)) {
+            if (preg_match('/\A(?:\#|tag:\s*|tagval:\s*)(\S+)\z/', $s, $m)) {
                 $tagger = $tagger ?? new Tagger($this->user);
                 if (($tag = $tagger->check($m[1]))) {
                     $ht[] = $tag;

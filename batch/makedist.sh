@@ -484,7 +484,6 @@ src/searchoperatorset.php
 src/searchparser.php
 src/searchselection.php
 src/searchterm.php
-src/searchviewcommand.php
 src/searchword.php
 src/sessionlist.php
 src/settinginfoset.php
@@ -537,6 +536,7 @@ src/useractions.php
 src/userinfo/u_developer.php
 src/userinfo/u_security.php
 src/userstatus.php
+src/viewcommand.php
 src/xtparams.php
 
 devel/hotcrp.vim

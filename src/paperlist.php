@@ -381,8 +381,8 @@ class PaperList {
             $this->_highlight_map = $this->search->highlights_by_paper_id();
         }
         foreach ($this->search->view_commands() as $svc) {
-            if (($show_action = $svc->show_action())) {
-                $this->set_view($svc->keyword, $show_action, self::VIEWORIGIN_SEARCH, $svc->decorations);
+            if (!$svc->is_sort()) {
+                $this->set_view($svc->keyword, $svc->is_show(), self::VIEWORIGIN_SEARCH, $svc->decorations);
             }
         }
 
@@ -698,21 +698,17 @@ class PaperList {
         array_splice($this->_sort_origin, $i, 0, [$origin]);
     }
 
-    /** @param string $k
-     * @param 0|1|2|3|4|5 $origin
-     * @param ?list<string> $decorations
-     * @param ?list<int> $sort_subset
-     * @param ?int $pos1
-     * @param ?int $pos2 */
-    private function _add_sorter($k, $origin, $decorations,
-                                 $sort_subset, $pos1, $pos2) {
-        // `sort:score` is a special case.
-        if ($k === "score") {
-            $flags = &$this->_viewf[$k];
+    /** @param ViewCommand $svc
+     * @param ?list<int> $sort_subset */
+    private function _add_sorter($svc, $sort_subset) {
+        $origin = $svc->flags >> ViewCommand::ORIGIN_SHIFT;
+
+        // `sort:score` is a special case
+        if ($svc->keyword === "score") {
+            $flags = &$this->_viewf[$svc->keyword];
             $flags = $flags ?? 0;
             if (($flags & self::VIEW_ORIGINMASK) <= $origin
-                && !empty($decorations)
-                && ($x = ScoreInfo::parse_score_sort($decorations[0])) !== null) {
+                && ($x = ScoreInfo::parse_score_sort($svc->decoration(0))) !== null) {
                 $flags = ($flags & ~self::VIEW_ORIGINMASK) | $origin;
                 $this->_score_sort = $x;
             }
@@ -722,48 +718,45 @@ class PaperList {
         assert($this->_sortcol_fixed < 2);
         // Do not use ensure_columns_by_name(), because decorations for sorters
         // might differ.
-        $fs = $this->conf->paper_columns($k, $this->xtp);
-        $mi = null;
+        $fs = $this->conf->paper_columns($svc->keyword, $this->xtp);
         if (count($fs) === 1) {
-            $col = PaperColumn::make($this->conf, $fs[0])->add_decorations($decorations);
+            $col = PaperColumn::make($this->conf, $fs[0])->add_decorations($svc->decorations);
             if ($col->prepare($this, PaperColumn::PREP_SORT)
                 && $col->sort) {
                 $col->sort_subset = $sort_subset;
                 $this->_append_sortcol($col, $origin);
-            } else {
-                $mi = $this->search->warning("<0>‘{$k}’ cannot be sorted");
+                return;
             }
-        } else if (empty($fs)) {
+        }
+
+        // Warn on failure
+        $warning = "<0>‘{$svc->keyword}’ cannot be sorted";
+        if (empty($fs)) {
             if ($this->user->can_view_tags(null)
                 && ($tagger = new Tagger($this->user))
-                && ($tag = $tagger->check($k))
+                && ($tag = $tagger->check($svc->keyword))
                 && ($ps = new PaperSearch($this->user, ["q" => "#{$tag}", "t" => "vis"]))
                 && $ps->paper_ids()) {
-                $mi = $this->search->warning("<0>‘{$k}’ cannot be sorted; did you mean “sort:#{$k}”?");
-            } else {
-                $mi = $this->search->warning("<0>‘{$k}’ cannot be sorted");
+                $warning = "<0>‘{$svc->keyword}’ cannot be sorted; did you mean “sort:#{$tag}”?";
             }
-        } else {
-            $mi = $this->search->warning("<0>Sort ‘{$k}’ is ambiguous");
+        } else if (count($fs) > 1) {
+            $warning = "<0>Sort ‘{$svc->keyword}’ is ambiguous";
         }
-        if ($mi) {
-            $mi->pos1 = $pos1;
-            $mi->pos2 = $pos2;
-            $mi->context = $this->search->q;
+        if ($svc->sword) {
+            $this->search->lwarning($svc->sword, $warning);
+        } else {
+            $this->search->warning($warning);
         }
     }
 
     /** @param ?string $str
      * @param 0|1|2|3|4|5 $origin */
     function parse_view($str, $origin) {
-        $groups = SearchParser::split_balanced_parens($str ?? "");
-        foreach (SearchViewCommand::analyze($groups) as $sve) {
-            if (($show_action = $sve->show_action())) {
-                $this->set_view($sve->keyword, $show_action, $origin, $sve->decorations);
-            }
-            if ($sve->sort_action()) {
-                $this->_add_sorter($sve->keyword, $origin, $sve->decorations,
-                                   null, $sve->pos1, $sve->pos2);
+        foreach (ViewCommand::split_parse($str ?? "", $origin << ViewCommand::ORIGIN_SHIFT) as $svc) {
+            if ($svc->is_sort()) {
+                $this->_add_sorter($svc, null);
+            } else {
+                $this->set_view($svc->keyword, $svc->is_show(), $origin, $svc->decorations);
             }
         }
     }
@@ -831,8 +824,8 @@ class PaperList {
                 }
             }
             $key = "{$pos} {$name}";
-            $kw = $v >= self::VIEW_SHOW ? "show" : "hide";
-            $res[$key] = PaperSearch::unparse_view($kw, $name, $this->_view_decorations[$name] ?? null);
+            $flags = $v >= self::VIEW_SHOW ? ViewCommand::F_SHOW : ViewCommand::F_HIDE;
+            $res[$key] = (new ViewCommand($flags, $name, $this->_view_decorations[$name] ?? null))->unparse();
         }
         if (((($this->_viewf["anonau"] ?? 0) >= self::VIEW_SHOW && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
              || ($this->_viewf["aufull"] ?? 0) >= self::VIEW_SHOW)
@@ -848,7 +841,7 @@ class PaperList {
                 if ($this->_sort_origin[$i] <= $base_origin) {
                     break;
                 }
-                $res[] = PaperSearch::unparse_view("sort", $s->name, $s->decorations());
+                $res[] = (new ViewCommand(ViewCommand::F_SORT, $s->name, $s->decorations()))->unparse();
                 if ($s->name === "id") {
                     break;
                 }
@@ -861,7 +854,7 @@ class PaperList {
         // score sort
         if ($this->_score_sort
             && ($base_origin < 0 || $this->_score_sort !== self::default_score_sort($this->conf))) {
-            $res[] = PaperSearch::unparse_view("sort", "score", [$this->_score_sort]);
+            $res[] = (new ViewCommand(ViewCommand::F_SORT, "score", [$this->_score_sort]))->unparse();
         }
 
         return $res;
@@ -916,10 +909,9 @@ class PaperList {
     /** @param ?list<int> $sort_subset */
     private function _add_search_sorters(SearchTerm $qe, $sort_subset) {
         $nsortcol = count($this->_sortcol);
-        foreach ($qe->view_commands() as $sve) {
-            if ($sve->sort_action()) {
-                $this->_add_sorter($sve->keyword, PaperList::VIEWORIGIN_SEARCH, $sve->decorations, $sort_subset, $sve->pos1, $sve->pos2);
-            }
+        foreach ($qe->view_commands() as $svc) {
+            if ($svc->is_sort())
+                $this->_add_sorter($svc, $sort_subset);
         }
         if (count($this->_sortcol) === $nsortcol
             && ($dspc = $qe->default_sort_column(true, $this))
@@ -1230,11 +1222,12 @@ class PaperList {
             $mi = $message;
         }
         if (($sve = $this->search->main_term()->find_view_command($name))
+            && $sve->sword
             && ($mi->status !== MessageSet::INFORM || empty($this->_finding_column_errors))) {
             if ($mi->pos1 !== null) {
-                $mis = $this->search->expand_message_context($mi, $mi->pos1 + $sve->pos1, $mi->pos2 + $sve->pos1, $sve->string_context);
+                $mis = $this->search->expand_message_context($mi, $mi->pos1 + $sve->sword->pos1, $mi->pos2 + $sve->sword->pos1, $sve->sword->string_context);
             } else {
-                $mis = $this->search->expand_message_context($mi, $sve->kwpos1, $sve->pos2, $sve->string_context);
+                $mis = $this->search->expand_message_context($mi, $sve->sword->kwpos1, $sve->sword->pos2, $sve->sword->string_context);
             }
         } else {
             $mis = [$mi];
@@ -2153,7 +2146,7 @@ class PaperList {
         $this->table_attr["data-search-params"] = $this->encoded_search_params();
         $views = [];
         foreach ($this->search->view_commands() as $svc) {
-            $views[] = $svc->command;
+            $views[] = $svc->unparse();
         }
         if (!empty($views)) {
             $this->table_attr["data-search-view"] = join(" ", $views);
