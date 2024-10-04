@@ -211,11 +211,15 @@ class Review_Page {
 
         $rv = new ReviewValues($this->conf);
         $my_rrow = $this->prow->review_by_user($this->user);
-        $my_rid = ($my_rrow ?? $this->rrow)->unparse_ordinal_id();
-        if ($rv->parse_qreq($this->qreq)) {
+        $want_rid = $this->rrow->unparse_ordinal_id();
+        if ($rv->parse_qreq($this->qreq)
+            && $rv->check_vtag($this->rrow)) {
             $rv->set_req_ready(!!$this->qreq->adoptsubmit);
+            // Be careful about if_vtag_match, since vtag corresponds to
+            // *subreview*, not $my_rrow
+            $rv->clear_req_vtag();
             if ($rv->check_and_save($this->user, $this->prow, $my_rrow)) {
-                $my_rid = $rv->review_ordinal_id;
+                $want_rid = $rv->review_ordinal_id;
                 if (!$rv->has_problem_at("ready")) {
                     // approve the source review
                     $rvx = new ReviewValues($this->conf);
@@ -225,7 +229,7 @@ class Review_Page {
             }
         }
         $rv->report();
-        $this->conf->redirect_self($this->qreq, ["r" => $my_rid]);
+        $this->conf->redirect_self($this->qreq, ["r" => $want_rid]);
     }
 
     function handle_delete() {

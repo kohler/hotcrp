@@ -155,6 +155,12 @@ class ReviewValues extends MessageSet {
         return $this;
     }
 
+    /** @return $this */
+    function clear_req_vtag() {
+        unset($this->req["if_vtag_match"]);
+        return $this;
+    }
+
     /** @param int|string $field
      * @param string $msg
      * @param int $status
@@ -540,6 +546,18 @@ class ReviewValues extends MessageSet {
         $this->rmsg("reviewerEmail", $msg, self::ERROR);
     }
 
+    /** @param ReviewInfo $rrow
+     * @return bool */
+    function check_vtag(ReviewInfo $rrow) {
+        if (!isset($this->req["if_vtag_match"])
+            || $this->req["if_vtag_match"] === $rrow->reviewTime) {
+            return true;
+        }
+        $this->rmsg("if_vtag_match", "<5><strong>Edit conflict</strong>: The review changed since you last loaded this page", self::ERROR);
+        $this->rmsg("if_vtag_match", "<0>Your changes were not saved, but you can check the form and save again.", self::INFORM);
+        return false;
+    }
+
     /** @return bool */
     function check_and_save(Contact $user, ?PaperInfo $prow, ?ReviewInfo $rrow = null) {
         assert(!$rrow || $rrow->paperId === $prow->paperId);
@@ -725,10 +743,7 @@ class ReviewValues extends MessageSet {
         }
 
         // version tag must match if provided
-        if (isset($this->req["if_vtag_match"])
-            && $this->req["if_vtag_match"] !== $rrow->reviewTime) {
-            $this->rmsg("if_vtag_match", "<5><strong>Edit conflict</strong>: The review changed since you last loaded this page", self::ERROR);
-            $this->rmsg("if_vtag_match", "<0>Your changes were not saved, but you can check the form and save again.", self::INFORM);
+        if (!$this->check_vtag($rrow)) {
             return false;
         }
 
