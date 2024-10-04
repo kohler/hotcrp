@@ -217,7 +217,8 @@ class Review_SettingParser extends SettingParser {
         $sv->print_radio_table("review_identity_visibility_pc", [
                 Conf::VIEWREV_ALWAYS => "Yes",
                 Conf::VIEWREV_IFASSIGNED => "Only if assigned a review for the same submission",
-                Conf::VIEWREV_AFTERREVIEW => "Only after completing a review for the same submission"
+                Conf::VIEWREV_AFTERREVIEW => "Only after completing a review for the same submission",
+                Conf::VIEWREV_NEVER => "No",
             ],
             'Can non-conflicted PC members see <strong>reviewer names</strong>?',
             ["after" => $hint]);
