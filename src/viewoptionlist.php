@@ -47,10 +47,19 @@ class ViewOptionList implements IteratorAggregate {
     }
 
     /** @param ViewOptionList|array<string,string> $list
+     * @return $this */
+    function append($list) {
+        foreach ($list ?? [] as $n => $v) {
+            $this->add($n, $v);
+        }
+        return $this;
+    }
+
+    /** @param ViewOptionList|array<string,string> $list
      * @param ViewOptionSchema $schema
      * @return $this */
     function append_validate($list, $schema) {
-        foreach ($list as $n => $v) {
+        foreach ($list ?? [] as $n => $v) {
             if (($pair = $schema->validate($n, $v)))
                 $this->add($pair[0], $pair[1]);
         }

@@ -15,6 +15,10 @@ class ViewCommand {
     /** @var ?SearchWord
      * @readonly */
     public $sword;
+    /** @var ?int */
+    public $order;
+    /** @var ?ViewCommand */
+    private $next;
 
     const F_SHOW = 1;
     const F_HIDE = 2;
@@ -43,6 +47,13 @@ class ViewCommand {
             $this->view_options = $view_options;
         }
         $this->sword = $sword;
+    }
+
+    function __clone() {
+        if ($this->view_options) {
+            $this->view_options = clone $this->view_options;
+        }
+        $this->next = null;
     }
 
     /** @param string $s
@@ -140,6 +151,39 @@ class ViewCommand {
         return $svcs;
     }
 
+    /** @param ViewCommand $svc */
+    function merge($svc) {
+        assert($svc->next === null);
+        if (!$this->next) {
+            $this->next = clone $this;
+        }
+        $prev = $this;
+        while ($prev->next
+               && ($prev->flags & self::FM_ORIGIN) <= ($svc->flags & self::FM_ORIGIN)) {
+            $prev = $prev->next;
+        }
+        $svc->next = $prev->next;
+        $prev->next = $svc;
+        if ($svc->next === null) {
+            $trav = $svc;
+        } else {
+            $this->flags = 0;
+            $this->view_options = null;
+            $trav = $this->next;
+        }
+        while ($trav !== null) {
+            if (($trav->flags & self::FM_ACTION) !== 0) {
+                $this->flags &= ~self::FM_ACTION;
+            }
+            $this->flags = ($this->flags & ~self::FM_ORIGIN) | $trav->flags;
+            if ($trav->view_options !== null) {
+                $this->view_options = $this->view_options ?? new ViewOptionList;
+                $this->view_options->append($trav->view_options);
+            }
+            $trav = $trav->next;
+        }
+    }
+
     /** @param string $str
      * @param int $flags
      * @return list<ViewCommand> */
@@ -179,6 +223,18 @@ class ViewCommand {
     /** @return bool */
     function is_sort() {
         return ($this->flags & self::F_SORT) !== 0;
+    }
+
+    /** @param int $origin
+     * @return bool */
+    function is_origin($origin) {
+        return ($this->flags & self::FM_ORIGIN) === $origin;
+    }
+
+    /** @param string $name
+     * @return mixed */
+    function view_option($name) {
+        return $this->view_options ? $this->view_options->get($name) : null;
     }
 
     /** @return string */
