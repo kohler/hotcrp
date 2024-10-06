@@ -1644,8 +1644,8 @@ class Settings_Tester {
         xassert(!array_key_exists("contactEmail", $this->conf->opt_override));
         xassert_eqq($this->conf->setting("opt.contactName"), null);
         xassert_eqq($this->conf->setting("opt.contactEmail"), null);
+        $this->conf->refresh_settings();
 
-        $this->conf->refresh_options();
         $dsc = $this->conf->default_site_contact();
         $sc = $this->conf->site_contact();
         xassert_eqq($dsc->name(), "Jane Chair");

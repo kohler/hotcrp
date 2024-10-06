@@ -640,7 +640,7 @@ class Unit_Tester {
         $t = $this->conf->parse_time("May 29, 2018 03:00:00 AoE");
         xassert_eqq($t, 1527606000);
         $this->conf->set_opt("timezone", "Etc/GMT+12");
-        $this->conf->refresh_options();
+        $this->conf->refresh_settings();
         $this->conf->refresh_globals();
         $t = $this->conf->parse_time("May 29, 2018 03:00:00");
         xassert_eqq($t, 1527606000);

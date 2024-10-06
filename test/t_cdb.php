@@ -809,7 +809,7 @@ class Cdb_Tester {
         xassert(!$u);
 
         $this->conf->set_opt("disableNonPC", 1);
-        $this->conf->refresh_options();
+        $this->conf->refresh_settings();
 
         $p = PaperInfo::make_new($this->conf->root_user(), null);
         $ps = (new PaperStatus($this->conf->root_user()))->set_disable_users(true);
@@ -860,7 +860,7 @@ class Cdb_Tester {
         xassert_eqq($d & ~Contact::CF_PLACEHOLDER, 0);
 
         $this->conf->set_opt("disableNonPC", null);
-        $this->conf->refresh_options();
+        $this->conf->refresh_settings();
     }
 
     function check_disablement($email, $want) {

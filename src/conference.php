@@ -295,7 +295,7 @@ class Conf {
             Dbl::$landmark_sanitizer = "/\A(?:Dbl::|Conf::q|Conf::fetch|call_user_func)/";
             $this->load_settings();
         } else {
-            $this->refresh_options();
+            $this->refresh_settings();
         }
     }
 
@@ -379,7 +379,6 @@ class Conf {
         }
 
         $this->refresh_settings();
-        $this->refresh_options();
 
         // GC old capabilities
         if (($this->settings["__capability_gc"] ?? 0) < Conf::$now - 86400) {
@@ -395,7 +394,7 @@ class Conf {
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
-    function refresh_settings() {
+    function refresh_settings($skip_options = false) {
         // enforce invariants
         $this->settings["pcrev_any"] = $this->settings["pcrev_any"] ?? 0;
         $this->settings["sub_blind"] = $this->settings["sub_blind"] ?? self::BLIND_ALWAYS;
@@ -468,6 +467,11 @@ class Conf {
             || !!$this->opt("definedTags");
         $this->_site_locks = $this->settingTexts["site_locks"] ?? null;
         $this->refresh_time_settings();
+
+        // options unless known unneeded
+        if (!$skip_options) {
+            $this->refresh_options();
+        }
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
@@ -583,7 +587,7 @@ class Conf {
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
-    function refresh_options() {
+    private function refresh_options() {
         // set longName, downloadPrefix, etc.
         $confid = $this->opt["confid"];
         if (($this->opt["longName"] ?? "") === "") {
@@ -838,10 +842,7 @@ class Conf {
     function save_refresh_setting($name, $value, $data = null) {
         $change = $this->save_setting($name, $value, $data);
         if ($change) {
-            $this->refresh_settings();
-            if (str_starts_with($name, "opt.")) {
-                $this->refresh_options();
-            }
+            $this->refresh_settings(!str_starts_with($name, "opt."));
         }
         return $change;
     }

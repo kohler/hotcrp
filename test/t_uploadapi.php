@@ -69,7 +69,7 @@ In thee!
                 "doc/054/sha2-054bfbd046e415952829e66856a1c7d6240d97ea2c08de3069d1578052b9b7a7.txt"
             ]);
         }
-        $this->conf->refresh_options();
+        $this->conf->refresh_settings();
         xassert(!!$this->conf->docstore());
     }
 
@@ -306,6 +306,6 @@ In thee!
         if ($this->s3c) {
             S3_Tester::install_s3_options($this->conf, $this->old_s3_opt);
         }
-        $this->conf->refresh_options();
+        $this->conf->refresh_settings();
     }
 }
