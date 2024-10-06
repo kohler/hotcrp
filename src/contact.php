@@ -3114,7 +3114,7 @@ class Contact implements JsonSerializable {
             }
             if ($this->_capabilities !== null
                 && ($this->_capabilities["@av{$prow->paperId}"] ?? null)
-                && !$isPC
+                && !$allow_pc_broad
                 && $ci->review_status === 0) {
                 $ci->view_conflict_type = CONFLICT_AUTHOR;
             }

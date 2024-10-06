@@ -567,7 +567,7 @@ class ReviewValues extends MessageSet {
         if (!$prow) {
             if (($pid = $this->req_pid()) === null) {
                 $this->rmsg("paperId", $this->conf->_("<0>{Submission} ID required"), self::ERROR);
-                $this->rmsg("paperId", $this->conf->_("<5>This review form doesn’t contain a valid {submission} ID. Enter the {submission} number in the right place and try again."), self::INFORM);
+                $this->rmsg("paperId", $this->conf->_("<0>Enter the {submission} number in the right place and try again."), self::INFORM);
                 return false;
             }
             $prow = $user->paper_by_id($pid);
