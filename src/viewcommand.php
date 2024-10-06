@@ -15,6 +15,8 @@ class ViewCommand {
     /** @var ?SearchWord
      * @readonly */
     public $sword;
+    /** @var ?int */
+    public $order;
 
     const F_SHOW = 1;
     const F_HIDE = 2;
@@ -138,6 +140,32 @@ class ViewCommand {
         return $svcs;
     }
 
+    /** @param ?ViewCommand $a
+     * @return ViewCommand */
+    function merge($a) {
+        if (!$a) {
+            return $this;
+        }
+        if (($a->flags & self::FM_ORIGIN) > ($this->flags & self::FM_ORIGIN)) {
+            $b = $a;
+            $a = $this;
+        } else {
+            $b = $this;
+        }
+        $keyword = $b->keyword === "all" ? $a->keyword : $b->keyword;
+        $decorations = self::decor_merge($a->decorations, $b->decorations, true);
+        $flags = $b->flags;
+        if (($flags & self::FM_ACTION) === 0) {
+            $flags |= $a->flags & self::FM_ACTION;
+        }
+        if ($b->keyword !== $keyword) {
+            return new ViewCommand($flags, $keyword, $decorations, $a->sword);
+        } else if ($b->flags !== $flags || $b->decorations !== $decorations) {
+            return new ViewCommand($flags, $keyword, $decorations, $b->sword);
+        }
+        return $b;
+    }
+
     /** @param string $str
      * @param int $flags
      * @return list<ViewCommand> */
@@ -177,6 +205,12 @@ class ViewCommand {
     /** @return bool */
     function is_sort() {
         return ($this->flags & self::F_SORT) !== 0;
+    }
+
+    /** @param int $origin
+     * @return bool */
+    function is_origin($origin) {
+        return ($this->flags & self::FM_ORIGIN) === $origin;
     }
 
     /** @return string */
