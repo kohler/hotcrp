@@ -1,6 +1,6 @@
 <?php
 // sessionlist.php -- HotCRP helper class for lists carried across pageloads
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class SessionList {
     /** @var string
@@ -430,6 +430,7 @@ class SessionList {
             return $this->nextid;
         } else if (isset($this->curid) && $this->set_current_id($this->curid)) {
             $pos = $this->id_index + $delta;
+            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             if ($pos >= 0 && isset($this->ids[$pos])) {
                 return $this->ids[$pos];
             }

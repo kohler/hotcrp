@@ -291,7 +291,7 @@ final class PaperContactInfo {
                 || $reviewNeedsSubmit === 0) {
                 $this->review_status = self::CIRS_SUBMITTED;
             } else if ($this->review_status === 0) {
-                $m = $conf->rev_open ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONDRAFT;
+                $m = $conf->time_review_open() ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONDRAFT;
                 if (($rflags & $m) !== 0) {
                     $this->review_status = self::CIRS_UNSUBMITTED;
                 }
@@ -842,7 +842,7 @@ class PaperInfo {
             $this->outcome_sign = 0;
         } else if ($this->outcome > 0) {
             $this->outcome_sign = 1;
-        } else if ($this->conf->has_complex_decision) {
+        } else if ($this->conf->has_complex_decision()) {
             $this->outcome_sign = $this->decision()->sign;
         } else {
             $this->outcome_sign = -1;
@@ -1115,17 +1115,6 @@ class PaperInfo {
             return ($this->_flags & self::UPDATING_WANT_SUBMITTED) !== 0;
         } else {
             return $this->timeSubmitted > 0;
-        }
-    }
-
-    /** @param ?bool $want_submitted */
-    function set_want_submitted($want_submitted) {
-        $this->_flags &= ~(self::HAS_WANT_SUBMITTED | self::WANT_SUBMITTED);
-        if ($want_submitted !== null) {
-            $this->_flags |= self::HAS_WANT_SUBMITTED;
-        }
-        if ($want_submitted) {
-            $this->_flags |= self::WANT_SUBMITTED;
         }
     }
 

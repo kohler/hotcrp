@@ -402,7 +402,7 @@ class ReviewInfo implements JsonSerializable {
 
     /** @return bool */
     function is_ghost() {
-        $m = $this->conf->rev_open ? self::RF_LIVE : self::RFM_NONEMPTY;
+        $m = $this->conf->time_review_open() ? self::RF_LIVE : self::RFM_NONEMPTY;
         return ($this->rflags & $m) === 0;
     }
 

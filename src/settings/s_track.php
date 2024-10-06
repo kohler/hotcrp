@@ -405,14 +405,14 @@ class Track_SettingParser extends SettingParser {
                     && $tr->perm[Track::VIEWPDF] !== $tr->perm[Track::SELFASSREV]
                     && $tr->perm[Track::SELFASSREV] !== "+none"
                     && $tr->perm[Track::VIEWPDF] !== $tr->perm[Track::VIEW]
-                    && $conf->setting("pcrev_any")) {
+                    && $conf->allow_self_assignment()) {
                     $sv->warning_at("track/{$ctr}/perm/unassrev", "<0>A track that restricts who can see documents should generally restrict review self-assignment in the same way.");
                 }
                 if ($tr->perm[Track::ASSREV]
                     && $tr->perm[Track::SELFASSREV]
                     && $tr->perm[Track::SELFASSREV] !== "+none"
                     && $tr->perm[Track::ASSREV] !== $tr->perm[Track::SELFASSREV]
-                    && $conf->setting("pcrev_any")) {
+                    && $conf->allow_self_assignment()) {
                     $n = 0;
                     foreach ($conf->pc_members() as $pc) {
                         if ($pc->has_permission($tr->perm[Track::ASSREV])

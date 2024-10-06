@@ -9,7 +9,7 @@ class AllTags_API {
             $jr["tags"] = [];
             return $jr;
         } else if ($user->conf->check_track_view_sensitivity()
-                   || (!$user->conf->tag_seeall
+                   || (!$user->conf->pc_can_view_conflicted_tags()
                        && ($user->privChair
                            ? $user->conf->has_any_manager()
                            : $user->is_manager()
@@ -47,7 +47,8 @@ class AllTags_API {
         } else {
             $qwhere[] = "timeSubmitted>0";
         }
-        if (!$user->privChair && !$user->conf->tag_seeall) {
+        if (!$user->privChair
+            && !$user->conf->pc_can_view_conflicted_tags()) {
             $q .= " left join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$user->contactId})";
             $qwhere[] = "coalesce(conflictType,0)<=" . CONFLICT_MAXUNCONFLICTED;
         }

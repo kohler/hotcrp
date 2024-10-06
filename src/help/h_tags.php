@@ -18,7 +18,7 @@ class Tags_HelpTopic {
 
     function print_intro() {
         $conflictmsg = "";
-        if ($this->user->isPC && !$this->conf->tag_seeall) {
+        if ($this->user->isPC && !$this->conf->pc_can_view_conflicted_tags()) {
             $conflictmsg = " and conflicted PC members";
         }
 
@@ -61,7 +61,7 @@ as a column.</p>
 
 <p>Tags are only shown to PC members and administrators. ";
         if ($this->user->isPC) {
-            if ($this->conf->tag_seeall) {
+            if ($this->conf->pc_can_view_conflicted_tags()) {
                 echo "Currently PC members can see tags for any paper, including conflicts.";
             } else {
                 echo "They are hidden from conflicted PC members; for instance, if a PC member searches for a tag, the result will never include their conflicts.";
@@ -210,7 +210,7 @@ high-ranked paper, but it’s usually better to trust the PC.)</p>\n";
 Publishing the order lets PC members prepare to discuss upcoming papers.
 Define an ordered tag such as #discuss, then ask the PC to ", $this->hth->search_link("search for “order:#discuss”", "order:#discuss"), ".
 The PC can now see the order and use quick links to go from paper to paper.";
-        if ($this->user->isPC && !$this->conf->tag_seeall) {
+        if ($this->user->isPC && !$this->conf->pc_can_view_conflicted_tags()) {
             echo " However, since PC members can’t see tags for conflicted papers, each PC member might see a different list.", $this->hth->change_setting_link("tag_visibility_conflict");
         }
         echo "</p>\n";

@@ -424,7 +424,7 @@ class Contact implements JsonSerializable {
     private function set_roles_properties() {
         $this->isPC = ($this->roles & self::ROLE_PCLIKE) !== 0;
         $this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0;
-        if ($this->isPC || !$this->conf->disable_non_pc) {
+        if ($this->isPC || !$this->conf->disable_non_pc()) {
             $this->cflags &= ~self::CF_ROLEDISABLED;
         } else {
             $this->cflags |= self::CF_ROLEDISABLED;
@@ -3374,7 +3374,7 @@ class Contact implements JsonSerializable {
             $m = ["(" . join(" or ", $m) . ")"];
         }
         // see also ReviewInfo::is_ghost
-        $mask = $this->conf->rev_open ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONEMPTY;
+        $mask = $this->conf->time_review_open() ? ReviewInfo::RF_LIVE : ReviewInfo::RFM_NONEMPTY;
         return "({$m[0]} and ({$table}.rflags&{$mask})!=0)";
     }
 
@@ -4351,7 +4351,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_review_any() {
         return $this->isPC
-            && $this->conf->setting("pcrev_any") > 0
+            && $this->conf->allow_self_assignment()
             && $this->conf->time_review(null, true, true)
             && $this->conf->check_any_tracks($this, Track::ASSREV)
             && $this->conf->check_any_tracks($this, Track::SELFASSREV);
@@ -4402,7 +4402,7 @@ class Contact implements JsonSerializable {
             || ($rights->is_reviewer()
                 ? $this->conf->time_review($rights->reviewRound, $rights->reviewType, true)
                 : $rights->allow_pc()
-                  && $this->conf->setting("pcrev_any") > 0
+                  && $this->conf->allow_self_assignment()
                   && $this->conf->check_tracks($prow, $this, Track::ASSREV)
                   && $this->conf->check_tracks($prow, $this, Track::SELFASSREV)
                   && $this->conf->time_review(null, true, true));
@@ -4450,7 +4450,7 @@ class Contact implements JsonSerializable {
             && !$rights->is_reviewer()
             && $this->pc_assignable($prow)
             && $this->conf->check_tracks($prow, $this, Track::SELFASSREV)
-            && $this->conf->setting("pcrev_any") > 0
+            && $this->conf->allow_self_assignment()
             && $this->conf->time_review($round, $rights->allow_pc(), true);
     }
 
@@ -4477,7 +4477,7 @@ class Contact implements JsonSerializable {
                 $whyNot["alreadyReviewed"] = true;
             } else {
                 $whyNot["permission"] = "review:edit";
-                if ($this->conf->setting("pcrev_any") <= 0) {
+                if (!$this->conf->allow_self_assignment()) {
                     $whyNot["reviewNotAssigned"] = true;
                 }
                 if ($rights->conflicted()) {
@@ -5101,7 +5101,7 @@ class Contact implements JsonSerializable {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_pc()
-                || ($rights->allow_pc_broad() && $this->conf->tag_seeall)
+                || ($rights->allow_pc_broad() && $this->conf->pc_can_view_conflicted_tags())
                 || ($this->privChair && $this->conf->tags()->has(TagInfo::TF_SITEWIDE));
         } else {
             return $this->isPC;
@@ -5113,7 +5113,7 @@ class Contact implements JsonSerializable {
         if ($prow) {
             $rights = $this->rights($prow);
             return $rights->allow_pc()
-                || ($rights->allow_pc_broad() && $this->conf->tag_seeall);
+                || ($rights->allow_pc_broad() && $this->conf->pc_can_view_conflicted_tags());
         } else {
             return $this->isPC;
         }
@@ -5191,7 +5191,7 @@ class Contact implements JsonSerializable {
                 && (!$this->privChair
                     || !$tagmap->is_sitewide($tag))
                 && (!$rights->allow_pc_broad()
-                    || (!$this->conf->tag_seeall
+                    || (!$this->conf->pc_can_view_conflicted_tags()
                         && !$tagmap->is_conflict_free($tag)))) {
                 return false;
             }

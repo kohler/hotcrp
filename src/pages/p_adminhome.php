@@ -96,7 +96,7 @@ class AdminHome_Page {
         }
         // Unnotified reviews?
         if (($conf->setting("pcrev_assigntime") ?? 0) > ($conf->setting("pcrev_informtime") ?? 0)
-            && $conf->rev_open) {
+            && $conf->time_review_open()) {
             $assigntime = $conf->setting("pcrev_assigntime");
             $result = $conf->fetch_ivalue("select exists(select * from PaperReview where reviewType>" . REVIEW_PC . " and timeRequested>timeRequestNotified and reviewSubmitted is null and (rflags&" . ReviewInfo::RF_LIVE . ")!=0) from dual");
             if ($result) {

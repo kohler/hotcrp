@@ -37,28 +37,28 @@ class Conf {
     /** @var int
      * @readonly */
     public $default_format;
-    /** @var string */
+    /** @var string
+     * @readonly */
     public $download_prefix;
     /** @var int */
-    private $permbits;
-    const PB_ALL_PDF_VIEWABLE = 1;
-    const PB_SOME_INCOMPLETE_VIEWABLE = 2;
-    const PB_ALL_INCOMPLETE_VIEWABLE = 4;
-    /** @var bool
-     * @readonly */
-    public $rev_open;
+    private $_permbits;
+    const PB_ALL_PDF_VIEWABLE = 0x1;
+    const PB_SOME_INCOMPLETE_VIEWABLE = 0x2;
+    const PB_ALL_INCOMPLETE_VIEWABLE = 0x4;
+    const PB_REVIEW_OPEN = 0x8;
+    const PBM_TIME = 0xF;
+    const PB_DISABLE_NON_PC = 0x10;
+    const PB_REVIEW_SELF_ASSIGN = 0x20;
+    const PB_VIEW_CONFLICTED_TAGS = 0x40;
+    const PB_HAS_AUTOMATIC_TAGS = 0x80;
+    const PB_UPDATING_AUTOMATIC_TAGS = 0x100;
+    const PB_HAS_COMPLEX_DECISION = 0x200;
     /** @var ?SearchTerm
      * @readonly */
     public $_au_seerev;
     /** @var ?SearchTerm
      * @readonly */
     public $_au_seedec;
-    /** @var bool
-     * @readonly */
-    public $disable_non_pc;
-    /** @var bool
-     * @readonly */
-    public $tag_seeall;
     /** @var int
      * @readonly */
     public $ext_subreviews;
@@ -114,18 +114,11 @@ class Conf {
     private $_track_sensitivity = 0;
     /** @var ?TagMap */
     private $_tag_map;
-    /** @var bool */
-    private $_maybe_automatic_tags;
-    /** @var bool */
-    private $_updating_automatic_tags = false;
     /** @var ?DecisionSet */
     private $_decision_set;
     /** @var DecisionInfo
      * @readonly */
     public $unspecified_decision;
-    /** @var bool
-     * @readonly */
-    public $has_complex_decision;
     /** @var ?TopicSet */
     private $_topic_set;
     /** @var ?Conflict */
@@ -396,9 +389,29 @@ class Conf {
     /** @suppress PhanAccessReadOnlyProperty */
     function refresh_settings($skip_options = false) {
         // enforce invariants
-        $this->settings["pcrev_any"] = $this->settings["pcrev_any"] ?? 0;
         $this->settings["sub_blind"] = $this->settings["sub_blind"] ?? self::BLIND_ALWAYS;
         $this->settings["rev_blind"] = $this->settings["rev_blind"] ?? self::BLIND_ALWAYS;
+
+        // permission bits
+        $this->_permbits = 0;
+        if (($this->settings["pcrev_any"] ?? 0) > 0) {
+            $this->_permbits |= self::PB_REVIEW_SELF_ASSIGN;
+        }
+        if ($this->opt["disableNonPC"] ?? null) {
+            $this->_permbits |= self::PB_DISABLE_NON_PC;
+        }
+        if (($this->settings["tag_seeall"] ?? 0) > 0) {
+            $this->_permbits |= self::PB_VIEW_CONFLICTED_TAGS;
+        }
+        if (($this->settings["tag_vote"] ?? 0) > 0
+            || ($this->settings["tag_approval"] ?? 0) > 0
+            || ($this->settings["tag_autosearch"] ?? 0) > 0
+            || !!$this->opt("definedTags")) {
+            $this->_permbits |= self::PB_HAS_AUTOMATIC_TAGS;
+        }
+        if (strpos($this->settingTexts["outcome_map"] ?? "{", "{", 1) !== false) {
+            $this->_permbits |= self::PB_HAS_COMPLEX_DECISION;
+        }
 
         // rounds
         $this->refresh_round_settings();
@@ -423,13 +436,24 @@ class Conf {
         $this->_formula_functions = null;
         $this->_assignment_parsers = null;
         $this->_decision_set = null;
-        /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-        $this->has_complex_decision = strpos($this->settingTexts["outcome_map"] ?? "{", "{", 1) !== false;
         $this->_topic_set = null;
+        $this->_au_seerev = null;
+        $this->_au_seedec = null;
 
         // digested settings
+        $this->ext_subreviews = $this->settings["pcrev_editdelegate"] ?? 0;
+        $this->_site_locks = $this->settingTexts["site_locks"] ?? null;
+
+        // options unless known unneeded
+        if (!$skip_options) {
+            $this->refresh_options();
+        }
+
+        // time settings
+        $this->refresh_time_settings();
+
+        // parse searches last (parse may depend on other settings)
         $au_seerev = $this->settings["au_seerev"] ?? 0;
-        $this->_au_seerev = null;
         if ($au_seerev === self::AUSEEREV_SEARCH) {
             if (($q = $this->settingTexts["au_seerev"] ?? null) !== null) {
                 $srch = new PaperSearch($this->root_user(), $q);
@@ -448,8 +472,8 @@ class Conf {
         if ($this->_au_seerev instanceof False_SearchTerm) {
             $this->_au_seerev = null;
         }
+
         $au_seedec = $this->settings["au_seedec"] ?? 0;
-        $this->_au_seedec = null;
         if ($au_seedec === 1 && ($q = $this->settingTexts["au_seedec"] ?? null) !== null) {
             $srch = new PaperSearch($this->root_user(), $q);
             $this->_au_seedec = $srch->full_term();
@@ -459,37 +483,27 @@ class Conf {
         if ($this->_au_seedec instanceof False_SearchTerm) {
             $this->_au_seedec = null;
         }
-        $this->tag_seeall = ($this->settings["tag_seeall"] ?? 0) > 0;
-        $this->ext_subreviews = $this->settings["pcrev_editdelegate"] ?? 0;
-        $this->_maybe_automatic_tags = ($this->settings["tag_vote"] ?? 0) > 0
-            || ($this->settings["tag_approval"] ?? 0) > 0
-            || ($this->settings["tag_autosearch"] ?? 0) > 0
-            || !!$this->opt("definedTags");
-        $this->_site_locks = $this->settingTexts["site_locks"] ?? null;
-        $this->refresh_time_settings();
-
-        // options unless known unneeded
-        if (!$skip_options) {
-            $this->refresh_options();
-        }
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
     private function refresh_time_settings() {
-        $this->permbits = self::PB_ALL_PDF_VIEWABLE | self::PB_ALL_INCOMPLETE_VIEWABLE;
+        $this->_permbits = ($this->_permbits & ~self::PBM_TIME)
+            | self::PB_ALL_PDF_VIEWABLE | self::PB_ALL_INCOMPLETE_VIEWABLE;
         foreach ($this->submission_round_list() as $sr) {
             if (!$sr->pdf_viewable) {
-                $this->permbits &= ~self::PB_ALL_PDF_VIEWABLE;
+                $this->_permbits &= ~self::PB_ALL_PDF_VIEWABLE;
             }
             if ($sr->incomplete_viewable) {
-                $this->permbits |= self::PB_SOME_INCOMPLETE_VIEWABLE;
+                $this->_permbits |= self::PB_SOME_INCOMPLETE_VIEWABLE;
             } else {
-                $this->permbits &= ~self::PB_ALL_INCOMPLETE_VIEWABLE;
+                $this->_permbits &= ~self::PB_ALL_INCOMPLETE_VIEWABLE;
             }
         }
 
         $rot = $this->settings["rev_open"] ?? 0;
-        $this->rev_open = $rot > 0 && $rot <= Conf::$now;
+        if ($rot > 0 && $rot <= Conf::$now) {
+            $this->_permbits |= self::PB_REVIEW_OPEN;
+        }
 
         $this->any_response_open = 0;
         if (($this->settings["resp_active"] ?? 0) > 0) {
@@ -727,7 +741,6 @@ class Conf {
             $this->invalidate_caches(["pc" => true]);
         }
         $this->sort_by_last = $sort_by_last;
-        $this->disable_non_pc = !!$this->opt("disableNonPC");
 
         $this->_api_map = null;
         $this->_file_filters = null;
@@ -1258,6 +1271,11 @@ class Conf {
         return $this->decision_set()->get($decid)->name;
     }
 
+    /** @return bool */
+    function has_complex_decision() {
+        return ($this->_permbits & self::PB_HAS_COMPLEX_DECISION) !== 0;
+    }
+
 
     /** @return bool */
     function has_topics() {
@@ -1375,6 +1393,11 @@ class Conf {
             $this->_tag_map = TagMap::make($this, true);
         }
         return $this->_tag_map;
+    }
+
+    /** @return bool */
+    function pc_can_view_conflicted_tags() {
+        return ($this->_permbits & self::PB_VIEW_CONFLICTED_TAGS) !== 0;
     }
 
 
@@ -1923,7 +1946,7 @@ class Conf {
 
     /** @return bool */
     function allow_user_self_register() {
-        return !$this->disable_non_pc && !$this->opt("disableNewUsers");
+        return !$this->disable_non_pc() && !$this->opt("disableNewUsers");
     }
 
     /** @return array<string,object> */
@@ -1971,11 +1994,16 @@ class Conf {
         return $this->_site_contact;
     }
 
+    /** @return bool */
+    function disable_non_pc() {
+        return ($this->_permbits & self::PB_DISABLE_NON_PC) !== 0;
+    }
+
     /** @param int $disabled
      * @param int $roles
      * @return int */
     function disablement_for($disabled, $roles) {
-        if ($this->disable_non_pc && ($roles & Contact::ROLE_PCLIKE) === 0) {
+        if ($this->disable_non_pc() && ($roles & Contact::ROLE_PCLIKE) === 0) {
             $disabled |= Contact::CF_ROLEDISABLED;
         }
         return $disabled;
@@ -2879,7 +2907,7 @@ class Conf {
     /** @param null|int|list<int>|PaperInfo $paper
      * @param null|string|list<string> $types */
     function update_automatic_tags($paper = null, $types = null) {
-        if (!$this->_maybe_automatic_tags || $this->_updating_automatic_tags) {
+        if (($this->_permbits & (self::PB_HAS_AUTOMATIC_TAGS | self::PB_UPDATING_AUTOMATIC_TAGS)) !== self::PB_HAS_AUTOMATIC_TAGS) {
             return;
         }
         $csv = ["paper,tag,tag value"];
@@ -2921,19 +2949,19 @@ class Conf {
     /** @param list<string> $csv */
     function _update_automatic_tags_csv($csv) {
         if (count($csv) > 1) {
-            $this->_updating_automatic_tags = true;
+            $this->_permbits |= self::PB_UPDATING_AUTOMATIC_TAGS;
             $aset = new AssignmentSet($this->root_user());
             $aset->set_override_conflicts(true);
             $aset->set_search_type("all");
             $aset->parse($csv);
             $aset->execute();
-            $this->_updating_automatic_tags = false;
+            $this->_permbits &= ~self::PB_UPDATING_AUTOMATIC_TAGS;
         }
     }
 
     /** @return bool */
     function is_updating_automatic_tags() {
-        return $this->_updating_automatic_tags;
+        return ($this->_permbits & self::PB_UPDATING_AUTOMATIC_TAGS) !== 0;
     }
 
 
@@ -3388,7 +3416,11 @@ class Conf {
     }
     /** @return bool */
     function time_review_open() {
-        return $this->rev_open;
+        return ($this->_permbits & self::PB_REVIEW_OPEN) !== 0;
+    }
+    /** @return bool */
+    function allow_self_assignment() {
+        return ($this->_permbits & self::PB_REVIEW_SELF_ASSIGN) !== 0;
     }
     /** @param ?int $round
      * @param bool|int $reviewType
@@ -3436,13 +3468,13 @@ class Conf {
     function time_pc_view(PaperInfo $prow, $pdf) {
         if ($prow->timeSubmitted > 0) {
             return !$pdf
-                || ($this->permbits & self::PB_ALL_PDF_VIEWABLE) !== 0
+                || ($this->_permbits & self::PB_ALL_PDF_VIEWABLE) !== 0
                 || (($sr = $prow->submission_round())
                     && ($sr->pdf_viewable
                         || $prow->timeSubmitted < $sr->open));
         } else if ($prow->timeWithdrawn <= 0) {
             return !$pdf
-                && ($this->permbits & self::PB_SOME_INCOMPLETE_VIEWABLE) !== 0
+                && ($this->_permbits & self::PB_SOME_INCOMPLETE_VIEWABLE) !== 0
                 && $prow->submission_round()->incomplete_viewable;
         } else {
             return false;
@@ -3543,12 +3575,12 @@ class Conf {
 
     /** @return bool */
     function can_pc_view_some_incomplete() {
-        return ($this->permbits & self::PB_SOME_INCOMPLETE_VIEWABLE) !== 0;
+        return ($this->_permbits & self::PB_SOME_INCOMPLETE_VIEWABLE) !== 0;
     }
 
     /** @return bool */
     function can_pc_view_all_incomplete() {
-        return ($this->permbits & self::PB_ALL_INCOMPLETE_VIEWABLE) !== 0;
+        return ($this->_permbits & self::PB_ALL_INCOMPLETE_VIEWABLE) !== 0;
     }
 
 
