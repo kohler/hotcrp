@@ -94,7 +94,7 @@ class ManualAssign_Page {
     function show_ass_element($pl, $name, $text, $extra = []) {
         return '<li class="' . rtrim("checki " . ($extra["item_class"] ?? ""))
             . '"><span class="checkc">'
-            . Ht::checkbox("show$name", 1, $pl->viewing($name), [
+            . Ht::checkbox("show[]", $name, $pl->viewing($name), [
                 "class" => "uich js-plinfo ignore-diff" . (isset($extra["fold_target"]) ? " js-foldup" : ""),
                 "data-fold-target" => $extra["foldup"] ?? null
             ]) . "</span>" . Ht::label($text) . '</li>';

@@ -11529,15 +11529,20 @@ handle_ui.on("js-plinfo", function (evt) {
     if (this.type !== "checkbox" || this.name.substring(0, 4) !== "show") {
         throw new Error("bad plinfo");
     }
-    var types = [this.name.substring(4)], dofold = !this.checked;
+    const types = [], dofold = !this.checked;
+    if (this.name === "show" || this.name === "show[]") {
+        types.push(this.value);
+    } else {
+        types.push(this.name.substring(4));
+    }
     if (types[0] === "anonau") {
-        var form = this.form, showau = form && form.elements.showau;
+        const form = this.form, showau = form && form.elements.showau;
         if (!dofold && showau)
             showau.checked = true;
         else if (!showau && dofold)
             types.push("authors");
     }
-    var plistui = make_plist.call(mainlist());
+    const plistui = make_plist.call(mainlist());
     for (var i = 0; i != types.length; ++i) {
         if (types[i] === "force")
             fold_override(plistui.pltable, dofold);

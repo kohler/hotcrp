@@ -788,14 +788,28 @@ class PaperList {
 
     function apply_view_qreq(Qrequest $qreq) {
         $x = [];
-        foreach ($qreq as $k => $v) {
-            if (str_starts_with($k, "show")) {
-                $x[substr($k, 4)] = !!$v;
-            } else if (str_starts_with($k, "has_show")) {
-                $x[substr($k, 8)] = $x[substr($k, 8)] ?? false;
-            } else if ($k === "forceShow") {
-                $x["force"] = !!$v;
+        if (isset($qreq->show)) {
+            if ($qreq->has_a("show")) {
+                foreach ($qreq->get_a("show") as $v) {
+                    $x[$v] = true;
+                }
+            } else {
+                foreach (ViewCommand::split_parse($qreq->show, 0) as $svc) {
+                    if ($svc->is_show() || $svc->is_hide())
+                        $x[$svc->keyword] = $svc->is_show();
+                }
             }
+        } else if (isset($qreq->has_showabstract)) { // XXX backward compat
+            foreach ($qreq as $k => $v) {
+                if (str_starts_with($k, "show")) {
+                    $x[substr($k, 4)] = !!$v;
+                } else if (str_starts_with($k, "has_show")) {
+                    $x[substr($k, 8)] = $x[substr($k, 8)] ?? false;
+                }
+            }
+        }
+        if (($v = friendly_boolean($qreq->forceShow)) !== null) {
+            $x["force"] = $v;
         }
         foreach ($x as $name => $show) {
             $this->set_view($name, $show, self::VIEWORIGIN_REQUEST, $this->_view_options[$name] ?? null);
