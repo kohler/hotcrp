@@ -44,8 +44,7 @@ class Search_Page {
     private function checkbox_item($column, $type, $title, $options = []) {
         $options["class"] = "uich js-plinfo";
         $x = '<label class="checki"><span class="checkc">'
-            . Ht::hidden("has_show{$type}", 1)
-            . Ht::checkbox("show{$type}", 1, $this->pl->viewing($type), $options)
+            . Ht::checkbox("show[]", $type, $this->pl->viewing($type), $options)
             . '</span>' . $title . '</label>';
         $this->item($column, $x);
     }
@@ -200,7 +199,7 @@ class Search_Page {
         // Conflict display
         if ($this->user->is_manager()) {
             echo '<td class="padlb"><label class="checki"><span class="checkc">',
-                Ht::checkbox("showforce", 1, $this->pl->viewing("force"),
+                Ht::checkbox("show[]", "force", $this->pl->viewing("force"),
                              ["id" => "showforce", "class" => "uich js-plinfo"]),
                 "</span>Override conflicts</label></td>";
         }
@@ -396,16 +395,7 @@ class Search_Page {
         $pl->apply_view_report_default();
         $pl->apply_view_session($qreq);
         $pl->apply_view_qreq($qreq);
-        $param = ["#" => "view"];
-        foreach ($pl->unparse_view(PaperList::VIEWORIGIN_SEARCH, false) as $vx) {
-            if (str_starts_with($vx, "sort:score[")) {
-                $param["scoresort"] = substr($vx, 11, -1);
-            } else if (strpos($vx, "[") === false) {
-                $name = substr($vx, 5);
-                $show = str_starts_with($vx, "show:") ? 1 : 0;
-                $param[$name === "force" ? "forceShow" : "show{$name}"] = $show;
-            }
-        }
+        $param = ["#" => "view", "show" => join(" ", $pl->unparse_view(PaperList::VIEWORIGIN_SEARCH, false))];
         $user->conf->redirect_self($qreq, $param);
     }
 

@@ -39,7 +39,7 @@ class ReviewPrefs_Page {
     static private function pref_element($pl, $name, $text, $extra = []) {
         return '<li class="' . rtrim("checki " . ($extra["item_class"] ?? ""))
             . '"><span class="checkc">'
-            . Ht::checkbox("show$name", 1, $pl->viewing($name), [
+            . Ht::checkbox("show[]", $name, $pl->viewing($name), [
                 "class" => "uich js-plinfo ignore-diff" . (isset($extra["fold_target"]) ? " js-foldup" : ""),
                 "data-fold-target" => $extra["fold_target"] ?? null
             ]) . "</span>" . Ht::label($text) . '</span>';
@@ -242,6 +242,7 @@ class ReviewPrefs_Page {
 
         // set options to view
         if (isset($qreq->redisplay)) {
+            // XXX
             $pfd = " ";
             foreach ($qreq as $k => $v) {
                 if (substr($k, 0, 4) == "show" && $v)
