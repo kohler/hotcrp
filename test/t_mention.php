@@ -140,4 +140,19 @@ class Mention_Tester {
         xassert_eqq($mpxs[2]->pos1, 27);
         xassert_eqq($mpxs[2]->pos2, 42);
     }
+
+    function test_name_email_prefix() {
+        $user_jon = $this->conf->pc_member_by_email("jon@cs.ucl.ac.uk");
+        $mpxs = $this->parse_mentions("@Jon Crowcroft fun", [$user_jon], $this->pc);
+        xassert_eqq(count($mpxs), 1);
+        xassert_eqq($mpxs[0]->user->email, "jon@cs.ucl.ac.uk");
+        xassert_eqq($mpxs[0]->pos1, 0);
+        xassert_eqq($mpxs[0]->pos2, 14);
+
+        $mpxs = $this->parse_mentions("@pdruschel HELLO", [$user_jon], $this->pc);
+        xassert_eqq(count($mpxs), 1);
+        xassert_eqq($mpxs[0]->user->email, "pdruschel@cs.rice.edu");
+        xassert_eqq($mpxs[0]->pos1, 0);
+        xassert_eqq($mpxs[0]->pos2, 10);
+    }
 }
