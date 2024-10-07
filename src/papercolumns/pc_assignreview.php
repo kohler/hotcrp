@@ -15,15 +15,11 @@ class AssignReview_PaperColumn extends PaperColumn {
             $this->contact = $conf->pc_member_by_email($cj->user);
         }
     }
-    function add_decoration($decor) {
-        if ($decor === "simple") {
-            $this->simple = true;
-            return $this->__add_decoration($decor);
-        } else {
-            return parent::add_decoration($decor);
-        }
+    function view_option_schema() {
+        return ["simple"];
     }
     function prepare(PaperList $pl, $visible) {
+        $this->simple = $this->view_option("simple") ?? false;
         $this->contact = $this->contact ?? $pl->reviewer_user();
         return $pl->user->is_manager();
     }

@@ -5,8 +5,6 @@
 class Color_PaperColumn extends PaperColumn {
     /** @var array<string,HclColor> */
     private $colors = [];
-    /** @var ?string */
-    private $decoration;
     /** @var float */
     private $hdelta = 8.0;
     /** @var bool */
@@ -15,23 +13,21 @@ class Color_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
-    function add_decoration($decor) {
-        $known_decor = ["rgb" => "+8", "gbr" => "+128", "brg" => "+248",
-                        "rbg" => "-45", "grb" => "-165", "bgr" => "-285"];
-        $kdecor = $known_decor[$decor] ?? $decor;
-        if (preg_match('/\A[-+]?\d+\z/', $kdecor)
-            && ($n = (float) $kdecor) >= -360
-            && $n <= 360) {
-            $this->hdelta = abs($n);
-            $this->hrev = str_starts_with($kdecor, "-");
-            $this->__add_decoration($decor, [$this->decoration]);
-            $this->decoration = $decor;
-            return true;
-        } else {
-            return parent::add_decoration($decor);
-        }
+    function view_option_schema() {
+        return ["order!"];
     }
     function prepare(PaperList $pl, $visible) {
+        if (($v = $this->view_option("order"))) {
+            $knownv = ["rgb" => "+8", "gbr" => "+128", "brg" => "+248",
+                       "rbg" => "-45", "grb" => "-165", "bgr" => "-285"];
+            $v = $knownv[$v] ?? $v;
+            if (preg_match('/\A[-+]?\d+\z/', $v)
+                && ($num = (float) $v) >= -360
+                && $num <= 360) {
+                $this->hdelta = abs($num);
+                $this->hrev = str_starts_with($v, "-");
+            }
+        }
         return $visible === self::PREP_SORT;
     }
     /** @return ?OklchColor */

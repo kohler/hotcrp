@@ -955,6 +955,10 @@ class PaperOption implements JsonSerializable {
 
     function render(FieldRender $fr, PaperValue $ov) {
     }
+    /** @return list<string> */
+    function view_option_schema() {
+        return [];
+    }
 
     /** @return ?FormatSpec */
     function format_spec() {
@@ -1598,6 +1602,10 @@ class Document_PaperOption extends PaperOption {
         return false;
     }
 
+    function view_option_schema() {
+        return ["type"];
+    }
+
     /** @param ?DocumentInfo $d */
     static function render_document(FieldRender $fr, PaperOption $opt, $d) {
         if (!$d) {
@@ -1614,7 +1622,7 @@ class Document_PaperOption extends PaperOption {
             $fr->title = "";
             $fr->set_html($d->link_html("<span class=\"pavfn\">{$th}</span>", $dif));
         } else {
-            $want_mimetype = $fr->column && $fr->column->has_decoration("type");
+            $want_mimetype = $fr->column && $fr->column->view_option("type");
             if ($want_mimetype) {
                 $t = $d->mimetype;
             } else if (!$fr->want(FieldRender::CFLIST | FieldRender::CFCOLUMN)

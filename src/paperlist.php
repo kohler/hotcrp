@@ -224,8 +224,8 @@ class PaperList {
     private $_view_hide_all = 0;
     /** @var array<string,int> */
     private $_viewf = [];
-    /** @var array<string,?list<string>> */
-    private $_view_decorations = [];
+    /** @var array<string,ViewOptionList> */
+    private $_view_options = [];
     /** @var array<string,int> */
     private $_view_order = [];
     /** @var int */
@@ -347,7 +347,8 @@ class PaperList {
         $this->_rowset = $args["rowset"] ?? null;
 
         if (in_array($qreq->linkto, ["paper", "assign", "paperedit", "finishreview"])) {
-            $this->set_view("linkto", true, self::VIEWORIGIN_REQUEST, [$qreq->linkto]);
+            $vol = (new ViewOptionList)->add("page", $qreq->linkto);
+            $this->set_view("linkto", true, self::VIEWORIGIN_REQUEST, $vol);
         }
 
         $this->tagger = new Tagger($this->user);
@@ -382,15 +383,18 @@ class PaperList {
         }
         foreach ($this->search->view_commands() as $svc) {
             if (!$svc->is_sort()) {
-                $this->set_view($svc->keyword, $svc->is_show(), self::VIEWORIGIN_SEARCH, $svc->decorations);
+                $this->set_view($svc->keyword, $svc->is_show(), self::VIEWORIGIN_SEARCH, $svc->view_options);
             }
         }
 
         if ($qreq->forceShow !== null) {
             $this->set_view("force", !!$qreq->forceShow, self::VIEWORIGIN_REQUEST);
         }
-        if ($qreq->selectall && !isset($this->_view_decorations["sel"])) {
-            $this->_view_decorations["sel"] = ["selected"];
+        if ($qreq->selectall) {
+            $vd = $this->_view_options["sel"] = $this->_view_options["sel"] ?? new ViewOptionList;
+            if (!$vd->has("selected")) {
+                $vd->add("selected", true);
+            }
         }
 
         $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
@@ -519,14 +523,14 @@ class PaperList {
     /** @param PaperColumn $col
      * @param ?string $default_name */
     function add_column(PaperColumn $col, $default_name = null) {
-        $decor = $this->_view_decorations[$col->name] ?? null;
+        $decor = $this->_view_options[$col->name] ?? null;
         $col->view_order = $this->_view_order[$col->name] ?? null;
         if ($default_name) {
-            $decor = $decor ?? $this->_view_decorations[$default_name] ?? null;
+            $decor = $decor ?? $this->_view_options[$default_name] ?? null;
             $col->view_order = $col->view_order ?? $this->_view_order[$default_name] ?? null;
         }
         if ($decor) {
-            $col->add_decorations($decor);
+            $col->add_view_options($decor);
         }
         $this->_columns_by_name[$col->name][] = $col;
     }
@@ -610,18 +614,12 @@ class PaperList {
     }
 
     /** @param string $k
-     * @param 'show'|'hide'|'edit'|bool $v
+     * @param bool $v
      * @param 0|1|2|3|4|5 $origin
-     * @param ?list<string> $decorations */
-    function set_view($k, $v, $origin, $decorations = null) {
+     * @param ?ViewOptionList $view_options */
+    function set_view($k, $v, $origin, $view_options = null) {
         $origin = $origin ?? self::VIEWORIGIN_MAX;
         assert($origin >= self::VIEWORIGIN_REPORT && $origin <= self::VIEWORIGIN_MAX);
-        if ($v === "show" || $v === "hide") {
-            $v = $v === "show";
-        } else if ($v === "edit") {
-            $v = true;
-            $decorations[] = "edit";
-        }
         assert(is_bool($v));
 
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
@@ -663,10 +661,10 @@ class PaperList {
         $flags = ($flags & ~(self::VIEW_ORIGINMASK | self::VIEW_SHOW))
             | $origin
             | ($v ? self::VIEW_SHOW : 0);
-        if (!empty($decorations)) {
-            $this->_view_decorations[$k] = $decorations;
+        if ($view_options && !$view_options->is_empty()) {
+            $this->_view_options[$k] = $view_options;
         } else {
-            unset($this->_view_decorations[$k]);
+            unset($this->_view_options[$k]);
         }
 
         if ($k === "force") {
@@ -674,10 +672,9 @@ class PaperList {
         } else if ($k === "facets") {
             $this->_view_facets = $v;
         } else if ($k === "linkto") {
-            if (!empty($decorations)
-                && in_array($decorations[0], ["paper", "paperedit", "assign", "finishreview"])) {
-                $this->_view_linkto = $decorations[0];
-            }
+            $schema = (new ViewOptionSchema)->define("page=paper paperedit assign finishreview");
+            $vol = (new ViewOptionList)->append_validate($view_options ?? [], $schema);
+            $this->_view_linkto = $vol->get("page") ?? $this->_view_linkto;
         } else if (($k === "aufull" || $k === "anonau")
                    && $origin >= self::VIEWORIGIN_SEARCH
                    && $v
@@ -707,20 +704,23 @@ class PaperList {
         if ($svc->keyword === "score") {
             $flags = &$this->_viewf[$svc->keyword];
             $flags = $flags ?? 0;
-            if (($flags & self::VIEW_ORIGINMASK) <= $origin
-                && ($x = ScoreInfo::parse_score_sort($svc->decoration(0))) !== null) {
-                $flags = ($flags & ~self::VIEW_ORIGINMASK) | $origin;
-                $this->_score_sort = $x;
+            if (($flags & self::VIEW_ORIGINMASK) <= $origin) {
+                $schema = (new ViewOptionSchema)->define("order=" . ScoreInfo::$score_sort_enum);
+                $vol = (new ViewOptionList)->append_validate($svc->view_options ?? [], $schema);
+                if (($ss = $vol->get("order")) !== null) {
+                    $flags = ($flags & ~self::VIEW_ORIGINMASK) | $origin;
+                    $this->_score_sort = $ss;
+                }
             }
             return;
         }
 
         assert($this->_sortcol_fixed < 2);
-        // Do not use ensure_columns_by_name(), because decorations for sorters
+        // Do not use ensure_columns_by_name(), because of sort options
         // might differ.
         $fs = $this->conf->paper_columns($svc->keyword, $this->xtp);
         if (count($fs) === 1) {
-            $col = PaperColumn::make($this->conf, $fs[0])->add_decorations($svc->decorations);
+            $col = PaperColumn::make($this->conf, $fs[0])->add_view_options($svc->view_options);
             if ($col->prepare($this, PaperColumn::PREP_SORT)
                 && $col->sort) {
                 $col->sort_subset = $sort_subset;
@@ -756,7 +756,7 @@ class PaperList {
             if ($svc->is_sort()) {
                 $this->_add_sorter($svc, null);
             } else {
-                $this->set_view($svc->keyword, $svc->is_show(), $origin, $svc->decorations);
+                $this->set_view($svc->keyword, $svc->is_show(), $origin, $svc->view_options);
             }
         }
     }
@@ -798,7 +798,7 @@ class PaperList {
             }
         }
         foreach ($x as $name => $show) {
-            $this->set_view($name, $show, self::VIEWORIGIN_REQUEST, $this->_view_decorations[$name] ?? null);
+            $this->set_view($name, $show, self::VIEWORIGIN_REQUEST, $this->_view_options[$name] ?? null);
         }
     }
 
@@ -825,7 +825,7 @@ class PaperList {
             }
             $key = "{$pos} {$name}";
             $flags = $v >= self::VIEW_SHOW ? ViewCommand::F_SHOW : ViewCommand::F_HIDE;
-            $res[$key] = (new ViewCommand($flags, $name, $this->_view_decorations[$name] ?? null))->unparse();
+            $res[$key] = (new ViewCommand($flags, $name, $this->_view_options[$name] ?? null))->unparse();
         }
         if (((($this->_viewf["anonau"] ?? 0) >= self::VIEW_SHOW && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
              || ($this->_viewf["aufull"] ?? 0) >= self::VIEW_SHOW)
@@ -841,7 +841,7 @@ class PaperList {
                 if ($this->_sort_origin[$i] <= $base_origin) {
                     break;
                 }
-                $res[] = (new ViewCommand(ViewCommand::F_SORT, $s->name, $s->decorations()))->unparse();
+                $res[] = (new ViewCommand(ViewCommand::F_SORT, $s->name, $s->view_options()))->unparse();
                 if ($s->name === "id") {
                     break;
                 }
@@ -854,7 +854,8 @@ class PaperList {
         // score sort
         if ($this->_score_sort
             && ($base_origin < 0 || $this->_score_sort !== self::default_score_sort($this->conf))) {
-            $res[] = (new ViewCommand(ViewCommand::F_SORT, "score", [$this->_score_sort]))->unparse();
+            $vol = (new ViewOptionList)->add($this->_score_sort, true);
+            $res[] = (new ViewCommand(ViewCommand::F_SORT, "score", $vol))->unparse();
         }
 
         return $res;
@@ -1010,7 +1011,7 @@ class PaperList {
         if (!$dt->has_order_anno()) {
             $any = false;
             foreach (["#{$etag}", "#{$alt_etag}", "tagval:{$etag}", "tagval:{$alt_etag}"] as $x) {
-                $any = $any || in_array("edit", $this->_view_decorations[$x] ?? []);
+                $any = $any || in_array("edit", $this->_view_options[$x] ?? []);
             }
             if (!$any) {
                 return [];
@@ -1416,13 +1417,14 @@ class PaperList {
 
     /** @param int $uid
      * @param ?PaperInfo $prow
+     * @param int $flags
      * @return string */
-    function user_content($uid, $prow = null) {
+    function user_content($uid, $prow = null, $flags = 0) {
         $u = $uid > 0 ? $this->conf->user_by_id($uid, USER_SLICE) : null;
         if (!$u) {
             return "";
         }
-        $h = $this->user->reviewer_html_for($u);
+        $h = $this->user->name_for("r", $u, $flags);
         if ($prow && ($rrow = $prow->review_by_user($u))) {
             $h .= " " . $this->make_review_analysis($rrow, $prow)->icon_html(false);
         }
@@ -1430,10 +1432,11 @@ class PaperList {
     }
 
     /** @param int $uid
+     * @param int $flags
      * @return string */
-    function user_text($uid) {
+    function user_text($uid, $flags = 0) {
         $u = $uid > 0 ? $this->conf->user_by_id($uid, USER_SLICE) : null;
-        return $u ? $this->user->reviewer_text_for($u) : "";
+        return $u ? $this->user->name_for("t", $u, $flags) : "";
     }
 
     /** @param int $uid1

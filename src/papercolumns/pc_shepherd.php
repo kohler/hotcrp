@@ -4,15 +4,15 @@
 
 class Shepherd_PaperColumn extends PaperColumn {
     /** @var int */
-    private $ianno;
+    private $nameflags;
     /** @var bool */
     private $was_reset = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
     }
-    function add_decoration($decor) {
-        return parent::add_user_sort_decoration($decor) || parent::add_decoration($decor);
+    function view_option_schema() {
+        return self::user_view_option_schema();
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_shepherd(null)
@@ -20,6 +20,7 @@ class Shepherd_PaperColumn extends PaperColumn {
             return false;
         }
         $pl->conf->pc_set(); // prepare cache
+        $this->nameflags = $this->user_view_option_name_flags($pl->conf);
         return true;
     }
     static private function cid(PaperList $pl, PaperInfo $row) {
@@ -28,9 +29,6 @@ class Shepherd_PaperColumn extends PaperColumn {
         } else {
             return 0;
         }
-    }
-    function prepare_sort(PaperList $pl, $sortindex) {
-        $this->ianno = Contact::parse_sortspec($pl->conf, $this->decorations);
     }
     function reset(PaperList $pl) {
         if (!$this->was_reset && $pl->conf->setting("extrev_shepherd")) {
@@ -41,15 +39,16 @@ class Shepherd_PaperColumn extends PaperColumn {
         }
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
-        return $pl->user_compare(self::cid($pl, $a), self::cid($pl, $b), $this->ianno);
+        $ianno = $this->nameflags & NAME_L ? Contact::SORTSPEC_LAST : Contact::SORTSPEC_FIRST;
+        return $pl->user_compare(self::cid($pl, $a), self::cid($pl, $b), $ianno);
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !self::cid($pl, $row);
     }
     function content(PaperList $pl, PaperInfo $row) {
-        return $pl->user_content($row->shepherdContactId, $row);
+        return $pl->user_content($row->shepherdContactId, $row, $this->nameflags);
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $pl->user_text($row->shepherdContactId);
+        return $pl->user_text($row->shepherdContactId, $this->nameflags);
     }
 }

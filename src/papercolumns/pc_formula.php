@@ -22,14 +22,8 @@ class Formula_PaperColumn extends PaperColumn {
         $this->override = PaperColumn::OVERRIDE_BOTH;
         $this->formula = $cj->formula;
     }
-    function add_decoration($decor) {
-        if (preg_match('/\A%\d*(?:\.\d*)[bdeEfFgGoxX]\z/', $decor)) {
-            $this->__add_decoration($decor, [$this->real_format]);
-            $this->real_format = $decor;
-            return true;
-        } else {
-            return parent::add_decoration($decor);
-        }
+    function view_option_schema() {
+        return ["format!"];
     }
     function completion_name() {
         if (strpos($this->formula->name, " ") !== false) {
@@ -53,6 +47,10 @@ class Formula_PaperColumn extends PaperColumn {
         $this->formula_function = $this->formula->compile_function();
         if ($visible) {
             $this->formula->add_query_options($pl->qopts);
+        }
+        if (($v = $this->view_option("format")) !== null
+            && preg_match('/\A%?(\d*(?:\.\d*)[bdeEfFgGoxX])\z/', $v, $m)) {
+            $this->real_format = "%{$m[1]}";
         }
         return true;
     }

@@ -10,21 +10,15 @@ class PreferenceList_PaperColumn extends PaperColumn {
         $this->topics = !!($cj->topics ?? false);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY_LINK;
     }
-    function add_decoration($decor) {
-        if ($decor === "topic" || $decor === "topics") {
-            $this->topics = true;
-            return $this->__add_decoration("topics");
-        } else {
-            return parent::add_decoration($decor);
-        }
+    function view_option_schema() {
+        return ["topics", "topic/topics"];
     }
     function prepare(PaperList $pl, $visible) {
-        if ($this->topics && !$pl->conf->has_topics()) {
-            $this->topics = false;
-        }
         if (!$pl->user->is_manager()) {
             return false;
         }
+        $this->topics = ($this->view_option("topics") ?? $this->topics)
+            && $pl->conf->has_topics();
         if ($visible) {
             $pl->qopts["allReviewerPreference"] = true;
             if ($this->topics) {

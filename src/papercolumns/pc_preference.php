@@ -29,28 +29,10 @@ class Preference_PaperColumn extends PaperColumn {
         if (isset($cj->user)) {
             $this->user = $conf->pc_member_by_email($cj->user);
         }
-        if ($cj->edit ?? false) {
-            $this->mark_editable();
-        }
+        $this->editable = $cj->edit ?? false;
     }
-    function add_decoration($decor) {
-        if ($decor === "topicscore" || $decor === "topic_score" || $decor === "topicsort") {
-            $this->secondary_sort_topic_score = true;
-            return $this->__add_decoration($decor);
-        } else if ($decor === "edit") {
-            $this->mark_editable();
-            return $this->__add_decoration($decor);
-        } else if ($decor === "all") {
-            $this->all = true;
-            return $this->__add_decoration($decor);
-        } else {
-            return parent::add_decoration($decor);
-        }
-    }
-    function mark_editable() {
-        $this->editable = true;
-        $this->override = PaperColumn::OVERRIDE_BOTH;
-        $this->className = "pl_editrevpref";
+    function view_option_schema() {
+        return ["topics", "topicscore/topics", "topic_score/topics", "edit", "all"];
     }
     function prepare(PaperList $pl, $visible) {
         $this->viewer = $pl->user;
@@ -60,7 +42,14 @@ class Preference_PaperColumn extends PaperColumn {
             || ($this->not_me && !$this->viewer->can_view_preference(null))) {
             return false;
         }
-        if ($visible) {
+        $this->editable = $this->view_option("edit") ?? $this->editable;
+        if ($this->editable) {
+            $this->override = PaperColumn::OVERRIDE_BOTH;
+            $this->className = "pl_editrevpref";
+        }
+        $this->secondary_sort_topic_score = $this->view_option("topics") ?? false;
+        $this->all = $this->view_option("all") ?? false;
+        if ($visible || $this->secondary_sort_topic_score) {
             $pl->qopts["topics"] = 1;
         }
         $this->prefix =  "";

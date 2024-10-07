@@ -9,9 +9,9 @@ class ViewCommand {
     /** @var string
      * @readonly */
     public $keyword;
-    /** @var ?list<string>
+    /** @var ?ViewOptionlist
      * @readonly */
-    public $decorations;
+    public $view_options;
     /** @var ?SearchWord
      * @readonly */
     public $sword;
@@ -33,22 +33,25 @@ class ViewCommand {
 
     /** @param int $flags
      * @param string $keyword
-     * @param ?list<string> $decorations
+     * @param ?ViewOptionList $view_options
      * @param ?SearchWord $sword */
-    function __construct($flags, $keyword, $decorations = null, $sword = null) {
+    function __construct($flags, $keyword, $view_options = null, $sword = null) {
         assert(($flags & ($flags - 1) & self::FM_ACTION) === 0);
         $this->flags = $flags;
         $this->keyword = $keyword;
-        $this->decorations = $decorations;
+        if ($view_options && !$view_options->is_empty()) {
+            $this->view_options = $view_options;
+        }
         $this->sword = $sword;
     }
 
     /** @param string $s
      * @param int $flags
      * @param ?SearchWord $sword
-     * @return array{ViewCommand}|array{ViewCommand,ViewCommand} */
+     * @return list<ViewCommand> */
     static function parse($s, $flags, $sword = null) {
-        $keyword = $decorations = null;
+        $keyword = null;
+        $view_options = new ViewOptionList;
         $edit = $sort = false;
 
         $colon = strpos($s, ":");
@@ -93,23 +96,24 @@ class ViewCommand {
                    && ($lbrack = strrpos($d, "[")) !== false) {
             $keyword = substr($d, 0, $lbrack);
             $d = substr($d, $lbrack + 1, strlen($d) - $lbrack - 2);
-            $decorations = [];
         }
 
         $splitter = new SearchParser($d);
         while ($splitter->skip_span(" \n\r\t\v\f,")) {
             $w = $splitter->shift_balanced_parens(" \n\r\t\v\f,");
-            if ($keyword === null) {
+            if ($w === "") {
+                continue;
+            } else if ($keyword === null) {
                 $keyword = $w;
-            } else {
-                $decorations[] = $w;
+            } else if (($pair = ViewOptionList::parse_pair($w))) {
+                $view_options->add($pair[0], $pair[1]);
             }
         }
 
         $keyword = $keyword ?? "";
-        if ($sort) {
+        if ($sort && $keyword !== "") {
             if ($keyword[0] === "-") {
-                $decorations[] = "reverse";
+                $view_options->add("sort", "reverse");
             }
             if ($keyword[0] === "-" || $keyword[0] === "+") {
                 $keyword = substr($keyword, 1);
@@ -118,19 +122,20 @@ class ViewCommand {
         if (str_starts_with($keyword, "\"") && str_ends_with($keyword, "\"")) {
             $keyword = substr($keyword, 1, -1);
         }
-        if ($edit) {
-            $decorations[] = "edit";
-        }
-
         if ($keyword === "") {
             return [];
         }
+
+        if ($edit) {
+            $view_options->add("edit", true);
+        }
+
         $svcs = [];
         if ($a !== 0 || !$sort) {
-            $svcs[] = new ViewCommand($a | $flags, $keyword, $decorations, $sword);
+            $svcs[] = new ViewCommand($a | $flags, $keyword, $view_options, $sword);
         }
         if ($sort) {
-            $svcs[] = new ViewCommand(self::F_SORT | $flags, $keyword, $decorations, $sword);
+            $svcs[] = new ViewCommand(self::F_SORT | $flags, $keyword, $view_options, $sword);
         }
         return $svcs;
     }
@@ -176,12 +181,6 @@ class ViewCommand {
         return ($this->flags & self::F_SORT) !== 0;
     }
 
-    /** @param int $index
-     * @return ?string */
-    function decoration($index) {
-        return $this->decorations[$index] ?? null;
-    }
-
     /** @return string */
     function unparse() {
         $s = (["viewoptions:", "show:", "hide:", null, "sort:"])[$this->flags & self::FM_ACTION];
@@ -191,8 +190,8 @@ class ViewCommand {
         } else {
             $s .= $this->keyword;
         }
-        if (!empty($this->decorations)) {
-            $s .= "[" . join(",", $this->decorations) . "]";
+        if ($this->view_options) {
+            $s .= $this->view_options->unparse();
         }
         return $s;
     }

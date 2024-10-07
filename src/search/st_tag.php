@@ -178,7 +178,7 @@ class Tag_SearchTerm extends SearchTerm {
         assert(count($xjs) === 1 && $xjs[0]->function === "+Tag_PaperColumn");
         $pc = PaperColumn::make($pl->conf, $xjs[0]);
         if ($dt && $dt->is(TagInfo::TFM_VOTES)) {
-            $pc->add_decoration("reverse");
+            $pc->add_view_options((new ViewOptionList)->add("sort", "reverse"));
         }
         return $pc;
     }

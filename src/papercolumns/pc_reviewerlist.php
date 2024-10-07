@@ -20,24 +20,17 @@ class ReviewerList_PaperColumn extends PaperColumn {
             }
         }
     }
-    function add_decoration($decor) {
-        if ($decor[0] === "p" && in_array($decor, ["pref", "prefs", "preference", "preferences"])) {
-            $this->pref = true;
-            return $this->__add_decoration("pref");
-        } else if ($decor === "topic" || $decor === "topics" || $decor === "topicscore") {
-            $this->pref = $this->topics = true;
-            return $this->__add_decoration("topics");
-        } else {
-            return parent::add_decoration($decor);
-        }
+    function view_option_schema() {
+        return ["pref", "prefs/pref", "preference/pref", "preferences/pref", "topics", "topic/topics", "topicscore/topics"];
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_some_review_identity()) {
             return false;
         }
-        if ($this->pref && !$pl->user->allow_view_preference(null)) {
-            $this->pref = false;
-        }
+        $this->topics = ($this->view_option("topics") ?? false)
+            && $pl->conf->has_topics();
+        $this->pref = ($this->view_option("pref") ?? $this->topics ?? false)
+            && $pl->user->allow_view_preference(null);
         $pl->qopts["reviewSignatures"] = true;
         if ($visible && $this->pref) {
             $pl->qopts["allReviewerPreference"] = true;

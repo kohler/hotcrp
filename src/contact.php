@@ -2,6 +2,20 @@
 // contact.php -- HotCRP helper class representing system users
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
+class ContactDecorations {
+    /** @var string */
+    public $colors;
+    /** @var string */
+    public $decorations;
+
+    /** @param string $colors
+     * @param string $decorations */
+    function __construct($colors, $decorations) {
+        $this->colors = $colors;
+        $this->decorations = $decorations;
+    }
+}
+
 class Contact implements JsonSerializable {
     /** @var int */
     static public $rights_version = 1;
@@ -124,8 +138,8 @@ class Contact implements JsonSerializable {
 
     /** @var ?array<int,int> */
     private $_topic_interest_map;
-    /** @var array<string,string> */
-    private $_name_for_map = [];
+    /** @var array<int,ContactDecorations> */
+    private $_name_decorations_map = [];
 
     // Roles
     const ROLE_PC = 0x0001; // value matters
@@ -562,9 +576,12 @@ class Contact implements JsonSerializable {
     // A unit of 1 === first, 2 === last, 3 === email, 4 === affiliation.
     // Least significant bits === most important sort.
 
-    /** @param ?list<string> $args
+    const SORTSPEC_FIRST = 0321;
+    const SORTSPEC_LAST = 0312;
+
+    /** @param ?string ...$args
      * @return int */
-    static function parse_sortspec(Conf $conf, $args) {
+    static function parse_sortspec(Conf $conf, ...$args) {
         $r = $seen = $shift = 0;
         while (!empty($args)) {
             $w = array_shift($args);
@@ -590,7 +607,7 @@ class Contact implements JsonSerializable {
             }
         }
         if ($r === 0) { // default
-            $r = $conf->sort_by_last ? 0312 : 0321;
+            $r = $conf->sort_by_last ? self::SORTSPEC_LAST : self::SORTSPEC_FIRST;
         } else if (($seen & 016) === 002) { // first -> first last email
             $r |= 032 << $shift;
         } else if (($seen & 016) === 004) { // last -> last first email
@@ -1201,69 +1218,78 @@ class Contact implements JsonSerializable {
         return $items;
     }
 
-    /** @param ''|'t'|'r'|'ra'|'rn' $pfx
-     * @param Author|Contact $user */
-    private function calculate_name_for($pfx, $user) {
-        $flags = NAME_P;
-        if (($user->nameAmbiguous ?? false) || $pfx === "ra") {
-            $flags |= NAME_E;
-        }
-        $n = Text::nameo($user, $flags);
-        if ($pfx !== "t") {
-            $n = htmlspecialchars($n);
-        }
-        if (($pfx === "r" || $pfx === "ra" || $pfx === "rn")
-            && ($this->isPC || $this->tracker_kiosk_state > 0)) {
-            $dt = $this->conf->tags();
-            $ctflags = ($dt->has_role_decoration ? self::CTFLAG_ROLES : 0)
-                | ($pfx !== "rn" ? self::CTFLAG_DISABLED : 0);
-            $act = self::all_user_tags_for($user, $ctflags);
-            if ($act !== ""
-                && $this->can_view_user_tags()
-                && ($viewable = $dt->censor(TagMap::CENSOR_VIEW, $act, $this, null))) {
-                if (($colors = $dt->color_classes($viewable))) {
-                    $n = "<span class=\"{$colors} taghh\">{$n}</span>";
-                }
-                if ($dt->has(TagInfo::TFM_DECORATION)) {
-                    $n .= (new Tagger($this))->unparse_decoration_html($viewable, Tagger::DECOR_USER);
-                }
-            }
-        }
-        return $n;
-    }
-
-    /** @param ''|'t'|'r'|'ra'|'rn' $pfx
+    /** @param 'n'|'t'|'r'|'ra'|'rn' $type
      * @param ReviewInfo|Contact|int $x
+     * @param int $flags
      * @return mixed */
-    function name_for($pfx, $x) {
+    function name_for($type, $x, $flags = 0) {
         $uid = is_int($x) ? $x : $x->contactId;
-        $key = $pfx . $uid;
-        if (isset($this->_name_for_map[$key])) {
-            return $this->_name_for_map[$key];
-        }
-
         if ($uid === $this->contactId) {
             $u = $this;
         } else if (is_int($x)) {
             $u = $this->conf->user_by_id($uid, USER_SLICE);
         } else if ($x instanceof ReviewInfo) {
             $u = $x->reviewer();
-            if ($x->nameAmbiguous && $pfx === "r" && !$u->nameAmbiguous) {
-                return $this->name_for("ra", $u);
+            if ($x->nameAmbiguous && $type === "r" && !$u->nameAmbiguous) {
+                $type = "ra";
             }
         } else {
             $u = $x;
         }
 
-        $n = $u ? $this->calculate_name_for($pfx, $u) : "";
-        $this->_name_for_map[$key] = $n;
+        if (!$u) {
+            return "";
+        }
+
+        $userdecor = null;
+        if ($type[0] === "r"
+            && ($this->isPC || $this->tracker_kiosk_state > 0)
+            && $this->can_view_user_tags()) {
+            if (array_key_exists($uid, $this->_name_decorations_map)) {
+                $userdecor = $this->_name_decorations_map[$uid];
+            } else {
+                $dt = $this->conf->tags();
+                $ctflags = ($dt->has_role_decoration ? self::CTFLAG_ROLES : 0)
+                    | ($type !== "rn" ? self::CTFLAG_DISABLED : 0);
+                $act = self::all_user_tags_for($u, $ctflags);
+                if ($act !== ""
+                    && ($viewable = $dt->censor(TagMap::CENSOR_VIEW, $act, $this, null))) {
+                    $colors = $dt->color_classes($viewable);
+                    if ($dt->has(TagInfo::TFM_DECORATION)) {
+                        $decorations = (new Tagger($this))->unparse_decoration_html($viewable, Tagger::DECOR_USER);
+                    } else {
+                        $decorations = "";
+                    }
+                    if ($colors !== "" || $decorations !== "") {
+                        $userdecor = new ContactDecorations($colors, $decorations);
+                    }
+                }
+                $this->_name_decorations_map[$uid] = $userdecor;
+            }
+        }
+
+        $flags |= NAME_P;
+        if (($u->nameAmbiguous ?? false) || $type === "ra") {
+            $flags |= NAME_E;
+        }
+
+        $n = Text::nameo($u, $flags);
+        if ($type !== "t") {
+            $n = htmlspecialchars($n);
+        }
+        if ($userdecor !== null) {
+            if ($userdecor->colors !== "") {
+                $n = "<span class=\"{$userdecor->colors} taghh\">{$n}</span>";
+            }
+            $n .= $userdecor->decorations;
+        }
         return $n;
     }
 
     /** @param int|Contact|ReviewInfo $x
      * @return string */
     function name_html_for($x) {
-        return $this->name_for("", $x);
+        return $this->name_for("n", $x);
     }
 
     /** @param int|Contact|ReviewInfo $x
@@ -1275,7 +1301,7 @@ class Contact implements JsonSerializable {
     /** @param int|Contact|ReviewInfo $x
      * @return string */
     function reviewer_html_for($x) {
-        return $this->name_for($this->isPC ? "r" : "", $x);
+        return $this->name_for($this->isPC ? "r" : "n", $x);
     }
 
     /** @param int|Contact|ReviewInfo $x

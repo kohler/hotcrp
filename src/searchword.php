@@ -56,10 +56,10 @@ class SearchWord {
      * @return string */
     static function quote($str) {
         if ($str === ""
-            || !preg_match('/\A[-A-Za-z0-9_.@\/]+\z/', $str)) {
-            $str = "\"" . str_replace("\"", "\\\"", $str) . "\"";
+            || preg_match('/\A[-A-Za-z0-9_.@\/]+\z/', $str)) {
+            return $str;
         }
-        return $str;
+        return "\"" . preg_replace('/\\(?=[\\\\"]|"/', '\\\\$0', $str) . "\"";
     }
 
     /** @param string $str
@@ -71,31 +71,27 @@ class SearchWord {
         }
         $ch = ord($str[0]);
         if ($ch === 34) {
-            $len1 = 1;
+            $pos1 = 1;
         } else if ($ch === 0xE2
                    && $len > 3
                    && ord($str[1]) === 0x80
                    && (ord($str[2]) | 1) === 0x9D) { // i.e., “”
-            $len1 = 3;
+            $pos1 = 3;
         } else {
-            $len1 = 0;
+            return $str;
         }
-        if ($len1 === 0 || $len === $len1) {
-            $len2 = 0;
+        $ch = ord($str[$len - 1]);
+        if ($ch === 34) {
+            $pos2 = $len - 1;
+        } else if (($ch | 1) === 0x9D
+                   && $len >= $pos1 + 3
+                   && ord($str[$len - 2]) === 0x80
+                   && ord($str[$len - 3]) === 0xE2) {
+            $pos2 = $len - 3;
         } else {
-            $ch = ord($str[$len - 1]);
-            if ($ch === 34) {
-                $len2 = 1;
-            } else if (($ch | 1) === 0x9D
-                       && $len >= $len1 + 3
-                       && ord($str[$len - 2]) === 0x80
-                       && ord($str[$len - 3]) === 0xE2) {
-                $len2 = 3;
-            } else {
-                $len2 = 0;
-            }
+            $pos2 = $len;
         }
-        return substr($str, $len1, $len - $len1 - $len2);
+        return preg_replace('/\\\\([\\\\"])/', '$1', substr($str, $pos1, $pos2 - $pos1));
     }
 
     /** @param string $str

@@ -13,6 +13,9 @@ class Attachments_PaperOption extends PaperOption {
     function has_attachments() {
         return true;
     }
+    function view_option_schema() {
+        return ["type"];
+    }
 
     function attachment(PaperValue $ov, $name) {
         return $ov->document_set()->document_by_filename($name);
@@ -171,7 +174,7 @@ class Attachments_PaperOption extends PaperOption {
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
-        $want_mimetype = $fr->column && $fr->column->has_decoration("type");
+        $want_mimetype = $fr->column && $fr->column->view_option("type");
         $ts = [];
         foreach ($ov->document_set() as $d) {
             if ($want_mimetype) {

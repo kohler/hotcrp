@@ -31,48 +31,37 @@ class Conflict_PaperColumn extends PaperColumn {
         }
         $this->show_description = ($cj->show_description ?? false)
             && $conf->setting("sub_pcconfsel");
-        if ($cj->edit ?? false) {
-            $this->mark_editable();
-        }
+        $this->editable = $cj->edit ?? false;
     }
-    function add_decoration($decor) {
-        if ($decor === "simple") {
-            $this->simple = true;
-            return $this->__add_decoration($decor);
-        } else if ($decor === "edit") {
-            $this->mark_editable();
-            return $this->__add_decoration($decor);
-        } else if (str_starts_with($decor, "pin=")) {
-            $this->pin_no = $decor === "pin=all" || $decor === "pin=unconflicted";
-            $this->pin_yes = $decor === "pin=all" || $decor === "pin=conflicted";
-            return $this->__add_decoration($decor);
-        } else {
-            return parent::add_decoration($decor);
-        }
-    }
-    function mark_editable() {
-        $this->editable = true;
-        $this->override = PaperColumn::OVERRIDE_BOTH;
+    function view_option_schema() {
+        return ["simple", "edit", "pin=all,yes none,no unconflicted conflicted"];
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $this->contact ? : $pl->reviewer_user();
         $this->not_me = $this->contact->contactId !== $pl->user->contactId;
+        $this->editable = $this->view_option("edit") ?? $this->editable;
+        if ($this->editable) {
+            $this->simple = $this->view_option("simple") ?? false;
+            $pin = $this->view_option("pin") ?? "none";
+            $this->pin_no = $pin === "all" || $pin === "unconflicted";
+            $this->pin_yes = $pin === "all" || $pin === "conflicted";
+            $this->override = PaperColumn::OVERRIDE_BOTH;
+        }
         $this->usuffix = $this->simple ? "" : "u{$this->contact->contactId}";
         $this->cset = $pl->conf->conflict_set();
         return true;
     }
     private function conflict_type(PaperList $pl, $row) {
-        if (!$this->not_me || $pl->user->can_view_conflicts($row)) {
-            $ct = $row->conflict_type($this->contact);
-            if ($this->show_description
-                && Conflict::is_conflicted($ct)
-                && !$pl->user->can_view_authors($row)) {
-                $ct = Conflict::GENERAL;
-            }
-            return $ct;
-        } else {
+        if ($this->not_me && !$pl->user->can_view_conflicts($row)) {
             return 0;
         }
+        $ct = $row->conflict_type($this->contact);
+        if ($this->show_description
+            && Conflict::is_conflicted($ct)
+            && !$pl->user->can_view_authors($row)) {
+            $ct = Conflict::GENERAL;
+        }
+        return $ct;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $act = $this->conflict_type($pl, $a);

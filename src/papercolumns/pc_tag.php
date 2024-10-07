@@ -35,17 +35,8 @@ class Tag_PaperColumn extends PaperColumn {
         $this->dtag = $cj->tag;
         $this->is_value = $cj->tagvalue ?? null;
     }
-    function add_decoration($decor) {
-        if ($decor === "edit") {
-            $this->editable = true;
-            return $this->__add_decoration($decor);
-        } else if (preg_match('/\A%?\d*(?:\.\d*)[bdeEfFgGoxX]\z/', $decor)) {
-            $this->__add_decoration($decor, [$this->real_format]);
-            $this->real_format = $decor;
-            return true;
-        } else {
-            return parent::add_decoration($decor);
-        }
+    function view_option_schema() {
+        return ["edit", "format!"];
     }
     function etag() {
         return $this->etag;
@@ -57,6 +48,11 @@ class Tag_PaperColumn extends PaperColumn {
         $tagger = new Tagger($pl->user);
         if (!($this->etag = $tagger->check($this->dtag, Tagger::NOVALUE | Tagger::ALLOWCONTACTID))) {
             return false;
+        }
+        $this->editable = $this->view_option("edit") ?? false;
+        if (($v = $this->view_option("format")) !== null
+            && preg_match('/\A%?(\d*(?:\.\d*)[bdeEfFgGoxX])\z/', $v, $m)) {
+            $this->real_format = "%{$m[1]}";
         }
         $this->ctag = " {$this->etag}#";
         if ($visible) {
