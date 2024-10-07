@@ -29,7 +29,7 @@ class MentionPhrase {
     }
 }
 
-class PossibleMentionParse {
+class PossibleMentionParse implements JsonSerializable {
     /** @var Contact|Author */
     public $user;
     /** @var string */
@@ -51,6 +51,16 @@ class PossibleMentionParse {
         $this->matchpos = 0;
         $this->breakpos = $breakpos;
         $this->priority = $priority;
+    }
+
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        $j = [];
+        foreach (["email", "firstName", "lastName"] as $k) {
+            if ($this->user->$k)
+                $j[$k] = $this->user->$k;
+        }
+        return $j + ["text" => $this->text, "matchpos" => $this->matchpos, "breakpos" => $this->breakpos, "priority" => $this->priority];
     }
 }
 
@@ -120,6 +130,21 @@ class MentionParser {
                     if (in_array($u->contactId, $matchuids)) {
                         continue;
                     }
+                    // check name
+                    if ($u->firstName !== "" || $u->lastName !== "") {
+                        $fn = $u->firstName === "" ? "" : "{$u->firstName} ";
+                        $n = $fn . ($u->lastName === "" ? "" : "{$u->lastName} ");
+                        if (strpos($n, ".") !== false) {
+                            $fn = preg_replace('/\.\s*/', " ", $fn);
+                            $n = preg_replace('/\.\s*/', " ", $n);
+                        }
+                        $ux = new PossibleMentionParse($u, $n, strlen($fn === "" ? $n : $fn), $listindex);
+                        if (self::match_word($ux, $w, $collator)) {
+                            $uset[] = $ux;
+                            $matchuids[] = $u->contactId;
+                            continue;
+                        }
+                    }
                     // check email prefix (require 2 or more letters)
                     $at = (int) strpos($u->email, "@");
                     if ($at > 1
@@ -129,21 +154,6 @@ class MentionParser {
                         $matchuids[] = $u->contactId;
                         continue;
                     }
-                    // check name
-                    if ($u->firstName === "" && $u->lastName === "") {
-                        continue;
-                    }
-                    $fn = $u->firstName === "" ? "" : "{$u->firstName} ";
-                    $n = $fn . ($u->lastName === "" ? "" : "{$u->lastName} ");
-                    if (strpos($n, ".") !== false) {
-                        $fn = preg_replace('/\.\s*/', " ", $fn);
-                        $n = preg_replace('/\.\s*/', " ", $n);
-                    }
-                    $ux = new PossibleMentionParse($u, $n, strlen($fn === "" ? $n : $fn), $listindex);
-                    if (self::match_word($ux, $w, $collator)) {
-                        $uset[] = $ux;
-                        $matchuids[] = $u->contactId;
-                    }
                 }
             }
 
@@ -152,20 +162,22 @@ class MentionParser {
             $endpos = $pos + 1 + strlen($w);
             $pos2 = $pos + 1 + strlen($m[0]);
             $best_ux = $best_pos2 = $best_endpos = null;
+            $sorted = count($ulist) === 1 || count($uset) <= 1;
             while (count($uset) > 1 && self::word_at($s, $pos2, $isascii, $m)) {
-                if (count($ulists) > 1) {
+                if (!$sorted) {
                     usort($uset, function ($a, $b) {
                         return $a->priority <=> $b->priority;
                     });
-                    // One of the remaining matches has higher priority than the others.
-                    // Remember it in case the next word fails to match anything.
-                    if ($uset[0]->priority < $uset[1]->priority) {
-                        $best_ux = $uset[0];
-                        $best_pos2 = $pos2;
-                        $best_endpos = $endpos;
-                    } else {
-                        $best_ux = null;
-                    }
+                }
+
+                // One of the remaining matches has higher priority than the others.
+                // Remember it in case the next word fails to match anything.
+                if ($uset[0]->priority < $uset[1]->priority) {
+                    $best_ux = $uset[0];
+                    $best_pos2 = $pos2;
+                    $best_endpos = $endpos;
+                } else {
+                    $best_ux = null;
                 }
 
                 $w = $m[1];
