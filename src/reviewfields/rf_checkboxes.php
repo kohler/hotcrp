@@ -251,7 +251,7 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
         $reqval = $reqstr === null ? $fval : $this->parse($reqstr);
         $n = count($this->values);
         $this->print_web_edit_open($this->short_id, null, $rvalues);
-        echo '<div class="revev">';
+        echo '<div class="revev">', Ht::hidden("has_{$this->short_id}", 1);
         $step = $this->flip ? -1 : 1;
         for ($i = $this->flip ? $n - 1 : 0; $i >= 0 && $i < $n; $i += $step) {
             $this->print_choice($i + 1, $fval ?? 0, $reqval ?? 0);
