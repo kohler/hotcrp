@@ -11,8 +11,8 @@ class Shepherd_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
     }
-    function add_decoration($decor) {
-        return parent::add_user_sort_decoration($decor) || parent::add_decoration($decor);
+    function decoration_spec() {
+        return PaperColumn::user_sort_decoration_spec();
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_shepherd(null)
@@ -30,7 +30,7 @@ class Shepherd_PaperColumn extends PaperColumn {
         }
     }
     function prepare_sort(PaperList $pl, $sortindex) {
-        $this->ianno = Contact::parse_sortspec($pl->conf, $this->decorations);
+        $this->ianno = Contact::parse_sortspec($pl->conf, $this->decoration_list());
     }
     function reset(PaperList $pl) {
         if (!$this->was_reset && $pl->conf->setting("extrev_shepherd")) {

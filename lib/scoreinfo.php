@@ -36,7 +36,7 @@ class ScoreInfo {
     static private $score_sorts = [
         "counts", "average", "median", "variance", "maxmin", "my"
     ];
-    static private $score_sort_parser = "0 C,0 M,0 count,0 counts,1 A,1 average,1 avg,1 av,1 ave,2 E,2 median,2 med,3 V,3 variance,3 var,4 D,4 maxmin,4 max-min,5 Y,5 my,5 myscore,";
+    static private $score_sort_parser = "0 C,0 M,0 count,0 counts,1 A,1 average,1 avg,1 av,1 ave,1 mean,2 E,2 median,2 med,3 V,3 variance,3 var,4 D,4 maxmin,4 max-min,5 Y,5 my,5 myscore,";
 
     /** @param ?string $x
      * @return null|'count'|'average'|'median'|'variance'|'maxmin'|'my' */
@@ -54,6 +54,11 @@ class ScoreInfo {
     /** @return list<string> */
     static function score_sort_list() {
         return self::$score_sorts;
+    }
+
+    /** @return list<string> */
+    static function decoration_spec() {
+        return ["sort=counts|count|average|avg|av|ave|mean|median|med|variance|var|maxmin|max-min|my|myscore"];
     }
 
     /** @return array<string,string> */

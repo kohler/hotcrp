@@ -9,7 +9,7 @@ class ViewCommand {
     /** @var string
      * @readonly */
     public $keyword;
-    /** @var ?list<string>
+    /** @var ?ViewOptionlist
      * @readonly */
     public $decorations;
     /** @var ?SearchWord
@@ -33,22 +33,25 @@ class ViewCommand {
 
     /** @param int $flags
      * @param string $keyword
-     * @param ?list<string> $decorations
+     * @param ?ViewOptionList $decorations
      * @param ?SearchWord $sword */
     function __construct($flags, $keyword, $decorations = null, $sword = null) {
         assert(($flags & ($flags - 1) & self::FM_ACTION) === 0);
         $this->flags = $flags;
         $this->keyword = $keyword;
-        $this->decorations = $decorations;
+        if ($decorations && !$decorations->is_empty()) {
+            $this->decorations = $decorations;
+        }
         $this->sword = $sword;
     }
 
     /** @param string $s
      * @param int $flags
      * @param ?SearchWord $sword
-     * @return array{ViewCommand}|array{ViewCommand,ViewCommand} */
+     * @return list<ViewCommand> */
     static function parse($s, $flags, $sword = null) {
-        $keyword = $decorations = null;
+        $keyword = null;
+        $decorations = new ViewOptionList;
         $edit = $sort = false;
 
         $colon = strpos($s, ":");
@@ -93,7 +96,6 @@ class ViewCommand {
                    && ($lbrack = strrpos($d, "[")) !== false) {
             $keyword = substr($d, 0, $lbrack);
             $d = substr($d, $lbrack + 1, strlen($d) - $lbrack - 2);
-            $decorations = [];
         }
 
         $splitter = new SearchParser($d);
@@ -102,14 +104,14 @@ class ViewCommand {
             if ($keyword === null) {
                 $keyword = $w;
             } else {
-                $decorations[] = $w;
+                $decorations->add_parse($w);
             }
         }
 
         $keyword = $keyword ?? "";
-        if ($sort) {
+        if ($sort && $keyword !== "") {
             if ($keyword[0] === "-") {
-                $decorations[] = "reverse";
+                $decorations->add("sort", "reverse");
             }
             if ($keyword[0] === "-" || $keyword[0] === "+") {
                 $keyword = substr($keyword, 1);
@@ -118,13 +120,14 @@ class ViewCommand {
         if (str_starts_with($keyword, "\"") && str_ends_with($keyword, "\"")) {
             $keyword = substr($keyword, 1, -1);
         }
-        if ($edit) {
-            $decorations[] = "edit";
-        }
-
         if ($keyword === "") {
             return [];
         }
+
+        if ($edit) {
+            $decorations->add("edit", true);
+        }
+
         $svcs = [];
         if ($a !== 0 || !$sort) {
             $svcs[] = new ViewCommand($a | $flags, $keyword, $decorations, $sword);
@@ -176,12 +179,6 @@ class ViewCommand {
         return ($this->flags & self::F_SORT) !== 0;
     }
 
-    /** @param int $index
-     * @return ?string */
-    function decoration($index) {
-        return $this->decorations[$index] ?? null;
-    }
-
     /** @return string */
     function unparse() {
         $s = (["viewoptions:", "show:", "hide:", null, "sort:"])[$this->flags & self::FM_ACTION];
@@ -191,8 +188,8 @@ class ViewCommand {
         } else {
             $s .= $this->keyword;
         }
-        if (!empty($this->decorations)) {
-            $s .= "[" . join(",", $this->decorations) . "]";
+        if ($this->decorations) {
+            $s .= $this->decorations->unparse();
         }
         return $s;
     }

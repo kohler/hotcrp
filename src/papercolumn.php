@@ -1,6 +1,6 @@
 <?php
 // papercolumn.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
 class PaperColumn extends Column {
     const OVERRIDE_NONE = 0;
@@ -42,12 +42,9 @@ class PaperColumn extends Column {
     }
 
 
-    final function add_user_sort_decoration($decor) {
-        if (in_array($decor, ["name", "family_name", "last", "given_name", "first", "email", "affiliation"])) {
-            return $this->__add_decoration($decor);
-        } else {
-            return false;
-        }
+    /** @return list<string> */
+    static function user_sort_decoration_spec() {
+        return ["name", "family_name", "last/family_name", "given_name", "first/given_name", "email", "affiliation"];
     }
 
     /** @param int $visible */
@@ -83,8 +80,8 @@ class PaperColumn extends Column {
         if ($this->fold) {
             $j["foldnum"] = $this->fold;
         }
-        if (!empty($this->decorations)) {
-            $j["decorations"] = $this->decorations;
+        if ($this->decoration_set()) {
+            $j["decorations"] = $this->decoration_list();
         }
         return $j;
     }
@@ -126,11 +123,12 @@ class PaperColumn extends Column {
     }
     /** @return string */
     function sort_name() {
-        $decor = $this->decorations;
-        if (!empty($decor)) {
-            $decor = array_diff($decor, ["asc", "desc"]);
+        $a = [$this->name];
+        foreach ($this->decorations ?? [] as $n => $v) {
+            if ($n !== "sort")
+                $a[] = ViewOptionList::unparse_option($n, $v);
         }
-        return empty($decor) ? $this->name : $this->name . " " . join(" ", $decor);
+        return join(" ", $a);
     }
     /** @return string */
     final function full_sort_name() {
@@ -186,17 +184,17 @@ class Id_PaperColumn extends PaperColumn {
 }
 
 class Selector_PaperColumn extends PaperColumn {
+    /** @var bool */
     private $selectall = false;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
-    function add_decoration($decor) {
-        if ($decor === "selected") {
-            $this->selectall = true;
-            return $this->__add_decoration("selected");
-        } else {
-            return parent::add_decoration($decor);
-        }
+    function decoration_spec() {
+        return ["selected"];
+    }
+    function prepare(PaperList $pl, $visible) {
+        $this->selectall = $this->decoration_value("selected") ?? false;
+        return true;
     }
     function header(PaperList $pl, $is_text) {
         if ($is_text) {
@@ -234,18 +232,16 @@ class Title_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
-    function add_decoration($decor) {
-        if ($decor === "plain" || $decor === "bare") {
-            $this->want_decoration = $this->want_pdf = false;
-            return $this->__add_decoration("plain");
-        } else {
-            return parent::add_decoration($decor);
-        }
+    function decoration_spec() {
+        return ["plain", "bare/plain"];
     }
     function prepare(PaperList $pl, $visible) {
-        $this->want_decoration = $this->want_decoration
-            && $pl->user->can_view_tags(null)
-            && $pl->conf->tags()->has(TagInfo::TFM_DECORATION);
+        if ($this->decoration_value("plain")) {
+            $this->want_decoration = $this->want_pdf = false;
+        } else {
+            $this->want_decoration = $pl->user->can_view_tags(null)
+                && $pl->conf->tags()->has(TagInfo::TFM_DECORATION);
+        }
         if ($this->want_decoration) {
             $pl->qopts["tags"] = 1;
         }
@@ -436,20 +432,12 @@ class Authors_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
-    function add_decoration($decor) {
-        if ($decor === "full" || $decor === "short") {
-            $this->aufull = $decor === "full";
-            return $this->__add_decoration($this->aufull ? "full" : null, ["full"]);
-        } else if ($decor === "anon" || $decor === "noanon") {
-            $this->anonau = $decor === "anon";
-            return $this->__add_decoration($this->anonau ? "anon" : "noanon", ["anon", "noanon"]);
-        } else {
-            return parent::add_user_sort_decoration($decor) || parent::add_decoration($decor);
-        }
+    function decoration_spec() {
+        return array_merge(parent::user_sort_decoration_spec(), ["anon", "full", "short/!full"]);
     }
     function prepare(PaperList $pl, $visible) {
-        $this->aufull = $this->aufull ?? $pl->viewing("aufull");
-        $this->anonau = $this->anonau ?? $pl->viewing("anonau");
+        $this->aufull = $this->decoration_value("full") ?? $pl->viewing("aufull");
+        $this->anonau = $this->decoration_value("anon") ?? $pl->viewing("anonau");
         $this->highlight = $pl->search->has_field_highlighter("au");
         return $pl->user->can_view_some_authors();
     }
@@ -459,7 +447,7 @@ class Authors_PaperColumn extends PaperColumn {
         return $j;
     }
     function prepare_sort(PaperList $pl, $sortindex) {
-        $this->ianno = Contact::parse_sortspec($pl->conf, $this->decorations);
+        $this->ianno = Contact::parse_sortspec($pl->conf, $this->decoration_list());
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $au1 = $pl->user->allow_view_authors($a) ? $a->author_list() : [];
@@ -653,15 +641,11 @@ class ReviewerType_PaperColumn extends PaperColumn {
             $this->contact = $conf->pc_member_by_email($cj->user);
         }
     }
-    function add_decoration($decor) {
-        if ($decor === "simple") {
-            $this->simple = true;
-            return $this->__add_decoration($decor);
-        } else {
-            return parent::add_decoration($decor);
-        }
+    function decoration_spec() {
+        return ["simple"];
     }
     function prepare(PaperList $pl, $visible) {
+        $this->simple = $this->decoration_value("simple") ?? false;
         $this->contact = $this->contact ?? $pl->reviewer_user();
         $this->not_me = $this->contact->contactXid !== $pl->user->contactXid;
         return true;
@@ -789,13 +773,8 @@ class TagList_PaperColumn extends PaperColumn {
         $this->override = PaperColumn::OVERRIDE_FORCE;
         $this->editable = $editable;
     }
-    function add_decoration($decor) {
-        if ($decor === "edit") {
-            $this->editable = true;
-            return $this->__add_decoration($decor);
-        } else {
-            return parent::add_decoration($decor);
-        }
+    function decoration_spec() {
+        return ["edit"];
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_tags(null)) {
@@ -804,6 +783,7 @@ class TagList_PaperColumn extends PaperColumn {
         if ($visible) {
             $pl->qopts["tags"] = 1;
         }
+        $this->editable = $this->decoration_value("edit") ?? false;
         if ($visible && $this->editable) {
             $pl->has_editable_tags = true;
         }
@@ -850,17 +830,15 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
-    function add_decoration($decor) {
-        if (($d = ScoreInfo::parse_score_sort($decor))) {
-            $this->score_sort = $d;
-            return $this->__add_decoration($d, ScoreInfo::score_sort_list());
-        } else {
-            return parent::add_decoration($decor);
-        }
+    function decoration_spec() {
+        return ["scoresort=counts|count|average|avg|ave|av|mean|median|variance|var|maxmin|max-min|my"];
     }
     function prepare(PaperList $pl, $visible) {
         $ruser = $pl->reviewer_user();
         $this->cid = $ruser->contactId;
+        if (($v = $this->decoration_value("scoresort")) !== null) {
+            $this->score_sort = ScoreInfo::parse_score_sort($v);
+        }
         if ($visible
             && $this->cid !== $pl->user->contactId
             && (!$pl->user->privChair || $pl->conf->has_any_manager())) {

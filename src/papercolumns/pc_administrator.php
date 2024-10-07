@@ -8,8 +8,8 @@ class Administrator_PaperColumn extends PaperColumn {
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
     }
-    function add_decoration($decor) {
-        return parent::add_user_sort_decoration($decor) || parent::add_decoration($decor);
+    function decoration_spec() {
+        return PaperColumn::user_sort_decoration_spec();
     }
     function prepare(PaperList $pl, $visible) {
         if (!$pl->user->can_view_manager(null)) {
@@ -26,7 +26,7 @@ class Administrator_PaperColumn extends PaperColumn {
         }
     }
     function prepare_sort(PaperList $pl, $sortindex) {
-        $this->ianno = Contact::parse_sortspec($pl->conf, $this->decorations);
+        $this->ianno = Contact::parse_sortspec($pl->conf, $this->decoration_list());
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         return $pl->user_compare(self::cid($pl, $a), self::cid($pl, $b), $this->ianno);

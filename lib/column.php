@@ -38,7 +38,7 @@ class Column {
     public $is_visible = false;
     /** @var bool */
     public $has_content = false;
-    /** @var ?list<string> */
+    /** @var ?ViewOptionList */
     protected $decorations;
 
     /** @param object|array $arg */
@@ -73,55 +73,76 @@ class Column {
         $this->__source_order = $arg["__source_order"] ?? null;
     }
 
-    /** @return list<string> */
-    function decorations() {
-        return $this->decorations ?? [];
+    /** @return ?ViewOptionList */
+    function decoration_set() {
+        return $this->decorations;
     }
 
-    /** @param string $decor
-     * @return int|false */
-    function decoration_index($decor) {
-        $l = strlen($decor);
-        foreach ($this->decorations ?? [] as $i => $s) {
-            if (str_starts_with($s, $decor)
-                && (strlen($s) === $l || $s[$l] === "=")) {
-                return $i;
+    /** @return list<string> */
+    function decoration_list() {
+        $decor = [];
+        foreach ($this->decorations ?? [] as $n => $v) {
+            $decor[] = ViewOptionList::unparse_option($n, $v);
+        }
+        return $decor;
+    }
+
+    /** @param string $n
+     * @return ?string */
+    function decoration_value($n) {
+        return $this->decorations ? $this->decorations->value($n) : null;
+    }
+
+    /** @return list<string> */
+    function decoration_spec() {
+        return [];
+    }
+
+    static private $base_decoration_spec = [
+        "display" => "=row|col|column",
+        "row" => "/display",
+        "col" => "/display",
+        "column" => "/col",
+        "sort" => "=up|asc|ascending|down|desc|descending|forward|reverse",
+        "up" => "/sort",
+        "asc" => "/sort",
+        "ascending" => "/sort",
+        "down" => "/sort",
+        "desc" => "/sort",
+        "descending" => "/sort",
+        "forward" => "/sort",
+        "reverse" => "/sort"
+    ];
+
+    /** @param ?ViewOptionlist $volist
+     * @return $this */
+    function add_decorations($volist) {
+        if (!$volist || $volist->is_empty()) {
+            return $this;
+        }
+
+        // get spec
+        $dsv = self::$base_decoration_spec;
+        ViewOptionlist::build_spec($dsv, $this->decoration_spec());
+
+        // add decorations
+        $this->decorations = $this->decorations ?? new ViewOptionList;
+        foreach ($volist as $n => $v) {
+            $this->decorations->spec_add($n, $v, $dsv);
+        }
+
+        // analyze decorations
+        if (($v = $this->decoration_value("display")) !== null) {
+            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
+            $this->as_row = $v === "row";
+            if ($this->as_row === $this->prefer_row) {
+                $this->decorations->remove("display");
             }
         }
-        return false;
-    }
-
-    /** @return bool */
-    function has_decoration($decor) {
-        return $this->decoration_index($decor) !== false;
-    }
-
-    /** @return ?string */
-    function decoration_value($decor) {
-        if (($i = $this->decoration_index($decor)) !== false) {
-            /** @phan-suppress-next-line PhanTypeArraySuspiciousNullable */
-            $s = $this->decorations[$i];
-            $l = strlen($decor);
-            return strlen($s) === $l ? "" : substr($s, $l + 1);
-        } else {
-            return null;
-        }
-    }
-
-    /** @param string $decor
-     * @return bool */
-    function add_decoration($decor) {
-        if ($decor === "row" || $decor === "column") {
-            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-            $this->as_row = $decor === "row";
-            $dd = $this->prefer_row !== $this->as_row ? $decor : null;
-            return $this->__add_decoration($dd, ["column", "row"]);
-        }
-
-        $sp = array_search($decor, [
-            "up", "asc", "ascending", "down", "desc", "descending", "forward", "reverse"
-        ]);
-        if ($sp !== false) {
+        if (($v = $this->decoration_value("sort")) !== null) {
+            $sp = array_search($v, [
+                "up", "asc", "ascending", "down", "desc", "descending", "forward", "reverse"
+            ]);
             if ($sp < 3) {
                 $this->sort_descending = false;
             } else if ($sp < 6) {
@@ -131,22 +152,13 @@ class Column {
             } else {
                 $this->sort_descending = !$this->default_sort_descending();
             }
-            return $this->__add_decoration($this->sort_decoration(), ["asc", "desc"]);
+            if (($ss = $this->sort_decoration())) {
+                $this->decorations->add("sort", $ss);
+            } else {
+                $this->decorations->remove("sort");
+            }
         }
 
-        if ($decor === "by") {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /** @param ?list<string> $decors
-     * @return $this */
-    function add_decorations($decors) {
-        foreach ($decors ?? [] as $decor) {
-            $this->add_decoration($decor);
-        }
         return $this;
     }
 
@@ -161,28 +173,5 @@ class Column {
             return "";
         }
         return $this->sort_descending ? "desc" : "asc";
-    }
-
-    /** @param ?string $add
-     * @param ?list<?string> $remove
-     * @return true */
-    protected function __add_decoration($add, $remove = []) {
-        foreach ($remove as $s) {
-            if ($s !== null && ($i = $this->decoration_index($s)) !== false) {
-                array_splice($this->decorations, $i, 1);
-            }
-        }
-        if ($add !== null && $add !== "") {
-            $addx = $add;
-            if (($eq = strpos($add, "=")) !== false) {
-                $addx = substr($add, 0, $eq);
-            }
-            if (($i = $this->decoration_index($addx)) !== false) {
-                $this->decorations[$i] = $add;
-            } else {
-                $this->decorations[] = $add;
-            }
-        }
-        return true;
     }
 }
