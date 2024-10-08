@@ -167,6 +167,11 @@ class PaperTable {
         $prow = $paperTable ? $paperTable->prow : null;
         $format = 0;
 
+        $paperConflicted = false;
+        if (!$paperTable->user->privChair && $prow->has_conflict($paperTable->user) && !$prow->has_author($paperTable->user)) {
+            $paperConflicted = true;
+        }
+
         $t = '<header id="h-page" class="header-page-submission"><h1 class="paptitle';
 
         if (!$paperTable) {
@@ -180,7 +185,11 @@ class PaperTable {
             $sr = $prow->submission_round();
             $title = $conf->_c5("paper_edit", "<0>New {sclass} {submission}", new FmtArg("sclass", $sr->tag, 0));
             $t .= '">' . $title;
-        } else {
+        } else if ($conf->settings["pc_hideconflicted"] == 1 && $paperConflicted) {
+            $t .= '">Access denied to conflicted paper';
+            $title = "[conflicted]";
+        }
+        else {
             $paperTable->initialize_list();
             $title = "#" . $prow->paperId;
             $viewable_tags = $prow->viewable_tags($paperTable->user);

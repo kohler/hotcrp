@@ -438,7 +438,9 @@ class Paper_Page {
 
         // produce paper table
         $this->print_header(false);
-        $pt->print_paper_info();
+        if($pt->user->privChair || !($pt->conf->settings["pc_hideconflicted"] == 1 && $pt->prow->has_conflict($pt->user) && !$pt->prow->has_author($pt->user))) {
+            $pt->print_paper_info();
+        }
 
         if ($pt->mode === "edit") {
             $pt->paptabEndWithoutReviews();

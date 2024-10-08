@@ -87,6 +87,11 @@ class Doc_Page {
             self::error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", MessageItem::error("<5>" . $whyNot->unparse_html()), $qreq);
         }
         $prow = $dr->prow;
+
+        if(!$user->privChair && $prow->conf->settings["pc_hideconflicted"] == 1 && $prow->has_conflict($user) && !$row->has_author($pl->user)) {
+            self::error("403 Forbidden", MessageItem::error("<5>Access denied to conflicting submission."), $qreq);
+        }
+
         $want_docid = $request_docid = (int) $dr->docid;
 
         // history
