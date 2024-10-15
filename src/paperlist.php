@@ -519,7 +519,9 @@ class PaperList {
 
     /** @readonly */
     static private $view_synonyms = [
+        "anonau" => "authors",
         "au" => "authors",
+        "aufull" => "authors",
         "author" => "authors",
         "kanban" => "facets",
         "rownumbers" => "rownum",
@@ -571,51 +573,46 @@ class PaperList {
 
     /** @param ViewCommand $svc */
     private function _add_view($svc) {
-        // ignore `show:all`, `force` in session
+        assert($this->_sortcol_fixed === 0);
+        if (($kk = self::$view_synonyms[$svc->keyword] ?? null) !== null) {
+            if ($svc->keyword === "anonau" || $svc->keyword === "aufull") {
+                $vol = $svc->view_options ? clone $svc->view_options : new ViewOptionList;
+                if ($svc->is_hide() || $svc->is_show()) {
+                    $vol->add($svc->keyword === "aufull" ? "full" : "anon", $svc->is_show());
+                }
+                $f = $svc->is_origin(ViewCommand::ORIGIN_SEARCH) ? $svc->flags : $svc->flags & ~ViewCommand::FM_ACTION;
+                $svc = new ViewCommand($f, "authors", $vol, $svc->sword);
+            } else {
+                $svc = new ViewCommand($svc->flags, $kk, $svc->view_options, $svc->sword);
+            }
+        }
+        // XXX view_order
+
+        // ignore `show:all`, `viewoptions:all`, session `force`
         if (($svc->keyword === "all" && !$svc->is_hide())
             || ($svc->keyword === "force" && $svc->is_origin(ViewCommand::ORIGIN_SESSION))) {
             return;
         }
 
-        if (($kk = self::$view_synonyms[$svc->keyword] ?? null) !== null) {
-            $svc = new ViewCommand($svc->flags, $kk, $svc->view_options, $svc->sword);
-        }
-        // XXX view_order
-
-        if (!isset($this->_viewa[$svc->keyword])) {
-            $this->_viewa[$svc->keyword] = clone $svc;
+        $xvc = &$this->_viewa[$svc->keyword];
+        if (!isset($xvc) && $this->_view_all) {
+            $xvc = new ViewCommand(0, $svc->keyword);
+            foreach ($this->_view_all->components() as $vc) {
+                $xvc = $xvc->merge($vc);
+            }
+            $xvc = $xvc->merge($svc);
+        } else if (!isset($xvc)) {
+            $xvc = $svc;
         } else {
-            $this->_viewa[$svc->keyword]->merge($svc);
+            $xvc = $xvc->merge($svc);
         }
 
-        if ($svc->keyword === "all") {
-            $xvc = $this->_viewa[$svc->keyword];
+        if ($xvc->keyword === "all") {
             foreach ($this->_viewa as &$vc) {
                 if (!self::_view_special($vc))
-                    $vc->merge($xvc);
+                    $vc = $vc->merge($svc);
             }
-            return;
-        }
-
-        $svc = $svc->merge($this->_viewa[$svc->keyword] ?? null);
-        if ($this->_view_all) {
-            $svc = $svc->merge($this->_view_all);
-        }
-        $this->_viewa[$svc->keyword] = $svc;
-
-        if ($svc->keyword === "force") {
-            $this->_view_force = $svc->is_show() ? Contact::OVERRIDE_CONFLICT : 0;
-        } else if ($svc->keyword === "facets") {
-            $this->_view_facets = $svc->is_show();
-        } else if ($svc->keyword === "linkto") {
-            $schema = (new ViewOptionSchema)->define("page=paper paperedit assign finishreview");
-            if (($p = (new ViewOptionList)->append_validate($svc->view_options, $schema)->get("page"))) {
-                $this->_view_linkto = $p;
-            }
-        } else if (($svc->keyword === "aufull" || $svc->keyword === "anonau")
-                   && $svc->flags >= ViewCommand::ORIGIN_SEARCH
-                   && $svc->is_show()) {
-            $this->_add_view(new ViewCommand($svc->flags, "authors"));
+            $this->_view_all = $xvc;
         }
     }
 
@@ -649,15 +646,17 @@ class PaperList {
     /** @param ViewCommand $svc
      * @param ?list<int> $sort_subset */
     private function _add_sorter($svc, $sort_subset) {
+        assert($this->_sortcol_fixed < 2);
         $origin = $svc->flags >> ViewCommand::ORIGIN_SHIFT;
 
         // `sort:score` is a special case
         if ($svc->keyword === "score") {
+            $schema = (new ViewOptionSchema)->define("order=" . ScoreInfo::$score_sort_enum);
+            $this->_score_sort = $this->_score_sort ?? new ViewCommand(0, "score");
             $this->_score_sort = $svc->merge($this->_score_sort);
             return;
         }
 
-        assert($this->_sortcol_fixed < 2);
         // Do not use ensure_columns_by_name(), because of sort options
         // might differ.
         $fs = $this->conf->paper_columns($svc->keyword, $this->xtp);
@@ -909,29 +908,43 @@ class PaperList {
     /** @return non-empty-list<PaperColumn> */
     function sorters() {
         assert($this->_sortcol_fixed !== 1);
-        if ($this->_sortcol_fixed === 0) {
-            $this->_sortcol_fixed = 1;
-            // apply sorters from search terms
-            if (($thenqe = $this->search->then_term())) {
-                foreach ($thenqe->subset_terms() as $chrange) {
-                    $this->_add_search_sorters($chrange[0], $chrange[1]);
-                }
-            }
-            $this->_add_search_sorters($this->search->main_term(), null);
-            // final default sorter
-            if (empty($this->_sortcol)) {
-                $idcol = ($this->ensure_columns_by_name("id"))[0];
-                $this->_append_sortcol($idcol, self::VIEWORIGIN_REPORT);
-            }
-            // default editable tag
-            $this->_sort_etag = "";
-            if ($this->_sortcol[0] instanceof Tag_PaperColumn
-                && !$this->_sortcol[0]->sort_descending) {
-                $this->_sort_etag = $this->_sortcol[0]->etag();
-            }
-            // done
-            $this->_sortcol_fixed = 2;
+        if ($this->_sortcol_fixed !== 0) {
+            return $this->_sortcol;
         }
+        $this->_sortcol_fixed = 1;
+        // parse views
+        if (($svc = $this->_viewa["force"] ?? null)) {
+            $this->_view_force = $svc->is_show() ? Contact::OVERRIDE_CONFLICT : 0;
+        }
+        if (($svc = $this->_viewa["facets"] ?? null)) {
+            $this->_view_facets = $svc->is_show();
+        }
+        if (($svc = $this->_viewa["linkto"] ?? null)) {
+            $schema = (new ViewOptionSchema)->define("page=paper paperedit assign finishreview");
+            if (($p = (new ViewOptionList)->append_validate($svc->view_options, $schema)->get("page"))) {
+                $this->_view_linkto = $p;
+            }
+        }
+        // apply sorters from search terms
+        if (($thenqe = $this->search->then_term())) {
+            foreach ($thenqe->subset_terms() as $chrange) {
+                $this->_add_search_sorters($chrange[0], $chrange[1]);
+            }
+        }
+        $this->_add_search_sorters($this->search->main_term(), null);
+        // final default sorter
+        if (empty($this->_sortcol)) {
+            $idcol = ($this->ensure_columns_by_name("id"))[0];
+            $this->_append_sortcol($idcol, self::VIEWORIGIN_REPORT);
+        }
+        // default editable tag
+        $this->_sort_etag = "";
+        if ($this->_sortcol[0] instanceof Tag_PaperColumn
+            && !$this->_sortcol[0]->sort_descending) {
+            $this->_sort_etag = $this->_sortcol[0]->etag();
+        }
+        // done
+        $this->_sortcol_fixed = 2;
         return $this->_sortcol;
     }
 
@@ -953,7 +966,7 @@ class PaperList {
     function score_sort() {
         $ss = null;
         if ($this->_score_sort) {
-            $ss = ScoreInfo::parse_score_sort($this->_score_sort->decoration(0));
+            $ss = ScoreInfo::parse_score_sort($this->_score_sort->view_option("order"));
         }
         return $ss ?? self::default_score_sort($this->conf);
     }

@@ -24,6 +24,7 @@ class ViewCommand {
     const F_HIDE = 2;
     const F_SORT = 4;
     const FM_ACTION = 7;
+    const F_HEAD = 8;
 
     const ORIGIN_REPORT = 0x000;
     const ORIGIN_DEFAULT_DISPLAY = 0x100;
@@ -151,13 +152,18 @@ class ViewCommand {
         return $svcs;
     }
 
-    /** @param ViewCommand $svc */
+    /** @param ViewCommand $svc
+     * @return ViewCommand */
     function merge($svc) {
         assert($svc->next === null);
-        if (!$this->next) {
-            $this->next = clone $this;
+        $svc = clone $svc;
+        if ($this->next === null) {
+            $xvc = clone $this;
+            $xvc->next = clone $this;
+        } else {
+            $xvc = $this;
         }
-        $prev = $this;
+        $prev = $xvc;
         while ($prev->next
                && ($prev->flags & self::FM_ORIGIN) <= ($svc->flags & self::FM_ORIGIN)) {
             $prev = $prev->next;
@@ -167,21 +173,34 @@ class ViewCommand {
         if ($svc->next === null) {
             $trav = $svc;
         } else {
-            $this->flags = 0;
-            $this->view_options = null;
-            $trav = $this->next;
+            $xvc->flags = 0;
+            $xvc->view_options = null;
+            $trav = $xvc->next;
         }
         while ($trav !== null) {
             if (($trav->flags & self::FM_ACTION) !== 0) {
-                $this->flags &= ~self::FM_ACTION;
+                $xvc->flags &= ~self::FM_ACTION;
             }
-            $this->flags = ($this->flags & ~self::FM_ORIGIN) | $trav->flags;
+            $xvc->flags = ($xvc->flags & ~self::FM_ORIGIN) | $trav->flags;
             if ($trav->view_options !== null) {
-                $this->view_options = $this->view_options ?? new ViewOptionList;
-                $this->view_options->append($trav->view_options);
+                $xvc->view_options = $xvc->view_options ?? new ViewOptionList;
+                $xvc->view_options->append($trav->view_options);
             }
             $trav = $trav->next;
         }
+        return $xvc;
+    }
+
+    /** @return list<ViewCommand> */
+    function components() {
+        if ($this->next === null) {
+            return [$this];
+        }
+        $a = [];
+        for ($trav = $this->next; $trav !== null; $trav = $trav->next) {
+            $a[] = $trav;
+        }
+        return $a;
     }
 
     /** @param string $str
