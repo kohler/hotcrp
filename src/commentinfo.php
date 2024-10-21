@@ -220,34 +220,33 @@ class CommentInfo {
     /** @param PaperInfo $prow
      * @return string */
     static function script($prow) {
-        if (Ht::mark_stash("papercomment")) {
-            $t = [];
-            $crow = new CommentInfo($prow);
-            $crow->commentType = self::CT_RESPONSE;
-            foreach ($prow->conf->response_rounds() as $rrd) {
-                $j = ["wl" => $rrd->wordlimit];
-                if ($rrd->hard_wordlimit >= $rrd->wordlimit) {
-                    $j["hwl"] = $rrd->hard_wordlimit;
-                }
-                $crow->commentRound = $rrd->id;
-                if (Contact::$main_user->can_edit_response($prow, $crow)) {
-                    if (($m = $rrd->instructions($prow->conf)) !== false) {
-                        $j["instrux"] = $m;
-                    }
-                    if ($rrd->done) {
-                        $j["done"] = $rrd->done;
-                    }
-                }
-                $t[] = "hotcrp.set_response_round(" . json_encode_browser($rrd->name) . "," . json_encode_browser($j) . ")";
-            }
-            Icons::stash_defs("tag", "attachment", "trash", "thread");
-            Icons::stash_licon("ui_tag");  // XXX backward compat
-            Icons::stash_licon("ui_attachment");   // XXX backward compat
-            Icons::stash_licon("ui_trash");   // XXX backward compat
-            return Ht::unstash_script(join(";", $t));
-        } else {
+        if (!Ht::mark_stash("papercomment")) {
             return "";
         }
+        $t = [];
+        $crow = new CommentInfo($prow);
+        $crow->commentType = self::CT_RESPONSE;
+        foreach ($prow->conf->response_rounds() as $rrd) {
+            $j = ["wl" => $rrd->wordlimit];
+            if ($rrd->hard_wordlimit >= $rrd->wordlimit) {
+                $j["hwl"] = $rrd->hard_wordlimit;
+            }
+            $crow->commentRound = $rrd->id;
+            if (Contact::$main_user->can_edit_response($prow, $crow)) {
+                if (($m = $rrd->instructions($prow->conf)) !== false) {
+                    $j["instrux"] = $m;
+                }
+                if ($rrd->done) {
+                    $j["done"] = $rrd->done;
+                }
+            }
+            $t[] = "hotcrp.set_response_round(" . json_encode_browser($rrd->name) . "," . json_encode_browser($j) . ")";
+        }
+        Icons::stash_defs("tag", "attachment", "trash", "thread");
+        Icons::stash_licon("ui_tag");  // XXX backward compat
+        Icons::stash_licon("ui_attachment");   // XXX backward compat
+        Icons::stash_licon("ui_trash");   // XXX backward compat
+        return Ht::unstash_script(join(";", $t));
     }
 
     /** @param PaperInfo $prow */
