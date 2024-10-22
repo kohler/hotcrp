@@ -221,15 +221,11 @@ class PaperList {
     /** @var int */
     private $_view_force = 0;
     /** @var int */
-    private $_view_hide_all = 0;
-    /** @var array<string,int> */
-    private $_viewf = [];
-    /** @var array<string,ViewOptionList> */
-    private $_view_options = [];
-    /** @var array<string,int> */
-    private $_view_order = [];
-    /** @var int */
-    private $_view_order_next = 1;
+    private $_view_order = 0;
+    /** @var array<string,ViewCommand> */
+    private $_viewa = [];
+    /** @var array<string,list<ViewCommand>> */
+    private $_viewax = [];
 
     const VIEWORIGIN_NONE = -1;
     const VIEWORIGIN_REPORT = 0;
@@ -348,7 +344,7 @@ class PaperList {
 
         if (in_array($qreq->linkto, ["paper", "assign", "paperedit", "finishreview"])) {
             $vol = (new ViewOptionList)->add("page", $qreq->linkto);
-            $this->set_view("linkto", true, self::VIEWORIGIN_REQUEST, $vol);
+            $this->_add_view(new ViewCommand(ViewCommand::ORIGIN_REQUEST, "linkto", $vol));
         }
 
         $this->tagger = new Tagger($this->user);
@@ -382,19 +378,17 @@ class PaperList {
             $this->_highlight_map = $this->search->highlights_by_paper_id();
         }
         foreach ($this->search->view_commands() as $svc) {
-            if (!$svc->is_sort()) {
-                $this->set_view($svc->keyword, $svc->is_show(), self::VIEWORIGIN_SEARCH, $svc->view_options);
-            }
+            if (!$svc->is_sort())
+                $this->_add_view($svc);
         }
 
-        if ($qreq->forceShow !== null) {
-            $this->set_view("force", !!$qreq->forceShow, self::VIEWORIGIN_REQUEST);
+        if (($x = friendly_boolean($qreq->forceShow)) !== null) {
+            $fl = $x ? ViewCommnad::F_SHOW : ViewCommand::F_HIDE;
+            $this->_add_view(new ViewCommand($fl | ViewCommand::ORIGIN_REQUEST, "force"));
         }
-        if ($qreq->selectall) {
-            $vd = $this->_view_options["sel"] = $this->_view_options["sel"] ?? new ViewOptionList;
-            if (!$vd->has("selected")) {
-                $vd->add("selected", true);
-            }
+        if (($x = friendly_boolean($qreq->selectall)) !== null) {
+            $vol = (new ViewOptionList)->add("selected", $x);
+            $this->_add_view(new ViewCommand(ViewCommand::ORIGIN_REQUEST, "sel", $vol));
         }
 
         $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
@@ -523,14 +517,13 @@ class PaperList {
     /** @param PaperColumn $col
      * @param ?string $default_name */
     function add_column(PaperColumn $col, $default_name = null) {
-        $decor = $this->_view_options[$col->name] ?? null;
-        $col->view_order = $this->_view_order[$col->name] ?? null;
-        if ($default_name) {
-            $decor = $decor ?? $this->_view_options[$default_name] ?? null;
-            $col->view_order = $col->view_order ?? $this->_view_order[$default_name] ?? null;
+        if ($default_name && ($vc = $this->_viewa[$default_name] ?? null)) {
+            $vc->view_options && $col->add_view_options($vc->view_options);
+            $vc->order && ($col->view_order = $vc->order);
         }
-        if ($decor) {
-            $col->add_view_options($decor);
+        if (($vc = $this->_viewa[$col->name] ?? null)) {
+            $vc->view_options && $col->add_view_options($vc->view_options);
+            $vc->order && ($col->view_order = $vc->order);
         }
         $this->_columns_by_name[$col->name][] = $col;
     }
@@ -551,19 +544,27 @@ class PaperList {
         "all" => -4, "linkto" => -4,
     ];
 
+    /** @param string $vkw
+     * @return bool */
+    private static function _view_keyword_special($vkw) {
+        return in_array($vkw, ["all", "sel", "statistics", "force", "facets", "linkto", "score"]);
+    }
+
 
     /** @param string $fname
      * @return bool */
     function viewing($fname) {
         $fname = self::$view_synonym[$fname] ?? $fname;
-        return ($this->_viewf[$fname] ?? 0) >= self::VIEW_SHOW;
+        $vc = $this->_viewa[$fname] ?? null;
+        return $vc && $vc->is_show();
     }
 
     /** @param string $k
      * @return 0|1|2|3|4|5 */
     function view_origin($k) {
         $k = self::$view_synonym[$k] ?? $k;
-        return ($this->_viewf[$k] ?? 0) & self::VIEW_ORIGINMASK;
+        $vc = $this->_viewa[$k] ?? null;
+        return $vc ? $vc->origin() : 0;
     }
 
     /** @param string $k
@@ -581,36 +582,78 @@ class PaperList {
         return $this;
     }
 
-    /** @param int $v
-     * @param 0|1|2|3|4|5 $origin
-     * @return bool */
-    static private function view_showing_at($v, $origin) {
-        assert($origin >= self::VIEWORIGIN_NONE && $origin <= self::VIEWORIGIN_MAX);
-        if ($origin < 0) {
-            return false;
-        } else if ($origin >= self::VIEWORIGIN_MAX) {
-            return ($v & self::VIEW_SHOW) !== 0;
-        } else {
-            $originmask = 1 << (self::VIEW_ORIGINSHIFT + 2 * $origin);
-            while ($origin >= 0 && ($v & $originmask) === 0) {
-                --$origin;
-                $originmask >>= 2;
+    /** @param string $vkw
+     * @param ViewCommand $vc */
+    private function _add_view_at($vkw, $vc) {
+        // XXX synonym
+        $va = &$this->_viewa[$vkw];
+        if ($va === null) {
+            if (!isset($this->_viewax["all"])) {
+                $va = $vc;
+                return;
             }
-            return $origin >= 0 && ($v & ($originmask << 1)) !== 0;
+            $this->_viewax[$vkw] = $this->_viewax["all"];
+        }
+        $vx = &$this->_viewax[$vkw];
+        if ($vx === null) {
+            $vx = [$va];
+        }
+        for ($i = 0; $i !== count($vx) && $vx[$i]->origin() <= $vc->origin(); ++$i) {
+        }
+        array_splice($vx, $i, 0, [$vc]);
+        $va = ViewCommand::merge($vkw, $vx);
+    }
+
+    /** @param ViewCommand $vc */
+    private function _add_view_all($vc) {
+        if (!$vc->is_hide()) {
+            return;
+        }
+        $vx = &$this->_viewax["all"];
+        $vx = $vx ?? [];
+        for ($i = 0; $i !== count($vx) && $vx[$i]->origin() <= $vc->origin(); ++$i) {
+        }
+        array_splice($vx, $i, 0, [$vc]);
+
+        foreach ($this->_viewa as $vkw => &$va) {
+            if (!self::_view_keyword_special($vkw))
+                $this->_add_view_at($vkw, $vc);
         }
     }
 
-    /** @param 0|1|2|3|4|5 $origin */
-    private function _set_view_hide_all($origin) {
-        $views = array_keys($this->_viewf);
-        foreach ($views as $k) {
-            if ($k !== "sel" && $k !== "statistics") {
-                $this->set_view($k, false, $origin, null);
-            }
+    /** @param ViewCommand $vc */
+    private function _add_view($vc) {
+        ++$this->_view_order;
+        $vc = $vc->with_order($this->_view_order);
+        if ($vc->keyword === "all") {
+            $this->_add_view_all($vc);
+            return;
         }
-        $this->_view_hide_all = $origin;
-        $this->_view_order = [];
-        $this->_view_order_next = 1;
+        $vkw = $vc->keyword;
+        $vkw = self::$view_synonym[$vkw] ?? $vkw;
+        if ($vkw === "force" && $vc->origin() === self::VIEWORIGIN_SESSION) {
+            return;
+        }
+        $this->_add_view_at($vkw, $vc);
+        $va = &$this->_viewa[$vkw];
+        if ($vkw === "force") {
+            $this->_view_force = $va->is_show() ? Contact::OVERRIDE_CONFLICT : 0;
+        } else if ($vkw === "facets") {
+            $this->_view_facets = $va->is_show();
+        } else if ($vkw === "linkto") {
+            $schema = (new ViewOptionSchema)->define("page=paper paperedit assign finishreview");
+            $vol = (new ViewOptionList)->append_validate($va->view_options, $schema);
+            $this->_view_linkto = $vol->get("page") ?? $this->_view_linkto;
+        } else if (($vkw === "aufull" || $vkw === "anonau")
+                   && $va->origin() >= self::VIEWORIGIN_SEARCH
+                   && $va->is_show()
+                   && $this->view_origin("authors") < $va->origin()) {
+            $this->set_view("authors", true, $va->origin(), null);
+        } else if ($vkw === "score") {
+            $schema = (new ViewOptionSchema)->define("order=" . ScoreInfo::$score_sort_enum);
+            $vol = (new ViewOptionList)->append_validate($va->view_options, $schema);
+            $this->_score_sort = $vol->get("order");
+        }
     }
 
     /** @param string $k
@@ -621,66 +664,12 @@ class PaperList {
         $origin = $origin ?? self::VIEWORIGIN_MAX;
         assert($origin >= self::VIEWORIGIN_REPORT && $origin <= self::VIEWORIGIN_MAX);
         assert(is_bool($v));
-
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
             $k = substr($k, 1, -1);
         }
         $k = self::$view_synonym[$k] ?? $k;
-
-        // process `hide:all`
-        if ($k === "all") {
-            if ($v === false && $origin >= $this->_view_hide_all) {
-                $this->_set_view_hide_all($origin);
-            }
-            return;
-        }
-
-        // ignore session values of `force`
-        if ($k === "force" && $origin === self::VIEWORIGIN_SESSION) {
-            return;
-        }
-
-        // track view order
-        if ($origin === $this->_view_hide_all) {
-            if (!$v) {
-                unset($this->_view_order[$k]);
-            } else if (!isset($this->_view_order[$k])) {
-                $this->_view_order[$k] = $this->_view_order_next;
-                ++$this->_view_order_next;
-            }
-        }
-
-        $flags = &$this->_viewf[$k];
-        $flags = $flags ?? 0;
-        $originbit = self::VIEW_ORIGINSHIFT + 2 * $origin;
-        $flags = ($flags & ~(2 << $originbit)) | (($v ? 3 : 1) << $originbit);
-        if (($flags & self::VIEW_ORIGINMASK) > $origin
-            || ($v && $this->_view_hide_all > $origin)) {
-            return;
-        }
-        $flags = ($flags & ~(self::VIEW_ORIGINMASK | self::VIEW_SHOW))
-            | $origin
-            | ($v ? self::VIEW_SHOW : 0);
-        if ($view_options && !$view_options->is_empty()) {
-            $this->_view_options[$k] = $view_options;
-        } else {
-            unset($this->_view_options[$k]);
-        }
-
-        if ($k === "force") {
-            $this->_view_force = $v ? Contact::OVERRIDE_CONFLICT : 0;
-        } else if ($k === "facets") {
-            $this->_view_facets = $v;
-        } else if ($k === "linkto") {
-            $schema = (new ViewOptionSchema)->define("page=paper paperedit assign finishreview");
-            $vol = (new ViewOptionList)->append_validate($view_options ?? [], $schema);
-            $this->_view_linkto = $vol->get("page") ?? $this->_view_linkto;
-        } else if (($k === "aufull" || $k === "anonau")
-                   && $origin >= self::VIEWORIGIN_SEARCH
-                   && $v
-                   && $this->view_origin("authors") < $origin) {
-            $this->set_view("authors", true, $origin, null);
-        }
+        $vc = new ViewCommand(($v ? ViewCommand::F_SHOW : ViewCommand::F_HIDE) | ($origin << ViewCommand::ORIGIN_SHIFT), $k, $view_options);
+        $this->_add_view($vc);
     }
 
 
@@ -702,16 +691,7 @@ class PaperList {
 
         // `sort:score` is a special case
         if ($svc->keyword === "score") {
-            $flags = &$this->_viewf[$svc->keyword];
-            $flags = $flags ?? 0;
-            if (($flags & self::VIEW_ORIGINMASK) <= $origin) {
-                $schema = (new ViewOptionSchema)->define("order=" . ScoreInfo::$score_sort_enum);
-                $vol = (new ViewOptionList)->append_validate($svc->view_options ?? [], $schema);
-                if (($ss = $vol->get("order")) !== null) {
-                    $flags = ($flags & ~self::VIEW_ORIGINMASK) | $origin;
-                    $this->_score_sort = $ss;
-                }
-            }
+            $this->_add_view(new ViewCommand($svc->flags & ViewCommand::FM_ORIGIN, "score", $svc->view_options, $svc->sword));
             return;
         }
 
@@ -756,7 +736,7 @@ class PaperList {
             if ($svc->is_sort()) {
                 $this->_add_sorter($svc, null);
             } else {
-                $this->set_view($svc->keyword, $svc->is_show(), $origin, $svc->view_options);
+                $this->_add_view($svc);
             }
         }
     }
@@ -798,8 +778,30 @@ class PaperList {
             }
         }
         foreach ($x as $name => $show) {
-            $this->set_view($name, $show, self::VIEWORIGIN_REQUEST, $this->_view_options[$name] ?? null);
+            $fl = ($show ? ViewCommand::F_SHOW : ViewCommand::F_HIDE) | ViewCommand::ORIGIN_REQUEST;
+            $this->_add_view(new ViewCommand($fl, $name));
         }
+    }
+
+    /** @param string $vkw
+     * @param ViewCommand $vc
+     * @param 0|1|2|3|4|5 $origin
+     * @return ?ViewCommand */
+    private function view_command_at($vkw, $vc, $origin) {
+        assert($origin >= self::VIEWORIGIN_NONE && $origin <= self::VIEWORIGIN_MAX);
+        if ($origin < 0) {
+            return null;
+        } else if ($origin >= $vc->origin()) {
+            return $vc;
+        } else if (!isset($this->_viewax[$vkw])) {
+            return null;
+        }
+        $vx = &$this->_viewax[$vkw];
+        $i = 0;
+        while ($i !== count($vx) && $vx[$i]->origin() <= $origin) {
+            ++$i;
+        }
+        return ViewCommand::merge($vkw, array_slice($vx, 0, $i));
     }
 
     /** @param -1|0|1|2|3|4|5 $base_origin
@@ -807,33 +809,23 @@ class PaperList {
      * @return list<string> */
     function unparse_view($base_origin = self::VIEWORIGIN_NONE, $include_sort = true) {
         // show/hide
-        $res = [];
-        $nextpos = 1000000;
-        foreach ($this->_viewf as $name => $v) {
-            if (($v >= self::VIEW_SHOW) === self::view_showing_at($v, $base_origin)) {
+        $vcs = [];
+        foreach ($this->_viewa as $vkw => $vc) {
+            $ovc = $this->view_command_at($vkw, $vc, $base_origin);
+            if (!$ovc && !$vc->is_show() && !$vc->view_options) {
                 continue;
             }
-            $pos = self::$view_fake[$name] ?? null;
-            if ($pos === null) {
-                $fs = $this->conf->paper_columns($name, $this->xtp);
-                if (count($fs) && isset($fs[0]->order)) {
-                    $pos = $fs[0]->order;
-                    $name = $fs[0]->name;
-                } else {
-                    $pos = $nextpos++;
-                }
+            if (($dvc = $vc->diff($ovc))) {
+                $vcs[] = $dvc;
             }
-            $key = "{$pos} {$name}";
-            $flags = $v >= self::VIEW_SHOW ? ViewCommand::F_SHOW : ViewCommand::F_HIDE;
-            $res[$key] = (new ViewCommand($flags, $name, $this->_view_options[$name] ?? null))->unparse();
         }
-        if (((($this->_viewf["anonau"] ?? 0) >= self::VIEW_SHOW && $this->conf->submission_blindness() == Conf::BLIND_OPTIONAL)
-             || ($this->_viewf["aufull"] ?? 0) >= self::VIEW_SHOW)
-            && ($this->_viewf["authors"] ?? 0) < self::VIEW_SHOW) {
-            $res["150 authors"] = "hide:authors";
+        usort($vcs, function ($a, $b) {
+            return $a->order <=> $b->order;
+        });
+        $res = [];
+        foreach ($vcs as $vc) {
+            $res[] = $vc->unparse();
         }
-        ksort($res, SORT_NATURAL);
-        $res = array_values($res);
 
         // sorters
         if ($include_sort) {
@@ -849,13 +841,6 @@ class PaperList {
             while (!empty($res) && $res[count($res) - 1] === "sort:id") {
                 array_pop($res);
             }
-        }
-
-        // score sort
-        if ($this->_score_sort
-            && ($base_origin < 0 || $this->_score_sort !== self::default_score_sort($this->conf))) {
-            $vol = (new ViewOptionList)->add($this->_score_sort, true);
-            $res[] = (new ViewCommand(ViewCommand::F_SORT, "score", $vol))->unparse();
         }
 
         return $res;
@@ -1010,8 +995,10 @@ class PaperList {
         $dt = $this->conf->tags()->ensure(Tagger::tv_tag($etag));
         if (!$dt->has_order_anno()) {
             $any = false;
-            foreach (["#{$etag}", "#{$alt_etag}", "tagval:{$etag}", "tagval:{$alt_etag}"] as $x) {
-                $any = $any || in_array("edit", $this->_view_options[$x] ?? []);
+            foreach (["#{$etag}", "#{$alt_etag}", "tagval:{$etag}", "tagval:{$alt_etag}"] as $vkw) {
+                $any = $any || (($vc = $this->_viewa[$vkw] ?? null)
+                                && $vc->is_show()
+                                && $vc->view_option("edit"));
             }
             if (!$any) {
                 return [];
@@ -1241,41 +1228,41 @@ class PaperList {
     /** @param string $name
      * @return list<PaperColumn> */
     private function ensure_columns_by_name($name) {
-        if (!array_key_exists($name, $this->_columns_by_name)) {
-            $this->_finding_column = $name;
-            $this->_columns_by_name[$name] = [];
-            foreach ($this->conf->paper_columns($name, $this->xtp) as $fdef) {
-                if ($fdef->name === $name
-                    || !array_key_exists($fdef->name, $this->_columns_by_name)) {
-                    $this->add_column(PaperColumn::make($this->conf, $fdef), $name);
-                }
-                if ($fdef->name !== $name) {
-                    array_push($this->_columns_by_name[$name], ...$this->_columns_by_name[$fdef->name]);
-                }
-            }
-            if (empty($this->_columns_by_name[$name])
-                && $this->want_column_errors($name)) {
-                if (empty($this->_finding_column_errors)) {
-                    $this->column_error("<0>Field ‘{$name}’ not found");
-                }
-                foreach ($this->_finding_column_errors as $mi) {
-                    $this->message_set()->append_item($mi);
-                }
-            }
-            $this->_finding_column = $this->_finding_column_errors = null;
+        $cbn = &$this->_columns_by_name[$name];
+        if ($cbn !== null) {
+            return $cbn;
         }
-        return $this->_columns_by_name[$name];
+        $this->_finding_column = $name;
+        $cbn = [];
+        foreach ($this->conf->paper_columns($name, $this->xtp) as $fdef) {
+            if ($fdef->name === $name
+                || !array_key_exists($fdef->name, $this->_columns_by_name)) {
+                $this->add_column(PaperColumn::make($this->conf, $fdef), $name);
+            }
+            if ($fdef->name !== $name) {
+                array_push($cbn, ...$this->_columns_by_name[$fdef->name]);
+            }
+        }
+        if (empty($cbn) && $this->want_column_errors($name)) {
+            if (empty($this->_finding_column_errors)) {
+                $this->column_error("<0>Field ‘{$name}’ not found");
+            }
+            foreach ($this->_finding_column_errors as $mi) {
+                $this->message_set()->append_item($mi);
+            }
+        }
+        $this->_finding_column = $this->_finding_column_errors = null;
+        return $cbn;
     }
 
     /** @param string $k
      * @return list<PaperColumn> */
     private function _expand_view_column($k) {
-        if (!isset(self::$view_fake[$k])
-            && ($this->_viewf[$k] ?? 0) >= self::VIEW_SHOW) {
+        $vc = $this->_viewa[$k] ?? null;
+        if ($vc && $vc->is_show() && !isset(self::$view_fake[$k])) {
             return $this->ensure_columns_by_name($k);
-        } else {
-            return [];
         }
+        return [];
     }
 
     /** @param string $name
@@ -1317,20 +1304,19 @@ class PaperList {
         $this->render_context = $context;
         assert(empty($this->row_attr));
 
-        // extract columns from _viewf
-        $fs1 = $viewf = [];
-        foreach ($this->_viewf as $k => $v) {
-            foreach ($this->_expand_view_column($k) as $f) {
-                assert($v >= self::VIEW_SHOW);
-                $fs1[$f->name] = $fs1[$f->name] ?? $f;
-                $viewf[$f->name] = $this->_viewf[$f->name] ?? $v;
+        // extract columns from _viewa
+        $fs1 = [];
+        foreach ($this->_viewa as $vkw => $vc) {
+            if ($vc->is_show() && !isset(self::$view_fake[$vkw])) {
+                foreach ($this->ensure_columns_by_name($vkw) as $f) {
+                    $fs1[$f->name] = $fs1[$f->name] ?? $f;
+                }
             }
         }
 
-        // update _viewf, prepare, mark fields editable
+        // prepare, mark fields editable
         $vcols1 = $vcols2 = [];
         foreach ($fs1 as $k => $f) {
-            $this->_viewf[$k] = $viewf[$k];
             $f->is_visible = true;
             $f->has_content = false;
             $this->_finding_column = $k;

@@ -104,6 +104,8 @@ class Column {
             self::$base_schema = new ViewOptionSchema;
             self::$base_schema->define("display=row col,column");
             self::$base_schema->define("sort=asc,ascending,up desc,descending,down forward reverse");
+            self::$base_schema->define("show");
+            self::$base_schema->define("hide/!show");
         }
         $schema = self::$base_schema;
         foreach ($this->view_option_schema() as $x) {

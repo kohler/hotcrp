@@ -15,6 +15,9 @@ class ViewCommand {
     /** @var ?SearchWord
      * @readonly */
     public $sword;
+    /** @var ?int
+     * @readonly */
+    public $order;
 
     const F_SHOW = 1;
     const F_HIDE = 2;
@@ -34,8 +37,9 @@ class ViewCommand {
     /** @param int $flags
      * @param string $keyword
      * @param ?ViewOptionList $view_options
-     * @param ?SearchWord $sword */
-    function __construct($flags, $keyword, $view_options = null, $sword = null) {
+     * @param ?SearchWord $sword
+     * @param ?int $order */
+    function __construct($flags, $keyword, $view_options = null, $sword = null, $order = null) {
         assert(($flags & ($flags - 1) & self::FM_ACTION) === 0);
         $this->flags = $flags;
         $this->keyword = $keyword;
@@ -43,7 +47,23 @@ class ViewCommand {
             $this->view_options = $view_options;
         }
         $this->sword = $sword;
+        $this->order = $order;
     }
+
+    /** @param int $order
+     * @return ViewCommand
+     * @suppress PhanAccessReadOnlyProperty */
+    function with_order($order) {
+        if ($this->order !== null) {
+            $vc = clone $this;
+            $vc->order = $order;
+            return $vc;
+        }
+        $this->order = $order;
+        return $this;
+    }
+
+
 
     /** @param string $s
      * @param int $flags
@@ -166,6 +186,67 @@ class ViewCommand {
     }
 
 
+    /** @param string $keyword
+     * @param list<ViewCommand> $list
+     * @return ViewCommand
+     * @suppress PhanAccessReadOnlyProperty */
+    static function merge($keyword, $list) {
+        if (empty($list)) {
+            return new ViewCommand(0, $keyword);
+        } else if (count($list) === 1 && $list[0]->keyword === $keyword) {
+            return $list[0];
+        }
+        $my_vol = false;
+        $vc = new ViewCommand(0, $keyword);
+        foreach ($list as $xvc) {
+            assert(($xvc->flags & self::FM_ORIGIN) >= ($vc->flags & self::FM_ORIGIN));
+            if (($xvc->flags & self::FM_ACTION) !== 0) {
+                $vc->flags = $xvc->flags;
+                $vc->order = $xvc->order ?? $vc->order;
+            } else {
+                $vc->flags = ($vc->flags & self::FM_ACTION) | ($xvc->flags & self::FM_ORIGIN);
+            }
+            if ($xvc->view_options) {
+                if ($vc->view_options === null) {
+                    $vc->view_options = $xvc->view_options;
+                } else {
+                    if (!$my_vol) {
+                        $vc->view_options = clone $vc->view_options;
+                        $my_vol = true;
+                    }
+                    $vc->view_options->append($xvc->view_options);
+                }
+            }
+            $vc->sword = $xvc->sword ?? $vc->sword;
+        }
+        return $vc;
+    }
+
+    /** @param ?ViewCommand $xvc
+     * @return ?ViewCommand */
+    function diff($xvc) {
+        if ($this === $xvc) {
+            return null;
+        }
+        $fl = $this->flags;
+        if (($fl & self::FM_ACTION) === (($xvc ? $xvc->flags : 0) & self::FM_ACTION)) {
+            $fl &= ~self::FM_ACTION;
+        }
+        $vol = $this->view_options;
+        if ($vol && $xvc && $xvc->view_options) {
+            $vol = clone $vol;
+            foreach ($xvc->view_options as $k => $v) {
+                if ($vol->get($k) === $v)
+                    $vol->remove($k);
+            }
+        }
+        if (($fl & self::FM_ACTION) === 0 && (!$vol || $vol->is_empty())) {
+            return null;
+        }
+        return new ViewCommand($fl, $this->keyword, $vol, $this->sword, $this->order);
+    }
+
+
     /** @return bool */
     function is_show() {
         return ($this->flags & self::F_SHOW) !== 0;
@@ -181,9 +262,20 @@ class ViewCommand {
         return ($this->flags & self::F_SORT) !== 0;
     }
 
+    /** @return int */
+    function origin() {
+        return ($this->flags & self::FM_ORIGIN) >> self::ORIGIN_SHIFT;
+    }
+
+    /** @param string $name
+     * @return mixed */
+    function view_option($name) {
+        return $this->view_options ? $this->view_options->get($name) : null;
+    }
+
     /** @return string */
     function unparse() {
-        $s = (["viewoptions:", "show:", "hide:", null, "sort:"])[$this->flags & self::FM_ACTION];
+        $s = (["view:", "show:", "hide:", null, "sort:"])[$this->flags & self::FM_ACTION];
         if (!ctype_alnum($this->keyword)
             && SearchParser::span_balanced_parens($this->keyword) !== strlen($this->keyword)) {
             $s .= "\"{$this->keyword}\"";
