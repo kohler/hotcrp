@@ -1011,7 +1011,9 @@ class PaperList {
         if (!$dt->has_order_anno()) {
             $any = false;
             foreach (["#{$etag}", "#{$alt_etag}", "tagval:{$etag}", "tagval:{$alt_etag}"] as $x) {
-                $any = $any || in_array("edit", $this->_view_options[$x] ?? []);
+                $any = $any
+                    || (($vol = $this->_view_options[$x] ?? null)
+                        && $vol->get("edit"));
             }
             if (!$any) {
                 return [];
