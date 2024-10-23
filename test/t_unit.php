@@ -1105,6 +1105,19 @@ class Unit_Tester {
         xassert_eqq($chtml->clean("<i><![CDATA[<alert>]]></i>"), "<i>&lt;alert&gt;</i>");
     }
 
+    function test_clean_html_comments() {
+        $chtml = CleanHTML::basic();
+        xassert_eqq($chtml->clean('<!-->'), false);
+        xassert_eqq($chtml->clean('<![ie foo>'), false);
+        xassert_eqq($chtml->clean('<!--->'), false);
+        xassert_eqq($chtml->clean('<!---'), false);
+        xassert_eqq($chtml->clean('<!---->'), "");
+        xassert_eqq($chtml->clean('<!--<!-->'), "");
+        xassert_eqq($chtml->clean('<!--<!--->'), false);
+        xassert_eqq($chtml->clean('<!--My favorite operators are > ad <!-->x'), "x");
+        xassert_eqq($chtml->clean('<!----!>-->'), false);
+    }
+
     function test_base48() {
         for ($i = 0; $i !== 1000; ++$i) {
             $n = mt_rand(0, 99);

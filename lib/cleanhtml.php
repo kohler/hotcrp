@@ -245,6 +245,31 @@ class CleanHTML {
         }
     }
 
+    private function check_comment($comment, $pos, $t) {
+        if (str_starts_with($comment, "<!-->")) {
+            $this->ml[] = $this->e("<0>Incorrectly closed HTML comment", $pos, $pos + 5, $t);
+            return false;
+        } else if (str_starts_with($comment, "<!--->")) {
+            $this->ml[] = $this->e("<0>Incorrectly closed HTML comment", $pos, $pos + 6, $t);
+            return false;
+        } else if (($xp = strpos($comment, "<!--", 4)) !== false
+                   && $xp + 5 !== strlen($comment)) {
+            $this->ml[] = $this->e("<0>HTML comments may not be nested", $pos + $xp, $pos + $xp + 4, $t);
+            return false;
+        } else if (str_ends_with($comment, "<!--->")) {
+            $this->ml[] = $this->e("<0>Incorrectly closed HTML comment", $pos, $pos + strlen($comment), $t);
+            return false;
+        } else if (($xp = strpos($comment, "--!>", 4)) !== false) {
+            $this->ml[] = $this->e("<0>Incorrectly closed HTML comment", $pos, $pos + $xp + 4, $t);
+            return false;
+        } else if (!str_ends_with($comment, "-->")) {
+            $this->ml[] = $this->e("<0>Unclosed HTML comment", $pos, $pos + strlen($comment), $t);
+            return false;
+        } else {
+            return true;
+        }
+    }
+
     /** @param string $t
      * @return string|false */
     function clean($t) {
@@ -265,19 +290,33 @@ class CleanHTML {
                 $this->check_text($curtf, $tagstack, $p, $nextp, $t);
             }
             $p = $nextp;
-            if (preg_match('/\G<!\[[ie]\w+/i', $t, $m, 0, $p)) {
-                $this->ml[] = $this->e("<0>Conditional HTML comments not allowed", $p, $p + strlen($m[0]), $t);
-                return false;
-            } else if (preg_match('/\G<!\[CDATA\[(.*?)(?:\]\]>|\z)/s', $t, $m, 0, $p)) {
-                $this->check_text($curtf, $tagstack, $p, $p + strlen($m[0]), $t);
-                $x .= substr($t, $xp, $p - $xp) . htmlspecialchars($m[1]);
-                $p = $xp = $p + strlen($m[0]);
-            } else if (preg_match('/\G<!--.*?(?:-->|\z)\z/s', $t, $m, 0, $p)) {
-                $x .= substr($t, $xp, $p - $xp);
-                $p = $xp = $p + strlen($m[0]);
-            } else if (preg_match('/\G<!(\S+)/s', $t, $m, 0, $p)) {
-                $this->ml[] = $this->e("<0>HTML and XML declarations not allowed", $p, $p + strlen($m[0]), $t);
-                return false;
+            if ($p + 1 < $len && $t[$p + 1] === "!") {
+                if (preg_match('/\G<!\[CDATA\[(.*?)(\]\]>|\z)/s', $t, $m, 0, $p)) {
+                    if ($m[2] === "") {
+                        $this->ml[] = $this->e("<0>Unclosed CDATA section", $p, $p + strlen($m[0]), $t);
+                        return false;
+                    }
+                    $this->check_text($curtf, $tagstack, $p, $p + strlen($m[0]), $t);
+                    $x .= substr($t, $xp, $p - $xp) . htmlspecialchars($m[1]);
+                    $p = $xp = $p + strlen($m[0]);
+                } else if (preg_match('/\G<!--.*?(-->|\z)/s', $t, $m, 0, $p)) {
+                    if (!$this->check_comment($m[0], $p, $t)) {
+                        return false;
+                    }
+                    $x .= substr($t, $xp, $p - $xp);
+                    $p = $xp = $p + strlen($m[0]);
+                } else {
+                    preg_match('/\G<!\s*(\S+)/s', $t, $m, 0, $p);
+                    if (str_starts_with(strtolower($m[1]), "doctype")) {
+                        $this->ml[] = $this->e("<0>HTML DOCTYPE declarations not allowed", $p, $p + strlen($m[0]), $t);
+                    } else if (str_starts_with(strtolower($m[1]), "[i")
+                               || str_starts_with(strtolower($m[1]), "[e")) {
+                        $this->ml[] = $this->e("<0>Conditional HTML comments not allowed", $p, $p + strlen($m[0]), $t);
+                    } else {
+                        $this->ml[] = $this->e("<0>Incorrectly opened HTML comment", $p, $p + strlen($m[0]), $t);
+                    }
+                    return false;
+                }
             } else if (preg_match('/\G<(\s*+)([A-Za-z][-A-Za-z0-9]*+)(?=[\s\/>])(\s*+)(?:[^<>\'"]+|\'[^\']*\'|"[^"]*")*+>?/s', $t, $m, 0, $p)) {
                 $tag = strtolower($m[2]);
                 $tagp = $p;
