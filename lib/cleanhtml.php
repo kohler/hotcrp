@@ -268,14 +268,10 @@ class CleanHTML {
             if (preg_match('/\G<!\[[ie]\w+/i', $t, $m, 0, $p)) {
                 $this->ml[] = $this->e("<0>Conditional HTML comments not allowed", $p, $p + strlen($m[0]), $t);
                 return false;
-            } else if (preg_match('/\G(<!\[CDATA\[.*?)(\]\]>|\z)/s', $t, $m, 0, $p)) {
+            } else if (preg_match('/\G<!\[CDATA\[(.*?)(?:\]\]>|\z)/s', $t, $m, 0, $p)) {
                 $this->check_text($curtf, $tagstack, $p, $p + strlen($m[0]), $t);
-                if ($m[2] === "") {
-                    $x .= substr($t, $xp) . "]]>";
-                    $p = $xp = $len;
-                } else {
-                    $p += strlen($m[0]);
-                }
+                $x .= substr($t, $xp, $p - $xp) . htmlspecialchars($m[1]);
+                $p = $xp = $p + strlen($m[0]);
             } else if (preg_match('/\G<!--.*?(?:-->|\z)\z/s', $t, $m, 0, $p)) {
                 $x .= substr($t, $xp, $p - $xp);
                 $p = $xp = $p + strlen($m[0]);

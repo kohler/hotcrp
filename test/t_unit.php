@@ -1088,7 +1088,7 @@ class Unit_Tester {
     }
 
     function test_clean_html() {
-        $chtml = CleanHtml::basic();
+        $chtml = CleanHTML::basic();
         xassert_eqq($chtml->clean('<a>Hello'), false);
         xassert_eqq($chtml->clean('<a>Hello</a>'), '<a>Hello</a>');
         xassert_eqq($chtml->clean('<script>Hello</script>'), false);
@@ -1102,6 +1102,7 @@ class Unit_Tester {
         xassert_eqq($chtml->clean('<table><tr><td>hi</td><td>there</td></tr></table>'), '<table><tr><td>hi</td><td>there</td></tr></table>');
         xassert_eqq($chtml->clean("<ul><li>X</li> <li>Y</li>\n\n<li>Z</li>\n</ul>\n"), "<ul><li>X</li> <li>Y</li>\n\n<li>Z</li>\n</ul>\n");
         xassert_eqq($chtml->clean("<ul><li>X</li> p <li>Y</li>\n\n<li>Z</li>\n</ul>\n"), false);
+        xassert_eqq($chtml->clean("<i><![CDATA[<alert>]]></i>"), "<i>&lt;alert&gt;</i>");
     }
 
     function test_base48() {
