@@ -14,7 +14,7 @@ nonnegative integer. The languages defined so far are:
 
 The `Ftext` class can convert between some formats.
 
-(Note that open-source HotCRP ships without Markdown support.)
+(Open-source HotCRP ships without Markdown support.)
 
 
 ## Ftext
@@ -297,7 +297,7 @@ HotCRP understands the following format specifications.
 | Format specification      | Result                                               |
 |:--------------------------|:-----------------------------------------------------|
 | `:url`                    | The string argument is urlencoded.                   |
-| `:html`                   | The string argument is HTML-encoded; i.e., `&<>"'` are replaced by HTML entities. |
+| `:html`                   | The string argument is HTML-encoded: `&<>"'` are replaced by HTML entities. |
 | `:ftext`                  | When possible, the string argument is incorporated as an ftext, rather than having its format translated or stripped. |
 | `:humanize_url`           | If the argument string is a simple url, such as `https://hotcrp.com/privacy`, it is replaced by a shorter version, such as `hotcrp.com/privacy`. |
 | `:.2f`, etc.              | The numeric argument is rendered using a printf-style specification. |

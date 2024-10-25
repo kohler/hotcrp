@@ -59,26 +59,34 @@ and terminates request processing. A `request_function` may also throw a value
 of type `Redirection` to force HotCRP to redirect the user’s browser to
 another URI.
 
-## Rendering the result
+## Printing the result
 
 Assuming the `request_function`s do not throw a redirection, HotCRP next
 re-scans the component list and prints the corresponding components.
 
-To print a component, HotCRP checks for:
-
-1. A `print_function` property. If present, this calls the corresponding PHP
-   callback, using the same syntax and arguments as `request_function`, above.
-
-2. Otherwise, an `html_content` property. If present, this is copied to the output.
-
-3. In either case, if the component has a `print_members` property, HotCRP
-   next prints the members of the group with the component’s name.
-
-A `print_function` may cancel further rendering by returning explicit `false`,
-or by throwing a `Redirection` or `PageCompletion` exception.
-
 Many HotCRP pages do not have separate `request_function`s, instead handling
 all request parsing as part of the first `print_function` for a page.
+
+To print a component, HotCRP:
+
+1. First, HotCRP prints the component itself, by looking for a
+   `print_function` or `content` property.
+
+    * If `print_function` is present, HotCRP calls the corresponding PHP
+      callback to print the component. The `print_function` property uses the
+      same syntax as `request_function`, and the callback takes the same
+      arguments.
+
+      A `print_function` may cancel further rendering by returning explicit
+      `false`, or by throwing a `Redirection` or `PageCompletion` exception.
+
+    * Otherwise, if `content` is present, HotCRP prints that content. This
+      property is an [ftext string][ftext].
+
+    * Otherwise, HotCRP prints nothing for the component itself.
+
+2. Second, if the component has a `print_members` property, HotCRP recursively
+   prints the members of the group with the component’s name.
 
 ## Shorthand
 
@@ -108,3 +116,4 @@ components support conditions relating to the current request.
 
 
 [components]: ./components.md
+[ftext]: ./fmt.md

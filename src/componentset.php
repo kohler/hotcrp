@@ -518,8 +518,10 @@ class ComponentSet {
         $result = null;
         if (isset($gj->print_function)) {
             $result = $this->call_function($gj, $gj->print_function, $gj);
+        } else if (isset($gj->content)) {
+            echo Ftext::as(5, $gj->content, 0);
         } else if (isset($gj->html_content)) {
-            echo $gj->html_content;
+            echo $gj->html_content; /* XXX backward compat */
         }
         if (isset($gj->print_members)) {
             $print_members = $gj->print_members;
