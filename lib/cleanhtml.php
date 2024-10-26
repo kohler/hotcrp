@@ -141,7 +141,7 @@ class CleanHTML {
         // keygen: self::F_SPECIAL
         "label" => 0,
         "legend" => self::F_BLOCK | (self::FT_FIELDSET << self::FSP),
-        "li" => self::F_BLOCK | self::F_SPECIAL | (self::FT_LIST << self::FSP),
+        "li" => self::F_BLOCK | self::F_SPECIAL,
         // link: self::F_SPECIAL
         // main: self::F_SPECIAL
         // map
@@ -278,6 +278,410 @@ class CleanHTML {
         }
     }
 
+    const SCOPEF_NODEFAULTS = 1;
+    const SCOPEF_NOCONTEXT = 2;
+
+    /** @param string $target
+     * @param int $scopef
+     * @param string ...$tags
+     * @return bool */
+    private function has_in_scope($target, $scopef, ...$tags) {
+        for ($t = $this->opentags; $t; $t = $t->next) {
+            if ($t->pos1 < 0 && ($scopef & self::SCOPEF_NOCONTEXT) !== 0) {
+                return false;
+            } else if ($t->tag === $target) {
+                return true;
+            } else if (($scopef & self::SCOPEF_NODEFAULTS) === 0
+                       && (($this->taginfo[$t->tag] ?? 0) & self::F_DEFAULT_SCOPE) !== 0) {
+                return false;
+            } else if (in_array($t->tag, $tags)) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    /** @param string $target
+     * @return bool */
+    private function has_in_table_scope($target) {
+        return $this->has_in_scope($target, self::SCOPEF_NODEFAULTS, "table", "template");
+    }
+
+    /** @param ?string $exclude
+     * @return string */
+    private function generate_implied_end_tags($exclude = null) {
+        $x = "";
+        while (($t = $this->opentags)
+               && $t->tag !== $exclude
+               && in_array($t->tag, ["dd", "dt", "li", "optgroup", "option", "p", "rb", "rp", "rt", "rtc"])
+               && $t->pos1 >= 0) {
+            $x .= "</{$t->tag}>";
+            $this->opentags = $t->next;
+        }
+        return $x;
+    }
+
+    /** @return string */
+    private function generate_implied_end_tags_thoroughly() {
+        $x = "";
+        while (($t = $this->opentags)
+               && in_array($t->tag, ["caption", "colgroup", "dd", "dt", "li", "optgroup", "option", "p", "rb", "rp", "rt", "rtc", "tbody", "td", "tfoot", "th", "thead", "tr"])
+               && $t->pos1 >= 0) {
+            $x .= "</{$t->tag}>";
+            $this->opentags = $t->next;
+        }
+        return $x;
+    }
+
+    /** @return string */
+    private function close_until($tag) {
+        $x = "";
+        while (($t = $this->opentags)
+               && $t->pos1 >= 0) {
+            $x .= "</{$t->tag}>";
+            $this->opentags  = $t->next;
+            if ($t->tag === $tag) {
+                break;
+            }
+        }
+        return $x;
+    }
+
+    /** @return string */
+    private function close_p($pos) {
+        $x = $this->generate_implied_end_tags("p");
+        if (!$this->opentags
+            || $this->opentags->tag !== "p"
+            || $this->opentags->pos1 < 0) {
+            if ($this->opentags) {
+                $this->lerror("<0>Expected <p> tag", $this->opentags->pos1, $this->opentags->pos2);
+            } else {
+                $this->lerror("<0>Expected <p> tag", $pos, $pos);
+            }
+        }
+        return $x . $this->close_until("p");
+    }
+
+    /** @return string */
+    private function close_p_in_button_scope($pos) {
+        if ($this->has_in_scope("p", 0, "button")) {
+            return $this->close_p($pos);
+        } else {
+            return "";
+        }
+    }
+
+    /** @param string $tag
+     * @param int $pos1
+     * @param int $pos2
+     * @return string */
+    private function generate_implied_end_tags_and_close($tag, $pos1, $pos2) {
+        $x = $this->generate_implied_end_tags($tag);
+        if ($this->opentags && $this->opentags->tag !== $tag) {
+            $this->lerror("<0>Unclosed tag", $this->opentags->pos1, $this->opentags->pos2);
+        }
+        return $x . $this->close_until($tag);
+    }
+
+    /** @param int $pos1
+     * @param int $pos2
+     * @return string */
+    private function handle_start_li($pos1, $pos2) {
+        $x = "";
+        $t = $this->opentags;
+        while ($t && $t->pos1 >= 0) {
+            if ($t->tag === "li") {
+                $x .= $this->generate_implied_end_tags_and_close("li", $pos1, $pos2);
+                break;
+            } else if ((($this->taginfo[$t->tag] ?? 0) & self::F_SPECIAL) !== 0
+                       && !in_array($t->tag, ["address", "div", "p"])) {
+                break;
+            }
+            $t = $t->next;
+        }
+        $x .= $this->close_p_in_button_scope($pos1);
+        if (!$this->opentags
+            || !in_array($this->opentags->tag, ["ul", "ol", "menu"])) {
+            $this->lerror("<0>Element not allowed here", $pos1, $pos2);
+        }
+        return $x;
+    }
+
+    /** @param string $tag
+     * @param int $pos1
+     * @param int $pos2
+     * @return string */
+    private function handle_start_dli($tag, $pos1, $pos2) {
+        $x = "";
+        $t = $this->opentags;
+        while ($t && $t->pos1 >= 0) {
+            if ($t->tag === "dd" || $t->tag === "dt") {
+                $x .= $this->generate_implied_end_tags_and_close($t->tag, $pos1, $pos2);
+                break;
+            } else if ((($this->taginfo[$t->tag] ?? 0) & self::F_SPECIAL) !== 0
+                       && !in_array($t->tag, ["address", "div", "p"])) {
+                break;
+            }
+            $t = $t->next;
+        }
+        $x .= $this->close_p_in_button_scope($pos1);
+        if (!$this->opentags
+            || $this->opentags->tag !== "dl") {
+            $this->lerror("<0>Element not allowed here", $pos1, $pos2);
+        }
+        return $x;
+    }
+
+    /** @param string $tag
+     * @param int $pos1
+     * @param int $pos2
+     * @return string */
+    private function handle_start_special($tag, $pos1, $pos2) {
+        $x = "";
+
+        if ($tag[0] === "h" && ctype_digit($tag[1])) {
+            if ($this->has_in_scope("p", 0, "button")) {
+                $this->close_p($pos1);
+            }
+            if ($this->opentags
+                && $this->opentags->tag[0] === "h"
+                && ctype_digit($this->opentags->tag[1])) {
+                $this->lerror("<0>Headings cannot be nested", $this->opentags->pos1, $pos2);
+                $x .= "</{$this->opentags->tag}>";
+                $this->opentags = $this->opentags->next;
+            }
+            return $x;
+        }
+
+        if ($tag === "li") {
+            return $this->handle_start_li($pos1, $pos2);
+        }
+
+        if ($tag === "dt" || $tag === "dd") {
+            return $this->handle_start_dli($tag, $pos1, $pos2);
+        }
+
+        // address
+        // article
+        // aside
+        // blockquote
+        // center
+        // details
+        // dialog
+        // dir
+        // div
+        // dl
+        // fieldset
+        // figcaption
+        // figure
+        // footer
+        // header
+        // hgroup
+        // listing
+        // main
+        // menu
+        // nav
+        // ol
+        // p
+        // pre
+        // search
+        // section
+        // summary
+        // ul
+
+
+        // applet
+        // area
+        // base
+        // basefont
+        // bgsound
+        // body
+        // br
+        // button
+        // caption
+        // col
+        // colgroup
+        // embed
+        // form
+        // frame
+        // frameset
+        // head
+        // hr
+        // html
+        // iframe
+        // img
+        // input
+        // keygen
+        // link
+        // marquee
+        // meta
+        // noembed
+        // noframes
+        // noscript
+        // object
+        // param
+        // plaintext
+        // script
+        // select
+        // source
+        // style
+        // table
+        // tbody
+        // td
+        // template
+        // textarea
+        // tfoot
+        // th
+        // thead
+        // title
+        // tr
+        // track
+        // wbr
+        // xmp; MathML mi
+        // MathML mo
+        // MathML mn
+        // MathML ms
+        // MathML mtext
+        // and MathML annotation-xml; and SVG foreignObject
+        // SVG desc
+        // and SVG title.
+    }
+
+    private function handle_end_header($pos1, $pos2) {
+        $t = $this->opentags;
+        while ($t && $t->pos1 >= 0) {
+            if ($t->tag[0] === "h" && ctype_digit($t->tag[1])) {
+                break;
+            }
+            $t = $t->next;
+        }
+        if (!$t || $t->pos1 < 0) {
+            $this->lerror("<0>Unopened tag", $pos1, $pos2);
+            return "";
+        }
+        return $this->generate_implied_end_tags_and_close($t->tag, $pos1, $pos2);
+    }
+
+    /** @param string $tag
+     * @param int $pos1
+     * @param int $pos2
+     * @return ?string */
+    private function handle_end_special($tag, $pos1, $pos2) {
+        $x = "";
+
+        if ($tag[0] === "h" && ctype_digit($tag[1])) {
+            return $this->handle_end_header($pos1, $pos2);
+        }
+
+        if ($tag === "li") {
+            if (!$this->has_in_scope("li", self::SCOPEF_NOCONTEXT, "ul", "ol", "menu")) {
+                $this->lerror("<0>Unopened tag", $pos1, $pos2);
+                return "";
+            }
+            return $this->generate_implied_end_tags_and_close("li", $pos1, $pos2);
+        }
+
+        if ($tag === "dt" || $tag === "dd") {
+            if (!$this->has_in_scope($tag, self::SCOPEF_NOCONTEXT)) {
+                $this->lerror("<0>Unopened tag", $pos1, $pos2);
+                return "";
+            }
+            return $this->generate_implied_end_tags_and_close($tag, $pos1, $pos2);
+        }
+
+        return null;
+
+        // address
+        // article
+        // aside
+        // applet
+        // area
+        // base
+        // basefont
+        // bgsound
+        // blockquote
+        // body
+        // br
+        // button
+        // caption
+        // center
+        // col
+        // colgroup
+        // details
+        // dir
+        // div
+        // dl
+        // embed
+        // fieldset
+        // figcaption
+        // figure
+        // footer
+        // form
+        // frame
+        // frameset
+        // h1
+        // h2
+        // h3
+        // h4
+        // h5
+        // h6
+        // head
+        // header
+        // hgroup
+        // hr
+        // html
+        // iframe
+        // img
+        // input
+        // keygen
+        // li
+        // link
+        // listing
+        // main
+        // marquee
+        // menu
+        // meta
+        // nav
+        // noembed
+        // noframes
+        // noscript
+        // object
+        // ol
+        // p
+        // param
+        // plaintext
+        // pre
+        // script
+        // search
+        // section
+        // select
+        // source
+        // style
+        // summary
+        // table
+        // tbody
+        // td
+        // template
+        // textarea
+        // tfoot
+        // th
+        // thead
+        // title
+        // tr
+        // track
+        // ul
+        // wbr
+        // xmp; MathML mi
+        // MathML mo
+        // MathML mn
+        // MathML ms
+        // MathML mtext
+        // and MathML annotation-xml; and SVG foreignObject
+        // SVG desc
+        // and SVG title.
+
+    }
+
     private function check_text($curtf, $pos1, $pos2) {
         if (($curtf & self::F_NOTEXT) !== 0
             && $pos1 !== $pos2
@@ -385,6 +789,9 @@ class CleanHTML {
                     $this->lerror("<0>HTML tag <{$m[2]}> not allowed", $tagp, $endp);
                     $tagtf = self::F_VOID;
                 }
+                if (($tagtf & self::F_SPECIAL) !== 0) {
+                    $x .= $this->handle_start_special($tag, $p, $endp);
+                }
                 $x .= "<{$tag}";
                 if (($tagtf & self::F_BLOCK) !== 0
                     && ($curtf & self::F_BLOCK) === 0) {
@@ -396,7 +803,7 @@ class CleanHTML {
                     $curt = ($curtf >> self::FSS) & self::FTM;
                     if ($curt === 0
                         || ($pt1 !== $curt && $pt2 !== $curt)) {
-                        $this->lerror("<0>Element not allowed here", $tagp, $endp);
+                        $this->lerror("<0>Element not allowed here 3", $tagp, $endp);
                         $this->ml[] = $this->inclusion_context($tag, $tagtf);
                     }
                 }
@@ -472,6 +879,14 @@ class CleanHTML {
                     }
                     $p = $xp = $endp;
                     continue;
+                }
+                if (($tagtf & self::F_SPECIAL) !== 0) {
+                    $z = $this->handle_end_special($tag, $tagp, $endp);
+                    if ($z !== null) {
+                        $x .= substr($t, $xp, $p - $xp) . $z;
+                        $xp = $p = $endp;
+                        continue;
+                    }
                 }
                 if (($tagtf & self::F_VOID) !== 0) {
                     // ignore close tags for void elements
