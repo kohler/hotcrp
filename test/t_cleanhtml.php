@@ -48,6 +48,8 @@ class CleanHTML_Tester {
         xassert_eqq($chtml->clean('<ul> <li> A </li> <li> B </li> </ul>'), '<ul> <li> A </li> <li> B </li> </ul>');
         $t = "<h2>ACM CCS 2025 - Cycle A</h2>\n<ul>\n<li><a href=\"https://www.sigsac.org/ccs/CCS2024/call-for/call-for-papers.html\">Call for Papers</a></li>\n<li><a href=\"https://www.acm.org/publications/policies/new-acm-policy-on-authorship\">ACM Authorship policies</a></li>\n</ul>";
         xassert_eqq($chtml->clean($t), $t);
+        xassert_eqq($chtml->clean('<ul> <li> A <li> B </li> </ul>'), '<ul> <li> A </li><li> B </li> </ul>');
+        xassert_eqq($chtml->clean('<ul> <li><b>A <li><i>B </li></ul>'), '<ul> <li><b>A </b></li><li><i>B </i></li></ul>');
     }
 
     function test_table() {
