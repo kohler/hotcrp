@@ -11,6 +11,7 @@ TestRunner::run(
     "AuthorMatch_Tester",
     "Ht_Tester",
     "Fmt_Tester",
+    "CleanHTML_Tester",
     "Abbreviation_Tester",
     "DocumentBasics_Tester",
     "FixCollaborators_Tester",
