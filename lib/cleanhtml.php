@@ -432,7 +432,7 @@ class CleanHTML {
                 }
                 if ($p === $endp) {
                     if ($endp === $len) {
-                        $this->lerror("<0>Unclosed HTML tag", $tagp, $p);
+                        $this->lerror("<0>Unclosed tag", $tagp, $p);
                     }
                     $x .= ">";
                     $xp = $endp - 1;
@@ -509,7 +509,7 @@ class CleanHTML {
             $x .= substr($t, $xp);
         }
         if ($this->opentags) {
-            $this->lerror("<0>Unclosed HTML tag", $this->opentags->pos1, $this->opentags->pos2);
+            $this->lerror("<0>Unclosed tag", $this->opentags->pos1, $this->opentags->pos2);
         }
 
         $this->context = $this->opentags = null;
@@ -537,6 +537,11 @@ class CleanHTML {
     /** @return list<MessageItem> */
     function message_list() {
         return $this->ml;
+    }
+
+    /** @return string */
+    function full_feedback_text() {
+        return MessageSet::feedback_text($this->ml);
     }
 
     /** @return CleanHTML */
