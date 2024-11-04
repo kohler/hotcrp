@@ -29,13 +29,16 @@ class MentionLister {
             $this->add_reviewers($prow, $user, $cvis);
         }
 
-        // XXX todo: list previous commentees in privileged position?
-        // XXX todo: list lead?
+        // XXX list lead?
 
         if ($prow
             && $prow->shepherdContactId > 0
             && $prow->shepherdContactId !== $user->contactId) {
             $this->add_shepherd($prow, $user);
+        }
+
+        if ($prow) {
+            $this->add_commenters($prow, $user, $cvis);
         }
 
         if ((!$prow || !$prow->has_author($user))
@@ -119,6 +122,21 @@ class MentionLister {
             && !$shepherd->is_dormant()) {
             $this->lists["reviewers"][] = $shepherd;
             $this->rcids[] = $prow->shepherdContactId;
+        }
+    }
+
+    /** @param PaperInfo $prow
+     * @param Contact $user
+     * @param int $cvis */
+    private function add_commenters($prow, $user, $cvis) {
+        foreach ($prow->viewable_comment_skeletons($user) as $crow) {
+            if (!in_array($crow->contactId, $this->rcids)
+                && $user->can_view_comment_identity($prow, $crow)
+                && ($commenter = $crow->commenter())
+                && !$commenter->is_dormant()) {
+                $this->lists["reviewers"][] = $commenter;
+                $this->rcids[] = $crow->contactId;
+            }
         }
     }
 
