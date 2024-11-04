@@ -778,7 +778,7 @@ class Dbl {
 
     /** @param \mysqli $dblink
      * @param int $flags
-     * @return callable(?string,string|int|null|list...):void */
+     * @return callable(?string,string|int|float|null|list...):void */
     static function make_multi_query_stager($dblink, $flags) {
         // NB $q argument as `true` is deprecated but might still be present
         $qs = $qvs = [];
@@ -797,13 +797,13 @@ class Dbl {
     }
 
     /** @param ?\mysqli $dblink
-     * @return callable(?string,string|int|null...):void */
+     * @return callable(?string,string|int|float|null|list...):void */
     static function make_multi_ql_stager($dblink = null) {
         return self::make_multi_query_stager($dblink ?? self::$default_dblink, self::F_LOG);
     }
 
     /** @param ?\mysqli $dblink
-     * @return callable(?string,string|int|null...):void */
+     * @return callable(?string,string|int|float|null|list...):void */
     static function make_multi_qe_stager($dblink = null) {
         return self::make_multi_query_stager($dblink ?? self::$default_dblink, self::F_ERROR);
     }

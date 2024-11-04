@@ -162,7 +162,7 @@ class MentionParser {
             $endpos = $pos + 1 + strlen($w);
             $pos2 = $pos + 1 + strlen($m[0]);
             $best_ux = $best_pos2 = $best_endpos = null;
-            $sorted = count($ulist) === 1 || count($uset) <= 1;
+            $sorted = count($ulists) === 1 || count($uset) <= 1;
             while (count($uset) > 1 && self::word_at($s, $pos2, $isascii, $m)) {
                 if (!$sorted) {
                     usort($uset, function ($a, $b) {
