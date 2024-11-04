@@ -1,6 +1,6 @@
 <?php
 // api_completion.php -- HotCRP completion API calls
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
 
 class Completion_API {
     /** @param list &$comp
@@ -207,107 +207,17 @@ class Completion_API {
      * @param ?PaperInfo $prow
      * @param int $cvis
      * @param 0|1 $reason
-     * @return list<list<Contact|Author>> */
+     * @return list<list<Contact|Author>>
+     * @deprecated */
     static function mention_lists($user, $prow, $cvis, $reason) {
-        $alist = $rlist = $pclist = [];
-        $is_author = $prow && $prow->has_author($user);
-        $saw_shepherd = false;
-
-        if ($prow
-            && $user->can_view_authors($prow)
-            && $cvis >= CommentInfo::CTVIS_AUTHOR) {
-            foreach ($prow->contact_list() as $au) {
-                if ($au->contactId !== $user->contactId)
-                    $alist[] = $au;
-            }
-        }
-
-        if ($prow && $user->can_view_review_assignment($prow, null)) {
-            $prow->ensure_reviewer_names();
-            $xview = $user->conf->time_some_external_reviewer_view_comment();
-            foreach ($prow->reviews_as_display() as $rrow) {
-                if (($rrow->reviewType < REVIEW_PC && !$xview)
-                    || $rrow->contactId === $user->contactId) {
-                    continue;
-                }
-                $viewid = $user->can_view_review_identity($prow, $rrow);
-                if ($rrow->reviewOrdinal
-                    && $user->can_view_review($prow, $rrow)) {
-                    $au = new Author;
-                    $au->lastName = "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
-                    $au->contactId = $rrow->contactId;
-                    $au->status = $viewid ? Author::STATUS_REVIEWER : Author::STATUS_ANONYMOUS_REVIEWER;
-                    $rlist[] = $au;
-                }
-                if ($viewid
-                    && ($cvis >= CommentInfo::CTVIS_REVIEWER || $rrow->reviewType >= REVIEW_PC)
-                    && !$rrow->reviewer()->is_dormant()) {
-                    $rlist[] = $rrow->reviewer();
-                    $saw_shepherd = $saw_shepherd || $rrow->contactId === $prow->shepherdContactId;
-                }
-            }
-            // XXX todo: list previous commentees in privileged position?
-            // XXX todo: list lead?
-        }
-
-        if ($prow
-            && $prow->shepherdContactId > 0
-            && $prow->shepherdContactId !== $user->contactId) {
-            $viewid = $user->can_view_shepherd($prow);
-            $au = new Author;
-            $au->lastName = "Shepherd";
-            $au->contactId = $prow->shepherdContactId;
-            $au->status = $viewid ? Author::STATUS_REVIEWER : Author::STATUS_ANONYMOUS_REVIEWER;
-            $rlist[] = $au;
-            if ($viewid
-                && !$saw_shepherd
-                && ($shepherd = $user->conf->user_by_id($prow->shepherdContactId, USER_SLICE))
-                && !$shepherd->is_dormant()) {
-                $rlist[] = $shepherd;
-            }
-        }
-
-        if (!$is_author && $user->can_view_pc()) {
-            if (!$prow
-                || $reason === self::MENTION_PARSE
-                || !$user->conf->check_track_view_sensitivity()) {
-                $pclist = $user->conf->enabled_pc_members();
-            } else {
-                foreach ($user->conf->pc_members() as $p) {
-                    if (!$p->is_dormant()
-                        && $p->can_pc_view_paper_track($prow))
-                        $pclist[] = $p;
-                }
-            }
-        }
-
-        return [$alist, $rlist, $pclist];
+        $mlister = new MentionLister($user, $prow, $cvis, $reason);
+        return $mlister->list_values();
     }
 
     /** @param Qrequest $qreq
-     * @param ?PaperInfo $prow */
+     * @param ?PaperInfo $prow
+     * @deprecated */
     static function mentioncompletion_api(Contact $user, $qreq, $prow) {
-        $comp = [];
-        $mlists = self::mention_lists($user, $prow, CommentInfo::CTVIS_AUTHOR, self::MENTION_COMPLETION);
-        $aunames = [];
-        foreach ($mlists as $i => $mlist) {
-            $skey = $i === 2 ? "sm1" : "s";
-            foreach ($mlist as $au) {
-                $n = Text::name($au->firstName, $au->lastName, $au->email, NAME_P);
-                $x = [$skey => $n];
-                if ($i === 0) {
-                    $x["au"] = true;
-                    if (in_array($n, $aunames)) { // duplicate contact names are common
-                        continue;
-                    }
-                    $aunames[] = $n;
-                }
-                if ($i < 2) {
-                    $x["pri"] = 1;
-                }
-                $comp[] = $x;
-            }
-        }
-        return ["ok" => true, "mentioncompletion" => array_values($comp)];
+        return MentionLister::mentioncompletion_api($user, $qreq, $prow);
     }
 }

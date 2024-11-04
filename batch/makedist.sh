@@ -338,6 +338,7 @@ src/logentryfilter.php
 src/mailrecipients.php
 src/mailsender.php
 src/meetingtracker.php
+src/mentionlister.php
 src/mentionparser.php
 src/mergecontacts.php
 src/multiconference.php

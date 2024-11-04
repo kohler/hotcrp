@@ -1183,7 +1183,8 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         if (strpos($text, "@") === false) {
             return [];
         }
-        return MentionParser::parse($text, ...Completion_API::mention_lists($user, $prow, $ctype & self::CTM_VIS, Completion_API::MENTION_PARSE));
+        $mlister = new MentionLister($user, $prow, $ctype & self::CTM_VIS, MentionLister::FOR_PARSE);
+        return MentionParser::parse($text, ...$mlister->list_values());
     }
 
     /** @param Contact $user
