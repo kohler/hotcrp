@@ -3773,20 +3773,19 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
-    function can_view_lead(?PaperInfo $prow = null) {
-        if ($prow) {
-            $rights = $this->rights($prow);
-            return $rights->can_administer()
-                || $prow->leadContactId === $this->contactXid
-                || (($rights->allow_pc() || $rights->is_reviewer())
-                    && $this->can_view_review_identity($prow, null));
-        } else {
+    function can_view_lead(?PaperInfo $prow) {
+        if (!$prow) {
             return $this->isPC;
         }
+        $rights = $this->rights($prow);
+        return $rights->can_administer()
+            || $prow->leadContactId === $this->contactXid
+            || (($rights->allow_pc() || $rights->is_reviewer())
+                && $this->can_view_review_identity($prow, null));
     }
 
     /** @return bool */
-    function can_view_shepherd(?PaperInfo $prow = null) {
+    function can_view_shepherd(?PaperInfo $prow) {
         // XXX Allow shepherd view when outcome == 0 && can_view_decision.
         // This is a mediocre choice, but people like to reuse the shepherd field
         // for other purposes, and I might hear complaints.
