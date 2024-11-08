@@ -3714,10 +3714,11 @@ class Contact implements JsonSerializable {
     function can_pc_view_paper_track(PaperInfo $prow) {
         assert($this->isPC);
         $rights = $this->rights($prow);
-        return $rights->allow_pc_broad()
-            && $this->conf->time_pc_view($prow, false)
-            && (!$this->conf->check_track_view_sensitivity()
-                || $this->conf->check_tracks($prow, $this, Track::VIEW));
+        return $rights->allow_administer()
+            || ($rights->allow_pc_broad()
+                && $this->conf->time_pc_view($prow, false)
+                && (!$this->conf->check_track_view_sensitivity()
+                    || $this->conf->check_tracks($prow, $this, Track::VIEW)));
     }
 
     /** @return bool */
