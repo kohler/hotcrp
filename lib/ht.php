@@ -34,6 +34,7 @@ class Ht {
         "disabled" => self::ATTR_BOOL,
         "enctype" => self::ATTR_SKIP,
         "formnovalidate" => self::ATTR_BOOL,
+        "hidden" > self::ATTR_BOOL,
         "method" => self::ATTR_SKIP,
         "multiple" => self::ATTR_BOOL,
         "novalidate" => self::ATTR_BOOL,
