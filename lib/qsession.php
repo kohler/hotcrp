@@ -9,7 +9,7 @@ class Qsession {
     /** @var bool */
     protected $sopen = false;
     /** @var 0|1|2 */
-    protected $opentype = 0;
+    private $opentype = 0;
 
     function maybe_open() {
         if (!$this->sopen && isset($_COOKIE[session_name()])) {
@@ -34,10 +34,10 @@ class Qsession {
     }
 
     function handle_open() {
-        if ($this->sopen && $this->opentype !== 1) {
+        if ($this->opentype !== 1 && $this->sopen) {
             return;
         }
-        if ($this->sid !== null && $this->opentype === 2) {
+        if ($this->opentype === 2 && $this->sid !== null) {
             $sid = $this->start($this->sid);
             assert($sid === $this->sid);
             return;
@@ -58,16 +58,55 @@ class Qsession {
             $this->sopen = true;
         }
 
-        // if reopened, empty [session fixation], or old, reset session
-        $curv = $this->all();
-        if (empty($curv)
-            || ($curv["deletedat"] ?? Conf::$now) < Conf::$now - 30) {
-            $this->opentype = 1;
+        // reset session while reopened, empty [session fixation], or deleted
+        if ($this->sid === $cookie_sid) {
+            $this->check_reopen();
+            if ($this->sid === null) {
+                return;
+            }
         }
-        if ($this->sid === $cookie_sid && $this->opentype === 1) {
-            $nsid = $this->new_sid();
-            if (!isset($curv["deletedat"])) {
+
+        // maybe update session format
+        if (($this->get("v") ?? 0) < 2) {
+            if (empty($this->all())) {
+                $this->set("v", 2);
+            } else {
+                UpdateSession::run($this);
+            }
+        }
+        if ($this->get("u") || $this->sid !== $cookie_sid) {
+            $this->refresh();
+        }
+    }
+
+    private function check_reopen() {
+        $tries = 0;
+        while (true) {
+            $curv = $this->all();
+            if (($this->opentype !== 1 || $tries > 0)
+                && (!empty($curv) || $tries > 0)
+                && !isset($curv["deletedat"])) {
+                return;
+            }
+            ++$tries;
+
+            $nsid = null;
+            if (isset($curv["deletedat"])) {
+                $transfer = false;
+                if ($curv["deletedat"] >= Conf::$now - 30
+                    && isset($curv["new_sid"])
+                    && is_string($curv["new_sid"])
+                    && $tries < 10) {
+                    $nsid = $curv["new_sid"];
+                }
+            } else {
+                $transfer = !empty($curv);
+            }
+
+            $nsid = $nsid ?? $this->new_sid();
+            if ($transfer) {
                 $this->set("deletedat", Conf::$now);
+                $this->set("new_sid", $nsid);
             }
             $this->commit();
 
@@ -77,22 +116,15 @@ class Qsession {
                 return;
             }
             $this->sopen = true;
-            unset($curv["deletedat"]);
-            foreach ($curv as $k => $v) {
-                $this->set($k, $v);
-            }
-        }
 
-        // maybe update session format
-        if (empty($this->all())) {
-            $this->set("v", 2);
-        } else {
-            if (($this->get("v") ?? 0) < 2) {
-                UpdateSession::run($this);
+            if ($transfer) {
+                // `unset` should be a no-op, because we never transfer data
+                // from a deleted session:
+                unset($curv["deletedat"], $curv["new_sid"]);
+                foreach ($curv as $k => $v) {
+                    $this->set($k, $v);
+                }
             }
-        }
-        if ($this->get("u") || $cookie_sid !== $this->sid) {
-            $this->refresh();
         }
     }
 

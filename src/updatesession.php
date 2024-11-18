@@ -146,6 +146,7 @@ class UpdateSession {
      * @param 0|1 $reason
      * @param bool $success */
     static function usec_add(Qrequest $qreq, $email, $type, $reason, $success) {
+        // See `etc/devel/sessions.md` for format information
         $uindex = Contact::session_index_by_email($qreq, $email);
         $old_usec = $qreq->gsession("usec") ?? [];
         $nold_usec = count($old_usec);
