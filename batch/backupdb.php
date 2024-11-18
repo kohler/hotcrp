@@ -29,6 +29,9 @@ class BackupDB_Batch {
     /** @var bool
      * @readonly */
     public $tablespaces;
+    /** @var bool
+     * @readonly */
+    public $single_transaction;
     /** @var int
      * @readonly */
     public $count;
@@ -143,6 +146,7 @@ class BackupDB_Batch {
         $this->compress = isset($arg["z"]);
         $this->schema = isset($arg["schema"]);
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
+        $this->single_transaction = true;
         $this->tablespaces = isset($arg["tablespaces"]);
         $this->pc_only = isset($arg["pc"]);
         $this->count = $arg["count"] ?? 1;
@@ -152,6 +156,14 @@ class BackupDB_Batch {
                 $this->throw_error("Bad option `{$arg}`");
             }
             $this->my_opts[] = $arg;
+            if ($arg === "--skip-lock-tables"
+                || $arg === "--lock-tables"
+                || $arg === "-l"
+                || $arg === "--lock-all-tables"
+                || $arg === "-x"
+                || $arg === "--single-transaction") {
+                $this->single_transaction = false;
+            }
         }
         if (isset($arg["skip-comments"])) {
             $this->my_opts[] = "--skip-comments";
@@ -402,8 +414,10 @@ class BackupDB_Batch {
         }
     }
 
-    /** @return string */
+    /** @param list<string> $args
+     * @return list<string> */
     function mysqlcmd($cmd, $args) {
+        $a = [$cmd];
         if (($this->connp->password ?? "") !== "") {
             if ($this->_pwfile === null) {
                 $this->_pwtmp = tmpfile();
@@ -420,28 +434,35 @@ class BackupDB_Batch {
                     $this->throw_error("Cannot create temporary file");
                 }
             }
-            $cmd .= " --defaults-extra-file=" . escapeshellarg($this->_pwfile);
+            $a[] = "--defaults-extra-file={$this->_pwfile}";
         }
         if (($this->connp->host ?? "localhost") !== "localhost"
             && $this->connp->host !== "") {
-            $cmd .= " -h " . escapeshellarg($this->connp->host);
+            $a[] = "-h";
+            $a[] = $this->connp->host;
         }
         if (($this->connp->user ?? "") !== "") {
-            $cmd .= " -u " . escapeshellarg($this->connp->user);
+            $a[] = "-u";
+            $a[] = $this->connp->user;
         }
         if (($this->connp->socket ?? "") !== "") {
-            $cmd .= " -S " . escapeshellarg($this->connp->socket);
+            $a[] = "-S";
+            $a[] = $this->connp->socket;
         }
-        if (!$this->tablespaces && $cmd === "mysqldump") {
-            $cmd .= " --no-tablespaces";
+        if ($cmd === "mysqldump" && !$this->tablespaces) {
+            $a[] = "--no-tablespaces";
+        }
+        if ($cmd === "mysqldump" && $this->single_transaction) {
+            $a[] = "--single-transaction";
         }
         foreach ($this->my_opts as $opt) {
-            $cmd .= " " . escapeshellarg($opt);
+            $a[] = $opt;
         }
-        if ($args !== "") {
-            $cmd .= " " . $args;
+        foreach ($args as $opt) {
+            $a[] = $opt;
         }
-        return $cmd . " " . escapeshellarg($this->connp->name);
+        $a[] = $this->connp->name;
+        return $a;
     }
 
     private function update_maybe_ephemeral() {
@@ -634,12 +655,12 @@ class BackupDB_Batch {
         $this->process_line($s, "\n");
     }
 
-    /** @param string $cmd
+    /** @param list<string> $args
      * @param array<int,list<string>> $descriptors
      * @param array<int,resource> &$pipes
      * @return resource */
-    private function my_proc_open($cmd, $descriptors, &$pipes) {
-        $proc = proc_open($cmd, $descriptors, $pipes, SiteLoader::$root, [
+    private function my_proc_open($args, $descriptors, &$pipes) {
+        $proc = proc_open(Subprocess::args_to_command($args), $descriptors, $pipes, SiteLoader::$root, [
             "PATH" => getenv("PATH"), "LC_ALL" => "C"
         ]);
         if (!$proc) {
@@ -650,7 +671,7 @@ class BackupDB_Batch {
 
     /** @return int */
     private function run_restore() {
-        $cmd = $this->mysqlcmd("mysql", "");
+        $cmd = $this->mysqlcmd("mysql", []);
         $pipes = [];
         $proc = $this->my_proc_open($cmd, [0 => ["pipe", "rb"], 1 => ["file", "/dev/null", "w"]], $pipes);
         $this->out = $pipes[0];
@@ -687,10 +708,9 @@ class BackupDB_Batch {
         }
     }
 
-    /** @param string $args
-     * @param string $tables */
-    private function run_mysqldump_transfer($args, $tables) {
-        $cmd = $this->mysqlcmd("mysqldump", $args) . ($tables ? " {$tables}" : "");
+    /** @param string ...$args */
+    private function run_mysqldump_transfer(...$args) {
+        $cmd = $this->mysqlcmd("mysqldump", $args);
         $pipes = [];
         $proc = $this->my_proc_open($cmd, [["file", "/dev/null", "r"], ["pipe", "wb"]], $pipes);
         $this->in = $pipes[1];
@@ -704,9 +724,9 @@ class BackupDB_Batch {
             $pc[] = -1;
         }
         $where = "contactId in (" . join(",", $pc) . ")";
-        $this->run_mysqldump_transfer("--where='{$where}'", "ContactInfo");
-        $this->run_mysqldump_transfer("", "Settings TopicArea");
-        $this->run_mysqldump_transfer("--where='{$where}'", "TopicInterest");
+        $this->run_mysqldump_transfer("--where={$where}", "ContactInfo");
+        $this->run_mysqldump_transfer("Settings", "TopicArea");
+        $this->run_mysqldump_transfer("--where={$where}", "TopicInterest");
     }
 
     private function open_streams() {
@@ -797,7 +817,7 @@ class BackupDB_Batch {
         } else if ($this->pc_only) {
             $this->run_pc_only_transfer();
         } else {
-            $this->run_mysqldump_transfer("", "");
+            $this->run_mysqldump_transfer();
         }
 
         if (!empty($this->_checked_tables)) {

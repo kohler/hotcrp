@@ -184,6 +184,7 @@ lib/runsql.sh
 lib/s3client.php
 lib/s3result.php
 lib/scoreinfo.php
+lib/subprocess.php
 lib/tagger.php
 lib/text.php
 lib/unicodehelper.php

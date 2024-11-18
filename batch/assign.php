@@ -57,7 +57,7 @@ class Assign_Batch {
         $arg = (new Getopt)->long(
             "name:,n: !",
             "config: !",
-            "dry-run,d Do not perform assignment; output CSV instead.",
+            "dry-run,d Do not perform assignment; output CSV instead",
             "help,h !"
         )->description("Perform HotCRP bulk assignments specified in the input CSV file.
 Usage: php batch/assign.php [--dry-run] [FILE]")
