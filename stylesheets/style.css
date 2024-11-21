@@ -322,6 +322,7 @@ h3, h4 {
 }
 h1.paptitle {
 	padding: 6px 24px;
+	overflow-wrap: break-word;
 }
 h1.signin {
 	margin-bottom: 1rem;
@@ -2343,6 +2344,7 @@ label.f-c, .f-i > label, .f-i > .label {
 	padding-left: 0 !important;
 	list-style-type: none;
 	font-size: 92%;
+	overflow-wrap: break-word;
 }
 .feedback, .feedback-list, .field-d {
 	margin-bottom: 0.3rem;
