@@ -908,12 +908,12 @@ class UserStatus extends MessageSet {
         $this->jval = $cj;
         $this->diffs = [];
         $this->created = $this->notified = false;
-        $this->save_update($old_user);
+        return $this->save_update($old_user);
     }
 
     /** @param ?Contact $old_user
      * @return ?Contact */
-    function save_update($cj, $old_user = null) {
+    function save_update($old_user = null) {
         assert(is_object($this->jval));
         assert(!$old_user || (!$this->no_create && !$this->no_modify));
         $cj = $this->jval;
