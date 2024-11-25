@@ -1101,7 +1101,10 @@ class ContactList {
                 . Ht::entry("tag", $this->qreq->tag, ["size" => 15, "class" => "want-focus js-autosubmit", "data-submit-fn" => "tag"])
                 . Ht::submit("fn", "Go", ["value" => "tag", "class" => "uic js-submit-list ml-2"])];
 
-            $mods = ["disableaccount" => "Disable", "enableaccount" => "Enable"];
+            $mods = [
+                "disableaccount" => "Disable",
+                "enableaccount" => "Enable"
+            ];
             if ($this->user->can_edit_any_password()) {
                 $mods["resetpassword"] = "Reset password";
             }

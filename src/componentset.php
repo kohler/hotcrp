@@ -490,11 +490,12 @@ class ComponentSet {
             $this->mark_separator();
         }
 
-        $title = ($gj->print_title ?? true) ? $gj->title ?? "" : "";
+        $title = $gj->title ?? "";
         $hashid = $gj->hashid ?? null;
-        if ($title !== ""
-            || ($this->_section_closer === null && $this->_next_section_class !== "")
-            || (string) $hashid !== "") {
+        if (($title !== ""
+             || (string) $hashid !== ""
+             || ($this->_section_closer === null && $this->_next_section_class !== ""))
+            && ($gj->autosection ?? true) !== false) {
             // create default hashid from title
             $this->print_start_section($title, $hashid);
         } else {

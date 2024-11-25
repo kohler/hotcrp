@@ -128,8 +128,8 @@ useful to provide synonyms; for example, the search keyword component fragment
 copying a component definition because changes in the source component are
 automatically incorporated in the alias.
 
-An alias may point to another alias, but HotCRP will only follow alias chains
-to a limited depth before giving up.
+An alias may point to another alias, but HotCRP will give up if an alias chain
+goes on too long.
 
 ## Nested components
 

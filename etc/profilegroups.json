@@ -47,7 +47,7 @@
         "print_function": "*Security_UserInfo::print_new_password",
         "request_function": "*Security_UserInfo::parse_qreq_new_password",
         "save_function": "Security_UserInfo::save_new_password",
-        "inputs": false   },
+        "autosection": false, "inputs": false   },
 
 
     {   "name": "preferences", "title": "Preferences", "order": 300   },
