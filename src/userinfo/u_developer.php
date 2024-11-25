@@ -146,7 +146,8 @@ class Developer_UserInfo {
     }
 
     function print_new_bearer_token(UserStatus $us) {
-        if (!$us->is_auth_self()) {
+        if (!$us->is_auth_self()
+            || !$us->has_recent_authentication()) {
             return;
         } else if ($us->user->security_locked()) {
             $us->conf->warning_msg("<0>This account’s security settings are locked, so its API tokens cannot be changed.");
@@ -219,14 +220,15 @@ class Developer_UserInfo {
     }
 
     function save_new_bearer_token(UserStatus $us) {
-        if ($this->_new_token !== null) {
-            $this->_new_token->set_token_pattern("hct_[30]")->insert();
-            if ($this->_new_token->stored()) {
-                $us->diffs["API tokens"] = true;
-            } else {
-                $us->error_at(null, "<0>Error while creating new API token");
-                $this->_new_token = null;
-            }
+        if ($this->_new_token === null) {
+            return;
+        }
+        $this->_new_token->set_token_pattern("hct_[30]")->insert();
+        if ($this->_new_token->stored()) {
+            $us->diffs["API tokens"] = true;
+        } else {
+            $us->error_at(null, "<0>Error while creating new API token");
+            $this->_new_token = null;
         }
     }
 
@@ -244,25 +246,26 @@ class Developer_UserInfo {
     }
 
     function save_delete_bearer_tokens(UserStatus $us) {
-        if ($this->_delete_tokens !== null) {
-            $toks = self::all_active_bearer_tokens($us->user);
-            $deleteables = [];
-            foreach ($toks as $tok) {
-                foreach ($this->_delete_tokens as $dt) {
-                    if ($tok->timeCreated === $dt[0]
-                        && $tok->is_cdb === $dt[1]
-                        && str_starts_with($tok->salt, $dt[2])) {
-                        $deleteables[] = $tok;
-                    }
+        if ($this->_delete_tokens === null) {
+            return;
+        }
+        $toks = self::all_active_bearer_tokens($us->user);
+        $deleteables = [];
+        foreach ($toks as $tok) {
+            foreach ($this->_delete_tokens as $dt) {
+                if ($tok->timeCreated === $dt[0]
+                    && $tok->is_cdb === $dt[1]
+                    && str_starts_with($tok->salt, $dt[2])) {
+                    $deleteables[] = $tok;
                 }
             }
-            if (!empty($deleteables)
-                && count($deleteables) <= count($this->_delete_tokens)) {
-                foreach ($deleteables as $tok) {
-                    $tok->delete();
-                }
-                $us->diffs["API tokens"] = true;
+        }
+        if (!empty($deleteables)
+            && count($deleteables) <= count($this->_delete_tokens)) {
+            foreach ($deleteables as $tok) {
+                $tok->delete();
             }
+            $us->diffs["API tokens"] = true;
         }
     }
 }

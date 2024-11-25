@@ -242,7 +242,7 @@ td.pl.pl_title, td.pl.pl_text {
 	display: none;
 }
 .msg,
-.w-text, .w-entry-text,
+.w-text, .w-entry-text, .form-outline-section.w-text,
 .feedback, .feedback-list, .field-d,
 .revtext.format0, .cmttext.format0, .revtext .format0, .cmttext .format0,
 .overlong-expander {

@@ -13094,13 +13094,6 @@ handle_ui.on("js-profile-role", function () {
     foldup.call(this, null, {n: 2, open: (pctype && pctype !== "none") || ass !== 0});
 });
 
-handle_ui.on("js-profile-current-password", function () {
-    if (this.value.trim() !== "") {
-        $(this.form).find(".need-profile-current-password").prop("disabled", false);
-        removeClass(this, "uii");
-    }
-});
-
 handle_ui.on("js-profile-token-add", function () {
     this.disabled = true;
     var nbt = document.getElementById("new-api-token").closest(".form-section");

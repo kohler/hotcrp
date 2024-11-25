@@ -30,7 +30,7 @@ class Profile_Page {
         $this->user = $viewer;
         $this->ustatus = new UserStatus($viewer);
         $this->ustatus->set_user($viewer);
-        $this->ustatus->qreq = $qreq;
+        $this->ustatus->set_qreq($qreq);
     }
 
 
@@ -508,7 +508,8 @@ class Profile_Page {
 
     function handle_request() {
         $this->find_user();
-        if ($this->qreq->cancel) {
+        if ($this->qreq->cancel
+            || ($this->qreq->reauth && $this->qreq->valid_post())) {
             $this->conf->redirect_self($this->qreq);
         } else if ($this->qreq->savebulk
                    && $this->page_type !== 0
@@ -739,10 +740,7 @@ class Profile_Page {
         if ($this->page_type === 2) {
             $this->ustatus->print_members("__bulk");
         } else {
-            $this->ustatus->cs()->print_body_members($this->topic);
-            if ($this->ustatus->inputs_printed()) {
-                $this->ustatus->print_actions();
-            }
+            $this->print_topic();
             echo "</div>"; // foldaccount
         }
 
@@ -752,6 +750,17 @@ class Profile_Page {
             Ht::stash_script('$("#f-profile").awaken()');
         }
         $this->qreq->print_footer();
+    }
+
+    private function print_topic() {
+        $this->ustatus->cs()->print_body_members($this->topic);
+        if (!$this->ustatus->inputs_printed()
+            || (!$this->ustatus->has_recent_authentication()
+                && ($gj = $this->ustatus->cs()->get($this->topic))
+                && ($gj->request_recent_authentication ?? false))) {
+            return;
+        }
+        $this->ustatus->print_actions();
     }
 
 

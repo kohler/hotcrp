@@ -1779,6 +1779,9 @@ div.hint {
 .overlong-expander {
 	max-width: 720px; /* see also @layer theme */
 }
+.form-outline-section.w-text {
+	max-width: 748px;
+}
 .w-entry-text {
 	max-width: 560px;
 }
@@ -1795,13 +1798,16 @@ h3.form-h, h3.helppage, h4.helppage {
 	margin-bottom: 3em;
 }
 .form-outline-section {
-	margin-left: -16px;
+	margin-left: -14px;
 	border: 1px solid silver;
 	border-radius: 5px;
-	padding: 8px 15px 12px;
+	padding: 8px 13px 12px;
 }
 .msg + .form-section {
 	margin-top: 2.25em;
+}
+.form-outline-section > .f-i:last-child {
+	margin-bottom: 4px;
 }
 h3.helppage {
 	margin: 2em 0 1em;

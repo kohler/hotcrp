@@ -384,13 +384,17 @@ class LoginHelper {
             $conf->redirect($urlarg->value);
         }
 
-        if ($ms) {
-            $ms->error_at(isset($info["email"]) ? "email" : "password", $msg);
+        if (!$ms) {
+            $conf->error_msg($msg);
+        } else if (isset($info["field"])) {
+            $ms->error_at($info["field"], $msg);
+        } else if (!isset($info["email"])) {
+            $ms->error_at("password", $msg);
+        } else {
+            $ms->error_at("email", $msg);
             if (isset($info["password"])) {
                 $ms->error_at("password");
             }
-        } else {
-            $conf->error_msg($msg);
         }
     }
 }

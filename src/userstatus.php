@@ -38,7 +38,8 @@ class UserStatus extends MessageSet {
     /** @var ?array<string,true> */
     public $unknown_topics = null;
 
-    /** @var Qrequest */
+    /** @var Qrequest
+     * @readonly */
     public $qreq;
     /** @var CsvRow */
     public $csvreq;
@@ -63,6 +64,8 @@ class UserStatus extends MessageSet {
     private $_cs;
     /** @var bool */
     private $_inputs_printed = false;
+    /** @var int */
+    private $_reauth_status = -1;
 
     /** @var array<string,int>
      * @readonly */
@@ -154,6 +157,35 @@ class UserStatus extends MessageSet {
         }
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
+    function set_qreq(Qrequest $qreq) {
+        $this->qreq = $qreq;
+
+        // maybe reauthenticate
+        if ($qreq->valid_post()
+            && isset($qreq["reauth:password"])
+            && !$this->viewer->is_root_user()
+            && !$this->viewer->is_empty()) {
+            $this->check_reauth_password();
+        }
+    }
+
+    private function check_reauth_password() {
+        $pw = trim($this->qreq["reauth:password"]);
+        $info = $this->viewer->check_password_info($pw);
+        if ($info["ok"]) {
+            UpdateSession::usec_add_list($this->qreq, $this->viewer->email, $info["usec"] ?? [], 1);
+        } else {
+            $info["field"] = "reauth:password";
+            LoginHelper::login_error($this->conf, $this->viewer->email, $info, $this);
+        }
+    }
+
+    /** @return ?Contact */
+    function cdb_user() {
+        return $this->user->cdb_user();
+    }
+
     /** @return bool */
     function is_new_user() {
         return !$this->user->email;
@@ -174,11 +206,6 @@ class UserStatus extends MessageSet {
     /** @return bool */
     function can_update_cdb() {
         return ($this->_authf & self::AUTHF_CDB) !== 0;
-    }
-
-    /** @return ?Contact */
-    function cdb_user() {
-        return $this->user->cdb_user();
     }
 
     /** @param object $gj
@@ -213,6 +240,20 @@ class UserStatus extends MessageSet {
     function allow_some_security() {
         return !$this->user->is_empty()
             && ($this->is_auth_self() || $this->viewer->can_edit_any_password());
+    }
+
+    /** @return bool */
+    function has_recent_authentication() {
+        if ($this->_reauth_status < 0) {
+            if ($this->viewer->is_root_user()
+                || (!$this->viewer->is_empty()
+                    && UpdateSession::usec_query($this->qreq, $this->viewer->email, 0, 1, Conf::$now - 600))) {
+                $this->_reauth_status = 1;
+            } else {
+                $this->_reauth_status = 0;
+            }
+        }
+        return $this->_reauth_status > 0;
     }
 
     /** @return ?bool */
@@ -1868,7 +1909,10 @@ John Adams,john@earbox.org,UC Berkeley,pc
     function request_group($name) {
         $cs = $this->cs();
         foreach ($cs->members($name, "request_function") as $gj) {
-            assert(!isset($gj->allow_request_if));
+            if (($gj->request_recent_authentication ?? false)
+                && !$this->has_recent_authentication()) {
+                continue;
+            }
             if ($cs->call_function($gj, $gj->request_function, $gj) === false) {
                 break;
             }
