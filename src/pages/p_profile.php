@@ -508,9 +508,13 @@ class Profile_Page {
 
     function handle_request() {
         $this->find_user();
-        if ($this->qreq->cancel
-            || ($this->qreq->reauth && $this->qreq->valid_post())) {
+        if ($this->qreq->cancel) {
             $this->conf->redirect_self($this->qreq);
+        } else if ($this->qreq->reauth
+                   && $this->qreq->valid_post()) {
+            if (!$this->ustatus->has_error()) {
+                $this->conf->redirect_self($this->qreq);
+            }
         } else if ($this->qreq->savebulk
                    && $this->page_type !== 0
                    && $this->qreq->valid_post()) {

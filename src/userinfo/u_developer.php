@@ -82,7 +82,9 @@ class Developer_UserInfo {
 
     /** @param int $n */
     private function print_bearer_token_deleter(UserStatus $us, TokenInfo $tok, $n) {
-        if (!$us->is_auth_self() || $us->user->security_locked()) {
+        if (!$us->is_auth_self()
+            || $us->user->security_locked()
+            || !$us->has_recent_authentication()) {
             return;
         }
         $dbid = $tok->is_cdb ? "A" : "L";

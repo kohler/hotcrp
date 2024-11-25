@@ -235,7 +235,7 @@
     ["signin_error", "<5>{message:ftext}. Use <a href=\"{forgotpassword}\">“Forgot your password?”</a> to reset it.", ["{problem}=password_expired", "{forgotpassword}"]],
     ["signin_error", "<5>{message:ftext}. If that’s your account, <a href=\"{signin}\">sign in</a> using your password.", ["{problem}=account_exists", "{signin}"]],
     ["signin_error", "<5>{message:ftext}. If that’s your account, <a href=\"{signin}\">sign in</a> using your password, or <a href=\"{forgotpassword}\">reset your password</a> if you have forgotten it.", ["{problem}=account_exists", "{forgotpassword}"]],
-    ["signin_error", "<5>{message:ftext}. Enter your password or <a href=\"{forgotpassword}\">reset your password</a> if you have forgotten it.", ["{problem}=bad_password", "{forgotpassword}"], 1],
+    ["signin_error", "<5>{message:ftext}. You may want to <a href=\"{forgotpassword}\">reset your password</a> if you have forgotten it.", ["{problem}=bad_password", "{forgotpassword}"], 1],
 
     ["<5><a href=\"{url}\">{Submissions} {pids:numlist#}</a> got fewer assignments than you requested.", "<5><a href=\"{url}\">{Submission} {pids:numlist#}</a> got fewer assignments than you requested.", ["#{pids}=1"]]
 ]

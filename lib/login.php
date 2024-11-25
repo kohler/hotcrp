@@ -357,8 +357,9 @@ class LoginHelper {
             $e = "<0>Internal error";
         } else if (isset($info["nologin"])) {
             $e = "<0>Direct signin is not allowed on this site";
+            $problem = "no_signin";
         } else {
-            $e = "<0>Incorrect password";
+            $e = "<0>Password incorrect";
         }
 
         if ($email !== "") {
