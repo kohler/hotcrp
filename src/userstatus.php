@@ -444,19 +444,18 @@ class UserStatus extends MessageSet {
     }
 
     function user_json() {
-        if ($this->user) {
-            $this->jval = (object) [];
-            if ($this->user->contactId > 0) {
-                $this->jval->id = $this->user->contactId;
-            }
-            $cs = $this->cs();
-            foreach ($cs->members("", "unparse_json_function") as $gj) {
-                $cs->call_function($gj, $gj->unparse_json_function, $gj);
-            }
-            return $this->jval;
-        } else {
+        if (!$this->user) {
             return null;
         }
+        $this->jval = (object) [];
+        if ($this->user->contactId > 0) {
+            $this->jval->id = $this->user->contactId;
+        }
+        $cs = $this->cs();
+        foreach ($cs->members("", "unparse_json_function") as $gj) {
+            $cs->call_function($gj, $gj->unparse_json_function, $gj);
+        }
+        return $this->jval;
     }
 
 
@@ -893,14 +892,31 @@ class UserStatus extends MessageSet {
     }
 
 
+    /** @param object $cj */
+    function start_update($cj) {
+        assert(is_object($cj));
+        $this->jval = $cj;
+        $this->diffs = [];
+        $this->created = $this->notified = false;
+    }
+
     /** @param object $cj
      * @param ?Contact $old_user
      * @return ?Contact */
     function save_user($cj, $old_user = null) {
         assert(is_object($cj));
-        assert(!$old_user || (!$this->no_create && !$this->no_modify));
+        $this->jval = $cj;
         $this->diffs = [];
         $this->created = $this->notified = false;
+        $this->save_update($old_user);
+    }
+
+    /** @param ?Contact $old_user
+     * @return ?Contact */
+    function save_update($cj, $old_user = null) {
+        assert(is_object($this->jval));
+        assert(!$old_user || (!$this->no_create && !$this->no_modify));
+        $cj = $this->jval;
 
         // normalize name, including email
         self::normalize_name($cj);

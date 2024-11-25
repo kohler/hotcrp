@@ -1468,9 +1468,19 @@ button:hover, button:focus, button:active, button:focus-within,
 	border-color: #005f00;
 	background-image: linear-gradient(#00a200, #007f00);
 }
+.btn-danger {
+	color: #cc0000;
+}
+.btn-danger:hover, .btn-danger:active {
+	border: 1px solid #b00000;
+	background: #ff0000;
+	background-image: linear-gradient(#ee0000, #cc0000);
+	color: white;
+}
 .differs .btn-default,
 .differs .btn-primary,
-.btn-highlight {
+.btn-highlight,
+.btn-highlight.btn-danger {
 	border-color: #cc0000;
 	background: #ff0000;
 	background-image: linear-gradient(#ff4040, #ff0000);
@@ -1481,15 +1491,6 @@ button:hover, button:focus, button:active, button:focus-within,
 .btn-highlight:hover, .btn-highlight:active {
 	border: 1px solid #b00000;
 	background-image: linear-gradient(#ee0000, #cc0000);
-}
-.btn-danger {
-	color: #cc0000;
-}
-.btn-danger:hover, .btn-danger:active {
-	border: 1px solid #b00000;
-	background: #ff0000;
-	background-image: linear-gradient(#ee0000, #cc0000);
-	color: white;
 }
 a.btn-default, a.btn-primary, a.btn-success, a.btn-highlight,
 a.btn-default:hover, a.btn-primary:hover, a.btn-success:hover,
@@ -1689,6 +1690,10 @@ button > .licon, .btn > .licon {
 .btn .is-mf {
 	position: absolute;
 	left: 100%;
+}
+.checkmark-before::before {
+	content: "\2713";
+	padding-right: 0.25em;
 }
 .is-mf.mf-success::after {
 	content: "\2713";

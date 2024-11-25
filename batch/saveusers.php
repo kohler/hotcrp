@@ -95,10 +95,10 @@ class SaveUsers_Batch {
         while (($line = $csv->next_row())) {
             $this->ustatus->set_user(Contact::make($this->conf));
             $this->ustatus->clear_messages();
+            $this->ustatus->start_update((object) ["id" => null]);
             $this->ustatus->csvreq = $line;
-            $this->ustatus->jval = (object) ["id" => null];
             $this->ustatus->parse_csv_group("");
-            if (($acct = $this->ustatus->save_user($this->ustatus->jval))) {
+            if (($acct = $this->ustatus->save_update())) {
                 if ($this->quiet) {
                     // print nothing
                 } else if (empty($this->ustatus->diffs)) {

@@ -224,7 +224,7 @@ class Profile_Page {
         }
 
         // save account
-        return $ustatus->save_user($ustatus->jval, $acct);
+        return $ustatus->save_update($acct);
     }
 
 
@@ -312,7 +312,7 @@ class Profile_Page {
         while (($line = $csv->next_row())) {
             $ustatus->set_user(Contact::make_placeholder($this->conf));
             $ustatus->clear_messages();
-            $ustatus->jval = (object) ["id" => null];
+            $ustatus->start_update((object) ["id" => null]);
             $ustatus->csvreq = $line;
             $ustatus->parse_csv_group("");
             $ustatus->notify = friendly_boolean($line["notify"]) ?? true;
@@ -367,7 +367,7 @@ class Profile_Page {
 
         // prepare UserStatus
         $this->ustatus->set_user($this->user);
-        $this->ustatus->jval = (object) ["id" => $this->user->has_account_here() ? $this->user->contactId : "new"];
+        $this->ustatus->start_update((object) ["id" => $this->user->has_account_here() ? $this->user->contactId : "new"]);
         $this->ustatus->no_deprivilege_self = true;
         if ($this->page_type !== 0) {
             $this->ustatus->update_profile_if_empty = true;

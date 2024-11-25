@@ -3257,7 +3257,8 @@ class Conf {
      * @param int $now
      * @return string */
     function unparse_time_relative($timestamp, $now = 0, $format = 0) {
-        $d = abs($timestamp - ($now ? : Conf::$now));
+        $now = $now ? : Conf::$now;
+        $d = abs($timestamp - $now);
         if ($d >= 5227200) {
             if (!($format & 1)) {
                 return ($format & 8 ? "on " : "") . $this->_date_unparse($timestamp, "obscure");
@@ -3291,7 +3292,7 @@ class Conf {
         if ($format & 2) {
             return $d;
         } else {
-            return $timestamp < ($now ? : Conf::$now) ? $d . " ago" : "in " . $d;
+            return $timestamp < $now ? $d . " ago" : "in " . $d;
         }
     }
 

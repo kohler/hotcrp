@@ -66,7 +66,7 @@ class Security_UserInfo {
         }
         $us->cs()->add_section_class("form-outline-section tag-yellow w-text")
             ->print_start_section("Confirm account", "reauth");
-        echo '<p>You must confirm your signin credentials before changing sensitive security settings.</p>';
+        echo '<p>Please re-enter your signin credentials to change sensitive security settings.</p>';
         $original_ignore_msgs = $us->swap_ignore_messages(false);
         $us->swap_ignore_messages($original_ignore_msgs);
         echo '<div class="', $us->control_class("reauth:password", "f-i w-text"), '">',
@@ -75,7 +75,7 @@ class Security_UserInfo {
             '</label>',
             $us->feedback_html_at("reauth:password"),
             Ht::entry("reauth:email", $us->viewer->email, ["autocomplete" => "username", "class" => "hidden ignore-diff", "readonly" => true]),
-            Ht::password("reauth:password", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff", "id" => "reauth:password", "autofocus" => true]),
+            Ht::password("reauth:password", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff", "id" => "reauth:password"]),
             '</div>',
             '<div class="aab aabig mb-0">',
             Ht::submit("reauth", "Confirm account", ["class" => "btn-success mt-0"]),
