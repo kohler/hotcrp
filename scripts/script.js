@@ -6837,7 +6837,7 @@ const vismap = {
     cmts = {}, resp_rounds = {},
     twiddle_start = siteinfo.user && siteinfo.user.uid ? siteinfo.user.uid + "~" : "###";
 let has_unload = false, last_visibility = null,
-    last_topic = null, my_last_topic = false,
+    last_topic = null, last_topic_viewer = false, last_topic_viewer_time = now_sec() - 14 * 86400,
     editor_observer, editing_list;
 
 function unparse_tag(tag, strip_value) {
@@ -7791,9 +7791,12 @@ function add_new_comment(cj, cid) {
         id: cid, class: "pcard cmtcard cmtid comment view need-anchor-unfold has-fold ".concat(cj.collapsed ? "fold20c" : "fold20o", cj.editable ? " editable" : "")
     }), $$("k-comment-actions"));
     if (!cj.is_new && !cj.response) {
-        if (!my_last_topic || cj.viewer_owned) {
+        if (cj.viewer_owned && cj.modified_at > last_topic_viewer_time) {
             last_topic = cj.topic || "rev";
-            my_last_topic = cj.viewer_owned;
+            last_topic_viewer = true;
+            last_topic_viewer_time = cj.modified_at;
+        } else if (!last_topic_viewer) {
+            last_topic = cj.topic || "rev";
         }
         if (cj.viewer_owned) {
             last_visibility = cj.visibility;
