@@ -185,7 +185,7 @@ if (!function_exists("mac_os_roman_to_utf8")) {
 /** @param string $str
  * @return string */
 function convert_to_utf8($str) {
-    if (substr($str, 0, 3) === "\xEF\xBB\xBF") {
+    if (str_starts_with($str, "\xEF\xBB\xBF")) {
         $str = substr($str, 3);
     }
     if (is_valid_utf8($str)) {

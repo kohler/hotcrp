@@ -644,20 +644,19 @@ class JsonParser {
     /** @param int $pos
      * @return ?string */
     function position_landmark($pos) {
-        if ($this->input !== null && $pos <= strlen($this->input)) {
-            $prefix = substr($this->input, 0, $pos);
-            $line = 1 + preg_match_all('/\r\n?|\n/s', $prefix);
-            $cr = strrpos($prefix, "\r");
-            $nl = strrpos($prefix, "\n");
-            $last_line = substr($prefix, max($cr === false ? 0 : $cr + 1, $nl === false ? 0 : $nl + 1));
-            $column = 1 + preg_match_all('/./u', $last_line);
-            if ($this->filename !== null) {
-                return "{$this->filename}:{$line}:{$column}";
-            } else {
-                return "line {$line}, column {$column}";
-            }
-        } else {
+        if ($this->input === null || $pos > strlen($this->input)) {
             return null;
+        }
+        $prefix = substr($this->input, 0, $pos);
+        $line = 1 + preg_match_all('/\r\n?|\n/s', $prefix);
+        $cr = strrpos($prefix, "\r");
+        $nl = strrpos($prefix, "\n");
+        $last_line = substr($prefix, max($cr === false ? 0 : $cr + 1, $nl === false ? 0 : $nl + 1));
+        $column = 1 + preg_match_all('/./u', $last_line);
+        if ($this->filename !== null) {
+            return "{$this->filename}:{$line}:{$column}";
+        } else {
+            return "line {$line}, column {$column}";
         }
     }
 
@@ -676,20 +675,19 @@ class JsonParser {
             return "{$path}[{$component}]";
         } else if (ctype_alnum($component) || preg_match('/\A\w+\z/', $component)) {
             return "{$path}.{$component}";
-        } else {
-            $component = preg_replace_callback('/["\/\000-\037\\\\]/', function ($m) {
-                $ch = ord($m[0]);
-                if ($ch === 8 || $ch === 9 || $ch === 10 || $ch === 13) {
-                    $s = "btnxxr";
-                    return "\\" . $s[$ch - 8];
-                } else if ($ch < 32) {
-                    return sprintf("\\u%04X", $ch);
-                } else {
-                    return "\\{$m[0]}";
-                }
-            }, $component);
-            return "{$path}[\"{$component}\"]";
         }
+        $component = preg_replace_callback('/["\/\000-\037\\\\]/', function ($m) {
+            $ch = ord($m[0]);
+            if ($ch === 8 || $ch === 9 || $ch === 10 || $ch === 13) {
+                $s = "btnxxr";
+                return "\\" . $s[$ch - 8];
+            } else if ($ch < 32) {
+                return sprintf("\\u%04X", $ch);
+            } else {
+                return "\\{$m[0]}";
+            }
+        }, $component);
+        return "{$path}[\"{$component}\"]";
     }
 
     /** @param ?string $path
@@ -739,16 +737,15 @@ class JsonParser {
             }
             $ipos = $jpp->vpos1;
         }
-        if ($jpp === null && $ipos === 0) {
-            $ilen = strlen($this->input);
-            while ($ipos !== $ilen && ctype_space($this->input[$ipos])) {
-                ++$ipos;
-            }
-            $vpos2 = $this->skip($ipos);
-            return new JsonParserPosition(null, null, null, $ipos, $vpos2);
-        } else {
+        if ($jpp !== null || $ipos !== 0) {
             return $jpp;
         }
+        $ilen = strlen($this->input);
+        while ($ipos !== $ilen && ctype_space($this->input[$ipos])) {
+            ++$ipos;
+        }
+        $vpos2 = $this->skip($ipos);
+        return new JsonParserPosition(null, null, null, $ipos, $vpos2);
     }
 
     /** @param string $path
@@ -773,14 +770,13 @@ class JsonParser {
     function last_error_msg() {
         if ($this->error_type === 0) {
             return null;
-        } else {
-            $msg = self::$error_messages[$this->error_type] ?? "Unknown error #{$this->error_type}";
-            $msg .= " at character {$this->error_pos}";
-            if (($lm = $this->position_landmark($this->error_pos)) !== null) {
-                $msg .= ", {$lm}";
-            }
-            return $msg;
         }
+        $msg = self::$error_messages[$this->error_type] ?? "Unknown error #{$this->error_type}";
+        $msg .= " at character {$this->error_pos}";
+        if (($lm = $this->position_landmark($this->error_pos)) !== null) {
+            $msg .= ", {$lm}";
+        }
+        return $msg;
     }
 }
 
