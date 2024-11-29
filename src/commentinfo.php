@@ -1005,8 +1005,12 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 Conf::advance_current_time($this->timeModified);
             }
             // do not notify on updates within 3 hours
+            // UNLESS the visibility type changed or this is a response
             $qa = "";
             if ($this->timeNotified + 10800 < Conf::$now
+                || (($ctype & self::CTVIS_MASK) !== 0
+                    && ($this->commentType & self::CTVIS_MASK) !== 0
+                    && ($ctype & self::CTVIS_MASK) !== ($this->commentType & self::CTVIS_MASK))
                 || (($ctype & self::CT_RESPONSE) !== 0
                     && ($ctype & self::CT_DRAFT) === 0
                     && ($this->commentType & self::CT_DRAFT) !== 0)) {
