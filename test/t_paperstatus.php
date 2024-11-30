@@ -850,6 +850,45 @@ Phil Porras.");
         return $ctypes;
     }
 
+    function test_prop_with_overflow() {
+        $p = $this->u_estrin->checked_paper_by_id($this->pid2);
+        $ab1 = $p->abstract;
+        xassert_eqq($p->abstract, "They\nsee\nlots of\n\n\ncolors.");
+        xassert_eqq($p->abstract(), "They\nsee\nlots of\n\n\ncolors.");
+        xassert_eqq($p->prop_with_overflow("abstract"), "They\nsee\nlots of\n\n\ncolors.");
+
+        $p->set_prop("abstract", null);
+        $p->set_overflow_prop("abstract", "Paper about eating mantis shrimp");
+
+        xassert_eqq($p->abstract, null);
+        xassert_eqq($p->abstract(), "Paper about eating mantis shrimp");
+        xassert_eqq($p->prop_with_overflow("abstract"), "Paper about eating mantis shrimp");
+        xassert_eqq($p->base_prop("abstract"), "They\nsee\nlots of\n\n\ncolors.");
+        xassert_eqq($p->base_prop_with_overflow("abstract"), "They\nsee\nlots of\n\n\ncolors.");
+
+        $this->conf->qe("update Paper set abstract=?, dataOverflow=? where paperId=?",
+            $p->abstract, $p->dataOverflow, $p->paperId);
+
+        $p = $this->u_estrin->checked_paper_by_id($this->pid2);
+        xassert_eqq($p->abstract, null);
+        xassert_eqq($p->abstract(), "Paper about eating mantis shrimp");
+        xassert_eqq($p->prop_with_overflow("abstract"), "Paper about eating mantis shrimp");
+
+        $p->set_prop("abstract", "Mother");
+        xassert_eqq($p->abstract, "Mother");
+        xassert_eqq($p->abstract(), "Paper about eating mantis shrimp");
+        xassert_eqq($p->prop_with_overflow("abstract"), "Paper about eating mantis shrimp");
+        xassert_eqq($p->base_prop_with_overflow("abstract"), "Paper about eating mantis shrimp");
+
+        $p->set_overflow_prop("abstract", "Assbutt");
+        xassert_eqq($p->abstract(), "Assbutt");
+        xassert_eqq($p->prop_with_overflow("abstract"), "Assbutt");
+        xassert_eqq($p->base_prop_with_overflow("abstract"), "Paper about eating mantis shrimp");
+
+        $this->conf->qe("update Paper set abstract=?, dataOverflow=? where paperId=?",
+            $ab1, null, $p->paperId);
+    }
+
     function test_save_pc_conflicts() {
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId]);

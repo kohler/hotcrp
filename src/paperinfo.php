@@ -1160,6 +1160,12 @@ class PaperInfo {
     }
 
     /** @param string $prop
+     * @return mixed */
+    function prop_with_overflow($prop) {
+        return $this->_dataOverflow[$prop] ?? $this->$prop;
+    }
+
+    /** @param string $prop
      * @param mixed $v */
     function set_prop($prop, $v) {
         $this->_old_prop = $this->_old_prop ?? [];
@@ -1183,6 +1189,9 @@ class PaperInfo {
     /** @param string $prop
      * @param mixed $v */
     function set_overflow_prop($prop, $v) {
+        if ($v === null && $this->dataOverflow === null) {
+            return;
+        }
         $this->_old_prop = $this->_old_prop ?? [];
         if (!array_key_exists("dataOverflow", $this->_old_prop)) {
             $this->_old_prop["dataOverflow"] = $this->dataOverflow;
@@ -1207,6 +1216,21 @@ class PaperInfo {
             return $this->_old_prop[$prop];
         }
         return $this->$prop;
+    }
+
+    /** @param string $prop
+     * @return mixed */
+    function base_prop_with_overflow($prop) {
+        if ($this->_old_prop !== null
+            && array_key_exists("dataOverflow", $this->_old_prop)) {
+            $old_dataOverflow = json_decode($this->_old_prop["dataOverflow"] ?? "null", true);
+            if (isset($old_dataOverflow[$prop])) {
+                return $old_dataOverflow[$prop];
+            }
+        } else if (isset($this->_dataOverflow[$prop])) {
+            return $this->_dataOverflow[$prop];
+        }
+        return $this->base_prop($prop);
     }
 
     /** @param ?string $prop
