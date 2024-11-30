@@ -166,6 +166,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     function offsetUnset($offset) {
         throw new Exception("invalid TopicSet::offsetUnset");
     }
+
     /** @param int $tid
      * @return ?string */
     function name($tid) {
@@ -207,6 +208,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
             return $this->_order[$a] - $this->_order[$b];
         });
     }
+
     /** @param array<int,mixed> &$by_id */
     function ksort(&$by_id) {
         uksort($by_id, function ($a, $b) {

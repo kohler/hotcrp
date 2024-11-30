@@ -28,6 +28,9 @@ class Collaborators_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
+        if ($ov->equals($ov->prow->base_option($this->id))) {
+            return true;
+        }
         $ps->change_at($this);
         $collab = $ov->data();
         if ($collab === null || strlen($collab) < 8190) {

@@ -1451,13 +1451,12 @@ class Document_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        if ($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL) {
-            $ps->change_at($this);
-            $ov->prow->set_prop($this->id ? "finalPaperStorageId" : "paperStorageId", $ov->value ?? 0);
-            return true;
-        } else {
+        if ($this->id !== DTYPE_SUBMISSION && $this->id !== DTYPE_FINAL) {
             return false;
         }
+        $ps->change_at($this);
+        $ov->prow->set_prop($this->id ? "finalPaperStorageId" : "paperStorageId", $ov->value ?? 0);
+        return true;
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {

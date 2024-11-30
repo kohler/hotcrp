@@ -61,12 +61,14 @@ class Topics_PaperOption extends CheckboxesBase_PaperOption {
     }
 
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        if ($this->id === PaperOption::TOPICSID) {
-            $ps->change_at($this);
-            $ov->prow->set_prop("topicIds", join(",", $ov->value_list()));
+        if ($ov->equals($ov->prow->base_option($this->id))) {
             return true;
-        } else {
+        }
+        if ($this->id !== PaperOption::TOPICSID) {
             return false;
         }
+        $ps->change_at($this);
+        $ov->prow->set_prop("topicIds", join(",", $ov->value_list()));
+        return true;
     }
 }

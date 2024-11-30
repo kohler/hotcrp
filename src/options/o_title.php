@@ -20,6 +20,9 @@ class Title_PaperOption extends PaperOption {
         return (string) $ov->data();
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
+        if ($ov->equals($ov->prow->base_option($this->id))) {
+            return true;
+        }
         $ps->change_at($this);
         $ov->prow->set_prop("title", $ov->data());
         return true;

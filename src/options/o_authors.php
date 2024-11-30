@@ -122,21 +122,23 @@ class Authors_PaperOption extends PaperOption {
     }
 
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        // set property
+        // construct property
         $authlist = $this->author_list($ov);
-        $v = "";
+        $d = "";
         $emails = [];
         foreach ($authlist as $auth) {
             if (!$auth->is_empty()) {
-                $v .= ($v === "" ? "" : "\n") . $auth->unparse_tabbed();
+                $d .= ($d === "" ? "" : "\n") . $auth->unparse_tabbed();
             }
             $emails[] = $auth->email;
         }
-        if ($v === $ov->prow->authorInformation) {
+
+        // check for change
+        if ($d === $ov->prow->base_option($this->id)->data()) {
             return true;
         }
         $ps->change_at($this);
-        $ov->prow->set_prop("authorInformation", $v);
+        $ov->prow->set_prop("authorInformation", $d);
 
         // set conflicts
         $ps->clear_conflict_values(CONFLICT_AUTHOR);

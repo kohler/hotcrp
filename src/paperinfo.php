@@ -2466,6 +2466,11 @@ class PaperInfo {
         $this->_option_array[$id] = $ov;
     }
 
+    /** @return list<int> */
+    function overridden_option_ids() {
+        return array_keys($this->_base_option_array ?? []);
+    }
+
     function remove_option_overrides() {
         if ($this->_base_option_array !== null) {
             foreach ($this->_base_option_array as $id => $ov) {

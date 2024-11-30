@@ -34,12 +34,6 @@ class PaperStatus extends MessageSet {
     private $_fdiffs;
     /** @var list<string> */
     private $_xdiffs;
-    /** @var associative-array<int,PaperValue> */
-    private $_field_values;
-    /** @var ?list<int> */
-    private $_option_delid;
-    /** @var ?list<list> */
-    private $_option_ins;
     /** @var associative-array<int,array{int,int,int}> */
     private $_conflict_values;
     /** @var ?list<array{int,int,int}> */
@@ -710,41 +704,12 @@ class PaperStatus extends MessageSet {
             if (!$ov->has_error()) {
                 $opt->value_store($ov, $this);
                 $this->prow->override_option($ov);
-                $this->_field_values[$opt->id] = $ov;
             }
         } else {
             $ov = $this->prow->force_option($opt);
             $opt->value_check($ov, $this->user);
         }
         $ov->append_messages_to($this);
-    }
-
-    /** @param PaperValue $ov */
-    private function _prepare_save_field($ov) {
-        // erroneous values shouldn't be saved
-        if ($ov->has_error()) { // XXX should never have errors here
-            return;
-        }
-        // return if no change
-        if ($ov->equals($this->prow->base_option($ov->option))) {
-            return;
-        }
-        // option may know how to save itself
-        if ($ov->option->value_save($ov, $this)) {
-            return;
-        }
-        // otherwise, save option normal way
-        $this->change_at($ov->option);
-        $oid = $ov->option_id();
-        $this->_option_delid[] = $oid;
-        $d1 = $ov->data_list();
-        foreach ($ov->value_list() as $i => $v) {
-            $qv0 = [-1, $oid, $v, null, null];
-            if ($d1[$i] !== null) {
-                $qv0[strlen($d1[$i]) < 32768 ? 3 : 4] = $d1[$i];
-            }
-            $this->_option_ins[] = $qv0;
-        }
     }
 
     private function _prepare_status($pj) {
@@ -1048,7 +1013,6 @@ class PaperStatus extends MessageSet {
         $this->paperId = $this->title = null;
         $this->_fdiffs = $this->_xdiffs = [];
         $this->_unknown_fields = null;
-        $this->_field_values = $this->_option_delid = $this->_option_ins = [];
         $this->_conflict_values = [];
         $this->_conflict_ins = $this->_created_contacts = null;
         $this->_author_change_cids = null;
@@ -1153,13 +1117,29 @@ class PaperStatus extends MessageSet {
      * @return bool */
     private function _finish_prepare($pj) {
         $ok = $this->_normalize_and_check($pj);
-        $this->prow->remove_option_overrides();
         if ($ok) {
             return true;
         } else {
             $this->prow->abort_prop();
+            $this->prow->remove_option_overrides();
             return false;
         }
+    }
+
+    /** @return bool */
+    private function _new_paper_is_empty() {
+        foreach ($this->_fdiffs as $opt) {
+            if ($opt->id === PaperOption::ANONYMITYID) {
+                continue;
+            }
+            if ($opt->id === PaperOption::AUTHORSID
+                && (!$this->prow->authorInformation
+                    || $this->prow->authorInformation === (new Author($this->user))->unparse_tabbed())) {
+                continue;
+            }
+            return false;
+        }
+        return true;
     }
 
     /** @param object $pj
@@ -1192,9 +1172,14 @@ class PaperStatus extends MessageSet {
             return false;
         }
 
-        // prepare fields for saving, mark which fields have changed
-        foreach ($this->_field_values ?? [] as $ov) {
-            $this->_prepare_save_field($ov);
+        // prepare fields for saving, mark changed fields
+        foreach ($this->prow->overridden_option_ids() as $oid) {
+            $ov = $this->prow->option($oid);
+            if (!$ov->has_error()
+                && !$ov->option->value_save($ov, $this)
+                && !$ov->equals($this->prow->base_option($oid))) {
+                $this->change_at($ov->option);
+            }
         }
 
         // prepare non-fields for saving
@@ -1227,10 +1212,7 @@ class PaperStatus extends MessageSet {
 
         // don't save if creating a mostly-empty paper
         if ($this->prow->is_new()
-            && !array_diff(array_keys($this->prow->_old_prop), ["authorInformation", "blind"])
-            && (!$this->prow->authorInformation
-                || $this->prow->authorInformation === (new Author($this->user))->unparse_tabbed())
-            && empty($this->_option_ins)) {
+            && $this->_new_paper_is_empty()) {
             $this->error_at(null, $this->_("<0>Empty {submission}. Please fill out the fields and try again"));
             $this->conf->qe("delete from Paper where paperId=?", $this->prow->paperId);
             $this->conf->qe("update PaperStorage set paperId=-1 where paperId=?", $this->prow->paperId);
@@ -1342,14 +1324,32 @@ class PaperStatus extends MessageSet {
     }
 
     private function _execute_options() {
-        if (!empty($this->_option_delid)) {
-            $this->conf->qe("delete from PaperOption where paperId=? and optionId?a", $this->paperId, $this->_option_delid);
+        $x = [];
+        foreach ($this->_fdiffs as $opt) {
+            $x[] = $opt->field_key();
         }
-        if (!empty($this->_option_ins)) {
-            foreach ($this->_option_ins as &$x) {
-                $x[0] = $this->paperId;
+
+        $del = $ins = [];
+        foreach ($this->_fdiffs as $opt) {
+            if ($opt->id <= 0) {
+                continue;
             }
-            $this->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $this->_option_ins);
+            $ov = $this->prow->option($opt);
+            $del[] = $opt->id;
+            $dl = $ov->data_list();
+            foreach ($ov->value_list() as $i => $v) {
+                $qv0 = [$this->paperId, $opt->id, $v, null, null];
+                if ($dl[$i] !== null) {
+                    $qv0[strlen($dl[$i]) < 32768 ? 3 : 4] = $dl[$i];
+                }
+                $ins[] = $qv0;
+            }
+        }
+        if (!empty($del) && !$this->prow->is_new()) {
+            $this->conf->qe("delete from PaperOption where paperId=? and optionId?a", $this->paperId, $del);
+        }
+        if (!empty($ins)) {
+            $this->conf->qe("insert into PaperOption (paperId, optionId, value, data, dataOverflow) values ?v", $ins);
         }
     }
 
@@ -1518,6 +1518,7 @@ class PaperStatus extends MessageSet {
         // do (e.g. in old tests), invalidate it now when it's convenient
         // to do so. XXX It would be useful to keep `$this->prow` around...
         $this->prow->commit_prop();
+        $this->prow->remove_option_overrides();
         $this->prow->invalidate_options();
         $this->prow->invalidate_conflicts();
         $this->prow->invalidate_documents();
@@ -1525,7 +1526,6 @@ class PaperStatus extends MessageSet {
         // save new title and clear out memory
         $this->title = $this->prow->title();
         $this->prow = null;
-        $this->_field_values = null;
         $this->_update_pid_dids = $this->_joindocs = null;
         return true;
     }
