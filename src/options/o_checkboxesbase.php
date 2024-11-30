@@ -86,10 +86,6 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     }
 
     function value_store(PaperValue $ov, PaperStatus $ps) {
-        if ($ov->has_anno("new_values") && count($ov->anno("new_values")) > 0) {
-            $this->value_store_new_values($ov, $ps);
-        }
-
         $vs = $ov->value_list();
         $this->topic_set()->sort($vs); // to reduce unnecessary diffs
         $ov->set_value_data($vs, array_fill(0, count($vs), null));
@@ -98,9 +94,6 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
         if (!empty($badvs)) {
             $ov->warning($ps->_("<0>Options {:list} not found", $badvs, new FmtArg("type", $this->type)));
         }
-    }
-
-    function value_store_new_values(PaperValue $ov, PaperStatus $ps) {
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
@@ -155,18 +148,22 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
                 $tid = $topicset->find_exact($tk);
                 if ($tid !== null) {
                     $vs[] = $tid;
+                } else if (empty($tids) && $topicset->auto_add()) {
+                    $newvs[] = $tk;
+                    $topicset->mark_auto_add($tk);
                 } else {
                     $badvs[] = $tk;
-                    if (empty($tids)) {
-                        $newvs[] = $tk;
-                    }
                 }
             }
         }
 
         $ov = PaperValue::make_multi($prow, $this, $vs, array_fill(0, count($vs), null));
-        $ov->set_anno("bad_values", $badvs);
-        $ov->set_anno("new_values", $newvs);
+        if (!empty($badvs)) {
+            $ov->set_anno("bad_values", $badvs);
+        }
+        if (!empty($newvs)) {
+            $ov->set_anno("new_values", $newvs);
+        }
         return $ov;
     }
 

@@ -807,9 +807,8 @@ Phil Porras.");
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), []); // XXX should be unchanged
 
-        $topic_option = $this->conf->option_by_id(PaperOption::TOPICSID);
-        assert($topic_option instanceof Topics_PaperOption);
-        $topic_option->allow_new_topics(true);
+        $this->conf->invalidate_topics();
+        $this->conf->topic_set()->set_auto_add(true);
         $ps = new PaperStatus($this->u_estrin);
         $ps->save_paper_json((object) [
             "id" => $this->pid2,
@@ -825,7 +824,7 @@ Phil Porras.");
         xassert(!$ps->has_problem());
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), [1, 5]);
-        $topic_option->allow_new_topics(false);
+        $this->conf->topic_set()->set_auto_add(false);
     }
 
     /** @param PaperInfo $prow

@@ -34,6 +34,8 @@ class PaperStatus extends MessageSet {
     private $_fdiffs;
     /** @var list<string> */
     private $_xdiffs;
+    /** @var ?list<PaperOption> */
+    private $_resave_fields;
     /** @var associative-array<int,array{int,int,int}> */
     private $_conflict_values;
     /** @var ?list<array{int,int,int}> */
@@ -644,6 +646,11 @@ class PaperStatus extends MessageSet {
         }
     }
 
+    /** @param PaperOption $field */
+    function request_resave($field) {
+        $this->_resave_fields[] = $field;
+    }
+
     /** @return bool */
     function has_change() {
         return !empty($this->_fdiffs) || !empty($this->_xdiffs);
@@ -1012,7 +1019,7 @@ class PaperStatus extends MessageSet {
         $this->prow = $prow;
         $this->paperId = $this->title = null;
         $this->_fdiffs = $this->_xdiffs = [];
-        $this->_unknown_fields = null;
+        $this->_unknown_fields = $this->_resave_fields = null;
         $this->_conflict_values = [];
         $this->_conflict_ins = $this->_created_contacts = null;
         $this->_author_change_cids = null;
@@ -1460,6 +1467,12 @@ class PaperStatus extends MessageSet {
         }
         assert($this->paperId === null);
         $this->_save_status = self::SAVE_STATUS_SAVED;
+
+        // call back to fields that need a second store pass
+        // (this stage must not error)
+        foreach ($this->_resave_fields ?? [] as $opt) {
+            $opt->value_save($this->prow->option($opt), $this);
+        }
 
         if ($this->prow->prop_changed()) {
             $modified_at = max(Conf::$now, $this->prow->timeModified + 1);

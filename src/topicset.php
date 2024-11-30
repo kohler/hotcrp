@@ -58,6 +58,8 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_topic_html;
     /** @var ?AbbreviationMatcher<int> */
     private $_topic_abbrev_matcher;
+    /** @var ?list<string> */
+    private $_auto_add;
 
 
     function __construct(Conf $conf) {
@@ -126,13 +128,26 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @return TopicSet */
     static function make_main(Conf $conf) {
         $ts = new TopicSet($conf);
-        $result = $conf->qe_raw("select topicId, topicName from TopicArea");
-        while (($row = $result->fetch_row())) {
-            $ts->__add((int) $row[0], $row[1]);
+        if ($conf->has_topics()) {
+            $ts->load_main();
         }
-        Dbl::free($result);
-        $ts->sort_by_name();
         return $ts;
+    }
+
+    private function reset() {
+        $this->_topic_map = $this->_order = $this->_others_sfxlen = [];
+        $this->_group_list = $this->_group_map = null;
+        $this->_topic_html = $this->_topic_abbrev_matcher = null;
+        $this->_auto_add = $this->_auto_add === null ? null : [];
+    }
+
+    private function load_main() {
+        $result = $this->conf->qe_raw("select topicId, topicName from TopicArea");
+        while (($row = $result->fetch_row())) {
+            $this->__add((int) $row[0], $row[1]);
+        }
+        $result->close();
+        $this->sort_by_name();
     }
 
 
@@ -175,31 +190,40 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
 
     /** @return list<TopicGroup> */
     function group_list() {
-        if ($this->_group_list === null) {
-            $this->_group_list = $this->_group_map = [];
-            $lastg = null;
-            foreach ($this->_topic_map as $tid => $tname) {
-                $colon = (int) strpos($tname, ":");
-                $group = $colon ? substr($tname, 0, $colon) : $tname;
-                if ($lastg !== null
-                    && strcasecmp($lastg->name, $group) === 0) {
-                    if ($lastg->members === null && $lastg->tid !== null) {
-                        $lastg->members = [$lastg->tid];
-                    }
-                    $lastg->members[] = $tid;
-                } else {
-                    $lastg = new TopicGroup($group);
-                    if ($colon === 0) {
-                        $lastg->tid = $tid;
-                    } else {
-                        $lastg->members = [$tid];
-                    }
-                    $this->_group_list[] = $lastg;
+        if ($this->_group_list !== null) {
+            return $this->_group_list;
+        }
+        $this->_group_list = $this->_group_map = [];
+        $lastg = null;
+        foreach ($this->_topic_map as $tid => $tname) {
+            $colon = (int) strpos($tname, ":");
+            $group = $colon ? substr($tname, 0, $colon) : $tname;
+            if ($lastg !== null
+                && strcasecmp($lastg->name, $group) === 0) {
+                if ($lastg->members === null && $lastg->tid !== null) {
+                    $lastg->members = [$lastg->tid];
                 }
-                $this->_group_map[$tid] = $lastg;
+                $lastg->members[] = $tid;
+            } else {
+                $lastg = new TopicGroup($group);
+                if ($colon === 0) {
+                    $lastg->tid = $tid;
+                } else {
+                    $lastg->members = [$tid];
+                }
+                $this->_group_list[] = $lastg;
             }
+            $this->_group_map[$tid] = $lastg;
         }
         return $this->_group_list;
+    }
+
+    /** @return array<int,TopicGroup> */
+    private function group_map() {
+        if ($this->_group_map === null) {
+            $this->group_list();
+        }
+        return $this->_group_map;
     }
 
     /** @param list<int> &$ids */
@@ -294,6 +318,56 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         return count($lctids) === 1 ? $lctids[0] : null;
     }
 
+
+    /** @return bool */
+    function auto_add() {
+        return $this->_auto_add !== null;
+    }
+
+    /** @return list<string> */
+    function auto_add_list() {
+        return $this->_auto_add ?? [];
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_auto_add($x) {
+        if (($this->_auto_add !== null) !== $x) {
+            $this->_auto_add = $x ? [] : null;
+        }
+        return $this;
+    }
+
+    /** @param string $t */
+    function mark_auto_add($t) {
+        if ($this->_auto_add === null) {
+            return;
+        }
+        $found = false;
+        foreach ($this->_auto_add as $aat) {
+            if (strcasecmp($aat, $t) === 0) {
+                $found = true;
+                break;
+            }
+        }
+        if (!$found) {
+            $this->_auto_add[] = $t;
+        }
+    }
+
+    function commit_auto_add() {
+        if (!empty($this->_auto_add) && $this === $this->conf->topic_set()) {
+            $qv = [];
+            foreach ($this->_auto_add as $t) {
+                $qv[] = [$t];
+            }
+            $this->conf->qe("insert into TopicArea (topicName) values ?v", $qv);
+            $this->reset();
+            $this->load_main();
+        }
+    }
+
+
     /** @param 'long'|'medium'|'short' $lenclass
      * @param string $tname
      * @return 'long'|'medium'|'short' */
@@ -324,25 +398,22 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @param int $tid
      * @return string */
     function unparse_name_html($tid) {
-        if ($this->_topic_html === null) {
-            $this->_topic_html = [];
-            $this->group_list();
+        if (isset($this->_topic_html[$tid])) {
+            return $this->_topic_html[$tid];
         }
-        if (!isset($this->_topic_html[$tid])) {
-            $tname = $this->_topic_map[$tid] ?? "";
-            $tg = $this->_group_map[$tid];
-            if ($tg->nontrivial()) {
-                if ($tg->tid === $tid) {
-                    $this->_topic_html[$tid] = '<span class="topicg">'
-                        . htmlspecialchars($tg->name) . '</span>';
-                } else {
-                    $this->_topic_html[$tid] = '<span class="topicg">'
-                        . htmlspecialchars($tg->name) . ':</span> '
-                        . htmlspecialchars(ltrim(substr($tname, strlen($tg->name) + 1)));
-                }
+        $tname = $this->_topic_map[$tid] ?? "";
+        $tg = ($this->group_map())[$tid];
+        if ($tg->nontrivial()) {
+            if ($tg->tid === $tid) {
+                $this->_topic_html[$tid] = '<span class="topicg">'
+                    . htmlspecialchars($tg->name) . '</span>';
             } else {
-                $this->_topic_html[$tid] = htmlspecialchars($tname);
+                $this->_topic_html[$tid] = '<span class="topicg">'
+                    . htmlspecialchars($tg->name) . ':</span> '
+                    . htmlspecialchars(ltrim(substr($tname, strlen($tg->name) + 1)));
             }
+        } else {
+            $this->_topic_html[$tid] = htmlspecialchars($tname);
         }
         return $this->_topic_html[$tid];
     }
@@ -350,10 +421,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     /** @param int $tid
      * @return string */
     function unparse_subtopic_name_html($tid) {
-        if ($this->_group_list === null) {
-            $this->group_list();
-        }
-        $tg = $this->_group_map[$tid];
+        $tg = ($this->group_map())[$tid];
         if ($tg->tid === $tid) {
             return $this->unparse_name_html($tid);
         }

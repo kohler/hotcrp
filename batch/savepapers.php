@@ -313,10 +313,8 @@ class SavePapers_Batch {
         $this->prefetch_authors($jl);
 
         if ($this->add_topics) {
-            foreach ($this->conf->options()->form_fields() as $opt) {
-                if ($opt instanceof Topics_PaperOption)
-                    $opt->allow_new_topics(true);
-            }
+            $this->conf->topic_set()->set_auto_add(true);
+            $this->conf->invalidate_topics();
         }
         if ($this->silent) {
             foreach ($this->conf->options()->form_fields() as $opt) {
