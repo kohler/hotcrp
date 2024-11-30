@@ -34,11 +34,10 @@ class TopicGroup {
     function proper_members() {
         if ($this->members === null) {
             return [$this->tid];
-        } else if ($this->tid !== $this->members[0]) {
-            return $this->members;
-        } else {
+        } else if ($this->tid === $this->members[0]) {
             return array_slice($this->members, 1);
         }
+        return $this->members;
     }
 }
 
@@ -273,6 +272,26 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->abbrev_matcher()->findp($pattern, $tflags);
     }
 
+    /** @param string $x
+     * @return ?int */
+    function find_exact($x) {
+        if (($tid = array_search($x, $this->_topic_map, true)) !== false) {
+            return $tid;
+        }
+        $x = simplify_whitespace($x);
+        $lcx = strtolower($x);
+        $lctids = [];
+        foreach ($this->_topic_map as $tid => $n) {
+            if (strcasecmp($lcx, $n) === 0) {
+                if ($x === $n) {
+                    return $tid;
+                }
+                $lctids[] = $tid;
+            }
+        }
+        return count($lctids) === 1 ? $lctids[0] : null;
+    }
+
     /** @param 'long'|'medium'|'short' $lenclass
      * @param string $tname
      * @return 'long'|'medium'|'short' */
@@ -296,9 +315,8 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         $n = $this->_topic_map[$tid] ?? null;
         if ($n && ($colon = (int) strpos($n, ":")) !== 0) {
             return ltrim(substr($n, $colon + 1));
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param int $tid
@@ -336,10 +354,9 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         $tg = $this->_group_map[$tid];
         if ($tg->tid === $tid) {
             return $this->unparse_name_html($tid);
-        } else {
-            $tname = $this->_topic_map[$tid] ?? "";
-            return htmlspecialchars(ltrim(substr($tname, strlen($tg->name) + 1)));
         }
+        $tname = $this->_topic_map[$tid] ?? "";
+        return htmlspecialchars(ltrim(substr($tname, strlen($tg->name) + 1)));
     }
 
     /** @param list<int> $tlist

@@ -152,22 +152,13 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
             } else if (!is_string($tk)) {
                 return PaperValue::make_estop($prow, $this, "<0>Validation error");
             } else if (($tk = trim($tk)) !== "") {
-                $tid = array_search($tk, $topicset->as_array(), true);
-                if ($tid !== false) {
+                $tid = $topicset->find_exact($tk);
+                if ($tid !== null) {
                     $vs[] = $tid;
-                } else if (!ctype_digit($tk)) {
-                    $tids = [];
-                    foreach ($topicset as $xtid => $tname) {
-                        if (strcasecmp($tk, $tname) == 0)
-                            $tids[] = $xtid;
-                    }
-                    if (count($tids) === 1) {
-                        $vs[] = $tids[0];
-                    } else {
-                        $badvs[] = $tk;
-                        if (empty($tids)) {
-                            $newvs[] = $tk;
-                        }
+                } else {
+                    $badvs[] = $tk;
+                    if (empty($tids)) {
+                        $newvs[] = $tk;
                     }
                 }
             }
