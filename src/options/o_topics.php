@@ -5,10 +5,13 @@
 class Topics_PaperOption extends CheckboxesBase_PaperOption {
     function __construct(Conf $conf, $args) {
         parent::__construct($conf, $args);
-        $topic_set = $this->conf->topic_set();
-        if ($topic_set->count() === 0 && !$topic_set->auto_add()) {
-            $this->override_exists_condition(false);
-        }
+        $this->refresh_topic_set();
+    }
+
+    function refresh_topic_set() {
+        $ts = $this->topic_set();
+        $empty = $ts->count() === 0 && !$ts->auto_add();
+        $this->override_exists_condition($empty ? false : null);
     }
 
     function topic_set() {

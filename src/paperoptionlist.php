@@ -212,18 +212,17 @@ class PaperOptionList implements IteratorAggregate {
                 $this->populate_intrinsic($id);
             }
             return $this->_imap[$id];
-        } else {
-            if (!array_key_exists($id, $this->_omap)) {
-                $opt = null;
-                if (($oj = ($this->option_json_map())[$id] ?? null)
-                    && Conf::xt_enabled($oj)
-                    && XtParams::static_allowed($oj, $this->conf, null)) {
-                    $opt = PaperOption::make($this->conf, $oj);
-                }
-                $this->_omap[$id] = $opt;
-            }
-            return $this->_omap[$id];
         }
+        if (!array_key_exists($id, $this->_omap)) {
+            $opt = null;
+            if (($oj = ($this->option_json_map())[$id] ?? null)
+                && Conf::xt_enabled($oj)
+                && XtParams::static_allowed($oj, $this->conf, null)) {
+                $opt = PaperOption::make($this->conf, $oj);
+            }
+            $this->_omap[$id] = $opt;
+        }
+        return $this->_omap[$id];
     }
 
     /** @param int $id
@@ -447,5 +446,16 @@ class PaperOptionList implements IteratorAggregate {
         $omap = $this->find_all_nonpaper($name);
         reset($omap);
         return count($omap) == 1 ? current($omap) : null;
+    }
+
+    function refresh_topics() {
+        foreach ($this->_imap as $opt) {
+            if ($opt && $opt instanceof Topics_PaperOption)
+                $opt->refresh_topic_set();
+        }
+        foreach ($this->_omap as $opt) {
+            if ($opt && $opt instanceof Topics_PaperOption)
+                $opt->refresh_topic_set();
+        }
     }
 }

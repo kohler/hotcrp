@@ -314,7 +314,7 @@ class SavePapers_Batch {
 
         if ($this->add_topics) {
             $this->conf->topic_set()->set_auto_add(true);
-            $this->conf->invalidate_topics();
+            $this->conf->options()->refresh_topics();
         }
         if ($this->silent) {
             foreach ($this->conf->options()->form_fields() as $opt) {

@@ -745,8 +745,7 @@ Phil Porras.");
 
     function test_save_topics() {
         $this->conf->qe("insert into TopicArea (topicName) values ('Cloud computing'), ('Architecture'), ('Security'), ('Cloud networking')");
-        $this->conf->save_setting("has_topics", 1);
-        $this->conf->invalidate_topics();
+        $this->conf->save_refresh_setting("has_topics", 1);
 
         $tset = $this->conf->topic_set();
         xassert_eqq($tset[1], "Cloud computing");
@@ -807,8 +806,8 @@ Phil Porras.");
         $nprow1->invalidate_topics();
         xassert_eqq($nprow1->topic_list(), []); // XXX should be unchanged
 
-        $this->conf->invalidate_topics();
         $this->conf->topic_set()->set_auto_add(true);
+        $this->conf->options()->refresh_topics();
         $ps = new PaperStatus($this->u_estrin);
         $ps->save_paper_json((object) [
             "id" => $this->pid2,

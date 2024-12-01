@@ -1290,11 +1290,6 @@ class Conf {
         return $this->_topic_set;
     }
 
-    function invalidate_topics() {
-        $this->_topic_set = null;
-        $this->_paper_opts->invalidate_intrinsic_option(PaperOption::TOPICSID);
-    }
-
 
     /** @return Conflict */
     function conflict_set() {
@@ -2979,51 +2974,47 @@ class Conf {
         }
     }
 
-    /** @param array<string,true> $caches */
+    /** @param array{all?:true,autosearch?:true,rf?:true,tags?:true,cdb?:true,pc?:true,users?:true,options?:true} $caches */
     function invalidate_caches($caches) {
-        if (!self::$no_invalidate_caches) {
-            if (!$caches || isset($caches["pc"]) || isset($caches["users"])) {
-                $this->_pc_set = null;
-                $this->_pc_members_cache = $this->_pc_tags_cache = null;
-                $this->_user_cache = $this->_user_email_cache = null;
-            }
-            if (!$caches || isset($caches["users"]) || isset($caches["cdb"])) {
-                $this->_cdb_user_cache = null;
-            }
-            if (isset($caches["cdb"])) {
-                unset($this->opt["contactdbConfid"]);
-                self::$_cdb = false;
-            }
-            // NB All setting-related caches cleared here should also be cleared
-            // in refresh_settings().
-            if (!$caches || isset($caches["options"])) {
-                $this->_paper_opts->invalidate_options();
-                $this->_formatspec_cache = [];
-                $this->_abbrev_matcher = null;
-            }
-            if (!$caches || isset($caches["rf"])) {
-                $this->_review_form = null;
-                $this->_defined_rounds = null;
-                $this->_abbrev_matcher = null;
-            }
-            if (!$caches || isset($caches["tags"]) || isset($caches["tracks"])) {
-                $this->_tag_map = null;
-            }
-            if (!$caches || isset($caches["formulas"])) {
-                $this->_formula_functions = null;
-            }
-            if (!$caches || isset($caches["assigners"])) {
-                $this->_assignment_parsers = null;
-            }
-            if (!$caches || isset($caches["topics"])) {
-                $this->invalidate_topics();
-            }
-            if (!$caches || isset($caches["tracks"])) {
-                Contact::update_rights();
-            }
-            if (isset($caches["autosearch"])) {
-                $this->update_automatic_tags();
-            }
+        if (self::$no_invalidate_caches) {
+            return;
+        }
+        $all = empty($caches) || isset($caches["all"]);
+        if ($all || isset($caches["pc"]) || isset($caches["users"])) {
+            $this->_pc_set = null;
+            $this->_pc_members_cache = $this->_pc_tags_cache = null;
+            $this->_user_cache = $this->_user_email_cache = null;
+        }
+        if ($all || isset($caches["users"]) || isset($caches["cdb"])) {
+            $this->_cdb_user_cache = null;
+        }
+        if (isset($caches["cdb"])) {
+            unset($this->opt["contactdbConfid"]);
+            self::$_cdb = false;
+        }
+        // NB All setting-related caches cleared here should also be cleared
+        // in refresh_settings().
+        if ($all || isset($caches["options"])) {
+            $this->_paper_opts->invalidate_options();
+            $this->_formatspec_cache = [];
+            $this->_abbrev_matcher = null;
+            $this->_topic_set = null;
+        }
+        if ($all || isset($caches["rf"])) {
+            $this->_review_form = null;
+            $this->_defined_rounds = null;
+            $this->_abbrev_matcher = null;
+        }
+        if ($all || isset($caches["tags"])) {
+            $this->_tag_map = null;
+        }
+        if ($all) {
+            $this->_formula_functions = null;
+            $this->_assignment_parsers = null;
+            Contact::update_rights();
+        }
+        if (isset($caches["autosearch"])) {
+            $this->update_automatic_tags();
         }
     }
 
