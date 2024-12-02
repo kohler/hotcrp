@@ -94,14 +94,13 @@ class Cdb_Tester {
         // checking an unencrypted password encrypts it
         $mu = user(self::MARINA);
         xassert($mu->check_password("isdevitch"));
-        xassert_eqq(substr(password(self::MARINA, true), 0, 2), " \$");
+        $cdbpw = password(self::MARINA, true);
+        xassert_eqq(substr($cdbpw, 0, 3), " \$\$");
         xassert_eqq(password(self::MARINA), "");
 
         // checking an encrypted password doesn't change it
-        save_password(self::MARINA, ' $$2y$12$Kj52A/EjaSHWboY5WdY4jeb2FgJ5WumYt6RRgcwZHCypaDUVWSd5y', true);
-        save_password(self::MARINA, '', false);
         xassert(user(self::MARINA)->check_password("isdevitch"));
-        xassert_eqq(password(self::MARINA, true), ' $$2y$12$Kj52A/EjaSHWboY5WdY4jeb2FgJ5WumYt6RRgcwZHCypaDUVWSd5y');
+        xassert_eqq(password(self::MARINA, true), $cdbpw);
     }
 
     function test_cdb_import_1() {
