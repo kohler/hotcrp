@@ -98,10 +98,10 @@ class Cdb_Tester {
         xassert_eqq(password(self::MARINA), "");
 
         // checking an encrypted password doesn't change it
-        save_password(self::MARINA, ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm', true);
+        save_password(self::MARINA, ' $$2y$12$Kj52A/EjaSHWboY5WdY4jeb2FgJ5WumYt6RRgcwZHCypaDUVWSd5y', true);
         save_password(self::MARINA, '', false);
         xassert(user(self::MARINA)->check_password("isdevitch"));
-        xassert_eqq(password(self::MARINA, true), ' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm');
+        xassert_eqq(password(self::MARINA, true), ' $$2y$12$Kj52A/EjaSHWboY5WdY4jeb2FgJ5WumYt6RRgcwZHCypaDUVWSd5y');
     }
 
     function test_cdb_import_1() {
