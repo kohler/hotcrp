@@ -556,20 +556,20 @@ class Home_Page {
             // Be careful not to refer to a future deadline; perhaps an admin
             // just turned off submissions.
             if (!$sr->submit || $sr->submit + $sr->grace > Conf::$now) {
-                $deadlines[] = "The site is currently closed for {$sr->title1}{$this->conf->snouns[1]}.";
+                $deadlines[] = "The site is currently closed for {$sr->prefix}{$this->conf->snouns[1]}.";
             } else {
-                $deadlines[] = 'The <a href="' . $this->conf->hoturl("deadlines") . "\">{$sr->title1}{$this->conf->snouns[0]} deadline</a> has passed.";
+                $deadlines[] = 'The <a href="' . $this->conf->hoturl("deadlines") . "\">{$sr->prefix}{$this->conf->snouns[0]} deadline</a> has passed.";
             }
         } else if (!$sr->time_update(true)) {
-            $deadlines[] = 'The <a href="' . $this->conf->hoturl("deadlines") . "\">{$sr->title1}update deadline</a> has passed, but you can still submit.";
+            $deadlines[] = 'The <a href="' . $this->conf->hoturl("deadlines") . "\">{$sr->prefix}update deadline</a> has passed, but you can still submit.";
             if ($sr->submit > Conf::$now) {
                 $d = $this->conf->unparse_time_with_local_span($sr->submit);
-                $deadlines[] = "You have until {$d} to submit {$sr->title1}papers.";
+                $deadlines[] = "You have until {$d} to submit {$sr->prefix}papers.";
             }
         } else {
             if ($sr->update > Conf::$now) {
                 $d = $this->conf->unparse_time_with_local_span($sr->update);
-                $deadlines[] = "You have until {$d} to submit {$sr->title1}papers.";
+                $deadlines[] = "You have until {$d} to submit {$sr->prefix}papers.";
             }
         }
     }

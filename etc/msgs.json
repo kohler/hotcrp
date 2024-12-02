@@ -186,18 +186,18 @@
         "context": "deadline_error", "in": "<0>Action not available yet", "m": [
             ["<0>The site will open for reviewing at {time:time}", ["{deadline}=rev_open"]],
             ["<5>The site will open for reviewing at {time:expandedtime}", ["{deadline}=rev_open", "{fmt}=5"]],
-            ["<0>The site will open for {submissions} at {time:time}", ["{deadline}=sub_open"]],
-            ["<5>The site will open for {submissions} at {time:expandedtime}", ["{deadline}=sub_open", "{fmt}=5"]]
+            ["<0>The site will open for {sclass_prefix}{submissions} at {time:time}", ["{deadline}=sub_open"]],
+            ["<5>The site will open for {sclass_prefix}{submissions} at {time:expandedtime}", ["{deadline}=sub_open", "{fmt}=5"]]
         ]
     },
     {
         "context": "deadline_error", "in": "<0>Deadline passed", "m": [
-            ["<0>The deadline for registering {submissions} has passed. The deadline was {time:time}.", ["{deadline}^=sub_reg"]],
-            ["<5>The <a href=\"{deadlineurl}\">deadline</a> for registering {submissions} has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_reg", "{fmt}=5"]],
-            ["<0>The {submission} update deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_update"]],
-            ["<5>The <a href=\"{deadlineurl}\">{submission} update deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_update", "{fmt}=5"]],
-            ["<0>The {submission} deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_sub"]],
-            ["<5>The <a href=\"{deadlineurl}\">{submission} deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_sub", "{fmt}=5"]],
+            ["<0>The deadline for registering {sclass_prefix}{submissions} has passed. The deadline was {time:time}.", ["{deadline}^=sub_reg"]],
+            ["<5>The <a href=\"{deadlineurl}\">deadline</a> for registering {sclass_prefix}{submissions} has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_reg", "{fmt}=5"]],
+            ["<0>The {sclass_prefix}{submission} update deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_update"]],
+            ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}{submission} update deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_update", "{fmt}=5"]],
+            ["<0>The {sclass_prefix}{submission} deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_sub"]],
+            ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}{submission} deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_sub", "{fmt}=5"]],
             ["<0>The deadline for this external review has passed", ["{deadline}^=extrev_hard"]],
             ["<0>The deadline for this review has passed", ["{deadline}^=pcrev_hard"]],
             ["<0>The deadline for requesting reviews has passed", ["{deadline}^=extrev_chairreq"]],

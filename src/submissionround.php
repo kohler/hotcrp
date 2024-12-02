@@ -8,7 +8,7 @@ class SubmissionRound {
     /** @var string */
     public $tag = "";
     /** @var string */
-    public $title1 = "";
+    public $prefix = "";
     /** @var int */
     public $open = 0;
     /** @var int */
@@ -46,7 +46,7 @@ class SubmissionRound {
     static function make_json($j, SubmissionRound $main_sr, Conf $conf) {
         $sr = new SubmissionRound;
         $sr->tag = $j->tag;
-        $sr->title1 = $sr->tag . " ";
+        $sr->prefix = $sr->tag . " ";
         $sr->open = $j->open ?? $main_sr->open;
         $sr->register = $j->register ?? 0;
         $sr->submit = $j->submit ?? 0;

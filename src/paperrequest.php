@@ -217,7 +217,7 @@ class PaperRequest {
             if (isset($qreq->sclass)
                 && !$user->conf->submission_round_by_tag($qreq->sclass, true)) {
                 // allow synonyms for unnamed submission round
-                throw new FailureReason($user->conf, ["invalidSclass" => $qreq->sclass]);
+                throw new FailureReason($user->conf, ["invalidSclass" => true, "sclass" => $qreq->sclass]);
             }
             return PaperInfo::make_new($user, $qreq->sclass);
         } else {

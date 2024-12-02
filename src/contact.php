@@ -3416,7 +3416,7 @@ class Contact implements JsonSerializable {
         }
         $sr = $prow->submission_round();
         if (!$sr->time_register(true)) {
-            return new FailureReason($this->conf, ["deadline" => "sub_reg", "override" => $this->privChair]);
+            return new FailureReason($this->conf, ["deadline" => "sub_reg", "override" => $this->privChair, "sclass" => $sr->tag]);
         } else if (!$this->email && !$allow_no_email) {
             return new FailureReason($this->conf, ["signin" => "paper:start"]);
         } else {
@@ -3501,6 +3501,7 @@ class Contact implements JsonSerializable {
                 $whyNot["deadline"] = "final_done";
             } else if (!$prow->submission_round()->time_update(true)) {
                 $whyNot["deadline"] = "sub_update";
+                $whyNot["sclass"] = $prow->submission_round()->tag;
             }
         }
         return $whyNot;
@@ -3529,6 +3530,7 @@ class Contact implements JsonSerializable {
         if (!$sr->time_submit(true)
             && !$rights->can_administer()) {
             $whyNot["deadline"] = "sub_sub";
+            $whyNot["sclass"] = $sr->tag;
         }
         return $whyNot;
     }
@@ -3591,6 +3593,7 @@ class Contact implements JsonSerializable {
         if (!$rights->can_administer()
             && !$prow->submission_round()->time_submit(true)) {
             $whyNot["deadline"] = "sub_sub";
+            $whyNot["sclass"] = $prow->submission_round()->tag;
         }
         return $whyNot;
     }

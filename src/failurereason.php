@@ -131,19 +131,21 @@ class FailureReason extends Exception
         return $fr;
     }
 
-    /** @return array{string,int,string,int} */
+    /** @return array{string,int,string,int,list<FmtArg>} */
     private function deadline_info() {
         $dn = $this->_a["deadline"];
-        if ($dn === "response") {
-            $rrd = $this->conf->response_round_by_id($this->_a["commentRound"]);
-            return ["response_open", $rrd->open, "response_done", $rrd->done];
+        if (str_starts_with($dn, "sub_")) {
+            return $this->submission_deadline_info();
         }
 
-        if (str_starts_with($dn, "sub_")) {
-            $odn = "sub_open";
-        } else if (str_starts_with($dn, "rev_")
-                   || str_starts_with($dn, "extrev_")
-                   || str_starts_with($dn, "pcrev_")) {
+        if ($dn === "response") {
+            $rrd = $this->conf->response_round_by_id($this->_a["commentRound"]);
+            return ["response_open", $rrd->open, "response_done", $rrd->done, []];
+        }
+
+        if (str_starts_with($dn, "rev_")
+            || str_starts_with($dn, "extrev_")
+            || str_starts_with($dn, "pcrev_")) {
             $odn = "rev_open";
         } else {
             $odn = null;
@@ -154,7 +156,25 @@ class FailureReason extends Exception
             $dn = $this->conf->review_deadline_name($this->_a["reviewRound"] ?? null, false, true);
         }
         $end = $this->conf->setting($dn) ?? -1;
-        return [$odn, $start, $dn, $end];
+        return [$odn, $start, $dn, $end, []];
+    }
+
+    /** @return array{string,int,string,int,list<FmtArg>} */
+    private function submission_deadline_info() {
+        $dn = $this->_a["deadline"];
+        $sr = $this->conf->submission_round_by_tag($this->_a["sclass"] ?? "")
+            ?? $this->conf->unnamed_submission_round();
+        if ($dn === "sub_reg") {
+            $end = $sr->register;
+        } else if ($dn === "sub_update") {
+            $end = $sr->update;
+        } else {
+            $end = $sr->submit;
+        }
+        return ["sub_sub", $sr->open, $dn, $end, [
+            new FmtArg("sclass", $sr->tag, 0),
+            new FmtArg("sclass_prefix", $sr->prefix, 0)
+        ]];
     }
 
     /** @param int $format
@@ -184,8 +204,8 @@ class FailureReason extends Exception
             $idname = $id === "paper" ? "{submission}" : $id;
             $ms[] = $this->conf->_("<0>Missing {$idname} ID");
         }
-        if (isset($this->_a["invalidSclass"])) {
-            $ms[] = $this->conf->_("<0>{Submission} class ‘{}’ not found", $this->_a["invalidSclass"]);
+        if ($this->_a["invalidSclass"] ?? false) {
+            $ms[] = $this->conf->_("<0>{Submission} class ‘{}’ not found", $this->_a["sclass"]);
         }
         if ($this->_a["site_lock"] ?? false) {
             $ms[] = $this->conf->_("<0>Action locked");
@@ -255,7 +275,7 @@ class FailureReason extends Exception
             $ms[] = $this->conf->_("<0>You are not assigned to review {submission} #{}", $paperId);
         }
         if (isset($this->_a["deadline"])) {
-            list($odn, $start, $edn, $end) = $this->deadline_info();
+            list($odn, $start, $edn, $end, $args) = $this->deadline_info();
             $m = "<0>Action not available";
             $dl = $edn;
             $time = 0;
@@ -276,7 +296,8 @@ class FailureReason extends Exception
                     new FmtArg("pid", $paperId),
                     new FmtArg("deadline", $dl),
                     new FmtArg("deadlineurl", $this->conf->hoturl_raw("deadlines"), 0),
-                    new FmtArg("fmt", $format));
+                    new FmtArg("fmt", $format),
+                    ...$args);
         }
         if ($this->_a["override"] ?? false) {
             $ms[] = $this->conf->_("<0>“Override deadlines” can override this restriction.");
