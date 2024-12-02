@@ -5935,7 +5935,7 @@ class Contact implements JsonSerializable {
             if ($extra["token"] ?? null) {
                 $fields["reviewToken"] = $this->unassigned_review_token();
             }
-            $reviewId = $this->conf->id_randomizer()->insert("PaperReview", "reviewId", $fields, 5);
+            $reviewId = $this->conf->id_randomizer()->insert(DatabaseIDRandomizer::REVIEWID, $fields, 5);
             $result = Dbl_Result::make_empty();
         } else if ($type === 0) {
             $rflags = 0;

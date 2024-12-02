@@ -3149,6 +3149,22 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("update PaperReviewHistory set rflags=rflags&~? where rflags>=? and reviewAuthorNotified=0", self::RF_AUSEEN_LIVE_v299, self::RF_AUSEEN_LIVE_v299)) {
             $conf->update_schema_version(304);
         }
+        if ($conf->sversion === 304
+            && $conf->ql_ok("CREATE TABLE `IDReservation` (
+  `type` int(11) NOT NULL,
+  `id` int(11) NOT NULL,
+  `timestamp` bigint(11) NOT NULL,
+  PRIMARY KEY (`type`,`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")) {
+            $conf->update_schema_version(305);
+        }
+        if ($conf->sversion === 305
+            && $conf->ql_ok("delete from IDReservation")
+            && $conf->ql_ok("alter table IDReservation add `uid` int(11) NOT NULL")
+            && $conf->ql_ok("alter table IDReservation add unique key `uid` (`uid`)")
+            && $conf->ql_ok("alter table IDReservation change `uid` `uid` int(11) NOT NULL AUTO_INCREMENT")) {
+            $conf->update_schema_version(306);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

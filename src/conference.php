@@ -353,7 +353,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 304) {
+        if ($this->sversion < 306) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -5737,7 +5737,8 @@ class Conf {
             }
             Dbl::free($result);
         }
-        $this->ql("delete from Capability where timeExpires>0 and timeExpires<".Conf::$now);
+        $this->ql("delete from Capability where timeExpires>0 and timeExpires<" . Conf::$now);
+        $this->ql("delete from IDReservation where timestamp<" . (Conf::$now - 60));
         $this->ql("insert into Settings set name='__capability_gc', value=? on duplicate key update value=?", Conf::$now, Conf::$now);
         $this->settings["__capability_gc"] = Conf::$now;
     }

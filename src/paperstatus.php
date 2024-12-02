@@ -44,14 +44,16 @@ class PaperStatus extends MessageSet {
     private $_author_change_cids;
     /** @var ?list<Contact> */
     private $_created_contacts;
+    /** @var list<int> */
+    private $_dids;
     /** @var bool */
     private $_paper_submitted;
     /** @var bool */
     private $_documents_changed;
     /** @var bool */
     private $_noncontacts_changed;
-    /** @var list<int> */
-    private $_update_pid_dids;
+    /** @var bool */
+    private $_document_pids_needed;
     /** @var list<DocumentInfo> */
     private $_joindocs;
     /** @var list<array{string,float|false}> */
@@ -250,8 +252,9 @@ class PaperStatus extends MessageSet {
         if ($doc->documentType <= 0) {
             $this->_joindocs[] = $doc;
         }
+        $this->_dids[] = $doc->paperStorageId;
         if ($doc->paperId === 0 || $doc->paperId === -1) {
-            $this->_update_pid_dids[] = $doc->paperStorageId;
+            $this->_document_pids_needed = true;
         } else {
             assert($doc->paperId === $this->prow->paperId);
         }
@@ -1023,15 +1026,17 @@ class PaperStatus extends MessageSet {
         $this->_conflict_values = [];
         $this->_conflict_ins = $this->_created_contacts = null;
         $this->_author_change_cids = null;
-        $this->_paper_submitted = $this->_documents_changed = false;
+        $this->_paper_submitted = false;
+        $this->_documents_changed = $this->_document_pids_needed = false;
         $this->_noncontacts_changed = $prow->is_new();
-        $this->_update_pid_dids = $this->_joindocs = $this->_tags_changed = [];
+        $this->_dids = $this->_joindocs = $this->_tags_changed = [];
         $this->_save_status = 0;
         if ($prow->is_new()) {
-            $pid = $this->conf->id_randomizer()->insert("Paper", "paperId", [
-                "paperId" => $pid, "title" => "", "abstract" => "", "authorInformation" => ""
-            ]);
+            $pid = $this->conf->id_randomizer()->reserve(DatabaseIDRandomizer::PAPERID);
             $this->prow->set_prop("paperId", $pid);
+            $this->prow->set_prop("title", "");
+            $this->prow->set_prop("abstract", "");
+            $this->prow->set_prop("authorInformation", "");
             foreach (Tagger::split_unpack($prow->all_tags_text()) as $tv) {
                 $this->_tags_changed[] = $tv;
             }
@@ -1221,8 +1226,9 @@ class PaperStatus extends MessageSet {
         if ($this->prow->is_new()
             && $this->_new_paper_is_empty()) {
             $this->error_at(null, $this->_("<0>Empty {submission}. Please fill out the fields and try again"));
-            $this->conf->qe("delete from Paper where paperId=?", $this->prow->paperId);
-            $this->conf->qe("update PaperStorage set paperId=-1 where paperId=?", $this->prow->paperId);
+            if (!empty($this->_dids)) {
+                $this->conf->qe("update PaperStorage set paperId=-1 where paperId=?", $this->prow->paperId);
+            }
             return false;
         }
 
@@ -1281,16 +1287,25 @@ class PaperStatus extends MessageSet {
     /** @return bool */
     private function _execute_update() {
         list($qf, $qv) = $this->_sql_prop();
-        $qv[] = $this->prow->paperId;
-        $result = $this->conf->qe_apply("update Paper set " . join(", ", $qf) . " where paperId=?", $qv);
+        if ($this->prow->is_new()) {
+            $result = $this->conf->qe_apply("insert into Paper set " . join(", ", $qf) . " on duplicate key update title=title", $qv);
+        } else {
+            $qv[] = $this->prow->paperId;
+            $result = $this->conf->qe_apply("update Paper set " . join(", ", $qf) . " where paperId=?", $qv);
+        }
         if ($result->is_error()) {
             $action = $this->prow->is_new() ? "create" : "update";
             $this->error_at(null, $this->_("<0>Could not {$action} {submission}"));
             return false;
-        } else if ($result->affected_rows === 0
-                   && !$this->conf->fetch_ivalue("select exists(select * from Paper where paperId=?) from dual", $this->prow->paperId)) {
-            $this->error_at(null, $this->_("<0>{Submission} #{} has been deleted", $this->prow->paperId));
-            return false;
+        }
+        if ($result->affected_rows === 0) {
+            if ($this->prow->is_new()) {
+                $this->error_at(null, $this->_("<0>Edit conflict"));
+                return false;
+            } else if (!$this->conf->fetch_ivalue("select exists(select * from Paper where paperId=?) from dual", $this->prow->paperId)) {
+                $this->error_at(null, $this->_("<0>{Submission} #{} has been deleted", $this->prow->paperId));
+                return false;
+            }
         }
         $this->paperId = $this->prow->paperId;
         if ($this->prow->is_new()) {
@@ -1495,8 +1510,8 @@ class PaperStatus extends MessageSet {
         $this->_execute_options();
         $this->_execute_conflicts();
 
-        if (!empty($this->_update_pid_dids)) {
-            $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $this->paperId, $this->_update_pid_dids);
+        if ($this->_document_pids_needed) {
+            $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $this->paperId, $this->_dids);
         }
 
         // maybe update `papersub` settings
@@ -1539,7 +1554,7 @@ class PaperStatus extends MessageSet {
         // save new title and clear out memory
         $this->title = $this->prow->title();
         $this->prow = null;
-        $this->_update_pid_dids = $this->_joindocs = null;
+        $this->_dids = $this->_joindocs = null;
         return true;
     }
 

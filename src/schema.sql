@@ -163,6 +163,22 @@ CREATE TABLE `Formula` (
 
 
 --
+-- Table structure for table `IDReservation`
+--
+
+DROP TABLE IF EXISTS `IDReservation`;
+CREATE TABLE `IDReservation` (
+  `type` int(11) NOT NULL,
+  `id` int(11) NOT NULL,
+  `timestamp` bigint(11) NOT NULL,
+  `uid` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`type`,`id`),
+  UNIQUE KEY `uid` (`uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+--
 -- Table structure for table `Invitation`
 --
 
@@ -627,7 +643,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 304, null),   -- schema version
+  ('allowPaperOption', 306, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators
