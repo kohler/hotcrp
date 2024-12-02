@@ -36,7 +36,7 @@ class Home_Page {
             $user->conf->warning_msg($user->conf->_i("account_disabled"));
             $qreq->print_header("Account disabled", "home", ["action_bar" => ""]);
             $qreq->print_footer();
-            exit();
+            exit(0);
         }
     }
 

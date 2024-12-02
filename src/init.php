@@ -271,7 +271,7 @@ function initialize_request($kwarg = null) {
         && $qreq->method() !== "POST"
         && $qreq->method() !== "HEAD") {
         header("HTTP/1.0 405 Method Not Allowed");
-        exit();
+        exit(0);
     }
 
     // mark as already expired to discourage caching, but allow the browser

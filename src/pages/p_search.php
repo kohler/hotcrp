@@ -443,7 +443,7 @@ class Search_Page {
             $qreq->print_header("Search", "search");
             $conf->error_msg($conf->_("<0>You aren’t allowed to search {submissions}"));
             $qreq->print_footer();
-            exit();
+            exit(0);
         }
 
         // paper selection

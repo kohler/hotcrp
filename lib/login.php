@@ -19,7 +19,7 @@ class LoginHelper {
             } else {
                 header("WWW-Authenticate: Basic realm=\"HotCRP\"");
             }
-            exit();
+            exit(0);
         }
 
         // if user is still valid, OK
@@ -36,7 +36,7 @@ class LoginHelper {
                 MessageItem::inform("<0>This site is using HTTP authentication to manage its users, but you have not provided authentication data. This usually indicates a server configuration error.")
             ]);
             $qreq->print_footer();
-            exit();
+            exit(0);
         }
         $qreq->email = $_SERVER["REMOTE_USER"];
         if (validate_email($qreq->email)) {
@@ -57,7 +57,7 @@ class LoginHelper {
                 MessageItem::inform("<0>This site is using HTTP authentication to manage its users. You have provided incorrect authentication data.")
             ]);
             $qreq->print_footer();
-            exit();
+            exit(0);
         }
     }
 
@@ -205,7 +205,7 @@ class LoginHelper {
             $where = $user->conf->hoturl_raw("index");
         }
         $user->conf->redirect($where);
-        exit();
+        exit(0);
     }
 
 

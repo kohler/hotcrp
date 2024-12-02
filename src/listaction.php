@@ -131,10 +131,10 @@ class ListAction {
             }
         } else if ($res instanceof Downloader) {
             $res->emit();
-            exit();
+            exit(0);
         } else if ($res instanceof Redirection) {
             $user->conf->redirect($res->url);
-            exit();
+            exit(0);
         }
     }
 

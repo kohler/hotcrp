@@ -74,7 +74,7 @@ class API_Page {
         }
         if ($jr instanceof Downloader) {
             $jr->emit();
-            exit();
+            exit(0);
         }
         if ($uf
             && ($uf->redirect ?? false)
@@ -156,7 +156,7 @@ class API_Page {
             header("Allow: OPTIONS, GET, HEAD, POST"); // XXX other methods?
         }
         http_response_code($ok ? 200 : 403);
-        exit();
+        exit(0);
     }
 
     /** @param NavigationState $nav
@@ -179,7 +179,7 @@ class API_Page {
                 http_response_code(400);
                 header("Content-Type: application/json; charset=utf-8");
                 echo '{"ok": false, "message_list": [{"field": "fn", "message": "<0>Parameter missing", "status": 2}]}', "\n";
-                exit();
+                exit(0);
             }
         }
         if ($_GET["fn"] === "deadlines") {

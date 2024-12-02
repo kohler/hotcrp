@@ -40,7 +40,7 @@ class GetCheckFormat_ListAction extends ListAction {
             ob_flush();
             flush();
         }
-        exit();
+        exit(0);
     }
 }
 

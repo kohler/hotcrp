@@ -99,7 +99,7 @@ class ChangeEmail_Page {
                 '</div></form>';
             Ht::stash_script("hotcrp.focus_within(\$(\"#changeemailform\"));window.scroll(0,0)");
             $qreq->print_footer();
-            exit();
+            exit(0);
         }
     }
 }

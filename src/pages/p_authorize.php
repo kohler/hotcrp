@@ -279,7 +279,7 @@ class Authorize_Page {
         $this->qreq->print_header("Sign in", "authorize", ["action_bar" => "", "hide_header" => true, "body_class" => "body-error"]);
         $this->conf->error_msg($m);
         $this->qreq->print_footer();
-        exit();
+        exit(0);
     }
 
     function go() {
