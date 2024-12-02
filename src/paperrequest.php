@@ -215,10 +215,8 @@ class PaperRequest {
         $pid = $this->find_pid($user->conf, $user, $qreq);
         if ($pid === 0) {
             if (isset($qreq->sclass)
-                && !$user->conf->submission_round_by_tag($qreq->sclass)
+                && !$user->conf->submission_round_by_tag($qreq->sclass, true)) {
                 // allow synonyms for unnamed submission round
-                && strcasecmp($qreq->sclass, "undefined") !== 0
-                && strcasecmp($qreq->sclass, "default") !== 0) {
                 throw new FailureReason($user->conf, ["invalidSclass" => $qreq->sclass]);
             }
             return PaperInfo::make_new($user, $qreq->sclass);

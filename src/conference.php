@@ -3370,8 +3370,9 @@ class Conf {
     }
 
     /** @param ?string $t
+     * @param bool $extended
      * @return ?SubmissionRound */
-    function submission_round_by_tag($t) {
+    function submission_round_by_tag($t, $extended = false) {
         if ($t === null || $t === "") {
             return $this->unnamed_submission_round();
         }
@@ -3380,7 +3381,9 @@ class Conf {
                 return $sr;
         }
         if (strcasecmp($t, "unnamed") === 0
-            || strcasecmp($t, "none") === 0) {
+            || strcasecmp($t, "none") === 0
+            || ($extended && strcasecmp($t, "undefined") === 0)
+            || ($extended && strcasecmp($t, "default") === 0)) {
             return $this->unnamed_submission_round();
         }
         return null;

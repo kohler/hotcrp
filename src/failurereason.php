@@ -185,7 +185,7 @@ class FailureReason extends Exception
             $ms[] = $this->conf->_("<0>Missing {$idname} ID");
         }
         if (isset($this->_a["invalidSclass"])) {
-            $ms[] = $this->conf->_("<0>Unknown submission class ‘{}’", $this->_a["invalidSclass"]);
+            $ms[] = $this->conf->_("<0>{Submission} class ‘{}’ not found", $this->_a["invalidSclass"]);
         }
         if ($this->_a["site_lock"] ?? false) {
             $ms[] = $this->conf->_("<0>Action locked");
