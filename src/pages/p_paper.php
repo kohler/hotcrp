@@ -212,7 +212,7 @@ class Paper_Page {
         // actually update
         $this->ps->execute_save();
 
-        $new_prow = $conf->paper_by_id($this->ps->paperId, $this->user, ["topics" => true, "options" => true]);
+        $new_prow = $this->ps->saved_prow();
         if (!$new_prow) {
             $this->ps->prepend_msg($conf->_("<0>{Submission} not saved; please correct these errors and try again"), MessageSet::ERROR);
             $conf->feedback_msg($this->ps->decorated_message_list());

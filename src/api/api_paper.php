@@ -10,7 +10,11 @@ class Paper_API extends MessageSet {
      * @readonly */
     public $user;
     /** @var bool */
+    private $notify = true;
+    /** @var bool */
     private $disable_users = false;
+    /** @var bool */
+    private $dry_run = false;
     /** @var ?ZipArchive */
     private $ziparchive;
     /** @var ?string */
@@ -24,39 +28,168 @@ class Paper_API extends MessageSet {
         $this->user = $user;
     }
 
+    /** @return JsonResult */
     static function run_get(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        $ml = [];
-        if ($prow) {
-            $pids = [$prow->paperId];
-            $prows = PaperInfoSet::make_singleton($prow);
-        } else if (isset($qreq->q)) {
-            $srch = new PaperSearch($user, ["q" => $qreq->q, "t" => $qreq->t, "sort" => $qreq->sort]);
-            $pids = $srch->sorted_paper_ids();
-            $prows = $srch->conf->paper_set([
-                "paperId" => $pids,
-                "options" => true, "topics" => true, "allConflictType" => true
-            ]);
-            $ml = $srch->message_list();
-        } else {
+        if ($prow && ($pj = (new PaperExport($user))->paper_json($prow))) {
+            return new JsonResult(["ok" => true, "papers" => [$pj]]);
+        }
+
+        if (isset($qreq->p)) {
+            return Conf::paper_error_json_result($qreq->annex("paper_whynot"));
+        }
+
+        if (!isset($qreq->q)) {
             return JsonResult::make_parameter_error("p");
         }
 
+        $srch = new PaperSearch($user, ["q" => $qreq->q, "t" => $qreq->t, "sort" => $qreq->sort]);
+        $pids = $srch->sorted_paper_ids();
+        $prows = $srch->conf->paper_set([
+            "paperId" => $pids,
+            "options" => true, "topics" => true, "allConflictType" => true
+        ]);
+
         $pex = new PaperExport($user);
-        if ($prow) {
-            $result = $pex->paper_json($prow);
+        $pjs = [];
+        foreach ($pids as $pid) {
+            if (($pj = $pex->paper_json($prows->get($pid))))
+                $pjs[] = $pj;
+        }
+
+        return new JsonResult([
+            "ok" => true,
+            "message_list" => $srch->message_list(),
+            "papers" => $pjs
+        ]);
+    }
+
+    /** @return JsonResult */
+    private function run_post(Qrequest $qreq, ?PaperInfo $prow) {
+        if ($this->user->privChair) {
+            if (friendly_boolean($qreq->disableusers)) {
+                $this->disable_users = true;
+            }
+            if (friendly_boolean($qreq->notify) === false) {
+                $this->notify = false;
+            }
+            if (friendly_boolean($qreq->addtopics)) {
+                $this->conf->topic_set()->set_auto_add(true);
+                $this->conf->options()->refresh_topics();
+            }
+        }
+        if (friendly_boolean($qreq->dryrun)) {
+            $this->dry_run = true;
+        }
+
+        $ct = $qreq->body_content_type();
+        if ($ct === "application/x-www-form-urlencoded"
+            || $ct === "multipart/form-data") {
+            return $this->run_post_form_data($qreq, $prow);
+        }
+
+        // below here not ready yet
+        return JsonResult::make_error(400, "<0>Nope");
+
+        if ($ct === "application/json") {
+            $jsonstr = $qreq->body();
+        } else if ($ct === "application/zip") {
+            $this->ziparchive = new ZipArchive;
+            $cf = $qreq->body_filename(".zip");
+            if (!$cf) {
+                return JsonResult::make_error(500, "<0>Cannot read uploaded content");
+            }
+            $ec = $this->ziparchive->open($cf);
+            if ($ec !== true) {
+                return JsonResult::make_error(400, "<0>Bad ZIP file (error " . json_encode($ec) . ")");
+            }
+            list($this->docdir, $jsonname) = self::analyze_zip_contents($this->ziparchive);
+            if (!$jsonname) {
+                return JsonResult::make_error(400, "<0>ZIP file lacks `data.json`");
+            }
+            $jsonstr = $this->ziparchive->getFromName($jsonname);
+        } else {
+            return JsonResult::make_error(400, "<0>POST data must be JSON or ZIP");
+        }
+
+        $jp = Json::try_decode($jsonstr);
+        if ($jp === null) {
+            return JsonResult::make_error(400, "<0>Invalid JSON: " . Json::last_error_msg());
+        } else if (!is_array($jp) && !is_object($jp)) {
+            return JsonResult::make_error(400, "<0>Expected array of objects");
+        }
+
+        $any_errors = $any_successes = false;
+        if (is_object($jp)) {
+            $result = $this->run_one_post(0, $jp);
+            $any_successes = !!$result;
+            $any_errors = !$result;
         } else {
             $result = [];
-            foreach ($pids as $pid) {
-                if (($p = $pex->paper_json($prows->get($pid))))
-                    $result[] = $p;
+            foreach ($jp as $index => &$j) {
+                if ($any_errors) {
+                    $result[] = null;
+                } else {
+                    $result[] = $ok = $this->run_one_post($index, $j);
+                    $any_errors = $any_errors || !$ok;
+                    $any_successes = $any_successes || $ok;
+                }
+                $j = null;
+                gc_collect_cycles();
             }
         }
 
-        if (!$result) {
-            return JsonResult::make_permission_error();
+        return new JsonResult([
+            "ok" => !$any_errors,
+            "message_list" => $this->message_list(),
+            "result" => $result
+        ]);
+    }
+
+    /** @return PaperStatus */
+    private function paper_status() {
+        return (new PaperStatus($this->user))
+            ->set_disable_users($this->disable_users)
+            ->set_notify($this->notify);
+    }
+
+    /** @return JsonResult */
+    private function run_post_form_data(Qrequest $qreq, ?PaperInfo $prow) {
+        if (!$prow) {
+            if ($qreq->p !== "new") {
+                return JsonResult::make_missing_error("p");
+            }
+            if (isset($qreq->sclass)
+                && !$this->conf->submission_round_by_tag($qreq->sclass, true)) {
+                return JsonResult::make_message_list(MessageItem::error($this->conf->_("<0>{Submission} class ‘{}’ not found", $qreq->sclass)));
+            }
+            $prow = PaperInfo::make_new($this->user, $qreq->sclass);
         }
 
-        return ["ok" => true, "message_list" => $ml, "result" => $result];
+        $ps = $this->paper_status();
+        $ok = $ps->prepare_save_paper_web($qreq, $prow);
+        if (!$ok || $this->dry_run) {
+            return new JsonResult([
+                "ok" => $ok,
+                "message_list" => $ps->message_list(),
+                "change_list" => $ps->changed_keys()
+            ]);
+        }
+
+        if (!$ps->execute_save()) {
+            return new JsonResult([
+                "ok" => false,
+                "message_list" => $ps->message_list()
+            ]);
+        }
+
+        $ps->log_save_activity("via API");
+        $pj = (new PaperExport($this->user))->paper_json($ps->saved_prow());
+        return new JsonResult([
+            "ok" => true,
+            "message_list" => $ps->message_list(),
+            "change_list" => $ps->changed_keys(),
+            "paper" => $pj
+        ]);
     }
 
     /** @return array{string,?string} */
@@ -100,71 +233,6 @@ class Paper_API extends MessageSet {
         } else {
             return [$dirpfx, null];
         }
-    }
-
-    private function run_post(Qrequest $qreq, ?PaperInfo $prow) {
-        $ct = $qreq->body_content_type();
-        if ($ct === "application/json") {
-            $jsonstr = $qreq->body();
-        } else if ($ct === "application/zip") {
-            $this->ziparchive = new ZipArchive;
-            $cf = $qreq->body_filename(".zip");
-            if (!$cf) {
-                return JsonResult::make_error(500, "<0>Cannot read uploaded content");
-            }
-            $ec = $this->ziparchive->open($cf);
-            if ($ec !== true) {
-                return JsonResult::make_error(400, "<0>Bad ZIP file (error " . json_encode($ec) . ")");
-            }
-            list($this->docdir, $jsonname) = self::analyze_zip_contents($this->ziparchive);
-            if (!$jsonname) {
-                return JsonResult::make_error(400, "<0>ZIP file lacks `data.json`");
-            }
-            $jsonstr = $this->ziparchive->getFromName($jsonname);
-        } else {
-            return JsonResult::make_error(400, "<0>POST data must be JSON or ZIP");
-        }
-
-        $jp = Json::try_decode($jsonstr);
-        if ($jp === null) {
-            return JsonResult::make_error(400, "<0>Invalid JSON: " . Json::last_error_msg());
-        } else if (!is_array($jp) && !is_object($jp)) {
-            return JsonResult::make_error(400, "<0>Expected array of objects");
-        }
-
-        if ($this->user->privChair) {
-            if ($qreq->disable_users) {
-                $this->disable_users = true;
-            }
-            if ($qreq->add_topics) {
-                foreach ($this->conf->options()->form_fields() as $opt) {
-                    if ($opt instanceof Topics_PaperOption)
-                        $opt->allow_new_topics(true);
-                }
-            }
-        }
-
-        $any_errors = $any_successes = false;
-        if (is_object($jp)) {
-            $result = $this->run_one_post(0, $jp);
-            $any_successes = !!$result;
-            $any_errors = !$result;
-        } else {
-            $result = [];
-            foreach ($jp as $index => &$j) {
-                if ($any_errors) {
-                    $result[] = null;
-                } else {
-                    $result[] = $ok = $this->run_one_post($index, $j);
-                    $any_errors = $any_errors || !$ok;
-                    $any_successes = $any_successes || $ok;
-                }
-                $j = null;
-                gc_collect_cycles();
-            }
-        }
-
-        return ["ok" => !$any_errors, "message_list" => $this->message_list(), "result" => $result];
     }
 
     /** @param object $j
@@ -279,12 +347,21 @@ class Paper_API extends MessageSet {
         return $p;
     }
 
+    /** @return JsonResult */
     static function run(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        if ($qreq->is_get()) {
-            return self::run_get($user, $qreq, $prow);
-        } else {
-            $papi = new Paper_API($user);
-            return $papi->run_post($qreq, $prow);
+        $old_overrides = $user->overrides();
+        if (friendly_boolean($qreq->forceShow) !== false) {
+            $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
+        if ($qreq->is_get()) {
+            $jr = self::run_get($user, $qreq, $prow);
+        } else {
+            $jr = (new Paper_API($user))->run_post($qreq, $prow);
+        }
+        $user->set_overrides($old_overrides);
+        if (($jr->content["message_list"] ?? null) === []) {
+            unset($jr->content["message_list"]);
+        }
+        return $jr;
     }
 }

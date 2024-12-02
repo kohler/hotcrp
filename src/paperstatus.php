@@ -26,6 +26,8 @@ class PaperStatus extends MessageSet {
     private $prow;
     /** @var int */
     public $paperId;
+    /** @var ?PaperInfo */
+    private $saved_prow;
     /** @var ?string */
     public $title;
     /** @var ?list<string> */
@@ -662,18 +664,17 @@ class PaperStatus extends MessageSet {
     /** @param string|PaperOption $field
      * @return bool */
     function has_change_at($field) {
-        if (is_string($field)) {
-            if (in_array($field, $this->_xdiffs)) {
-                return true;
-            }
-            foreach ($this->conf->find_all_fields($field, Conf::MFLAG_OPTION) as $f) {
-                if (in_array($f, $this->_fdiffs))
-                    return true;
-            }
-            return false;
-        } else {
+        if (!is_string($field)) {
             return in_array($field, $this->_fdiffs);
         }
+        if (in_array($field, $this->_xdiffs)) {
+            return true;
+        }
+        foreach ($this->conf->find_all_fields($field, Conf::MFLAG_OPTION) as $f) {
+            if (in_array($f, $this->_fdiffs))
+                return true;
+        }
+        return false;
     }
 
     /** @return list<string> */
@@ -1020,7 +1021,7 @@ class PaperStatus extends MessageSet {
         assert($prow->paperId !== -1);
         parent::clear();
         $this->prow = $prow;
-        $this->paperId = $this->title = null;
+        $this->paperId = $this->saved_prow = $this->title = null;
         $this->_fdiffs = $this->_xdiffs = [];
         $this->_unknown_fields = $this->_resave_fields = null;
         $this->_conflict_values = [];
@@ -1556,6 +1557,12 @@ class PaperStatus extends MessageSet {
         $this->prow = null;
         $this->_dids = $this->_joindocs = null;
         return true;
+    }
+
+    /** @return PaperInfo */
+    function saved_prow() {
+        $this->saved_prow = $this->saved_prow ?? $this->conf->paper_by_id($this->paperId, $this->user, ["topics" => true, "options" => true]);
+        return $this->saved_prow;
     }
 
     function log_save_activity($via = null) {

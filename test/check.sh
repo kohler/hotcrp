@@ -22,5 +22,6 @@ runcheck test/test07.php "$@"
 if $all; then
     runcheck test/test08.php "$@"
 fi
+runcheck test/test09.php "$@"
 
 exit $a

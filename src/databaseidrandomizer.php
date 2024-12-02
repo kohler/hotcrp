@@ -124,5 +124,6 @@ class DatabaseIDRandomizer {
         foreach ($this->reservations as $type => $ids) {
             $this->conf->qe("delete from IDReservation where type=? and id?a", $type, $ids);
         }
+        $this->reservations = [];
     }
 }
