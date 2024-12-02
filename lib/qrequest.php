@@ -199,7 +199,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             if ($this->_body_type === self::BODY_INPUT) {
                 $ok = copy("php://input", $fn);
             } else {
-                $ok = file_put_contents($this->_body, $fn) === strlen($this->_body);
+                $ok = file_put_contents($fn, $this->_body) === strlen($this->_body);
             }
             if ($ok) {
                 $this->_body_filename = $fn;
