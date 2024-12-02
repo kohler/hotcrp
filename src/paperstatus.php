@@ -286,6 +286,22 @@ class PaperStatus extends MessageSet {
             }
         }
 
+        // extract filename
+        $filename = null;
+        if (isset($docj->filename)) {
+            if (is_string($docj->filename)) {
+                $filename = $docj->filename;
+            }
+        } else if (isset($docj->content_file) && is_string($docj->content_file)) {
+            if (($slash = strrpos($docj->content_file, "/")) > 0) {
+                $filename = substr($docj->content_file, $slash + 1);
+            } else if (preg_match('/\A[A-Za-z]+:.*+\\\\(.*)\z/', $docj->content_file, $m)) {
+                $filename = $m[1];
+            } else {
+                $filename = $docj->content_file;
+            }
+        }
+
         // extract requested hash
         $ha = $want_algorithm = null;
         if (isset($docj->hash) && is_string($docj->hash)) {
@@ -397,8 +413,8 @@ class PaperStatus extends MessageSet {
         if (isset($docj->timestamp) && is_int($docj->timestamp)) {
             $doc->set_timestamp($docj->timestamp);
         }
-        if (isset($docj->filename) && is_string($docj->filename)) {
-            $doc->set_filename(DocumentInfo::sanitize_filename($docj->filename));
+        if ($filename) {
+            $doc->set_filename(DocumentInfo::sanitize_filename($filename));
         }
         if ($content !== null) {
             $doc->set_simple_content($content);

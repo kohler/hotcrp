@@ -39,6 +39,36 @@ class PaperAPI_Tester {
             ->set_body(null, "application/x-www-form-urlencoded");
     }
 
+    /** @param mixed $body
+     * @param array<string,mixed> $args
+     * @return Qrequest */
+    function make_post_json_qreq($body, $args = []) {
+        return (new Qrequest("POST", $args))
+            ->approve_token()
+            ->set_body(json_encode_db($body), "application/json");
+    }
+
+    /** @param array<string,mixed> $contents
+     * @param array<string,mixed> $args
+     * @return Qrequest */
+    function make_post_zip_qreq($contents, $args = []) {
+        if (($fn = tempnam("/tmp", "hctz")) === false) {
+            throw new ErrorException("Failed to create temporary file");
+        }
+        unlink($fn);
+        $zip = new ZipArchive;
+        $zip->open($fn, ZipArchive::CREATE);
+        foreach ($contents as $name => $value) {
+            $zip->addFromString($name, is_string($value) ? $value : json_encode_db($value));
+        }
+        $zip->close();
+        $qreq = (new Qrequest("POST", $args))
+            ->approve_token()
+            ->set_body(file_get_contents($fn), "application/zip");
+        unlink($fn);
+        return $qreq;
+    }
+
     function test_save_submit_new_paper() {
         $qreq = $this->make_post_form_qreq(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission", "%PDF-2", null, "application/pdf");
         $jr = call_api("=paper", $this->u_estrin, $qreq);
@@ -47,6 +77,23 @@ class PaperAPI_Tester {
         xassert_eqq($jr->paper->title, "New paper");
         xassert_eqq($jr->paper->abstract, "This is an abstract");
         $this->npid = $jr->paper->pid;
+    }
+
+    function test_save_submit_new_paper_zip() {
+        $qreq = $this->make_post_zip_qreq([
+            "data.json" => ["pid" => "new", "title" => "Jans paper", "abstract" => "Swafford 4eva\r\n", "authors" => [["name" => "Jan Swafford", "email" => "swafford@_.com"]], "submission" => ["content_file" => "janspaper.pdf"], "status" => "submitted"],
+            "janspaper.pdf" => "%PDF-JAN"
+        ]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->paper->object, "paper");
+        xassert_eqq($jr->paper->title, "Jans paper");
+        xassert_eqq($jr->paper->abstract, "Swafford 4eva");
+        $prow = $this->conf->checked_paper_by_id($jr->paper->pid);
+        $doc = $prow->document(DTYPE_SUBMISSION, 0, true);
+        xassert_eqq($doc->filename, "janspaper.pdf");
+        xassert_eqq($doc->mimetype, "application/pdf");
+        xassert_eqq($doc->content(), "%PDF-JAN");
     }
 
     function test_dry_run() {
@@ -77,6 +124,11 @@ class PaperAPI_Tester {
         $this->conf->refresh_settings();
 
         $qreq = $this->make_post_form_qreq(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission", "%PDF-2", null, "application/pdf");
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($jr->message_list[0]->field, "status:submitted");
+
+        $qreq = $this->make_post_json_qreq(["pid" => "new", "title" => "New paper", "abstract" => "This is an abstract\r\n", "authors" => [["name" => "Bobby Flay", "email" => "flay@_.com"]], "submission" => ["content" => "%PDF-2"], "status" => "draft"]);
         $jr = call_api("=paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->message_list[0]->field, "status:submitted");
