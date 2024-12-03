@@ -94,7 +94,7 @@ class FailureReason extends Exception
     function count() {
         $n = 0;
         foreach ($this->_a as $k => $v) {
-            if (!in_array($k, ["paperId", "reviewId", "option", "override", "forceShow", "listViewable"]))
+            if (!in_array($k, ["paperId", "reviewId", "option", "override", "forceShow", "listViewable", "expand"]))
                 ++$n;
         }
         return $n;
@@ -179,9 +179,8 @@ class FailureReason extends Exception
 
     /** @param ?string $field
      * @param 1|2|3 $status
-     * @param 0|5 $format
      * @return list<MessageItem> */
-    function message_list($field, $status, $format = 0) {
+    function message_list($field = null, $status = 2) {
         $ms = $args = [];
         $paperId = $this->_a["paperId"] ?? -1;
         if ($paperId > 0) {
@@ -192,6 +191,11 @@ class FailureReason extends Exception
         if ($option) {
             $args[] = new FmtArg("field", $option->title(), 0);
         }
+        if ($this->_a["expand"] ?? false) {
+            $args[] = new FmtArg("expand", true);
+        }
+
+        // collect primary messages
         if (isset($this->_a["invalidId"])) {
             $id = $this->_a["invalidId"];
             $idname = $id === "paper" ? "{submission}" : $id;
@@ -232,7 +236,10 @@ class FailureReason extends Exception
         }
         if (isset($this->_a["signin"])) {
             $url = $this->_a["signinUrl"] ?? $this->conf->hoturl_raw("signin");
-            $ms[] = $this->conf->_i("signin_required", new FmtArg("url", $url, 0), new FmtArg("action", $this->_a["signin"]));
+            $ms[] = $this->conf->_i("signin_required",
+                new FmtArg("action", $this->_a["signin"]),
+                new FmtArg("url", $url, 0),
+                ...$args);
         }
         if ($this->_a["withdrawn"] ?? false) {
             $ms[] = $this->conf->_("<0>{Submission} #{} has been withdrawn", $paperId);
@@ -269,9 +276,6 @@ class FailureReason extends Exception
         }
         if ($this->_a["reviewsOutstanding"] ?? false) {
             $ms[] = $this->conf->_("<0>You will get access to the reviews once you complete your assigned reviews. If you can’t complete your reviews, please inform the organizers.");
-            if ($format === 5) {
-                $ms[] = $this->conf->_("<5><a href=\"{searchurl}\">List assigned reviews</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", ["q" => "", "t" => "r"]), 0));
-            }
         }
         if ($this->_a["reviewNotAssigned"] ?? false) {
             $ms[] = $this->conf->_("<0>You are not assigned to review {submission} #{}", $paperId);
@@ -298,7 +302,6 @@ class FailureReason extends Exception
                     new FmtArg("pid", $paperId),
                     new FmtArg("deadline", $dl),
                     new FmtArg("deadlineurl", $this->conf->hoturl_raw("deadlines"), 0),
-                    new FmtArg("fmt", $format),
                     ...$args);
         }
         if ($this->_a["override"] ?? false) {
@@ -353,25 +356,15 @@ class FailureReason extends Exception
         if (empty($ms)) {
             $ms[] = $this->conf->_i("permission_error", new FmtArg("action", "unknown"), ...$args);
         }
-        // finish it off
-        if (($this->_a["forceShow"] ?? false)
-            && $format === 5
-            && Navigation::get()->page !== "api"
-            && Qrequest::$main_request) {
-            $ms[] = $this->conf->_("<5><a class=\"nw\" href=\"{overrideurl}\">Override conflict</a>", new FmtArg("overrideurl", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1], Conf::HOTURL_RAW), 0));
-        }
-        if (!empty($ms)
-            && ($this->_a["listViewable"] ?? false)
-            && $format === 5) {
-            $ms[] = $this->conf->_("<5><a href=\"{searchurl}\">List the {submissions} you can view</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", "q="), 0));
-        }
-        if (!empty($ms)
-            && ($this->_a["confirmOverride"] ?? false)) {
-            $ms[] = $this->conf->_("<0>Are you sure you want to override the deadline?");
-        }
-        // generate message list
+
+        // return if no messages
         if (empty($ms)) {
             return [];
+        }
+
+        // consolidate primary messages
+        if ($this->_a["confirmOverride"] ?? false) {
+            $ms[] = $this->conf->_("<0>Are you sure you want to override the deadline?");
         }
         if (count($ms) > 1) {
             $xformat = 0;
@@ -398,13 +391,39 @@ class FailureReason extends Exception
             }
             $ms = [$tt];
         }
-        return [new MessageItem($field, $ms[0], $status)];
+        $ml = [new MessageItem($field, $ms[0], $status)];
+
+        // add context messages
+        if ($this->_a["expand"] ?? false) {
+            $mx = [];
+            if (($this->_a["forceShow"] ?? false) && Qrequest::$main_request) {
+                $mx[] = $this->conf->_("<5><a class=\"nw\" href=\"{overrideurl}\">Override conflict</a>", new FmtArg("overrideurl", $this->conf->selfurl(Qrequest::$main_request, ["forceShow" => 1], Conf::HOTURL_RAW), 0));
+            }
+            if ($this->_a["listViewable"] ?? false) {
+                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List the {submissions} you can view</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", "q="), 0));
+            }
+            if ($this->_a["reviewsOutstanding"] ?? false) {
+                $mx[] = $this->conf->_("<5><a href=\"{searchurl}\">List assigned reviews</a>", new FmtArg("searchurl", $this->conf->hoturl_raw("search", ["q" => "", "t" => "r"]), 0));
+            }
+            if (count($mx) > 1) {
+                $mxl = [];
+                foreach ($mx as $m) {
+                    $mxl[] = "<li>" . Ftext::as(5, $m) . "</li>";
+                }
+                $mx = ["<5><ul class=\"midpoint\">" . join("", $mxl) . "</ul>"];
+            }
+            if (count($mx) === 1) {
+                $ml[] = new MessageItem($field, $mx[0], MessageSet::PLAIN);
+            }
+        }
+
+        return $ml;
     }
 
     /** @param int $format
      * @return string */
     function unparse($format) {
-        $ml = $this->message_list(null, 2, $format);
+        $ml = $this->message_list(null, 2);
         return $ml ? Ftext::as($format, $ml[0]->message) : "";
     }
 

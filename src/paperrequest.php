@@ -252,13 +252,12 @@ class PaperRequest {
         } else if (isset($qreq->reviewId)) {
             $rrow = $this->prow->review_by_ordinal_id($qreq->reviewId);
             $whynot = $rrow ? $user->perm_view_review($this->prow, $rrow) : null;
-            if ($rrow && !$whynot) {
-                return $rrow;
-            } else {
+            if (!$rrow || $whynot) {
                 throw $user->perm_view_review($this->prow, null)
                     ?? $whynot
                     ?? new FailureReason($user->conf, ["invalidId" => "review"]);
             }
+            return $rrow;
         } else if (($racid = $user->reviewer_capability($this->prow))) {
             return $this->prow->review_by_user($racid);
         } else {

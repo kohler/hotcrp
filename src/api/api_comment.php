@@ -107,10 +107,10 @@ class Comment_API {
 
         // check permission, other errors
         $newctype = $xcrow->requested_type($req);
-        $whyNot = $this->user->perm_edit_comment($this->prow, $xcrow, $newctype);
-        if ($whyNot) {
+        $whynot = $this->user->perm_edit_comment($this->prow, $xcrow, $newctype);
+        if ($whynot) {
+            $whynot->set("expand", true)->append_to($this->ms, null, 2);
             $this->ok = false;
-            $whyNot->append_to($this->ms, null, 2);
             return null;
         }
 

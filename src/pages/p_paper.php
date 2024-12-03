@@ -40,11 +40,10 @@ class Paper_Page {
 
     /** @param ?FailureReason $perm */
     function error_exit($perm = null) {
-        if ($perm) {
+        if ($perm && (!$perm->secondary || $this->conf->saved_messages_status() < 2)) {
+            $perm->set("expand", true);
             $perm->set("listViewable", $this->user->is_author() || $this->user->is_reviewer());
-            if (!$perm->secondary || $this->conf->saved_messages_status() < 2) {
-                $this->conf->error_msg("<5>" . $perm->unparse_html());
-            }
+            $this->conf->feedback_msg($perm->message_list());
         }
         $this->print_header(true);
         Ht::stash_script("hotcrp.shortcut().add()");
@@ -73,7 +72,7 @@ class Paper_Page {
 
     function handle_withdraw() {
         if (($whynot = $this->user->perm_withdraw_paper($this->prow))) {
-            $this->conf->error_msg("<5>" . $whynot->unparse_html() . " The {$this->conf->snouns[0]} has not been withdrawn.");
+            $this->conf->feedback_msg($whynot->set("expand", true)->message_list(), MessageItem::urgent_note("<0>The {$this->conf->snouns[0]} has not been withdrawn."));
             return;
         }
 
@@ -96,7 +95,7 @@ class Paper_Page {
 
     function handle_revive() {
         if (($whynot = $this->user->perm_revive_paper($this->prow))) {
-            $this->conf->error_msg("<5>" . $whynot->unparse_html());
+            $this->conf->feedback_msg($whynot->set("expand", true)->message_list());
             return;
         }
 
@@ -204,7 +203,7 @@ class Paper_Page {
             }
         }
         if ($whynot) {
-            $this->conf->error_msg("<5>" . $whynot->unparse_html());
+            $this->conf->feedback_msg($whynot->set("expand", true)->message_list());
             $this->useRequest = !$is_new; // XXX used to have more complex logic
             return;
         }
@@ -366,7 +365,7 @@ class Paper_Page {
 
         if (!$this->user->can_administer($this->prow)
             && !$this->prow->has_author($this->user)) {
-            $conf->error_msg("<5>" . $this->prow->failure_reason(["permission" => "contact:edit"])->unparse_html());
+            $conf->feedback_msg($this->prow->failure_reason(["permission" => "contact:edit", "expand" => true])->message_list());
             return;
         }
 

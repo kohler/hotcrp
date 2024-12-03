@@ -26,34 +26,33 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
             if ($whyNot
                 && !isset($whyNot["deadline"])
                 && !isset($whyNot["reviewNotAssigned"])) {
-                $ms->error_at(null, "<0>" . $whyNot->unparse_text());
-            } else {
-                $t = "";
-                if ($whyNot) {
-                    $m = $whyNot->unparse_text();
-                    $ms->warning_at(null, "<0>" . $m);
-                    if (!isset($whyNot["deadline"])) {
-                        $t .= prefix_word_wrap("==-== ", strtoupper($m) . "\n\n", "==-== ");
-                    }
-                }
-                if (!$this->all || !$user->allow_administer($prow)) {
-                    $rrows = $prow->full_reviews_by_user($user);
-                } else {
-                    $prow->ensure_full_reviews();
-                    $rrows = $prow->reviews_as_display();
-                }
-                $time = null;
-                if (empty($rrows)) {
-                    $rrows[] = null;
-                }
-                foreach ($rrows as $rrow) {
-                    $t .= $rf->text_form($prow, $rrow, $user) . "\n";
-                    if ($rrow) {
-                        $time = max($time ?? 0, $rrow->mtime($user));
-                    }
-                }
-                $texts[] = [$prow->paperId, $t, $time];
+                $whyNot->append_to($ms, null, 2);
+                continue;
             }
+            $t = "";
+            if ($whyNot) {
+                $whyNot->append_to($ms, null, 1);
+                if (!isset($whyNot["deadline"])) {
+                    $t .= prefix_word_wrap("==-== ", strtoupper($whyNot->unparse_text()) . "\n\n", "==-== ");
+                }
+            }
+            if (!$this->all || !$user->allow_administer($prow)) {
+                $rrows = $prow->full_reviews_by_user($user);
+            } else {
+                $prow->ensure_full_reviews();
+                $rrows = $prow->reviews_as_display();
+            }
+            $time = null;
+            if (empty($rrows)) {
+                $rrows[] = null;
+            }
+            foreach ($rrows as $rrow) {
+                $t .= $rf->text_form($prow, $rrow, $user) . "\n";
+                if ($rrow) {
+                    $time = max($time ?? 0, $rrow->mtime($user));
+                }
+            }
+            $texts[] = [$prow->paperId, $t, $time];
         }
 
         return $this->finish($user, $texts, $ms);

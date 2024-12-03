@@ -1766,7 +1766,7 @@ class Contact implements JsonSerializable {
         $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
 
         if (!$qreq->valid_post()) {
-            Multiconference::fail($qreq, 403, $this->conf->_i("signin_required", new FmtArg("action", $qreq->page()), new FmtArg("url", $this->conf->hoturl_raw("signin", ["redirect" => $url]), 0)));
+            Multiconference::fail($qreq, 403, new FailureReason($this->conf, ["signin" => $qreq->page(), "signinUrl" => $this->conf->hoturl_raw("signin", ["redirect" => $url])]));
         }
 
         // Preserve post values across session expiration.

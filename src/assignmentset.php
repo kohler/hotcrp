@@ -1661,13 +1661,13 @@ class AssignmentSet {
             $prow = $this->astate->prow($p);
             if (!$prow) {
                 $this->error("<5>" . $this->user->no_paper_whynot($p)->unparse_html());
-            } else {
-                $ret = $this->apply_paper($prow, $contacts, $aparser, $req);
-                if ($ret === 1) {
-                    $any_success = true;
-                } else if ($ret < 0) {
-                    break;
-                }
+                continue;
+            }
+            $ret = $this->apply_paper($prow, $contacts, $aparser, $req);
+            if ($ret === 1) {
+                $any_success = true;
+            } else if ($ret < 0) {
+                break;
             }
         }
         if ($paper_universe === "none" || $paper_universe === "reqpost") {

@@ -1208,19 +1208,19 @@ label.hashtarget, .label.hashtarget, .field-title.hashtarget {
 	margin-left: 1.5rem;
 	text-indent: -1.5rem;
 }
-ul.semi, ul.comma {
+ul.semi, ul.comma, ul.midpoint {
 	padding-left: 0;
 	margin-top: 0;
 	margin-bottom: 0;
 }
-ul.semi {
+ul.semi, ul.midpoint {
 	display: flex;
 	flex-wrap: wrap;
 }
 ul.comma {
 	display: inline;
 }
-ul.semi > li, ul.comma > li {
+ul.semi > li, ul.comma > li, ul.midpoint > li {
 	display: inline-block;
 }
 ul.semi > li::after {
@@ -1231,7 +1231,14 @@ ul.comma > li::after {
 	content: ", ";
 	padding-right: 0.35em;
 }
-ul.semi > li:last-child::after, ul.comma > li:last-child::after {
+ul.midpoint > li::after {
+	content: "·";
+	padding-left: 0.35em;
+	padding-right: 0.35em;
+}
+ul.semi > li:last-child::after,
+ul.comma > li:last-child::after,
+ul.midpoint > li:last-child::after  {
 	content: "";
 	padding-right: 0;
 }

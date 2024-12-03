@@ -43,7 +43,8 @@ class Assign_Page {
         } catch (Redirection $redir) {
             throw $redir;
         } catch (FailureReason $perm) {
-            $this->error_exit(MessageItem::error("<5>" . $perm->unparse_html()));
+            $perm->set("expand", true);
+            $this->error_exit($perm->message_list());
         }
     }
 

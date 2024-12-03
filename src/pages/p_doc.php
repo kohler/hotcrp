@@ -4,19 +4,20 @@
 
 class Doc_Page {
     /** @param string $status
-     * @param MessageItem|MessageSet $msg
+     * @param MessageItem|MessageSet|iterable<MessageItem> $msg
      * @param Qrequest $qreq */
     static private function error($status, $msg, $qreq) {
-        $ml = $msg instanceof MessageSet ? $msg->message_list() : [$msg];
-
         if (str_starts_with($status, "403") && $qreq->user()->is_empty()) {
             $qreq->user()->escape();
             exit(0);
-        } else if (str_starts_with($status, "5")) {
+        }
+
+        $ml = MessageSet::make_list($msg);
+        if (str_starts_with($status, "5")) {
             $navpath = $qreq->path();
             error_log($qreq->conf()->dbname . ": bad doc $status "
                 . MessageSet::feedback_text($ml)
-                . json_encode($qreq) . ($navpath ? " @$navpath" : "")
+                . json_encode($qreq) . ($navpath ? " @{$navpath}" : "")
                 . ($qreq->user() ? " " . $qreq->user()->email : "")
                 . (empty($_SERVER["HTTP_REFERER"]) ? "" : " R[" . $_SERVER["HTTP_REFERER"] . "]"));
         }
@@ -84,7 +85,7 @@ class Doc_Page {
         }
 
         if (($whyNot = $dr->perm_view_document($user))) {
-            self::error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", MessageItem::error("<5>" . $whyNot->unparse_html()), $qreq);
+            self::error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", $whyNot->message_list(), $qreq);
         }
         $prow = $dr->prow;
         $want_docid = $request_docid = (int) $dr->docid;

@@ -169,10 +169,10 @@
     ["permission_error", "<0>You aren’t allowed to view the {field} field for {submission} #{pid}", ["{action}=field:view"]],
     ["permission_error", "<0>You aren’t allowed to view the {field} field", ["{action}=field:view", "!{pid}"]],
 
-    ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> to access this page"],
-    ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> in order to start a new {submission}.", ["{action}=paper:start"]],
-    ["signin_required", "<0>You must sign in to access this page", ["!{url}"]],
-    ["signin_required", "<5><a href=\"{url}\">Sign in to your HotCRP account</a> to make changes", ["{action}=paper:edit"]],
+    ["signin_required", "<0>You must sign in to access this page"],
+    ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> to access this page", ["{expand}", "{url}"]],
+    ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> in order to start a new {submission}.", ["{expand}", "{url}", "{action}=paper:start"]],
+    ["signin_required", "<5>You must <a href=\"{url}\">sign in to your HotCRP account</a> in order to make changes.", ["{expand}", "{url}", "{action}=paper:edit"]],
 
     {
         "context": "deadline_error", "in": "<0>Action not available", "m": [
@@ -185,25 +185,25 @@
     {
         "context": "deadline_error", "in": "<0>Action not available yet", "m": [
             ["<0>The site will open for reviewing at {time:time}", ["{deadline}=rev_open"]],
-            ["<5>The site will open for reviewing at {time:expandedtime}", ["{deadline}=rev_open", "{fmt}=5"]],
+            ["<5>The site will open for reviewing at {time:expandedtime}", ["{deadline}=rev_open", "{expand}"]],
             ["<0>The site will open for {sclass_prefix}{submissions} at {time:time}", ["{deadline}=sub_open"]],
-            ["<5>The site will open for {sclass_prefix}{submissions} at {time:expandedtime}", ["{deadline}=sub_open", "{fmt}=5"]]
+            ["<5>The site will open for {sclass_prefix}{submissions} at {time:expandedtime}", ["{deadline}=sub_open", "{expand}"]]
         ]
     },
     {
         "context": "deadline_error", "in": "<0>Deadline passed", "m": [
             ["<0>The deadline for registering {sclass_prefix}{submissions} has passed. The deadline was {time:time}.", ["{deadline}^=sub_reg"]],
-            ["<5>The <a href=\"{deadlineurl}\">deadline</a> for registering {sclass_prefix}{submissions} has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_reg", "{fmt}=5"]],
+            ["<5>The <a href=\"{deadlineurl}\">deadline</a> for registering {sclass_prefix}{submissions} has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_reg", "{expand}"]],
             ["<0>The {sclass_prefix}{submission} update deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_update"]],
-            ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}{submission} update deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_update", "{fmt}=5"]],
+            ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}{submission} update deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_update", "{expand}"]],
             ["<0>The {sclass_prefix}{submission} deadline has passed. The deadline was {time:time}", ["{deadline}^=sub_sub"]],
-            ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}{submission} deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_sub", "{fmt}=5"]],
+            ["<5>The <a href=\"{deadlineurl}\">{sclass_prefix}{submission} deadline</a> has passed. The deadline was {time:expandedtime}", ["{deadline}^=sub_sub", "{expand}"]],
             ["<0>The deadline for this external review has passed", ["{deadline}^=extrev_hard"]],
             ["<0>The deadline for this review has passed", ["{deadline}^=pcrev_hard"]],
             ["<0>The deadline for requesting reviews has passed", ["{deadline}^=extrev_chairreq"]],
             ["<0>The deadline to update final versions has passed", ["{deadline}^=final_done"]],
             ["<0>The deadline for editing this response has passed. The deadline was {time:time}", ["{deadline}^=response"]],
-            ["<5>The deadline for editing this response has passed. The deadline was {time:expandedtime}", ["{deadline}^=response", "{fmt}=5"]],
+            ["<5>The deadline for editing this response has passed. The deadline was {time:expandedtime}", ["{deadline}^=response", "{expand}"]],
             ["<0>The deadline to perform this action has passed"]
         ]
     },

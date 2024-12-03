@@ -15,7 +15,7 @@ class RequestReview_API {
         }
 
         if (($whyNot = $user->perm_request_review($prow, $round, true))) {
-            return JsonResult::make_error(403, "<5>" . $whyNot->unparse_html());
+            return JsonResult::make_message_list(403, $whyNot->message_list());
         }
 
         // check proposal:
