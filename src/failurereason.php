@@ -180,7 +180,7 @@ class FailureReason extends Exception
     /** @param ?string $field
      * @param 1|2|3 $status
      * @param 0|5 $format
-     * @return Iterable<MessageItem> */
+     * @return list<MessageItem> */
     function message_list($field, $status, $format = 0) {
         $ms = $args = [];
         $paperId = $this->_a["paperId"] ?? -1;

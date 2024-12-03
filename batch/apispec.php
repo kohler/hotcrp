@@ -4,7 +4,7 @@
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
-    exit(APISpec_Batch::make_args($argv)->run());
+    APISpec_Batch::run_args($argv);
 }
 
 class APISpec_Batch {
@@ -63,10 +63,6 @@ class APISpec_Batch {
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
-        if (isset($arg["x"])) {
-            $conf->set_opt("apiFunctions", null);
-            $conf->set_opt("apiDescriptions", null);
-        }
         $this->user = $conf->root_user();
 
         $this->api_map = $conf->expanded_api_map();
@@ -94,11 +90,12 @@ class APISpec_Batch {
             } else {
                 $s = file_get_contents_throw(safe_filename($arg["i"]));
             }
-            if ($s === false || !is_object($this->j = json_decode($s))) {
+            if ($s !== false) {
+                $this->j = Json::try_decode($s);
+            }
+            if ($s === false || !is_object($this->j)) {
                 $msg = $arg["i"] . ": Invalid input";
-                if ($this->j === null
-                    && Json::decode($s) === null
-                    && Json::last_error()) {
+                if ($this->j === null && Json::last_error()) {
                     $msg .= ": " . Json::last_error_msg();
                 }
                 throw new CommandLineException($msg);
@@ -857,13 +854,14 @@ class APISpec_Batch {
         return strcmp($an, $bn);
     }
 
-    /** @return APISpec_Batch */
-    static function make_args($argv) {
+    /** @return array{Conf,array<string,mixed>} */
+    static function parse_args($argv) {
         $arg = (new Getopt)->long(
             "name:,n: !",
             "config: !",
             "help,h !",
             "x,no-extensions Ignore extensions",
+            "w,watch Watch for updates",
             "i:,input: =FILE Modify existing specification in FILE",
             "override-ref Overwrite conflicting \$refs in input",
             "override-param",
@@ -880,6 +878,80 @@ Usage: php batch/apispec.php")
          ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
-        return new APISpec_Batch($conf, $arg);
+        if (isset($arg["x"])) {
+            $conf->set_opt("apiFunctions", null);
+            $conf->set_opt("apiDescriptions", null);
+        }
+        return [$conf, $arg];
+    }
+
+    static private function add_expanded_includes($opt, &$cmd) {
+        if (!$opt) {
+            return;
+        }
+        foreach (is_array($opt) ? $opt : [$opt] as $fn) {
+            if (str_starts_with($fn, "?")) {
+                $fn = substr($fn, 1);
+            }
+            if (preg_match('/\A(.*?)\/[^\/]*[?*{\[]/', $fn, $m)) {
+                $cmd[] = $m[1];
+            } else {
+                $cmd[] = $fn;
+            }
+        }
+    }
+
+    /** @return never */
+    static function run_args($argv) {
+        list($conf, $arg) = self::parse_args($argv);
+
+        // handle non-watch
+        if (!isset($arg["w"])) {
+            $apispec = new APISpec_Batch($conf, $arg);
+            exit($apispec->run());
+        }
+
+        // watch requires `-i` or `-o` with a named file
+        if (($arg["i"] ?? null) === "-"
+            || (!isset($arg["i"]) && ($arg["o"] ?? "-") === "-")) {
+            throw new CommandLineException("`-w` requires `-o`");
+        }
+
+        // enumerate files to watch
+        $cmd = ["fswatch", "etc/apifunctions.json", "etc/apiexpansions.json", "devel/apidoc"];
+        self::add_expanded_includes($conf->opt("apiFunctions"), $cmd);
+        self::add_expanded_includes($conf->opt("apiDescriptions"), $cmd);
+        $proc = proc_open(Subprocess::args_to_command($cmd),
+            [0 => ["file", "/dev/null", "r"], 1 => ["pipe", "w"]],
+            $pipes);
+        $fswatch = $pipes[1];
+
+        // create command line for creating spec
+        $clone = ["php", "batch/apispec.php"];
+        foreach ($arg as $name => $value) {
+            if ($name === "_" || $name === "w") {
+                continue;
+            }
+            $start = strlen($name) === 1 ? "-{$name}" : "--{$name}";
+            if ($value === false) {
+                $clone[] = $start;
+            } else if (strlen($name) > 1) {
+                $clone[] = "{$start}={$value}";
+            } else {
+                $clone[] = $start . $value;
+            }
+        }
+        if (!empty($arg["_"])) {
+            array_push($clone, "--", ...$arg["_"]);
+        }
+
+        // build/wait loop
+        while (true) {
+            $xproc = proc_open(Subprocess::args_to_command($clone), [], $xpipes);
+            proc_close($xproc);
+            if (@fread($fswatch, 1024) === false) {
+                exit(0);
+            }
+        }
     }
 }
