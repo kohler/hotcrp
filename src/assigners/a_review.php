@@ -380,7 +380,7 @@ class Review_Assigner extends Assigner {
     function add_locks(AssignmentSet $aset, &$locks) {
         $locks["PaperReview"] = $locks["PaperReviewRefused"] =
             $locks["PaperReviewHistory"] = $locks["ReviewRating"] =
-            $locks["Settings"] = "write";
+            $locks["IDReservation"] = $locks["Settings"] = "write";
     }
     function execute(AssignmentSet $aset) {
         $extra = ["no_autosearch" => true];
