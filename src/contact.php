@@ -3793,16 +3793,20 @@ class Contact implements JsonSerializable {
         // XXX Allow shepherd view when outcome == 0 && can_view_decision.
         // This is a mediocre choice, but people like to reuse the shepherd field
         // for other purposes, and I might hear complaints.
-        if ($prow) {
-            return $this->act_pc($prow)
-                || (!$this->conf->setting("shepherd_hide")
-                    && $this->can_view_decision($prow)
-                    && $this->can_view_submitted_review($prow));
-        } else {
+        if (!$prow) {
             return $this->isPC
                 || (!$this->conf->setting("shepherd_hide")
                     && $this->can_view_some_decision());
         }
+        $rights = $this->rights($prow);
+        return $rights->can_administer()
+            || $prow->shepherdContactId === $this->contactXid
+            || ($this->conf->setting("shepherd_hide")
+                ? ($rights->allow_pc() || $rights->is_reviewer())
+                  && $this->can_view_review_identity($prow, null)
+                : $rights->allow_pc()
+                  || ($this->can_view_decision($prow)
+                      && $this->can_view_submitted_review($prow)));
     }
 
     /** @param PaperInfo $prow
