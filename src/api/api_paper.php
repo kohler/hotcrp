@@ -141,10 +141,12 @@ class Paper_API extends MessageSet {
             return $this->run_post_single_json($prow, $jp);
         } else if ($this->single) {
             return JsonResult::make_error(400, "<0>Expected object");
-        } else if (is_array($jp)) {
-            return $this->run_post_multi_json($jp);
-        } else {
+        } else if (!is_array($jp)) {
             return JsonResult::make_error(400, "<0>Expected array of objects");
+        } else if (!$this->user->privChair) {
+            return JsonResult::make_permission_error();
+        } else {
+            return $this->run_post_multi_json($jp);
         }
     }
 
@@ -281,10 +283,8 @@ class Paper_API extends MessageSet {
             }
         }
         $pid = $j->pid ?? $j->id ?? null;
-        if (is_int($pid) && $pid > 0) {
-            return $pid;
-        } else if ($pid === null || $pid === "new") {
-            return "new";
+        if ($pid === null || (is_int($pid) && $pid > 0) || $pid === "new") {
+            return $pid ?? "new";
         } else {
             return null;
         }
@@ -292,14 +292,13 @@ class Paper_API extends MessageSet {
 
     private function set_json_landmark($index, $jp, $expected = null) {
         $pidish = self::analyze_json_pid($this->conf, $jp, 0);
-        if (!$pidish) {
-            $mi = $this->error_at(null, "Bad `pid`");
-        } else if (($expected ?? $pidish) !== $pidish) {
-            $mi = $this->error_at(null, "`pid` does not match");
-        } else {
+        if ($pidish && ($expected === null || $pidish === $expected)) {
             $this->landmark = $pidish === "new" ? "index {$index}" : "#{$pidish}";
             return true;
         }
+        $pidkey = isset($jp->pid) || !isset($jp->id) ? "pid" : "id";
+        $msg = $pidish ? "<0>ID does not match" : "<0>Format error";
+        $mi = $this->error_at($pidkey, $msg);
         if (!$this->single) {
             $mi->landmark = "index {$index}";
         }
