@@ -696,10 +696,10 @@ class PaperStatus extends MessageSet {
     /** @return list<string> */
     function changed_keys() {
         $s = [];
-        foreach ($this->_fdiffs as $field) {
+        foreach ($this->_fdiffs ?? [] as $field) {
             $s[] = $field->json_key();
         }
-        foreach ($this->_xdiffs as $field) {
+        foreach ($this->_xdiffs ?? [] as $field) {
             $s[] = $field;
         }
         return $s;
@@ -1049,7 +1049,7 @@ class PaperStatus extends MessageSet {
         $this->_dids = $this->_joindocs = $this->_tags_changed = [];
         $this->_save_status = 0;
         if ($prow->is_new()) {
-            $pid = $this->conf->id_randomizer()->reserve(DatabaseIDRandomizer::PAPERID);
+            $pid = $pid ?? $this->conf->id_randomizer()->reserve(DatabaseIDRandomizer::PAPERID);
             $this->prow->set_prop("paperId", $pid);
             $this->prow->set_prop("title", "");
             $this->prow->set_prop("abstract", "");
@@ -1118,13 +1118,13 @@ class PaperStatus extends MessageSet {
             return false;
         }
         $pid = $pj->pid ?? $pj->id ?? null;
-        if ($pid !== null && !is_int($pid) && $pid !== "new") {
-            $key = isset($pj->pid) ? "pid" : "id";
-            $this->syntax_error_at($key);
-            return false;
-        }
+        $pidkey = isset($pj->pid) && isset($pj->id) ? "id" : "pid";
         if ($pid === "new" || (is_int($pid) && $pid <= 0)) {
             $pid = null;
+        }
+        if ($pid !== null && !is_int($pid)) {
+            $this->syntax_error_at($pidkey);
+            return false;
         }
 
         if (($pj->error ?? null) || ($pj->error_html ?? null)) {
@@ -1135,6 +1135,10 @@ class PaperStatus extends MessageSet {
         $prow = null;
         if ($pid !== null) {
             $prow = $this->conf->paper_by_id($pid, $this->user, ["topics" => true, "options" => true]);
+            if (!$prow && !$this->user->privChair) {
+                $this->user->no_paper_whynot($pid)->append_to($this, null, MessageSet::ESTOP);
+                return false;
+            }
         }
         $this->_reset($prow ?? PaperInfo::make_new($this->user, $pj->submission_class ?? null), $pid);
         assert($pid === null || $this->prow->paperId === $pid);

@@ -177,9 +177,11 @@ class FailureReason extends Exception
         ]];
     }
 
-    /** @param int $format
-     * @return string */
-    function unparse($format = 0) {
+    /** @param ?string $field
+     * @param 1|2|3 $status
+     * @param 0|5 $format
+     * @return Iterable<MessageItem> */
+    function message_list($field, $status, $format = 0) {
         $ms = $args = [];
         $paperId = $this->_a["paperId"] ?? -1;
         if ($paperId > 0) {
@@ -367,21 +369,43 @@ class FailureReason extends Exception
             && ($this->_a["confirmOverride"] ?? false)) {
             $ms[] = $this->conf->_("<0>Are you sure you want to override the deadline?");
         }
-        $tt = "";
-        foreach ($ms as $m) {
-            $t = Ftext::as($format, $m);
-            if ($tt !== "") {
-                if (preg_match('/\/(?:p|div|ul|ol)>\s*\z/i', $tt)) {
+        // generate message list
+        if (empty($ms)) {
+            return [];
+        }
+        if (count($ms) > 1) {
+            $xformat = 0;
+            foreach ($ms as $m) {
+                if (!str_starts_with($m, "<0>")) {
+                    $xformat = 5;
+                    break;
+                }
+            }
+            $tt = "<{$xformat}>";
+            foreach ($ms as $m) {
+                $t = Ftext::as($xformat, $m);
+                if ($t === "") {
+                    continue;
+                }
+                if ($tt === "" || ($xformat === 5 && preg_match('/\/(?:p|div|ul|ol|li)>\s*\z/i', $tt))) {
                     // nothing
                 } else if (preg_match('/[.;,:?!\s]\z/', $tt)) {
                     $tt .= " ";
                 } else {
                     $tt .= ". ";
                 }
+                $tt .= $t;
             }
-            $tt .= $t;
+            $ms = [$tt];
         }
-        return $tt;
+        return [new MessageItem($field, $ms[0], $status)];
+    }
+
+    /** @param int $format
+     * @return string */
+    function unparse($format) {
+        $ml = $this->message_list(null, 2, $format);
+        return $ml ? Ftext::as($format, $ml[0]->message) : "";
     }
 
     /** @return string */
@@ -394,13 +418,6 @@ class FailureReason extends Exception
         return $this->unparse(5);
     }
 
-    /** @param ?string $field
-     * @param 1|2|3 $status
-     * @return Iterable<MessageItem> */
-    function message_list($field, $status) {
-        return [new MessageItem($field, "<5>" . $this->unparse_html(), $status)];
-    }
-
     /** @param MessageSet|JsonResult $ms
      * @param ?string $field
      * @param 1|2|3 $status */
@@ -410,5 +427,3 @@ class FailureReason extends Exception
         }
     }
 }
-
-class_alias("FailureReason", "PermissionProblem"); // XXX compat

@@ -15,6 +15,9 @@ class PaperAPI_Tester {
     /** @var Contact
      * @readonly */
     public $u_estrin;
+    /** @var Contact
+     * @readonly */
+    public $u_puneet;
     /** @var int */
     public $npid;
 
@@ -29,6 +32,7 @@ class PaperAPI_Tester {
         $conf->refresh_settings();
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
         $this->u_estrin = $conf->checked_user_by_email("estrin@usc.edu"); // pc
+        $this->u_puneet = $conf->checked_user_by_email("puneet@catarina.usc.edu");
     }
 
     /** @param array<string,mixed> $args
@@ -94,6 +98,61 @@ class PaperAPI_Tester {
         xassert_eqq($doc->filename, "janspaper.pdf");
         xassert_eqq($doc->mimetype, "application/pdf");
         xassert_eqq($doc->content(), "%PDF-JAN");
+    }
+
+    function test_submit_new_paper_pleb() {
+        $qreq = $this->make_post_json_qreq([
+            "pid" => "new", "title" => "Soft Timers for Scalable Protocols",
+            "abstract" => "The softest timers are the most scalable. So delicious, so delightful",
+            "authors" => [["name" => "Puneet Sharma", "email" => $this->u_puneet->email]],
+            "submission" => ["content" => "%PDF-2"],
+            "status" => "draft"
+        ]);
+        $jr = call_api("=paper", $this->u_puneet, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->paper->object, "paper");
+        xassert_eqq($jr->paper->title, "Soft Timers for Scalable Protocols");
+    }
+
+    function test_update_paper_pleb() {
+        $qreq = $this->make_post_json_qreq([
+            "pid" => 1, "title" => "Scalable Timers for Soft State Protocols: Taylor’s Version"
+        ]);
+        $jr = call_api("=paper", $this->u_puneet, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->paper->object, "paper");
+    }
+
+    function test_update_attack_paper_pleb() {
+        $prow = $this->conf->checked_paper_by_id(2);
+        xassert_eqq($this->u_puneet->can_view_paper($prow), false);
+        $qreq = $this->make_post_json_qreq([
+            ["pid" => 2, "title" => "Scalable Timers for Soft State Protocols: Taylor’s Version"],
+            ["pid" => 10000, "title" => "Scalable Timers for Soft State Protocols: Taylor’s Version"]
+        ]);
+        $jr = call_api("=paper", $this->u_puneet, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($jr->change_lists[0], []);
+        xassert_eqq($jr->change_lists[1], []);
+        xassert_eqq($jr->message_list[0]->message, "<0>You aren’t allowed to view submission #2");
+        xassert_eqq($jr->message_list[1]->message, "<0>You aren’t allowed to view submission #10000");
+    }
+
+    function test_assigned_paper_id() {
+        // Only chairs can assign papers with a specific ID
+        $qreq = $this->make_post_json_qreq([
+            ["pid" => 10000, "title" => "Scalable Timers for Soft State Protocols: György’s Version",
+             "abstract" => "Hello", "authors" => [["name" => "My Name"]],
+             "status" => "draft"]
+        ]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($jr->change_lists[0], []);
+        xassert_eqq($jr->message_list[0]->message, "<0>Submission #10000 does not exist");
+
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->papers[0]->pid, 10000);
     }
 
     function test_dry_run() {

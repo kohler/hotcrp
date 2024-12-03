@@ -211,7 +211,7 @@ class Paper_API extends MessageSet {
         if ($this->ok && !$this->dry_run) {
             $this->ok = $ok = $ps->execute_save();
         }
-        foreach ($ps->decorated_message_list() as $mi) {
+        foreach ($ps->message_list() as $mi) {
             if (!$this->single && $this->landmark) {
                 $mi->landmark = $this->landmark;
             }
