@@ -16,6 +16,8 @@ class APISpec_Batch {
     public $api_map;
     /** @var object */
     private $j;
+    /** @var ?JsonParser */
+    private $jparser;
     /** @var object */
     private $paths;
     /** @var ?object */
@@ -86,17 +88,20 @@ class APISpec_Batch {
 
         if (isset($arg["i"])) {
             if ($arg["i"] === "-") {
+                $filename = "<stdin>";
                 $s = stream_get_contents(STDIN);
             } else {
-                $s = file_get_contents_throw(safe_filename($arg["i"]));
+                $filename = safe_filename($arg["i"]);
+                $s = file_get_contents_throw($filename);
             }
             if ($s !== false) {
-                $this->j = Json::try_decode($s);
+                $this->jparser = (new JsonParser($s))->set_filename($filename);
+                $this->j = $this->jparser->decode();
             }
             if ($s === false || !is_object($this->j)) {
                 $msg = $arg["i"] . ": Invalid input";
-                if ($this->j === null && Json::last_error()) {
-                    $msg .= ": " . Json::last_error_msg();
+                if ($this->j === null && $this->jparser->last_error()) {
+                    $msg .= ": " . $this->jparser->last_error_msg();
                 }
                 throw new CommandLineException($msg);
             }
@@ -375,6 +380,9 @@ class APISpec_Batch {
     /** @param string $name
      * @return object */
     private function reference_common_schema($name) {
+        if (in_array($name, ["string", "boolean"])) {
+            return (object) ["type" => $name];
+        }
         if ($this->schemas === null) {
             $compj = $this->j->components = $this->j->components ?? (object) [];
             $this->schemas = $compj->schemas = $compj->schemas ?? (object) [];
@@ -459,6 +467,16 @@ class APISpec_Batch {
         return (object) ["\$ref" => "#/components/schemas/{$name}"];
     }
 
+    static private $param_schemas = [
+        "p" => "pid", "r" => "rid", "c" => "cid",
+        "q" => "search_string", "t" => "search_collection", "qt" => "search_qt",
+        "reviewer" => "search_reviewer", "sort" => "search_sort", "scoresort" => "search_scoresort",
+        "redirect" => "string", "forceShow" => "boolean"
+    ];
+    static private $param_required = [
+        "p" => true, "r" => true, "c" => true
+    ];
+
     /** @param string $name
      * @return object */
     private function reference_common_param($name) {
@@ -468,40 +486,25 @@ class APISpec_Batch {
         }
         $nj = $this->parameters->$name ?? null;
         if ($nj === null || ($this->override_schema && !isset($this->setj_parameters->$name))) {
-            if ($name === "p.path") {
+            if (str_ends_with($name, ".path")) {
+                $xname = substr($name, 0, -5);
+                $in = "path";
+                $required = true;
+            } else if (str_ends_with($name, ".opt")) {
+                $xname = substr($name, 0, -4);
+                $in = "query";
+                $required = false;
+            } else {
+                $xname = $name;
+                $in = "query";
+                $required = self::$param_required[$xname] ?? false;
+            }
+            if (isset(self::$param_schemas[$xname])) {
                 $nj = (object) [
-                    "name" => "p",
-                    "in" => "path",
-                    "required" => true,
-                    "schema" => $this->reference_common_schema("pid")
-                ];
-            } else if ($name === "p" || $name === "p.opt") {
-                $nj = (object) [
-                    "name" => "p",
-                    "in" => "query",
-                    "required" => $name === "p",
-                    "schema" => $this->reference_common_schema("pid")
-                ];
-            } else if ($name === "r" || $name === "r.opt") {
-                $nj = (object) [
-                    "name" => "r",
-                    "in" => "query",
-                    "required" => $name === "r",
-                    "schema" => $this->reference_common_schema("rid")
-                ];
-            } else if ($name === "c" || $name === "c.opt") {
-                $nj = (object) [
-                    "name" => "c",
-                    "in" => "query",
-                    "required" => $name === "c",
-                    "schema" => $this->reference_common_schema("cid")
-                ];
-            } else if ($name === "redirect") {
-                $nj = (object) [
-                    "name" => "redirect",
-                    "in" => "query",
-                    "required" => false,
-                    "schema" => (object) ["type" => "string"]
+                    "name" => $xname,
+                    "in" => $in,
+                    "required" => $required,
+                    "schema" => $this->reference_common_schema(self::$param_schemas[$xname])
                 ];
             } else {
                 assert(false);
@@ -546,6 +549,7 @@ class APISpec_Batch {
      * @param string $path */
     private function expand_request($x, $known, $uf, $path) {
         $params = $bprop = $breq = [];
+        $query_plausible = isset($known["q"]);
         $has_file = false;
         foreach ($known as $name => $f) {
             if ($name === "*") {
@@ -565,6 +569,15 @@ class APISpec_Batch {
                 $params["c"] = $this->reference_common_param($pn);
             } else if ($name === "redirect" && $f === 0) {
                 $params["redirect"] = $this->reference_common_param("redirect");
+            } else if ($name === "forceShow" && $f === 0) {
+                $params["forceShow"] = $this->reference_common_param("forceShow");
+            } else if ($name === "q") {
+                $pn = $f & self::F_REQUIRED ? "q" : "q.opt";
+                $params["q"] = $this->reference_common_param($pn);
+            } else if (in_array($name, ["t", "qt", "reviewer", "sort", "scoresort"])
+                       && $query_plausible
+                       && ($f & self::F_REQUIRED) === 0) {
+                $params[$name] = $this->reference_common_param($name);
             } else if (($f & (self::F_BODY | self::F_FILE)) === 0) {
                 $ps = $uf->parameter_info->$name ?? null;
                 $params[$name] = (object) [
@@ -608,6 +621,15 @@ class APISpec_Batch {
         }
     }
 
+    private function parameter_landmark($path, $index) {
+        if (!preg_match('/\A(.*)\.(get|post)\z/', $path, $m)) {
+            return "";
+        }
+        $jpath = "\$.paths[\"{$m[1]}\"].{$m[2]}.parameters[{$index}]";
+        $lm = $this->jparser->path_landmark($jpath, false);
+        return $lm ? "{$lm}: " : "";
+    }
+
     private function apply_parameters($x, $params, $path) {
         $x->parameters = $x->parameters ?? [];
         $xparams = [];
@@ -626,20 +648,22 @@ class APISpec_Batch {
                 continue;
             }
             $xpj = $x->parameters[$i];
-            if ($this->override_param || ($this->override_ref && isset($npj->{"\$ref"}))) {
+            $xpjref = $xpj->{"\$ref"} ?? null;
+            $npjref = $npj->{"\$ref"} ?? null;
+            if ($this->override_param || ($this->override_ref && $npjref !== null)) {
                 $x->parameters[$i] = $npj;
-            } else if (isset($xpj->{"\$ref"}) !== isset($npj->{"\$ref"})) {
-                fwrite(STDERR, "{$path}.param[{$n}]: \$ref status differs\n");
-            } else if (isset($xpj->{"\$ref"})) {
-                if ($xpj->{"\$ref"} !== $npj->{"\$ref"}) {
-                    fwrite(STDERR, "{$path}.param[{$n}]: \$ref destination differs\n");
+            } else if (isset($xpjref) !== isset($npjref)) {
+                fwrite(STDERR, $this->parameter_landmark($path, $i) . "{$path}.param[{$n}]: \$ref status differs\n  input " . ($xpjref ?? "noref") . ", expected " . ($npjref ?? "noref") . "\n");
+            } else if (isset($xpjref)) {
+                if ($xpjref !== $npjref) {
+                    fwrite(STDERR, $this->parameter_landmark($path, $i) . "{$path}.param[{$n}]: \$ref destination differs\n  input {$xpjref}, expected {$npjref}\n");
                 }
             } else {
                 foreach ((array) $npj as $k => $v) {
                     if (!isset($xpj->$k)) {
                         $xpj->$k = $v;
                     } else if (is_scalar($v) && $xpj->$k !== $v) {
-                        fwrite(STDERR, "{$path}.param[{$n}]: {$k} differs\n");
+                        fwrite(STDERR, $this->parameter_landmark($path, $i) . "{$path}.param[{$n}]: {$k} differs\n");
                     }
                 }
             }
@@ -917,8 +941,24 @@ Usage: php batch/apispec.php")
             throw new CommandLineException("`-w` requires `-o`");
         }
 
+        $file = $arg["i"] ?? $arg["o"] ?? "<none>";
+        if (str_starts_with($file, "../") || str_contains($file, "/..")) {
+            throw new CommandLineException("`-w` spec filename must not contain `..`");
+        }
+        if (str_starts_with($file, "/")) {
+            $path = $file;
+        } else if (str_starts_with($file, "./")) {
+            $path = getcwd() . substr($file, 1);
+        } else {
+            $path = getcwd() . "/" . $file;
+        }
+
         // enumerate files to watch
-        $cmd = ["fswatch", "etc/apifunctions.json", "etc/apiexpansions.json", "devel/apidoc"];
+        $cmd = [
+            "fswatch",
+            "etc/apifunctions.json", "etc/apiexpansions.json", "devel/apidoc", "batch/apispec.php",
+            $path
+        ];
         self::add_expanded_includes($conf->opt("apiFunctions"), $cmd);
         self::add_expanded_includes($conf->opt("apiDescriptions"), $cmd);
         $proc = proc_open(Subprocess::args_to_command($cmd),
@@ -948,9 +988,17 @@ Usage: php batch/apispec.php")
         // build/wait loop
         while (true) {
             $xproc = proc_open(Subprocess::args_to_command($clone), [], $xpipes);
-            proc_close($xproc);
-            if (@fread($fswatch, 1024) === false) {
-                exit(0);
+            $term = proc_close($xproc);
+            $t = microtime(true);
+            fwrite(STDERR, "Created {$file}" . ($term === 0 ? "" : " (termination status {$term})") . "\n\n");
+            while (true) {
+                $x = @fread($fswatch, 1024);
+                if ($x === false) {
+                    exit(1);
+                }
+                if ($x !== "{$path}\n" || microtime(true) - $t > 1) {
+                    break;
+                }
             }
         }
     }

@@ -14,14 +14,32 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "paper": {
+                                                    "$ref": "#/components/schemas/paper"
+                                                },
+                                                "papers": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/paper"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
                                 }
                             }
-                        }
+                        },
+                        "description": ""
                     },
                     "default": {
                         "description": "",
@@ -33,7 +51,35 @@
                             }
                         }
                     }
-                }
+                },
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.opt"
+                    },
+                    {
+                        "$ref": "#/components/parameters/q.opt"
+                    },
+                    {
+                        "$ref": "#/components/parameters/t"
+                    },
+                    {
+                        "$ref": "#/components/parameters/qt"
+                    },
+                    {
+                        "$ref": "#/components/parameters/sort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/scoresort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/reviewer"
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow"
+                    }
+                ],
+                "summary": "Retrieve submission(s)",
+                "description": "Use this endpoint to retrieve JSON-formatted information about submissions.\n\nProvide either the `p` parameter or the `q` parameter. The `p` parameter\nshould be a submission ID; the server will return information about that\nsingle submission in the `paper` response field. Otherwise, the `q` parameter\nshould be a search query (other search parameters `t`, `qt`, etc. are also\naccepted); the server will return information about all matching submissions\nin the `papers` response field, which is an array of paper objects.\n\nError messages—for instance, about permission errors—are returned in the\n`message_list` component as usual.\n\nPaper object fields depend on the submission form. Every paper has an `object`\nmember, a `pid`, and a `status`. Other fields are provided depending on\nwhether they exist and whether the accessing user can see them.\n\n\n"
             },
             "post": {
                 "tags": [
@@ -60,7 +106,20 @@
                             }
                         }
                     }
-                }
+                },
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.opt"
+                    },
+                    {
+                        "name": "dryrun",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "summary": "Create or modify submission(s)",
+                "description": "### Single submission\n\nA request with a `p` parameter (as a path parameter `/{p}/paper` or a query\nparameter) modifies the submission with that ID. The special ID `new` can be\nused to create a submission.\n\nThe body of the request may be formatted as an HTML form\n(`application/x-www-form-urlencoded` or `multipart/form-data`), a JSON object\n(`application/json`), or a ZIP file (`application/zip`—see below). HTML form\ninput follows the conventions of the HotCRP web application and is subject to\nchange at any time.\n\n### Multiple submissions\n\nA request with no `p` parameter can create or modify any number of\nsubmissions.\n\n\n### ZIP uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON and treated a\nsubmission object (or array of submission objects). Attachment fields in the\nJSON content can refer to other files in the ZIP. For instance, this shell\nsession might upload a submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n"
             }
         },
         "/formatcheck": {
@@ -892,50 +951,22 @@
                 ],
                 "parameters": [
                     {
-                        "name": "q",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_string"
-                        }
+                        "$ref": "#/components/parameters/q"
                     },
                     {
-                        "name": "t",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_collection"
-                        }
+                        "$ref": "#/components/parameters/t"
                     },
                     {
-                        "name": "qt",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_qt"
-                        }
+                        "$ref": "#/components/parameters/qt"
                     },
                     {
-                        "name": "sort",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_sort"
-                        }
+                        "$ref": "#/components/parameters/sort"
                     },
                     {
-                        "name": "scoresort",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_scoresort"
-                        }
+                        "$ref": "#/components/parameters/scoresort"
                     },
                     {
-                        "name": "reviewer",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
+                        "$ref": "#/components/parameters/reviewer"
                     },
                     {
                         "name": "report",
@@ -1000,50 +1031,22 @@
                         "schema": {}
                     },
                     {
-                        "name": "q",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_string"
-                        }
+                        "$ref": "#/components/parameters/q"
                     },
                     {
-                        "name": "t",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_collection"
-                        }
+                        "$ref": "#/components/parameters/t"
                     },
                     {
-                        "name": "qt",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_qt"
-                        }
+                        "$ref": "#/components/parameters/qt"
                     },
                     {
-                        "name": "sort",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_sort"
-                        }
+                        "$ref": "#/components/parameters/sort"
                     },
                     {
-                        "name": "scoresort",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_scoresort"
-                        }
+                        "$ref": "#/components/parameters/scoresort"
                     },
                     {
-                        "name": "reviewer",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
+                        "$ref": "#/components/parameters/reviewer"
                     }
                 ],
                 "responses": {
@@ -1283,12 +1286,7 @@
                         "schema": {}
                     },
                     {
-                        "name": "q",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_string"
-                        }
+                        "$ref": "#/components/parameters/q.opt"
                     }
                 ],
                 "responses": {
@@ -1347,12 +1345,7 @@
                         "schema": {}
                     },
                     {
-                        "name": "q",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_string"
-                        }
+                        "$ref": "#/components/parameters/q.opt"
                     }
                 ],
                 "requestBody": {
@@ -4091,53 +4084,25 @@
                         "schema": {}
                     },
                     {
-                        "name": "q",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_string"
-                        }
+                        "$ref": "#/components/parameters/q"
                     },
                     {
-                        "name": "t",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_collection"
-                        }
+                        "$ref": "#/components/parameters/t"
                     },
                     {
-                        "name": "qt",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_qt"
-                        }
+                        "$ref": "#/components/parameters/qt"
                     },
                     {
-                        "name": "sort",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_sort"
-                        }
+                        "$ref": "#/components/parameters/sort"
                     },
                     {
-                        "name": "scoresort",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_scoresort"
-                        }
+                        "$ref": "#/components/parameters/scoresort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/reviewer"
                     },
                     {
                         "name": "report",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
-                    },
-                    {
-                        "name": "reviewer",
                         "in": "query",
                         "required": false,
                         "schema": {}
@@ -4244,6 +4209,70 @@
                 "schema": {
                     "$ref": "#/components/schemas/cid"
                 }
+            },
+            "q": {
+                "name": "q",
+                "in": "query",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/search_string"
+                }
+            },
+            "q.opt": {
+                "name": "q",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_string"
+                }
+            },
+            "t": {
+                "name": "t",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_collection"
+                }
+            },
+            "qt": {
+                "name": "qt",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_qt"
+                }
+            },
+            "reviewer": {
+                "name": "reviewer",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_reviewer"
+                }
+            },
+            "sort": {
+                "name": "sort",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_sort"
+                }
+            },
+            "scoresort": {
+                "name": "scoresort",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_scoresort"
+                }
+            },
+            "forceShow": {
+                "name": "forceShow",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "boolean"
+                }
             }
         },
         "schemas": {
@@ -4259,6 +4288,15 @@
                 "type": "integer",
                 "description": "Submission ID",
                 "minimum": 1
+            },
+            "paper_status": {
+                "type": "string",
+                "description": "Submission status",
+                "examples": [
+                    "draft",
+                    "submitted",
+                    "withdrawn"
+                ]
             },
             "message": {
                 "type": "object",
@@ -4474,7 +4512,7 @@
             },
             "search_collection": {
                 "type": "string",
-                "description": "Submission universe for search",
+                "description": "Collection to search",
                 "examples": [
                     "s",
                     "all"
@@ -4500,6 +4538,13 @@
                     "average"
                 ]
             },
+            "search_reviewer": {
+                "type": "string",
+                "description": "Email of designated reviewer for search",
+                "examples": [
+                    "pcmember@uhcrp.edu"
+                ]
+            },
             "search_parameters": {
                 "type": "object",
                 "description": "Search parameters",
@@ -4523,7 +4568,7 @@
                         "$ref": "#/components/schemas/search_scoresort"
                     },
                     "reviewer": {
-                        "type": "string"
+                        "$ref": "#/components/schemas/search_reviewer"
                     }
                 }
             },
@@ -4705,6 +4750,26 @@
                     "au"
                 ]
             },
+            "paper": {
+                "type": "object",
+                "required": [
+                    "object",
+                    "pid",
+                    "status"
+                ],
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "const": "paper"
+                    },
+                    "pid": {
+                        "$ref": "#/components/schemas/pid"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/paper_status"
+                    }
+                }
+            },
             "comment": {
                 "type": "object",
                 "required": [
@@ -4826,7 +4891,8 @@
     },
     "tags": [
         {
-            "name": "Submissions"
+            "name": "Submissions",
+            "description": "These endpoints query and modify HotCRP submissions.\n\n\n"
         },
         {
             "name": "Documents"

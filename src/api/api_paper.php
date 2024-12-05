@@ -46,8 +46,12 @@ class Paper_API extends MessageSet {
 
     /** @return JsonResult */
     static function run_get(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
+        if (isset($qreq->p) && isset($qreq->q)) {
+            return JsonResult::make_parameter_error("p");
+        }
+
         if ($prow && ($pj = (new PaperExport($user))->paper_json($prow))) {
-            return new JsonResult(["ok" => true, "papers" => [$pj]]);
+            return new JsonResult(["ok" => true, "paper" => $pj]);
         }
 
         if (isset($qreq->p)) {
@@ -58,7 +62,7 @@ class Paper_API extends MessageSet {
             return JsonResult::make_parameter_error("p");
         }
 
-        $srch = new PaperSearch($user, ["q" => $qreq->q, "t" => $qreq->t, "sort" => $qreq->sort]);
+        $srch = new PaperSearch($user, $qreq);
         $pids = $srch->sorted_paper_ids();
         $prows = $srch->conf->paper_set([
             "paperId" => $pids,
@@ -154,6 +158,9 @@ class Paper_API extends MessageSet {
     /** @return JsonResult */
     private function run_post_form_data(Qrequest $qreq, ?PaperInfo $prow) {
         if (!$prow) {
+            if (!isset($qreq->p)) {
+                return JsonResult::make_missing_error("p");
+            }
             if (isset($qreq->sclass)
                 && !$this->conf->submission_round_by_tag($qreq->sclass, true)) {
                 return JsonResult::make_message_list(MessageItem::error($this->conf->_("<0>{Submission} class ‘{}’ not found", $qreq->sclass)));
