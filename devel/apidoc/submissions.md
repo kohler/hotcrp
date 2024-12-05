@@ -45,7 +45,6 @@ change at any time.
 A request with no `p` parameter can create or modify any number of
 submissions.
 
-
 ### ZIP uploads
 
 A ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is

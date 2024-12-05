@@ -46,8 +46,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 
     const ARRAY_MARKER = "__array__";
     const BODY_NONE = 0;
-    const BODY_INPUT = 1;
-    const BODY_SET = 2;
+    const BODY_FILE = 1;
+    const BODY_STRING = 2;
 
     /** @param string $method
      * @param array<string,string> $data */
@@ -181,8 +181,15 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 
     /** @return ?string */
     function body() {
-        if ($this->_body === null && $this->_body_type === self::BODY_INPUT) {
-            $this->_body = file_get_contents("php://input");
+        if ($this->_body !== null || $this->_body_type === self::BODY_NONE) {
+            return $this->_body;
+        }
+        $s = @file_get_contents($this->_body_filename ?? "php://input");
+        if ($s !== false) {
+            $this->_body = $s;
+        } else {
+            $this->_body_type = self::BODY_NONE;
+            $this->_body_filename = null;
         }
         return $this->_body;
     }
@@ -190,36 +197,47 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @param ?string $extension
      * @return ?string */
     function body_filename($extension = null) {
-        if ($this->_body_filename === null && $this->_body_type !== self::BODY_NONE) {
-            if (!($tmpdir = tempdir())) {
-                return null;
-            }
-            $extension = $extension ?? Mimetype::extension($this->header("Content-Type"));
+        if ($this->_body_filename !== null || $this->_body_type === self::BODY_NONE) {
+            return $this->_body_filename;
+        }
+        if (!($tmpdir = tempdir())) {
+            return null;
+        }
+        $extension = $extension ?? Mimetype::extension($this->header("Content-Type"));
+        $f = $fn = null;
+        for ($n = 0; $n !== 5 && !$f; ++$n) {
             $fn = $tmpdir . "/" . strtolower(encode_token(random_bytes(6))) . $extension;
-            if ($this->_body_type === self::BODY_INPUT) {
-                $ok = copy("php://input", $fn);
-            } else {
-                $ok = file_put_contents($fn, $this->_body) === strlen($this->_body);
-            }
-            if ($ok) {
-                $this->_body_filename = $fn;
-            }
+            $f = @fopen($fn, "xb");
+        }
+        if (!$f) {
+            return null;
+        }
+        if ($this->_body === null) {
+            $if = fopen("php://input", "rb");
+            $nc = stream_copy_to_stream($if, $f);
+            fclose($if);
+            $ok = $nc !== false;
+        } else {
+            $nc = fwrite($f, $this->_body);
+            $ok = $nc === strlen($this->_body);
+        }
+        fclose($f);
+        if ($ok) {
+            $this->_body_filename = $fn;
+        } else {
+            $this->_body_type = self::BODY_NONE;
         }
         return $this->_body_filename;
     }
 
     /** @return ?string */
     function body_content_type() {
-        if ($this->_body_type === self::BODY_NONE) {
+        if (($ct = $this->header("Content-Type"))) {
+            return Mimetype::base($ct);
+        } else if ($this->_body_type === self::BODY_NONE) {
             return null;
-        } else if (($ct = $this->header("Content-Type"))) {
-            return Mimetype::type($ct);
         }
-        $b = $this->_body;
-        if ($b === null && $this->_body_type === self::BODY_INPUT) {
-            $b = file_get_contents("php://input", false, null, 0, 4096);
-        }
-        $b = (string) $b;
+        $b = (string) $this->body();
         if (str_starts_with($b, "\x50\x4B\x03\x04")) {
             return "application/zip";
         } else if (preg_match('/\A\s*[\[\{]/s', $b)) {
@@ -233,7 +251,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @param ?string $content_type
      * @return $this */
     function set_body($body, $content_type = null) {
-        $this->_body_type = self::BODY_SET;
+        $this->_body_type = self::BODY_STRING;
         $this->_body_filename = null;
         $this->_body = $body;
         if ($content_type !== null) {
@@ -538,7 +556,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         if (isset($_SERVER["HTTP_REFERER"])) {
             $qreq->set_referrer($_SERVER["HTTP_REFERER"]);
         }
-        $qreq->_body_type = empty($_POST) ? self::BODY_INPUT : self::BODY_NONE;
+        $qreq->_body_type = empty($_POST) ? self::BODY_FILE : self::BODY_NONE;
 
         // $_FILES requires special processing since we want error messages.
         $errors = [];

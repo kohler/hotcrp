@@ -139,6 +139,20 @@ class Mimetype {
         return self::$max_extension_length;
     }
 
+    /** @param string $type
+     * @return string */
+    static function base($type) {
+        $space = strpos($type, " ");
+        $semi = strpos($type, ";");
+        if ($space === false && $semi === false) {
+            return $type;
+        } else if ($space === false || $semi < $space) {
+            return substr($type, 0, $semi);
+        } else {
+            return substr($type, 0, $space);
+        }
+    }
+
     /** @param string|Mimetype $type
      * @return ?Mimetype */
     static function lookup($type) {
@@ -152,13 +166,9 @@ class Mimetype {
         if (array_key_exists($type, self::$tmap)) {
             return self::$tmap[$type];
         }
-        $space = strpos($type, " ");
-        $semi = strpos($type, ";");
-        if ($space || $semi) {
-            $type = substr($type, 0, min($space ? : strlen($type), $semi ? : strlen($type)));
-            if (array_key_exists($type, self::$tmap)) {
-                return self::$tmap[$type];
-            }
+        $type = self::base($type);
+        if (array_key_exists($type, self::$tmap)) {
+            return self::$tmap[$type];
         }
         self::$mime_types_loaded || self::load_mime_types();
         return self::$tmap[$type] ?? null;
