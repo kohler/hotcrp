@@ -374,7 +374,7 @@ class Unit_Tester {
         "c": "d"
     }
 }';
-        $jp = (new JsonParser)->input($input)->flags(JSON_THROW_ON_ERROR)->filename("x.txt");
+        $jp = (new JsonParser)->set_input($input)->set_flags(JSON_THROW_ON_ERROR)->set_filename("x.txt");
         xassert_eqq($jp->position_landmark(11), "x.txt:2:10");
         xassert_eqq($jp->path_landmark(" . a   "), "x.txt:2:10");
         xassert_eqq($jp->path_landmark("\$.a"), "x.txt:2:10");
@@ -400,96 +400,96 @@ class Unit_Tester {
     }
 
     function test_json5() {
-        $jp = (new JsonParser)->assoc(true);
-        $jp5 = (new JsonParser)->assoc(true)->flags(JsonParser::JSON5);
+        $jp = (new JsonParser)->set_assoc(true);
+        $jp5 = (new JsonParser)->set_assoc(true)->set_flags(JsonParser::JSON5);
 
-        xassert_eqq($jp->input("[\"a\"]")->decode(), ["a"]);
+        xassert_eqq($jp->set_input("[\"a\"]")->decode(), ["a"]);
         xassert($jp->ok());
-        xassert_eqq($jp5->input("[\"a\"]")->decode(), ["a"]);
+        xassert_eqq($jp5->set_input("[\"a\"]")->decode(), ["a"]);
         xassert($jp5->ok());
-        xassert_eqq($jp->input("[\"a\",]")->decode(), null);
+        xassert_eqq($jp->set_input("[\"a\",]")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp5->input("[\"a\",]")->decode(), ["a"]);
+        xassert_eqq($jp5->set_input("[\"a\",]")->decode(), ["a"]);
         xassert($jp5->ok());
-        xassert_eqq($jp->input("[,]")->decode(), null);
+        xassert_eqq($jp->set_input("[,]")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp5->input("[,]")->decode(), null);
+        xassert_eqq($jp5->set_input("[,]")->decode(), null);
         xassert(!$jp5->ok());
 
-        xassert_eqq($jp->input("{\"a\":1}")->decode(), ["a" => 1]);
+        xassert_eqq($jp->set_input("{\"a\":1}")->decode(), ["a" => 1]);
         xassert($jp->ok());
-        xassert_eqq($jp5->input("{\"a\":1}")->decode(), ["a" => 1]);
+        xassert_eqq($jp5->set_input("{\"a\":1}")->decode(), ["a" => 1]);
         xassert($jp5->ok());
-        xassert_eqq($jp->input("{\"a\":1,}")->decode(), null);
+        xassert_eqq($jp->set_input("{\"a\":1,}")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp5->input("{\"a\":1,}")->decode(), ["a" => 1]);
+        xassert_eqq($jp5->set_input("{\"a\":1,}")->decode(), ["a" => 1]);
         xassert($jp5->ok());
-        xassert_eqq($jp->input("{\"b\",\"a\":1}")->decode(), null);
+        xassert_eqq($jp->set_input("{\"b\",\"a\":1}")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp5->input("{\"b\",\"a\":1}")->decode(), null);
+        xassert_eqq($jp5->set_input("{\"b\",\"a\":1}")->decode(), null);
         xassert(!$jp5->ok());
-        xassert_eqq($jp->input("{,}")->decode(), null);
+        xassert_eqq($jp->set_input("{,}")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp5->input("{,}")->decode(), null);
+        xassert_eqq($jp5->set_input("{,}")->decode(), null);
         xassert(!$jp5->ok());
 
-        xassert_eqq($jp->input("0x1A")->decode(), null);
+        xassert_eqq($jp->set_input("0x1A")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp5->input("0x1A")->decode(), 26);
+        xassert_eqq($jp5->set_input("0x1A")->decode(), 26);
         xassert($jp5->ok());
-        xassert_eqq($jp->input("+12")->decode(), null);
+        xassert_eqq($jp->set_input("+12")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp5->input("+12")->decode(), 12);
+        xassert_eqq($jp5->set_input("+12")->decode(), 12);
         xassert($jp5->ok());
 
-        xassert_eqq($jp->input("Infinity")->decode(), null);
+        xassert_eqq($jp->set_input("Infinity")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp5->input("Infinity")->decode(), INF);
+        xassert_eqq($jp5->set_input("Infinity")->decode(), INF);
         xassert($jp5->ok());
 
-        xassert_eqq($jp->input("NaN")->decode(), null);
+        xassert_eqq($jp->set_input("NaN")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp5->input("NaN")->decode(), NAN);
+        xassert_eqq($jp5->set_input("NaN")->decode(), NAN);
         xassert($jp5->ok());
 
-        xassert_eqq($jp->input("// Comment\ntrue\n/* Yep */")->decode(), null);
+        xassert_eqq($jp->set_input("// Comment\ntrue\n/* Yep */")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp5->input("// Comment\ntrue\n/* Yep */")->decode(), true);
+        xassert_eqq($jp5->set_input("// Comment\ntrue\n/* Yep */")->decode(), true);
         xassert($jp5->ok());
 
-        xassert_eqq($jp5->input("'Hello.\t'")->decode(), "Hello.\t");
+        xassert_eqq($jp5->set_input("'Hello.\t'")->decode(), "Hello.\t");
         xassert($jp5->ok());
-        xassert_eqq($jp5->input("'Hello.\n'")->decode(), null);
+        xassert_eqq($jp5->set_input("'Hello.\n'")->decode(), null);
         xassert(!$jp5->ok());
-        xassert_eqq($jp5->input("'Hello.\\\n'")->decode(), "Hello.");
+        xassert_eqq($jp5->set_input("'Hello.\\\n'")->decode(), "Hello.");
         xassert($jp5->ok());
-        xassert_eqq($jp5->input("'Hello.\\\n\"'")->decode(), "Hello.\"");
+        xassert_eqq($jp5->set_input("'Hello.\\\n\"'")->decode(), "Hello.\"");
         xassert($jp5->ok());
-        xassert_eqq($jp5->input("\"Hello.\t'")->decode(), null);
+        xassert_eqq($jp5->set_input("\"Hello.\t'")->decode(), null);
         xassert(!$jp5->ok());
-        xassert_eqq($jp5->input("\"Hello.\t\"")->decode(), "Hello.\t");
+        xassert_eqq($jp5->set_input("\"Hello.\t\"")->decode(), "Hello.\t");
         xassert($jp5->ok());
-        xassert_eqq($jp5->input("\"Hello.\n\"")->decode(), null);
+        xassert_eqq($jp5->set_input("\"Hello.\n\"")->decode(), null);
         xassert(!$jp5->ok());
-        xassert_eqq($jp5->input("\"Hello.\\\n\"")->decode(), "Hello.");
+        xassert_eqq($jp5->set_input("\"Hello.\\\n\"")->decode(), "Hello.");
         xassert($jp5->ok());
-        xassert_eqq($jp5->input("\"Hello.\\\n'\"")->decode(), "Hello.'");
+        xassert_eqq($jp5->set_input("\"Hello.\\\n'\"")->decode(), "Hello.'");
         xassert($jp5->ok());
 
-        xassert_eqq($jp->input("\"Hello.\t'")->decode(), null);
+        xassert_eqq($jp->set_input("\"Hello.\t'")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp->input("\"Hello.\t\"")->decode(), null);
+        xassert_eqq($jp->set_input("\"Hello.\t\"")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp->input("\"Hello.\n\"")->decode(), null);
+        xassert_eqq($jp->set_input("\"Hello.\n\"")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp->input("\"Hello.\\\n\"")->decode(), null);
+        xassert_eqq($jp->set_input("\"Hello.\\\n\"")->decode(), null);
         xassert(!$jp->ok());
-        xassert_eqq($jp->input("\"Hello.\\\n'\"")->decode(), null);
+        xassert_eqq($jp->set_input("\"Hello.\\\n'\"")->decode(), null);
         xassert(!$jp->ok());
 
-        xassert_eqq($jp5->input("{a:1}")->decode(), ["a" => 1]);
+        xassert_eqq($jp5->set_input("{a:1}")->decode(), ["a" => 1]);
         xassert($jp5->ok());
-        xassert_eqq($jp->input("{a:1}")->decode(), null);
+        xassert_eqq($jp->set_input("{a:1}")->decode(), null);
         xassert(!$jp->ok());
     }
 
@@ -498,7 +498,7 @@ class Unit_Tester {
      * @return list<JsonParserPosition> */
     private function get_member_positions($jp, $input) {
         $jpps = [];
-        foreach ($jp->input($input)->member_positions(0) as $jpp) {
+        foreach ($jp->set_input($input)->member_positions(0) as $jpp) {
             $jpps[] = $jpp;
         }
         return $jpps;

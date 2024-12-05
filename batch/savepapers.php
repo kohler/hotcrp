@@ -363,8 +363,8 @@ class SavePapers_Batch {
             $j = json_decode($content);
         }
         if ($j === null) {
-            $jparser = (new JsonParser)->flags($this->json5 ? JsonParser::JSON5 : 0);
-            $j = $jparser->input($content)->decode();
+            $jparser = (new JsonParser)->set_flags($this->json5 ? JsonParser::JSON5 : 0);
+            $j = $jparser->set_input($content)->decode();
         }
         if ($j === null) {
             fwrite(STDERR, "{$this->errprefix}invalid JSON: " . $jparser->last_error_msg() . "\n");

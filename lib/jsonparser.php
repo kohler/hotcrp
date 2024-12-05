@@ -80,8 +80,52 @@ class JsonParser {
     }
 
     /** @param ?string $input
-     * @return $this */
+     * @return $this
+     * @deprecated */
     function input($input) {
+        return $this->set_input($input);
+    }
+
+    /** @param ?bool $assoc
+     * @param int $maxdepth
+     * @param int $flags
+     * @return $this
+     * @deprecated */
+    function params($assoc = null, $maxdepth = 512, $flags = 0) {
+        return $this->set_params($assoc, $maxdepth, $flags);
+    }
+
+    /** @param ?bool $assoc
+     * @return $this
+     * @deprecated */
+    function assoc($assoc = null) {
+        return $this->set_assoc($assoc);
+    }
+
+    /** @param int $maxdepth
+     * @return $this
+     * @deprecated */
+    function maxdepth($maxdepth = 512) {
+        return $this->set_maxdepth($maxdepth);
+    }
+
+    /** @param int $flags
+     * @return $this
+     * @deprecated */
+    function flags($flags = 0) {
+        return $this->set_flags($flags);
+    }
+
+    /** @param ?string $filename
+     * @return $this
+     * @deprecated */
+    function filename($filename) {
+        return $this->set_filename($filename);
+    }
+
+    /** @param ?string $input
+     * @return $this */
+    function set_input($input) {
         $this->input = $input;
         $this->error_type = 0;
         $this->error_pos = 0;
@@ -92,7 +136,7 @@ class JsonParser {
      * @param int $maxdepth
      * @param int $flags
      * @return $this */
-    function params($assoc = null, $maxdepth = 512, $flags = 0) {
+    function set_params($assoc = null, $maxdepth = 512, $flags = 0) {
         $this->assoc = $assoc;
         $this->maxdepth = $maxdepth;
         $this->flags = $flags;
@@ -101,28 +145,28 @@ class JsonParser {
 
     /** @param ?bool $assoc
      * @return $this */
-    function assoc($assoc = null) {
+    function set_assoc($assoc = null) {
         $this->assoc = $assoc;
         return $this;
     }
 
     /** @param int $maxdepth
      * @return $this */
-    function maxdepth($maxdepth = 512) {
+    function set_maxdepth($maxdepth = 512) {
         $this->maxdepth = $maxdepth;
         return $this;
     }
 
     /** @param int $flags
      * @return $this */
-    function flags($flags = 0) {
+    function set_flags($flags = 0) {
         $this->flags = $flags;
         return $this;
     }
 
     /** @param ?string $filename
      * @return $this */
-    function filename($filename) {
+    function set_filename($filename) {
         $this->filename = $filename;
         return $this;
     }
@@ -642,8 +686,9 @@ class JsonParser {
     }
 
     /** @param int $pos
+     * @param bool $include_column
      * @return ?string */
-    function position_landmark($pos) {
+    function position_landmark($pos, $include_column = true) {
         if ($this->input === null || $pos > strlen($this->input)) {
             return null;
         }
@@ -654,9 +699,9 @@ class JsonParser {
         $last_line = substr($prefix, max($cr === false ? 0 : $cr + 1, $nl === false ? 0 : $nl + 1));
         $column = 1 + preg_match_all('/./u', $last_line);
         if ($this->filename !== null) {
-            return "{$this->filename}:{$line}:{$column}";
+            return "{$this->filename}:{$line}" . ($include_column ? ":{$column}" : "");
         } else {
-            return "line {$line}, column {$column}";
+            return "line {$line}" . ($include_column ? ", column {$column}" : "");
         }
     }
 
@@ -749,10 +794,11 @@ class JsonParser {
     }
 
     /** @param string $path
+     * @param bool $include_column
      * @return ?string */
-    function path_landmark($path) {
+    function path_landmark($path, $include_column = true) {
         $jpp = $this->path_position($path);
-        return $jpp ? $this->position_landmark($jpp->vpos1) : null;
+        return $jpp ? $this->position_landmark($jpp->vpos1, $include_column) : null;
     }
 
 
