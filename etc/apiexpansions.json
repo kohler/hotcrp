@@ -6,10 +6,9 @@
   {
     "name": "paper", "post": true, "merge": true,
     "tags": ["Submissions"], "order": 0,
-    "response": "?paper ?papers ?+change_list ?+change_lists ?+valid",
-    "response_info": {"paper": "paper", "papers": "[paper]",
-      "change_list": "[string]", "change_lists": "[[string]]",
-      "valid": "boolean", "dry_run": "boolean"
+    "response_info": {"?paper": "paper", "?papers": "[paper]",
+      "?+change_list": "[string]", "?+change_lists": "[[string]]",
+      "?+valid": "[boolean]", "?dry_run": "boolean"
     }
   },
   {

@@ -63,6 +63,12 @@ class APISpec_Batch {
     private $cur_ptype;
     /** @var string */
     private $cur_psubtype;
+    /** @var array<string,int> */
+    private $cur_paramf;
+    /** @var array<string,object> */
+    private $cur_params;
+    /** @var array<string,string> */
+    private $cur_paramd;
 
     const PT_QUERY = 1;
     const PT_BODY = 2;
@@ -155,6 +161,10 @@ class APISpec_Batch {
                 preg_match('/\A(?:^> .*?\n)+/m', $d, $mx);
                 $x["summary"] = simplify_whitespace(str_replace("\n> ", "", substr($mx[0], 2)));
                 $d = ltrim(substr($d, strlen($mx[0])));
+            }
+            if (preg_match('/\n(?=\*)(?:\* (?:param|parameter|response) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
+                $d = cleannl(substr($d, 0, -strlen($mx[0])));
+                $x["fields"] = substr($mx[0], 1);
             }
             if ($d !== "") {
                 $x["description"] = $d;
@@ -257,78 +267,133 @@ class APISpec_Batch {
         return null;
     }
 
+
+    /** @param string $name
+     * @return ?object */
+    private function find_description($name) {
+        if (!isset($this->description_map[$name])) {
+            return null;
+        }
+        $xtp = new XtParams($this->conf, null);
+        return $xtp->search_name($this->description_map, $name);
+    }
+
+    /** @param object $xj
+     * @param object $dj */
+    private function merge_description_from($xj, $dj) {
+        if (isset($dj->summary)
+            && ($this->override_description || ($xj->summary ?? "") === "")) {
+            $xj->summary = $dj->summary;
+        }
+        if (isset($dj->description)
+            && ($this->override_description || ($xj->description ?? "") === "")) {
+            $xj->description = $dj->description;
+        }
+    }
+
+    /** @param string $name
+     * @param object $xj */
+    private function merge_description($name, $xj) {
+        if (($dj = $this->find_description($name))) {
+            $this->merge_description_from($xj, $dj);
+        }
+    }
+
+
     const F_REQUIRED = 0x01;
     const F_POST = 0x02;
     const F_BODY = 0x04;
     const F_FILE = 0x08;
     const F_SUFFIX = 0x10;
     const F_PATH = 0x20;
+    const F_DEFAULT = 0x40;
     const FM_NONGET = 0x0E;
 
-    /** @param object $j
-     * @return array<string,int> */
-    static private function parse_parameters($j) {
-        $known = [];
+    /** @param string $p
+     * @param int $f
+     * @return array{string,int} */
+    static function parse_field_name($p, $f = self::F_DEFAULT) {
+        for ($i = 0; $i !== strlen($p); ++$i) {
+            if ($p[$i] === "?") {
+                $f &= ~(self::F_REQUIRED | self::F_DEFAULT);
+            } else if ($p[$i] === "!") {
+                $f = ($f & ~self::F_DEFAULT) | self::F_REQUIRED;
+            } else if ($p[$i] === "+") {
+                $f |= self::F_POST;
+            } else if ($p[$i] === "=") {
+                $f |= self::F_BODY;
+            } else if ($p[$i] === "@") {
+                $f |= self::F_FILE;
+            } else if ($p[$i] === ":") {
+                $f |= self::F_SUFFIX;
+            } else {
+                break;
+            }
+        }
+        return [substr($p, $i), $f];
+    }
+
+    /** @param string $name
+     * @param int $f */
+    private function add_parameter($name, $f) {
+        if (!isset($this->cur_paramf[$name])) {
+            $this->cur_paramf[$name] = $f;
+        } else if (($f & self::F_DEFAULT) !== 0) {
+            $this->cur_paramf[$name] |= $f & ~(self::F_DEFAULT | self::F_REQUIRED);
+        } else {
+            $this->cur_paramf[$name] = ($this->cur_paramf[$name] & ~(self::F_DEFAULT | self::F_REQUIRED)) | $f;
+        }
+    }
+
+    /** @param object $j */
+    private function parse_basic_parameters($j) {
+        $this->cur_paramf = [];
+        $this->cur_params = [];
+        $this->cur_paramd = [];
+
         if ($j->paper ?? false) {
-            $known["p"] = self::F_REQUIRED;
+            $this->cur_paramf["p"] = self::F_REQUIRED;
         }
         $parameters = $j->parameters ?? [];
         if (is_string($parameters)) {
             $parameters = explode(" ", trim($parameters));
         }
         foreach ($parameters as $p) {
-            $flags = self::F_REQUIRED;
-            for ($i = 0; $i !== strlen($p); ++$i) {
-                if ($p[$i] === "?") {
-                    $flags &= ~self::F_REQUIRED;
-                } else if ($p[$i] === "+") {
-                    $flags |= self::F_POST;
-                } else if ($p[$i] === "=") {
-                    $flags |= self::F_BODY;
-                } else if ($p[$i] === "@") {
-                    $flags |= self::F_FILE;
-                } else if ($p[$i] === ":") {
-                    $flags |= self::F_SUFFIX;
-                } else {
-                    break;
-                }
-            }
-            $name = substr($p, $i);
-            $known[$name] = $flags;
+            list($name, $f) = self::parse_field_name($p, self::F_DEFAULT | self::F_REQUIRED);
+            $this->add_parameter($name, $f);
         }
         if ($j->redirect ?? false) {
-            $known["redirect"] = 0;
+            $this->add_parameter("redirect", 0);
         }
-        return $known;
     }
 
     /** @param string $fn */
     private function expand_paths($fn) {
-        foreach (["GET", "POST"] as $method) {
-            if (!($uf = $this->conf->api($fn, null, $method))) {
+        foreach (["get", "post"] as $lmethod) {
+            if (!($uf = $this->conf->api($fn, null, strtoupper($lmethod)))) {
                 continue;
             }
-            if ($method === "POST" && !($uf->post ?? false) && ($uf->get ?? false)) {
+            if ($lmethod === "post" && !($uf->post ?? false) && ($uf->get ?? false)) {
                 continue;
             }
-            $known = self::parse_parameters($uf);
-            $p = $known["p"] ?? 0;
+            $this->parse_basic_parameters($uf);
+            $p = $this->cur_paramf["p"] ?? 0;
             if (($p & self::F_REQUIRED) !== 0) {
-                $known["p"] |= self::F_PATH;
-                $this->expand_path_method("/{p}/{$fn}", $method, $known, $uf);
+                $this->cur_paramf["p"] |= self::F_PATH;
+                $path = "/{p}/{$fn}";
             } else {
-                $this->expand_path_method("/{$fn}", $method, $known, $uf);
+                $path = "/{$fn}";
             }
+            $this->expand_path_method($path, $lmethod, $uf);
         }
     }
 
     /** @param string $path
-     * @param 'GET'|'POST' $method
-     * @param array<string,int> $known
+     * @param 'get'|'post' $lmethod
      * @param object $uf */
-    private function expand_path_method($path, $method, $known, $uf) {
+    private function expand_path_method($path, $lmethod, $uf) {
         $this->cur_path = $path;
-        $this->cur_lmethod = $lmethod = strtolower($method);
+        $this->cur_lmethod = $lmethod;
 
         $pathj = $this->paths->$path = $this->paths->$path ?? (object) [];
         $pathj->__path = $path;
@@ -344,21 +409,24 @@ class APISpec_Batch {
             $this->setj->paths->$path->$lmethod = true;
         }
 
-        $this->expand_metadata($xj, $uf);
-        $this->expand_request($xj, $known, $uf);
-        $this->expand_response($xj, $uf);
+        $dj = $this->find_description("{$this->cur_lmethod} {$this->cur_path}");
+        $this->expand_metadata($xj, $uf, $dj);
+        $this->expand_request($xj, $uf, $dj);
+        $this->expand_response($xj, $uf, $dj);
     }
 
     /** @param object $xj
      * @param object $uf
+     * @param ?object $dj
      * @param string $path */
-    private function expand_metadata($xj, $uf) {
-        $path = "{$this->cur_lmethod} {$this->cur_path}";
-        $this->merge_description($path, $xj);
+    private function expand_metadata($xj, $uf, $dj) {
+        if ($dj) {
+            $this->merge_description_from($xj, $dj);
+        }
         if (isset($uf->tags) && (!isset($xj->tags) || $this->override_tags)) {
             $xj->tags = $uf->tags;
         } else if (isset($uf->tags) && $uf->tags !== $xj->tags) {
-            fwrite(STDERR, "{$path}: tags differ, expected " . json_encode($xj->tags) . "\n");
+            fwrite(STDERR, "{$this->cur_lmethod} {$this->cur_path}: tags differ, expected " . json_encode($xj->tags) . "\n");
         }
         foreach ($xj->tags ?? [] as $tag) {
             if (isset($this->setj_tags->$tag)) {
@@ -376,25 +444,6 @@ class APISpec_Batch {
             }
             $this->merge_description($tag, $this->j->tags[$i]);
             $this->setj_tags->$tag = true;
-        }
-    }
-
-    private function merge_description($name, $xj) {
-        if (!isset($this->description_map[$name])) {
-            return;
-        }
-        $xtp = new XtParams($this->conf, null);
-        $dj = $xtp->search_name($this->description_map, $name);
-        if (!$dj) {
-            return;
-        }
-        if (isset($dj->summary)
-            && ($this->override_description || ($xj->summary ?? "") === "")) {
-            $xj->summary = $dj->summary;
-        }
-        if (isset($dj->description)
-            && ($this->override_description || ($xj->description ?? "") === "")) {
-            $xj->description = $dj->description;
         }
     }
 
@@ -564,21 +613,90 @@ class APISpec_Batch {
         return $j;
     }
 
+    private function resolve_info($info, $name) {
+        if ($info === null) {
+            return (object) [];
+        } else if (is_object($info)) {
+            return $info;
+        } else if (!is_string($info) || $info === "") {
+            fwrite(STDERR, $this->cur_prefix(null) . "bad info for " . $this->cur_field_description() . " `{$name}`\n");
+            return (object) [];
+        } else if (str_starts_with($info, "[") && str_ends_with($info, "]")) {
+            return (object) ["type" => "array", "items" => $this->resolve_info(substr($info, 1, -1), $name)];
+        } else if (($s = $this->reference_common_schema($info))) {
+            return $s;
+        } else {
+            fwrite(STDERR, $this->cur_prefix(null) . "unknown type `{$info}` for " . $this->cur_field_description() . " `{$name}`\n");
+            return (object) [];
+        }
+    }
+
+    private function parse_description_parameters($params) {
+        $pos = 0;
+        while (preg_match('/\G\* (param|parameter|response)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)(?:  [^\n]++\n|[ \t]++\n)*+|\n)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
+            $pos += strlen($m[0]);
+            if ($m[1] === "response") {
+                continue;
+            }
+            list($name, $f) = self::parse_field_name($m[2]);
+            $this->add_parameter($name, $f);
+            if ($m[3] !== "") {
+                $info = self::resolve_info($m[3], $name);
+                if (!empty(get_object_vars($info))) {
+                    $this->cur_params[$name] = $info;
+                }
+            }
+            if (str_starts_with($m[4], ":")
+                && ($d = trim(substr($m[4], 1))) !== "") {
+                $this->cur_paramd[$name] = $d;
+            }
+        }
+    }
+
+    private function parse_parameter_info($pinfo) {
+        foreach (get_object_vars($pinfo) as $p => $info) {
+            list($name, $f) = self::parse_field_name($p, self::F_DEFAULT | self::F_REQUIRED);
+            $info = self::resolve_info($info, $name);
+            if (isset($info->required)) {
+                $f = ($f & ~(self::F_DEFAULT | self::F_REQUIRED)) | ($info->required ? self::F_DEFAULT : 0);
+                unset($info->required);
+            }
+            $this->add_parameter($name, $f);
+            if (isset($info->description)) {
+                $this->cur_paramd[$name] = $info->description;
+                unset($info->description);
+            }
+            if (!empty(get_object_vars($info))) {
+                $this->cur_params[$name] = $info;
+            }
+        }
+    }
+
     /** @param object $x
-     * @param array<string,int> $known
-     * @param object $uf */
-    private function expand_request($x, $known, $uf) {
+     * @param object $uf
+     * @param ?object $dj */
+    private function expand_request($x, $uf, $dj) {
+        if ($dj && isset($dj->fields)) {
+            $this->parse_description_parameters($dj->fields);
+        }
+        if (isset($uf->parameter_info)) {
+            $this->parse_parameter_info($uf->parameter_info);
+        }
+
         $params = $bprop = $breq = [];
-        $query_plausible = isset($known["q"]);
+        $query_plausible = isset($this->cur_paramf["q"]);
         $has_file = false;
-        foreach ($known as $name => $f) {
+        foreach ($this->cur_paramf as $name => $f) {
             if ($name === "*"
                 || (($f & self::FM_NONGET) !== 0 && $this->cur_lmethod === "get")) {
                 continue;
             }
             if (($f & (self::F_BODY | self::F_FILE)) !== 0) {
-                $schema = $uf->parameter_info->$name ?? self::$param_schemas[$name] ?? null;
+                $schema = $this->cur_params[$name] ?? self::$param_schemas[$name] ?? null;
                 $bprop[$name] = $this->resolve_info($schema, $name);
+                if (isset($this->cur_paramd[$name]) && !isset($bprop[$name]->{"\$ref"})) {
+                    $bprop[$name]->description = $this->cur_paramd[$name];
+                }
                 if (($f & self::F_REQUIRED) !== 0) {
                     $breq[] = $name;
                 }
@@ -588,10 +706,12 @@ class APISpec_Batch {
                 continue;
             }
             if ($name === "p") {
-                if ($f === (self::F_REQUIRED | self::F_PATH)) {
+                if (($f & self::F_REQUIRED) === 0) {
+                    $pn = "p.opt";
+                } else if (($f & self::F_PATH) !== 0) {
                     $pn = "p.path";
                 } else {
-                    $pn = $f & self::F_REQUIRED ? "p" : "p.opt";
+                    $pn = "p";
                 }
                 $params["p"] = $this->reference_common_param($pn);
             } else if ($name === "r") {
@@ -616,8 +736,11 @@ class APISpec_Batch {
                     "name" => $name,
                     "in" => "query",
                     "required" => ($f & self::F_REQUIRED) !== 0,
-                    "schema" => $this->resolve_info($uf->parameter_info->$name ?? null, $name)
+                    "schema" => $this->resolve_info($this->cur_params[$name] ?? null, $name)
                 ];
+                if (isset($this->cur_paramd[$name])) {
+                    $params[$name]->description = $this->cur_paramd[$name];
+                }
             }
         }
         if (!empty($params) || isset($x->parameters)) {
@@ -635,24 +758,6 @@ class APISpec_Batch {
             $xbschema = $bodyj->schema = $bodyj->schema ?? (object) [];
             $xbschema->type = "object";
             $this->apply_body_parameters($xbschema, $bprop, $breq, $formtype);
-        }
-    }
-
-    private function resolve_info($info, $name) {
-        if ($info === null) {
-            return (object) [];
-        } else if (is_object($info)) {
-            return $info;
-        } else if (!is_string($info) || $info === "") {
-            fwrite(STDERR, $this->cur_prefix(null) . "bad info for " . $this->cur_field_description() . " `{$name}`\n");
-            return (object) [];
-        } else if (str_starts_with($info, "[") && str_ends_with($info, "]")) {
-            return (object) ["type" => "array", "items" => $this->resolve_info(substr($info, 1, -1), $name)];
-        } else if (($s = $this->reference_common_schema($info))) {
-            return $s;
-        } else {
-            fwrite(STDERR, $this->cur_prefix(null) . "unknown type `{$info}` for " . $this->cur_field_description() . " `{$name}`\n");
-            return (object) [];
         }
     }
 
@@ -945,8 +1050,10 @@ class APISpec_Batch {
             foreach ((array) $npj as $k => $v) {
                 if (!isset($xpj->$k)) {
                     $xpj->$k = $v;
-                } else if (is_scalar($v) && $xpj->$k !== $v) {
-                    fwrite(STDERR, $this->cur_prefix($paramid) . "{$paramdesc} `{$name}` {$k} differs\n");
+                } else if (is_object($v) && empty(get_object_vars($v))) {
+                    continue;
+                } else if (is_scalar($v) ? $xpj->$k !== $v : json_encode($xpj->$k) !== json_encode($v)) {
+                    fwrite(STDERR, $this->cur_prefix($paramid) . "{$paramdesc} `{$name}` {$k} differs\n  input " . json_encode($xpj->$k) . ", expected " . json_encode($v) . "\n");
                 }
             }
         }

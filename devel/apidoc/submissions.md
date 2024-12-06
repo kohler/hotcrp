@@ -77,14 +77,11 @@ $ cat data.json
 $ zip upload.zip data.json paper.pdf
 $ curl -H "Authorization: bearer hct_XXX" --data-binary @upload.zip -H "Content-Type: application/zip" SITEURL/api/paper
 ```
-### Parameters
-
-Set `dry_run=1` to check the upload for errors without modifying the
-database.
-
-Three additional parameters are available to administrators. Set
-`disable_users=1` to disable newly-created users; set `add_topics=1` to
-automatically add newly-referenced topics; and set `notify=0` to make changes
-without notifying contacts.
 
 ### Responses
+
+
+* param dry_run boolean: True checks input for errors, but does not save changes
+* param disable_users boolean: True disables any newly-created users (administrators only)
+* param add_topics boolean: True automatically adds topics from input papers (administrators only)
+* param notify boolean: False does not notify contacts of changes (administrators only)

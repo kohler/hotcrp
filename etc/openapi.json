@@ -154,29 +154,41 @@
                         "name": "dry_run",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True checks input for errors, but does not save changes"
                     },
                     {
                         "name": "disable_users",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "description": "True disables any newly-created users (administrators only)",
+                        "schema": {
+                            "type": "boolean"
+                        }
                     },
                     {
                         "name": "add_topics",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "description": "True automatically adds topics from input papers (administrators only)",
+                        "schema": {
+                            "type": "boolean"
+                        }
                     },
                     {
                         "name": "notify",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "description": "False does not notify contacts of changes (administrators only)",
+                        "schema": {
+                            "type": "boolean"
+                        }
                     }
                 ],
                 "summary": "Create or modify submission(s)",
-                "description": "### Single submission\n\nA request with a `p` parameter (as a path parameter `/{p}/paper` or a query\nparameter) modifies the submission with that ID. The special ID `new` can be\nused to create a submission.\n\nModifications are specified using a JSON object. There are three ways to\nprovide that JSON, depending on the content-type of the request:\n\n1. As a request body with content-type `application/json`.\n2. As a file named `data.json` in an uploaded ZIP archive, with content-type\n   `application/zip`.\n3. As a parameter named `json` (body type\n   `application/x-www-form-urlencoded` or `multipart/form-data`).\n\nThe JSON upload must be formatted as an object.\n\nZIP and form uploads also support document upload. A document is referenced\nvia `content_file` fields in the JSON.\n\n### Multiple submissions\n\nA request with no `p` parameter can create or modify any number of\nsubmissions. Upload types are the same as for single submissions, but the JSON\nupload is defined as an array of objects. These objects are processed in turn.\n\nCurrently, multiple-submission upload is only allowed for administrators.\n\n### ZIP uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON and treated a\nsubmission object (or array of submission objects). Attachment fields in the\nJSON content can refer to other files in the ZIP. For instance, this shell\nsession might upload a submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n### Parameters\n\nSet `dry_run=1` to check the upload for errors without modifying the\ndatabase.\n\nThree additional parameters are available to administrators. Set\n`disable_users=1` to disable newly-created users; set `add_topics=1` to\nautomatically add newly-referenced topics; and set `notify=0` to make changes\nwithout notifying contacts.\n\n### Responses\n"
+                "description": "### Single submission\n\nA request with a `p` parameter (as a path parameter `/{p}/paper` or a query\nparameter) modifies the submission with that ID. The special ID `new` can be\nused to create a submission.\n\nModifications are specified using a JSON object. There are three ways to\nprovide that JSON, depending on the content-type of the request:\n\n1. As a request body with content-type `application/json`.\n2. As a file named `data.json` in an uploaded ZIP archive, with content-type\n   `application/zip`.\n3. As a parameter named `json` (body type\n   `application/x-www-form-urlencoded` or `multipart/form-data`).\n\nThe JSON upload must be formatted as an object.\n\nZIP and form uploads also support document upload. A document is referenced\nvia `content_file` fields in the JSON.\n\n### Multiple submissions\n\nA request with no `p` parameter can create or modify any number of\nsubmissions. Upload types are the same as for single submissions, but the JSON\nupload is defined as an array of objects. These objects are processed in turn.\n\nCurrently, multiple-submission upload is only allowed for administrators.\n\n### ZIP uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON and treated a\nsubmission object (or array of submission objects). Attachment fields in the\nJSON content can refer to other files in the ZIP. For instance, this shell\nsession might upload a submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\n### Responses\n\n"
             }
         },
         "/formatcheck": {
@@ -1060,8 +1072,7 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve search results"
+                }
             }
         },
         "/fieldhtml": {
@@ -2622,9 +2633,9 @@
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean",
-                            "description": "False omits comment content from response"
-                        }
+                            "type": "boolean"
+                        },
+                        "description": "False omits comment content from response"
                     }
                 ],
                 "responses": {

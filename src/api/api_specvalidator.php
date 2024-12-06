@@ -86,11 +86,14 @@ class SpecValidator_API {
     }
 
     static function response($uf, Qrequest $qreq, $jr) {
+        if (!($jr instanceof JsonResult)) {
+            return;
+        }
         $response = $uf->response ?? [];
         if (is_string($response)) {
             $response = explode(" ", trim($response));
         }
-        if ($response === ["*"] || !($jr instanceof JsonResult)) {
+        if ($response === ["*"]) {
             return;
         }
         $response_deprecated = $uf->response_deprecated ?? [];
