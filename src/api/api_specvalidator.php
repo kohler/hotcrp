@@ -3,15 +3,18 @@
 // Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
 
 class SpecValidator_API {
-    const F_REQUIRED = 1;
-    const F_BODY = 2;
-    const F_FILE = 4;
-    const F_SUFFIX = 8;
-    const F_PRESENT = 16;
-    const F_DEPRECATED = 32;
+    const F_REQUIRED = 0x01;
+    const F_POST = 0x02;
+    const F_BODY = 0x04;
+    const F_FILE = 0x08;
+    const F_SUFFIX = 0x10;
+    const F_PRESENT = 0x20;
+    const F_DEPRECATED = 0x40;
+    const FM_NONGET = 0x0E;
 
     static function request($uf, Qrequest $qreq) {
-        if ($qreq->is_post() && !($uf->post ?? false)) {
+        $post = $qreq->is_post();
+        if ($post && !($uf->post ?? false)) {
             self::error($qreq, "POST request handled by get handler");
         }
 
@@ -26,6 +29,8 @@ class SpecValidator_API {
             for ($i = 0; $i !== strlen($p); ++$i) {
                 if ($p[$i] === "?") {
                     $t &= ~self::F_REQUIRED;
+                } else if ($p[$i] === "+") {
+                    $t |= self::F_POST;
                 } else if ($p[$i] === "=") {
                     $t |= self::F_BODY;
                 } else if ($p[$i] === "@") {
@@ -40,8 +45,10 @@ class SpecValidator_API {
                     break;
                 }
             }
-            $n = substr($p, $i);
-            $known[$n] = $t;
+            if ($post || ($t & self::FM_NONGET) === 0) {
+                $n = substr($p, $i);
+                $known[$n] = $t;
+            }
         }
 
         $param = [];
@@ -58,10 +65,10 @@ class SpecValidator_API {
         }
         foreach (array_keys($_POST) as $n) {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
-                self::error($qreq, "post param `{$n}` unknown");
+                self::error($qreq, "body param `{$n}` unknown");
             } else if (!isset($_GET[$n])
                        && ($t & self::F_BODY) === 0) {
-                self::error($qreq, "post param `{$n}` should be in query");
+                self::error($qreq, "body param `{$n}` should be in query");
             }
         }
         foreach (array_keys($_FILES) as $n) {
