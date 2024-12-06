@@ -207,23 +207,21 @@ class PaperStatus extends MessageSet {
     /** @param ?list<int> $oids
      * @return list<MessageItem> */
     function decorated_message_list($oids = null) {
-        assert(!$this->json_fields);
         $ms = [];
         foreach ($this->message_list() as $mi) {
             if (($mi->field ?? "") !== ""
                 && (str_ends_with($mi->field, ":context") || $mi->status === MessageSet::INFORM)
                 && !str_starts_with($mi->field, "status:")) {
-                // do not report in decorated list
-            } else if ($mi->field
-                       && $mi->message !== ""
-                       && ($o = $this->conf->options()->option_by_field_key($mi->field))) {
-                if ($oids === null || in_array($o->id, $oids)) {
-                    $link = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
-                    $ms[] = $mi->with(["message" => "<5>{$link}: " . $mi->message_as(5)]);
-                }
-            } else {
-                $ms[] = $mi;
+                continue;
             }
+            if (($o = $this->conf->options()->option_by_key($mi->field))) {
+                if ($oids !== null && !in_array($o->id, $oids)) {
+                    continue;
+                }
+                $link = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
+                $mi = $mi->with(["message" => "<5>{$link}: " . $mi->message_as(5)]);
+            }
+            $ms[] = $mi;
         }
         return $ms;
     }

@@ -5,7 +5,12 @@
   },
   {
     "name": "paper", "post": true, "merge": true,
-    "tags": ["Submissions"], "order": 0
+    "tags": ["Submissions"], "order": 0,
+    "response": "?paper ?papers ?+change_list ?+change_lists ?+valid",
+    "response_info": {"paper": "paper", "papers": "[paper]",
+      "change_list": "[string]", "change_lists": "[[string]]",
+      "valid": "boolean", "dry_run": "boolean"
+    }
   },
   {
     "name": "formatcheck", "get": true, "merge": true,
@@ -167,8 +172,7 @@
     "name": "comment", "get": true, "merge": true,
     "tags": ["Comments"], "order": 0,
     "parameter_info": {"content": {"type": "boolean", "description": "False omits comment content from response"}},
-    "response_info": {"comment": {"$ref": "#/components/schemas/comment"},
-      "comments": {"type": "list", "items": {"$ref": "#/components/schemas/comment"}}}
+    "response_info": {"comment": "comment", "comments": "[comment]"}
   },
   {
     "name": "comment", "post": true, "merge": true,
@@ -185,7 +189,7 @@
       "blind": {"type": "boolean"},
       "by_author": {"type": "boolean"},
       "review_token": {"type": "string"}},
-    "response_info": {"comment": {"$ref": "#/components/schemas/comment"}}
+    "response_info": {"comment": "comment"}
   },
   {
     "name": "mentioncompletion", "get": true, "merge": true,

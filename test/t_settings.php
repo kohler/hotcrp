@@ -1280,14 +1280,14 @@ class Settings_Tester {
     function test_json_settings_api() {
         $x = call_api("settings", $this->u_chair, []);
         xassert($x->ok);
-        xassert(!isset($x->changes));
+        xassert(!isset($x->change_list));
         xassert(is_object($x->settings));
         xassert_eqq($x->settings->review_blind, "blind");
 
         $x = call_api("=settings", $this->u_chair, ["settings" => "{}"]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
-        xassert_eqq($x->changes, []);
+        xassert_eqq($x->change_list, []);
 
         $x = call_api("=settings", $this->u_chair, ["settings" => "{\"notgood\":true}"]);
         xassert($x->ok);
@@ -1307,13 +1307,13 @@ class Settings_Tester {
 
         $x = call_api("=settings", $this->u_chair, ["settings" => "{\"review_blind\":\"open\"}"]);
         xassert($x->ok);
-        xassert_eqq($x->changes, ["rev_blind"]);
+        xassert_eqq($x->change_list, ["rev_blind"]);
         xassert_eqq($x->settings->review_blind, "open");
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), 0);
 
         $x = call_api("=settings", $this->u_chair, ["settings" => "{\"review_blind\":\"blind\"}"]);
         xassert($x->ok);
-        xassert_eqq($x->changes, ["rev_blind"]);
+        xassert_eqq($x->change_list, ["rev_blind"]);
         xassert_eqq($x->settings->review_blind, "blind");
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
 
@@ -1374,7 +1374,7 @@ class Settings_Tester {
 
         $x = call_api("settings", $this->u_chair, []);
         xassert($x->ok);
-        xassert(!isset($x->changes));
+        xassert(!isset($x->change_list));
         xassert(is_object($x->settings));
         xassert_eqq($x->settings->review_blind, "blind");
         xassert_eqq($x->settings->rf[5]->required, false);
@@ -1384,7 +1384,7 @@ class Settings_Tester {
         $x = call_api("=settings", $this->u_chair, ["settings" => $sa]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
-        xassert_eqq($x->changes, []);
+        xassert_eqq($x->change_list, []);
         xassert_eqq($this->conf->setting_data("ioptions"), null);
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
 
@@ -1396,7 +1396,7 @@ class Settings_Tester {
         $x = call_api("=settings", $this->u_chair, ["settings" => $sb]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
-        xassert_eqq($x->changes, []);
+        xassert_eqq($x->change_list, []);
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
 
         $sc = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
@@ -1408,7 +1408,7 @@ class Settings_Tester {
         $x = call_api("=settings", $this->u_chair, ["settings" => json_encode_browser($x->settings)]);
         xassert($x->ok);
         xassert_eqq($x->message_list, []);
-        xassert_eqq($x->changes, []);
+        xassert_eqq($x->change_list, []);
 
         $sd = json_encode_browser($x->settings, JSON_PRETTY_PRINT);
         if ($sc !== $sd) {
@@ -1417,7 +1417,7 @@ class Settings_Tester {
     }
 
     function test_json_settings_errors() {
-        $x = call_api("=settings", $this->u_chair, ["dryrun" => 1, "settings" => "{\"review\":[\"a\"]}"]);
+        $x = call_api("=settings", $this->u_chair, ["dry_run" => 1, "settings" => "{\"review\":[\"a\"]}"]);
         xassert(!$x->ok);
         $mi = $x->message_list[0] ?? null;
         xassert_eqq($mi->status, 2);

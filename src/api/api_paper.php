@@ -95,18 +95,18 @@ class Paper_API extends MessageSet {
 
         // set parameters
         if ($this->user->privChair) {
-            if (friendly_boolean($qreq->disableusers)) {
+            if (friendly_boolean($qreq->disable_users)) {
                 $this->disable_users = true;
             }
             if (friendly_boolean($qreq->notify) === false) {
                 $this->notify = false;
             }
-            if (friendly_boolean($qreq->addtopics)) {
+            if (friendly_boolean($qreq->add_topics)) {
                 $this->conf->topic_set()->set_auto_add(true);
                 $this->conf->options()->refresh_topics();
             }
         }
-        if (friendly_boolean($qreq->dryrun)) {
+        if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun)) {
             $this->dry_run = true;
         }
 
@@ -234,18 +234,17 @@ class Paper_API extends MessageSet {
 
     /** @param PaperStatus $ps */
     private function execute_save($ok, $ps) {
-        $this->ok = $this->ok && $ok;
-        if ($this->ok && !$this->dry_run) {
-            $this->ok = $ok = $ps->execute_save();
+        if ($ok && !$this->dry_run) {
+            $ok = $ps->execute_save();
         }
         foreach ($ps->message_list() as $mi) {
-            if (!$this->single && $this->landmark) {
+            if (!$this->single) {
                 $mi->landmark = $this->landmark;
             }
             $this->append_item($mi);
         }
         $this->change_lists[] = $ps->changed_keys();
-        if ($this->ok && !$this->dry_run) {
+        if ($ok && !$this->dry_run) {
             if ($ps->has_change()) {
                 $ps->log_save_activity("via API");
             }
@@ -256,6 +255,7 @@ class Paper_API extends MessageSet {
             $this->papers[] = null;
         }
         $this->valid[] = $ok;
+        $this->ok = $this->ok && $ok;
     }
 
     private function execute_fail() {
@@ -271,6 +271,9 @@ class Paper_API extends MessageSet {
             "ok" => $this->ok,
             "message_list" => $this->message_list()
         ]);
+        if ($this->dry_run) {
+            $jr->content["dry_run"] = true;
+        }
         if ($this->single) {
             $jr->content["change_list"] = $this->change_lists[0];
             if ($this->npapers > 0) {
@@ -318,14 +321,14 @@ class Paper_API extends MessageSet {
     private function set_json_landmark($index, $jp, $expected = null) {
         $pidish = self::analyze_json_pid($this->conf, $jp, 0);
         if ($pidish && ($expected === null || $pidish === $expected)) {
-            $this->landmark = $pidish === "new" ? "index {$index}" : "#{$pidish}";
+            $this->landmark = $index;
             return true;
         }
         $pidkey = isset($jp->pid) || !isset($jp->id) ? "pid" : "id";
         $msg = $pidish ? "<0>ID does not match" : "<0>Format error";
         $mi = $this->error_at($pidkey, $msg);
         if (!$this->single) {
-            $mi->landmark = "index {$index}";
+            $mi->landmark = $index;
         }
         return false;
     }

@@ -15,7 +15,7 @@ class MessageItem implements JsonSerializable {
     public $pos2;
     /** @var ?string */
     public $context;
-    /** @var ?string */
+    /** @var null|int|string */
     public $landmark;
 
     /** @param ?string $field
@@ -103,19 +103,21 @@ class MessageItem implements JsonSerializable {
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        $x = [];
+        $x = ["status" => $this->status];
         if ($this->field !== null) {
             $x["field"] = $this->field;
         }
         if ($this->message !== "") {
             $x["message"] = $this->message;
         }
-        $x["status"] = $this->status;
         if ($this->pos1 !== null && $this->context !== null) {
             $x["context"] = Ht::make_mark_substring($this->context, $this->pos1, $this->pos2);
         } else if ($this->pos1 !== null) {
             $x["pos1"] = $this->pos1;
             $x["pos2"] = $this->pos2;
+        }
+        if ($this->landmark !== null) {
+            $x["landmark"] = $this->landmark;
         }
         return (object) $x;
     }

@@ -31,7 +31,7 @@ class JSON_SettingParser extends SettingParser {
         if (!empty($hl) || !empty($tips)) {
             echo ' data-highlight-utf8-pos';
         }
-        echo ' data-reflect-highlight-api="=api/settings?dryrun=1 settings">',
+        echo ' data-reflect-highlight-api="=api/settings?dry_run=1 settings">',
             $mainh, "\n</div>",
             '</div><div class="settings-json-panel-info"><div class="settings-json-info">',
             '<h3 class="form-h">Selected settings</h3>',

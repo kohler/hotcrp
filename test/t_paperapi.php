@@ -159,7 +159,7 @@ class PaperAPI_Tester {
     function test_dry_run() {
         $prow = $this->conf->checked_paper_by_id($this->npid);
         $original_title = $prow->title;
-        $qreq = $this->make_post_form_qreq(["dryrun" => 1, "title" => "New paper with changed ID", "p" => $prow->paperId]);
+        $qreq = $this->make_post_form_qreq(["dry_run" => 1, "title" => "New paper with changed ID", "p" => $prow->paperId]);
         $jr = call_api("=paper", $this->u_estrin, $qreq, $prow);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->paper ?? null, null);
@@ -170,7 +170,7 @@ class PaperAPI_Tester {
 
         // dry run does not create new paper
         $npapers = $this->conf->fetch_ivalue("select count(*) from Paper");
-        $qreq = $this->make_post_form_qreq(["p" => "new", "status:submit" => 1, "title" => "Goddamnit", "abstract" => "This is an abstract", "has_authors" => 1, "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "dryrun" => 1]);
+        $qreq = $this->make_post_form_qreq(["p" => "new", "status:submit" => 1, "title" => "Goddamnit", "abstract" => "This is an abstract", "has_authors" => 1, "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "dry_run" => 1]);
         $jr = call_api("=paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->paper ?? null, null);

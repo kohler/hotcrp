@@ -88,7 +88,7 @@
     {
         "name": "fieldhtml", "get": true,
         "function": "Search_API::fieldhtml",
-        "parameters": "f ?aufull ?session q ?t ?sort ?qt ?reviewer",
+        "parameters": "f ?aufull ?session q ?t ?qt ?reviewer ?sort ?scoresort",
         "response": "fields data ?stat ?classes ?attr"
     },
     {
@@ -188,9 +188,9 @@
         "response": "?paper ?papers"
     },
     {
-        "name": "paper", "post": true, "allow_if": "chair",
+        "name": "paper", "post": true,
         "function": "Paper_API::run",
-        "parameters": "?p ?dryrun"
+        "parameters": "?p ?dry_run ?disable_users ?add_topics ?notify"
     },
     {
         "name": "pc", "get": true,
@@ -300,8 +300,8 @@
     {
         "name": "settings", "get": true, "post": true,
         "function": "Settings_API::run",
-        "parameters": "?=settings ?dryrun",
-        "response": "?dry_run ?changes"
+        "parameters": "?=settings ?+dry_run ?+reset ?+filename",
+        "response": "?+dry_run ?+change_list"
     },
     {
         "name": "shepherd", "get": true, "paper": true,

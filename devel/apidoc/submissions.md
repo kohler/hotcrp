@@ -34,16 +34,27 @@ A request with a `p` parameter (as a path parameter `/{p}/paper` or a query
 parameter) modifies the submission with that ID. The special ID `new` can be
 used to create a submission.
 
-The body of the request may be formatted as an HTML form
-(`application/x-www-form-urlencoded` or `multipart/form-data`), a JSON object
-(`application/json`), or a ZIP file (`application/zip`—see below). HTML form
-input follows the conventions of the HotCRP web application and is subject to
-change at any time.
+Modifications are specified using a JSON object. There are three ways to
+provide that JSON, depending on the content-type of the request:
+
+1. As a request body with content-type `application/json`.
+2. As a file named `data.json` in an uploaded ZIP archive, with content-type
+   `application/zip`.
+3. As a parameter named `json` (body type
+   `application/x-www-form-urlencoded` or `multipart/form-data`).
+
+The JSON upload must be formatted as an object.
+
+ZIP and form uploads also support document upload. A document is referenced
+via `content_file` fields in the JSON.
 
 ### Multiple submissions
 
 A request with no `p` parameter can create or modify any number of
-submissions.
+submissions. Upload types are the same as for single submissions, but the JSON
+upload is defined as an array of objects. These objects are processed in turn.
+
+Currently, multiple-submission upload is only allowed for administrators.
 
 ### ZIP uploads
 
@@ -66,3 +77,14 @@ $ cat data.json
 $ zip upload.zip data.json paper.pdf
 $ curl -H "Authorization: bearer hct_XXX" --data-binary @upload.zip -H "Content-Type: application/zip" SITEURL/api/paper
 ```
+### Parameters
+
+Set `dry_run=1` to check the upload for errors without modifying the
+database.
+
+Three additional parameters are available to administrators. Set
+`disable_users=1` to disable newly-created users; set `add_topics=1` to
+automatically add newly-referenced topics; and set `notify=0` to make changes
+without notifying contacts.
+
+### Responses

@@ -5,11 +5,12 @@
 class Settings_API {
     static function run(Contact $user, Qrequest $qreq) {
         $content = ["ok" => true];
+        $reset = !!friendly_boolean($qreq->reset);
         if ($qreq->valid_post()) {
-            if (isset($qreq->settings)) {
-                $jtext = $qreq->settings;
-            } else if ($qreq->body_content_type() === Mimetype::JSON_TYPE) {
+            if ($qreq->body_content_type() === Mimetype::JSON_TYPE) {
                 $jtext = $qreq->body();
+            } else if (isset($qreq->settings)) {
+                $jtext = $qreq->settings;
             } else {
                 return JsonResult::make_missing_error("settings");
             }
@@ -18,11 +19,9 @@ class Settings_API {
                 return JsonResult::make_permission_error();
             }
             $sv->add_json_string($jtext, $qreq->filename);
-            if (isset($qreq->reset)) {
-                $sv->set_req("reset", friendly_boolean($qreq->reset) ? "1" : "");
-            }
+            $sv->set_req("reset", $reset ? "1" : "");
             $sv->parse();
-            $dry_run = $qreq->dryrun || $qreq->dry_run;
+            $dry_run = friendly_boolean($qreq->dry_run ?? $qreq->dryrun);
             if ($dry_run) {
                 $content["dry_run"] = true;
             } else {
@@ -30,7 +29,7 @@ class Settings_API {
             }
             $content["ok"] = !$sv->has_error();
             $content["message_list"] = $sv->message_list();
-            $content["changes"] = $sv->changed_keys();
+            $content["change_list"] = $sv->changed_keys();
             if ($dry_run || $sv->has_error()) {
                 return new JsonResult($content);
             }
@@ -39,7 +38,7 @@ class Settings_API {
         if (!$sv->viewable_by_user()) {
             return JsonResult::make_permission_error();
         }
-        $content["settings"] = $sv->all_jsonv(["reset" => !!$qreq->reset]);
+        $content["settings"] = $sv->all_jsonv(["reset" => $reset]);
         return new JsonResult($content);
     }
 
