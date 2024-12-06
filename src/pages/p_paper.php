@@ -401,7 +401,7 @@ class Paper_Page {
                 if ($this->user->can_edit_option($this->prow, $o)) {
                     $ov = $this->prow->force_option($o);
                     $o->value_check($ov, $this->user);
-                    $ov->append_messages_to($this->ps);
+                    $this->ps->append_messages_from($ov);
                 }
             }
             $this->user->set_overrides($old_overrides);

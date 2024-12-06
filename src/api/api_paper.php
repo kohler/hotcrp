@@ -19,6 +19,8 @@ class Paper_API extends MessageSet {
     private $single = false;
     /** @var ?ZipArchive */
     private $ziparchive;
+    /** @var ?Qrequest */
+    private $attachment_qreq;
     /** @var ?string */
     private $docdir;
 
@@ -110,8 +112,8 @@ class Paper_API extends MessageSet {
 
         // handle multipart or form-encoded data
         $ct = $qreq->body_content_type();
-        if ($ct === "application/x-www-form-urlencoded"
-            || $ct === "multipart/form-data") {
+        $ct_form = $ct === "application/x-www-form-urlencoded" || $ct === "multipart/form-data";
+        if ($ct_form && !$this->post_form_is_json($qreq)) {
             return $this->run_post_form_data($qreq, $prow);
         }
 
@@ -133,8 +135,11 @@ class Paper_API extends MessageSet {
                 return JsonResult::make_error(400, "<0>ZIP `data.json` not found");
             }
             $jsonstr = $this->ziparchive->getFromName($jsonname);
+        } else if ($ct_form) {
+            $jsonstr = $qreq->json;
+            $this->attachment_qreq = $qreq;
         } else {
-            return JsonResult::make_error(400, "<0>POST data must be JSON or ZIP");
+            return JsonResult::make_error(400, "<0>POST data must be JSON or ZIP ($ct)");
         }
 
         $jp = Json::try_decode($jsonstr);
@@ -154,6 +159,19 @@ class Paper_API extends MessageSet {
         }
     }
 
+
+    /** @return bool */
+    private function post_form_is_json(Qrequest $qreq) {
+        if (!isset($qreq->json)) {
+            return false;
+        }
+        foreach ($qreq as $k => $v) {
+            if (str_starts_with($k, "has_") || str_starts_with($k, "status:")) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     /** @return JsonResult */
     private function run_post_form_data(Qrequest $qreq, ?PaperInfo $prow) {
@@ -386,23 +404,53 @@ class Paper_API extends MessageSet {
         } else {
             $docj->content_file = $content;
         }
+        self::apply_docj_filename($docj, $filename);
+        return true;
+    }
+
+    /** @param object $docj
+     * @param QrequestFile $qf */
+    static function apply_qrequest_file($docj, $qf) {
+        if ($qf->content !== null) {
+            $docj->content = $qf->content;
+            $docj->content_file = null;
+        } else {
+            $docj->content_file = $qf->tmp_name;
+        }
+        if (!isset($docj->size) && isset($qf->size)) {
+            $docj->size = $qf->size;
+        }
+        if (!isset($docj->mimetype) && isset($qf->type)) {
+            $docj->mimetype = $qf->type;
+        }
+        if (!isset($docj->filename) && isset($qf->name)) {
+            self::apply_docj_filename($docj, $qf->name);
+        }
+    }
+
+    /** @param object $docj
+     * @param string $filename */
+    static function apply_docj_filename($docj, $filename) {
         if (!isset($docj->filename)) {
             $slash = strpos($filename, "/");
-            $docj->filename = $slash > 0 ? substr($filename, $slash + 1) : $filename;
+            $docj->filename = $slash !== false ? substr($filename, $slash + 1) : $filename;
         }
-        return true;
     }
 
     function on_document_import($docj, PaperOption $o, PaperStatus $pstatus) {
         if ($docj instanceof DocumentInfo
             || !isset($docj->content_file)) {
             return;
-        } else if (is_string($docj->content_file ?? null)
-                   && $this->ziparchive) {
-            return self::apply_zip_content_file($docj, $this->docdir . $docj->content_file, $this->ziparchive, $o, $pstatus);
-        } else {
-            unset($docj->content_file);
         }
+        if (is_string($docj->content_file)) {
+            if ($this->ziparchive) {
+                return self::apply_zip_content_file($docj, $this->docdir . $docj->content_file, $this->ziparchive, $o, $pstatus);
+            } else if ($this->attachment_qreq
+                       && ($qf = $this->attachment_qreq->file($docj->content_file))) {
+                return self::apply_qrequest_file($docj, $qf);
+            }
+        }
+        unset($docj->content_file);
     }
 
 

@@ -17,6 +17,10 @@ class PaperStatus extends MessageSet {
     private $allow_hash_without_content = false;
     /** @var bool */
     private $notify = true;
+    /** @var ?bool */
+    private $override_json_fields;
+    /** @var bool */
+    private $json_fields;
     /** @var int */
     private $doc_savef = 0;
     /** @var list<callable> */
@@ -107,6 +111,13 @@ class PaperStatus extends MessageSet {
         return $this;
     }
 
+    /** @param ?bool $x
+     * @return $this */
+    function set_json_fields($x) {
+        $this->override_json_fields = $x;
+        return $this;
+    }
+
     /** @param bool $x
      * @return $this */
     function set_skip_document_verify($x) {
@@ -148,23 +159,29 @@ class PaperStatus extends MessageSet {
     }
 
 
+    /** @param PaperOption $o
+     * @return string */
+    function option_key($o) {
+        return $this->json_fields ? $o->json_key() : $o->field_key();
+    }
+
     /** @param ?string $msg
      * @param int $status
      * @return MessageItem */
     function msg_at_option(PaperOption $o, $msg, $status) {
-        return $this->msg_at($o->field_key(), $msg, $status);
+        return $this->msg_at($this->option_key($o), $msg, $status);
     }
 
     /** @param ?string $msg
      * @return MessageItem */
     function error_at_option(PaperOption $o, $msg) {
-        return $this->error_at($o->field_key(), $msg);
+        return $this->error_at($this->option_key($o), $msg);
     }
 
     /** @param ?string $msg
      * @return MessageItem */
     function warning_at_option(PaperOption $o, $msg) {
-        return $this->warning_at($o->field_key(), $msg);
+        return $this->warning_at($this->option_key($o), $msg);
     }
 
     /** @param string $key
@@ -173,9 +190,24 @@ class PaperStatus extends MessageSet {
         return $this->error_at($key, "<0>Validation error [{$key}]");
     }
 
+    /** @param PaperValue $ov */
+    function append_messages_from($ov) {
+        foreach ($ov->message_list() as $mi) {
+            if ($this->json_fields && $mi->field) {
+                $fk = $ov->option->field_key();
+                if (str_starts_with($mi->field, $fk)
+                    && (strlen($mi->field) === strlen($fk) || $mi->field[strlen($fk)] === ":")) {
+                    $mi = $mi->with_field($ov->option->json_key() . substr($mi->field, strlen($fk)));
+                }
+            }
+            $this->append_item($mi);
+        }
+    }
+
     /** @param ?list<int> $oids
      * @return list<MessageItem> */
     function decorated_message_list($oids = null) {
+        assert(!$this->json_fields);
         $ms = [];
         foreach ($this->message_list() as $mi) {
             if (($mi->field ?? "") !== ""
@@ -224,7 +256,7 @@ class PaperStatus extends MessageSet {
             && isset($docj->content_file)
             && is_string($docj->content_file)
             && preg_match('/\A\/|(?:\A|\/)\.\.(?:\/|\z)/', $docj->content_file)) {
-            $this->error_at_option($o, "<0>Bad content_file: only simple filenames allowed");
+            $this->error_at_option($o, "<0>Invalid `content_file`");
             return null;
         }
 
@@ -736,7 +768,7 @@ class PaperStatus extends MessageSet {
             $ov = $this->prow->force_option($opt);
             $opt->value_check($ov, $this->user);
         }
-        $ov->append_messages_to($this);
+        $this->append_messages_from($ov);
     }
 
     private function _prepare_status($pj) {
@@ -786,7 +818,7 @@ class PaperStatus extends MessageSet {
                     && $opt->test_exists($this->prow)) {
                     $ov = $this->prow->force_option($opt);
                     if (!$opt->value_check_required($ov)) {
-                        $ov->append_messages_to($this);
+                        $this->append_messages_from($ov);
                         $pj_submitted = $old_submitted;
                     }
                 }
@@ -1064,6 +1096,7 @@ class PaperStatus extends MessageSet {
      * @return bool */
     function prepare_save_paper_web(Qrequest $qreq, $prow) {
         $this->_reset($prow ?? PaperInfo::make_new($this->user, $qreq->sclass), null);
+        $this->json_fields = $this->override_json_fields ?? false;
         $pj = (object) [];
 
         // Backward compatibility XXX
@@ -1141,6 +1174,7 @@ class PaperStatus extends MessageSet {
             }
         }
         $this->_reset($prow ?? PaperInfo::make_new($this->user, $pj->submission_class ?? null), $pid);
+        $this->json_fields = $this->override_json_fields ?? true;
         assert($pid === null || $this->prow->paperId === $pid);
 
         return $this->_finish_prepare($pj);

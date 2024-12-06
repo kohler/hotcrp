@@ -94,6 +94,8 @@ class PaperOptionList implements IteratorAggregate {
         $am->add_keyword_lazy("pc_conflicts", $cb, [PaperOption::PCCONFID], Conf::MFLAG_OPTION);
         $am->add_keyword_lazy("collaborators", $cb, [PaperOption::COLLABORATORSID], Conf::MFLAG_OPTION);
         $am->add_keyword("reviews", null); // reserve keyword
+        $am->add_keyword("comments", null); // reserve keyword
+        $am->add_keyword("json", null); // reserve keyword
         foreach ($this->option_json_map() as $id => $oj) {
             if (($oj->nonpaper ?? false) !== true) {
                 $this->add_abbrev_matcher($am, $id, $oj);
