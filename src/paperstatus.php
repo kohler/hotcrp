@@ -359,7 +359,7 @@ class PaperStatus extends MessageSet {
         if ($ha
             && $content_ha->ok()
             && $ha->binary() !== $content_ha->binary()) {
-            $this->error_at_option($o, "<0>Corrupt document ignored (its content did not match the provided hash)");
+            $this->error_at_option($o, "<0>Document corrupt (its content did not match the provided hash)");
             return null;
         }
 
@@ -385,7 +385,7 @@ class PaperStatus extends MessageSet {
             }
             if ($content_crc32 !== false
                 && $crc32 !== $content_crc32) {
-                $this->error_at_option($o, "<0>Corrupt document ignored (its content did not match the provided checksum)");
+                $this->error_at_option($o, "<0>Document corrupt (its content did not match the provided checksum)");
                 return null;
             }
         }

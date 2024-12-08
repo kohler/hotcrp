@@ -23,17 +23,17 @@ class Mail_Page {
 
         // set list of searchable paper collections
         if ($viewer->privChair) {
-            $this->search_topt["s"] = PaperSearch::$search_type_names["s"];
+            $this->search_topt["s"] = PaperSearch::limit_description($this->conf, "s");
             if ($this->conf->has_any_accepted()) {
-                $this->search_topt["accepted"] = PaperSearch::$search_type_names["accepted"];
+                $this->search_topt["accepted"] = PaperSearch::limit_description($this->conf, "accepted");
             }
-            $this->search_topt["unsub"] = "Unsubmitted";
-            $this->search_topt["all"] = PaperSearch::$search_type_names["all"];
+            $this->search_topt["unsub"] = PaperSearch::limit_description($this->conf, "unsub");
+            $this->search_topt["all"] = PaperSearch::limit_description($this->conf, "all");
         }
         if ($viewer->privChair ? $this->conf->has_any_manager() : $viewer->is_manager()) {
-            $this->search_topt["admin"] = PaperSearch::$search_type_names["admin"];
+            $this->search_topt["admin"] = PaperSearch::limit_description($this->conf, "admin");
         }
-        $this->search_topt["req"] = PaperSearch::$search_type_names["req"];
+        $this->search_topt["req"] = PaperSearch::limit_description($this->conf, "req");
 
         $this->recip = new MailRecipients($viewer);
     }

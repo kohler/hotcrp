@@ -248,7 +248,7 @@ class FailureReason extends Exception
             $ms[] = $this->conf->_("<0>{Submission} #{} is not withdrawn", $paperId);
         }
         if ($this->_a["notSubmitted"] ?? false) {
-            $ms[] = $this->conf->_("<0>{Submission} #{} is only a draft", $paperId);
+            $ms[] = $this->conf->_("<0>{Submission} #{} is a draft", $paperId);
         }
         if ($this->_a["reviewsSeen"] ?? false) {
             $ms[] = $this->conf->_("<0>You can’t withdraw {submission} #{} after seeing its reviews", $paperId);

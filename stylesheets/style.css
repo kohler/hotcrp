@@ -186,6 +186,9 @@ ul.inline > li {
 	display: inline-block;
 	padding-right: 1rem;
 }
+ul.inline > li:last-child {
+	padding-right: 0;
+}
 address {
 	font-style: inherit;
 }

@@ -186,6 +186,8 @@ class PaperSearch extends MessageSet {
     public $expand_automatic = 0;
     /** @var bool */
     private $_allow_deleted = false;
+    /** @var 0|1|2 */
+    private $_warn_missing = 0;
     /** @var ?string */
     private $_urlbase;
     /** @var ?array<string,string> */
@@ -341,6 +343,13 @@ class PaperSearch extends MessageSet {
             $this->clear_compilation();
         }
         $this->expand_automatic = $n;
+        return $this;
+    }
+
+    /** @param bool|0|1|2 $x
+     * @return $this */
+    function set_warn_missing($x) {
+        $this->_warn_missing = (int) $x;
         return $this;
     }
 
@@ -603,7 +612,7 @@ class PaperSearch extends MessageSet {
     static private function _search_word_is_paperid($str) {
         $ch = substr($str, 0, 1);
         return ($ch === "#" || ctype_digit($ch))
-            && preg_match('/\A(?:#?\d++(?:(?:-|–|—)(?:|#?\d++))?(?:\s*,\s*|\z))+\z/s', $str);
+            && preg_match('/\A(?:\#?\d++(?:(?:-|–|—)(?:|\#?\d++))?(?:\s*,\s*|\z))+\z/s', $str);
     }
 
     /** @param string $str
@@ -954,6 +963,42 @@ class PaperSearch extends MessageSet {
         return $ps;
     }
 
+    /** @param list<int> $pids */
+    private function _warn_missing_papers($pids) {
+        sort($pids);
+        $missingset = $this->user->paper_set(["paperId" => $pids]);
+        foreach ($pids as $pid) {
+            $prow = $missingset->get($pid);
+            $fr = $prow ? $this->user->perm_view_paper($prow) : $this->user->no_paper_whynot($pid);
+            if ($fr) {
+                $fr->append_to($this, null, 1);
+                continue;
+            }
+            $m = null;
+            $args = [$pid];
+            if ($this->_warn_missing > 1) {
+                $sm = "<5><a href=\"{url}\">{Submission} #{}</a>";
+                $args[] = new FmtArg("url", $this->conf->hoturl_raw("paper", ["p" => $pid]));
+            } else {
+                $sm = "<0>{Submission} #{}";
+            }
+            if ($this->_limit_qe->is_submitted()) {
+                if ($prow->timeWithdrawn > 0) {
+                    $m = "{$sm} has been withdrawn";
+                } else if ($prow->timeSubmitted <= 0) {
+                    $m = "{$sm} is a draft";
+                }
+            }
+            if ($m === null
+                && $this->_limit_qe->is_accepted()
+                && (!$this->user->can_view_decision($prow) || $prow->outcome_sign <= 0)) {
+                $m = "{$sm} is not accepted";
+            }
+            $m = $m ?? "{$sm} does not match this search";
+            $this->warning_at("warn_missing_repeatable", $this->conf->_($m, ...$args));
+        }
+    }
+
 
     // BASIC QUERY FUNCTION
 
@@ -1115,11 +1160,9 @@ class PaperSearch extends MessageSet {
         // add deleted papers explicitly listed by number (e.g. action log)
         if ($this->_allow_deleted) {
             $this->_add_deleted_papers($qe);
-        } else if ($this->_limit_qe->named_limit === "s"
-                   && $this->user->privChair
-                   && ($ps = $this->_check_missing_papers($qe))
-                   && $this->conf->fetch_ivalue("select exists (select * from Paper where paperId?a)", $ps)) {
-            $this->warning("<5>Some incomplete or withdrawn submissions also match this search. " . Ht::link("Show all matching submissions", $this->conf->hoturl("search", ["t" => "all", "q" => $this->q])));
+        } else if ($this->_warn_missing
+                   && ($missing = $this->_check_missing_papers($qe))) {
+            $this->_warn_missing_papers($missing);
         }
 
         $this->user->set_overrides($old_overrides);
@@ -1528,8 +1571,8 @@ class PaperSearch extends MessageSet {
 
 
     /** @return string */
-    static function limit_description(Conf $conf, $t) {
-        return $conf->_c("search_type", self::$search_type_names[$t] ?? "Submitted");
+    static function limit_description(Conf $conf, $t, ...$args) {
+        return $conf->_c("search_type", $t, ...$args);
     }
 
     /** @param ?string $reqtype

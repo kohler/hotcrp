@@ -218,9 +218,12 @@ class Search_Page {
     private function print_list($pl_text, $qreq, $limits) {
         $search = $this->pl->search;
 
+        if ($search->has_problem_at("warn_missing_repeatable")) {
+            $search->inform_at(null, "<5>" . Ht::link("Repeat search in all submissions you can view", $this->conf->hoturl("search", ["t" => "viewable", "q" => $search->q])));
+        }
         if (!empty($this->user->hidden_papers)
             && $this->user->is_actas_user()) {
-            $this->pl->message_set()->warning_at(null, $this->conf->_("<0>{Submissions} {:numlist} are totally hidden when viewing the site as another user.", array_map(function ($n) { return "#{$n}"; }, array_keys($this->user->hidden_papers))));
+            $search->warning_at(null, $this->conf->_("<0>{Submissions} {:numlist} are totally hidden when viewing the site as another user.", array_map(function ($n) { return "#{$n}"; }, array_keys($this->user->hidden_papers))));
         }
         if ($search->has_message()) {
             echo '<div class="msgs-wide">',
@@ -248,10 +251,6 @@ class Search_Page {
                     $a[] = "{$xa}=" . urlencode($qreq[$xa]);
                 }
             }
-            if ($limits[0] !== $search->limit()
-                && !in_array($search->limit(), ["all", "viewable", "active"], true)) {
-                echo " (<a href=\"", $this->conf->hoturl("search", join("&amp;", $a)), "\">Repeat search in ", htmlspecialchars(strtolower(PaperSearch::limit_description($this->conf, $limits[0]))), "</a>)";
-            }
         }
 
         if ($this->pl->has("sel")) {
@@ -269,6 +268,7 @@ class Search_Page {
         } else {
             $search = new PaperSearch($user, ["t" => $qreq->t, "q" => "NONE"]);
         }
+        $search->set_warn_missing(2);
         assert(!isset($qreq->display));
         $this->pl = new PaperList("pl", $search, ["sort" => true], $qreq);
         $this->pl->apply_view_report_default();

@@ -1718,7 +1718,7 @@ class PaperID_SearchTerm extends SearchTerm {
     static function parse_normal($word) {
         $st = new PaperID_SearchTerm;
         $pos = 0;
-        while (preg_match('/\G#?(\d++)((?:-|–|—)#?(\d++)|(?:-|–|—)|)\s*,?\s*/s', $word, $m, 0, $pos)) {
+        while (preg_match('/\G\#?(\d++)((?:-|–|—)\#?(\d++)|(?:-|–|—)|)\s*,?\s*/s', $word, $m, 0, $pos)) {
             $p1 = intval($m[1]);
             if ($m[2] === "") {
                 $p2 = $p1;

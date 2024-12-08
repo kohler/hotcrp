@@ -2103,16 +2103,20 @@ class PaperList {
 
         $rows = $this->rowset();
         if ($rows->is_empty()) {
+            $m = "No matches";
+            if (!in_array($this->search->limit(), ["s", "all", "active", "viewable"])) {
+                $ld = PaperSearch::limit_description($this->conf, $this->search->limit(), new FmtArg("full", true), new FmtArg("lcfirst", true));
+                $m .= " in " . lcfirst(Ftext::as(0, $ld, 0));
+            }
             if (($altq = $this->search->alternate_query())) {
                 $altqh = htmlspecialchars($altq);
                 $url = $this->search->url_site_relative_raw(["q" => $altq]);
                 if (substr($url, 0, 5) == "search") {
                     $altqh = "<a href=\"" . htmlspecialchars($this->siteurl() . $url) . "\">" . $altqh . "</a>";
                 }
-                return PaperListTableRender::make_error("No matches. Did you mean ‘{$altqh}’?");
-            } else {
-                return PaperListTableRender::make_error("No matches");
+                $m .= ". Did you mean ‘{$altqh}’?";
             }
+            return PaperListTableRender::make_error($m);
         }
 
         // analyze columns and folds
