@@ -3,7 +3,7 @@
     "info": {
         "title": "HotCRP",
         "version": "0.1",
-        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\n\nWe welcome [pull requests](https://github.com/kohler/hotcrp/pulls) that fill\nout this documentation. To request documentation for an API method, please\nopen a [GitHub issue](https://github.com/kohler/hotcrp/issues).\n\n## Basics\n\nHotCRP reads parameters using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),\neither in query strings or in the request body. Complex requests either use\nstructured keys, such as `named_search/1/q`, or, occasionally, JSON encoding.\n`multipart/form-data` is used for requests that include file data.\n\nThe `p` parameter, which defines a submission ID, can appear either in the\nquery string or immediately following `api/` in the query path.\n`api/comment?p=1` and `api/1/comment` are the same API call.\n\nResponses are formatted as JSON.\n\n\n",
+        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\n\nWe welcome [pull requests](https://github.com/kohler/hotcrp/pulls) that fill\nout this documentation. To request documentation for an API method, please\nopen a [GitHub issue](https://github.com/kohler/hotcrp/issues).\n\n## Basics\n\nHotCRP reads parameters using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),\neither in query strings or in the request body. Complex requests either use\nstructured keys, such as `named_search/1/q`, or, occasionally, parameters\nencoded as JSON. Use `multipart/form-data` for requests that include uploaded\nfiles.\n\nThe `p` parameter, which defines a submission ID, can appear either in the\nquery string or immediately following `api/` in the query path.\n`api/comment?p=1` and `api/1/comment` are the same API call. `p` is generally\na decimal number greater than 0.\n\nResponses are formatted as JSON. Every response has an `ok` property; `ok` is\n`true` if the request succeeded and `false` otherwise. Messages about the\nrequest, if any, are expressed in a `message_list` property.\n",
         "summary": "HotCRP conference management software API"
     },
     "paths": {
@@ -12,78 +12,19 @@
                 "tags": [
                     "Submissions"
                 ],
-                "responses": {
-                    "200": {
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
-                                        },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "paper": {
-                                                    "$ref": "#/components/schemas/paper"
-                                                },
-                                                "papers": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/paper"
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        },
-                        "description": ""
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                },
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.opt"
                     },
                     {
-                        "$ref": "#/components/parameters/q.opt"
-                    },
-                    {
-                        "$ref": "#/components/parameters/t"
-                    },
-                    {
-                        "$ref": "#/components/parameters/qt"
-                    },
-                    {
-                        "$ref": "#/components/parameters/sort"
-                    },
-                    {
-                        "$ref": "#/components/parameters/scoresort"
-                    },
-                    {
-                        "$ref": "#/components/parameters/reviewer"
-                    },
-                    {
-                        "$ref": "#/components/parameters/forceShow"
+                        "name": "forceShow",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "False to not override administrator conflict"
                     }
-                ],
-                "summary": "Retrieve submission(s)",
-                "description": "Use this endpoint to retrieve JSON-formatted information about submissions.\n\nProvide either the `p` parameter or the `q` parameter. The `p` parameter\nshould be a submission ID; the server will return information about that\nsingle submission in the `paper` response field. Otherwise, the `q` parameter\nshould be a search query (other search parameters `t`, `qt`, etc. are also\naccepted); the server will return information about all matching submissions\nin the `papers` response field, which is an array of paper objects.\n\nError messages—for instance, about permission errors—are returned in the\n`message_list` component as usual.\n\nPaper object fields depend on the submission form. Every paper has an `object`\nmember, a `pid`, and a `status`. Other fields are provided depending on\nwhether they exist and whether the accessing user can see them.\n\n\n"
-            },
-            "post": {
-                "tags": [
-                    "Submissions"
                 ],
                 "responses": {
                     "200": {
@@ -98,36 +39,8 @@
                                         {
                                             "type": "object",
                                             "properties": {
-                                                "paper": {
-                                                    "$ref": "#/components/schemas/paper"
-                                                },
-                                                "papers": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/paper"
-                                                    }
-                                                },
-                                                "change_list": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string"
-                                                    }
-                                                },
-                                                "change_lists": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "string"
-                                                        }
-                                                    }
-                                                },
-                                                "valid": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "boolean"
-                                                    }
-                                                }
+                                                "paper": {},
+                                                "dry_run": {}
                                             }
                                         }
                                     ]
@@ -146,6 +59,13 @@
                         }
                     }
                 },
+                "summary": "Retrieve submission",
+                "description": "This endpoint retrieves JSON-formatted information about a submission. All\nvisible information about submission fields, tags, and overall status are\nreturned in as the response’s `paper` property. Error messages—for instance,\nabout permission errors or nonexistent submissions—are returned in\n`message_list`.\n\nThe returned `paper` property is a submission object. Submission objects are\nformatted based on the submission form. Every paper object has an `object`\nproperty set to `\"paper\"`, a `pid`, and a `status`. Other properties are\nprovided based on which submission fields exist and whether the accessing user\ncan see them.\n"
+            },
+            "post": {
+                "tags": [
+                    "Submissions"
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.opt"
@@ -163,32 +83,311 @@
                         "name": "disable_users",
                         "in": "query",
                         "required": false,
-                        "description": "True disables any newly-created users (administrators only)",
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "description": "True disables any newly-created users (administrators only)"
                     },
                     {
                         "name": "add_topics",
                         "in": "query",
                         "required": false,
-                        "description": "True automatically adds topics from input papers (administrators only)",
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "description": "True automatically adds topics from input papers (administrators only)"
                     },
                     {
                         "name": "notify",
                         "in": "query",
                         "required": false,
-                        "description": "False does not notify contacts of changes (administrators only)",
                         "schema": {
                             "type": "boolean"
+                        },
+                        "description": "False does not notify contacts of changes (administrators only)"
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow"
+                    },
+                    {
+                        "name": "json",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 ],
-                "summary": "Create or modify submission(s)",
-                "description": "### Single submission\n\nA request with a `p` parameter (as a path parameter `/{p}/paper` or a query\nparameter) modifies the submission with that ID. The special ID `new` can be\nused to create a submission.\n\nModifications are specified using a JSON object. There are three ways to\nprovide that JSON, depending on the content-type of the request:\n\n1. As a request body with content-type `application/json`.\n2. As a file named `data.json` in an uploaded ZIP archive, with content-type\n   `application/zip`.\n3. As a parameter named `json` (body type\n   `application/x-www-form-urlencoded` or `multipart/form-data`).\n\nThe JSON upload must be formatted as an object.\n\nZIP and form uploads also support document upload. A document is referenced\nvia `content_file` fields in the JSON.\n\n### Multiple submissions\n\nA request with no `p` parameter can create or modify any number of\nsubmissions. Upload types are the same as for single submissions, but the JSON\nupload is defined as an array of objects. These objects are processed in turn.\n\nCurrently, multiple-submission upload is only allowed for administrators.\n\n### ZIP uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON and treated a\nsubmission object (or array of submission objects). Attachment fields in the\nJSON content can refer to other files in the ZIP. For instance, this shell\nsession might upload a submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\n### Responses\n\n"
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "paper": {
+                                                    "$ref": "#/components/schemas/paper",
+                                                    "description": "JSON version of modified paper"
+                                                },
+                                                "dry_run": {
+                                                    "type": "boolean",
+                                                    "description": "True for `dry_run` requests"
+                                                },
+                                                "change_list": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    },
+                                                    "description": "List of changed fields"
+                                                },
+                                                "valid": {
+                                                    "type": "boolean",
+                                                    "description": "True if the modification was valid"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Create or modify submission",
+                "description": "This endpoint modifies a specified submission. The `p` parameter determines\nthe submission ID. Setting `p=new` will create a new submission; the response\nwill contain the chosen submission ID.\n\nModifications are specified using a JSON object. There are three ways to\nprovide that JSON, depending on the content-type of the request:\n\n1. As a request body with content-type `application/json`.\n2. As a file named `data.json` in a ZIP archive. The request body has\n   content-type `application/zip`.\n3. As a parameter named `json` in a normal `application/x-www-form-urlencoded`\n   or `multipart/form-data` body.\n\nHowever it is provided, the JSON must define an object interpretable as a\nsubmission (or a subset of a submission). The properties of this object define\nthe modifications to be applied to the submission.\n\nThe `p` parameter is optional; if unset, HotCRP uses the `pid` from the\nsupplied JSON. If the `p` parameter and the JSON `pid` property are both\npresent, then they must match.\n\nTo test a modification, supply a `dry_run=1` parameter. This will test the\nuploaded JSON but make no changes to the database.\n\n\n### ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Attachment fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n### Responses\n\nIf the modification succeeds, the response’s `paper` property contains the\nmodified submission object.\n\nThe `change_list` property is a list of names of the modified fields. New\nsubmissions have `\"pid\"` as the first item in the list. `change_list` contains\nfields that the request *attempted* to modify; successful requests, erroneous\nrequests, and dry-run requests can all return nonempty `change_list`s.\n\nThe `valid` property is `true` if and only if the modification was valid. In\nnon-dry-run requests, `valid: true` indicates that database changes were\ncommitted.\n\nDry-run requests return `change_list` and `valid` properties, but not `paper`\nproperties, since no modifications are performed.\n\n\n### Administrator use\n\nAdministrators can use this endpoint to set some submission properties, such\nas `decision`, that have other endpoints as well.\n\nAdministrators can upload new submissions with chosen IDs by setting `p` (or\nJSON `pid`) to the chosen ID. This will either overwrite an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the JSON `status.if_unmodified_since` property to\n`0`. (That is, the submission JSON should have a `status` property, formatted\nas an object, whose `if_unmodified_since` property is `0`.)\n"
+            }
+        },
+        "/papers": {
+            "get": {
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/q"
+                    },
+                    {
+                        "$ref": "#/components/parameters/t"
+                    },
+                    {
+                        "$ref": "#/components/parameters/qt"
+                    },
+                    {
+                        "$ref": "#/components/parameters/scoresort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/sort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/reviewer"
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow"
+                    },
+                    {
+                        "name": "warn_missing",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Get warnings for missing submissions"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "papers": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieve multiple submissions",
+                "description": "This endpoint retrieves JSON-formatted information about multiple submissions\nbased on a search. The search is specified in the `q` parameter; all matching\nvisible papers are returned. Other search parameters (`t`, `qt`) are accepted\ntoo. The response property `papers` is an array of matching submission objects.\n\nSince searches silently filter out non-viewable submissions, `/papers?q=1010`\nand `/paper?p=1010` can return different error messages. The `/paper` request\nmight return an error like `Submission #1010 does not exist` or `You aren’t\nallowed to view submission #10110`, whereas the `/papers` request will return\nno errors. To obtain warnings for missing submissions that were explicitly\nlisted in a query, supply a `warn_missing=1` parameter.\n",
+                "tags": [
+                    "Submissions"
+                ]
+            },
+            "post": {
+                "parameters": [
+                    {
+                        "name": "dry_run",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True checks input for errors, but does not save changes"
+                    },
+                    {
+                        "name": "disable_users",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True disables any newly-created users (administrators only)"
+                    },
+                    {
+                        "name": "add_topics",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True automatically adds topics from input papers (administrators only)"
+                    },
+                    {
+                        "name": "notify",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "False does not notify contacts of changes (administrators only)"
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow"
+                    },
+                    {
+                        "name": "json",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "description": "Search query for match requests",
+                        "schema": {
+                            "$ref": "#/components/schemas/search_string"
+                        }
+                    },
+                    {
+                        "name": "t",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_collection"
+                        },
+                        "description": "Collection to search; defaults to `viewable`"
+                    },
+                    {
+                        "$ref": "#/components/parameters/qt"
+                    },
+                    {
+                        "$ref": "#/components/parameters/sort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/scoresort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/reviewer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "papers": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/paper"
+                                                    },
+                                                    "description": "List of JSON versions of modified papers"
+                                                },
+                                                "valid": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "description": "List of validity checks"
+                                                },
+                                                "dry_run": {
+                                                    "type": "boolean",
+                                                    "description": "True for `dry_run` requests"
+                                                },
+                                                "change_lists": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "description": "List of lists of changed fields"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Create or modify multiple submissions",
+                "description": "This administrator-only endpoint modifies multiple submissions at once. Its\nrequest formats are similar to that of `POST /{p}/paper`: it can accept a\nJSON, ZIP, or form-encoded request body with a `json` parameter, and ZIP and\nform-encoded requests can also include attached files.\n\nThe JSON provided for `/papers` should be an *array* of JSON objects. Response\nproperties `papers`, `change_lists`, and `valid` are arrays with the same\nnumber of elements as the input JSON; component *i* of each response property\ncontains the result for the *i*th submission object in the input JSON.\n\nAlternately, you can provide a `q` search query parameter and a *single* JSON\nobject. The JSON object must not have a `pid` property. The JSON modification\nwill be applied to all papers returned by the `q` search query.\n\nThe response `message_list` contains messages relating to all modified\nsubmissions. To filter out the messages for a single submission, use the\nmessages’ `landmark` properties. `landmark` is set to the integer index of the\nrelevant submission in the input JSON.\n\n",
+                "tags": [
+                    "Submissions"
+                ]
             }
         },
         "/formatcheck": {
@@ -1072,7 +1271,8 @@
                             }
                         }
                     }
-                }
+                },
+                "summary": "Retrieve search results"
             }
         },
         "/fieldhtml": {
@@ -1283,6 +1483,78 @@
                                             }
                                         }
                                     ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/searchaction": {
+            "get": {
+                "tags": [
+                    "Search"
+                ],
+                "parameters": [
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/q"
+                    },
+                    {
+                        "$ref": "#/components/parameters/t"
+                    },
+                    {
+                        "$ref": "#/components/parameters/qt"
+                    },
+                    {
+                        "$ref": "#/components/parameters/sort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/scoresort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/reviewer"
+                    },
+                    {
+                        "name": "report",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "pap[]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/pid"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
                                 }
                             }
                         }
@@ -1581,6 +1853,53 @@
                 }
             }
         },
+        "/alltags": {
+            "get": {
+                "tags": [
+                    "Tags"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "tags"
+                                            ],
+                                            "properties": {
+                                                "tags": {
+                                                    "$ref": "#/components/schemas/tag_list"
+                                                },
+                                                "readonly_tagmap": {},
+                                                "sitewide_tagmap": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieve all visible tags"
+            }
+        },
         "/assigntags": {
             "post": {
                 "summary": "Change several tags",
@@ -1650,53 +1969,6 @@
                         }
                     }
                 }
-            }
-        },
-        "/alltags": {
-            "get": {
-                "tags": [
-                    "Tags"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
-                                        },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "tags"
-                                            ],
-                                            "properties": {
-                                                "tags": {
-                                                    "$ref": "#/components/schemas/tag_list"
-                                                },
-                                                "readonly_tagmap": {},
-                                                "sitewide_tagmap": {}
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                },
-                "summary": "Retrieve all visible tags"
             }
         },
         "/taganno": {
@@ -2678,7 +2950,7 @@
                         }
                     }
                 },
-                "description": "The `c` parameter specifies the comment to return. If the comment exists and\nthe user can view it, it will be returned in the `comment` component of the\nresponse. Otherwise, an error response is returned.\n\nIf `c` is omitted, all viewable comments are returned in a `comments` list.\n\n\n",
+                "description": "The `c` parameter specifies the comment to return. If the comment exists and\nthe user can view it, it will be returned in the `comment` component of the\nresponse. Otherwise, an error response is returned.\n\nIf `c` is omitted, all viewable comments are returned in a `comments` list.\n",
                 "summary": "Retrieve comment"
             },
             "post": {
@@ -4130,78 +4402,6 @@
                     }
                 }
             }
-        },
-        "/searchaction": {
-            "get": {
-                "tags": [
-                    "Search"
-                ],
-                "parameters": [
-                    {
-                        "name": "action",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/q"
-                    },
-                    {
-                        "$ref": "#/components/parameters/t"
-                    },
-                    {
-                        "$ref": "#/components/parameters/qt"
-                    },
-                    {
-                        "$ref": "#/components/parameters/sort"
-                    },
-                    {
-                        "$ref": "#/components/parameters/scoresort"
-                    },
-                    {
-                        "$ref": "#/components/parameters/reviewer"
-                    },
-                    {
-                        "name": "report",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
-                    },
-                    {
-                        "name": "pap[]",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/components/schemas/pid"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     },
     "components": {
@@ -4565,7 +4765,7 @@
             },
             "search_string": {
                 "type": "string",
-                "description": "Search string",
+                "description": "Search query",
                 "examples": [
                     "1-10 OR #ready"
                 ]

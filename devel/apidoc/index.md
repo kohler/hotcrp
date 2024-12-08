@@ -14,16 +14,15 @@ open a [GitHub issue](https://github.com/kohler/hotcrp/issues).
 HotCRP reads parameters using [form
 encoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),
 either in query strings or in the request body. Complex requests either use
-structured keys, such as `named_search/1/q`, or, occasionally, JSON encoding.
-`multipart/form-data` is used for requests that include file data.
+structured keys, such as `named_search/1/q`, or, occasionally, parameters
+encoded as JSON. Use `multipart/form-data` for requests that include uploaded
+files.
 
 The `p` parameter, which defines a submission ID, can appear either in the
 query string or immediately following `api/` in the query path.
-`api/comment?p=1` and `api/1/comment` are the same API call.
+`api/comment?p=1` and `api/1/comment` are the same API call. `p` is generally
+a decimal number greater than 0.
 
-Responses are formatted as JSON.
-
-
-# schema message
-
-Fart fart
+Responses are formatted as JSON. Every response has an `ok` property; `ok` is
+`true` if the request succeeded and `false` otherwise. Messages about the
+request, if any, are expressed in a `message_list` property.

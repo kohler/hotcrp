@@ -1,6 +1,6 @@
 apis:
   core@v1:
-    root: ../../etc/openapi.json
+    root: ../openapi.json
     rules:
       operation-4xx-response: off
       operation-operationId: off
@@ -14,7 +14,6 @@ extends:
 
 theme:
   openapi:
-    schemaExpansionLevel: 3
     theme:
       sidebar:
         backgroundColor: 'ivory'

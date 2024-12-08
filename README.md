@@ -20,7 +20,7 @@ Extensive online help has more on configuring and using HotCRP. See also:
 
 * [The HotCRP development manual](./devel/manual/index.md) to learn about
   advanced configuration, software internals, and developing extensions.
-* [The OpenAPI specification](./etc/openapi.json) for API information.
+* [The OpenAPI specification](./devel/openapi.json) for API information.
 
 
 Prerequisites

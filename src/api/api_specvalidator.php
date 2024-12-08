@@ -25,29 +25,31 @@ class SpecValidator_API {
         $known = [];
         $has_suffix = false;
         foreach ($parameters as $p) {
-            $t = self::F_REQUIRED;
+            $f = self::F_REQUIRED;
             for ($i = 0; $i !== strlen($p); ++$i) {
                 if ($p[$i] === "?") {
-                    $t &= ~self::F_REQUIRED;
+                    $f &= ~self::F_REQUIRED;
+                } else if ($p[$i] === "!") {
+                    $f |= self::F_REQUIRED;
                 } else if ($p[$i] === "+") {
-                    $t |= self::F_POST;
+                    $f |= self::F_POST;
                 } else if ($p[$i] === "=") {
-                    $t |= self::F_BODY;
+                    $f |= self::F_BODY;
                 } else if ($p[$i] === "@") {
-                    $t |= self::F_FILE;
+                    $f |= self::F_FILE;
                 } else if ($p[$i] === ":") {
-                    $t |= self::F_SUFFIX;
+                    $f |= self::F_SUFFIX;
                     $has_suffix = true;
                 } else if ($p[$i] === "*") {
-                    $t &= ~self::F_REQUIRED;
+                    $f &= ~self::F_REQUIRED;
                     break;
                 } else {
                     break;
                 }
             }
-            if ($post || ($t & self::FM_NONGET) === 0) {
+            if ($post || ($f & self::FM_NONGET) === 0) {
                 $n = substr($p, $i);
-                $known[$n] = $t;
+                $known[$n] = $f;
             }
         }
 
@@ -96,33 +98,30 @@ class SpecValidator_API {
         if ($response === ["*"]) {
             return;
         }
-        $response_deprecated = $uf->response_deprecated ?? [];
-        if (is_string($response_deprecated)) {
-            $response_deprecated = explode(" ", trim($response_deprecated));
-        }
         $nmandatory = count($response);
-        if (!empty($response_deprecated)) {
-            array_push($response, ...$response_deprecated);
-        }
         $known = [];
         $has_suffix = false;
         foreach ($response as $ri => $p) {
-            $t = $ri < $nmandatory ? self::F_REQUIRED : self::F_DEPRECATED;
+            $f = self::F_REQUIRED;
             for ($i = 0; $i !== strlen($p); ++$i) {
                 if ($p[$i] === "?") {
-                    $t &= ~self::F_REQUIRED;
+                    $f &= ~self::F_REQUIRED;
+                } else if ($p[$i] === "!") {
+                    $f |= self::F_REQUIRED;
+                } else if ($p[$i] === "<") {
+                    $f |= self::F_DEPRECATED;
                 } else if ($p[$i] === ":") {
-                    $t |= self::F_SUFFIX;
+                    $f |= self::F_SUFFIX;
                     $has_suffix = true;
                 } else if ($p[$i] === "*") {
-                    $t &= ~self::F_REQUIRED;
+                    $f &= ~self::F_REQUIRED;
                     break;
                 } else {
                     break;
                 }
             }
             $n = substr($p, $i);
-            $known[$n] = $t;
+            $known[$n] = $f;
         }
         foreach (array_keys($jr->content) as $n) {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
@@ -176,7 +175,7 @@ class SpecValidator_API {
         if (($t & self::F_FILE) !== 0) {
             return "file param";
         } else if (($t & self::F_BODY) !== 0) {
-            return "post param";
+            return "body param";
         } else {
             return "query param";
         }

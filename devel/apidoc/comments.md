@@ -29,6 +29,8 @@ response. Otherwise, an error response is returned.
 
 If `c` is omitted, all viewable comments are returned in a `comments` list.
 
+* param content boolean: False omits comment content from response
+
 
 # post /{p}/comment
 
@@ -55,3 +57,16 @@ To upload a single new attachment:
 To upload multiple attachments, number them sequentially (`attachment:2`,
 `attachment:3`, and so forth). To delete an existing attachment, supply its
 `docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.
+
+* param override boolean
+* param delete boolean
+* param text string
+* param tags string
+* param topic comment_topic
+* param visibility comment_visibility
+* param response string
+* param ready boolean
+* param draft boolean
+* param blind boolean
+* param by_author boolean
+* param review_token string
