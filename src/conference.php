@@ -223,7 +223,8 @@ class Conf {
     /** @var ?ComponentSet */
     private $_page_components;
 
-    /** @var ?PaperInfo */
+    /** @var ?PaperInfo
+     * @deprecated */
     public $paper; // current paper row
 
     /** @var Conf */
@@ -3678,12 +3679,14 @@ class Conf {
         // append forceShow to links to same paper if appropriate
         $is_paper_page = preg_match('/\A(?:paper|review|comment|assign)\z/', $page);
         if ($is_paper_page
-            && $this->paper
+            && $qreq
+            && ($paper = $qreq->paper())
+            && $paper->conf === $this
             && Contact::$main_user
             && Contact::$main_user->conf === $this
-            && Contact::$main_user->can_administer($this->paper)
-            && $this->paper->has_conflict(Contact::$main_user)
-            && preg_match("{$are}p={$this->paper->paperId}{$zre}", $param)
+            && Contact::$main_user->can_administer($paper)
+            && $paper->has_conflict(Contact::$main_user)
+            && preg_match("{$are}p={$paper->paperId}{$zre}", $param)
             && (is_array($params) ? !array_key_exists("forceShow", $params) : !preg_match($are . 'forceShow=/', $param))) {
             $param .= $amp . "forceShow=1";
         }
@@ -4374,11 +4377,17 @@ class Conf {
 
     /** @return ?PaperInfo */
     function set_paper_request(Qrequest $qreq, Contact $user) {
-        $this->paper = $prow = null;
+        $qreq->set_paper(null);
+        $prow = null;
         if ($qreq->p) {
-            if (ctype_digit($qreq->p)
-                && ($pid = intval($qreq->p)) > 0
-                && $pid <= PaperInfo::PID_MAX) {
+            if (is_int($qreq->p)) {
+                $pid = $qreq->p;
+            } else if (ctype_digit($qreq->p)) {
+                $pid = intval($qreq->p);
+            } else {
+                $pid = 0;
+            }
+            if ($pid > 0 && $pid <= PaperInfo::PID_MAX) {
                 $prow = $this->paper_by_id($pid, $user);
             }
             if (($whynot = $user->perm_view_paper($prow, false, $qreq->p))) {
@@ -4386,7 +4395,8 @@ class Conf {
                 $prow = null;
             }
         }
-        return ($this->paper = $prow);
+        $qreq->set_paper($prow);
+        return $prow;
     }
 
 
@@ -4709,8 +4719,8 @@ class Conf {
         if (!is_int($pid)) {
             $pid = $pid && ctype_digit($pid) ? intval($pid) : 0;
         }
-        if ($pid > 0 && $this->paper) {
-            $pid = $this->paper->paperId;
+        if ($pid > 0 && $qreq->paper()) {
+            $pid = $qreq->paper()->paperId;
         }
         if ($pid > 0) {
             $siteinfo["paperid"] = $pid;
@@ -4948,7 +4958,7 @@ class Conf {
         // deadlines settings
         $my_deadlines = null;
         if ($user) {
-            $my_deadlines = $user->status_json($this->paper ? [$this->paper] : []);
+            $my_deadlines = $user->status_json($qreq->paper() ? [$qreq->paper()] : []);
             Ht::stash_script("hotcrp.init_deadlines(" . json_encode_browser($my_deadlines) . ")");
         }
 
@@ -5087,18 +5097,19 @@ class Conf {
         if ($viewer->can_view_user_tags()) {
             $rj["tags"] = $this->viewable_user_tags($viewer);
         }
-        if ($this->paper && $viewer->allow_administer($this->paper)) {
+        $paper = Qrequest::$main_request ? Qrequest::$main_request->paper() : null;
+        if ($paper && $paper->conf === $this && $viewer->allow_administer($paper)) {
             $assignable = [];
             foreach ($this->pc_members() as $pcm) {
-                if ($pcm->pc_assignable($this->paper)) {
+                if ($pcm->pc_assignable($paper)) {
                     $assignable[] = $pcm->contactId;
                 }
             }
             $pj = ["assignable" => $assignable];
             if ($this->setting("extrev_shepherd")) {
-                $this->paper->ensure_reviewer_names();
+                $paper->ensure_reviewer_names();
                 $erlist = $ercids = [];
-                foreach ($this->paper->reviews_as_display() as $rrow) {
+                foreach ($paper->reviews_as_display() as $rrow) {
                     if ($rrow->reviewType === REVIEW_EXTERNAL
                         && !$rrow->reviewToken
                         && !in_array($rrow->contactId, $ercids)) {
@@ -5110,7 +5121,7 @@ class Conf {
                     $pj["extrev"] = $erlist;
                 }
             }
-            $rj["p"] = [$this->paper->paperId => $pj];
+            $rj["p"] = [$paper->paperId => $pj];
         }
         return (object) $rj;
     }
@@ -5533,8 +5544,8 @@ class Conf {
         return self::xt_enabled($uf) ? $uf : null;
     }
     /** @return JsonResult */
-    function call_api_on($uf, $fn, Contact $user, Qrequest $qreq, $prow) {
-        // NOTE: Does not check $user->can_view_paper($prow)
+    function call_api_on($uf, $fn, Contact $user, Qrequest $qreq) {
+        // NOTE: Does not check $user->can_view_paper($qreq->paper())
         $method = $qreq->method();
         if ($method !== "GET"
             && $method !== "HEAD"
@@ -5543,10 +5554,12 @@ class Conf {
             && (!$uf || ($uf->post ?? false))
             && (!$uf || ($uf->check_token ?? null) !== false)) {
             return JsonResult::make_error(403, "<0>Missing credentials");
-        } else if ($user->is_disabled()
-                   && (!$uf || !($uf->allow_disabled ?? false))) {
+        }
+        if ($user->is_disabled()
+            && (!$uf || !($uf->allow_disabled ?? false))) {
             return JsonResult::make_error(403, "<0>Disabled account");
-        } else if (!$uf) {
+        }
+        if (!$uf) {
             if ($this->has_api($fn, $user, null)) {
                 return JsonResult::make_error(405, "<0>Method not supported");
             } else if ($this->has_api($fn, null, $qreq->method())) {
@@ -5554,21 +5567,23 @@ class Conf {
             } else {
                 return JsonResult::make_error(404, "<0>Function not found");
             }
-        } else if (!$prow && ($uf->paper ?? false)) {
+        }
+        $prow = $qreq->paper();
+        if (!$prow && ($uf->paper ?? false)) {
             return self::paper_error_json_result($qreq->annex("paper_whynot"));
-        } else if (!is_string($uf->function)) {
+        }
+        if (!is_string($uf->function)) {
             return JsonResult::make_error(404, "<0>Function not found");
-        } else {
-            try {
-                self::xt_resolve_require($uf);
-                $j = call_user_func($uf->function, $user, $qreq, $prow, $uf);
-                if (is_array($j) || $j instanceof \stdClass) {
-                    return new JsonResult($j);
-                }
-                return $j;
-            } catch (JsonCompletion $ex) {
-                return $ex->result;
+        }
+        try {
+            self::xt_resolve_require($uf);
+            $j = call_user_func($uf->function, $user, $qreq, $prow, $uf);
+            if (is_array($j) || $j instanceof \stdClass) {
+                return new JsonResult($j);
             }
+            return $j;
+        } catch (JsonCompletion $ex) {
+            return $ex->result;
         }
     }
     /** @param ?FailureReason $whynot

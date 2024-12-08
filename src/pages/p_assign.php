@@ -35,7 +35,8 @@ class Assign_Page {
     function assign_load() {
         try {
             $pr = new PaperRequest($this->qreq, true);
-            $this->prow = $this->conf->paper = $pr->prow;
+            $this->qreq->set_paper($pr->prow);
+            $this->prow = $pr->prow;
             if (($whynot = $this->user->perm_request_review($this->prow, null, false))) {
                 $this->pt = new PaperTable($this->user, $this->qreq, $this->prow);
                 throw $whynot;

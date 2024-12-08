@@ -68,7 +68,7 @@ class API_Page {
         if (($validate = $uf && $conf->opt("validateApiSpec"))) {
             SpecValidator_API::request($uf, $qreq);
         }
-        $jr = $conf->call_api_on($uf, $fn, $user, $qreq, $conf->paper);
+        $jr = $conf->call_api_on($uf, $fn, $user, $qreq);
         if ($validate) {
             SpecValidator_API::response($uf, $qreq, $jr);
         }
@@ -90,7 +90,7 @@ class API_Page {
      * @param Qrequest $qreq
      * @return JsonResult */
     static private function status_api($fn, $user, $qreq) {
-        $prow = $user->conf->paper;
+        $prow = $qreq->paper();
         // default status API to not being pretty printed; it's frequently called
         $jr = (new JsonResult($user->status_json($prow ? [$prow] : [])))
             ->set_pretty_print(false);

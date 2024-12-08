@@ -40,6 +40,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     private $_active_list = false;
     /** @var Qsession */
     private $_qsession;
+    /** @var ?PaperInfo */
+    private $_requested_paper;
 
     /** @var Qrequest */
     static public $main_request;
@@ -107,6 +109,14 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this;
     }
 
+    /** @return $this
+     * @suppress PhanDeprecatedProperty */
+    function set_paper(?PaperInfo $prow) {
+        $this->_requested_paper = $prow;
+        $this->_conf->paper = $prow;
+        return $this;
+    }
+
     /** @return string */
     function method() {
         return $this->_method;
@@ -160,6 +170,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             }
         }
         return null;
+    }
+    /** @return ?PaperInfo */
+    function paper() {
+        return $this->_requested_paper;
     }
 
     /** @return ?string */

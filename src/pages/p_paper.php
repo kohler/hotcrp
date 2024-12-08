@@ -55,7 +55,8 @@ class Paper_Page {
         // determine whether request names a paper
         try {
             $pr = new PaperRequest($this->qreq, false);
-            $this->prow = $this->conf->paper = $pr->prow;
+            $this->qreq->set_paper($pr->prow);
+            $this->prow = $pr->prow;
         } catch (Redirection $redir) {
             throw $redir;
         } catch (FailureReason $perm) {
@@ -352,7 +353,8 @@ class Paper_Page {
             }
         }
 
-        $conf->paper = $this->prow = $new_prow;
+        $this->qreq->set_paper($new_prow);
+        $this->prow = $new_prow;
         if (!$this->ps->has_error() || ($is_new && $new_prow)) {
             $conf->redirect_self($this->qreq, ["p" => $new_prow->paperId, "m" => "edit"]);
         }

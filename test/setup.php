@@ -959,8 +959,15 @@ function call_api($fn, $user, $qreq, $prow = null) {
             $qreq = new Qrequest("GET", $qreq);
         }
     }
+    $qreq->set_user($user);
+    if ($prow) {
+        $qreq->set_paper($prow);
+    } else if ($qreq->p && ctype_digit((string) $qreq->p)) {
+        $user->conf->set_paper_request($qreq, $user);
+    }
+    Qrequest::set_main_request($qreq);
     $uf = $user->conf->api($fn, $user, $qreq->method());
-    $jr = $user->conf->call_api_on($uf, $fn, $user, $qreq, $prow);
+    $jr = $user->conf->call_api_on($uf, $fn, $user, $qreq);
     return (object) $jr->content;
 }
 
