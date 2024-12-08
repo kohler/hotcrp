@@ -1541,7 +1541,7 @@ function hoturl(page, options) {
             x.t = "api";
             x.v.push("fn=" + page.substring(4));
         }
-        hoturl_clean(x, /^p=(\d+)$/, true);
+        hoturl_clean(x, /^p=(\d+|new)$/, true);
         hoturl_clean(x, /^fn=(\w+)$/);
         want_forceShow = true;
     } else if (page === "settings") {
@@ -1561,13 +1561,17 @@ function hoturl(page, options) {
         x.t = k + x.t.substring(i);
     }
 
-    if (siteinfo.want_override_conflict && want_forceShow
-        && !hoturl_find(xv, /^forceShow=/))
+    if (siteinfo.want_override_conflict
+        && want_forceShow
+        && !hoturl_find(xv, /^forceShow=/)) {
         xv.push("forceShow=1");
-    if (siteinfo.defaults)
+    }
+    if (siteinfo.defaults) {
         xv.push(serialize_object(siteinfo.defaults));
-    if (xv.length)
+    }
+    if (xv.length){
         x.t += "?" + xv.join("&");
+    }
     return siteinfo.site_relative + x.t + anchor;
 }
 

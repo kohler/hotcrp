@@ -3269,7 +3269,7 @@ th.plr, th.pl_sel {
 	text-align: right;
 }
 
-th.pl_orcid {
+th.pl_id, th.pl_orcid {
 	white-space: nowrap;
 }
 

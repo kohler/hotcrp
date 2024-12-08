@@ -965,6 +965,7 @@ function call_api($fn, $user, $qreq, $prow = null) {
     } else if ($qreq->p && ctype_digit((string) $qreq->p)) {
         $user->conf->set_paper_request($qreq, $user);
     }
+    $qreq->set_navigation(Navigation::get());
     Qrequest::set_main_request($qreq);
     $uf = $user->conf->api($fn, $user, $qreq->method());
     $jr = $user->conf->call_api_on($uf, $fn, $user, $qreq);

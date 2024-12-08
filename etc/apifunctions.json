@@ -182,15 +182,22 @@
         "function": "Authorize_Page::oauthtoken_api"
     },
     {
-        "name": "paper", "get": true,
-        "function": "Paper_API::run",
-        "parameters": "?p ?forceShow ?q ?t ?qt ?scoresort ?sort ?reviewer",
-        "response": "?paper ?papers"
+        "name": "paper", "get": true, "post": true,
+        "function": "Paper_API::run_one",
+        "parameters": "?p ?+dry_run ?+disable_users ?+add_topics ?+notify ?forceShow",
+        "response": "?paper ?dry_run ?+change_list ?+valid"
     },
     {
-        "name": "paper", "post": true,
-        "function": "Paper_API::run",
-        "parameters": "?p ?dry_run ?disable_users ?add_topics ?notify"
+        "name": "papers", "get": true,
+        "function": "Paper_API::run_multi",
+        "parameters": "q ?t ?qt ?scoresort ?sort ?reviewer ?warn_missing ?forceShow",
+        "response": "?papers"
+    },
+    {
+        "name": "papers", "post": true,
+        "function": "Paper_API::run_multi",
+        "parameters": "?json ?dry_run ?disable_users ?add_topics ?notify ?forceShow ?q ?t ?qt ?sort ?scoresort ?reviewer",
+        "response": "?papers ?dry_run ?change_lists ?valid"
     },
     {
         "name": "pc", "get": true,

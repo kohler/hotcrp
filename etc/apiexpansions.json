@@ -5,11 +5,15 @@
   },
   {
     "name": "paper", "post": true, "merge": true,
-    "tags": ["Submissions"], "order": 0,
-    "response_info": {"?paper": "paper", "?papers": "[paper]",
-      "?+change_list": "[string]", "?+change_lists": "[[string]]",
-      "?+valid": "[boolean]", "?dry_run": "boolean"
-    }
+    "tags": ["Submissions"], "order": 0
+  },
+  {
+    "name": "papers", "get": true, "merge": true,
+    "tags": ["Submissions"], "order": 1
+  },
+  {
+    "name": "papers", "post": true, "merge": true,
+    "tags": ["Submissions"], "order": 1
   },
   {
     "name": "formatcheck", "get": true, "merge": true,

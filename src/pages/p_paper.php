@@ -158,7 +158,7 @@ class Paper_Page {
             $this->conf->redirect_self($this->qreq, ["p" => $this->prow->paperId, "m" => "edit"]);
         } else {
             $this->ps->inform_at("status:if_unmodified_since",
-                $this->conf->_("<5>Your unsaved changes to {:list} are highlighted. Check them and save again, or <a href=\"{url}\" class=\"uic js-ignore-unload-protection\">discard your edits</a>.",
+                $this->conf->_("<5>Your changes were not saved because the {submission} has changed since you last loaded this page. Unsaved changes to {:list} are highlighted. Check them and save again, or <a href=\"{url}\" class=\"uic js-ignore-unload-protection\">discard your edits</a>.",
                     PaperTable::field_title_links($fields, "edit_title"),
                     new FmtArg("url", $this->prow->hoturl(["m" => "edit"], Conf::HOTURL_RAW), 0)));
         }

@@ -87,7 +87,7 @@ class PaperAPI_Tester {
         $qreq = $this->make_post_zip_qreq([
             "data.json" => ["pid" => "new", "title" => "Jans paper", "abstract" => "Swafford 4eva\r\n", "authors" => [["name" => "Jan Swafford", "email" => "swafford@_.com"]], "submission" => ["content_file" => "janspaper.pdf"], "status" => "submitted"],
             "janspaper.pdf" => "%PDF-JAN"
-        ]);
+        ], ["p" => "new"]);
         $jr = call_api("=paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->paper->object, "paper");
@@ -107,7 +107,7 @@ class PaperAPI_Tester {
             "authors" => [["name" => "Puneet Sharma", "email" => $this->u_puneet->email]],
             "submission" => ["content" => "%PDF-2"],
             "status" => "draft"
-        ]);
+        ], ["p" => "new"]);
         $jr = call_api("=paper", $this->u_puneet, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->paper->object, "paper");
@@ -126,13 +126,17 @@ class PaperAPI_Tester {
     function test_update_attack_paper_pleb() {
         $prow = $this->conf->checked_paper_by_id(2);
         xassert_eqq($this->u_puneet->can_view_paper($prow), false);
-        $qreq = $this->make_post_json_qreq(["pid" => 2, "title" => "Scalable Timers for Soft State Protocols: Taylor’s Version"]);
+        $qreq = $this->make_post_json_qreq([
+            "pid" => 2, "title" => "Scalable Timers for Soft State Protocols: Taylor’s Version"
+        ]);
         $jr = call_api("=paper", $this->u_puneet, $qreq);
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->change_list, []);
         xassert_eqq($jr->message_list[0]->message, "<0>You aren’t allowed to view submission #2");
 
-        $qreq = $this->make_post_json_qreq(["pid" => 10000, "title" => "Scalable Timers for Soft State Protocols: Taylor’s Version"]);
+        $qreq = $this->make_post_json_qreq([
+            "pid" => 10000, "title" => "Scalable Timers for Soft State Protocols: Taylor’s Version"
+        ], ["p" => "10000"]);
         $jr = call_api("=paper", $this->u_puneet, $qreq);
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->change_list, []);
@@ -154,6 +158,11 @@ class PaperAPI_Tester {
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->paper->pid, 10000);
+
+        // Not possible to change ID
+        $qreq->p = 1;
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, false);
     }
 
     function test_dry_run() {
@@ -178,6 +187,105 @@ class PaperAPI_Tester {
         $this->conf->id_randomizer()->cleanup();
     }
 
+    function test_pid_mismatch() {
+        $qreq = $this->make_post_json_qreq(["title" => "Foo", "pid" => $this->npid + 1], ["p" => 1, "dry_run" => 1]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq, $this->conf->checked_paper_by_id(1));
+        xassert_eqq($jr->ok, false);
+    }
+
+    function test_decision() {
+        $qreq = $this->make_post_json_qreq(["decision" => "Rejected", "pid" => $this->npid]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        $prow = $this->conf->checked_paper_by_id($this->npid);
+        xassert_lt($prow->outcome, 0);
+
+        $qreq = $this->make_post_json_qreq(["decision" => "Accepted", "pid" => $this->npid]);
+        $jr = call_api("=paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, true);
+        $prow = $this->conf->checked_paper_by_id($this->npid);
+        xassert_lt($prow->outcome, 0);
+
+        $qreq = $this->make_post_json_qreq(["decision" => "Accepted", "pid" => $this->npid]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        $prow = $this->conf->checked_paper_by_id($this->npid);
+        xassert_gt($prow->outcome, 0);
+    }
+
+    function test_multiple() {
+        $qreq = $this->make_post_json_qreq([
+            ["title" => "Fun with people", "pid" => 1],
+            ["title" => "Fun with animals", "pid" => $this->npid]
+        ]);
+        $jr = call_api("=papers", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count($jr->papers), 2);
+        xassert_eqq($jr->papers[0]->pid, 1);
+        xassert_eqq($jr->papers[0]->title, "Fun with people");
+        xassert_eqq($jr->papers[1]->pid, $this->npid);
+        xassert_eqq($jr->papers[1]->title, "Fun with animals");
+        xassert_eqq($jr->valid, [true, true]);
+        xassert_eqq($jr->change_lists, [["title"], ["title"]]);
+    }
+
+    function test_if_unmodified_since_create() {
+        $qreq = $this->make_post_json_qreq(["pid" => 200, "title" => "Fart", "abstract" => "Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]]]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list[0], "pid");
+
+        $qreq = $this->make_post_json_qreq(["pid" => 201, "title" => "Fart Again", "abstract" => "Extra Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]], "status" => ["if_unmodified_since" => 0]]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list[0], "pid");
+
+        $qreq = $this->make_post_json_qreq(["pid" => 201, "title" => "Fart", "abstract" => "Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]], "status" => ["if_unmodified_since" => 0]]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, false);
+    }
+
+    function test_get_sort() {
+        $jr = call_api("papers", $this->u_chair, ["q" => "1-5 sort:title"]);
+        xassert_eqq($jr->ok, true);
+        $lastt = "";
+        $ptotal = 0;
+        $collator = $this->conf->collator();
+        foreach ($jr->papers as $pj) {
+            $ptotal += $pj->pid;
+            xassert_lt($collator->compare($lastt, $pj->title), 0);
+            $lastt = $pj->title;
+        }
+        xassert_eqq($ptotal, 15);
+
+        $jr = call_api("papers", $this->u_chair, ["q" => "1-5", "sort" => "-title"]);
+        xassert_eqq($jr->ok, true);
+        $lastt = "ZZZZZZ";
+        $ptotal = 0;
+        $collator = $this->conf->collator();
+        foreach ($jr->papers as $pj) {
+            $ptotal += $pj->pid;
+            xassert_gt($collator->compare($lastt, $pj->title), 0);
+            $lastt = $pj->title;
+        }
+        xassert_eqq($ptotal, 15);
+    }
+
+    function test_match() {
+        $qreq = $this->make_post_json_qreq(["calories" => 10], ["q" => "1-10"]);
+        $jr = call_api("=papers", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        for ($i = 0; $i !== 10; ++$i) {
+            xassert_eqq($jr->change_lists[$i], ["calories"]);
+            xassert_eqq($jr->papers[$i]->pid, $i + 1);
+            xassert_eqq($jr->papers[$i]->calories, 10);
+        }
+
+        $qreq = $this->make_post_json_qreq(["calories" => 10, "pid" => 1], ["q" => "1-10"]);
+        $jr = call_api("=papers", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, false);
+    }
+
     function test_new_paper_after_deadline() {
         $this->conf->save_setting("sub_update", Conf::$now - 10);
         $this->conf->save_setting("sub_sub", Conf::$now - 10);
@@ -188,7 +296,9 @@ class PaperAPI_Tester {
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->message_list[0]->field, "status:submitted");
 
-        $qreq = $this->make_post_json_qreq(["pid" => "new", "title" => "New paper", "abstract" => "This is an abstract\r\n", "authors" => [["name" => "Bobby Flay", "email" => "flay@_.com"]], "submission" => ["content" => "%PDF-2"], "status" => "draft"]);
+        $qreq = $this->make_post_json_qreq([
+            "pid" => "new", "title" => "New paper", "abstract" => "This is an abstract\r\n", "authors" => [["name" => "Bobby Flay", "email" => "flay@_.com"]], "submission" => ["content" => "%PDF-2"], "status" => "draft"
+        ]);
         $jr = call_api("=paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->message_list[0]->field, "status:submitted");

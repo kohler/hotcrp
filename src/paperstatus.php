@@ -723,9 +723,13 @@ class PaperStatus extends MessageSet {
         return false;
     }
 
-    /** @return list<string> */
-    function changed_keys() {
+    /** @param bool $full
+     * @return list<string> */
+    function changed_keys($full = false) {
         $s = [];
+        if ($full && ($this->_save_status & self::SAVE_STATUS_NEW) !== 0) {
+            $s[] = "pid";
+        }
         foreach ($this->_fdiffs ?? [] as $field) {
             $s[] = $field->json_key();
         }
@@ -1062,8 +1066,8 @@ class PaperStatus extends MessageSet {
         }
     }
 
-    /** @param ?int $pid */
-    private function _reset(PaperInfo $prow, $pid) {
+    /** @return bool */
+    private function _reset(PaperInfo $prow) {
         assert($prow->paperId !== -1);
         parent::clear();
         $this->prow = $prow;
@@ -1078,22 +1082,30 @@ class PaperStatus extends MessageSet {
         $this->_noncontacts_changed = $prow->is_new();
         $this->_dids = $this->_joindocs = $this->_tags_changed = [];
         $this->_save_status = 0;
-        if ($prow->is_new()) {
-            $pid = $pid ?? $this->conf->id_randomizer()->reserve(DatabaseIDRandomizer::PAPERID);
-            $this->prow->set_prop("paperId", $pid);
-            $this->prow->set_prop("title", "");
-            $this->prow->set_prop("abstract", "");
-            $this->prow->set_prop("authorInformation", "");
-            foreach (Tagger::split_unpack($prow->all_tags_text()) as $tv) {
-                $this->_tags_changed[] = $tv;
-            }
+        if (!$prow->is_new()) {
+            return true;
         }
+        if ($prow->paperId === 0) {
+            $this->prow->set_prop("paperId", $this->conf->id_randomizer()->reserve(DatabaseIDRandomizer::PAPERID));
+        } else if (!$this->user->privChair) {
+            $this->user->no_paper_whynot($prow->paperId)->append_to($this, null, MessageSet::ESTOP);
+            return false;
+        }
+        $this->prow->set_prop("title", "");
+        $this->prow->set_prop("abstract", "");
+        $this->prow->set_prop("authorInformation", "");
+        foreach (Tagger::split_unpack($prow->all_tags_text()) as $tv) {
+            $this->_tags_changed[] = $tv;
+        }
+        return true;
     }
 
     /** @param ?PaperInfo $prow
      * @return bool */
     function prepare_save_paper_web(Qrequest $qreq, $prow) {
-        $this->_reset($prow ?? PaperInfo::make_new($this->user, $qreq->sclass), null);
+        if (!$this->_reset($prow ?? PaperInfo::make_new($this->user, $qreq->sclass))) {
+            return false;
+        }
         $this->json_fields = $this->override_json_fields ?? false;
         $pj = (object) [];
 
@@ -1140,8 +1152,9 @@ class PaperStatus extends MessageSet {
     }
 
     /** @param object $pj
+     * @param ?PaperInfo $prow
      * @return bool */
-    function prepare_save_paper_json($pj) {
+    function prepare_save_paper_json($pj, $prow = null) {
         assert(is_object($pj));
 
         if (($pj->object ?? "paper") !== "paper") {
@@ -1150,11 +1163,16 @@ class PaperStatus extends MessageSet {
         }
         $pid = $pj->pid ?? $pj->id ?? null;
         $pidkey = isset($pj->pid) && isset($pj->id) ? "id" : "pid";
-        if ($pid === "new" || (is_int($pid) && $pid <= 0)) {
+        if ($pid === null && $prow) {
+            $pid = $prow->paperId;
+        } else if ($pid === "new" || (is_int($pid) && $pid <= 0)) {
             $pid = null;
         }
         if ($pid !== null && (!is_int($pid) || $pid > PaperInfo::PID_MAX)) {
             $this->syntax_error_at($pidkey);
+            return false;
+        } else if ($prow && $pid !== $prow->paperId) {
+            $this->error_at($pidkey, "<0>{Submission} ID does not match");
             return false;
         }
 
@@ -1163,15 +1181,18 @@ class PaperStatus extends MessageSet {
             return false;
         }
 
-        $prow = null;
-        if ($pid !== null) {
-            $prow = $this->conf->paper_by_id($pid, $this->user, ["topics" => true, "options" => true]);
-            if (!$prow && !$this->user->privChair) {
-                $this->user->no_paper_whynot($pid)->append_to($this, null, MessageSet::ESTOP);
-                return false;
+        if (!$prow && $pid !== null) {
+            $prow = $this->conf->paper_by_id($pid, $this->user, ["topics" => true, "options" => true, "allConflictType" => true]);
+        }
+        if (!$prow) {
+            $prow = PaperInfo::make_new($this->user, $pj->submission_class ?? null);
+            if ($pid !== null) {
+                $prow->set_prop("paperId", $pid);
             }
         }
-        $this->_reset($prow ?? PaperInfo::make_new($this->user, $pj->submission_class ?? null), $pid);
+        if (!$this->_reset($prow)) {
+            return false;
+        }
         $this->json_fields = $this->override_json_fields ?? true;
         assert($pid === null || $this->prow->paperId === $pid);
 
@@ -1265,8 +1286,7 @@ class PaperStatus extends MessageSet {
         // don't save if transaction required
         if (isset($pj->status->if_unmodified_since)
             && $pj->status->if_unmodified_since < $this->prow->timeModified) {
-            $this->estop_at("status:if_unmodified_since", $this->_("<5><strong>Edit conflict</strong>: The {submission} changed since you last loaded this page"));
-            $this->inform_at("status:if_unmodified_since", $this->_("<0>Your changes were not saved, but you can check the form and save again."));
+            $this->estop_at("status:if_unmodified_since", $this->_("<5><strong>Edit conflict</strong>: The {submission} has changed"));
         }
 
         // don't save if not allowed
@@ -1611,9 +1631,10 @@ class PaperStatus extends MessageSet {
         return true;
     }
 
-    /** @return PaperInfo */
-    function saved_prow() {
-        $this->saved_prow = $this->saved_prow ?? $this->conf->paper_by_id($this->paperId, $this->user, ["topics" => true, "options" => true]);
+    /** @param array<string,mixed> $options
+     * @return PaperInfo */
+    function saved_prow($options = null) {
+        $this->saved_prow = $this->saved_prow ?? $this->conf->paper_by_id($this->paperId, $this->user, $options ?? ["topics" => true, "options" => true]);
         return $this->saved_prow;
     }
 

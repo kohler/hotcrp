@@ -34,9 +34,13 @@ class Paper_API extends MessageSet {
     private $valid = [];
     /** @var int */
     private $npapers = 0;
-    /** @var ?string */
+    /** @var null|int|string */
     private $landmark;
 
+
+    const M_ONE = 1;
+    const M_MULTI = 2;
+    const M_MATCH = 4;
 
     const PIDFLAG_IGNORE_PID = 1;
     const PIDFLAG_MATCH_TITLE = 2;
@@ -46,35 +50,47 @@ class Paper_API extends MessageSet {
         $this->user = $user;
     }
 
-    /** @return JsonResult */
-    static function run_get(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        if (isset($qreq->p) && isset($qreq->q)) {
-            return JsonResult::make_parameter_error("p");
-        }
-
-        if ($prow && ($pj = (new PaperExport($user))->paper_json($prow))) {
-            return new JsonResult(["ok" => true, "paper" => $pj]);
-        }
-
-        if (isset($qreq->p)) {
-            return Conf::paper_error_json_result($qreq->annex("paper_whynot"));
-        }
-
-        if (!isset($qreq->q)) {
-            return JsonResult::make_parameter_error("p");
-        }
-
+    /** @return array{PaperSearch,PaperInfoSet} */
+    static private function make_search(Contact $user, Qrequest $qreq) {
+        $qreq->t = $qreq->t ?? "viewable";
         $srch = new PaperSearch($user, $qreq);
-        $pids = $srch->sorted_paper_ids();
-        $prows = $srch->conf->paper_set([
-            "paperId" => $pids,
+        if (friendly_boolean($qreq->warn_missing)) {
+            $srch->set_warn_missing(true);
+        }
+        $prows = $srch->user->paper_set([
+            "paperId" => $srch->paper_ids(),
             "options" => true, "topics" => true, "allConflictType" => true
         ]);
+        if ($srch->nontrivial_sort()) {
+            $pidmap = array_flip($srch->sorted_paper_ids());
+            $prows->sort_by(function ($a, $b) use ($pidmap) {
+                return $pidmap[$a->paperId] <=> $pidmap[$b->paperId];
+            });
+        }
+        return [$srch, $prows];
+    }
+
+    /** @param 1|2|3 $mode
+     * @return JsonResult */
+    static function run_get(Contact $user, Qrequest $qreq, ?PaperInfo $prow, $mode) {
+        if (isset($qreq->p) && ($mode & self::M_ONE) !== 0) {
+            if ($prow && ($pj = (new PaperExport($user))->paper_json($prow))) {
+                return new JsonResult(["ok" => true, "paper" => $pj]);
+            }
+            $fr = $prow ? $user->perm_view_paper($prow) : $qreq->annex("paper_whynot");
+            return Conf::paper_error_json_result($fr);
+        } else if ($mode === self::M_ONE) {
+            return JsonResult::make_missing_error("p");
+        } else if (!isset($qreq->q)) {
+            return JsonResult::make_missing_error("q");
+        }
+
+        list($srch, $prows) = self::make_search($user, $qreq);
 
         $pex = new PaperExport($user);
         $pjs = [];
-        foreach ($pids as $pid) {
-            if (($pj = $pex->paper_json($prows->get($pid))))
+        foreach ($prows as $prow) {
+            if (($pj = $pex->paper_json($prow)))
                 $pjs[] = $pj;
         }
 
@@ -85,12 +101,25 @@ class Paper_API extends MessageSet {
         ]);
     }
 
-    /** @return JsonResult */
-    private function run_post(Qrequest $qreq, ?PaperInfo $prow) {
-        // if `p` param is set, must be a paper or "new"
-        $this->single = $prow || isset($qreq->p);
-        if ($this->single && !$prow && $qreq->p !== "new") {
-            return Conf::paper_error_json_result($qreq->annex("paper_whynot"));
+    /** @param 1|2|3 $mode
+     * @return JsonResult */
+    private function run_post(Qrequest $qreq, ?PaperInfo $prow, $mode) {
+        // check `p` parameter
+        if (($mode & self::M_ONE) !== 0 && isset($qreq->p)) {
+            $mode = self::M_ONE;
+            if ($qreq->p === "") {
+                unset($qreq->p);
+            } else {
+                $qreq->p = (string) $qreq->p;
+                if (!ctype_digit($qreq->p) && $qreq->p !== "new") {
+                    return JsonResult::make_parameter_error("p");
+                }
+            }
+        }
+
+        // check `q` parameter
+        if ($mode === self::M_MULTI && !isset($qreq->q)) {
+            return JsonResult::make_missing_error("q");
         }
 
         // set parameters
@@ -110,11 +139,17 @@ class Paper_API extends MessageSet {
             $this->dry_run = true;
         }
 
-        // handle multipart or form-encoded data
+        // check Content-Type
         $ct = $qreq->body_content_type();
-        $ct_form = $ct === "application/x-www-form-urlencoded" || $ct === "multipart/form-data";
+        $ct_form = $ct === "application/x-www-form-urlencoded"
+            || $ct === "multipart/form-data";
         if ($ct_form && !$this->post_form_is_json($qreq)) {
-            return $this->run_post_form_data($qreq, $prow);
+            // handle form-encoded data
+            if (($mode & self::M_ONE) !== 0) {
+                return $this->run_post_form_data($qreq, $prow);
+            } else {
+                return JsonResult::make_error(400, "<0>Unexpected content type");
+            }
         }
 
         // from here on, expect JSON
@@ -124,11 +159,11 @@ class Paper_API extends MessageSet {
             $this->ziparchive = new ZipArchive;
             $cf = $qreq->body_filename(".zip");
             if (!$cf) {
-                return JsonResult::make_error(500, "<0>Cannot read uploaded content");
+                return JsonResult::make_error(500, "<0>Uploaded content unreadable");
             }
             $ec = $this->ziparchive->open($cf);
             if ($ec !== true) {
-                return JsonResult::make_error(400, "<0>Bad ZIP file (error " . json_encode($ec) . ")");
+                return JsonResult::make_error(400, "<0>ZIP error " . json_encode($ec));
             }
             list($this->docdir, $jsonname) = self::analyze_zip_contents($this->ziparchive);
             if (!$jsonname) {
@@ -139,21 +174,45 @@ class Paper_API extends MessageSet {
             $jsonstr = $qreq->json;
             $this->attachment_qreq = $qreq;
         } else {
-            return JsonResult::make_error(400, "<0>POST data must be JSON or ZIP ($ct)");
+            return JsonResult::make_error(400, "<0>Unexpected content type");
         }
 
+        // read JSON, check format
         $jp = Json::try_decode($jsonstr);
-        if ($jp === null) {
-            return JsonResult::make_error(400, "<0>Invalid JSON: " . Json::last_error_msg());
-        } else if (is_object($jp)) {
-            $this->single = true;
+        if (is_object($jp)) {
+            if (isset($qreq->q)
+                && ($mode & self::M_MATCH) !== 0) {
+                $mode = self::M_MATCH;
+            } else if (($mode & self::M_ONE) !== 0) {
+                $mode = self::M_ONE;
+            } else {
+                $jp = [$jp];
+                $mode = self::M_MULTI;
+            }
+        } else if (is_array($jp)) {
+            if (($mode & self::M_MULTI) !== 0) {
+                $mode = self::M_MULTI;
+            } else if (($mode & self::M_ONE) !== 0
+                       && count($jp) === 1
+                       && is_object($jp[0])) {
+                $jp = $jp[0];
+                $mode = self::M_ONE;
+            } else {
+                return JsonResult::make_error(400, "<0>Expected object");
+            }
+        } else if ($jp === null) {
+            return JsonResult::make_error(400, "<0>Invalid JSON (" . Json::last_error_msg() . ")");
+        } else {
+            return JsonResult::make_error(400, $mode === self::M_MULTI ? "<0>Expected array of objects" : "<0>Expected object");
+        }
+
+        // process result
+        if ($mode === self::M_ONE) {
             return $this->run_post_single_json($prow, $jp);
-        } else if ($this->single) {
-            return JsonResult::make_error(400, "<0>Expected object");
-        } else if (!is_array($jp)) {
-            return JsonResult::make_error(400, "<0>Expected array of objects");
         } else if (!$this->user->privChair) {
             return JsonResult::make_permission_error();
+        } else if ($mode === self::M_MATCH) {
+            return $this->run_post_match_json($qreq, $jp);
         } else {
             return $this->run_post_multi_json($jp);
         }
@@ -178,14 +237,27 @@ class Paper_API extends MessageSet {
         if (!$prow) {
             if (!isset($qreq->p)) {
                 return JsonResult::make_missing_error("p");
+            } else if ($qreq->p === "new") {
+                $pid = null;
+            } else {
+                $pid = intval($qreq->p);
+                if ((string) $pid !== $qreq->p
+                    || $pid === 0
+                    || $pid > PaperInfo::PID_MAX) {
+                    return JsonResult::make_parameter_error("p");
+                }
             }
             if (isset($qreq->sclass)
                 && !$this->conf->submission_round_by_tag($qreq->sclass, true)) {
                 return JsonResult::make_message_list(MessageItem::error($this->conf->_("<0>{Submission} class ‘{}’ not found", $qreq->sclass)));
             }
             $prow = PaperInfo::make_new($this->user, $qreq->sclass);
+            if ($pid !== null) {
+                $prow->set_prop("paperId", $pid);
+            }
         }
 
+        $this->single = true;
         $ps = $this->paper_status();
         $ok = $ps->prepare_save_paper_web($qreq, $prow);
         $this->execute_save($ok, $ps);
@@ -194,12 +266,10 @@ class Paper_API extends MessageSet {
 
     /** @return JsonResult */
     private function run_post_single_json(?PaperInfo $prow, $jp) {
-        if ($prow && !isset($jp->pid) && !isset($jp->id)) {
-            $jp->pid = $prow->paperId;
-        }
+        $this->single = true;
         if ($this->set_json_landmark(0, $jp, $prow ? $prow->paperId : null)) {
             $ps = $this->paper_status();
-            $ok = $ps->prepare_save_paper_json($jp);
+            $ok = $ps->prepare_save_paper_json($jp, $prow);
             $this->execute_save($ok, $ps);
         } else {
             $this->execute_fail();
@@ -210,6 +280,7 @@ class Paper_API extends MessageSet {
     /** @param array $jps
      * @return JsonResult */
     private function run_post_multi_json($jps) {
+        $this->single = false;
         foreach ($jps as $i => $jp) {
             if ($this->set_json_landmark($i, $jp, null)) {
                 $ps = $this->paper_status();
@@ -218,6 +289,25 @@ class Paper_API extends MessageSet {
             } else {
                 $this->execute_fail();
             }
+        }
+        return $this->make_result();
+    }
+
+    /** @param object $jp
+     * @return JsonResult */
+    private function run_post_match_json(Qrequest $qreq, $jp) {
+        if (isset($jp->pid) || isset($jp->id)) {
+            return JsonResult::make_error(400, "<0>Unexpected `pid`");
+        }
+        $this->single = false;
+        list($srch, $prows) = self::make_search($this->user, $qreq);
+        $i = 0;
+        foreach ($prows as $prow) {
+            $this->landmark = $i;
+            $ps = $this->paper_status();
+            $ok = $ps->prepare_save_paper_json($jp, $prow);
+            $this->execute_save($ok, $ps);
+            ++$i;
         }
         return $this->make_result();
     }
@@ -243,7 +333,7 @@ class Paper_API extends MessageSet {
             }
             $this->append_item($mi);
         }
-        $this->change_lists[] = $ps->changed_keys();
+        $this->change_lists[] = $ps->changed_keys(true);
         if ($ok && !$this->dry_run) {
             if ($ps->has_change()) {
                 $ps->log_save_activity("via API");
@@ -276,15 +366,16 @@ class Paper_API extends MessageSet {
         }
         if ($this->single) {
             $jr->content["change_list"] = $this->change_lists[0];
+            $jr->content["valid"] = $this->valid[0];
             if ($this->npapers > 0) {
                 $jr->content["paper"] = $this->papers[0];
             }
         } else {
             $jr->content["change_lists"] = $this->change_lists;
-            if ($this->npapers > 0) {
+            $jr->content["valid"] = $this->valid;
+            if (!$this->dry_run) {
                 $jr->content["papers"] = $this->papers;
             }
-            $jr->content["valid"] = $this->valid;
         }
         return $jr;
     }
@@ -311,7 +402,9 @@ class Paper_API extends MessageSet {
             }
         }
         $pid = $j->pid ?? $j->id ?? null;
-        if ($pid === null || (is_int($pid) && $pid > 0) || $pid === "new") {
+        if ($pid === null
+            || (is_int($pid) && $pid > 0 && $pid <= PaperInfo::PID_MAX)
+            || $pid === "new") {
             return $pid ?? "new";
         } else {
             return null;
@@ -458,20 +551,30 @@ class Paper_API extends MessageSet {
 
 
     /** @return JsonResult */
-    static function run(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
+    static private function run(Contact $user, Qrequest $qreq, ?PaperInfo $prow, $mode) {
         $old_overrides = $user->overrides();
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
         if ($qreq->is_get()) {
-            $jr = self::run_get($user, $qreq, $prow);
+            $jr = self::run_get($user, $qreq, $prow, $mode);
         } else {
-            $jr = (new Paper_API($user))->run_post($qreq, $prow);
+            $jr = (new Paper_API($user))->run_post($qreq, $prow, $mode);
         }
         $user->set_overrides($old_overrides);
         if (($jr->content["message_list"] ?? null) === []) {
             unset($jr->content["message_list"]);
         }
         return $jr;
+    }
+
+    /** @return JsonResult */
+    static function run_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
+        return self::run($user, $qreq, $prow, self::M_ONE);
+    }
+
+    /** @return JsonResult */
+    static function run_multi(Contact $user, Qrequest $qreq) {
+        return self::run($user, $qreq, null, self::M_MULTI | self::M_MATCH);
     }
 }

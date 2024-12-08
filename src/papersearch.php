@@ -1175,7 +1175,7 @@ class PaperSearch extends MessageSet {
     }
 
     /** @return bool */
-    private function nontrivial_sort() {
+    function nontrivial_sort() {
         return $this->_req_sort
             || $this->_req_scoresort
             || $this->sort_field_list()
