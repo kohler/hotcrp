@@ -1153,7 +1153,7 @@ class PaperStatus extends MessageSet {
         if ($pid === "new" || (is_int($pid) && $pid <= 0)) {
             $pid = null;
         }
-        if ($pid !== null && !is_int($pid)) {
+        if ($pid !== null && (!is_int($pid) || $pid > PaperInfo::PID_MAX)) {
             $this->syntax_error_at($pidkey);
             return false;
         }

@@ -4376,8 +4376,10 @@ class Conf {
     function set_paper_request(Qrequest $qreq, Contact $user) {
         $this->paper = $prow = null;
         if ($qreq->p) {
-            if (ctype_digit($qreq->p)) {
-                $prow = $this->paper_by_id(intval($qreq->p), $user);
+            if (ctype_digit($qreq->p)
+                && ($pid = intval($qreq->p)) > 0
+                && $pid <= PaperInfo::PID_MAX) {
+                $prow = $this->paper_by_id($pid, $user);
             }
             if (($whynot = $user->perm_view_paper($prow, false, $qreq->p))) {
                 $qreq->set_annex("paper_whynot", $whynot);

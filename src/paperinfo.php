@@ -766,6 +766,8 @@ class PaperInfo {
     /** @var ?array<string,mixed> */
     public $_old_prop;
 
+    const PID_MAX = 2000000000;
+
     const REVIEW_HAS_FULL = 0x01;
     const REVIEW_HAS_NAMES = 0x02;
     const REVIEW_HAS_LASTLOGIN = 0x04;

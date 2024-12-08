@@ -165,7 +165,7 @@ class API_Page {
         // argument cleaning
         if (!isset($_GET["fn"])) {
             $fn = $nav->path_component(0, true);
-            if ($fn && ctype_digit($fn)) {
+            if ($fn && (ctype_digit($fn) || $fn === "new")) {
                 if (!isset($_GET["p"])) {
                     $_GET["p"] = $fn;
                 }
@@ -187,7 +187,7 @@ class API_Page {
         }
         if (!isset($_GET["p"])
             && ($p = $nav->path_component(1, true))
-            && ctype_digit($p)) {
+            && (ctype_digit($p) || $p === "new")) {
             $_GET["p"] = $p;
         }
 
