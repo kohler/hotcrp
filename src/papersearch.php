@@ -953,7 +953,7 @@ class PaperSearch extends MessageSet {
         } else if ($qe->type === "pn") {
             assert($qe instanceof PaperID_SearchTerm);
             foreach ($qe->ranges() as $r) {
-                for ($p = $r[0]; $p < $r[1] && $r[4]; ++$p) {
+                for ($p = $r->first; $p < $r->last && $r->explicit; ++$p) {
                     if (array_search($p, $this->_matches) === false) {
                         $ps[] = $p;
                     }

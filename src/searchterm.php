@@ -1547,11 +1547,33 @@ class Show_SearchTerm {
     }
 }
 
+class PaperIDRange {
+    /** @var int */
+    public $first;
+    /** @var int */
+    public $last;
+    /** @var int */
+    public $pos;
+    /** @var bool */
+    public $rev;
+    /** @var bool */
+    public $explicit;
+
+    function __construct($first, $last, $pos, $rev, $explicit) {
+        $this->first = $first;
+        $this->last = $last;
+        $this->pos = $pos;
+        $this->rev = $rev;
+        $this->explicit = $explicit;
+    }
+}
+
 class PaperID_SearchTerm extends SearchTerm {
-    /** @var list<array{int,int,int,bool,bool}> */
+    /** @var list<PaperIDRange> */
     private $r = [];
     /** @var int */
     private $n = 0;
+    /** @var bool */
     private $in_order = true;
 
     function __construct() {
@@ -1565,9 +1587,9 @@ class PaperID_SearchTerm extends SearchTerm {
         while ($l < $r) {
             $m = $l + (($r - $l) >> 1);
             $x = $this->r[$m];
-            if ($p < $x[0]) {
+            if ($p < $x->first) {
                 $r = $m;
-            } else if ($p >= $x[1]) {
+            } else if ($p >= $x->last) {
                 $l = $m + 1;
             } else {
                 $l = $r = $m;
@@ -1578,9 +1600,9 @@ class PaperID_SearchTerm extends SearchTerm {
     /** @return int|false */
     function index_of($p) {
         $i = $this->lower_bound($p);
-        if ($i < count($this->r) && $p >= $this->r[$i][0]) {
-            $d = $p - $this->r[$i][0];
-            return $this->r[$i][2] + ($this->r[$i][3] ? -$d : $d);
+        if ($i < count($this->r) && $p >= $this->r[$i]->first) {
+            $d = $p - $this->r[$i]->first;
+            return $this->r[$i]->pos + ($this->r[$i]->rev ? -$d : $d);
         } else {
             return false;
         }
@@ -1591,13 +1613,13 @@ class PaperID_SearchTerm extends SearchTerm {
     private function add_drange($p0, $p1, $rev, $explicit) {
         while ($p0 < $p1) {
             $i = $this->lower_bound($p0);
-            if ($i < count($this->r) && $p0 >= $this->r[$i][0]) {
-                $p0 = $this->r[$i][1];
+            if ($i < count($this->r) && $p0 >= $this->r[$i]->first) {
+                $p0 = $this->r[$i]->last;
                 ++$i;
             }
             $p1x = $p1;
-            if ($i < count($this->r) && $p1 >= $this->r[$i][0]) {
-                $p1x = $this->r[$i][0];
+            if ($i < count($this->r) && $p1 >= $this->r[$i]->first) {
+                $p1x = $this->r[$i]->first;
             }
             if ($p0 < $p1x) {
                 if ($rev || $i < count($this->r)) {
@@ -1605,12 +1627,12 @@ class PaperID_SearchTerm extends SearchTerm {
                 }
                 if ($i > 0
                     && $this->in_order
-                    && $p0 === $this->r[$i - 1][1]) {
-                    $this->r[$i - 1][1] = $p1x;
-                    $this->r[$i - 1][4] = $this->r[$i - 1][4] && $explicit;
+                    && $p0 === $this->r[$i - 1]->last) {
+                    $this->r[$i - 1]->last = $p1x;
+                    $this->r[$i - 1]->explicit = $this->r[$i - 1]->explicit && $explicit;
                 } else {
                     $n = $this->n + ($rev ? $p1x - $p0 - 1 : 0);
-                    array_splice($this->r, $i, 0, [[$p0, $p1x, $n, $rev, $explicit]]);
+                    array_splice($this->r, $i, 0, [new PaperIDRange($p0, $p1x, $n, $rev, $explicit)]);
                 }
                 // ensure `$this->n <= PHP_INT_MAX`
                 // (it naturally will be, UNLESS someone calls add_range
@@ -1622,10 +1644,11 @@ class PaperID_SearchTerm extends SearchTerm {
         }
     }
     /** @param int $p0
-     * @param int $p1 */
-    function add_range($p0, $p1) {
+     * @param int $p1
+     * @param bool $explicit */
+    function add_range($p0, $p1, $explicit = false) {
         if ($p0 <= $p1) {
-            $this->add_drange($p0, $p1 + 1, false, $p1 - $p0 <= 4);
+            $this->add_drange($p0, $p1 + 1, false, $explicit);
         } else {
             $this->add_drange($p1, $p0 + 1, true, false);
         }
@@ -1634,10 +1657,10 @@ class PaperID_SearchTerm extends SearchTerm {
         if ($st instanceof PaperID_SearchTerm) {
             $rs = $st->r;
             if (!$st->in_order) {
-                usort($rs, function ($a, $b) { return $a[2] <=> $b[2]; });
+                usort($rs, function ($a, $b) { return $a->n <=> $b->n; });
             }
             foreach ($rs as $r) {
-                $this->add_drange($r[0], $r[1], $r[3], $r[4]);
+                $this->add_drange($r->first, $r->last, $r->rev, $r->explicit);
             }
             return true;
         } else {
@@ -1649,7 +1672,7 @@ class PaperID_SearchTerm extends SearchTerm {
         if ($this->n <= 1000) {
             $a = [];
             foreach ($this->r as $r) {
-                for ($i = $r[0]; $i < $r[1]; ++$i) {
+                for ($i = $r->first; $i < $r->last; ++$i) {
                     $a[] = $i;
                 }
             }
@@ -1658,7 +1681,7 @@ class PaperID_SearchTerm extends SearchTerm {
             return null;
         }
     }
-    /** @return list<array{int,int,int,bool,bool}> */
+    /** @return list<PaperIDRange> */
     function ranges() {
         return $this->r;
     }
@@ -1677,7 +1700,7 @@ class PaperID_SearchTerm extends SearchTerm {
         } else {
             $s = [];
             foreach ($this->r as $r) {
-                $s[] = "({$field}>={$r[0]} and {$field}<{$r[1]})";
+                $s[] = "({$field}>={$r->first} and {$field}<{$r->last})";
             }
             return "(" . join(" or ", $s) . ")";
         }
@@ -1727,7 +1750,7 @@ class PaperID_SearchTerm extends SearchTerm {
             } else {
                 $p2 = intval($m[3]);
             }
-            $st->add_range($p1, $p2);
+            $st->add_range($p1, $p2, $m[2] === "");
             $pos += strlen($m[0]);
         }
         return $st;
