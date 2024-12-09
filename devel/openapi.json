@@ -2,9 +2,9 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2024-12-09:3e7badc40",
+        "version": "2024-12-09:74fb3c4fc",
         "summary": "HotCRP conference management software API",
-        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST-like API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Basics\n\nHotCRP parameters are generally provided using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),\neither in query strings or in the request body. Some parameters are formatted\nas JSON. Complex requests generally use structured keys, such as\n`named_search/1/q`. Use `multipart/form-data`\nfor requests that include uploaded files.\n\nThe common `p` parameter defines a submission ID. It can appear either in the\nquery string or immediately following `api/` in the query path:\n`api/comment?p=1` and `api/1/comment` are the same API call. `p` is a decimal\nnumber greater than 0, but some API calls accept `p=new` when defining a new\nsubmission.\n\nResponses are formatted as JSON. Every response has an `ok` property; `ok` is\n`true` if the request succeeded and `false` otherwise. Messages about the\nrequest, if any, are expressed in a `message_list` property.\n\nThe `GET` method is used to retrieve information and the `POST` method to\nmodify information. Other methods are generally not used; for instance,\ndeleting a comment uses a `delete=1` parameter for a `POST` request, rather\nthan a `DELETE` request.\n\n\n## Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens.\nObtain an API token using Account settings > Developer.\n\nHotCRP Javascript makes API calls using session cookies for authentication.\n"
+        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST-like API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nHotCRP parameters are generally provided using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),\neither in query strings or in the request body. Some parameters are formatted\nas JSON. Complex requests generally use structured keys, such as\n`named_search/1/q`. Use `multipart/form-data`\nfor requests that include uploaded files.\n\nThe common `p` parameter defines a submission ID. It can appear either in the\nquery string or immediately following `api/` in the query path:\n`api/comment?p=1` and `api/1/comment` are the same API call. `p` is a positive\ndecimal integer, but some API calls accept `p=new` when defining a new\nsubmission.\n\nResponses are formatted as JSON. Every response has an `ok` property; `ok` is\n`true` if the request succeeded and `false` otherwise. Messages about the\nrequest, if any, are expressed in a `message_list` property.\n\nThe `GET` method is used to retrieve information and the `POST` method to\nmodify information. Other methods are generally not used; for instance,\ndeleting a comment uses a `delete=1` parameter for a `POST` request, rather\nthan a `DELETE` request.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain an API token using Account\nsettings > Developer.\n\nHotCRP Javascript makes API calls using session cookies for authentication.\n"
     },
     "paths": {
         "/paper": {
@@ -65,7 +65,7 @@
             },
             "post": {
                 "summary": "Create or modify submission",
-                "description": "This endpoint modifies a specified submission. The `p` parameter determines\nthe submission ID. Setting `p=new` will create a new submission; the response\nwill contain the chosen submission ID.\n\nModifications are specified using a JSON object. There are three ways to\nprovide that JSON, depending on the content-type of the request:\n\n1. As a request body with content-type `application/json`.\n2. As a file named `data.json` in a ZIP archive. The request body has\n   content-type `application/zip`.\n3. As a parameter named `json` in a normal `application/x-www-form-urlencoded`\n   or `multipart/form-data` body.\n\nHowever it is provided, the JSON must define an object interpretable as a\nsubmission (or a subset of a submission). The properties of this object define\nthe modifications to be applied to the submission.\n\nThe `p` parameter is optional; if unset, HotCRP uses the `pid` from the\nsupplied JSON. If the `p` parameter and the JSON `pid` property are both\npresent, then they must match.\n\nTo test a modification, supply a `dry_run=1` parameter. This will test the\nuploaded JSON but make no changes to the database.\n\n\n### ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n### Responses\n\nIf the modification succeeds, the response’s `paper` property contains the\nmodified submission object.\n\nThe `change_list` property is a list of names of the modified fields. New\nsubmissions have `\"pid\"` as the first item in the list. `change_list` contains\nfields that the request *attempted* to modify; successful requests, erroneous\nrequests, and dry-run requests can all return nonempty `change_list`s.\n\nThe `valid` property is `true` if and only if the modification was valid. In\nnon-dry-run requests, `valid: true` indicates that database changes were\ncommitted.\n\nDry-run requests return `change_list` and `valid` properties, but not `paper`\nproperties, since no modifications are performed.\n\n\n### Administrator use\n\nAdministrators can use this endpoint to set some submission properties, such\nas `decision`, that have other endpoints as well.\n\nAdministrators can choose specific IDs for new submissions; just set `p` (or\nJSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the JSON’s `status`.`if_unmodified_since` to `0`.\n",
+                "description": "This endpoint modifies the submission specified by the `p` parameter. Setting\n`p=new` will create a new submission; the response will contain the chosen\nsubmission ID.\n\nModifications are specified using a JSON object. There are three ways to\nprovide that JSON, depending on the content-type of the request:\n\n1. As a JSON request body with content-type `application/json`.\n2. In a ZIP archive request body with content-type `application/zip`, as a\n   file named `data.json`.\n3. As a parameter named `json` in a normal `application/x-www-form-urlencoded`\n   or `multipart/form-data` body.\n\nHowever it is provided, the JSON must define an object interpretable as a\nsubmission (or a subset of a submission). The properties of this object define\nthe modifications to be applied to the submission.\n\nThe `p` parameter is optional; if unset, HotCRP uses the `pid` from the\nsupplied JSON. If the `p` parameter and the JSON `pid` property are both\npresent, then they must match.\n\nTo test a modification, supply a `dry_run=1` parameter. This will test the\nuploaded JSON but make no changes to the database.\n\n\n### ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n### Responses\n\nIf the modification succeeds, the response’s `paper` property contains the\nmodified submission object.\n\nThe `change_list` property is a list of names of the modified fields. New\nsubmissions have `\"pid\"` as the first item in the list. `change_list` contains\nfields that the request *attempted* to modify; successful requests, erroneous\nrequests, and dry-run requests can all return nonempty `change_list`s.\n\nThe `valid` property is `true` if and only if the modification was valid. In\nnon-dry-run requests, `valid: true` indicates that database changes were\ncommitted.\n\nDry-run requests return `change_list` and `valid` properties, but not `paper`\nproperties, since no modifications are performed.\n\n\n### Administrator use\n\nAdministrators can use this endpoint to set some submission properties, such\nas `decision`, that have other endpoints as well.\n\nAdministrators can choose specific IDs for new submissions; just set `p` (or\nJSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the JSON’s `status`.`if_unmodified_since` to `0`.\n",
                 "tags": [
                     "Submissions"
                 ],
@@ -1197,6 +1197,8 @@
         },
         "/search": {
             "get": {
+                "summary": "Retrieve search results",
+                "description": "Use this endpoint to return the list of submission IDs corresponding to a\nsearch.\n\nPass the search query in the `q` parameter. The list of matching IDs is\nreturned in the `ids` response property.\n\nThe `t`, `qt`, `reviewer`, `sort`, and `scoresort` parameters can also affect\nthe search. `t` defines the collection of submissions to search. `t=viewable`\nchecks all submissions the user can view; the default collection is often\nnarrower (a typical default is `t=s`, which searches complete submissions).\n\nThe `groups` response property is an array of annotations that apply to the\nsearch, and is returned for `THEN` searches, `LEGEND` searches, and searches\non tags with annotations. Each annotation contains a position `pos`, and may\nalso have a `legend`, a `search`, an `annoid`, and other properties. `pos` is\nan integer index into the `ids` array; it ranges from 0 to the number of items\nin that array. Annotations with a given `pos` should appear *before* the paper\nat that index in the `ids` array. For instance, this response might be\nreturned for the search `10-12 THEN 15-18`:\n\n```json\n{\n    \"ok\": true,\n    \"message_list\": [],\n    \"ids\": [10, 12, 18],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"15-18\",\n            \"search\": \"15-18\"\n        }\n    ]\n}\n```\n",
                 "tags": [
                     "Search"
                 ],
@@ -1214,16 +1216,22 @@
                         "$ref": "#/components/parameters/sort"
                     },
                     {
+                        "$ref": "#/components/parameters/scoresort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/reviewer"
+                    },
+                    {
                         "name": "report",
                         "in": "query",
                         "required": false,
                         "schema": {}
                     },
                     {
-                        "$ref": "#/components/parameters/scoresort"
-                    },
-                    {
-                        "$ref": "#/components/parameters/reviewer"
+                        "name": "warn_missing",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
                     }
                 ],
                 "responses": {
@@ -1259,6 +1267,7 @@
         },
         "/fieldhtml": {
             "get": {
+                "summary": "Retrieve search results as field HTML",
                 "tags": [
                     "Search"
                 ],
@@ -1344,8 +1353,117 @@
         },
         "/fieldtext": {
             "get": {
+                "summary": "Retrieve list field text",
                 "tags": [
                     "Search"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/searchactions": {
+            "get": {
+                "summary": "Retrieve available search actions",
+                "tags": [
+                    "Search"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "actions"
+                                            ],
+                                            "properties": {
+                                                "actions": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/searchaction": {
+            "get": {
+                "summary": "Perform search action",
+                "tags": [
+                    "Search"
+                ],
+                "parameters": [
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/q"
+                    },
+                    {
+                        "$ref": "#/components/parameters/t"
+                    },
+                    {
+                        "$ref": "#/components/parameters/qt"
+                    },
+                    {
+                        "$ref": "#/components/parameters/sort"
+                    },
+                    {
+                        "name": "report",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/scoresort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/reviewer"
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.opt"
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -1465,73 +1583,6 @@
                                             }
                                         }
                                     ]
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/searchaction": {
-            "get": {
-                "tags": [
-                    "Search"
-                ],
-                "parameters": [
-                    {
-                        "name": "action",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/q"
-                    },
-                    {
-                        "$ref": "#/components/parameters/t"
-                    },
-                    {
-                        "$ref": "#/components/parameters/qt"
-                    },
-                    {
-                        "$ref": "#/components/parameters/sort"
-                    },
-                    {
-                        "name": "report",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/scoresort"
-                    },
-                    {
-                        "$ref": "#/components/parameters/reviewer"
-                    },
-                    {
-                        "name": "pap[]",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
                                 }
                             }
                         }
@@ -4890,6 +4941,7 @@
             },
             "tag_list": {
                 "type": "array",
+                "description": "List of tag names",
                 "items": {
                     "$ref": "#/components/schemas/tag"
                 },
@@ -4913,6 +4965,7 @@
             },
             "tag_value_list": {
                 "type": "array",
+                "description": "List of tag names with values",
                 "items": {
                     "$ref": "#/components/schemas/tag_value"
                 },
@@ -4982,7 +5035,8 @@
                 "properties": {
                     "pos": {
                         "type": "integer",
-                        "minimum": 0
+                        "minimum": 0,
+                        "description": "Position of annotation in associated submission list"
                     },
                     "annoid": {
                         "type": "integer"
@@ -5169,7 +5223,8 @@
             "name": "Submission administration"
         },
         {
-            "name": "Search"
+            "name": "Search",
+            "description": "These endpoints perform searches on submissions.\n\n\n"
         },
         {
             "name": "Tags"
