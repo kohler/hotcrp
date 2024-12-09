@@ -155,7 +155,7 @@ class MailChecker {
                     "Mail mismatch\n",
                     "... line {$badline} differs near {$havel[$badline-1]}\n",
                     "... expected {$wantl[$badline-1]}\n",
-                    "... ", str_replace("\n", "\n    ", rtrim($wtext)),
+                    "... ", str_replace("\n", "\n    ", rtrim($have)),
                     "\n!== ", str_replace("\n", "\n    ", rtrim($wtext)), "\n"
                 ];
                 if (is_object($want) && isset($want->landmark)) {
