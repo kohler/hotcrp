@@ -1627,9 +1627,9 @@ class PaperID_SearchTerm extends SearchTerm {
                 }
                 if ($i > 0
                     && $this->in_order
-                    && $p0 === $this->r[$i - 1]->last) {
+                    && $p0 === $this->r[$i - 1]->last
+                    && $explicit === $this->r[$i - 1]->explicit) {
                     $this->r[$i - 1]->last = $p1x;
-                    $this->r[$i - 1]->explicit = $this->r[$i - 1]->explicit && $explicit;
                 } else {
                     $n = $this->n + ($rev ? $p1x - $p0 - 1 : 0);
                     array_splice($this->r, $i, 0, [new PaperIDRange($p0, $p1x, $n, $rev, $explicit)]);
