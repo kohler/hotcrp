@@ -20,6 +20,7 @@ provided based on which submission fields exist and whether the accessing user
 can see them.
 
 * param forceShow boolean: False to not override administrator conflict
+* response ?paper paper
 
 
 # post /paper
@@ -54,7 +55,7 @@ uploaded JSON but make no changes to the database.
 ### ZIP and form uploads
 
 A ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is
-also acceptable). This file’s content is parsed as JSON. Attachment fields in
+also acceptable). This file’s content is parsed as JSON. Submission fields in
 the JSON can refer to other files in the ZIP. For instance, this shell session
 uploads a new submission with content `paper.pdf`:
 
@@ -101,18 +102,16 @@ properties, since no modifications are performed.
 Administrators can use this endpoint to set some submission properties, such
 as `decision`, that have other endpoints as well.
 
-Administrators can upload new submissions with chosen IDs by setting `p` (or
-JSON `pid`) to the chosen ID. This will either overwrite an existing
+Administrators can choose specific IDs for new submissions; just set `p` (or
+JSON `pid`) to the chosen ID. Such a request will either modify an existing
 submission or create a new submission with that ID. To avoid overwriting an
-existing submission, set the JSON `status.if_unmodified_since` property to
-`0`. (That is, the submission JSON should have a `status` property, formatted
-as an object, whose `if_unmodified_since` property is `0`.)
+existing submission, set the JSON’s `status`.`if_unmodified_since` to `0`.
 
 * param dry_run boolean: True checks input for errors, but does not save changes
 * param disable_users boolean: True disables any newly-created users (administrators only)
 * param add_topics boolean: True automatically adds topics from input papers (administrators only)
 * param notify boolean: False does not notify contacts of changes (administrators only)
-* param json string
+* param ?json string
 * response ?dry_run boolean: True for `dry_run` requests
 * response ?paper paper: JSON version of modified paper
 * response ?+change_list [string]: List of changed fields
@@ -136,6 +135,7 @@ no errors. To obtain warnings for missing submissions that were explicitly
 listed in a query, supply a `warn_missing=1` parameter.
 
 * param warn_missing boolean: Get warnings for missing submissions
+* response ?papers [paper]
 
 
 # post /papers

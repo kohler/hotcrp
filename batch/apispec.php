@@ -14,6 +14,8 @@ class APISpec_Batch {
     public $user;
     /** @var XtParams */
     private $xtp;
+    /** @var bool */
+    private $base;
     /** @var array<string,list<object>> */
     public $api_map;
     /** @var object */
@@ -88,6 +90,7 @@ class APISpec_Batch {
         $this->conf = $conf;
         $this->user = $conf->root_user();
         $this->xtp = new XtParams($this->conf, null);
+        $this->base = isset($arg["x"]);
 
         $this->api_map = $conf->expanded_api_map();
         $this->j = (object) [];
@@ -108,12 +111,14 @@ class APISpec_Batch {
             expand_json_includes_callback($desc, [$this, "_add_description_item"], "APISpec_Batch::parse_description_markdown");
         }
 
-        if (isset($arg["i"])) {
-            if ($arg["i"] === "-") {
+        if (isset($arg["i"])
+            || ($this->base && !isset($arg["o"]))) {
+            $filearg = $arg["i"] ?? "devel/apidoc/openapi-base.json";
+            if ($filearg === "-") {
                 $filename = "<stdin>";
                 $s = stream_get_contents(STDIN);
             } else {
-                $filename = safe_filename($arg["i"]);
+                $filename = safe_filename($filearg);
                 $s = file_get_contents_throw($filename);
             }
             if ($s !== false) {
@@ -121,13 +126,13 @@ class APISpec_Batch {
                 $this->j = $this->jparser->decode();
             }
             if ($s === false || !is_object($this->j)) {
-                $msg = $arg["i"] . ": Invalid input";
+                $msg = $filearg . ": Invalid input";
                 if ($this->j === null && $this->jparser->last_error()) {
                     $msg .= ": " . $this->jparser->last_error_msg();
                 }
                 throw new CommandLineException($msg);
             }
-            $this->output_file = $arg["i"];
+            $this->output_file = $arg["i"] ?? "devel/openapi.json";
             $this->batch = true;
         }
         if (isset($arg["o"])) {
@@ -218,6 +223,10 @@ class APISpec_Batch {
         if (!str_starts_with($s, "#")) {
             return null;
         }
+        $s = cleannl($s);
+        if ($s !== "" && !str_ends_with($s, "\n")) {
+            $s .= "\n";
+        }
         $m = preg_split('/^\#\s+([^\n]*?)\s*\n/m', cleannl($s), -1, PREG_SPLIT_DELIM_CAPTURE);
         $xs = [];
         $lineno = 1;
@@ -229,9 +238,9 @@ class APISpec_Batch {
                 $x["summary"] = simplify_whitespace(str_replace("\n> ", "", substr($mx[0], 2)));
                 $d = ltrim(substr($d, strlen($mx[0])));
             }
-            if (preg_match('/\n(?=\*)(?:\* (?:param|parameter|response) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
+            if (preg_match('/(?:\n|\A)(?=\*)(?:\* (?:param|parameter|response) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
                 $d = cleannl(substr($d, 0, -strlen($mx[0])));
-                $x["fields"] = substr($mx[0], 1);
+                $x["fields"] = ltrim($mx[0]);
             }
             if ($d !== "") {
                 $x["description"] = $d;
@@ -429,6 +438,8 @@ class APISpec_Batch {
     private function reference_common_schema($name) {
         if (in_array($name, ["string", "number", "integer", "boolean", "null"])) {
             return (object) ["type" => $name];
+        } else if ($name === "nonnegative_integer") {
+            return (object) ["type" => "integer", "minimum" => 0];
         }
         if ($this->schemas === null) {
             $compj = $this->j->components = $this->j->components ?? (object) [];
@@ -503,6 +514,7 @@ class APISpec_Batch {
                     ]
                 ];
             } else {
+                throw new CommandLineException("Common schema `{$name}` unknown");
                 assert(false);
             }
             $this->schemas->$name = $nj;
@@ -815,7 +827,7 @@ class APISpec_Batch {
             }
         }
         foreach ($breq as $p) {
-            if (in_array($p, $ignore)
+            if (!in_array($p, $ignore)
                 && !in_array($p, $xreq)) {
                 $xreq[] = $p;
             }
@@ -1088,8 +1100,13 @@ class APISpec_Batch {
         $mj = $this->j;
         $mj->openapi = "3.1.0";
         $info = $mj->info = $mj->info ?? (object) [];
-        $info->title = $info->title ?? "HotCRP";
-        $info->version = $info->version ?? "0.1";
+        if ($this->base) {
+            $info->title = "HotCRP REST API";
+            $info->version = `git log --format="format:%cs:%h" -n1 devel/apidoc etc/apifunctions.json etc/apiexpansions.json batch/apispec.php`;
+        } else {
+            $info->title = $info->title ?? "HotCRP";
+            $info->version = $info->version ?? "0.1";
+        }
         $this->merge_description("info", $info);
 
         // initialize paths
@@ -1180,7 +1197,7 @@ class APISpec_Batch {
             "name:,n: !",
             "config: !",
             "help,h !",
-            "x,no-extensions Ignore extensions",
+            "x,base Produce the base API",
             "w,watch Watch for updates",
             "i:,input: =FILE Modify existing specification in FILE",
             "override-ref Overwrite conflicting \$refs in input",
@@ -1233,12 +1250,17 @@ Usage: php batch/apispec.php")
         }
 
         // watch requires `-i` or `-o` with a named file
-        if (($arg["i"] ?? null) === "-"
-            || (!isset($arg["i"]) && ($arg["o"] ?? "-") === "-")) {
-            throw new CommandLineException("`-w` requires `-o`");
+        if (isset($arg["x"])
+            && !isset($arg["i"])
+            && !isset($arg["o"])) {
+            $file = "devel/openapi.json";
+        } else {
+            $file = $arg["o"] ?? $arg["i"] ?? "-";
+        }
+        if ($file === "-") {
+            throw new CommandLineException("`-w` requires known output file");
         }
 
-        $file = $arg["i"] ?? $arg["o"] ?? "<none>";
         if (str_starts_with($file, "../") || str_contains($file, "/..")) {
             throw new CommandLineException("`-w` spec filename must not contain `..`");
         }

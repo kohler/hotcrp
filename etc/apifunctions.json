@@ -308,7 +308,7 @@
         "name": "settings", "get": true, "post": true,
         "function": "Settings_API::run",
         "parameters": "?=settings ?+dry_run ?+reset ?+filename",
-        "response": "?+dry_run ?+change_list"
+        "response": "?+dry_run ?+change_list settings"
     },
     {
         "name": "shepherd", "get": true, "paper": true,

@@ -25,7 +25,7 @@ setting.
 | Mail keywords                          | `etc/mailkeywords.json`       | `$Opt["mailKeywords"]`    | ✓ | ✓ |   |
 | Mail templates                         | `etc/mailtemplates.json`      | `$Opt["mailTemplates"]`   |   | ✓ |   |
 | Search columns                         | `etc/papercolumns.json`       | `$Opt["paperColumns"]`    | ✓ | ✓ |   |
-| Profile page topics                    | `etc/profilegroups.json`      | `$Opt["profileGroups"]`   |   | ✓ | ✓ |
+| Account settings topics                | `etc/profilegroups.json`      | `$Opt["profileGroups"]`   |   | ✓ | ✓ |
 | Sample review fields                   | `etc/reviewfieldlibrary.json` | `$Opt["reviewFieldLibraries"]` |   | ✓ |   |
 | Review field types                     | `etc/reviewfieldtypes.json`   | `$Opt["reviewFieldTypes"]` |  |   |   |
 | Search keywords                        | `etc/searchkeywords.json`     | `$Opt["searchKeywords"]`  | ✓ | ✓ |   |

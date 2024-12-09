@@ -2,6 +2,11 @@
 
 > Check PDF format
 
+* param ?doc document_name
+* param ?dt document_type
+* param ?docid document_id
+* param ?soft boolean
+
 
 # post /upload
 
@@ -27,3 +32,23 @@ hash of the uploaded document.
 
 The upload API is only available on sites that have enabled the document
 store.
+
+* param ?dtype document_type
+* param ?start boolean
+* param ?finish boolean
+* param ?cancel boolean
+* param ?token upload_token
+* param ?offset nonnegative_integer: Offset of `blob` in uploaded file
+* param ?size nonnegative_integer: Size of uploaded file
+* param ?mimetype mimetype
+* param ?filename string
+* param blob
+* response token upload_token
+* response dtype document_type
+* response filename string
+* response mimetype mimetype
+* response size nonnegative_integer
+* response ranges [offset_range]
+* response hash string
+* response server_progress_loaded integer
+* response server_progress_max integer

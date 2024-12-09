@@ -14,6 +14,8 @@ extends:
 
 theme:
   openapi:
+    disableSearch: true
+    expandResponses: 200,201
     theme:
       sidebar:
         backgroundColor: 'ivory'

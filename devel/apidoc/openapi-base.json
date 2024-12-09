@@ -1,0 +1,790 @@
+{
+    "openapi": "3.1.0",
+    "info": {},
+    "paths": {},
+    "components": {
+        "parameters": {
+            "redirect": {
+                "name": "redirect",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                }
+            },
+            "p.path": {
+                "name": "p",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/pid"
+                }
+            },
+            "p": {
+                "name": "p",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/pid"
+                }
+            },
+            "r": {
+                "name": "r",
+                "in": "query",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/rid"
+                }
+            },
+            "p.opt": {
+                "name": "p",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/pid"
+                }
+            },
+            "r.opt": {
+                "name": "r",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/rid"
+                }
+            },
+            "c.opt": {
+                "name": "c",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/cid"
+                }
+            },
+            "c": {
+                "name": "c",
+                "in": "query",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/cid"
+                }
+            },
+            "q": {
+                "name": "q",
+                "in": "query",
+                "required": true,
+                "schema": {
+                    "$ref": "#/components/schemas/search_string"
+                }
+            },
+            "q.opt": {
+                "name": "q",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_string"
+                }
+            },
+            "t": {
+                "name": "t",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_collection"
+                }
+            },
+            "qt": {
+                "name": "qt",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_qt"
+                }
+            },
+            "reviewer": {
+                "name": "reviewer",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_reviewer"
+                }
+            },
+            "sort": {
+                "name": "sort",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_sort"
+                }
+            },
+            "scoresort": {
+                "name": "scoresort",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/search_scoresort"
+                }
+            },
+            "forceShow": {
+                "name": "forceShow",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "schemas": {
+            "message": {
+                "type": "object",
+                "required": [
+                    "status"
+                ],
+                "properties": {
+                    "status": {
+                        "type": "integer",
+                        "minimum": -5,
+                        "maximum": 3
+                    },
+                    "field": {
+                        "type": "string"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "context": {
+                        "$ref": "#/components/schemas/message_context"
+                    },
+                    "pos1": {
+                        "title": "start position",
+                        "type": "integer"
+                    },
+                    "pos2": {
+                        "title": "end position",
+                        "type": "integer"
+                    }
+                },
+                "examples": [
+                    {
+                        "status": 0,
+                        "message": "<0>Helpful message"
+                    },
+                    {
+                        "status": 2,
+                        "field": "abstract",
+                        "message": "<0>Entry required to complete submission"
+                    }
+                ]
+            },
+            "message_list": {
+                "type": "array",
+                "description": "Diagnostic list",
+                "items": {
+                    "$ref": "#/components/schemas/message"
+                },
+                "examples": [
+                    [],
+                    [
+                        {
+                            "status": 2,
+                            "message": "<0>Function not found"
+                        }
+                    ]
+                ]
+            },
+            "message_context": {
+                "type": "array",
+                "prefixItems": [
+                    {
+                        "title": "substring",
+                        "type": "string"
+                    },
+                    {
+                        "title": "start position",
+                        "type": "integer"
+                    },
+                    {
+                        "title": "end position",
+                        "type": "integer"
+                    }
+                ]
+            },
+            "minimal_response": {
+                "type": "object",
+                "required": [
+                    "ok"
+                ],
+                "properties": {
+                    "ok": {
+                        "type": "boolean"
+                    },
+                    "message_list": {
+                        "$ref": "#/components/schemas/message_list"
+                    }
+                }
+            },
+            "error_response": {
+                "type": "object",
+                "required": [
+                    "ok"
+                ],
+                "properties": {
+                    "ok": {
+                        "type": "boolean",
+                        "description": "always false"
+                    },
+                    "message_list": {
+                        "$ref": "#/components/schemas/message_list"
+                    },
+                    "status_code": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "pid": {
+                "type": "integer",
+                "description": "Submission ID",
+                "minimum": 1
+            },
+            "mimetype": {
+                "type": "string",
+                "description": "MIME type",
+                "examples": [
+                    "application/pdf",
+                    "image/png"
+                ]
+            },
+            "paper_status": {
+                "type": "string",
+                "description": "Submission status",
+                "examples": [
+                    "draft",
+                    "submitted",
+                    "withdrawn"
+                ]
+            },
+            "rid": {
+                "oneOf": [
+                    {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    {
+                        "type": "string"
+                    }
+                ],
+                "description": "Review ID"
+            },
+            "cid": {
+                "oneOf": [
+                    {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    {
+                        "type": "string",
+                        "examples": [
+                            "new",
+                            "response",
+                            "R2response"
+                        ]
+                    }
+                ],
+                "description": "Comment ID"
+            },
+            "document_name": {
+                "type": "string",
+                "examples": [
+                    "testconf-paper1.pdf"
+                ]
+            },
+            "document_type": {
+                "type": "integer"
+            },
+            "document_id": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Document ID"
+            },
+            "offset_range": {
+                "type": "array",
+                "prefixItems": [
+                    {
+                        "type": "integer",
+                        "description": "First offset"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Last offset"
+                    }
+                ]
+            },
+            "upload_token": {
+                "type": "string",
+                "description": "Token for file upload",
+                "examples": [
+                    "hcupwhvGDVmHNYyDKdqeqA"
+                ]
+            },
+            "hotlist": {
+                "type": "object",
+                "description": "Properties of submission list or user list",
+                "properties": {
+                    "listid": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "urlbase": {
+                        "type": "string"
+                    },
+                    "highlight": {
+                        "type": "boolean"
+                    },
+                    "ids": {
+                        "$ref": "#/components/schemas/encoded_pid_list"
+                    }
+                },
+                "examples": [
+                    {
+                        "listid": "p/s/1-40",
+                        "description": "1-40 in Submitted",
+                        "urlbase": "search?t=s",
+                        "ids": "Q3ihaiilFkB"
+                    }
+                ]
+            },
+            "hotlist_input": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/hotlist"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "digest": {
+                                "type": "string"
+                            },
+                            "curid": {
+                                "type": "integer"
+                            },
+                            "previd": {
+                                "type": "integer"
+                            },
+                            "nextid": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "description": "Properties of submission list or user list"
+            },
+            "encoded_pid_list": {
+                "type": "string",
+                "description": "Encoded list of nonnegative submission IDs",
+                "examples": [
+                    "Q3ihaiilFkB",
+                    "1 2 3-10 5"
+                ]
+            },
+            "encoded_search_parameters": {
+                "type": "string",
+                "description": "URL-encoded search parameters",
+                "examples": [
+                    "q=&t=s&sort=id&forceShow=&report=pl"
+                ]
+            },
+            "search_string": {
+                "type": "string",
+                "description": "Search query",
+                "examples": [
+                    "1-10 OR #ready"
+                ]
+            },
+            "search_collection": {
+                "type": "string",
+                "description": "Collection to search",
+                "examples": [
+                    "s",
+                    "all"
+                ]
+            },
+            "search_qt": {
+                "type": "string",
+                "description": "Search fields"
+            },
+            "search_sort": {
+                "type": "string",
+                "description": "Sort order",
+                "examples": [
+                    "id",
+                    "-title"
+                ]
+            },
+            "search_scoresort": {
+                "type": "string",
+                "description": "Sort order for scores",
+                "examples": [
+                    "counts",
+                    "average"
+                ]
+            },
+            "search_reviewer": {
+                "type": "string",
+                "description": "Email of designated reviewer for search",
+                "examples": [
+                    "pcmember@uhcrp.edu"
+                ]
+            },
+            "search_parameters": {
+                "type": "object",
+                "description": "Search parameters",
+                "required": [
+                    "q"
+                ],
+                "properties": {
+                    "q": {
+                        "$ref": "#/components/schemas/search_string"
+                    },
+                    "t": {
+                        "$ref": "#/components/schemas/search_collection"
+                    },
+                    "qt": {
+                        "$ref": "#/components/schemas/search_qt"
+                    },
+                    "sort": {
+                        "$ref": "#/components/schemas/search_sort"
+                    },
+                    "scoresort": {
+                        "$ref": "#/components/schemas/search_scoresort"
+                    },
+                    "reviewer": {
+                        "$ref": "#/components/schemas/search_reviewer"
+                    }
+                }
+            },
+            "search_parameter_specification": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/encoded_search_parameters"
+                    },
+                    {
+                        "$ref": "#/components/schemas/search_parameters"
+                    }
+                ],
+                "examples": [
+                    "q=",
+                    "{\"q\":\"hello\",\"t\":\"all\"}"
+                ]
+            },
+            "search_response": {
+                "type": "object",
+                "description": "Search result",
+                "properties": {
+                    "ids": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/pid"
+                        }
+                    },
+                    "groups": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/tag_annotation"
+                        }
+                    },
+                    "hotlist": {
+                        "$ref": "#/components/schemas/hotlist"
+                    },
+                    "search_params": {
+                        "$ref": "#/components/schemas/encoded_search_parameters"
+                    }
+                }
+            },
+            "tag": {
+                "type": "string",
+                "description": "Tag",
+                "pattern": "^~?~?[a-zA-Z@*_:.][-+a-zA-Z0-9?!@*_:.\\/]*$",
+                "examples": [
+                    "discuss",
+                    "For_Evaluation",
+                    "~mine"
+                ]
+            },
+            "tag_list": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/tag"
+                },
+                "examples": [
+                    [
+                        "discuss",
+                        "~mine"
+                    ],
+                    []
+                ]
+            },
+            "tag_value": {
+                "type": "string",
+                "description": "Tag with value",
+                "pattern": "^~?~?[a-zA-Z@*_:.][-+a-zA-Z0-9?!@*_:.\\/]*#\\d+\\.?\\d*$",
+                "examples": [
+                    "discuss#0",
+                    "For_Evaluation#2.1",
+                    "~mine#1"
+                ]
+            },
+            "tag_value_list": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/tag_value"
+                },
+                "examples": [
+                    [
+                        "discuss#0",
+                        "~mine#1"
+                    ],
+                    []
+                ]
+            },
+            "tag_response": {
+                "type": "object",
+                "required": [
+                    "pid",
+                    "tags",
+                    "tags_edit_text",
+                    "tags_view_html",
+                    "tag_decoration_html",
+                    "color_classes"
+                ],
+                "properties": {
+                    "pid": {
+                        "$ref": "#/components/schemas/pid"
+                    },
+                    "tags": {
+                        "$ref": "#/components/schemas/tag_value_list"
+                    },
+                    "tags_edit_text": {
+                        "type": "string",
+                        "description": "Textual representation for editing"
+                    },
+                    "tags_view_html": {
+                        "type": "string",
+                        "description": "HTML representation for display"
+                    },
+                    "tag_decoration_html": {
+                        "type": "string",
+                        "description": "HTML representation of badges and emoji"
+                    },
+                    "color_classes": {
+                        "$ref": "#/components/schemas/style_classes"
+                    },
+                    "tags_conflicted": {
+                        "$ref": "#/components/schemas/tag_value_list"
+                    },
+                    "color_classes_conflicted": {
+                        "$ref": "#/components/schemas/style_classes"
+                    }
+                }
+            },
+            "style_classes": {
+                "type": "string",
+                "description": "Space-separated list of tag style classes",
+                "examples": [
+                    "tag-red tagbg",
+                    "",
+                    "tag-rgb-000000 tag-bold dark tagbg"
+                ]
+            },
+            "tag_annotation": {
+                "type": "object",
+                "description": "Annotation for tag or submission group",
+                "required": [
+                    "annoid"
+                ],
+                "properties": {
+                    "pos": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "annoid": {
+                        "type": "integer"
+                    },
+                    "tag": {
+                        "$ref": "#/components/schemas/tag"
+                    },
+                    "tagval": {
+                        "type": "number"
+                    },
+                    "blank": {
+                        "type": "boolean"
+                    },
+                    "legend": {
+                        "type": "string"
+                    }
+                }
+            },
+            "comment_topic": {
+                "type": "string",
+                "enum": [
+                    "paper",
+                    "rev",
+                    "dec"
+                ]
+            },
+            "comment_visibility": {
+                "type": "string",
+                "enum": [
+                    "admin",
+                    "pc",
+                    "rev",
+                    "au"
+                ]
+            },
+            "paper": {
+                "type": "object",
+                "required": [
+                    "object",
+                    "pid",
+                    "status"
+                ],
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "const": "paper"
+                    },
+                    "pid": {
+                        "$ref": "#/components/schemas/pid"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/paper_status"
+                    }
+                }
+            },
+            "comment": {
+                "type": "object",
+                "required": [
+                    "object",
+                    "pid",
+                    "cid"
+                ],
+                "properties": {
+                    "object": {
+                        "type": "string",
+                        "const": "comment"
+                    },
+                    "pid": {
+                        "$ref": "#/components/schemas/pid"
+                    },
+                    "cid": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "ordinal": {
+                        "type": "string"
+                    },
+                    "editable": {
+                        "type": "boolean"
+                    },
+                    "viewer_owned": {
+                        "type": "boolean"
+                    },
+                    "visibility": {
+                        "$ref": "#/components/schemas/comment_visibility"
+                    },
+                    "topic": {
+                        "$ref": "#/components/schemas/comment_topic"
+                    },
+                    "blind": {
+                        "type": "boolean"
+                    },
+                    "draft": {
+                        "type": "boolean"
+                    },
+                    "collapsed": {
+                        "type": "boolean"
+                    },
+                    "response": {
+                        "type": "string"
+                    },
+                    "author_editable": {
+                        "type": "boolean"
+                    },
+                    "by_author": {
+                        "type": "boolean"
+                    },
+                    "by_shepherd": {
+                        "type": "boolean"
+                    },
+                    "format": {
+                        "type": "integer"
+                    },
+                    "review_token": {
+                        "type": "string"
+                    },
+                    "tags": {
+                        "type": "string"
+                    },
+                    "color_classes": {
+                        "$ref": "#/components/schemas/style_classes"
+                    },
+                    "author": {
+                        "type": "string"
+                    },
+                    "author_email": {
+                        "type": "string"
+                    },
+                    "author_hidden": {
+                        "type": "boolean"
+                    },
+                    "author_pseudonym": {
+                        "type": "string"
+                    },
+                    "author_pseudonymous": {
+                        "type": "boolean"
+                    },
+                    "modified_at": {
+                        "type": "integer"
+                    },
+                    "modified_at_obscured": {
+                        "type": "boolean"
+                    },
+                    "modified_at_text": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    },
+                    "docs": {
+                        "type": "array",
+                        "items": {}
+                    },
+                    "word_count": {
+                        "type": "integer"
+                    }
+                },
+                "description": "Comment representation"
+            }
+        },
+        "securitySchemes": {
+            "apiToken": {
+                "type": "http",
+                "scheme": "bearer",
+                "description": "API token created via Profile > Developer"
+            },
+            "session": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "hotcrpsession",
+                "description": "Web sessions use a cookie. The name of the cookie varies by installation; `hotcrpcookie` is used on hotcrp.com. Operations other than GET and HEAD also require a `post` query parameter"
+            }
+        }
+    },
+    "tags": [],
+    "security": [
+        {
+            "apiToken": [],
+            "session": []
+        }
+    ]
+}

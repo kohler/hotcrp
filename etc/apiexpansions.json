@@ -28,6 +28,10 @@
     "tags": ["Submission administration"]
   },
   {
+    "name": "assigntags", "post": true, "merge": true,
+    "tags": ["Tags"]
+  },
+  {
     "name": "decision", "get": true, "merge": true,
     "tags": ["Submission administration"]
   },
@@ -70,6 +74,10 @@
   {
     "name": "fieldhtml", "get": true, "merge": true,
     "tags": ["Search"], "order": 1
+  },
+  {
+    "name": "searchaction", "get": true, "merge": true,
+    "tags": ["Search"]
   },
   {
     "name": "fieldtext", "get": true, "merge": true,
