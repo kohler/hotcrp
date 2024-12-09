@@ -72,6 +72,6 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
     }
 
     static function completions(Contact $user, $xfj) {
-        return ["graph(<formula>)"];
+        return ["graph({formula})"];
     }
 }

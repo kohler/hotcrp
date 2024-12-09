@@ -3916,6 +3916,10 @@ a.badge-white:hover {
 	padding-left: 0.5em;
 	opacity: 0.5;
 }
+.s9ta {
+	font-style: italic;
+	font-weight: 300;
+}
 
 /* bubbles */
 .bubble {

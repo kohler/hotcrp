@@ -212,7 +212,7 @@ class Formula_PaperColumnFactory {
         return null;
     }
     static function completions(Contact $user, $fxt) {
-        $cs = ["(<formula>)"];
+        $cs = ["({formula})"];
         foreach ($user->conf->named_formulas() as $f) {
             if ($user->can_view_formula($f)) {
                 $cs[] = preg_match('/\A[-A-Za-z_0-9:]+\z/', $f->name) ? $f->name : "\"{$f->name}\"";

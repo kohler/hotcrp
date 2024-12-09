@@ -273,7 +273,7 @@ class Tag_PaperColumn extends PaperColumn {
 
     static function completions(Contact $user, $xfj) {
         if ($user->can_view_tags(null)) {
-            return ["#<tag>"];
+            return ["#{tag}"];
         } else {
             return [];
         }

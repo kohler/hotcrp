@@ -1022,11 +1022,28 @@ function unparse_byte_size_binary(n) {
         return "0B";
 }
 
-var strnatcasecmp = (function () {
+const strnatcasecmp = (function () {
 try {
-    var collator = new Intl.Collator(undefined, {sensitivity: "accent", numeric: true, ignorePunctuation: true});
+    let collator = new Intl.Collator(undefined, {sensitivity: "accent", numeric: true, ignorePunctuation: true});
     return function (a, b) {
-        var cmp = collator.compare(a, b);
+        let cmp = collator.compare(a, b);
+        if (cmp === 0 && a !== b) {
+            cmp = a < b ? -1 : 1;
+        }
+        return cmp;
+    };
+} catch (e) {
+    return function (a, b) {
+        return a < b ? -1 : (a === b ? 0 : 1);
+    };
+}
+})();
+
+const strcasecmp_id = (function () {
+try {
+    let collator = new Intl.Collator(undefined, {sensitivity: "accent", numeric: true});
+    return function (a, b) {
+        let cmp = collator.compare(a, b);
         if (cmp === 0 && a !== b) {
             cmp = a < b ? -1 : 1;
         }
@@ -8141,8 +8158,8 @@ demand_load.search_completion = demand_load.make(function (resolve) {
         $.each(sci, function (index, item) {
             $.isArray(item.i) || (item.i = [item.i]);
             item.nosort || item.i.sort(function (a, b) {
-                var ai = completion_item(a), bi = completion_item(b);
-                return strnatcasecmp(ai.s, bi.s);
+                const ai = completion_item(a), bi = completion_item(b);
+                return strcasecmp_id(ai.s, bi.s);
             });
             Array.prototype.push.apply(result, item.i);
         });
@@ -8509,28 +8526,47 @@ function suggest() {
     }
 
     function render_item(titem, prepend) {
-        var node = document.createElement("div");
+        let node = document.createElement("div");
         node.className = titem.no_space ? "suggestion s9nsp" : "suggestion";
-        if (titem.r)
+        if (titem.r) {
             node.setAttribute("data-replacement", titem.r);
+        }
         if (titem.sh) {
             node.innerHTML = titem.sh;
-        } else if (titem.d || titem.dh || prepend) {
-            if (prepend) {
-                node.appendChild($e("span", "s9p", prepend));
+            return node;
+        }
+        let s = titem.s;
+        const lb = s.indexOf("{");
+        if (lb >= 0) {
+            const rb = s.indexOf("}", lb + 1), frag = document.createDocumentFragment();
+            if (lb > 0) {
+                frag.append(s.substring(0, lb));
             }
-            node.appendChild($e("span", "s9t", titem.s));
-            if (titem.d || titem.dh) {
-                var s9d = document.createElement("span");
-                s9d.className = "s9d";
-                if (titem.dh)
-                    s9d.innerHTML = titem.dh;
-                else
-                    s9d.append(titem.d)
-                node.appendChild(s9d);
+            if (rb > lb + 1) {
+                frag.append($e("span", "s9ta", s.substring(lb + 1, rb)));
             }
-        } else {
-            node.append(titem.s);
+            if (rb > 0 && rb + 1 < s.length) {
+                frag.append(s.substring(rb + 1));
+            }
+            s = frag;
+        }
+        if (!titem.d && !titem.dh && !prepend) {
+            node.append(s);
+            return node;
+        }
+        if (prepend) {
+            node.appendChild($e("span", "s9p", prepend));
+        }
+        node.appendChild($e("span", "s9t", s));
+        if (titem.d || titem.dh) {
+            var s9d = document.createElement("span");
+            s9d.className = "s9d";
+            if (titem.dh) {
+                s9d.innerHTML = titem.dh;
+            } else {
+                s9d.append(titem.d)
+            }
+            node.appendChild(s9d);
         }
         return node;
     }
@@ -9640,7 +9676,7 @@ function tagannorow_add(tfacet, tbody, before, anno) {
     if (anno.tag && anno.annoid) {
         const dra = facet_tablelist(tfacet).getAttribute("data-drag-action") || "";
         if (dra.startsWith("tagval:")
-            && strnatcasecmp(dra, "tagval:" + tag_canonicalize(anno.tag)) === 0) {
+            && strcasecmp_id(dra, "tagval:" + tag_canonicalize(anno.tag)) === 0) {
             add_draghandle(tr);
         }
     }
@@ -10003,7 +10039,7 @@ function taganno_success(rv) {
         return;
     $(".pltable").each(function () {
         var tblsort = hoturl_search(tablelist_search(this), "sort");
-        if (!tblsort || strnatcasecmp(tblsort, "#" + rv.tag) !== 0) {
+        if (!tblsort || strcasecmp_id(tblsort, "#" + rv.tag) !== 0) {
             return;
         }
         var groups = [], cur = this.tBodies[0].firstChild, pos = 0, annoi = 0;
@@ -10807,7 +10843,7 @@ function vcolumn_order_compare(f1, f2) {
     if (o1 != o2) {
         return o1 < o2 ? -1 : 1;
     }
-    return strnatcasecmp(f1.name, f2.name);
+    return strcasecmp_id(f1.name, f2.name);
 }
 Plist.prototype.add_field = function (f, append) {
     var j;
@@ -11135,7 +11171,7 @@ function render_tagset(plistui, tagstr, editable) {
         }
     }
     t.sort(function (a, b) {
-        return strnatcasecmp(a[1], b[1]);
+        return strcasecmp_id(a[1], b[1]);
     });
     if (t.length === 0) {
         return editable ? document.createTextNode("none") : null;

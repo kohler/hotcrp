@@ -238,7 +238,7 @@ class Attachments_PaperOption extends PaperOption {
                 new FmtArg("comparator", ">2", 0)
             ),
             new SearchExample(
-                $this, $this->search_keyword() . ":\"{filename}\"",
+                $this, $this->search_keyword() . ":{filename}",
                 "<0>submission has {title} attachment matching ‘{filename}’",
                 new FmtArg("filename", "*.gif", 0)
             )
