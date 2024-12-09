@@ -234,6 +234,12 @@ class PaperSearch extends MessageSet {
     ];
 
 
+    /** @param Qrequest $qreq
+     * @return array<string,mixed> */
+    static function qreq_subset($qreq) {
+        return $qreq->subset_as_array("q", "t", "qt", "reviewer", "sort", "scoresort");
+    }
+
     // NB: `$options` can come from an unsanitized user request.
     /** @param string|array|Qrequest $options */
     function __construct(Contact $user, $options) {

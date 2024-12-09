@@ -27,16 +27,16 @@ can see them.
 
 > Create or modify submission
 
-This endpoint modifies a specified submission. The `p` parameter determines
-the submission ID. Setting `p=new` will create a new submission; the response
-will contain the chosen submission ID.
+This endpoint modifies the submission specified by the `p` parameter. Setting
+`p=new` will create a new submission; the response will contain the chosen
+submission ID.
 
 Modifications are specified using a JSON object. There are three ways to
 provide that JSON, depending on the content-type of the request:
 
-1. As a request body with content-type `application/json`.
-2. As a file named `data.json` in a ZIP archive. The request body has
-   content-type `application/zip`.
+1. As a JSON request body with content-type `application/json`.
+2. In a ZIP archive request body with content-type `application/zip`, as a
+   file named `data.json`.
 3. As a parameter named `json` in a normal `application/x-www-form-urlencoded`
    or `multipart/form-data` body.
 

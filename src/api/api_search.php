@@ -1,33 +1,39 @@
 <?php
 // api_search.php -- HotCRP search-related API calls
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
 
 class Search_API {
-    /** @return JsonResult|PaperList */
-    static function make_list(Contact $user, Qrequest $qreq) {
-        $q = $qreq->q;
-        if (isset($q)) {
-            $q = trim($q);
-            if ($q === "(All)") {
-                $q = "";
+    /** @return JsonResult|PaperSearch */
+    static private function make_search(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
+        $sq = PaperSearch::qreq_subset($qreq);
+        if (!isset($sq["q"])) {
+            if ($prow) {
+                $sq["q"] = (string) $prow->paperId;
+                $sq["t"] = "viewable";
+            } else if (isset($qreq->qa) || isset($qreq->qo) || isset($qreq->qx)) {
+                $sq["q"] = PaperSearch::canonical_query((string) $qreq->qa, (string) $qreq->qo, (string) $qreq->qx, $qreq->qt, $user->conf);
+            } else {
+                return JsonResult::make_missing_error("q");
             }
-        } else if (isset($qreq->qa) || isset($qreq->qo) || isset($qreq->qx)) {
-            $q = PaperSearch::canonical_query((string) $qreq->qa, (string) $qreq->qo, (string) $qreq->qx, $qreq->qt, $user->conf);
-        } else {
-            return JsonResult::make_missing_error("q");
         }
+        $search = new PaperSearch($user, $sq);
+        if (friendly_boolean($qreq->warn_missing)) {
+            $search->set_warn_missing(true);
+        }
+        return $search;
+    }
 
-        $search = new PaperSearch($user, [
-            "t" => $qreq->t ?? "",
-            "q" => $q,
-            "qt" => $qreq->qt,
-            "reviewer" => $qreq->reviewer,
-            "sort" => $qreq->sort,
-            "scoresort" => $qreq->scoresort
-        ]);
+    /** @return JsonResult|PaperList */
+    static private function make_list(Contact $user, Qrequest $qreq) {
+        $search = self::make_search($user, $qreq, null);
+        if ($search instanceof JsonResult) {
+            return $search;
+        }
         $pl = new PaperList($qreq->report ? : "pl", $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default();
-        $pl->apply_view_session($qreq);
+        if (friendly_boolean($qreq->session) !== false) {
+            $pl->apply_view_session($qreq);
+        }
         return $pl;
     }
 
@@ -40,6 +46,7 @@ class Search_API {
         $ih = $pl->ids_and_groups();
         return new JsonResult([
             "ok" => true,
+            "message_list" => $pl->search->message_list(),
             "ids" => $ih[0],
             "groups" => $ih[1],
             "hotlist" => $pl->session_list_object()->info_string(),
@@ -76,17 +83,13 @@ class Search_API {
         if ($qreq->f === null) {
             return JsonResult::make_missing_error("f");
         }
-        if (!isset($qreq->q) && $prow) {
-            $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
-            $qreq->q = $prow->paperId;
-        } else if (!isset($qreq->q)) {
-            $qreq->q = "";
+        $search = self::make_search($user, $qreq, $prow);
+        if ($search instanceof JsonResult) {
+            return $search;
         }
-
-        $search = new PaperSearch($user, $qreq);
         $pl = new PaperList("empty", $search);
-        if (isset($qreq->aufull)) {
-            $pl->set_view("aufull", (bool) $qreq->aufull, PaperList::VIEWORIGIN_SESSION);
+        if (($aufull = friendly_boolean($qreq->aufull)) !== null) {
+            $pl->set_view("aufull", $aufull, PaperList::VIEWORIGIN_SESSION);
         }
         $pl->parse_view($qreq->f, PaperList::VIEWORIGIN_MAX);
         $response = $pl->table_html_json();
@@ -95,7 +98,11 @@ class Search_API {
             "ok" => !empty($response["fields"]),
             "message_list" => $pl->message_set()->message_list()
         ] + $response;
-        if ($j["ok"] && $qreq->session && $qreq->valid_token() && !$qreq->is_head()) {
+        if ($j["ok"]
+            && $qreq->session
+            && $qreq->valid_token()
+            && !$qreq->is_head()
+            && friendly_boolean($qreq->session) === null) {
             Session_API::change_session($qreq, $qreq->session);
         }
         return $j;
@@ -105,17 +112,14 @@ class Search_API {
         if ($qreq->f === null) {
             return JsonResult::make_missing_error("f");
         }
-
-        if (!isset($qreq->q) && $prow) {
-            $qreq->t = $prow->timeSubmitted > 0 ? "s" : "all";
-            $qreq->q = $prow->paperId;
-        } else if (!isset($qreq->q)) {
-            $qreq->q = "";
+        $search = self::make_search($user, $qreq, $prow);
+        if ($search instanceof JsonResult) {
+            return $search;
         }
-        $search = new PaperSearch($user, $qreq);
         $pl = new PaperList("empty", $search);
         $pl->parse_view($qreq->f, PaperList::VIEWORIGIN_MAX);
         $response = $pl->text_json();
+
         return [
             "ok" => !empty($response),
             "message_list" => $pl->message_set()->message_list(),
@@ -124,9 +128,7 @@ class Search_API {
     }
 
     static function searchaction(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
-        if ($qreq->is_get() && ($qreq->action ?? "") === "") {
-            return self::searchaction_list($user);
-        } else if (($qreq->action ?? "") === "") {
+        if (($qreq->action ?? "") === "") {
             return JsonResult::make_missing_error("action");
         }
         $qreq->p = $qreq->p ?? "all";
@@ -138,7 +140,7 @@ class Search_API {
         return ListAction::resolve_document($action, $qreq);
     }
 
-    static function searchaction_list(Contact $user) {
+    static function searchactions(Contact $user) {
         $fjs = [];
         $cs = ListAction::components($user);
         foreach ($cs->members("") as $rf) {

@@ -264,13 +264,18 @@
     {
         "name": "search", "get": true,
         "function": "Search_API::search",
-        "parameters": "q ?t ?qt ?sort ?report ?scoresort ?reviewer",
+        "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing",
         "response": "ids groups hotlist search_params"
+    },
+    {
+        "name": "searchactions", "get": true,
+        "function": "Search_API::searchactions",
+        "response": "actions"
     },
     {
         "name": "searchaction", "get": true,
         "function": "Search_API::searchaction",
-        "parameters": "?action q ?t ?qt ?sort ?report ?scoresort ?reviewer ?pap[]"
+        "parameters": "?action q ?t ?qt ?sort ?report ?scoresort ?reviewer ?p"
     },
     {
         "name": "searchcompletion", "get": true,

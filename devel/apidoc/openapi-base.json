@@ -514,6 +514,7 @@
             },
             "tag_list": {
                 "type": "array",
+                "description": "List of tag names",
                 "items": {
                     "$ref": "#/components/schemas/tag"
                 },
@@ -537,6 +538,7 @@
             },
             "tag_value_list": {
                 "type": "array",
+                "description": "List of tag names with values",
                 "items": {
                     "$ref": "#/components/schemas/tag_value"
                 },
@@ -606,7 +608,8 @@
                 "properties": {
                     "pos": {
                         "type": "integer",
-                        "minimum": 0
+                        "minimum": 0,
+                        "description": "Position of annotation in associated submission list"
                     },
                     "annoid": {
                         "type": "integer"

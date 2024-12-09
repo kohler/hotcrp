@@ -11,7 +11,7 @@ issue](https://github.com/kohler/hotcrp/issues). We also welcome [pull
 requests](https://github.com/kohler/hotcrp/pulls).
 
 
-## Basics
+## Overview
 
 HotCRP parameters are generally provided using [form
 encoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),
@@ -22,8 +22,8 @@ for requests that include uploaded files.
 
 The common `p` parameter defines a submission ID. It can appear either in the
 query string or immediately following `api/` in the query path:
-`api/comment?p=1` and `api/1/comment` are the same API call. `p` is a decimal
-number greater than 0, but some API calls accept `p=new` when defining a new
+`api/comment?p=1` and `api/1/comment` are the same API call. `p` is a positive
+decimal integer, but some API calls accept `p=new` when defining a new
 submission.
 
 Responses are formatted as JSON. Every response has an `ok` property; `ok` is
@@ -36,9 +36,10 @@ deleting a comment uses a `delete=1` parameter for a `POST` request, rather
 than a `DELETE` request.
 
 
-## Authentication
+### Authentication
 
-External applications should authenticate to HotCRP’s API using bearer tokens.
-Obtain an API token using Account settings > Developer.
+External applications should authenticate to HotCRP’s API using bearer tokens
+(an `Authorization: bearer` HTTP header). Obtain an API token using Account
+settings > Developer.
 
 HotCRP Javascript makes API calls using session cookies for authentication.

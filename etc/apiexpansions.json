@@ -76,12 +76,16 @@
     "tags": ["Search"], "order": 1
   },
   {
-    "name": "searchaction", "get": true, "merge": true,
-    "tags": ["Search"]
+    "name": "fieldtext", "get": true, "merge": true,
+    "tags": ["Search"], "order": 2
   },
   {
-    "name": "fieldtext", "get": true, "merge": true,
-    "tags": ["Search"]
+    "name": "searchactions", "get": true, "merge": true,
+    "tags": ["Search"], "order": 3
+  },
+  {
+    "name": "searchaction", "get": true, "merge": true,
+    "tags": ["Search"], "order": 4
   },
   {
     "name": "graphdata", "get": true, "merge": true,
