@@ -1,14 +1,16 @@
 {
     "openapi": "3.1.0",
     "info": {
-        "title": "HotCRP",
-        "version": "0.1",
-        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\n\nWe welcome [pull requests](https://github.com/kohler/hotcrp/pulls) that fill\nout this documentation. To request documentation for an API method, please\nopen a [GitHub issue](https://github.com/kohler/hotcrp/issues).\n\n## Basics\n\nHotCRP reads parameters using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),\neither in query strings or in the request body. Complex requests either use\nstructured keys, such as `named_search/1/q`, or, occasionally, parameters\nencoded as JSON. Use `multipart/form-data` for requests that include uploaded\nfiles.\n\nThe `p` parameter, which defines a submission ID, can appear either in the\nquery string or immediately following `api/` in the query path.\n`api/comment?p=1` and `api/1/comment` are the same API call. `p` is generally\na decimal number greater than 0.\n\nResponses are formatted as JSON. Every response has an `ok` property; `ok` is\n`true` if the request succeeded and `false` otherwise. Messages about the\nrequest, if any, are expressed in a `message_list` property.\n",
-        "summary": "HotCRP conference management software API"
+        "title": "HotCRP REST API",
+        "version": "2024-12-09:3e7badc40",
+        "summary": "HotCRP conference management software API",
+        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST-like API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Basics\n\nHotCRP parameters are generally provided using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),\neither in query strings or in the request body. Some parameters are formatted\nas JSON. Complex requests generally use structured keys, such as\n`named_search/1/q`. Use `multipart/form-data`\nfor requests that include uploaded files.\n\nThe common `p` parameter defines a submission ID. It can appear either in the\nquery string or immediately following `api/` in the query path:\n`api/comment?p=1` and `api/1/comment` are the same API call. `p` is a decimal\nnumber greater than 0, but some API calls accept `p=new` when defining a new\nsubmission.\n\nResponses are formatted as JSON. Every response has an `ok` property; `ok` is\n`true` if the request succeeded and `false` otherwise. Messages about the\nrequest, if any, are expressed in a `message_list` property.\n\nThe `GET` method is used to retrieve information and the `POST` method to\nmodify information. Other methods are generally not used; for instance,\ndeleting a comment uses a `delete=1` parameter for a `POST` request, rather\nthan a `DELETE` request.\n\n\n## Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens.\nObtain an API token using Account settings > Developer.\n\nHotCRP Javascript makes API calls using session cookies for authentication.\n"
     },
     "paths": {
         "/paper": {
             "get": {
+                "summary": "Retrieve submission",
+                "description": "This endpoint retrieves JSON-formatted information about a submission. All\nvisible information about submission fields, tags, and overall status are\nreturned in as the response’s `paper` property. Error messages—for instance,\nabout permission errors or nonexistent submissions—are returned in\n`message_list`.\n\nThe returned `paper` property is a submission object. Submission objects are\nformatted based on the submission form. Every paper object has an `object`\nproperty set to `\"paper\"`, a `pid`, and a `status`. Other properties are\nprovided based on which submission fields exist and whether the accessing user\ncan see them.\n",
                 "tags": [
                     "Submissions"
                 ],
@@ -39,8 +41,9 @@
                                         {
                                             "type": "object",
                                             "properties": {
-                                                "paper": {},
-                                                "dry_run": {}
+                                                "paper": {
+                                                    "$ref": "#/components/schemas/paper"
+                                                }
                                             }
                                         }
                                     ]
@@ -58,11 +61,11 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve submission",
-                "description": "This endpoint retrieves JSON-formatted information about a submission. All\nvisible information about submission fields, tags, and overall status are\nreturned in as the response’s `paper` property. Error messages—for instance,\nabout permission errors or nonexistent submissions—are returned in\n`message_list`.\n\nThe returned `paper` property is a submission object. Submission objects are\nformatted based on the submission form. Every paper object has an `object`\nproperty set to `\"paper\"`, a `pid`, and a `status`. Other properties are\nprovided based on which submission fields exist and whether the accessing user\ncan see them.\n"
+                }
             },
             "post": {
+                "summary": "Create or modify submission",
+                "description": "This endpoint modifies a specified submission. The `p` parameter determines\nthe submission ID. Setting `p=new` will create a new submission; the response\nwill contain the chosen submission ID.\n\nModifications are specified using a JSON object. There are three ways to\nprovide that JSON, depending on the content-type of the request:\n\n1. As a request body with content-type `application/json`.\n2. As a file named `data.json` in a ZIP archive. The request body has\n   content-type `application/zip`.\n3. As a parameter named `json` in a normal `application/x-www-form-urlencoded`\n   or `multipart/form-data` body.\n\nHowever it is provided, the JSON must define an object interpretable as a\nsubmission (or a subset of a submission). The properties of this object define\nthe modifications to be applied to the submission.\n\nThe `p` parameter is optional; if unset, HotCRP uses the `pid` from the\nsupplied JSON. If the `p` parameter and the JSON `pid` property are both\npresent, then they must match.\n\nTo test a modification, supply a `dry_run=1` parameter. This will test the\nuploaded JSON but make no changes to the database.\n\n\n### ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n### Responses\n\nIf the modification succeeds, the response’s `paper` property contains the\nmodified submission object.\n\nThe `change_list` property is a list of names of the modified fields. New\nsubmissions have `\"pid\"` as the first item in the list. `change_list` contains\nfields that the request *attempted* to modify; successful requests, erroneous\nrequests, and dry-run requests can all return nonempty `change_list`s.\n\nThe `valid` property is `true` if and only if the modification was valid. In\nnon-dry-run requests, `valid: true` indicates that database changes were\ncommitted.\n\nDry-run requests return `change_list` and `valid` properties, but not `paper`\nproperties, since no modifications are performed.\n\n\n### Administrator use\n\nAdministrators can use this endpoint to set some submission properties, such\nas `decision`, that have other endpoints as well.\n\nAdministrators can choose specific IDs for new submissions; just set `p` (or\nJSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the JSON’s `status`.`if_unmodified_since` to `0`.\n",
                 "tags": [
                     "Submissions"
                 ],
@@ -112,7 +115,7 @@
                     {
                         "name": "json",
                         "in": "query",
-                        "required": true,
+                        "required": false,
                         "schema": {
                             "type": "string"
                         }
@@ -167,13 +170,16 @@
                             }
                         }
                     }
-                },
-                "summary": "Create or modify submission",
-                "description": "This endpoint modifies a specified submission. The `p` parameter determines\nthe submission ID. Setting `p=new` will create a new submission; the response\nwill contain the chosen submission ID.\n\nModifications are specified using a JSON object. There are three ways to\nprovide that JSON, depending on the content-type of the request:\n\n1. As a request body with content-type `application/json`.\n2. As a file named `data.json` in a ZIP archive. The request body has\n   content-type `application/zip`.\n3. As a parameter named `json` in a normal `application/x-www-form-urlencoded`\n   or `multipart/form-data` body.\n\nHowever it is provided, the JSON must define an object interpretable as a\nsubmission (or a subset of a submission). The properties of this object define\nthe modifications to be applied to the submission.\n\nThe `p` parameter is optional; if unset, HotCRP uses the `pid` from the\nsupplied JSON. If the `p` parameter and the JSON `pid` property are both\npresent, then they must match.\n\nTo test a modification, supply a `dry_run=1` parameter. This will test the\nuploaded JSON but make no changes to the database.\n\n\n### ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Attachment fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n### Responses\n\nIf the modification succeeds, the response’s `paper` property contains the\nmodified submission object.\n\nThe `change_list` property is a list of names of the modified fields. New\nsubmissions have `\"pid\"` as the first item in the list. `change_list` contains\nfields that the request *attempted* to modify; successful requests, erroneous\nrequests, and dry-run requests can all return nonempty `change_list`s.\n\nThe `valid` property is `true` if and only if the modification was valid. In\nnon-dry-run requests, `valid: true` indicates that database changes were\ncommitted.\n\nDry-run requests return `change_list` and `valid` properties, but not `paper`\nproperties, since no modifications are performed.\n\n\n### Administrator use\n\nAdministrators can use this endpoint to set some submission properties, such\nas `decision`, that have other endpoints as well.\n\nAdministrators can upload new submissions with chosen IDs by setting `p` (or\nJSON `pid`) to the chosen ID. This will either overwrite an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the JSON `status.if_unmodified_since` property to\n`0`. (That is, the submission JSON should have a `status` property, formatted\nas an object, whose `if_unmodified_since` property is `0`.)\n"
+                }
             }
         },
         "/papers": {
             "get": {
+                "summary": "Retrieve multiple submissions",
+                "description": "This endpoint retrieves JSON-formatted information about multiple submissions\nbased on a search. The search is specified in the `q` parameter; all matching\nvisible papers are returned. Other search parameters (`t`, `qt`) are accepted\ntoo. The response property `papers` is an array of matching submission objects.\n\nSince searches silently filter out non-viewable submissions, `/papers?q=1010`\nand `/paper?p=1010` can return different error messages. The `/paper` request\nmight return an error like `Submission #1010 does not exist` or `You aren’t\nallowed to view submission #10110`, whereas the `/papers` request will return\nno errors. To obtain warnings for missing submissions that were explicitly\nlisted in a query, supply a `warn_missing=1` parameter.\n",
+                "tags": [
+                    "Submissions"
+                ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/q"
@@ -194,9 +200,6 @@
                         "$ref": "#/components/parameters/reviewer"
                     },
                     {
-                        "$ref": "#/components/parameters/forceShow"
-                    },
-                    {
                         "name": "warn_missing",
                         "in": "query",
                         "required": false,
@@ -204,6 +207,9 @@
                             "type": "boolean"
                         },
                         "description": "Get warnings for missing submissions"
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow"
                     }
                 ],
                 "responses": {
@@ -219,7 +225,12 @@
                                         {
                                             "type": "object",
                                             "properties": {
-                                                "papers": {}
+                                                "papers": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/paper"
+                                                    }
+                                                }
                                             }
                                         }
                                     ]
@@ -237,15 +248,23 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve multiple submissions",
-                "description": "This endpoint retrieves JSON-formatted information about multiple submissions\nbased on a search. The search is specified in the `q` parameter; all matching\nvisible papers are returned. Other search parameters (`t`, `qt`) are accepted\ntoo. The response property `papers` is an array of matching submission objects.\n\nSince searches silently filter out non-viewable submissions, `/papers?q=1010`\nand `/paper?p=1010` can return different error messages. The `/paper` request\nmight return an error like `Submission #1010 does not exist` or `You aren’t\nallowed to view submission #10110`, whereas the `/papers` request will return\nno errors. To obtain warnings for missing submissions that were explicitly\nlisted in a query, supply a `warn_missing=1` parameter.\n",
-                "tags": [
-                    "Submissions"
-                ]
+                }
             },
             "post": {
+                "summary": "Create or modify multiple submissions",
+                "description": "This administrator-only endpoint modifies multiple submissions at once. Its\nrequest formats are similar to that of `POST /{p}/paper`: it can accept a\nJSON, ZIP, or form-encoded request body with a `json` parameter, and ZIP and\nform-encoded requests can also include attached files.\n\nThe JSON provided for `/papers` should be an *array* of JSON objects. Response\nproperties `papers`, `change_lists`, and `valid` are arrays with the same\nnumber of elements as the input JSON; component *i* of each response property\ncontains the result for the *i*th submission object in the input JSON.\n\nAlternately, you can provide a `q` search query parameter and a *single* JSON\nobject. The JSON object must not have a `pid` property. The JSON modification\nwill be applied to all papers returned by the `q` search query.\n\nThe response `message_list` contains messages relating to all modified\nsubmissions. To filter out the messages for a single submission, use the\nmessages’ `landmark` properties. `landmark` is set to the integer index of the\nrelevant submission in the input JSON.\n\n",
+                "tags": [
+                    "Submissions"
+                ],
                 "parameters": [
+                    {
+                        "name": "json",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     {
                         "name": "dry_run",
                         "in": "query",
@@ -286,21 +305,13 @@
                         "$ref": "#/components/parameters/forceShow"
                     },
                     {
-                        "name": "json",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "q",
                         "in": "query",
                         "required": false,
-                        "description": "Search query for match requests",
                         "schema": {
                             "$ref": "#/components/schemas/search_string"
-                        }
+                        },
+                        "description": "Search query for match requests"
                     },
                     {
                         "name": "t",
@@ -344,13 +355,6 @@
                                                     },
                                                     "description": "List of JSON versions of modified papers"
                                                 },
-                                                "valid": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "boolean"
-                                                    },
-                                                    "description": "List of validity checks"
-                                                },
                                                 "dry_run": {
                                                     "type": "boolean",
                                                     "description": "True for `dry_run` requests"
@@ -364,6 +368,13 @@
                                                         }
                                                     },
                                                     "description": "List of lists of changed fields"
+                                                },
+                                                "valid": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "description": "List of validity checks"
                                                 }
                                             }
                                         }
@@ -382,20 +393,19 @@
                             }
                         }
                     }
-                },
-                "summary": "Create or modify multiple submissions",
-                "description": "This administrator-only endpoint modifies multiple submissions at once. Its\nrequest formats are similar to that of `POST /{p}/paper`: it can accept a\nJSON, ZIP, or form-encoded request body with a `json` parameter, and ZIP and\nform-encoded requests can also include attached files.\n\nThe JSON provided for `/papers` should be an *array* of JSON objects. Response\nproperties `papers`, `change_lists`, and `valid` are arrays with the same\nnumber of elements as the input JSON; component *i* of each response property\ncontains the result for the *i*th submission object in the input JSON.\n\nAlternately, you can provide a `q` search query parameter and a *single* JSON\nobject. The JSON object must not have a `pid` property. The JSON modification\nwill be applied to all papers returned by the `q` search query.\n\nThe response `message_list` contains messages relating to all modified\nsubmissions. To filter out the messages for a single submission, use the\nmessages’ `landmark` properties. `landmark` is set to the integer index of the\nrelevant submission in the input JSON.\n\n",
-                "tags": [
-                    "Submissions"
-                ]
+                }
             }
         },
         "/formatcheck": {
             "get": {
+                "summary": "Check PDF format",
                 "tags": [
                     "Documents"
                 ],
                 "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.opt"
+                    },
                     {
                         "name": "doc",
                         "in": "query",
@@ -427,9 +437,6 @@
                         "schema": {
                             "$ref": "#/components/schemas/document_id"
                         }
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "responses": {
@@ -474,17 +481,20 @@
                             }
                         }
                     }
-                },
-                "summary": "Check PDF format"
+                }
             }
         },
         "/upload": {
             "post": {
-                "operationId": "upload",
+                "summary": "Upload file",
+                "description": "The `POST /upload` endpoint uploads documents to the server. It is intended\nfor large documents, and can upload a file over multiple requests, each\ncontaining a slice of the data.\n\nTo start an upload, set `start=1` and include the `size` of the whole uploaded\nfile. The response will include a `token` field, a string like\n`hcupwhvGDVmHNYyDKdqeqA` that identifies the upload in progress. All further\nrequests for the upload must include the `token` as parameter.\n\nEach request adds a chunk of data to the upload. The `offset` parameter gives\nthe byte offset of the uploaded chunk; the `blob` attachment parameter\ncontains the chunk itself. The request that completes the upload should set\n`finish=1`; this request will fail unless all chunks have been received.\n\nThe `ranges` response field represents the ranges of bytes received so far.\nThe response to a `finish=1` request will include a `hash` field, which is the\nhash of the uploaded document.\n\nThe upload API is only available on sites that have enabled the document\nstore.\n",
                 "tags": [
                     "Documents"
                 ],
                 "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.opt"
+                    },
                     {
                         "name": "dtype",
                         "in": "query",
@@ -505,21 +515,21 @@
                         "name": "offset",
                         "in": "query",
                         "required": false,
-                        "description": "Offset of `blob` in uploaded file",
                         "schema": {
                             "type": "integer",
                             "minimum": 0
-                        }
+                        },
+                        "description": "Offset of `blob` in uploaded file"
                     },
                     {
                         "name": "size",
                         "in": "query",
                         "required": false,
-                        "description": "Size of uploaded file",
                         "schema": {
                             "type": "integer",
                             "minimum": 0
-                        }
+                        },
+                        "description": "Size of uploaded file"
                     },
                     {
                         "name": "finish",
@@ -544,9 +554,6 @@
                         "schema": {
                             "type": "boolean"
                         }
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "requestBody": {
@@ -603,17 +610,7 @@
                                                 "ranges": {
                                                     "type": "array",
                                                     "items": {
-                                                        "type": "array",
-                                                        "prefixItems": [
-                                                            {
-                                                                "type": "integer",
-                                                                "description": "First offset"
-                                                            },
-                                                            {
-                                                                "type": "integer",
-                                                                "description": "Last offset"
-                                                            }
-                                                        ]
+                                                        "$ref": "#/components/schemas/offset_range"
                                                     }
                                                 },
                                                 "hash": {
@@ -642,13 +639,12 @@
                             }
                         }
                     }
-                },
-                "summary": "Upload file",
-                "description": "The `POST /upload` endpoint uploads documents to the server. It is intended\nfor large documents, and can upload a file over multiple requests, each\ncontaining a slice of the data.\n\nTo start an upload, set `start=1` and include the `size` of the whole uploaded\nfile. The response will include a `token` field, a string like\n`hcupwhvGDVmHNYyDKdqeqA` that identifies the upload in progress. All further\nrequests for the upload must include the `token` as parameter.\n\nEach request adds a chunk of data to the upload. The `offset` parameter gives\nthe byte offset of the uploaded chunk; the `blob` attachment parameter\ncontains the chunk itself. The request that completes the upload should set\n`finish=1`; this request will fail unless all chunks have been received.\n\nThe `ranges` response field represents the ranges of bytes received so far.\nThe response to a `finish=1` request will include a `hash` field, which is the\nhash of the uploaded document.\n\nThe upload API is only available on sites that have enabled the document\nstore.\n"
+                }
             }
         },
         "/assign": {
             "post": {
+                "summary": "Assignments",
                 "tags": [
                     "Submission administration"
                 ],
@@ -666,12 +662,12 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
-                                "properties": {
-                                    "assignments": {}
-                                },
                                 "required": [
                                     "assignments"
-                                ]
+                                ],
+                                "properties": {
+                                    "assignments": {}
+                                }
                             }
                         }
                     }
@@ -697,12 +693,12 @@
                             }
                         }
                     }
-                },
-                "summary": "Assignments"
+                }
             }
         },
         "/{p}/decision": {
             "get": {
+                "summary": "Retrieve submission decision",
                 "tags": [
                     "Submission administration"
                 ],
@@ -748,10 +744,10 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve submission decision"
+                }
             },
             "post": {
+                "summary": "Change submission decision",
                 "tags": [
                     "Submission administration"
                 ],
@@ -766,12 +762,12 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
-                                "properties": {
-                                    "decision": {}
-                                },
                                 "required": [
                                     "decision"
-                                ]
+                                ],
+                                "properties": {
+                                    "decision": {}
+                                }
                             }
                         }
                     }
@@ -813,12 +809,12 @@
                             }
                         }
                     }
-                },
-                "summary": "Change submission decision"
+                }
             }
         },
         "/{p}/lead": {
             "get": {
+                "summary": "Retrieve submission discussion lead",
                 "tags": [
                     "Submission administration"
                 ],
@@ -846,9 +842,7 @@
                                             "properties": {
                                                 "lead": {},
                                                 "lead_html": {},
-                                                "color_classes": {
-                                                    "$ref": "#/components/schemas/style_classes"
-                                                }
+                                                "color_classes": {}
                                             }
                                         }
                                     ]
@@ -866,10 +860,10 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve submission discussion lead"
+                }
             },
             "post": {
+                "summary": "Change submission discussion lead",
                 "tags": [
                     "Submission administration"
                 ],
@@ -884,12 +878,12 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
-                                "properties": {
-                                    "lead": {}
-                                },
                                 "required": [
                                     "lead"
-                                ]
+                                ],
+                                "properties": {
+                                    "lead": {}
+                                }
                             }
                         }
                     }
@@ -913,9 +907,7 @@
                                             "properties": {
                                                 "lead": {},
                                                 "lead_html": {},
-                                                "color_classes": {
-                                                    "$ref": "#/components/schemas/style_classes"
-                                                }
+                                                "color_classes": {}
                                             }
                                         }
                                     ]
@@ -933,12 +925,12 @@
                             }
                         }
                     }
-                },
-                "summary": "Change submission discussion lead"
+                }
             }
         },
         "/{p}/manager": {
             "get": {
+                "summary": "Retrieve submission administrator",
                 "tags": [
                     "Submission administration"
                 ],
@@ -966,9 +958,7 @@
                                             "properties": {
                                                 "manager": {},
                                                 "manager_html": {},
-                                                "color_classes": {
-                                                    "$ref": "#/components/schemas/style_classes"
-                                                }
+                                                "color_classes": {}
                                             }
                                         }
                                     ]
@@ -986,10 +976,10 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve submission administrator"
+                }
             },
             "post": {
+                "summary": "Change submission administrator",
                 "tags": [
                     "Submission administration"
                 ],
@@ -1004,12 +994,12 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
-                                "properties": {
-                                    "manager": {}
-                                },
                                 "required": [
                                     "manager"
-                                ]
+                                ],
+                                "properties": {
+                                    "manager": {}
+                                }
                             }
                         }
                     }
@@ -1033,9 +1023,7 @@
                                             "properties": {
                                                 "manager": {},
                                                 "manager_html": {},
-                                                "color_classes": {
-                                                    "$ref": "#/components/schemas/style_classes"
-                                                }
+                                                "color_classes": {}
                                             }
                                         }
                                     ]
@@ -1053,12 +1041,12 @@
                             }
                         }
                     }
-                },
-                "summary": "Change submission administrator"
+                }
             }
         },
         "/{p}/reviewround": {
             "post": {
+                "summary": "Change review round",
                 "tags": [
                     "Submission administration"
                 ],
@@ -1088,12 +1076,12 @@
                             }
                         }
                     }
-                },
-                "summary": "Change review round"
+                }
             }
         },
         "/{p}/shepherd": {
             "get": {
+                "summary": "Retrieve submission shepherd",
                 "tags": [
                     "Submission administration"
                 ],
@@ -1121,9 +1109,7 @@
                                             "properties": {
                                                 "shepherd": {},
                                                 "shepherd_html": {},
-                                                "color_classes": {
-                                                    "$ref": "#/components/schemas/style_classes"
-                                                }
+                                                "color_classes": {}
                                             }
                                         }
                                     ]
@@ -1141,10 +1127,10 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve submission shepherd"
+                }
             },
             "post": {
+                "summary": "Change submission shepherd",
                 "tags": [
                     "Submission administration"
                 ],
@@ -1159,12 +1145,12 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
-                                "properties": {
-                                    "shepherd": {}
-                                },
                                 "required": [
                                     "shepherd"
-                                ]
+                                ],
+                                "properties": {
+                                    "shepherd": {}
+                                }
                             }
                         }
                     }
@@ -1188,9 +1174,7 @@
                                             "properties": {
                                                 "shepherd": {},
                                                 "shepherd_html": {},
-                                                "color_classes": {
-                                                    "$ref": "#/components/schemas/style_classes"
-                                                }
+                                                "color_classes": {}
                                             }
                                         }
                                     ]
@@ -1208,8 +1192,7 @@
                             }
                         }
                     }
-                },
-                "summary": "Change submission shepherd"
+                }
             }
         },
         "/search": {
@@ -1231,16 +1214,16 @@
                         "$ref": "#/components/parameters/sort"
                     },
                     {
-                        "$ref": "#/components/parameters/scoresort"
-                    },
-                    {
-                        "$ref": "#/components/parameters/reviewer"
-                    },
-                    {
                         "name": "report",
                         "in": "query",
                         "required": false,
                         "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/scoresort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/reviewer"
                     }
                 ],
                 "responses": {
@@ -1271,8 +1254,7 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve search results"
+                }
             }
         },
         "/fieldhtml": {
@@ -1309,13 +1291,13 @@
                         "$ref": "#/components/parameters/qt"
                     },
                     {
+                        "$ref": "#/components/parameters/reviewer"
+                    },
+                    {
                         "$ref": "#/components/parameters/sort"
                     },
                     {
                         "$ref": "#/components/parameters/scoresort"
-                    },
-                    {
-                        "$ref": "#/components/parameters/reviewer"
                     }
                 ],
                 "responses": {
@@ -1525,27 +1507,22 @@
                         "$ref": "#/components/parameters/sort"
                     },
                     {
-                        "$ref": "#/components/parameters/scoresort"
-                    },
-                    {
-                        "$ref": "#/components/parameters/reviewer"
-                    },
-                    {
                         "name": "report",
                         "in": "query",
                         "required": false,
                         "schema": {}
                     },
                     {
+                        "$ref": "#/components/parameters/scoresort"
+                    },
+                    {
+                        "$ref": "#/components/parameters/reviewer"
+                    },
+                    {
                         "name": "pap[]",
                         "in": "query",
                         "required": false,
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/components/schemas/pid"
-                            }
-                        }
+                        "schema": {}
                     }
                 ],
                 "responses": {
@@ -1695,12 +1672,12 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
-                                "properties": {
-                                    "display": {}
-                                },
                                 "required": [
                                     "display"
-                                ]
+                                ],
+                                "properties": {
+                                    "display": {}
+                                }
                             }
                         }
                     }
@@ -1752,6 +1729,7 @@
         },
         "/{p}/tags": {
             "get": {
+                "summary": "Retrieve submission tags",
                 "tags": [
                     "Tags"
                 ],
@@ -1788,8 +1766,7 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve submission tags"
+                }
             },
             "post": {
                 "summary": "Change submission tags",
@@ -1811,9 +1788,7 @@
                                     "tags": {},
                                     "addtags": {},
                                     "deltags": {},
-                                    "search": {
-                                        "$ref": "#/components/schemas/search_parameter_specification"
-                                    }
+                                    "search": {}
                                 }
                             }
                         }
@@ -1855,6 +1830,7 @@
         },
         "/alltags": {
             "get": {
+                "summary": "Retrieve all visible tags",
                 "tags": [
                     "Tags"
                 ],
@@ -1896,8 +1872,7 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve all visible tags"
+                }
             }
         },
         "/assigntags": {
@@ -1912,21 +1887,18 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
+                                "required": [
+                                    "tagassignment"
+                                ],
                                 "properties": {
                                     "tagassignment": {
                                         "type": "string",
-                                        "description": "Comma-separated list of paper IDs and tag assignments",
-                                        "examples": [
-                                            "1 foo#clear,2 ~discuss#1 discuss"
-                                        ]
+                                        "description": "Comma-separated list of paper IDs and tag assignments"
                                     },
                                     "search": {
                                         "$ref": "#/components/schemas/search_parameter_specification"
                                     }
-                                },
-                                "required": [
-                                    "tagassignment"
-                                ]
+                                }
                             }
                         }
                     }
@@ -1942,6 +1914,9 @@
                                             "$ref": "#/components/schemas/minimal_response"
                                         },
                                         {
+                                            "$ref": "#/components/schemas/search_response"
+                                        },
+                                        {
                                             "type": "object",
                                             "required": [
                                                 "p"
@@ -1949,9 +1924,6 @@
                                             "properties": {
                                                 "p": {}
                                             }
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/search_response"
                                         }
                                     ]
                                 }
@@ -1973,6 +1945,7 @@
         },
         "/taganno": {
             "get": {
+                "summary": "Retrieve tag annotations",
                 "tags": [
                     "Tags"
                 ],
@@ -2003,6 +1976,9 @@
                                     "allOf": [
                                         {
                                             "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/search_response"
                                         },
                                         {
                                             "type": "object",
@@ -2025,9 +2001,6 @@
                                                     }
                                                 }
                                             }
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/search_response"
                                         }
                                     ]
                                 }
@@ -2044,10 +2017,10 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve tag annotations"
+                }
             },
             "post": {
+                "summary": "Change tag annotations",
                 "tags": [
                     "Tags"
                 ],
@@ -2056,19 +2029,36 @@
                         "name": "tag",
                         "in": "query",
                         "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/tag"
-                        }
+                        "schema": {}
                     },
                     {
                         "name": "search",
                         "in": "query",
                         "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/search_parameter_specification"
-                        }
+                        "schema": {}
                     }
                 ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "anno"
+                                ],
+                                "properties": {
+                                    "anno": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/tag_annotation"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "",
@@ -2078,6 +2068,9 @@
                                     "allOf": [
                                         {
                                             "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/search_response"
                                         },
                                         {
                                             "type": "object",
@@ -2094,12 +2087,12 @@
                                                     "type": "boolean"
                                                 },
                                                 "anno": {
-                                                    "$ref": "#/components/schemas/tag_annotation"
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/tag_annotation"
+                                                    }
                                                 }
                                             }
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/search_response"
                                         }
                                     ]
                                 }
@@ -2116,33 +2109,12 @@
                             }
                         }
                     }
-                },
-                "summary": "Change tag annotations",
-                "requestBody": {
-                    "description": "",
-                    "content": {
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "anno": {
-                                        "type": "array",
-                                        "items": {
-                                            "$ref": "#/components/schemas/tag_annotation"
-                                        }
-                                    }
-                                },
-                                "required": [
-                                    "anno"
-                                ]
-                            }
-                        }
-                    }
                 }
             }
         },
         "/{p}/tagmessages": {
             "get": {
+                "summary": "Retrieve tag edit messages",
                 "tags": [
                     "Tags"
                 ],
@@ -2185,12 +2157,12 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve tag edit messages"
+                }
             }
         },
         "/{p}/votereport": {
             "get": {
+                "summary": "Retrieve vote analysis",
                 "tags": [
                     "Tags"
                 ],
@@ -2243,8 +2215,7 @@
                             }
                         }
                     }
-                },
-                "summary": "Retrieve vote analysis"
+                }
             }
         },
         "/{p}/revpref": {
@@ -2324,12 +2295,12 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
-                                "properties": {
-                                    "pref": {}
-                                },
                                 "required": [
                                     "pref"
-                                ]
+                                ],
+                                "properties": {
+                                    "pref": {}
+                                }
                             }
                         }
                     }
@@ -2682,6 +2653,9 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
+                                "required": [
+                                    "email"
+                                ],
                                 "properties": {
                                     "email": {},
                                     "given_name": {},
@@ -2690,10 +2664,7 @@
                                     "affiliation": {},
                                     "override": {},
                                     "reason": {}
-                                },
-                                "required": [
-                                    "email"
-                                ]
+                                }
                             }
                         }
                     }
@@ -2787,12 +2758,12 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
-                                "properties": {
-                                    "user_rating": {}
-                                },
                                 "required": [
                                     "user_rating"
-                                ]
+                                ],
+                                "properties": {
+                                    "user_rating": {}
+                                }
                             }
                         }
                     }
@@ -2890,6 +2861,8 @@
         },
         "/{p}/comment": {
             "get": {
+                "summary": "Retrieve comment",
+                "description": "The `c` parameter specifies the comment to return. If the comment exists and\nthe user can view it, it will be returned in the `comment` component of the\nresponse. Otherwise, an error response is returned.\n\nIf `c` is omitted, all viewable comments are returned in a `comments` list.\n",
                 "tags": [
                     "Comments"
                 ],
@@ -2949,11 +2922,11 @@
                             }
                         }
                     }
-                },
-                "description": "The `c` parameter specifies the comment to return. If the comment exists and\nthe user can view it, it will be returned in the `comment` component of the\nresponse. Otherwise, an error response is returned.\n\nIf `c` is omitted, all viewable comments are returned in a `comments` list.\n",
-                "summary": "Retrieve comment"
+                }
             },
             "post": {
+                "summary": "Create, modify, or delete comment",
+                "description": "The `c` parameter specifies the comment to modify. It can be a numeric comment\nID; `new`, to create a new comment; or `response` (or a compound like\n`R2response`), to create or modify a named response.\n\nSetting `delete=1` deletes the specified comment, and the response does not\ncontain a `comment` component. Otherwise the comment is created or modified,\nand the response `comment` component contains the new comment.\n\nComment attachments may be uploaded as files (requiring a request body in\n`multipart/form-data` encoding), or using the [upload API](#operation/upload).\nTo upload a single new attachment:\n\n* Set the `attachment:1` body parameter to `new`\n* Either:\n\t* Set `attachment:1:file` as a uploaded file containing the relevant data\n\t* Or use the [upload API](#operation/upload) to upload the file,\n\t  and supply the upload token in the `attachment:1:upload` body parameter\n\nTo upload multiple attachments, number them sequentially (`attachment:2`,\n`attachment:3`, and so forth). To delete an existing attachment, supply its\n`docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.\n",
                 "tags": [
                     "Comments"
                 ],
@@ -3058,15 +3031,18 @@
                             }
                         }
                     }
-                },
-                "description": "The `c` parameter specifies the comment to modify. It can be a numeric comment\nID; `new`, to create a new comment; or `response` (or a compound like\n`R2response`), to create or modify a named response.\n\nSetting `delete=1` deletes the specified comment, and the response does not\ncontain a `comment` component. Otherwise the comment is created or modified,\nand the response `comment` component contains the new comment.\n\nComment attachments may be uploaded as files (requiring a request body in\n`multipart/form-data` encoding), or using the [upload API](#operation/upload).\nTo upload a single new attachment:\n\n* Set the `attachment:1` body parameter to `new`\n* Either:\n\t* Set `attachment:1:file` as a uploaded file containing the relevant data\n\t* Or use the [upload API](#operation/upload) to upload the file,\n\t  and supply the upload token in the `attachment:1:upload` body parameter\n\nTo upload multiple attachments, number them sequentially (`attachment:2`,\n`attachment:3`, and so forth). To delete an existing attachment, supply its\n`docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.\n",
-                "summary": "Create, modify, or delete comment"
+                }
             }
         },
         "/mentioncompletion": {
             "get": {
                 "tags": [
                     "Comments"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.opt"
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -3102,12 +3078,7 @@
                             }
                         }
                     }
-                },
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.opt"
-                    }
-                ]
+                }
             }
         },
         "/track": {
@@ -3276,13 +3247,13 @@
                         "schema": {}
                     },
                     {
+                        "$ref": "#/components/parameters/p.opt"
+                    },
+                    {
                         "name": "potential_conflict",
                         "in": "query",
                         "required": false,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "responses": {
@@ -3334,6 +3305,14 @@
                 "tags": [
                     "Users"
                 ],
+                "parameters": [
+                    {
+                        "name": "ui",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "",
@@ -3371,15 +3350,7 @@
                             }
                         }
                     }
-                },
-                "parameters": [
-                    {
-                        "name": "ui",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
-                    }
-                ]
+                }
             }
         },
         "/clickthrough": {
@@ -3387,23 +3358,28 @@
                 "tags": [
                     "Profile"
                 ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.opt"
+                    }
+                ],
                 "requestBody": {
                     "description": "",
                     "content": {
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
+                                "required": [
+                                    "clickthrough_id",
+                                    "clickthrough_type",
+                                    "clickthrough_time"
+                                ],
                                 "properties": {
                                     "accept": {},
                                     "clickthrough_id": {},
                                     "clickthrough_type": {},
                                     "clickthrough_time": {}
-                                },
-                                "required": [
-                                    "clickthrough_id",
-                                    "clickthrough_type",
-                                    "clickthrough_time"
-                                ]
+                                }
                             }
                         }
                     }
@@ -3429,12 +3405,7 @@
                             }
                         }
                     }
-                },
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.opt"
-                    }
-                ]
+                }
             }
         },
         "/events": {
@@ -3515,12 +3486,12 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
-                                "properties": {
-                                    "following": {}
-                                },
                                 "required": [
                                     "following"
-                                ]
+                                ],
+                                "properties": {
+                                    "following": {}
+                                }
                             }
                         }
                     }
@@ -3573,6 +3544,9 @@
                         "in": "query",
                         "required": false,
                         "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/p.opt"
                     },
                     {
                         "$ref": "#/components/parameters/r.opt"
@@ -3630,9 +3604,6 @@
                         "in": "query",
                         "required": false,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "responses": {
@@ -3846,12 +3817,12 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
-                                "properties": {
-                                    "formula": {}
-                                },
                                 "required": [
                                     "formula"
-                                ]
+                                ],
+                                "properties": {
+                                    "formula": {}
+                                }
                             }
                         }
                     }
@@ -3910,9 +3881,11 @@
                                         },
                                         {
                                             "type": "object",
+                                            "required": [
+                                                "settings"
+                                            ],
                                             "properties": {
-                                                "dry_run": {},
-                                                "changes": {}
+                                                "settings": {}
                                             }
                                         }
                                     ]
@@ -3981,9 +3954,13 @@
                                         },
                                         {
                                             "type": "object",
+                                            "required": [
+                                                "settings"
+                                            ],
                                             "properties": {
                                                 "dry_run": {},
-                                                "change_list": {}
+                                                "change_list": {},
+                                                "settings": {}
                                             }
                                         }
                                     ]
@@ -4196,16 +4173,16 @@
                         "application/x-www-form-urlencoded": {
                             "schema": {
                                 "type": "object",
+                                "required": [
+                                    "error"
+                                ],
                                 "properties": {
                                     "error": {},
                                     "url": {},
                                     "lineno": {},
                                     "colno": {},
                                     "stack": {}
-                                },
-                                "required": [
-                                    "error"
-                                ]
+                                }
                             }
                         }
                     }
@@ -4371,18 +4348,10 @@
                                         {
                                             "type": "object",
                                             "properties": {
-                                                "email": {
-                                                    "type": "string"
-                                                },
-                                                "given_name": {
-                                                    "type": "string"
-                                                },
-                                                "family_name": {
-                                                    "type": "string"
-                                                },
-                                                "affiliation": {
-                                                    "type": "string"
-                                                }
+                                                "email": {},
+                                                "given_name": {},
+                                                "family_name": {},
+                                                "affiliation": {}
                                             }
                                         }
                                     ]
@@ -4536,28 +4505,6 @@
             }
         },
         "schemas": {
-            "mimetype": {
-                "type": "string",
-                "description": "MIME type",
-                "examples": [
-                    "application/pdf",
-                    "image/png"
-                ]
-            },
-            "pid": {
-                "type": "integer",
-                "description": "Submission ID",
-                "minimum": 1
-            },
-            "paper_status": {
-                "type": "string",
-                "description": "Submission status",
-                "examples": [
-                    "draft",
-                    "submitted",
-                    "withdrawn"
-                ]
-            },
             "message": {
                 "type": "object",
                 "required": [
@@ -4586,28 +4533,34 @@
                         "title": "end position",
                         "type": "integer"
                     }
-                }
+                },
+                "examples": [
+                    {
+                        "status": 0,
+                        "message": "<0>Helpful message"
+                    },
+                    {
+                        "status": 2,
+                        "field": "abstract",
+                        "message": "<0>Entry required to complete submission"
+                    }
+                ]
             },
             "message_list": {
                 "type": "array",
                 "description": "Diagnostic list",
                 "items": {
                     "$ref": "#/components/schemas/message"
-                }
-            },
-            "minimal_response": {
-                "type": "object",
-                "required": [
-                    "ok"
-                ],
-                "properties": {
-                    "ok": {
-                        "type": "boolean"
-                    },
-                    "message_list": {
-                        "$ref": "#/components/schemas/message_list"
-                    }
-                }
+                },
+                "examples": [
+                    [],
+                    [
+                        {
+                            "status": 2,
+                            "message": "<0>Function not found"
+                        }
+                    ]
+                ]
             },
             "message_context": {
                 "type": "array",
@@ -4626,6 +4579,20 @@
                     }
                 ]
             },
+            "minimal_response": {
+                "type": "object",
+                "required": [
+                    "ok"
+                ],
+                "properties": {
+                    "ok": {
+                        "type": "boolean"
+                    },
+                    "message_list": {
+                        "$ref": "#/components/schemas/message_list"
+                    }
+                }
+            },
             "error_response": {
                 "type": "object",
                 "required": [
@@ -4643,6 +4610,28 @@
                         "type": "integer"
                     }
                 }
+            },
+            "pid": {
+                "type": "integer",
+                "description": "Submission ID",
+                "minimum": 1
+            },
+            "mimetype": {
+                "type": "string",
+                "description": "MIME type",
+                "examples": [
+                    "application/pdf",
+                    "image/png"
+                ]
+            },
+            "paper_status": {
+                "type": "string",
+                "description": "Submission status",
+                "examples": [
+                    "draft",
+                    "submitted",
+                    "withdrawn"
+                ]
             },
             "rid": {
                 "oneOf": [
@@ -4686,6 +4675,19 @@
                 "type": "integer",
                 "minimum": 1,
                 "description": "Document ID"
+            },
+            "offset_range": {
+                "type": "array",
+                "prefixItems": [
+                    {
+                        "type": "integer",
+                        "description": "First offset"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Last offset"
+                    }
+                ]
             },
             "upload_token": {
                 "type": "string",
@@ -4849,6 +4851,12 @@
             "search_response": {
                 "type": "object",
                 "description": "Search result",
+                "required": [
+                    "ids",
+                    "groups",
+                    "hotlist",
+                    "search_params"
+                ],
                 "properties": {
                     "ids": {
                         "type": "array",
