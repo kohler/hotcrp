@@ -44,7 +44,7 @@ class Developer_UserInfo {
     }
 
     function print_bearer_tokens(UserStatus $us) {
-        echo '<p class="w-text">API tokens let you access HotCRP’s API programmatically. Supply a token using an HTTP <code>Authorization</code> header, as in “<code>Authorization: Bearer <em>token-name</em></code>”.</p>';
+        echo '<p class="w-text">API tokens let you access <a href="https://hotcrp.com/devel/api/">HotCRP’s API</a> programmatically. Supply a token using an HTTP <code>Authorization</code> header, as in “<code>Authorization: Bearer <em>token-name</em></code>”.</p>';
         if ($us->is_auth_self()) {
             $us->conf->warning_msg('<0>Treat tokens like passwords and keep them secret. Anyone who knows your tokens can access this site with your privileges.');
         } else {
