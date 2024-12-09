@@ -73,6 +73,8 @@ class APISpec_Batch {
     private $cur_fields;
     /** @var array<string,string> */
     private $cur_fieldd;
+    /** @var list<string> */
+    private $cur_fieldsch;
 
     const PT_QUERY = 1;
     const PT_BODY = 2;
@@ -238,7 +240,7 @@ class APISpec_Batch {
                 $x["summary"] = simplify_whitespace(str_replace("\n> ", "", substr($mx[0], 2)));
                 $d = ltrim(substr($d, strlen($mx[0])));
             }
-            if (preg_match('/(?:\n|\A)(?=\*)(?:\* (?:param|parameter|response) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
+            if (preg_match('/(?:\n|\A)(?=\*)(?:\* (?:param|parameter|response|response_schema) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
                 $d = cleannl(substr($d, 0, -strlen($mx[0])));
                 $x["fields"] = ltrim($mx[0]);
             }
@@ -620,11 +622,21 @@ class APISpec_Batch {
         }
     }
 
-    private function parse_description_fields($params, $response) {
+    private function parse_description_fields($params, $response, $landmark) {
         $pos = 0;
-        while (preg_match('/\G\* (param|parameter|response)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)(?:  [^\n]++\n|[ \t]++\n)*+|\n)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
+        while (preg_match('/\G\* (param|parameter|response|response_schema)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)(?:  [^\n]++\n|[ \t]++\n)*+|\n)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
             $pos += strlen($m[0]);
-            if (($m[1] === "response") !== $response) {
+            if (str_starts_with($m[1], "response") !== $response) {
+                continue;
+            }
+            if ($m[1] === "response_schema") {
+                if ($this->reference_common_schema($m[2])) {
+                    if (!in_array($m[2], $this->cur_fieldsch)) {
+                        $this->cur_fieldsch[] = $m[2];
+                    }
+                } else {
+                    fwrite(STDERR, "{$landmark}: {$this->cur_prefix()}: unknown response_schema `{$m[2]}`\n");
+                }
                 continue;
             }
             list($name, $f) = self::parse_field_name($m[2]);
@@ -698,7 +710,7 @@ class APISpec_Batch {
      * @param ?object $dj */
     private function expand_request($x, $uf, $dj) {
         if ($dj && isset($dj->fields)) {
-            $this->parse_description_fields($dj->fields, false);
+            $this->parse_description_fields($dj->fields, false, $dj->landmark);
         }
         if (isset($uf->parameter_info)) {
             $this->parse_field_info($uf->parameter_info);
@@ -847,6 +859,7 @@ class APISpec_Batch {
         $this->cur_fieldf = [];
         $this->cur_fields = [];
         $this->cur_fieldd = [];
+        $this->cur_fieldsch = [];
 
         $response = $uf->response ?? [];
         if (is_string($response)) {
@@ -857,7 +870,7 @@ class APISpec_Batch {
             $this->cur_fieldf[$name] = $f;
         }
         if ($dj && isset($dj->fields)) {
-            $this->parse_description_fields($dj->fields, true);
+            $this->parse_description_fields($dj->fields, true, $dj->landmark);
         }
         if (isset($uf->response_info)) {
             $this->parse_field_info($uf->response_info);
@@ -881,6 +894,8 @@ class APISpec_Batch {
     private function apply_response($x, $bprop, $breq) {
         $x->responses = $x->responses ?? (object) [];
         $resp200 = $x->responses->{"200"} = $x->responses->{"200"} ?? (object) [];
+
+        // default response
         if (!isset($x->responses->default)) {
             $x->responses->default = (object) [
                 "description" => "",
@@ -892,48 +907,44 @@ class APISpec_Batch {
             ];
         }
 
+        // 200 status response
         $resp200->description = $resp200->description ?? "";
         $respc = $resp200->content = $resp200->content ?? (object) [];
         $respj = $respc->{"application/json"} = $respc->{"application/json"} ?? (object) [];
-        $resps = $respj->{"schema"} = $respj->{"schema"} ?? $this->reference_common_schema("minimal_response");
-
-        if (($resps->{"\$ref"} ?? null) === "#/components/schemas/minimal_response") {
-            $respstype = 0;
-        } else if (is_array($resps->allOf ?? null)
-                   && self::allOf_object_position($resps->allOf) >= 0) {
-            $respstype = 1;
+        if ($this->override_response || !isset($respj->{"schema"})) {
+            $resps = $respj->{"schema"} = $this->reference_common_schema("minimal_response");
         } else {
-            $respstype = -1;
+            $resps = $respj->{"schema"};
         }
 
-        if (!$this->override_response
-            && ($respstype < 0 || ($respstype > 0 && !$bprop))) {
-            return;
-        }
-
-        if (!$bprop) {
-            if ($respstype !== 0) {
-                $respj->{"schema"} = $this->reference_common_schema("minimal_response");
-            }
-            return;
-        }
-
-        if ($respstype <= 0) {
-            $resps = $respj->{"schema"} = (object) [
-                "allOf" => [
-                    $this->reference_common_schema("minimal_response"),
-                    (object) ["type" => "object"]
-                ]
-            ];
-        }
-        $allOf_index = self::allOf_object_position($resps->allOf);
-        $respb = $resps->allOf[$allOf_index];
+        // obtain allOf list of schemas
         $this->cur_ptype = self::PT_RESPONSE;
-        $this->cur_psubtype = $allOf_index;
+        if (is_array($resps->allOf ?? null)) {
+            $rsch = $resps->allOf;
+            $this->cur_psubtype = count($rsch) - 1;
+        } else {
+            $rsch = [$resps];
+            $this->cur_psubtype = null;
+        }
 
-        // referenced properties
+        // add requested response_schemas
+        foreach ($this->cur_fieldsch as $sch) {
+            $ref = $this->reference_common_schema($sch);
+            assert(isset($ref->{"\$ref"}));
+            $i = 0;
+            while (isset($rsch[$i])
+                   && isset($rsch[$i]->{"\$ref"})
+                   && $rsch[$i]->{"\$ref"} !== $ref->{"\$ref"}) {
+                ++$i;
+            }
+            if (!isset($rsch[$i]) || !isset($rsch[$i]->{"\$ref"})) {
+                array_splice($rsch, $i, 0, [$ref]);
+            }
+        }
+
+        // enumerate known properties
         $knownparam = $knownreq = [];
-        foreach ($resps->allOf as $respx) {
+        foreach ($rsch as $respx) {
             if (($j = $this->resolve_reference($respx, "schemas"))
                 && is_object($j)
                 && ($j->type ?? null) === "object") {
@@ -944,13 +955,17 @@ class APISpec_Batch {
             }
         }
 
+        // `$respb` is the last object schema
+        if (($rsch[count($rsch) - 1]->type ?? null) === "object") {
+            $respb = $rsch[count($rsch) - 1];
+        } else {
+            $rsch[] = $respb = (object) ["type" => "object"];
+        }
+
         // required properties
         $this->apply_required($respb, $bprop, $breq, $knownreq);
 
-        // property list
-        if ($this->override_response) {
-            unset($respb->properties);
-        }
+        // property settings
         $respprop = $respb->properties ?? (object) [];
         foreach ((array) $respprop as $p => $v) {
             if (!isset($bprop[$p])
@@ -971,8 +986,21 @@ class APISpec_Batch {
                 $respprop->$k->description = $this->cur_fieldd[$k];
             }
         }
-        if (!empty(get_object_vars($respprop))) {
+
+        // result
+        if (self::is_empty_object($respprop)) {
+            if (!empty($respb->required)) {
+                error_log(json_encode($respb->required));
+            }
+            assert(empty($respb->required));
+            array_pop($rsch);
+        } else {
             $respb->properties = $respprop;
+        }
+        if (count($rsch) === 1) {
+            $respj->{"schema"} = $rsch[0];
+        } else {
+            $respj->{"schema"} = (object) ["allOf" => $rsch];
         }
     }
 

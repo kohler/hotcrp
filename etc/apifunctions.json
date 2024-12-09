@@ -185,7 +185,7 @@
         "name": "paper", "get": true, "post": true,
         "function": "Paper_API::run_one",
         "parameters": "?p ?+dry_run ?+disable_users ?+add_topics ?+notify ?forceShow",
-        "response": "?paper ?dry_run ?+change_list ?+valid"
+        "response": "?paper ?+dry_run ?+change_list ?+valid"
     },
     {
         "name": "papers", "get": true,

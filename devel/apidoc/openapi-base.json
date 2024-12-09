@@ -480,6 +480,7 @@
             "search_response": {
                 "type": "object",
                 "description": "Search result",
+                "required": ["ids", "groups", "hotlist", "search_params"],
                 "properties": {
                     "ids": {
                         "type": "array",
