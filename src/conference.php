@@ -4809,7 +4809,7 @@ class Conf {
             echo '<li class="has-link">', Ht::link($t, $this->hoturl("signin")), '</li>';
         } else if ($itemid === "profile") {
             if ($user->has_email()) {
-                $this->_print_profilemenu_link_if_enabled($user, "Your profile", "profile");
+                $this->_print_profilemenu_link_if_enabled($user, "Account settings", "profile");
             }
         } else if ($itemid === "my_submissions") {
             $this->_print_profilemenu_link_if_enabled($user, "Your submissions", "search", "t=a");

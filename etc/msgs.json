@@ -26,7 +26,6 @@
     },
 
     ["<0>A {submission} may have at most {max} authors", "<0>A {submission} may have at most one author", ["{max}=1"]],
-    ["<0>This site requests that authors provide ORCID iDs. Please ask {0:list} to sign in and update their profiles.", "<0>This site requests that authors provide ORCID iDs. Please ask {0:list} to sign in and update their profile.", ["#{0}=1"]],
 
     ["{naccepted} of {nsubmitted} {submissions} accepted", "{naccepted} of {nsubmitted} {submission} accepted", ["{naccepted}=1", "{nsubmitted}=1"]],
 
