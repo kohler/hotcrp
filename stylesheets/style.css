@@ -2938,14 +2938,14 @@ del .rto {
 }
 
 .ti_interest {
-	padding-right: 1px;
+	padding: 2px 1px 2px 0;
 	white-space: nowrap;
 	font-size: smaller;
 	text-align: center;
 	min-width: 2.2rem;
 }
 .ti_topic {
-	padding-right: 0.5em;
+	padding: 2px 0.5em 2px 6px;
 }
 .ti_subtopic {
 	padding-left: 1.75em;
@@ -2953,7 +2953,7 @@ del .rto {
 table.reviewers, div.revnotes {
 	margin-bottom: 8px;
 }
-table.reviewers {
+table.reviewers, table.profile-topic-interests {
 	margin-left: -6px;
 }
 td.rl:first-child {

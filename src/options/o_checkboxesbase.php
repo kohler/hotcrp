@@ -203,15 +203,14 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
                     "data-range-type" => $this->formid];
             if (($isgroup = $tg->nontrivial())) {
                 echo '<li class="ctelt cteltg"><div class="ctelti">';
-                if ($tg->improper()) {
+                if ($tg->has_group_topic()) {
                     $arg["data-default-checked"] = in_array($tg->tid, $ov->value_list());
                     $checked = in_array($tg->tid, $reqov->value_list());
                     echo '<label class="checki cteltx"><span class="checkc">',
                         $this->render_checkbox($tg->tid, $checked, $arg),
                         '</span>', $topicset->unparse_name_html($tg->tid), '</label>';
                 } else {
-                    echo '<div class="cteltx"><span class="topicg">',
-                        htmlspecialchars($tg->name), '</span></div>';
+                    echo '<div class="cteltx">', $tg->unparse_name_html(), '</div>';
                 }
                 echo '<div class="checki">';
             }

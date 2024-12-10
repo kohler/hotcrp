@@ -1714,7 +1714,7 @@ class UserStatus extends MessageSet {
 topics. We use this information to help match papers to reviewers.</p>',
             Ht::hidden("has_ti", 1),
             $us->feedback_html_at("ti"),
-            '  <table class="table-striped"><thead>
+            '  <table class="table-striped profile-topic-interests"><thead>
     <tr><td></td><th class="ti_interest">Low</th><th class="ti_interest"></th><th class="ti_interest"></th><th class="ti_interest"></th><th class="ti_interest">High</th></tr>
     <tr><td></td><th class="topic-2"></th><th class="topic-1"></th><th class="topic0"></th><th class="topic1"></th><th class="topic2"></th></tr></thead><tbody>', "\n";
 
@@ -1724,9 +1724,14 @@ topics. We use this information to help match papers to reviewers.</p>',
         foreach ($ts->group_list() as $tg) {
             foreach ($tg->members() as $i => $tid) {
                 $tic = "ti_topic";
-                if ($i === 0) {
+                if ($tg->trivial() || ($i === 0 && $tg->has_group_topic())) {
                     $n = $ts->unparse_name_html($tid);
                 } else {
+                    if ($i == 0) {
+                        echo "    <tr><td class=\"ti_topic\">",
+                            $tg->unparse_name_html(),
+                            "</td><td class=\"ti_interest\" colspan=\"5\"></td></tr>\n";
+                    }
                     $n = $ts->unparse_subtopic_name_html($tid);
                     $tic .= " ti_subtopic";
                 }
@@ -1736,7 +1741,7 @@ topics. We use this information to help match papers to reviewers.</p>',
                 for ($j = -2; $j <= 2; ++$j) {
                     $ichecked = $ival >= $ibound[$j+2] && $ival < $ibound[$j+3];
                     $reqchecked = $reqval >= $ibound[$j+2] && $reqval < $ibound[$j+3];
-                    echo '<td class="ti_interest">', Ht::radio("ti$tid", $j, $reqchecked, ["class" => "uic js-range-click", "data-range-type" => "topicinterest$j", "data-default-checked" => $ichecked]), "</td>";
+                    echo '<td class="ti_interest">', Ht::radio("ti{$tid}", $j, $reqchecked, ["class" => "uic js-range-click", "data-range-type" => "topicinterest{$j}", "data-default-checked" => $ichecked]), "</td>";
                 }
                 echo "</tr>\n";
             }

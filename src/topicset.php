@@ -6,7 +6,7 @@ class TopicGroup {
     /** @var string */
     public $name;     // never contains a colon
     /** @var ?int */
-    public $tid;      // if nonnull, its name equals the group name
+    public $tid;      // if nonnull, the group name is also a topic name
     /** @var ?list<int> */
     public $members;  // if nonnull, contains all members
 
@@ -15,11 +15,15 @@ class TopicGroup {
         $this->name = $name;
     }
     /** @return bool */
+    function trivial() {
+        return $this->members === null || count($this->members) <= 1;
+    }
+    /** @return bool */
     function nontrivial() {
         return $this->members !== null && count($this->members) > 1;
     }
     /** @return bool */
-    function improper() {
+    function has_group_topic() {
         return $this->tid !== null;
     }
     /** @return int */
@@ -38,6 +42,11 @@ class TopicGroup {
             return array_slice($this->members, 1);
         }
         return $this->members;
+    }
+    /** @param string $suffix
+     * @return string */
+    function unparse_name_html($suffix = "") {
+        return '<span class="topicg">' . htmlspecialchars($this->name) . $suffix . '</span>';
     }
 }
 
@@ -405,12 +414,10 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
         $tg = ($this->group_map())[$tid];
         if ($tg->nontrivial()) {
             if ($tg->tid === $tid) {
-                $this->_topic_html[$tid] = '<span class="topicg">'
-                    . htmlspecialchars($tg->name) . '</span>';
+                $this->_topic_html[$tid] = $tg->unparse_name_html();
             } else {
-                $this->_topic_html[$tid] = '<span class="topicg">'
-                    . htmlspecialchars($tg->name) . ':</span> '
-                    . htmlspecialchars(ltrim(substr($tname, strlen($tg->name) + 1)));
+                $this->_topic_html[$tid] = $tg->unparse_name_html(":")
+                    . ' ' . htmlspecialchars(ltrim(substr($tname, strlen($tg->name) + 1)));
             }
         } else {
             $this->_topic_html[$tid] = htmlspecialchars($tname);
