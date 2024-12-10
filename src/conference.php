@@ -4805,7 +4805,7 @@ class Conf {
             if ($actas_email !== null) {
                 echo '<li class="has-link">', Ht::link("Act as ". htmlspecialchars($actas_email), $this->selfurl($qreq, ["actas" => $actas_email])), '</li>';
             }
-            $t = $user->is_empty() ? "Sign in" : "Add account";
+            $t = $user->has_email() ? "Add another account" : "Sign in";
             echo '<li class="has-link">', Ht::link($t, $this->hoturl("signin")), '</li>';
         } else if ($itemid === "profile") {
             if ($user->has_email()) {

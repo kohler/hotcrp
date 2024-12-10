@@ -14,7 +14,7 @@
     {   "name": "__profilemenu/settings", "order": 450, "allow_if": "chair", "print_function": "*Conf::print_profilemenu_item", "separator_group": "overall"   },
     {   "name": "__profilemenu/users", "order": 460, "allow_if": "chair", "print_function": "*Conf::print_profilemenu_item", "separator_group": "overall"   },
     {   "name": "__profilemenu/assignments", "order": 470, "allow_if": "chair", "print_function": "*Conf::print_profilemenu_item", "separator_group": "overall"   },
-    {   "name": "__profilemenu/signout", "order": 500, "allow_if": "!empty", "print_function": "*Conf::print_profilemenu_item", "separator_group": "close"   },
+    {   "name": "__profilemenu/signout", "order": 500, "allow_if": "email", "print_function": "*Conf::print_profilemenu_item", "separator_group": "close"   },
 
     {   "name": "__profilecheck/name", "order": 1, "function": "Contact::profilecheck_name"   },
     {   "name": "__profilecheck/affiliation", "order": 2, "function": "Contact::profilecheck_affiliation"   },
