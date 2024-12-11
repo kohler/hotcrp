@@ -72,7 +72,7 @@ class ViewCommand {
             $sort = $edit = true;
         } else if ($as === "hide") {
             $a = self::F_HIDE;
-        } else if ($as === "viewoptions" || $as === "decor") {
+        } else if ($as === "view" || $as === "viewoptions") {
             $a = 0;
         } else {
             $a = self::F_SHOW;
@@ -111,13 +111,12 @@ class ViewCommand {
         }
 
         $keyword = $keyword ?? "";
-        if ($sort && $keyword !== "") {
-            if ($keyword[0] === "-") {
-                $view_options->add("sort", "reverse");
-            }
-            if ($keyword[0] === "-" || $keyword[0] === "+") {
-                $keyword = substr($keyword, 1);
-            }
+        if ($sort && str_starts_with($keyword, "-")) {
+            $view_options->add("sort", "reverse");
+            $keyword = substr($keyword, 1);
+        } else if ($sort && str_starts_with($keyword, "+")) {
+            $view_options->add("sort", "forward");
+            $keyword = substr($keyword, 1);
         }
         if (str_starts_with($keyword, "\"") && str_ends_with($keyword, "\"")) {
             $keyword = substr($keyword, 1, -1);
@@ -183,7 +182,7 @@ class ViewCommand {
 
     /** @return string */
     function unparse() {
-        $s = (["viewoptions:", "show:", "hide:", null, "sort:"])[$this->flags & self::FM_ACTION];
+        $s = (["view:", "show:", "hide:", null, "sort:"])[$this->flags & self::FM_ACTION];
         if (!ctype_alnum($this->keyword)
             && SearchParser::span_balanced_parens($this->keyword) !== strlen($this->keyword)) {
             $s .= "\"{$this->keyword}\"";

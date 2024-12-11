@@ -159,7 +159,7 @@ class Mail_Page {
     function print_review_requests() {
         $plist = new PaperList("reqrevs", new PaperSearch($this->viewer, ["t" => "req", "q" => ""]));
         $plist->set_table_id_class("foldpl", "fullw");
-        $plist->set_view("sel", false, PaperList::VIEWORIGIN_MAX);
+        $plist->add_view(new ViewCommand(ViewCommand::F_HIDE | ViewCommand::ORIGIN_MAX, "sel"));
         if ($plist->is_empty()) {
             $this->conf->warning_msg("<5>You have not requested any external reviews. " . Ht::link("Return home", $this->conf->hoturl("index")));
         } else {

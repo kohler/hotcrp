@@ -348,7 +348,7 @@ class PaperList {
 
         if (in_array($qreq->linkto, ["paper", "assign", "paperedit", "finishreview"])) {
             $vol = (new ViewOptionList)->add("page", $qreq->linkto);
-            $this->set_view("linkto", true, self::VIEWORIGIN_REQUEST, $vol);
+            $this->add_view(new ViewCommand(ViewCommand::ORIGIN_REQUEST, "linkto", $vol));
         }
 
         $this->tagger = new Tagger($this->user);
@@ -383,18 +383,17 @@ class PaperList {
         $this->_highlight_map = $this->search->highlights_by_paper_id();
         foreach ($this->search->view_commands() as $svc) {
             if (!$svc->is_sort()) {
-                $this->set_view($svc->keyword, $svc->is_show(), self::VIEWORIGIN_SEARCH, $svc->view_options);
+                $this->add_view($svc);
             }
         }
 
-        if ($qreq->forceShow !== null) {
-            $this->set_view("force", !!$qreq->forceShow, self::VIEWORIGIN_REQUEST);
+        if (($x = friendly_boolean($qreq->forceShow)) !== null) {
+            $fl = ($x ? ViewCommand::F_SHOW : ViewCommand::F_HIDE) | ViewCommand::ORIGIN_REQUEST;
+            $this->add_view(new ViewCommand($fl, "force"));
         }
-        if ($qreq->selectall) {
-            $vd = $this->_view_options["sel"] = $this->_view_options["sel"] ?? new ViewOptionList;
-            if (!$vd->has("selected")) {
-                $vd->add("selected", true);
-            }
+        if (($x = friendly_boolean($qreq->selectall)) !== null) {
+            $vol = (new ViewOptionList)->add("selected", $x);
+            $this->add_view(new ViewCommand(ViewCommand::ORIGIN_REQUEST, "sel", $vol));
         }
 
         $this->_columns_by_name = ["anonau" => [], "aufull" => [], "rownum" => [], "statistics" => []];
@@ -569,9 +568,11 @@ class PaperList {
     /** @param string $k
      * @return bool */
     function want_column_errors($k) {
+        if ($this->_report_view_errors !== null) {
+            return $this->_report_view_errors;
+        }
         $origin = $this->view_origin($k);
-        return $this->_report_view_errors
-            ?? ($origin === self::VIEWORIGIN_SEARCH || $origin === self::VIEWORIGIN_MAX);
+        return $origin === self::VIEWORIGIN_SEARCH || $origin === self::VIEWORIGIN_MAX;
     }
 
     /** @param ?bool $x
@@ -683,6 +684,10 @@ class PaperList {
         }
     }
 
+    function add_view(ViewCommand $vc) {
+        $this->set_view($vc->keyword, $vc->is_show(), $vc->flags >> ViewCommand::ORIGIN_SHIFT, $vc->view_options);
+    }
+
 
     /** @param PaperColumn $col
      * @param 0|1|2|3|4|5 $origin */
@@ -752,11 +757,11 @@ class PaperList {
     /** @param ?string $str
      * @param 0|1|2|3|4|5 $origin */
     function parse_view($str, $origin) {
-        foreach (ViewCommand::split_parse($str ?? "", $origin << ViewCommand::ORIGIN_SHIFT) as $svc) {
-            if ($svc->is_sort()) {
-                $this->_add_sorter($svc, null);
+        foreach (ViewCommand::split_parse($str ?? "", $origin << ViewCommand::ORIGIN_SHIFT) as $vc) {
+            if ($vc->is_sort()) {
+                $this->_add_sorter($vc, null);
             } else {
-                $this->set_view($svc->keyword, $svc->is_show(), $origin, $svc->view_options);
+                $this->add_view($vc);
             }
         }
     }
@@ -796,7 +801,8 @@ class PaperList {
                 continue;
             }
             if ($name !== "" && ($x = friendly_boolean($v)) !== null) {
-                $this->set_view($name, $x, self::VIEWORIGIN_REQUEST, $this->_view_options[$name] ?? null);
+                $fl = ($x ? ViewCommand::F_SHOW : ViewCommand::F_HIDE) | ViewCommand::ORIGIN_REQUEST;
+                $this->add_view(new ViewCommand($fl, $name));
             }
         }
     }
@@ -925,29 +931,30 @@ class PaperList {
     /** @return non-empty-list<PaperColumn> */
     function sorters() {
         assert($this->_sortcol_fixed !== 1);
-        if ($this->_sortcol_fixed === 0) {
-            $this->_sortcol_fixed = 1;
-            // apply sorters from search terms
-            if (($thenqe = $this->search->then_term())) {
-                foreach ($thenqe->subset_terms() as $chrange) {
-                    $this->_add_search_sorters($chrange[0], $chrange[1]);
-                }
-            }
-            $this->_add_search_sorters($this->search->main_term(), null);
-            // final default sorter
-            if (empty($this->_sortcol)) {
-                $idcol = ($this->ensure_columns_by_name("id"))[0];
-                $this->_append_sortcol($idcol, self::VIEWORIGIN_REPORT);
-            }
-            // default editable tag
-            $this->_sort_etag = "";
-            if ($this->_sortcol[0] instanceof Tag_PaperColumn
-                && !$this->_sortcol[0]->sort_descending) {
-                $this->_sort_etag = $this->_sortcol[0]->etag();
-            }
-            // done
-            $this->_sortcol_fixed = 2;
+        if ($this->_sortcol_fixed > 0) {
+            return $this->_sortcol;
         }
+        $this->_sortcol_fixed = 1;
+        // apply sorters from search terms
+        if (($thenqe = $this->search->then_term())) {
+            foreach ($thenqe->subset_terms() as $chrange) {
+                $this->_add_search_sorters($chrange[0], $chrange[1]);
+            }
+        }
+        $this->_add_search_sorters($this->search->main_term(), null);
+        // final default sorter
+        if (empty($this->_sortcol)) {
+            $idcol = ($this->ensure_columns_by_name("id"))[0];
+            $this->_append_sortcol($idcol, self::VIEWORIGIN_REPORT);
+        }
+        // default editable tag
+        $this->_sort_etag = "";
+        if ($this->_sortcol[0] instanceof Tag_PaperColumn
+            && !$this->_sortcol[0]->sort_descending) {
+            $this->_sort_etag = $this->_sortcol[0]->etag();
+        }
+        // done
+        $this->_sortcol_fixed = 2;
         return $this->_sortcol;
     }
 
