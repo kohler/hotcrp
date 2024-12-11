@@ -109,7 +109,7 @@ class GetCSV_ListAction extends ListAction {
         $pl = new PaperList("pl", $search, ["sort" => true], $qreq);
         $pl->apply_view_report_default();
         $pl->apply_view_session($qreq);
-        $pl->set_view("sel", false, PaperList::VIEWORIGIN_MAX);
+        $pl->add_view(new ViewCommand(ViewCommand::F_HIDE | ViewCommand::ORIGIN_MAX, "sel"));
         list($header, $data) = $pl->text_csv();
         return $user->conf->make_csvg("data", CsvGenerator::FLAG_ITEM_COMMENTS)
             ->set_keys(array_keys($header))->set_header(array_values($header))
