@@ -230,6 +230,10 @@ class PaperList {
     private $_view_order = [];
     /** @var int */
     private $_view_order_next = 1;
+    /** @var list<ViewCommand> */
+    private $_viewlist = [];
+    /** @var bool */
+    private $_viewlist_sorted = false;
 
     const VIEWORIGIN_NONE = -1;
     const VIEWORIGIN_REPORT = 0;
@@ -535,7 +539,9 @@ class PaperList {
     }
 
     static private $view_synonym = [
+        "anonau" => "authors",
         "au" => "authors",
+        "aufull" => "authors",
         "author" => "authors",
         "kanban" => "facets",
         "rownumbers" => "rownum",
@@ -685,7 +691,47 @@ class PaperList {
     }
 
     function add_view(ViewCommand $vc) {
-        $this->set_view($vc->keyword, $vc->is_show(), $vc->flags >> ViewCommand::ORIGIN_SHIFT, $vc->view_options);
+        assert($vc->order === null);
+        if (isset(self::$view_synonym[$vc->keyword])) {
+            if ($vc->keyword === "aufull" || $vc->keyword === "anonau") {
+                $opt = $vc->keyword === "aufull" ? "full" : "anon";
+                $vol = (new ViewOptionList)->add($opt, $vc->is_show());
+                $fl = $vc->flags;
+                if ($fl < ViewCommand::ORIGIN_SEARCH) {
+                    $fl &= ~ViewCommand::FM_SHOW;
+                }
+                $vc = new ViewCommand($fl, "authors", $vol, $vc->sword);
+            } else {
+                $vc = new ViewCommand($vc->flags, self::$view_synonym[$vc->keyword], $vc->view_options, $vc->sword);
+            }
+        }
+
+        $n = $vc->order = count($this->_viewlist);
+        $this->_viewf = null;
+        if ($n > 0 && $vc->flags - $this->_viewlist[$n - 1]->flags < -128) {
+            $this->_viewlist_sorted = false;
+        }
+    }
+
+    private function _sort_viewlist() {
+        if ($this->_viewlist_sorted) {
+            return;
+        }
+        usort($this->_viewlist, function ($a, $b) {
+            $fldiff = $a->flags - $b->flags;
+            if ($fldiff < -128) {
+                return -1;
+            } else if ($fldiff > 128) {
+                return 1;
+            } else {
+                return $a->order <=> $b->order;
+            }
+        });
+        $this->_viewlist_sorted = true;
+    }
+
+    private function _compute_viewa() {
+
     }
 
 

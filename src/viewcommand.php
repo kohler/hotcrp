@@ -15,11 +15,17 @@ class ViewCommand {
     /** @var ?SearchWord
      * @readonly */
     public $sword;
+    /** @var ?int */
+    public $order;
 
-    const F_SHOW = 1;
-    const F_HIDE = 2;
-    const F_SORT = 4;
-    const FM_ACTION = 7;
+    const F_SHOW = 0x01;
+    const F_HIDE = 0x02;
+    const F_SORT = 0x04;
+    const FM_SHOW = 0x03;
+    const FM_ACTION = 0x07;
+    const F_MERGED = 0x08;
+    const F_VOMERGED = 0x10;
+    // NB bit 0x80 must be unused
 
     const ORIGIN_REPORT = 0x000;
     const ORIGIN_DEFAULT_DISPLAY = 0x100;
@@ -43,6 +49,41 @@ class ViewCommand {
             $this->view_options = $view_options;
         }
         $this->sword = $sword;
+    }
+
+    /** @param ?ViewCommand $a
+     * @param ViewCommand $b
+     * @return ViewCommand
+     * @suppress PhanAccessReadOnly */
+    static function merge($a, $b) {
+        if (!$a) {
+            return $b;
+        }
+        if (($a->flags & self::F_MERGED) === 0) {
+            $a = clone $a;
+            $a->flags |= self::F_MERGED;
+        }
+        $fm = self::FM_ORIGIN | (($b->flags & self::FM_SHOW) !== 0 ? self::FM_SHOW : 0);
+        $a->flags = ($a->flags & ~$fm) | ($b->flags & $fm);
+        if ($b->view_options) {
+            if (!$a->view_options) {
+                $a->view_options = $b->view_options;
+            } else {
+                if (($a->flags & self::F_VOMERGED) === 0) {
+                    $a->view_options = clone $a->view_options;
+                    $a->flags |= self::F_VOMERGED;
+                }
+                foreach ($b->view_options as $k => $v) {
+                    $a->add($k, $v);
+                }
+            }
+        }
+
+        if (($b->flags & self::FM_SHOW) !== 0) {
+            $a->flags = $b->flags | self::F_MERGED;
+        } else {
+            $a->flags = ($a->flags & ~self::FM_ORIGIN) | ($b->flags & self::FM_ORIGIN);
+        }
     }
 
     /** @param string $s
