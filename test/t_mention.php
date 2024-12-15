@@ -21,7 +21,7 @@ class Mention_Tester {
         if (empty($user_lists)) {
             $user_lists = [$this->pc];
         }
-        return iterator_to_array(MentionParser::parse($s, ...$user_lists));
+        return MentionParser::parse($s, ...$user_lists);
     }
 
     function test_no_mentions() {

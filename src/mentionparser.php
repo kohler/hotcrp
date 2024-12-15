@@ -1,8 +1,8 @@
 <?php
 // mentionparser.php -- HotCRP helper class for parsing mentions
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
-class MentionPhrase {
+class MentionPhrase implements JsonSerializable {
     /** @var Contact|Author
      * @readonly */
     public $user;
@@ -26,6 +26,20 @@ class MentionPhrase {
     function named() {
         return $this->user instanceof Contact
             || $this->user->status !== Author::STATUS_ANONYMOUS_REVIEWER;
+    }
+
+    /** @param 0|1 $sliced
+     * @return ?Contact */
+    function user(Conf $conf, $sliced = 0) {
+        if ($this->user instanceof Contact) {
+            return $this->user;
+        }
+        return $conf->user_by_id($this->user->contactId, $sliced);
+    }
+
+    #[\ReturnTypeWillChange]
+    function jsonSerialize() {
+        return [$this->user->contactId, $this->pos1, $this->pos2, $this->named()];
     }
 }
 
@@ -67,7 +81,7 @@ class PossibleMentionParse implements JsonSerializable {
 class MentionParser {
     /** @param string $s
      * @param array<Contact|Author> ...$user_lists
-     * @return \Generator<MentionPhrase> */
+     * @return list<MentionPhrase> */
     static function parse($s, ...$user_lists) {
         // filter out empty user lists
         $ulists = [];
@@ -80,6 +94,8 @@ class MentionParser {
         $pos = 0;
         $len = strlen($s);
         $isascii = $collator = $strength = null;
+        $result = [];
+
         while (($pos = strpos($s, "@", $pos)) !== false) {
             // check that the mention is isolated on the left
             if (($pos > 0
@@ -105,7 +121,7 @@ class MentionParser {
                     foreach ($ulist as $u) {
                         if (strcasecmp($u->email, $email) === 0
                             && self::mention_ends_at($s, $pos + 1 + strlen($email))) {
-                            yield new MentionPhrase($u, $pos, $pos + 1 + strlen($email));
+                            $result[] = new MentionPhrase($u, $pos, $pos + 1 + strlen($email));
                             $pos += 1 + strlen($email);
                             continue 3;
                         }
@@ -223,11 +239,13 @@ class MentionParser {
                     && strpos($ux->firstName . $ux->lastName, substr($s, $endpos - 1, 2)) !== false) {
                     ++$endpos;
                 }
-                yield new MentionPhrase($ux, $pos, $endpos);
+                $result[] = new MentionPhrase($ux, $pos, $endpos);
             }
 
             $pos = $pos2;
         }
+
+        return $result;
     }
 
     /** @param string $s

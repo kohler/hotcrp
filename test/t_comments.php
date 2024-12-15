@@ -160,6 +160,59 @@ class Comments_Tester {
         $this->conf->save_refresh_setting("viewrev", null);
     }
 
+    function test_mention_censor() {
+        // paper1 wants at least two submitted reviews
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        $reviewer = $this->conf->user_by_email("lixia@cs.ucla.edu");
+        $tf = new ReviewValues($this->conf);
+        xassert($tf->parse_json(["ovemer" => 2, "revexp" => 1, "papsum" => "Flanges", "comaut" => "On the Wilbur Cross Parkway, December 15, 2024"]));
+        xassert($tf->check_and_save($reviewer, $paper1));
+        MailChecker::clear();
+
+        $this->conf->save_setting("viewrev", Conf::VIEWREV_UNLESSINCOMPLETE);
+        $this->conf->save_refresh_setting("tracks", 1, ["_" => ["viewrevid" => "+none"]]);
+
+        $j = call_api("=comment", $this->u_chair, ["c" => "new", "text" => "Hello @Reviewer A @Lixia Zhang @Reviewer B @Mary Baker @Christophe Diot"], $paper1);
+        xassert($j->ok);
+        $cid = $j->comment->cid;
+
+        $paper1->load_comments();
+        $cmt = $paper1->comment_by_id($cid);
+
+        $lixia = $this->conf->checked_user_by_email("lixia@cs.ucla.edu");
+        xassert($lixia->can_view_comment($paper1, $cmt));
+        $cmtj = $cmt->unparse_json($lixia);
+        xassert_eqq($cmtj->text, "Hello @Reviewer A @Lixia Zhang @Reviewer B @Reviewer A @Anonymous");
+        $pos1a = strpos($cmtj->text, "@Lixia");
+        $pos1b = strpos($cmtj->text, "@Reviewer B");
+        xassert_eqq($cmtj->my_mentions,
+            [[$lixia->contactId, $pos1a, $pos1a + strlen("@Lixia Zhang"), true],
+             [$lixia->contactId, $pos1b, $pos1b + strlen("@Reviewer B"), false]]);
+
+        $mgbaker = $this->conf->checked_user_by_email("mgbaker@cs.stanford.edu");
+        xassert($mgbaker->can_view_comment($paper1, $cmt));
+        $cmtj = $cmt->unparse_json($mgbaker);
+        xassert_eqq($cmtj->text, "Hello @Reviewer A @Reviewer B @Reviewer B @Mary Baker @Anonymous");
+        $pos1a = strpos($cmtj->text, "@Reviewer A");
+        $pos1b = strpos($cmtj->text, "@Mary");
+        xassert_eqq($cmtj->my_mentions,
+            [[$mgbaker->contactId, $pos1a, $pos1a + strlen("@Reviewer A"), false],
+             [$mgbaker->contactId, $pos1b, $pos1b + strlen("@Mary Baker"), true]]);
+
+        $diot = $this->conf->checked_user_by_email("christophe.diot@sophia.inria.fr");
+        xassert($diot->can_view_comment($paper1, $cmt));
+        $cmtj = $cmt->unparse_json($diot);
+        xassert_eqq($cmtj->text, "Hello @Reviewer A @Reviewer B @Reviewer B @Reviewer A @Christophe Diot");
+        $pos1a = strpos($cmtj->text, "@Chr");
+        xassert_eqq($cmtj->my_mentions,
+            [[$diot->contactId, $pos1a, $pos1a + strlen("@Christophe Diot"), true]]);
+
+        MailChecker::check_db("t_comments-mention-censor");
+
+        $this->conf->save_setting("viewrev", null);
+        $this->conf->save_refresh_setting("tracks", null);
+    }
+
     function test_attachments() {
         $paper1 = $this->conf->checked_paper_by_id(1);
         $qreq = new Qrequest("POST", ["c" => "new", "text" => "Hello", "attachment:1" => "new"]);

@@ -86,17 +86,16 @@ class MentionLister {
                 || $rrow->contactId === $user->contactId) {
                 continue;
             }
-            $viewid = $user->can_view_review_identity($prow, $rrow);
             if ($rrow->reviewOrdinal
                 && $user->can_view_review($prow, $rrow)) {
                 $au = new Author;
                 $au->lastName = "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
                 $au->contactId = $rrow->contactId;
-                $au->status = $viewid ? Author::STATUS_REVIEWER : Author::STATUS_ANONYMOUS_REVIEWER;
+                $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
                 $rlist[] = $au;
             }
-            if ($viewid
-                && ($cvis >= CommentInfo::CTVIS_REVIEWER || $rrow->reviewType >= REVIEW_PC)
+            if (($cvis >= CommentInfo::CTVIS_REVIEWER || $rrow->reviewType >= REVIEW_PC)
+                && $user->can_view_review_identity($prow, $rrow)
                 && !$rrow->reviewer()->is_dormant()) {
                 $rlist[] = $rrow->reviewer();
                 $this->rcids[] = $rrow->contactId;
@@ -110,14 +109,13 @@ class MentionLister {
     /** @param PaperInfo $prow
      * @param Contact $user */
     private function add_shepherd($prow, $user) {
-        $viewid = $user->can_view_shepherd($prow);
         $au = new Author;
         $au->lastName = "Shepherd";
         $au->contactId = $prow->shepherdContactId;
-        $au->status = $viewid ? Author::STATUS_REVIEWER : Author::STATUS_ANONYMOUS_REVIEWER;
+        $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
         $this->lists["reviewers"][] = $au;
-        if ($viewid
-            && !in_array($prow->shepherdContactId, $this->rcids)
+        if (!in_array($prow->shepherdContactId, $this->rcids)
+            && $user->can_view_shepherd($prow)
             && ($shepherd = $user->conf->user_by_id($prow->shepherdContactId, USER_SLICE))
             && !$shepherd->is_dormant()) {
             $this->lists["reviewers"][] = $shepherd;

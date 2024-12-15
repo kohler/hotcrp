@@ -366,6 +366,14 @@ class CommentInfo {
         return true;
     }
 
+    /** @param Contact $viewer
+     * @param int $uid
+     * @return string */
+    private function _mention_pseudonym($viewer, $uid) {
+        $s = $this->prow->unparse_pseudonym($viewer, $uid) ?? "Anonymous";
+        return "@{$s}";
+    }
+
     /** @param ?Contact $viewer
      * @param ?int $censor_until
      * @return string */
@@ -383,13 +391,29 @@ class CommentInfo {
         $censor_until = $censor_until ?? PHP_INT_MAX;
         foreach ($mns as $mn) {
             if ($this->_mention_censor($viewer, $mn, $censor_until - $delta)) {
-                $r = $this->prow->unparse_pseudonym($viewer, $mn[0]) ?? "Anonymous";
-                $t = substr_replace($t, "@{$r}", $mn[1] + $delta, $mn[2] - $mn[1]);
-                $delta += strlen($r) - ($mn[2] - $mn[1] - 1);
+                $r = $this->_mention_pseudonym($viewer, $mn[0]);
+                $t = substr_replace($t, $r, $mn[1] + $delta, $mn[2] - $mn[1]);
+                $delta += strlen($r) - ($mn[2] - $mn[1]);
                 $this->_recently_censored = true;
             }
         }
         return $t;
+    }
+
+    /** @param list<array{int,int,int,bool}> $mns
+     * @return list<array{int,int,int,bool}> */
+    private function make_my_mentions(Contact $viewer, $mns) {
+        $delta = 0;
+        $result = [];
+        foreach ($mns as $mn) {
+            if ($mn[0] === $viewer->contactId) {
+                $result[] = [$mn[0], $mn[1] + $delta, $mn[2] + $delta, $mn[3]];
+            } else if ($this->_mention_censor($viewer, $mn, PHP_INT_MAX)) {
+                $r = $this->_mention_pseudonym($viewer, $mn[0]);
+                $delta += strlen($r) - ($mn[2] - $mn[1]);
+            }
+        }
+        return $result;
     }
 
     /** @return object */
@@ -415,6 +439,11 @@ class CommentInfo {
         $this->make_data();
         if ($value === null) {
             unset($this->_jdata->$key);
+        } else if ($key === "mentions") {
+            $this->_jdata->mentions = [];
+            foreach ($value as $mn) {
+                $this->_jdata->mentions[] = is_object($mn) ? $mn->jsonSerialize() : $mn;
+            }
         } else {
             $this->_jdata->$key = $value;
         }
@@ -774,6 +803,10 @@ class CommentInfo {
             if ($this->has_attachments()) {
                 $cj["docs"] = $this->attachments_json($cj["editable"] ?? false);
             }
+            if (($mentions = $this->data("mentions"))
+                && ($my_mentions = $this->make_my_mentions($viewer, $mentions))) {
+                $cj["my_mentions"] = $my_mentions;
+            }
         } else {
             $cj["word_count"] = count_words($this->raw_content());
         }
@@ -841,12 +874,9 @@ class CommentInfo {
     function unparse_flow_entry(Contact $viewer) {
         // See also ReviewForm::reviewFlowEntry
         $a = '<a href="' . $this->conf->hoturl("paper", "p={$this->paperId}#" . $this->unparse_html_id()) . '"';
-        $t = '<tr class="pl"><td class="pl_eventicon">' . $a . ">"
+        $t = "<tr class=\"pl\"><td class=\"pl_eventicon\">{$a}>"
             . Ht::img("comment48.png", "[Comment]", ["class" => "dlimg", "width" => 24, "height" => 24])
-            . '</a></td><td class="pl_eventid pl_rowclick">'
-            . $a . ' class="pnum">#' . $this->paperId . '</a></td>'
-            . '<td class="pl_eventdesc pl_rowclick"><small>'
-            . $a . ' class="ptitle">'
+            . "</a></td><td class=\"pl_eventid pl_rowclick\">{$a} class=\"pnum\">#{$this->paperId}</a></td><td class=\"pl_eventdesc pl_rowclick\"><small>{$a} class=\"ptitle\">"
             . htmlspecialchars(UnicodeHelper::utf8_abbreviate($this->prow->title, 80))
             . "</a>";
         $idable = $viewer->can_view_comment_identity($this->prow, $this);
@@ -957,7 +987,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         $desired_mentions = [];
         if ($text !== false) {
             $text = (string) $text;
-            $desired_mentions = $this->analyze_mentions($user, $text, $ctype);
+            $desired_mentions = self::parse_mentions($user, $this->prow, $text, $ctype);
             $this->set_data("mentions", empty($desired_mentions) ? null : $desired_mentions);
         }
 
@@ -1147,7 +1177,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             && $this->commentId
             && ($this->commentType & self::CTM_VIS) > self::CTVIS_ADMINONLY
             && !empty($desired_mentions)) {
-            $this->inform_mentions($desired_mentions);
+            $this->inform_mentions($user, $desired_mentions);
         }
 
         if ($this->timeNotified === $this->timeModified) {
@@ -1175,7 +1205,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
      * @param PaperInfo $prow
      * @param string $text
      * @param int $ctype
-     * @return list<MentionPhrase>|\Generator<MentionPhrase> */
+     * @return list<MentionPhrase> */
     static function parse_mentions($user, $prow, $text, $ctype) {
         if (strpos($text, "@") === false) {
             return [];
@@ -1185,24 +1215,13 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
     }
 
     /** @param Contact $user
-     * @param string $text
-     * @param int $ctype
-     * @return list<array{int,int,int,bool}> */
-    private function analyze_mentions($user, $text, $ctype) {
-        $dm = [];
-        foreach (self::parse_mentions($user, $this->prow, $text, $ctype) as $mpx) {
-            $dm[] = [$mpx->user->contactId, $mpx->pos1, $mpx->pos2, $mpx->named()];
-        }
-        return $dm;
-    }
-
-    /** @param list<array{int,int,int,bool}> $mentions */
-    private function inform_mentions($mentions) {
+     * @param list<MentionPhrase> $mentions */
+    private function inform_mentions($user, $mentions) {
         foreach ($mentions as $mxm) {
-            $this->conf->prefetch_user_by_id($mxm[0]);
+            $this->conf->prefetch_user_by_id($mxm->user->contactId);
         }
         foreach ($mentions as $mxm) {
-            $mentionee = $this->conf->user_by_id($mxm[0], USER_SLICE);
+            $mentionee = $mxm->user($this->conf, USER_SLICE);
             if (!$mentionee) {
                 continue;
             }
@@ -1217,8 +1236,9 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 "prow" => $this->prow,
                 "comment_row" => $this
             ]);
-            if (!$mxm[3]) {
-                $n = substr($this->raw_content(), $mxm[1] + 1, $mxm[2] - $mxm[1] - 1);
+            if (!$mxm->named()
+                && !$this->prow->can_view_review_identity_of($mxm->user->contactId, $user)) {
+                $n = substr($this->raw_content(), $mxm->pos1 + 1, $mxm->pos2 - $mxm->pos1 - 1);
                 $notification->user_html = htmlspecialchars($n);
             }
             $notification->flags |= NotificationInfo::SENT;

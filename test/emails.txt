@@ -2332,3 +2332,75 @@ Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
 
 - Testconf I Submissions
+******** t_comments-mention-censor
+To: Mary Baker <mgbaker@cs.stanford.edu>
+Subject: [Testconf I] Mentioned for #1 "Scalable Timers for Soft State
+ Protocols"
+
+Comment @4 by Jane Chair <chair@_.com> (Administrator)
+---------------------------------------------------------------------------
+Hello @Reviewer A @Reviewer B @Reviewer B @Mary Baker @Anonymous
+
+
+\***************************************************************************
+
+
+You were mentioned in this comment for Test Conference I (Testconf I)
+submission #1. For the most up-to-date comments, see the submission
+site.
+
+* Title: Scalable Timers for Soft State Protocols
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** t_comments-mention-censor
+To: Lixia Zhang <lixia@cs.ucla.edu>
+Subject: [Testconf I] Mentioned for #1 "Scalable Timers for Soft State
+ Protocols"
+
+Comment @4 by Jane Chair <chair@_.com> (Administrator)
+---------------------------------------------------------------------------
+Hello @Reviewer A @Lixia Zhang @Reviewer B @Reviewer A @Anonymous
+
+
+\***************************************************************************
+
+
+You were mentioned in this comment for Test Conference I (Testconf I)
+submission #1. For the most up-to-date comments, see the submission
+site.
+
+* Title: Scalable Timers for Soft State Protocols
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+******** t_comments-mention-censor
+To: Christophe Diot <christophe.diot@sophia.inria.fr>
+Subject: [Testconf I] Mentioned for #1 "Scalable Timers for Soft State
+ Protocols"
+
+Comment @4 by Jane Chair <chair@_.com> (Administrator)
+---------------------------------------------------------------------------
+Hello @Reviewer A @Reviewer B @Reviewer B @Reviewer A @Christophe Diot
+
+
+\***************************************************************************
+
+
+You were mentioned in this comment for Test Conference I (Testconf I)
+submission #1. For the most up-to-date comments, see the submission
+site.
+
+* Title: Scalable Timers for Soft State Protocols
+* Site: http://hotcrp.lcdf.org/test/paper/1
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
