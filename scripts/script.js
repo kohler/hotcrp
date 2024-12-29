@@ -4808,7 +4808,7 @@ handle_ui.on("click.js-dropmenu-open", function (evt) {
         if (!modal) {
             modal = $e("div", "modal transparent");
             modal.id = "dropmenu-modal";
-            edetails.parentElement.insertBefore(modal, edetails.nextsibling);
+            edetails.parentElement.insertBefore(modal, edetails.nextSibling);
             modal.addEventListener("click", dropmenu_close, false);
         }
         edetails.open = true;

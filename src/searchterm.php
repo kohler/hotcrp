@@ -1657,7 +1657,7 @@ class PaperID_SearchTerm extends SearchTerm {
         if ($st instanceof PaperID_SearchTerm) {
             $rs = $st->r;
             if (!$st->in_order) {
-                usort($rs, function ($a, $b) { return $a->n <=> $b->n; });
+                usort($rs, function ($a, $b) { return $a->first <=> $b->first; });
             }
             foreach ($rs as $r) {
                 $this->add_drange($r->first, $r->last, $r->rev, $r->explicit);

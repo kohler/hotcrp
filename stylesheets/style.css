@@ -5088,10 +5088,10 @@ a.help {
 }
 .modal-dialog {
 	position: relative;
-	z-index: 16;
-	pointer-events: none;
 	min-width: 15em;
 	max-width: 32em;
+	z-index: 16;
+	pointer-events: none;
 }
 .modal-dialog-w40 {
 	width: fit-content;
