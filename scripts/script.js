@@ -1666,35 +1666,35 @@ function render_class(c, format) {
     }
 }
 
-function render_with(context, renderer, text) {
+function render_with(context, renderer, text, ...rest) {
     var renderf = renderer.render;
     if (renderer.render_inline
         && (hasClass(context, "format-inline")
             || window.getComputedStyle(context).display.startsWith("inline"))) {
         renderf = renderer.render_inline;
     }
-    var html = renderf.call(context, text, context);
+    var html = renderf.call(context, text, ...rest);
     context.className = render_class(context.className, renderer.format);
     context.innerHTML = html;
 }
 
-function onto(context, format, text) {
+function onto(context, format, text, ...rest) {
     if (format === "f") {
         var ft = parse_ftext(text);
         format = ft[0];
         text = ft[1];
     }
     try {
-        render_with(context, renderers[format] || renderers[0], text);
+        render_with(context, renderers[format] || renderers[0], text, ...rest);
     } catch (err) {
         log_jserror("do_render format ".concat(format, ": ", err.toString()), err);
-        render_with(context, renderers[0], text);
+        render_with(context, renderers[0], text, ...rest);
         delete renderers[format];
     }
     $(context).trigger("renderText");
 }
 
-function into(context) {
+function into(context, ...rest) {
     if (typeof context === "number") { // jQuery.each
         context = this;
     }
@@ -1703,7 +1703,7 @@ function into(context) {
     if (text == null) {
         text = context.textContent;
     }
-    onto(context, format, text);
+    onto(context, format, text, ...rest);
 }
 
 function on_page() {
@@ -7655,8 +7655,6 @@ function cmt_render(cj, editing) {
             }
         }
     }
-
-    // render
     cmt_toggle_editing(article, editing);
 
     // draft responses <-> real responses
@@ -7674,8 +7672,7 @@ function cmt_render(cj, editing) {
         cmt_start_edit(article, cj);
     } else {
         if (cj.text !== false) {
-            cmt_render_text(cj.format, cj.text || "", cj.response,
-                            article.querySelector(".cmttext"), article);
+            cmt_render_text(article.querySelector(".cmttext"), cj, article);
         } else if (cj.response) {
             const t = (cj.word_count ? cj.word_count + "-word draft " : "Draft ") +
                 (cj.response == "1" ? "" : cj.response + " ");
@@ -7707,11 +7704,11 @@ function overlong_truncation_site(e) {
     return e;
 }
 
-function cmt_render_text(format, value, response, texte, article) {
-    const rrd = response && resp_rounds[response];
-    let aftertexte = null;
+function cmt_render_text(texte, cj, article) {
+    const rrd = cj.response && resp_rounds[cj.response];
+    let text = cj.text || "", aftertexte = null;
     if (rrd && rrd.wl > 0) {
-        const wc = count_words(value);
+        const wc = count_words(text);
         if (wc > 0 && article) {
             let cth = article.querySelector("header");
             cmt_header_dotsep(cth);
@@ -7719,14 +7716,14 @@ function cmt_render_text(format, value, response, texte, article) {
         }
         if ((rrd.hwl || 0) > 0
             && wc > rrd.hwl) {
-            const wcx = count_words_split(value, rrd.hwl);
-            value = wcx[0].trimEnd() + "… ";
+            const wcx = count_words_split(text, rrd.hwl);
+            text = wcx[0].trimEnd() + "… ";
             aftertexte = $e("span", {class: "overlong-truncation", title: "Truncated for length"}, "✖");
         }
         if (wc > rrd.wl
             && ((rrd.hwl || 0) <= 0
                 || rrd.wl < rrd.hwl)) {
-            const wcx = count_words_split(value, rrd.wl),
+            const wcx = count_words_split(text, rrd.wl),
                 allowede = $e("div", "overlong-allowed"),
                 dividere = $e("div", "overlong-divider",
                     allowede,
@@ -7738,17 +7735,17 @@ function cmt_render_text(format, value, response, texte, article) {
             addClass(texte, "overlong-collapsed");
             texte.prepend(dividere, contente);
             texte = contente;
-            render_text.onto(allowede, format, wcx[0]);
+            render_text.onto(allowede, cj.format, wcx[0], cj);
         }
     }
-    render_text.onto(texte, format, value);
+    render_text.onto(texte, cj.format, text, cj);
     aftertexte && overlong_truncation_site(texte).append(aftertexte);
-    toggleClass(texte, "emoji-only", emojiregex.test(value));
+    toggleClass(texte, "emoji-only", emojiregex.test(text));
 }
 
-function cmt_render_preview(evt, format, value, dest) {
-    const cj = cj_find(evt.target);
-    cmt_render_text(format, value, cj ? cj.response : 0, dest, null);
+function cmt_render_preview(evt, format, text, dest) {
+    const cj = cj_find(evt.target) || {};
+    cmt_render_text(dest, {object: "comment", format: format, text: text, response: cj.response}, null);
     return false;
 }
 
