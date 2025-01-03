@@ -267,9 +267,8 @@ function lower_bound_index(a, v) {
 const string_utf8_index_re = /([\x00-\x7F]*)([\u0080-\u07FF]*)([\u0800-\uD7FF\uE000-\uFFFF]*)((?:[\uD800-\uDBFF][\uDC00-\uDFFF])*)/y;
 
 function string_utf8_index(str, index, pos) {
-    let r = 0;
     const len = str.length;
-    string_utf8_index_re.lastIndex = pos = pos || 0;
+    let r = pos = string_utf8_index_re.lastIndex = pos || 0;
     while (pos < len && index > 0) {
         const m = string_utf8_index_re.exec(str);
         if (!m) {
