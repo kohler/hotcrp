@@ -4585,6 +4585,15 @@ a:hover .t-editor,
 	font-size: 200%;
 	line-height: 1.125;
 }
+.my-mention {
+	display: inline-block;
+	color: #a16300;
+	text-decoration-line: underline;
+	text-decoration-thickness: 1px;
+	text-decoration-color: #a16300;
+	text-decoration-style: dashed;
+	text-underline-offset: 2px;
+}
 .preview {
 	margin-bottom: 24px;
 }
