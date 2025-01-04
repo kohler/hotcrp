@@ -339,23 +339,24 @@ class PCConflicts_PaperOption extends PaperOption {
         $confset = $this->selectors ? $this->conf->conflict_set() : null;
         $names = [];
         foreach ($ov->prow->conflict_type_list() as $cflt) {
-            if (Conflict::is_conflicted($cflt->conflictType)
-                && ($p = $pcm[$cflt->contactId] ?? null)) {
-                $t = $user->reviewer_html_for($p);
-                if ($p->affiliation) {
-                    $t .= " <span class=\"auaff\">(" . htmlspecialchars($p->affiliation) . ")</span>";
-                }
-                $ch = "";
-                if (Conflict::is_author($cflt->conflictType)) {
-                    $ch = "<strong>Author</strong>";
-                } else if ($confset) {
-                    $ch = $confset->unparse_html($cflt->conflictType);
-                }
-                if ($ch !== "") {
-                    $t .= " - {$ch}";
-                }
-                $names[$p->pc_index] = "<li class=\"odname\">{$t}</li>";
+            if (!Conflict::is_conflicted($cflt->conflictType)
+                || !($p = $pcm[$cflt->contactId] ?? null)) {
+                continue;
             }
+            $t = $user->reviewer_extended_html_for($p);
+            if ($p->affiliation) {
+                $t .= " <span class=\"auaff\">(" . htmlspecialchars($p->affiliation) . ")</span>";
+            }
+            $ch = "";
+            if (Conflict::is_author($cflt->conflictType)) {
+                $ch = "<strong>Author</strong>";
+            } else if ($confset) {
+                $ch = $confset->unparse_html($cflt->conflictType);
+            }
+            if ($ch !== "") {
+                $t .= " - {$ch}";
+            }
+            $names[$p->pc_index] = "<li class=\"odname\">{$t}</li>";
         }
         if (empty($names)) {
             $names[] = "<li class=\"odname\">None</li>";

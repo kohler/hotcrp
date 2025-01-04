@@ -1,6 +1,6 @@
 <?php
 // commentinfo.php -- HotCRP helper class for comments
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class CommentInfo {
     /** @var Conf
@@ -567,6 +567,8 @@ class CommentInfo {
         if (($this->commentType & self::CT_RESPONSE) !== 0) {
             $n = "<i>" . $this->unparse_response_text() . "</i>"
                 . ($n === "Author" ? "" : " ({$n})");
+        } else if ($this->contactId === $viewer->contactId) {
+            $n = "<span class=\"my-mention\" title=\"This is you\">{$n}</span>";
         }
         return $n;
     }

@@ -1,6 +1,6 @@
 /* -*- mode: css; indent-tabs-mode: t; css-indent-offset: 8 -*- */
 /* style.css -- HotCRP CSS styles */
-/* Copyright (c) 2006-2024 Eddie Kohler; see LICENSE. */
+/* Copyright (c) 2006-2025 Eddie Kohler; see LICENSE. */
 
 /* theme colors and widths */
 @layer theme {
@@ -3524,6 +3524,10 @@ tr.plx {
 	background-position: top left;
 }
 
+.my-mention {
+	color: #a16300;
+}
+
 .tagbg, .badge {
 	-webkit-print-color-adjust: exact;
 	print-color-adjust: exact;
@@ -4585,14 +4589,15 @@ a:hover .t-editor,
 	font-size: 200%;
 	line-height: 1.125;
 }
-.my-mention {
+.my-mention::after {
+	content: "✪";
+	padding-left: 0.1em;
+	font-size: 95%;
 	display: inline-block;
+	position: relative;
+	bottom: 0.3em;
+	text-indent: 0;
 	color: #a16300;
-	text-decoration-line: underline;
-	text-decoration-thickness: 1px;
-	text-decoration-color: #a16300;
-	text-decoration-style: dashed;
-	text-underline-offset: 2px;
 }
 .preview {
 	margin-bottom: 24px;

@@ -1494,8 +1494,8 @@ class PaperTable {
                 || !Conflict::is_conflicted($cu->conflictType)) {
                 continue;
             }
-            $h = $this->user->reviewer_html_for($cu->user);
-            $pcconf[$cu->user->pc_index] = "<li class=\"odname\"><span class=\"taghl\" title=\"{$cu->user->email}\">{$h}</span></li>";
+            $h = $this->user->reviewer_extended_html_for($cu->user);
+            $pcconf[$cu->user->pc_index] = "<li class=\"odname\">{$h}</li>";
         }
         if (empty($pcconf)) {
             $pcconf[] = '<li class="od">None</li>';
@@ -2611,19 +2611,22 @@ class PaperTable {
             // reviewer identity
             $showtoken = $rr->reviewToken && $user->can_edit_review($prow, $rr);
             if (!$user->can_view_review_identity($prow, $rr)) {
-                $t .= ($rtype ? "<td class=\"rl\">{$rtype}</td>" : '<td></td>');
+                $t .= $rtype ? "<td class=\"rl\">{$rtype}</td>" : '<td></td>';
             } else {
                 $reviewer = $rr->reviewer();
-                if (!$showtoken || !Contact::is_anonymous_email($reviewer->email)) {
-                    $n = $user->reviewer_html_for($rr);
+                if ($showtoken && Contact::is_anonymous_email($reviewer->email)) {
+                    $n = "[Token " . encode_token($rr->reviewToken) . "]";
+                    if ($user->is_my_review($rr)) {
+                        $n = "<span class=\"my-mention\" title=\"You have this review token\">{$n}</span>";
+                    }
                 } else {
-                    $n = "[Token " . encode_token((int) $rr->reviewToken) . "]";
+                    $n = $user->reviewer_extended_html_for($rr);
                 }
                 if ($allow_actas) {
                     $n .= $this->_review_table_actas($reviewer);
                 }
                 $rtypex = $rtype ? " {$rtype}" : "";
-                $t .= "<td class=\"rl\"><span class=\"taghl\" title=\"{$reviewer->email}\">{$n}</span>{$rtypex}</td>";
+                $t .= "<td class=\"rl\">{$n}{$rtypex}</td>";
             }
 
             // requester
@@ -2746,7 +2749,7 @@ class PaperTable {
                     $tclass = "cmtlink";
                     if (($tags = $cx[0]->viewable_tags($this->user))
                         && ($color = $cx[0]->conf->tags()->color_classes($tags))) {
-                        $tclass .= " $color taghh";
+                        $tclass .= " {$color} taghh";
                     }
                     $cid = $cx[0]->unparse_html_id();
                     return "<span class=\"nb\"><a class=\"{$tclass} track\" href=\"#{$cid}\">"
