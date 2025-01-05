@@ -79,6 +79,13 @@ function array_sort_unique(&$a) {
 
 // string helpers
 
+if (PHP_VERSION_ID < 80000) {
+    /** @suppress PhanRedefineFunctionInternal */
+    function str_contains($haystack, $needle) {
+        return strpos($haystack, $needle) !== false;
+    }
+}
+
 /** @param string $haystack
  * @param string $needle
  * @return bool */
