@@ -1,6 +1,6 @@
 <?php
 // papercolumn.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class PaperColumn extends Column {
     const OVERRIDE_NONE = 0;
@@ -433,10 +433,12 @@ class ReviewStatus_PaperColumn extends PaperColumn {
 }
 
 class Authors_PaperColumn extends PaperColumn {
-    /** @var bool */
-    private $aufull;
-    /** @var bool */
-    private $anonau;
+    /** @var bool
+     * @readonly */
+    public $full;
+    /** @var bool
+     * @readonly */
+    public $anon;
     /** @var bool */
     private $highlight;
     function __construct(Conf $conf, $cj) {
@@ -445,15 +447,17 @@ class Authors_PaperColumn extends PaperColumn {
     function view_option_schema() {
         return ["anon", "full", "short/!full"];
     }
+    /** @suppress PhanAccessReadOnlyProperty */
     function prepare(PaperList $pl, $visible) {
-        $this->aufull = $this->view_option("full") ?? $pl->viewing("aufull");
-        $this->anonau = $this->view_option("anon") ?? $pl->viewing("anonau");
+        $this->full = $this->view_option("full") ?? $pl->viewing("aufull");
+        $this->anon = $this->view_option("anon") ?? $pl->viewing("anonau");
         $this->highlight = $pl->search->has_field_highlighter("au");
         return $pl->user->can_view_some_authors();
     }
     function field_json(PaperList $pl) {
         $j = parent::field_json($pl);
-        $j["aufull"] = $this->aufull;
+        $j["full"] = $this->full;
+        $j["anon"] = $this->anon;
         return $j;
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
@@ -497,7 +501,7 @@ class Authors_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $out = [];
-        if (!$this->highlight && !$this->aufull) {
+        if (!$this->highlight && !$this->full) {
             foreach ($row->author_list() as $au) {
                 $out[] = $au->name_h(NAME_P|NAME_I);
             }
@@ -509,7 +513,7 @@ class Authors_PaperColumn extends PaperColumn {
             $regex = $this->highlight ? $pl->search->field_highlighter("au", $row->_search_group) : null;
             foreach ($row->author_list() as $i => $au) {
                 $name = Text::highlight($au->name(), $regex, $didhl);
-                if (!$this->aufull
+                if (!$this->full
                     && ($first = htmlspecialchars($au->firstName))
                     && (!$didhl || substr($name, 0, strlen($first)) === $first)
                     && ($initial = Text::initial($first)) !== "") {
@@ -524,14 +528,14 @@ class Authors_PaperColumn extends PaperColumn {
                 }
             }
             // $affout[0] === "" iff there are no nonempty affiliations
-            if (($any_affhl || $this->aufull)
+            if (($any_affhl || $this->full)
                 && !empty($out)
                 && $affout[0] !== "") {
                 foreach ($out as $i => &$x) {
                     $x .= ' <span class="auaff">(' . $affout[$i] . ')</span>';
                 }
             }
-            $t = join($any_affhl || $this->aufull ? "; " : ", ", $out);
+            $t = join($any_affhl || $this->full ? "; " : ", ", $out);
         }
         if ($pl->conf->submission_blindness() !== Conf::BLIND_NEVER
             && !$pl->user->can_view_authors($row)) {
@@ -540,11 +544,11 @@ class Authors_PaperColumn extends PaperColumn {
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        if (!$pl->user->can_view_authors($row) && !$this->anonau) {
+        if (!$pl->user->can_view_authors($row) && !$this->anon) {
             return "";
         }
         $out = [];
-        if (!$this->aufull) {
+        if (!$this->full) {
             foreach ($row->author_list() as $au) {
                 $out[] = $au->name(NAME_P|NAME_I);
             }

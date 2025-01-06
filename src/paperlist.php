@@ -1,6 +1,6 @@
 <?php
 // paperlist.php -- HotCRP helper class for producing paper lists
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class PaperListTableRender {
     /** @var string */
@@ -427,9 +427,9 @@ class PaperList {
         case "reviewAssignment":
             return "id title desirability topicscore mypref assignment potentialconflict topics reviewers linkto[assign]";
         case "conflictassign":
-            return "id title authors aufull potentialconflict revtype[simple] editconf[simple,pin=conflicted] linkto[assign]";
+            return "id title authors[anon,full] potentialconflict revtype[simple] editconf[simple,pin=conflicted] linkto[assign]";
         case "conflictassign:neg":
-            return "id title authors aufull potentialconflict revtype[simple] editconf[simple,pin=unconflicted] linkto[assign]";
+            return "id title authors[anon,full] potentialconflict revtype[simple] editconf[simple,pin=unconflicted] linkto[assign]";
         case "pf":
             return "sel id title status revtype topicscore editmypref[topicscore]";
         case "reviewers":
@@ -1811,7 +1811,7 @@ class PaperList {
     private function _analyze_folds() {
         $classes = &$this->table_attr["class"];
         $jscol = [];
-        $has_sel = $has_statistics = false;
+        $has_sel = $has_statistics = $has_anonau = false;
         foreach ($this->_vcolumns as $fdef) {
             assert(!!$fdef->is_visible);
             if (!$fdef->has_content) {
@@ -1827,10 +1827,12 @@ class PaperList {
             if ($fdef->has_content && ($j["has_statistics"] ?? false)) {
                 $has_statistics = true;
             }
+            if ($fdef instanceof Authors_PaperColumn && $fdef->anon) {
+                $has_anonau = true;
+            }
         }
         // authorship requires special handling
-        $classes[] = "fold2" . ($this->viewing("anonau") ? "o" : "c");
-        $classes[] = "fold4" . ($this->viewing("aufull") ? "o" : "c");
+        $classes[] = "fold2" . ($has_anonau ? "o" : "c");
         if ($this->user->is_track_manager()) {
             $classes[] = "fold5" . ($this->viewing("force") ? "o" : "c");
         }
