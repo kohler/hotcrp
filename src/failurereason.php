@@ -1,6 +1,6 @@
 <?php
 // failurereason.php -- HotCRP helper class for permission errors
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class FailureReason extends Exception
     implements ArrayAccess, IteratorAggregate, Countable, JsonSerializable {
@@ -380,7 +380,7 @@ class FailureReason extends Exception
                 if ($t === "") {
                     continue;
                 }
-                if ($tt === "" || ($xformat === 5 && preg_match('/\/(?:p|div|ul|ol|li)>\s*\z/i', $tt))) {
+                if ($tt === "<{$xformat}>" || ($xformat === 5 && preg_match('/\/(?:p|div|ul|ol|li)>\s*\z/i', $tt))) {
                     // nothing
                 } else if (preg_match('/[.;,:?!\s]\z/', $tt)) {
                     $tt .= " ";
