@@ -164,6 +164,9 @@
     "analytics": {
         "weak": true
     },
+    "applied": {
+        "weak": true
+    },
     "associates": {
         "weak": true
     },
@@ -174,6 +177,9 @@
         "weak": true
     },
     "bv": {
+        "weak": true
+    },
+    "campus": {
         "weak": true
     },
     "capital": {
@@ -583,6 +589,9 @@
     "ethz": {
         "alternate": ["eth zurich"]
     },
+    "europe": {
+        "weak": true
+    },
     "facebook": {
         "nameish": false
     },
@@ -590,7 +599,7 @@
         "nameish": false
     },
     "florida": {
-        "sync": ["state", "central", "international"]
+        "sync": ["state", "central", "international", "south"]
     },
     "france": {
         "weak": true
@@ -950,7 +959,13 @@
         "alternate": [
             {"word": "uw", "if": "university"}
         ],
-        "sync": ["george", "lee", "state"]
+        "sync": ["george", "lee", "state", "louis"]
+    },
+    "western": {
+        "sync": ["case", "australia"]
+    },
+    "wien": {
+        "weak": true
     },
     "wisconsin": {
         "alternate": [
