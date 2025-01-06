@@ -5054,8 +5054,10 @@ body {
 .fold63c .fx63, .fold63o .fn63,
 .fold64c .fx64, .fold64o .fn64,
 .fold98c .fx98, .fold98o .fn98,
-.fold99c .fx99, .fold99o .fn99,
-.hidden {
+.fold99c .fx99, .fold99o .fn99 {
+	display: none;
+}
+.hidden, [hidden] {
 	display: none !important;
 }
 .unhidden {

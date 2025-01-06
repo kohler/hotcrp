@@ -1,5 +1,5 @@
 // script.js -- HotCRP JavaScript library
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 "use strict";
 var siteinfo, hotcrp;
@@ -9797,8 +9797,8 @@ function sorter_analyze(sorter) {
 function tablelist_ids(tbl) {
     const ids = [];
     let xpid;
-    for (const t of tablelist_facets(tbl)) {
-        for (const tr of t.tBodies[0].children) {
+    for (const tfacet of tablelist_facets(tbl)) {
+        for (const tr of tfacet.tBodies[0].children) {
             if (tr.nodeType === 1
                 && (tr.className === "pl" || tr.className.startsWith("pl "))
                 && (xpid = tr.getAttribute("data-pid"))) {
@@ -10820,10 +10820,8 @@ function Plist(tbl) {
     this.pltable = tbl;
     this.fields = {};
     this.field_order = [];
-    this.aufull = {};
     this.tagmap = false;
     this.taghighlighter = false;
-    this.next_foldnum = 8;
     this._bypid = {};
     var fs = JSON.parse(tbl.getAttribute("data-fields")), i;
     for (i = 0; i !== fs.length; ++i) {
@@ -10841,32 +10839,71 @@ function vcolumn_order_compare(f1, f2) {
     }
     return strcasecmp_id(f1.name, f2.name);
 }
+Plist.prototype.facets = function () {
+    return tablelist_facets(this.pltable);
+};
+Plist.prototype.rows = function* (klass) {
+    for (const tfacet of this.facets()) {
+        for (const tr of tfacet.tBodies[0].children) {
+            if (tr.nodeName === "TR"
+                && (!klass || hasClass(tr, klass)))
+                yield tr;
+        }
+    }
+};
+Plist.prototype.statistics_rows = function* () {
+    for (const tfacet of this.facets()) {
+        for (const tr of tfacet.tFoot.children) {
+            if (tr.nodeName === "TR" && hasClass(tr, "pl_statrow"))
+                yield tr;
+        }
+    }
+};
+Plist.prototype.field_containers = function* (f, all) {
+    const as_row = f.as_row, klass = as_row ? "plx" : "pl";
+    for (const tfacet of this.facets()) {
+        if (!as_row && all) {
+            yield tfacet.tHead.rows[0];
+        }
+        for (const tr of tfacet.tBodies[0].children) {
+            if (tr.nodeName === "TR" && hasClass(tr, klass))
+                yield as_row ? tr.lastChild : tr;
+        }
+        if (!as_row && all) {
+            for (const tr of tfacet.tFoot.children) {
+                if (tr.nodeName === "TR" && hasClass(tr, "pl_statrow"))
+                    yield tr;
+            }
+        }
+    }
+};
 Plist.prototype.add_field = function (f, append) {
-    var j;
+    this.fields[f.name] = f;
     if (append) {
         this.field_order.push(f);
     } else {
-        j = this.field_order.length;
+        let j = this.field_order.length;
         while (j > 0 && vcolumn_order_compare(f, this.field_order[j-1]) < 0) {
             --j;
         }
         this.field_order.splice(j, 0, f);
     }
-    this.fields[f.name] = f;
     if (/^(?:#|tag:|tagval:)\S+$/.test(f.name)) {
         $(window).on("hotcrptags", make_tag_column_callback(this, f));
     }
-    if (f.foldnum === true) {
-        do {
-            ++this.next_foldnum;
-        } while (hasClass(this.pltable, "fold" + this.next_foldnum + "c")
-                 || hasClass(this.pltable, "fold" + this.next_foldnum + "o"));
-        f.foldnum = this.next_foldnum;
+};
+Plist.prototype.load_field = function (f) {
+    const oldf = this.fields[f.name];
+    if (oldf) {
+        this.fields[f.name] = f;
+        this.field_order[this.field_order.indexOf(oldf)] = f;
+    } else {
+        f.missing = true;
+        this.add_field(f);
     }
 };
 Plist.prototype.foldnum = function (type) {
-    var fn = ({anonau:2, aufull:4, force:5, rownum:6, statistics:7})[type];
-    return fn || this.fields[type].foldnum;
+    return ({anonau:2, force:5, rownum:6, statistics:7})[type];
 };
 Plist.prototype.field_index = function (f) {
     var i, index = 0;
@@ -10877,28 +10914,18 @@ Plist.prototype.field_index = function (f) {
     }
     return index;
 };
-function populate_pidrows(tbl, bypid) {
-    var tr = tbl.tBodies[0].firstChild, xpid;
-    while (tr) {
-        if (tr.nodeName === "TR"
-            && hasClass(tr, "pl")
-            && (xpid = tr.getAttribute("data-pid"))) {
-            bypid[+xpid] = tr;
-        }
-        tr = tr.nextSibling;
-    }
-}
 Plist.prototype.pidrow = function (pid) {
-    if (!(pid in this._bypid)) {
-        var bypid = this._bypid;
-        for (const tbl of tablelist_facets(this.pltable)) {
-            populate_pidrows(tbl, bypid);
+    const bypid = this._bypid;
+    if (!(pid in bypid)) {
+        for (const tr of this.rows("pl")) {
+            let xpid = tr.getAttribute("data-pid");
+            xpid && (bypid[+xpid] = tr);
         }
     }
-    return this._bypid[pid];
+    return bypid[pid];
 };
 Plist.prototype.pidxrow = function (pid) {
-    var tr = this.pidrow(pid);
+    let tr = this.pidrow(pid);
     if (!tr) {
         return null;
     }
@@ -11073,14 +11100,14 @@ function set_pidfield(f, elt, text, classes) {
         return;
     }
     if (text == null || text === "") {
-        elt.className = add_tokens(f.as_row ? "ple" : "pl", "fx" + f.foldnum);
+        elt.className = f.as_row ? "ple" : "pl";
         elt.replaceChildren();
         return;
     }
     if (f.as_row) {
-        elt.className = add_tokens("ple", f.className || "pl_" + f.name, "fx" + f.foldnum, classes);
+        elt.className = add_tokens("ple", f.className || "pl_" + f.name, classes);
         if (!elt.firstChild) {
-            let em = $e("em", "plet");
+            const em = $e("em", "plet");
             if (f.title)
                 em.innerHTML = f.title + ":";
             elt.append(em, $e("div", "pled"));
@@ -11249,64 +11276,65 @@ hotcrp.render_list = function () {
 }
 
 function add_column(plistui, f) {
-    var pctr = plistui.pltable, index = plistui.field_index(f), $j = $(pctr);
-    $j.find("tr.plx > td.plx, td.pl-footer, tr.plheading > td:last-child, " +
+    // colspans
+    const index = plistui.field_index(f), pctr = plistui.pltable;
+    $(pctr).find("tr.plx > td.plx, td.pl-footer, tr.plheading > td:last-child, " +
             "thead > tr.pl_headrow.pl_annorow > td:last-child, " +
             "tfoot > tr.pl_statheadrow > td:last-child").each(function () {
         this.setAttribute("colspan", +this.getAttribute("colspan") + 1);
     });
-    var classes = (f.className || 'pl_' + f.name) + ' fx' + f.foldnum,
-        stmpl = f.sort && pctr.getAttribute("data-sort-url-template");
-    $j.find("thead > tr.pl_headrow:first-child").each(function () {
-        var th = document.createElement("th"), x = th;
-        th.className = "pl plh ".concat(classes, f.sort ? " sortable" : "");
-        th.setAttribute("data-pc", f.sort_name || f.name);
-        if (f.sort && stmpl) {
-            th.setAttribute("data-pc-sort", f.sort);
-            x = document.createElement("a");
-            th.appendChild(x);
-            x.className = "pl_sort";
-            x.rel = "nofollow";
-            x.setAttribute("href", stmpl.replace(/\{sort\}/, urlencode(f.sort_name || f.name)));
-        }
-        x.innerHTML = f.title;
-        this.insertBefore(th, this.childNodes[index] || null);
-    });
-    var dclasses = "pl " + classes;
-    $j.find("tr.pl").each(function () {
-        var td = document.createElement("td");
-        td.className = dclasses;
-        this.insertBefore(td, this.childNodes[index] || null);
-    });
-    dclasses = "plstat " + classes;
-    $j.find("tfoot > tr.pl_statrow").each(function () {
-        var td = document.createElement("td");
-        td.className = dclasses;
-        this.insertBefore(td, this.childNodes[index] || null);
-    });
-    f.missing = false;
-}
 
-function add_row(plistui, f) {
-    var index = plistui.field_index(f),
-        classes = (f.className || "pl_" + f.name).concat(" fx", f.foldnum);
-    $(plistui.pltable).find("td.plx").each(function () {
-        var div = document.createElement("div");
-        div.className = classes;
-        this.insertBefore(div, this.childNodes[index] || null);
+    // headers
+    const klass = f.className || "pl_" + f.name;
+    let model = $e("th", {
+        class: "pl ph ".concat(klass, f.sort ? " sortable" : ""), "data-pc": f.sort_name || f.name
     });
-    f.missing = false;
+    if (f.sort && pctr.getAttribute("data-sort-url-template")) {
+        model.setAttribute("data-pc-sort", f.sort);
+        model.append($e("a", {
+            class: "pl_sort", rel: "nofollow",
+            href: pctr.getAttribute("data-sort-url-template").replace("{sort}", urlencode(f.sort_name || f.name))
+        }));
+    }
+    (model.firstChild || model).innerHTML = f.title;
+    for (const tfacet of plistui.facets()) {
+        const tr = tfacet.tHead.rows[0];
+        tr.insertBefore(model.cloneNode(true), tr.childNodes[index] || null);
+    }
+
+    // statistics rows
+    model = $e("td", "plstat " + klass);
+    for (const tr of plistui.statistics_rows()) {
+        tr.insertBefore(model.cloneNode(), tr.childNodes[index] || null);
+    }
 }
 
 function ensure_field(plistui, f) {
-    if (f.missing)
-        f.as_row ? add_row(plistui, f) : add_column(plistui, f);
+    if (!f.missing) {
+        return;
+    }
+    f.as_row || add_column(plistui, f);
+    const index = plistui.field_index(f),
+        klass = f.className || "pl_" + f.name,
+        model = f.as_row ? $e("div", klass) : $e("td", "pl " + klass);
+    for (const tr of plistui.field_containers(f)) {
+        tr.insertBefore(model.cloneNode(), tr.childNodes[index] || null);
+    }
+    f.missing = false;
 }
 
-function make_callback(plistui, dofold, type) {
-    var f = plistui.fields[type], values, tr;
+function fold_field(plistui, f, folded) {
+    const index = plistui.field_index(f);
+    for (const fc of plistui.field_containers(f, true)) {
+        fc.childNodes[index].hidden = folded;
+    }
+    f.hidden = folded;
+}
+
+function make_callback(plistui, type) {
+    let f, values, tr;
     function render_some() {
-        var index = plistui.field_index(f), htmlk = f.name, n = 0,
+        let index = plistui.field_index(f), htmlk = f.name, n = 0,
             table = tr.closest("table");
         while (n < 64 && tr) {
             if (tr.nodeName === "TR"
@@ -11336,51 +11364,41 @@ function make_callback(plistui, dofold, type) {
         tr && setTimeout(render_some, 8);
     }
     function render_statistics(statvalues) {
-        var tr = plistui.pltable.querySelector("tfoot > tr.pl_statrow"),
-            index = plistui.field_index(f);
-        for (; tr; tr = tr.nextSibling)
-            if (tr.nodeName === "TR" && tr.hasAttribute("data-statistic")) {
-                var stat = tr.getAttribute("data-statistic"),
-                    td = tr.childNodes[index];
-                if (td && stat in statvalues)
-                    td.innerHTML = statvalues[stat];
+        const index = plistui.field_index(f);
+        for (const tr of plistui.statistics_rows()) {
+            const stat = tr.getAttribute("data-statistic");
+            if (stat in statvalues) {
+                tr.childNodes[index].innerHTML = statvalues[stat];
             }
+        }
     }
     function render_start() {
+        f = plistui.fields[type];
         ensure_field(plistui, f);
         tr = plistui.pltable.querySelector("tr.pl");
         tr && render_some();
         if (values.stat && f.name in values.stat) {
             render_statistics(values.stat[f.name]);
         }
-        if (dofold !== null) {
-            fold(plistui.pltable, dofold, f.foldnum);
-        }
         check_statistics(plistui);
     }
     return function (rv) {
-        if (!f && rv.ok && rv.fields && rv.fields[type]) {
-            f = rv.fields[type];
-            f.foldnum = f.missing = true;
-            plistui.add_field(f);
-            addClass(plistui.pltable, "fold" + f.foldnum + "c");
+        if (!rv.ok) {
+            return;
         }
-        if (type === "authors") {
-            plistui.aufull[rv.fields[type].aufull] = rv;
+        if (rv.fields && rv.fields[type]) {
+            plistui.load_field(rv.fields[type]);
         }
-        if (rv.ok) {
-            values = rv;
-            $(render_start);
-        }
+        values = rv;
+        $(render_start);
     };
 }
 
 function check_statistics(plistui) {
-    var statistics = false, t, f;
-    for (t in plistui.fields) {
-        f = plistui.fields[t];
-        if (f.has_statistics
-            && hasClass(plistui.pltable, "fold" + f.foldnum + "o")) {
+    let statistics = false;
+    for (const t in plistui.fields) {
+        const f = plistui.fields[t];
+        if (f.has_statistics && !f.missing && !f.hidden) {
             statistics = true;
             break;
         }
@@ -11388,69 +11406,73 @@ function check_statistics(plistui) {
     fold(plistui.pltable, !statistics, 8);
 }
 
-function plinfo(plistui, type, dofold) {
-    var xtype;
-    if (type === "au")
-        type = xtype = "authors"; // special case
-    else if (type === "aufull" || type === "anonau")
-        xtype = "authors";
-    else
-        xtype = type;
-    var f = plistui.fields[xtype], pctr = plistui.pltable;
+function plinfo_session(ses, type, hidden, form) {
+    let v = ses + type + "=" + (hidden ? 1 : 0);
+    if (type === "authors" && form) {
+        const anone = form.elements.showanonau, fulle = form.elements.showaufull;
+        if (anone) {
+            v += " " + ses + "anonau=" + (anone.checked ? 0 : 1);
+        }
+        if (fulle) {
+            v += " " + ses + "aufull=" + (fulle.checked ? 0 : 1);
+        }
+    }
+    return v;
+}
 
-    var ses = pctr.getAttribute("data-fold-session-prefix"), sesv;
-    if (ses) {
-        if (type === "anonau" && !dofold)
-            sesv = ses + "authors=0 " + ses + "anonau=0";
-        else
-            sesv = ses + type + (dofold ? "=1" : "=0");
+function plinfo(plistui, type, hidden, form) {
+    // find field
+    if (type === "au") {
+        type = "authors";
+    }
+    const f = plistui.fields[type];
+    let load_type = type,
+        need_load = !hidden && (!f || f.missing);
+    if (type === "authors" && form) {
+        const decor = [], anone = form.elements.showanonau, fulle = form.elements.showaufull;
+        if (anone) {
+            decor.push(anone.checked ? "anon" : "-anon");
+            need_load = need_load || (!hidden && f.anon !== anone.checked);
+        }
+        if (fulle) {
+            decor.push(fulle.checked ? "full" : "-full");
+            need_load = need_load || (!hidden && f.full !== fulle.checked);
+        }
+        if (decor.length) {
+            load_type += "[" + decor.join(",") + "]";
+        }
     }
 
-    if (!f || (type === "aufull" && !plistui.aufull[!dofold])) {
-        // initiate load
-        var loadargs = {fn: "fieldhtml", f: xtype};
-        if (type === "aufull")
-            loadargs.aufull = dofold ? 0 : 1;
-        else if (xtype === "authors")
-            loadargs.aufull = hasClass(pctr, "fold" + plistui.foldnum("aufull") + "o") ? 1 : 0;
+    const pctr = plistui.pltable;
+    let ses = pctr.getAttribute("data-fold-session-prefix");
+    if (need_load) {
+        const loadargs = {fn: "fieldhtml", f: load_type};
         if (ses) {
-            loadargs.session = sesv;
+            loadargs.session = plinfo_session(ses, type, hidden, form);
             ses = null;
         }
         $.get(hoturl("=api", $.extend(loadargs, hotlist_search_params(pctr, true))),
-              make_callback(plistui, type === "aufull" ? null : dofold, xtype));
-        if (type === "anonau" || type === "aufull") {
-            fold(pctr, dofold, plistui.foldnum(type));
-        }
-    } else {
-        // display
-        if (type === "aufull") {
-            make_callback(plistui, null, xtype)(plistui.aufull[!dofold]);
-        } else {
-            if (type === "anonau" && !dofold) {
-                fold(pctr, dofold, plistui.foldnum(xtype));
-            }
-            fold(pctr, dofold, plistui.foldnum(type));
-        }
-        // update statistics
+              make_callback(plistui, type));
+    } else if (hidden !== (!f || f.missing || f.hidden)) {
+        fold_field(plistui, f, hidden);
         check_statistics(plistui);
     }
+
     // update session
-    if (ses)
-        $.post(hoturl("=api/session", {v: sesv}));
+    ses && $.post(hoturl("=api/session", {v: plinfo_session(ses, type, hidden, form)}));
     return false;
 }
 
 function plist_hotcrptags(plistui, rv) {
-    var pr = plistui.pidrow(rv.pid);
+    const pr = plistui.pidrow(rv.pid);
     if (!pr) {
         return;
     }
-    var prx = pr.nextElementSibling;
+    let prx = pr.nextElementSibling;
     if (prx && !hasClass(prx, "plx")) {
         prx = null;
     }
-    var $ptr = prx ? $([pr, prx]) : $(pr);
+    const $ptr = prx ? $([pr, prx]) : $(pr);
 
     pr.setAttribute("data-tags", $.isArray(rv.tags) ? rv.tags.join(" ") : rv.tags);
     if ("tags_conflicted" in rv) {
@@ -11460,7 +11482,7 @@ function plist_hotcrptags(plistui, rv) {
     }
 
     // set color classes
-    var cc = rv.color_classes, f;
+    let cc = rv.color_classes;
     if (cc) {
         ensure_pattern(cc);
     }
@@ -11492,7 +11514,8 @@ function plist_hotcrptags(plistui, rv) {
     hotcrp.update_tag_decoration($ptr.find(".pl_title"), rv.tag_decoration_html);
 
     // set actual tags
-    if ((f = plistui.fields.tags) && !f.missing) {
+    let f = plistui.fields.tags;
+    if (f && !f.missing) {
         render_row_tags(plistui.pidfield(rv.pid, f));
     }
     if (rv.status_html != null && (f = plistui.fields.status) && !f.missing) {
@@ -11544,7 +11567,8 @@ function fold_override(tbl, dofold) {
 }
 
 handle_ui.on("js-override-conflict", function () {
-    var pr = this.closest("tr"), prb;
+    const pr = this.closest("tr");
+    let prb;
     if (hasClass(pr, "plx")) {
         prb = pr.previousElementSibling; /* XXX could be previousSibling */
     } else {
@@ -11565,25 +11589,32 @@ handle_ui.on("js-override-conflict", function () {
 });
 
 handle_ui.on("js-plinfo", function (evt) {
-    if (this.type !== "checkbox" || this.name.substring(0, 4) !== "show") {
+    if (this.type !== "checkbox" || !this.name.startsWith("show")) {
         throw new Error("bad plinfo");
     }
-    var types = [this.name.substring(4)], dofold = !this.checked;
-    if (types[0] === "anonau") {
-        var form = this.form, showau = form && form.elements.showau;
-        if (!dofold && showau)
+    const plistui = make_plist.call(mainlist()),
+        fname = this.name.substring(4),
+        hidden = !this.checked;
+    if (fname === "force") {
+        fold_override(plistui.pltable, hidden);
+    } else if (fname === "rownum") {
+        fold(plistui.pltable, hidden, 6);
+    } else if (fname === "anonau") {
+        const showau = this.form && this.form.elements.showau;
+        fold(plistui.pltable, hidden, 2);
+        if (!hidden && showau) {
             showau.checked = true;
-        else if (!showau && dofold)
-            types.push("authors");
-    }
-    var plistui = make_plist.call(mainlist());
-    for (var i = 0; i != types.length; ++i) {
-        if (types[i] === "force")
-            fold_override(plistui.pltable, dofold);
-        else if (types[i] === "rownum")
-            fold(plistui.pltable, dofold, 6);
-        else
-            plinfo(plistui, types[i], dofold);
+        }
+        plinfo(plistui, "authors", showau ? !showau.checked : hidden, this.form);
+    } else if (fname === "aufull") {
+        const showau = this.form && (this.form.elements.showau || this.form.elements.showanonau);
+        if (!hidden && showau) {
+            showau.checked = true;
+            showau.name === "showanonau" && fold(plistui.pltable, false, 2);
+        }
+        plinfo(plistui, "authors", showau ? !showau.checked : false, this.form);
+    } else {
+        plinfo(plistui, fname, hidden, this.form);
     }
     evt.preventDefault();
 });

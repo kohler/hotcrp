@@ -28,6 +28,7 @@ class Session_API {
     static function change_session($qreq, $v) {
         $qreq->open_session();
         $ok = true;
+        $views = [];
         preg_match_all('/(?:\A|\s)(foldpaper|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|(?:|ul)scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
         foreach ($ms as $m) {
             $unfold = intval(substr($m[3], 1) ? : "0") === 0;
@@ -56,7 +57,7 @@ class Session_API {
             } else if ($m[1] === "scoresort" && $m[2] === "" && $m[3] !== "") {
                 $ss = ScoreInfo::parse_score_sort(substr($m[3], 1));
                 if ($ss !== null) {
-                    self::parse_view($qreq, "pl", "sort:[score {$ss}]");
+                    $view["pl"][] = "sort:[score {$ss}]";
                 }
             } else if ($m[1] === "ulscoresort" && $m[2] === "" && $m[3] !== "") {
                 $want = ScoreInfo::parse_score_sort(substr($m[3], 1));
@@ -67,8 +68,7 @@ class Session_API {
                 }
             } else if (($m[1] === "pldisplay" || $m[1] === "pfdisplay")
                        && $m[2] !== "") {
-                $view = ($unfold ? "show:" : "hide:") . substr($m[2], 1);
-                self::parse_view($qreq, substr($m[1], 0, 2), $view);
+                $view[substr($m[1], 0, 2)][] = ($unfold ? "show:" : "hide:") . substr($m[2], 1);
             } else if ($m[1] === "uldisplay"
                        && preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2])) {
                 self::change_uldisplay($qreq, [substr($m[2], 1) => $unfold]);
@@ -81,6 +81,9 @@ class Session_API {
             } else {
                 $ok = false;
             }
+        }
+        foreach ($view as $report => $viewlist) {
+            self::parse_view($qreq, $report, join(" ", $viewlist));
         }
         return $ok;
     }

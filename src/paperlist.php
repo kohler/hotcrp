@@ -1605,15 +1605,14 @@ class PaperList {
             }
             $content = $this->_column_html($fdef, $row);
             if ($content !== "") {
-                $k = Ht::add_tokens("pl", $fdef->className, $fdef->fold ? "fx{$fdef->fold}" : null);
+                $k = Ht::add_tokens("pl", $fdef->className);
                 if ($this->column_class !== null) {
                     $content = "<div class=\"{$this->column_class}\">{$content}</div>";
                 }
                 $tm[] = "<td class=\"{$k}\">{$content}</td>";
                 $fdef->has_content = true;
             } else {
-                $k = $fdef->fold ? "pl fx{$fdef->fold}" : "pl";
-                $tm[] = "<td class=\"{$k}\"></td>";
+                $tm[] = "<td class=\"pl\"></td>";
             }
         }
 
@@ -1627,11 +1626,11 @@ class PaperList {
             if ($content !== "") {
                 $ch = $fdef->header($this, false);
                 $chx = $ch ? "{$ch}:" : "";
-                $k = Ht::add_tokens("ple", $fdef->className, $fdef->fold ? "fx{$fdef->fold}" : null, $this->column_class);
+                $k = Ht::add_tokens("ple", $fdef->className, $this->column_class);
                 $tt[] = "<div class=\"{$k}\"><em class=\"plet\">{$chx}</em><div class=\"pled\">{$content}</div></div>";
                 $fdef->has_content = true;
             } else {
-                $k = Ht::add_tokens("ple", $fdef->className, $fdef->fold ? "fx{$fdef->fold}" : null);
+                $k = Ht::add_tokens("ple", $fdef->className);
                 $tt[] = "<div class=\"{$k}\"></div>";
             }
         }
@@ -1769,12 +1768,11 @@ class PaperList {
         // empty header
         if (!$fdef->has_content
             && ($this->_table_decor & self::DECOR_EVERYHEADER) === 0) {
-            $class = $fdef->fold ? " class=\"fx{$fdef->fold}\"" : "";
-            return "<th{$class} data-pc=\"{$sort_name_h}\"></th>";
+            return "<th data-pc=\"{$sort_name_h}\"></th>";
         }
 
         // non-sortable header
-        $thclass = "pl plh {$fdef->className}" . ($fdef->fold ? " fx{$fdef->fold}" : "");
+        $thclass = "pl plh {$fdef->className}";
         $title = $fdef->header($this, false);
         if (!$fdef->sort
             || !$this->_sortable
@@ -1818,9 +1816,6 @@ class PaperList {
                 continue;
             }
             $jscol[] = $j = $fdef->field_json($this);
-            if ($fdef->fold) {
-                $classes[] = "fold{$fdef->fold}o";
-            }
             if ($fdef instanceof Selector_PaperColumn) {
                 $has_sel = true;
             }
@@ -1871,9 +1866,6 @@ class PaperList {
                     $class = "plstat pl_statheader";
                 } else {
                     $content = "";
-                }
-                if ($fdef->fold) {
-                    $class .= " fx{$fdef->fold}";
                 }
                 $t .= "<td class=\"{$class}\">{$content}</td>";
                 ++$col;
