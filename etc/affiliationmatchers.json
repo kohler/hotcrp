@@ -254,6 +254,9 @@
     "economics": {
         "weak": true
     },
+    "electronic": {
+        "weak": true
+    },
     "electronics": {
         "weak": true
     },
@@ -301,6 +304,9 @@
         "weak": true
     },
     "it": {
+        "weak": true
+    },
+    "king": {
         "weak": true
     },
     "lab": {
@@ -434,6 +440,12 @@
     "tokyo": {
         "weak": true
     },
+    "uk": {
+        "weak": true
+    },
+    "united": {
+        "weak": true
+    },
     "univ": {
         "weak": true
     },
@@ -485,6 +497,9 @@
     },
     "austin": {
         "nameish": true, "sync": "ut texas"
+    },
+    "australia": {
+        "weak": true
     },
     "australian": {
         "alternate": [{"word": "anu", "if": "national university"}]
@@ -578,7 +593,8 @@
     },
     "diego": {
         "nameish": true,
-        "alternate": [{"word": "ucsd", "if": "university california san"}]
+        "alternate": [{"word": "ucsd", "if": "university california san"}],
+        "sync": "state"
     },
     "epfl": {
         "nameish": false
@@ -684,6 +700,9 @@
     "inria": {
         "nameish": false
     },
+    "iowa": {
+        "sync": "state"
+    },
     "irisa": {
         "nameish": false
     },
@@ -752,7 +771,7 @@
         ]
     },
     "michigan": {
-        "sync": "state"
+        "sync": ["state", "technological"]
     },
     "microsoft": {
         "nameish": false,
@@ -783,7 +802,11 @@
         "alternate": ["national university singapore"]
     },
     "nyu": {
-        "alternate": ["new york university"]
+        "alternate": ["new york university"],
+        "sync": "buffalo"
+    },
+    "oregon": {
+        "sync": "state"
     },
     "penn": {
         "weak": true, "nameish": 0,
@@ -806,6 +829,9 @@
     },
     "rio": {
         "weak": true
+    },
+    "rome": {
+        "sync": ["sapienza", "tor"]
     },
     "rpi": {
         "alternate": ["rensselaer polytechnic institute"]
@@ -834,6 +860,9 @@
     },
     "standards": {
         "alternate": [{"word": "nist", "if": "national institute technology"}]
+    },
+    "sun": {
+        "nameish": true
     },
     "suny": {
         "nameish": false
@@ -980,7 +1009,7 @@
         "alternate": [
             {"word": "nyu", "if": "new university"}
         ],
-        "sync": ["new"]
+        "sync": ["new", "buffalo"]
     },
     "zurich": {
         "weak": true
