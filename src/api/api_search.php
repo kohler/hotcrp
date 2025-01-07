@@ -88,9 +88,6 @@ class Search_API {
             return $search;
         }
         $pl = new PaperList("empty", $search);
-        if (($aufull = friendly_boolean($qreq->aufull)) !== null) {
-            $pl->set_view("aufull", $aufull, PaperList::VIEWORIGIN_SESSION);
-        }
         $pl->parse_view($qreq->f, PaperList::VIEWORIGIN_MAX);
         $response = $pl->table_html_json();
 

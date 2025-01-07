@@ -88,7 +88,7 @@
     {
         "name": "fieldhtml", "get": true,
         "function": "Search_API::fieldhtml",
-        "parameters": "f ?aufull ?session q ?t ?qt ?reviewer ?sort ?scoresort",
+        "parameters": "f ?session q ?t ?qt ?reviewer ?sort ?scoresort",
         "response": "fields data ?stat ?classes ?attr"
     },
     {
