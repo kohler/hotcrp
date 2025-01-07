@@ -234,6 +234,8 @@ class PaperList {
     private $_viewlist = [];
     /** @var bool */
     private $_viewlist_sorted = false;
+    /** @var array<string,ViewCommand> */
+    private $_viewa = null;
 
     const VIEWORIGIN_NONE = -1;
     const VIEWORIGIN_REPORT = 0;
@@ -731,6 +733,10 @@ class PaperList {
     }
 
     private function _compute_viewa() {
+        if ($this->_viewa !== null) {
+            return;
+        }
+        $this->_sort_viewlist();
 
     }
 
