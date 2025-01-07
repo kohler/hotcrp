@@ -11049,6 +11049,24 @@ function render_allpref() {
     });
 }
 
+let assignment_selector_models;
+
+function assignment_selector_model(assignable) {
+    if (assignment_selector_models && assignment_selector_models[assignable ? 1 : 0]) {
+        return assignment_selector_models[assignable ? 1 : 0];
+    }
+    const e = document.createElement("select");
+    e.className = "uich js-assign-review";
+    e.tabIndex = 2;
+    for (const rtopt of ["none", "primary", "secondary", "pc", "meta", "conflict"]) {
+        if (assignable || rtopt === "none" || rtopt === "conflict")
+            e.append($e("option", {value: rtopt}, review_types.unparse_selector(rtopt)));
+    }
+    assignment_selector_models = assignment_selector_models || [null, null];
+    assignment_selector_models[assignable ? 1 : 0] = e;
+    return e;
+}
+
 function render_assignment_selector() {
     const prow = prownear(this),
         rts = ["none", "primary", "secondary", "pc", "meta", "conflict"],
@@ -11063,22 +11081,12 @@ function render_assignment_selector() {
             assignable = false;
         }
     }
-    const sel = document.createElement("select");
+    const sel = assignment_selector_model(assignable).cloneNode(true);
     sel.name = "assrev" + prow.getAttribute("data-pid") + "u" + words[0];
     sel.setAttribute("data-default-value", rt);
-    sel.className = "uich js-assign-review";
-    sel.tabIndex = 2;
-    for (const rtopt of rts) {
-        if (assignable || rtopt === "none" || rtopt === "conflict") {
-            const opt = document.createElement("option");
-            opt.value = rtopt;
-            opt.text = review_types.unparse_selector(rtopt);
-            opt.defaultSelected = opt.selected = rtopt === rt;
-            if (rsub && rtopt === "none")
-                opt.disabled = true;
-            sel.add(opt, null);
-        }
-    }
+    rsub && (sel.options[0].disabled = true);
+    sel.value = rt;
+    sel.selectedOptions[0].defaultSelected = true;
     this.className = "select mf mr-2";
     this.removeAttribute("data-assignment");
     this.appendChild(sel);
