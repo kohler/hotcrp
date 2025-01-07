@@ -1,6 +1,6 @@
 <?php
 // pc_topicscore.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class TopicScore_PaperColumn extends PaperColumn {
     /** @var Contact */
@@ -33,7 +33,7 @@ class TopicScore_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $v = $row->topic_interest_score($this->contact);
         $this->statistics->add($v);
-        return htmlspecialchars((string) $v);
+        return self::unparse_value($v);
     }
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $row->topic_interest_score($this->contact);
@@ -45,8 +45,14 @@ class TopicScore_PaperColumn extends PaperColumn {
         return true;
     }
     function statistic_html(PaperList $pl, $stat) {
-        $v = $this->statistics->statistic($stat);
-        return is_int($v) ? (string) $v : sprintf("%.2f", $v);
+        return self::unparse_value($this->statistics->statistic($stat));
+    }
+    static function unparse_value($v) {
+        if (is_int($v)) {
+            return $v < 0 ? "−" /*U+2122*/ . (-$v) : (string) $v;
+        } else {
+            return $v < 0 ? sprintf("−%.2f", -$v) : sprintf("%.2f", $v);
+        }
     }
 
     static function expand($name, XtParams $xtp, $xfj, $m) {
