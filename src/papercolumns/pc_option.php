@@ -1,6 +1,6 @@
 <?php
 // pc_option.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Option_PaperColumn extends PaperColumn {
     /** @var PaperOption */
@@ -28,6 +28,9 @@ class Option_PaperColumn extends PaperColumn {
             $this->className = ltrim(preg_replace('/(?: +|\A)(?:plrd|plr|plc)(?= |\z)/', "", $this->className));
         }
         return true;
+    }
+    function sort_name() {
+        return $this->sort_name_with_options(...$this->opt->sort_view_options());
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         return $this->opt->value_compare($a->option($this->opt),

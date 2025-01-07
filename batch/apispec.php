@@ -1,6 +1,6 @@
 <?php
 // apispec.php -- HotCRP script for generating OpenAPI specification
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -65,7 +65,7 @@ class APISpec_Batch {
     private $cur_lmethod;
     /** @var int */
     private $cur_ptype;
-    /** @var string */
+    /** @var null|int|string */
     private $cur_psubtype;
     /** @var array<string,int> */
     private $cur_fieldf;

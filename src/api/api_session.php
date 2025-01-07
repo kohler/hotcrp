@@ -1,6 +1,6 @@
 <?php
 // api_session.php -- HotCRP session API calls
-// Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class Session_API {
     static private function session_result(Contact $user, Qrequest $qreq, $ok) {
@@ -28,7 +28,7 @@ class Session_API {
     static function change_session($qreq, $v) {
         $qreq->open_session();
         $ok = true;
-        $views = [];
+        $view = [];
         preg_match_all('/(?:\A|\s)(foldpaper|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|(?:|ul)scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
         foreach ($ms as $m) {
             $unfold = intval(substr($m[3], 1) ? : "0") === 0;

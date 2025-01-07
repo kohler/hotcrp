@@ -1,6 +1,6 @@
 <?php
 // paperoption.php -- HotCRP helper class for paper options
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class PaperOption implements JsonSerializable {
     const TITLEID = -1000;
@@ -957,6 +957,10 @@ class PaperOption implements JsonSerializable {
     }
     /** @return list<string> */
     function view_option_schema() {
+        return [];
+    }
+    /** @return list<string> */
+    function sort_view_options() {
         return [];
     }
 

@@ -61,20 +61,14 @@ class PaperColumn extends Column {
         }
         if ($this->as_row) {
             $j["as_row"] = true;
-        } else {
-            $j["column"] = true;
-            if ($this->has_statistics()) {
-                $j["has_statistics"] = true;
-            }
+        } else if ($this->has_statistics()) {
+            $j["has_statistics"] = true;
         }
         if ($this->sort) {
             $j["sort"] = $this->default_sort_descending() ? "descending" : "ascending";
             if (($sn = $this->sort_name()) !== $this->name) {
                 $j["sort_name"] = $sn;
             }
-        }
-        if ($this->fold) {
-            $j["foldnum"] = $this->fold;
         }
         if (($vol = $this->view_options())) {
             foreach ($vol as $n => $v) {
@@ -121,10 +115,14 @@ class PaperColumn extends Column {
     }
     /** @return string */
     function sort_name() {
+        return $this->name;
+    }
+    /** @return string ...$keys */
+    final function sort_name_with_options(...$keys) {
         $a = [$this->name];
-        foreach ($this->view_options ?? [] as $n => $v) {
-            if ($n !== "sort")
-                $a[] = ViewOptionList::unparse_pair($n, $v);
+        foreach ($keys as $k) {
+            if (($v = $this->view_option($k)))
+                $a[] = ViewOptionList::unparse_pair($k, $v);
         }
         return join(" ", $a);
     }
@@ -322,15 +320,16 @@ class Status_PaperColumn extends PaperColumn {
         }
     }
     function reset(PaperList $pl) {
-        if (!$this->status_analyzed) {
-            $this->status_analyzed = true;
-            foreach ($pl->rowset() as $row) {
-                if ($row->outcome !== 0 || $row->paperStorageId <= 1) {
-                    list($class, $name) = $row->status_class_and_name($pl->user);
-                    if (strlen($name) > 10 && strpos($name, " ") !== false) {
-                        $this->className .= " pl-status-long";
-                        break;
-                    }
+        if ($this->status_analyzed) {
+            return;
+        }
+        $this->status_analyzed = true;
+        foreach ($pl->rowset() as $row) {
+            if ($row->outcome !== 0 || $row->paperStorageId <= 1) {
+                list($class, $name) = $row->status_class_and_name($pl->user);
+                if (strlen($name) > 10 && strpos($name, " ") !== false) {
+                    $this->className .= " pl-status-long";
+                    break;
                 }
             }
         }
@@ -869,6 +868,9 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
                 $this->avgmap[$row->paperXid] = $sci->mean();
             }
         }
+    }
+    function sort_name() {
+        return $this->sort_name_with_options("scoresort");
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $x = ScoreInfo::compare($this->sortmap[$a->paperXid] ?? null, $this->sortmap[$b->paperXid] ?? null, -1);

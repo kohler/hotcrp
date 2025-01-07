@@ -1,6 +1,6 @@
 <?php
 // pc_preference.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Preference_PaperColumn extends PaperColumn {
     /** @var bool */
@@ -75,6 +75,9 @@ class Preference_PaperColumn extends PaperColumn {
             }
         }
         return $pf;
+    }
+    function sort_name() {
+        return $this->sort_name_with_options("topics");
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $cmp = PaperReviewPreference::compare($this->sortable_preference($a), $this->sortable_preference($b));

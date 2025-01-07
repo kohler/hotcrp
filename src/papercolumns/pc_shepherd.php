@@ -1,6 +1,6 @@
 <?php
 // pc_shepherd.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Shepherd_PaperColumn extends PaperColumn {
     /** @var int */
@@ -37,6 +37,9 @@ class Shepherd_PaperColumn extends PaperColumn {
                     $pl->conf->prefetch_user_by_id($row->shepherdContactId);
             }
         }
+    }
+    function sort_name() {
+        return $this->sort_name_with_options("format");
     }
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $ianno = $this->nameflags & NAME_L ? Contact::SORTSPEC_LAST : Contact::SORTSPEC_FIRST;

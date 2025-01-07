@@ -2114,9 +2114,7 @@ class PaperList {
         }
 
         // analyze columns and folds
-        // folds: anonau:2, fullrow:3, aufull:4, force:5, rownum:6, statistics:7,
-        // statistics-exist:8, [fields]
-        $next_fold = 9;
+        // folds: anonau:2, force:5, rownum:6, statistics:7, statistics-exist:8
         foreach ($this->_vcolumns as $fdef) {
             foreach ($rows as $row) {
                 $this->row_overridable = $this->user->has_overridable_conflict($row);
@@ -2128,10 +2126,6 @@ class PaperList {
             $fdef->reset($this);
             if (!$fdef->has_content) {
                 continue;
-            }
-            if ($this->view_origin($fdef->name) !== self::VIEWORIGIN_REPORT) {
-                $fdef->fold = $next_fold;
-                ++$next_fold;
             }
         }
 
@@ -2157,7 +2151,7 @@ class PaperList {
         if ($this->_table_fold_session) {
             $this->table_attr["data-fold-session-prefix"] = $this->_table_fold_session;
             $this->table_attr["data-fold-session"] = json_encode_browser([
-                "2" => "anonau", "4" => "aufull", "5" => "force",
+                "2" => "anonau", "5" => "force",
                 "6" => "rownum", "7" => "statistics"
             ]);
         }

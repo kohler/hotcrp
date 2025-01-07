@@ -516,7 +516,9 @@ label.checki {
 	white-space: nowrap;
 }
 .checkc > input {
+	margin-top: 0;
 	margin-left: 0;
+	margin-bottom: 0;
 	padding-left: 0;
 }
 .entryg, .entryi {
