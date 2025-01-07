@@ -65,24 +65,18 @@ class ViewCommand {
         }
         $fm = self::FM_ORIGIN | (($b->flags & self::FM_SHOW) !== 0 ? self::FM_SHOW : 0);
         $a->flags = ($a->flags & ~$fm) | ($b->flags & $fm);
-        if ($b->view_options) {
-            if (!$a->view_options) {
-                $a->view_options = $b->view_options;
-            } else {
-                if (($a->flags & self::F_VOMERGED) === 0) {
-                    $a->view_options = clone $a->view_options;
-                    $a->flags |= self::F_VOMERGED;
-                }
-                foreach ($b->view_options as $k => $v) {
-                    $a->add($k, $v);
-                }
-            }
-        }
-
-        if (($b->flags & self::FM_SHOW) !== 0) {
-            $a->flags = $b->flags | self::F_MERGED;
+        if (!$b->view_options) {
+            /* do nothing */
+        } else if (!$a->view_options) {
+            $a->view_options = $b->view_options;
         } else {
-            $a->flags = ($a->flags & ~self::FM_ORIGIN) | ($b->flags & self::FM_ORIGIN);
+            if (($a->flags & self::F_VOMERGED) === 0) {
+                $a->view_options = clone $a->view_options;
+                $a->flags |= self::F_VOMERGED;
+            }
+            foreach ($b->view_options as $k => $v) {
+                $a->add($k, $v);
+            }
         }
     }
 
