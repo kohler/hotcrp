@@ -1014,19 +1014,6 @@ class ContactList {
         return $uldisplay;
     }
 
-    /** @param list<int> $a
-     * @return list<int> */
-    private function addScores($a) {
-        if ($this->user->isPC) {
-            $uldisplay = self::uldisplay($this->qreq);
-            foreach ($this->_rfields as $i => $f) {
-                if (strpos($uldisplay, " {$f->short_id} ") !== false)
-                    $a[] = self::FIELD_SCORE + $i;
-            }
-        }
-        return $a;
-    }
-
     /** @param string $columnlist
      * @return list<Column> */
     function _resolve_columns($columnlist) {
@@ -1035,14 +1022,12 @@ class ContactList {
         foreach (explode(" ", $columnlist) as $colname) {
             if ($colname === "") {
                 continue;
-            }
-            if (($col = $this->_column($colname))) {
+            } else if (($col = $this->_column($colname))) {
                 $cols[] = $col;
-            } else if ($colname === "scores") {
-                if ($this->user->isPC) {
-                    foreach ($this->_rfields as $i => $f) {
+            } else if ($colname === "scores" && $this->user->isPC) {
+                foreach ($this->_rfields as $i => $f) {
+                    if (strpos($uldisplay, " {$f->short_id} ") !== false)
                         $cols[] = $this->_column(self::FIELD_SCORE + $i);
-                    }
                 }
             }
         }
