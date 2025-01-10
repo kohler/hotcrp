@@ -30,6 +30,7 @@ class Search_Page {
     private function set_header($column, $header) {
         $this->headers[$column] = $header;
     }
+
     /** @param int $column
      * @param string $item */
     private function item($column, $item) {
@@ -38,11 +39,20 @@ class Search_Page {
         }
         $this->items[$column][] = $item;
     }
+
     /** @param int $column
      * @param string $type
      * @param string $title */
     private function checkbox_item($column, $type, $title, $options = []) {
         $options["class"] = "uich js-plinfo";
+        $xtype = $type === "anonau" ? "authors" : $type;
+        if ($this->pl->view_origin($xtype) >= PaperList::VIEWORIGIN_SEARCH) {
+            $options["disabled"] = true;
+            $this->item($column, '<label class="checki disabled"><span class="checkc">'
+                . Ht::checkbox("show{$type}", 1, $this->pl->viewing($type), $options)
+                . "</span>{$title}</label>");
+            return;
+        }
         $x = '<label class="checki"><span class="checkc">'
             . Ht::hidden("has_show{$type}", 1)
             . Ht::checkbox("show{$type}", 1, $this->pl->viewing($type), $options)

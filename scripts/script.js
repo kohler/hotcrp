@@ -11616,7 +11616,7 @@ handle_ui.on("js-plinfo", function (evt) {
         plinfo(plistui, "authors", showau ? !showau.checked : hidden, this.form);
     } else if (fname === "aufull") {
         const showau = this.form && (this.form.elements.showau || this.form.elements.showanonau);
-        if (!hidden && showau) {
+        if (!hidden && showau && !showau.disabled) {
             showau.checked = true;
             showau.name === "showanonau" && fold(plistui.pltable, false, 2);
         }
