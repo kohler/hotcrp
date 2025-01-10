@@ -19,8 +19,9 @@ class CheckFormat extends MessageSet {
     /** @var bool */
     const DEBUG = false;
 
-    /** @var Conf */
-    private $conf;
+    /** @var Conf
+     * @readonly */
+    public $conf;
     /** @var int */
     public $allow_run;
     /** @var array<string,FormatChecker> */

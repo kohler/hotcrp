@@ -50,6 +50,7 @@
 
     {"name": "pid", "function": "+Pid_Fexpr"},
     {"name": "paperid", "function": "+Pid_Fexpr"},
+    {"name": "pagecount", "function": "+PageCount_Fexpr"},
     {"name": "pdfsize", "function": "+PdfSize_Fexpr"},
     {"name": "time:submitted", "function": "+SubmittedAt_Fexpr", "is_time": true},
     {"name": "time:sub", "alias": "time:submitted"},

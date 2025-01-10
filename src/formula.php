@@ -1508,6 +1508,16 @@ class FormulaCompiler {
     }
 
     /** @return string */
+    function _add_primary_document() {
+        if ($this->check_gvar('$primary_document')) {
+            $prow = $this->_prow();
+            $decision = $this->_add_decision();
+            $this->gstmt[] = "\$primary_document = \$contact->can_view_pdf({$prow}) ? {$prow}->document({$prow}->finalPaperStorageId > 0 ? " . DTYPE_FINAL . " : " . DTYPE_SUBMISSION . ") : null;";
+        }
+        return '$primary_document';
+    }
+
+    /** @return string */
     function loop_cid($aggregate = false) {
         $this->indexed = true;
         if ($this->index_type === Fexpr::IDX_NONE) {
