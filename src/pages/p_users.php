@@ -335,13 +335,15 @@ class Users_Page {
 
     /** @return bool */
     private function handle_redisplay() {
+        $this->qreq->unset_csession("uldisplay");
         $sv = [];
         foreach (ContactList::$folds as $key) {
-            $sv[] = "uldisplay.{$key}=" . ($this->qreq->get("show$key") ? 0 : 1);
+            if (($x = friendly_boolean($this->qreq["show{$key}"])) !== null)
+                $sv[] = "uldisplay.{$key}=" . ($x ? 0 : 1);
         }
         foreach ($this->conf->all_review_fields() as $f) {
-            if ($this->qreq["has_show{$f->short_id}"])
-                $sv[] = "uldisplay.{$f->short_id}=" . ($this->qreq["show{$f->short_id}"] ? 0 : 1);
+            if (($x = friendly_boolean($this->qreq["show{$f->short_id}"])) !== null)
+                $sv[] = "uldisplay.{$f->short_id}=" . ($x ? 0 : 1);
         }
         if (isset($this->qreq->scoresort)) {
             $sv[] = "ulscoresort=" . ScoreInfo::parse_score_sort($this->qreq->scoresort);
@@ -434,9 +436,9 @@ class Users_Page {
             $uldisplay = ContactList::uldisplay($this->qreq);
             foreach ($viewable_fields as $f) {
                 $checked = strpos($uldisplay, " {$f->short_id} ") !== false;
-                echo Ht::checkbox("show{$f->short_id}", 1, $checked),
-                    "&nbsp;", Ht::label($f->name_html),
-                    Ht::hidden("has_show{$f->short_id}", 1), "<br />";
+                echo '<label class="checki"><span class="checkc">',
+                    Ht::checkbox("show{$f->short_id}", 1, $checked),
+                    '</span>', $f->name_html, '</label>';
             }
             echo "</td>";
         }

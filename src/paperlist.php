@@ -787,18 +787,17 @@ class PaperList {
     }
 
     function apply_view_qreq(Qrequest $qreq) {
-        $x = [];
         foreach ($qreq as $k => $v) {
             if (str_starts_with($k, "show")) {
-                $x[substr($k, 4)] = !!$v;
-            } else if (str_starts_with($k, "has_show")) {
-                $x[substr($k, 8)] = $x[substr($k, 8)] ?? false;
+                $name = substr($k, 4);
             } else if ($k === "forceShow") {
-                $x["force"] = !!$v;
+                $name = "force";
+            } else {
+                continue;
             }
-        }
-        foreach ($x as $name => $show) {
-            $this->set_view($name, $show, self::VIEWORIGIN_REQUEST, $this->_view_options[$name] ?? null);
+            if ($name !== "" && ($x = friendly_boolean($v)) !== null) {
+                $this->set_view($name, $x, self::VIEWORIGIN_REQUEST, $this->_view_options[$name] ?? null);
+            }
         }
     }
 

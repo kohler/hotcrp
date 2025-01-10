@@ -54,7 +54,6 @@ class Search_Page {
             return;
         }
         $x = '<label class="checki"><span class="checkc">'
-            . Ht::hidden("has_show{$type}", 1)
             . Ht::checkbox("show{$type}", 1, $this->pl->viewing($type), $options)
             . '</span>' . $title . '</label>';
         $this->item($column, $x);
@@ -393,6 +392,7 @@ class Search_Page {
     static function redisplay(Contact $user, Qrequest $qreq) {
         // change session based on request
         if ($qreq->qsession()->is_open()) {
+            $qreq->unset_csession("pldisplay");
             Session_API::parse_view($qreq, "pl", $qreq);
         }
         // redirect, including differences between search and request
