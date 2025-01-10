@@ -21,8 +21,6 @@ class Preference_PaperColumn extends PaperColumn {
     private $secondary_sort_topic_score = false;
     /** @var ScoreInfo */
     private $statistics;
-    /** @var ?ScoreInfo */
-    private $override_statistics;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
@@ -102,7 +100,6 @@ class Preference_PaperColumn extends PaperColumn {
                 || $rtuid[0] !== $this->user->contactId;
         }
         $this->statistics = new ScoreInfo;
-        $this->override_statistics = null;
     }
     function header(PaperList $pl, $is_text) {
         if ($this->user === $this->viewer || $this->as_row) {
@@ -153,17 +150,11 @@ class Preference_PaperColumn extends PaperColumn {
             && $t !== "") {
             $tag = $this->as_row ? "div" : "span";
             $t = "<{$tag} class=\"fx5\">{$t}</{$tag}>";
-            if (!$this->override_statistics) {
-                $this->override_statistics = clone $this->statistics;
-            }
             if ($pf_exists) {
-                $this->override_statistics->add($pf->preference);
+                $this->statistics->add_overriding($pf->preference, 2);
             }
-        } else if ($pf_exists) {
-            $this->statistics->add($pf->preference);
-            if ($this->override_statistics) {
-                $this->override_statistics->add($pf->preference);
-            }
+        } else if ($pf_exists && !$this->editable) {
+            $this->statistics->add_overriding($pf->preference, $pl->overriding);
         }
 
         return $t;
@@ -178,25 +169,8 @@ class Preference_PaperColumn extends PaperColumn {
     function has_statistics() {
         return !$this->as_row && !$this->editable;
     }
-    private function unparse_statistic($statistics, $stat) {
-        $x = $statistics->statistic($stat);
-        if ($x == 0
-            && $stat !== ScoreInfo::COUNT
-            && $statistics->statistic(ScoreInfo::COUNT) == 0) {
-            return "";
-        } else if (in_array($stat, [ScoreInfo::COUNT, ScoreInfo::SUM, ScoreInfo::MEDIAN])) {
-            return $x;
-        } else {
-            return sprintf("%.2f", $x);
-        }
-    }
-    function statistic_html(PaperList $pl, $stat) {
-        $t = $this->unparse_statistic($this->statistics, $stat);
-        if ($this->override_statistics) {
-            $tt = $this->unparse_statistic($this->override_statistics, $stat);
-            $t = $pl->wrap_conflict($t, $tt);
-        }
-        return $t;
+    function statistics() {
+        return $this->statistics;
     }
 
     static function expand($name, XtParams $xtp, $xfj, $m) {

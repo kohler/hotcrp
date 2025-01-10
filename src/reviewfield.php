@@ -414,14 +414,12 @@ abstract class ReviewField implements JsonSerializable {
     abstract function unparse_json($fval);
 
     /** @param int|float $fval
-     * @param ?string $format
      * @return string */
-    abstract function unparse_computed($fval, $format = null);
+    abstract function unparse_computed($fval);
 
     /** @param int|float|string $fval
-     * @param ?string $format
      * @return string */
-    function unparse_span_html($fval, $format = null) {
+    function unparse_span_html($fval) {
         return "";
     }
 
@@ -940,59 +938,55 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
     }
 
     function unparse_value($fval) {
-        if ($fval > 0) {
-            return (string) $this->symbols[$fval - 1];
-        } else {
+        if ($fval <= 0) {
             return "";
         }
+        return (string) $this->symbols[$fval - 1];
     }
 
     function unparse_json($fval) {
         assert($fval === null || is_int($fval));
-        if ($fval !== null) {
-            return $fval > 0 ? $this->symbols[$fval - 1] : false;
-        } else {
+        if ($fval === null) {
             return null;
         }
+        return $fval > 0 ? $this->symbols[$fval - 1] : false;
     }
 
     function unparse_search($fval) {
-        if ($fval > 0) {
-            return (string) $this->symbols[$fval - 1];
-        } else {
+        if ($fval <= 0) {
             return "none";
         }
+        return (string) $this->symbols[$fval - 1];
     }
 
     /** @param int|float $fval
-     * @param ?string $format
      * @return string */
-    function unparse_computed($fval, $format = null) {
+    function unparse_computed($fval) {
         if ($fval === null) {
             return "";
         }
         $numeric = ($this->flags & self::FLAG_NUMERIC) !== 0;
-        if ($format !== null && $numeric) {
-            return sprintf($format, $fval);
+        if ($numeric && is_float($fval) && abs($fval - round($fval)) >= 0.01) {
+            return sprintf("%.2f", $fval);
         }
         if ($fval <= 0.8) {
             return "–";
         }
-        if (!$numeric && $fval <= count($this->values) + 0.2) {
-            $rval = (int) round($fval);
-            if ($fval >= $rval + 0.25 || $fval <= $rval - 0.25) {
-                $ival = (int) $fval;
-                $vl = $this->symbols[$ival - 1];
-                $vh = $this->symbols[$ival];
-                return $this->flip ? "{$vh}~{$vl}" : "{$vl}~{$vh}";
-            }
-            return $this->symbols[$rval - 1];
+        if ($numeric || $fval > count($this->values) + 0.2) {
+            return (string) $fval;
         }
-        return (string) $fval;
+        $rval = (int) round($fval);
+        if ($fval >= $rval + 0.25 || $fval <= $rval - 0.25) {
+            $ival = (int) $fval;
+            $vl = $this->symbols[$ival - 1];
+            $vh = $this->symbols[$ival];
+            return $this->flip ? "{$vh}~{$vl}" : "{$vl}~{$vh}";
+        }
+        return $this->symbols[$rval - 1];
     }
 
-    function unparse_span_html($fval, $format = null) {
-        $s = $this->unparse_computed($fval, $format);
+    function unparse_span_html($fval) {
+        $s = $this->unparse_computed($fval);
         if ($s !== "" && ($vc = $this->value_class($fval)) !== "") {
             $s = "<span class=\"{$vc}\">{$s}</span>";
         }
@@ -1009,7 +1003,7 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
         }
         $n = count($this->values);
 
-        $avgtext = $this->unparse_computed($sci->mean(), "%.2f");
+        $avgtext = $this->unparse_computed($sci->mean());
         if ($sci->count() > 1 && ($stddev = $sci->stddev_s())) {
             $avgtext .= sprintf(" ± %.2f", $stddev);
         }
@@ -1341,7 +1335,7 @@ class Text_ReviewField extends ReviewField {
         return $fval;
     }
 
-    function unparse_computed($fval, $format = null) {
+    function unparse_computed($fval) {
         return (string) $fval;
     }
 

@@ -1499,6 +1499,15 @@ class FormulaCompiler {
     }
 
     /** @return string */
+    function _add_decision() {
+        if ($this->check_gvar('$decision')) {
+            $prow = $this->_prow();
+            $this->gstmt[] = "\$decision = \$contact->can_view_decision({$prow}) ? {$prow}->outcome : 0;";
+        }
+        return '$decision';
+    }
+
+    /** @return string */
     function loop_cid($aggregate = false) {
         $this->indexed = true;
         if ($this->index_type === Fexpr::IDX_NONE) {
@@ -1773,6 +1782,8 @@ class Formula implements JsonSerializable {
     /** @var int */
     private $_format = Fexpr::FUNKNOWN;
     private $_format_detail;
+    /** @var ?ValueFormat */
+    private $_value_format;
 
     private $_extractorf;
     private $_combinerf;
@@ -1970,6 +1981,7 @@ class Formula implements JsonSerializable {
                 $this->_format = Fexpr::FERROR;
                 $this->_format_detail = null;
             }
+            $this->_value_format = null;
         }
         return $this->_format !== Fexpr::FERROR;
     }
@@ -2740,34 +2752,8 @@ class Formula implements JsonSerializable {
         return eval("return {$function};");
     }
 
-/*    function _unparse_iso_duration($x) {
-        $x = round($x);
-        $t = "P";
-        if ($x < 0) {
-            $t .= "-";
-            $x = -$x;
-        }
-        if (($d = floor($x / 86400))) {
-            $t .= $d . "D";
-            $x -= $d * 86400;
-        }
-        $tt = "";
-        if (($h = floor($x / 3600))) {
-            $tt .= $h . "H";
-            $x -= $h * 3600;
-        }
-        if (($m = floor($x / 60))) {
-            $tt .= $m . "M";
-            $x -= $m * 60;
-        }
-        if ($x || ($tt === "" && strlen($t) <= 2))
-            $tt .= $x . "S";
-        if ($tt !== "")
-            $t .= "T" . $tt;
-        return $t;
-    } */
-
-    /** @return string */
+    /** @return string
+     * @deprecated */
     function _unparse_duration($x) {
         $t = "";
         if ($x < 0) {
@@ -2785,7 +2771,9 @@ class Formula implements JsonSerializable {
         }
     }
 
-    /** @return string */
+    /** @return string
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     function unparse_html($x, $real_format = null) {
         if ($x === null || $x === false) {
             return "";
@@ -2795,7 +2783,7 @@ class Formula implements JsonSerializable {
         $rx = round($x * 100) / 100;
         if ($this->_format > Fexpr::FNUMERIC) {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
-                return $this->format_rf()->unparse_span_html($rx, $real_format);
+                return $this->format_rf()->unparse_span_html($rx);
             } else if ($this->_format === Fexpr::FSUBFIELD) {
                 $prow = $this->placeholder_prow();
                 $fr = new FieldRender(FieldRender::CFHTML);
@@ -2803,7 +2791,7 @@ class Formula implements JsonSerializable {
                 $sf->render($fr, PaperValue::make($prow, $sf, $x));
                 return $fr->value_html();
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
-                return ReviewField::make_expertise($this->conf)->unparse_span_html($x + 2, $real_format);
+                return ReviewField::make_expertise($this->conf)->unparse_span_html($x + 2);
             } else if ($this->_format === Fexpr::FREVIEWER) {
                 return $this->user->reviewer_html_for((int) $x);
             } else if ($this->_format === Fexpr::FDATE
@@ -2818,7 +2806,9 @@ class Formula implements JsonSerializable {
         return $real_format ? sprintf($real_format, $rx) : (string) $rx;
     }
 
-    /** @return string */
+    /** @return string
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     function unparse_text($x, $real_format) {
         if ($x === null) {
             return "";
@@ -2830,7 +2820,7 @@ class Formula implements JsonSerializable {
         $rx = round($x * 100) / 100;
         if ($this->_format > Fexpr::FNUMERIC) {
             if ($this->_format === Fexpr::FREVIEWFIELD) {
-                return $this->format_rf()->unparse_computed($rx, $real_format);
+                return $this->format_rf()->unparse_computed($rx);
             } else if ($this->_format === Fexpr::FSUBFIELD) {
                 $prow = $this->placeholder_prow();
                 $fr = new FieldRender(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
@@ -2838,7 +2828,7 @@ class Formula implements JsonSerializable {
                 $sf->render($fr, PaperValue::make($prow, $sf, $x));
                 return $fr->value; // XXX
             } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
-                return ReviewField::make_expertise($this->conf)->unparse_computed($x + 2, $real_format);
+                return ReviewField::make_expertise($this->conf)->unparse_computed($x + 2);
             } else if ($this->_format === Fexpr::FREVIEWER) {
                 return $this->user->name_text_for((int) $x);
             } else if ($this->_format === Fexpr::FDATE
@@ -2854,7 +2844,9 @@ class Formula implements JsonSerializable {
     }
 
     /** @param ?string $real_format
-     * @return string */
+     * @return string
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     function unparse_diff_html($x, $real_format) {
         if ($x === null) {
             return "";
@@ -2898,12 +2890,51 @@ class Formula implements JsonSerializable {
 
     /** @return int */
     function result_format() {
-        return $this->check() ? $this->_format : null;
+        if (!$this->check()) {
+            return null;
+        }
+        return $this->_format;
     }
 
     /** @return mixed */
     function result_format_detail() {
-        return $this->check() ? $this->_parse->fexpr->format_detail() : null;
+        if (!$this->check()) {
+            return null;
+        }
+        return $this->_parse->fexpr->format_detail();
+    }
+
+    /** @return ValueFormat */
+    function value_format() {
+        require_once(__DIR__ . "/valueformat.php");
+        if ($this->_value_format !== null) {
+            return $this->_value_format;
+        }
+        if (!$this->check()) {
+            $this->_value_format = Null_ValueFormat::main();
+        } else if ($this->_format <= Fexpr::FNUMERIC) {
+            $this->_value_format = Numeric_ValueFormat::main();
+        } else if ($this->_format === Fexpr::FBOOL) {
+            $this->_value_format = Bool_ValueFormat::main();
+        } else if ($this->_format === Fexpr::FREVIEWFIELD) {
+            $this->_value_format = new ReviewField_ValueFormat($this->format_rf());
+        } else if ($this->_format === Fexpr::FSUBFIELD) {
+            $this->_value_format = new SubmissionField_ValueFormat($this->user, $this->format_sf());
+        } else if ($this->_format === Fexpr::FPREFEXPERTISE) {
+            $this->_value_format = new Expertise_ValueFormat($this->conf);
+        } else if ($this->_format === Fexpr::FREVIEWER) {
+            $this->_value_format = new User_ValueFormat($this->user);
+        } else if ($this->_format === Fexpr::FDATE) {
+            $this->_value_format = new Date_ValueFormat;
+        } else if ($this->_format === Fexpr::FTIME) {
+            $this->_value_format = new Time_ValueFormat;
+        } else if ($this->_format === Fexpr::FDATEDELTA
+                   || $this->_format === Fexpr::FTIMEDELTA) {
+            $this->_value_format = Duration_ValueFormat::main();
+        } else {
+            $this->_value_format = Numeric_ValueFormat::main();
+        }
+        return $this->_value_format;
     }
 
     /** @return ?bool */
@@ -2919,7 +2950,10 @@ class Formula implements JsonSerializable {
 
     /** @return string */
     function result_format_description() {
-        return $this->check() ? $this->_parse->fexpr->format_description() : "error";
+        if (!$this->check()) {
+            return "error";
+        }
+        return $this->_parse->fexpr->format_description();
     }
 
 

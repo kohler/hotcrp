@@ -68,34 +68,13 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
     }
 
     /** @param int|float $fval
-     * @param ?string $format
      * @return string */
-    function unparse_computed($fval, $format = null) {
+    function unparse_computed($fval) {
         // XXX
-        if ($fval === null) {
-            return "";
-        }
-        $numeric = ($this->flags & self::FLAG_NUMERIC) !== 0;
-        if ($format !== null && $numeric) {
-            return sprintf($format, $fval);
-        }
-        if ($fval <= 0.8) {
-            return "–";
-        }
-        if (!$numeric && $fval <= count($this->values) + 0.2) {
-            $rval = (int) round($fval);
-            if ($fval >= $rval + 0.25 || $fval <= $rval - 0.25) {
-                $ival = (int) $fval;
-                $vl = $this->symbols[$ival - 1];
-                $vh = $this->symbols[$ival];
-                return $this->flip ? "{$vh}~{$vl}" : "{$vl}~{$vh}";
-            }
-            return $this->symbols[$rval - 1];
-        }
-        return (string) $fval;
+        return "???";
     }
 
-    function unparse_span_html($fval, $format = null) {
+    function unparse_span_html($fval) {
         $r = self::unpack_value($fval, $this->flip);
         if ($r === null) {
             return "";

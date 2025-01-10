@@ -25,8 +25,8 @@ class SiteLoader {
         "LogEntryGenerator" => "src/logentry.php",
         "LoginHelper" => "lib/login.php",
         "MessageItem" => "lib/messageset.php",
+        "Numeric_ValueFormat" => "src/valueformat.php",
         "PaperInfoSet" => "src/paperinfo.php",
-        "PermissionProblem" => "src/failurereason.php", // XXX compat
         "Present_ReviewFieldSearch" => "src/reviewfieldsearch.php",
         "QrequestFile" => "lib/qrequest.php",
         "ReviewFieldInfo" => "src/reviewfield.php",
@@ -66,7 +66,8 @@ class SiteLoader {
         "_settingparser.php" => ["s_", "src/settings"],
         "_sitype.php" => ["si_", "src/settings"],
         "_tester.php" => ["t_", "test"],
-        "_userinfo.php" => ["u_", "src/userinfo"]
+        "_userinfo.php" => ["u_", "src/userinfo"],
+        "_valueformat.php" => ["vf_", "src/valueformats"]
     ];
 
     /** @var string */

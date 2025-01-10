@@ -29,30 +29,19 @@ class Checkbox_ReviewField extends Discrete_ReviewField {
         return $fval > 0 ? "yes" : "no";
     }
 
-    function unparse_computed($fval, $format = null) {
+    function unparse_computed($fval) {
         if ($fval === null) {
             return "";
         } else if ($fval == 0) {
             return "✗";
         } else if ($fval == 1) {
             return "✓";
-        } else if ($format !== null) {
-            return sprintf($format, $fval);
-        } else if ($fval < 0.125) {
-            return "✗";
-        } else if ($fval >= 0.875) {
-            return "✓";
-        } else if ($fval < 0.375) {
-            return "¼✓";
-        } else if ($fval < 0.625) {
-            return "½✓";
-        } else {
-            return "¾✓";
         }
+        return sprintf("%.2f", $fval);
     }
 
-    function unparse_span_html($fval, $format = null) {
-        $s = $this->unparse_computed($fval, $format);
+    function unparse_span_html($fval) {
+        $s = $this->unparse_computed($fval);
         if ($s !== "" && ($vc = $this->value_class($fval)) !== "") {
             $s = "<span class=\"{$vc}\">{$s}</span>";
         }
@@ -64,7 +53,7 @@ class Checkbox_ReviewField extends Discrete_ReviewField {
             return "";
         }
 
-        $avgtext = $this->unparse_computed($sci->mean(), "%.2f");
+        $avgtext = $this->unparse_computed($sci->mean());
         if ($sci->count() > 1 && ($stddev = $sci->stddev_s())) {
             $avgtext .= sprintf(" ± %.2f", $stddev);
         }

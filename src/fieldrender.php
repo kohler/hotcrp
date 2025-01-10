@@ -1,5 +1,5 @@
 <?php
-// fieldrender.php -- HotCRP helper class for multi-format messages
+// fieldrender.php -- HotCRP helper class for rendering submission fields
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class FieldRender {
@@ -45,10 +45,11 @@ class FieldRender {
         $this->context = $context;
         $this->user = $user;
     }
+
     /** @param PaperTable $table
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function make_table($table) {
+    function set_table($table) {
         assert(($this->context & self::CFHTML) === self::CFHTML);
         assert(($this->context & (self::CFPAGE | self::CFFORM)) !== 0);
         assert(!$this->table && (!$this->user || $this->user === $table->user));
@@ -56,11 +57,20 @@ class FieldRender {
         $this->table = $table;
         return $this;
     }
+
     /** @param PaperColumn $column
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
-    function make_column($column) {
+    function set_column($column) {
         $this->column = $column;
+        return $this;
+    }
+
+    /** @param int $context
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_context($context) {
+        $this->context = $context;
         return $this;
     }
 
@@ -68,19 +78,23 @@ class FieldRender {
         $this->title = null;
         $this->value = $this->value_format = $this->value_long = null;
     }
+
     /** @return bool */
     function is_empty() {
         return (string) $this->title === "" && (string) $this->value === "";
     }
+
     /** @param int $context
      * @return bool */
     function want($context) {
         return ($this->context & $context) === $context;
     }
+
     /** @return bool */
     function verbose() {
         return ($this->context & self::CFVERBOSE) !== 0;
     }
+
     /** @param string $t
      * @return $this */
     function set_text($t) {
@@ -88,6 +102,7 @@ class FieldRender {
         $this->value_format = 0;
         return $this;
     }
+
     /** @param string $t
      * @return $this */
     function set_html($t) {
@@ -95,6 +110,7 @@ class FieldRender {
         $this->value_format = 5;
         return $this;
     }
+
     /** @param bool $b
      * @return $this */
     function set_bool($b) {
@@ -107,6 +123,15 @@ class FieldRender {
         }
         return $this;
     }
+
+    /** @return string */
+    function value_text() {
+        if ($this->value === null || $this->value === "") {
+            return "";
+        }
+        return Ftext::convert_to(0, $this->value_format, $this->value);
+    }
+
     /** @return string */
     function value_html($divclass = null) {
         $rest = "";

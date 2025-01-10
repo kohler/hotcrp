@@ -1262,7 +1262,7 @@ class PaperTable {
             htmlspecialchars($name), "</span></p>";
 
         $renders = [];
-        $fr = (new FieldRender(FieldRender::CFHTML | FieldRender::CFPAGE))->make_table($this);
+        $fr = (new FieldRender(FieldRender::CFHTML | FieldRender::CFPAGE))->set_table($this);
         foreach ($this->prow->page_fields() as $o) {
             if ($o->display() < PaperOption::DISP_TOP
                 || $o->display() > PaperOption::DISP_REST
@@ -2360,7 +2360,7 @@ class PaperTable {
     }
 
     private function _print_editable_fields() {
-        $fr = (new FieldRender(FieldRender::CFHTML | FieldRender::CFFORM | FieldRender::CFVERBOSE))->make_table($this);
+        $fr = (new FieldRender(FieldRender::CFHTML | FieldRender::CFFORM | FieldRender::CFVERBOSE))->set_table($this);
         foreach ($this->prow->form_fields() as $o) {
             if (!$this->user->allow_view_option($this->prow, $o)) {
                 continue;
@@ -2657,7 +2657,7 @@ class PaperTable {
                 foreach ($conf->review_form()->forder as $f) {
                     if ($f->view_score > $view_score
                         && ($fv = $rr->fval($f)) !== null
-                        && ($fh = $f->unparse_span_html($fv, null)) !== "") {
+                        && ($fh = $f->unparse_span_html($fv)) !== "") {
                         if ($score_header[$f->short_id] === "") {
                             $score_header[$f->short_id] = '<th class="rlscore">' . $f->web_abbreviation() . "</th>";
                         }

@@ -10,10 +10,6 @@ class Decision_Fexpr extends Fexpr {
         return $user->can_view_some_decision();
     }
     function compile(FormulaCompiler $state) {
-        if ($state->check_gvar('$decision')) {
-            $prow = $state->_prow();
-            $state->gstmt[] = "\$decision = \$contact->can_view_decision({$prow}) ? {$prow}->outcome : 0;";
-        }
-        return '$decision';
+        return $state->_add_decision();
     }
 }

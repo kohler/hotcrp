@@ -9,12 +9,12 @@ class Formula_PaperColumn extends PaperColumn {
     private $formula_function;
     /** @var ScoreInfo */
     private $statistics;
-    /** @var ?ScoreInfo */
-    private $override_statistics;
     /** @var array<int,mixed> */
     private $results;
     /** @var ?string */
     private $real_format;
+    /** @var ValueFormat */
+    private $value_format;
     /** @var array<int,int|float> */
     private $sortmap;
     function __construct(Conf $conf, $cj) {
@@ -85,16 +85,12 @@ class Formula_PaperColumn extends PaperColumn {
                 }
             }
         }
-        $this->statistics = new ScoreInfo;
-        $this->override_statistics = null;
-    }
-    /** @return string */
-    private function unparse($x) {
-        return $this->formula->unparse_html($x, $this->real_format);
-    }
-    /** @return string */
-    private function unparse_diff($x) {
-        return $this->formula->unparse_diff_html($x, $this->real_format);
+        if ($this->real_format && $this->formula->result_format_is_numeric()) {
+            $this->value_format = new Numeric_ValueFormat($this->real_format);
+        } else {
+            $this->value_format = $this->formula->value_format();
+        }
+        $this->statistics = (new ScoreInfo)->set_value_format($this->value_format);
     }
     function content(PaperList $pl, PaperInfo $row) {
         if ($pl->overriding === 2) {
@@ -102,50 +98,18 @@ class Formula_PaperColumn extends PaperColumn {
         } else {
             $v = $this->results[$row->paperId];
         }
-        if ($pl->overriding !== 0 && !$this->override_statistics) {
-            $this->override_statistics = clone $this->statistics;
-        }
-        if ($pl->overriding <= 1) {
-            $this->statistics->add($v);
-        }
-        if ($pl->overriding !== 1 && $this->override_statistics) {
-            $this->override_statistics->add($v);
-        }
-        return $this->unparse($v);
+        $this->statistics->add_overriding($v, $pl->overriding);
+        return $this->value_format->html($v);
     }
     function text(PaperList $pl, PaperInfo $row) {
         $v = $this->results[$row->paperId];
-        return $this->formula->unparse_text($v, $this->real_format);
+        return $this->value_format->text($v);
     }
     function has_statistics() {
         return true;
     }
-    /** @return string */
-    private function unparse_statistic($statistics, $stat) {
-        $x = $statistics->statistic($stat);
-        if ($stat === ScoreInfo::MEAN || $stat === ScoreInfo::MEDIAN) {
-            return $this->unparse($x);
-        } else if ($stat === ScoreInfo::STDDEV_P || $stat === ScoreInfo::VARIANCE_P) {
-            return $this->unparse_diff($x);
-        } else if ($stat === ScoreInfo::COUNT && is_int($x)) {
-            return (string) $x;
-        } else if ($this->real_format) {
-            return sprintf($this->real_format, $x);
-        } else {
-            return is_int($x) ? (string) $x : sprintf("%.2f", $x);
-        }
-    }
-    function statistic_html(PaperList $pl, $stat) {
-        if ($stat === ScoreInfo::SUM
-            && !$this->formula->result_format_is_numeric()) {
-            return "—";
-        }
-        $t = $this->unparse_statistic($this->statistics, $stat);
-        if ($this->override_statistics) {
-            $tt = $this->unparse_statistic($this->override_statistics, $stat);
-            $t = $pl->wrap_conflict($t, $tt);
-        }
-        return $t;
+    function statistics() {
+        return $this->statistics;
     }
 }
 

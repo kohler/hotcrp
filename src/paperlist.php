@@ -1491,7 +1491,7 @@ class PaperList {
      * @param string $override_content
      * @param 'div'|'span' $tag
      * @return string */
-    function wrap_conflict($main_content, $override_content, $tag = "span") {
+    static function wrap_conflict($main_content, $override_content, $tag = "span") {
         if ($main_content === $override_content) {
             return $main_content;
         }
@@ -1561,7 +1561,7 @@ class PaperList {
                 $this->column_class = Ht::add_tokens($this->column_class, "fx5");
                 $content = $content2;
             } else {
-                $content = $this->wrap_conflict($content, $content2, $fdef->as_row ? "div" : "span");
+                $content = self::wrap_conflict($content, $content2, $fdef->as_row ? "div" : "span");
             }
         }
         return $content;
@@ -1839,6 +1839,19 @@ class PaperList {
         $this->table_attr["data-fields"] = $jscol;
     }
 
+    /** @param int $stat
+     * @param ScoreInfo $scores
+     * @return string */
+    static private function _statistic_html($stat, $scores) {
+        $vf = ScoreInfo::statistic_value_format($stat, $scores->value_format);
+        $s = $vf->html($scores->statistic($stat));
+        if ($scores->overrides) {
+            $sc = $vf->html($scores->overrides->statistic($stat));
+            $s = self::wrap_conflict($s, $sc);
+        }
+        return $s;
+    }
+
     /** @param PaperListTableRender $rstate
      * @return string */
     private function _statistics_rows($rstate) {
@@ -1859,8 +1872,8 @@ class PaperList {
                     continue;
                 }
                 $class = "plstat " . $fdef->className;
-                if ($fdef->has_statistics()) {
-                    $content = $fdef->statistic_html($this, $stat);
+                if ($fdef->has_statistics() && ($scores = $fdef->statistics())) {
+                    $content = self::_statistic_html($stat, $scores);
                 } else if ($col === $rstate->titlecol) {
                     $content = ScoreInfo::$stat_names[$stat];
                     $class = "plstat pl_statheader";
@@ -2367,13 +2380,15 @@ class PaperList {
         $fields = $stats = [];
         foreach ($this->_vcolumns as $fdef) {
             $fields[$fdef->name] = $fdef->field_json($this);
-            if ($fdef->has_statistics()) {
-                $stat = [];
-                foreach (self::$stats as $s) {
-                    $stat[ScoreInfo::$stat_keys[$s]] = $fdef->statistic_html($this, $s);
-                }
-                $stats[$fdef->name] = $stat;
+            if (!$fdef->has_statistics()
+                || !($scores = $fdef->statistics())) {
+                continue;
             }
+            $sset = [];
+            foreach (self::$stats as $stat) {
+                $sset[ScoreInfo::$stat_keys[$stat]] = self::_statistic_html($stat, $scores);
+            }
+            $stats[$fdef->name] = $sset;
         }
 
         // restore forceShow

@@ -167,9 +167,9 @@ class PaperColumn extends Column {
     function has_statistics() {
         return false;
     }
-    /** @return false|string */
-    function statistic_html(PaperList $pl, $stat) {
-        return false;
+    /** @return ?ScoreInfo */
+    function statistics() {
+        return null;
     }
 }
 

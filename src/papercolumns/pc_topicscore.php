@@ -32,7 +32,7 @@ class TopicScore_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $v = $row->topic_interest_score($this->contact);
-        $this->statistics->add($v);
+        $this->statistics->add_overriding($v, $pl->overriding);
         return self::unparse_value($v);
     }
     function text(PaperList $pl, PaperInfo $row) {
@@ -44,8 +44,8 @@ class TopicScore_PaperColumn extends PaperColumn {
     function has_statistics() {
         return true;
     }
-    function statistic_html(PaperList $pl, $stat) {
-        return self::unparse_value($this->statistics->statistic($stat));
+    function statistics() {
+        return $this->statistics;
     }
     static function unparse_value($v) {
         if (is_int($v)) {
