@@ -1319,6 +1319,16 @@ class PaperList {
         $this->render_context = $context;
         assert(empty($this->row_attr));
 
+        // correct authors
+        if ($this->viewing("authors")
+            && $this->view_origin("authors") >= self::VIEWORIGIN_SEARCH
+            && $this->view_origin("anonau") < self::VIEWORIGIN_SEARCH
+            && (!isset($this->_view_options["authors"])
+                || !$this->_view_options["authors"]->has("anon"))) {
+            $this->_view_options["authors"] = $this->_view_options["authors"] ?? new ViewOptionList;
+            $this->_view_options["authors"]->add("anon", true);
+        }
+
         // extract columns from _viewf
         $fs1 = $viewf = [];
         foreach ($this->_viewf as $k => $v) {
