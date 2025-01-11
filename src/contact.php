@@ -5012,7 +5012,10 @@ class Contact implements JsonSerializable {
         if (($crow
              && $crow->contactId === $this->contactId)
             || (($ctype & CommentInfo::CT_BYSHEPHERD) !== 0
-                && $this->can_view_shepherd($prow))
+                && $this->can_view_shepherd($prow)
+                && (!$crow
+                    || $prow->shepherdContactId === $crow->contactId
+                    || !$this->conf->setting("shepherd_hide")))
             || (($ctype & CommentInfo::CT_BYADMINISTRATOR) !== 0
                 && $this->can_view_manager($prow))) {
             return true;
