@@ -5005,15 +5005,15 @@ class Contact implements JsonSerializable {
     /** @param ?CommentInfo $crow
      * @return bool */
     function can_view_comment_identity(PaperInfo $prow, $crow) {
-        $ct = $crow ? $crow->commentType : CommentInfo::CT_BLIND;
-        if (($ct & CommentInfo::CTM_BYAUTHOR) !== 0) {
+        $ctype = $crow ? $crow->commentType : CommentInfo::CT_BLIND;
+        if (($ctype & CommentInfo::CTM_BYAUTHOR) !== 0) {
             return $this->can_view_authors($prow);
         }
         if (($crow
              && $crow->contactId === $this->contactId)
-            || (($ct & CommentInfo::CT_BYSHEPHERD) !== 0
+            || (($ctype & CommentInfo::CT_BYSHEPHERD) !== 0
                 && $this->can_view_shepherd($prow))
-            || (($ct & CommentInfo::CT_BYADMINISTRATOR) !== 0
+            || (($ctype & CommentInfo::CT_BYADMINISTRATOR) !== 0
                 && $this->can_view_manager($prow))) {
             return true;
         }
@@ -5022,7 +5022,7 @@ class Contact implements JsonSerializable {
             || ($rights->reviewType === REVIEW_META
                 && $this->conf->check_tracks($prow, $this, Track::VIEWREVID))
             || ($rights->act_author_view()
-                && !$this->conf->is_review_blind(($ct & CommentInfo::CT_BLIND) !== 0))) {
+                && !$this->conf->is_review_blind(($ctype & CommentInfo::CT_BLIND) !== 0))) {
             return true;
         }
         $seerevid = $this->seerevid_setting($prow, null, $rights);
