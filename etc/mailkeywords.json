@@ -1,7 +1,7 @@
 [
     {"name": "NULL", "function": "Mailer::kw_null", "global": true},
     {"name": "OPT", "function": "*kw_opt", "global": true},
-    {"name": "URLENC", "function": "Mailer::kw_urlenc", "global": true},
+    {"name": "URLENC", "function": "*kw_urlenc", "global": true},
     {"name": "PHP", "function": "Mailer::kw_php", "global": true},
 
     {"name": "CONFNAME", "function": "*kw_confnames", "global": true},
@@ -26,7 +26,7 @@
     {"name": "EMAIL", "function": "Mailer::kw_recipient", "userx": "EMAIL"},
     {"name": "FIRST", "function": "Mailer::kw_recipient", "userx": "FIRST"},
     {"name": "LAST", "function": "Mailer::kw_recipient", "userx": "LAST"},
-    {"name": "CAPABILITY", "function": "Mailer::kw_capability"},
+    {"name": "CAPABILITY", "function": "*kw_capability"},
     {"name": "LOGINURL", "function": "*kw_login"},
     {"name": "LOGINURLPARTS", "function": "*kw_login"},
     {"name": "PASSWORD", "function": "*kw_login"},

@@ -107,7 +107,7 @@ class Mailer {
         }
 
         if ($out === "EMAIL") {
-            return $flags & NAME_B ? "<$email>" : $email;
+            return $flags & NAME_B ? "<{$email}>" : $email;
         } else if ($out === "CONTACT") {
             return Text::name($r->firstName, $r->lastName, $email, $flags | NAME_E);
         } else if ($out === "NAME") {
@@ -138,18 +138,16 @@ class Mailer {
         $yes = $this->expandvar($args, true);
         if ($yes && !$isbool) {
             return $this->expandvar($args, false);
-        } else {
-            return $yes;
         }
+        return $yes;
     }
 
-    static function kw_urlenc($args, $isbool, $m) {
-        $hasinner = $m->expandvar($args, true);
+    function kw_urlenc($args, $isbool) {
+        $hasinner = $this->expandvar($args, true);
         if ($hasinner && !$isbool) {
-            return urlencode($m->expandvar($args, false));
-        } else {
-            return $hasinner;
+            return urlencode($this->expandvar($args, false));
         }
+        return $hasinner;
     }
 
     function kw_confnames($args, $isbool, $uf) {
@@ -237,11 +235,11 @@ class Mailer {
         return $m->expand_user($m->recipient, $uf->userx);
     }
 
-    static function kw_capability($args, $isbool, $m, $uf) {
-        if ($m->capability_token) {
-            $m->sensitive = true;
+    function kw_capability($args, $isbool) {
+        if ($this->capability_token) {
+            $this->sensitive = true;
         }
-        return $isbool || $m->capability_token ? $m->capability_token : "";
+        return $isbool || $this->capability_token ? $this->capability_token : "";
     }
 
     function kw_login($args, $isbool, $uf) {
@@ -339,13 +337,12 @@ class Mailer {
 
         if ($isbool) {
             return $mks ? null : false;
-        } else {
-            if (!isset($this->_unexpanded[$what])) {
-                $this->_unexpanded[$what] = true;
-                $this->unexpanded_warning_at($what);
-            }
-            return null;
         }
+        if (!isset($this->_unexpanded[$what])) {
+            $this->_unexpanded[$what] = true;
+            $this->unexpanded_warning_at($what);
+        }
+        return null;
     }
 
 
@@ -704,18 +701,19 @@ class Mailer {
         $prep->headers["subject"] = $subject . $this->eol;
         $prep->headers["to"] = "";
         foreach (self::$email_fields as $lcfield => $field) {
-            if (($text = $mail[$lcfield] ?? "") !== "" && $text !== "<none>") {
-                if (($hdr = $mimetext->encode_email_header($field . ": ", $text))) {
-                    $prep->headers[$lcfield] = $hdr . $this->eol;
-                } else {
-                    $mimetext->mi->field = $lcfield;
-                    $mimetext->mi->landmark = "{$field} field";
-                    $prep->append_item($mimetext->mi);
-                    $logmsg = "{$lcfield}: {$text}";
-                    if (!in_array($logmsg, $this->_errors_reported)) {
-                        error_log("mailer error on {$logmsg}");
-                        $this->_errors_reported[] = $logmsg;
-                    }
+            if (($text = $mail[$lcfield] ?? "") === "" || $text === "<none>") {
+                continue;
+            }
+            if (($hdr = $mimetext->encode_email_header($field . ": ", $text))) {
+                $prep->headers[$lcfield] = $hdr . $this->eol;
+            } else {
+                $mimetext->mi->field = $lcfield;
+                $mimetext->mi->landmark = "{$field} field";
+                $prep->append_item($mimetext->mi);
+                $logmsg = "{$lcfield}: {$text}";
+                if (!in_array($logmsg, $this->_errors_reported)) {
+                    error_log("mailer error on {$logmsg}");
+                    $this->_errors_reported[] = $logmsg;
                 }
             }
         }

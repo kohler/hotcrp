@@ -715,14 +715,14 @@ if (function_exists("pcntl_wifexited") && pcntl_wifexited(0) !== null) {
      * @param int $exitstatus
      * @return bool */
     function pcntl_wifexitedwith($status, $exitstatus = 0) {
-        return pcntl_wifexited($status) && pcntl_wexitstatus($status) == $exitstatus;
+        return pcntl_wifexited($status) && pcntl_wexitstatus($status) === $exitstatus;
     }
 } else {
     /** @param int $status
      * @param int $exitstatus
      * @return bool */
     function pcntl_wifexitedwith($status, $exitstatus = 0) {
-        return ($status & 0xff7f) == ($exitstatus << 8);
+        return ($status & 0xff7f) === ($exitstatus << 8);
     }
 }
 

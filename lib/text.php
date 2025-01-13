@@ -307,16 +307,15 @@ class Text {
      * @param bool $literal
      * @return string */
     static function word_regex($word, $literal = false) {
-        if ($word !== "") {
-            $aw = ctype_alnum($word[0]);
-            $zw = ctype_alnum($word[strlen($word) - 1]);
-            $sp = $literal ? '\s+' : '(?=\s).*\s';
-            return ($aw ? '\b' : '')
-                . str_replace(" ", $sp, preg_quote($word))
-                . ($zw ? '\b' : '');
-        } else {
+        if ($word === "") {
             return "";
         }
+        $aw = ctype_alnum($word[0]);
+        $zw = ctype_alnum($word[strlen($word) - 1]);
+        $sp = $literal ? '\s+' : '(?=\s).*\s';
+        return ($aw ? '\b' : '')
+            . str_replace(" ", $sp, preg_quote($word))
+            . ($zw ? '\b' : '');
     }
 
     const UTF8_INITIAL_NONLETTERDIGIT = '(?:\A|(?!\pL|\pN)\X)';
@@ -328,20 +327,19 @@ class Text {
      * @param bool $literal
      * @return string */
     static function utf8_word_regex($word, $literal = false) {
-        if ($word !== "") {
-            $aw = preg_match('/\A(?:\pL|\pN)/u', $word);
-            $zw = preg_match('/(?:\pL|\pN)\z/u', $word);
-            // Maybe `$word` is not valid UTF-8. Avoid warnings later.
-            if ($aw || $zw || is_valid_utf8($word)) {
-                $sp = $literal ? '(?:\s|\p{Zs})+' : '(?=\s|\p{Zs}).*(?:\s|\p{Zs})';
-                return ($aw ? self::UTF8_INITIAL_NONLETTERDIGIT : '')
-                    . str_replace(" ", $sp, preg_quote($word))
-                    . ($zw ? self::UTF8_FINAL_NONLETTERDIGIT : '');
-            } else {
-                return self::utf8_word_regex(convert_to_utf8($word));
-            }
-        } else {
+        if ($word === "") {
             return "";
+        }
+        $aw = preg_match('/\A(?:\pL|\pN)/u', $word);
+        $zw = preg_match('/(?:\pL|\pN)\z/u', $word);
+        // Maybe `$word` is not valid UTF-8. Avoid warnings later.
+        if ($aw || $zw || is_valid_utf8($word)) {
+            $sp = $literal ? '(?:\s|\p{Zs})+' : '(?=\s|\p{Zs}).*(?:\s|\p{Zs})';
+            return ($aw ? self::UTF8_INITIAL_NONLETTERDIGIT : '')
+                . str_replace(" ", $sp, preg_quote($word))
+                . ($zw ? self::UTF8_FINAL_NONLETTERDIGIT : '');
+        } else {
+            return self::utf8_word_regex(convert_to_utf8($word));
         }
     }
 
