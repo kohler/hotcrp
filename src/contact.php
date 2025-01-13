@@ -1494,7 +1494,8 @@ class Contact implements JsonSerializable {
     /** @param string $t
      * @return bool */
     function has_tag($t) {
-        if (($this->roles & self::ROLE_PC) && strcasecmp($t, "pc") == 0) {
+        if (($this->roles & self::ROLE_PC) !== 0
+            && strcasecmp($t, "pc") === 0) {
             return true;
         }
         if ($this->contactTags) {
@@ -1515,17 +1516,6 @@ class Contact implements JsonSerializable {
         } else if ($this->contactTags
                    && ($p = stripos($this->contactTags, " {$t}#")) !== false) {
             return (float) substr($this->contactTags, $p + strlen($t) + 2);
-        } else {
-            return null;
-        }
-    }
-
-    /** @param string $perm
-     * @return ?bool */
-    function perm_tag_allows($perm) {
-        if ($this->contactTags
-            && ($pos = stripos($this->contactTags, " perm:{$perm}#")) !== false) {
-            return $this->contactTags[$pos + strlen($perm) + 7] !== "-";
         } else {
             return null;
         }
@@ -2228,20 +2218,19 @@ class Contact implements JsonSerializable {
                 $new_roles, $this->contactId);
         }
         // save the roles bits
-        if ($result->affected_rows > 0) {
-            if (!$skip_log) {
-                $this->conf->log_for($actor ?? $this, $this, "Account edited: roles [" . UserStatus::unparse_roles_diff($old_roles, $new_roles) . "]");
-            }
-            $this->roles = $new_roles;
-            $this->_session_roles = (($this->_session_roles ?? 0) & ~self::ROLE_DBMASK) | $new_roles;
-            $this->set_roles_properties();
-            $this->conf->invalidate_caches(["pc" => true]);
-            $this->conf->invalidate_user($this, true);
-            $this->update_cdb_roles();
-            return $new_roles;
-        } else {
+        if ($result->affected_rows === 0) {
             return $old_roles;
         }
+        if (!$skip_log) {
+            $this->conf->log_for($actor ?? $this, $this, "Account edited: roles [" . UserStatus::unparse_roles_diff($old_roles, $new_roles) . "]");
+        }
+        $this->roles = $new_roles;
+        $this->_session_roles = (($this->_session_roles ?? 0) & ~self::ROLE_DBMASK) | $new_roles;
+        $this->set_roles_properties();
+        $this->conf->invalidate_caches(["pc" => true]);
+        $this->conf->invalidate_user($this, true);
+        $this->update_cdb_roles();
+        return $new_roles;
     }
 
     static function importable_props() {
@@ -4939,12 +4928,11 @@ class Contact implements JsonSerializable {
         return null;
     }
 
-    /** @param ?CommentInfo $crow
-     * @return bool */
-    function can_view_comment(PaperInfo $prow, $crow, $textless = false) {
-        $ctype = $crow ? $crow->commentType : CommentInfo::CTVIS_AUTHOR;
+    /** @return bool */
+    function can_view_comment(PaperInfo $prow, CommentInfo $crow, $textless = false) {
+        $ctype = $crow->commentType;
         $rights = $this->rights($prow);
-        if (($crow && $this->is_my_comment($prow, $crow))
+        if ($this->is_my_comment($prow, $crow)
             || $rights->can_administer()) {
             return true;
         }
@@ -4974,19 +4962,10 @@ class Contact implements JsonSerializable {
         return false;
     }
 
-    /** @param ?CommentInfo $crow
-     * @return bool
-     * @deprecated */
-    function can_view_comment_contents(PaperInfo $prow, $crow) {
-        return $this->can_view_comment_content($prow, $crow);
-    }
-
-    /** @param ?CommentInfo $crow
-     * @return bool */
-    function can_view_comment_content(PaperInfo $prow, $crow) {
+    /** @return bool */
+    function can_view_comment_content(PaperInfo $prow, CommentInfo $crow) {
         // assume can_view_comment is true
-        if (!$crow
-            || ($crow->commentType & (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT)) !== (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT)) {
+        if (($crow->commentType & (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT)) !== (CommentInfo::CT_RESPONSE | CommentInfo::CT_DRAFT)) {
             return true;
         }
         $rights = $this->rights($prow);
@@ -5002,19 +4981,16 @@ class Contact implements JsonSerializable {
         return $rights->can_administer() || $rights->allow_pc();
     }
 
-    /** @param ?CommentInfo $crow
-     * @return bool */
-    function can_view_comment_identity(PaperInfo $prow, $crow) {
-        $ctype = $crow ? $crow->commentType : CommentInfo::CT_BLIND;
+    /** @return bool */
+    function can_view_comment_identity(PaperInfo $prow, CommentInfo $crow) {
+        $ctype = $crow->commentType;
         if (($ctype & CommentInfo::CTM_BYAUTHOR) !== 0) {
             return $this->can_view_authors($prow);
         }
-        if (($crow
-             && $crow->contactId === $this->contactId)
+        if ($crow->contactId === $this->contactId
             || (($ctype & CommentInfo::CT_BYSHEPHERD) !== 0
                 && $this->can_view_shepherd($prow)
-                && (!$crow
-                    || $prow->shepherdContactId === $crow->contactId
+                && ($prow->shepherdContactId === $crow->contactId
                     || !$this->conf->setting("shepherd_hide")))
             || (($ctype & CommentInfo::CT_BYADMINISTRATOR) !== 0
                 && $this->can_view_manager($prow))) {
@@ -5033,19 +5009,17 @@ class Contact implements JsonSerializable {
             return $seerevid > 0;
         } else {
             return $rights->review_status > PaperContactInfo::CIRS_UNSUBMITTED
-                || ($crow && $prow->can_view_review_identity_of($crow->contactId, $this));
+                || $prow->can_view_review_identity_of($crow->contactId, $this);
         }
     }
 
-    /** @param ?CommentInfo $crow
-     * @return bool */
-    function can_view_comment_time(PaperInfo $prow, $crow) {
+    /** @return bool */
+    function can_view_comment_time(PaperInfo $prow, CommentInfo $crow) {
         return $this->can_view_comment_identity($prow, $crow);
     }
 
-    /** @param ?CommentInfo $crow
-     * @return bool */
-    function can_view_comment_tags(PaperInfo $prow, $crow) {
+    /** @return bool */
+    function can_view_comment_tags(PaperInfo $prow, CommentInfo $crow) {
         $rights = $this->rights($prow);
         return $rights->allow_pc() || $rights->review_status > 0;
     }

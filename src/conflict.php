@@ -53,7 +53,8 @@ class Conflict {
      * @param int $ct2
      * @return int */
     static function merge($ct1, $ct2) {
-        if ($ct2 >= CONFLICT_AUTHOR && $ct1 < CONFLICT_AUTHOR) {
+        if (($ct2 & CONFLICT_CONTACTAUTHOR) !== 0
+            || ($ct2 >= CONFLICT_AUTHOR && $ct1 < CONFLICT_AUTHOR)) {
             $ct1 |= CONFLICT_CONTACTAUTHOR;
         }
         if (($ct2 & CONFLICT_PCMASK) !== 0
