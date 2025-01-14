@@ -135,7 +135,7 @@ class Paper_API extends MessageSet {
                 $this->conf->options()->refresh_topics();
             }
         }
-        if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun)) {
+        if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun /* XXX */)) {
             $this->dry_run = true;
         }
 

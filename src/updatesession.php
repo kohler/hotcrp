@@ -3,6 +3,11 @@
 // Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
 
 class UpdateSession {
+    const USEC_TYPE_PASSWORD = 0;
+    const USEC_TYPE_TOTP = 2;
+    const USEC_REASON_SIGNIN = 0;
+    const USEC_REASON_CHECK = 1;
+
     /** @param Qsession $qs */
     static function run($qs) {
         if (($qs->get("v") ?? 0) < 1) {
@@ -109,9 +114,13 @@ class UpdateSession {
         $qreq->unset_gsession("uts");
         if (!$add) {
             $usec = [];
-            foreach ($qreq->gsession("usec") ?? [] as $e) {
-                if (($e["u"] ?? 0) !== $ui)
-                    $usec[] = $e;
+            foreach ($qreq->gsession("usec") ?? [] as $usx) {
+                if (isset($usx["e"])
+                    ? strcasecmp($usx["e"], $email) === 0
+                    : ($usx["u"] ?? 0) === $ui) {
+                    continue;
+                }
+                $usec[] = $usx;
             }
             $qreq->set_gsession("usec", $usec);
         }
@@ -120,25 +129,29 @@ class UpdateSession {
     }
 
     /** @param string $email
-     * @param 0|1|2 $type
-     * @param 0|1 $reason
+     * @param null|0|1|2 $type
+     * @param null|0|1 $reason
      * @param int $bound
-     * @return bool */
+     * @return int */
     static function usec_query(Qrequest $qreq, $email, $type, $reason, $bound = 0) {
         $uindex = Contact::session_index_by_email($qreq, $email);
         $usec = $qreq->gsession("usec") ?? [];
-        $success = false;
-        foreach ($qreq->gsession("usec") ?? [] as $e) {
-            if ((isset($e["e"])
-                 ? strcasecmp($e["e"], $email) === 0
-                 : ($e["u"] ?? 0) === $uindex)
-                && ($e["t"] ?? 0) === $type
-                && ($e["r"] ?? 0) === $reason
-                && $e["a"] >= $bound) {
-                $success = !($e["x"] ?? false);
+        $flags = 0;
+        foreach ($qreq->gsession("usec") ?? [] as $usx) {
+            if ((isset($usx["e"])
+                 ? strcasecmp($usx["e"], $email) === 0
+                 : ($usx["u"] ?? 0) === $uindex)
+                && ($type === null || ($usx["t"] ?? 0) === $type)
+                && ($reason === null || ($usx["r"] ?? 0) === $reason)
+                && $usx["a"] >= $bound) {
+                if ($usx["x"] ?? false) {
+                    $flags &= ~(1 << ($usx["t"] ?? 0));
+                } else {
+                    $flags |= 1 << ($usx["t"] ?? 0);
+                }
             }
         }
-        return $success;
+        return $flags;
     }
 
     /** @param string $email
@@ -152,48 +165,48 @@ class UpdateSession {
         $nold_usec = count($old_usec);
 
         $usec = [];
-        foreach ($old_usec as $i => $e) {
+        foreach ($old_usec as $i => $usx) {
             if ($uindex >= 0
-                && isset($e["e"])
-                && strcasecmp($e["e"], $email) === 0) {
-                unset($e["e"]);
+                && isset($usx["e"])
+                && strcasecmp($usx["e"], $email) === 0) {
+                unset($usx["e"]);
                 if ($uindex > 0) {
-                    $e["u"] = $uindex;
+                    $usx["u"] = $uindex;
                 }
             }
-            if ((($e["r"] ?? 0) === 1
-                 && $e["a"] < Conf::$now - 86400)
+            if ((($usx["r"] ?? 0) === 1
+                 && $usx["a"] < Conf::$now - 86400)
                 || ($success
-                    && (isset($e["e"])
-                        ? strcasecmp($e["e"], $email) === 0
-                        : ($e["u"] ?? 0) === $uindex)
-                    && ($e["t"] ?? 0) === $type
-                    && ($e["r"] ?? 0) === $reason)
+                    && (isset($usx["e"])
+                        ? strcasecmp($usx["e"], $email) === 0
+                        : ($usx["u"] ?? 0) === $uindex)
+                    && ($usx["t"] ?? 0) === $type
+                    && ($usx["r"] ?? 0) === $reason)
                 || ($nold_usec > 150
-                    && ($e["x"] ?? false)
-                    && $e["a"] < Conf::$now - 900)) {
+                    && ($usx["x"] ?? false)
+                    && $usx["a"] < Conf::$now - 900)) {
                 continue;
             }
-            $usec[] = $e;
+            $usec[] = $usx;
         }
 
-        $x = [];
+        $usx = [];
         if ($uindex < 0) {
-            $x["e"] = $email;
+            $usx["e"] = $email;
         } else if ($uindex > 0) {
-            $x["u"] = $uindex;
+            $usx["u"] = $uindex;
         }
         if ($type !== 0) {
-            $x["t"] = $type;
+            $usx["t"] = $type;
         }
         if ($reason !== 0) {
-            $x["r"] = $reason;
+            $usx["r"] = $reason;
         }
         if (!$success) {
-            $x["x"] = true;
+            $usx["x"] = true;
         }
-        $x["a"] = Conf::$now;
-        $usec[] = $x;
+        $usx["a"] = Conf::$now;
+        $usec[] = $usx;
         $qreq->set_gsession("usec", $usec);
     }
 

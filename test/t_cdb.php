@@ -524,14 +524,14 @@ class Cdb_Tester {
 
         // current user cannot edit Cengiz's review for some random user
         $result = RequestReview_API::claimreview($user_cengiz, new Qrequest("POST", ["p" => "3", "r" => "$rrid", "email" => "betty6@manchette.net"]), $paper3);
-        xassert_eqq($result->content["ok"], false);
+        xassert_eqq($result->ok(), false);
         $rrow = $paper3->fresh_review_by_id($rrid);
         xassert(!!$rrow);
         xassert_eqq($rrow->contactId, $user_cengiz->contactId);
 
         // current user can claim Sophia's review, even as Cengiz
         $result = RequestReview_API::claimreview($user_cengiz, new Qrequest("POST", ["p" => "3", "r" => "$rrid", "email" => "sophia@dros.nl"]), $paper3);
-        xassert_eqq($result->content["ok"], true);
+        xassert_eqq($result->ok(), true);
         $user_sophia = $this->conf->checked_user_by_email("sophia@dros.nl");
         xassert(!!$user_sophia);
         $rrow = $paper3->fresh_review_by_id($rrid);
