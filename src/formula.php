@@ -200,6 +200,11 @@ abstract class Fexpr implements JsonSerializable {
         $this->_format_detail = $format_detail;
     }
 
+    final function set_format_error() {
+        $this->_format = Fexpr::FERROR;
+        $this->_format_detail = null;
+    }
+
     /** @return string */
     function disallowed_use_error() {
         return "<0>Expression of type " . $this->format_description() . " can’t be used here";
@@ -290,11 +295,22 @@ abstract class Fexpr implements JsonSerializable {
 
     /** @return int */
     function inferred_index() {
-        $lt = 0;
+        $index = 0;
         foreach ($this->args as $a) {
-            $lt |= $a->inferred_index();
+            $index |= $a->inferred_index();
         }
-        return $lt;
+        return $index;
+    }
+
+    /** @return int */
+    final function some_inferred_index() {
+        $index = $this->inferred_index();
+        if ($index === 0 || ($index & ($index - 1)) === 0) {
+            return $index;
+        }
+        for ($i = 1; ($i & $index) === 0; $i <<= 1) {
+        }
+        return $i;
     }
 
     /** @return bool */
@@ -889,10 +905,9 @@ abstract class Aggregate_Fexpr extends Fexpr {
         if ($lt === 0 || ($lt & ($lt - 1)) === 0) {
             $this->index_type = $lt;
             return true;
-        } else {
-            $formula->fexpr_lerror($this, "<0>Ambiguous collection, specify ‘{$this->op}.pc’ or ‘{$this->op}.re’");
-            return false;
         }
+        $formula->fexpr_lerror($this, "<0>Ambiguous collection, specify ‘{$this->op}.pc’ or ‘{$this->op}.re’");
+        return false;
     }
     function inferred_index() {
         return 0;
@@ -1754,14 +1769,18 @@ class FormulaCompiler {
 }
 
 class FormulaParse {
-    /** @var ?Fexpr */
+    /** @var Fexpr */
     public $fexpr;
     /** @var bool */
-    public $indexed;
+    public $indexed = false;
     /** @var int */
-    public $index_type;
+    public $index_type = 0;
     /** @var list<MessageItem> */
     public $lerrors;
+
+    function __construct(Fexpr $fexpr) {
+        $this->fexpr = $fexpr;
+    }
 }
 
 class Formula implements JsonSerializable {
@@ -1770,10 +1789,13 @@ class Formula implements JsonSerializable {
     /** @var ?Contact */
     public $user;
 
+    /** @var ?int */
     public $formulaId;
     public $name;
     public $expression;
+    /** @var int */
     public $createdBy = 0;
+    /** @var int */
     public $timeModified = 0;
 
     /** @var bool */
@@ -1847,6 +1869,8 @@ class Formula implements JsonSerializable {
 
     private function fetch_incorporate() {
         $this->formulaId = (int) $this->formulaId;
+        $this->createdBy = (int) $this->createdBy;
+        $this->timeModified = (int) $this->timeModified;
     }
 
     /** @param Dbl_Result $result
@@ -1929,52 +1953,54 @@ class Formula implements JsonSerializable {
         $this->_bind = [];
         $t = $this->expression;
         if ((string) $t === "") {
-            $this->lerror(0, 0, "<0>Empty formula");
-            $e = null;
+            $fe = Constant_Fexpr::cerror(0, 0);
+            $this->fexpr_lerror($e, "<0>Empty formula");
         } else {
             ++$this->_depth;
-            $e = $this->_parse_ternary($t, false);
+            $fe = $this->_parse_ternary($t, false) ?? Constant_Fexpr::cerror(-strlen($t), 0);
             --$this->_depth;
         }
-        $fp = new FormulaParse;
-        if (!$e
-            || $t !== ""
-            || !empty($this->_lerrors)) {
-            if (empty($this->_lerrors)) {
-                $this->lerror(-strlen($t), 0, "<0>Formula parse error");
-            }
-        } else if (!$e->typecheck($this)) {
-            if (empty($this->_lerrors)) {
-                $this->fexpr_lerror($e, "<0>Formula type mismatch");
-            }
-        } else {
-            $state = new FormulaCompiler($this->user);
-            $e->compile($state);
-            if ($state->indexed
-                && !$this->_allow_indexed
-                && $e->matches_at_most_once()) {
-                $e = new Some_Fexpr($e);
-                $e->typecheck($this);
-                $state = new FormulaCompiler($this->user);
-                $e->compile($state);
-            }
-            if ($state->indexed && !$this->_allow_indexed) {
-                $this->fexpr_lerror($e, "<0>Need an aggregate function like ‘sum’ or ‘max’");
-            } else {
-                $fp->fexpr = $e;
-                $fp->indexed = !!$state->indexed;
-                if ($fp->indexed) {
-                    $fp->index_type = $e->inferred_index();
-                } else if ($e instanceof Aggregate_Fexpr) {
-                    $fp->index_type = $e->index_type;
-                } else {
-                    $fp->index_type = 0;
-                }
-            }
-        }
+        $fp = $this->_fexpr_to_parse($fe);
         $fp->lerrors = $this->_lerrors;
         $this->_lerrors = null;
         $this->_bind = null;
+        return $fp;
+    }
+
+    /** @return FormulaParse */
+    private function _fexpr_to_parse(Fexpr $fe) {
+        if ($fe->format() === Fexpr::FERROR) {
+            if (empty($this->_lerrors)) {
+                $this->fexpr_lerror($fe, "<0>Formula parse error");
+            }
+            return new FormulaParse($fe);
+        }
+        if (!$fe->typecheck($this)) {
+            if (empty($this->_lerrors)) {
+                $this->fexpr_lerror($fe, "<0>Formula type mismatch");
+            }
+            $fe->set_format_error();
+            return new FormulaParse($fe);
+        }
+        $state = new FormulaCompiler($this->user);
+        $fe->compile($state);
+        if ($state->indexed && !$this->_allow_indexed) {
+            if ($fe->matches_at_most_once()) {
+                $some_fe = new Some_Fexpr($fe, $fe->some_inferred_index());
+                $some_fe->set_landmark($fe->pos1, $fe->pos2);
+                return $this->_fexpr_to_parse($some_fe);
+            }
+            $this->fexpr_lerror($fe, "<0>Need an aggregate function like ‘sum’ or ‘max’");
+            $fe->set_format_error();
+            return new FormulaParse($fe);
+        }
+        $fp = new FormulaParse($fe);
+        $fp->indexed = !!$state->indexed;
+        if ($fp->indexed) {
+            $fp->index_type = $fe->inferred_index();
+        } else if ($fe instanceof Aggregate_Fexpr) {
+            $fp->index_type = $fe->index_type;
+        }
         return $fp;
     }
 
@@ -1984,16 +2010,17 @@ class Formula implements JsonSerializable {
         assert($user !== null);
         if ($this->_parse === null || $user !== $this->user) {
             $this->_parse = $this->parse($user);
-            if (($fe = $this->_parse->fexpr)) {
-                $this->_format = $fe->format();
-                $this->_format_detail = $fe->format_detail();
-            } else {
-                $this->_format = Fexpr::FERROR;
-                $this->_format_detail = null;
-            }
+            $this->_format = $this->_parse->fexpr->format();
+            $this->_format_detail = $this->_parse->fexpr->format_detail();
             $this->_value_format = null;
         }
         return $this->_format !== Fexpr::FERROR;
+    }
+
+    /** @return Fexpr */
+    function fexpr() {
+        $this->check();
+        return $this->_parse->fexpr;
     }
 
     /** @return list<MessageItem> */
@@ -2339,11 +2366,10 @@ class Formula implements JsonSerializable {
         } else if ($f instanceof Formula) {
             if ($f->_depth === 0) {
                 $fp = $f->parse($this->user);
-                if ($fp->fexpr && $fp->fexpr->format() !== Fexpr::FERROR) {
+                if ($fp->fexpr->format() !== Fexpr::FERROR) {
                     return $fp->fexpr;
-                } else {
-                    $this->lerror($pos1, $pos2, "<0>Formula definition contains an error");
                 }
+                $this->lerror($pos1, $pos2, "<0>Formula definition contains an error");
             } else {
                 $this->lerror($pos1, $pos2, "<0>Self-referential formula");
             }
@@ -2557,8 +2583,8 @@ class Formula implements JsonSerializable {
             if (!$e2) {
                 if ($e->format() !== Fexpr::FERROR) {
                     $this->lerror(-strlen($t), -strlen($t), "<0>Missing expression");
+                    $e = Constant_Fexpr::cerror(-strlen($t), -strlen($t));
                 }
-                $e = Constant_Fexpr::cerror();
             } else if ($opx === "<" || $opx === ">" || $opx === "<=" || $opx === ">=") {
                 $e = new Inequality_Fexpr($opx, $e, $e2);
             } else if ($opx === "==" || $opx === "!=") {
@@ -2580,7 +2606,7 @@ class Formula implements JsonSerializable {
             } else if ($opx === "**") {
                 $e = new Pow_Fexpr($e, $e2);
             } else {
-                throw new Exception("Unknown operator $opx");
+                throw new Exception("Unknown operator {$opx}");
             }
             $e->set_landmark($pos1, -strlen($t));
         }
