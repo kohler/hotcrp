@@ -1,6 +1,6 @@
 <?php
 // pc_formula.php -- HotCRP helper classes for paper list content
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Formula_PaperColumn extends PaperColumn {
     /** @var Formula */
@@ -80,7 +80,7 @@ class Formula_PaperColumn extends PaperColumn {
                 if ($isreal
                     && !$this->real_format
                     && is_float($v)
-                    && round($v * 100) % 100 != 0) {
+                    && $v - floor($v) >= 0.005) {
                     $this->real_format = "%.2f";
                 }
             }
