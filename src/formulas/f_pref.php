@@ -1,6 +1,6 @@
 <?php
 // formulas/f_pref.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2025 Eddie Kohler; see LICENSE.
 
 class Pref_Fexpr extends Fexpr {
     private $is_expertise;
@@ -14,16 +14,17 @@ class Pref_Fexpr extends Fexpr {
             $this->cids = $ff->modifier;
         }
     }
-    static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
-        if ($ff->modifier === false && !str_starts_with($arg, ".")) {
-            if (str_starts_with($arg, ":")) {
-                $arg = substr($arg, 1);
-            }
-            $csm = ContactSearch::make_pc($arg, $formula->user);
-            if (!$csm->has_error()) {
-                $ff->modifier = $csm->user_ids();
-                return true;
-            }
+    static function parse_modifier(FormulaCall $ff, $arg, Formula $formula) {
+        if ($ff->modifier !== false || str_starts_with($arg, ".")) {
+            return false;
+        }
+        if (str_starts_with($arg, ":")) {
+            $arg = substr($arg, 1);
+        }
+        $csm = ContactSearch::make_pc($arg, $formula->user);
+        if (!$csm->has_error()) {
+            $ff->modifier = $csm->user_ids();
+            return true;
         }
         return false;
     }

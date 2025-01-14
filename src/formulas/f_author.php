@@ -1,6 +1,6 @@
 <?php
 // formulas/f_author.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2025 Eddie Kohler; see LICENSE.
 
 class Author_Fexpr extends Fexpr {
     private $matchtype;
@@ -19,23 +19,22 @@ class Author_Fexpr extends Fexpr {
             $this->matchidx = count(self::$matchers) - 1;
         }
     }
-    static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
-        if ($ff->modifier === null && !str_starts_with($arg, ".")) {
-            if (str_starts_with($arg, ":")) {
-                $arg = substr($arg, 1);
-            }
-            $csm = new ContactSearch(ContactSearch::F_TAG, $arg, $formula->user);
-            if (!$csm->has_error()) {
-                $ff->modifier = $csm->user_ids();
-            } else if (!str_starts_with($arg, "#")) {
-                $ff->modifier = Text::star_text_pregexes($arg);
-            } else {
-                return false;
-            }
-            return true;
+    static function parse_modifier(FormulaCall $ff, $arg, Formula $formula) {
+        if ($ff->modifier !== null || str_starts_with($arg, ".")) {
+            return false;
+        }
+        if (str_starts_with($arg, ":")) {
+            $arg = substr($arg, 1);
+        }
+        $csm = new ContactSearch(ContactSearch::F_TAG, $arg, $formula->user);
+        if (!$csm->has_error()) {
+            $ff->modifier = $csm->user_ids();
+        } else if (!str_starts_with($arg, "#")) {
+            $ff->modifier = Text::star_text_pregexes($arg);
         } else {
             return false;
         }
+        return true;
     }
     function viewable_by(Contact $user) {
         return $user->can_view_some_authors();

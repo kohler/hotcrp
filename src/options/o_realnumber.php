@@ -1,6 +1,6 @@
 <?php
 // o_realnumber.php -- HotCRP helper class for whole-number options
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class RealNumber_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
@@ -94,7 +94,7 @@ class RealNumber_PaperOption extends PaperOption {
         return ["type" => "numeric", "formid" => $this->formid];
     }
 
-    function parse_fexpr(FormulaCall $fcall, &$t) {
+    function parse_fexpr(FormulaCall $fcall) {
         return new RealNumberOption_Fexpr($this);
     }
 

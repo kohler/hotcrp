@@ -1,6 +1,6 @@
 <?php
 // formulas/f_topic.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2025 Eddie Kohler; see LICENSE.
 
 class Topic_Fexpr extends Fexpr {
     /** @var true|array<int> */
@@ -17,17 +17,16 @@ class Topic_Fexpr extends Fexpr {
             }
         }
     }
-    static function parse_modifier(FormulaCall $ff, $arg, $rest, Formula $formula) {
-        if ($ff->modifier === null && !str_starts_with($arg, ".")) {
-            if (str_starts_with($arg, ":")) {
-                $arg = substr($arg, 1);
-            }
-            $ff->modifier = $formula->conf->topic_set()->find_all(SearchWord::unquote($arg));
-            // XXX warn if no match
-            return true;
-        } else {
+    static function parse_modifier(FormulaCall $ff, $arg, Formula $formula) {
+        if ($ff->modifier !== null || str_starts_with($arg, ".")) {
             return false;
         }
+        if (str_starts_with($arg, ":")) {
+            $arg = substr($arg, 1);
+        }
+        $ff->modifier = $formula->conf->topic_set()->find_all(SearchWord::unquote($arg));
+        // XXX warn if no match
+        return true;
     }
     function paper_options(&$oids) {
         $oids[PaperOption::TOPICSID] = true;

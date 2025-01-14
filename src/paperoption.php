@@ -1025,9 +1025,8 @@ class PaperOption implements JsonSerializable {
         }
     }
 
-    /** @param string &$t
-     * @return ?Fexpr */
-    function parse_fexpr(FormulaCall $fcall, &$t) {
+    /** @return ?Fexpr */
+    function parse_fexpr(FormulaCall $fcall) {
         return null;
     }
     /** @return OptionPresent_Fexpr */
@@ -1146,7 +1145,7 @@ class Checkbox_PaperOption extends PaperOption {
         return $this->present_script_expression();
     }
 
-    function parse_fexpr(FormulaCall $fcall, &$t) {
+    function parse_fexpr(FormulaCall $fcall) {
         return $this->present_fexpr();
     }
 }
@@ -1361,7 +1360,7 @@ class Selector_PaperOption extends PaperOption {
         return $this->present_script_expression();
     }
 
-    function parse_fexpr(FormulaCall $fcall, &$t) {
+    function parse_fexpr(FormulaCall $fcall) {
         $fex = new OptionValue_Fexpr($this);
         $fex->set_format(Fexpr::FSUBFIELD, $this);
         return $fex;

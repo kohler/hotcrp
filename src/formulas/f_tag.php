@@ -1,6 +1,6 @@
 <?php
 // formulas/f_tag.php -- HotCRP helper class for formula expressions
-// Copyright (c) 2009-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2025 Eddie Kohler; see LICENSE.
 
 class Tag_Fexpr extends Fexpr {
     private $tag;
@@ -20,9 +20,8 @@ class Tag_Fexpr extends Fexpr {
         } else if (count($ff->rawargs) === 1 && $arg[0] === ":") {
             $ff->rawargs[0] .= $arg;
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
     static function make(FormulaCall $ff) {
         if (count($ff->rawargs) === 1
