@@ -13,6 +13,8 @@ class ManageEmail_API extends MessageSet {
     private $user;
     /** @var Contact */
     private $dstuser;
+    /** @var bool */
+    private $dry_run = false;
 
     function __construct(Contact $viewer, Contact $user, Contact $dstuser) {
         $this->conf = $user->conf;
@@ -21,31 +23,171 @@ class ManageEmail_API extends MessageSet {
         $this->dstuser = $dstuser;
     }
 
-    private function transferpc() {
+    /** @param bool $x
+     * @return $this */
+    function set_dry_run($x) {
+        $this->dry_run = $x;
+        return $this;
+    }
+
+    /** @return bool */
+    static private function confirm(Qrequest $qreq, Contact $u) {
+        return UpdateSession::usec_query($qreq, $u->email, 0, null, Conf::$now - 3600) > 0;
+    }
+
+    /** @return JsonResult */
+    static function list(Contact $viewer, Contact $user, ?Contact $dstuser, Qrequest $qreq) {
+        if ($viewer !== $user && !$viewer->privChair) {
+            return JsonResult::make_permission_error("u")->set("actions", []);
+        }
+        $jr = new JsonResult(200, ["ok" => true, "actions" => []]);
+        if ($user->isPC) {
+            $jr->content["actions"] = "transferpc";
+        }
+        if ($viewer->privChair) {
+            $jr->set("any_email", true);
+        } else {
+            $need_confirm = [];
+            if (!self::confirm($qreq, $user)) {
+                $need_confirm[] = $user->email;
+            }
+            if ($dstuser && !self::confirm($qreq, $dstuser)) {
+                $need_confirm[] = $dstuser->email;
+            }
+            if (!empty($need_confirm)) {
+                $jr->set("need_confirm", $need_confirm);
+            }
+        }
+        return $jr;
+    }
+
+    static function go(Contact $viewer, Qrequest $qreq) {
+        // extract `u` (source account)
+        if (!isset($qreq->u) || strcasecmp($qreq->u, $viewer->email) === 0) {
+            $user = $viewer;
+        } else if (!validate_email($qreq->u)) {
+            return JsonResult::make_parameter_error("u")
+                ->set("error_code", "invalid");
+        } else {
+            $user = $viewer->conf->user_by_email($qreq->u)
+                ?? $viewer->conf->cdb_user_by_email($qreq->u)
+                ?? Contact::make_email($viewer->conf, $qreq->u);
+        }
+
+        // check source account
+        if (!$viewer->privChair
+            && Contact::session_index_by_email($qreq, $user->email) < 0) {
+            return JsonResult::make_parameter_error("u", "<0>Not signed in")
+                ->set("error_code", "signin");
+        } else if ($user->is_disabled()) {
+            return JsonResult::make_parameter_error("u", "<0>Account disabled")
+                ->set("error_code", "disabled");
+        } else if ($user->security_locked()) {
+            return JsonResult::make_parameter_error("u", "<0>Account security locked")
+                ->set("error_code", "security_locked");
+        }
+
+        // extract `email` (destination account)
+        if (!isset($qreq->email)) {
+            $dstuser = null;
+        } else if (!validate_email($qreq->email)) {
+            return JsonResult::make_parameter_error("email")
+                ->set("error_code", "invalid");
+        } else {
+            $dstuser = $viewer->conf->user_by_email($qreq->email)
+                ?? $viewer->conf->cdb_user_by_email($qreq->email)
+                ?? Contact::make_email($viewer->conf, $qreq->email);
+        }
+
+        // check destination account
+        if ($dstuser) {
+            if (!$viewer->privChair
+                && Contact::session_index_by_email($qreq, $dstuser->email) < 0) {
+                return JsonResult::make_parameter_error("email", "<0>You must sign in to the destination account")
+                    ->set("error_code", "signin");
+            } else if ($dstuser->cdb_user()
+                       && ($dstuser->cdb_user()->disabled_flags() & Contact::CF_GDISABLED) !== 0) {
+                return JsonResult::make_parameter_error("email", "<0>Destination account globally disabled")
+                    ->set("error_code", "disabled");
+            } else if ($dstuser->is_disabled()) {
+                return JsonResult::make_parameter_error("email", "<0>Destination account disabled")
+                    ->set("error_code", "disabled");
+            }
+        }
+
+        // list action can complete without user
+        if (!isset($qreq->action) || $qreq->action === "list") {
+            return self::list($viewer, $user, $dstuser, $qreq);
+        }
+
+        // otherwise user required
+        if (!$dstuser) {
+            return JsonResult::make_missing_error("email")
+                ->set("error_code", "missing");
+        }
+
+        // check whetehr accounts have been recently confirmed
+        if (($viewer === $user || !$viewer->privChair)
+            && !self::confirm($qreq, $user)) {
+            return JsonResult::make_parameter_error("u", "<0>Account requires confirmation")
+                ->set("error_code", "confirm");
+        } else if (!$viewer->privChair
+                   && !self::confirm($qreq, $dstuser)) {
+            return JsonResult::make_parameter_error("email", "<0>Account requires confirmation")
+                ->set("error_code", "confirm");
+        }
+
+        // actually go
+        $meapi = new ManageEmail_API($viewer, $user, $dstuser);
+        $meapi->set_dry_run(friendly_boolean($qreq->dry_run) ?? false);
+        return $meapi->run($qreq->action);
+    }
+
+    function run($action) {
+        if ($action === "transferpc") {
+            $ec = $this->run_transferpc();
+        } else {
+            return JsonResult::make_not_found_error("action");
+        }
+        $jr = JsonResult::make_message_list($ec ? 400 : 200, $this->message_list());
+        if ($this->dry_run) {
+            $jr->set("dry_run", true);
+        }
+        if ($ec) {
+            $jr->set("error_code", $ec);
+        }
+        return $jr;
+    }
+
+    /** @return ?string */
+    private function run_transferpc() {
         if (strcasecmp($this->user->email, $this->dstuser->email) === 0) {
             $this->error_at("email", "<0>Emails must differ");
-            return false;
+            return "same_email";
         }
         if (($this->user->roles & Contact::ROLE_PCLIKE) === 0) {
             $this->error_at("u", "<0>Source account is not a member of the PC");
-            return false;
+            return "not_pc";
         }
         assert($this->user->contactId > 0);
         if (($this->dstuser->roles & Contact::ROLE_PCLIKE) !== 0) {
             $this->error_at("email", "<0>Destination account must not be a member of the PC");
-            return false;
+            return "not_pc";
         }
         if ($this->dstuser->has_review()) {
             assert($this->dstuser->contactId > 0);
             $ps = $this->conf->paper_set(["where" => "exists (select * from PaperReview where paperId=Paper.paperId and contactId={$this->user->contactId}) and exists (select * from PaperReview where paperId=Paper.paperId and contactId={$this->dstuser->contactId})"]);
             if (!$ps->is_empty()) {
                 $this->error_at("email", "<0>Review conflict with destination account");
-                $this->inform_at("email", "<5>There are {submissions} for which both accounts have reviews.");
-                return false;
+                $this->inform_at("email", $this->conf->_("<5>PC information for {0} can’t be transferred to {1} because there are {submissions} for which both accounts have reviews.", $this->user->email, $this->dstuser->email));
+                return "review_conflict";
             }
         }
+        if ($this->dry_run) {
+            return null;
+        }
 
-        $this->dstuser->ensure_account_here();
+        $this->import_account();
         $this->transfer_pc_roles();
         $this->transfer_user_tags();
         $this->transfer_conflicts();
@@ -54,7 +196,15 @@ class ManageEmail_API extends MessageSet {
         $this->transfer_reviews();
         $this->transfer_review_requests();
         $this->transfer_comments();
-        $this->transfer_private_tags();
+        $this->transfer_tags();
+        $this->complete();
+        return null;
+    }
+
+    private function import_account() {
+        $this->dstuser->ensure_account_here();
+        $this->dstuser->import_prop($this->user, 1);
+        $this->dstuser->save_prop();
     }
 
     private function transfer_pc_roles() {
@@ -70,18 +220,12 @@ class ManageEmail_API extends MessageSet {
         if (!$this->user->contactTags) {
             return;
         }
-        $add_tags = "";
         foreach (Tagger::split_unpack($this->user->contactTags ?? "") as $tv) {
-            if (!$this->dstuser->has_tag($tv[0]))
-                $add_tags .= " {$tv[0]}#{$tv[1]}";
+            $this->dstuser->change_tag_prop($tv[0], $tv[1], true);
         }
-        if ($add_tags !== "") {
-            $this->conf->qe("update ContactInfo set contactTags=? where contactId=?",
-                ($this->dstuser->contactTags ?? "") . $add_tags,
-                $this->dstuser->contactId);
-        }
-        $this->conf->qe("update ContactInfo set contactTags=null where contactId=?",
-            $this->user->contactId);
+        $this->dstuser->save_prop();
+        $this->user->set_prop("contactTags", null);
+        $this->user->save_prop();
     }
 
     private function transfer_conflicts() {
@@ -184,157 +328,9 @@ class ManageEmail_API extends MessageSet {
         }
     }
 
-
-
-
-
-    static private function session_result(Contact $user, Qrequest $qreq, $ok) {
-        $si = ["postvalue" => $qreq->post_value()];
-        if ($user->email) {
-            $si["email"] = $user->email;
-        }
-        if ($user->contactId) {
-            $si["uid"] = $user->contactId;
-        }
-        return [
-            "ok" => $ok,
-            "sessioninfo" => $si
-        ];
-    }
-
-    static function getsession(Contact $user, Qrequest $qreq) {
-        $qreq->open_session();
-        return self::session_result($user, $qreq, true);
-    }
-
-    /** @param Qrequest $qreq
-     * @param string $v
-     * @return bool */
-    static function change_session($qreq, $v) {
-        $qreq->open_session();
-        $ok = true;
-        $view = [];
-        preg_match_all('/(?:\A|\s)(foldpaper|foldpscollab|foldhomeactivity|(?:pl|pf|ul)display|(?:|ul)scoresort)(|\.[^=]*)(=\S*|)(?=\s|\z)/', $v, $ms, PREG_SET_ORDER);
-        foreach ($ms as $m) {
-            $unfold = intval(substr($m[3], 1) ? : "0") === 0;
-            if ($m[1] === "foldpaper" && $m[2] !== "") {
-                $x = $qreq->csession($m[1]) ?? [];
-                if (is_string($x)) {
-                    $x = explode(" ", $x);
-                }
-                $x = array_diff($x, [substr($m[2], 1)]);
-                if ($unfold) {
-                    $x[] = substr($m[2], 1);
-                }
-                $v = join(" ", $x);
-                if ($v === "") {
-                    $qreq->unset_csession("foldpaper");
-                } else if (substr_count($v, " ") === count($x) - 1) {
-                    $qreq->set_csession("foldpaper", $v);
-                } else {
-                    $qreq->set_csession("foldpaper", $x);
-                }
-                // XXX backwards compat
-                $qreq->unset_csession("foldpapera");
-                $qreq->unset_csession("foldpaperb");
-                $qreq->unset_csession("foldpaperp");
-                $qreq->unset_csession("foldpapert");
-            } else if ($m[1] === "scoresort" && $m[2] === "" && $m[3] !== "") {
-                $ss = ScoreInfo::parse_score_sort(substr($m[3], 1));
-                if ($ss !== null) {
-                    $view["pl"][] = "sort:[score {$ss}]";
-                }
-            } else if ($m[1] === "ulscoresort" && $m[2] === "" && $m[3] !== "") {
-                $want = ScoreInfo::parse_score_sort(substr($m[3], 1));
-                if ($want === "variance" || $want === "maxmin") {
-                    $qreq->set_csession("ulscoresort", $want);
-                } else if ($want === "average") {
-                    $qreq->unset_csession("ulscoresort");
-                }
-            } else if (($m[1] === "pldisplay" || $m[1] === "pfdisplay")
-                       && $m[2] !== "") {
-                $view[substr($m[1], 0, 2)][] = ($unfold ? "show:" : "hide:") . substr($m[2], 1);
-            } else if ($m[1] === "uldisplay"
-                       && preg_match('/\A\.[-a-zA-Z0-9_:]+\z/', $m[2])) {
-                self::change_uldisplay($qreq, [substr($m[2], 1) => $unfold]);
-            } else if (substr($m[1], 0, 4) === "fold" && $m[2] === "") {
-                if ($unfold) {
-                    $qreq->set_csession($m[1], 0);
-                } else {
-                    $qreq->unset_csession($m[1]);
-                }
-            } else {
-                $ok = false;
-            }
-        }
-        foreach ($view as $report => $viewlist) {
-            self::parse_view($qreq, $report, join(" ", $viewlist));
-        }
-        return $ok;
-    }
-
-    /** @param Qrequest $qreq
-     * @return array{ok:bool,sessioninfo:array} */
-    static function setsession(Contact $user, $qreq) {
-        assert($user === $qreq->user());
-        $qreq->open_session();
-        $ok = self::change_session($qreq, $qreq->v);
-        return self::session_result($user, $qreq, $ok);
-    }
-
-    /** @param string $report
-     * @param string|Qrequest $view */
-    static function parse_view(Qrequest $qreq, $report, $view) {
-        $search = new PaperSearch($qreq->user(), "NONE");
-        $pl = new PaperList($report, $search, ["sort" => true], $qreq);
-        $pl->apply_view_report_default(PaperList::VIEWORIGIN_REPORT);
-        $pl->apply_view_session($qreq);
-        if ($view instanceof Qrequest) {
-            $pl->apply_view_qreq($view);
-        } else {
-            $pl->parse_view($view, PaperList::VIEWORIGIN_MAX);
-        }
-        $vd = $pl->unparse_view(PaperList::VIEWORIGIN_REPORT, false);
-        if (!empty($vd)) {
-            $qreq->set_csession("{$report}display", join(" ", $vd));
-        } else {
-            $qreq->unset_csession("{$report}display");
-        }
-    }
-
-    /** @param array<string,bool> $settings */
-    static private function change_uldisplay(Qrequest $qreq, $settings) {
-        $curl = explode(" ", trim(ContactList::uldisplay($qreq)));
-        foreach ($settings as $name => $setting) {
-            if (($f = $qreq->conf()->review_field($name))) {
-                $terms = [$f->short_id];
-                if ($f->main_storage !== null && $f->main_storage !== $f->short_id) {
-                    $terms[] = $f->main_storage;
-                }
-            } else {
-                $terms = [$name];
-            }
-            foreach ($terms as $i => $term) {
-                $p = array_search($term, $curl, true);
-                if ($i === 0 && $setting && $p === false) {
-                    $curl[] = $term;
-                }
-                while (($i !== 0 || !$setting) && $p !== false) {
-                    array_splice($curl, $p, 1);
-                    $p = array_search($term, $curl, true);
-                }
-            }
-        }
-
-        $defaultl = explode(" ", trim(ContactList::uldisplay($qreq, true)));
-        sort($defaultl);
-        sort($curl);
-        if ($curl === $defaultl) {
-            $qreq->unset_csession("uldisplay");
-        } else if ($curl === [] || $curl === [""]) {
-            $qreq->set_csession("uldisplay", " ");
-        } else {
-            $qreq->set_csession("uldisplay", " " . join(" ", $curl) . " ");
-        }
+    private function complete() {
+        Contact::update_rights();
+        $this->user->update_cdb_roles();
+        $this->dstuser->update_cdb_roles();
     }
 }

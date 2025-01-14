@@ -1204,7 +1204,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
         MailChecker::check_db("t_review-external2-request17");
         xassert($result instanceof JsonResult);
-        xassert($result->content["ok"]);
+        xassert($result->ok());
         $user_external2 = $this->conf->checked_user_by_email("external2@_.com");
         xassert(!$user_external2->is_placeholder());
         $this->conf->invalidate_user($user_external2);
@@ -1229,7 +1229,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $xqreq = new Qrequest("POST", ["r" => $rrow->reviewId]);
         $result = RequestReview_API::acceptreview($emptyuser, $xqreq, $paper17);
         xassert($result instanceof JsonResult);
-        xassert($result->content["ok"]);
+        xassert($result->ok());
         MailChecker::check_db("t_review-external2-accept17");
         $rrow = $paper17->fresh_review_by_user($user_external2);
         xassert_eqq($rrow->reviewStatus, ReviewInfo::RS_ACKNOWLEDGED);
@@ -1466,13 +1466,13 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $p16 = $this->conf->checked_paper_by_id(16);
         $result = RequestReview_API::requestreview($u_floyd, $xqreq, $p16);
         xassert($result instanceof JsonResult);
-        xassert($result->content["ok"]);
+        xassert($result->ok());
         xassert_eqq($result->content["action"], "propose");
 
         // confirm proposal
         $xqreq = new Qrequest("POST", ["email" => "external4@_.com"]);
         $result = RequestReview_API::requestreview($this->u_chair, $xqreq, $p16);
-        xassert($result->content["ok"]);
+        xassert($result->ok());
         xassert_eqq($result->content["action"], "request");
 
         // check that new review exists
@@ -1807,7 +1807,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $paper17 = $this->conf->checked_paper_by_id(17);
         $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
         xassert($result instanceof JsonResult);
-        xassert($result->content["ok"]);
+        xassert($result->ok());
 
         $u_ext2p = $this->conf->checked_user_by_email("external2p@_.com");
         xassert(!$u_ext2p->is_placeholder());

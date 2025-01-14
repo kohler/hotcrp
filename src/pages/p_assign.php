@@ -129,7 +129,7 @@ class Assign_Page {
 
     function handle_requestreview() {
         $result = RequestReview_API::requestreview($this->user, $this->qreq, $this->prow);
-        if ($result->content["ok"]) {
+        if ($result->ok()) {
             assert(is_array($result->content["message_list"]));
             $this->conf->feedback_msg($result->content["message_list"]);
             $this->redirect_requestreview();
@@ -149,7 +149,7 @@ class Assign_Page {
 
     function handle_denyreview() {
         $result = RequestReview_API::denyreview($this->user, $this->qreq, $this->prow);
-        if ($result->content["ok"]) {
+        if ($result->ok()) {
             $this->conf->success_msg("<0>Proposed reviewer denied");
             $this->redirect_requestreview();
         }
@@ -159,7 +159,7 @@ class Assign_Page {
 
     function handle_retractreview() {
         $result = RequestReview_API::retractreview($this->user, $this->qreq, $this->prow);
-        if ($result->content["ok"]) {
+        if ($result->ok()) {
             if ($result->content["notified"]) {
                 $this->conf->feedback_msg(
                     MessageItem::success("<0>Review retracted"),
@@ -176,7 +176,7 @@ class Assign_Page {
 
     function handle_undeclinereview() {
         $result = RequestReview_API::undeclinereview($this->user, $this->qreq, $this->prow);
-        if ($result->content["ok"]) {
+        if ($result->ok()) {
             $email = $this->qreq->email ? : "You";
             $this->conf->feedback_msg(
                 MessageItem::success("<0>Review refusal removed"),
