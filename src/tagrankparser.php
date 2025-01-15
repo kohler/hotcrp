@@ -38,11 +38,8 @@ class TagRankParser {
             }
             $csv->set_header($req);
         }
-        $csv->add_synonym("paper", "pid");
-        $csv->add_synonym("paper", "paperid");
-        $csv->add_synonym("paper", "id");
-        $csv->add_synonym("action", "tag");
-        $csv->add_synonym("action", "index");
+        $csv->add_synonym("paper", "pid", "paperid", "id");
+        $csv->add_synonym("action", "tag", "index");
 
         $settings = $pids = [];
         $tagger = new Tagger($this->user);

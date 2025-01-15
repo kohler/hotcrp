@@ -123,8 +123,8 @@ class CsvParser implements Iterator {
     private $comment_start;
     /** @var callable(string,CsvParser) */
     private $comment_function;
-    /** @var array<int,int> */
-    private $synonym = [];
+    /** @var ?array<int,int> */
+    private $synonym;
     /** @var ?string */
     private $filename;
     /** @var int */
@@ -177,6 +177,7 @@ class CsvParser implements Iterator {
     static function make_json($json, $allow_mixed = false) {
         $ja = is_array($json) ? $json : [];
         $csvp = new CsvParser([]);
+        $csvp->synonym = [];
 
         $hs = [];
         foreach ($ja as $j) {
@@ -319,17 +320,22 @@ class CsvParser implements Iterator {
     }
 
     /** @param string $dst
-     * @param int|string $src
+     * @param int|string ...$srclist
      * @return void */
-    function add_synonym($dst, $src) {
-        if (is_string($src)) {
-            $src = $this->hmap[$src] ?? null;
-        }
-        if ($src !== null && isset($this->hmap[$dst])) {
-            $this->synonym[$src] = $this->hmap[$dst];
-        } else if ($src !== null) {
-            $this->hmap[$dst] = $src;
-            $this->xheader[$src] = $dst;
+    function add_synonym($dst, ...$srclist) {
+        foreach ($srclist as $src) {
+            if (is_string($src)) {
+                $src = $this->hmap[$src] ?? null;
+            }
+            if ($src === null) {
+                continue;
+            } else if (!isset($this->hmap[$dst])) {
+                $this->hmap[$dst] = $src;
+                $this->xheader[$src] = $dst;
+            } else if ($this->synonym !== null
+                       && !isset($this->synonym[$src])) {
+                $this->synonym[$src] = $this->hmap[$dst];
+            }
         }
     }
 
@@ -493,10 +499,12 @@ class CsvParser implements Iterator {
         }
         ++$this->lpos;
         $a = is_string($line) ? $this->{$this->typefn}($line) : $line;
-        foreach ($this->synonym as $src => $dst) {
-            if (($a[$src] ?? "") !== "" && ($a[$dst] ?? "") === "") {
-                $a[$dst] = $a[$src];
-                unset($a[$src]);
+        if ($this->synonym !== null) {
+            foreach ($this->synonym as $src => $dst) {
+                if (($a[$src] ?? "") !== "" && ($a[$dst] ?? "") === "") {
+                    $a[$dst] = $a[$src];
+                    unset($a[$src]);
+                }
             }
         }
         return $a;

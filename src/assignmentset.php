@@ -1451,9 +1451,7 @@ class AssignmentSet {
                   ["new_tag", "newtag"],
                   ["conflict", "conflict_type", "conflicttype"],
                   ["withdraw_reason", "reason"]] as $ks) {
-            for ($i = 1; $i < count($ks) && !$csv->has_column($ks[0]); ++$i) {
-                $csv->add_synonym($ks[0], $ks[$i]);
-            }
+            $csv->add_synonym(...$ks);
         }
 
         $has_action = $csv->has_column("action");
