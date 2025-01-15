@@ -126,7 +126,7 @@ class SparsifyPref_Batch {
                        && $this->rows[$l][$col2] === $endpref) {
                     ++$l;
                 }
-                for ($x = $k; $x < $l - 1; ++$x) {
+                for ($x = $k; $x < $i + $max; ++$x) {
                     $y = mt_rand($x, $l - 1);
                     $t = $this->rows[$x];
                     $this->rows[$x] = $this->rows[$y];
