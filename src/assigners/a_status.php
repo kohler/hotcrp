@@ -17,12 +17,15 @@ class Status_Assignable extends Assignable {
      * @param ?string $withdraw_reason
      * @param ?bool $notify */
     function __construct($pid, $submitted = null, $withdrawn = null, $withdraw_reason = null, $notify = null) {
-        $this->type = "status";
         $this->pid = $pid;
         $this->_submitted = $submitted;
         $this->_withdrawn = $withdrawn;
         $this->_withdraw_reason = $withdraw_reason;
         $this->_notify = $notify;
+    }
+    /** @return string */
+    function type() {
+        return "status";
     }
     /** @return self */
     function fresh() {

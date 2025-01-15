@@ -11,10 +11,13 @@ class Decision_Assignable extends Assignable {
      * @param ?int $decision
      * @param ?int $decyes */
     function __construct($pid, $decision = null, $decyes = null) {
-        $this->type = "decision";
         $this->pid = $pid;
         $this->_decision = $decision;
         $this->_decyes = $decyes;
+    }
+    /** @return string */
+    function type() {
+        return "decision";
     }
     /** @return self */
     function fresh() {

@@ -21,7 +21,6 @@ class TagAnno_Assignable extends Assignable {
      * @param ?string $heading
      * @param ?string $infoJson */
     function __construct($tag, $annoId, $index = null, $heading = null, $infoJson = null) {
-        $this->type = "taganno";
         $this->pid = 0;
         $this->ltag = strtolower($tag);
         $this->annoId = $annoId;
@@ -29,6 +28,10 @@ class TagAnno_Assignable extends Assignable {
         $this->_tagIndex = $index;
         $this->_heading = $heading;
         $this->_infoJson = $infoJson;
+    }
+    /** @return string */
+    function type() {
+        return "taganno";
     }
     /** @return self */
     function fresh() {

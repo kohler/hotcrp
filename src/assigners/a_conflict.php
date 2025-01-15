@@ -11,10 +11,13 @@ class Conflict_Assignable extends Assignable {
      * @param ?int $cid
      * @param ?int $ctype */
     function __construct($pid, $cid, $ctype = null) {
-        $this->type = "conflict";
         $this->pid = $pid;
         $this->cid = $cid;
         $this->_ctype = $ctype;
+    }
+    /** @return string */
+    function type() {
+        return "conflict";
     }
     /** @return self */
     function fresh() {

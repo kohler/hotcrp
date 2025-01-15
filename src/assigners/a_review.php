@@ -22,11 +22,14 @@ class Review_Assignable extends Assignable {
      * @param ?int $rtype
      * @param ?int $round */
     function __construct($pid, $cid, $rtype = null, $round = null) {
-        $this->type = "review";
         $this->pid = $pid;
         $this->cid = $cid;
         $this->_rtype = $rtype;
         $this->_round = $round;
+    }
+    /** @return string */
+    function type() {
+        return "review";
     }
     /** @return self */
     function fresh() {

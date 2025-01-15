@@ -2,16 +2,15 @@
 // assignmentset.php -- HotCRP helper classes for assignments
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
-class Assignable {
-    /** @var string */
-    public $type;
+abstract class Assignable {
     /** @var int */
     public $pid;
 
+    /** @return string */
+    abstract function type();
+
     /** @return self */
-    function fresh() {
-        return new Assignable;
-    }
+    abstract function fresh();
 
     /** @param Assignable $q
      * @return bool */
@@ -53,7 +52,7 @@ class AssignmentItem implements ArrayAccess, JsonSerializable {
     }
     /** @return string */
     function type() {
-        return $this->before->type;
+        return $this->before->type();
     }
     /** @return int */
     function pid() {
@@ -157,12 +156,12 @@ class AssignmentItem implements ArrayAccess, JsonSerializable {
         return $r;
     }
     function realize(AssignmentState $astate) {
-        return call_user_func($astate->realizer($this->offsetGet("type")), $this, $astate);
+        return call_user_func($astate->realizer($this->type()), $this, $astate);
     }
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
         $x = [
-            "type" => $this->before->type,
+            "type" => $this->type(),
             "pid" => $this->before->pid,
             "\$status" => $this->deleted
                 ? "DELETED"
@@ -294,8 +293,8 @@ class AssignmentState extends MessageSet {
     /** @param Assignable $x
      * @return ?string */
     private function extract_key($x, $pid = null) {
-        $t = $x->type;
-        foreach ($this->types[$x->type] as $k) {
+        $t = $x->type();
+        foreach ($this->types[$x->type()] as $k) {
             if (isset($x->$k)) {
                 $t .= "`" . $x->$k;
             } else if ($pid !== null && $k === "pid") {
@@ -304,7 +303,7 @@ class AssignmentState extends MessageSet {
                 return null;
             }
         }
-        assert($t !== $x->type);
+        assert($t !== $x->type());
         return $t;
     }
     /** @param Assignable $x */
@@ -339,7 +338,7 @@ class AssignmentState extends MessageSet {
             foreach ($k ? [$st->items[$k] ?? null] : $st->items as $item) {
                 if ($item
                     && (!$item->deleted() || $include_deleted)
-                    && $item->before->type === $q->type
+                    && $item->type() === $q->type()
                     && ($item->after ?? $item->before)->match($q)) {
                     $res[] = $item;
                 }
@@ -886,10 +885,9 @@ abstract class UserlessAssignmentParser extends AssignmentParser {
 }
 
 class Assigner {
-    /** @var AssignmentItem */
+    /** @var AssignmentItem
+     * @readonly */
     public $item;
-    /** @var string */
-    public $type;
     /** @var int */
     public $pid;
     /** @var ?int */
@@ -900,12 +898,15 @@ class Assigner {
     public $next_index;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         $this->item = $item;
-        $this->type = $item["type"];
         $this->pid = $item["pid"];
         $this->cid = $item["cid"] ? : $item["_cid"];
         if ($this->cid) {
             $this->contact = $state->user_by_id($this->cid);
         }
+    }
+    /** @return string */
+    function type() {
+        return $this->item->type();
     }
     /** @return string */
     function unparse_description() {
@@ -1835,7 +1836,7 @@ class AssignmentSet {
     function assigned_types() {
         $types = [];
         foreach ($this->assigners as $assigner) {
-            $types[$assigner->type] = true;
+            $types[$assigner->type()] = true;
         }
         ksort($types);
         return array_keys($types);
@@ -1906,7 +1907,7 @@ class AssignmentSet {
             } else if ($c1 && !$c2) {
                 return -1;
             } else {
-                return strcmp($assigner1->type, $assigner2->type);
+                return strcmp($assigner1->type(), $assigner2->type());
             }
         });
         $t = [];

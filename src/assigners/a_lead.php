@@ -3,30 +3,47 @@
 // Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
 
 class Lead_Assignable extends Assignable {
+    /** @var 0|1|2 */
+    private $xtype;
     /** @var ?int */
     public $_cid;
     /** @var ?int */
     public $_override;
-    /** @param string $type
+
+    /** @var readonly */
+    static public $xtypes = ["lead", "shepherd", "manager"];
+
+    /** @param 0|1|2 $xtype
      * @param ?int $pid
      * @param ?int $cid */
-    function __construct($type, $pid, $cid = null) {
-        $this->type = $type;
+    function __construct($xtype, $pid, $cid = null) {
+        $this->xtype = $xtype;
         $this->pid = $pid;
         $this->_cid = $cid;
     }
+    /** @return string */
+    function type() {
+        return self::$xtypes[$this->xtype];
+    }
     /** @return self */
     function fresh() {
-        return new Lead_Assignable($this->type, $this->pid);
+        return new Lead_Assignable($this->xtype, $this->pid);
     }
 }
 
 class Lead_AssignmentParser extends AssignmentParser {
+    /** @var 'lead'|'shepherd'|'manager' */
     private $key;
+    /** @var 0|1|2 */
+    private $xtype;
     private $remove;
     function __construct(Conf $conf, $aj) {
         parent::__construct($aj->name);
         $this->key = $aj->type;
+        if (($xt = array_search($this->key, Lead_Assignable::$xtypes)) === false) {
+            throw new Exception("bad key for Lead_AssignmentParser");
+        }
+        $this->xtype = $xt;
         $this->remove = $aj->remove;
     }
     function load_state(AssignmentState $state) {
@@ -36,7 +53,7 @@ class Lead_AssignmentParser extends AssignmentParser {
         $k = $this->key . "ContactId";
         foreach ($state->prows() as $prow) {
             if (($cid = +$prow->$k))
-                $state->load(new Lead_Assignable($this->key, $prow->paperId, $cid));
+                $state->load(new Lead_Assignable($this->xtype, $prow->paperId, $cid));
         }
         Conflict_AssignmentParser::load_conflict_state($state);
     }
@@ -60,7 +77,7 @@ class Lead_AssignmentParser extends AssignmentParser {
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         if ($this->remove) {
-            $m = $state->query(new Lead_Assignable($this->key, $prow->paperId));
+            $m = $state->query(new Lead_Assignable($this->xtype, $prow->paperId));
             $cids = array_map(function ($x) { return $x->_cid; }, $m);
             return $state->users_by_id($cids);
         } else {
@@ -90,9 +107,9 @@ class Lead_AssignmentParser extends AssignmentParser {
         if ($this->remove && $contact->contactId) {
             $remcid = $contact->contactId;
         }
-        $state->remove(new Lead_Assignable($this->key, $prow->paperId, $remcid));
+        $state->remove(new Lead_Assignable($this->xtype, $prow->paperId, $remcid));
         if (!$this->remove && $contact->contactId) {
-            $a = new Lead_Assignable($this->key, $prow->paperId, $contact->contactId);
+            $a = new Lead_Assignable($this->xtype, $prow->paperId, $contact->contactId);
             if (isset($req["override"]) && friendly_boolean($req["override"])) {
                 $a->_override = 1;
             }
@@ -106,7 +123,7 @@ class Lead_Assigner extends Assigner {
     private $description;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
-        $this->description = $this->type === "manager" ? "administrator" : $this->type;
+        $this->description = $this->type() === "manager" ? "administrator" : $this->type();
     }
     static function make(AssignmentItem $item, AssignmentState $state) {
         if (!$item->existed()) {
@@ -115,9 +132,9 @@ class Lead_Assigner extends Assigner {
         return new Lead_Assigner($item, $state);
     }
     function icon() {
-        if ($this->type === "lead") {
+        if ($this->type() === "lead") {
             return review_lead_icon();
-        } else if ($this->type === "shepherd") {
+        } else if ($this->type() === "shepherd") {
             return review_shepherd_icon();
         } else {
             return "({$this->description})";
@@ -151,7 +168,7 @@ class Lead_Assigner extends Assigner {
         if (!$this->item->deleted()) {
             $aset->show_column("reviewers");
         }
-        $k = $this->type;
+        $k = $this->type();
         if ($k === "lead" || $k === "shepherd") {
             $deltarev->has |= $k === "lead" ? AssignmentCountSet::HAS_LEAD : AssignmentCountSet::HAS_SHEPHERD;
             if ($this->item->existed()) {
@@ -172,17 +189,18 @@ class Lead_Assigner extends Assigner {
     function execute(AssignmentSet $aset) {
         $old_cid = $this->item->pre("_cid") ? : 0;
         $new_cid = $this->item->post("_cid") ? : 0;
-        $aset->stage_qe("update Paper set {$this->type}ContactId=? where paperId=? and {$this->type}ContactId=?", $new_cid, $this->pid, $old_cid);
+        $t = $this->type();
+        $aset->stage_qe("update Paper set {$t}ContactId=? where paperId=? and {$t}ContactId=?", $new_cid, $this->pid, $old_cid);
         if ($new_cid) {
             $aset->user->log_activity_for($new_cid, "Set {$this->description}", $this->pid);
         } else {
             $aset->user->log_activity("Clear {$this->description}", $this->pid);
         }
-        if ($this->type === "lead" || $this->type === "shepherd") {
+        if ($t === "lead" || $t === "shepherd") {
             $aset->register_cleanup_function("lead", function ($vals) use ($aset) {
                 $aset->conf->update_paperlead_setting(min($vals));
             }, $new_cid ? 1 : 0);
-        } else if ($this->type === "manager") {
+        } else if ($t === "manager") {
             $aset->register_cleanup_function("manager", function ($vals) use ($aset) {
                 $aset->conf->update_papermanager_setting(min($vals));
             }, $new_cid ? 1 : 0);

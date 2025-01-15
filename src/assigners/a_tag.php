@@ -17,12 +17,15 @@ class Tag_Assignable extends Assignable {
      * @param ?float $index
      * @param ?bool $override */
     function __construct($pid, $ltag, $tag = null, $index = null, $override = null) {
-        $this->type = "tag";
         $this->pid = $pid;
         $this->ltag = $ltag;
         $this->_tag = $tag ?? $ltag;
         $this->_index = $index;
         $this->_override = $override;
+    }
+    /** @return string */
+    function type() {
+        return "tag";
     }
     /** @return self */
     function fresh() {

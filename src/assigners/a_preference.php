@@ -14,11 +14,14 @@ class Preference_Assignable extends Assignable {
      * @param ?int $pref
      * @param ?int $exp */
     function __construct($pid, $cid, $pref = null, $exp = null) {
-        $this->type = "pref";
         $this->pid = $pid;
         $this->cid = $cid;
         $this->_pref = $pref;
         $this->_exp = $exp;
+    }
+    /** @return string */
+    function type() {
+        return "pref";
     }
     /** @return self */
     function fresh() {

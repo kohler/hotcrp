@@ -11,10 +11,13 @@ class Follow_Assignable extends Assignable {
      * @param ?int $cid
      * @param ?int $watch */
     function __construct($pid, $cid, $watch = null) {
-        $this->type = "follow";
         $this->pid = $pid;
         $this->cid = $cid;
         $this->_watch = $watch;
+    }
+    /** @return string */
+    function type() {
+        return "follow";
     }
     /** @return self */
     function fresh() {
