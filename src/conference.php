@@ -5475,12 +5475,11 @@ class Conf {
         }
         $xtp = new XtParams($this, $user);
         $uf = $xtp->search_name($this->_assignment_parsers, $keyword);
-        $uf = self::xt_resolve_require($uf);
-        if ($uf && !isset($uf->__parser)) {
+        if (($uf = self::xt_resolve_require($uf))) {
             $p = $uf->parser_class;
-            $uf->__parser = new $p($this, $uf);
+            return new $p($this, $uf);
         }
-        return $uf ? $uf->__parser : null;
+        return null;
     }
 
 

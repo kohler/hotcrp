@@ -265,3 +265,9 @@ td.pl.pl_title, td.pl.pl_text {
 	min-width: 5rem;
 }
 }
+
+@media (max-width: 456px) {
+.minw-480 {
+	min-width: 100%;
+}
+}

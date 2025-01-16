@@ -427,13 +427,13 @@ class AssignmentState extends MessageSet {
         return $item;
     }
 
-    /** @return array<int,list<AssignmentItem>> */
-    function diff() {
+    /** @return list<AssignmentItem> */
+    function diff_list() {
         $diff = [];
         foreach ($this->st as $pid => $st) {
             foreach ($st->items as $item) {
                 if ($item->changed())
-                    $diff[$pid][] = $item;
+                    $diff[] = $item;
             }
         }
         return $diff;
@@ -477,6 +477,12 @@ class AssignmentState extends MessageSet {
                 if (!isset($this->prows[$pid]))
                     $this->pid_attempts[$pid] = true;
             }
+        }
+    }
+    function fetch_all_prows() {
+        assert(empty($this->prows));
+        foreach ($this->user->paper_set([]) as $prow) {
+            $this->prows[$prow->paperId] = $prow;
         }
     }
     /** @return PaperInfo */
@@ -1060,10 +1066,18 @@ class AssignmentSet {
     private $search_type = "all";
     /** @var ?array<int,true> */
     private $enabled_pids;
+    /** @var array<string,AssignmentParser> */
+    private $parsers = [];
     /** @var ?array<string,true> */
     private $enabled_actions;
     /** @var int */
     private $request_count = 0;
+    /** @var int */
+    private $progress_phase = 0;
+    /** @var ?int */
+    private $progress_value;
+    /** @var ?int */
+    private $progress_max;
     /** @var list<callable> */
     private $progressf = [];
     /** @var list<Assigner> */
@@ -1085,6 +1099,13 @@ class AssignmentSet {
     private $_cleanup_notify_tracker = [];
     private $qe_stager;
 
+    const PROGPHASE_PARSE = 1;
+    const PROGPHASE_PREAPPLY = 2;
+    const PROGPHASE_REALIZE = 3;
+    const PROGPHASE_APPLY = 4;
+    const PROGPHASE_UNPARSE = 5;
+    const PROGPHASE_SAVE = 6;
+
     function __construct(Contact $user, $overrides = null) {
         $this->conf = $user->conf;
         $this->user = $user;
@@ -1096,19 +1117,25 @@ class AssignmentSet {
         }
     }
 
-    /** @param callable(AssignmentSet,?CsvRow) $progressf
-     * @return $this
-     * @deprecated */
-    function add_progress_handler($progressf) {
-        $this->progressf[] = $progressf;
-        return $this;
-    }
-    /** @param callable(AssignmentSet,?CsvRow) $progressf
+    /** @param callable(AssignmentSet) $progressf
      * @return $this */
     function add_progress_function($progressf) {
         $this->progressf[] = $progressf;
         return $this;
     }
+
+    /** @param ?array{int,?int} $valmax
+     * @param ?CsvRow $row */
+    private function notify_progress($valmax = null, $row = null) {
+        if ($valmax !== null) {
+            $this->progress_value = $valmax[0];
+            $this->progress_max = $valmax[1];
+        }
+        foreach ($this->progressf as $progressf) {
+            call_user_func($progressf, $this, $row);
+        }
+    }
+
     /** @param string $search_type
      * @return $this */
     function set_search_type($search_type) {
@@ -1161,7 +1188,7 @@ class AssignmentSet {
             $this->enabled_actions = [];
         }
         foreach (is_array($action) ? $action : [$action] as $a) {
-            if (($aparser = $this->conf->assignment_parser($a, $this->user)))
+            if (($aparser = $this->assignment_parser($a)))
                 $this->enabled_actions[$aparser->type] = true;
         }
         return $this;
@@ -1196,6 +1223,18 @@ class AssignmentSet {
     /** @return string */
     function landmark() {
         return $this->astate->landmark();
+    }
+    /** @return int */
+    function progress_phase() {
+        return $this->progress_phase;
+    }
+    /** @return ?int */
+    function progress_value() {
+        return $this->progress_value;
+    }
+    /** @return ?int */
+    function progress_max() {
+        return $this->progress_max;
     }
 
     /** @return MessageSet */
@@ -1530,8 +1569,14 @@ class AssignmentSet {
                 $this->error("<0>Paper required");
             }
             return [];
+        } else if ($pfield === "NONE") {
+            return [];
         }
-        if (preg_match('/\A[\d,\s]+\z/', $pfield)) {
+
+        if (ctype_digit($pfield)) {
+            $pids = [intval($pfield)];
+            $this->astate->paper_exact_match = true;
+        } else if (preg_match('/\A[\d,\s]+\z/', $pfield)) {
             $pids = [];
             foreach (preg_split('/[,\s]+/', $pfield) as $pid) {
                 if ($pid !== "") {
@@ -1539,8 +1584,6 @@ class AssignmentSet {
                 }
             }
             $this->astate->paper_exact_match = true;
-        } else if ($pfield === "NONE") {
-            return [];
         } else {
             $search = $this->searches[$pfield] ?? null;
             if ($search === null) {
@@ -1571,12 +1614,19 @@ class AssignmentSet {
     }
 
     /** @return ?AssignmentParser */
+    private function assignment_parser($name) {
+        if (!array_key_exists($name, $this->parsers)) {
+            $this->parsers[$name] = $this->conf->assignment_parser($name, $this->user);
+        }
+        return $this->parsers[$name];
+    }
+
+    /** @return ?AssignmentParser */
     private function collect_parser($req) {
         if (($action = $req["action"]) === null) {
             $action = $this->astate->defaults["action"];
         }
-        $action = strtolower(trim($action));
-        return $this->conf->assignment_parser($action, $this->user);
+        return $this->assignment_parser(strtolower(trim($action)));
     }
 
     /** @return ?list<Contact> */
@@ -1769,81 +1819,132 @@ class AssignmentSet {
         $has_landmark = $csv->has_column("landmark");
         $old_overrides = $this->user->set_overrides($this->astate->overrides);
 
-        // parse file, load papers all at once
-        $lines = $pids = [];
-        while (($req = $csv->next_row())) {
-            if (($aparser = $this->collect_parser($req))) {
-                if ($aparser->paper_universe($req, $this->astate) === "none") {
-                    $paper = "NONE";
-                } else {
-                    $paper = $aparser->expand_papers($req, $this->astate);
+        // parse file up to 2000 lines at a time
+        $this->progress_phase = self::PROGPHASE_PARSE;
+        while ($this->parse_batch($csv, $has_landmark)) {
+            /* do nothing */
+        }
+
+        // call preapply functions and compute diff
+        $this->progress_phase = self::PROGPHASE_PREAPPLY;
+        $this->notify_progress([0, null]);
+        $this->astate->call_preapply_functions();
+        $difflist = $this->astate->diff_list();
+
+        // create assigners for difference
+        $this->progress_phase = self::PROGPHASE_REALIZE;
+        $this->notify_progress([0, count($difflist)]);
+        $this->assigners_pidhead = $pidtail = [];
+        $progresscadence = 1000;
+        foreach ($difflist as $item) {
+            try {
+                $this->astate->set_landmark($item->landmark);
+                $a = $item->realize($this->astate);
+                if (!$a) {
+                    continue;
                 }
-            } else {
-                $paper = (string) $req["paper"];
+                if ($a->pid > 0) {
+                    $index = count($this->assigners);
+                    if (isset($pidtail[$a->pid])) {
+                        $pidtail[$a->pid]->next_index = $index;
+                    } else {
+                        $this->assigners_pidhead[$a->pid] = $index;
+                    }
+                    $pidtail[$a->pid] = $a;
+                }
+                $this->assigners[] = $a;
+            } catch (Exception $e) {
+                if ($e->getMessage() !== "") {
+                    $this->astate->error($e->getMessage());
+                }
             }
+            ++$this->progress_value;
+            if ($this->progress_value % $progresscadence === 0) {
+                $this->notify_progress();
+            }
+        }
+        if ($this->progress_value % $progresscadence !== 0) {
+            $this->astate->set_landmark($csv->lineno());
+            $this->notify_progress();
+        }
+
+        $this->user->set_overrides($old_overrides);
+        return $this;
+    }
+
+    /** @return bool */
+    private function parse_batch(CsvParser $csv, $has_landmark) {
+        set_time_limit(30);
+        $rowlimit = 5000;
+        $progresscadence = 1000;
+
+        // read up to 5000 lines; read all their papers at once
+        $reqs = $pids = $progress = [];
+        $nrows = 0;
+        while ($nrows < $rowlimit && ($req = $csv->next_row())) {
             if ($has_landmark) {
-                $landmark = $req["landmark"] ?? $csv->lineno();
+                $reqs[] = $req["landmark"] ?? $csv->lineno();
             } else {
-                $landmark = $csv->lineno();
+                $reqs[] = $csv->lineno();
             }
-            foreach ($this->collect_papers($paper, false) as $pid) {
+            $reqs[] = $aparser = $this->collect_parser($req);
+            $reqs[] = $req;
+
+            ++$nrows;
+            if ($nrows % $progresscadence === $progresscadence - 1) {
+                $progress[] = [$csv->progress_value(), $csv->progress_max()];
+            }
+
+            // only collect papers in first batch
+            if ($this->request_count !== 0) {
+                continue;
+            }
+
+            if (!$aparser) {
+                $ps = (string) $req["paper"];
+            } else if ($aparser->paper_universe($req, $this->astate) === "none") {
+                $ps = "NONE";
+            } else {
+                $ps = $aparser->expand_papers($req, $this->astate);
+            }
+            foreach ($this->collect_papers($ps, false) as $pid) {
                 $pids[$pid] = true;
             }
-            $lines[] = [$landmark, $aparser, $req];
         }
-        if (!empty($pids)) {
+
+        // in first batch, load required papers
+        if ($this->request_count === 0) {
             $this->astate->set_landmark($csv->lineno());
-            $this->astate->fetch_prows(array_keys($pids), true);
+            if ($nrows < $rowlimit) {
+                if (!empty($pids)) {
+                    $this->astate->fetch_prows(array_keys($pids), true);
+                }
+            } else if (isset($this->enabled_pids)) {
+                $this->astate->fetch_prows(array_keys($this->enabled_pids), true);
+            } else {
+                $this->astate->fetch_all_prows();
+            }
         }
 
         // apply assignment parsers
-        foreach ($lines as $linereq) {
-            $this->astate->set_landmark($linereq[0]);
+        $nreqs = count($reqs);
+        $nrows = 0;
+        for ($i = 0; $i !== $nreqs; $i += 3) {
+            $this->astate->set_landmark($reqs[$i]);
+            $this->apply_req($reqs[$i + 1], $reqs[$i + 2]);
             ++$this->request_count;
-            if ($this->request_count % 100 === 0) {
-                foreach ($this->progressf as $progressf) {
-                    call_user_func($progressf, $this, $linereq[2]);
-                }
-                set_time_limit(30);
-            }
-            $this->apply_req($linereq[1], $linereq[2]);
-        }
-
-        // call preapply functions
-        $this->astate->call_preapply_functions();
-
-        // create assigners for difference
-        $this->assigners_pidhead = $pidtail = [];
-        foreach ($this->astate->diff() as $difflist) {
-            foreach ($difflist as $item) {
-                try {
-                    $this->astate->set_landmark($item->landmark);
-                    if (($a = $item->realize($this->astate))) {
-                        if ($a->pid > 0) {
-                            $index = count($this->assigners);
-                            if (isset($pidtail[$a->pid])) {
-                                $pidtail[$a->pid]->next_index = $index;
-                            } else {
-                                $this->assigners_pidhead[$a->pid] = $index;
-                            }
-                            $pidtail[$a->pid] = $a;
-                        }
-                        $this->assigners[] = $a;
-                    }
-                } catch (Exception $e) {
-                    if ($e->getMessage() !== "") {
-                        $this->astate->error($e->getMessage());
-                    }
-                }
+            ++$nrows;
+            if ($nrows % $progresscadence === $progresscadence - 1) {
+                $this->notify_progress(array_shift($progress));
             }
         }
 
-        $this->astate->set_landmark($csv->lineno());
-        foreach ($this->progressf as $progressf) {
-            call_user_func($progressf, $this, null);
+        // complete
+        if ($nrows === $rowlimit) {
+            return true;
         }
-        $this->user->set_overrides($old_overrides);
-        return $this;
+        $this->notify_progress([$csv->progress_value(), $csv->progress_value()]);
+        return false;
     }
 
     /** @return list<string> */
@@ -1894,6 +1995,7 @@ class AssignmentSet {
                     $this->assignment_type = $desc;
                 } else {
                     $this->assignment_type = "";
+                    break;
                 }
             }
         }
@@ -2017,8 +2119,20 @@ class AssignmentSet {
         }
         $this->conf->qe("lock tables " . join(", ", $tables));
 
+        $progresscadence = 1000;
+        $this->progress_phase = self::PROGPHASE_SAVE;
+        $this->progress_value = 0;
+        $this->progress_max = count($this->assigners);
         foreach ($this->assigners as $assigner) {
             $assigner->execute($this);
+            ++$this->progress_value;
+            if ($this->progress_value % $progresscadence === 0) {
+                set_time_limit(30);
+                $this->notify_progress();
+            }
+        }
+        if ($this->progress_value % $progresscadence !== 0) {
+            $this->notify_progress();
         }
 
         if ($this->qe_stager) {

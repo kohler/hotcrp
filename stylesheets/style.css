@@ -3419,6 +3419,7 @@ div.bigid {
 	padding: 0 0 0 3em;
 }
 span.lineno {
+	font-variant-numeric: tabular-nums;
 }
 
 hr {

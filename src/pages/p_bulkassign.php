@@ -9,12 +9,16 @@ class BulkAssign_Page {
     public $user;
     /** @var Qrequest */
     public $qreq;
+    /** @var bool */
+    private $saving;
     /** @var AssignmentSet */
     private $aset;
     /** @var bool */
-    private $csv_preparing = false;
+    private $progress_open = false;
     /** @var float */
-    private $csv_started = 0.0;
+    private $start_time = 0.0;
+    /** @var ?int */
+    private $progress_max;
 
     function __construct(Contact $user, Qrequest $qreq) {
         $this->conf = $user->conf;
@@ -37,39 +41,97 @@ class BulkAssign_Page {
         return $defaults;
     }
 
-    function keep_browser_alive(AssignmentSet $aset, ?CsvRow $line = null) {
+    private function generic_progress($phase, $progv, $progmax, $landmark) {
         $time = microtime(true);
-        if (!$this->csv_started) {
-            $this->csv_started = $time;
-        } else if ($time - $this->csv_started > 1) {
-            if (!$this->csv_preparing) {
-                echo '<div id="foldmail" class="foldc fold2o">',
-                    '<div class="fn fx2 msg msg-warning">',
-                      '<p class="feedback is-warning">Preparing assignments</p>',
-                      '<p class="feedback is-inform" id="mailcount"></p>',
-                    '</div></div>';
-                $this->csv_preparing = true;
+        if (!$this->start_time) {
+            $this->start_time = $time;
+        }
+        if ($time - $this->start_time <= 1) {
+            return;
+        }
+        if (!$this->progress_open) {
+            echo '<div id="foldprogress" class="foldc fold2o">',
+                '<div class="fn fx2 msg msg-warning minw-480">',
+                  '<p class="feedback is-warning">',
+                  $this->saving ? 'Applying assignments' : 'Preparing draft assignments',
+                  '</p>',
+                  '<p class="feedback is-inform" id="progress-info"></p>',
+                  '<progress id="progress-meter"></progress>',
+                '</div></div>';
+            $this->progress_open = true;
+        }
+        if ($progmax === null) {
+            $progpct = null;
+        } else if ($progv >= $progmax) {
+            $progpct = 100;
+        } else {
+            $progpct = 100 * $progv / $progmax;
+        }
+        if ($phase === AssignmentSet::PROGPHASE_PARSE) {
+            $text = "<span class=\"lineno\">" . htmlspecialchars($landmark) . ":</span> Parsing assignment";
+            if ($progpct !== null) {
+                $text .= sprintf(" (%.0f%% done)", $progpct);
             }
-            $text = '<span class="lineno">' . htmlspecialchars($aset->landmark()) . ':</span>';
-            if (!$line) {
-                $text .= " processing";
+        } else if ($phase === AssignmentSet::PROGPHASE_REALIZE) {
+            $text = sprintf("Computing assignments (%.0f%% done)", $progpct);
+        } else if ($phase === AssignmentSet::PROGPHASE_UNPARSE) {
+            $text = "Completing assignments";
+        } else if ($phase === AssignmentSet::PROGPHASE_SAVE) {
+            $text = sprintf("Saving assignments (%.0f%% done)", $progpct);
+        } else {
+            $text = "Preparing assignment";
+            if ($progpct !== null) {
+                $text .= sprintf(" (%.0f%% done)", $progpct);
+            } else if ($landmark) {
+                $text .= " at <span class=\"lineno\">" . htmlspecialchars($landmark) . "</span>";
+            }
+        }
+        $js = "";
+        if ($text !== null) {
+            $js .= "document.getElementById('progress-info').innerHTML=" . json_encode_browser($text) . ";";
+        }
+        if ($progmax !== $this->progress_max) {
+            if ($progmax === null) {
+                $js .= "document.getElementById('progress-meter').removeAttribute('value');";
             } else {
-                $text .= " <code>" . htmlspecialchars(join(",", $line->as_list())) . "</code>";
+                $js .= "document.getElementById('progress-meter').max=" . json_encode_browser($progmax) . ";";
             }
-            echo Ht::unstash_script("document.getElementById('mailcount').innerHTML=" . json_encode_browser($text) . ";");
-            flush();
-            while (@ob_end_flush()) {
-            }
+            $this->progress_max = $progmax;
+        }
+        if ($progmax !== null) {
+            $js .= "document.getElementById('progress-meter').value=" . json_encode_browser($progv) . ";";
+        }
+        echo Ht::unstash_script($js ? : ";");
+        flush();
+        while (@ob_end_flush()) {
         }
     }
 
-    function finish_browser_alive() {
-        if ($this->csv_preparing) {
-            echo Ht::unstash_script("hotcrp.fold('mail',null)");
+    function aset_progress(AssignmentSet $aset) {
+        $this->generic_progress($aset->progress_phase(),
+            $aset->progress_value(), $aset->progress_max(),
+            $aset->landmark());
+    }
+
+    function finish_progress() {
+        if ($this->progress_open) {
+            echo Ht::unstash_script("hotcrp.fold('progress',null)");
         }
     }
 
     function complete_assignment($callback) {
+        if (isset($this->qreq->data)) {
+            $content = $this->qreq->data;
+        } else if (isset($this->qreq->data_source)
+                   && preg_match('/\Abulkassign-\w+\.csv\z/', $this->qreq->data_source)
+                   && ($tmpdir = Filer::docstore_tempdir($this->conf))) {
+            $content = @fopen($tmpdir . $this->qreq->data_source, "rb");
+        } else {
+            $content = null;
+        }
+        if (!$content) {
+            return false;
+        }
         $ssel = SearchSelection::make($this->qreq, $this->user);
         $aset = new AssignmentSet($this->user);
         $aset->set_override_conflicts(true);
@@ -80,7 +142,8 @@ class BulkAssign_Page {
             $aset->add_progress_function($callback);
         }
         $aset->enable_papers($ssel->selection());
-        $aset->parse($this->qreq->data, $this->qreq->filename, $this->assignment_defaults());
+        $this->saving = true;
+        $aset->parse($content, $this->qreq->filename, $this->assignment_defaults());
         return $aset->execute(true);
     }
 
@@ -90,16 +153,26 @@ class BulkAssign_Page {
         while (@ob_end_flush()) {
         }
 
-        if ($this->qreq->has_file("file")) {
-            $text = $this->qreq->file_content("file");
-            $filename = $this->qreq->file_filename("file");
+        $qf = $this->qreq->file("file");
+        $filename = $qf ? $qf->name : "";
+        $content_tmpfile = null;
+        if (!$qf) {
+            $content = $this->qreq->data;
+        } else if ($qf->content !== null || ($qf->size ?? 0) < (4 << 20)) {
+            $content = $qf->content();
         } else {
-            $text = $this->qreq->data;
-            $filename = "";
-        }
-        if ($text === false) {
-            $this->conf->error_msg("<0>Internal error: could not read uploaded file");
-            return false;
+            $tfinfo = Filer::docstore_tempfile("bulkassign-", ".csv", $this->conf);
+            if ($tfinfo === null
+                || !@move_uploaded_file($qf->tmp_name, $tfinfo[0])) {
+                $this->conf->error_msg("<0>Uploaded file too big to process");
+                return false;
+            }
+            $content = @fopen($tfinfo[0], "rb");
+            if ($content === false) {
+                $this->conf->error_msg("<0>Internal error: Could not read uploaded file");
+                return false;
+            }
+            $content_tmpfile = substr($tfinfo[0], strrpos($tfinfo[0], "/") + 1);
         }
 
         $aset = new AssignmentSet($this->user);
@@ -108,18 +181,24 @@ class BulkAssign_Page {
             $aset->set_search_type($this->qreq->t);
         }
         $aset->set_csv_context(true);
-        $aset->add_progress_function([$this, "keep_browser_alive"]);
+        $aset->add_progress_function([$this, "aset_progress"]);
         $defaults = $this->assignment_defaults();
-        $text = convert_to_utf8($text);
-        $aset->parse($text, $filename, $defaults);
-        $this->finish_browser_alive();
+        if (is_string($content)) {
+            $content = convert_to_utf8($content);
+        } else {
+            UTF8ConversionFilter::append($content);
+        }
+        $this->saving = false;
+        $aset->parse($content, $filename, $defaults);
 
         if ($aset->has_error() || $aset->is_empty()) {
+            $this->finish_progress();
             $aset->report_errors();
             return false;
         }
 
         $atype = $aset->type_description();
+        $this->generic_progress(AssignmentSet::PROGPHASE_UNPARSE, 0, null, "");
         echo '<h3>Proposed ', $atype ? $atype . " " : "", 'assignment</h3>';
         $this->conf->feedback_msg(
             new MessageItem(null, "Select “Apply changes” to make the checked assignments.", MessageSet::MARKED_NOTE)
@@ -127,15 +206,26 @@ class BulkAssign_Page {
 
         $atypes = $aset->assigned_types();
         $apids = $aset->numjoin_assigned_pids(" ");
+        if (strlen($apids) > 200) {
+            $apids = SessionList::encode_ids($aset->assigned_pids());
+        }
+        if (strlen($apids) > 400) {
+            $apids = "[many]";
+        }
         echo Ht::form($this->conf->hoturl("=bulkassign", [
                 "saveassignment" => 1,
                 "assigntypes" => join(" ", $atypes),
-                "assignpids" => $apids
+                "assignpids" => $apids,
+                "XDEBUG_TRIGGER" => $this->qreq->XDEBUG_TRIGGER
             ])),
             Ht::hidden("default_action", $defaults["action"] ?? "guess"),
-            Ht::hidden("rev_round", $defaults["round"]),
-            Ht::hidden("data", $text),
-            Ht::hidden("filename", $filename),
+            Ht::hidden("rev_round", $defaults["round"]);
+        if (is_string($content)) {
+            echo Ht::hidden("data", $content);
+        } else {
+            echo Ht::hidden("data_source", $content_tmpfile);
+        }
+        echo Ht::hidden("filename", $filename),
             Ht::hidden("assignment_size_estimate", max($aset->assignment_count(), $aset->request_count())),
             Ht::hidden("requestreview_notify", $this->qreq->requestreview_notify),
             Ht::hidden("requestreview_subject", $this->qreq->requestreview_subject),
@@ -143,6 +233,7 @@ class BulkAssign_Page {
 
         $aset->report_errors();
         $aset->print_unparse_display();
+        $this->finish_progress();
 
         echo Ht::actions([
             Ht::submit("Apply changes", ["class" => "btn-success"]),
@@ -228,10 +319,10 @@ secondary review for submission #2:</p>
         }
         if (isset($qreq->saveassignment)
             && $qreq->valid_post()
-            && isset($qreq->data)
-            && $qreq->assignment_size_estimate >= 1000) {
-            $this->complete_assignment([$this, "keep_browser_alive"]);
-            $this->finish_browser_alive();
+            && ((isset($qreq->data) && $qreq->assignment_size_estimate >= 1000)
+                || isset($qreq->data_source))) {
+            $this->complete_assignment([$this, "aset_progress"]);
+            $this->finish_progress();
         }
 
 
@@ -254,7 +345,10 @@ Assignment methods:
 
 
         // Form
-        echo Ht::form($conf->hoturl("=bulkassign", "upload=1"));
+        echo Ht::form($conf->hoturl("=bulkassign", [
+            "upload" => 1,
+            "XDEBUG_TRIGGER" => $qreq->XDEBUG_TRIGGER
+        ]));
 
         // Upload
         echo '<div class="f-i mt-3">',
