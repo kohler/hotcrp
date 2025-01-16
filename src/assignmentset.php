@@ -1512,10 +1512,10 @@ class AssignmentSet {
 
     /** @param string $line */
     function parse_csv_comment($line) {
-        if (preg_match('/\A###\s*hotcrp_assign_display_search\s*(\S.*)\s*\z/', $line, $m)) {
+        if (preg_match('/\A\#\#\#\s*hotcrp_assign_display_search\s*(\S.*)\s*\z/', $line, $m)) {
             $this->unparse_search = $m[1];
         }
-        if (preg_match('/\A###\s*hotcrp_assign_show\s+(\w+)\s*\z/', $line, $m)) {
+        if (preg_match('/\A\#\#\#\s*hotcrp_assign_show\s+(\w+)\s*\z/', $line, $m)) {
             $this->show_column($m[1]);
         }
     }

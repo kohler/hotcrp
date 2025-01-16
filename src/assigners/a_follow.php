@@ -1,6 +1,6 @@
 <?php
 // a_follow.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Follow_Assignable extends Assignable {
     /** @var ?int */

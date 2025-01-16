@@ -1,6 +1,6 @@
 <?php
 // a_conflict.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Conflict_Assignable extends Assignable {
     /** @var int */

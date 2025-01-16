@@ -1,6 +1,6 @@
 <?php
 // a_review.php -- HotCRP assignment helper classes
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Review_Assignable extends Assignable {
     /** @var ?int */
@@ -175,7 +175,7 @@ class Review_AssignmentParser extends AssignmentParser {
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->newtype >= REVIEW_PC && !$contact->is_pc_member()) {
             $uname = $contact->name(NAME_E);
-            return new AssignmentError("<0>{$uname} is not a PC member and cannot be assigned a PC review");
+            return new AssignmentError("<0>‘{$uname}’ is not a PC member and cannot be assigned a PC review");
         }
         // Conflict allowed if we're not going to assign a new review
         if ($this->rtype == 0
