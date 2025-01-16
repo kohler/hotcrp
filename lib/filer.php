@@ -78,13 +78,12 @@ class Filer {
                 @touch($path, Conf::$now);
             }
         }
-        if (($flags & self::FPATH_MKDIR) !== 0
-            && !self::prepare_docstore(self::docstore_fixed_prefix($pattern), $path)) {
-            $doc->message_set()->warning_at(null, "<0>File system storage cannot be initialized");
-            return null;
-        } else {
+        if (($flags & self::FPATH_MKDIR) === 0
+            || self::prepare_docstore(self::docstore_fixed_prefix($pattern), $path)) {
             return $path;
         }
+        $doc->message_set()->warning_at(null, "<0>File system storage cannot be initialized");
+        return null;
     }
 
     /** @param ?string $s
@@ -129,11 +128,34 @@ class Filer {
     /** @return ?non-empty-string */
     static function docstore_tempdir(?Conf $conf = null) {
         $conf = $conf ?? Conf::$main;
-        if ($conf && ($prefix = self::docstore_fixed_prefix($conf->docstore()))) {
-            $tmpdir = "{$prefix}tmp/";
-            '@phan-var non-empty-string $tmpdir';
-            if (self::prepare_docstore($prefix, $tmpdir)) {
-                return $tmpdir;
+        $prefix = $conf ? self::docstore_fixed_prefix($conf->docstore()) : null;
+        if (!$prefix) {
+            return null;
+        }
+        $tmpdir = "{$prefix}tmp/";
+        if (self::prepare_docstore($prefix, $tmpdir)) {
+            return $tmpdir;
+        }
+        return null;
+    }
+
+    /** @param string $prefix
+     * @param string $suffix
+     * @return ?array{non-empty-string,resource} */
+    static function docstore_tempfile($prefix, $suffix, ?Conf $conf = null) {
+        $tmpdir = self::docstore_tempdir($conf);
+        if (!$tmpdir) {
+            return null;
+        }
+        for ($i = 0; $i !== 100; ++$i) {
+            try {
+                $middle = bin2hex(random_bytes(20));
+            } catch (Exception $e) {
+                $middle = sprintf("x%09d", mt_rand(0, 999999999));
+            }
+            $fname = $tmpdir . $prefix . $middle . $suffix;
+            if (($f = @fopen($fname, "x+b"))) {
+                return [$fname, $f];
             }
         }
         return null;
@@ -196,20 +218,21 @@ class Filer {
         while (str_ends_with($container, "/")) {
             $container = substr($container, 0, strlen($container) - 1);
         }
-        if (!is_dir($container)) {
-            while (str_ends_with($fdir, "/")) {
-                $fdir = substr($fdir, 0, strlen($fdir) - 1);
-            }
-            if (strlen($container) < strlen($fdir)
-                || !($parent = self::_make_fpath_parents($fdir, $container))
-                || !@mkdir($container, 0770)) {
-                error_log("Cannot initialize docstore directory {$container}");
-                return null;
-            } else if (!@chmod($container, 02770 & fileperms($parent))) {
-                @rmdir($container);
-                error_log("Cannot set permissions on docstore directory {$container}");
-                return null;
-            }
+        if (is_dir($container)) {
+            return $container;
+        }
+        while (str_ends_with($fdir, "/")) {
+            $fdir = substr($fdir, 0, strlen($fdir) - 1);
+        }
+        if (strlen($container) < strlen($fdir)
+            || !($parent = self::_make_fpath_parents($fdir, $container))
+            || !@mkdir($container, 0770)) {
+            error_log("Cannot initialize docstore directory {$container}");
+            return null;
+        } else if (!@chmod($container, 02770 & fileperms($parent))) {
+            @rmdir($container);
+            error_log("Cannot set permissions on docstore directory {$container}");
+            return null;
         }
         return $container;
     }
