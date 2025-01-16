@@ -105,6 +105,10 @@ class CsvParser implements Iterator {
     private $lpos = 0;
     /** @var int */
     private $loff = 0;
+    /** @var int */
+    private $bpos = 0;
+    /** @var ?int */
+    private $blen;
     /** @var ?resource */
     private $stream;
     /** @var string */
@@ -140,6 +144,7 @@ class CsvParser implements Iterator {
     const TYPE_TAB = 4;
     const TYPE_DOUBLEBAR = 8;
     const TYPE_GUESS = 7;
+    const TYPEM_TYPES = 15;
     const TYPE_HEADER = 16;
     const TYPE_COMMA_HEADER = 17; /* TYPE_COMMA | TYPE_HEADER */
 
@@ -147,75 +152,45 @@ class CsvParser implements Iterator {
      * @return list<string> */
     static public function split_lines($str) {
         $b = [];
-        foreach (preg_split('/([^\r\n]*(?:\z|\r\n?|\n))/', $str, 0, PREG_SPLIT_DELIM_CAPTURE) as $line) {
+        foreach (preg_split('/([^\r\n]*+(?:\z|\r\n?|\n))/', $str, 0, PREG_SPLIT_DELIM_CAPTURE) as $line) {
             if ($line !== "")
                 $b[] = $line;
         }
         return $b;
     }
 
+    /** @param string $line
+     * @return int */
+    static function linelen($line) {
+        $len = strlen($line);
+        if ($len > 0 && $line[$len - 1] === "\n") {
+            --$len;
+        }
+        if ($len > 0 && $line[$len - 1] === "\r") {
+            --$len;
+        }
+        return $len;
+    }
+
     /** @param resource|string|list<string>|list<list<string>> $x
      * @param int $type */
     function __construct($x = "", $type = self::TYPE_COMMA) {
-        if (is_string($x)) {
-            $this->lines = self::split_lines($x);
-        } else if (is_array($x)) {
-            $this->lines = $x;
-        } else {
-            $this->lines = [];
-            $this->stream = $x;
+        if ($x !== null && $x !== "") {
+            $this->set_content($x);
         }
-        $this->set_type($type & ~self::TYPE_HEADER);
+        $this->set_type($type & self::TYPEM_TYPES);
         if (($type & self::TYPE_HEADER) !== 0) {
             $this->set_header($this->next_list());
         }
     }
 
-    /** @param mixed $json
-     * @param bool $allow_mixed
-     * @return CsvParser */
-    static function make_json($json, $allow_mixed = false) {
-        $ja = is_array($json) ? $json : [];
-        $csvp = new CsvParser([]);
-        $csvp->synonym = [];
-
-        $hs = [];
-        foreach ($ja as $j) {
-            if (is_object($j)) {
-                foreach ($j as $k => $v) {
-                    if (is_scalar($v) || $v === null) {
-                        $hs[$k] = true;
-                    }
-                }
-            }
+    /** @param int $type
+     * @return $this */
+    function set_type($type) {
+        if (($type & self::TYPEM_TYPES) === 0) {
+            $type |= self::TYPE_COMMA;
         }
-        $csvp->set_header(array_keys($hs));
-
-        foreach ($ja as $j) {
-            if (is_object($j)) {
-                $x = [];
-                foreach ($j as $k => $v) {
-                    if ($allow_mixed) {
-                        $x[$csvp->hmap[$k]] = $v;
-                    } else if (is_bool($v)) {
-                        $x[$csvp->hmap[$k]] = $v ? "Y" : "N";
-                    } else if (is_scalar($v) || $v === null) {
-                        $x[$csvp->hmap[$k]] = (string) $v;
-                    }
-                }
-                '@phan-var-force list<string> $x';
-                if (!empty($x)) {
-                    $csvp->lines[] = $x;
-                }
-            }
-        }
-
-        return $csvp;
-    }
-
-    /** @param int $type */
-    private function set_type($type) {
-        $this->type = $type ? : self::TYPE_COMMA;
+        $this->type = $type;
         if ($this->type === self::TYPE_COMMA) {
             $this->typefn = "parse_comma";
         } else if ($this->type === self::TYPE_BAR) {
@@ -227,6 +202,100 @@ class CsvParser implements Iterator {
         } else {
             $this->typefn = "parse_guess";
         }
+        return $this;
+    }
+
+    /** @param resource|string|list<string>|list<list<string>> $x
+     * @return $this */
+    function set_content($x) {
+        assert($this->lines === null);
+        if (is_string($x)) {
+            $this->set_content_string($x);
+        } else if (is_array($x)) {
+            $this->set_content_list($x);
+        } else {
+            $this->set_content_stream($x);
+        }
+        return $this;
+    }
+
+    /** @param string $x
+     * @return $this */
+    function set_content_string($x) {
+        assert($this->lines === null);
+        $this->lines = self::split_lines($x);
+        $this->blen = strlen($x);
+        return $this;
+    }
+
+    /** @param list<string>|list<list<string>> $x
+     * @return $this */
+    function set_content_list($x) {
+        assert($this->lines === null);
+        $this->lines = $x;
+        return $this;
+    }
+
+    /** @param resource $x
+     * @return $this */
+    function set_content_stream($x) {
+        assert($this->lines === null);
+        $this->lines = [];
+        $this->stream = $x;
+        if (($stat = @fstat($x)) && isset($stat["size"])) {
+            $this->blen = $stat["size"];
+        }
+        return $this;
+    }
+
+    /** @param mixed $json
+     * @param bool $allow_mixed
+     * @return $this */
+    function set_content_json($json, $allow_mixed = false) {
+        assert($this->lines === null);
+        $ja = is_array($json) ? $json : [];
+        $this->lines = [];
+        $this->synonym = [];
+
+        $hs = [];
+        foreach ($ja as $j) {
+            if (is_object($j)) {
+                foreach ($j as $k => $v) {
+                    if (is_scalar($v) || $v === null) {
+                        $hs[$k] = true;
+                    }
+                }
+            }
+        }
+        $this->set_header(array_keys($hs));
+
+        foreach ($ja as $j) {
+            if (is_object($j)) {
+                $x = [];
+                foreach ($j as $k => $v) {
+                    if ($allow_mixed) {
+                        $x[$this->hmap[$k]] = $v;
+                    } else if (is_bool($v)) {
+                        $x[$this->hmap[$k]] = $v ? "Y" : "N";
+                    } else if (is_scalar($v) || $v === null) {
+                        $x[$this->hmap[$k]] = (string) $v;
+                    }
+                }
+                '@phan-var-force list<string> $x';
+                if (!empty($x)) {
+                    $this->lines[] = $x;
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    /** @param mixed $json
+     * @param bool $allow_mixed
+     * @return $this */
+    static function make_json($json, $allow_mixed = false) {
+        return (new CsvParser)->set_content_json($json, $allow_mixed);
     }
 
     /** @param ?string $fn
@@ -256,6 +325,49 @@ class CsvParser implements Iterator {
         $this->comment_function = $f;
         return $this;
     }
+
+
+    /** @return ?string */
+    function filename() {
+        return $this->filename;
+    }
+
+    /** @return int */
+    function lineno() {
+        return $this->lpos + $this->loff;
+    }
+
+    /** @return string */
+    function landmark() {
+        $l = $this->lpos + $this->loff;
+        if (($this->filename ?? "") !== "") {
+            return "line {$l}";
+        } else {
+            return "{$this->filename}:{$l}";
+        }
+    }
+
+    /** @return string */
+    function landmark_html() {
+        return htmlspecialchars($this->landmark());
+    }
+
+    /** @return int */
+    function progress_value() {
+        if ($this->stream && $this->blen !== null) {
+            return $this->bpos;
+        }
+        return $this->lpos + $this->loff;
+    }
+
+    /** @return ?int */
+    function progress_max() {
+        if ($this->stream) {
+            return $this->blen;
+        }
+        return count($this->lines);
+    }
+
 
     /** @return list<string> */
     function header() {
@@ -377,54 +489,15 @@ class CsvParser implements Iterator {
     /** @param list<string> $a
      * @return array<int,string> */
     function as_map($a) {
-        if (!empty($this->header)) {
-            $b = [];
-            foreach ($a as $i => $v) {
-                $offset = $this->header[$i] ?? "";
-                $b[$offset === "" ? $i : $offset] = $v;
-            }
-            return $b;
-        } else {
+        if (empty($this->header)) {
             return $a;
         }
-    }
-
-    /** @param string $line
-     * @return int */
-    static function linelen($line) {
-        $len = strlen($line);
-        if ($len > 0 && $line[$len - 1] === "\n") {
-            --$len;
+        $b = [];
+        foreach ($a as $i => $v) {
+            $offset = $this->header[$i] ?? "";
+            $b[$offset === "" ? $i : $offset] = $v;
         }
-        if ($len > 0 && $line[$len - 1] === "\r") {
-            --$len;
-        }
-        return $len;
-    }
-
-    /** @return ?string */
-    function filename() {
-        return $this->filename;
-    }
-
-    /** @return int */
-    function lineno() {
-        return $this->lpos + $this->loff;
-    }
-
-    /** @return string */
-    function landmark() {
-        $l = $this->lpos + $this->loff;
-        if (($this->filename ?? "") !== "") {
-            return "line {$l}";
-        } else {
-            return "{$this->filename}:{$l}";
-        }
-    }
-
-    /** @return string */
-    function landmark_html() {
-        return htmlspecialchars($this->landmark());
+        return $b;
     }
 
     /** @return bool */
@@ -487,6 +560,7 @@ class CsvParser implements Iterator {
                 }
             }
             ++$this->lpos;
+            $this->bpos += strlen($line);
         }
     }
 
@@ -498,7 +572,12 @@ class CsvParser implements Iterator {
             return null;
         }
         ++$this->lpos;
-        $a = is_string($line) ? $this->{$this->typefn}($line) : $line;
+        if (is_string($line)) {
+            $this->bpos += strlen($line);
+            $a = $this->{$this->typefn}($line);
+        } else {
+            $a = $line;
+        }
         if ($this->synonym !== null) {
             foreach ($this->synonym as $src => $dst) {
                 if (($a[$src] ?? "") !== "" && ($a[$dst] ?? "") === "") {
@@ -524,13 +603,19 @@ class CsvParser implements Iterator {
 
     /** @param null|false|string|list<string> $line */
     function unshift($line) {
-        if ($line !== null && $line !== false) {
-            if ($this->lpos > 0) {
-                $this->lines[$this->lpos - 1] = $line;
-                --$this->lpos;
-            } else {
-                array_unshift($this->lines, $line);
-            }
+        if ($line === null || $line === false) {
+            return;
+        }
+        if ($this->lpos > 0) {
+            $this->lines[$this->lpos - 1] = $line;
+            --$this->lpos;
+        } else {
+            array_unshift($this->lines, $line);
+        }
+        if (is_string($line)) {
+            $this->bpos -= strlen($line);
+        } else {
+            $this->blen = null;
         }
     }
 
@@ -586,8 +671,10 @@ class CsvParser implements Iterator {
                         if (!$this->current_line()) {
                             break;
                         }
-                        $line .= $this->lines[$this->lpos];
+                        $contline = $this->lines[$this->lpos];
+                        $line .= $contline;
                         ++$this->lpos;
+                        $this->bpos += strlen($contline);
                         $linelen = self::linelen($line);
                     } else if ($pos + 1 < $linelen && $line[$pos + 1] === "\"") {
                         ++$pos;
@@ -705,6 +792,14 @@ class CsvParser implements Iterator {
             throw new Exception("trying to rewind stream CsvParser");
         }
         $this->lpos = $this->_rewind_lnum - $this->loff;
+        $this->bpos = 0;
+        for ($i = 0; $i < $this->lpos; ++$i) {
+            if (is_string($this->lines[$i])) {
+                $this->bpos += strlen($this->lines[$i]);
+            } else {
+                $this->blen = null;
+            }
+        }
         $this->skip_empty();
         $this->_current = null;
         $this->_current_lnum = $this->lpos + $this->loff;

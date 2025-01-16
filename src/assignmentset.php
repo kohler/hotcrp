@@ -240,10 +240,12 @@ class AssignmentState extends MessageSet {
     function set_filename($filename) {
         $this->filename = $filename;
     }
+
     /** @param null|int|string $landmark */
     function set_landmark($landmark) {
         $this->landmark = $landmark;
     }
+
     /** @param null|int|string $landmark
      * @return string */
     function landmark_near($landmark) {
@@ -259,6 +261,7 @@ class AssignmentState extends MessageSet {
             return "{$this->filename}:{$landmark}";
         }
     }
+
     /** @return string */
     function landmark() {
         return $this->landmark_near($this->landmark);
@@ -1728,24 +1731,35 @@ class AssignmentSet {
         return $ret;
     }
 
-    /** @param CsvParser|string|list<string> $text
+    /** @return CsvParser */
+    function make_csv_parser() {
+        return (new CsvParser)->set_comment_start("###")
+            ->set_comment_function([$this, "parse_csv_comment"]);
+    }
+
+    /** @param CsvParser|string|list<string>|resource $text
      * @param ?string $filename
      * @param ?array<string,mixed> $defaults
      * @return $this */
     function parse($text, $filename = null, $defaults = null) {
         assert(empty($this->assigners));
-
         if ($text instanceof CsvParser) {
             $csv = $text;
-            assert($filename === null || $csv->filename() === $filename);
+            assert($filename === null || $text->filename() === $filename);
         } else {
-            $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
-            $csv->set_comment_start("###");
-            $csv->set_comment_function([$this, "parse_csv_comment"]);
-            $csv->set_filename($filename);
+            $csv = $this->make_csv_parser()
+                ->set_type(CsvParser::TYPE_GUESS)
+                ->set_content($text)
+                ->set_filename($filename);
         }
-        $this->astate->set_filename($csv->filename());
+        return $this->parse_csv($csv, $defaults);
+    }
 
+    /** @param ?array<string,mixed> $defaults
+     * @return $this */
+    function parse_csv(CsvParser $csv, $defaults = null) {
+        assert(empty($this->assigners));
+        $this->astate->set_filename($csv->filename());
         $this->astate->defaults = $defaults ?? [];
 
         if (!$this->install_csv_header($csv)) {
