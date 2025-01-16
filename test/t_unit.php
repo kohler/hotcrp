@@ -1470,13 +1470,9 @@ class Unit_Tester {
     function one_test_convert_to_utf8($s, $expect) {
         xassert_eqq(convert_to_utf8($s), $expect);
 
-        if (strpos($s, "\0") !== false) {
-            $stream = fopen("php://temp", "rb+");
-            fwrite($stream, $s);
-            rewind($stream);
-        } else {
-            $stream = fopen("data://text/plain,{$s}", "rb");
-        }
+        $stream = fopen("php://memory", "rb+");
+        fwrite($stream, $s);
+        rewind($stream);
         UTF8ConversionFilter::append($stream);
         xassert_eqq(stream_get_contents($stream), $expect);
     }
