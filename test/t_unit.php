@@ -1454,4 +1454,79 @@ class Unit_Tester {
         $vos->define("sort=asc,ascending,up desc,down,descending forward reverse");
         xassert_eqq($vos->validate("reverse", true), ["sort", "reverse"]);
     }
+
+    function test_utf16_incomplete_suffix_length() {
+        xassert_eqq(UnicodeHelper::utf16_incomplete_suffix_length("\xFF\xFF", false), 0);
+        xassert_eqq(UnicodeHelper::utf16_incomplete_suffix_length("", false), 0);
+        xassert_eqq(UnicodeHelper::utf16_incomplete_suffix_length("\xFF", false), 1);
+        xassert_eqq(UnicodeHelper::utf16_incomplete_suffix_length("\xD8\xDC", false), 2);
+        xassert_eqq(UnicodeHelper::utf16_incomplete_suffix_length("\xD8\xDC\xDC", false), 3);
+        xassert_eqq(UnicodeHelper::utf16_incomplete_suffix_length("\xD8\xDC\xDC\xDC", false), 0);
+        xassert_eqq(UnicodeHelper::utf16_incomplete_suffix_length("\xD8\xDC", true), 0);
+        xassert_eqq(UnicodeHelper::utf16_incomplete_suffix_length("\xD8\xDC\xDC", true), 1);
+        xassert_eqq(UnicodeHelper::utf16_incomplete_suffix_length("\xD8\xDC\xDC\xD8", true), 2);
+    }
+
+    function one_test_convert_to_utf8($s, $expect) {
+        xassert_eqq(convert_to_utf8($s), $expect);
+
+        if (strpos($s, "\0") !== false) {
+            $stream = fopen("php://temp", "rb+");
+            fwrite($stream, $s);
+            rewind($stream);
+        } else {
+            $stream = fopen("data://text/plain,{$s}", "rb");
+        }
+        UTF8ConversionFilter::append($stream);
+        xassert_eqq(stream_get_contents($stream), $expect);
+    }
+
+    function one_test_streaming_convert_to_utf8($ss, $expect) {
+        $cmd = "";
+        foreach ($ss as $i => $s) {
+            if ($i > 0) {
+                $cmd .= "; sleep 0.001; ";
+            }
+            $arg = "";
+            foreach (str_split($s) as $ch) {
+                $arg .= sprintf("\\%03o", ord($ch));
+            }
+            $cmd .= "printf " . escapeshellarg($arg);
+        }
+        $xcmd = "/bin/sh -c " . escapeshellarg($cmd);
+        $p = proc_open($xcmd, [["file", "/dev/null", "rb"], ["pipe", "w"]], $pipes);
+        UTF8ConversionFilter::append($pipes[1]);
+        xassert_eqq(stream_get_contents($pipes[1]), $expect);
+        proc_close($p);
+    }
+
+    function test_convert_to_utf8() {
+        $this->one_test_convert_to_utf8("\xEF\xBB\xBFHello", "Hello");
+        $this->one_test_convert_to_utf8("\xFF\xFE\x00H\x00e\x00l\x00l\x00o", "Hello");
+        $this->one_test_convert_to_utf8("\xFE\xFFH\x00e\x00l\x00l\x00o\x00", "Hello");
+        $this->one_test_convert_to_utf8("\x00H\x00e\x00l\x00l\x00o", "Hello");
+        $this->one_test_convert_to_utf8("H\x00e\x00l\x00l\x00o\x00", "Hello");
+        $this->one_test_convert_to_utf8("\xFE\xFF\x3D\xD8\x00\xDE", "\xF0\x9F\x98\x80");
+        $this->one_test_convert_to_utf8("\xFF\xFE\xD8\x3D\xDE\x00", "\xF0\x9F\x98\x80");
+        $this->one_test_convert_to_utf8("\xC2llo!", "Âllo!");
+    }
+
+    function test_streaming_convert_to_utf8() {
+        $spread = str_repeat("a", 128);
+        $spread_half = str_repeat("a", 64);
+        $spread_le = str_repeat("a\x00", 64);
+        $spread_be = str_repeat("\x00a", 64);
+        $this->one_test_streaming_convert_to_utf8(
+            ["\xEF\xBB\xBFHello"],
+            "Hello"
+        );
+        $this->one_test_streaming_convert_to_utf8(
+            ["\xEF", "\xBB", "\xBFHello"],
+            "Hello"
+        );
+        $this->one_test_streaming_convert_to_utf8(
+            ["\xFE\xFF", $spread_le, "H", "\x00e", "\x00l", "\x00l\x00o", "\x00"],
+            $spread_half . "Hello"
+        );
+    }
 }

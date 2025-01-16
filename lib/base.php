@@ -166,43 +166,27 @@ function is_valid_utf8($str) {
     return !!preg_match('//u', $str);
 }
 
-if (function_exists("iconv")) {
-    function windows_1252_to_utf8(string $str) {
-        return iconv("Windows-1252", "UTF-8//IGNORE", $str);
-    }
-    function mac_os_roman_to_utf8(string $str) {
-        return iconv("Mac", "UTF-8//IGNORE", $str);
-    }
-} else if (function_exists("mb_convert_encoding")) {
-    function windows_1252_to_utf8(string $str) {
-        return mb_convert_encoding($str, "UTF-8", "Windows-1252");
-    }
-}
-if (!function_exists("windows_1252_to_utf8")) {
-    function windows_1252_to_utf8(string $str) {
-        return UnicodeHelper::windows_1252_to_utf8($str);
-    }
-}
-if (!function_exists("mac_os_roman_to_utf8")) {
-    function mac_os_roman_to_utf8(string $str) {
-        return UnicodeHelper::mac_os_roman_to_utf8($str);
-    }
-}
-
 /** @param string $str
  * @return string */
 function convert_to_utf8($str) {
-    if (str_starts_with($str, "\xEF\xBB\xBF")) {
+    if ($str === "") {
+        return "";
+    } else if (($has_bom = str_starts_with($str, "\xEF\xBB\xBF"))) {
         $str = substr($str, 3);
+    } else if (str_starts_with($str, "\xFE\xFF")) {
+        return UnicodeHelper::to_utf8("UTF-16LE", substr($str, 2));
+    } else if (str_starts_with($str, "\xFF\xFE")) {
+        return UnicodeHelper::to_utf8("UTF-16BE", substr($str, 2));
+    } else if (substr_count($str, "\0", 0, min(strlen($str), 128)) >= min(5, strlen($str) / 2)) {
+        $zp = strpos($str, "\0");
+        return UnicodeHelper::to_utf8($zp & 1 ? "UTF-16LE" : "UTF-16BE", $str);
     }
     if (is_valid_utf8($str)) {
         return $str;
-    }
-    $pfx = substr($str, 0, 5000);
-    if (substr_count($pfx, "\r") > 1.5 * substr_count($pfx, "\n")) {
-        return mac_os_roman_to_utf8($str);
+    } else if ($has_bom) {
+        return UnicodeHelper::utf8_replace_invalid($str);
     } else {
-        return windows_1252_to_utf8($str);
+        return UnicodeHelper::to_utf8("Windows-1252", $str);
     }
 }
 

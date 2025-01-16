@@ -10,7 +10,6 @@ const UTF8_ALPHA_TRANS_3 = "\xE1\xB8\x80\xE1\xB8\x81\xE1\xB8\x82\xE1\xB8\x83\xE1
 
 const UTF8_ALPHA_TRANS_3_OUT = "A  a  B  b  B  b  B  b  C  c  D  d  D  d  D  d  D  d  D  d  E  e  E  e  E  e  E  e  E  e  F  f  G  g  H  h  H  h  H  h  H  h  H  h  I  i  I  i  K  k  K  k  K  k  L  l  L  l  L  l  L  l  M  m  M  m  M  m  N  n  N  n  N  n  N  n  O  o  O  o  O  o  O  o  P  p  P  p  R  r  R  r  R  r  R  r  S  s  S  s  S  s  S  s  S  s  T  t  T  t  T  t  T  t  U  u  U  u  U  u  U  u  U  u  V  v  V  v  W  w  W  w  W  w  W  w  W  w  X  x  X  x  Y  y  Z  z  Z  z  Z  z  h  t  w  y  s  A  a  A  a  A  a  A  a  A  a  A  a  A  a  A  a  A  a  A  a  A  a  A  a  E  e  E  e  E  e  E  e  E  e  E  e  E  e  E  e  I  i  I  i  O  o  O  o  O  o  O  o  O  o  O  o  O  o  O  o  O  o  O  o  O  o  O  o  U  u  U  u  U  u  U  u  U  u  U  u  U  u  Y  y  Y  y  Y  y  Y  y  -  -  -  -  '  '  \"  \"  K  ff fi fl ffifflst st (  )  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q  R  S  T  U  V  W  X  Y  Z  [  ]  a  b  c  d  e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z  {  }  ";
 
-const UTF8_FROM_MAC_OS_ROMAN = "\xC3\x84\x20\xC3\x85\x20\xC3\x87\x20\xC3\x89\x20\xC3\x91\x20\xC3\x96\x20\xC3\x9C\x20\xC3\xA1\x20\xC3\xA0\x20\xC3\xA2\x20\xC3\xA4\x20\xC3\xA3\x20\xC3\xA5\x20\xC3\xA7\x20\xC3\xA9\x20\xC3\xA8\x20\xC3\xAA\x20\xC3\xAB\x20\xC3\xAD\x20\xC3\xAC\x20\xC3\xAE\x20\xC3\xAF\x20\xC3\xB1\x20\xC3\xB3\x20\xC3\xB2\x20\xC3\xB4\x20\xC3\xB6\x20\xC3\xB5\x20\xC3\xBA\x20\xC3\xB9\x20\xC3\xBB\x20\xC3\xBC\x20\xE2\x80\xA0\xC2\xB0\x20\xC2\xA2\x20\xC2\xA3\x20\xC2\xA7\x20\xE2\x80\xA2\xC2\xB6\x20\xC3\x9F\x20\xC2\xAE\x20\xC2\xA9\x20\xE2\x84\xA2\xC2\xB4\x20\xC2\xA8\x20\xE2\x89\xA0\xC3\x86\x20\xC3\x98\x20\xE2\x88\x9E\xC2\xB1\x20\xE2\x89\xA4\xE2\x89\xA5\xC2\xA5\x20\xC2\xB5\x20\xE2\x88\x82\xE2\x88\x91\xE2\x88\x8F\xCF\x80\x20\xE2\x88\xAB\xC2\xAA\x20\xC2\xBA\x20\xCE\xA9\x20\xC3\xA6\x20\xC3\xB8\x20\xC2\xBF\x20\xC2\xA1\x20\xC2\xAC\x20\xE2\x88\x9A\xC6\x92\x20\xE2\x89\x88\xE2\x88\x86\xC2\xAB\x20\xC2\xBB\x20\xE2\x80\xA6\xC2\xA0\x20\xC3\x80\x20\xC3\x83\x20\xC3\x95\x20\xC5\x92\x20\xC5\x93\x20\xE2\x80\x93\xE2\x80\x94\xE2\x80\x9C\xE2\x80\x9D\xE2\x80\x98\xE2\x80\x99\xC3\xB7\x20\xE2\x97\x8A\xC3\xBF\x20\xC5\xB8\x20\xE2\x81\x84\xE2\x82\xAC\xE2\x80\xB9\xE2\x80\xBA\xEF\xAC\x81\xEF\xAC\x82\xE2\x80\xA1\xC2\xB7\x20\xE2\x80\x9A\xE2\x80\x9E\xE2\x80\xB0\xC3\x82\x20\xC3\x8A\x20\xC3\x81\x20\xC3\x8B\x20\xC3\x88\x20\xC3\x8D\x20\xC3\x8E\x20\xC3\x8F\x20\xC3\x8C\x20\xC3\x93\x20\xC3\x94\x20\xEF\xA3\xBF\xC3\x92\x20\xC3\x9A\x20\xC3\x9B\x20\xC3\x99\x20\xC4\xB1\x20\xCB\x86\x20\xCB\x9C\x20\xC2\xAF\x20\xCB\x98\x20\xCB\x99\x20\xCB\x9A\x20\xC2\xB8\x20\xCB\x9D\x20\xCB\x9B\x20\xCB\x87\x20";
 const UTF8_FROM_WINDOWS_1252 = "\xE2\x82\xAC\x20\x20\x20\xE2\x80\x9A\xC6\x92\x20\xE2\x80\x9E\xE2\x80\xA6\xE2\x80\xA0\xE2\x80\xA1\xCB\x86\x20\xE2\x80\xB0\xC5\xA0\x20\xE2\x80\xB9\xC5\x92\x20\x20\x20\x20\xC5\xBD\x20\x20\x20\x20\x20\x20\x20\xE2\x80\x98\xE2\x80\x99\xE2\x80\x9C\xE2\x80\x9D\xE2\x80\xA2\xE2\x80\x93\xE2\x80\x94\xCB\x9C\x20\xE2\x84\xA2\xC5\xA1\x20\xE2\x80\xBA\xC5\x93\x20\x20\x20\x20\xC5\xBE\x20\xC5\xB8\x20\xC2\xA0\x20\xC2\xA1\x20\xC2\xA2\x20\xC2\xA3\x20\xC2\xA4\x20\xC2\xA5\x20\xC2\xA6\x20\xC2\xA7\x20\xC2\xA8\x20\xC2\xA9\x20\xC2\xAA\x20\xC2\xAB\x20\xC2\xAC\x20\xC2\xAD\x20\xC2\xAE\x20\xC2\xAF\x20\xC2\xB0\x20\xC2\xB1\x20\xC2\xB2\x20\xC2\xB3\x20\xC2\xB4\x20\xC2\xB5\x20\xC2\xB6\x20\xC2\xB7\x20\xC2\xB8\x20\xC2\xB9\x20\xC2\xBA\x20\xC2\xBB\x20\xC2\xBC\x20\xC2\xBD\x20\xC2\xBE\x20\xC2\xBF\x20\xC3\x80\x20\xC3\x81\x20\xC3\x82\x20\xC3\x83\x20\xC3\x84\x20\xC3\x85\x20\xC3\x86\x20\xC3\x87\x20\xC3\x88\x20\xC3\x89\x20\xC3\x8A\x20\xC3\x8B\x20\xC3\x8C\x20\xC3\x8D\x20\xC3\x8E\x20\xC3\x8F\x20\xC3\x90\x20\xC3\x91\x20\xC3\x92\x20\xC3\x93\x20\xC3\x94\x20\xC3\x95\x20\xC3\x96\x20\xC3\x97\x20\xC3\x98\x20\xC3\x99\x20\xC3\x9A\x20\xC3\x9B\x20\xC3\x9C\x20\xC3\x9D\x20\xC3\x9E\x20\xC3\x9F\x20\xC3\xA0\x20\xC3\xA1\x20\xC3\xA2\x20\xC3\xA3\x20\xC3\xA4\x20\xC3\xA5\x20\xC3\xA6\x20\xC3\xA7\x20\xC3\xA8\x20\xC3\xA9\x20\xC3\xAA\x20\xC3\xAB\x20\xC3\xAC\x20\xC3\xAD\x20\xC3\xAE\x20\xC3\xAF\x20\xC3\xB0\x20\xC3\xB1\x20\xC3\xB2\x20\xC3\xB3\x20\xC3\xB4\x20\xC3\xB5\x20\xC3\xB6\x20\xC3\xB7\x20\xC3\xB8\x20\xC3\xB9\x20\xC3\xBA\x20\xC3\xBB\x20\xC3\xBC\x20\xC3\xBD\x20\xC3\xBE\x20\xC3\xBF\x20";
 
 class UnicodeHelper {
@@ -117,20 +116,39 @@ class UnicodeHelper {
         return normalizer_normalize($str);
     }
 
-    /** @param string $str
+    /** @param 'Windows-1252'|'UTF-16LE'|'UTF-16BE' $encoding
+     * @param string $s
      * @return string */
-    static function windows_1252_to_utf8($str) {
-        return preg_replace_callback('/[\200-\377]/', function ($m) {
-            return rtrim(substr(UTF8_FROM_WINDOWS_1252, 3 * (ord($m[0]) - 128), 3));
-        }, $str);
-    }
-
-    /** @param string $str
-     * @return string */
-    static function mac_os_roman_to_utf8($str) {
-        return preg_replace_callback('/[\200-\377]/', function ($m) {
-            return rtrim(substr(UTF8_FROM_MAC_OS_ROMAN, 3 * (ord($m[0]) - 128), 3));
-        }, $str);
+    static function to_utf8($encoding, $s) {
+        if (function_exists("iconv")) {
+            return iconv($encoding, "UTF-8//IGNORE", $s);
+        } else if (function_exists("mb_convert_encoding")) {
+            return mb_convert_encoding($s, "UTF-8", $encoding);
+        } else if ($encoding === "Windows-1252") {
+            return preg_replace_callback('/[\200-\377]/', function ($m) {
+                return rtrim(substr(UTF8_FROM_WINDOWS_1252, 3 * (ord($m[0]) - 128), 3));
+            }, $s);
+        }
+        // very slow backup
+        $le = $encoding === "UTF-16LE";
+        $t = "";
+        $len = strlen($s) & ~1;
+        $dx = null;
+        for ($i = 0; $i !== $len; $i += 2) {
+            $c0 = ord($s[$i]);
+            $c1 = ord($s[$i + 1]);
+            $cx = $le ? ($c1 << 8) | $c0 : ($c0 << 8) | $c1;
+            if ($cx < 0xD800 || $cx >= 0xE000) {
+                $t .= self::utf8_chr($cx);
+            } else if ($cx < 0xDC00) {
+                $dx = $cx;
+                continue;
+            } else if ($dx !== null) {
+                $t .= self::utf8_chr(0x10000 | (($dx - 0xD800) << 10) | ($cx - 0xDC00));
+            }
+            $dx = null;
+        }
+        return $t;
     }
 
     /** @param string $str
@@ -412,49 +430,73 @@ class UnicodeHelper {
     }
 
     /** @param string $str
-     * @return string */
-    static function utf8_truncate_invalid($str) {
+     * @return 0|1|2|3 */
+    static function utf8_incomplete_suffix_length($str) {
         $len = strlen($str);
         $c = $len ? ord($str[$len - 1]) : 0;
         if ($c < 0x80) {
-            return $str;
+            return 0;
         } else if ($c >= 0xC0
                    || $len === 1
                    || ($d = ord($str[$len - 2])) < 0x80) {
-            return substr($str, 0, $len - 1);
+            return 1;
         } else if ($d >= 0xC0
                    && $d < 0xE0) {
-            return $str;
+            return 0;
         } else if ($d >= 0xC0
                    || $len === 2
                    || ($e = ord($str[$len - 3])) < 0x80) {
-            return substr($str, 0, $len - 2);
+            return 2;
         } else if ($e >= 0xE0
                    && $e < 0xF0) {
-            return $str;
+            return 0;
         } else if ($e >= 0xC0
                    || $len === 3
                    || ord($str[$len - 4]) < 0xF0) {
-            return substr($str, 0, $len - 3);
+            return 3;
         } else {
-            return $str;
+            return 0;
         }
+    }
+
+    /** @param string $str
+     * @param bool $is_le
+     * @return 0|1|2|3 */
+    static function utf16_incomplete_suffix_length($str, $is_le) {
+        $len = strlen($str);
+        $keep = $len & 1;
+        if ($len - $keep > 0) {
+            $ch = ord($str[$len - $keep - ($is_le ? 1 : 2)]);
+            if ($ch >= 0xD8 && $ch < 0xDC) {
+                $keep += 2;
+            }
+        }
+        return $keep;
+    }
+
+    /** @param string $str
+     * @return string */
+    static function utf8_truncate_invalid($str) {
+        $slen = self::utf8_incomplete_suffix_length($str);
+        return $slen === 0 ? $str : substr($str, 0, strlen($str) - $slen);
     }
 
     /** @param string $str
      * @return string */
     static function utf8_replace_invalid($str) {
         $t = "";
-        while ($str !== "" && $str !== false) {
-            if (preg_match('/\A[\x01-\x7f]+/', $str, $m)
-                || preg_match('/\A(?:[\xc2-\xdf][\x80-\xbf]|\xe0[\xa0-\xbf][\x80-\xbf]|[\xe1-\xec\xee\xef][\x80-\xbf][\x80-\xbf]|\xed[\x80-\x9f][\x80-\xbf]|\xf0[\x90-\xbf][\x80-\xbf][\x80-\xbf]|[\xf1-\xf3][\x80-\xbf][\x80-\xbf][\x80-\xbf]|\xf4[\x80-\x8f][\x80-\xbf][\x80-\xbf])+/', $str, $m)) {
+        $pos = 0;
+        $len = strlen($str);
+        while ($pos < $len) {
+            if (preg_match('/\G[\x01-\x7f]+/', $str, $m, 0, $pos)
+                || preg_match('/\G(?:[\xc2-\xdf][\x80-\xbf]|\xe0[\xa0-\xbf][\x80-\xbf]|[\xe1-\xec\xee\xef][\x80-\xbf][\x80-\xbf]|\xed[\x80-\x9f][\x80-\xbf]|\xf0[\x90-\xbf][\x80-\xbf][\x80-\xbf]|[\xf1-\xf3][\x80-\xbf][\x80-\xbf][\x80-\xbf]|\xf4[\x80-\x8f][\x80-\xbf][\x80-\xbf])+/', $str, $m, 0, $pos)) {
                 $t .= $m[0];
-                $str = substr($str, strlen($m[0]));
+                $pos += strlen($m[0]);
             } else {
-                if (substr($str, 0, 1) !== "\x00") {
-                    $t .= chr(0x7f);
+                if ($str[$pos] !== "\x00") {
+                    $t .= "\x7F";
                 }
-                $str = substr($str, 1);
+                ++$pos;
             }
         }
         return $t;
