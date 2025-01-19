@@ -1,6 +1,6 @@
 <?php
 // mailsender.php -- HotCRP mail merge manager
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class MailSender {
     /** @var Conf
@@ -601,7 +601,7 @@ class MailSender {
 
         if ($this->mcount === 0) {
             if ($this->recip->has_message()) {
-                $this->recip->prepend_msg("<0>Mail not sent; please fix these errors and try again", 2);
+                $this->recip->prepend_item(MessageItem::error("<0>Mail not sent; please fix these errors and try again"));
             } else {
                 $this->recip->warning_at(null, "<0>Mail not sent: no users match this search");
             }

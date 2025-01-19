@@ -1,6 +1,6 @@
 <?php
 // listactions/la_tag.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Tag_ListAction extends ListAction {
     static function render(PaperList $pl, Qrequest $qreq) {
@@ -107,13 +107,13 @@ class Tag_ListAction extends ListAction {
             }
         }
         if ($assignset->is_empty() && $assignset->has_message()) {
-            $assignset->prepend_msg("<0>Changes not saved due to errors", 2);
+            $assignset->prepend_item(MessageItem::error("<0>Changes not saved due to errors"));
         } else if ($assignset->is_empty()) {
-            $assignset->prepend_msg("<0>No changes", MessageSet::WARNING_NOTE);
+            $assignset->prepend_item(MessageItem::warning_note("<0>No changes"));
         } else if ($assignset->has_message()) {
-            $assignset->prepend_msg("<0>Some tag assignments ignored because of errors", MessageSet::MARKED_NOTE);
+            $assignset->prepend_item(MessageItem::marked_note("<0>Some tag assignments ignored because of errors"));
         } else {
-            $assignset->prepend_msg("<0>Tag changes saved", MessageSet::SUCCESS);
+            $assignset->prepend_item(MessageItem::success("<0>Tag changes saved"));
         }
         $success = $assignset->execute();
         if ($qreq->ajax) {

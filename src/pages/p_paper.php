@@ -1,6 +1,6 @@
 <?php
 // pages/p_paper.php -- HotCRP paper view and edit page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Paper_Page {
     /** @var Conf */
@@ -179,12 +179,12 @@ class Paper_Page {
         if (!$prepared) {
             if ($is_new && $this->qreq->has_files()) {
                 // XXX save uploaded files
-                $this->ps->prepend_msg("<5><strong>Your uploaded files were ignored.</strong>", 2);
+                $this->ps->prepend_item(MessageItem::error("<5><strong>Your uploaded files were ignored.</strong>"));
             }
             if ($this->ps->has_error_at("status:if_unmodified_since")) {
                 $this->handle_if_unmodified_since();
             } else {
-                $this->ps->prepend_msg("<0>Changes not saved; please correct these errors and try again.", 2);
+                $this->ps->prepend_item(MessageItem::error("<0>Changes not saved; please correct these errors and try again."));
             }
             $conf->feedback_msg($this->ps->decorated_message_list());
             return;
@@ -214,7 +214,7 @@ class Paper_Page {
 
         $new_prow = $this->ps->saved_prow();
         if (!$new_prow) {
-            $this->ps->prepend_msg($conf->_("<0>{Submission} not saved; please correct these errors and try again"), MessageSet::ERROR);
+            $this->ps->prepend_item(MessageItem::error($conf->_("<0>{Submission} not saved; please correct these errors and try again")));
             $conf->feedback_msg($this->ps->decorated_message_list());
             return;
         }
@@ -288,26 +288,26 @@ class Paper_Page {
         $msgpos = 0;
         if (!$this->ps->has_change()) {
             if (!$this->ps->has_error()) {
-                $this->ps->splice_msg($msgpos++, $conf->_("<0>No changes"), MessageSet::WARNING_NOTE);
+                $this->ps->splice_item($msgpos++, MessageItem::warning_note($conf->_("<0>No changes")));
             }
         } else if ($is_new) {
-            $this->ps->splice_msg($msgpos++, $conf->_("<0>Registered {submission} as #{}", $new_prow->paperId), MessageSet::SUCCESS);
+            $this->ps->splice_item($msgpos++, MessageItem::success($conf->_("<0>Registered {submission} as #{}", $new_prow->paperId)));
         } else {
             $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
-            $this->ps->splice_msg($msgpos++, $conf->_("<0>Updated {submission} (changed {:list})", $chf, new FmtArg("phase", $is_final ? "final" : "review")), MessageSet::SUCCESS);
+            $this->ps->splice_item($msgpos++, MessageItem::success($conf->_("<0>Updated {submission} (changed {:list})", $chf, new FmtArg("phase", $is_final ? "final" : "review"))));
         }
         if ($this->ps->has_error()) {
             if (!$this->ps->has_change()) {
-                $this->ps->splice_msg($msgpos++, $conf->_("<5><strong>Changes not saved.</strong> Please correct these issues and save again."), MessageSet::ERROR);
+                $this->ps->splice_item($msgpos++, MessageItem::error($conf->_("<5><strong>Changes not saved.</strong> Please correct these issues and save again.")));
             } else {
-                $this->ps->splice_msg($msgpos++, $conf->_("<0>Please correct these issues and save again."), MessageSet::URGENT_NOTE);
+                $this->ps->splice_item($msgpos++, MessageItem::urgent_note($conf->_("<0>Please correct these issues and save again.")));
             }
         } else if ($this->ps->has_problem() && !$sr->freeze) {
-            $this->ps->splice_msg($msgpos++, $conf->_("<0>Please check these issues before completing the {submission}."), MessageSet::WARNING_NOTE);
+            $this->ps->splice_item($msgpos++, MessageItem::warning_note($conf->_("<0>Please check these issues before completing the {submission}.")));
         }
         $notes_ftext = Ftext::join_nonempty(" ", $notes);
         if ($notes_ftext !== "") {
-            $this->ps->splice_msg(-1, $notes_ftext, $note_status);
+            $this->ps->append_item(new MessageItem(null, $notes_ftext, $note_status));
         }
         $conf->feedback_msg($this->ps->decorated_message_list());
 
@@ -379,11 +379,11 @@ class Paper_Page {
         }
 
         if (!$this->ps->has_change()) {
-            $this->ps->prepend_msg($conf->_("<0>No changes", $this->prow->paperId), MessageSet::WARNING_NOTE);
+            $this->ps->prepend_item(MessageItem::warning_note($conf->_("<0>No changes", $this->prow->paperId)));
             $this->ps->warning_at(null, "");
             $conf->feedback_msg($this->ps->decorated_message_list([PaperOption::CONTACTSID]));
         } else if ($this->ps->execute_save()) {
-            $this->ps->prepend_msg($conf->_("<0>Updated contacts", $this->prow->paperId), MessageSet::SUCCESS);
+            $this->ps->prepend_item(MessageItem::success($conf->_("<0>Updated contacts", $this->prow->paperId)));
             $conf->feedback_msg($this->ps->decorated_message_list([PaperOption::CONTACTSID]));
             $this->ps->log_save_activity();
         }

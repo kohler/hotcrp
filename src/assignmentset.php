@@ -1,6 +1,6 @@
 <?php
 // assignmentset.php -- HotCRP helper classes for assignments
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 abstract class Assignable {
     /** @var int */
@@ -1241,6 +1241,10 @@ class AssignmentSet {
     function message_set() {
         return $this->astate;
     }
+    /** @return list<MessageItem> */
+    function message_list() {
+        return $this->astate->message_list();
+    }
     /** @return bool */
     function has_message() {
         return $this->astate->has_message();
@@ -1266,16 +1270,17 @@ class AssignmentSet {
     function warning($msg) {
         $this->astate->msg_near($this->astate->landmark(), $msg, 1);
     }
-
-    /** @return list<MessageItem> */
-    function message_list() {
-        return $this->astate->message_list();
+    /** @param MessageItem $mi
+     * @return void */
+    function prepend_item($mi) {
+        $this->astate->prepend_item($mi);
     }
     /** @param string $msg
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return $this */
+     * @return $this
+     * @deprecated */
     function prepend_msg($msg, $status) {
-        $this->astate->prepend_msg($msg, $status);
+        $this->astate->prepend_item(new MessageItem(null, $msg, $status));
         return $this;
     }
     /** @return string */
@@ -1285,7 +1290,7 @@ class AssignmentSet {
     function report_errors() {
         if ($this->astate->has_message()) {
             if ($this->astate->has_error()) {
-                $this->astate->prepend_msg("<0>Changes not saved due to errors in the assignment", MessageSet::ERROR);
+                $this->astate->prepend_item(MessageItem::error("<0>Changes not saved due to errors in the assignment"));
             }
             $this->conf->feedback_msg($this->astate->message_list());
         } else if (empty($this->assigners)) {

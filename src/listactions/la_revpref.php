@@ -1,6 +1,6 @@
 <?php
 // listactions/la_revpref.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Revpref_ListAction extends ListAction {
     /** @var string */
@@ -110,9 +110,9 @@ class Revpref_ListAction extends ListAction {
             return $aset->json_result();
         } else if ($ok) {
             if ($aset->is_empty()) {
-                $aset->prepend_msg("<0>No changes", MessageSet::WARNING_NOTE);
+                $aset->prepend_item(MessageItem::warning_note("<0>No changes"));
             } else {
-                $aset->prepend_msg("<0>Preference changes saved", MessageSet::SUCCESS);
+                $aset->prepend_item(MessageItem::success("<0>Preference changes saved"));
             }
             $user->conf->feedback_msg($aset->message_list());
             return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
@@ -167,9 +167,9 @@ class Revpref_ListAction extends ListAction {
         $aset->parse($csv);
         if ($aset->is_empty()) {
             if ($aset->has_error()) {
-                $aset->prepend_msg("<0>Changes not saved; please correct these errors and try again", 2);
+                $aset->prepend_item(MessageItem::error("<0>Changes not saved; please correct these errors and try again"));
             } else {
-                $aset->prepend_msg("<0>No changes", MessageSet::WARNING_NOTE);
+                $aset->prepend_item(MessageItem::warning_note("<0>No changes"));
             }
             $conf->feedback_msg($aset->message_list());
             return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));

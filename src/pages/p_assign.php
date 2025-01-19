@@ -1,6 +1,6 @@
 <?php
 // pages/p_assign.php -- HotCRP per-paper assignment/conflict management page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Assign_Page {
     /** @var Conf */
@@ -117,7 +117,7 @@ class Assign_Page {
         if ($this->qreq->ajax) {
             json_exit($aset->json_result());
         }
-        $ok && $aset->prepend_msg("<0>Assignments saved", MessageSet::SUCCESS);
+        $ok && $aset->prepend_item(MessageItem::success("<0>Assignments saved"));
         $this->conf->feedback_msg($aset->message_list());
         $ok && $this->conf->redirect_self($this->qreq);
     }

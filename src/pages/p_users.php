@@ -1,6 +1,6 @@
 <?php
 // pages/p_users.php -- HotCRP people listing/editing page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Users_Page {
     /** @var Conf */
@@ -275,7 +275,7 @@ class Users_Page {
             }
         }
         if ($ms->has_error()) {
-            $ms->prepend_msg("<0>Changes not saved; please correct these errors and try again", MessageSet::ERROR);
+            $ms->prepend_item(MessageItem::error("<0>Changes not saved; please correct these errors and try again"));
             $this->conf->feedback_msg($ms);
             return false;
         } else if (!count($t1)) {
@@ -324,7 +324,7 @@ class Users_Page {
             $this->conf->feedback_msg($ms);
             return false;
         } else {
-            $ms->prepend_msg("<0>User tag changes saved", MessageSet::SUCCESS);
+            $ms->prepend_item(MessageItem::success("<0>User tag changes saved"));
             $this->conf->feedback_msg($ms);
             unset($this->qreq->fn, $this->qreq->tagfn);
             $this->conf->redirect_self($this->qreq);

@@ -1,6 +1,6 @@
 <?php
 // pages/p_reviewprefs.php -- HotCRP review preference global settings page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ReviewPrefs_Page {
     // Update preferences
@@ -29,7 +29,7 @@ class ReviewPrefs_Page {
         $aset = (new AssignmentSet($user))->set_override_conflicts(true);
         $aset->parse($csvg->unparse());
         $ok = $aset->execute();
-        $ok && $aset->prepend_msg("<0>Preferences saved", MessageSet::SUCCESS);
+        $ok && $aset->prepend_item(MessageItem::success("<0>Preferences saved"));
         $user->conf->feedback_msg($aset->message_list());
         $ok && $user->conf->redirect_self($qreq);
     }
@@ -39,7 +39,7 @@ class ReviewPrefs_Page {
     static private function pref_element($pl, $name, $text, $extra = []) {
         return '<li class="' . rtrim("checki " . ($extra["item_class"] ?? ""))
             . '"><span class="checkc">'
-            . Ht::checkbox("show$name", 1, $pl->viewing($name), [
+            . Ht::checkbox("show{$name}", 1, $pl->viewing($name), [
                 "class" => "uich js-plinfo ignore-diff" . (isset($extra["fold_target"]) ? " js-foldup" : ""),
                 "data-fold-target" => $extra["fold_target"] ?? null
             ]) . "</span>" . Ht::label($text) . '</span>';

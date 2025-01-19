@@ -1,6 +1,6 @@
 <?php
 // pages/p_mergeaccounts.php -- HotCRP account merging page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class MergeAccounts_Page {
     /** @var Conf */
@@ -76,7 +76,7 @@ class MergeAccounts_Page {
         // actually merge users or change email
         $merger->run();
         if (!$merger->has_error()) {
-            $merger->prepend_msg("<0>Merged account {$merger->oldu->email}", MessageSet::SUCCESS);
+            $merger->prepend_item(MessageItem::success("<0>Merged account {$merger->oldu->email}"));
             $merger->newu->log_activity("Account merged " . $merger->oldu->email);
         } else {
             $merger->newu->log_activity("Account merged " . $merger->oldu->email . " with errors");

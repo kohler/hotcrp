@@ -1,6 +1,6 @@
 <?php
 // pages/p_offline.php -- HotCRP offline review management page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Offline_Page {
     /** @var Conf */
@@ -70,12 +70,12 @@ class Offline_Page {
         }
         $aset = $trp->parse_assignment_set($text, $filename);
         if ($aset->execute()) {
-            $aset->prepend_msg("<0>Tag changes saved", MessageSet::SUCCESS);
+            $aset->prepend_item(MessageItem::success("<0>Tag changes saved"));
             $this->conf->feedback_msg($aset->message_list());
             $this->conf->redirect_self($this->qreq);
             return true;
         } else {
-            $aset->prepend_msg("<0>Changes not saved; please correct these errors and try again", MessageSet::ERROR);
+            $aset->prepend_item(MessageItem::error("<0>Changes not saved; please correct these errors and try again"));
             $this->conf->feedback_msg($aset->message_list());
             return false;
         }

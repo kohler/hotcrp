@@ -1,6 +1,6 @@
 <?php
 // listactions/la_getreviewbase.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class GetReviewBase_ListAction extends ListAction {
     protected $isform;
@@ -22,7 +22,7 @@ class GetReviewBase_ListAction extends ListAction {
         }
 
         if ($ms->has_error()) {
-            $ms->prepend_msg($this->isform ? "<0>Some review forms are missing." : "<0>Some reviews are missing.", MessageSet::MARKED_NOTE);
+            $ms->prepend_item(MessageItem::marked_note($this->isform ? "<0>Some review forms are missing." : "<0>Some reviews are missing."));
         }
 
         $rfname = $this->author_view ? "aureview" : "review";

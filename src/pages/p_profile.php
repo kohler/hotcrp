@@ -1,6 +1,6 @@
 <?php
 // pages/p_profile.php -- HotCRP profile management page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Profile_Page {
     /** @var Conf
@@ -384,15 +384,15 @@ class Profile_Page {
         // report messages
         $purl = $this->conf->hoturl("profile", ["u" => $saved_user ? $saved_user->email : null]);
         if ($this->ustatus->has_error()) {
-            $this->ustatus->prepend_msg("<0>Changes not saved; please correct the highlighted errors and try again", 2);
+            $this->ustatus->prepend_item(MessageItem::error("<0>Changes not saved; please correct the highlighted errors and try again"));
         } else if ($this->ustatus->created && $this->ustatus->notified) {
-            $this->ustatus->prepend_msg("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created and notified", MessageSet::SUCCESS);
+            $this->ustatus->prepend_item(MessageItem::success("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created and notified"));
         } else if ($this->ustatus->created) {
-            $this->ustatus->prepend_msg("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created, but not notified", MessageSet::SUCCESS);
+            $this->ustatus->prepend_item(MessageItem::success("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created, but not notified"));
         } else {
             $pos = 0;
             if ($this->page_type !== 0) {
-                $this->ustatus->splice_msg($pos++, "<5>User " . Ht::link($saved_user->name_h(NAME_E), $purl) . " already had an account on this site", MessageSet::WARNING_NOTE);
+                $this->ustatus->splice_item($pos++, MessageItem::warning_note("<5>User " . Ht::link($saved_user->name_h(NAME_E), $purl) . " already had an account on this site"));
             }
             if ($this->page_type !== 0 || $this->user !== $this->viewer) {
                 $diffs = " to " . commajoin(array_keys($this->ustatus->diffs));
@@ -401,12 +401,12 @@ class Profile_Page {
             }
             if (empty($this->ustatus->diffs)) {
                 if (!$this->ustatus->has_message_at("email_confirm")) {
-                    $this->ustatus->splice_msg($pos++, "<0>No changes", MessageSet::WARNING_NOTE);
+                    $this->ustatus->splice_item($pos++, MessageItem::warning_note("<0>No changes"));
                 }
             } else if ($this->ustatus->notified) {
-                $this->ustatus->splice_msg($pos++, "<0>Changes saved{$diffs} and user notified", MessageSet::SUCCESS);
+                $this->ustatus->splice_item($pos++, MessageItem::success("<0>Changes saved{$diffs} and user notified"));
             } else {
-                $this->ustatus->splice_msg($pos++, "<0>Changes saved{$diffs}", MessageSet::SUCCESS);
+                $this->ustatus->splice_item($pos++, MessageItem::success("<0>Changes saved{$diffs}"));
             }
         }
         $this->conf->feedback_msg($this->decorated_message_list($this->ustatus, $this->ustatus));

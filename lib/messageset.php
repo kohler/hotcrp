@@ -1,6 +1,6 @@
 <?php
 // messageset.php -- HotCRP sets of messages by fields
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class MessageItem implements JsonSerializable {
     /** @var ?string */
@@ -22,7 +22,9 @@ class MessageItem implements JsonSerializable {
      * @param string $message
      * @param int $status */
     function __construct($field, $message, $status) {
-        $this->field = $field;
+        if ($field !== "") {
+            $this->field = $field;
+        }
         $this->message = $message;
         $this->status = $status;
     }
@@ -157,6 +159,12 @@ class MessageItem implements JsonSerializable {
      * @return MessageItem */
     static function marked_note($msg) {
         return new MessageItem(null, $msg, MessageSet::MARKED_NOTE);
+    }
+
+    /** @param ?string $msg
+     * @return MessageItem */
+    static function warning_note($msg) {
+        return new MessageItem(null, $msg, MessageSet::WARNING_NOTE);
     }
 
     /** @param ?string $msg
@@ -352,6 +360,12 @@ class MessageSet {
         return $this->splice_item(-1, $mi->with_field($field));
     }
 
+    /** @param MessageItem $mi
+     * @return MessageItem */
+    function prepend_item($mi) {
+        return $this->splice_item(0, $mi);
+    }
+
     /** @param iterable<MessageItem> $message_list */
     function append_list($message_list) {
         if (!($this->_ms_flags & self::IGNORE_MSGS)) {
@@ -380,10 +394,6 @@ class MessageSet {
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
      * @return MessageItem */
     function msg_at($field, $msg, $status) {
-        assert($field !== false && $msg !== false);
-        if ($field === "") {
-            $field = null;
-        }
         return $this->append_item(new MessageItem($field, $msg ?? "", $status));
     }
 
@@ -433,14 +443,16 @@ class MessageSet {
     /** @param int $pos
      * @param ?string $msg
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem */
+     * @return MessageItem
+     * @deprecated */
     function splice_msg($pos, $msg, $status) {
         return $this->splice_item($pos, new MessageItem(null, $msg, $status));
     }
 
     /** @param ?string $msg
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem */
+     * @return MessageItem
+     * @deprecated */
     function prepend_msg($msg, $status) {
         return $this->splice_item(0, new MessageItem(null, $msg, $status));
     }

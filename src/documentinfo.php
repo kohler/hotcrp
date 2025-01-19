@@ -1,6 +1,6 @@
 <?php
 // documentinfo.php -- HotCRP document objects
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class DocumentInfo implements JsonSerializable {
     /** @var Conf */
@@ -1144,7 +1144,7 @@ class DocumentInfo implements JsonSerializable {
             }
             return true;
         } else {
-            $this->message_set()->prepend_msg("<0>Document not saved", MessageSet::ERROR);
+            $this->message_set()->prepend_item(MessageItem::error("<0>Document not saved"));
             error_log("Error saving document " . $this->export_filename() . ", hash " . $this->text_hash() . ": " . $this->_ms->full_feedback_text());
             return false;
         }
