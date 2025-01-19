@@ -52,11 +52,11 @@ class MergeAccounts_Page {
             $this->conf->redirect();
             return true;
         }
-        if ($this->user->data("locked")) {
+        if ($this->user->security_locked()) {
             $this->conf->error_msg("<0>Account ‘{$this->user->email}’ is locked and cannot be merged");
             return false;
         }
-        if ($other->data("locked")) {
+        if ($other->security_locked()) {
             $this->conf->error_msg("<0>Account ‘{$other->email}’ is locked and cannot be merged");
             return false;
         }
