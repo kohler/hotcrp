@@ -1,6 +1,6 @@
 <?php
 // papertable.php -- HotCRP helper class for producing paper tables
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class PaperTable {
     /** @var Conf
@@ -513,7 +513,8 @@ class PaperTable {
         }
         echo '">';
         $heading = $heading ?? $this->edit_title_html($opt);
-        $klass = Ht::add_tokens("field-title", $opt->required ? "field-required" : "");
+        $required = $rest["required"] ?? $opt->required;
+        $klass = Ht::add_tokens("field-title", $required ? "field-required" : "");
         if ($for) {
             echo Ht::label($heading, $for === "checkbox" ? null : $for, ["class" => $klass]);
         } else {

@@ -46,7 +46,7 @@
         "configurable": true, "properties": ["name", "description", "edit_condition", "editable_if", "max"]
     },
     {
-        "name": "Anonymous submission", "id": -1002,
+        "name": "Anonymity", "id": -1002,
         "type": "nonblind", "include_empty": true,
         "json_key": "nonblind",
         "form_order": 3002,

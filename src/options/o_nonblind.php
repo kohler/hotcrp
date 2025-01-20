@@ -1,6 +1,6 @@
 <?php
 // o_nonblind.php -- HotCRP helper class for blindness selection intrinsic
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Nonblind_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
@@ -26,7 +26,15 @@ class Nonblind_PaperOption extends PaperOption {
         return true;
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
-        return PaperValue::make($prow, $this, $qreq->blind ? null : 1);
+        if ($qreq->nonblind === "blind") {
+            return PaperValue::make($prow, $this, null);
+        } else if ($qreq->nonblind === "nonblind") {
+            return PaperValue::make($prow, $this, 1);
+        } else if ($prow->is_new()) {
+            return PaperValue::make_estop($prow, $this, "<0>Entry required");
+        } else {
+            return PaperValue::make($prow, $this, $prow->blind ? null : 1);
+        }
     }
     function parse_json(PaperInfo $prow, $j) {
         if (is_bool($j) || $j === null) {
@@ -36,15 +44,25 @@ class Nonblind_PaperOption extends PaperOption {
         }
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
-        if ($ov->prow->phase() !== PaperInfo::PHASE_FINAL) {
-            $cb = Ht::checkbox("blind", 1, !$reqov->value, [
-                "id" => false,
-                "data-default-checked" => !$ov->value
-            ]);
-            $pt->print_editable_option_papt($this,
-                '<span class="checkc">' . $cb . '</span>' . $pt->edit_title_html($this),
-                ["for" => "checkbox", "tclass" => "ui js-click-child", "id" => $this->formid]);
-            echo "</div>\n\n";
+        if ($ov->prow->phase() === PaperInfo::PHASE_FINAL) {
+            return;
         }
+        $pt->print_editable_option_papt($this, null, ["id" => $this->formid, "for" => false, "required" => true]);
+        if ($ov->prow->is_new()) {
+            $oval = $reqval = null;
+        } else {
+            $oval = $reqval = $ov->value ? "nonblind" : "blind";
+        }
+        if ($reqov !== $ov && !$reqov->has_error()) {
+            $reqval = $reqov->value ? "nonblind" : "blind";
+        }
+        echo '<div class="papev">';
+        foreach (["blind" => "Anonymous submission", "nonblind" => "Open (non-anonymous) submission"] as $k => $s) {
+            echo '<div class="checki"><label><span class="checkc">',
+                Ht::radio($this->formid, $k, $k === $reqval,
+                    ["data-default-checked" => $k === $oval]),
+                '</span>', $s, '</label></div>';
+        }
+        echo "</div></div>\n\n";
     }
 }

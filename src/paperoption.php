@@ -695,19 +695,18 @@ class PaperOption implements JsonSerializable {
     }
     /** @return bool */
     function value_check_required(PaperValue $ov) {
-        if ($this->test_required($ov->prow)
-            && !$this->value_present($ov)
-            && !$ov->prow->allow_absent()) {
-            if ($this->required === self::REQ_SUBMIT) {
-                $m = $this->conf->_("<0>Entry required to complete {submission}");
-                $ov->msg($m, $ov->prow->want_submitted() ? MessageSet::ERROR : MessageSet::WARNING);
-            } else {
-                $ov->error("<0>Entry required");
-            }
-            return false;
-        } else {
+        if (!$this->test_required($ov->prow)
+            || $this->value_present($ov)
+            || $ov->prow->allow_absent()) {
             return true;
         }
+        if ($this->required === self::REQ_SUBMIT) {
+            $m = $this->conf->_("<0>Entry required to complete {submission}");
+            $ov->msg($m, $ov->prow->want_submitted() ? MessageSet::ERROR : MessageSet::WARNING);
+        } else {
+            $ov->error("<0>Entry required");
+        }
+        return false;
     }
     function value_check(PaperValue $ov, Contact $user) {
         $this->value_check_required($ov);
@@ -1259,15 +1258,14 @@ class Selector_PaperOption extends PaperOption {
         $v = trim((string) $qreq[$this->formid]);
         if ($v === "" || $v === "0") {
             return PaperValue::make($prow, $this);
+        }
+        $iv = ctype_digit($v) ? intval($v) : -1;
+        if ($iv > 0 && isset($this->values[$iv - 1])) {
+            return PaperValue::make($prow, $this, $iv);
+        } else if (($idx = array_search($v, $this->values)) !== false) {
+            return PaperValue::make($prow, $this, $idx + 1);
         } else {
-            $iv = ctype_digit($v) ? intval($v) : -1;
-            if ($iv > 0 && isset($this->values[$iv - 1])) {
-                return PaperValue::make($prow, $this, $iv);
-            } else if (($idx = array_search($v, $this->values)) !== false) {
-                return PaperValue::make($prow, $this, $idx + 1);
-            } else {
-                return PaperValue::make_estop($prow, $this, "<0>Value doesn’t match any of the options");
-            }
+            return PaperValue::make_estop($prow, $this, "<0>Value doesn’t match any of the options");
         }
     }
 

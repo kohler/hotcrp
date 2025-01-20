@@ -87,7 +87,7 @@
         ]
     },
     ["sfdescription_contacts", "<0>These users can view and edit the {submission}. All listed authors with site accounts are contacts. You can add contacts who aren’t in the author list or create accounts for authors who haven’t yet signed in."],
-    ["sfdescription_nonblind", "<0>Check this to submit anonymously (reviewers won’t be shown the author list). Make sure you also remove your name from the submission itself!"],
+    ["sfdescription_nonblind", "<0>Select whether the {submission} is anonymous. Your choice should also be reflected in the {submission} itself."],
     {
         "in": "sfdescription_topics", "m": [
             ["<0>Select any topics that apply to your {submission}."],
