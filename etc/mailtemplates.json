@@ -137,6 +137,7 @@
 			"Dear {{NAME}},\n\n",
 			"Your password on the {{CONFNAME}} submission site cannot be reset because your account there is disabled.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
+			"Site: {{URL}}/\n\n",
 			"{{SIGNATURE}}\n"
 		]
 	},
@@ -161,10 +162,10 @@
 			"Dear {{NAME}},\n\n",
 			"Your account on the {{CONFSHORTNAME}} submission site has been merged with the account of {{OTHERCONTACT}}. From now on, you should log in using the {{OTHEREMAIL}} account.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
+			"Site: {{URL}}/\n\n",
 			"{{SIGNATURE}}\n"
 		]
 	},
-
 
 	{
 		"name": "registerpaper",
@@ -344,12 +345,12 @@
 			"Dear {{NAME}},\n\n",
 			"Your {{CONFNAME}} submission #{{NUMBER}} has been removed from the submission database by an administrator. This can be done to eliminate duplicates.{{IF(REASON)}} The following reason was provided for deleting the submission: {{REASON}}{{ENDIF}}\n\n",
 			"* Title: {{TITLE}}\n",
-			"* Author(s): {{OPT(AUTHORS)}}\n\n",
+			"* Author(s): {{OPT(AUTHORS)}}\n",
+			"* Site: {{URL}}/\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n"
 		]
 	},
-
 
 	{
 		"name": "requestreview",
@@ -413,7 +414,8 @@
 			"Dear {{NAME}},\n\n",
 			"{{REQUESTERNAME}} has retracted a previous request that you review {{CONFNAME}} submission #{{NUMBER}}. There's no need to complete your review.\n\n",
 			"* Title: {{TITLE}}\n",
-			"* Author(s): {{OPT(AUTHORS)}}\n\n",
+			"* Author(s): {{OPT(AUTHORS)}}\n",
+			"* Site: {{URL}}/\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n"
 		]
@@ -546,7 +548,6 @@
 		]
 	},
 
-
 	{
 		"name": "commentnotify",
 		"subject": "[{{CONFSHORTNAME}}] Comment for #{{NUMBER}} {{TITLEHINT}}",
@@ -614,10 +615,10 @@
 		]
 	},
 
-
 	{
 		"name": "generic",
-		"alias": "authors"
+		"alias": "authors",
+		"body": ["Site: {{URL}}/\n\n", "{{SIGNATURE}}\n"]
 	},
 	{
 		"name": "authors",
@@ -645,6 +646,7 @@
 		"body": [
 			"Dear program committee,\n\n",
 			"Your message here.\n\n",
+			"Site: {{URL}}/\n\n",
 			"{{SIGNATURE}}\n"
 		]
 	},
