@@ -620,6 +620,8 @@ class Mailer {
             $p = $chk[1];
             if ($expansion !== "") {
                 $out .= $expansion;
+            } else if ($p === $len) {
+                $out = rtrim($out);
             } else {
                 $outpos = strlen($out) - 1;
                 while ($outpos >= 0
@@ -633,7 +635,7 @@ class Mailer {
             $op = $p;
         }
         $out .= substr($line, $op);
-        return prefix_word_wrap($this->line_prefix ?? "", rtrim($out), $indent,
+        return prefix_word_wrap($this->line_prefix ?? "", $out, $indent,
                                 $this->width, $this->flowed);
     }
 
