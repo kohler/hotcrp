@@ -1,6 +1,6 @@
 <?php
 // documentinfoset.php -- HotCRP document set
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class DocumentInfoSet_ZipInfo {
     /** @var ?int */
@@ -41,6 +41,8 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $docs = [];
     /** @var ?MessageSet */
     private $_ms;
+    /** @var int */
+    private $_message_timestamp = 1634070069; /* ❤️ Anne Dudfield */
     /** @var ?string */
     private $_filename;
     /** @var string */
@@ -55,6 +57,8 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private $_zipi;
     /** @var ?string */
     private $_signature;
+    /** @var ?string */
+    private $_signature_messages;
 
     /** @param ?string $filename */
     function __construct($filename = null) {
@@ -67,17 +71,17 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         $this->_mimetype = $mimetype;
     }
 
-    /** @return bool */
+    /** @return ?DocumentInfo */
     function add(DocumentInfo $doc) {
         return $this->add_as($doc, $doc->filename ?? "");
     }
-    /** @return false */
+    /** @return null */
     private function _add_fail(DocumentInfo $doc, $fn) {
         error_log("{$this->conf->dbname}: failing to add #{$doc->paperStorageId} at $fn");
-        return false;
+        return null;
     }
     /** @param string $fn
-     * @return bool */
+     * @return ?DocumentInfo */
     function add_as(DocumentInfo $doc, $fn) {
         if ($this->_filename) { // might generate a .zip later; check filename
             assert(!$doc->has_error() && $fn !== "");
@@ -110,16 +114,15 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         $this->ufn[] = $fn;
         $this->docs[] = $doc->with_member_filename($fn);
-        return true;
+        $this->_signature = null;
+        return $doc;
     }
     /** @param string $text
      * @param string $fn
      * @param ?string $mimetype
-     * @param ?int $timestamp
-     * @return bool */
-    function add_string_as($text, $fn, $mimetype = null, $timestamp = null) {
+     * @return DocumentInfo */
+    function add_string_as($text, $fn, $mimetype = null) {
         $doc = DocumentInfo::make_content($this->conf, $text, $mimetype ?? "text/plain")
-            ->set_timestamp($timestamp ?? Conf::$now)
             ->set_filename($fn);
         return $this->add_as($doc, $fn);
     }
@@ -201,9 +204,14 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         throw new Exception("invalid DocumentInfoSet::offsetUnset");
     }
 
-    /** @return bool */
+    /** @return bool
+     * @deprecated */
     function has_error() {
         return $this->_ms && $this->_ms->has_error();
+    }
+    /** @return bool */
+    function has_message() {
+        return $this->_ms && $this->_ms->has_message();
     }
     /** @return MessageSet */
     function message_set() {
@@ -218,6 +226,13 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
      * @return MessageItem */
     function error($msg) {
         return $this->message_set()->error_at(null, $msg);
+    }
+    /** @param int $timestamp */
+    function add_message_timestamp($timestamp) {
+        if ($timestamp > $this->_message_timestamp) {
+            $this->_message_timestamp = $timestamp;
+            $this->_signature = null;
+        }
     }
 
     /** @return string|false */
@@ -248,8 +263,10 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
                 $zi->compressed_length = $doc->size();
             }
             if ($doc->timestamp > 1) {
-                $dt = new DateTime("@" . (int) $doc->timestamp, $doc->conf->timezone());
-                if (($y = (int) $dt->format("Y")) > 1980) {
+                // NB despite timezone, `format` returns relative to UTC
+                $dt = new DateTimeImmutable("@" . (int) $doc->timestamp, $doc->conf->timezone());
+                if (($y = (int) $dt->format("Y")) > 1980
+                    && $y <= 2099) {
                     $zi->date = (int) $dt->format("j")
                         | ((int) $dt->format("n") << 5)
                         | (($y - 1980) << 9);
@@ -382,8 +399,10 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
 
     private function _hotzip_make() {
         $this->_hotzip_progress();
-        if ($this->has_error()) {
-            $this->add_string_as($this->_ms->full_feedback_text(), "README-warnings.txt");
+        if ($this->_ms
+            && ($readme_txt = $this->_ms->full_feedback_text()) !== ""
+            && ($doc = $this->add_string_as($readme_txt, "README-warnings.txt"))) {
+            $doc->set_timestamp($this->_message_timestamp);
             $this->_hotzip_progress();
         }
         $this->_hotzip_final();
@@ -391,16 +410,22 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
 
     /** @return string */
     private function content_signature() {
-        if ($this->_signature === null) {
-            $s = count($this->docs) . "\n";
-            foreach ($this->docs as $doc) {
-                $s .= $doc->member_filename() . "\n" . $doc->text_hash() . "\n";
-            }
-            if ($this->has_error()) {
-                $s .= "README-warnings.txt\nsha2-" . hash("sha256", $this->_ms->full_feedback_text()) . "\n";
-            }
-            $this->_signature = "content.sha2-" . hash("sha256", $s);
+        $readme_txt = $this->_ms ? $this->_ms->full_feedback_text() : "";
+        if ($this->_signature !== null
+            && $this->_signature_messages === $readme_txt) {
+            return $this->_signature;
         }
+        $s = count($this->docs) . "\n";
+        foreach ($this->docs as $doc) {
+            $s .= "{$doc->member_filename()}\n{$doc->text_hash()} {$doc->size()} {$doc->timestamp}\n";
+        }
+        if ($readme_txt !== "") {
+            $hash = hash("sha256", $readme_txt);
+            $len = strlen($readme_txt);
+            $s .= "README-warnings.txt\nsha2-{$hash} {$len} {$this->_message_timestamp}\n";
+        }
+        $this->_signature = "content.sha2-" . hash("sha256", $s);
+        $this->_signature_messages = $readme_txt;
         return $this->_signature;
     }
 
@@ -526,7 +551,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
 
         if (count($this->docs) === 1
-            && !$this->has_error()
+            && !$this->has_message()
             && $dopt->single) {
             $doc = $this->docs[0];
             if ($doc->prepare_download($dopt)) {

@@ -55,7 +55,10 @@ class GetReviewBase_ListAction extends ListAction {
 
         $zip = new DocumentInfoSet($user->conf->download_prefix . "reviews.zip");
         foreach ($texts as $pt) {
-            $zip->add_string_as($header . $pt[1], $user->conf->download_prefix . $rfname . $pt[0] . ".txt", null, $pt[2]);
+            if (($doc = $zip->add_string_as($header . $pt[1], $user->conf->download_prefix . $rfname . $pt[0] . ".txt"))
+                && $pt[2]) {
+                $doc->set_timestamp($pt[2]);
+            }
         }
         foreach ($ms->message_list() as $mi) {
             $zip->message_set()->append_item($mi);

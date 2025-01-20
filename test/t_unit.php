@@ -1,6 +1,6 @@
 <?php
 // t_unit.php -- HotCRP tests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Unit_Tester {
     /** @var Conf
@@ -664,6 +664,19 @@ class Unit_Tester {
         xassert_eqq($t, 1527681599);
         $t = $this->conf->parse_time("29 May AoE", 1527606000);
         xassert_eqq($t, 1527681599);
+    }
+
+    function test_php_times() {
+        $tz = date_default_timezone_get();
+        $dt = new DateTimeImmutable("@1262304000");
+        xassert_eqq($dt->format("Y-m-d H:i:s"), "2010-01-01 00:00:00");
+        date_default_timezone_set("America/Los_Angeles");
+        $dt = new DateTimeImmutable("@1262304000");
+        xassert_eqq($dt->format("Y-m-d H:i:s"), "2010-01-01 00:00:00");
+        date_default_timezone_set("Asia/Kolkata");
+        $dt = new DateTimeImmutable("@1262304000");
+        xassert_eqq($dt->format("Y-m-d H:i:s"), "2010-01-01 00:00:00");
+        date_default_timezone_set($tz);
     }
 
     function test_tagger_checks() {
