@@ -175,6 +175,7 @@ class Unit_Tester {
         xassert_eqq(DocumentInfo::sanitize_filename(".a"), "_a");
         xassert_eqq(DocumentInfo::sanitize_filename("a/b.txt"), "a_b.txt");
         xassert_eqq(DocumentInfo::sanitize_filename("a/\\b.txt"), "a__b.txt");
+        xassert_eqq(DocumentInfo::sanitize_filename("a\nb.txt"), "a_b.txt");
         xassert_eqq(DocumentInfo::sanitize_filename("a/\x80M.txt"), "a_\x7fM.txt");
         xassert_eqq(DocumentInfo::sanitize_filename(str_repeat("i", 1024) . ".txt"), str_repeat("i", 248) . "....txt");
         xassert_eqq(strlen(DocumentInfo::sanitize_filename(str_repeat("i", 1024) . ".txt")), 255);

@@ -371,17 +371,17 @@ class DocumentInfo implements JsonSerializable {
     /** @param ?string $fn
      * @return ?string */
     static function sanitize_filename($fn) {
-        $fn = str_replace(["/", "\\"], "_", $fn ?? "");
+        $fn = preg_replace('/[\/\\\\\n\r\t\f\013\000]/', "_", $fn ?? "");
         if (str_starts_with($fn, ".")) {
             $fn = "_" . substr($fn, 1);
         }
         if (strlen($fn) > 255) {
             if (($dot = strpos($fn, ".", strlen($fn) - 10)) !== false) {
-                $extlen = strlen($fn) - $dot;
-                $fn = substr($fn, 0, 252 - $extlen) . "..." . substr($fn, $dot);
+                $suffix = "..." . substr($fn, $dot);
             } else {
-                $fn = substr($fn, 0, 252) . "...";
+                $suffix = "...";
             }
+            $fn = UnicodeHelper::utf8_truncate($fn, 255 - strlen($suffix)) . $suffix;
         }
         if ($fn !== "" && !is_valid_utf8($fn)) {
             $fn = UnicodeHelper::utf8_replace_invalid($fn);
