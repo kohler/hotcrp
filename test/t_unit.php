@@ -805,6 +805,8 @@ class Unit_Tester {
         xassert_eqq(SearchParser::span_balanced_parens("abc(def g)h)i jk"), 11);
         xassert_eqq(SearchParser::span_balanced_parens("abc(def [g)h)i jk"), 12);
         xassert_eqq(SearchParser::span_balanced_parens("abc(def sajf"), 12);
+        xassert_eqq(SearchParser::span_balanced_parens("() def"), 2);
+        xassert_eqq(SearchParser::span_balanced_parens("()a def"), 3);
 
         $m = SearchParser::split_balanced_parens(" a(b) )c");
         xassert_array_eqq($m, ["a(b)", ")c"]);
@@ -1111,14 +1113,14 @@ class Unit_Tester {
         }
     }
 
-    function test_mailer_expand() {
+    function test_mailer_expand_percent() {
         $mailer = new HotCRPMailer($this->conf, null, ["width" => false]);
         xassert_eqq($mailer->expand("%CONFNAME%//%CONFLONGNAME%//%CONFSHORTNAME%"),
             "Test Conference I (Testconf I)//Test Conference I//Testconf I\n");
         xassert_eqq($mailer->expand("%SITECONTACT%//%ADMINEMAIL%"),
             "Eddie Kohler <ekohler@hotcrp.lcdf.org>//ekohler@hotcrp.lcdf.org\n");
         xassert_eqq($mailer->expand("%URLENC(ADMINEMAIL)% : %OPT(ADMINEMAIL)% : %OPT(NULL)% : %OPT(EMAIL)%"),
-            "ekohler%40hotcrp.lcdf.org : ekohler@hotcrp.lcdf.org :  : %OPT(EMAIL)%\n");
+            "ekohler%40hotcrp.lcdf.org : ekohler@hotcrp.lcdf.org : : %OPT(EMAIL)%\n");
         $mailer->reset(null, [
             "requester_contact" => Author::make_tabbed("Bob\tJones\tbobjones@a.com"),
             "reviewer_contact" => Author::make_tabbed("France \"Butt\"\tvon Ranjanath\tvanraj@b.com"),
@@ -1139,6 +1141,38 @@ class Unit_Tester {
 
         xassert_eqq($mailer->expand(" %IF(NULL)%A%ELSE%Y%ENDIF%"), " Y\n");
         xassert_eqq($mailer->expand(" %IF(CONFLONGNAME)%A%ELSE%Y%ENDIF%"), " A\n");
+        xassert_eqq($mailer->expand(" %IF(NULL)%A%ELIF(UNKNOWN)%Y%ENDIF%"), " %IF(UNKNOWN)%Y%ENDIF%\n");
+        xassert_eqq($mailer->expand(" %IF(NULL)%A%ELIF(UNKNOWN)%Y"), " %IF(UNKNOWN)%Y%ENDIF%\n");
+        xassert_eqq($mailer->expand("Hello\n%IF(CONFLONGNAME)%\nHello\n\n%ENDIF%\n\nGoodbye\n"),
+            "Hello\nHello\n\nGoodbye\n");
+    }
+
+    function test_mailer_expand_brace() {
+        $mailer = new HotCRPMailer($this->conf, null, ["width" => false]);
+        xassert_eqq($mailer->expand("{{CONFNAME}}//{{CONFLONGNAME}}//{{CONFSHORTNAME}}"),
+            "Test Conference I (Testconf I)//Test Conference I//Testconf I\n");
+        xassert_eqq($mailer->expand("{{SITECONTACT}}//{{ADMINEMAIL}}"),
+            "Eddie Kohler <ekohler@hotcrp.lcdf.org>//ekohler@hotcrp.lcdf.org\n");
+        xassert_eqq($mailer->expand("{{URLENC(ADMINEMAIL)}} : {{OPT(ADMINEMAIL)}} : {{OPT(NULL)}} : {{OPT(EMAIL)}}"),
+            "ekohler%40hotcrp.lcdf.org : ekohler@hotcrp.lcdf.org : : {{OPT(EMAIL)}}\n");
+        $mailer->reset(null, [
+            "requester_contact" => Author::make_tabbed("Bob\tJones\tbobjones@a.com"),
+            "reviewer_contact" => Author::make_tabbed("France \"Butt\"\tvon Ranjanath\tvanraj@b.com"),
+            "other_contact" => Author::make_email("noname@c.com")
+        ]);
+        xassert_eqq($mailer->expand("{{REQUESTERFIRST}}"), "Bob\n");
+        xassert_eqq($mailer->expand("{{REQUESTERFIRST}}", "to"), "Bob");
+        xassert_eqq($mailer->expand("{{REQUESTERNAME}}"), "Bob Jones\n");
+        xassert_eqq($mailer->expand("{{REQUESTERNAME}}", "to"), "Bob Jones");
+        xassert_eqq($mailer->expand("{{REVIEWERFIRST}}"), "France \"Butt\"\n");
+        xassert_eqq($mailer->expand("{{REVIEWERFIRST}}", "to"), "\"France \\\"Butt\\\"\"");
+        xassert_eqq($mailer->expand("{{REVIEWERNAME}}"), "France \"Butt\" von Ranjanath\n");
+        xassert_eqq($mailer->expand("{{REVIEWERNAME}}", "to"), "\"France \\\"Butt\\\" von Ranjanath\"");
+        xassert_eqq($mailer->expand("{{OTHERNAME}}"), "noname@c.com\n");
+        xassert_eqq($mailer->expand("{{OTHERNAME}}", "to"), "");
+        xassert_eqq($mailer->expand("{{OTHERCONTACT}}"), "noname@c.com\n");
+        xassert_eqq($mailer->expand("{{OTHERCONTACT}}", "to"), "noname@c.com");
+
         xassert_eqq($mailer->expand(" {{IF(NULL)}}A{{ELSE}}Y{{ENDIF}}"), " Y\n");
         xassert_eqq($mailer->expand(" {{IF(UNKNOWN)}}A{{ELSE}}Y{{ENDIF}}"), " {{IF(UNKNOWN)}}A{{ELSE}}Y{{ENDIF}}\n");
         xassert_eqq($mailer->expand(" {{IF(UNKNOWN)}}A{{ELIF(NULL)}}Y{{ENDIF}}"), " {{IF(UNKNOWN)}}A{{ENDIF}}\n");
@@ -1151,10 +1185,33 @@ class Unit_Tester {
         xassert_eqq($mailer->expand(" {{IF(UNKNOWN)}} a {{ELIF(NULL)}} b {{ELIF(NULL)}} c {{ENDIF}} "),
             " {{IF(UNKNOWN)}} a {{ENDIF}}\n");
         xassert_eqq($mailer->expand(" {{IF(NULL)}}A{{ELIF(UNKNOWN)}}Y{{ENDIF}}"), " {{IF(UNKNOWN)}}Y{{ENDIF}}\n");
-        xassert_eqq($mailer->expand(" %IF(NULL)%A%ELIF(UNKNOWN)%Y%ENDIF%"), " %IF(UNKNOWN)%Y%ENDIF%\n");
-        xassert_eqq($mailer->expand(" %IF(NULL)%A%ELIF(UNKNOWN)%Y"), " %IF(UNKNOWN)%Y%ENDIF%\n");
-        xassert_eqq($mailer->expand("Hello\n%IF(CONFLONGNAME)%\nHello\n\n%ENDIF%\n\nGoodbye\n"),
-            "Hello\nHello\n\nGoodbye\n");
+    }
+
+    function test_mailer_expand_halfbrace() {
+        $mailer = new HotCRPMailer($this->conf, null, ["width" => false]);
+        xassert_eqq($mailer->expand("{{CONFNAME%//%CONFLONGNAME}}"),
+            "{{CONFNAME%//%CONFLONGNAME}}\n");
+    }
+
+    function test_mailer_expand_merge_space() {
+        $mailer = new HotCRPMailer($this->conf, null, ["width" => false, "reason" => ""]);
+        xassert_eqq($mailer->expand("Hello\n\n{{OPT(REASON)}}\n\nGoodbye\n"),
+            "Hello\n\nGoodbye\n");
+        xassert_eqq($mailer->expand("Hello\n\n\n{{OPT(REASON)}}\n\nGoodbye\n"),
+            "Hello\n\n\nGoodbye\n");
+        xassert_eqq($mailer->expand("Hello\n\n{{OPT(REASON)}}\n \n \nGoodbye\n"),
+            "Hello\n\n\nGoodbye\n");
+        xassert_eqq($mailer->expand("Hello\n{{OPT(REASON)}}\n\nGoodbye\n"),
+            "Hello\n\nGoodbye\n");
+
+        xassert_eqq($mailer->expand("Hello  {{OPT(REASON)}}  Goodbye\n"),
+            "Hello  Goodbye\n");
+        xassert_eqq($mailer->expand("Hello   {{OPT(REASON)}}  Goodbye\n"),
+            "Hello   Goodbye\n");
+        xassert_eqq($mailer->expand("Hello  {{OPT(REASON)}}   Goodbye\n"),
+            "Hello   Goodbye\n");
+        xassert_eqq($mailer->expand("Hello {{OPT(REASON)}}  Goodbye\n"),
+            "Hello  Goodbye\n");
     }
 
     function test_collator() {
