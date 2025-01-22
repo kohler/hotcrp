@@ -8,7 +8,7 @@
 			"{{PASSWORDLINK}}\n\n",
 			"If you did not make this request, it’s safe to ignore this email.\n\n",
 			"The link will work for 3 days. Should it expire, obtain a new link using \"Forgot my password\".\n\n",
-			"* Site: {{URL}}/\n",
+			"* Site: {{URL}}\n",
 			"* Email: {{EMAIL}}\n\n",
 			"If you already have an account under a different email address, you may merge this new account into that one. Go to your account settings and select \"Merge with another account\".\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
@@ -22,7 +22,7 @@
 		"body": [
 			"Greetings,\n\n",
 			"A system administrator has activated an account for you on the {{CONFNAME}} submission site.\n\n",
-			"* Site: {{URL}}/\n",
+			"* Site: {{URL}}\n",
 			"* Email: {{EMAIL}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
@@ -40,8 +40,8 @@
 		"subject": "[{{CONFSHORTNAME}}] Contact for #{{NUMBER}} {{TITLEHINT}}",
 		"body": [
 			"Greetings,\n\n",
-			"An account has been created for you on the {{CONFNAME}} submission site. You are now a contact for submission #{{NUMBER}}.{{IF(ADMINUPDATE)}} An administrator performed this update.{{ENDIF}}\n\n",
-			"* Site: {{URL}}/\n",
+			"An account has been created for you on the {{CONFNAME}} submission site. You are now a contact for submission #{{NUMBER}}. {{IF(ADMINUPDATE)}}An administrator performed this update.{{ENDIF}}\n\n",
+			"* Site: {{URL}}\n",
 			"* Email: {{EMAIL}}\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n\n",
@@ -62,7 +62,7 @@
 		"body": [
 			"Greetings,\n\n",
 			"You have been added to the program committee on the {{CONFNAME}} submission site.\n\n",
-			"* Site: {{URL}}/\n",
+			"* Site: {{URL}}\n",
 			"* Email: {{EMAIL}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
@@ -81,7 +81,7 @@
 		"body": [
 			"Greetings,\n\n",
 			"You are now a system administrator of the {{CONFNAME}} submission site.\n\n",
-			"* Site: {{URL}}/\n",
+			"* Site: {{URL}}\n",
 			"* Email: {{EMAIL}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
@@ -100,7 +100,7 @@
 		"body": [
 			"Dear {{NAME}},\n\n",
 			"Here is your account information for the {{CONFNAME}} submission site.\n\n",
-			"* Site: {{URL}}/\n",
+			"* Site: {{URL}}\n",
 			"* Email: {{EMAIL}}\n\n",
 			"{{IF(PASSWORDLINK)}}\n",
 			"{{IF(NEEDPASSWORD)}}\n",
@@ -147,7 +147,7 @@
 		"body": [
 			"Dear {{NAME}},\n\n",
 			"We received a request to change the email address for your account on the {{CONFNAME}} submission site. If you made this request, please use the following link to update your account to use {{EMAIL}}. The link will work for 3 days.\n\n",
-			"{{URL}}/profile{{PHP}}?changeemail={{CAPABILITY}}\n\n",
+			"{{URL(profile, changeemail={{CAPABILITY}})}}\n\n",
 			"If you did not make this request, it's safe to ignore this email.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n"
@@ -342,7 +342,7 @@
 		"subject": "[{{CONFSHORTNAME}}] Deleted submission #{{NUMBER}} {{TITLEHINT}}",
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"Your {{CONFNAME}} submission #{{NUMBER}} has been removed from the submission database by an administrator. This can be done to eliminate duplicates.{{IF(REASON)}} The following reason was provided for deleting the submission: {{REASON}}{{ENDIF}}\n\n",
+			"Your {{CONFNAME}} submission #{{NUMBER}} has been removed from the submission database by an administrator. This can be done to eliminate duplicates. {{IF(REASON)}}The following reason was provided for deleting the submission: {{REASON}}{{ENDIF}}\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
@@ -357,7 +357,7 @@
 		"allow_pc": true,
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"On behalf of the {{CONFNAME}} program committee, {{REQUESTERCONTACT}} has asked you to review {{CONFNAME}} submission #{{NUMBER}}.\n\n",
+			"On behalf of the {{CONFNAME}} program committee, {{REQUESTERCONTACT}} has asked you to review {{CONFSHORTNAME}} submission #{{NUMBER}}.\n\n",
 			"{{IF(REASON)}}\n",
 			"They supplied this note: {{REASON}}\n",
 			"{{ENDIF}}\n\n",
@@ -366,7 +366,7 @@
 			"* Site: {{URL(review, p={{NUMBER}}&cap={{REVIEWACCEPTOR}})}}\n\n",
 			"Once you have viewed the submission and decided whether you are willing to review it, please accept or decline this review request at the submission site.",
 			" {{IF(REVIEWDEADLINE)}}Should you accept, your review is requested by {{REVIEWDEADLINE}}.{{ENDIF}}\n\n",
-			"{{IF(NEEDPASSWORD)}}",
+			"{{IF(NEEDPASSWORD)}}\n",
 			"You haven't used the site as {{EMAIL}} before, so you may need to create a password to sign in. Use this link to set one up:\n\n",
 			"{{PASSWORDLINK}}\n\n",
 			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
@@ -382,7 +382,7 @@
 		"subject": "[{{CONFSHORTNAME}}] Review proposal for submission #{{NUMBER}}",
 		"body": [
 			"Greetings,\n\n",
-			"{{REQUESTERCONTACT}} would like {{REVIEWERCONTACT}} to review {{CONFNAME}} submission #{{NUMBER}}.{{IF(REASON)}} They supplied this note: {{REASON}}{{ENDIF}}\n\n",
+			"{{REQUESTERCONTACT}} would like {{REVIEWERCONTACT}} to review {{CONFNAME}} submission #{{NUMBER}}. {{IF(REASON)}}They supplied this note: {{REASON}}{{ENDIF}}\n\n",
 			"Visit the assignment page to approve or deny the proposal.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
@@ -672,10 +672,10 @@
 		"subject": "[{{CONFSHORTNAME}}] New review assignments",
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"You have been assigned new reviews for {{CONFNAME}}.{{IF(REVIEWDEADLINE)}} Reviews are requested by {{REVIEWDEADLINE}}.{{ENDIF}}\n\n",
+			"You have been assigned new reviews for {{CONFNAME}}. {{IF(REVIEWDEADLINE)}}Reviews are requested by {{REVIEWDEADLINE}}.{{ENDIF}}\n\n",
 			"* Your reviews: {{URL(search, q=re:me)}}\n",
 			"* New assignments: {{NEWASSIGNMENTS}}\n",
-			"* Site: {{URL}}/\n\n",
+			"* Site: {{URL}}\n\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n"
@@ -711,7 +711,7 @@
 		"subject": "[{{CONFSHORTNAME}}] Review reminder for submission #{{NUMBER}} {{TITLEHINT}}",
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"This is a reminder from {{REQUESTERCONTACT}} to complete your review for {{CONFNAME}} submission #{{NUMBER}}.{{IF(REVIEWDEADLINE)}} Reviews are requested by {{REVIEWDEADLINE}}.{{ENDIF}} If you are unable to complete the review, please decline the review using the site or contact {{REQUESTERNAME}} directly.\n\n",
+			"This is a reminder from {{REQUESTERCONTACT}} to complete your review for {{CONFNAME}} submission #{{NUMBER}}. {{IF(REVIEWDEADLINE)}}Reviews are requested by {{REVIEWDEADLINE}}.{{ENDIF}} If you are unable to complete the review, please decline the review using the site or contact {{REQUESTERNAME}} directly.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
 			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
