@@ -183,7 +183,7 @@ class Mail_Page {
 
 <div class="ctable no-hmargin">
 <dl class="ctelt">
-<dt><code>{{URL}}</code></dt>
+<dt><code>{{LINK}}</code></dt>
     <dd>Site URL.</dd>
 <dt><code>{{NUMSUBMITTED}}</code></dt>
     <dd>Number of papers submitted.</dd>

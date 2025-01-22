@@ -4,15 +4,13 @@
 		"subject": "[{{CONFSHORTNAME}}] New account",
 		"body": [
 			"Greetings,\n\n",
-			"We received a request to create an account for you on the {{CONFNAME}} submission site. If you made this request, please use this link to set a password:\n\n",
+			"We received a request to create an account for {{EMAIL}} on the {{CONFNAME}} submission site. If you made this request, please use this link to set a password:\n\n",
 			"{{PASSWORDLINK}}\n\n",
 			"If you did not make this request, it’s safe to ignore this email.\n\n",
 			"The link will work for 3 days. Should it expire, obtain a new link using \"Forgot my password\".\n\n",
-			"* Site: {{URL}}\n",
-			"* Email: {{EMAIL}}\n\n",
 			"If you already have an account under a different email address, you may merge this new account into that one. Go to your account settings and select \"Merge with another account\".\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -21,9 +19,8 @@
 		"subject": "[{{CONFSHORTNAME}}] Account activated",
 		"body": [
 			"Greetings,\n\n",
-			"A system administrator has activated an account for you on the {{CONFNAME}} submission site.\n\n",
-			"* Site: {{URL}}\n",
-			"* Email: {{EMAIL}}\n\n",
+			"A system administrator has activated your {{EMAIL}} account on the {{CONFNAME}} submission site.\n\n",
+			"{{LINK}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
 			"{{PASSWORDLINK}}\n\n",
@@ -31,20 +28,19 @@
 			"{{ENDIF}}\n\n",
 			"If you already have an account under a different email address, you may merge this new account into that one. Go to your account settings and select \"Merge with another account\".\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "newaccount.paper",
-		"subject": "[{{CONFSHORTNAME}}] Contact for #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Contact for #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Greetings,\n\n",
-			"An account has been created for you on the {{CONFNAME}} submission site. You are now a contact for submission #{{NUMBER}}. {{IF(ADMINUPDATE)}}An administrator performed this update.{{ENDIF}}\n\n",
-			"* Site: {{URL}}\n",
-			"* Email: {{EMAIL}}\n",
+			"An account has been created for {{EMAIL}} on the {{CONFNAME}} submission site. You are now a contact for submission #{{PID}}. {{IF(ADMINUPDATE)}}An administrator performed this update.{{ENDIF}}\n\n",
 			"* Title: {{TITLE}}\n",
-			"* Author(s): {{OPT(AUTHORS)}}\n\n",
+			"* Author(s): {{OPT(AUTHORS)}}\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
 			"{{PASSWORDLINK}}\n\n",
@@ -52,7 +48,7 @@
 			"{{ENDIF}}\n\n",
 			"If you already have an account under a different email address, you may merge this new account into that one. Go to your account settings and select \"Merge with another account\".\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -62,7 +58,7 @@
 		"body": [
 			"Greetings,\n\n",
 			"You have been added to the program committee on the {{CONFNAME}} submission site.\n\n",
-			"* Site: {{URL}}\n",
+			"* Site: {{LINK}}\n",
 			"* Email: {{EMAIL}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
@@ -71,7 +67,7 @@
 			"{{ENDIF}}\n\n",
 			"If you already have an account under a different email address, you may merge this new account into that one. Go to your account settings and select \"Merge with another account\".\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -81,7 +77,7 @@
 		"body": [
 			"Greetings,\n\n",
 			"You are now a system administrator of the {{CONFNAME}} submission site.\n\n",
-			"* Site: {{URL}}\n",
+			"* Site: {{LINK}}\n",
 			"* Email: {{EMAIL}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
 			"You will need a password to sign in. Use this link to set one up:\n\n",
@@ -90,7 +86,7 @@
 			"{{ENDIF}}\n\n",
 			"If you already have an account under a different email address, you may merge this new account into that one. Go to your account settings and select \"Merge with another account\".\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -100,7 +96,7 @@
 		"body": [
 			"Dear {{NAME}},\n\n",
 			"Here is your account information for the {{CONFNAME}} submission site.\n\n",
-			"* Site: {{URL}}\n",
+			"* Site: {{LINK}}\n",
 			"* Email: {{EMAIL}}\n\n",
 			"{{IF(PASSWORDLINK)}}\n",
 			"{{IF(NEEDPASSWORD)}}\n",
@@ -112,7 +108,7 @@
 			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
 			"{{ENDIF}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -126,7 +122,7 @@
 			"If you did not make this request, it's safe to ignore this email.\n\n",
 			"The link will work for 3 days. Should it expire, obtain a new link using \"Forgot my password\".\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -137,7 +133,7 @@
 			"Dear {{NAME}},\n\n",
 			"Your password on the {{CONFNAME}} submission site cannot be reset because your account there is disabled.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -147,10 +143,10 @@
 		"body": [
 			"Dear {{NAME}},\n\n",
 			"We received a request to change the email address for your account on the {{CONFNAME}} submission site. If you made this request, please use the following link to update your account to use {{EMAIL}}. The link will work for 3 days.\n\n",
-			"{{URL(profile, changeemail={{CAPABILITY}})}}\n\n",
+			"{{LINK(profile, changeemail={{CAPABILITY}})}}\n\n",
 			"If you did not make this request, it's safe to ignore this email.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -161,19 +157,19 @@
 			"Dear {{NAME}},\n\n",
 			"Your account on the {{CONFSHORTNAME}} submission site has been merged with the account of {{OTHERCONTACT}}. From now on, you should log in using the {{OTHEREMAIL}} account.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 
 	{
 		"name": "registerpaper",
-		"subject": "[{{CONFSHORTNAME}}] Registered #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Registered #{{PID}} {{TITLEHINT}}",
 		"body": [
-			"Submission #{{NUMBER}} has been registered on the {{CONFNAME}} site.\n\n",
+			"Submission #{{PID}} has been registered on the {{CONFNAME}} site.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
 			"{{NOTES}}\n\n",
 			"{{IF(REASON)}}\n",
 			"An administrator provided the following reason for this registration: {{REASON}}\n",
@@ -181,18 +177,18 @@
 			"An administrator performed this registration.\n",
 			"{{ENDIF}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "updatepaper",
-		"subject": "[{{CONFSHORTNAME}}] Updated #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Updated #{{PID}} {{TITLEHINT}}",
 		"body": [
-			"Submission #{{NUMBER}} has been updated on the {{CONFNAME}} site. {{OPT(CHANGE)}}\n\n",
+			"Submission #{{PID}} has been updated on the {{CONFNAME}} site. {{OPT(CHANGE)}}\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
 			"{{NOTES}}\n\n",
 			"{{IF(REASON)}}\n",
 			"An administrator provided the following reason for this update: {{REASON}}\n",
@@ -200,18 +196,18 @@
 			"An administrator performed this update.\n",
 			"{{ENDIF}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "submitpaper",
-		"subject": "[{{CONFSHORTNAME}}] Submitted #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Submitted #{{PID}} {{TITLEHINT}}",
 		"body": [
-			"Submission #{{NUMBER}} is now ready for review on the {{CONFNAME}} site. {{OPT(CHANGE)}}\n\n",
+			"Submission #{{PID}} is now ready for review on the {{CONFNAME}} site. {{OPT(CHANGE)}}\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
 			"{{NOTES}}\n\n",
 			"{{IF(REASON)}}\n",
 			"An administrator provided the following reason for this update: {{REASON}}\n",
@@ -219,18 +215,18 @@
 			"An administrator performed this update.\n",
 			"{{ENDIF}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "submitfinalpaper",
-		"subject": "[{{CONFSHORTNAME}}] Updated accepted #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Updated accepted #{{PID}} {{TITLEHINT}}",
 		"body": [
-			"Accepted submission #{{NUMBER}} has been updated on the {{CONFNAME}} submission site. {{OPT(CHANGE)}}\n\n",
+			"Accepted submission #{{PID}} has been updated on the {{CONFNAME}} submission site. {{OPT(CHANGE)}}\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
 			"{{NOTES}}\n\n",
 			"{{IF(REASON)}}\n",
 			"An administrator provided the following reason for this update: {{REASON}}\n",
@@ -238,72 +234,72 @@
 			"An administrator performed this update.\n",
 			"{{ENDIF}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "registernotify",
-		"subject": "[{{CONFSHORTNAME}}] New draft submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] New draft submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"A new draft submission for {{CONFNAME}} has been received.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Control notifications for new draft submissions on Account settings > Preferences.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "newsubmitnotify",
-		"subject": "[{{CONFSHORTNAME}}] New submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] New submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"A new submission for {{CONFNAME}} has been received.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Control notifications for new submissions on Account settings > Preferences.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "finalsubmitnotify",
-		"subject": "[{{CONFSHORTNAME}}] Updated final version #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Updated final version #{{PID}} {{TITLEHINT}}",
 		"body": [
-			"The final version for {{CONFNAME}} submission #{{NUMBER}} has been updated. {{OPT(CHANGE)}} The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
+			"The final version for {{CONFNAME}} submission #{{PID}} has been updated. {{OPT(CHANGE)}} The authors may still be able make updates; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Control notifications for final version updates on Account settings > Preferences.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "authorwithdraw",
-		"subject": "[{{CONFSHORTNAME}}] Withdrawn submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Withdrawn submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Greetings,\n\n",
-			"An author of {{CONFNAME}} submission #{{NUMBER}} has withdrawn the submission from consideration. It will not be reviewed.\n\n",
+			"An author of {{CONFNAME}} submission #{{PID}} has withdrawn the submission from consideration. It will not be reviewed.\n\n",
 			"{{IF(REASON)}}\n",
 			"They gave the following reason: {{REASON}}\n",
 			"{{ENDIF}}\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "adminwithdraw",
-		"subject": "[{{CONFSHORTNAME}}] Withdrawn submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Withdrawn submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Greetings,\n\n",
-			"{{CONFNAME}} submission #{{NUMBER}} has been withdrawn from consideration and will not be reviewed.\n\n",
+			"{{CONFNAME}} submission #{{PID}} has been withdrawn from consideration and will not be reviewed.\n\n",
 			"{{IF(REASON)}}\n",
 			"An administrator withdrew the submission. They provided this reason: {{REASON}}\n",
 			"{{ELSE}}\n",
@@ -311,18 +307,18 @@
 			"{{ENDIF}}\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "withdrawreviewer",
-		"subject": "[{{CONFSHORTNAME}}] Withdrawn submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Withdrawn submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Greetings,\n\n",
-			"{{CONFSHORTNAME}} submission #{{NUMBER}}, which you reviewed or were assigned to review, has been withdrawn from consideration for the conference.\n\n",
+			"{{CONFSHORTNAME}} submission #{{PID}}, which you reviewed or were assigned to review, has been withdrawn from consideration for the conference.\n\n",
 			"{{IF(ADMINUPDATE)}}\n",
 			"An administrator withdrew the submission. {{IF(REASON)}}They provided this reason: {{REASON}}{{ENDIF}}\n",
 			"{{ELSE}}\n",
@@ -330,40 +326,40 @@
 			"{{ENDIF}}\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"You are not expected to complete your review (and the system will not allow it unless the submission is revived).\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "deletepaper",
-		"subject": "[{{CONFSHORTNAME}}] Deleted submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Deleted submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"Your {{CONFNAME}} submission #{{NUMBER}} has been removed from the submission database by an administrator. This can be done to eliminate duplicates. {{IF(REASON)}}The following reason was provided for deleting the submission: {{REASON}}{{ENDIF}}\n\n",
+			"Your {{CONFNAME}} submission #{{PID}} has been removed from the submission database by an administrator. This can be done to eliminate duplicates. {{IF(REASON)}}The following reason was provided for deleting the submission: {{REASON}}{{ENDIF}}\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 
 	{
 		"name": "requestreview",
-		"subject": "[{{CONFSHORTNAME}}] Review request for submission #{{NUMBER}}",
+		"subject": "[{{CONFSHORTNAME}}] Review request for submission #{{PID}}",
 		"allow_pc": true,
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"On behalf of the {{CONFNAME}} program committee, {{REQUESTERCONTACT}} has asked you to review {{CONFSHORTNAME}} submission #{{NUMBER}}.\n\n",
+			"On behalf of the {{CONFNAME}} program committee, {{REQUESTERCONTACT}} has asked you to review {{CONFSHORTNAME}} submission #{{PID}}.\n\n",
 			"{{IF(REASON)}}\n",
 			"They supplied this note: {{REASON}}\n",
 			"{{ENDIF}}\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(review, p={{NUMBER}}&cap={{REVIEWACCEPTOR}})}}\n\n",
+			"* Site: {{LINK(review, p={{PID}}&cap={{REVIEWACCEPTOR}})}}\n\n",
 			"Once you have viewed the submission and decided whether you are willing to review it, please accept or decline this review request at the submission site.",
 			" {{IF(REVIEWDEADLINE)}}Should you accept, your review is requested by {{REVIEWDEADLINE}}.{{ENDIF}}\n\n",
 			"{{IF(NEEDPASSWORD)}}\n",
@@ -373,141 +369,141 @@
 			"{{ENDIF}}\n\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "proposereview",
-		"subject": "[{{CONFSHORTNAME}}] Review proposal for submission #{{NUMBER}}",
+		"subject": "[{{CONFSHORTNAME}}] Review proposal for submission #{{PID}}",
 		"body": [
 			"Greetings,\n\n",
-			"{{REQUESTERCONTACT}} would like {{REVIEWERCONTACT}} to review {{CONFNAME}} submission #{{NUMBER}}. {{IF(REASON)}}They supplied this note: {{REASON}}{{ENDIF}}\n\n",
+			"{{REQUESTERCONTACT}} would like {{REVIEWERCONTACT}} to review {{CONFNAME}} submission #{{PID}}. {{IF(REASON)}}They supplied this note: {{REASON}}{{ENDIF}}\n\n",
 			"Visit the assignment page to approve or deny the proposal.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(assign, p={{NUMBER}})}}\n\n",
-			"{{SIGNATURE}}\n"
+			"* Site: {{LINK(assign, p={{PID}})}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "denyreviewrequest",
-		"subject": "[{{CONFSHORTNAME}}] Review proposal for submission #{{NUMBER}} denied",
+		"subject": "[{{CONFSHORTNAME}}] Review proposal for submission #{{PID}} denied",
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"Your proposal that {{REVIEWERCONTACT}} review {{CONFNAME}} submission #{{NUMBER}} has been denied by an administrator. You may want to propose someone else.\n\n",
+			"Your proposal that {{REVIEWERCONTACT}} review {{CONFNAME}} submission #{{PID}} has been denied by an administrator. You may want to propose someone else.\n\n",
 			"{{IF(REASON)}}\nThey gave the following reason: {{REASON}}\n\n{{ENDIF}}\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "retractrequest",
-		"subject": "[{{CONFSHORTNAME}}] Retracting review request for submission #{{NUMBER}}",
+		"subject": "[{{CONFSHORTNAME}}] Retracting review request for submission #{{PID}}",
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"{{REQUESTERNAME}} has retracted a previous request that you review {{CONFNAME}} submission #{{NUMBER}}. There's no need to complete your review.\n\n",
+			"{{REQUESTERNAME}} has retracted a previous request that you review {{CONFNAME}} submission #{{PID}}. There's no need to complete your review.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "acceptreviewrequest",
-		"subject": "[{{CONFSHORTNAME}}] Accepted review request for submission #{{NUMBER}}",
+		"subject": "[{{CONFSHORTNAME}}] Accepted review request for submission #{{PID}}",
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"{{REVIEWERCONTACT}} has confirmed their intention to complete the review you requested of {{CONFNAME}} submission #{{NUMBER}}.\n\n",
+			"{{REVIEWERCONTACT}} has confirmed their intention to complete the review you requested of {{CONFNAME}} submission #{{PID}}.\n\n",
 			"{{IF(REASON)}}\nThey gave the following reason: {{REASON}}\n\n{{ENDIF}}\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
-			"{{SIGNATURE}}\n"
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "declinereviewrequest",
-		"subject": "[{{CONFSHORTNAME}}] Declined review request for submission #{{NUMBER}}",
+		"subject": "[{{CONFSHORTNAME}}] Declined review request for submission #{{PID}}",
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"{{REVIEWERCONTACT}} cannot complete the review you requested of {{CONFNAME}} submission #{{NUMBER}}. You may want to find an alternate reviewer.\n\n",
+			"{{REVIEWERCONTACT}} cannot complete the review you requested of {{CONFNAME}} submission #{{PID}}. You may want to find an alternate reviewer.\n\n",
 			"{{IF(REASON)}}\nThey gave the following reason: {{REASON}}\n\n{{ENDIF}}\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
-			"{{SIGNATURE}}\n"
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "reviewapprovalrequest",
-		"subject": "[{{CONFSHORTNAME}}] Review approval requested for submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Review approval requested for submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Greetings,\n\n",
-			"{{REVIEWAUTHOR}}'s review for {{CONFNAME}} submission #{{NUMBER}} has been submitted for approval.\n\n",
+			"{{REVIEWAUTHOR}}'s review for {{CONFNAME}} submission #{{PID}} has been submitted for approval.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
 			"* Review by: {{OPT(REVIEWAUTHOR)}}\n",
-			"* Review site: {{URL(review, p={{NUMBER}}&r={{REVIEWID}})}}\n\n",
+			"* Review site: {{LINK(review, p={{PID}}&r={{REVIEWID}})}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n\n",
 			"{{REVIEWS}}\n"
 		]
 	},
 
 	{
 		"name": "reviewapprovalupdate",
-		"subject": "[{{CONFSHORTNAME}}] Review approval requested for submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Review approval requested for submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Greetings,\n\n",
-			"{{REVIEWAUTHOR}}'s review for {{CONFNAME}} submission #{{NUMBER}} has been resubmitted for approval.\n\n",
+			"{{REVIEWAUTHOR}}'s review for {{CONFNAME}} submission #{{PID}} has been resubmitted for approval.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
 			"* Review by: {{OPT(REVIEWAUTHOR)}}\n",
-			"* Review site: {{URL(review, p={{NUMBER}}&r={{REVIEWID}})}}\n\n",
+			"* Review site: {{LINK(review, p={{PID}}&r={{REVIEWID}})}}\n\n",
 			"You can approve the review at the link above.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n\n",
 			"{{REVIEWS}}\n"
 		]
 	},
 
 	{
 		"name": "reviewapprove",
-		"subject": "[{{CONFSHORTNAME}}] Review approved for submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Review approved for submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Greetings,\n\n",
-			"{{REVIEWAUTHOR}}'s review for {{CONFNAME}} submission #{{NUMBER}} has been approved.\n\n",
+			"{{REVIEWAUTHOR}}'s review for {{CONFNAME}} submission #{{PID}} has been approved.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
 			"* Review by: {{OPT(REVIEWAUTHOR)}}\n",
-			"* Review site: {{URL(review, p={{NUMBER}}&r={{REVIEWID}})}}\n\n",
+			"* Review site: {{LINK(review, p={{PID}}&r={{REVIEWID}})}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n\n",
 			"{{REVIEWS}}\n"
 		]
 	},
 
 	{
 		"name": "reviewpreapprovaledit",
-		"subject": "[{{CONFSHORTNAME}}] Review edited for submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Review edited for submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Greetings,\n\n",
-			"{{REVIEWAUTHOR}}'s review for {{CONFNAME}} submission #{{NUMBER}} has been edited by its requester. The review has not yet been approved.\n\n",
+			"{{REVIEWAUTHOR}}'s review for {{CONFNAME}} submission #{{PID}} has been edited by its requester. The review has not yet been approved.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
 			"* Review by: {{OPT(REVIEWAUTHOR)}}\n",
-			"* Review site: {{URL(review, p={{NUMBER}}&r={{REVIEWID}})}}\n\n",
+			"* Review site: {{LINK(review, p={{PID}}&r={{REVIEWID}})}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n\n",
 			"{{REVIEWS}}\n"
 		]
 	},
@@ -517,14 +513,14 @@
 		"subject": "[{{CONFSHORTNAME}}] Submitted {{REVIEWNAME(SUBJECT)}} {{TITLEHINT}}",
 		"body": [
 			"Greetings,\n\n",
-			"{{REVIEWNAME}} for {{CONFNAME}} submission #{{NUMBER}} has been submitted. The review is available on the submission site.\n\n",
+			"{{REVIEWNAME}} for {{CONFNAME}} submission #{{PID}} has been submitted. The review is available on the submission site.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
 			"* Review by: {{OPT(REVIEWAUTHOR)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the submission site.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n\n",
 			"{{REVIEWS}}\n"
 		]
 	},
@@ -534,14 +530,14 @@
 		"subject": "[{{CONFSHORTNAME}}] Updated {{REVIEWNAME(SUBJECT)}} {{TITLEHINT}}",
 		"body": [
 			"Greetings,\n\n",
-			"{{REVIEWNAME}} for {{CONFNAME}} submission #{{NUMBER}} has been updated. The review is available on the submission site.\n\n",
+			"{{REVIEWNAME}} for {{CONFNAME}} submission #{{PID}} has been updated. The review is available on the submission site.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
 			"* Review by: {{OPT(REVIEWAUTHOR)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"For the most up-to-date reviews and comments, or to unsubscribe from email notification, see the submission site.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n\n",
 			"{{REVIEWS}}\n"
 		]
 	},
@@ -549,67 +545,67 @@
 
 	{
 		"name": "commentnotify",
-		"subject": "[{{CONFSHORTNAME}}] Comment for #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Comment for #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"{{COMMENTS}}\n\n",
 			"***************************************************************************\n\n\n",
-			"You’re following comments for {{CONFNAME}} submission #{{NUMBER}}. For the most up-to-date comments, or to unsubscribe from email notification, see the submission site.\n\n",
+			"You’re following comments for {{CONFNAME}} submission #{{PID}}. For the most up-to-date comments, or to unsubscribe from email notification, see the submission site.\n\n",
 			"* Title: {{TITLE}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "mentionnotify",
-		"subject": "[{{CONFSHORTNAME}}] Mentioned for #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Mentioned for #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"{{COMMENTS}}\n\n",
 			"***************************************************************************\n\n\n",
-			"You were mentioned in this comment for {{CONFNAME}} submission #{{NUMBER}}. For the most up-to-date comments, see the submission site.\n\n",
+			"You were mentioned in this comment for {{CONFNAME}} submission #{{PID}}. For the most up-to-date comments, see the submission site.\n\n",
 			"* Title: {{TITLE}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "admincommentnotify",
-		"subject": "[{{CONFSHORTNAME}}] Comment for administrators of #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Comment for administrators of #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"{{COMMENTS}}\n\n",
 			"***************************************************************************\n\n\n",
-			"This comment is for the administrators of {{CONFNAME}} submission #{{NUMBER}}. For the most up-to-date comments, see the submission site.\n\n",
+			"This comment is for the administrators of {{CONFNAME}} submission #{{PID}}. For the most up-to-date comments, see the submission site.\n\n",
 			"* Title: {{TITLE}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
-			"{{SIGNATURE}}\n"
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
 	{
 		"name": "responsenotify",
-		"subject": "[{{CONFSHORTNAME}}] Response for #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Response for #{{PID}} {{TITLEHINT}}",
 		"body": [
-			"The authors' response for {{CONFNAME}} submission #{{NUMBER}} is available as shown below. The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
+			"The authors' response for {{CONFNAME}} submission #{{PID}} is available as shown below. The authors may still update their response; for the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
 			"* Title: {{TITLE}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n\n",
 			"{{COMMENTS}}\n"
 		]
 	},
 
 	{
 		"name": "responsedraftnotify",
-		"subject": "[{{CONFSHORTNAME}}] Draft response for #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Draft response for #{{PID}} {{TITLEHINT}}",
 		"body": [
-			"The draft authors' response for {{CONFNAME}} submission #{{NUMBER}} has been updated as shown below. This response has not yet been submitted to reviewers. For the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
+			"The draft authors' response for {{CONFNAME}} submission #{{PID}} has been updated as shown below. This response has not yet been submitted to reviewers. For the most up-to-date version, or to turn off notification emails, see the submission site.\n\n",
 			"* Title: {{TITLE}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n\n",
 			"{{COMMENTS}}\n"
 		]
 	},
@@ -625,14 +621,14 @@
 		"allow_pc": true,
 		"order": 0,
 		"default_recipients": "s",
-		"subject": "[{{CONFSHORTNAME}}] Submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Dear author(s),\n\n",
 			"Your message here.\n\n",
 			"* Title: {{TITLE}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 	{
@@ -645,7 +641,7 @@
 		"body": [
 			"Dear program committee,\n\n",
 			"Your message here.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 	{
@@ -654,13 +650,13 @@
 		"allow_pc": true,
 		"order": 1,
 		"default_recipients": "rev",
-		"subject": "[{{CONFSHORTNAME}}] Review for #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Review for #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Dear {{NAME}},\n\n",
 			"Your message here.\n\n",
 			"* Title: {{TITLE}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
-			"{{SIGNATURE}}\n"
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -673,12 +669,12 @@
 		"body": [
 			"Dear {{NAME}},\n\n",
 			"You have been assigned new reviews for {{CONFNAME}}. {{IF(REVIEWDEADLINE)}}Reviews are requested by {{REVIEWDEADLINE}}.{{ENDIF}}\n\n",
-			"* Your reviews: {{URL(search, q=re:me)}}\n",
+			"* Your reviews: {{LINK(search, q=re:me)}}\n",
 			"* New assignments: {{NEWASSIGNMENTS}}\n",
-			"* Site: {{URL}}\n\n",
+			"* Site: {{LINK}}\n\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -688,16 +684,16 @@
 		"allow_pc": true,
 		"order": 20,
 		"default_recipients": "uncrev",
-		"subject": "[{{CONFSHORTNAME}}] Review reminder for submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Review reminder for submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"This is a reminder to complete your review for {{CONFNAME}} submission #{{NUMBER}}. {{IF(REVIEWDEADLINE)}}Reviews are requested by {{REVIEWDEADLINE}}. {{ENDIF}}If you are unable to complete the review, please decline the review using the site or contact the person who requested the review directly.\n\n",
+			"This is a reminder to complete your review for {{CONFNAME}} submission #{{PID}}. {{IF(REVIEWDEADLINE)}}Reviews are requested by {{REVIEWDEADLINE}}. {{ENDIF}}If you are unable to complete the review, please decline the review using the site or contact the person who requested the review directly.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -708,16 +704,16 @@
 		"order": 21,
 		"default_recipients": "uncmyextrev",
 		"default_search_type": "req",
-		"subject": "[{{CONFSHORTNAME}}] Review reminder for submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Review reminder for submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Dear {{NAME}},\n\n",
-			"This is a reminder from {{REQUESTERCONTACT}} to complete your review for {{CONFNAME}} submission #{{NUMBER}}. {{IF(REVIEWDEADLINE)}}Reviews are requested by {{REVIEWDEADLINE}}.{{ENDIF}} If you are unable to complete the review, please decline the review using the site or contact {{REQUESTERNAME}} directly.\n\n",
+			"This is a reminder from {{REQUESTERCONTACT}} to complete your review for {{CONFNAME}} submission #{{PID}}. {{IF(REVIEWDEADLINE)}}Reviews are requested by {{REVIEWDEADLINE}}.{{ENDIF}} If you are unable to complete the review, please decline the review using the site or contact {{REQUESTERNAME}} directly.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}})}}\n\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n"
+			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
 	},
 
@@ -726,17 +722,17 @@
 		"title": "Accept notification",
 		"order": 60,
 		"default_recipients": "somedec:yes",
-		"subject": "[{{CONFSHORTNAME}}] Accepted submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Accepted submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Dear author(s),\n\n",
-			"The {{CONFNAME}} program committee is delighted to inform you that your submission #{{NUMBER}} has been accepted to appear in the conference.\n\n",
+			"The {{CONFNAME}} program committee is delighted to inform you that your submission #{{PID}} has been accepted to appear in the conference.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
 			"{{NUMACCEPTED}} of {{NUMSUBMITTED}} submissions were accepted. Congratulations!\n\n",
 			"Visit the submission site for reviews, comments, and related information. Reviews and comments are also included below.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n\n",
 			"{{REVIEWS}}\n",
 			"{{COMMENTS}}\n"
 		]
@@ -747,17 +743,17 @@
 		"title": "Reject notification",
 		"order": 61,
 		"default_recipients": "somedec:no",
-		"subject": "[{{CONFSHORTNAME}}] Rejected submission #{{NUMBER}} {{TITLEHINT}}",
+		"subject": "[{{CONFSHORTNAME}}] Rejected submission #{{PID}} {{TITLEHINT}}",
 		"body": [
 			"Dear author(s),\n\n",
-			"The {{CONFNAME}} program committee is sorry to inform you that your submission #{{NUMBER}} was rejected, and will not appear in the conference.\n\n",
+			"The {{CONFNAME}} program committee is sorry to inform you that your submission #{{PID}} was rejected, and will not appear in the conference.\n\n",
 			"* Title: {{TITLE}}\n",
 			"* Author(s): {{OPT(AUTHORS)}}\n",
-			"* Site: {{URL(paper, p={{NUMBER}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
+			"* Site: {{LINK(paper, p={{PID}}, {{AUTHORVIEWCAPABILITY}})}}\n\n",
 			"{{NUMACCEPTED}} papers were accepted out of {{NUMSUBMITTED}} submissions.\n\n",
 			"Visit the submission site for reviews, comments, and related information. Reviews and comments are also included below.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
-			"{{SIGNATURE}}\n\n",
+			"{{SIGNATURE}}\n{{LINK}}\n\n",
 			"{{REVIEWS}}\n",
 			"{{COMMENTS}}\n"
 		]
