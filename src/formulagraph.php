@@ -299,6 +299,7 @@ class FormulaGraph extends MessageSet {
         }
         $this->fx = count($this->fxs) === 1 ? $this->fxs[0] : null;
 
+        // Y axis expressions
         if (!$fy_ok) {
             foreach ($this->fy->message_list() as $mi) {
                 $this->append_item($mi->with_field("fy"));
@@ -324,7 +325,7 @@ class FormulaGraph extends MessageSet {
         for ($i = 1; isset($qreq["q{$i}"]); ++$i) {
             $q = trim($qreq["q{$i}"]);
             $queries[] = $q === "" || $q === "(All)" ? "all" : $q;
-            $styles[] = trim((string) $qreq["s$i"]);
+            $styles[] = trim((string) $qreq["s{$i}"]);
         }
         if (empty($queries) && isset($qreq->q)) {
             $q = trim($qreq->q);

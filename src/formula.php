@@ -94,6 +94,7 @@ abstract class Fexpr implements JsonSerializable {
     const IDX_CREVIEW = 0x12;
     const IDX_ANYREVIEW = 0x22;
     const IDX_REVIEW_MASK = 0x32;
+    const IDX_X = 0x40;
 
     const FUNKNOWN = 0;
     const FNULL = 1;
@@ -882,19 +883,22 @@ abstract class Aggregate_Fexpr extends Fexpr {
         if (!str_starts_with($arg, ".")) {
             return false;
         }
-        $pos = array_search($arg, [".pc", ".re", ".rev", ".review", ".cre", ".creview", ".anyre", ".anyreview"]);
         if ($ff->index_type) {
             $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "<0>Collection already specified");
-        } else if ($pos === false) {
-            $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "<0>Collection ‘{$arg}’ not found");
-        } else if ($pos === 0) {
+            return true;
+        }
+        if ($arg === ".pc") {
             $ff->index_type = Fexpr::IDX_PC;
-        } else if ($pos < 4) {
+        } else if ($arg === ".re" || $arg === ".rev" || $arg === ".review") {
             $ff->index_type = Fexpr::IDX_REVIEW;
-        } else if ($pos < 6) {
+        } else if ($arg === ".cre" || $arg === ".creview") {
             $ff->index_type = Fexpr::IDX_CREVIEW;
-        } else {
+        } else if ($arg === ".anyre" || $arg === ".anyreview") {
             $ff->index_type = Fexpr::IDX_ANYREVIEW;
+        } else if ($arg === ".x") {
+            $ff->index_type = Fexpr::IDX_X;
+        } else {
+            $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "<0>Collection ‘{$arg}’ not found");
         }
         return true;
     }
@@ -1669,7 +1673,7 @@ class FormulaCompiler {
         } else if ($index_types === Fexpr::IDX_PC) {
             return $this->_add_pc();
         } else {
-            assert($index_types === 0);
+            assert($index_types === 0 || $index_types === Fexpr::IDX_X);
             return $this->define_gvar("trivial_loop", "[0]");
         }
     }

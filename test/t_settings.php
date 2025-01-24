@@ -513,12 +513,13 @@ class Settings_Tester {
         xassert_eqq($rf->unparse_computed(0.81), "E");
         xassert_eqq($rf->unparse_computed(1), "E");
         xassert_eqq($rf->unparse_computed(1.2), "E");
-        xassert_eqq($rf->unparse_computed(1.4), "D~E");
-        xassert_eqq($rf->unparse_computed(1.5), "D~E");
-        xassert_eqq($rf->unparse_computed(1.6), "D~E");
+        xassert_eqq($rf->unparse_computed(1.4), "E+");
+        xassert_eqq($rf->unparse_computed(1.5), "D−");
+        xassert_eqq($rf->unparse_computed(1.6), "D−");
         xassert_eqq($rf->unparse_computed(1.8), "D");
         xassert_eqq($rf->unparse_computed(2), "D");
         xassert_eqq($rf->unparse_computed(2.2), "D");
+        xassert_eqq($rf->unparse_computed(2.25), "D+");
         xassert_eqq($rf->unparse_computed(5), "A");
         xassert_eqq($rf->value_class(1), "sv sv1");
         xassert_eqq($rf->value_class(2), "sv sv3");

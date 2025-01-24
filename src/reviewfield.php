@@ -969,20 +969,28 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
         if ($numeric && is_float($fval) && abs($fval - round($fval)) >= 0.01) {
             return sprintf("%.2f", $fval);
         }
-        if ($fval <= 0.8) {
+        $alpha = ($this->flags & self::FLAG_ALPHA) !== 0;
+        $edgebound = $alpha ? 0.5 : 0.25;
+        if ($fval <= 1 - $edgebound) {
             return "–";
-        }
-        if ($numeric || $fval > count($this->values) + 0.2) {
+        } else if ($numeric || $fval >= count($this->values) + $edgebound) {
             return (string) $fval;
         }
         $rval = (int) round($fval);
-        if ($fval >= $rval + 0.25 || $fval <= $rval - 0.25) {
+        if (($this->flags & self::FLAG_ALPHA) === 0
+            && ($fval >= $rval + 0.25 || $fval <= $rval - 0.25)) {
             $ival = (int) $fval;
             $vl = $this->symbols[$ival - 1];
             $vh = $this->symbols[$ival];
             return $this->flip ? "{$vh}~{$vl}" : "{$vl}~{$vh}";
         }
-        return $this->symbols[$rval - 1];
+        $sym = $this->symbols[$rval - 1];
+        if ($fval > $rval + 0.2) {
+            $sym .= $this->flip ? "+" : "−"; /* U+2212 MINUS SIGN */
+        } else if ($fval < $rval - 0.2) {
+            $sym .= $this->flip ? "−" : "+";
+        }
+        return $sym;
     }
 
     function unparse_span_html($fval) {
