@@ -350,7 +350,7 @@ function draw_axes(svg, xAxis, yAxis, args) {
     const parent = d3.select(svg.node().parentElement);
 
     const xaxe = parent.append("g")
-        .attr("class", "x axis")
+        .attr("class", "x-axis")
         .attr("transform", `translate(${args.marginLeft},${args.marginTop+args.plotHeight})`)
         .call(xAxis)
         .attr("font-family", null)
@@ -359,10 +359,11 @@ function draw_axes(svg, xAxis, yAxis, args) {
         .call(make_rotate_ticks(args.x.tickRotation));
     if (args.x.label) {
         xaxe.append("text")
+            .attr("class", "label")
             .attr("x", args.plotWidth)
             .attr("y", args.marginBottom - 3)
-            .style("text-anchor", "end")
-            .style("pointer-events", "none")
+            .attr("text-anchor", "end")
+            .attr("pointer-events", "none")
             .text(`${args.x.label} →`);
     }
     xaxe.select(".domain").each(function () {
@@ -374,7 +375,7 @@ function draw_axes(svg, xAxis, yAxis, args) {
     });
 
     const yaxe = parent.append("g")
-        .attr("class", "y axis")
+        .attr("class", "y-axis")
         .attr("transform", `translate(${args.marginLeft},${args.marginTop})`)
         .call(yAxis)
         .attr("font-family", null)
@@ -383,10 +384,11 @@ function draw_axes(svg, xAxis, yAxis, args) {
         .call(make_rotate_ticks(args.y.tickRotation));
     if (args.y.label) {
         yaxe.append("text")
+            .attr("class", "label")
             .attr("x", -args.marginLeft)
             .attr("y", -14)
-            .style("text-anchor", "start")
-            .style("pointer-events", "none")
+            .attr("text-anchor", "start")
+            .attr("pointer-events", "none")
             .text(`↑ ${args.y.label}`);
     }
     yaxe.select(".domain").remove();
@@ -607,7 +609,7 @@ function graph_cdf(selector, args) {
         .attr("width", args.plotWidth + args.marginLeft)
         .attr("height", args.plotHeight + args.marginBottom)
         .attr("fill", "none")
-        .style("pointer-events", "all")
+        .attr("pointer-events", "all")
         .on("mouseover", mousemoved)
         .on("mousemove", mousemoved)
         .on("mouseout", mouseout)
@@ -981,7 +983,7 @@ function graph_scatter(selector, args) {
         .attr("width", args.plotWidth + args.marginLeft)
         .attr("height", args.plotHeight + args.marginBottom)
         .attr("fill", "none")
-        .style("pointer-events", "all")
+        .attr("pointer-events", "all")
         .on("mouseover", mousemoved)
         .on("mousemove", mousemoved)
         .on("mouseout", mouseout)
@@ -1150,7 +1152,7 @@ function graph_bars(selector, args) {
     svg.append("path").attr("class", "gbar gbar-hover0");
     svg.append("path").attr("class", "gbar gbar-hover1");
     var hovers = svg.selectAll(".gbar-hover0, .gbar-hover1")
-        .style("display", "none").style("pointer-events", "none");
+        .style("display", "none").attr("pointer-events", "none");
 
     svg.selectAll(".gbar").on("mouseover", mouseover).on("mouseout", mouseout)
         .on("click", mouseclick);
@@ -1641,9 +1643,9 @@ function get_sample_tick_height(axis) {
 }
 
 function named_integer_ticks(map) {
-    var want_tilt = Object.values(map).length > 30
-        || d3.max(Object.keys(map).map(function (k) { return mtext(k).length; })) > 4;
-    var want_mclasses = Object.keys(map).some(function (k) { return mclasses(k); });
+    const want_tilt = Object.values(map).length > 30
+            || d3.max(Object.keys(map).map(function (k) { return mtext(k).length; })) > 4,
+        want_mclasses = Object.keys(map).some(function (k) { return mclasses(k); });
 
     function mtext(value) {
         const m = map[value];
@@ -1670,8 +1672,10 @@ function named_integer_ticks(map) {
 
         // apply offset first (so `mclasses` rects include offset)
         if (want_tilt) {
-            this.selectAll("g.tick text").style("text-anchor", "end")
-                .attr("dx", "-9px").attr("dy", "2px");
+            this.selectAll("g.tick text")
+                .attr("text-anchor", "end")
+                .attr("dx", "-9px")
+                .attr("dy", "2px");
         }
 
         // apply classes by adding them and adding background rects
@@ -1695,9 +1699,12 @@ function named_integer_ticks(map) {
             this.selectAll("g.tick text, g.tick rect")
                 .attr("transform", "rotate(-65)");
             max_width = max_width * Math.sin(1.13446) + 20; // 65 degrees in radians
-            if (max_width > BOTTOM_MARGIN && this.classed("x")) {
-                var container = $(this.node()).closest("svg");
-                container.attr("height", +container.attr("height") + (max_width - BOTTOM_MARGIN));
+            if (max_width > BOTTOM_MARGIN && this.classed("x-axis")) {
+                const delta = max_width - BOTTOM_MARGIN,
+                    container = $(this.node()).closest("svg");
+                container.attr("height", +container.attr("height") + delta);
+                this.select(".label")
+                    .attr("y", function () { return +this.getAttribute("y") + delta; });
             }
         }
 
@@ -1758,7 +1765,7 @@ function make_rotate_ticks(angle) {
         axis.selectAll("text")
             .attr("x", 0).attr("y", 0).attr("dy", "-.71em")
             .attr("transform", "rotate(" + angle + ")")
-            .style("text-anchor", "middle");
+            .attr("text-anchor", "middle");
     };
 }
 

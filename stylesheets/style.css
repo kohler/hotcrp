@@ -5310,15 +5310,6 @@ th.pl_logaction {
 }
 
 /* graphs */
-.axis.widelabel > .tick {
-	font-size: smaller;
-}
-.axis path, .axis line {
-	fill: none;
-	stroke: black;
-	shape-rendering: crispEdges;
-}
-
 .gcdf {
 	fill: none;
 	stroke: rgba(0, 92, 168, 0.5);
@@ -5388,6 +5379,14 @@ th.pl_logaction {
 	fill: none;
 	pointer-events: none;
 }
-.hotgraph .axis {
+.hotgraph .x-axis, .hotgraph .y-axis {
 	font-size: smaller;
+}
+.widelabel > .tick {
+	font-size: smaller;
+}
+.x-axis path, .x-axis line, .y-axis path, .y-axis line {
+	fill: none;
+	stroke: black;
+	shape-rendering: crispEdges;
 }
