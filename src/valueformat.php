@@ -250,13 +250,11 @@ class ReviewField_ValueFormat extends ValueFormat {
     }
 
     function vtext($x) {
-        $rx = round($x * 100) / 100;
-        return $this->rf->unparse_computed($rx);
+        return $this->rf->unparse_computed($x);
     }
 
     function vhtml($x) {
-        $rx = round($x * 100) / 100;
-        return $this->rf->unparse_span_html($rx);
+        return $this->rf->unparse_span_html($x);
     }
 
     function difference_format() {

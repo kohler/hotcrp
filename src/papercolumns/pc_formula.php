@@ -73,14 +73,12 @@ class Formula_PaperColumn extends PaperColumn {
         if ($this->results === null) {
             $formulaf = $this->formula_function;
             $this->results = [];
-            $isreal = $this->formula->result_format_is_numeric();
+            $isreal = $this->formula->result_format() === Fexpr::FNUMERIC
+                && !$this->real_format;
             foreach ($pl->rowset() as $row) {
                 $v = $formulaf($row, null, $pl->user);
                 $this->results[$row->paperId] = $v;
-                if ($isreal
-                    && !$this->real_format
-                    && is_float($v)
-                    && $v - floor($v) >= 0.005) {
+                if ($isreal && is_float($v) && $v - floor($v) >= 0.005) {
                     $this->real_format = "%.2f";
                 }
             }

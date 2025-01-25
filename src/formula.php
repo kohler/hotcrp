@@ -1002,13 +1002,13 @@ class Variance_Fexpr extends Aggregate_Fexpr {
             && $this->typecheck_index($formula);
     }
     function compile(FormulaCompiler $state) {
-        $t = $state->_compile_loop("[0, 0, 0]", "(~l~ !== null ? [~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1] : ~r~)", $this);
+        $t = $state->_compile_loop("[0.0, 0.0, 0]", "(~l~ !== null ? [~r~[0] + ~l~ * ~l~, ~r~[1] + ~l~, ~r~[2] + 1] : ~r~)", $this);
         if ($this->op === "variance") {
-            return "({$t}[2] > 1 ? {$t}[0] / ({$t}[2] - 1) - ({$t}[1] * {$t}[1]) / ({$t}[2] * ({$t}[2] - 1)) : ({$t}[2] ? 0 : null))";
+            return "({$t}[2] > 1 ? {$t}[0] / ({$t}[2] - 1) - ({$t}[1] * {$t}[1]) / ({$t}[2] * ({$t}[2] - 1)) : ({$t}[2] ? 0.0 : null))";
         } else if ($this->op === "variance_pop") {
             return "({$t}[2] ? {$t}[0] / {$t}[2] - ({$t}[1] * {$t}[1]) / ({$t}[2] * {$t}[2]) : null)";
         } else if ($this->op === "stddev") {
-            return "({$t}[2] > 1 ? sqrt({$t}[0] / ({$t}[2] - 1) - ({$t}[1] * {$t}[1]) / ({$t}[2] * ({$t}[2] - 1))) : ({$t}[2] ? 0 : null))";
+            return "({$t}[2] > 1 ? sqrt({$t}[0] / ({$t}[2] - 1) - ({$t}[1] * {$t}[1]) / ({$t}[2] * ({$t}[2] - 1))) : ({$t}[2] ? 0.0 : null))";
         } else {
             return "({$t}[2] ? sqrt({$t}[0] / {$t}[2] - ({$t}[1] * {$t}[1]) / ({$t}[2] * {$t}[2])) : null)";
         }
@@ -1016,8 +1016,11 @@ class Variance_Fexpr extends Aggregate_Fexpr {
 }
 
 class Quantile_Fexpr extends Aggregate_Fexpr {
+    /** @var int */
+    private $varg;
     function __construct($fn, array $values, ?int $index_type) {
         parent::__construct($fn, $values, $index_type);
+        $this->varg = $fn === "median" ? 0 : 1;
     }
     static function make(FormulaCall $ff) {
         return $ff->check_nargs($ff->name === "median" ? 1 : 2)
@@ -1025,11 +1028,16 @@ class Quantile_Fexpr extends Aggregate_Fexpr {
             : null;
     }
     function typecheck(Formula $formula) {
+        if ($this->op !== "median"
+            && $this->args[1]->inferred_index() === 0
+            && $this->args[0]->inferred_index() !== 0) {
+            $this->varg = 0;
+        }
         return $this->typecheck_arguments($formula, true)
             && $this->typecheck_index($formula);
     }
     function inferred_format() {
-        return self::inferred_numeric_format($this->args[0]);
+        return [$this->args[$this->varg]];
     }
     static function quantile($a, $p) {
         // The “R-7” quantile implementation
@@ -1040,7 +1048,7 @@ class Quantile_Fexpr extends Aggregate_Fexpr {
         $ix = (count($a) - 1) * $p + 1;
         $i = (int) $ix;
         $v = $a[$i - 1];
-        if (($e = $ix - $i)) {
+        if (($e = $ix - $i) && $a[$i] !== $v) {
             $v += $e * ($a[$i] - $v);
         }
         return $v;
@@ -1049,12 +1057,13 @@ class Quantile_Fexpr extends Aggregate_Fexpr {
         if ($this->op === "median") {
             $q = "0.5";
         } else {
-            $q = $state->_addltemp($this->args[1]->compile($state));
+            $q = $state->_addltemp($this->args[1 - $this->varg]->compile($state));
             if ($this->compiled_relation("<") === ">") {
                 $q = "1 - {$q}";
             }
         }
-        $t = $state->_compile_loop("[]", "if (~l~ !== null)\n  array_push(~r~, +~l~);", $this);
+        $carg = $this->varg ? "~l1~" : "~l~";
+        $t = $state->_compile_loop("[]", "if ({$carg} !== null)\n  array_push(~r~, +{$carg});", $this);
         return "Quantile_Fexpr::quantile({$t}, {$q})";
     }
 }
@@ -1179,7 +1188,7 @@ class Mean_Fexpr extends Aggregate_Fexpr {
         return self::inferred_numeric_format($this->args[0]);
     }
     function compile(FormulaCompiler $state) {
-        $t = $state->_compile_loop("[0, 0]", "(~l~ !== null ? [~r~[0] + ~l~, ~r~[1] + 1] : ~r~)", $this);
+        $t = $state->_compile_loop("[0.0, 0]", "(~l~ !== null ? [~r~[0] + ~l~, ~r~[1] + 1] : ~r~)", $this);
         return "({$t}[1] ? {$t}[0] / {$t}[1] : null)";
     }
 }
@@ -1964,7 +1973,8 @@ class Formula implements JsonSerializable {
         } else {
             ++$this->_depth;
             $this->pos = 0;
-            $fe = $this->_parse_ternary(false) ?? Constant_Fexpr::cerror(0, strlen($this->expression));
+            $fe = $this->_parse_ternary(false)
+                ?? Constant_Fexpr::cerror(0, strlen($this->expression));
             if (self::skip_whitespace($this->expression, $this->pos) !== strlen($this->expression)) {
                 $this->lerror($this->pos, strlen($this->expression), "<0>Expected end of formula");
             }
@@ -2994,6 +3004,25 @@ class Formula implements JsonSerializable {
         return $this->_parse->fexpr->format_detail();
     }
 
+    /** @return ?bool */
+    function result_format_is_numeric() {
+        if (!$this->check()) {
+            return null;
+        }
+        return $this->_format === Fexpr::FNULL
+            || $this->_format === Fexpr::FNUMERIC
+            || ($this->_format === Fexpr::FREVIEWFIELD
+                && $this->_format_detail->is_numeric());
+    }
+
+    /** @return string */
+    function result_format_description() {
+        if (!$this->check()) {
+            return "error";
+        }
+        return $this->_parse->fexpr->format_description();
+    }
+
     /** @return ValueFormat */
     function value_format() {
         require_once(__DIR__ . "/valueformat.php");
@@ -3025,25 +3054,6 @@ class Formula implements JsonSerializable {
             $this->_value_format = Numeric_ValueFormat::main();
         }
         return $this->_value_format;
-    }
-
-    /** @return ?bool */
-    function result_format_is_numeric() {
-        if (!$this->check()) {
-            return null;
-        }
-        return $this->_format === Fexpr::FNULL
-            || $this->_format === Fexpr::FNUMERIC
-            || ($this->_format === Fexpr::FREVIEWFIELD
-                && $this->_format_detail->is_numeric());
-    }
-
-    /** @return string */
-    function result_format_description() {
-        if (!$this->check()) {
-            return "error";
-        }
-        return $this->_parse->fexpr->format_description();
     }
 
 

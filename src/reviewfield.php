@@ -966,7 +966,7 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
             return "";
         }
         $numeric = ($this->flags & self::FLAG_NUMERIC) !== 0;
-        if ($numeric && is_float($fval) && abs($fval - round($fval)) >= 0.01) {
+        if ($numeric && is_float($fval)) {
             return sprintf("%.2f", $fval);
         }
         $alpha = ($this->flags & self::FLAG_ALPHA) !== 0;
