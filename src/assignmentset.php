@@ -216,7 +216,7 @@ class AssignmentState extends MessageSet {
     public $defaults = [];
     /** @var array<int,PaperInfo> */
     private $prows = [];
-    /** @var array<int,true> */
+    /** @var list<int> */
     private $pid_attempts = [];
     /** @var ?PaperInfo */
     private $placeholder_prow;
@@ -447,9 +447,8 @@ class AssignmentState extends MessageSet {
      * @return ?PaperInfo */
     function prow($pid) {
         $p = $this->prows[$pid] ?? null;
-        if (!$p && !isset($this->pid_attempts[$pid])) {
-            $this->fetch_prows($pid);
-            $p = $this->prows[$pid] ?? null;
+        if (!$p) {
+            assert(!empty($this->pid_attempts) && ($this->pid_attempts[0] === -1 || in_array($pid, $this->pid_attempts)));
         }
         return $p;
     }
@@ -461,29 +460,31 @@ class AssignmentState extends MessageSet {
         return $this->prows;
     }
     /** @param int|list<int> $pids */
-    function fetch_prows($pids, $initial_load = false) {
+    function fetch_prows($pids) {
+        assert(empty($this->pid_attempts));
         $pids = is_array($pids) ? $pids : [$pids];
-        $fetch_pids = [];
-        foreach ($pids as $pid) {
-            if (!isset($this->prows[$pid]) && !isset($this->pid_attempts[$pid]))
-                $fetch_pids[] = $pid;
+        if (!empty($this->prows)) {
+            $pids = array_values(array_filter($pids, function ($p) {
+                return !isset($this->prows[$p]);
+            }));
         }
-        assert($initial_load || empty($fetch_pids));
-        if (!empty($fetch_pids)) {
-            foreach ($this->user->paper_set(["paperId" => $fetch_pids]) as $prow) {
+        if (!empty($pids)) {
+            foreach ($this->user->paper_set(["paperId" => $pids]) as $prow) {
                 $this->prows[$prow->paperId] = $prow;
             }
-            foreach ($fetch_pids as $pid) {
-                if (!isset($this->prows[$pid]))
-                    $this->pid_attempts[$pid] = true;
-            }
+        }
+        $this->pid_attempts = [0];
+        foreach ($pids as $pid) {
+            if (!isset($this->prows[$pid]))
+                $this->pid_attempts[] = $pid;
         }
     }
     function fetch_all_prows() {
-        assert(empty($this->prows));
+        assert(empty($this->prows) && empty($this->pid_attempts));
         foreach ($this->user->paper_set([]) as $prow) {
             $this->prows[$prow->paperId] = $prow;
         }
+        $this->pid_attempts = [-1];
     }
     /** @return PaperInfo */
     function placeholder_prow() {
@@ -1198,9 +1199,7 @@ class AssignmentSet {
      * @return $this */
     function enable_papers($paper) {
         assert(empty($this->assigners));
-        if ($this->enabled_pids === null) {
-            $this->enabled_pids = [];
-        }
+        $this->enabled_pids = $this->enabled_pids ?? [];
         foreach (is_array($paper) ? $paper : [$paper] as $p) {
             if ($p instanceof PaperInfo) {
                 $this->astate->add_prow($p);
@@ -1707,9 +1706,6 @@ class AssignmentSet {
             $pids = $npids;
         }
 
-        // fetch papers
-        $this->astate->fetch_prows($pids);
-
         // check conflicts and perform assignment
         $any_success = false;
         foreach ($pids as $p) {
@@ -1918,11 +1914,9 @@ class AssignmentSet {
         if ($this->request_count === 0) {
             $this->astate->set_landmark($csv->lineno());
             if ($nrows < $rowlimit) {
-                if (!empty($pids)) {
-                    $this->astate->fetch_prows(array_keys($pids), true);
-                }
+                $this->astate->fetch_prows(array_keys($pids));
             } else if (isset($this->enabled_pids)) {
-                $this->astate->fetch_prows(array_keys($this->enabled_pids), true);
+                $this->astate->fetch_prows(array_keys($this->enabled_pids));
             } else {
                 $this->astate->fetch_all_prows();
             }
