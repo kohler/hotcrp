@@ -1085,6 +1085,8 @@ class AssignmentSet {
     private $assigners = [];
     /** @var array<int,int> */
     private $assigners_pidhead = [];
+    /** @var int */
+    private $executed = 0;
     /** @var AssignmentState */
     private $astate;
     /** @var array<string,PaperSearch> */
@@ -1240,9 +1242,16 @@ class AssignmentSet {
     function message_set() {
         return $this->astate;
     }
-    /** @return list<MessageItem> */
-    function message_list() {
-        return $this->astate->message_list();
+    /** @param ?int $max
+     * @return list<MessageItem> */
+    function message_list($max = null) {
+        $ml = $this->astate->message_list();
+        if ($max !== null && count($ml) > $max) {
+            $elided = count($ml) - $max + 1;
+            array_splice($ml, $max - 1);
+            $ml[] = MessageItem::warning_note($this->conf->_("<0>...{} more messages elided", $elided));
+        }
+        return $ml;
     }
     /** @return bool */
     function has_message() {
@@ -1286,23 +1295,45 @@ class AssignmentSet {
     function full_feedback_text() {
         return $this->astate->full_feedback_text();
     }
+    /** @deprecated */
     function report_errors() {
-        if ($this->astate->has_message()) {
-            if ($this->astate->has_error()) {
-                $this->astate->prepend_item(MessageItem::error("<0>Changes not saved due to errors in the assignment"));
+        $this->feedback_msg(self::FEEDBACK_ASSIGN);
+    }
+    const FEEDBACK_ASSIGN = 0;
+    const FEEDBACK_CHANGE = 1;
+    /** @param int $type */
+    function feedback_msg($type) {
+        $fml = [];
+        if ($this->executed > 0) {
+            if ($type === self::FEEDBACK_CHANGE) {
+                $fml[] = MessageItem::success("<0>Changes saved");
+            } else {
+                $fml[] = MessageItem::success("<0>Assignments saved");
+                if ($this->conf->setting("pcrev_assigntime") === $this->executed) {
+                    $fml[] = MessageItem::inform("<5>You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", "template=newpcrev") . ".");
+                }
             }
-            $this->conf->feedback_msg($this->astate->message_list());
+        } else if ($this->astate->has_error()) {
+            if ($type === self::FEEDBACK_CHANGE) {
+                $fml[] = MessageItem::error("<0>Changes not saved; please correct these errors and try again");
+            } else {
+                $fml[] = MessageItem::error("<0>Assignments not saved due to errors");
+            }
         } else if (empty($this->assigners)) {
-            $this->conf->feedback_msg([new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE)]);
+            $fml[] = MessageItem::warning_note("<0>No changes");
         }
+        if ($this->astate->has_message()) {
+            $fml[] = $this->message_list(1000);
+        }
+        $this->conf->feedback_msg(...$fml);
     }
     /** @return JsonResult */
     function json_result() {
         if ($this->has_error()) {
             $status = $this->astate->has_user_error ? 200 : 403;
-            return new JsonResult($status, ["ok" => false, "message_list" => $this->message_list()]);
+            return new JsonResult($status, ["ok" => false, "message_list" => $this->message_list(3000)]);
         } else if ($this->astate->has_message()) {
-            return new JsonResult(["ok" => true, "message_list" => $this->message_list()]);
+            return new JsonResult(["ok" => true, "message_list" => $this->message_list(3000)]);
         } else {
             return new JsonResult(["ok" => true]);
         }
@@ -2065,6 +2096,8 @@ class AssignmentSet {
     }
 
     function print_unparse_display() {
+        $this->progress_phase = self::PROGPHASE_UNPARSE;
+        $this->notify_progress([0, null]);
         Assignment_PaperColumn::print_unparse_display($this->unparse_paper_column());
     }
 
@@ -2082,16 +2115,18 @@ class AssignmentSet {
         return $this->astate->prow($pid);
     }
 
-    /** @param bool $verbose
-     * @return bool */
-    function execute($verbose = false) {
-        if ($this->has_error() || empty($this->assigners)) {
-            $verbose && $this->report_errors();
-            return !$this->has_error(); // true means no errors
+    /** @return bool */
+    function execute() {
+        assert($this->executed === 0);
+        if ($this->has_error()) {
+            return false;
+        } else if (empty($this->assigners)) {
+            return true;
         }
 
         // mark activity now to avoid DB errors later
         $this->user->mark_activity();
+        $this->executed = Conf::$now;
 
         // create new contacts, collect pids
         $locks = ["ContactInfo" => "read", "Paper" => "read", "PaperConflict" => "read"];
@@ -2135,16 +2170,6 @@ class AssignmentSet {
             call_user_func($this->qe_stager, null);
         }
         $this->conf->qe("unlock tables");
-
-        // confirmation message
-        if ($verbose && $this->conf->setting("pcrev_assigntime") == Conf::$now) {
-            $this->conf->feedback_msg(
-                MessageItem::success("<0>Assignments saved"),
-                MessageItem::inform("<5>You may want to " . $this->conf->hotlink("send mail about the new assignments", "mail", "template=newpcrev") . ".")
-            );
-        } else if ($verbose) {
-            $this->conf->success_msg("<0>Assignments saved");
-        }
 
         // clean up
         foreach ($this->assigners as $assigner) {

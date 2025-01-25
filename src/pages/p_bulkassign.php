@@ -144,7 +144,9 @@ class BulkAssign_Page {
         $aset->enable_papers($ssel->selection());
         $this->saving = true;
         $aset->parse($content, $this->qreq->filename, $this->assignment_defaults());
-        return $aset->execute(true);
+        $aset->execute();
+        $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
+        return !$aset->has_error();
     }
 
     /** @return bool */
@@ -193,12 +195,11 @@ class BulkAssign_Page {
 
         if ($aset->has_error() || $aset->is_empty()) {
             $this->finish_progress();
-            $aset->report_errors();
+            $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
             return false;
         }
 
         $atype = $aset->type_description();
-        $this->generic_progress(AssignmentSet::PROGPHASE_UNPARSE, 0, null, "");
         echo '<h3>Proposed ', $atype ? $atype . " " : "", 'assignment</h3>';
         $this->conf->feedback_msg(
             new MessageItem(null, "Select “Apply changes” to make the checked assignments.", MessageSet::MARKED_NOTE)
@@ -231,15 +232,14 @@ class BulkAssign_Page {
             Ht::hidden("requestreview_subject", $this->qreq->requestreview_subject),
             Ht::hidden("requestreview_body", $this->qreq->requestreview_body);
 
-        $aset->report_errors();
+        $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         $aset->print_unparse_display();
         $this->finish_progress();
 
         echo Ht::actions([
             Ht::submit("Apply changes", ["class" => "btn-success"]),
             Ht::submit("cancel", "Cancel")
-        ], ["class" => "aab aabig"]),
-            "</form>\n";
+        ], ["class" => "aab aabig"]), "</form>\n";
         $this->qreq->print_footer();
         return true;
     }

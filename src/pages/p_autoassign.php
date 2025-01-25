@@ -686,7 +686,8 @@ class Autoassign_Page {
         $aset->set_override_conflicts(true);
         $aset->enable_papers($this->ssel->selection());
         $aset->parse($tok->outputData);
-        $aset->execute(true);
+        $aset->execute();
+        $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         $this->jobid = null;
         $this->conf->redirect_self($this->qreq, $this->qreq_parameters());
     }
@@ -709,7 +710,7 @@ class Autoassign_Page {
         $atype = $aset->type_description();
         echo '<h3 class="form-h">Proposed ', $atype ? "{$atype} " : "", 'assignment</h3>';
         echo Ht::feedback_msg($this->ms);
-        $aset->report_errors();
+        $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         $this->conf->feedback_msg(
             new MessageItem(null, "Select “Apply changes” to make the checked assignments.", MessageSet::MARKED_NOTE),
             MessageItem::inform("Reviewer preferences, if any, are shown as “P#”.")

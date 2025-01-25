@@ -105,20 +105,15 @@ class Revpref_ListAction extends ListAction {
         }
         $aset = (new AssignmentSet($user))->set_override_conflicts(true);
         $aset->parse($csvg->unparse());
-        $ok = $aset->execute();
+        $aset->execute();
         if ($qreq->ajax) {
             return $aset->json_result();
-        } else if ($ok) {
-            if ($aset->is_empty()) {
-                $aset->prepend_item(MessageItem::warning_note("<0>No changes"));
-            } else {
-                $aset->prepend_item(MessageItem::success("<0>Preference changes saved"));
-            }
-            $user->conf->feedback_msg($aset->message_list());
-            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
-        } else {
-            $user->conf->feedback_msg($aset->message_list());
         }
+        $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
+        if ($aset->has_error()) {
+            return;
+        }
+        return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
     }
     /** @return CsvParser */
     static function preference_file_csv($text, $filename) {
@@ -153,6 +148,7 @@ class Revpref_ListAction extends ListAction {
         } else {
             return MessageItem::error("<0>File upload required");
         }
+        $execute = $this->name === "applyuploadpref" || $this->name === "uploadpref";
 
         $aset = (new AssignmentSet($user))->set_override_conflicts(true);
         $aset->set_search_type("editpref");
@@ -162,20 +158,16 @@ class Revpref_ListAction extends ListAction {
             $aset->enable_papers($ssel->selection());
         }
         $aset->parse($csv);
-        if ($aset->is_empty()) {
-            if ($aset->has_error()) {
-                $aset->prepend_item(MessageItem::error("<0>Changes not saved; please correct these errors and try again"));
-            } else {
-                $aset->prepend_item(MessageItem::warning_note("<0>No changes"));
-            }
-            $conf->feedback_msg($aset->message_list());
-            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
-        } else if ($this->name === "applyuploadpref" || $this->name === "uploadpref") {
-            $aset->execute(true);
+        if ($execute) {
+            $aset->execute();
+        }
+        if ($execute || $aset->is_empty()) {
+            $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
             return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
         }
+
         $qreq->print_header("Review preferences", "revpref");
-        $conf->feedback_msg($aset->message_list());
+        $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
 
         echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]), ["class" => "differs need-unload-protection"]),
             Ht::hidden("fn", "applyuploadpref"),

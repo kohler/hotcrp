@@ -63,7 +63,8 @@ class Assign_ListAction extends ListAction {
         $assignset->set_override_conflicts(true);
         $assignset->enable_papers($ssel->selection());
         $assignset->parse($text);
-        $assignset->execute(true);
+        $assignset->execute();
+        $assignset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         return null;
     }
 }

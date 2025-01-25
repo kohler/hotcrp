@@ -79,7 +79,8 @@ class ManualAssign_Page {
             }
             $aset = new AssignmentSet($this->viewer);
             $aset->parse($text);
-            $aset->execute(true);
+            $aset->execute();
+            $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
             if ($aset->has_error()) {
                 error_log($aset->full_feedback_text());
             }
