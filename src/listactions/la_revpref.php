@@ -173,25 +173,24 @@ class Revpref_ListAction extends ListAction {
         } else if ($this->name === "applyuploadpref" || $this->name === "uploadpref") {
             $aset->execute(true);
             return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
-        } else {
-            $qreq->print_header("Review preferences", "revpref");
-            $conf->feedback_msg($aset->message_list());
-
-            echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]), ["class" => "differs need-unload-protection"]),
-                Ht::hidden("fn", "applyuploadpref"),
-                Ht::hidden("file", $aset->make_acsv()->unparse(), ["data-default-value" => ""]),
-                Ht::hidden("filename", $csv->filename());
-
-            echo '<h3>Proposed preference assignment</h3>';
-            echo '<p>The uploaded file requests the following preference changes.</p>';
-            $aset->print_unparse_display();
-
-            echo Ht::actions([
-                Ht::submit("Apply changes", ["class" => "btn-success"]),
-                Ht::submit("cancel", "Cancel", ["formnovalidate" => true])
-            ], ["class" => "aab aabig"]), "</form>\n";
-            $qreq->print_footer();
-            exit(0);
         }
+        $qreq->print_header("Review preferences", "revpref");
+        $conf->feedback_msg($aset->message_list());
+
+        echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]), ["class" => "differs need-unload-protection"]),
+            Ht::hidden("fn", "applyuploadpref"),
+            Ht::hidden("file", $aset->make_acsv()->unparse(), ["data-default-value" => ""]),
+            Ht::hidden("filename", $csv->filename());
+
+        echo '<h3>Proposed preference assignment</h3>';
+        echo '<p>The uploaded file requests the following preference changes.</p>';
+        $aset->print_unparse_display();
+
+        echo Ht::actions([
+            Ht::submit("Apply changes", ["class" => "btn-success"]),
+            Ht::submit("cancel", "Cancel", ["formnovalidate" => true])
+        ], ["class" => "aab aabig"]), "</form>\n";
+        $qreq->print_footer();
+        exit(0);
     }
 }
