@@ -1029,9 +1029,9 @@ class Quantile_Fexpr extends Aggregate_Fexpr {
     }
     function typecheck(Formula $formula) {
         if ($this->op !== "median"
-            && $this->args[1]->inferred_index() === 0
-            && $this->args[0]->inferred_index() !== 0) {
-            $this->varg = 0;
+            && $this->args[0]->inferred_index() === 0
+            && $this->args[1]->inferred_index() !== 0) {
+            $this->varg = 1;
         }
         return $this->typecheck_arguments($formula, true)
             && $this->typecheck_index($formula);
