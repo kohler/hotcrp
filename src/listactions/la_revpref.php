@@ -32,6 +32,7 @@ class Revpref_ListAction extends ListAction {
             return $user->conf->pc_member_by_email($reviewer);
         }
     }
+
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         // maybe download preferences for someone else
         $reviewer = self::lookup_reviewer($user, $qreq->reviewer);
@@ -53,6 +54,7 @@ class Revpref_ListAction extends ListAction {
             return parent::run($user, $qreq, $ssel);
         }
     }
+
     function run_get(Contact $user, Qrequest $qreq, SearchSelection $ssel,
                      Contact $reviewer, $extended) {
         $not_me = $user->contactId !== $reviewer->contactId;
@@ -115,11 +117,32 @@ class Revpref_ListAction extends ListAction {
         }
         return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
     }
-    /** @return CsvParser */
-    static function preference_file_csv($text, $filename) {
-        $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
+
+    function run_uploadpref(Contact $user, Qrequest $qreq, SearchSelection $ssel,
+                            Contact $reviewer) {
+        $reviewer_arg = $user->contactId === $reviewer->contactId ? null : $reviewer->email;
+        $conf = $user->conf;
+        if ($qreq->cancel) {
+            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
+        }
+
+        if (($qf = $qreq->file("fileupload"))) {
+            $qf = $qf->content_or_docstore("prefassign-%s.csv", $user->conf);
+        } else if ($qreq->data) {
+            $qf = QrequestFile::make_string($qreq->data, $qreq->filename);
+        } else if (($f = Filer::check_docstore_tempfile($qreq->data_source, "prefassign-%s.csv", $user->conf))) {
+            $qf = QrequestFile::make_stream($f, $qreq->filename);
+        } else {
+            return MessageItem::error("<0>File upload required");
+        }
+        if (!$qf) {
+            return MessageItem::error("<0>Uploaded file too big to process");
+        }
+        $qf->convert_to_utf8();
+
+        $csv = new CsvParser($qf->stream ?? $qf->content, CsvParser::TYPE_GUESS);
         $csv->add_comment_prefix("#")->add_comment_prefix("==-== ");
-        $csv->set_filename($filename);
+        $csv->set_filename($qf->name);
         $line = $csv->peek_list();
         if ($line === null) {
             // do nothing
@@ -133,23 +156,8 @@ class Revpref_ListAction extends ListAction {
                 $csv->set_header(["paper", "title", "preference"]);
             }
         }
-        return $csv;
-    }
-    function run_uploadpref(Contact $user, Qrequest $qreq, SearchSelection $ssel,
-                            Contact $reviewer) {
-        $reviewer_arg = $user->contactId === $reviewer->contactId ? null : $reviewer->email;
-        $conf = $user->conf;
-        if ($qreq->cancel) {
-            return new Redirection($user->conf->selfurl($qreq, null, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
-        } else if ($qreq->file) {
-            $csv = self::preference_file_csv($qreq->file, $qreq->filename);
-        } else if ($qreq->has_file("fileupload")) {
-            $csv = self::preference_file_csv($qreq->file_content("fileupload"), $qreq->file_filename("fileupload"));
-        } else {
-            return MessageItem::error("<0>File upload required");
-        }
-        $execute = $this->name === "applyuploadpref" || $this->name === "uploadpref";
 
+        $execute = $this->name === "applyuploadpref" || $this->name === "uploadpref";
         $aset = (new AssignmentSet($user))->set_override_conflicts(true);
         $aset->set_search_type("editpref");
         $aset->set_reviewer($reviewer);
@@ -170,9 +178,15 @@ class Revpref_ListAction extends ListAction {
         $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
 
         echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]), ["class" => "differs need-unload-protection"]),
-            Ht::hidden("fn", "applyuploadpref"),
-            Ht::hidden("file", $aset->make_acsv()->unparse(), ["data-default-value" => ""]),
-            Ht::hidden("filename", $csv->filename());
+            Ht::hidden("fn", "applyuploadpref");
+        if ($aset->assignment_count() < 5000) {
+            echo Ht::hidden("data", $aset->make_acsv()->unparse(), ["data-default-value" => ""]);
+        } else if (is_string($qf->content)) {
+            echo Ht::hidden("data", $qf->content, ["data-default-value" => ""]);
+        } else {
+            echo Ht::hidden("data_source", $qf->docstore_tmp_name, ["data-default-value" => ""]);
+        }
+        echo Ht::hidden("filename", $csv->filename());
 
         echo '<h3>Proposed preference assignment</h3>';
         echo '<p>The uploaded file requests the following preference changes.</p>';

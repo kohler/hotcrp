@@ -75,7 +75,7 @@ class BulkAssign_Page {
         } else if ($phase === AssignmentSet::PROGPHASE_REALIZE) {
             $text = sprintf("Computing assignments (%.0f%% done)", $progpct);
         } else if ($phase === AssignmentSet::PROGPHASE_UNPARSE) {
-            $text = "Completing assignments";
+            $text = "Rendering assignments";
         } else if ($phase === AssignmentSet::PROGPHASE_SAVE) {
             $text = sprintf("Saving assignments (%.0f%% done)", $progpct);
         } else {
@@ -122,12 +122,8 @@ class BulkAssign_Page {
     function complete_assignment($callback) {
         if (isset($this->qreq->data)) {
             $content = $this->qreq->data;
-        } else if (isset($this->qreq->data_source)
-                   && preg_match('/\Abulkassign-\w+\.csv\z/', $this->qreq->data_source)
-                   && ($tmpdir = Filer::docstore_tempdir($this->conf))) {
-            $content = @fopen($tmpdir . $this->qreq->data_source, "rb");
         } else {
-            $content = null;
+            $content = Filer::check_docstore_tempfile($this->qreq->data_source, "bulkassign-%s.csv", $this->conf);
         }
         if (!$content) {
             return false;
@@ -155,27 +151,16 @@ class BulkAssign_Page {
         while (@ob_end_flush()) {
         }
 
-        $qf = $this->qreq->file("file");
-        $filename = $qf ? $qf->name : "";
-        $content_tmpfile = null;
-        if (!$qf) {
-            $content = $this->qreq->data;
-        } else if ($qf->content !== null || ($qf->size ?? 0) < (4 << 20)) {
-            $content = $qf->content();
+        if (($qf = $this->qreq->file("file"))) {
+            $qf = $qf->content_or_docstore("bulkassign-%s.csv", $this->conf);
         } else {
-            $tfinfo = Filer::docstore_tempfile("bulkassign-", ".csv", $this->conf);
-            if ($tfinfo === null
-                || !@move_uploaded_file($qf->tmp_name, $tfinfo[0])) {
-                $this->conf->error_msg("<0>Uploaded file too big to process");
-                return false;
-            }
-            $content = @fopen($tfinfo[0], "rb");
-            if ($content === false) {
-                $this->conf->error_msg("<0>Internal error: Could not read uploaded file");
-                return false;
-            }
-            $content_tmpfile = substr($tfinfo[0], strrpos($tfinfo[0], "/") + 1);
+            $qf = QrequestFile::make_string($this->qreq->data, "");
         }
+        if (!$qf) {
+            $this->conf->error_msg("<0>Uploaded file too big to process");
+            return false;
+        }
+        $qf->convert_to_utf8();
 
         $aset = new AssignmentSet($this->user);
         $aset->set_override_conflicts(true);
@@ -185,13 +170,8 @@ class BulkAssign_Page {
         $aset->set_csv_context(true);
         $aset->add_progress_function([$this, "aset_progress"]);
         $defaults = $this->assignment_defaults();
-        if (is_string($content)) {
-            $content = convert_to_utf8($content);
-        } else {
-            UTF8ConversionFilter::append($content);
-        }
         $this->saving = false;
-        $aset->parse($content, $filename, $defaults);
+        $aset->parse($qf->stream ?? $qf->content, $qf->name, $defaults);
 
         if ($aset->has_error() || $aset->is_empty()) {
             $this->finish_progress();
@@ -221,12 +201,12 @@ class BulkAssign_Page {
             ])),
             Ht::hidden("default_action", $defaults["action"] ?? "guess"),
             Ht::hidden("rev_round", $defaults["round"]);
-        if (is_string($content)) {
-            echo Ht::hidden("data", $content);
+        if (is_string($qf->content)) {
+            echo Ht::hidden("data", $qf->content);
         } else {
-            echo Ht::hidden("data_source", $content_tmpfile);
+            echo Ht::hidden("data_source", $qf->docstore_tmp_name);
         }
-        echo Ht::hidden("filename", $filename),
+        echo Ht::hidden("filename", $qf->name),
             Ht::hidden("assignment_size_estimate", max($aset->assignment_count(), $aset->request_count())),
             Ht::hidden("requestreview_notify", $this->qreq->requestreview_notify),
             Ht::hidden("requestreview_subject", $this->qreq->requestreview_subject),

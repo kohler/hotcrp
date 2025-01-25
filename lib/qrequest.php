@@ -839,6 +839,10 @@ class QrequestFile {
     public $content;
     /** @var int */
     public $error;
+    /** @var ?resource */
+    public $stream;
+    /** @var string */
+    public $docstore_tmp_name;
 
     /** @param array{name?:string,type?:string,size?:?int,tmp_name?:?string,content?:?string,error?:int} $finfo
      * @return QrequestFile */
@@ -862,8 +866,23 @@ class QrequestFile {
         $qf->name = $filename ?? "__content__";
         $qf->type = $mimetype ?? "application/octet-stream";
         $qf->size = strlen($content);
-        $qf->tmp_name = null;
         $qf->content = $content;
+        $qf->error = 0;
+        return $qf;
+    }
+
+    /** @param resource $stream
+     * @param ?string $filename
+     * @param ?string $mimetype
+     * @return QrequestFile */
+    static function make_stream($stream, $filename = null, $mimetype = null) {
+        $qf = new QrequestFile;
+        $qf->name = $filename ?? "__content__";
+        $qf->type = $mimetype ?? "application/octet-stream";
+        if (($stat = @fstat($stream)) && isset($stat["size"])) {
+            $qf->size = $stat["size"];
+        }
+        $qf->stream = $stream;
         $qf->error = 0;
         return $qf;
     }
@@ -880,5 +899,58 @@ class QrequestFile {
             $data = @file_get_contents($this->tmp_name, false, null, $offset, $maxlen);
         }
         return $data;
+    }
+
+    /** @return bool */
+    function prepare_content() {
+        if ($this->content !== null || $this->stream !== null) {
+            return true;
+        }
+        if (($stream = @fopen($this->tmp_name, "rb"))) {
+            $this->stream = $stream;
+            return true;
+        }
+        return false;
+    }
+
+    /** @param string $template
+     * @return ?QrequestFile */
+    function content_or_docstore($template, ?Conf $conf = null) {
+        if ($this->content !== null || $this->stream !== null) {
+            return $this;
+        }
+        $max = Filer::docstore_tempdir($conf) ? 4 << 20 : 80 << 20;
+        if (($this->size ?? 0) < $max) {
+            $t = @file_get_contents($this->tmp_name);
+            if ($t === false) {
+                return null;
+            }
+            $qf = clone $this;
+            $qf->content = $t;
+            $qf->size = strlen($t);
+            return $qf;
+        }
+        $tfinfo = Filer::docstore_tempfile($template, $conf);
+        if ($tfinfo === null) {
+            return null;
+        }
+        if (@move_uploaded_file($this->tmp_name, $tfinfo[0])
+            && ($stream = @fopen($tfinfo[0], "rb"))) {
+            $this->tmp_name = $tfinfo[0];
+            $this->stream = $stream;
+            $this->docstore_tmp_name = substr($tfinfo[0], strrpos($tfinfo[0], "/") + 1);
+        }
+        fclose($tfinfo[1]);
+        return $this->stream ? $this : null;
+    }
+
+    function convert_to_utf8() {
+        assert($this->content !== null || $this->stream !== null);
+        if ($this->content !== null) {
+            $this->content = convert_to_utf8($this->content);
+            $this->size = strlen($this->content);
+        } else {
+            UTF8ConversionFilter::append($this->stream);
+        }
     }
 }

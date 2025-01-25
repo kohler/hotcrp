@@ -139,10 +139,10 @@ class Filer {
         return null;
     }
 
-    /** @param string $prefix
-     * @param string $suffix
+    /** @param string $template
      * @return ?array{non-empty-string,resource} */
-    static function docstore_tempfile($prefix, $suffix, ?Conf $conf = null) {
+    static function docstore_tempfile($template, ?Conf $conf = null) {
+        assert(preg_match('/\A[-_A-Za-z0-9]+%s(?:\.[A-Za-z0-9]+|)\z/', $template));
         $tmpdir = self::docstore_tempdir($conf);
         if (!$tmpdir) {
             return null;
@@ -153,10 +153,24 @@ class Filer {
             } catch (Exception $e) {
                 $middle = sprintf("x%09d", mt_rand(0, 999999999));
             }
-            $fname = $tmpdir . $prefix . $middle . $suffix;
+            $fname = $tmpdir . str_replace("%s", $middle, $template);
             if (($f = @fopen($fname, "x+b"))) {
                 return [$fname, $f];
             }
+        }
+        return null;
+    }
+
+    /** @param string $name
+     * @param string $template
+     * @return ?resource */
+    static function check_docstore_tempfile($name, $template, ?Conf $conf = null) {
+        if ($name !== null
+            && preg_match('/\A[-_A-Za-z0-9]+%s(?:\.[A-Za-z0-9]+|)\z/', $template)
+            && preg_match('/\A' . str_replace(".", '\\.', str_replace("%s", '\w{10,}', $template)) . '\z/', $name)
+            && ($tmpdir = Filer::docstore_tempdir($conf))
+            && ($f = @fopen($tmpdir . $name, "rb"))) {
+            return $f;
         }
         return null;
     }
