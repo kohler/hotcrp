@@ -117,8 +117,7 @@ class Assign_Page {
         if ($this->qreq->ajax) {
             json_exit($aset->json_result());
         }
-        $ok && $aset->prepend_item(MessageItem::success("<0>Assignments saved"));
-        $this->conf->feedback_msg($aset->message_list());
+        $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         $ok && $this->conf->redirect_self($this->qreq);
     }
 

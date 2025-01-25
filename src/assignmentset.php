@@ -1279,7 +1279,8 @@ class AssignmentSet {
         $this->astate->msg_near($this->astate->landmark(), $msg, 1);
     }
     /** @param MessageItem $mi
-     * @return void */
+     * @return void
+     * @deprecated */
     function prepend_item($mi) {
         $this->astate->prepend_item($mi);
     }

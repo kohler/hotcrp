@@ -28,10 +28,11 @@ class ReviewPrefs_Page {
 
         $aset = (new AssignmentSet($user))->set_override_conflicts(true);
         $aset->parse($csvg->unparse());
-        $ok = $aset->execute();
-        $ok && $aset->prepend_item(MessageItem::success("<0>Preferences saved"));
-        $user->conf->feedback_msg($aset->message_list());
-        $ok && $user->conf->redirect_self($qreq);
+        $aset->execute();
+        $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
+        if (!$aset->has_error()) {
+            $user->conf->redirect_self($qreq);
+        }
     }
 
     /** @param PaperList $pl

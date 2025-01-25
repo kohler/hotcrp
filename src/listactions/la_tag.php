@@ -106,22 +106,12 @@ class Tag_ListAction extends ListAction {
                 $assignset->error($tagger->error_ftext());
             }
         }
-        if ($assignset->is_empty() && $assignset->has_message()) {
-            $assignset->prepend_item(MessageItem::error("<0>Changes not saved due to errors"));
-        } else if ($assignset->is_empty()) {
-            $assignset->prepend_item(MessageItem::warning_note("<0>No changes"));
-        } else if ($assignset->has_message()) {
-            $assignset->prepend_item(MessageItem::marked_note("<0>Some tag assignments ignored because of errors"));
-        } else {
-            $assignset->prepend_item(MessageItem::success("<0>Tag changes saved"));
-        }
-        $success = $assignset->execute();
+        $assignset->execute();
         if ($qreq->ajax) {
-            json_exit(["ok" => $success, "message_list" => $assignset->message_list()]);
-        } else {
-            $user->conf->feedback_msg($assignset->message_list());
-            $args = ["atab" => "tag"] + $qreq->subset_as_array("tag", "tagfn", "tagcr_method", "tagcr_source", "tagcr_gapless");
-            return new Redirection($user->conf->selfurl($qreq, $args, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
+            return $assignset->json_result();
         }
+        $assignset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
+        $args = ["atab" => "tag"] + $qreq->subset_as_array("tag", "tagfn", "tagcr_method", "tagcr_source", "tagcr_gapless");
+        return new Redirection($user->conf->selfurl($qreq, $args, Conf::HOTURL_RAW | Conf::HOTURL_REDIRECTABLE));
     }
 }
