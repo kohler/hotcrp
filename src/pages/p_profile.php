@@ -270,16 +270,15 @@ class Profile_Page {
 
         $csv = new CsvParser($text);
         $csv->set_filename($filename);
-        $csv->set_comment_chars("#%");
-        if (($line = $csv->next_list())) {
+        $csv->add_comment_prefix("#")->add_comment_prefix("%");
+        if (($line = $csv->peek_list())) {
             if (preg_grep('/\A(?:email|user)\z/i', $line)) {
                 $csv->set_header($line);
+                $csv->next_list();
             } else if (count($line) == 1) {
                 $csv->set_header(["user"]);
-                $csv->unshift($line);
             } else {
                 // interpolate a likely header
-                $csv->unshift($line);
                 $hdr = [];
                 for ($i = 0; $i < count($line); ++$i) {
                     if (validate_email($line[$i])

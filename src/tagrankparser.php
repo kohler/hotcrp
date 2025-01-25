@@ -22,21 +22,22 @@ class TagRankParser {
             $csv = $text;
         } else {
             $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
-            $csv->set_comment_chars("%#");
+            $csv->add_comment_prefix("%")->add_comment_prefix("#");
             $csv->set_filename($filename);
         }
         $csva = [["paper", "action", "tag", "landmark", "message"]];
 
         if (!$csv->header()) {
-            if (!($req = $csv->next_list())) {
+            if (!($req = $csv->peek_list())) {
                 $csva[] = ["", "error", "", $csv->filename(), "Empty file."];
                 return $csva;
             }
-            if (!preg_grep('/\A(?:paper|pid|tag|index|action)\z/', $req)) {
-                $csv->unshift($req);
-                $req = ["action", "paper"];
+            if (preg_grep('/\A(?:paper|pid|tag|index|action)\z/', $req)) {
+                $csv->set_header($req);
+                $csv->next_list();
+            } else {
+                $csv->set_header(["action", "paper"]);
             }
-            $csv->set_header($req);
         }
         $csv->add_synonym("paper", "pid", "paperid", "id");
         $csv->add_synonym("action", "tag", "index");

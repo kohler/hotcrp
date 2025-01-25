@@ -35,7 +35,7 @@ class SparsifyPref_Batch {
         }
 
         $this->csvp = $csvp = new CsvParser($f);
-        $req = $csvp->next_list();
+        $req = $csvp->peek_list();
         if (empty($req)) {
             throw new CommandLineException("Empty file");
         }
@@ -43,6 +43,7 @@ class SparsifyPref_Batch {
         foreach ($req as $i => $t) {
             if (in_array($t, ["pid", "paperid", "paper_id", "paper", "action", "email", "user", "preference", "pref", "revpref"])) {
                 $csvp->set_header($req);
+                $csvp->next_list();
                 break;
             } else if (ctype_digit($t) && $epid === null) {
                 $epid = $i;
@@ -69,7 +70,6 @@ class SparsifyPref_Batch {
                 $hdr[$eaction] = "action";
             }
             $csvp->set_header($hdr);
-            $csvp->unshift($req);
         }
 
         $csvp->add_synonym("paper", "pid", "paperid", "paper_id");

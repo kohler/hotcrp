@@ -122,23 +122,20 @@ class Revpref_ListAction extends ListAction {
     }
     /** @return CsvParser */
     static function preference_file_csv($text, $filename) {
-        $text = preg_replace('/^==-== /m', '#', cleannl($text));
         $csv = new CsvParser($text, CsvParser::TYPE_GUESS);
-        $csv->set_comment_chars("#");
+        $csv->add_comment_prefix("#")->add_comment_prefix("==-== ");
         $csv->set_filename($filename);
-        $line = $csv->next_list();
-        if ($line !== null) {
-            if (preg_grep('/\A(?:paper|pid|paper[\s_]*id|id)\z/i', $line)) {
-                $csv->set_header($line);
+        $line = $csv->peek_list();
+        if ($line === null) {
+            // do nothing
+        } else if (preg_grep('/\A(?:paper|pid|paper[\s_]*id|id)\z/i', $line)) {
+            $csv->set_header($line);
+            $csv->next_list();
+        } else if (count($line) >= 2 && ctype_digit($line[0])) {
+            if (preg_match('/\A\s*\d+\s*[XYZ]?\s*\z/i', $line[1])) {
+                $csv->set_header(["paper", "preference"]);
             } else {
-                if (count($line) >= 2 && ctype_digit($line[0])) {
-                    if (preg_match('/\A\s*\d+\s*[XYZ]?\s*\z/i', $line[1])) {
-                        $csv->set_header(["paper", "preference"]);
-                    } else {
-                        $csv->set_header(["paper", "title", "preference"]);
-                    }
-                }
-                $csv->unshift($line);
+                $csv->set_header(["paper", "title", "preference"]);
             }
         }
         return $csv;

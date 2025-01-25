@@ -98,6 +98,15 @@ class CsvRow implements ArrayAccess, IteratorAggregate, Countable, JsonSerializa
     }
 }
 
+class CsvParserCommentPrefix {
+    /** @var string */
+    public $prefix;
+    /** @var ?callable(string,CsvParser) */
+    public $f;
+    /** @var ?CsvParserCommentPrefix */
+    public $next;
+}
+
 class CsvParser implements Iterator {
     /** @var list<string|list<string>> */
     private $lines;
@@ -123,10 +132,8 @@ class CsvParser implements Iterator {
     private $xheader = [];
     /** @var array<string,int> */
     private $hmap = [];
-    /** @var ?list<string> */
-    private $comment_start;
-    /** @var callable(string,CsvParser) */
-    private $comment_function;
+    /** @var ?CsvParserCommentPrefix */
+    private $comment_prefix;
     /** @var ?array<int,int> */
     private $synonym;
     /** @var ?string */
@@ -305,24 +312,22 @@ class CsvParser implements Iterator {
         return $this;
     }
 
-    /** @param string $s
+    /** @param string $prefix
+     * @param ?callable(string,CsvParser) $f
      * @return $this */
-    function set_comment_chars($s) {
-        $this->comment_start = empty($s) ? null : str_split($s);
-        return $this;
-    }
-
-    /** @param string ...$s
-     * @return $this */
-    function set_comment_start(...$s) {
-        $this->comment_start = empty($s) ? null : $s;
-        return $this;
-    }
-
-    /** @param callable(string,CsvParser) $f
-     * @return $this */
-    function set_comment_function($f) {
-        $this->comment_function = $f;
+    function add_comment_prefix($prefix, $f = null) {
+        $cpcf = new CsvParserCommentPrefix;
+        $cpcf->prefix = $prefix;
+        $cpcf->f = $f;
+        if (!$this->comment_prefix) {
+            $this->comment_prefix = $cpcf;
+        } else {
+            $prev = $this->comment_prefix;
+            while ($prev->next) {
+                $prev = $prev->next;
+            }
+            $prev->next = $cpcf;
+        }
         return $this;
     }
 
@@ -542,21 +547,16 @@ class CsvParser implements Iterator {
                 return;
             } else if ($line === "" || $line[0] === "\n" || $line[0] === "\r") {
                 // skip
-            } else if ($this->comment_start === null) {
-                return;
             } else {
-                $comment = false;
-                foreach ($this->comment_start as $s) {
-                    if (str_starts_with($line, $s)) {
-                        $comment = true;
-                        break;
-                    }
+                $cpcf = $this->comment_prefix;
+                while ($cpcf && !str_starts_with($line, $cpcf->prefix)) {
+                    $cpcf = $cpcf->next;
                 }
-                if (!$comment) {
+                if (!$cpcf) {
                     return;
                 }
-                if ($this->comment_function) {
-                    call_user_func($this->comment_function, $line, $this);
+                if ($cpcf->f) {
+                    call_user_func($cpcf->f, $line, $this);
                 }
             }
             ++$this->lpos;
@@ -589,6 +589,18 @@ class CsvParser implements Iterator {
         return $a;
     }
 
+    /** @return ?list<string> */
+    function peek_list() {
+        $xlpos = $this->lpos;
+        $xbpos = $this->bpos;
+        $xloff = $this->loff;
+        $line = $this->next_list();
+        assert($this->loff === $xloff);
+        $this->lpos = $xlpos;
+        $this->bpos = $xbpos;
+        return $line;
+    }
+
     /** @return ?CsvRow */
     function next_row() {
         $a = $this->next_list();
@@ -601,7 +613,8 @@ class CsvParser implements Iterator {
         return $a !== null ? $this->as_map($a) : null;
     }
 
-    /** @param null|false|string|list<string> $line */
+    /** @param null|false|string|list<string> $line
+     * @deprecated */
     function unshift($line) {
         if ($line === null || $line === false) {
             return;

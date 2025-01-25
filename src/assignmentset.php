@@ -1463,27 +1463,25 @@ class AssignmentSet {
         $def_action = $this->astate->defaults["action"] ?? null;
 
         if (!$csv->header()) {
-            if (!($req = $csv->next_list())) {
+            if (!($req = $csv->peek_list())) {
                 $this->msg_near(null, "<0>Empty file", 2);
                 return false;
             }
             if (self::is_csv_header($req)) {
                 // found header
+                $csv->set_header($req);
+                $csv->next_list();
             } else if (!$def_action) {
                 $this->msg_near(null, "<0>CSV header required", 2);
                 $this->msg_near(null, "<5>CSV assignment files must define ‘<code>action</code>’ and ‘<code>paper</code>’ columns. Add a CSV header line to tell me what the columns mean.", MessageSet::INFORM);
                 return false;
+            } else if ($def_action === "settag") {
+                $csv->set_header(["paper", "tag"]);
+            } else if ($def_action === "preference") {
+                $csv->set_header(["paper", "user", "preference"]);
             } else {
-                $csv->unshift($req);
-                if ($def_action === "settag") {
-                    $req = ["paper", "tag"];
-                } else if ($def_action === "preference") {
-                    $req = ["paper", "user", "preference"];
-                } else {
-                    $req = ["paper", "user"];
-                }
+                $csv->set_header(["paper", "user"]);
             }
-            $csv->set_header($req);
         }
 
         foreach ([["action", "assignment", "type"],
@@ -1788,8 +1786,7 @@ class AssignmentSet {
 
     /** @return CsvParser */
     function make_csv_parser() {
-        return (new CsvParser)->set_comment_start("###")
-            ->set_comment_function([$this, "parse_csv_comment"]);
+        return (new CsvParser)->add_comment_prefix("###", [$this, "parse_csv_comment"]);
     }
 
     /** @param CsvParser|string|list<string>|resource $text
@@ -2120,7 +2117,7 @@ class AssignmentSet {
         // execute assignments
         $tables = [];
         foreach ($locks as $t => $type) {
-            $tables[] = "$t $type";
+            $tables[] = "{$t} {$type}";
         }
         $this->conf->qe("lock tables " . join(", ", $tables));
 

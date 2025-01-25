@@ -80,7 +80,7 @@ class SaveUsers_Batch {
 
     function parse_csv($str) {
         $csv = new CsvParser(cleannl(convert_to_utf8($str)));
-        $csv->set_comment_start("###");
+        $csv->add_comment_prefix("###");
         $line = $csv->next_list();
         if ($line !== null && preg_grep('/\Aemail\z/i', $line)) {
             $csv->set_header($line);
