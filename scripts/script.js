@@ -11069,7 +11069,6 @@ function assignment_selector_model(assignable) {
 
 function render_assignment_selector() {
     const prow = prownear(this),
-        rts = ["none", "primary", "secondary", "pc", "meta", "conflict"],
         asstext = this.getAttribute("data-assignment"),
         words = asstext.split(/\s+/),
         rt = review_types.parse(words[1]);
