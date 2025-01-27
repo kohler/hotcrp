@@ -886,7 +886,7 @@ abstract class Aggregate_Fexpr extends Fexpr {
         if (!str_starts_with($arg, ".")) {
             return false;
         }
-        if ($ff->index_type !== 0) {
+        if (($ff->index_type ?? 0) !== 0) {
             $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "<0>Collection already specified");
             return true;
         }
@@ -1936,6 +1936,7 @@ class Formula implements JsonSerializable {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->_parse = null;
+        $this->_extractorf = $this->_combinerf = null;
     }
 
     /** @param int $pos1
@@ -2825,19 +2826,19 @@ class Formula implements JsonSerializable {
         if ($this->_extractorf !== null) {
             return $this->_extractorf !== false;
         } else if (!$this->check()) {
+            error_log("FUCK");
             return false;
         }
-        $this->check();
-        $this->_extractorf = $this->_combinerf = false;
-        if ($this->_parse) {
-            $state = FormulaCompiler::make_combiner($this->user);
-            $expr = $this->_parse->fexpr->compile($state);
-            if (!$state->term_error && !$state->term_compiler->term_error) {
-                $this->_extractorf = self::compile_body($this->user, $state->term_compiler, "[" . join(",", $state->term_compiler->term_list) . "]", 0);
-                $this->_combinerf = self::compile_body(null, $state, $expr, 0);
-            }
+        $state = FormulaCompiler::make_combiner($this->user);
+        $expr = $this->_parse->fexpr->compile($state);
+        if (!$state->term_error && !$state->term_compiler->term_error) {
+            $this->_extractorf = self::compile_body($this->user, $state->term_compiler, "[" . join(",", $state->term_compiler->term_list) . "]", 0);
+            $this->_combinerf = self::compile_body(null, $state, $expr, 0);
+            return true;
+        } else {
+            $this->_extractorf = $this->_combinerf = false;
+            return false;
         }
-        return $this->_extractorf !== false;
     }
 
     function compile_extractor_function() {
