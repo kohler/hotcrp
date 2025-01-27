@@ -2826,7 +2826,6 @@ class Formula implements JsonSerializable {
         if ($this->_extractorf !== null) {
             return $this->_extractorf !== false;
         } else if (!$this->check()) {
-            error_log("FUCK");
             return false;
         }
         $state = FormulaCompiler::make_combiner($this->user);
