@@ -57,8 +57,8 @@ class Graph_Formula_Page {
 
         if ($fg->fx_format() === Fexpr::FSEARCH) {
             $h2 = "";
-        } else if ($fg->type === FormulaGraph::RAWCDF) {
-            $h2 = "Cumulative count of {$xhtml}";
+        } else if ($fg->type === FormulaGraph::OGIVE) {
+            $h2 = "Cumulative frequency of {$xhtml}";
         } else if ($fg->type & FormulaGraph::CDF) {
             $h2 = "{$xhtml} CDF";
         } else if (($fg->type & FormulaGraph::BARCHART)

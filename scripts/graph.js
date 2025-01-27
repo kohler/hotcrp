@@ -412,10 +412,6 @@ function proj1(d) {
     return d[1];
 }
 
-function proj2(d) {
-    return d[2];
-}
-
 function pid_sorter(a, b) {
     if (typeof a === "object") {
         a = a.id || a[2];
@@ -436,7 +432,7 @@ function render_pid_p(ps, cc) {
         if (typeof p === "object") {
             if (p.id) {
                 rest = p.rest;
-                cx = p.color_classes;
+                cx = p.cc;
                 p = p.id;
             } else {
                 cx = p[3];
@@ -669,44 +665,43 @@ function graph_cdf(selector, args) {
 
 
 function procrastination_filter(revdata) {
-    var args = {type: "cdf", data: {}, x: {}, y: {}, tooltip_class: "graphtip dark"};
+    const args = {type: "cdf", data: {}, x: {}, y: {}, tooltip_class: "graphtip dark"};
 
     // collect data
-    var alldata = [], d, i, cid, u;
-    for (cid in revdata.reviews) {
-        d = {d: revdata.reviews[cid], className: "gcdf-many"};
-        if ((u = revdata.users[cid])) {
-            if (u.name)
-                d.label = u.name;
-            if (u.email)
-                d.click = make_reviewer_clicker(u.email);
-        }
+    const alldata = [];
+    for (const cid in revdata.reviews) {
+        const d = {d: revdata.reviews[cid], className: "gcdf-many"},
+            u = revdata.users[cid];
+        u && u.name && (d.label = u.name);
+        u && u.email && (d.click = make_reviewer_clicker(u.email));
         if (cid && cid == siteinfo.user.uid) {
             d.className = "gcdf-highlight";
             d.priority = 1;
-        } else if (u && u.light)
+        } else if (u && u.light) {
             d.className += " gcdf-thin";
-        if (u && u.color_classes)
-            d.className += " " + u.color_classes;
+        }
+        u && u.color_classes && (d.className += " " + u.color_classes);
         Array.prototype.push.apply(alldata, d.d);
-        if (cid !== "conflicts")
+        if (cid !== "conflicts") {
             args.data[cid] = d;
+        }
     }
     args.data.all = {d: alldata, className: "gcdf-cumulative", priority: 2};
 
     var dlf = max_procrastination_seq;
 
     // infer deadlines when not set
-    for (i in revdata.deadlines) {
-        if (!revdata.deadlines[i]) {
-            var subat = alldata.filter(function (d) { return (d[2] || 0) == i; })
-                .map(proj0);
-            subat.sort(d3.ascending);
-            revdata.deadlines[i] = subat.length ? d3.quantile(subat, 0.8) : 0;
+    for (const i in revdata.deadlines) {
+        if (revdata.deadlines[i]) {
+            continue;
         }
+        const subat = alldata.filter(function (d) { return (d[2] || 0) == i; })
+            .map(proj0);
+        subat.sort(d3.ascending);
+        revdata.deadlines[i] = subat.length ? d3.quantile(subat, 0.8) : 0;
     }
     // make cdfs
-    for (i in args.data) {
+    for (const i in args.data) {
         args.data[i].d = seq_to_cdf(dlf(args.data[i].d, revdata.deadlines));
     }
 
@@ -727,8 +722,9 @@ function grouped_quadtree_mark_bounds(q, rf, ordinalf) {
 
     var b, p, i, n, ps;
     if (!q.length) {
-        for (p = q.data, ps = []; p; p = p.next)
+        for (p = q.data, ps = []; p; p = p.next) {
             ps.push(p);
+        }
         ps.sort(function (a, b) { return d3.ascending(a.n, b.n); });
         for (i = n = 0; i < ps.length; ++i) {
             ps[i].r0 = i ? ps[i-1].r : 0;
@@ -782,27 +778,42 @@ function grouped_quadtree_gfind(point, min_distance) {
 
 function grouped_quadtree(data, xs, ys, rf) {
     function make_extent() {
-        var xe = xs.range(), ye = ys.range();
+        const xe = xs.range(), ye = ys.range();
         return [[Math.min(xe[0], xe[1]), Math.min(ye[0], ye[1])],
                 [Math.max(xe[0], xe[1]), Math.max(ye[0], ye[1])]];
     }
-    var q = d3.quadtree().extent(make_extent());
+    const q = d3.quadtree().extent(make_extent()), nd = [];
 
-    var d, nd = [], vp, vd, dx, dy;
-    for (var i = 0; (d = data[i]); ++i) {
-        if (d[0] == null || d[1] == null)
+    for (const d of data) {
+        if (d[0] == null || d[1] == null) {
             continue;
-        vd = [xs(d[0]), ys(d[1]), [d], d[3]];
-        if ((vp = q.find(vd[0], vd[1]))) {
-            dx = Math.abs(vp[0] - vd[0]);
-            dy = Math.abs(vp[1] - vd[1]);
-            if (dx > 2 || dy > 2 || dx * dx + dy * dy > 4)
-                vp = null;
         }
-        while (vp && vp[3] != vd[3] && vp.next)
+        let vd = {
+            "0": xs(d[0]),
+            "1": ys(d[1]),
+            data: [d],
+            cc: d[3],
+            next: null,
+            head: null,
+            n: 1,
+            i: nd.length,
+            r0: null,
+            r: null,
+            ur: null
+        };
+        let vp = q.find(vd[0], vd[1]);
+        if (vp) {
+            const dx = Math.abs(vp[0] - vd[0]),
+                dy = Math.abs(vp[1] - vd[1]);
+            if (dx > 2 || dy > 2 || dx * dx + dy * dy > 4) {
+                vp = null;
+            }
+        }
+        while (vp && vp.cc != vd.cc && vp.next) {
             vp = vp.next;
-        if (vp && vp[3] == vd[3]) {
-            vp[2].push(d);
+        }
+        if (vp && vp.cc == vd.cc) {
+            vp.data.push(d);
             vp.n += 1;
         } else {
             if (vp) {
@@ -811,33 +822,50 @@ function grouped_quadtree(data, xs, ys, rf) {
             } else {
                 q.add(vd);
             }
-            vd.n = 1;
-            vd.i = nd.length;
             nd.push(vd);
         }
     }
 
-    if (rf == null)
+    if (rf == null) {
         rf = Math.sqrt;
-    else if (typeof rf === "number")
+    } else if (typeof rf === "number") {
         rf = (function (f) {
             return function (n) { return Math.sqrt(n) * f; };
         })(rf);
-    if (q.root())
+    }
+    if (q.root()) {
         grouped_quadtree_mark_bounds(q.root(), rf);
+    }
 
     delete q.add;
     q.gfind = grouped_quadtree_gfind;
     return {data: nd, quadtree: q};
 }
 
-function data_to_scatter(data) {
-    if (!$.isArray(data)) {
-        for (var i in data)
-            i && data[i].forEach(function (d) { d.push(i); });
-        data = d3.merge(Object.values(data));
+function gqdata_ids(gqp) {
+    const ids = [];
+    for (; gqp; gqp = gqp.next) {
+        for (const d of gqp.data) {
+            if ($.isArray(d[2])) {
+                Array.prototype.push.apply(ids, d[2]);
+            } else {
+                ids.push(d[2]);
+            }
+        }
     }
-    return data;
+    return ids;
+}
+
+function ungroup_data(data) {
+    if ($.isArray(data)) {
+        return data;
+    }
+    for (const style in data) {
+        if (style) {
+            data[style].forEach(d => d.push(style));
+        }
+    }
+    return d3.merge(Object.values(data));
 }
 
 function remap_scatter_data(data, rv, map) {
@@ -874,9 +902,14 @@ function remap_scatter_data(data, rv, map) {
     }
 }
 
-var scatter_annulus = d3 ? d3.arc()
+const scatter_annulus = d3 ? d3.arc()
     .innerRadius(function (d) { return d.r0 ? d.r0 - 0.5 : 0; })
     .outerRadius(function (d) { return d.r - 0.5; })
+    .startAngle(0)
+    .endAngle(Math.PI * 2) : null;
+
+const scatter_union_annulus = d3 ? d3.arc()
+    .outerRadius(function (d) { return (d.ur || d.r) - 0.5; })
     .startAngle(0)
     .endAngle(Math.PI * 2) : null;
 
@@ -888,17 +921,17 @@ function scatter_key(d) {
     return d[0] + "," + d[1] + "," + d.r;
 }
 
-function scatter_create(svg, data, klass) {
+function scatter_create(svg, gqdata, klass) {
     var sel = svg.selectAll(".gdot");
     if (klass)
         sel = sel.filter("." + klass);
-    sel = sel.data(data, scatter_key);
+    sel = sel.data(gqdata, scatter_key);
     sel.exit().remove();
     var pathklass = "gdot" + (klass ? " " + klass : "");
     sel.enter()
         .append("path")
-        .attr("class", function (d) { return pathklass + (d[3] ? " " + d[3] : "") })
-        .style("fill", function (d) { return ensure_pattern(d[3], "gdot"); })
+        .attr("class", function (d) { return pathklass + (d.cc ? " " + d.cc : "") })
+        .style("fill", function (d) { return ensure_pattern(d.cc, "gdot"); })
       .merge(sel)
         .attr("d", scatter_annulus)
         .attr("transform", scatter_transform);
@@ -942,27 +975,61 @@ function scatter_union(p) {
     if (p.head) {
         p = p.head;
     }
-    if (!p.next) {
+    if (!p.next || p.ur != null) {
         return p;
     }
-    if (!p.union) {
-        const u = [p[0], p[1], [].concat(p[2]), p[3]];
-        u.r = p.r;
-        let pp = p.next;
-        while (pp) {
-            u.r = Math.max(u.r, pp.r);
-            Array.prototype.push.apply(u[2], pp[2]);
-            pp = pp.next;
-        }
-        u[2].sort(pid_sorter);
-        p.union = u;
+    p.ur = p.r;
+    for (let pp = p.next; pp; pp = pp.next) {
+        p.ur = Math.max(p.ur, pp.r);
     }
-    return p.union;
+    return p;
+}
+
+function make_hover_interactor(svg, hovers, identity) {
+    let data = null, over = null;
+    function mouseout() {
+        hovers.style("display", "none");
+        if (self.bubble) {
+            self.bubble.remove();
+        }
+        self.data = self.bubble = data = over = null;
+        svg.style("cursor", null);
+    }
+    const self = {
+        data: null,
+        bubble: null,
+        move: function (d) {
+            if (!d && data) {
+                mouseout();
+            }
+            if (!d || (data && (identity ? identity(d, data) : d === data))) {
+                over = d;
+                return false;
+            }
+            self.data = data = d;
+            self.bubble = self.bubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
+            svg.style("cursor", "pointer");
+            return true;
+        },
+        mouseout: mouseout,
+        mouseout_soon: function () {
+            if (!data) {
+                return;
+            }
+            const kill = data;
+            over = null;
+            setTimeout(function () {
+                if (data === kill && !over)
+                    mouseout();
+            }, 10);
+        }
+    };
+    return self;
 }
 
 function graph_scatter(selector, args) {
     const svg = this;
-    let data = data_to_scatter(args.data);
+    let data = ungroup_data(args.data);
 
     const x = make_linear_scale(args.x.extent, expand_extent(d3.extent(data, proj0), args.x)),
         y = make_linear_scale(args.y.extent, expand_extent(d3.extent(data, proj1), args.y)),
@@ -970,11 +1037,13 @@ function graph_scatter(selector, args) {
 
     $(selector).on("hotgraphhighlight", highlight);
 
-    data = grouped_quadtree(data, x, y, 4);
-    scatter_create(svg, data.data);
+    const gq = grouped_quadtree(data, x, y, 4);
+    data = null;
+    scatter_create(svg, gq.data);
 
     svg.append("path").attr("class", "gdot gdot-hover");
-    var hovers = svg.selectAll(".gdot-hover").style("display", "none");
+    const hovers = svg.selectAll(".gdot-hover").style("display", "none"),
+        hoverer = make_hover_interactor(svg, hovers);
 
     draw_axes(svg, axes[0], axes[1], args);
 
@@ -986,86 +1055,86 @@ function graph_scatter(selector, args) {
         .attr("pointer-events", "all")
         .on("mouseover", mousemoved)
         .on("mousemove", mousemoved)
-        .on("mouseout", mouseout)
+        .on("mouseout", hoverer.mouseout_soon)
         .on("click", mouseclick);
 
-    function make_tooltip(p, ps) {
+    function make_tooltip(p) {
+        const pinstance = p.data[0];
         return [
-            $e("p", null, render_position(args.x, p[0]), ", ", render_position(args.y, p[1])),
-            render_pid_p(ps, p[3])
+            $e("p", null, render_position(args.x, pinstance[0]), ", ", render_position(args.y, pinstance[1])),
+            render_pid_p(gqdata_ids(p), pinstance[3])
         ];
     }
 
-    var hovered_data, hubble;
     function mousemoved(event) {
-        let m = d3.pointer(event), p = scatter_union(data.quadtree.gfind(m, 4));
-        if (!p) {
-            hovered_data && mouseout();
-            return;
-        } else if (p === hovered_data) {
+        let m = d3.pointer(event), p = scatter_union(gq.quadtree.gfind(m, 4));
+        if (!hoverer.move(p)) {
             return;
         }
         hovers.datum(p)
-            .attr("d", scatter_annulus)
+            .attr("d", scatter_union_annulus)
             .attr("transform", scatter_transform)
             .style("display", null);
-        hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-        hubble.replace_content(...make_tooltip(p[2][0], p[2]))
+        hoverer.bubble.replace_content(...make_tooltip(p))
             .anchor("s")
             .near(hovers.node());
-        svg.style("cursor", "pointer");
-        hovered_data = p;
-    }
-
-    function mouseout() {
-        hovers.style("display", "none");
-        hubble && hubble.remove();
-        hovered_data = hubble = null;
-        svg.style("cursor", null);
     }
 
     function mouseclick(event) {
-        clicker(hovered_data ? hovered_data[2].map(proj2) : null, event);
+        clicker(hoverer.data ? gqdata_ids(hoverer.data) : null, event);
     }
 
     function highlight(event) {
-        if (event.ids) {
-            mouseout();
-            var myd = [];
-            if (event.ids.length)
-                myd = data.data.filter(function (d) {
-                    var pts = d[2];
-                    for (var i in pts) {
-                        var p = pts[i][2];
-                        if (typeof p === "string")
-                            p = parseInt(p, 10);
-                        if (event.ids.indexOf(p) >= 0)
-                            return true;
+        if (!event.ids) {
+            if (event.q && event.ok) {
+                $.getJSON(hoturl("api/search", {q: event.q}), null, highlight);
+            }
+            return;
+        }
+        hoverer.mouseout();
+        let myd = [];
+        if (event.ids.length) {
+            myd = gq.data.filter(function (pd) {
+                for (const d of pd.data) {
+                    let p = d[2];
+                    if (typeof p === "string") {
+                        p = parseInt(p, 10);
                     }
-                    return false;
-                });
-            scatter_highlight(svg, myd);
-        } else if (event.q && event.ok)
-            $.getJSON(hoturl("api/search", {q: event.q}), null, highlight);
+                    if (event.ids.indexOf(p) >= 0) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+        scatter_highlight(svg, myd);
     }
 }
 
 function data_quantize_x(data) {
-    if (data.length) {
-        data.sort(function (a, b) { return d3.ascending(a[0], b[0]); });
-        var epsilon = (data[data.length - 1][0] - data[0][0]) / 5000, active = null;
-        data.forEach(function (d) {
-            if (active !== null && Math.abs(active - d[0]) <= epsilon)
-                d[0] = active;
-            else
-                active = d[0];
-        });
+    data = ungroup_data(data);
+    if (!data.length) {
+        return data;
+    }
+    data.sort(function (a, b) { return d3.ascending(a[0], b[0]); });
+    const epsilon = (data[data.length - 1][0] - data[0][0]) / 5000;
+    let active = null;
+    for (const d of data) {
+        if (active !== null && Math.abs(active - d[0]) <= epsilon) {
+            d[0] = active;
+        } else {
+            active = d[0];
+        }
     }
     return data;
 }
 
 function data_to_barchart(data, yaxis) {
     data = data_quantize_x(data);
+    if (!data.length) {
+        return data;
+    }
+
     data.sort(function (a, b) {
         return d3.ascending(a[0], b[0])
             || d3.ascending(a[4] || 0, b[4] || 0)
@@ -1074,46 +1143,54 @@ function data_to_barchart(data, yaxis) {
 
     let last = null;
     const ndata = [];
-    for (let i = 0; i !== data.length; ++i) {
-        const cur = data[i];
-        if (cur[1] == null) {
+    for (const d of data) {
+        if (d[1] == null) {
             continue;
         }
+        const cur = {
+            "0": d[0],
+            "1": d[1],
+            ids: d[2],
+            yoff: 0,
+            i0: ndata.length,
+            cc: d[3],
+            sx: d[4]
+        };
         ndata.push(cur);
-        if (last && cur[0] == last[0] && cur[4] == last[4]) {
+        if (last && cur[0] == last[0] && cur.sx == last.sx) {
             cur.yoff = last.yoff + last[1];
             cur.i0 = last.i0;
-        } else {
-            cur.yoff = 0;
-            cur.i0 = ndata.length - 1;
         }
         last = cur;
     }
 
-    if (yaxis.fraction && ndata.some(function (d) { return d[4] != data[0][4]; })) {
+    if (!yaxis.fraction) {
+        return ndata;
+    }
+
+    if (ndata.some(function (d) { return d.sx != data[0].sx; })) {
         let maxy = {};
         ndata.forEach(function (d) { maxy[d[0]] = d[1] + d.yoff; });
         ndata.forEach(function (d) { d.yoff /= maxy[d[0]]; d[1] /= maxy[d[0]]; });
-    } else if (yaxis.fraction) {
+    } else {
         let maxy = 0;
         ndata.forEach(function (d) { maxy += d[1]; });
         ndata.forEach(function (d) { d.yoff /= maxy; d[1] /= maxy; });
     }
-
     return ndata;
 }
 
 function graph_bars(selector, args) {
     const svg = this,
-        data = data_to_barchart(args.data, args.y);
+        bdata = data_to_barchart(args.data, args.y);
 
     const ystart = args.y.ticks.type === "score" ? 0.75 : 0,
-        xe = d3.extent(data, proj0),
-        ge = d3.extent(data, function (d) { return d[4] || 0; }),
-        ye = [d3.min(data, function (d) { return Math.max(d.yoff, ystart); }),
-              d3.max(data, function (d) { return d.yoff + d[1]; })],
-        deltae = d3.extent(data, function (d, i) {
-            var delta = i ? d[0] - data[i-1][0] : 0;
+        xe = d3.extent(bdata, proj0),
+        ge = d3.extent(bdata, function (d) { return d.sx || 0; }),
+        ye = [d3.min(bdata, function (d) { return Math.max(d.yoff, ystart); }),
+              d3.max(bdata, function (d) { return d.yoff + d[1]; })],
+        deltae = d3.extent(bdata, function (d, i) {
+            const delta = i ? d[0] - bdata[i-1][0] : 0;
             return delta || Infinity;
         }),
         x = make_linear_scale(args.x.extent, expand_extent(xe, args.x)),
@@ -1132,89 +1209,87 @@ function graph_bars(selector, args) {
     const gdelta = -(ge[1] + 1) * barwidth / 2;
 
     function place(sel, close) {
+        close = close || "";
         return sel.attr("d", function (d) {
-            var yoff = Math.max(d.yoff, ystart);
-            return ["M", x(d[0]) + gdelta + (d[4] ? barwidth * d[4] : 0), y(yoff),
-                    "V", y(d.yoff + d[1]), "h", barwidth,
-                    "V", y(yoff)].join(" ") + (close || "");
+            const yoff = Math.max(d.yoff, ystart),
+                x0 = x(d[0]) + gdelta + (d.sx ? barwidth * d.sx : 0),
+                y0 = y(yoff),
+                y1 = y(d.yoff + d[1]);
+            return `M${x0},${y0}V${y1}h${barwidth}V${y0}${close}`;
         });
     }
 
-    place(svg.selectAll(".gbar").data(data)
+    place(svg.selectAll(".gbar").data(bdata)
           .enter().append("path")
             .attr("class", function (d) {
-                return d[3] ? "gbar " + d[3] : "gbar";
+                return d.cc ? "gbar " + d.cc : "gbar";
             })
-            .style("fill", function (d) { return ensure_pattern(d[3], "gdot"); }));
+            .style("fill", function (d) { return ensure_pattern(d.cc, "gdot"); }));
 
     draw_axes(svg, axes[0], axes[1], args);
 
     svg.append("path").attr("class", "gbar gbar-hover0");
     svg.append("path").attr("class", "gbar gbar-hover1");
-    var hovers = svg.selectAll(".gbar-hover0, .gbar-hover1")
-        .style("display", "none").attr("pointer-events", "none");
+    const hovers = svg.selectAll(".gbar-hover0, .gbar-hover1")
+            .style("display", "none")
+            .attr("pointer-events", "none"),
+        hoverer = make_hover_interactor(svg, hovers, function (d1, d2) {
+            return d1.i0 === d2.i0;
+        });
 
-    svg.selectAll(".gbar").on("mouseover", mouseover).on("mouseout", mouseout)
+    svg.selectAll(".gbar")
+        .on("mouseover", mouseover)
+        .on("mouseout", hoverer.mouseout_soon)
         .on("click", mouseclick);
 
     function make_tooltip(p) {
         return [
             $e("p", null, render_position(args.x, p[0]), ", ", render_position(args.y, p[1])),
-            render_pid_p(p[2], p[3])
+            render_pid_p(p.ids, p.cc)
         ];
     }
 
-    function make_mouseover(d) {
-        if (!d || d.i0 == null) {
-            return d;
-        }
-        if (!d.ia) {
-            d.ia = [d[0], 0, [], "", d[4]];
-            d.ia.yoff = 0;
-            for (let i = d.i0; i !== data.length && data[i].i0 === d.i0; ++i) {
-                d.ia[1] = data[i][1] + data[i].yoff;
-                const pids = data[i][2], cc = data[i][3];
-                for (let j = 0; j !== pids.length; ++j) {
-                    d.ia[2].push(cc ? {id: pids[j], color_classes: cc} : pids[j]);
-                }
+    function make_hovered_data(p) {
+        const hd = {
+            "0": p[0],
+            "1": 0,
+            ids: [],
+            yoff: 0,
+            cc: "",
+            sx: p.sx,
+            i0: p.i0
+        };
+        for (let i = p.i0; i !== bdata.length && bdata[i].i0 === p.i0; ++i) {
+            const p2 = bdata[i];
+            hd[1] = p2[1] + p2.yoff;
+            for (let id of p2.ids) {
+                hd.ids.push(p2.cc ? {id: id, cc: p2.cc} : id);
             }
         }
-        return d.ia;
+        return hd;
     }
 
-    var hovered_data, hubble;
     function mouseover() {
-        const p = make_mouseover(d3.select(this).data()[0]);
-        if (!p) {
-            hovered_data && mouseout();
-            return;
-        } else if (p === hovered_data) {
+        const p = d3.select(this).data()[0];
+        if (!hoverer.move(p)) {
             return;
         }
-        place(hovers.datum(p), "Z").style("display", null);
-        svg.style("cursor", "pointer");
-        hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-        hubble.replace_content(...make_tooltip(p))
+        hoverer.data = make_hovered_data(p);
+        place(hovers.datum(hoverer.data), "Z").style("display", null);
+        hoverer.bubble.replace_content(...make_tooltip(hoverer.data))
             .anchor("h")
             .near(hovers.node());
-        hovered_data = p;
-    }
-
-    function mouseout() {
-        hovers.style("display", "none");
-        hubble && hubble.remove();
-        hovered_data = hubble = null;
-        svg.style("cursor", null);
     }
 
     function mouseclick(event) {
-        clicker(hovered_data ? hovered_data[2] : null, event);
+        clicker(hoverer.data ? hoverer.data.ids : null, event);
     }
 }
 
 function boxplot_sort(data) {
     data.sort(function (a, b) {
-        return d3.ascending(a[0], b[0]) || d3.ascending(a[1], b[1])
+        return d3.ascending(a[0], b[0])
+            || d3.ascending(a[1], b[1])
             || (a[3] || "").localeCompare(b[3] || "")
             || pid_sorter(a[2], b[2]);
     });
@@ -1222,33 +1297,48 @@ function boxplot_sort(data) {
 }
 
 function data_to_boxplot(data, septags) {
-    data = boxplot_sort(data_quantize_x(data_to_scatter(data)));
+    data = boxplot_sort(data_quantize_x(data));
 
     let active = null;
     data = data.reduce(function (newdata, d) {
-        if (!active || active[0] != d[0] || (septags && active[4] != d[3])) {
-            active = {"0": d[0], ymin: d[1], c: d[3] || "", d: [], p: []};
+        if (!active || active[0] != d[0] || (septags && active.cc != d[3])) {
+            active = {
+                "0": d[0],
+                ymin: d[1],
+                ymax: 0,
+                cc: d[3] || "",
+                ys: [],
+                ids: [],
+                qnt: null,
+                mean: null
+            };
             newdata.push(active);
-        } else if (active.c != d[3]) {
-            active.c = "";
+        } else if (active.cc != d[3]) {
+            active.cc = "";
         }
         active.ymax = d[1];
-        active.d.push(d[1]);
-        active.p.push(d[2]);
+        active.ys.push(d[1]);
+        active.ids.push(d[2]);
         return newdata;
     }, []);
 
     data.map(function (d) {
-        const l = d.d.length, med = d3.quantile(d.d, 0.5);
+        const l = d.ys.length, med = d3.quantile(d.ys, 0.5);
         if (l < 4) {
-            d.q = [d.d[0], d.d[0], med, d.d[l-1], d.d[l-1]];
+            d.qnt = [d.ys[0], d.ys[0], med, d.ys[l-1], d.ys[l-1]];
         } else {
-            const q1 = d3.quantile(d.d, 0.25), q3 = d3.quantile(d.d, 0.75),
+            const q1 = d3.quantile(d.ys, 0.25),
+                q3 = d3.quantile(d.ys, 0.75),
                 iqr = q3 - q1;
-            d.q = [Math.max(d.d[0], q1 - 1.5 * iqr), q1, med,
-                   q3, Math.min(d.d[l-1], q3 + 1.5 * iqr)];
+            d.qnt = [
+                Math.max(d.ys[0], q1 - 1.5 * iqr),
+                q1,
+                med,
+                q3,
+                Math.min(d.ys[l-1], q3 + 1.5 * iqr)
+            ];
         }
-        d.m = d3.sum(d.d) / d.d.length;
+        d.mean = d3.sum(d.ys) / d.ys.length;
     });
 
     return data;
@@ -1278,32 +1368,35 @@ function graph_boxplot(selector, args) {
     function place_whisker(l, sel) {
         sel.attr("x1", function (d) { return x(d[0]); })
             .attr("x2", function (d) { return x(d[0]); })
-            .attr("y1", function (d) { return y(d.q[l]); })
-            .attr("y2", function (d) { return y(d.q[l + 1]); });
+            .attr("y1", function (d) { return y(d.qnt[l]); })
+            .attr("y2", function (d) { return y(d.qnt[l + 1]); });
     }
 
     function place_box(sel) {
         sel.attr("d", function (d) {
-            var yq1 = y(d.q[1]), yq2 = y(d.q[2]), yq3 = y(d.q[3]);
+            const x0 = x(d[0]),
+                yq2 = y(d.qnt[2]);
+            let yq1 = y(d.qnt[1]), yq3 = y(d.qnt[3]);
             if (yq1 < yq3) {
-                var tmp = yq3;
+                const tmp = yq3;
                 yq3 = yq1;
                 yq1 = tmp;
             }
-            if (yq1 - yq3 < 4)
-                yq3 = yq2 - 2, yq1 = yq3 + 4;
+            if (yq1 - yq3 < 4) {
+                yq3 = yq2 - 2;
+                yq1 = yq3 + 4;
+            }
             yq3 = Math.min(yq3, yq2 - 1);
             yq1 = Math.max(yq1, yq2 + 1);
-            return ["M", x(d[0]) - barwidth / 2, ",", yq3, "l", barwidth, ",0",
-                    "l0,", yq1 - yq3, "l-", barwidth, ",0Z"].join("");
+            return `M${x0 - barwidth / 2},${yq3}h${barwidth}v${yq1 - yq3}h${-barwidth}Z`;
         });
     }
 
     function place_median(sel) {
         sel.attr("x1", function (d) { return x(d[0]) - barwidth / 2; })
             .attr("x2", function (d) { return x(d[0]) + barwidth / 2; })
-            .attr("y1", function (d) { return y(d.q[2]); })
-            .attr("y2", function (d) { return y(d.q[2]); });
+            .attr("y1", function (d) { return y(d.qnt[2]); })
+            .attr("y2", function (d) { return y(d.qnt[2]); });
     }
 
     function place_outlier(sel) {
@@ -1312,44 +1405,47 @@ function graph_boxplot(selector, args) {
     }
 
     function place_mean(sel) {
-        sel.attr("transform", function (d) { return "translate(" + x(d[0]) + "," + y(d.m) + ")"; })
+        sel.attr("transform", function (d) { return "translate(" + x(d[0]) + "," + y(d.mean) + ")"; })
             .attr("d", "M2.2,0L0,2.2L-2.2,0L0,-2.2Z");
     }
 
-    var nonoutliers = data.filter(function (d) { return d.d.length > 1; });
+    const nonoutliers = data.filter(function (d) { return d.ys.length > 1; });
 
     place_whisker(0, svg.selectAll(".gbox.whiskerl").data(nonoutliers)
             .enter().append("line")
-            .attr("class", function (d) { return "gbox whiskerl " + d.c; }));
+            .attr("class", function (d) { return "gbox whiskerl " + d.cc; }));
 
     place_whisker(3, svg.selectAll(".gbox.whiskerh").data(nonoutliers)
             .enter().append("line")
-            .attr("class", function (d) { return "gbox whiskerh " + d.c; }));
+            .attr("class", function (d) { return "gbox whiskerh " + d.cc; }));
 
     place_box(svg.selectAll(".gbox.box").data(nonoutliers)
             .enter().append("path")
-            .attr("class", function (d) { return "gbox box " + d.c; })
-            .style("fill", function (d) { return ensure_pattern(d.c, "gdot"); }));
+            .attr("class", function (d) { return "gbox box " + d.cc; })
+            .style("fill", function (d) { return ensure_pattern(d.cc, "gdot"); }));
 
     place_median(svg.selectAll(".gbox.median").data(nonoutliers)
             .enter().append("line")
-            .attr("class", function (d) { return "gbox median " + d.c; }));
+            .attr("class", function (d) { return "gbox median " + d.cc; }));
 
     place_mean(svg.selectAll(".gbox.mean").data(nonoutliers)
             .enter().append("path")
-            .attr("class", function (d) { return "gbox mean " + d.c; }));
+            .attr("class", function (d) { return "gbox mean " + d.cc; }));
 
-    var outliers = d3.merge(data.map(function (d) {
-        var nd = [], len = d.d.length;
-        for (var i = 0; i < len; ++i)
-            if (d.d[i] < d.q[0] || d.d[i] > d.q[4] || len <= 1)
-                nd.push([d[0], d.d[i], d.p[i], d.c]);
+    let outliers = d3.merge(data.map(function (d) {
+        const nd = [], len = d.ys.length;
+        for (let i = 0; i < len; ++i) {
+            if (d.ys[i] < d.qnt[0] || d.ys[i] > d.qnt[4] || len <= 1)
+                nd.push([d[0], d.ys[i], d.ids[i], d.cc]);
+        }
         return nd;
     }));
     outliers = grouped_quadtree(outliers, x, y, 2);
     place_outlier(svg.selectAll(".gbox.outlier")
-            .data(outliers.data).enter().append("circle")
-            .attr("class", function (d) { return "gbox outlier " + d[3]; }));
+            .data(outliers.data)
+            .enter()
+              .append("circle")
+              .attr("class", function (d) { return "gbox outlier " + d[3]; }));
 
     draw_axes(svg, axes[0], axes[1], args);
 
@@ -1359,16 +1455,14 @@ function graph_boxplot(selector, args) {
     svg.append("line").attr("class", "gbox median gbox-hover");
     svg.append("circle").attr("class", "gbox outlier gbox-hover");
     svg.append("path").attr("class", "gbox mean gbox-hover");
-    var hovers = svg.selectAll(".gbox-hover")
-        .style("display", "none").style("ponter-events", "none");
+    const hovers = svg.selectAll(".gbox-hover")
+            .style("display", "none")
+            .style("ponter-events", "none"),
+        hoverer = make_hover_interactor(svg, hovers);
 
     $sel.on("hotgraphhighlight", highlight);
 
-    $sel[0].addEventListener("mouseout", function (event) {
-        if (hasClass(event.target, "gbox")
-            || hasClass(event.target, "gscatter"))
-            mouseout.call(event.target);
-    }, false);
+    $sel[0].addEventListener("mouseout", hoverer.mouseout_soon, false);
 
     $sel[0].addEventListener("mouseover", function (event) {
         if (hasClass(event.target, "outlier")
@@ -1384,32 +1478,30 @@ function graph_boxplot(selector, args) {
             mouseclick.call(event.target, event);
     }, false);
 
-    function make_tooltip(p, ps, ds, cc) {
-        const yformat = args.y.ticks.render_onto, pe = $e("p");
-        let x = ps;
-        pe.append(render_position(args.x, p[0]));
-        if (p.q) {
-            pe.append(", ", render_position(args.y, p.q[2], "median "));
-            x = [];
-            for (let i = 0; i < ps.length; ++i) {
+    function make_tooltip(p) {
+        const yformat = args.y.ticks.render_onto,
+            posd = p.qnt ? p : p.data[0],
+            pe = $e("p", null, render_position(args.x, posd[0]), ", ");
+        let ids;
+        if (p.qnt) {
+            pe.append(render_position(args.y, p.qnt[2], "median "));
+            ids = [];
+            for (let i = 0; i !== p.ys.length; ++i) {
                 const rest = $frag(" (");
-                yformat.call(args.y, rest, ds[i]);
+                yformat.call(args.y, rest, p.ys[i]);
                 rest.append(")");
-                x.push({id: ps[i], rest: rest});
+                ids.push({id: p.ids[i], rest: rest});
             }
         } else {
-            pe.append(", ", render_position(args.y, ds[0]));
+            pe.append(render_position(args.y, posd[1]));
+            ids = gqdata_ids(p);
         }
-        return [pe, render_pid_p(x, cc)];
+        return [pe, render_pid_p(ids, p.cc)];
     }
 
-    var hovered_data, hubble;
     function mouseover() {
-        let p = d3.select(this).data()[0];
-        if (!p) {
-            hovered_data && mouseout();
-            return;
-        } else if (p === hovered_data) {
+        const p = d3.select(this).data()[0];
+        if (!hoverer.move(p)) {
             return;
         }
         hovers.style("display", "none");
@@ -1419,71 +1511,58 @@ function graph_boxplot(selector, args) {
         place_box(hovers.filter(".box"));
         place_median(hovers.filter(".median"));
         place_mean(hovers.filter(".mean"));
-        svg.style("cursor", "pointer");
-        hovered_data = p;
-        hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-        hubble.replace_content(...make_tooltip(p, p.p, p.d, p.c))
+        hoverer.bubble.replace_content(...make_tooltip(p))
             .anchor("h")
             .near(hovers.filter(".box").node());
     }
 
     function mouseover_outlier() {
-        let p = d3.select(this).data()[0];
-        if (!p) {
-            hovered_data && mouseout();
-            return;
-        } else if (p === hovered_data) {
+        const po = d3.select(this).data()[0];
+        if (!hoverer.move(po)) {
             return;
         }
         hovers.style("display", "none");
-        place_outlier(hovers.filter(".outlier").style("display", null).datum(p));
-        svg.style("cursor", "pointer");
-        hovered_data = p;
-        hubble = hubble || make_bubble("", {color: "graphtip", "pointer-events": "none"});
-        hubble.replace_content(...make_tooltip(p[2][0], p[2].map(proj2), p[2].map(proj1), p[3]))
+        place_outlier(hovers.filter(".outlier").style("display", null).datum(po));
+        hoverer.bubble.replace_content(...make_tooltip(po))
             .anchor("h")
             .near(hovers.filter(".outlier").node());
     }
 
-    function mouseout() {
-        hovers.style("display", "none");
-        hubble && hubble.remove();
-        hovered_data = hubble = null;
-        svg.style("cursor", null);
-    }
-
     function mouseclick(event) {
-        var s;
-        if (!hovered_data)
+        let s;
+        if (!hoverer.data) {
             clicker(null, event);
-        else if (!hovered_data.q)
-            clicker(hovered_data[2].map(proj2), event);
-        else if ((s = args.x.ticks.search(hovered_data[0])))
+        } else if (!hoverer.data.qnt) {
+            clicker(gqdata_ids(hoverer.data), event);
+        } else if ((s = args.x.ticks.search(hoverer.data[0]))) {
             clicker_go(hoturl("search", {q: s}), event);
-        else
-            clicker(hovered_data.p, event);
+        } else {
+            clicker(hoverer.data.ids, event);
+        }
     }
 
     function highlight(event) {
-        mouseout();
-        if (event.ids && !event.ids.length)
+        hoverer.mouseout();
+        if (event.ids && !event.ids.length) {
             svg.selectAll(".gscatter").remove();
-        else {
-            var $g = $(selector);
-            $.getJSON(hoturl("api/graphdata"), {
-                x: $g.attr("data-graph-fx"), y: $g.attr("data-graph-fy"),
-                q: event.q
-            }, function (rv) {
-                if (rv.ok) {
-                    var data = data_to_scatter(rv.data);
-                    if (args.x.reordered && args.x.ticks.map)
-                        remap_scatter_data(data, rv, args.x.ticks.map);
-                    data = grouped_quadtree(data, x, y, 4);
-                    scatter_create(svg, data.data, "gscatter");
-                    scatter_highlight(svg, data.data, "gscatter");
-                }
-            });
+            return;
         }
+        const $g = $(selector);
+        $.getJSON(hoturl("api/graphdata"), {
+            x: $g.attr("data-graph-fx"), y: $g.attr("data-graph-fy"),
+            q: event.q
+        }, function (rv) {
+            if (!rv.ok) {
+                return;
+            }
+            const data = ungroup_data(rv.data);
+            if (args.x.reordered && args.x.ticks.map) {
+                remap_scatter_data(data, rv, args.x.ticks.map);
+            }
+            const gq = grouped_quadtree(data, x, y, 4);
+            scatter_create(svg, gq.data, "gscatter");
+            scatter_highlight(svg, gq.data, "gscatter");
+        });
     }
 }
 
@@ -1786,9 +1865,9 @@ const graphers = {
     procrastination: {filter: true, function: procrastination_filter},
     scatter: {function: graph_scatter},
     cdf: {function: graph_cdf},
-    cumulative_count: {function: graph_cdf},
+    cumfreq: {function: graph_cdf},
     bar: {function: graph_bars},
-    full_stack: {function: graph_bars},
+    fraction: {function: graph_bars},
     box: {function: graph_boxplot}
 };
 

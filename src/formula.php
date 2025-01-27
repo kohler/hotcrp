@@ -874,32 +874,35 @@ class Round_Fexpr extends Fexpr {
 abstract class Aggregate_Fexpr extends Fexpr {
     /** @var int */
     public $index_type;
+    /** @var bool */
+    public $explicit_index;
 
     function __construct($fn, array $values, ?int $index_type) {
         parent::__construct($fn, $values);
         $this->index_type = $index_type ?? 0;
+        $this->explicit_index = $this->index_type !== 0;
     }
     static function parse_modifier(FormulaCall $ff, $arg) {
         if (!str_starts_with($arg, ".")) {
             return false;
         }
-        if ($ff->index_type) {
+        if ($ff->index_type !== 0) {
             $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "<0>Collection already specified");
             return true;
         }
         if ($arg === ".pc") {
-            $ff->index_type = Fexpr::IDX_PC;
+            $it = Fexpr::IDX_PC;
         } else if ($arg === ".re" || $arg === ".rev" || $arg === ".review") {
-            $ff->index_type = Fexpr::IDX_REVIEW;
+            $it = Fexpr::IDX_REVIEW;
         } else if ($arg === ".cre" || $arg === ".creview") {
-            $ff->index_type = Fexpr::IDX_CREVIEW;
+            $it = Fexpr::IDX_CREVIEW;
         } else if ($arg === ".anyre" || $arg === ".anyreview") {
-            $ff->index_type = Fexpr::IDX_ANYREVIEW;
-        } else if ($arg === ".x") {
-            $ff->index_type = Fexpr::IDX_X;
+            $it = Fexpr::IDX_ANYREVIEW;
         } else {
             $ff->formula->lerror($ff->pos2 - strlen($arg), $ff->pos2, "<0>Collection ‘{$arg}’ not found");
+            return true;
         }
+        $ff->index_type = $it;
         return true;
     }
     function typecheck_index(Formula $formula) {
@@ -2819,16 +2822,19 @@ class Formula implements JsonSerializable {
 
     /** @return bool */
     function support_combiner() {
-        if ($this->_extractorf === null) {
-            $this->check();
-            $this->_extractorf = $this->_combinerf = false;
-            if ($this->_parse) {
-                $state = FormulaCompiler::make_combiner($this->user);
-                $expr = $this->_parse->fexpr->compile($state);
-                if (!$state->term_error && !$state->term_compiler->term_error) {
-                    $this->_extractorf = self::compile_body($this->user, $state->term_compiler, "[" . join(",", $state->term_compiler->term_list) . "]", 0);
-                    $this->_combinerf = self::compile_body(null, $state, $expr, 0);
-                }
+        if ($this->_extractorf !== null) {
+            return $this->_extractorf !== false;
+        } else if (!$this->check()) {
+            return false;
+        }
+        $this->check();
+        $this->_extractorf = $this->_combinerf = false;
+        if ($this->_parse) {
+            $state = FormulaCompiler::make_combiner($this->user);
+            $expr = $this->_parse->fexpr->compile($state);
+            if (!$state->term_error && !$state->term_compiler->term_error) {
+                $this->_extractorf = self::compile_body($this->user, $state->term_compiler, "[" . join(",", $state->term_compiler->term_list) . "]", 0);
+                $this->_combinerf = self::compile_body(null, $state, $expr, 0);
             }
         }
         return $this->_extractorf !== false;
