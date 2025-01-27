@@ -195,17 +195,16 @@ function pathNodeMayBeNearer(pathNode, point, dist) {
     }
     // check bounding rectangle of path
     if ("clientX" in point) {
-        var bounds = pathNode.getBoundingClientRect(),
+        const bounds = pathNode.getBoundingClientRect(),
             dx = point[0] - point.clientX, dy = point[1] - point.clientY;
         if (bounds && oob(bounds.left + dx, bounds.top + dy,
                           bounds.right + dx, bounds.bottom + dy))
             return false;
     }
     // check path
-    var npsl = normalize_svg_path(pathNode);
-    var l, t, r, b;
-    for (var i = 0; i < npsl.length; ++i) {
-        var item = npsl[i];
+    const npsl = normalize_svg_path(pathNode);
+    let l, t, r, b;
+    for (const item of npsl) {
         if (item[0] === "L") {
             l = Math.min(item[1], item[3]);
             t = Math.min(item[2], item[4]);
@@ -216,12 +215,14 @@ function pathNodeMayBeNearer(pathNode, point, dist) {
             t = Math.min(item[2], item[4], item[6], item[8]);
             r = Math.max(item[1], item[3], item[5], item[7]);
             b = Math.max(item[2], item[4], item[6], item[8]);
-        } else if (item[0] === "Z" || item[0] === "M")
+        } else if (item[0] === "Z" || item[0] === "M") {
             continue;
-        else
+        } else {
             return true;
-        if (!oob(l, t, r, b))
+        }
+        if (!oob(l, t, r, b)) {
             return true;
+        }
     }
     return false;
 }
@@ -1572,7 +1573,7 @@ function make_axis_pair(args, x, y) {
         args.y.ticks.make_axis.call(args.y, "y", args, y)
     ];
     if (args.y.tickLength > 0 && args.marginLeftDefault) {
-        args.marginLeft = 10 * args.y.tickLength + 6;
+        args.marginLeft = 10 * Math.max(args.y.tickLength, 1.5) + 6;
         args.plotWidth = args.width - args.marginLeft - args.marginRight;
         x.range(args.x.flip ? [args.plotWidth, 0] : [0, args.plotWidth]);
     }
