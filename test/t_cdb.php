@@ -31,7 +31,7 @@ class Cdb_Tester {
     }
 
     function test_setup() {
-        $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru"];
+        $removables = ["te@tl.edu", "te2@tl.edu", "akhmatova@poema.ru", "leopard@fart.edu", "puma@fart.edu"];
         $this->conf->qe("delete from ContactInfo where email?a", $removables);
         Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email?a", $removables);
     }
@@ -964,5 +964,75 @@ class Cdb_Tester {
         xassert_eqq($gussie->lastName, "Onufryk");
         xassert_eqq($gussie->unaccentedName, "gussie onufryk");
         xassert_ge($this->conf->setting("__cdb_user_update_at"), Conf::$now - 3);
+    }
+
+    function test_import_secondary() {
+        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Leopard', lastName='Face', email='leopard@fart.edu', affiliation='Place University', collaborators='Newsweek Magazine', password=' unset', cflags=0");
+        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Puma', lastName='Face', email='puma@fart.edu', affiliation='Place University', collaborators='Newsweek Magazine', password=' unset', cflags=0");
+
+        $cu_leopard = $this->conf->cdb_user_by_email("leopard@fart.edu");
+        $cu_puma = $this->conf->cdb_user_by_email("puma@fart.edu");
+        ContactPrimary::set_primary_user($cu_puma, $cu_leopard);
+
+        $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
+        $lu_puma = $this->conf->user_by_email("puma@fart.edu");
+        xassert_eqq($lu_leopard, null);
+        xassert_eqq($lu_puma, null);
+
+        $lu_puma = Contact::make_email($this->conf, "puma@fart.edu")->store();
+        xassert(!!$lu_puma);
+        $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
+        xassert_eqq($lu_leopard->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
+        xassert_eqq($lu_puma->primaryContactId, $lu_leopard->contactId);
+        $primary_emails = $this->conf->resolve_primary_emails(["PuMa@fART.edu"]);
+        xassert_eqq($primary_emails, ["leopard@fart.edu"]);
+
+        // changing a primary into a secondary also affects its secondaries
+        Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Mountain Lion', lastName='Face', email='mtnlion@fart.edu', affiliation='Place University', collaborators='Newsweek Magazine', password=' unset', cflags=0");
+
+        $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");
+        ContactPrimary::set_primary_user($lu_leopard, $lu_mtnlion);
+        $lu_puma = $this->conf->user_by_email("puma@fart.edu");
+        $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
+        xassert_eqq($lu_mtnlion->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
+        xassert_eqq($lu_puma->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_leopard->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_puma->primaryContactId, $lu_mtnlion->contactId);
+        xassert_eqq($lu_leopard->primaryContactId, $lu_mtnlion->contactId);
+        xassert_eqq($lu_mtnlion->primaryContactId, 0);
+
+        ContactPrimary::set_primary_user($lu_mtnlion, $lu_leopard);
+        $lu_puma = $this->conf->user_by_email("puma@fart.edu");
+        $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
+        $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");
+        xassert_eqq($lu_leopard->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
+        xassert_eqq($lu_puma->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_mtnlion->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_mtnlion->primaryContactId, $lu_leopard->contactId);
+        xassert_eqq($lu_puma->primaryContactId, $lu_leopard->contactId);
+        xassert_eqq($lu_leopard->primaryContactId, 0);
+
+        // remove secondaries one at a time
+        ContactPrimary::set_primary_user($lu_mtnlion, null);
+        $lu_puma = $this->conf->user_by_email("puma@fart.edu");
+        $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
+        $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");
+        xassert_eqq($lu_leopard->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
+        xassert_eqq($lu_puma->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_mtnlion->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_mtnlion->primaryContactId, 0);
+        xassert_eqq($lu_puma->primaryContactId, $lu_leopard->contactId);
+        xassert_eqq($lu_leopard->primaryContactId, 0);
+
+        ContactPrimary::set_primary_user($lu_puma, null);
+        $lu_puma = $this->conf->user_by_email("puma@fart.edu");
+        $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
+        $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");
+        xassert_eqq($lu_leopard->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_puma->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_mtnlion->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_mtnlion->primaryContactId, 0);
+        xassert_eqq($lu_puma->primaryContactId, 0);
+        xassert_eqq($lu_leopard->primaryContactId, 0);
     }
 }

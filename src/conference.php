@@ -354,7 +354,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 306) {
+        if ($this->sversion < 307) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -2044,7 +2044,7 @@ class Conf {
         if (($slice & Contact::SLICEBIT_REST) === 0) {
             return "{$prefix}*, 0 _slice";
         }
-        $f = "{$prefix}contactDbId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}disabled";
+        $f = "{$prefix}contactDbId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}disabled, {$prefix}primaryContactId";
         if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
             $f .= ", {$prefix}collaborators";
         }
@@ -2289,6 +2289,13 @@ class Conf {
         }
     }
 
+    /** @param int $uid */
+    function invalidate_cdb_user_by_id($uid) {
+        if (($u = $this->_cdb_user_cache[$uid] ?? null)) {
+            $this->invalidate_cdb_user($u, false);
+        }
+    }
+
     /** @param Contact $u
      * @param bool $saved */
     private function invalidate_local_user($u, $saved) {
@@ -2366,64 +2373,57 @@ class Conf {
     function resolve_primary_emails($emails) {
         $cdb = $this->contactdb();
 
-        // load local sliced users
+        // load users
         foreach ($emails as $email) {
             $this->prefetch_user_by_email($email);
         }
-        $missing = $redirect = $oemails = [];
-        foreach ($emails as $i => $email) {
-            $u = $this->user_by_email($email, USER_SLICE);
+
+        $us = [];
+        $wantcdb = false;
+        foreach ($emails as $email) {
+            $us[] = $u = $this->user_by_email($email, USER_SLICE);
             if (!$u && $cdb) {
-                $missing[] = $i;
                 $this->prefetch_cdb_user_by_email($email);
-            } else if ($u && $u->primaryContactId > 0) {
-                $redirect[$i] = $u;
+                $wantcdb = true;
             }
-            $oemails[] = $u ? $u->email : $email;
         }
-
-        // load cdb users
-        foreach ($missing as $i) {
-            if (($u = $this->cdb_user_by_email($emails[$i]))) {
-                $oemails[$i] = $u->email;
-                if ($u->primaryContactId > 0) {
-                    $redirect[$i] = $u;
+        if ($wantcdb) {
+            foreach ($emails as $i => $email) {
+                if (!$us[$i]) {
+                    $us[$i] = $this->cdb_user_by_email($email);
                 }
             }
         }
 
-        // resolve indirected users
-        for ($round = 0; !empty($redirect) && $round !== 3; ++$round) {
-            // redirection chains stop at explicitly disabled users
-            $this_redirect = [];
-            foreach ($redirect as $i => $u) {
-                if (!$u->is_explicitly_disabled()) {
-                    if ($u->is_cdb_user()) {
-                        $this->prefetch_cdb_user_by_id($u->primaryContactId);
-                    } else {
-                        $this->prefetch_user_by_id($u->primaryContactId);
-                    }
-                    $this_redirect[$i] = $u;
-                }
-            }
+        // prefetch primaries
+        foreach ($us as $u) {
+            $this->_resolve_primary($u, 0);
+        }
 
-            $redirect = [];
-            foreach ($this_redirect as $i => $u) {
-                if ($u->is_cdb_user()) {
-                    $u2 = $this->cdb_user_by_id($u->primaryContactId);
-                } else {
-                    $u2 = $this->user_by_id($u->primaryContactId, USER_SLICE);
-                }
-                if ($u2) {
-                    $oemails[$i] = $u2->email;
-                    if ($u2->primaryContactId > 0) {
-                        $redirect[$i] = $u2;
-                    }
-                }
+        // resolve emails and primary links
+        foreach ($us as $i => $u) {
+            if (($u = $this->_resolve_primary($u, 1))) {
+                $emails[$i] = $u->email;
             }
         }
 
-        return $oemails;
+        return $emails;
+    }
+
+    private function _resolve_primary(?Contact $u, $phase) {
+        if (!$u || $u->primaryContactId <= 0 || $u->is_explicitly_disabled()) {
+            return $u;
+        }
+        if ($u->is_cdb_user() && $phase === 1) {
+            $u = $this->cdb_user_by_id($u->primaryContactId) ?? $u;
+        } else if ($u->is_cdb_user()) {
+            $this->prefetch_cdb_user_by_id($u->primaryContactId);
+        } else if ($phase === 1) {
+            $u = $this->user_by_id($u->primaryContactId) ?? $u;
+        } else {
+            $this->prefetch_user_by_id($u->primaryContactId);
+        }
+        return $u;
     }
 
 

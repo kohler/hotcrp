@@ -238,6 +238,7 @@ class Contact implements JsonSerializable {
     const CF_GDISABLED = 0x10;
     const CF_UNCONFIRMED = 0x20;
     const CF_SECURITYLOCK = 0x40;
+    const CF_PRIMARY = 0x80;
 
     const CFM_DISABLEMENT = 0x1F;
     const CFM_DB = ~0xC;
@@ -273,7 +274,7 @@ class Contact implements JsonSerializable {
         "updateTime" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_NOUPDATECDB,
         "lastLogin" => self::PROP_LOCAL | self::PROP_INT,
         "defaultWatch" => self::PROP_LOCAL | self::PROP_INT,
-        "primaryContactId" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE,
+        "primaryContactId" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE | self::PROP_NOUPDATECDB,
         "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE | self::PROP_SPECIAL,
         "cdbRoles" => self::PROP_LOCAL | self::PROP_INT,
         "disabled" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE | self::PROP_NOUPDATECDB,
@@ -925,6 +926,26 @@ class Contact implements JsonSerializable {
     /** @return \mysqli */
     function dblink() {
         return $this->is_cdb_user() ? $this->conf->contactdb() : $this->conf->dblink;
+    }
+
+    /** @param int $id
+     * @param 0|1 $sliced
+     * @return ?Contact */
+    function similar_user_by_id($id, $sliced = 0) {
+        if ($this->is_cdb_user()) {
+            return $this->conf->cdb_user_by_id($id);
+        } else {
+            return $this->conf->user_by_id($id, $sliced);
+        }
+    }
+
+    /** @param int $id */
+    function invalidate_similar_user_by_id($id) {
+        if ($this->is_cdb_user()) {
+            $this->conf->invalidate_cdb_user_by_id($id);
+        } else {
+            $this->conf->invalidate_user_by_id($id);
+        }
     }
 
     /** @return $this */
@@ -2385,6 +2406,14 @@ class Contact implements JsonSerializable {
                 $msg .= ", disabled";
             }
             $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, $msg);
+        }
+
+        // if importing a secondary user, automatically import the primary
+        if ($cdbu
+            && $cdbu->primaryContactId > 0
+            && ($cdbpri = $this->conf->cdb_user_by_id($cdbu->primaryContactId))
+            && ($pri = Contact::make_email($this->conf, $cdbpri->email)->store())) {
+            ContactPrimary::set_primary_user($this, $pri);
         }
 
         // we created the user, so no `$localu` (preexisting local user)

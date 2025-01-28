@@ -259,6 +259,7 @@ src/contact.php
 src/contactcounter.php
 src/contactcountmatcher.php
 src/contactlist.php
+src/contactprimary.php
 src/contactsearch.php
 src/contactset.php
 src/databaseidrandomizer.php

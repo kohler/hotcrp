@@ -1,6 +1,6 @@
 <?php
 // confinvariants.php -- HotCRP invariant checker
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ConfInvariants {
     /** @var Conf */
@@ -415,8 +415,28 @@ class ConfInvariants {
         }
         Dbl::free($result);
 
+        // load primary contact links
+        $primap = [];
+        $isprimary = [];
+        $result = $this->conf->qe("select contactId, primaryContactId from ContactPrimary");
+        while (($cp = $result->fetch_object())) {
+            $cp->contactId = intval($cp->contactId);
+            $cp->primaryContactId = intval($cp->primaryContactId);
+            if ($cp->contactId <= 0 || $cp->primaryContactId <= 0) {
+                $this->invariant_error("contactprimary_id", "ContactPrimary {$cp->contactId}->{$cp->primaryContactId} has nonpositive ID");
+                continue;
+            }
+            if (isset($primap[$cp->primaryContactId])) {
+                $this->invariant_error("contactprimary_conflict", "primary user {$cp->primaryContactId} is also secondary");
+            } else if (isset($isprimary[$cp->contactId])) {
+                $this->invariant_error("contactprimary_conflict", "secondary user {$cp->contactId} is also primary");
+            }
+            $primap[$cp->contactId] = $cp;
+            $isprimary[$cp->primaryContactId][] = $cp;
+        }
+        Dbl::free($result);
+
         // load users
-        $primary = [];
         $result = $this->conf->qe("select " . $this->conf->user_query_fields() . ", unaccentedName from ContactInfo");
         while (($u = $result->fetch_object())) {
             $u->contactId = intval($u->contactId);
@@ -479,29 +499,37 @@ class ConfInvariants {
                 $this->invariant_error("user_tag_strings", "bad user tags ‘{$u->contactTags}’ for {$u->email}/{$u->contactId}");
             }
 
-            // primary contactIds are not negative
-            if ($u->primaryContactId < 0) {
-                $this->invariant_error("primary_user_negative", "primary user ID for {$u->email} is negative");
-            } else if ($u->primaryContactId !== 0) {
-                $primary[$u->contactId] = $u->primaryContactId;
+            // cflags CF_PRIMARY means not secondary
+            $uprimary = ($u->cflags & Contact::CF_PRIMARY) !== 0;
+            if ($uprimary && $u->primaryContactId !== 0) {
+                $this->invariant_error("user_cflags_primary", "user {$u->email}/{$u->contactId} bad primary cflags");
             }
+
+            // cflags reflects ContactPrimary
+            if ($uprimary !== isset($isprimary[$u->contactId])) {
+                $this->invariant_error("user_cflags_primary", "user {$u->email}/{$u->contactId} primary flag disagreement");
+            }
+            $cp = $primap[$u->contactId] ?? null;
+            $cp_primary = $cp ? $cp->primaryContactId : 0;
+            if ($u->primaryContactId !== $cp_primary) {
+                $this->invariant_error("contactprimary_user", "user {$u->email}/{$u->contactId} primary disagreement (user {$u->primaryContactId}, ContactPrimary {$cp_primary})");
+            }
+            unset($isprimary[$u->contactId], $primap[$u->contactId]);
         }
         Dbl::free($result);
 
-        // primary contactIds can be resolved in at most 2 rounds
-        $tprimary = $primary;
-        for ($i = 0; $i !== 2 && !empty($tprimary); ++$i) {
-            $nprimary = [];
-            foreach ($tprimary as $uid => $puid) {
-                if (isset($primary[$puid])) {
-                    $nprimary[$uid] = $primary[$puid];
-                }
+        // no remaining ContactPrimary elements
+        if (!empty($primap) || !empty($isprimary)) {
+            $badcp = null;
+            foreach ($primap as $cp) {
+                $badcp = $cp;
+                break;
             }
-            $tprimary = $nprimary;
-        }
-        if (!empty($tprimary)) {
-            $baduid = (array_keys($tprimary))[0];
-            $this->invariant_error("primary_resolvable", "primary user ID for #{$baduid} cannot be quickly resolved");
+            foreach ($isprimary as $cpl) {
+                $badcp = $cpl[0];
+                break;
+            }
+            $this->invariant_error("contactprimary_surplus", "surplus ContactPrimary {$badcp->contactId}->{$badcp->primaryContactId}");
         }
 
         // authors are all accounted for
