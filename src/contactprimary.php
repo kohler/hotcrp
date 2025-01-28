@@ -172,7 +172,7 @@ class ContactPrimary {
                 continue;
             }
             $cfltf("insert into PaperConflict (paperId, contactId, conflictType) values ?v ?U
-                    on duplicate key update conflictType=(conflictType&~?)|?U(conflictType)",
+                    on duplicate key update conflictType=((conflictType&~?)|?U(conflictType))",
                 $qv, CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
             if ($del) {
                 $cfltf("delete from PaperConflict where paperId=? and conflictType=0",
