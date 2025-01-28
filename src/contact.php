@@ -922,6 +922,11 @@ class Contact implements JsonSerializable {
         return $this->cdb_confid !== 0;
     }
 
+    /** @return \mysqli */
+    function dblink() {
+        return $this->is_cdb_user() ? $this->conf->contactdb() : $this->conf->dblink;
+    }
+
     /** @return $this */
     function ensure_account_here() {
         assert($this->has_email());
@@ -1654,7 +1659,7 @@ class Contact implements JsonSerializable {
         $change = array_to_object_recursive($data);
         assert($cid > 0);
         Dbl::compare_exchange(
-            $cdb ? $this->conf->contactdb() : $this->conf->dblink,
+            $this->dblink(),
             "select `data` from ContactInfo where {$key}=?", [$cid],
             function ($old) use ($change) {
                 $this->data = $old;
@@ -2091,16 +2096,17 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function save_prop() {
         if ($this->cdb_confid !== 0) {
-            $db = $this->conf->contactdb();
             $idk = "contactDbId";
             $flag = self::PROP_CDB;
         } else {
-            $db = $this->conf->dblink;
             $idk = "contactId";
             $flag = self::PROP_LOCAL;
         }
+        if (empty($this->_mod_undo) && $this->$idk > 0) {
+            return true;
+        }
+        $this->_mod_undo = $this->_mod_undo ?? [];
         if ($this->$idk <= 0) {
-            $this->_mod_undo = $this->_mod_undo ?? [];
             if (!array_key_exists("password", $this->_mod_undo)) {
                 $this->password = validate_email($this->email) ? " unset" : " nologin";
                 $this->passwordTime = Conf::$now;
@@ -2109,8 +2115,9 @@ class Contact implements JsonSerializable {
                 && !array_key_exists("cdbRoles", $this->_mod_undo)) {
                 $this->cdbRoles = 0;
             }
-        } else if (empty($this->_mod_undo)) {
-            return true;
+            if (!array_key_exists("primaryContactId", $this->_mod_undo)) {
+                $this->primaryContactId = 0;
+            }
         }
         $qf = $qv = [];
         foreach (self::$props as $prop => $shape) {
@@ -2144,10 +2151,10 @@ class Contact implements JsonSerializable {
         }
         if ($this->$idk > 0) {
             $qv[] = $this->$idk;
-            $result = Dbl::qe_apply($db, "update ContactInfo set " . join(", ", $qf) . " where {$idk}=?", $qv);
+            $result = Dbl::qe_apply($this->dblink(), "update ContactInfo set " . join(", ", $qf) . " where {$idk}=?", $qv);
         } else {
             assert($this->email !== "");
-            $result = Dbl::qe_apply($db, "insert into ContactInfo set " . join(", ", $qf) . " on duplicate key update cflags=cflags", $qv);
+            $result = Dbl::qe_apply($this->dblink(), "insert into ContactInfo set " . join(", ", $qf) . " on duplicate key update cflags=cflags", $qv);
             if ($result->affected_rows > 0) {
                 $this->$idk = (int) $result->insert_id;
                 if ($this->cdb_confid === 0) {
@@ -2318,40 +2325,10 @@ class Contact implements JsonSerializable {
 
         // import properties from cdb
         if (!$localu) {
-            $this->_mod_undo = ["disabled" => -1, "cflags" => -1];
-            foreach (self::importable_props() as $prop => $shape) {
-                $this->_mod_undo[$prop] = ($shape & self::PROP_NULL) !== 0 ? null : "";
-            }
-            if ($cdbu) {
-                $this->password = "";
-                if ($cdbu->contactDbId > 0) {
-                    $this->import_prop($cdbu, $cdbu->is_placeholder() ? 2 : 0);
-                    $this->passwordTime = $cdbu->passwordTime;
-                } else {
-                    $this->passwordTime = 0;
-                }
-                $this->passwordUseTime = 0;
-                $this->_mod_undo["password"] = null;
-                $this->_mod_undo["passwordTime"] = null;
-                $this->_mod_undo["passwordUseTime"] = null;
-            }
-            $this->_cdb_user = $cdbu;
-
-            if ($this->save_prop()) {
-                // log creation (except for placeholder accounts)
-                if (($this->cflags & self::CF_PLACEHOLDER) === 0) {
-                    $msg = "Account created";
-                    if (($this->cflags & self::CFM_DISABLEMENT & ~self::CF_ROLEDISABLED) !== 0) {
-                        $msg .= ", disabled";
-                    }
-                    $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, $msg);
-                }
-            } else {
-                // maybe user already existed
-                $localu = $this->conf->fresh_user_by_email($this->email);
-                if (!$localu) {
-                    return null;
-                }
+            $localu = $this->_store_create($cdbu, $actor);
+            if (!$localu && $this->contactId <= 0) {
+                // failed to create user
+                return null;
             }
         }
 
@@ -2370,6 +2347,48 @@ class Contact implements JsonSerializable {
         }
 
         return $this;
+    }
+
+    /** @param ?Contact $cdbu
+     * @param ?Contact $actor
+     * @return ?Contact */
+    private function _store_create($cdbu, $actor) {
+        $this->_mod_undo = ["disabled" => -1, "cflags" => -1];
+        foreach (self::importable_props() as $prop => $shape) {
+            $this->_mod_undo[$prop] = ($shape & self::PROP_NULL) !== 0 ? null : "";
+        }
+
+        if ($cdbu) {
+            $this->password = "";
+            if ($cdbu->contactDbId > 0) {
+                $this->import_prop($cdbu, $cdbu->is_placeholder() ? 2 : 0);
+                $this->passwordTime = $cdbu->passwordTime;
+            } else {
+                $this->passwordTime = 0;
+            }
+            $this->passwordUseTime = 0;
+            $this->_mod_undo["password"] = null;
+            $this->_mod_undo["passwordTime"] = null;
+            $this->_mod_undo["passwordUseTime"] = null;
+        }
+        $this->_cdb_user = $cdbu;
+
+        if (!$this->save_prop()) {
+            // maybe user actually already existed; return it as `$localu`
+            return $this->conf->fresh_user_by_email($this->email);
+        }
+
+        // log creation of non-placeholder accounts
+        if (($this->cflags & self::CF_PLACEHOLDER) === 0) {
+            $msg = "Account created";
+            if (($this->cflags & self::CFM_DISABLEMENT & ~self::CF_ROLEDISABLED) !== 0) {
+                $msg .= ", disabled";
+            }
+            $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, $msg);
+        }
+
+        // we created the user, so no `$localu` (preexisting local user)
+        return null;
     }
 
 
@@ -2863,10 +2882,9 @@ class Contact implements JsonSerializable {
     function cdb_roles() {
         if ($this->is_disabled()) {
             return 0;
-        } else {
-            $this->check_author_reviewer_status(self::ROLE_CDBMASK);
-            return $this->roles & self::ROLE_CDBMASK;
         }
+        $this->check_author_reviewer_status(self::ROLE_CDBMASK);
+        return $this->roles & self::ROLE_CDBMASK;
     }
 
     /** @return bool */

@@ -1,6 +1,6 @@
 <?php
 // conference.php -- HotCRP central class representing a conference
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Conf {
     /** @var ?mysqli
@@ -2012,24 +2012,23 @@ class Conf {
      * @param string $prefix
      * @return string */
     function user_query_fields($slice = Contact::SLICE_MINIMAL, $prefix = "") {
-        if (($slice & Contact::SLICEBIT_REST) !== 0) {
-            $f = "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}roles, {$prefix}disabled, {$prefix}primaryContactId, {$prefix}contactTags, {$prefix}cflags";
-            if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
-                $f .= ", {$prefix}collaborators";
-            }
-            if (($slice & Contact::SLICEBIT_PASSWORD) === 0) {
-                $f .= ", {$prefix}password";
-            }
-            if (($slice & Contact::SLICEBIT_COUNTRY) === 0) {
-                $f .= ", {$prefix}country";
-            }
-            if (($slice & Contact::SLICEBIT_ORCID) === 0) {
-                $f .= ", {$prefix}orcid";
-            }
-            return "{$f}, {$slice} _slice";
-        } else {
+        if (($slice & Contact::SLICEBIT_REST) === 0) {
             return "{$prefix}*, 0 _slice";
         }
+        $f = "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}roles, {$prefix}disabled, {$prefix}primaryContactId, {$prefix}contactTags, {$prefix}cflags";
+        if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
+            $f .= ", {$prefix}collaborators";
+        }
+        if (($slice & Contact::SLICEBIT_PASSWORD) === 0) {
+            $f .= ", {$prefix}password";
+        }
+        if (($slice & Contact::SLICEBIT_COUNTRY) === 0) {
+            $f .= ", {$prefix}country";
+        }
+        if (($slice & Contact::SLICEBIT_ORCID) === 0) {
+            $f .= ", {$prefix}orcid";
+        }
+        return "{$f}, {$slice} _slice";
     }
 
     /** @param string $prefix
@@ -2042,24 +2041,23 @@ class Conf {
      * @param string $prefix
      * @return string */
     function contactdb_user_query_fields($slice = Contact::SLICE_MINIMAL, $prefix = "") {
-        if (($slice & Contact::SLICEBIT_REST) !== 0) {
-            $f = "{$prefix}contactDbId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}disabled";
-            if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
-                $f .= ", {$prefix}collaborators";
-            }
-            if (($slice & Contact::SLICEBIT_PASSWORD) === 0) {
-                $f .= ", {$prefix}password";
-            }
-            if (($slice & Contact::SLICEBIT_COUNTRY) === 0) {
-                $f .= ", {$prefix}country";
-            }
-            if (($slice & Contact::SLICEBIT_ORCID) === 0) {
-                $f .= ", {$prefix}orcid";
-            }
-            return "{$f}, {$slice} _slice";
-        } else {
+        if (($slice & Contact::SLICEBIT_REST) === 0) {
             return "{$prefix}*, 0 _slice";
         }
+        $f = "{$prefix}contactDbId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}disabled";
+        if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
+            $f .= ", {$prefix}collaborators";
+        }
+        if (($slice & Contact::SLICEBIT_PASSWORD) === 0) {
+            $f .= ", {$prefix}password";
+        }
+        if (($slice & Contact::SLICEBIT_COUNTRY) === 0) {
+            $f .= ", {$prefix}country";
+        }
+        if (($slice & Contact::SLICEBIT_ORCID) === 0) {
+            $f .= ", {$prefix}orcid";
+        }
+        return "{$f}, {$slice} _slice";
     }
 
 
@@ -2171,13 +2169,15 @@ class Conf {
         foreach ($this->_user_cache_missing ?? [] as $req) {
             $req = self::clean_user_cache_request($req);
             if (is_int($req)) {
-                if (!array_key_exists($req, $this->_user_cache)) {
+                if ($req !== 0
+                    && !array_key_exists($req, $this->_user_cache)) {
                     $this->_user_cache[$req] = null;
                     $reqids[] = $req;
                 }
             } else if (is_string($req)) {
                 $this->_ensure_user_email_cache();
-                if (!array_key_exists($req, $this->_user_email_cache)) {
+                if ($req !== ""
+                    && !array_key_exists($req, $this->_user_email_cache)) {
                     $this->_user_email_cache[$req] = null;
                     $reqemails[] = $req;
                 }

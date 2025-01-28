@@ -1449,66 +1449,68 @@ class PaperStatus extends MessageSet {
     }
 
     private function _execute_conflicts() {
-        if (!empty($this->_conflict_ins)) {
-            // insert conflicts
-            $auflags = CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR;
-            $clears = 0;
-            $qxa = [];
-            foreach ($this->_conflict_ins as $ci) {
-                $ci1 = $ci[1] & ~$ci[2];
-                if ($ci1 !== 0) {
-                    $ci1x = "(PaperConflict.conflictType&~{$ci1})";
-                } else {
-                    $ci1x = "PaperConflict.conflictType";
-                }
-                $clears |= $ci1;
-                if (($ci[1] & CONFLICT_PCMASK) === (CONFLICT_PCMASK & ~1)) {
-                    $ci1a = $ci[1] & ~$ci[2] & $auflags;
-                    $ci2a = $ci[2] & $auflags;
-                    if ($ci1a !== 0) {
-                        $ci1ax = "(PaperConflict.conflictType&~{$ci1a})";
-                    } else {
-                        $ci1ax = "PaperConflict.conflictType";
-                    }
-                    $k = "if(PaperConflict.conflictType&1,({$ci1ax}|{$ci2a}),({$ci1x}|{$ci[2]}))";
-                } else {
-                    $k = "({$ci1x}|?U(conflictType))";
-                }
-                $qxa[$k][] = [$this->paperId, $ci[0], $ci[2]];
-            }
-            $cfltf = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_ERROR);
-            foreach ($qxa as $k => $qv) {
-                $cfltf("insert into PaperConflict (paperId,contactId,conflictType) values ?v ?U on duplicate key update conflictType={$k}", $qv);
-            }
-            if ($clears !== 0) {
-                $cfltf("delete from PaperConflict where paperId=? and conflictType=0", $this->paperId);
-            }
-            $cfltf(null);
+        if (empty($this->_conflict_ins)) {
+            return;
         }
-
-        if (!empty($this->_author_change_cids)) {
-            // enable placeholder users that are now contacts;
-            // update author records in contactdb
-            $this->conf->prefetch_users_by_id($this->_author_change_cids);
-            $us = [];
-            foreach ($this->_author_change_cids as $uid) {
-                $u = $this->conf->user_by_id($uid);
-                if ($u === null) {
-                    continue;
-                }
-                $us[] = $u;
-                if (self::new_conflict_value($this->_conflict_values[$u->contactId]) >= CONFLICT_CONTACTAUTHOR
-                    && $u->activate_placeholder(false)) {
-                    $this->_created_contacts[] = $u;
-                }
+        // insert conflicts
+        $auflags = CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR;
+        $clears = 0;
+        $qxa = [];
+        foreach ($this->_conflict_ins as $ci) {
+            $ci1 = $ci[1] & ~$ci[2];
+            if ($ci1 !== 0) {
+                $ci1x = "(PaperConflict.conflictType&~{$ci1})";
+            } else {
+                $ci1x = "PaperConflict.conflictType";
             }
-            if ($this->conf->contactdb()) {
-                foreach ($us as $u) {
-                    $this->conf->prefetch_cdb_user_by_email($u->email);
+            $clears |= $ci1;
+            if (($ci[1] & CONFLICT_PCMASK) === (CONFLICT_PCMASK & ~1)) {
+                $ci1a = $ci[1] & ~$ci[2] & $auflags;
+                $ci2a = $ci[2] & $auflags;
+                if ($ci1a !== 0) {
+                    $ci1ax = "(PaperConflict.conflictType&~{$ci1a})";
+                } else {
+                    $ci1ax = "PaperConflict.conflictType";
                 }
-                foreach ($us as $u) {
-                    $u->update_cdb_roles();
-                }
+                $k = "if(PaperConflict.conflictType&1,({$ci1ax}|{$ci2a}),({$ci1x}|{$ci[2]}))";
+            } else {
+                $k = "({$ci1x}|?U(conflictType))";
+            }
+            $qxa[$k][] = [$this->paperId, $ci[0], $ci[2]];
+        }
+        $cfltf = Dbl::make_multi_query_stager($this->conf->dblink, Dbl::F_ERROR);
+        foreach ($qxa as $k => $qv) {
+            $cfltf("insert into PaperConflict (paperId,contactId,conflictType) values ?v ?U on duplicate key update conflictType={$k}", $qv);
+        }
+        if ($clears !== 0) {
+            $cfltf("delete from PaperConflict where paperId=? and conflictType=0", $this->paperId);
+        }
+        $cfltf(null);
+    }
+
+    private function _execute_author_changes() {
+        if (empty($this->_author_change_cids)) {
+            return;
+        }
+        // enable placeholder users that are now contacts;
+        // update author records in contactdb
+        $this->conf->prefetch_users_by_id($this->_author_change_cids);
+        $us = [];
+        foreach ($this->_author_change_cids as $uid) {
+            $u = $this->conf->user_by_id($uid);
+            if ($u === null) {
+                continue;
+            }
+            $us[] = $u;
+            if (self::new_conflict_value($this->_conflict_values[$u->contactId]) >= CONFLICT_CONTACTAUTHOR
+                && $u->activate_placeholder(false)) {
+                $this->_created_contacts[] = $u;
+            }
+            $this->conf->prefetch_cdb_user_by_email($u->email);
+        }
+        if ($this->conf->contactdb()) {
+            foreach ($us as $u) {
+                $u->update_cdb_roles();
             }
         }
     }
@@ -1582,6 +1584,7 @@ class PaperStatus extends MessageSet {
         $this->_execute_topics();
         $this->_execute_options();
         $this->_execute_conflicts();
+        $this->_execute_author_changes();
 
         if ($this->_document_pids_needed) {
             $this->conf->qe("update PaperStorage set paperId=? where paperStorageId?a", $this->paperId, $this->_dids);

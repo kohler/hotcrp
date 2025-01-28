@@ -1,6 +1,6 @@
 <?php
 // o_contacts.php -- HotCRP helper class for contacts intrinsic
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Contacts_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
@@ -25,7 +25,7 @@ class Contacts_PaperOption extends PaperOption {
     function value_force(PaperValue $ov) {
         // $ov->value_list: contact IDs
         // $ov->data_list: emails
-        // $ov->anno("users"): list<Contact>
+        // $ov->anno("users"): list<Author>
         // NB fake papers start out with this user as contact
         // NB only non-placeholder users
         $ca = $va = [];
@@ -60,16 +60,17 @@ class Contacts_PaperOption extends PaperOption {
         return $j;
     }
     function value_check(PaperValue $ov, Contact $user) {
-        if ($ov->anno("modified") && !$user->allow_administer($ov->prow)) {
-            if ($ov->prow->conflict_type($user) >= CONFLICT_CONTACTAUTHOR
-                && self::ca_index(self::users_anno($ov), $user->email) === false) {
-                $ov->error($this->conf->_("<0>You can’t remove yourself from the submission’s contacts"));
-                $ov->msg("<0>(Ask another contact to remove you.)", MessageSet::INFORM);
-            } else if (empty($ov->value_list())
-                       && $ov->prow->paperId > 0
-                       && !empty($ov->prow->contact_list())) {
-                $ov->error($this->conf->_("<0>Each submission must have at least one contact"));
-            }
+        if (!$ov->anno("modified") || $user->allow_administer($ov->prow)) {
+            return;
+        }
+        if ($ov->prow->conflict_type($user) >= CONFLICT_CONTACTAUTHOR
+            && self::ca_index(self::users_anno($ov), $user->email) === false) {
+            $ov->error($this->conf->_("<0>You can’t remove yourself from the submission’s contacts"));
+            $ov->msg("<0>(Ask another contact to remove you.)", MessageSet::INFORM);
+        } else if (empty($ov->value_list())
+                   && $ov->prow->paperId > 0
+                   && !empty($ov->prow->contact_list())) {
+            $ov->error($this->conf->_("<0>Each submission must have at least one contact"));
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
