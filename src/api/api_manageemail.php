@@ -306,6 +306,8 @@ class ManageEmail_API extends MessageSet {
             $this->dstuser->contactId, $this->user->contactId);
         $this->conf->qe("update PaperReviewRefused set requestedBy=? where requestedBy=?",
             $this->dstuser->contactId, $this->user->contactId);
+        $this->conf->qe("update ReviewRequest set email=? where email=?",
+            $this->dstuser->email, $this->user->email);
         $this->conf->qe("update ReviewRequest set requestedBy=? where requestedBy=?",
             $this->dstuser->contactId, $this->user->contactId);
     }
