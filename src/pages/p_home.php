@@ -76,7 +76,11 @@ class Home_Page {
      * @param ComponentSet $gx */
     static function profilecheck($user, $gx) {
         $gx->enter()->set_context_args($user);
-        $v = $gx->call_members("__profilecheck", "&&");
+        $v = true;
+        foreach ($gx->members("__profilecheck") as $gj) {
+            if (!($v = $gx->call_function($gj, $gj->function, $gj)))
+                break;
+        }
         $gx->leave();
         return $v;
     }

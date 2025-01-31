@@ -573,7 +573,8 @@ class ComponentSet {
 
     /** @param string $name
      * @param null|string $reducer
-     * @return mixed */
+     * @return mixed
+     * @deprecated */
     function call_members($name, $reducer = null) {
         $result = $reducer === null ? [] : null;
         foreach ($this->members($name) as $gj) {
