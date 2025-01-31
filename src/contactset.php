@@ -46,11 +46,6 @@ class ContactSet implements IteratorAggregate, Countable {
     function as_map() {
         return $this->by_uid;
     }
-    /** @return array<int,Contact>
-     * @deprecated */
-    function all() {
-        return $this->by_uid;
-    }
     /** @return list<int> */
     function user_ids() {
         return array_keys($this->by_uid);

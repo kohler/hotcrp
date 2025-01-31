@@ -429,13 +429,6 @@ class TokenInfo {
         return $this;
     }
 
-    /** @return ?string
-     * @deprecated */
-    function create() {
-        $this->insert();
-        return $this->timeCreated ? $this->salt : null;
-    }
-
     /** @param ?string $key
      * @return mixed */
     final function data($key = null) {

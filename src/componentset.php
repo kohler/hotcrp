@@ -376,16 +376,6 @@ class ComponentSet {
         return $this->on_leave([$this, "print"], $name);
     }
 
-    /** @param string $cleaner
-     * @deprecated */
-    function push_print_cleanup($cleaner) {
-        if (is_string($cleaner)) {
-            $this->print_on_leave($cleaner);
-        } else {
-            $this->on_leave($cleaner);
-        }
-    }
-
     /** @param string $classes
      * @return $this */
     function add_section_class($classes) {
@@ -533,14 +523,6 @@ class ComponentSet {
             $this->mark_separator();
         }
         return $result;
-    }
-
-    /** @param string $name
-     * @param bool $top
-     * @return mixed
-     * @deprecated */
-    function print_group($name, $top = false) {
-        return $top ? $this->print_body_members($name) : $this->print_members($name);
     }
 
     /** @param string $name

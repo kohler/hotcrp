@@ -1414,13 +1414,6 @@ class UserStatus extends MessageSet {
     }
 
 
-    /** @return bool
-     * @deprecated */
-    function has_req_security() {
-        return $this->cs()->callable("Security_UserInfo")->allow_security_changes();
-    }
-
-
     static private $csv_keys = [
         ["email"],
         ["user"],

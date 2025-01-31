@@ -3887,35 +3887,6 @@ class Conf {
         return $this->qrequrl($qreq, $param ?? [], $flags);
     }
 
-    /** @param Qrequest $qreq
-     * @param ?array $param
-     * @param int $flags
-     * @return string
-     * @deprecated */
-    function site_referrer_url(Qrequest $qreq, $param = null, $flags = 0) {
-        if (($r = $qreq->referrer()) && ($rf = parse_url($r))) {
-            $sup = $qreq->navigation()->siteurl_path();
-            $path = $rf["path"] ?? "";
-            if ($path !== "" && str_starts_with($path, $sup)) {
-                $xqreq = new Qrequest("GET");
-                $xqreq->set_user($qreq->user());
-                $p = substr($path, strlen($sup));
-                if (($slash = strpos($p, "/"))) {
-                    $xqreq->set_page(substr($p, $slash), substr($p, $slash + 1));
-                } else {
-                    $xqreq->set_page($p);
-                }
-                preg_match_all('/([^=;&]+)=([^;&]+)/', $rf["query"] ?? "", $m, PREG_SET_ORDER);
-                foreach ($m as $mx) {
-                    $xqreq[urldecode($mx[1])] = urldecode($mx[2]);
-                }
-                return $this->qrequrl($xqreq, $param ?? [], $flags);
-            }
-        }
-        return $this->selfurl($qreq, $param, $flags);
-    }
-
-
     /** @return int */
     function saved_messages_status() {
         $st = 0;
@@ -3973,18 +3944,6 @@ class Conf {
      * @throws Redirection */
     function redirect_self(Qrequest $qreq, $param = null) {
         $this->redirect($this->selfurl($qreq, $param, self::HOTURL_RAW));
-    }
-
-    /** @param string $siteurl
-     * @return string
-     * @deprecated */
-    function make_absolute_site($siteurl) {
-        $nav = Navigation::get();
-        if (str_starts_with($siteurl, "u/")) {
-            return $nav->resolve($siteurl, $nav->base_path);
-        } else {
-            return $nav->resolve($siteurl, $nav->site_path);
-        }
     }
 
     /** @param Qrequest $qreq

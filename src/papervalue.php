@@ -1,15 +1,11 @@
 <?php
 // papervalue.php -- HotCRP helper class for paper options
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class PaperValue implements JsonSerializable {
     /** @var PaperInfo
      * @readonly */
     public $prow;
-    /** @var int
-     * @deprecated
-     * @readonly */
-    public $id;
     /** @var PaperOption
      * @readonly */
     public $option;
@@ -32,7 +28,6 @@ class PaperValue implements JsonSerializable {
      * @suppress PhanDeprecatedProperty */
     function __construct($prow, PaperOption $o) { // XXX should be private
         $this->prow = $prow;
-        $this->id = $o->id;
         $this->option = $o;
     }
     /** @param PaperInfo $prow
@@ -188,11 +183,6 @@ class PaperValue implements JsonSerializable {
         $this->prow->invalidate_options(true);
         $this->load_value_data();
         $this->_anno = null;
-    }
-    /** @param string $method
-     * @deprecated */
-    function call($method, ...$args) {
-        return $this->option->$method($this, ...$args);
     }
 
     /** @param string $name
