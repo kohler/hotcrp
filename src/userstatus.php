@@ -220,15 +220,16 @@ class UserStatus extends MessageSet {
 
     /** @return ComponentSet */
     function cs() {
-        if ($this->_cs === null) {
-            $this->_cs = new ComponentSet($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
-            $this->_cs->set_title_class("form-h")
-                ->set_section_class("form-section")
-                ->set_separator('<hr class="form-sep">')
-                ->add_print_callback([$this, "_print_callback"]);
-            $this->_cs->add_xt_checker([$this, "xt_allower"]);
-            $this->initialize_cs();
+        if ($this->_cs !== null) {
+            return $this->_cs;
         }
+        $this->_cs = new ComponentSet($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
+        $this->_cs->set_title_class("form-h")
+            ->set_section_class("form-section")
+            ->set_separator('<hr class="form-sep">')
+            ->add_print_callback([$this, "_print_callback"]);
+        $this->_cs->add_xt_checker([$this, "xt_allower"]);
+        $this->initialize_cs();
         return $this->_cs;
     }
 
@@ -1905,10 +1906,11 @@ John Adams,john@earbox.org,UC Berkeley,pc
     }
 
     static function print_bulk_help_topics(UserStatus $us) {
-        if ($us->conf->has_topics()) {
-            echo '<dl class="ctelt dd"><dt><code>topic: &lt;TOPIC NAME&gt;</code></dt>',
-                '<dd>Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)</dd></dl>';
+        if (!$us->conf->has_topics()) {
+            return;
         }
+        echo '<dl class="ctelt dd"><dt><code>topic: &lt;TOPIC NAME&gt;</code></dt>',
+            '<dd>Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)</dd></dl>';
     }
 
 

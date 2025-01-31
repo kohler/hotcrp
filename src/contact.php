@@ -778,6 +778,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @param Qrequest $qreq
+     * @param bool $signin
      * @return Contact */
     function activate($qreq, $signin, $userindex = 0) {
         $this->_activated |= 1 | ($userindex << 8);
@@ -3408,7 +3409,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function can_edit_password(Contact $acct) {
         return !$acct->security_locked()
-            && ((($this->_activated & 7) === 1
+            && ((($this->_activated & 7) === 1 /* activated, not actas, not token */
                  && $this->contactId > 0
                  && $this->contactId === $acct->contactId)
                 || $this->can_edit_any_password());

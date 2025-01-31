@@ -342,21 +342,22 @@ class Profile_Page {
         if (!empty($ustatus->unknown_topics)) {
             $ms->warning_at(null, $this->conf->_("<0>Unknown topics ignored ({:list})", array_keys($ustatus->unknown_topics)));
         }
-        $mpos = 0;
+        $ml = [];
         if (!empty($success)) {
-            $ms->splice_item($mpos++, MessageItem::success($this->conf->_("<5>Saved accounts {:list}", $success)));
+            $ml[] = MessageItem::success($this->conf->_("<5>Accounts {:list} saved", $success));
         } else if ($ms->has_error()) {
-            $ms->splice_item($mpos++, MessageItem::error($this->conf->_("<0>Changes not saved; please correct these errors and try again")));
+            $ml[] = MessageItem::error($this->conf->_("<0>Changes not saved; please correct these errors and try again"));
         }
         if (!empty($notified)) {
-            $ms->splice_item($mpos++, MessageItem::success($this->conf->_("<5>Activated accounts and sent mail to {:list}", $notified)));
+            $ml[] = MessageItem::success($this->conf->_("<5>Accounts {:list} activated and notified", $notified));
         }
         if (!empty($nochanges)) {
-            $ms->splice_item($mpos++, new MessageItem(null, $this->conf->_("<5>No changes to accounts {:list}", $nochanges), MessageSet::WARNING_NOTE));
-        } else if (!$ms->has_message()) {
-            $ms->splice_item($mpos++, new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE));
+            $ml[] = MessageItem::warning_note($this->conf->_("<5>No changes to accounts {:list}", $nochanges));
         }
-        $this->conf->feedback_msg($this->decorated_message_list($ms));
+        if (empty($ml) && !$ms->has_message()) {
+            $ml[] = MessageItem::warning_note("<0>No changes");
+        }
+        $this->conf->feedback_msg($ml, $this->decorated_message_list($ms));
         return !$ms->has_error();
     }
 
@@ -381,17 +382,17 @@ class Profile_Page {
         $saved_user = $this->save_user($this->ustatus, $this->page_type !== 0 ? null : $this->user);
 
         // report messages
+        $ml = [];
         $purl = $this->conf->hoturl("profile", ["u" => $saved_user ? $saved_user->email : null]);
         if ($this->ustatus->has_error()) {
-            $this->ustatus->prepend_item(MessageItem::error("<0>Changes not saved; please correct the highlighted errors and try again"));
+            $ml[] = MessageItem::error("<0>Changes not saved; please correct the highlighted errors and try again");
         } else if ($this->ustatus->created && $this->ustatus->notified) {
-            $this->ustatus->prepend_item(MessageItem::success("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created and notified"));
+            $ml[] = MessageItem::success("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created and notified");
         } else if ($this->ustatus->created) {
-            $this->ustatus->prepend_item(MessageItem::success("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created, but not notified"));
+            $ml[] = MessageItem::success("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created, but not notified");
         } else {
-            $pos = 0;
             if ($this->page_type !== 0) {
-                $this->ustatus->splice_item($pos++, MessageItem::warning_note("<5>User " . Ht::link($saved_user->name_h(NAME_E), $purl) . " already had an account on this site"));
+                $ml[] = MessageItem::warning_note("<5>User " . Ht::link($saved_user->name_h(NAME_E), $purl) . " already had an account on this site");
             }
             if ($this->page_type !== 0 || $this->user !== $this->viewer) {
                 $diffs = " to " . commajoin(array_keys($this->ustatus->diffs));
@@ -400,15 +401,15 @@ class Profile_Page {
             }
             if (empty($this->ustatus->diffs)) {
                 if (!$this->ustatus->has_message_at("email_confirm")) {
-                    $this->ustatus->splice_item($pos++, MessageItem::warning_note("<0>No changes"));
+                    $ml[] = MessageItem::warning_note("<0>No changes");
                 }
             } else if ($this->ustatus->notified) {
-                $this->ustatus->splice_item($pos++, MessageItem::success("<0>Changes saved{$diffs} and user notified"));
+                $ml[] = MessageItem::success("<0>Changes saved{$diffs} and user notified");
             } else {
-                $this->ustatus->splice_item($pos++, MessageItem::success("<0>Changes saved{$diffs}"));
+                $ml[] = MessageItem::success("<0>Changes saved{$diffs}");
             }
         }
-        $this->conf->feedback_msg($this->decorated_message_list($this->ustatus, $this->ustatus));
+        $this->conf->feedback_msg($ml, $this->decorated_message_list($this->ustatus, $this->ustatus));
 
         // exit on error
         if ($this->ustatus->has_error()) {
@@ -418,31 +419,30 @@ class Profile_Page {
         // redirect on success
         if (isset($this->qreq->redirect)) {
             $this->conf->redirect();
-        } else {
-            $xcj = [];
-            if ($this->page_type !== 0) {
-                $roles = $this->ustatus->jval->roles ?? [];
-                if (in_array("chair", $roles)) {
-                    $xcj["pctype"] = "chair";
-                } else if (in_array("pc", $roles)) {
-                    $xcj["pctype"] = "pc";
-                } else {
-                    $xcj["pctype"] = "none";
-                }
-                if (in_array("sysadmin", $roles)) {
-                    $xcj["ass"] = 1;
-                }
-                $xcj["contactTags"] = join(" ", $this->ustatus->jval->tags ?? []);
-            }
-            if ($this->ustatus->has_problem()) {
-                $xcj["warning_fields"] = $this->ustatus->problem_fields();
-            }
-            $this->qreq->set_csession("profile_redirect", $xcj);
-            if ($this->user !== $this->viewer && $this->page_type === 0) {
-                $this->conf->redirect_self($this->qreq, ["u" => $this->user->email]);
+        }
+        $xcj = [];
+        if ($this->page_type !== 0) {
+            $roles = $this->ustatus->jval->roles ?? [];
+            if (in_array("chair", $roles)) {
+                $xcj["pctype"] = "chair";
+            } else if (in_array("pc", $roles)) {
+                $xcj["pctype"] = "pc";
             } else {
-                $this->conf->redirect_self($this->qreq);
+                $xcj["pctype"] = "none";
             }
+            if (in_array("sysadmin", $roles)) {
+                $xcj["ass"] = 1;
+            }
+            $xcj["contactTags"] = join(" ", $this->ustatus->jval->tags ?? []);
+        }
+        if ($this->ustatus->has_problem()) {
+            $xcj["warning_fields"] = $this->ustatus->problem_fields();
+        }
+        $this->qreq->set_csession("profile_redirect", $xcj);
+        if ($this->user !== $this->viewer && $this->page_type === 0) {
+            $this->conf->redirect_self($this->qreq, ["u" => $this->user->email]);
+        } else {
+            $this->conf->redirect_self($this->qreq);
         }
     }
 

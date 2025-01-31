@@ -285,31 +285,31 @@ class Paper_Page {
         }
 
         // HTML confirmation
-        $msgpos = 0;
+        $ml = [];
         if (!$this->ps->has_change()) {
             if (!$this->ps->has_error()) {
-                $this->ps->splice_item($msgpos++, MessageItem::warning_note($conf->_("<0>No changes")));
+                $ml[] = MessageItem::warning_note($conf->_("<0>No changes"));
             }
         } else if ($is_new) {
-            $this->ps->splice_item($msgpos++, MessageItem::success($conf->_("<0>Registered {submission} as #{}", $new_prow->paperId)));
+            $ml[] = MessageItem::success($conf->_("<0>Registered {submission} as #{}", $new_prow->paperId));
         } else {
             $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
-            $this->ps->splice_item($msgpos++, MessageItem::success($conf->_("<0>Updated {submission} (changed {:list})", $chf, new FmtArg("phase", $is_final ? "final" : "review"))));
+            $ml[] = MessageItem::success($conf->_("<0>Updated {submission} (changed {:list})", $chf, new FmtArg("phase", $is_final ? "final" : "review")));
         }
         if ($this->ps->has_error()) {
             if (!$this->ps->has_change()) {
-                $this->ps->splice_item($msgpos++, MessageItem::error($conf->_("<5><strong>Changes not saved.</strong> Please correct these issues and save again.")));
+                $ml[] = MessageItem::error($conf->_("<5><strong>Changes not saved.</strong> Please correct these issues and save again."));
             } else {
-                $this->ps->splice_item($msgpos++, MessageItem::urgent_note($conf->_("<0>Please correct these issues and save again.")));
+                $ml[] = MessageItem::urgent_note($conf->_("<0>Please correct these issues and save again."));
             }
         } else if ($this->ps->has_problem() && !$sr->freeze) {
-            $this->ps->splice_item($msgpos++, MessageItem::warning_note($conf->_("<0>Please check these issues before completing the {submission}.")));
+            $ml[] = MessageItem::warning_note($conf->_("<0>Please check these issues before completing the {submission}."));
         }
         $notes_ftext = Ftext::join_nonempty(" ", $notes);
         if ($notes_ftext !== "") {
             $this->ps->append_item(new MessageItem(null, $notes_ftext, $note_status));
         }
-        $conf->feedback_msg($this->ps->decorated_message_list());
+        $conf->feedback_msg($ml, $this->ps->decorated_message_list());
 
         // mail confirmation to all contact authors if changed
         if ($this->ps->has_change()) {

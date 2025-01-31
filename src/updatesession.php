@@ -142,8 +142,8 @@ class UpdateSession {
     }
 
     /** @param string $email
-     * @param 0|1|2 $type
-     * @param 0|1 $reason
+     * @param 0|1|2 $type - 0 password, 2 MFA
+     * @param 0|1 $reason - 0 login, 1 confirmation
      * @param bool $success */
     static function usec_add(Qrequest $qreq, $email, $type, $reason, $success) {
         // See `etc/devel/sessions.md` for format information

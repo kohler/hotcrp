@@ -168,24 +168,24 @@ class ComponentSet {
 
     /** @param string $name
      * @return ?object */
-    function get_raw($name) {
-        if (!array_key_exists($name, $this->_raw)) {
-            if (($xt = $this->xtp->search_list($this->_jall[$name] ?? []))
-                && Conf::xt_enabled($xt)) {
-                $this->_raw[$name] = $xt;
-            } else {
-                $this->_raw[$name] = null;
-            }
+    private function get_noalias($name) {
+        if (array_key_exists($name, $this->_raw)) {
+            return $this->_raw[$name];
         }
-        return $this->_raw[$name];
+        $xt = $this->xtp->search_list($this->_jall[$name] ?? []);
+        if ($xt && !Conf::xt_enabled($xt)) {
+            $xt = null;
+        }
+        $this->_raw[$name] = $xt;
+        return $xt;
     }
 
     /** @param string $name
      * @return ?object */
     function get($name) {
-        $gj = $this->get_raw($name);
+        $gj = $this->get_noalias($name);
         for ($nalias = 0; $gj && isset($gj->alias) && $nalias < 5; ++$nalias) {
-            $gj = $this->get_raw($gj->alias);
+            $gj = $this->get_noalias($gj->alias);
         }
         return $gj;
     }
@@ -194,12 +194,11 @@ class ComponentSet {
      * @return ?string */
     function canonical_group($x) {
         $gj = is_string($x) ? $this->get($x) : $x;
-        if ($gj) {
-            $pos = strpos($gj->group, "/");
-            return $pos === false ? $gj->group : substr($gj->group, 0, $pos);
-        } else {
+        if (!$gj) {
             return null;
         }
+        $pos = strpos($gj->group, "/");
+        return $pos === false ? $gj->group : substr($gj->group, 0, $pos);
     }
 
     /** @param string $name
@@ -213,7 +212,7 @@ class ComponentSet {
         $r = [];
         $alias = false;
         foreach (array_unique($this->_potential_members[$name] ?? []) as $subname) {
-            if (($gj = $this->get_raw($subname))
+            if (($gj = $this->get_noalias($subname))
                 && $gj->group === ($name === "" ? $gj->name : $name)
                 && $gj->name !== $name
                 && (!isset($gj->alias) || isset($gj->order))

@@ -1202,14 +1202,12 @@ class PaperStatus extends MessageSet {
     /** @param object $pj
      * @return bool */
     private function _finish_prepare($pj) {
-        $ok = $this->_normalize_and_check($pj);
-        if ($ok) {
+        if ($this->_normalize_and_check($pj)) {
             return true;
-        } else {
-            $this->prow->abort_prop();
-            $this->prow->remove_option_overrides();
-            return false;
         }
+        $this->prow->abort_prop();
+        $this->prow->remove_option_overrides();
+        return false;
     }
 
     /** @return bool */
