@@ -62,6 +62,8 @@ class UserStatus extends MessageSet {
 
     /** @var ?ComponentSet */
     private $_cs;
+    /** @var ?ComponentSet */
+    private $_xcs;
     /** @var bool */
     private $_inputs_printed = false;
     /** @var int */
@@ -115,11 +117,6 @@ class UserStatus extends MessageSet {
     function __construct(Contact $viewer) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
-        if ($viewer->is_root_user()) {
-            $this->set_user(Contact::make($this->conf));
-        } else {
-            $this->set_user($viewer);
-        }
         parent::__construct();
         $this->set_want_ftext(true, 5);
     }
@@ -130,39 +127,36 @@ class UserStatus extends MessageSet {
     }
 
     /** @return $this */
-    function set_user(Contact $user) {
+    function set_user(?Contact $user) {
         if ($user === $this->user) {
             return $this;
         }
+
         /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
         $this->user = $user;
 
         // set authentication flags
         $this->_authf = 0;
-        $auth_viewer = $this->viewer->base_user();
-        if ($auth_viewer->has_email()
-            && strcasecmp($auth_viewer->email, $user->email) === 0) {
-            $this->_authf |= self::AUTHF_USER;
-        }
-        if ($this->viewer->is_actas_user()) {
-            if ($this->viewer->has_email()
-                && strcasecmp($this->viewer->email, $user->email) === 0) {
-                $this->_authf |= self::AUTHF_ACTAS;
+        if ($user && $user->has_email()) {
+            $auth_viewer = $this->viewer->base_user();
+            if (strcasecmp($auth_viewer->email, $user->email) === 0) {
+                $this->_authf |= self::AUTHF_USER;
             }
-        } else if (($this->_authf & self::AUTHF_USER) !== 0) {
-            $this->_authf |= self::AUTHF_SELF | self::AUTHF_CDB;
-        }
-        if (($this->_authf & self::AUTHF_CDB) === 0
-            && $auth_viewer->privChair
-            && $this->conf->opt("contactdbAdminUpdate")) {
-            $this->_authf |= self::AUTHF_CDB;
+            if ($this->viewer->is_actas_user()) {
+                if (strcasecmp($this->viewer->email, $user->email) === 0) {
+                    $this->_authf |= self::AUTHF_ACTAS;
+                }
+            } else if (($this->_authf & self::AUTHF_USER) !== 0) {
+                $this->_authf |= self::AUTHF_SELF | self::AUTHF_CDB;
+            }
+            if (($this->_authf & self::AUTHF_CDB) === 0
+                && $auth_viewer->privChair
+                && $this->conf->opt("contactdbAdminUpdate")) {
+                $this->_authf |= self::AUTHF_CDB;
+            }
         }
 
-        if ($this->_cs) {
-            $this->_cs->reset_context();
-            $this->initialize_cs();
-        }
-
+        $this->_cs = null;
         return $this;
     }
 
@@ -258,18 +252,22 @@ class UserStatus extends MessageSet {
         if ($this->_cs !== null) {
             return $this->_cs;
         }
-        $this->_cs = new ComponentSet($this->viewer, ["etc/profilegroups.json"], $this->conf->opt("profileGroups"));
-        $this->_cs->set_title_class("form-h")
-            ->set_section_class("form-section")
-            ->set_separator('<hr class="form-sep">')
-            ->add_print_callback([$this, "_print_callback"]);
-        $this->_cs->add_xt_checker([$this, "xt_allower"]);
-        $this->initialize_cs();
+        if ($this->_xcs === null) {
+            $this->_xcs = new ComponentSet($this->viewer,
+                ["etc/profilegroups.json"],
+                $this->conf->opt("profileGroups"));
+            $this->_xcs->set_title_class("form-h")
+                ->set_section_class("form-section")
+                ->set_separator('<hr class="form-sep">')
+                ->add_print_callback([$this, "_print_callback"]);
+            $this->_xcs->add_xt_checker([$this, "xt_allower"]);
+        } else {
+            $this->_xcs->reset_context();
+        }
+        $this->_cs = $this->_xcs;
+        $this->_cs->set_callable("UserStatus", $this)
+            ->set_context_args($this);
         return $this->_cs;
-    }
-
-    private function initialize_cs() {
-        $this->_cs->set_callable("UserStatus", $this)->set_context_args($this);
     }
 
     /** @return bool
@@ -930,29 +928,30 @@ class UserStatus extends MessageSet {
     }
 
 
-    /** @param object $cj */
+    /** @param object $cj
+     * @return $this */
     function start_update($cj) {
         assert(is_object($cj));
         $this->jval = $cj;
         $this->diffs = [];
         $this->created = $this->notified = false;
+        $this->set_user(null);
+        return $this;
     }
 
     /** @param object $cj
      * @param ?Contact $old_user
      * @return ?Contact */
     function save_user($cj, $old_user = null) {
-        assert(is_object($cj));
-        $this->jval = $cj;
-        $this->diffs = [];
-        $this->created = $this->notified = false;
-        return $this->save_update($old_user);
+        $this->start_update($cj);
+        $this->set_user($old_user);
+        return $this->execute_update() ? $this->user : null;
     }
 
-    /** @param ?Contact $old_user
-     * @return ?Contact */
-    function save_update($old_user = null) {
+    /** @return bool */
+    function execute_update() {
         assert(is_object($this->jval));
+        $old_user = $this->user;
         assert(!$old_user || (!$this->no_create && !$this->no_modify));
         $cj = $this->jval;
 
@@ -964,12 +963,12 @@ class UserStatus extends MessageSet {
             && $cj->id !== "new"
             && (!is_int($cj->id) || $cj->id <= 0)) {
             $this->error_at("id", "<0>Format error [id]");
-            return null;
+            return false;
         }
         if (isset($cj->email)
             && !is_string($cj->email)) {
             $this->error_at("email", "<0>Format error [email]");
-            return null;
+            return false;
         }
 
         // obtain old users in this conference and contactdb
@@ -1012,16 +1011,16 @@ class UserStatus extends MessageSet {
             } else {
                 $this->error_at("email", "<0>Refusing to create user with email {$cj->email}");
             }
-            return null;
-        } else if (($this->no_modify || ($cj->id ?? null) === "new") && $old_user) {
+            return false;
+        }
+        if (($this->no_modify || ($cj->id ?? null) === "new") && $old_user) {
             if (isset($cj->id) && $cj->id !== "new") {
                 $this->error_at("id", "<0>Refusing to modify existing user with ID {$cj->id}");
             } else {
                 $this->error_at("email", "<0>Refusing to modify existing user with email {$cj->email}");
             }
-            return null;
+            return false;
         }
-
         $user = $old_user ?? $old_cdb_user;
 
         // normalize and check for errors
@@ -1030,7 +1029,7 @@ class UserStatus extends MessageSet {
         }
         if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {
             $this->error_at("id", "<0>Saving user with different ID");
-            return null;
+            return false;
         }
         $this->normalize($cj, $user);
         $roles = $old_roles = $old_user ? $old_user->roles : 0;
@@ -1041,7 +1040,7 @@ class UserStatus extends MessageSet {
             }
         }
         if ($this->has_error()) {
-            return null;
+            return false;
         }
         // At this point, we will save a user.
 
@@ -1054,7 +1053,7 @@ class UserStatus extends MessageSet {
             $cj->email = $user->email; // adopt contactdb’s email capitalization
         }
         if (!$user) {
-            return null;
+            return false;
         }
         $old_disablement = $user->disabled_flags();
 
@@ -1079,7 +1078,7 @@ class UserStatus extends MessageSet {
         }
         if (($user->prop_changed() || $this->created)
             && !$user->save_prop()) {
-            return null;
+            return false;
         }
 
         // Roles
@@ -1143,7 +1142,7 @@ class UserStatus extends MessageSet {
             }
         }
 
-        return $user;
+        return true;
     }
 
 

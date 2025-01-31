@@ -93,18 +93,17 @@ class SaveUsers_Batch {
 
     private function parse_csvp(CsvParser $csv) {
         while (($line = $csv->next_row())) {
-            $this->ustatus->set_user(Contact::make($this->conf));
             $this->ustatus->clear_messages();
             $this->ustatus->start_update((object) ["id" => null]);
             $this->ustatus->csvreq = $line;
             $this->ustatus->parse_csv_group("");
-            if (($acct = $this->ustatus->save_update())) {
+            if ($this->ustatus->execute_update()) {
                 if ($this->quiet) {
                     // print nothing
                 } else if (empty($this->ustatus->diffs)) {
-                    fwrite(STDOUT, "{$acct->email}: No changes\n");
+                    fwrite(STDOUT, "{$this->ustatus->user->email}: No changes\n");
                 } else {
-                    fwrite(STDOUT, "{$acct->email}: Changed " . join(", ", array_keys($this->ustatus->diffs)) . "\n");
+                    fwrite(STDOUT, "{$this->ustatus->user->email}: Changed " . join(", ", array_keys($this->ustatus->diffs)) . "\n");
                 }
             } else {
                 if ($this->ustatus->no_modify

@@ -29,7 +29,6 @@ class Profile_Page {
 
         $this->user = $viewer;
         $this->ustatus = new UserStatus($viewer);
-        $this->ustatus->set_user($viewer);
         $this->ustatus->set_qreq($qreq);
     }
 
@@ -148,18 +147,16 @@ class Profile_Page {
             Dbl::free($result);
         }
 
-        // apply user to UserStatus
         $this->user = $user;
-        $this->ustatus->set_user($user);
     }
 
 
     /** @param UserStatus $ustatus
-     * @param ?Contact $acct
      * @return ?Contact */
-    private function save_user($ustatus, $acct) {
+    private function save_user($ustatus) {
         // check for missing fields
         UserStatus::normalize_name($ustatus->jval);
+        $acct = $ustatus->user;
         if (!$acct && !isset($ustatus->jval->email)) {
             $ustatus->error_at("email", "<0>Email address required");
             return null;
@@ -224,7 +221,7 @@ class Profile_Page {
         }
 
         // save account
-        return $ustatus->save_update($acct);
+        return $ustatus->execute_update() ? $ustatus->user : null;
     }
 
 
@@ -311,13 +308,12 @@ class Profile_Page {
         $ustatus->add_csv_synonyms($csv);
 
         while (($line = $csv->next_row())) {
-            $ustatus->set_user(Contact::make_placeholder($this->conf));
             $ustatus->clear_messages();
             $ustatus->start_update((object) ["id" => null]);
             $ustatus->csvreq = $line;
             $ustatus->parse_csv_group("");
             $ustatus->notify = friendly_boolean($line["notify"]) ?? true;
-            $saved_user = $this->save_user($ustatus, null);
+            $saved_user = $this->save_user($ustatus);
             if ($saved_user) {
                 $url = $this->conf->hoturl("profile", "u=" . urlencode($saved_user->email));
                 $link = "<a class=\"nb\" href=\"{$url}\">" . $saved_user->name_h(NAME_E) . "</a>";
@@ -368,8 +364,10 @@ class Profile_Page {
         assert($this->user->is_empty() === ($this->page_type !== 0));
 
         // prepare UserStatus
-        $this->ustatus->set_user($this->user);
         $this->ustatus->start_update((object) ["id" => $this->user->has_account_here() ? $this->user->contactId : "new"]);
+        if ($this->page_type === 0) {
+            $this->ustatus->set_user($this->user);
+        }
         $this->ustatus->no_deprivilege_self = true;
         if ($this->page_type !== 0) {
             $this->ustatus->set_if_empty(UserStatus::IF_EMPTY_MOST);
@@ -380,7 +378,7 @@ class Profile_Page {
         $this->ustatus->request_group("");
 
         // save request
-        $saved_user = $this->save_user($this->ustatus, $this->page_type !== 0 ? null : $this->user);
+        $saved_user = $this->save_user($this->ustatus);
 
         // report messages
         $ml = [];
@@ -588,6 +586,7 @@ class Profile_Page {
             $this->qreq->t = $this->topic === "main" ? null : $this->topic;
             $this->conf->redirect_self($this->qreq);
         }
+        $this->ustatus->set_user($this->user);
         $this->ustatus->cs()->set_root($this->topic);
 
         // set session list

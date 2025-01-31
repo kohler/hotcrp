@@ -31,16 +31,15 @@ class UserStatus_Tester {
         $newpw = $u->check_password("maksdfnqw") ? "MAKsdfnqw" : "maksdfnqw";
         $qreq->upassword = $qreq->upassword2 = $newpw;
 
-        $us = (new UserStatus($u))->set_user($u)->set_qreq($qreq);
-        $us->start_update((object) ["id" => $u->contactId]);
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update((object) ["id" => $u->contactId])->set_user($u);
         xassert($us->is_auth_self());
         xassert($us->has_recent_authentication());
         $us->request_group("");
         xassert_eqq($us->jval->new_password, $newpw);
-        $saved_user = $us->save_update($u);
-        xassert(!!$saved_user);
+        xassert($us->execute_update());
 
-        xassert($saved_user->check_password($newpw));
+        xassert($us->user->check_password($newpw));
     }
 
     function test_edit_own_password_fail_no_recent_auth() {
@@ -52,15 +51,14 @@ class UserStatus_Tester {
         xassert(UpdateSession::usec_query($qreq, "estrin@usc.edu", 0, 1, Conf::$now - 50000));
         xassert(!UpdateSession::usec_query($qreq, "estrin@usc.edu", 0, 1, Conf::$now - 20000));
 
-        $us = (new UserStatus($u))->set_user($u)->set_qreq($qreq);
-        $us->start_update((object) ["id" => $u->contactId]);
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update((object) ["id" => $u->contactId])->set_user($u);
         xassert($us->is_auth_self());
         xassert(!$us->has_recent_authentication());
         $us->request_group("");
-        $saved_user = $us->save_update($u);
-        xassert(!!$saved_user);
+        xassert($us->execute_update());
 
-        xassert(!$saved_user->check_password("maksdf"));
+        xassert(!$us->user->check_password("maksdf"));
     }
 
     function test_edit_other_password_chair() {
@@ -72,13 +70,12 @@ class UserStatus_Tester {
         xassert($u->can_edit_any_password());
 
         $ux = $this->conf->fresh_user_by_email("estrin@usc.edu");
-        $us = (new UserStatus($u))->set_user($ux)->set_qreq($qreq);
-        $us->start_update((object) ["id" => $ux->contactId]);
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update((object) ["id" => $ux->contactId])->set_user($ux);
         $us->request_group("");
-        $saved_user = $us->save_update($ux);
-        xassert(!!$saved_user);
+        xassert($us->execute_update());
 
-        xassert($saved_user->check_password("maksdfnq!"));
+        xassert($us->user->check_password("maksdfnq!"));
     }
 
     function test_edit_other_password_fail_nonchair() {
@@ -89,12 +86,12 @@ class UserStatus_Tester {
         xassert(!$u->can_edit_any_password());
 
         $ux = $this->conf->fresh_user_by_email("estrin@usc.edu");
-        $us = (new UserStatus($u))->set_user($ux)->set_qreq($qreq);
-        $us->start_update((object) ["id" => $ux->contactId]);
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update((object) ["id" => $ux->contactId])->set_user($ux);
         $us->request_group("");
-        $saved_user = $us->save_update($ux);
+        $us->execute_update();
 
-        xassert(!$saved_user->check_password("maksdfnq11"));
+        xassert(!$us->user->check_password("maksdfnq11"));
     }
 
     function test_edit_actas_password_fail() {
@@ -105,12 +102,11 @@ class UserStatus_Tester {
         );
         xassert_eqq($u->email, "estrin@usc.edu");
 
-        $us = (new UserStatus($u))->set_user($u)->set_qreq($qreq);
-        $us->start_update((object) ["id" => $u->contactId]);
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update((object) ["id" => $u->contactId])->set_user($u);
         $us->request_group("");
-        $saved_user = $us->save_update($u);
-        xassert(!!$saved_user);
+        xassert($us->execute_update());
 
-        xassert(!$saved_user->check_password("maksdfnqw11"));
+        xassert(!$us->user->check_password("maksdfnqw11"));
     }
 }
