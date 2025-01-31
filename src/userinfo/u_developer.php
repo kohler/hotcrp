@@ -1,16 +1,39 @@
 <?php
 // u_developer.php -- HotCRP Profile > Developer
-// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class Developer_UserInfo {
+    /** @var UserStatus */
+    private $us;
     /** @var ?TokenInfo */
     private $_new_token;
     /** @var list<array{int,bool,string}> */
     private $_delete_tokens = [];
 
-    function request(UserStatus $us) {
-        if ($us->is_auth_self() && !$us->user->security_locked()) {
-            $us->request_group("developer");
+    function __construct(UserStatus $us) {
+        $this->us = $us;
+    }
+
+    function display_if() {
+        if ($this->us->is_actas_self()) {
+            return "dim";
+        }
+        return $this->us->is_auth_self();
+    }
+
+    function allow() {
+        return $this->us->is_auth_self() && !$this->us->user->security_locked();
+    }
+
+    function request() {
+        if ($this->allow()) {
+            $this->us->request_group("developer");
+        }
+    }
+
+    function save() {
+        if ($this->allow()) {
+            $this->us->save_members("developer");
         }
     }
 
@@ -44,12 +67,12 @@ class Developer_UserInfo {
     }
 
     function print_bearer_tokens(UserStatus $us) {
-        echo '<p class="w-text">API tokens let you access <a href="https://hotcrp.com/devel/api/">HotCRP’s API</a> programmatically. Supply a token using an HTTP <code>Authorization</code> header, as in “<code>Authorization: Bearer <em>token-name</em></code>”.</p>';
-        if ($us->is_auth_self()) {
-            $us->conf->warning_msg('<0>Treat tokens like passwords and keep them secret. Anyone who knows your tokens can access this site with your privileges.');
-        } else {
-            $us->conf->warning_msg('<0>You can only create and delete API tokens when logged in to your own account.');
+        if (!$us->is_auth_self()) {
+            $us->conf->warning_msg('<0>API tokens cannot be edited when acting as another user.');
+            return false;
         }
+        echo '<p class="w-text">API tokens let you access <a href="https://hotcrp.com/devel/api/">HotCRP’s API</a> programmatically. Supply a token using an HTTP <code>Authorization</code> header, as in “<code>Authorization: Bearer <em>token-name</em></code>”.</p>';
+        $us->conf->warning_msg('<0>Treat tokens like passwords and keep them secret. Anyone who knows your tokens can access this site with your privileges.');
     }
 
     function print_current_bearer_tokens(UserStatus $us) {
@@ -191,7 +214,7 @@ class Developer_UserInfo {
     }
 
     function request_new_bearer_token(UserStatus $us) {
-        assert($us->allow_some_security());
+        assert($us->is_auth_self());
         if (!$us->qreq["bearer_token/new/enable"]
             || $us->user->security_locked()) {
             return;
@@ -235,7 +258,7 @@ class Developer_UserInfo {
     }
 
     function request_delete_bearer_tokens(UserStatus $us) {
-        assert($us->allow_some_security());
+        assert($us->is_auth_self());
         if ($us->user->security_locked()) {
             return;
         }

@@ -1,6 +1,6 @@
 <?php
 // u_security.php -- HotCRP Profile > Security
-// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class Security_UserInfo {
     /** @var UserStatus
@@ -13,27 +13,37 @@ class Security_UserInfo {
         $this->us = $us;
     }
 
-    function request(UserStatus $us) {
-        if (!$us->allow_some_security()) {
-            return;
+    function display_if() {
+        if ($this->us->is_actas_self()) {
+            return "dim";
         }
-        $us->request_group("security");
+        return $this->us->is_auth_self() || $this->us->viewer->can_edit_any_password();
     }
 
-    /** @return bool */
+    function request() {
+        $this->us->request_group("security");
+    }
+
+    function save() {
+        $this->us->save_members("security");
+    }
+
+    /** @return bool
+     * @deprecated */
     function allow_security_changes() {
         return $this->us->has_recent_authentication();
     }
 
     function print(UserStatus $us) {
-        if (!$us->allow_some_security()) {
-            if ($us->viewer->is_actas_user()) {
-                $us->conf->warning_msg("<0>You cannot edit other users’ security settings.");
-            } else {
-                $us->conf->warning_msg("<0>You can only access your own account’s security settings.");
-            }
+        if ($us->viewer->is_actas_user()) {
+            $us->conf->warning_msg("<0>Security settings cannot be edited when acting as another user.");
             return false;
-        } else if ($us->user->security_locked()) {
+        }
+        if (!$us->is_auth_self() && !$us->viewer->can_edit_any_password()) {
+            $us->conf->warning_msg("<0>You can only access your own account’s security settings.");
+            return false;
+        }
+        if ($us->user->security_locked()) {
             $us->conf->warning_msg("<0>This account‘s security settings are locked and cannot be changed.");
             return false;
         }
@@ -43,9 +53,7 @@ class Security_UserInfo {
         $pw = trim($us->qreq->upassword ?? "");
         $pw2 = trim($us->qreq->upassword2 ?? "");
         $this->_req_passwords = [$us->qreq->upassword ?? "", $us->qreq->upassword2 ?? ""];
-        if (($pw === "" && $pw2 === "")
-            || !$us->has_recent_authentication()
-            || !$us->viewer->can_edit_password($us->user)) {
+        if ($pw === "" && $pw2 === "") {
             return;
         }
         if ($pw !== $pw2) {
@@ -112,10 +120,15 @@ class Security_UserInfo {
     }
 
     static function save_new_password(UserStatus $us) {
-        if (isset($us->jval->new_password)
-            && $us->viewer->can_edit_password($us->user)) {
-            $us->user->change_password($us->jval->new_password);
-            $us->diffs["password"] = true;
+        // This function is protected by `request_recent_authentication`,
+        // which checks `has_recent_authentication`. But check it explicitly
+        // for clarity.
+        if (!isset($us->jval->new_password)
+            || !$us->viewer->can_edit_password($us->user)
+            || !$us->has_recent_authentication()) {
+            return;
         }
+        $us->user->change_password($us->jval->new_password);
+        $us->diffs["password"] = true;
     }
 }

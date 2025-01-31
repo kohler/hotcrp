@@ -228,15 +228,15 @@ class Users_Page {
         if ($modifyfn === "disableaccount") {
             $j = UserActions::disable($this->viewer, $this->papersel);
             if ($j->disabled_users ?? false) {
-                $ms->success($this->conf->_("<0>Disabled accounts {:list}", $j->disabled_users));
+                $ms->success($this->conf->_("<0>Accounts {:list} disabled", $j->disabled_users));
             }
         } else if ($modifyfn === "enableaccount") {
             $j = UserActions::enable($this->viewer, $this->papersel);
             if ($j->enabled_users ?? false) {
-                $ms->success($this->conf->_("<0>Enabled accounts {:list}", $j->enabled_users));
+                $ms->success($this->conf->_("<0>Accounts {:list} enabled", $j->enabled_users));
             }
             if ($j->activated_users ?? false) {
-                $ms->success($this->conf->_("<0>Activated accounts and sent mail to {:list}", $j->activated_users));
+                $ms->success($this->conf->_("<0>Accounts {:list} activated and notified", $j->activated_users));
             }
         } else if ($modifyfn === "sendaccount") {
             $j = UserActions::send_account_info($this->viewer, $this->papersel);

@@ -305,7 +305,9 @@ class Profile_Page {
 
         $ustatus = new UserStatus($this->viewer);
         $ustatus->no_deprivilege_self = true;
-        $ustatus->update_profile_if_empty = !$this->qreq->bulkoverride;
+        if (!$this->qreq->bulkoverride) {
+            $ustatus->set_if_empty(UserStatus::IF_EMPTY_PROFILE);
+        }
         $ustatus->add_csv_synonyms($csv);
 
         while (($line = $csv->next_row())) {
@@ -370,8 +372,7 @@ class Profile_Page {
         $this->ustatus->start_update((object) ["id" => $this->user->has_account_here() ? $this->user->contactId : "new"]);
         $this->ustatus->no_deprivilege_self = true;
         if ($this->page_type !== 0) {
-            $this->ustatus->update_profile_if_empty = true;
-            $this->ustatus->update_pc_if_empty = true;
+            $this->ustatus->set_if_empty(UserStatus::IF_EMPTY_MOST);
             $this->ustatus->notify = true;
         }
 
@@ -669,6 +670,18 @@ class Profile_Page {
             $first = $this->viewer->privChair;
             $cs = $this->ustatus->cs();
             foreach ($cs->members("", "title") as $gj) {
+                $disabled = false;
+                if (isset($gj->display_if)) {
+                    $disp = $gj->display_if;
+                    if (is_string($disp) && $disp !== "dim") {
+                        $disp = $cs->call_function($gj, $disp);
+                    }
+                    if (!$disp) {
+                        continue;
+                    } else if ($disp === "dim") {
+                        $disabled = true;
+                    }
+                }
                 echo '<li class="leftmenu-item',
                     $gj->name === $this->topic ? ' active' : ' ui js-click-child',
                     $first ? ' leftmenu-item-gap4' : '', '">';
@@ -677,8 +690,7 @@ class Profile_Page {
                     echo $title;
                 } else {
                     $aextra = [];
-                    if (isset($gj->dim_group_if)
-                        && $cs->xtp->check($gj->dim_group_if, $gj)) {
+                    if ($disabled) {
                         $aextra["class"] = "dim";
                     }
                     echo Ht::link($title, $this->conf->selfurl($this->qreq, ["t" => $gj->name]), $aextra);

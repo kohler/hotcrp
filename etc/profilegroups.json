@@ -42,11 +42,11 @@
 
 
     {   "name": "security", "title": "Security", "order": 200,
-        "allow_if": "profile_security",
+        "display_if": "*Security_UserInfo::display_if",
         "print_function": "*Security_UserInfo::print",
         "request_recent_authentication": true,
         "request_function": "*Security_UserInfo::request",
-        "save_members": true,
+        "save_function": "*Security_UserInfo::save",
         "inputs": false   },
     {   "name": "security/reauthenticate",
         "order": 999999, "alias": "__reauthenticate"   },
@@ -67,10 +67,10 @@
 
     {   "name": "developer", "title": "Developer settings", "short_title": "Developer",
         "order": 2000,
-        "allow_if": "auth_self",
+        "display_if": "*Developer_UserInfo::display_if",
         "request_recent_authentication": true,
         "request_function": "*Developer_UserInfo::request",
-        "save_members": true   },
+        "save_function": "*Developer_UserInfo::save"   },
     {   "name": "developer/reauthenticate",
         "order": 999999, "alias": "__reauthenticate"   },
     {   "name": "developer/tokens", "title": "API tokens", "order": 10,

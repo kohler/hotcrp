@@ -186,6 +186,7 @@ lib/s3result.php
 lib/scoreinfo.php
 lib/subprocess.php
 lib/tagger.php
+lib/testqsession.php
 lib/text.php
 lib/unicodehelper.php
 lib/xlsx.php

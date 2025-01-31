@@ -1,6 +1,6 @@
 <?php
 // userstatus.php -- HotCRP helpers for reading/storing users as JSON
-// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class UserStatus_UserLinks {
     /** @var list<int> */
@@ -20,17 +20,22 @@ class UserStatus extends MessageSet {
     /** @var Contact
      * @readonly */
     public $viewer;
-    /** @var Contact */
+    /** @var Contact
+     * @readonly */
     public $user;
+    const AUTHF_USER = 1;
+    const AUTHF_SELF = 2;
+    const AUTHF_CDB = 4;
+    const AUTHF_ACTAS = 8;
+    /** @var int */
+    private $_authf;
 
     /** @var bool */
     public $notify = false;
     /** @var bool */
     public $no_deprivilege_self = false;
-    /** @var bool */
-    public $update_profile_if_empty = false;
-    /** @var bool */
-    public $update_pc_if_empty = false;
+    /** @var 0|1|2 */
+    private $if_empty = 0; /* = IF_EMPTY_NONE */
     /** @var bool */
     public $no_create = false;
     /** @var bool */
@@ -46,11 +51,6 @@ class UserStatus extends MessageSet {
     /** @var object */
     public $jval;
 
-    const AUTHF_USER = 1;
-    const AUTHF_SELF = 2;
-    const AUTHF_CDB = 4;
-    /** @var int */
-    private $_authf;
     /** @var ?bool */
     private $_req_security;
     /** @var bool */
@@ -129,10 +129,12 @@ class UserStatus extends MessageSet {
         $this->unknown_topics = null;
     }
 
+    /** @return $this */
     function set_user(Contact $user) {
         if ($user === $this->user) {
-            return;
+            return $this;
         }
+        /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
         $this->user = $user;
 
         // set authentication flags
@@ -141,9 +143,14 @@ class UserStatus extends MessageSet {
         if ($auth_viewer->has_email()
             && strcasecmp($auth_viewer->email, $user->email) === 0) {
             $this->_authf |= self::AUTHF_USER;
-            if (!$this->viewer->is_actas_user()) {
-                $this->_authf |= self::AUTHF_SELF | self::AUTHF_CDB;
+        }
+        if ($this->viewer->is_actas_user()) {
+            if ($this->viewer->has_email()
+                && strcasecmp($this->viewer->email, $user->email) === 0) {
+                $this->_authf |= self::AUTHF_ACTAS;
             }
+        } else if (($this->_authf & self::AUTHF_USER) !== 0) {
+            $this->_authf |= self::AUTHF_SELF | self::AUTHF_CDB;
         }
         if (($this->_authf & self::AUTHF_CDB) === 0
             && $auth_viewer->privChair
@@ -155,9 +162,12 @@ class UserStatus extends MessageSet {
             $this->_cs->reset_context();
             $this->initialize_cs();
         }
+
+        return $this;
     }
 
-    /** @suppress PhanAccessReadOnlyProperty */
+    /** @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     function set_qreq(Qrequest $qreq) {
         $this->qreq = $qreq;
 
@@ -168,6 +178,18 @@ class UserStatus extends MessageSet {
             && !$this->viewer->is_empty()) {
             $this->check_reauth_password();
         }
+
+        return $this;
+    }
+
+    const IF_EMPTY_NONE = 0;
+    const IF_EMPTY_PROFILE = 1;
+    const IF_EMPTY_MOST = 2;
+    /** @param 0|1|2 $if_empty
+     * @return $this */
+    function set_if_empty($if_empty) {
+        $this->if_empty = $if_empty;
+        return $this;
     }
 
     private function check_reauth_password() {
@@ -191,16 +213,29 @@ class UserStatus extends MessageSet {
         return !$this->user->email;
     }
 
-    /** Test if the edited user is the authenticated user.
+
+    /* These functions distinguish three kinds of user:
+       1. The *edited user* — the user being edited ($this->user)
+       2. The *apparent viewer* ($this->viewer; might be actas)
+       3. The *authenticated viewer* ($this->viewer->base_user(), if that viewer
+          has an email) */
+
+    /** Test if edited user is the authenticated viewer.
      * @return bool */
-    function is_auth_user() {
+    function is_editing_authenticated() {
         return ($this->_authf & self::AUTHF_USER) !== 0;
     }
 
-    /** Test if the edited user is the authenticated user and same as the viewer.
+    /** Test if edited user = apparent viewer = authenticated viewer.
      * @return bool */
     function is_auth_self() {
         return ($this->_authf & self::AUTHF_SELF) !== 0;
+    }
+
+    /** Test if edited user = apparent viewer != authenticated viewer.
+     * @return bool */
+    function is_actas_self() {
+        return ($this->_authf & self::AUTHF_ACTAS) !== 0;
     }
 
     /** @return bool */
@@ -237,7 +272,8 @@ class UserStatus extends MessageSet {
         $this->_cs->set_callable("UserStatus", $this)->set_context_args($this);
     }
 
-    /** @return bool */
+    /** @return bool
+     * @deprecated */
     function allow_some_security() {
         return !$this->user->is_empty()
             && ($this->is_auth_self() || $this->viewer->can_edit_any_password());
@@ -260,6 +296,7 @@ class UserStatus extends MessageSet {
     /** @return ?bool */
     function xt_allower($e, $xt, $xtp) {
         if ($e === "profile_security") {
+            /** @phan-suppress-next-line PhanDeprecatedFunction */
             return $this->allow_some_security();
         } else if ($e === "auth_self") {
             return $this->is_auth_self();
@@ -286,7 +323,7 @@ class UserStatus extends MessageSet {
         } else if (($this->jval->user_override ?? null) !== null) {
             return $this->jval->user_override ? 0 : 1;
         } else {
-            return $this->update_profile_if_empty ? 1 : 0;
+            return min($this->if_empty, 1);
         }
     }
 
@@ -1030,17 +1067,23 @@ class UserStatus extends MessageSet {
         $this->set_user($user);
         $user->invalidate_cdb_user();
         $cdb_user = $user->ensure_cdb_user();
+        $cs = $this->cs();
+        $this->jval = $cj;
 
         // Early properties
-        $this->jval = $cj;
-        $this->save_members("", "save_early_function", null);
+        foreach ($cs->members("") as $gj) {
+            if (isset($gj->save_early_function)
+                && $cs->call_function($gj, $gj->save_early_function, $gj) === false) {
+                return false;
+            }
+        }
         if (($user->prop_changed() || $this->created)
             && !$user->save_prop()) {
             return null;
         }
 
         // Roles
-        if ($this->update_pc_if_empty
+        if ($this->if_empty >= UserStatus::IF_EMPTY_MOST
             && ($old_roles & Contact::ROLE_PCLIKE) !== 0) {
             $roles = ($roles & ~Contact::ROLE_PCLIKE) | ($old_roles & Contact::ROLE_PCLIKE);
         }
@@ -1065,7 +1108,7 @@ class UserStatus extends MessageSet {
         }
 
         // Main properties
-        $this->save_members("", "save_function", "save_members");
+        $this->save_members("");
 
         // Clean up
         $old_activity_at = $user->activity_at;
@@ -1105,19 +1148,12 @@ class UserStatus extends MessageSet {
 
 
     /** @param string $name
-     * @param string $function
-     * @param string $members
      * @return null|false */
-    private function save_members($name, $function, $members) {
+    function save_members($name) {
         $cs = $this->cs();
         foreach ($cs->members($name) as $gj) {
-            if (isset($gj->$function)
-                && $cs->call_function($gj, $gj->$function, $gj) === false) {
-                return false;
-            }
-            if ($members !== null
-                && ($gj->$members ?? false)
-                && $this->save_members($gj->name, $function, $members) === false) {
+            if (isset($gj->save_function)
+                && $cs->call_function($gj, $gj->save_function, $gj) === false) {
                 return false;
             }
         }
@@ -1153,7 +1189,8 @@ class UserStatus extends MessageSet {
 
         // Follow
         if (isset($cj->follow)
-            && (!$us->update_pc_if_empty || $user->defaultWatch === Contact::WATCH_REVIEW)) {
+            && ($us->if_empty < UserStatus::IF_EMPTY_MOST
+                || $user->defaultWatch === Contact::WATCH_REVIEW)) {
             $w = 0;
             $wmask = ($cj->follow->partial ?? false ? 0 : 0xFFFFFFFF);
             foreach (self::$watch_keywords as $k => $bit) {
@@ -1172,7 +1209,8 @@ class UserStatus extends MessageSet {
         // Tags
         if ((isset($cj->tags) || isset($cj->add_tags) || isset($cj->remove_tags))
             && $us->viewer->privChair
-            && (!$us->update_pc_if_empty || $user->contactTags === null)) {
+            && ($us->if_empty < UserStatus::IF_EMPTY_MOST
+                || $user->contactTags === null)) {
             if (isset($cj->tags)) {
                 $user->set_prop("contactTags", null);
             }
@@ -1237,7 +1275,7 @@ class UserStatus extends MessageSet {
             return;
         }
         $ti = $us->created ? [] : $us->user->topic_interest_map();
-        if ($us->update_pc_if_empty && !empty($ti)) {
+        if ($us->if_empty >= UserStatus::IF_EMPTY_MOST && !empty($ti)) {
             return;
         }
         $tv = [];
@@ -1793,12 +1831,13 @@ topics. We use this information to help match papers to reviewers.</p>',
         if (!$us->viewer->privChair || $us->is_new_user()) {
             return;
         }
+
         $us->cs()->add_section_class("form-outline-section")->print_start_section("User administration");
         echo '<div class="grid-btn-explanation"><div class="d-flex mf mf-absolute">';
 
         echo Ht::button("Send account information", ["class" => "ui js-send-user-accountinfo flex-grow-1", "disabled" => $us->user->is_disabled()]), '</div><p></p>';
 
-        if (!$us->is_auth_user()) {
+        if (!$us->is_editing_authenticated()) {
             $disablement = $us->user->disabled_flags() & ~Contact::CF_PLACEHOLDER;
             if ($us->user->contactdb_disabled()) {
                 $klass = "flex-grow-1 disabled";
@@ -1821,7 +1860,6 @@ topics. We use this information to help match papers to reviewers.</p>',
                 Ht::button($disablement ? "Enable account" : "Disable account", [
                     "class" => $klass, "disabled" => $disabled
                 ]), '</div>', $p;
-
             self::print_delete_action($us);
         }
 
