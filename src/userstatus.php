@@ -1074,7 +1074,7 @@ class UserStatus extends MessageSet {
         foreach ($cs->members("") as $gj) {
             if (isset($gj->save_early_function)
                 && $cs->call_function($gj, $gj->save_early_function, $gj) === false) {
-                return false;
+                break;
             }
         }
         if (($user->prop_changed() || $this->created)
