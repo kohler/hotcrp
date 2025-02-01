@@ -248,7 +248,6 @@ class Profile_Page {
      * @param string $filename */
     private function save_bulk($text, $filename) {
         $text = cleannl(convert_to_utf8($text));
-        $filename = $filename ? htmlspecialchars($filename) . ":" : "line ";
         $ms = new MessageSet;
         $success = $nochanges = $notified = [];
 
@@ -266,7 +265,7 @@ class Profile_Page {
         }
 
         $csv = new CsvParser($text);
-        $csv->set_filename($filename);
+        $csv->set_filename($filename ? "{$filename}:" : "line ");
         $csv->add_comment_prefix("#")->add_comment_prefix("%");
         if (($line = $csv->peek_list())) {
             if (preg_grep('/\A(?:email|user)\z/i', $line)) {
@@ -312,7 +311,7 @@ class Profile_Page {
             $ustatus->start_update((object) ["id" => null]);
             $ustatus->csvreq = $line;
             $ustatus->parse_csv_group("");
-            $ustatus->notify = friendly_boolean($line["notify"]) ?? true;
+            $ustatus->set_notify(friendly_boolean($line["notify"]) ?? true);
             $saved_user = $this->save_user($ustatus);
             if ($saved_user) {
                 $url = $this->conf->hoturl("profile", "u=" . urlencode($saved_user->email));
@@ -371,7 +370,7 @@ class Profile_Page {
         $this->ustatus->no_deprivilege_self = true;
         if ($this->page_type !== 0) {
             $this->ustatus->set_if_empty(UserStatus::IF_EMPTY_MOST);
-            $this->ustatus->notify = true;
+            $this->ustatus->set_notify(true);
         }
 
         // parse request

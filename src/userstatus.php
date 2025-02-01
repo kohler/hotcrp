@@ -30,18 +30,15 @@ class UserStatus extends MessageSet {
     /** @var int */
     private $_authf;
 
-    /** @var bool */
+    /** @var bool
+     * @readonly */
     public $notify = false;
     /** @var bool */
     public $no_deprivilege_self = false;
     /** @var 0|1|2 */
     private $if_empty = 0; /* = IF_EMPTY_NONE */
-    /** @var bool */
-    public $no_create = false;
-    /** @var bool */
-    public $no_modify = false;
-    /** @var ?array<string,true> */
-    public $unknown_topics = null;
+    /** @var 0|1|2 */
+    private $save_mode = 0; /* = SAVE_ALL */
 
     /** @var Qrequest
      * @readonly */
@@ -53,6 +50,8 @@ class UserStatus extends MessageSet {
 
     /** @var ?bool */
     private $_req_security;
+    /** @var ?array<string,true> */
+    public $unknown_topics;
     /** @var bool */
     public $created;
     /** @var bool */
@@ -121,6 +120,34 @@ class UserStatus extends MessageSet {
         $this->set_want_ftext(true, 5);
     }
 
+    const IF_EMPTY_NONE = 0;
+    const IF_EMPTY_PROFILE = 1;
+    const IF_EMPTY_MOST = 2;
+    /** @param 0|1|2 $if_empty
+     * @return $this */
+    function set_if_empty($if_empty) {
+        $this->if_empty = $if_empty;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_notify($x) {
+        $this->notify = $x;
+        return $this;
+    }
+
+    const SAVE_ALL = 0;
+    const SAVE_EXISTING = 1;
+    const SAVE_NEW = 2;
+    /** @param 0|1|2 $mode
+     * @return $this */
+    function set_save_mode($mode) {
+        $this->save_mode = $mode;
+        return $this;
+    }
+
     function clear() {
         $this->clear_messages();
         $this->unknown_topics = null;
@@ -173,16 +200,6 @@ class UserStatus extends MessageSet {
             $this->check_reauth_password();
         }
 
-        return $this;
-    }
-
-    const IF_EMPTY_NONE = 0;
-    const IF_EMPTY_PROFILE = 1;
-    const IF_EMPTY_MOST = 2;
-    /** @param 0|1|2 $if_empty
-     * @return $this */
-    function set_if_empty($if_empty) {
-        $this->if_empty = $if_empty;
         return $this;
     }
 
@@ -595,7 +612,7 @@ class UserStatus extends MessageSet {
         } else if (!$this->has_problem_at("email")
                    && !validate_email($cj->email)
                    && (!$old_user || $old_user->email !== $cj->email)) {
-            $this->error_at("email", "<0>Invalid email address ‘{$cj->email}’");
+            $this->error_at("email", "<0>Invalid email address");
         }
 
         // ID
@@ -951,9 +968,9 @@ class UserStatus extends MessageSet {
     /** @return bool */
     function execute_update() {
         assert(is_object($this->jval));
-        $old_user = $this->user;
-        assert(!$old_user || (!$this->no_create && !$this->no_modify));
+        assert(!$this->user || $this->save_mode === self::SAVE_ALL);
         $cj = $this->jval;
+        $old_user = $this->user;
 
         // normalize name, including email
         self::normalize_name($cj);
@@ -1004,8 +1021,9 @@ class UserStatus extends MessageSet {
             }
         }
 
-        // - check no_create and no_modify
-        if ($this->no_create && !$old_user) {
+        // - check save mode
+        if ($this->save_mode === self::SAVE_EXISTING
+            && !$old_user) {
             if (isset($cj->id) && $cj->id !== "new") {
                 $this->error_at("id", "<0>Refusing to create user with ID {$cj->id}");
             } else {
@@ -1013,7 +1031,8 @@ class UserStatus extends MessageSet {
             }
             return false;
         }
-        if (($this->no_modify || ($cj->id ?? null) === "new") && $old_user) {
+        if (($this->save_mode === self::SAVE_NEW || ($cj->id ?? null) === "new")
+            && $old_user) {
             if (isset($cj->id) && $cj->id !== "new") {
                 $this->error_at("id", "<0>Refusing to modify existing user with ID {$cj->id}");
             } else {

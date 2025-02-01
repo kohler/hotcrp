@@ -2706,22 +2706,24 @@ class Conf {
         }
     }
 
-    /** @param int $id */
+    /** @param int $id
+     * @return bool */
     function prefetch_cdb_user_by_id($id) {
-        if (!array_key_exists($id, $this->_cdb_user_cache ?? [])) {
-            $this->_cdb_user_cache_missing[] = $id;
+        if (array_key_exists($id, $this->_cdb_user_cache ?? [])) {
+            return false;
         }
+        $this->_cdb_user_cache_missing[] = $id;
+        return true;
     }
 
     /** @param string $email
      * @return bool */
     function prefetch_cdb_user_by_email($email) {
-        if (!array_key_exists($email, $this->_cdb_user_cache ?? [])) {
-            $this->_cdb_user_cache_missing[] = $email;
-            return true;
-        } else {
+        if (array_key_exists($email, $this->_cdb_user_cache ?? [])) {
             return false;
         }
+        $this->_cdb_user_cache_missing[] = $email;
+        return true;
     }
 
     /** @param iterable<string> $emails */
@@ -2747,6 +2749,16 @@ class Conf {
         return $this->_cdb_user_cache[$id] ?? null;
     }
 
+    /** @param int $id
+     * @return ?Contact */
+    function fresh_cdb_user_by_id($id) {
+        if ($id <= 0) {
+            return null;
+        }
+        $us = $this->_fresh_cdb_user_list([$id], null);
+        return $us[0] ?? null;
+    }
+
     /** @param string $email
      * @return ?Contact */
     function cdb_user_by_email($email) {
@@ -2764,12 +2776,11 @@ class Conf {
     /** @param string $email
      * @return ?Contact */
     function fresh_cdb_user_by_email($email) {
-        if ($email !== "" && is_valid_utf8($email)) {
-            $us = $this->_fresh_cdb_user_list(null, [$email]);
-            return $us[0] ?? null;
-        } else {
+        if ($email === "" || !is_valid_utf8($email)) {
             return null;
         }
+        $us = $this->_fresh_cdb_user_list(null, [$email]);
+        return $us[0] ?? null;
     }
 
     /** @param string $email

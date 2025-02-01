@@ -26,9 +26,12 @@ class SaveUsers_Batch {
     function __construct(Contact $user, $arg) {
         $this->conf = $user->conf;
         $this->ustatus = new UserStatus($user);
-        $this->ustatus->notify = isset($arg["notify"]) && !isset($arg["no-notify"]);
-        $this->ustatus->no_create = isset($arg["no-create"]);
-        $this->ustatus->no_modify = isset($arg["no-modify"]);
+        $this->ustatus->set_notify(isset($arg["notify"]) && !isset($arg["no-notify"]));
+        if (isset($arg["only-create"])) {
+            $this->ustatus->set_save_mode(UserStatus::SAVE_NEW);
+        } else if (isset($arg["only-modify"])) {
+            $this->ustatus->set_save_mode(UserStatus::SAVE_EXISTING);
+        }
         $this->quiet = isset($arg["quiet"]);
 
         if (isset($arg["expression"])) {
@@ -106,10 +109,6 @@ class SaveUsers_Batch {
                     fwrite(STDOUT, "{$this->ustatus->user->email}: Changed " . join(", ", array_keys($this->ustatus->diffs)) . "\n");
                 }
             } else {
-                if ($this->ustatus->no_modify
-                    && $this->ustatus->has_error_at("email_inuse")) {
-                    $this->ustatus->msg_at("email_inuse", "Use `--modify` to modify existing users.", MessageSet::INFORM);
-                }
                 fwrite(STDERR, $this->ustatus->full_feedback_text());
                 $this->exit_status = 1;
             }
@@ -143,8 +142,8 @@ class SaveUsers_Batch {
             "expression[],expr[],e[] =JSON Create or modify users specified in JSON",
             "notify,N Send email notifications (off by default)",
             "no-notify,no-email !",
-            "no-modify,create-only Only create new users, do not modify existing",
-            "no-create,modify-only Only modify existing users, do not create new",
+            "only-create,no-modify Only create new users, do not modify existing",
+            "only-modify,no-create Only modify existing users, do not create new",
             "quiet,q Do not print changes"
         )->helpopt("help")
          ->description("Save HotCRP users as specified in JSON or CSV.
@@ -161,8 +160,8 @@ Usage: php batch/saveusers.php [OPTION]... [JSONFILE | CSVFILE]
         } else if ((isset($arg["roles"]) || isset($arg["user-name"]) || isset($arg["disable"]) || isset($arg["enable"]))
                    && !isset($arg["user"])) {
             throw new CommandLineException("`-u` required for those options", $go);
-        } else if (isset($arg["no-modify"]) && isset($arg["no-create"])) {
-            throw new CommandLineException("`--no-modify --no-create` does nothing", $go);
+        } else if (isset($arg["only-modify"]) && isset($arg["only-create"])) {
+            throw new CommandLineException("`--only-create --only-modify` does nothing", $go);
         }
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
