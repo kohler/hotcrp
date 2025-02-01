@@ -259,16 +259,20 @@ class Users_Page {
 
     /** @return bool */
     private function handle_tags() {
+        $tagfn = $this->qreq->tagfn;
+        // XXX what about removing a tag with a specific value?
+
         // check tags
         $tagger = new Tagger($this->viewer);
         $t1 = [];
         $ms = new MessageSet;
+        $flags = $tagfn === "d" ? Tagger::NOVALUE | Tagger::NOPRIVATE : Tagger::NOPRIVATE;
         foreach (preg_split('/[\s,;]+/', (string) $this->qreq->tag) as $t) {
             if ($t === "") {
-                /* nada */
-            } else if (!($t = $tagger->check($t, Tagger::NOPRIVATE))) {
+                continue;
+            } else if (!($t = $tagger->check($t, $flags))) {
                 $ms->error_at(null, $tagger->error_ftext());
-            } else if (in_array(strtolower(Tagger::tv_tag($t)), ["pc", "admin", "chair"])) {
+            } else if (!UserStatus::check_pc_tag(Tagger::tv_tag($t))) {
                 $ms->error_at(null, $this->conf->_("<0>User tag ‘{}’ reserved", Tagger::tv_tag($t)));
             } else {
                 $t1[] = $t;
@@ -278,43 +282,46 @@ class Users_Page {
             $ms->prepend_item(MessageItem::error("<0>Changes not saved; please correct these errors and try again"));
             $this->conf->feedback_msg($ms);
             return false;
-        } else if (!count($t1)) {
+        } else if (empty($t1)) {
             $ms->msg_at(null, "No changes", MessageSet::WARNING_NOTE);
             $this->conf->feedback_msg($ms);
             return false;
         }
 
-        // modify database
+        // load affected users
         Conf::$no_invalidate_caches = true;
-        $users = [];
-        if ($this->qreq->tagfn === "s") {
-            // erase existing tags
-            $likes = $removes = [];
+        $tests = ["contactId?a"];
+        if ($tagfn === "s") {
             foreach ($t1 as $t) {
                 list($tag, $index) = Tagger::unpack($t);
-                $removes[] = $t;
-                $x = sqlq(Dbl::escape_like($tag));
-                $likes[] = "contactTags like " . Dbl::utf8ci("'% {$x}#%'");
-            }
-            foreach (Dbl::fetch_first_columns(Dbl::qe("select contactId from ContactInfo where " . join(" or ", $likes))) as $cid) {
-                $users[(int) $cid] = (object) ["id" => (int) $cid, "add_tags" => [], "remove_tags" => $removes];
+                $x = $this->conf->dblink->real_escape_string(Dbl::escape_like($tag));
+                $tests[] = "contactTags like " . Dbl::utf8ci($this->conf->dblink, "'% {$x}#%'");
             }
         }
+        $result = $this->conf->qe("select * from ContactInfo where " . join(" or ", $tests), $this->papersel);
 
-        // account for request
-        $key = $this->qreq->tagfn === "d" ? "remove_tags" : "add_tags";
-        foreach ($this->papersel as $cid) {
-            if (!isset($users[(int) $cid])) {
-                $users[(int) $cid] = (object) ["id" => (int) $cid, "add_tags" => [], "remove_tags" => []];
-            }
-            array_push($users[(int) $cid]->$key, ...$t1);
-        }
-
-        // apply modifications
+        // make changes
         $us = new UserStatus($this->viewer);
-        foreach ($users as $cid => $cj) {
-            $us->save_user($cj);
+        $changes = false;
+        while (($u = Contact::fetch($result, $this->conf))) {
+            $us->start_update((object) ["id" => null]);
+            $us->set_user($u);
+            foreach ($t1 as $t) {
+                if ($tagfn === "s"
+                    || $tagfn === "d") {
+                    $us->jval->change_tags[] = "-" . Tagger::tv_tag($t);
+                }
+                if (($tagfn === "s" && in_array($u->contactId, $this->papersel))
+                    || $tagfn === "a") {
+                    $us->jval->change_tags[] = $t;
+                }
+            }
+            $us->execute_update();
+            $changes = $changes || !empty($us->diffs);
         }
+        $result->close();
+
+        // that’s it
         Conf::$no_invalidate_caches = false;
         $this->conf->invalidate_caches(["pc" => true]);
 
@@ -323,13 +330,16 @@ class Users_Page {
             $ms->append_set($us);
             $this->conf->feedback_msg($ms);
             return false;
-        } else {
-            $ms->prepend_item(MessageItem::success("<0>User tag changes saved"));
-            $this->conf->feedback_msg($ms);
-            unset($this->qreq->fn, $this->qreq->tagfn);
-            $this->conf->redirect_self($this->qreq);
-            return true;
         }
+        if ($changes) {
+            $ms->prepend_item(MessageItem::success("<0>User tag changes saved"));
+        } else {
+            $ms->prepend_item(MessageItem::warning_note("<0>No changes"));
+        }
+        $this->conf->feedback_msg($ms);
+        unset($this->qreq->fn, $this->qreq->tagfn);
+        $this->conf->redirect_self($this->qreq);
+        return true;
     }
 
 
