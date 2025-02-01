@@ -1630,7 +1630,7 @@ class Tagger {
             $flags |= self::NOCHAIR;
         }
         if (!preg_match('/\A(|~|~~|[1-9][0-9]*~)(' . TAG_REGEX_NOTWIDDLE . ')(|[#=](?:-?\d+(?:\.\d*)?|-?\.\d+|))\z/', $tag, $m)) {
-            if (preg_match('/\A([-a-zA-Z0-9!@*_:.\/#=]+)[\s,]+\S+/', $tag, $m)
+            if (preg_match('/\A([-a-zA-Z0-9!@*_:.\/\#=]+)[\s,]+\S+/', $tag, $m)
                 && $this->check($m[1], $flags)) {
                 return $this->set_error_code(self::EMULTIPLE, $tag);
             } else {

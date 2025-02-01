@@ -15,7 +15,7 @@ class GetReviewBase_ListAction extends ListAction {
     protected function finish(Contact $user, $texts, $ms) {
         if (empty($texts)) {
             $user->conf->feedback_msg(
-                new MessageItem(null, "Nothing to download", MessageSet::MARKED_NOTE),
+                MessageItem::marked_note("<0>Nothing to download"),
                 $ms->message_list()
             );
             return;

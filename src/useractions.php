@@ -26,7 +26,7 @@ class UserActions {
             [$ids, Contact::CF_UDISABLED, $user->contactId]);
         $j = (object) ["ok" => true, "message_list" => []];
         if (empty($users)) {
-            $j->message_list[] = new MessageItem(null, "<0>No changes (those accounts were already disabled)", MessageSet::WARNING_NOTE);
+            $j->message_list[] = MessageItem::warning_note("<0>No changes (those accounts were already disabled)");
         } else {
             $conf->qe("update ContactInfo set disabled=?, cflags=cflags|? where contactId?a and (cflags&?)=0",
                 Contact::CF_UDISABLED, Contact::CF_UDISABLED,
@@ -49,7 +49,7 @@ class UserActions {
             [$ids, Contact::CF_UDISABLED]);
         $j = (object) ["ok" => true, "message_list" => []];
         if (empty($users)) {
-            $j->message_list[] = new MessageItem(null, "<0>No changes (those accounts were already enabled)", MessageSet::WARNING_NOTE);
+            $j->message_list[] = MessageItem::warning_note("<0>No changes (those accounts were already enabled)");
         } else {
             $conf->qe("update ContactInfo set disabled=0, cflags=(cflags&~?) where contactId?a and (cflags&?)!=0",
                 Contact::CF_UDISABLED, array_keys($users), Contact::CF_UDISABLED);

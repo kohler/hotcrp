@@ -154,7 +154,7 @@ class Doc_Page {
             } else if (($listing = $doc->archive_listing(65536)) === null) {
                 $ml = $doc->message_list();
                 if (empty($ml)) {
-                    $ml[] = new MessageItem(null, "<0>Internal error", 2);
+                    $ml[] = MessageItem::error("<0>Internal error");
                 }
                 json_exit(["ok" => false, "message_list" => $ml]);
             } else {

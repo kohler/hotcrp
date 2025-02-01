@@ -1409,7 +1409,7 @@ class ReviewValues extends MessageSet {
             $mis = $this->message_list();
             if ($this->text !== null && $this->has_problem()) {
                 $errtype = $this->has_error() ? "errors" : "warnings";
-                array_unshift($mis, new MessageItem(null, $this->conf->_("<0>There were {$errtype} while parsing the uploaded review file."), MessageSet::INFORM));
+                array_unshift($mis, MessageItem::inform($this->conf->_("<0>There were {$errtype} while parsing the uploaded review file.")));
             }
             if (($status = $this->summary_status()) !== MessageSet::PLAIN) {
                 $this->conf->feedback_msg($mis, new MessageItem(null, "", $status));

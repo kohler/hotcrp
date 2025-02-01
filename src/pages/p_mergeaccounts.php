@@ -48,7 +48,7 @@ class MergeAccounts_Page {
             return false;
         }
         if ($other->contactId && $other->contactId === $this->user->contactId) {
-            $this->conf->feedback_msg([new MessageItem(null, "<0>Accounts already merged", MessageSet::SUCCESS)]);
+            $this->conf->feedback_msg(MessageItem::success("<0>Accounts already merged"));
             $this->conf->redirect();
             return true;
         }

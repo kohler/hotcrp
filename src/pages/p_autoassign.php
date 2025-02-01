@@ -712,8 +712,8 @@ class Autoassign_Page {
         echo Ht::feedback_msg($this->ms);
         $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         $this->conf->feedback_msg(
-            new MessageItem(null, "Select “Apply changes” to make the checked assignments.", MessageSet::MARKED_NOTE),
-            MessageItem::inform("Reviewer preferences, if any, are shown as “P#”.")
+            MessageItem::marked_note("<0>Select “Apply changes” to make the checked assignments."),
+            MessageItem::inform("<0>Reviewer preferences, if any, are shown as “P#”.")
         );
         return $aset->unparse_paper_column();
     }

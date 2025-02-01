@@ -46,7 +46,7 @@ class GetDocument_ListAction extends ListAction {
         $user->set_overrides($old_overrides);
         if ($docset->is_empty()) {
             return JsonResult::make_message_list($docset->message_set(),
-                new MessageItem(null, "<0>Nothing to download", MessageSet::MARKED_NOTE));
+                MessageItem::marked_note("<0>Nothing to download"));
         }
         $qreq->qsession()->commit();
         $dopt = new Downloader;

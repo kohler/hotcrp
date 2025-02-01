@@ -1219,7 +1219,7 @@ class PaperList {
             return;
         }
         if (is_string($message)) {
-            $mi = new MessageItem($name, $message, MessageSet::WARNING);
+            $mi = MessageItem::warning_at($name, $message);
         } else {
             $mi = $message;
         }

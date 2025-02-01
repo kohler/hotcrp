@@ -57,15 +57,15 @@ class RequestReview_API {
             if ($reviewer
                 && ($refusal->refusedBy == $reviewer->contactId
                     || ($refusal->refusedBy === null && $refusal->reason !== "request denied by chair"))) {
-                $ml[] = new MessageItem("email", "<5>" . $reviewer->name_h(NAME_P) . " has declined to review this submission", 2);
+                $ml[] = MessageItem::error_at("email", "<5>" . $reviewer->name_h(NAME_P) . " has declined to review this submission");
             } else {
-                $ml[] = new MessageItem("email", "<0>An administrator denied a previous request for {$email} to review this submission", 2);
+                $ml[] = MessageItem::error_at("email", "<0>An administrator denied a previous request for {$email} to review this submission");
             }
             if ($refusal->reason !== "" && $refusal->reason !== "request denied by chair") {
-                $ml[] = new MessageItem("email", "<5>They offered this reason: “" . htmlspecialchars($refusal->reason) . "”", MessageSet::INFORM);
+                $ml[] = MessageItem::inform_at("email", "<5>They offered this reason: “" . htmlspecialchars($refusal->reason) . "”");
             }
             if ($user->allow_administer($prow)) {
-                $ml[] = new MessageItem("override", "", 2);
+                $ml[] = MessageItem::error_at("override", "");
             }
             return new JsonResult(["ok" => false, "message_list" => $ml]);
         }
@@ -114,23 +114,23 @@ class RequestReview_API {
             $ml = [];
             if ($user->can_administer($prow)) {
                 if ($potconf) {
-                    $ml[] = new MessageItem("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
-                    $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf), MessageSet::INFORM);
+                    $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)));
+                    $ml[] = MessageItem::inform_at("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf));
                 } else {
-                    $ml[] = new MessageItem("email", $prow->conf->_("<0>{} could not normally be assigned to review this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
+                    $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} could not normally be assigned to review this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)));
                 }
             } else if ($extrev_chairreq === 2) {
                 if ($potconf || !$user->can_view_pc()) {
-                    $ml[] = new MessageItem("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
+                    $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)));
                     if ($potconf && $user->can_view_authors($prow)) {
-                        $ml[] = new MessageItem("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf), MessageSet::INFORM);
+                        $ml[] = MessageItem::inform_at("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf));
                     }
                 } else {
-                    $ml[] = new MessageItem("email", $prow->conf->_("<0>{} could not normally be assigned to review this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)), MessageSet::WARNING_NOTE);
+                    $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} could not normally be assigned to review this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)));
                 }
             } else {
-                $ml[] = new MessageItem("email", "<5>Proposed an external review from " . $xreviewer->name_h(NAME_E), MessageSet::WARNING_NOTE);
-                $ml[] = new MessageItem("email", "<0>An administrator must approve this proposal for it to take effect.", MessageSet::INFORM);
+                $ml[] = MessageItem::warning_note_at("email", "<5>Proposed an external review from " . $xreviewer->name_h(NAME_E));
+                $ml[] = MessageItem::inform_at("email", "<0>An administrator must approve this proposal for it to take effect.");
             }
             $user->log_activity("Review proposal added for {$email}", $prow);
             $prow->conf->update_automatic_tags($prow, "review");
@@ -164,7 +164,7 @@ class RequestReview_API {
             "requester_contact" => $requester, "reason" => $reason
         ]);
 
-        $mi = new MessageItem("email", "<0>Requested a review from " . $reviewer->name(NAME_E), MessageSet::SUCCESS);
+        $mi = MessageItem::success_at("email", "<0>Requested a review from " . $reviewer->name(NAME_E));
         return new JsonResult(["ok" => true, "action" => "request", "message_list" => [$mi]]);
     }
 
@@ -414,7 +414,7 @@ class RequestReview_API {
             return JsonResult::make_permission_error("r", "<0>Review has already been submitted");
         } else if ($rrow && $rrow->reviewType >= REVIEW_SECONDARY) {
             $jr = JsonResult::make_permission_error("r", "<0>Primary and secondary reviews can’t be declined");
-            $jr->content["message_list"][] = new MessageItem("r", "Contact the PC chairs directly if you really cannot finish this review.", MessageSet::INFORM);
+            $jr->content["message_list"][] = MessageItem::inform_at("r", "Contact the PC chairs directly if you really cannot finish this review.");
             return $jr;
         }
         $rrid = $rrow ? $rrow->reviewId : $refrow->refusedReviewId;

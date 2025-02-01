@@ -3035,15 +3035,15 @@ class PaperTable {
         if (($this->user->is_owned_review($rrow) || $this->admin)
             && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
             if ($this->conf->time_review_open()) {
-                $t = 'The <a href="' . $this->conf->hoturl("deadlines") . '">review deadline</a> has passed, so the review can no longer be changed.';
+                $t = '<5>The <a href="' . $this->conf->hoturl("deadlines") . '">review deadline</a> has passed, so the review can no longer be changed.';
             } else {
-                $t = "The site is not open for reviewing, so the review cannot be changed.";
+                $t = "<0>The site is not open for reviewing, so the review cannot be changed.";
             }
             if (!$this->admin) {
-                $rrow->message_list[] = new MessageItem(null, $t, MessageSet::URGENT_NOTE);
+                $rrow->message_list[] = MessageItem::urgent_note($t);
                 return false;
             } else {
-                $rrow->message_list[] = new MessageItem(null, "{$t} As an administrator, you can override this deadline.", MessageSet::WARNING);
+                $rrow->message_list[] = MessageItem::warning("{$t} As an administrator, you can override this deadline.");
             }
         } else if (!$this->user->can_edit_review($this->prow, $rrow)) {
             return false;
@@ -3052,9 +3052,9 @@ class PaperTable {
         // administrator?
         if (!$this->user->is_my_review($rrow)) {
             if ($this->user->is_owned_review($rrow)) {
-                $rrow->message_list[] = new MessageItem(null, "This isn’t your review, but you can make changes since you requested it.", MessageSet::MARKED_NOTE);
+                $rrow->message_list[] = MessageItem::marked_note("<0>This isn’t your review, but you can make changes since you requested it.");
             } else if ($this->admin) {
-                $rrow->message_list[] = new MessageItem(null, "This isn’t your review, but as an administrator you can still make changes.", MessageSet::MARKED_NOTE);
+                $rrow->message_list[] = MessageItem::marked_note("<0>This isn’t your review, but as an administrator you can still make changes.");
             }
         }
 
@@ -3084,7 +3084,7 @@ class PaperTable {
             } else {
                 $t = "<0>Your delegated external reviewer has not yet submitted a review.  If they do not, you should complete this review yourself.";
             }
-            $rrow->message_list[] = new MessageItem(null, $t, MessageSet::MARKED_NOTE);
+            $rrow->message_list[] = MessageItem::marked_note($t);
         }
 
         return $editable;

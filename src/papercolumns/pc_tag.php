@@ -78,9 +78,9 @@ class Tag_PaperColumn extends PaperColumn {
             if ($pl->conf->tags()->is_automatic($this->etag)) {
                 if ($pl->conf->tags()->is_votish($this->etag)
                     && $pl->user->is_pc_member()) {
-                    $pl->column_error(new MessageItem(null, "<0>This tag is set automatically based on per-user votes. Did you mean ‘edit:#~{$this->dtag}’?", MessageSet::INFORM));
+                    $pl->column_error(MessageItem::inform("<0>This tag is set automatically based on per-user votes. Did you mean ‘edit:#~{$this->dtag}’?"));
                 } else {
-                    $pl->column_error(new MessageItem(null, "<0>This tag is set automatically.", MessageSet::INFORM));
+                    $pl->column_error(MessageItem::inform("<0>This tag is set automatically"));
                 }
             }
             return;

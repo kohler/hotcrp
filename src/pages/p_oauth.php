@@ -224,13 +224,13 @@ class OAuth_Page {
         if (!isset($jid->email) || !is_string($jid->email)) {
             return [
                 MessageItem::error("<0>The {$authtitle} authenticator didn’t provide your email"),
-                new MessageItem(null, "<0>HotCRP requires your email to sign you in.", MessageSet::INFORM)
+                MessageItem::inform("<0>HotCRP requires your email to sign you in.")
             ];
         } else if (isset($jid->email_verified)
                    && $jid->email_verified === false) {
             return [
                 MessageItem::error("<0>The {$authtitle} authenticator hasn’t verified your email"),
-                new MessageItem(null, "<0>HotCRP requires a verified email to sign you in.", MessageSet::INFORM)
+                MessageItem::inform("<0>HotCRP requires a verified email to sign you in.")
             ];
         }
 
@@ -272,7 +272,7 @@ class OAuth_Page {
             $user->save_roles($user_roles, $user);
         }
         if (!$tokdata->quiet) {
-            $this->conf->feedback_msg(new MessageItem(null, "<0>Signed in", MessageSet::SUCCESS));
+            $this->conf->feedback_msg(MessageItem::success("<0>Signed in"));
         }
         $uindex = UpdateSession::user_change($this->qreq, $user->email, true);
         UpdateSession::usec_add($this->qreq, $user->email, 1, 0, true);

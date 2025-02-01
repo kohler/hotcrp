@@ -366,11 +366,11 @@ class CheckFormat extends MessageSet {
     /** @return MessageItem */
     function front_report_item() {
         if ($this->has_error()) {
-            return new MessageItem(null, "<5>This document violates the submission format requirements", MessageSet::ERROR);
+            return MessageItem::error("<5>This document violates the submission format requirements");
         } else if ($this->has_problem()) {
-            return new MessageItem(null, "<0>This document may violate the submission format requirements", MessageSet::WARNING);
+            return MessageItem::warning("<0>This document may violate the submission format requirements");
         } else {
-            return new MessageItem(null, "<0>Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.", MessageSet::SUCCESS);
+            return MessageItem::success("<0>Congratulations, this document seems to comply with the format guidelines. However, the automated checker may not verify all formatting requirements. It is your responsibility to ensure correct formatting.");
         }
     }
 
@@ -808,7 +808,7 @@ class Default_FormatChecker implements FormatChecker {
             $ms->append_item($mi);
         }
         if ($cf->has_problem()) {
-            $ms->append_item(new MessageItem(null, "<5>Submissions that violate the requirements will not be considered. However, some violation reports may be false positives (for instance, the checker can miscalculate margins and text sizes for figures). If you are confident that the current document respects all format requirements, keep it as is.", MessageSet::INFORM));
+            $ms->append_item(MessageItem::inform("<0>Submissions that violate the requirements will not be considered. However, some violation reports may be false positives (for instance, the checker can miscalculate margins and text sizes for figures). If you are confident that the current document respects all format requirements, keep it as is."));
         }
         $ms->append_list($cf->message_list());
         return true;

@@ -120,10 +120,10 @@ class API_Page {
             }
         }
         if (empty($ml) && isset($jr->content["error"])) { // XXX backward compat
-            $ml[] = new MessageItem(null, "<0>" . $jr->content["error"], 2);
+            $ml[] = MessageItem::error("<0>" . $jr->content["error"]);
         }
         if (empty($ml) && !($jr->content["ok"] ?? ($jr->status <= 299))) {
-            $ml[] = new MessageItem(null, "<0>Internal error", 2);
+            $ml[] = MessageItem::error("<0>Internal error");
         }
         return $ml;
     }

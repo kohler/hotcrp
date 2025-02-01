@@ -511,7 +511,7 @@ class SettingValues extends MessageSet {
     function report() {
         $msgs = [];
         if ($this->_use_req && $this->has_error()) {
-            $msgs[] = new MessageItem("", "<0>Your changes were not saved. Please fix these errors and try again.", MessageSet::PLAIN);
+            $msgs[] = MessageItem::plain("<0>Your changes were not saved. Please fix these errors and try again.");
         }
         foreach ($this->decorated_message_list() as $mi) {
             $msgs[] = $mi;

@@ -44,10 +44,10 @@ class Tags_API {
             $link = $user->conf->hoturl("search", ["q" => "editsort:-#~{$t->tag}"]);
             if ($tv[1] < $t->allotment) {
                 $nleft = $t->allotment - $tv[1];
-                $tmr->message_list[] = new MessageItem(null, "<5><a href=\"{$link}\">#~{$t->tag}</a>: " . plural($nleft, "vote") . " remaining", MessageSet::MARKED_NOTE);
+                $tmr->message_list[] = MessageItem::marked_note("<5><a href=\"{$link}\">#~{$t->tag}</a>: " . plural($nleft, "vote") . " remaining");
             } else if ($tv[1] > $t->allotment) {
-                $tmr->message_list[] = new MessageItem(null, "<5><a href=\"{$link}\">#~{$t->tag}</a>: Too many votes", 1);
-                $tmr->message_list[] = new MessageItem(null, "<0>Your vote total, {$tv[1]}, is over the allotment, {$t->allotment}.", MessageSet::INFORM);
+                $tmr->message_list[] = MessageItem::warning("<5><a href=\"{$link}\">#~{$t->tag}</a>: Too many votes");
+                $tmr->message_list[] = MessageItem::inform("<0>Your vote total, {$tv[1]}, is over the allotment, {$t->allotment}.");
             }
         }
     }

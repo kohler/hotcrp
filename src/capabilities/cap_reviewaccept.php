@@ -71,8 +71,8 @@ class ReviewAccept_Capability {
                     $t .= " <a href=\"" . $user->conf->hoturl("signin") . "\">Sign in to the site</a> to view or edit your reviews.";
                 }
                 $user->conf->feedback_msg([
-                    new MessageItem(null, "<0>Bad review link", MessageSet::ERROR),
-                    new MessageItem(null, $t, MessageSet::INFORM)
+                    MessageItem::error("<0>Bad review link"),
+                    MessageItem::inform($t)
                 ]);
             }
         }

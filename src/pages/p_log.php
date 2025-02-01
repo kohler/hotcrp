@@ -454,7 +454,7 @@ class Log_Page {
         if (!$this->viewer->privChair || !empty($this->exclude_pids)) {
             echo '<div class="msgs-wide">';
             if (!$this->viewer->privChair) {
-                $conf->feedback_msg(new MessageItem(null, "<0>Only showing your actions, plus entries for papers you administer", MessageSet::MARKED_NOTE));
+                $conf->feedback_msg(MessageItem::marked_note("<0>Only showing your actions, plus entries for papers you administer"));
             } else if (!empty($this->exclude_pids)
                        && (!$this->include_pids || array_intersect_key($this->include_pids, $this->exclude_pids))
                        && array_keys($this->exclude_pids) != array_keys($this->viewer->hidden_papers ? : [])) {
@@ -468,9 +468,9 @@ class Log_Page {
                     $req["offset"] = $leg->page_delta();
                 }
                 if ($this->qreq->forceShow) { // XXX never true
-                    $conf->feedback_msg(new MessageItem(null, "<5>Showing all entries (" . Ht::link("unprivileged view", $conf->selfurl($this->qreq, $req + ["forceShow" => null])) . ")", MessageSet::MARKED_NOTE));
+                    $conf->feedback_msg(MessageItem::marked_note("<5>Showing all entries (" . Ht::link("unprivileged view", $conf->selfurl($this->qreq, $req + ["forceShow" => null])) . ")"));
                 } else {
-                    $conf->feedback_msg(new MessageItem(null, "<5>Not showing entries for " . Ht::link("conflicted administered papers", $conf->hoturl("search", "q=" . join("+", array_keys($this->exclude_pids)))), MessageSet::MARKED_NOTE));
+                    $conf->feedback_msg(MessageItem::marked_note("<5>Not showing entries for " . Ht::link("conflicted administered papers", $conf->hoturl("search", "q=" . join("+", array_keys($this->exclude_pids))))));
                 }
             }
             echo '</div>';

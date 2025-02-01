@@ -342,7 +342,7 @@ class Review_Page {
             } else {
                 $m = "<5>You’re accessing this review using a special link for reviewer {$hemail}. " . Ht::link("Sign in to the site", $this->conf->hoturl("signin", ["email" => $u->email, "cap" => null]), ["class" => "nw"]);
             }
-            $this->pt()->add_pre_status_feedback(new MessageItem(null, $m, MessageSet::WARNING_NOTE));
+            $this->pt()->add_pre_status_feedback(MessageItem::warning_note($m));
         }
     }
 

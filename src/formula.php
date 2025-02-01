@@ -1947,7 +1947,7 @@ class Formula implements JsonSerializable {
         if (!Ftext::is_ftext($message)) {
             error_log("not ftext: " . debug_string_backtrace());
         }
-        $mi = new MessageItem(null, $message, MessageSet::ERROR);
+        $mi = MessageItem::error($message);
         $mi->pos1 = $pos1;
         $mi->pos2 = $pos2;
         $mi->context = (string) $this->expression;

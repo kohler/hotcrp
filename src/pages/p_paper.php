@@ -420,7 +420,7 @@ class Paper_Page {
                 new FmtArg("reviewer", $u->email, 0),
                 new FmtArg("self", $this->user->email, 0),
                 new FmtArg("signinurl", $this->conf->hoturl_raw("signin", ["email" => $u->email, "cap" => null])));
-            $this->pt()->add_pre_status_feedback(new MessageItem(null, $m, MessageSet::WARNING_NOTE));
+            $this->pt()->add_pre_status_feedback(MessageItem::warning_note($m));
         }
     }
 

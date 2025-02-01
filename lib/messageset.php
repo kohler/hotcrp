@@ -143,10 +143,24 @@ class MessageItem implements JsonSerializable {
         return new MessageItem(null, $msg, 1);
     }
 
+    /** @param ?string $field
+     * @param ?string $msg
+     * @return MessageItem */
+    static function warning_at($field, $msg) {
+        return new MessageItem($field, $msg, 1);
+    }
+
     /** @param ?string $msg
      * @return MessageItem */
     static function success($msg) {
         return new MessageItem(null, $msg, MessageSet::SUCCESS);
+    }
+
+    /** @param ?string $field
+     * @param ?string $msg
+     * @return MessageItem */
+    static function success_at($field, $msg) {
+        return new MessageItem($field, $msg, MessageSet::SUCCESS);
     }
 
     /** @param ?string $msg
@@ -167,6 +181,13 @@ class MessageItem implements JsonSerializable {
         return new MessageItem(null, $msg, MessageSet::WARNING_NOTE);
     }
 
+    /** @param ?string $field
+     * @param ?string $msg
+     * @return MessageItem */
+    static function warning_note_at($field, $msg) {
+        return new MessageItem($field, $msg, MessageSet::WARNING_NOTE);
+    }
+
     /** @param ?string $msg
      * @return MessageItem */
     static function urgent_note($msg) {
@@ -177,6 +198,13 @@ class MessageItem implements JsonSerializable {
      * @return MessageItem */
     static function inform($msg) {
         return new MessageItem(null, $msg, MessageSet::INFORM);
+    }
+
+    /** @param ?string $field
+     * @param ?string $msg
+     * @return MessageItem */
+    static function inform_at($field, $msg) {
+        return new MessageItem($field, $msg, MessageSet::INFORM);
     }
 }
 

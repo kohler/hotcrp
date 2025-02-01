@@ -461,7 +461,7 @@ class Profile_Page {
                 $this->conf->redirect_self($this->qreq);
             }
         } else {
-            $this->conf->feedback_msg(new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE));
+            $this->conf->feedback_msg(MessageItem::warning_note("<0>No changes"));
         }
     }
 
@@ -471,7 +471,7 @@ class Profile_Page {
         } else if ($this->user === $this->viewer) {
             $this->conf->error_msg("<0>You can’t delete your own account");
         } else if (!$this->user->has_account_here()) {
-            $this->conf->feedback_msg(new MessageItem(null, "<0>This user’s account is not active on this site", MessageSet::MARKED_NOTE));
+            $this->conf->feedback_msg(MessageItem::marked_note("<0>This user’s account is not active on this site"));
         } else if ($this->user->security_locked_here()) {
             $this->conf->error_msg("<0>This account is locked and can’t be deleted");
         } else if (($tracks = UserStatus::user_paper_info($this->conf, $this->user->contactId))

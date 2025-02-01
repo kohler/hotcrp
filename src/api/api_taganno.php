@@ -89,7 +89,7 @@ class TagAnno_API {
                     $qf[] = "tagIndex=?";
                     $qv[] = floatval($tagval);
                 } else {
-                    $ml[] = new MessageItem("ta/{$annokey}/tagval", "Tag value should be a number", 2);
+                    $ml[] = MessageItem::error_at("ta/{$annokey}/tagval", "Tag value should be a number");
                 }
             }
 

@@ -22,7 +22,7 @@ class ReviewPrefs_Page {
             }
         }
         if ($csvg->is_empty()) {
-            $user->conf->feedback_msg([new MessageItem(null, "<0>No changes", MessageSet::WARNING_NOTE)]);
+            $user->conf->feedback_msg(MessageItem::warning_note("<0>No changes"));
             return;
         }
 
@@ -204,7 +204,7 @@ class ReviewPrefs_Page {
             }
         }
         if (!$correct_reviewer) {
-            $conf->feedback_msg([new MessageItem(null, "<0>Requested reviewer ‘{$qreq->reviewer}’ is not on the PC", MessageSet::ERROR)]);
+            $conf->feedback_msg(MessageItem::error("<0>Requested reviewer ‘{$qreq->reviewer}’ is not on the PC"));
         }
 
         // cancel action
@@ -234,7 +234,7 @@ class ReviewPrefs_Page {
                 if ($correct_reviewer) {
                     self::save_preferences($user, $reviewer, $qreq);
                 } else {
-                    $conf->feedback_msg([new MessageItem(null, "<0>Changes not saved", MessageSet::ERROR)]);
+                    $conf->feedback_msg(MessageItem::error("<0>Changes not saved"));
                 }
             }
         } else if ($qreq->fn !== null) {
