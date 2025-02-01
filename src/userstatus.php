@@ -501,9 +501,6 @@ class UserStatus extends MessageSet {
             return null;
         }
         $this->jval = (object) [];
-        if ($this->user->contactId > 0) {
-            $this->jval->id = $this->user->contactId;
-        }
         $cs = $this->cs();
         foreach ($cs->members("", "unparse_json_function") as $gj) {
             $cs->call_function($gj, $gj->unparse_json_function, $gj);
@@ -625,22 +622,6 @@ class UserStatus extends MessageSet {
                    && !validate_email($cj->email)
                    && (!$old_user || $old_user->email !== $cj->email)) {
             $this->error_at("email", "<0>Invalid email address");
-        }
-
-        // ID
-        if (!isset($cj->id)
-            && $old_user
-            && $old_user->contactId) {
-            $cj->id = $old_user->contactId;
-        }
-        if (isset($cj->id)
-            && $cj->id !== "new"
-            && $old_user
-            && ($cj->email ?? false)
-            && strtolower($old_user->email) !== strtolower($cj->email)
-            && $this->conf->fresh_user_by_email($cj->email)) {
-            $this->error_at("email", "<0>Email address ‘{$cj->email}’ already in use");
-            $this->msg_at("email", "<5>You may want to <a href=\"" . $this->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.", MessageSet::INFORM);
         }
 
         // Contactdb information
@@ -960,11 +941,10 @@ class UserStatus extends MessageSet {
     }
 
 
-    /** @param object $cj
+    /** @param ?object $cj
      * @return $this */
-    function start_update($cj) {
-        assert(is_object($cj));
-        $this->jval = $cj;
+    function start_update($cj = null) {
+        $this->jval = $cj ?? (object) [];
         $this->diffs = [];
         $this->created = $this->notified = false;
         $this->set_user(null);
@@ -990,13 +970,7 @@ class UserStatus extends MessageSet {
         // normalize name, including email
         self::normalize_name($cj);
 
-        // check id and email
-        if (isset($cj->id)
-            && $cj->id !== "new"
-            && (!is_int($cj->id) || $cj->id <= 0)) {
-            $this->error_at("id", "<0>Format error [id]");
-            return false;
-        }
+        // check email
         if (isset($cj->email)
             && !is_string($cj->email)) {
             $this->error_at("email", "<0>Format error [email]");
@@ -1004,11 +978,6 @@ class UserStatus extends MessageSet {
         }
 
         // obtain old users in this conference and contactdb
-        // - load by id if only id is set
-        if (!$old_user && isset($cj->id) && is_int($cj->id)) {
-            $old_user = $this->conf->fresh_user_by_id($cj->id);
-        }
-
         // - obtain email
         if ($old_user && $old_user->has_email()) {
             $old_email = $old_user->email;
@@ -1037,34 +1006,17 @@ class UserStatus extends MessageSet {
         }
 
         // - check save mode
-        if ($this->save_mode === self::SAVE_EXISTING
-            && !$old_user) {
-            if (isset($cj->id) && $cj->id !== "new") {
-                $this->error_at("id", "<0>Refusing to create user with ID {$cj->id}");
-            } else {
-                $this->error_at("email", "<0>Refusing to create user with email {$cj->email}");
-            }
+        if ($this->save_mode === self::SAVE_EXISTING && !$old_user) {
+            $this->error_at("email", "<0>Refusing to create user with email {$cj->email}");
             return false;
         }
-        if (($this->save_mode === self::SAVE_NEW || ($cj->id ?? null) === "new")
-            && $old_user) {
-            if (isset($cj->id) && $cj->id !== "new") {
-                $this->error_at("id", "<0>Refusing to modify existing user with ID {$cj->id}");
-            } else {
-                $this->error_at("email", "<0>Refusing to modify existing user with email {$cj->email}");
-            }
+        if ($this->save_mode === self::SAVE_NEW && $old_user) {
+            $this->error_at("email", "<0>Email address ‘{$old_user->email}’ is already in use");
             return false;
         }
         $user = $old_user ?? $old_cdb_user;
 
         // normalize and check for errors
-        if (!isset($cj->id)) {
-            $cj->id = $old_user ? $old_user->contactId : "new";
-        }
-        if ($cj->id !== "new" && $old_user && $cj->id != $old_user->contactId) {
-            $this->error_at("id", "<0>Saving user with different ID");
-            return false;
-        }
         $this->normalize($cj, $user);
         $roles = $old_roles = $old_user ? $old_user->roles : 0;
         if (isset($cj->roles)) {
@@ -1614,7 +1566,7 @@ class UserStatus extends MessageSet {
                 $email_class .= " uii js-email-populate";
             }
             $us->print_field("uemail", "Email" . $actas,
-                Ht::entry("uemail", $qreq->email ?? $user->email, ["class" => $email_class, "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => $user->email, "type" => "email"]));
+                Ht::entry("uemail", $qreq->uemail ?? $user->email, ["class" => $email_class, "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => $user->email, "type" => "email"]));
         } else if (!$user->is_empty()) {
             $us->print_field("", "Username" . $actas,
                 htmlspecialchars($user->email));
@@ -1622,7 +1574,7 @@ class UserStatus extends MessageSet {
                 Ht::entry("preferredEmail", $qreq->preferredEmail ?? $user->preferredEmail, ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => $user->preferredEmail, "type" => "email"]));
         } else {
             $us->print_field("uemail", "Username",
-                Ht::entry("newUsername", $qreq->email ?? $user->email, ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => $user->email]));
+                Ht::entry("newUsername", $qreq->uemail ?? $user->email, ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => $user->email]));
             $us->print_field("preferredEmail", "Email",
                       Ht::entry("preferredEmail", $qreq->preferredEmail ?? $user->preferredEmail, ["class" => "fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => $user->preferredEmail, "type" => "email"]));
         }

@@ -308,7 +308,7 @@ class Profile_Page {
 
         while (($line = $csv->next_row())) {
             $ustatus->clear_messages();
-            $ustatus->start_update((object) ["id" => null]);
+            $ustatus->start_update();
             $ustatus->csvreq = $line;
             $ustatus->parse_csv_group("");
             $ustatus->set_notify(friendly_boolean($line["notify"]) ?? true);
@@ -363,12 +363,11 @@ class Profile_Page {
         assert($this->user->is_empty() === ($this->page_type !== 0));
 
         // prepare UserStatus
-        $this->ustatus->start_update((object) ["id" => $this->user->has_account_here() ? $this->user->contactId : "new"]);
+        $this->ustatus->start_update();
+        $this->ustatus->no_deprivilege_self = true;
         if ($this->page_type === 0) {
             $this->ustatus->set_user($this->user);
-        }
-        $this->ustatus->no_deprivilege_self = true;
-        if ($this->page_type !== 0) {
+        } else {
             $this->ustatus->set_if_empty(UserStatus::IF_EMPTY_MOST);
             $this->ustatus->set_notify(true);
         }

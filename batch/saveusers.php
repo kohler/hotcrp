@@ -97,7 +97,7 @@ class SaveUsers_Batch {
     private function parse_csvp(CsvParser $csv) {
         while (($line = $csv->next_row())) {
             $this->ustatus->clear_messages();
-            $this->ustatus->start_update((object) ["id" => null]);
+            $this->ustatus->start_update();
             $this->ustatus->csvreq = $line;
             $this->ustatus->parse_csv_group("");
             if ($this->ustatus->execute_update()) {

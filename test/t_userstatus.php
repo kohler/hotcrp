@@ -32,7 +32,7 @@ class UserStatus_Tester {
         $qreq->upassword = $qreq->upassword2 = $newpw;
 
         $us = (new UserStatus($u))->set_qreq($qreq);
-        $us->start_update((object) ["id" => $u->contactId])->set_user($u);
+        $us->start_update()->set_user($u);
         xassert($us->is_auth_self());
         xassert($us->has_recent_authentication());
         $us->request_group("");
@@ -52,7 +52,7 @@ class UserStatus_Tester {
         xassert(!UpdateSession::usec_query($qreq, "estrin@usc.edu", 0, 1, Conf::$now - 20000));
 
         $us = (new UserStatus($u))->set_qreq($qreq);
-        $us->start_update((object) ["id" => $u->contactId])->set_user($u);
+        $us->start_update()->set_user($u);
         xassert($us->is_auth_self());
         xassert(!$us->has_recent_authentication());
         $us->request_group("");
@@ -71,7 +71,7 @@ class UserStatus_Tester {
 
         $ux = $this->conf->fresh_user_by_email("estrin@usc.edu");
         $us = (new UserStatus($u))->set_qreq($qreq);
-        $us->start_update((object) ["id" => $ux->contactId])->set_user($ux);
+        $us->start_update()->set_user($ux);
         $us->request_group("");
         xassert($us->execute_update());
 
@@ -87,7 +87,7 @@ class UserStatus_Tester {
 
         $ux = $this->conf->fresh_user_by_email("estrin@usc.edu");
         $us = (new UserStatus($u))->set_qreq($qreq);
-        $us->start_update((object) ["id" => $ux->contactId])->set_user($ux);
+        $us->start_update()->set_user($ux);
         $us->request_group("");
         $us->execute_update();
 
@@ -103,7 +103,7 @@ class UserStatus_Tester {
         xassert_eqq($u->email, "estrin@usc.edu");
 
         $us = (new UserStatus($u))->set_qreq($qreq);
-        $us->start_update((object) ["id" => $u->contactId])->set_user($u);
+        $us->start_update()->set_user($u);
         $us->request_group("");
         xassert($us->execute_update());
 

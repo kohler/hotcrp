@@ -304,7 +304,7 @@ class Users_Page {
         $us = new UserStatus($this->viewer);
         $changes = false;
         while (($u = Contact::fetch($result, $this->conf))) {
-            $us->start_update((object) ["id" => null]);
+            $us->start_update();
             $us->set_user($u);
             foreach ($t1 as $t) {
                 if ($tagfn === "s"
