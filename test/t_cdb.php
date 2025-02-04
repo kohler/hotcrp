@@ -2,6 +2,7 @@
 // t_cdb.php -- HotCRP tests
 // Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
 
+#[RequireCdb(true)]
 class Cdb_Tester {
     /** @var Conf
      * @readonly */

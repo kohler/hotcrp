@@ -258,6 +258,14 @@ class ProfileTimer {
 class SkipLandmark {
 }
 
+#[Attribute]
+class RequireCdb {
+    public $required;
+    function __construct($required = true) {
+        $this->required = $required;
+    }
+}
+
 class Xassert {
     /** @var int */
     static public $n = 0;
@@ -448,15 +456,16 @@ class Xassert {
  * @param string $file
  * @param int $line */
 function xassert_error_handler($errno, $emsg, $file, $line) {
-    if ((error_reporting() || $errno != E_NOTICE)
-        && Xassert::$disabled <= 0) {
-        if (($e = Xassert::$emap[$errno] ?? null)) {
-            $emsg = "{$e}:  {$emsg}";
-        } else {
-            $emsg = "PHP Message {$errno}:  {$emsg}";
-        }
-        Xassert::error_with("!", "{$emsg} in {$file} on line {$line}\n");
+    if ((!error_reporting() && $errno == E_NOTICE)
+        || Xassert::$disabled > 0) {
+        return;
     }
+    if (($e = Xassert::$emap[$errno] ?? null)) {
+        $emsg = "{$e}:  {$emsg}";
+    } else {
+        $emsg = "PHP Message {$errno}:  {$emsg}";
+    }
+    Xassert::error_with("!", "{$emsg} in {$file} on line {$line}\n");
 }
 
 set_error_handler("xassert_error_handler");
@@ -1097,6 +1106,8 @@ class TestRunner {
     private $reset;
     /** @var bool */
     private $need_reset;
+    /** @var ?bool */
+    private $need_cdb;
     /** @var ?bool
      * @readonly */
     public $color;
@@ -1106,6 +1117,8 @@ class TestRunner {
     private $last_classname;
     /** @var ?object */
     private $tester;
+    /** @var ?string */
+    private $requirement_failure;
     /** @var bool */
     private $need_newline = false;
     /** @var ?string */
@@ -1119,6 +1132,7 @@ class TestRunner {
         }
         if (isset($arg["no-cdb"])) {
             Conf::$main->set_opt("contactdbDsn", null);
+            self::$original_opt["contactdbDsn"] = null;
         }
         if (isset($arg["reset"])) {
             $this->reset = true;
@@ -1317,26 +1331,39 @@ class TestRunner {
 
 
     function will_print() {
-        if ($this->need_newline) {
-            if ($this->color) {
-                fwrite(STDERR, "\r{$this->verbose_test}\x1b[K\n");
-            } else {
-                fwrite(STDERR, "\n");
-            }
-            $this->need_newline = false;
+        if (!$this->need_newline) {
+            return;
         }
+        if ($this->color) {
+            fwrite(STDERR, "\r{$this->verbose_test}\x1b[K\n");
+        } else {
+            fwrite(STDERR, "\n");
+        }
+        $this->need_newline = false;
     }
 
     function will_fail() {
-        if ($this->verbose_test !== null) {
-            if ($this->color) {
-                fwrite(STDERR, "\r{$this->verbose_test} \x1b[01;31mFAIL\x1b[m\n");
-            } else {
-                fwrite(STDERR, " FAIL\n");
-            }
-            $this->verbose_test = null;
-            $this->need_newline = false;
+        if ($this->verbose_test === null) {
+            return;
         }
+        if ($this->color) {
+            fwrite(STDERR, "\r{$this->verbose_test} \x1b[01;31mFAIL\x1b[m\n");
+        } else {
+            fwrite(STDERR, " FAIL\n");
+        }
+        $this->need_newline = false;
+        $this->verbose_test = null;
+    }
+
+    function set_verbose_test($ro, $m) {
+        if (!$this->verbose) {
+            return;
+        }
+        $mpfx = str_pad("{$ro->getName()}::{$m->name} ", $this->width, ".");
+        if (strlen($mpfx) > $this->width) {
+            $mpfx = rtrim($mpfx);
+        }
+        $this->verbose_test = $mpfx;
     }
 
     /** @param object $testo
@@ -1344,58 +1371,122 @@ class TestRunner {
     private function run_object_tests($testo, $methodmatch) {
         $ro = new ReflectionObject($testo);
         foreach ($ro->getMethods() as $m) {
-            if (str_starts_with($m->name, "test")
-                && strlen($m->name) > 4
-                && ($m->name[4] === "_" || ctype_upper($m->name[4]))
-                && ($methodmatch === "" || fnmatch($methodmatch, $m->name))) {
-                if ($this->verbose) {
-                    $mpfx = str_pad("{$ro->getName()}::{$m->name} ", $this->width, ".");
-                    if (strlen($mpfx) > $this->width) {
-                        $mpfx = rtrim($mpfx);
-                    }
-                    if ($this->color) {
-                        fwrite(STDERR, "{$mpfx} \x1b[01;36mRUN\x1b[m");
-                    } else {
-                        fwrite(STDERR, $mpfx);
-                    }
-                    $this->verbose_test = $mpfx;
-                    $this->need_newline = true;
-                    $before_nfail = Xassert::$n - Xassert::$nsuccess;
-                    $before_nerror = Xassert::$nerror;
-                    $testo->{$m->name}();
-                    $fail = Xassert::$n - Xassert::$nsuccess > $before_nfail;
-                    $ok = !$fail && Xassert::$nerror === $before_nerror;
-                    if ($this->verbose_test !== null) {
-                        if ($this->color) {
-                            $pfx = ($this->need_newline ? "\r" : "") . $mpfx;
-                            if ($ok) {
-                                $sfx = " \x1b[01;32m OK\x1b[m\x1b[K";
-                            } else if (!$fail) {
-                                $sfx = " \x1b[01;36mERROR\x1b[m\x1b[K";
-                            } else {
-                                $sfx = " \x1b[01;31mFAIL\x1b[m";
-                            }
-                        } else {
-                            $pfx = $this->need_newline ? "" : $mpfx;
-                            if ($ok) {
-                                $sfx = "  OK";
-                            } else if (!$fail) {
-                                $sfx = " ERROR";
-                            } else {
-                                $sfx = " FAIL";
-                            }
-                        }
-                        fwrite(STDERR, "{$pfx}{$sfx}\n");
-                    }
-                    $this->verbose_test = null;
-                    $this->need_newline = false;
-                } else {
-                    $testo->{$m->name}();
-                }
+            if (!str_starts_with($m->name, "test")
+                || strlen($m->name) <= 4
+                || ($m->name[4] !== "_" && !ctype_upper($m->name[4]))
+                || ($methodmatch !== "" && !fnmatch($methodmatch, $m->name))) {
+                continue;
             }
+            $this->set_verbose_test($ro, $m);
+            if (!$this->check_test_attributes($m, false)) {
+                if ($this->verbose) {
+                    if ($this->color) {
+                        fwrite(STDERR, "\x1b[90m{$this->verbose_test} \x1b[1;90mSKIP\x1b[m\n");
+                    } else {
+                        fwrite(STDERR, "{$this->verbose_test} SKIP\n");
+                    }
+                }
+                continue;
+            }
+            if (!$this->verbose) {
+                $testo->{$m->name}();
+                continue;
+            }
+            if ($this->color) {
+                fwrite(STDERR, "{$this->verbose_test} \x1b[1;36mRUN\x1b[m");
+            } else {
+                fwrite(STDERR, $this->verbose_test);
+            }
+            $this->need_newline = true;
+            $before_nfail = Xassert::$n - Xassert::$nsuccess;
+            $before_nerror = Xassert::$nerror;
+            $testo->{$m->name}();
+            $fail = Xassert::$n - Xassert::$nsuccess > $before_nfail;
+            $ok = !$fail && Xassert::$nerror === $before_nerror;
+            if ($this->verbose_test !== null) {
+                if ($this->color) {
+                    $pfx = ($this->need_newline ? "\r" : "") . $this->verbose_test;
+                    if ($ok) {
+                        $sfx = " \x1b[1;32m OK\x1b[m\x1b[K";
+                    } else if (!$fail) {
+                        $sfx = " \x1b[1;36mERROR\x1b[m\x1b[K";
+                    } else {
+                        $sfx = " \x1b[1;31mFAIL\x1b[m";
+                    }
+                } else {
+                    $pfx = $this->need_newline ? "" : $this->verbose_test;
+                    if ($ok) {
+                        $sfx = "  OK";
+                    } else if (!$fail) {
+                        $sfx = " ERROR";
+                    } else {
+                        $sfx = " FAIL";
+                    }
+                }
+                fwrite(STDERR, "{$pfx}{$sfx}\n");
+            }
+            $this->verbose_test = null;
+            $this->need_newline = false;
         }
     }
 
+    private function check_test_attributes($class, $store) {
+        if (PHP_MAJOR_VERSION < 8) {
+            return true;
+        }
+        foreach ($class->getAttributes("RequireCdb") ?? [] as $attr) {
+            $x = $attr->newInstance();
+            if ($x->required === !!Conf::$main->opt("contactdbDsn")) {
+                continue;
+            } else if ($store) {
+                $this->need_cdb = $x->required;
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** @param string $test */
+    private function set_test_class($test) {
+        $this->last_classname = $test;
+        $this->tester = null;
+
+        $class = new ReflectionClass($test);
+        $this->check_test_attributes($class, true);
+
+        // prepare database
+        if ($this->reset ?? $this->need_reset) {
+            self::reset_db($this->reset ?? false);
+            $this->need_reset = false;
+            $this->reset = null;
+        }
+
+        // apply CDB requirement
+        if ($this->need_cdb === true && !Conf::$main->opt("contactdbDsn")) {
+            if (!(self::$original_opt["contactdbDsn"] ?? null)) {
+                $this->requirement_failure = "test class requires contactdb";
+                return;
+            }
+            Conf::$main->set_opt("contactdbDsn", self::$original_opt["contactdbDsn"]);
+            Conf::$main->invalidate_caches(["cdb" => true]);
+        } else if ($this->need_cdb === false && Conf::$main->opt("contactdbDsn")) {
+            Conf::$main->set_opt("contactdbDsn", null);
+            Conf::$main->invalidate_caches(["cdb" => true]);
+        }
+        $this->need_cdb = null;
+
+        // construct tester
+        $ctor = $class->getConstructor();
+        if ($ctor && $ctor->getNumberOfParameters() === 1) {
+            $this->tester = $class->newInstance(Conf::$main);
+        } else {
+            assert(!$ctor || $ctor->getNumberOfParameters() === 0);
+            $this->tester = $class->newInstance();
+        }
+    }
+
+    /** @param string $test */
     private function run_test($test) {
         if ($test === "no_argv") {
             return;
@@ -1419,29 +1510,22 @@ class TestRunner {
         $methodmatch = "";
         if (($pos = strpos($test, "::")) !== false) {
             $methodmatch = substr($test, $pos + 2);
-            $test = substr($test, 0, $pos);
+            $testclass = substr($test, 0, $pos);
+        } else {
+            $testclass = $test;
         }
-        if (strpos($test, "_") === false && ctype_alpha($test[0])) {
-            $test .= "_Tester";
+        if (strpos($testclass, "_") === false && ctype_alpha($testclass[0])) {
+            $testclass .= "_Tester";
         }
 
-        if ($test !== $this->last_classname || $methodmatch === "") {
-            $class = new ReflectionClass($test);
-            $ctor = $class->getConstructor();
-            if ($ctor && $ctor->getNumberOfParameters() === 1) {
-                if ($this->reset ?? $this->need_reset) {
-                    self::reset_db($this->reset ?? false);
-                    $this->need_reset = false;
-                    $this->reset = null;
-                }
-                $this->tester = $class->newInstance(Conf::$main);
-            } else {
-                assert(!$ctor || $ctor->getNumberOfParameters() === 0);
-                $this->tester = $class->newInstance();
-            }
-            $this->last_classname = $test;
+        if ($testclass !== $this->last_classname || $methodmatch === "") {
+            $this->set_test_class($testclass);
         }
-        $this->run_object_tests($this->tester, $methodmatch);
+        if ($this->tester) {
+            $this->run_object_tests($this->tester, $methodmatch);
+        } else {
+            Xassert::fail_with("!", "Cannot run `{$test}`: {$this->requirement_failure}");
+        }
     }
 
     /** @param 'no_cdb'|'reset_db'|class-string ...$tests */
@@ -1461,6 +1545,7 @@ class TestRunner {
                 "no-color !"
             )->description("Usage: php test/" . basename($_SERVER["PHP_SELF"]) . " [-V] [CLASSNAME...]")
              ->helpopt("help")
+             ->interleave(true)
              ->parse($argv);
         }
 

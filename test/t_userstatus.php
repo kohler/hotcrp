@@ -61,7 +61,12 @@ class UserStatus_Tester {
         xassert(!$us->user->check_password("maksdf"));
     }
 
+    #[RequireCdb(false)]
     function test_edit_other_password_chair() {
+        if ($this->conf->contactdb()) {
+            return;
+        }
+
         list($u, $qreq) = $this->make_qreq_for(
             "chair@_.com",
             ["upassword" => "maksdfnq!", "upassword2" => "maksdfnq!"]
