@@ -443,6 +443,8 @@ class Contact implements JsonSerializable {
     }
 
     private function set_roles_properties() {
+        $this->_session_roles = (($this->_session_roles ?? 0) & ~self::ROLE_DBMASK)
+            | ($this->roles & self::ROLE_DBMASK);
         $this->isPC = ($this->roles & self::ROLE_PCLIKE) !== 0;
         $this->privChair = ($this->roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0;
         if ($this->isPC || !$this->conf->disable_non_pc()) {
@@ -1061,12 +1063,12 @@ class Contact implements JsonSerializable {
             $cdbux->save_prop();
             $cdbur = $cdbux;
         }
-        if (($this->_cdb_user = $cdbur)) {
-            $this->update_cdb_roles();
-            return $cdbur->contactDbId;
-        } else {
+        $this->_cdb_user = $cdbur;
+        if (!$cdbur) {
             return false;
         }
+        $this->update_cdb_roles();
+        return $cdbur->contactDbId;
     }
 
     /** @return Contact */
@@ -2253,8 +2255,7 @@ class Contact implements JsonSerializable {
         if (!$skip_log) {
             $this->conf->log_for($actor ?? $this, $this, "Account edited: roles [" . UserStatus::unparse_roles_diff($old_roles, $new_roles) . "]");
         }
-        $this->roles = $new_roles;
-        $this->_session_roles = (($this->_session_roles ?? 0) & ~self::ROLE_DBMASK) | $new_roles;
+        $this->roles = ($this->roles & ~self::ROLE_DBMASK) | $new_roles;
         $this->set_roles_properties();
         $this->conf->invalidate_caches(["pc" => true]);
         $this->conf->invalidate_user($this, true);
@@ -2728,12 +2729,13 @@ class Contact implements JsonSerializable {
     }
 
     function mark_activity() {
-        if ((!$this->activity_at || $this->activity_at < Conf::$now)
-            && !$this->is_anonymous_user()) {
-            $this->activity_at = Conf::$now;
-            if ($this->contactId) {
-                $this->conf->ql("update ContactInfo set lastLogin=" . Conf::$now . " where contactId={$this->contactId}");
-            }
+        if (($this->activity_at && $this->activity_at >= Conf::$now)
+            || $this->is_anonymous_user()) {
+            return;
+        }
+        $this->activity_at = Conf::$now;
+        if ($this->contactId) {
+            $this->conf->ql("update ContactInfo set lastLogin=" . Conf::$now . " where contactId={$this->contactId}");
             $this->update_cdb_roles();
         }
     }
@@ -2847,14 +2849,15 @@ class Contact implements JsonSerializable {
     }
 
     function check_rights_version() {
-        if ($this->_rights_version !== self::$rights_version) {
-            $this->role_mask = self::ROLE_DBMASK;
-            $this->roles = $this->roles & self::ROLE_DBMASK;
-            $this->_session_roles = $this->roles;
-            $this->_conflict_types = $this->_can_view_pc = $this->_dangerous_track_mask =
-                $this->_has_approvable = $this->_authored_papers = null;
-            $this->_rights_version = self::$rights_version;
+        if ($this->_rights_version === self::$rights_version) {
+            return;
         }
+        $this->role_mask = self::ROLE_DBMASK;
+        $this->roles = $this->roles & self::ROLE_DBMASK;
+        $this->_session_roles = $this->roles;
+        $this->_conflict_types = $this->_can_view_pc = $this->_dangerous_track_mask =
+            $this->_has_approvable = $this->_authored_papers = null;
+        $this->_rights_version = self::$rights_version;
     }
 
     /** @return bool */

@@ -550,6 +550,7 @@ class Cdb_Tester {
         xassert(!!$acct);
         $acct = $this->conf->fresh_user_by_email("jmrv@startup.com");
         xassert(($acct->roles & Contact::ROLE_PCLIKE) === Contact::ROLE_PC);
+
         $acct = $this->conf->fresh_cdb_user_by_email("jmrv@startup.com");
         xassert_eqq($acct->roles, Contact::ROLE_PC);
     }
@@ -567,6 +568,7 @@ class Cdb_Tester {
         // saving without disablement wakes up cdb
         $acct = $this->us1->save_user((object) ["email" => "pavlin@isi.edu"]);
         xassert_eqq($acct->disabled_flags(), 0);
+
         $acct = $this->conf->fresh_cdb_user_by_email("pavlin@isi.edu");
         xassert_eqq($acct->disabled_flags(), 0);
     }
@@ -584,6 +586,7 @@ class Cdb_Tester {
         xassert($acct->isPC);
         xassert($acct->privChair);
         xassert_eqq($acct->cdb_roles(), Contact::ROLE_AUTHOR | Contact::ROLE_ADMIN);
+
         $acct = $this->conf->fresh_cdb_user_by_email($email);
         xassert_eqq($acct->roles, Contact::ROLE_AUTHOR | Contact::ROLE_ADMIN);
     }

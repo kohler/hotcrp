@@ -102,7 +102,7 @@
     {   "name": "__bulk/help/f/tags", "order": -70, "description_html": "PC tags (space-separated)"   },
     {   "name": "__bulk/help/f/add_tags", "order": -65, "description_html": "PC tags to add"   },
     {   "name": "__bulk/help/f/remove_tags", "order": -65, "description_html": "PC tags to remove"   },
-    {   "name": "__bulk/help/f/follow", "description_html": "Event notification: blank, “<code>reviews</code>”, “<code>allreviews</code>”, “<code>none</code>”"   },
+    {   "name": "__bulk/help/f/follow", "description_html": "Event notification: blank, “<code>review</code>”, “<code>anyreview</code>”, “<code>none</code>”"   },
     {   "name": "__bulk/help/f/topics", "field": "topic:<TOPICNAME>", "description_html": "Topic interest: blank, “<code>low</code>”, “<code>medium-low</code>”, “<code>medium-high</code>”, or “<code>high</code>”, or numeric (-2 to 2)", "allow_if": "conf.has_topics", "order": 1   },
     {   "name": "__bulk/help/f/topic_override", "field": "topic_override", "description_html": "If “<code>no</code>”, then do not overwrite existing topic interests", "allow_if": "conf.has_topics", "order": 1.2   },
     {   "name": "__bulk/help/f/notify", "description_html": "Notify new accounts (default <code>yes</code>)", "order": 100   }

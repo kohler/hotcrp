@@ -128,20 +128,7 @@ class Contacts_PaperOption extends PaperOption {
             $ov->set_anno("modified", true);
         }
     }
-    static private function translate_qreq(Qrequest $qreq) {
-        $n = 1;
-        while (isset($qreq["contacts:email_{$n}"])) {
-            $qreq["contacts:{$n}:email"] = $qreq["contacts:email_{$n}"];
-            $qreq["contacts:{$n}:name"] = $qreq["contacts:name_{$n}"];
-            $qreq["contacts:{$n}:affiliation"] = $qreq["contacts:affiliation_{$n}"];
-            $qreq["contacts:{$n}:active"] = $qreq["contacts:active_{$n}"];
-            ++$n;
-        }
-    }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
-        if (!isset($qreq["contacts:1:email"])) {
-            self::translate_qreq($qreq);
-        }
         $ov = PaperValue::make_force($prow, $this);
         // collect values
         $specau = $reqau = [];

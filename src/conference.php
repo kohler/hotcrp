@@ -2637,14 +2637,14 @@ class Conf {
 
     /** @return int */
     function cdb_confid() {
-        $confid = $this->opt["contactdbConfid"] ?? null;
-        if ($confid === null) {
-            if (($cdb = $this->contactdb())) {
-                $confid = Dbl::fetch_ivalue($cdb, "select confid from Conferences where confuid=?", $this->cdb_confuid());
-            }
-            $this->opt["contactdbConfid"] = $confid = $confid ?? -1;
+        if (($confid = $this->opt["contactdbConfid"] ?? null) !== null) {
+            return $confid;
         }
-        return $confid;
+        if (($cdb = $this->contactdb())) {
+            $confid = Dbl::fetch_ivalue($cdb, "select confid from Conferences where confuid=?", $this->cdb_confuid());
+        }
+        $this->opt["contactdbConfid"] = $confid ?? -1;
+        return $confid ?? -1;
     }
 
     /** @param ?list<int> $ids

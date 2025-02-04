@@ -829,40 +829,39 @@ class UserStatus extends MessageSet {
             if (!is_string($v)) {
                 $ms && $ms->error_at("roles", "<0>Format error in roles");
                 return $old_roles;
-            } else if ($v !== "") {
-                $action = null;
-                if (preg_match('/\A(\+|-|–|—|−)\s*(.*)\z/s', $v, $m)) {
-                    $action = $m[1] === "+";
-                    $v = $m[2];
-                }
-                if ($v === "") {
-                    $ms && $ms->error_at("roles", "<0>Format error in roles");
-                    return $old_roles;
-                } else if (is_bool($action) && strcasecmp($v, "none") === 0) {
-                    $ms && $ms->error_at("roles", "<0>Format error near “none”");
-                    return $old_roles;
-                } else if (is_bool($reset_roles) && is_bool($action) === $reset_roles) {
-                    $ms && $ms->warning_at("roles", "<0>Expected ‘" . ($reset_roles ? "" : "+") . "{$v}’ in roles");
-                } else if ($reset_roles === null) {
-                    $reset_roles = $action === null;
-                }
-                $role = 0;
-                if (strcasecmp($v, "pc") === 0) {
-                    $role = Contact::ROLE_PC;
-                } else if (strcasecmp($v, "chair") === 0) {
-                    $role = Contact::ROLE_CHAIR;
-                } else if (strcasecmp($v, "sysadmin") === 0
-                           || strcasecmp($v, "admin") === 0) {
-                    $role = Contact::ROLE_ADMIN;
-                } else if (strcasecmp($v, "none") !== 0) {
-                    $ms && $ms->warning_at("roles", "<0>Unknown role ‘{$v}’");
-                }
-                if ($action !== false) {
-                    $add_roles |= $role;
-                } else {
-                    $remove_roles |= $role;
-                    $add_roles &= ~$role;
-                }
+            }
+            $action = null;
+            if (preg_match('/\A(\+|-|–|—|−)\s*(.*)\z/s', $v, $m)) {
+                $action = $m[1] === "+";
+                $v = $m[2];
+            }
+            if ($v === "") {
+                $ms && $ms->error_at("roles", "<0>Format error in roles");
+                return $old_roles;
+            } else if (is_bool($action) && strcasecmp($v, "none") === 0) {
+                $ms && $ms->error_at("roles", "<0>Format error near “none”");
+                return $old_roles;
+            } else if (is_bool($reset_roles) && is_bool($action) === $reset_roles) {
+                $ms && $ms->warning_at("roles", "<0>Expected ‘" . ($reset_roles ? "" : "+") . "{$v}’ in roles");
+            } else if ($reset_roles === null) {
+                $reset_roles = $action === null;
+            }
+            $role = 0;
+            if (strcasecmp($v, "pc") === 0) {
+                $role = Contact::ROLE_PC;
+            } else if (strcasecmp($v, "chair") === 0) {
+                $role = Contact::ROLE_CHAIR;
+            } else if (strcasecmp($v, "sysadmin") === 0
+                       || strcasecmp($v, "admin") === 0) {
+                $role = Contact::ROLE_ADMIN;
+            } else if (strcasecmp($v, "none") !== 0) {
+                $ms && $ms->warning_at("roles", "<0>Unknown role ‘{$v}’");
+            }
+            if ($action !== false) {
+                $add_roles |= $role;
+            } else {
+                $remove_roles |= $role;
+                $add_roles &= ~$role;
             }
         }
 
