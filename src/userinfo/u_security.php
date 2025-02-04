@@ -123,6 +123,7 @@ class Security_UserInfo {
         // This function is protected by `request_recent_authentication`,
         // which checks `has_recent_authentication`. But check it explicitly
         // for clarity.
+        // `Contact::can_edit_password` checks `security_locked`.
         if (!isset($us->jval->new_password)
             || !$us->viewer->can_edit_password($us->user)
             || !$us->has_recent_authentication()) {

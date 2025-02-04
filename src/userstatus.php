@@ -65,8 +65,8 @@ class UserStatus extends MessageSet {
     private $_xcs;
     /** @var bool */
     private $_inputs_printed = false;
-    /** @var int */
-    private $_reauth_status = -1;
+    /** @var ?bool */
+    private $_reauth_status;
 
     static private $web_to_message_map = [
         "preferredEmail" => "preferred_email",
@@ -267,37 +267,23 @@ class UserStatus extends MessageSet {
         return $this->_cs;
     }
 
-    /** @return bool
-     * @deprecated */
-    function allow_some_security() {
-        return !$this->user->is_empty()
-            && ($this->is_auth_self() || $this->viewer->can_edit_any_password());
-    }
-
     /** @return bool */
     function has_recent_authentication() {
-        if ($this->_reauth_status < 0) {
-            if ($this->viewer->is_root_user()
-                || (!$this->viewer->is_empty()
-                    && UpdateSession::usec_query($this->qreq, $this->viewer->email, 0, 1, Conf::$now - 600))) {
-                $this->_reauth_status = 1;
-            } else {
-                $this->_reauth_status = 0;
-            }
+        if ($this->_reauth_status !== null) {
+            return $this->_reauth_status;
         }
-        return $this->_reauth_status > 0;
+        $this->_reauth_status = $this->viewer->is_root_user()
+            || (!$this->viewer->is_empty()
+                && UpdateSession::usec_query($this->qreq, $this->viewer->email, 0, 1, Conf::$now - 600));
+        return $this->_reauth_status;
     }
 
     /** @return ?bool */
     function xt_allower($e, $xt, $xtp) {
-        if ($e === "profile_security") {
-            /** @phan-suppress-next-line PhanDeprecatedFunction */
-            return $this->allow_some_security();
-        } else if ($e === "auth_self") {
+        if ($e === "auth_self") {
             return $this->is_auth_self();
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return 0|1|2
