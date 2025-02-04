@@ -3,7 +3,7 @@
         "unparse_json_function": "UserStatus::unparse_json_main",
         "request_function": "UserStatus::parse_qreq_main",
         "parse_csv_function": "UserStatus::parse_csv_main",
-        "save_early_function": "UserStatus::save_main"
+        "save_early_function": "*UserStatus::save_main"
     },
     {
         "name": "__crosscheck/main", "order": 100,

@@ -68,26 +68,6 @@ class UserStatus extends MessageSet {
     /** @var int */
     private $_reauth_status = -1;
 
-    /** @var array<string,int>
-     * @readonly */
-    static public $watch_keywords = [
-        "register" => Contact::WATCH_PAPER_REGISTER_ALL,
-        "submit" => Contact::WATCH_PAPER_NEWSUBMIT_ALL,
-        "latewithdraw" => Contact::WATCH_LATE_WITHDRAWAL_ALL,
-        "review" => Contact::WATCH_REVIEW,
-        "anyreview" => Contact::WATCH_REVIEW_ALL,
-        "adminreview" => Contact::WATCH_REVIEW_MANAGED,
-        "finalupdate" => Contact::WATCH_FINAL_UPDATE_ALL,
-
-        "allregister" => Contact::WATCH_PAPER_REGISTER_ALL,
-        "allnewsubmit" => Contact::WATCH_PAPER_NEWSUBMIT_ALL,
-        "reviews" => Contact::WATCH_REVIEW,
-        "allreviews" => Contact::WATCH_REVIEW_ALL,
-        "adminreviews" => Contact::WATCH_REVIEW_MANAGED,
-        "managedreviews" => Contact::WATCH_REVIEW_MANAGED,
-        "allfinal" => Contact::WATCH_FINAL_UPDATE_ALL
-    ];
-
     static private $web_to_message_map = [
         "preferredEmail" => "preferred_email",
         "uemail" => "email"
@@ -468,13 +448,10 @@ class UserStatus extends MessageSet {
             if (($dw & Contact::WATCH_REVIEW_ALL) !== 0) {
                 $dw |= Contact::WATCH_REVIEW;
             }
-            foreach (self::$watch_keywords as $kw => $bit) {
-                if ($dw === 0) {
-                    break;
-                } else if (($dw & $bit) !== 0) {
-                    $cj->follow->$kw = true;
-                    $dw &= ~$bit;
-                }
+            for ($b = 1; $b <= $dw; $b <<= 1) {
+                if (($dw & $b) !== 0
+                    && ($n = self::unparse_follow_bit($b)))
+                    $cj->follow->$n = true;
             }
         }
 
@@ -506,6 +483,35 @@ class UserStatus extends MessageSet {
             $cs->call_function($gj, $gj->unparse_json_function, $gj);
         }
         return $this->jval;
+    }
+
+
+    /** @var array<int,non-empty-list<string>>
+     * @readonly */
+    static private $follow_keywords = [
+        Contact::WATCH_REVIEW => ["review", "reviews"],
+        Contact::WATCH_REVIEW_ALL => ["anyreview", "allreviews"],
+        Contact::WATCH_REVIEW_MANAGED => ["adminreview", "adminreviews", "managedreviews"],
+        Contact::WATCH_PAPER_NEWSUBMIT_ALL => ["submit", "allnewsubmit"],
+        Contact::WATCH_PAPER_REGISTER_ALL => ["register", "allregister"],
+        Contact::WATCH_LATE_WITHDRAWAL_ALL => ["latewithdraw"],
+        Contact::WATCH_FINAL_UPDATE_ALL => ["finalupdate", "allfinal"]
+    ];
+
+    /** @param int $f
+     * @return ?string */
+    static function unparse_follow_bit($f) {
+        return self::$follow_keywords[$f][0] ?? null;
+    }
+
+    /** @param string $s
+     * @return ?int */
+    static function parse_follow_bit($s) {
+        foreach (self::$follow_keywords as $b => $ns) {
+            if (in_array($s, $ns))
+                return $b;
+        }
+        return null;
     }
 
 
@@ -713,13 +719,18 @@ class UserStatus extends MessageSet {
 
         // Follow
         if (isset($cj->follow) && $cj->follow !== "") {
-            $cj->follow = $this->make_keyed_object($cj->follow, "follow", true);
+            $fs = $this->make_keyed_object($cj->follow, "follow", true);
+            $cj->follow = (object) [];
             $cj->bad_follow = [];
-            foreach ((array) $cj->follow as $k => $v) {
-                if ($v
-                    && $k !== "none"
-                    && $k !== "partial"
-                    && !isset(self::$watch_keywords[$k])) {
+            foreach ((array) $fs as $k => $v) {
+                if ($k === "none" || $k === "partial") {
+                    $cj->follow->$k = $v;
+                } else if (($b = self::parse_follow_bit($k))) {
+                    $n = self::unparse_follow_bit($b);
+                    if ($n === $k || !isset($cj->follow->$n)) {
+                        $cj->follow->$n = $v;
+                    }
+                } else if ($v) {
                     $cj->bad_follow[] = $k;
                 }
             }
@@ -1015,19 +1026,25 @@ class UserStatus extends MessageSet {
         }
         $user = $old_user ?? $old_cdb_user;
 
-        // normalize and check for errors
+        // normalize properties
         $this->normalize($cj, $user);
+
+        // parse roles
         $roles = $old_roles = $old_user ? $old_user->roles : 0;
         if (isset($cj->roles)) {
             $roles = self::parse_roles($cj->roles, $roles, $this);
+            if ($this->if_empty >= UserStatus::IF_EMPTY_MOST) {
+                $roles |= $old_roles & Contact::ROLE_PCLIKE;
+            }
             if ($old_user) {
                 $roles = $this->check_role_change($roles, $old_user);
             }
         }
+
+        // errors before this point prevent save
         if ($this->has_error()) {
             return false;
         }
-        // At this point, we will save a user.
 
         // ensure/create user
         $this->check_invariants($cj);
@@ -1054,7 +1071,13 @@ class UserStatus extends MessageSet {
         $cs = $this->cs();
         $this->jval = $cj;
 
-        // Early properties
+        // apply roles
+        if ($roles !== $old_roles) {
+            $user->set_prop("roles", $roles);
+            $this->diffs["roles"] = self::unparse_roles_diff($old_roles, $roles);
+        }
+
+        // apply other early properties
         foreach ($cs->members("") as $gj) {
             if (isset($gj->save_early_function)
                 && $cs->call_function($gj, $gj->save_early_function, $gj) === false) {
@@ -1066,16 +1089,6 @@ class UserStatus extends MessageSet {
             return false;
         }
 
-        // Roles
-        if ($this->if_empty >= UserStatus::IF_EMPTY_MOST
-            && ($old_roles & Contact::ROLE_PCLIKE) !== 0) {
-            $roles = ($roles & ~Contact::ROLE_PCLIKE) | ($old_roles & Contact::ROLE_PCLIKE);
-        }
-        if ($roles !== $old_roles
-            && ($roles = $user->save_roles($roles, $actor, true)) !== $old_roles) {
-            $this->diffs["roles"] = self::unparse_roles_diff($old_roles, $roles);
-        }
-
         // Contact DB (must precede password)
         if ($cdb_user && $cdb_user->prop_changed()) {
             if ($this->jval->update_global ?? true) {
@@ -1085,10 +1098,6 @@ class UserStatus extends MessageSet {
             } else {
                 $cdb_user->abort_prop();
             }
-        }
-        if ($roles !== $old_roles
-            || ($user->disabled_flags() !== 0) !== ($old_disablement !== 0)) {
-            $user->update_cdb();
         }
 
         // Main properties
@@ -1144,14 +1153,36 @@ class UserStatus extends MessageSet {
         return null;
     }
 
-    static function save_main(UserStatus $us) {
-        $user = $us->user;
-        $cj = $us->jval;
+
+    /** @param 0|1|2 $ifempty */
+    private function set_profile_prop(Contact $user, $ifempty) {
+        foreach (["firstName" => "name",
+                  "lastName" => "name",
+                  "affiliation" => "affiliation",
+                  "collaborators" => "collaborators",
+                  "country" => "country",
+                  "phone" => "phone",
+                  "address" => "address",
+                  "city" => "address",
+                  "state" => "address",
+                  "zip" => "address"] as $prop => $diff) {
+            if (($v = $this->jval->$prop ?? null) !== null) {
+                $user->set_prop($prop, $v, $ifempty);
+                if ($user->prop_changed($prop)) {
+                    $this->diffs[$diff] = true;
+                }
+            }
+        }
+    }
+
+    function save_main() {
+        $user = $this->user;
+        $cj = $this->jval;
 
         // Profile properties
-        $us->set_profile_prop($user, $us->if_empty_code(false));
+        $this->set_profile_prop($user, $this->if_empty_code(false));
         if (($cdbu = $user->cdb_user())) {
-            $us->set_profile_prop($cdbu, $us->if_empty_code(true));
+            $this->set_profile_prop($cdbu, $this->if_empty_code(true));
         }
 
         // Disabled
@@ -1168,26 +1199,14 @@ class UserStatus extends MessageSet {
         }
         $user->set_prop("cflags", $cflags);
         if ($user->prop_changed("disabled") && isset($cj->disabled)) {
-            $us->diffs[$cj->disabled ? "disabled" : "enabled"] = true;
+            $this->diffs[$cj->disabled ? "disabled" : "enabled"] = true;
         }
 
         // Follow
         if (isset($cj->follow)
-            && ($us->if_empty < UserStatus::IF_EMPTY_MOST
+            && ($this->if_empty < UserStatus::IF_EMPTY_MOST
                 || $user->defaultWatch === Contact::WATCH_REVIEW)) {
-            $w = 0;
-            $wmask = ($cj->follow->partial ?? false ? 0 : 0xFFFFFFFF);
-            foreach (self::$watch_keywords as $k => $bit) {
-                if (isset($cj->follow->$k)) {
-                    $wmask |= $bit;
-                    $w |= $cj->follow->$k ? $bit : 0;
-                }
-            }
-            $w |= $user->defaultWatch & ~$wmask;
-            $user->set_prop("defaultWatch", $w);
-            if ($user->prop_changed("defaultWatch")) {
-                $us->diffs["follow"] = true;
-            }
+            $this->save_follow($cj->follow);
         }
 
         // Tags
@@ -1195,8 +1214,8 @@ class UserStatus extends MessageSet {
              || !empty($cj->add_tags)
              || !empty($cj->remove_tags)
              || !empty($cj->change_tags))
-            && $us->viewer->privChair
-            && ($us->if_empty < UserStatus::IF_EMPTY_MOST
+            && $this->viewer->privChair
+            && ($this->if_empty < UserStatus::IF_EMPTY_MOST
                 || $user->contactTags === null)) {
             if (isset($cj->tags)) {
                 $user->set_prop("contactTags", null);
@@ -1232,7 +1251,7 @@ class UserStatus extends MessageSet {
                 }
             }
             if ($user->prop_changed("contactTags")) {
-                $us->diffs["tags"] = true;
+                $this->diffs["tags"] = true;
             }
         }
 
@@ -1240,30 +1259,26 @@ class UserStatus extends MessageSet {
         if (isset($cj->data) && is_object($cj->data)) {
             foreach (get_object_vars($cj->data) as $key => $value) {
                 if ($user->set_data($key, $value)) {
-                    $us->diffs["data"] = true;
+                    $this->diffs["data"] = true;
                 }
             }
         }
     }
 
-    /** @param 0|1|2 $ifempty */
-    private function set_profile_prop(Contact $user, $ifempty) {
-        foreach (["firstName" => "name",
-                  "lastName" => "name",
-                  "affiliation" => "affiliation",
-                  "collaborators" => "collaborators",
-                  "country" => "country",
-                  "phone" => "phone",
-                  "address" => "address",
-                  "city" => "address",
-                  "state" => "address",
-                  "zip" => "address"] as $prop => $diff) {
-            if (($v = $this->jval->$prop ?? null) !== null) {
-                $user->set_prop($prop, $v, $ifempty);
-                if ($user->prop_changed($prop)) {
-                    $this->diffs[$diff] = true;
-                }
+    private function save_follow($follow) {
+        if (($follow->partial ?? false) && !($follow->none ?? false)) {
+            $w = $this->user->defaultWatch;
+        } else {
+            $w = 0;
+        }
+        foreach (self::$follow_keywords as $bit => $ns) {
+            if (($v = $follow->{$ns[0]}) !== null) {
+                $w = ($w & ~$bit) | ($v ? $bit : 0);
             }
+        }
+        $this->user->set_prop("defaultWatch", $w);
+        if ($this->user->prop_changed("defaultWatch")) {
+            $this->diffs["follow"] = true;
         }
     }
 
@@ -1309,22 +1324,14 @@ class UserStatus extends MessageSet {
         $cj = $us->jval;
 
         // email
-        if (!$us->conf->external_login()) {
-            if (isset($qreq->uemail) || $us->user->is_empty()) {
-                $cj->email = trim((string) $qreq->uemail);
-            } else {
-                $cj->email = $us->user->email;
-            }
-        } else {
-            if ($us->user->is_empty()) {
-                $cj->email = trim((string) $qreq->newUsername);
-            } else {
-                $cj->email = $us->user->email;
-            }
+        $email_key = $us->conf->external_login() ? "newUsername" : "uemail";
+        if (isset($qreq->$email_key)) {
+            $cj->email = trim((string) $qreq->$email_key);
         }
 
         // whether to update global profile
-        if (friendly_boolean($qreq->update_global ?? !$qreq->has_update_global) === false) {
+        $ug = $qreq->update_global ?? !isset($qreq->has_update_global);
+        if (!friendly_boolean($ug)) {
             $cj->update_global = false;
         }
 
@@ -1336,72 +1343,59 @@ class UserStatus extends MessageSet {
                 $cj->$k = $v;
         }
 
+        // follow settings
+        $follow = [];
+        foreach (self::$follow_keywords as $bit => $names) {
+            $t = $qreq["follow_{$names[0]}"] ?? (isset($qreq["has_follow_{$names[0]}"]) ? "0" : null);
+            if (($v = friendly_boolean($t)) !== null) {
+                $follow[$names[0]] = $v;
+            }
+        }
+        if (!empty($follow)) {
+            $follow["partial"] = true;
+            $cj->follow = (object) $follow;
+        }
+
         // PC components
-        if (isset($qreq->pctype) && $us->viewer->privChair) {
+        if ($us->viewer->privChair) {
+            $us->parse_qreq_chair();
+        }
+
+        if (isset($qreq->has_ti)
+            && $us->viewer->isPC
+            && (!isset($cj->roles) || $cj->roles !== ["none"])) {
+            $topics = [];
+            foreach ($us->conf->topic_set() as $id => $t) {
+                if (($v = $qreq["ti{$id}"]) !== null && is_numeric($v)) {
+                    $topics[$id] = (int) $v;
+                }
+            }
+            $cj->topics = (object) $topics;
+        }
+    }
+
+    private function parse_qreq_chair() {
+        $cj = $this->jval;
+
+        if (isset($this->qreq->pctype)) {
             $cj->roles = [];
-            $pctype = $qreq->pctype;
+            $pctype = $this->qreq->pctype;
             if ($pctype === "chair") {
                 $cj->roles[] = "chair";
                 $cj->roles[] = "pc";
             } else if ($pctype === "pc") {
                 $cj->roles[] = "pc";
             }
-            if ($qreq->ass) {
+            if ($this->qreq->ass) {
                 $cj->roles[] = "sysadmin";
             }
-            $roles_pc = !empty($cj->roles);
-            if (!$roles_pc) {
+            if (empty($cj->roles)) {
                 $cj->roles[] = "none";
             }
-        } else {
-            $roles_pc = ($us->user->roles & Contact::ROLE_PCLIKE) !== 0;
         }
 
-        $follow = [];
-        if ($qreq->has_follow_register
-            && ($us->viewer->privChair || $us->user->is_track_manager())) {
-            $follow["register"] = !!$qreq->follow_register;
-        }
-        if ($qreq->has_follow_submit
-            && ($us->viewer->privChair || $us->user->is_track_manager())) {
-            $follow["submit"] = !!$qreq->follow_submit;
-        }
-        if ($qreq->has_follow_latewithdraw
-            && ($us->viewer->privChair || $us->user->is_track_manager())) {
-            $follow["latewithdraw"] = !!$qreq->follow_latewithdraw;
-        }
-        if ($qreq->has_follow_review) {
-            $follow["review"] = !!$qreq->follow_review;
-        }
-        if ($qreq->has_follow_anyreview
-            && ($us->viewer->privChair || $us->user->isPC)) {
-            $follow["anyreview"] = !!$qreq->follow_anyreview;
-        }
-        if ($qreq->has_follow_adminreview
-            && ($us->viewer->privChair || $us->user->is_manager())) {
-            $follow["adminreview"] = !!$qreq->follow_adminreview;
-        }
-        if ($qreq->has_follow_finalupdate
-            && ($us->viewer->privChair || $us->user->is_manager())) {
-            $follow["finalupdate"] = !!$qreq->follow_finalupdate;
-        }
-        if (!empty($follow) && $roles_pc) {
-            $follow["partial"] = true;
-            $cj->follow = (object) $follow;
-        }
-
-        if (isset($qreq->tags) && $roles_pc && $us->viewer->privChair) {
-            $cj->tags = explode(" ", simplify_whitespace($qreq->tags));
-        }
-
-        if (isset($qreq->has_ti) && $roles_pc && $us->viewer->isPC) {
-            $topics = [];
-            foreach ($us->conf->topic_set() as $id => $t) {
-                if (isset($qreq["ti$id"]) && is_numeric($qreq["ti$id"])) {
-                    $topics[$id] = (int) $qreq["ti$id"];
-                }
-            }
-            $cj->topics = (object) $topics;
+        if (isset($this->qreq->tags)) {
+            $cj->tags = explode(" ", simplify_whitespace($this->qreq->tags));
         }
     }
 
@@ -1611,9 +1605,10 @@ class UserStatus extends MessageSet {
     static function print_follow(UserStatus $us) {
         $qreq = $us->qreq;
         $reqwatch = $iwatch = $us->user->defaultWatch;
-        foreach (self::$watch_keywords as $kw => $bit) {
-            if ($qreq["has_follow_{$kw}"] || $qreq["follow_{$kw}"]) {
-                $reqwatch = ($reqwatch & ~$bit) | ($qreq["follow_{$kw}"] ? $bit : 0);
+        foreach (self::$follow_keywords as $bit => $ns) {
+            $t = $qreq["follow_{$ns[0]}"] ?? (isset($req["has_follow_{$ns[0]}"]) ? "0" : null);
+            if (($v = friendly_boolean($t)) !== null) {
+                $reqwatch = ($reqwatch & ~$bit) | ($v ? $bit : 0);
             }
         }
         if ($us->user->is_empty() ? $us->viewer->privChair : $us->user->isPC) {

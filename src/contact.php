@@ -1008,22 +1008,38 @@ class Contact implements JsonSerializable {
     }
 
     function update_cdb_roles() {
-        $roles = $this->cdb_roles();
-        if (($cdbu = $this->cdb_user())
-            && ($roles !== $cdbu->roles
-                || ($roles !== 0 && (int) $cdbu->activity_at <= Conf::$now - 604800))) {
-            assert($cdbu->cdb_confid < 0 || $cdbu->cdb_confid === $this->conf->opt["contactdbConfid"]);
-            if ($roles !== 0) {
-                Dbl::ql($this->conf->contactdb(), "insert into Roles set contactDbId=?, confid=?, roles=?, activity_at=? on duplicate key update roles=?, activity_at=?", $cdbu->contactDbId, $this->conf->cdb_confid(), $roles, Conf::$now, $roles, Conf::$now);
-            } else {
-                Dbl::ql($this->conf->contactdb(), "delete from Roles where contactDbId=? and confid=?", $cdbu->contactDbId, $this->conf->cdb_confid());
+        $this->conf->register_cdb_user_update($this, Conf::CDB_UPDATE_ROLES);
+    }
+
+    static function update_cdb_roles_list(Conf $conf, $uids) {
+        $role_updates = $role_deletes = [];
+        $qstager = Dbl::make_multi_qe_stager($conf->dblink);
+        foreach (array_unique($uids) as $uid) {
+            $u = $conf->user_by_id($uid);
+            $cu = $u ? $u->cdb_user() : null;
+            if (!$cu) {
+                continue;
             }
-            $cdbu->roles = $roles;
+            $r = $u->cdb_roles();
+            if ($r === 0 && $cu->roles > 0) {
+                $role_deletes[] = $cu->contactDbId;
+            } else if ($r !== $cu->roles
+                       || ($r !== 0 && (int) $cu->activity_at <= Conf::$now - 604800)) {
+                $role_updates[] = [$cu->contactDbId, $conf->cdb_confid(), $r, Conf::$now];
+            }
+            if ($r !== $u->cdbRoles) {
+                $qstager("update ContactInfo set cdbRoles=? where contactId=?", $r, $u->contactId);
+            }
         }
-        if ($this->contactId > 0
-            && $roles !== $this->cdbRoles) {
-            Dbl::ql($this->conf->dblink, "update ContactInfo set cdbRoles=? where contactId=?", $roles, $this->contactId);
-            $this->cdbRoles = $roles;
+        $qstager(null);
+        if (!empty($role_deletes)) {
+            Dbl::qe($conf->contactdb(), "delete from Roles where contactDbId?a and confid=?",
+                $role_deletes, $conf->cdb_confid());
+        }
+        if (!empty($role_updates)) {
+            Dbl::qe($conf->contactdb(), "insert into Roles (contactDbId, confid, roles, activity_at) values ?v ?U
+                on duplicate key update roles=?U(roles), activity_at=?U(activity_at)",
+                $role_updates);
         }
     }
 
@@ -2065,9 +2081,11 @@ class Contact implements JsonSerializable {
             && in_array($prop, ["firstName", "lastName", "email", "affiliation"])) {
             $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
         }
-        if ($prop === "cflags") {
+        if ($prop === "roles" || $prop === "cflags") {
             $this->set_roles_properties();
-            $this->set_prop("disabled", $this->cflags & Contact::CFM_DISABLEMENT & Contact::CFM_DB);
+            if ($prop === "cflags") {
+                $this->set_prop("disabled", $this->cflags & Contact::CFM_DISABLEMENT & Contact::CFM_DB);
+            }
         }
     }
 
@@ -2100,21 +2118,6 @@ class Contact implements JsonSerializable {
      * @return bool */
     function prop_changed($prop = null) {
         return $prop ? array_key_exists($prop, $this->_mod_undo ?? []) : !empty($this->_mod_undo);
-    }
-
-    /** @param bool $confirm
-     * @return bool */
-    private function activate_placeholder_prop($confirm) {
-        $changed = false;
-        if (($this->cflags & self::CF_PLACEHOLDER) !== 0) {
-            $this->set_prop("cflags", $this->cflags & ~self::CF_PLACEHOLDER);
-            $changed = true;
-        }
-        if (($this->cflags & self::CF_UNCONFIRMED) !== 0 && $confirm) {
-            $this->set_prop("cflags", $this->cflags & ~self::CF_UNCONFIRMED);
-            $changed = true;
-        }
-        return $changed;
     }
 
     /** @return bool */
@@ -2194,10 +2197,31 @@ class Contact implements JsonSerializable {
             return false;
         }
         // otherwise, success
-        // maybe mark CDB update
+        // maybe enqueue CDB update and/or invalidate caches
         if ($this->cdb_confid !== 0
             && array_key_exists("updateTime", $this->_mod_undo)) {
-            $this->conf->register_cdb_user_update($this->contactDbId, $this->updateTime);
+            $this->conf->register_cdb_user_update($this, Conf::CDB_UPDATE_PROFILE);
+        }
+        if ($this->cdb_confid === 0
+            && array_key_exists("roles", $this->_mod_undo)) {
+            $this->conf->register_cdb_user_update($this, Conf::CDB_UPDATE_ROLES);
+            $this->conf->invalidate_caches(["pc" => true]);
+        }
+        if ($this->cdb_confid === 0
+            && array_key_exists("cflags", $this->_mod_undo)) {
+            $cf0 = $this->_mod_undo["cflags"];
+            $cf1 = $this->cflags;
+            $dmask = self::CFM_DISABLEMENT & self::CFM_DB;
+            if ((($cf0 & $dmask) !== 0) !== (($cf1 & $dmask) !== 0)
+                && !array_key_exists("roles", $this->_mod_undo)) {
+                $this->conf->register_cdb_user_update($this, Conf::CDB_UPDATE_ROLES);
+            }
+            if (($cf0 & ~$cf1 & self::CF_PLACEHOLDER) !== 0) {
+                $this->conf->register_cdb_user_update($this, Conf::CDB_UPDATE_PLACEHOLDER);
+            }
+            if (($cf0 & ~$cf1 & self::CF_UNCONFIRMED) !== 0) {
+                $this->conf->register_cdb_user_update($this, Conf::CDB_UPDATE_CONFIRMED);
+            }
         }
         // invalidate caches
         $this->_mod_undo = null;
@@ -2217,14 +2241,12 @@ class Contact implements JsonSerializable {
     /** @param bool $confirm
      * @return bool */
     function activate_placeholder($confirm) {
-        if (!$this->activate_placeholder_prop($confirm)) {
+        $mask = self::CF_PLACEHOLDER | ($confirm ? self::CF_UNCONFIRMED : 0);
+        if (($this->cflags & $mask) === 0) {
             return false;
         }
+        $this->set_prop("cflags", $this->cflags & ~$mask);
         $this->save_prop();
-        if (($cdbu = $this->cdb_user())
-            && $cdbu->activate_placeholder_prop($confirm)) {
-            $cdbu->save_prop();
-        }
         return true;
     }
 
@@ -2698,7 +2720,7 @@ class Contact implements JsonSerializable {
             $saveu->set_prop("password", $hash);
             $saveu->set_prop("passwordTime", Conf::$now);
             $saveu->set_prop("passwordUseTime", $use_time);
-            $saveu->activate_placeholder_prop(false);
+            $saveu->set_prop("cflags", $saveu->cflags & ~self::CF_PLACEHOLDER);
             $saveu->save_prop();
         }
         if ($saveu !== $this && $this->contactId) {
@@ -2707,7 +2729,7 @@ class Contact implements JsonSerializable {
                 $this->set_prop("passwordTime", Conf::$now);
                 $this->set_prop("passwordUseTime", $use_time);
             }
-            $this->activate_placeholder_prop(false);
+            $this->set_prop("cflags", $saveu->cflags & ~self::CF_PLACEHOLDER);
             $this->save_prop();
         }
     }

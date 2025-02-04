@@ -1,6 +1,6 @@
 <?php
 // api_user.php -- HotCRP user-related API calls
-// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class User_API {
     static function whoami(Contact $user, Qrequest $qreq) {
@@ -130,7 +130,6 @@ class User_API {
             return JsonResult::make_error(400, "<0>You cannot disable your own account");
         }
         $ustatus = new UserStatus($viewer);
-        $ustatus->set_user($user);
         if (!$ustatus->save_user((object) ["disabled" => $disabled], $user)) {
             return new JsonResult(["ok" => false]);
         }

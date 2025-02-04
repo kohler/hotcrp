@@ -155,13 +155,10 @@ class Users_Page {
             }
             $f = [];
             $dw = $user->defaultWatch;
-            foreach (UserStatus::$watch_keywords as $kw => $bit) {
-                if ($dw === 0) {
-                    break;
-                } else if (($dw & $bit) !== 0) {
-                    $f[] = $kw;
-                    $dw &= ~$bit;
-                }
+            for ($b = 1; $b <= $dw; $b <<= 1) {
+                if (($dw & $b) !== 0
+                    && ($fb = UserStatus::unparse_follow_bit($b)))
+                    $f[] = $fb;
             }
             $row["follow"] = empty($f) ? "none" : join(" ", $f);
             if ($user->roles & (Contact::ROLE_PC | Contact::ROLE_ADMIN | Contact::ROLE_CHAIR)) {
