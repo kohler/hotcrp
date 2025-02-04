@@ -114,4 +114,92 @@ class UserStatus_Tester {
 
         xassert(!$us->user->check_password("maksdfnqw11"));
     }
+
+    function test_anonymous_fail() {
+        list($u, $qreq) = $this->make_qreq_for(
+            "chair@_.com",
+            ["uemail" => "anonymous"]
+        );
+
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update()->request_group("");
+        xassert(!$us->execute_update());
+    }
+
+    function test_no_follow_primary() {
+        $this->conf->qe("delete from ContactInfo where email='xvan@usc.edu'");
+        $van = $this->conf->user_by_email("van@ee.lbl.gov");
+        xassert(!$van->isPC);
+        $result = $this->conf->qe("insert into ContactInfo set email='xvan@usc.edu', password=' unset', primaryContactId=?", $van->contactId);
+        xassert_gt($result->insert_id ?? 0, 0);
+        $van->set_prop("cflags", $van->cflags | Contact::CF_PRIMARY);
+        $van->save_prop();
+
+        list($u, $qreq) = $this->make_qreq_for(
+            "chair@_.com",
+            ["uemail" => "xvan@usc.edu", "firstName" => "Ximena"]
+        );
+
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->start_update();
+        $us->request_group("");
+        xassert($us->execute_update());
+
+        xassert_eqq($us->user->email, "xvan@usc.edu");
+        xassert_eqq($us->user->firstName, "Ximena");
+    }
+
+    function test_follow_primary() {
+        list($u, $qreq) = $this->make_qreq_for(
+            "chair@_.com",
+            ["uemail" => "xvan@usc.edu", "pctype" => "pc"]
+        );
+
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->set_follow_primary(true);
+        $us->start_update();
+        $us->request_group("");
+        xassert($us->execute_update());
+
+        xassert_eqq($us->user->email, "van@ee.lbl.gov");
+        xassert_eqq($us->user->isPC, true);
+    }
+
+    #[RequireCdb(true)]
+    function test_follow_primary_cdb() {
+        if (!$this->conf->contactdb()) {
+            return;
+        }
+
+        $this->conf->qe("delete from ContactInfo where email='yvan@usc.edu'");
+        Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email='yvan@usc.edu'");
+        $c_van = $this->conf->cdb_user_by_email("van@ee.lbl.gov");
+        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set email='yvan@usc.edu', password=' unset', primaryContactId=?", $c_van->contactDbId);
+        xassert_gt($result->insert_id ?? 0, 0);
+        $c_van->set_prop("cflags", $c_van->cflags | Contact::CF_PRIMARY);
+        $c_van->save_prop();
+
+        list($u, $qreq) = $this->make_qreq_for(
+            "chair@_.com",
+            ["uemail" => "yvan@usc.edu", "pctype" => "chair"]
+        );
+
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->set_follow_primary(true);
+        $us->start_update();
+        $us->request_group("");
+        xassert($us->execute_update());
+
+        xassert_eqq($us->user->email, "van@ee.lbl.gov");
+        xassert_eqq($us->user->privChair, true);
+    }
+
+    function test_cleanup() {
+        $this->conf->qe("delete from ContactInfo where email='xvan@usc.edu' or email='yvan@usc.edu'");
+        $this->conf->qe("update ContactInfo set roles=0, cflags=cflags&~? where email='van@ee.lbl.gov'", Contact::CF_PRIMARY);
+        if (($cdb = $this->conf->contactdb())) {
+            $this->conf->qe("delete from ContactInfo where email='xvan@usc.edu' or email='yvan@usc.edu'");
+            $this->conf->qe("update ContactInfo set cflags=cflags&~? where email='van@ee.lbl.gov'", Contact::CF_PRIMARY);
+        }
+    }
 }

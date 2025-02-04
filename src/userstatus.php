@@ -39,6 +39,8 @@ class UserStatus extends MessageSet {
     private $if_empty = 0; /* = IF_EMPTY_NONE */
     /** @var 0|1|2 */
     private $save_mode = 0; /* = SAVE_ALL */
+    /** @var bool */
+    private $follow_primary = false;
 
     /** @var Qrequest
      * @readonly */
@@ -125,6 +127,13 @@ class UserStatus extends MessageSet {
      * @return $this */
     function set_save_mode($mode) {
         $this->save_mode = $mode;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_follow_primary($x) {
+        $this->follow_primary = $x;
         return $this;
     }
 
@@ -612,7 +621,7 @@ class UserStatus extends MessageSet {
             }
         } else if (!$this->has_problem_at("email")
                    && !validate_email($cj->email)
-                   && (!$old_user || $old_user->email !== $cj->email)) {
+                   && (!$old_user || strcasecmp($old_user->email, $cj->email) !== 0)) {
             $this->error_at("email", "<0>Invalid email address");
         }
 
@@ -961,53 +970,72 @@ class UserStatus extends MessageSet {
         assert(is_object($this->jval));
         assert(!$this->user || $this->save_mode === self::SAVE_ALL);
         $cj = $this->jval;
-        $old_user = $this->user;
 
         // normalize name, including email
         self::normalize_name($cj);
 
-        // check email
-        if (isset($cj->email)
-            && !is_string($cj->email)) {
-            $this->error_at("email", "<0>Format error [email]");
-            return false;
-        }
-
         // obtain old users in this conference and contactdb
         // - obtain email
-        if ($old_user && $old_user->has_email()) {
-            $old_email = $old_user->email;
-        } else if (is_string($cj->email ?? null) && $cj->email !== "") {
-            $old_email = $cj->email;
+        $xuser = $this->user && $this->user->has_email() ? $this->user : null;
+        if ($xuser) {
+            $email = $xuser->email;
+        } else if (!isset($cj->email) || $cj->email === "") {
+            $this->error_at("email", "<0>Entry required");
+            return false;
+        } else if (!is_string($cj->email)
+                   || !is_valid_utf8($cj->email)) {
+            $this->error_at("email", "<0>Format error");
+            return false;
+        } else if (!validate_email($cj->email)) {
+            $this->error_at("email", "<0>Invalid email address");
+            return false;
         } else {
-            $old_email = null;
+            $email = $cj->email;
         }
 
-        // - load old_cdb_user
-        if ($old_user && $old_user->contactDbId > 0) {
-            $old_cdb_user = $old_user;
-        } else if ($old_email) {
-            $old_cdb_user = $this->conf->fresh_cdb_user_by_email($old_email);
+        // - look up local user
+        if ($xuser && !$xuser->is_cdb_user()) {
+            $old_user = $xuser;
         } else {
-            $old_cdb_user = null;
-        }
-
-        // - load old_user; reset if old_user was in contactdb
-        if (!$old_user || !$old_user->has_account_here()) {
-            if ($old_email) {
-                $old_user = $this->conf->fresh_user_by_email($old_email);
-            } else {
-                $old_user = null;
+            $old_user = $this->conf->fresh_user_by_email($email);
+            if ($old_user
+                && $old_user->primaryContactId > 0
+                && $this->follow_primary
+                && !$xuser) {
+                $old_user = $this->conf->fresh_user_by_id($old_user->primaryContactId)
+                    ?? /* should never happen */ $old_user;
+                $email = $old_user->email;
             }
+        }
+
+        // - look up CDB user
+        if ($xuser && $xuser->is_cdb_user()) {
+            $old_cdb_user = $xuser;
+        } else {
+            $old_cdb_user = $this->conf->fresh_cdb_user_by_email($email);
+            if ($old_cdb_user
+                && $old_cdb_user->primaryContactId > 0
+                && $this->follow_primary
+                && !$old_user) {
+                $old_cdb_user = $this->conf->fresh_cdb_user_by_id($old_cdb_user->primaryContactId)
+                    ?? /* should never happen */ $old_cdb_user;
+                $email = $old_cdb_user->email;
+                $old_user = $this->conf->fresh_user_by_email($email);
+            }
+        }
+
+        // - adopt existing user email case
+        if ($old_user || $old_cdb_user) {
+            $email = ($old_user ?? $old_cdb_user)->email;
         }
 
         // - check save mode
         if ($this->save_mode === self::SAVE_EXISTING && !$old_user) {
-            $this->error_at("email", "<0>Refusing to create user with email {$cj->email}");
+            $this->error_at("email", "<0>Account ‘{$cj->email}’ not found");
             return false;
         }
         if ($this->save_mode === self::SAVE_NEW && $old_user) {
-            $this->error_at("email", "<0>Email address ‘{$old_user->email}’ is already in use");
+            $this->error_at("email", "<0>Email address ‘{$email}’ is already in use");
             return false;
         }
         $user = $old_user ?? $old_cdb_user;
@@ -1036,9 +1064,10 @@ class UserStatus extends MessageSet {
         $this->check_invariants($cj);
         $actor = $this->viewer->is_root_user() ? null : $this->viewer;
         if (!$old_user) {
-            $create_cj = array_merge((array) $cj, ["disablement" => Contact::CF_PLACEHOLDER]);
+            $create_cj = array_merge((array) $cj, [
+                "email" => $email, "disablement" => Contact::CF_PLACEHOLDER
+            ]);
             $user = Contact::make_keyed($this->conf, $create_cj)->store(0, $actor);
-            $cj->email = $user->email; // adopt contactdb’s email capitalization
         }
         if (!$user) {
             return false;
@@ -1046,10 +1075,6 @@ class UserStatus extends MessageSet {
         $old_disablement = $user->disabled_flags();
 
         // initialize
-        if (isset($cj->email) && strcasecmp($cj->email, $user->email) !== 0) {
-            error_log(debug_string_backtrace());
-        }
-        assert(!isset($cj->email) || strcasecmp($cj->email, $user->email) === 0);
         $this->created = !$old_user;
         $this->set_user($user);
         $user->invalidate_cdb_user();

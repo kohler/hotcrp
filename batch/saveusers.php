@@ -1,6 +1,6 @@
 <?php
 // saveusers.php -- HotCRP command-line user modification script
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -27,6 +27,7 @@ class SaveUsers_Batch {
         $this->conf = $user->conf;
         $this->ustatus = new UserStatus($user);
         $this->ustatus->set_notify(isset($arg["notify"]) && !isset($arg["no-notify"]));
+        $this->ustatus->set_follow_primary(true);
         if (isset($arg["only-create"])) {
             $this->ustatus->set_save_mode(UserStatus::SAVE_NEW);
         } else if (isset($arg["only-modify"])) {

@@ -304,6 +304,7 @@ class Profile_Page {
         if (!$this->qreq->bulkoverride) {
             $ustatus->set_if_empty(UserStatus::IF_EMPTY_PROFILE);
         }
+        $ustatus->set_follow_primary(true);
         $ustatus->add_csv_synonyms($csv);
 
         while (($line = $csv->next_row())) {
@@ -370,6 +371,7 @@ class Profile_Page {
         } else {
             $this->ustatus->set_if_empty(UserStatus::IF_EMPTY_MOST);
             $this->ustatus->set_notify(true);
+            $this->ustatus->set_follow_primary(true);
         }
 
         // parse request
