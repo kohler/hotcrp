@@ -277,7 +277,7 @@ class Contact implements JsonSerializable {
         "primaryContactId" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE | self::PROP_NOUPDATECDB,
         "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE | self::PROP_SPECIAL,
         "cdbRoles" => self::PROP_LOCAL | self::PROP_INT,
-        "disabled" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE | self::PROP_NOUPDATECDB,
+        "disabled" => self::PROP_LOCAL | self::PROP_INT | self::PROP_NOUPDATECDB,
         "contactTags" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SLICE,
         "cflags" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE | self::PROP_NOUPDATECDB | self::PROP_SPECIAL,
         "address" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRINGLIST | self::PROP_SIMPLIFY | self::PROP_UPDATE,
@@ -414,8 +414,6 @@ class Contact implements JsonSerializable {
         $this->role_mask = (int) ($this->role_mask ?? self::ROLE_DBMASK);
         $this->roles = (int) $this->roles;
         $this->cflags = (int) $this->cflags;
-        /** @phan-suppress-next-line PhanDeprecatedProperty */
-        $this->disabled = (int) $this->disabled;
         if (isset($this->primaryContactId)) {
             $this->primaryContactId = (int) $this->primaryContactId;
         }

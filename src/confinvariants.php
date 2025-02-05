@@ -437,13 +437,13 @@ class ConfInvariants {
         Dbl::free($result);
 
         // load users
-        $result = $this->conf->qe("select " . $this->conf->user_query_fields() . ", unaccentedName from ContactInfo");
+        $result = $this->conf->qe("select " . $this->conf->user_query_fields() . ", unaccentedName, disabled from ContactInfo");
         while (($u = $result->fetch_object())) {
             $u->contactId = intval($u->contactId);
             $u->primaryContactId = intval($u->primaryContactId);
             $u->roles = intval($u->roles);
-            $u->disabled = intval($u->disabled);
             $u->cflags = intval($u->cflags);
+            $u->disabled = intval($u->disabled);
             unset($authors[strtolower($u->email)]);
 
             // anonymous users are disabled

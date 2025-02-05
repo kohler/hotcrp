@@ -1,6 +1,6 @@
 <?php
 // t_cdb.php -- HotCRP tests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 #[RequireCdb(true)]
 class Cdb_Tester {
@@ -480,9 +480,9 @@ class Cdb_Tester {
         Dbl::qe($this->cdb, "delete from Roles where contactDbId=?", $cdb_cid);
 
         // make cdb user non-disabled, but empty name
-        Dbl::qe($this->cdb, "update ContactInfo set email=?, password=?, firstName=?, lastName=?, disabled=? where email=?",
-            'cenGiz@isi.edu', 'TEST PASSWORD', '', '', 0,
-            'cengiz@isi.edu');
+        Dbl::qe($this->cdb, "update ContactInfo set email=?, password=?, firstName=?, lastName=?, cflags=cflags&~? where email=?",
+            'cenGiz@isi.edu', 'TEST PASSWORD', '',
+            '', Contact::CFM_DISABLEMENT, 'cengiz@isi.edu');
         $this->conf->invalidate_user(Contact::make_cdb_email($this->conf, "cengiz@isi.edu"));
 
         // creating a local user updates empty name from contactdb
@@ -829,10 +829,8 @@ class Cdb_Tester {
 
         $u = $this->conf->fresh_cdb_user_by_email("belling@cat.com");
         xassert_eqq($u->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED);
-        $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='belling@cat.com'") ?? -1;
-        xassert_eqq($d & ~Contact::CF_PLACEHOLDER, Contact::CF_UDISABLED);
-        $d = Dbl::fetch_ivalue($this->cdb, "select disabled from ContactInfo where email='belling@cat.com'") ?? -1;
-        xassert_eqq($d & ~Contact::CF_PLACEHOLDER, 0);
+        $u2 = $this->conf->fresh_user_by_email("belling@cat.com");
+        xassert_eqq($u2->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_UDISABLED | Contact::CF_ROLEDISABLED);
 
         $u = $this->conf->fresh_cdb_user_by_email("kitcat@cat.com");
         xassert(!$u);
@@ -847,20 +845,14 @@ class Cdb_Tester {
         xassert_eqq($u->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_UDISABLED | Contact::CF_ROLEDISABLED);
         $uu = $u->cdb_user();
         xassert_eqq($uu->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED);
-        $d = Dbl::fetch_ivalue($this->conf->dblink, "select disabled from ContactInfo where email='kitcat@cat.com'") ?? -1;
-        xassert_eqq($d & ~Contact::CF_PLACEHOLDER, Contact::CF_UDISABLED);
-        $d = Dbl::fetch_ivalue($this->cdb, "select disabled from ContactInfo where email='kitcat@cat.com'") ?? -1;
-        xassert_eqq($d & ~Contact::CF_PLACEHOLDER, 0);
 
         Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@cat.com', affiliation='University of Connecticut', password='', disabled=1, cflags=1");
-        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@cat.com', affiliation='University of Connecticut', password=' unset', disabled=2, cflags=2");
+        Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@cat.com', affiliation='University of Connecticut', password=' unset', cflags=2");
         $u = $this->conf->fresh_user_by_email("marthatanner@cat.com");
         xassert_eqq($u->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED | Contact::CF_UDISABLED);
         $u->update_cdb();
         $uu = $this->conf->fresh_cdb_user_by_email("marthatanner@cat.com");
         xassert_eqq($uu->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED);
-        $d = Dbl::fetch_ivalue($this->cdb, "select disabled from ContactInfo where email='marthatanner@cat.com'") ?? -1;
-        xassert_eqq($d & ~Contact::CF_PLACEHOLDER, 0);
 
         $this->conf->set_opt("disableNonPC", null);
         $this->conf->refresh_settings();
@@ -869,8 +861,6 @@ class Cdb_Tester {
     function check_disablement($email, $want) {
         $u = $this->conf->fresh_cdb_user_by_email($email);
         xassert_eqq($u->disabled_flags(), $want);
-        $x = Dbl::fetch_ivalue($this->cdb, "select disabled from ContactInfo where email=?", $email);
-        xassert_eqq($x, $want);
         $u = $this->conf->fresh_user_by_email($email);
         xassert_eqq($u->disabled_flags(), $want);
         $x = $this->conf->fetch_ivalue("select disabled from ContactInfo where email=?", $email);

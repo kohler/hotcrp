@@ -2015,7 +2015,7 @@ class Conf {
         if (($slice & Contact::SLICEBIT_REST) === 0) {
             return "{$prefix}*, 0 _slice";
         }
-        $f = "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}roles, {$prefix}disabled, {$prefix}primaryContactId, {$prefix}contactTags, {$prefix}cflags";
+        $f = "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}roles, {$prefix}primaryContactId, {$prefix}contactTags, {$prefix}cflags";
         if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
             $f .= ", {$prefix}collaborators";
         }
@@ -2034,7 +2034,7 @@ class Conf {
     /** @param string $prefix
      * @return string */
     function deleted_user_query_fields($prefix = "") {
-        return "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, 0 roles, " . Contact::CF_DELETED . " disabled, 0 primaryContactId, '' contactTags, " . Contact::CF_DELETED . " cflags, 0 _slice";
+        return "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, 0 roles, 0 primaryContactId, '' contactTags, " . Contact::CF_DELETED . " cflags, 0 _slice";
     }
 
     /** @param int $slice
@@ -2044,7 +2044,7 @@ class Conf {
         if (($slice & Contact::SLICEBIT_REST) === 0) {
             return "{$prefix}*, 0 _slice";
         }
-        $f = "{$prefix}contactDbId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}disabled, {$prefix}primaryContactId";
+        $f = "{$prefix}contactDbId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}primaryContactId, {$prefix}cflags";
         if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
             $f .= ", {$prefix}collaborators";
         }
@@ -2855,9 +2855,9 @@ class Conf {
         }
 
         if (!empty($ph_emails)) {
-            Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~?, disabled=disabled&~?
+            Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~?
                 where email?a and (cflags&?)!=0",
-                Contact::CF_PLACEHOLDER, Contact::CF_PLACEHOLDER, $ph_emails, Contact::CF_PLACEHOLDER);
+                Contact::CF_PLACEHOLDER, $ph_emails, Contact::CF_PLACEHOLDER);
         }
 
         if (!empty($confirm_emails)) {

@@ -1779,6 +1779,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($r16f->reviewSubmitted, null);
     }
 
+    #[RequireCdb(true)]
     function test_requested_reviewer_placeholder() {
         if (!($cdb = $this->conf->contactdb())) {
             return;
@@ -1794,7 +1795,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
 
         $uc_ext2p = $this->conf->cdb_user_by_email("external2p@_.com");
         xassert(!$uc_ext2p);
-        $result = Dbl::qe($cdb, "insert into ContactInfo set firstName='Thorsten', lastName='Gorsten', email='external2p@_.com', affiliation='Brandeis University', collaborators='German Strawberries', password='', cflags=2, disabled=2");
+        $result = Dbl::qe($cdb, "insert into ContactInfo set firstName='Thorsten', lastName='Gorsten', email='external2p@_.com', affiliation='Brandeis University', collaborators='German Strawberries', password='', cflags=2");
         assert(!Dbl::is_error($result));
         Dbl::free($result);
 
