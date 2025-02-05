@@ -143,7 +143,7 @@ class Conf {
     private $_cdb_user_cache;
     /** @var ?list<int|string> */
     private $_cdb_user_cache_missing;
-    /** @var ?list<int> */
+    /** @var ?list<int|string> */
     private $_cdb_user_update_list;
     /** @var ?Contact */
     private $_root_user;
@@ -2802,7 +2802,7 @@ class Conf {
     const CDB_UPDATE_CONFIRMED = 3;
 
     /** @param Contact $user
-     * @param 0|1 $type */
+     * @param 0|1|2|3 $type */
     function register_cdb_user_update($user, $type) {
         if ($this->_cdb_user_update_list === null) {
             register_shutdown_function([$this, "save_cdb_user_updates"]);

@@ -3165,14 +3165,15 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table IDReservation change `uid` `uid` int(11) NOT NULL AUTO_INCREMENT")) {
             $conf->update_schema_version(306);
         }
-        if ($conf->sversion === 306
-            && $conf->ql_ok("DROP TABLE IF EXISTS `ContactPrimary`")
-            && $conf->ql_ok("CREATE TABLE `ContactPrimary` (
+        if ($conf->sversion === 306) {
+            Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `ContactPrimary`");
+            if ($conf->ql_ok("CREATE TABLE `ContactPrimary` (
   `contactId` int(11) NOT NULL,
   `primaryContactId` int(11) NOT NULL,
   PRIMARY KEY (`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")) {
-            $conf->update_schema_version(307);
+                $conf->update_schema_version(307);
+            }
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
