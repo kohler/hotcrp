@@ -143,8 +143,8 @@ class SaveUsers_Batch {
             "expression[],expr[],e[] =JSON Create or modify users specified in JSON",
             "notify,N Send email notifications (off by default)",
             "no-notify,no-email !",
-            "only-create,no-modify Only create new users, do not modify existing",
-            "only-modify,no-create Only modify existing users, do not create new",
+            "only-create,create-only,no-modify Only create new users, do not modify existing",
+            "only-modify,modify-only,no-create Only modify existing users, do not create new",
             "quiet,q Do not print changes"
         )->helpopt("help")
          ->description("Save HotCRP users as specified in JSON or CSV.
