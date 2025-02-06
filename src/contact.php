@@ -949,6 +949,15 @@ class Contact implements JsonSerializable {
         }
     }
 
+    /** @param int $id */
+    function prefetch_similar_user_by_id($id) {
+        if ($this->is_cdb_user()) {
+            $this->conf->prefetch_cdb_user_by_id($id);
+        } else {
+            $this->conf->prefetch_user_by_id($id);
+        }
+    }
+
     /** @return $this */
     function ensure_account_here() {
         assert($this->has_email());

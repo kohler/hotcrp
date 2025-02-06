@@ -16,12 +16,14 @@ class ContactPrimary {
         $this->conf = $sec->conf;
         $this->cdb = $sec->is_cdb_user();
         $this->sec = $sec;
-        $this->pri = $pri;
+        if ($pri && strcasecmp($pri->email, $sec->email) !== 0) {
+            $this->pri = $pri;
+        }
     }
 
-    // Change the primary account for `$sec` to the primary for `$pri`.
-    // If `$pri` is secondary, then it is resolved first to its own primary,
-    // unless that primary is `$sec`.
+    // Change the primary account for `$sec` to `$pri`.
+    // If `$pri` is currently secondary, then its primary, and any other
+    // secondaries of it, are retargeted to `$pri`.
     // If `$sec` is CDB, then `$pri` must be CDB.
     // If `$sec` is local, then `$pri` is made local.
     // If any changes are made, then authorship in `PaperConflict` is also
@@ -33,8 +35,8 @@ class ContactPrimary {
 
     private function run() {
         // resolve pri
-        if ($this->pri) {
-            $this->_resolve_requested_primary();
+        if ($this->pri && !$this->cdb) {
+            $this->pri->ensure_account_here();
         }
         assert(!$this->pri || $this->cdb === $this->pri->is_cdb_user());
         // do not assign to self
@@ -45,7 +47,7 @@ class ContactPrimary {
         // main changes
         if ($this->sec->primaryContactId !== 0) {
             $this->_remove_old_primary();
-        } else if (($this->sec->cflags & Contact::CF_PRIMARY) !== 0) {
+        } else {
             $this->_relink_to_new_primary();
         }
         if ($this->pri) {
@@ -63,24 +65,6 @@ class ContactPrimary {
         }
     }
 
-    private function _resolve_requested_primary() {
-        // resolve `$pri` to its own primary, unless its primary is `$sec`
-        if ($this->pri->primaryContactId !== 0) {
-            $xpri = $this->pri->similar_user_by_id($this->pri->primaryContactId);
-            if ($xpri && strcasecmp($xpri->email, $this->sec->email) !== 0) {
-                $this->pri = $xpri;
-            }
-        }
-        // resolve `$pri` to a local user if `$sec` is local
-        if (!$this->cdb) {
-            $this->pri->ensure_account_here();
-        }
-        // `null` if same as `$sec`
-        if (strcasecmp($this->pri->email, $this->sec->email) === 0) {
-            $this->pri = null;
-        }
-    }
-
     private function _remove_old_primary() {
         $idk = $this->cdb ? "contactDbId" : "contactId";
         $oldid = $this->sec->primaryContactId;
@@ -95,21 +79,54 @@ class ContactPrimary {
 
     private function _relink_to_new_primary() {
         $idk = $this->cdb ? "contactDbId" : "contactId";
-        $this->sec->set_prop("cflags", $this->sec->cflags & ~Contact::CF_PRIMARY);
-        $result = Dbl::qe($this->sec->dblink(), "select contactId from ContactPrimary where primaryContactId=?", $this->sec->$idk);
+        $redir = [];
+        if (($this->sec->cflags & Contact::CF_PRIMARY) !== 0) {
+            $this->sec->set_prop("cflags", $this->sec->cflags & ~Contact::CF_PRIMARY);
+            $redir[] = $this->sec->$idk;
+        }
+        $old_primary = $this->pri ? $this->pri->primaryContactId : 0;
+        if ($old_primary > 0) {
+            $redir[] = $old_primary;
+        }
+        assert(empty($redir) || $this->pri);
+        if (empty($redir)) {
+            return;
+        }
+
+        $result = Dbl::qe($this->sec->dblink(), "select contactId from ContactPrimary where primaryContactId?a", $redir);
         $ids = [];
         while (($row = $result->fetch_row())) {
             $id = (int) $row[0];
             if ($id !== $this->pri->$idk) {
-                $this->sec->invalidate_similar_user_by_id($id);
+                $this->sec->prefetch_similar_user_by_id($id);
                 $ids[] = $id;
             }
         }
+        if ($old_primary > 0 && $old_primary !== $this->sec->$idk) {
+            $this->sec->prefetch_similar_user_by_id($old_primary);
+            $ids[] = $old_primary;
+        }
         $result->close();
-        Dbl::qe($this->sec->dblink(), "update ContactInfo set primaryContactId=? where contactId?a and primaryContactId=?",
-            $this->pri->$idk, $ids, $this->sec->$idk);
-        Dbl::qe($this->sec->dblink(), "update ContactPrimary set primaryContactId=? where contactId?a and primaryContactId=?",
-            $this->pri->$idk, $ids, $this->sec->$idk);
+
+        foreach ($ids as $id) {
+            if (($u = $this->sec->similar_user_by_id($id))) {
+                $u->set_prop("primaryContactId", $this->pri->$idk);
+                $u->set_prop("cflags", $u->cflags & ~Contact::CF_PRIMARY);
+                $u->save_prop();
+            }
+        }
+        if (!empty($ids)) {
+            Dbl::qe($this->sec->dblink(), "update ContactPrimary set primaryContactId=? where contactId?a",
+                $this->pri->$idk, $ids);
+        }
+        if ($old_primary > 0) {
+            Dbl::qe($this->sec->dblink(), "delete from ContactPrimary where contactId=?",
+                $this->pri->$idk);
+            if ($old_primary !== $this->sec->$idk) {
+                Dbl::qe($this->sec->dblink(), "insert into ContactPrimary set contactId=?, primaryContactId=?",
+                    $old_primary, $this->pri->$idk);
+            }
+        }
     }
 
     static private function _update_author_records(Conf $conf, ...$ids) {

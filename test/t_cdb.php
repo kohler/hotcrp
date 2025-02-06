@@ -1028,5 +1028,27 @@ class Cdb_Tester {
         xassert_eqq($lu_mtnlion->primaryContactId, 0);
         xassert_eqq($lu_puma->primaryContactId, 0);
         xassert_eqq($lu_leopard->primaryContactId, 0);
+
+        // link secondary groups
+        Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Cougar', lastName='Brain', email='cougar@fart.edu', affiliation='Place University', collaborators='Newsweek Magazine', password=' unset', cflags=0");
+        $lu_cougar = $this->conf->user_by_email("cougar@fart.edu");
+        ContactPrimary::set_primary_user($lu_puma, $lu_cougar);
+        ContactPrimary::set_primary_user($lu_leopard, $lu_mtnlion);
+        // cross-group link
+        ContactPrimary::set_primary_user($lu_cougar, $lu_leopard);
+        $lu_puma = $this->conf->user_by_email("puma@fart.edu");
+        $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
+        $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");
+        $lu_cougar = $this->conf->user_by_email("cougar@fart.edu");
+        xassert_eqq($lu_cougar->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_leopard->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
+        xassert_eqq($lu_puma->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_mtnlion->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($lu_cougar->primaryContactId, $lu_leopard->contactId);
+        xassert_eqq($lu_leopard->primaryContactId, 0);
+        xassert_eqq($lu_mtnlion->primaryContactId, $lu_leopard->contactId);
+        xassert_eqq($lu_puma->primaryContactId, $lu_leopard->contactId);
+
+        (new ConfInvariants($this->conf))->check_users();
     }
 }

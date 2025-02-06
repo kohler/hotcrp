@@ -16,7 +16,7 @@ class ManageEmail_API extends MessageSet {
     /** @var bool */
     private $dry_run = false;
 
-    function __construct(Contact $viewer, Contact $user, Contact $dstuser) {
+    function __construct(Contact $viewer, Contact $user, ?Contact $dstuser) {
         $this->conf = $user->conf;
         $this->viewer = $viewer;
         $this->user = $user;
@@ -37,13 +37,18 @@ class ManageEmail_API extends MessageSet {
 
     /** @return JsonResult */
     static function list(Contact $viewer, Contact $user, ?Contact $dstuser, Qrequest $qreq) {
-        if ($viewer !== $user && !$viewer->privChair) {
+        if (!$viewer->privChair && $viewer !== $user) {
             return JsonResult::make_permission_error("u")->set("actions", []);
         }
-        $jr = new JsonResult(200, ["ok" => true, "actions" => []]);
+        $actions = [];
         if ($user->isPC) {
-            $jr->content["actions"] = "transferpc";
+            $actions[] = "transferpc";
         }
+        $actions[] = "link";
+        if ($user->primaryContactId > 0) {
+            $actions[] = "unlink";
+        }
+        $jr = new JsonResult(200, ["ok" => true, "actions" => $actions]);
         if ($viewer->privChair) {
             $jr->set("any_email", true);
         } else {
@@ -120,18 +125,13 @@ class ManageEmail_API extends MessageSet {
             return self::list($viewer, $user, $dstuser, $qreq);
         }
 
-        // otherwise user required
-        if (!$dstuser) {
-            return JsonResult::make_missing_error("email")
-                ->set("error_code", "missing");
-        }
-
-        // check whetehr accounts have been recently confirmed
+        // check whether accounts have been recently confirmed
         if (($viewer === $user || !$viewer->privChair)
             && !self::confirm($qreq, $user)) {
             return JsonResult::make_parameter_error("u", "<0>Account requires confirmation")
                 ->set("error_code", "confirm");
         } else if (!$viewer->privChair
+                   && $dstuser
                    && !self::confirm($qreq, $dstuser)) {
             return JsonResult::make_parameter_error("email", "<0>Account requires confirmation")
                 ->set("error_code", "confirm");
@@ -146,10 +146,16 @@ class ManageEmail_API extends MessageSet {
     function run($action) {
         if ($action === "transferpc") {
             $ec = $this->run_transferpc();
+        } else if ($action === "unlink") {
+            $ec = $this->run_unlink();
         } else {
             return JsonResult::make_not_found_error("action");
         }
-        $jr = JsonResult::make_message_list($ec ? 400 : 200, $this->message_list());
+        if ($ec === "missing") {
+            $jr = JsonResult::make_missing_error("email");
+        } else {
+            $jr = JsonResult::make_message_list($ec ? 400 : 200, $this->message_list());
+        }
         if ($this->dry_run) {
             $jr->set("dry_run", true);
         }
@@ -161,6 +167,9 @@ class ManageEmail_API extends MessageSet {
 
     /** @return ?string */
     private function run_transferpc() {
+        if (!$this->dstuser) {
+            return "missing";
+        }
         if (strcasecmp($this->user->email, $this->dstuser->email) === 0) {
             $this->error_at("email", "<0>Emails must differ");
             return "same_email";
@@ -334,5 +343,52 @@ class ManageEmail_API extends MessageSet {
         Contact::update_rights();
         $this->user->update_cdb_roles();
         $this->dstuser->update_cdb_roles();
+    }
+
+    private function run_unlink() {
+        $global = friendly_boolean($qreq->global);
+        $luser = $this->user->is_cdb_user() ? null : $this->user;
+        $guser = $global ? $this->user->cdb_user() : null;
+        if ((!$luser || $luser->primaryContactId <= 0)
+            && (!$guser || $guser->primaryContactId <= 0)) {
+            $this->warning("<0>No changes");
+            return null;
+        }
+        if ($this->dry_run) {
+            return null;
+        }
+        if ($luser) {
+            ContactPrimary::set_primary_user($luser, null);
+        }
+        if ($guser) {
+            ContactPrimary::set_primary_user($guser, null);
+        }
+        return null;
+    }
+
+    private function run_link() {
+        $global = friendly_boolean($qreq->global);
+        $luser = $this->user->is_cdb_user() ? null : $this->user;
+        $guser = $global ? $this->user->cdb_user() : null;
+        $gdstuser = $guser ? $this->dstuser->cdb_user() : null;
+        if ((!$luser
+             || (!$this->dstuser->is_cdb_user()
+                 && $luser->primaryContactId === $this->dstuser->contactId))
+            && (!$guser
+                || ($gdstuser
+                    && $guser->primaryContactId === $gdstuser->contactDbId))) {
+            $this->warning("<0>No changes");
+            return null;
+        }
+        if ($this->dry_run) {
+            return null;
+        }
+        if ($luser) {
+            ContactPrimary::set_primary_user($luser, $this->dstuser);
+        }
+        if ($guser && $gdstuser) {
+            ContactPrimary::set_primary_user($guser, $gdstuser);
+        }
+        return null;
     }
 }
