@@ -5,12 +5,11 @@
 class ManageEmail_Capability {
     /** @param Contact $viewer
      * @return ?TokenInfo */
-    static function make($viewer, $create) {
+    static function prepare($viewer) {
         return (new TokenInfo($viewer->conf, TokenInfo::MANAGEEMAIL))
             ->set_user_id($viewer->contactId)
             ->set_invalid_after(3600 /* 1 hour */)
             ->set_expires_after(7200 /* 2 hours */)
-            ->set_token_pattern("hcme[16]")
-            ->insert();
+            ->set_token_pattern("hcme[16]");
     }
 }
