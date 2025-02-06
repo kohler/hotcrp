@@ -37,12 +37,14 @@ class ManageEmail_API extends MessageSet {
 
     /** @return JsonResult */
     static function list(Contact $viewer, Contact $user, ?Contact $dstuser, Qrequest $qreq) {
-        if (!$viewer->privChair && $viewer !== $user) {
+        if (!$viewer->privChair
+            && $viewer !== $user
+            && Contact::session_index_by_email($qreq, $user->email) < 0) {
             return JsonResult::make_permission_error("u")->set("actions", []);
         }
         $actions = [];
-        if ($user->isPC) {
-            $actions[] = "transferpc";
+        if ($user->is_reviewer()) {
+            $actions[] = "transferreview";
         }
         $actions[] = "link";
         if ($user->primaryContactId > 0) {
@@ -144,8 +146,8 @@ class ManageEmail_API extends MessageSet {
     }
 
     function run($action) {
-        if ($action === "transferpc") {
-            $ec = $this->run_transferpc();
+        if ($action === "transferreview") {
+            $ec = $this->run_transferreview();
         } else if ($action === "unlink") {
             $ec = $this->run_unlink();
         } else {
@@ -166,7 +168,7 @@ class ManageEmail_API extends MessageSet {
     }
 
     /** @return ?string */
-    private function run_transferpc() {
+    private function run_transferreview() {
         if (!$this->dstuser) {
             return "missing";
         }
@@ -174,21 +176,22 @@ class ManageEmail_API extends MessageSet {
             $this->error_at("email", "<0>Emails must differ");
             return "same_email";
         }
-        if (($this->user->roles & Contact::ROLE_PCLIKE) === 0) {
-            $this->error_at("u", "<0>Source account is not a member of the PC");
-            return "not_pc";
+        if ($this->user->contactId <= 0 || !$this->user->is_reviewer()) {
+            $this->error_at("u", "<0>Account is not a reviewer on this site");
+            return "not_reviewer";
         }
         assert($this->user->contactId > 0);
-        if (($this->dstuser->roles & Contact::ROLE_PCLIKE) !== 0) {
-            $this->error_at("email", "<0>Destination account must not be a member of the PC");
-            return "not_pc";
+        if (($this->srcuser->roles & Contact::ROLE_PCLIKE) !== 0
+            && ($this->dstuser->roles & Contact::ROLE_PCLIKE) !== 0) {
+            $this->error_at("email", "<0>Both accounts are already members of the PC");
+            return "pc_conflict";
         }
         if ($this->dstuser->has_review()) {
             assert($this->dstuser->contactId > 0);
             $ps = $this->conf->paper_set(["where" => "exists (select * from PaperReview where paperId=Paper.paperId and contactId={$this->user->contactId}) and exists (select * from PaperReview where paperId=Paper.paperId and contactId={$this->dstuser->contactId})"]);
             if (!$ps->is_empty()) {
                 $this->error_at("email", "<0>Review conflict with destination account");
-                $this->inform_at("email", $this->conf->_("<5>PC information for {0} can’t be transferred to {1} because there are {submissions} for which both accounts have reviews.", $this->user->email, $this->dstuser->email));
+                $this->inform_at("email", $this->conf->_("<0>Reviews can’t be transferred from {0} to {1} because there are {submissions} for which both accounts have reviews.", $this->user->email, $this->dstuser->email));
                 return "review_conflict";
             }
         }
@@ -197,11 +200,13 @@ class ManageEmail_API extends MessageSet {
         }
 
         $this->import_account();
-        $this->transfer_pc_roles();
+        if (($this->user->roles & Contact::ROLE_PCLIKE) !== 0) {
+            $this->transfer_pc_roles();
+            $this->transfer_paperpc();
+            $this->transfer_pc_info();
+        }
         $this->transfer_user_tags();
         $this->transfer_conflicts();
-        $this->transfer_paperpc();
-        $this->transfer_pc_info();
         $this->transfer_reviews();
         $this->transfer_review_requests();
         $this->transfer_comments();

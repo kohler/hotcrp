@@ -238,6 +238,7 @@
     {   "name": "help", "print_function": "Help_Page::go"   },
     {   "name": "log", "print_function": "Log_Page::go"   },
     {   "name": "mail", "print_function": "Mail_Page::go"   },
+    {   "name": "manageemail", "print_function": "ManageEmail_Page::go"   },
     {   "name": "manualassign", "print_function": "ManualAssign_Page::go"   },
     {   "name": "mergeaccounts", "print_function": "MergeAccounts_Page::go"   },
     {   "name": "oauth", "print_function": "OAuth_Page::go", "allow_disabled": true   },

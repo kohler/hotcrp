@@ -885,6 +885,12 @@ body.paper #p-body {
 	margin-left: 0;
 	margin-right: 0;
 }
+@media screen and (min-width: 900px) {
+.body-text #p-body {
+	margin-left: 10%;
+	margin-right: 10%;
+}
+}
 
 #h-messages {
 	margin-left: 24px;
