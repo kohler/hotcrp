@@ -1283,7 +1283,7 @@ class UserStatus extends MessageSet {
             $w = 0;
         }
         foreach (self::$follow_keywords as $bit => $ns) {
-            if (($v = $follow->{$ns[0]}) !== null) {
+            if (($v = $follow->{$ns[0]} ?? null) !== null) {
                 $w = ($w & ~$bit) | ($v ? $bit : 0);
             }
         }
