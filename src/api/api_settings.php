@@ -21,7 +21,7 @@ class Settings_API {
             $sv->add_json_string($jtext, $qreq->filename);
             $sv->set_req("reset", $reset ? "1" : "");
             $sv->parse();
-            $dry_run = friendly_boolean($qreq->dry_run ?? $qreq->dryrun);
+            $dry_run = friendly_boolean($qreq->dry_run ?? $qreq->dryrun /* XXX */);
             if ($dry_run) {
                 $content["dry_run"] = true;
             } else {

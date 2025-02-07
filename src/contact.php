@@ -2108,12 +2108,16 @@ class Contact implements JsonSerializable {
 
     /** @param string $tag
      * @param false|int|float $value
+     * @param bool $ifunset
      * @return void */
-    function change_tag_prop($tag, $value) {
+    function change_tag_prop($tag, $value, $ifunset = false) {
         assert(strcasecmp($tag, "pc") !== 0 && strcasecmp($tag, "chair") !== 0);
         $shape = self::$props["contactTags"];
         $svalue = $this->prop1("contactTags", $shape) ?? "";
         if (($pos = stripos($svalue, " {$tag}#")) !== false) {
+            if ($ifunset) {
+                return;
+            }
             $epos = $pos + strlen($tag) + 2;
             $space = strpos($svalue, " ", $epos);
             $space = $space === false ? strlen($svalue) : $space;
