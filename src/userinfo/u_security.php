@@ -72,7 +72,7 @@ class Security_UserInfo {
         if ($us->has_recent_authentication()) {
             return;
         }
-        $us->cs()->add_section_class("form-outline-section tag-yellow w-text")
+        $us->cs()->add_section_class("form-outline-section tag-yellow")
             ->print_start_section("Confirm account", "reauth");
         echo '<p>Please re-enter your signin credentials if you want to change these security-sensitive settings.</p>';
         $original_ignore_msgs = $us->swap_ignore_messages(false);

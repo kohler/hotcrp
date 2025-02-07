@@ -18,6 +18,8 @@ body {
 	--submission-bg-dark: #dce4e8;
 	--submission-bg: #e2e9ec;
 	--submission-sidebar-bg: #edf3f5;
+	--warning-fg: #c07700;
+	--warning-bg: #ffffdd;
 }
 select, button {
 	color: #222222;
@@ -924,7 +926,7 @@ body.paper #p-body {
 	border-style: solid;
 	border-color: transparent;
 	border-radius: 4px;
-	padding: 0.5em 0.85em;
+	padding: 0.5rem 0.85rem;
 }
 .msgs-wide > .msg,
 .msg.mx-auto,
@@ -960,7 +962,7 @@ body.paper-error .msg {
 }
 .msg.msg-warning {
 	border-width: 3px;
-	background: padding-box linear-gradient(#ffffdd, #ffffdd),
+	background: padding-box linear-gradient(var(--warning-bg), var(--warning-bg)),
 		border-box url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2IiBoZWlnaHQ9IjYiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmZjAiIC8+PHBvbHlsaW5lIHBvaW50cz0iLTMsNiwzLDAsNiwwLDAsNiIgZmlsbD0iIzY5NjkwMyIgLz48cG9seWxpbmUgcG9pbnRzPSIzLDYsOSwwLDEyLDAsNiw2IiBmaWxsPSIjNjk2OTAzIiAvPjwvc3ZnPg==) repeat;
 }
 .msg.msg-error {
@@ -1803,9 +1805,6 @@ div.hint {
 .overlong-expander {
 	max-width: 720px; /* see also @layer theme */
 }
-.form-outline-section.w-text {
-	max-width: 748px;
-}
 .w-entry-text {
 	max-width: 560px;
 }
@@ -1822,10 +1821,15 @@ h3.form-h, h3.helppage, h4.helppage {
 	margin-bottom: 3em;
 }
 .form-outline-section {
-	margin-left: -14px;
 	border: 1px solid silver;
 	border-radius: 5px;
-	padding: 8px 13px 12px;
+	padding: 0.5rem 0.85rem 0.75rem;
+}
+@media screen and (min-width: 920px) {
+.form-outline-section {
+	width: fit-content;
+	min-width: 720px;
+}
 }
 .msg + .form-section {
 	margin-top: 2.25em;
@@ -2093,7 +2097,7 @@ a:hover .settings-jpath {
 	text-decoration-line: underline;
 	text-decoration-style: wavy;
 	text-underline-position: under;
-	text-decoration-color: #c07700;
+	text-decoration-color: var(--warning-fg);
 }
 
 .form-sep {
@@ -2479,7 +2483,7 @@ input[type=date].has-error,
 textarea.has-error,
 select.has-error {
 	border: 1px solid red;
-	background-color: rgba(255, 0, 0, 0.02);
+	background-color: #fff9f9;
 }
 .has-warning > .f-c,
 .has-warning > label,
@@ -2489,7 +2493,7 @@ h2.has-warning,
 h3.has-warning,
 .is-warning,
 .is-warning-note {
-	color: #c07700;
+	color: var(--warning-fg);
 }
 .has-warning input[type=text],
 .has-warning input[type=email],
@@ -2503,8 +2507,8 @@ input[type=password].has-warning,
 input[type=date].has-warning,
 textarea.has-warning,
 select.has-warning {
-	border: 1px solid #c07700;
-	background-color: rgba(192, 119, 0, 0.02);
+	border: 1px solid var(--warning-fg);
+	background-color: #fdfcf9;
 }
 .is-success {
 	color: #006600;
