@@ -91,8 +91,8 @@ class Signin_Page {
 
     static function signin_request_success(Contact $user, Qrequest $qreq, $cs, $info)  {
         if (!$info["ok"]) {
-            if (!empty($info["usec"])) {
-                UpdateSession::usec_add_list($qreq, $qreq->email, $info["usec"], 0);
+            foreach ($info["usec"] ?? [] as $use) {
+                $use->store($qreq);
             }
             return $info;
         }

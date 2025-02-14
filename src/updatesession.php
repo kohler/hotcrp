@@ -1,6 +1,6 @@
 <?php
 // updatesession.php -- HotCRP session cleaner functions
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class UpdateSession {
     /** @param Qsession $qs */
@@ -66,77 +66,30 @@ class UpdateSession {
     /** @param Qrequest $qreq
      * @param string $email
      * @param bool $add
-     * @return int */
+     * @return int
+     * @deprecated */
     static function user_change($qreq, $email, $add) {
-        $us = Contact::session_users($qreq);
-        $empty = null;
-        $ui = 0;
-        while ($ui !== count($us)) {
-            if ($us[$ui] === "") {
-                $empty = $empty ?? $ui;
-            } else if (strcasecmp($us[$ui], $email) === 0) {
-                break;
-            }
-            ++$ui;
-        }
         if ($add) {
-            if ($ui === count($us) && $empty !== null) {
-                $ui = $empty;
-            }
-            $us[$ui] = $email;
-        } else if ($ui !== count($us)) {
-            $us[$ui] = "";
-        }
-        while (!empty($us) && $us[count($us) - 1] === "") {
-            array_pop($us);
-        }
-        if (count($us) > 1) {
-            $qreq->set_gsession("us", $us);
+            return UserSecurityEvent::session_user_add($qreq, $email);
         } else {
-            $qreq->unset_gsession("us");
+            UserSecurityEvent::session_user_remove($qreq, $email);
+            return -1;
         }
-        if (empty($us)) {
-            $qreq->unset_gsession("u");
-        } else {
-            $i = 0;
-            while ($us[$i] === "") {
-                ++$i;
-            }
-            $qreq->set_gsession("u", $us[$i]);
-        }
-
-        // clear out usec entries
-        $qreq->unset_gsession("uts");
-        if (!$add) {
-            $usec = [];
-            foreach ($qreq->gsession("usec") ?? [] as $e) {
-                if (($e["u"] ?? 0) !== $ui)
-                    $usec[] = $e;
-            }
-            $qreq->set_gsession("usec", $usec);
-        }
-
-        return $add ? $ui : -1;
     }
 
     /** @param string $email
      * @param 0|1|2 $type
      * @param 0|1 $reason
      * @param int $bound
-     * @return bool */
+     * @return bool
+     * @deprecated */
     static function usec_query(Qrequest $qreq, $email, $type, $reason, $bound = 0) {
-        $uindex = Contact::session_index_by_email($qreq, $email);
-        $usec = $qreq->gsession("usec") ?? [];
         $success = false;
-        foreach ($qreq->gsession("usec") ?? [] as $e) {
-            if ((isset($e["e"])
-                 ? strcasecmp($e["e"], $email) === 0
-                 : ($e["u"] ?? 0) === $uindex)
-                && ($e["t"] ?? 0) === $type
-                && ($e["r"] ?? 0) === $reason
-                && $e["a"] >= $bound) {
-                $success = !($e["x"] ?? false);
-            }
+        foreach (UserSecurityEvent::session_list_by_email($qreq, $email) as $use) {
+            if ($use->type === $type
+                && $use->reason === $reason
+                && $use->timestamp >= $bound)
+                $success = $use->success;
         }
         return $success;
     }
@@ -144,62 +97,18 @@ class UpdateSession {
     /** @param string $email
      * @param 0|1|2 $type - 0 password, 2 MFA
      * @param 0|1 $reason - 0 login, 1 confirmation
-     * @param bool $success */
+     * @param bool $success
+     * @deprecated */
     static function usec_add(Qrequest $qreq, $email, $type, $reason, $success) {
-        // See `etc/devel/sessions.md` for format information
-        $uindex = Contact::session_index_by_email($qreq, $email);
-        $old_usec = $qreq->gsession("usec") ?? [];
-        $nold_usec = count($old_usec);
-
-        $usec = [];
-        foreach ($old_usec as $i => $e) {
-            if ($uindex >= 0
-                && isset($e["e"])
-                && strcasecmp($e["e"], $email) === 0) {
-                unset($e["e"]);
-                if ($uindex > 0) {
-                    $e["u"] = $uindex;
-                }
-            }
-            if ((($e["r"] ?? 0) === 1
-                 && $e["a"] < Conf::$now - 86400)
-                || ($success
-                    && (isset($e["e"])
-                        ? strcasecmp($e["e"], $email) === 0
-                        : ($e["u"] ?? 0) === $uindex)
-                    && ($e["t"] ?? 0) === $type
-                    && ($e["r"] ?? 0) === $reason)
-                || ($nold_usec > 150
-                    && ($e["x"] ?? false)
-                    && $e["a"] < Conf::$now - 900)) {
-                continue;
-            }
-            $usec[] = $e;
-        }
-
-        $x = [];
-        if ($uindex < 0) {
-            $x["e"] = $email;
-        } else if ($uindex > 0) {
-            $x["u"] = $uindex;
-        }
-        if ($type !== 0) {
-            $x["t"] = $type;
-        }
-        if ($reason !== 0) {
-            $x["r"] = $reason;
-        }
-        if (!$success) {
-            $x["x"] = true;
-        }
-        $x["a"] = Conf::$now;
-        $usec[] = $x;
-        $qreq->set_gsession("usec", $usec);
+        UserSecurityEvent::make($email, $type, $reason)
+            ->set_success($success)
+            ->store($qreq);
     }
 
     /** @param string $email
      * @param list<array{0|1|2,bool}> $useclist
-     * @param 0|1 $reason */
+     * @param 0|1 $reason
+     * @deprecated */
     static function usec_add_list(Qrequest $qreq, $email, $useclist, $reason) {
         foreach ($useclist as $elt) {
             self::usec_add($qreq, $email, $elt[0], $reason, $elt[1]);

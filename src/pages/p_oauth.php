@@ -93,39 +93,41 @@ class OAuth_Page {
         $this->site_uri = $qreq->navigation()->base_absolute();
     }
 
+    /** @return MessageItem|list<MessageItem> */
     function start() {
         $this->qreq->open_session();
-        if (($authi = OAuthProvider::find($this->conf, $this->qreq->authtype))) {
-            $tok = new TokenInfo($this->conf, TokenInfo::OAUTHSIGNIN);
-            $tok->set_contactdb(!!$this->conf->contactdb())
-                ->set_expires_after(60)
-                ->set_token_pattern("hcoa[20]");
-            $nonce = base48_encode(random_bytes(8));
-            $tok->assign_data([
-                "authtype" => $authi->name,
-                "session" => $this->qreq->qsid(),
-                "quiet" => $this->qreq->quiet,
-                "redirect" => $this->qreq->redirect,
-                "site_uri" => $this->conf->opt("paperSite"),
-                "nonce" => $nonce
-            ])->insert();
-            if ($tok->stored()) {
-                $params = "client_id=" . urlencode($authi->client_id)
-                    . "&response_type=code"
-                    . "&scope=" . rawurlencode($authi->scope ?? "openid email profile")
-                    . "&redirect_uri=" . rawurlencode($authi->redirect_uri)
-                    . "&state=" . $tok->salt
-                    . "&nonce=" . $nonce;
-                $this->qreq->set_cookie_opt("oauth-{$nonce}", "1", ["expires" => Conf::$now + 600, "path" => "/", "httponly" => true]);
-                throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
+        $authi = OAuthProvider::find($this->conf, $this->qreq->authtype);
+        if (!$authi) {
+            if ($this->qreq->authtype) {
+                return MessageItem::error("<0>{$this->qreq->authtype} authentication is not supported on this site");
             } else {
-                $this->conf->error_msg("<0>Authentication attempt failed");
+                return MessageItem::error("<0>OAuth authentication is not supported on this site");
             }
-        } else if ($this->qreq->authtype) {
-            $this->conf->error_msg("<0>{$this->qreq->authtype} authentication is not supported on this site");
-        } else {
-            $this->conf->error_msg("<0>OAuth authentication is not supported on this site");
         }
+        $tok = new TokenInfo($this->conf, TokenInfo::OAUTHSIGNIN);
+        $tok->set_contactdb(!!$this->conf->contactdb())
+            ->set_expires_after(60)
+            ->set_token_pattern("hcoa[20]");
+        $nonce = base48_encode(random_bytes(8));
+        $tok->assign_data([
+            "authtype" => $authi->name,
+            "session" => $this->qreq->qsid(),
+            "quiet" => $this->qreq->quiet,
+            "redirect" => $this->qreq->redirect,
+            "site_uri" => $this->conf->opt("paperSite"),
+            "nonce" => $nonce
+        ])->insert();
+        if (!$tok->stored()) {
+            return MessageItem::error("<0>Authentication attempt failed");
+        }
+        $params = "client_id=" . urlencode($authi->client_id)
+            . "&response_type=code"
+            . "&scope=" . rawurlencode($authi->scope ?? "openid email profile")
+            . "&redirect_uri=" . rawurlencode($authi->redirect_uri)
+            . "&state=" . $tok->salt
+            . "&nonce=" . $nonce;
+        $this->qreq->set_cookie_opt("oauth-{$nonce}", "1", ["expires" => Conf::$now + 600, "path" => "/", "httponly" => true]);
+        throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
     }
 
     /** @return MessageItem|list<MessageItem> */
@@ -254,6 +256,10 @@ class OAuth_Page {
         $info = LoginHelper::check_external_login(Contact::make_keyed($this->conf, $reg));
         if (!$info["ok"]) {
             LoginHelper::login_error($this->conf, $jid->email, $info, null);
+            UserSecurityEvent::make($jid->email, UserSecurityEvent::TYPE_OAUTH)
+                ->set_subtype($authi->name)
+                ->set_success(false)
+                ->store($this->qreq);
             throw new Redirection($tokdata->site_uri);
         }
 
@@ -274,8 +280,10 @@ class OAuth_Page {
         if (!$tokdata->quiet) {
             $this->conf->feedback_msg(MessageItem::success("<0>Signed in"));
         }
-        $uindex = UpdateSession::user_change($this->qreq, $user->email, true);
-        UpdateSession::usec_add($this->qreq, $user->email, 1, 0, true);
+        $uindex = UserSecurityEvent::session_user_add($this->qreq, $user->email);
+        UserSecurityEvent::make($user->email, UserSecurityEvent::TYPE_OAUTH)
+            ->set_subtype($authi->name)
+            ->store($this->qreq);
 
         $uri = $this->site_uri;
         if (count(Contact::session_users($this->qreq)) > 1) {
@@ -290,16 +298,20 @@ class OAuth_Page {
 
     static function go(Contact $user, Qrequest $qreq) {
         $oap = new OAuth_Page($user, $qreq);
+        $redirect = false;
         if (isset($qreq->state)) {
             $ml = $oap->response();
-            if ($ml) {
-                $user->conf->feedback_msg($ml);
-                throw new Redirection($oap->site_uri . "signin" . $qreq->navigation()->php_suffix);
-            }
+            $redirect = true;
         } else if ($qreq->valid_post()) {
-            $oap->start();
+            $ml = $oap->start();
         } else {
-            $user->conf->error_msg("<0>Missing CSRF token");
+            $ml = MessageItem::error("<0>Missing CSRF token");
+        }
+        if ($ml) {
+            $user->conf->feedback_msg($ml);
+        }
+        if ($redirect) {
+            throw new Redirection($oap->site_uri . "signin" . $qreq->navigation()->php_suffix);
         }
         if (http_response_code() === 200) {
             http_response_code(400);

@@ -18,8 +18,10 @@ class UserStatus_Tester {
         $u = $this->conf->fresh_user_by_email($email);
         $qreq = (new Qrequest("POST", $req))->approve_token();
         $qreq->set_qsession(new TestQsession);
-        UpdateSession::user_change($qreq, $email, true);
-        UpdateSession::usec_add($qreq, $email, 0, 1, true);
+        UserSecurityEvent::session_user_add($qreq, $email);
+        UserSecurityEvent::make($email)
+            ->set_reason(UserSecurityEvent::REASON_REAUTH)
+            ->store($qreq);
         $u = $u->activate($qreq, true);
         $qreq->set_user($u);
         return [$u, $qreq];
@@ -42,14 +44,25 @@ class UserStatus_Tester {
         xassert($us->user->check_password($newpw));
     }
 
+    static function reauth_query($qreq, $email, $bound) {
+        $x = false;
+        foreach (UserSecurityEvent::session_list_by_email($qreq, $email) as $use) {
+            if ($use->type === UserSecurityEvent::TYPE_PASSWORD
+                && $use->reason === UserSecurityEvent::REASON_REAUTH
+                && $use->timestamp >= $bound)
+                $x = $use->success;
+        }
+        return $x;
+    }
+
     function test_edit_own_password_fail_no_recent_auth() {
         list($u, $qreq) = $this->make_qreq_for("estrin@usc.edu", [
             "upassword" => "maksdf", "upassword2" => "maksdf"
         ]);
         xassert_eqq($u->email, "estrin@usc.edu");
         $qreq->qsession()->set("usec", [["a" => Conf::$now - 40000, "r" => 1]]);
-        xassert(UpdateSession::usec_query($qreq, "estrin@usc.edu", 0, 1, Conf::$now - 50000));
-        xassert(!UpdateSession::usec_query($qreq, "estrin@usc.edu", 0, 1, Conf::$now - 20000));
+        xassert(self::reauth_query($qreq, "estrin@usc.edu", Conf::$now - 50000));
+        xassert(!self::reauth_query($qreq, "estrin@usc.edu", Conf::$now - 20000));
 
         $us = (new UserStatus($u))->set_qreq($qreq);
         $us->start_update()->set_user($u);

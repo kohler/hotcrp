@@ -539,6 +539,7 @@ src/updatesession.php
 src/useractions.php
 src/userinfo/u_developer.php
 src/userinfo/u_security.php
+src/usersecurityevent.php
 src/userstatus.php
 src/viewcommand.php
 src/viewoptionlist.php

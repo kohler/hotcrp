@@ -64,8 +64,8 @@ class ChangeEmail_Page {
                 Contact::set_main_user($chuser->activate($qreq, false));
             }
             if (Contact::session_index_by_email($qreq, $capcontent->oldemail) >= 0) {
-                UpdateSession::user_change($qreq, $capcontent->oldemail, false);
-                UpdateSession::user_change($qreq, $newemail, true);
+                UserSecurityEvent::session_user_add($qreq, $newemail);
+                UserSecurityEvent::session_user_remove($qreq, $capcontent->oldemail);
             }
             $conf->redirect_hoturl("profile");
         } else {

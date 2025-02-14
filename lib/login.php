@@ -148,8 +148,10 @@ class LoginHelper {
 
         // store authentication
         $qreq->qsession()->open_new_sid();
-        UpdateSession::user_change($qreq, $xuser->email, true);
-        UpdateSession::usec_add_list($qreq, $xuser->email, $info["usec"] ?? [], 0);
+        UserSecurityEvent::session_user_add($qreq, $xuser->email);
+        foreach ($info["usec"] ?? [] as $use) {
+            $use->set_email($xuser->email)->store($qreq);
+        }
 
         // activate
         $user = $xuser->activate($qreq, false);

@@ -721,6 +721,9 @@ class Contact implements JsonSerializable {
      * @param string $email
      * @return int */
     static function session_index_by_email($qreq, $email) {
+        if (!$email) {
+            return -1;
+        }
         foreach (self::session_users($qreq) as $i => $u) {
             if (strcasecmp($u, $email) === 0) {
                 return $i;
@@ -2558,7 +2561,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @param string $input
-     * @return array{ok:true,user:$this}|array{ok:false} */
+     * @return array{ok:true,user:$this,usec:list<UserSecurityEvent>}|array{ok:false,usec?:list<UserSecurityEvent>} */
     function check_password_info($input) {
         assert(!$this->conf->external_login());
         assert($this->_slice === 0);
@@ -2607,7 +2610,8 @@ class Contact implements JsonSerializable {
         // deny if no match
         if (!$cdb_ok && !$local_ok) {
             $x = [
-                "ok" => false, "invalid" => true, "usec" => [[0, false]],
+                "ok" => false, "invalid" => true,
+                "usec" => [UserSecurityEvent::make($this->email)->set_success(false)],
                 "can_reset" => $this->can_reset_password()
             ];
             // report information about passwords
@@ -2688,7 +2692,10 @@ class Contact implements JsonSerializable {
             }
         }
 
-        return ["ok" => true, "user" => $this, "usec" => [[0, true]]];
+        return [
+            "ok" => true, "user" => $this,
+            "usec" => [UserSecurityEvent::make($this->email)]
+        ];
     }
 
     /** @param string $input

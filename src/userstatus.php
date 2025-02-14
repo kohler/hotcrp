@@ -196,7 +196,9 @@ class UserStatus extends MessageSet {
         $pw = trim($this->qreq["reauth:password"]);
         $info = $this->viewer->check_password_info($pw);
         if ($info["ok"]) {
-            UpdateSession::usec_add_list($this->qreq, $this->viewer->email, $info["usec"] ?? [], 1);
+            foreach ($info["usec"] ?? [] as $use) {
+                $use->set_reason(UserSecurityEvent::REASON_REAUTH)->store($this->qreq);
+            }
         } else {
             $info["field"] = "reauth:password";
             LoginHelper::login_error($this->conf, $this->viewer->email, $info, $this);
@@ -281,9 +283,17 @@ class UserStatus extends MessageSet {
         if ($this->_reauth_status !== null) {
             return $this->_reauth_status;
         }
-        $this->_reauth_status = $this->viewer->is_root_user()
-            || (!$this->viewer->is_empty()
-                && UpdateSession::usec_query($this->qreq, $this->viewer->email, 0, 1, Conf::$now - 600));
+        $this->_reauth_status = false;
+        if ($this->viewer->is_root_user()) {
+            $this->_reauth_status = true;
+        } else if (!$this->viewer->is_empty()) {
+            foreach (UserSecurityEvent::session_list_by_email($this->qreq, $this->viewer->email) as $use) {
+                if ($use->reason === UserSecurityEvent::REASON_REAUTH
+                    && $use->timestamp >= Conf::$now - 600) {
+                    $this->_reauth_status = $use->success;
+                }
+            }
+        }
         return $this->_reauth_status;
     }
 
