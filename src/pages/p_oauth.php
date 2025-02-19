@@ -59,7 +59,8 @@ class OAuthProvider {
         $instance->client_secret = $authdata->client_secret ?? null;
         $instance->auth_uri = $authdata->auth_uri ?? null;
         $instance->token_uri = $authdata->token_uri ?? null;
-        $instance->redirect_uri = $authdata->redirect_uri ?? $conf->hoturl("oauth", null, Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
+        $instance->redirect_uri = $authdata->redirect_uri
+            ?? $conf->hoturl("oauth", null, Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
         $instance->token_function = $authdata->token_function ?? null;
         $instance->require = $authdata->require ?? null;
         $instance->group_mappings = $authdata->group_mappings ?? null;
@@ -104,6 +105,9 @@ class OAuth_Page {
                 return MessageItem::error("<0>OAuth authentication is not supported on this site");
             }
         }
+        $reauth = friendly_boolean($this->qreq->reauth)
+            && $this->viewer->has_email();
+
         $tok = new TokenInfo($this->conf, TokenInfo::OAUTHSIGNIN);
         $tok->set_contactdb(!!$this->conf->contactdb())
             ->set_expires_after(60)
@@ -112,7 +116,8 @@ class OAuth_Page {
         $tok->assign_data([
             "authtype" => $authi->name,
             "session" => $this->qreq->qsid(),
-            "quiet" => $this->qreq->quiet,
+            "quiet" => friendly_boolean($this->qreq->quiet),
+            "reauth" => $reauth ? $this->viewer->email : null,
             "redirect" => $this->qreq->redirect,
             "site_uri" => $this->conf->opt("paperSite"),
             "nonce" => $nonce
@@ -120,13 +125,21 @@ class OAuth_Page {
         if (!$tok->stored()) {
             return MessageItem::error("<0>Authentication attempt failed");
         }
+        $this->qreq->set_cookie_opt("oauth-{$nonce}", "1", [
+            "expires" => Conf::$now + 600, "path" => "/", "httponly" => true
+        ]);
         $params = "client_id=" . urlencode($authi->client_id)
             . "&response_type=code"
             . "&scope=" . rawurlencode($authi->scope ?? "openid email profile")
             . "&redirect_uri=" . rawurlencode($authi->redirect_uri)
             . "&state=" . $tok->salt
             . "&nonce=" . $nonce;
-        $this->qreq->set_cookie_opt("oauth-{$nonce}", "1", ["expires" => Conf::$now + 600, "path" => "/", "httponly" => true]);
+        if ($reauth) {
+            $params .= "&login_hint=" . rawurlencode($this->viewer->email);
+        }
+        if (ctype_digit($this->qreq->max_age ?? "")) {
+            $params .= "&max_age=" . $this->qreq->max_age;
+        }
         throw new Redirection(hoturl_add_raw($authi->auth_uri, $params));
     }
 
@@ -147,7 +160,7 @@ class OAuth_Page {
         } else if ($tok->timeUsed) {
             return MessageItem::error("<0>Authentication request reused");
         } else if ($tok->capabilityType !== TokenInfo::OAUTHSIGNIN
-                   || !($tokdata = json_decode($tok->data ?? "0"))) {
+                   || !($tokdata = json_decode($tok->data ?? "null"))) {
             return MessageItem::error("<0>Invalid authentication request ‘{$state}’, internal error");
         }
 
@@ -219,24 +232,75 @@ class OAuth_Page {
 
         if (isset($authi->token_function)
             && Conf::xt_resolve_require($authi)
-            && ($m = call_user_func($authi->token_function, $this, $authi, $response, $jid))) {
-            return $m;
+            && ($ml = call_user_func($authi->token_function, $this, $authi, $response, $jid))) {
+            return $ml;
         }
 
+        // check returned email
         if (!isset($jid->email) || !is_string($jid->email)) {
             return [
                 MessageItem::error("<0>The {$authtitle} authenticator didn’t provide your email"),
                 MessageItem::inform("<0>HotCRP requires your email to sign you in.")
             ];
-        } else if (isset($jid->email_verified)
-                   && $jid->email_verified === false) {
+        }
+        if (($jid->email_verified ?? null) === false) {
             return [
                 MessageItem::error("<0>The {$authtitle} authenticator hasn’t verified your email"),
                 MessageItem::inform("<0>HotCRP requires a verified email to sign you in.")
             ];
         }
 
-        // log user in
+        // handle reauthentication requests
+        if (isset($tokdata->reauth)) {
+            $ml = $this->instance_reauth($authi, $tok, $tokdata, $jid);
+        } else {
+            $ml = $this->instance_signin($authi, $tok, $tokdata, $jid);
+        }
+        if ($ml) {
+            return $ml;
+        }
+
+        $uri = $this->site_uri;
+        if (count(Contact::session_users($this->qreq)) > 1
+            && ($uindex = Contact::session_user_index($this->qreq, $jid->email)) >= 0) {
+            $uri .= "u/{$uindex}/";
+        }
+        if ($tokdata->redirect) {
+            $rnav = NavigationState::make_base($uri);
+            $uri = $rnav->resolve_within($tokdata->redirect) ?? $uri;
+        }
+        throw new Redirection($uri);
+    }
+
+    /** @param OAuthProvider $authi
+     * @param TokenInfo $tok
+     * @param object $tokdata
+     * @param object $jid
+     * @return null|MessageItem|list<MessageItem> */
+    private function instance_reauth($authi, $tok, $tokdata, $jid) {
+        $use = UserSecurityEvent::make($tokdata->reauth, UserSecurityEvent::TYPE_OAUTH)
+            ->set_subtype($authi->name)
+            ->set_reason(UserSecurityEvent::REASON_REAUTH);
+        if (strcasecmp($tokdata->reauth, $jid->email) !== 0) {
+            $use->set_success(false)->store($this->qreq);
+            return [
+                MessageItem::error("<0>The {$authtitle} authenticator verified the wrong email"),
+                MessageItem::inform("<0>You must provide reauthentication for {$tokdata->reauth}.")
+            ];
+        }
+        if (!$tokdata->quiet) {
+            $this->conf->feedback_msg(MessageItem::success("<0>Reauthentication succeeded"));
+        }
+        $use->store($this->qreq);
+        return null;
+    }
+
+    /** @param OAuthProvider $authi
+     * @param TokenInfo $tok
+     * @param object $tokdata
+     * @param object $jid
+     * @return null|MessageItem|list<MessageItem> */
+    private function instance_signin($authi, $tok, $tokdata, $jid) {
         $reg = ["email" => $jid->email];
         if (isset($jid->given_name) && is_string($jid->given_name)) {
             $reg["firstName"] = $jid->given_name;
@@ -253,6 +317,7 @@ class OAuth_Page {
         if (isset($jid->affiliation) && is_string($jid->affiliation)) {
             $reg["affiliation"] = $jid->affiliation;
         }
+
         $info = LoginHelper::check_external_login(Contact::make_keyed($this->conf, $reg));
         if (!$info["ok"]) {
             LoginHelper::login_error($this->conf, $jid->email, $info, null);
@@ -277,23 +342,15 @@ class OAuth_Page {
             }
             $user->save_roles($user_roles, $user);
         }
+
         if (!$tokdata->quiet) {
             $this->conf->feedback_msg(MessageItem::success("<0>Signed in"));
         }
-        $uindex = UserSecurityEvent::session_user_add($this->qreq, $user->email);
+        UserSecurityEvent::session_user_add($this->qreq, $user->email);
         UserSecurityEvent::make($user->email, UserSecurityEvent::TYPE_OAUTH)
             ->set_subtype($authi->name)
             ->store($this->qreq);
-
-        $uri = $this->site_uri;
-        if (count(Contact::session_users($this->qreq)) > 1) {
-            $uri .= "u/{$uindex}/";
-        }
-        if ($tokdata->redirect) {
-            $rnav = NavigationState::make_base($uri);
-            $uri = $rnav->resolve_within($tokdata->redirect) ?? $uri;
-        }
-        throw new Redirection($uri);
+        return null;
     }
 
     static function go(Contact $user, Qrequest $qreq) {
