@@ -12,4 +12,7 @@
 /logs
 /node_modules
 /package-lock.json
+/test/oauth/vendor
+/test/oauth/auths.json
+/test/oauth/composer.lock
 /vendor

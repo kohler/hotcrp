@@ -1,6 +1,6 @@
 <?php
 // pages/p_signin.php -- HotCRP password reset partials
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Signin_Page {
     /** @var ?string */
@@ -260,7 +260,14 @@ class Signin_Page {
             return;
         }
         $buttons = [];
-        $param = array_merge(["authtype" => null, "post" => $qreq->maybe_post_value()], $this->_oauth_hoturl_param ?? ["redirect" => $qreq->redirect]);
+        $param = ["authtype" => null, "post" => $qreq->maybe_post_value()];
+        if ($this->_oauth_hoturl_param) {
+            $param += $this->_oauth_hoturl_param;
+        } else {
+            $nav = $qreq->navigation();
+            $param["success_redirect"] = $qreq->redirect;
+            $param["failure_redirect"] = $conf->selfurl($qreq, ["signedout" => null], Conf::HOTURL_SITEREL);
+        }
         $top = "";
         foreach ($conf->oauth_providers() as $authdata) {
             if ($authdata->button_html && !($authdata->disabled ?? false)) {

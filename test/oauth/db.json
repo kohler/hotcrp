@@ -1,0 +1,26 @@
+{
+	"clients": [
+		{
+			"client_id": "hotcrp-oauth-test",
+			"client_secret": "Dudfield",
+			"name": "HotCRP OAuth Test",
+			"redirect_uri": "http://localhost:8080/testconf/oauth"
+		}
+	],
+	"users": [
+		{
+			"email": "fran@hotcrp-oauth.org",
+			"email_verified": true,
+			"given_name": "Fran",
+			"family_name": "Framer",
+			"name": "Fran Framer"
+		},
+		{
+			"email": "paula@hotcrp-oauth.org",
+			"email_verified": true,
+			"given_name": "Paula",
+			"family_name": "Books",
+			"name": "Paula Books"
+		}
+	]
+}

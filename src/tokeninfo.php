@@ -1,6 +1,6 @@
 <?php
 // tokeninfo.php -- HotCRP token management
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class TokenInfo {
     /** @var Conf
@@ -434,6 +434,12 @@ class TokenInfo {
     final function data($key = null) {
         $this->_jdata = $this->_jdata ?? json_decode_object($this->data);
         return $key ? $this->_jdata->$key ?? null : $this->_jdata;
+    }
+
+    /** @param string $key
+     * @return bool */
+    final function has_data($key) {
+        return $this->data($key) !== null;
     }
 
     final function load_data() {

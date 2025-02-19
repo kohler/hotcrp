@@ -1,0 +1,15 @@
+{
+    "name": "kohler/hotcrp-oauth",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Eddie Kohler",
+            "email": "ekohler@gmail.com"
+        }
+    ],
+    "require": {
+        "league/oauth2-server": "^8.3",
+        "nyholm/psr7-server": "^1.0",
+        "nyholm/psr7": "^1.4"
+    }
+}
