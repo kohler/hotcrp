@@ -32,7 +32,6 @@ class Ht {
         "data-default-checked" => self::ATTR_BOOLTEXT,
         "defer" => self::ATTR_BOOL,
         "disabled" => self::ATTR_BOOL,
-        "enctype" => self::ATTR_SKIP,
         "formnovalidate" => self::ATTR_BOOL,
         "hidden" > self::ATTR_BOOL,
         "method" => self::ATTR_SKIP,
@@ -163,12 +162,8 @@ class Ht {
         if ($action !== "") {
             $x .= " action=\"{$action}\"";
         }
-        $enctype = $extra["enctype"] ?? null;
-        if (!$enctype && $method !== "get") {
-            $enctype = "multipart/form-data";
-        }
-        if ($enctype) {
-            $x .= " enctype=\"{$enctype}\"";
+        if (!isset($extra["enctype"]) && $method !== "get") {
+            $extra["enctype"] = "multipart/form-data";
         }
         return $x . ' accept-charset="UTF-8"' . self::extra($extra) . $suffix;
     }
