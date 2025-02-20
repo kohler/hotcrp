@@ -331,9 +331,9 @@ class LoginHelper {
         } else if (isset($info["noreset"])) {
             $e = "<0>Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.";
         } else if (isset($info["nologin"])) {
-            $e = "<0>User {$email} is not allowed to sign in to this site";
+            $e = "<0>User {email} is not allowed to sign in to this site";
         } else if (isset($info["noaccount"])) {
-            $e = "<0>User {$email} does not have an account here";
+            $e = "<0>Account {email} not found";
             $problem = "no_account";
             if (!$conf->login_type()
                 && $conf->allow_user_self_register()
@@ -341,15 +341,15 @@ class LoginHelper {
                 $args[] = new FmtArg("newaccount", $conf->hoturl_raw("newaccount", ["email" => $email]));
             }
         } else if (isset($info["unset"])) {
-            $e = "<0>User {$email} has not set a password yet";
+            $e = "<0>User {email} has not set a password";
             $problem = "no_password";
         } else if (isset($info["userexists"])) {
-            $e = "<0>User {$email} already has an account on this site";
+            $e = "<0>Account {email} already exists";
             $problem = "account_exists";
         } else if (isset($info["disabled"])) {
             $e = $conf->_i("account_disabled");
         } else if (isset($info["reset"])) {
-            $e = "<0>Your password has expired";
+            $e = "<0>Password expired";
             $problem = "password_expired";
         } else if (isset($info["nopw"])) {
             $e = "<0>Enter your password";
@@ -378,7 +378,7 @@ class LoginHelper {
             $args[] = new FmtArg("allow_redirect", true);
         }
 
-        $msg = $conf->_i("signin_error", new FmtArg("message", $e), ...$args);
+        $msg = $conf->_($e, ...$args);
 
         if (($info["allow_redirect"] ?? false)
             && $problem !== "bad_password"

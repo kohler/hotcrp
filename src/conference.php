@@ -5396,7 +5396,8 @@ class Conf {
 
     /** @param string $context
      * @param string $id
-     * @return ?string */
+     * @return ?string
+     * @deprecated */
     function _ci($context, $id, ...$args) {
         return $this->fmt()->_ci($context, $id, ...$args);
     }
