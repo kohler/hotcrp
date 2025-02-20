@@ -241,7 +241,7 @@ class Users_Page {
                 $ms->success($this->conf->_("<0>Sent account information mail to {:list}", $j->mailed_users));
             }
             if ($j->skipped_users ?? false) {
-                $ms->msg_at(null, $this->conf->_("<0>Skipped disabled accounts {:list}", $j->skipped_users), MessageSet::WARNING_NOTE);
+                $ms->append_item(MessageItem::warning_note($this->conf->_("<0>Skipped disabled accounts {:list}", $j->skipped_users)));
             }
         } else {
             return false;
@@ -280,7 +280,7 @@ class Users_Page {
             $this->conf->feedback_msg($ms);
             return false;
         } else if (empty($t1)) {
-            $ms->msg_at(null, "No changes", MessageSet::WARNING_NOTE);
+            $ms->append_item(MessageItem::warning_note("<0>No changes"));
             $this->conf->feedback_msg($ms);
             return false;
         }

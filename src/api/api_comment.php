@@ -1,6 +1,6 @@
 <?php
 // api_comment.php -- HotCRP comment API call
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class Comment_API {
     /** @var Conf */
@@ -182,10 +182,10 @@ class Comment_API {
             $this->ms->success($this->conf->_("<5>Notified mentioned users {:nblist}", $mentions));
         }
         if ($mentions_missing) {
-            $this->ms->msg_at(null, $this->conf->_("<0>Some mentioned users cannot currently see this comment, so they were not notified."), MessageSet::WARNING_NOTE);
+            $this->ms->append_item(MessageItem::warning_note($this->conf->_("<0>Some mentioned users cannot currently see this comment, so they were not notified.")));
         }
         if ($mentions_censored) {
-            $this->ms->msg_at(null, $this->conf->_("<0>Some notifications were censored to anonymize mentioned users."), MessageSet::WARNING_NOTE);
+            $this->ms->append_item(MessageItem::warning_note($this->conf->_("<0>Some notifications were censored to anonymize mentioned users.")));
         }
         return $xcrow;
     }

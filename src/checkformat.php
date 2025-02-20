@@ -1,6 +1,6 @@
 <?php
 // checkformat.php -- HotCRP/banal integration
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class CheckFormat extends MessageSet {
     const RUN_ALWAYS = 0;
@@ -449,7 +449,7 @@ class Default_FormatChecker implements FormatChecker {
             && ($bj->msx[0] ?? null) === $spec->timestamp) {
             for ($i = 1; $i !== count($bj->msx); ++$i) {
                 $mx = $bj->msx[$i];
-                $mi = $cf->msg_at($mx[0], $mx[1], $mx[2]);
+                $mi = $cf->append_item(new MessageItem($mx[2], $mx[0], $mx[1]));
                 if (isset($mx[3])) {
                     $mi->landmark = $mx[3];
                 }
@@ -559,7 +559,7 @@ class Default_FormatChecker implements FormatChecker {
             }
             if ($p < $pages
                 && ($bj->pages[$p]->fs ?? $last_fs) > $last_fs) {
-                $cf->msg_at("pagelimit", "<5>It looks like this PDF might use normal section numbers for its appendixes. Appendix sections should use letters, like ‘A’ and ‘B’. If using LaTeX, start the appendixes with the <code>\appendix</code> command.", MessageSet::INFORM);
+                $cf->inform_at("pagelimit", "<5>It looks like this PDF might use normal section numbers for its appendixes. Appendix sections should use letters, like ‘A’ and ‘B’. If using LaTeX, start the appendixes with the <code>\appendix</code> command.");
             }
         }
     }
@@ -722,7 +722,7 @@ class Default_FormatChecker implements FormatChecker {
         }));
         if ($nd0_pages == $this->npages) {
             $cf->problem_at("notext", "<0>This document appears to contain no text", 2);
-            $cf->msg_at("notext", "<0>The PDF software has rendered pages as images. PDFs like this are less efficient to transfer and harder to search.", MessageSet::INFORM);
+            $cf->inform_at("notext", "<0>The PDF software has rendered pages as images. PDFs like this are less efficient to transfer and harder to search.");
         }
     }
 

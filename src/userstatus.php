@@ -944,13 +944,13 @@ class UserStatus extends MessageSet {
         if ($user->is_pc_member()) {
             if ($user->collaborators() === "") {
                 $us->warning_at("collaborators", "<0>Please enter your recent collaborators and other affiliations");
-                $us->msg_at("collaborators", "<0>This information can help detect conflicts of interest. Enter “None” if you have none.", MessageSet::INFORM);
+                $us->inform_at("collaborators", "<0>This information can help detect conflicts of interest. Enter “None” if you have none.");
             }
             if ($us->conf->has_topics()
                 && !$user->topic_interest_map()
                 && !$us->conf->opt("allowNoTopicInterests")) {
                 $us->warning_at("topics", "<0>Please enter your topic interests");
-                $us->msg_at("topics", "<0>We use topic interests to improve the paper assignment process.", MessageSet::INFORM);
+                $us->inform_at("topics", "<0>We use topic interests to improve the paper assignment process.");
             }
         }
     }

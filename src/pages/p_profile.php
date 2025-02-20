@@ -173,7 +173,7 @@ class Profile_Page {
                     $ustatus->jval->id = $new_acct->contactId;
                 } else {
                     $ustatus->error_at("email", "<0>Email address ‘{$uemail}’ is already in use");
-                    $ustatus->msg_at("email", "<5>You may want to <a href=\"" . $this->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.", MessageSet::INFORM);
+                    $ustatus->inform_at("email", "<5>You may want to <a href=\"" . $this->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.");
                     return null;
                 }
             } else if ($this->conf->external_login()) {
@@ -210,7 +210,7 @@ class Profile_Page {
                 }
                 if ($prep->can_send()) {
                     $prep->send();
-                    $ustatus->msg_at("email_confirm", "<0>Confirmation email sent to {$uemail}", MessageSet::MARKED_NOTE);
+                    $ustatus->append_item(MessageItem::marked_note_at("email_confirm", "<0>Confirmation email sent to {$uemail}"));
                     $ustatus->inform_at("email_confirm", "<0>Follow the instructions in the confirmation email to complete the process of changing your email address.");
                 } else {
                     $ustatus->error_at("email", "<0>Email change not saved: confirmation email cannot be sent to {$uemail} at the moment");

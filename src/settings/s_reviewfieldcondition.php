@@ -49,11 +49,11 @@ class ReviewFieldCondition_SettingParser extends SettingParser {
         $ps = new PaperSearch($sv->conf->root_user(), $q);
         foreach ($ps->message_list() as $mi) {
             $sv->append_item_at("{$pfx}/condition", $mi);
-            $sv->msg_at("{$pfx}/presence", "", $mi->status);
+            $sv->append_item_at("{$pfx}/presence", new MessageItem($mi->status));
         }
         if (!self::check_condition($ps)) {
-            $sv->msg_at("{$pfx}/presence", "", $status);
-            $sv->msg_at("{$pfx}/condition", "<0>Invalid search in field condition", $status);
+            $sv->append_item_at("{$pfx}/presence", new MessageItem($status));
+            $sv->append_item_at("{$pfx}/condition", new MessageItem($status, null, "<0>Invalid search in field condition"));
             $sv->inform_at("{$pfx}/condition", "<0>Field conditions are limited to simple search keywords about reviews.");
         }
         return $q;

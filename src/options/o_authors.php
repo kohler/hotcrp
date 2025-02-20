@@ -1,6 +1,6 @@
 <?php
 // o_authors.php -- HotCRP helper class for authors intrinsic
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Authors_PaperOption extends PaperOption {
     /** @var int */
@@ -42,7 +42,7 @@ class Authors_PaperOption extends PaperOption {
         if ($nreal === 0) {
             if (!$ov->prow->allow_absent()) {
                 $ov->estop($this->conf->_("<0>Entry required"));
-                $ov->msg_at("authors:1", null, MessageSet::ERROR);
+                $ov->append_item(MessageItem::error_at("authors:1"));
             }
             return;
         }
@@ -69,36 +69,36 @@ class Authors_PaperOption extends PaperOption {
                 && $auth->email === ""
                 && $auth->affiliation !== "") {
                 $msg_missing = true;
-                $ov->msg_at("authors:{$n}", null, MessageSet::WARNING);
+                $ov->append_item(MessageItem::warning_at("authors:{$n}"));
                 continue;
             }
             if (strpos($auth->email, "@") === false
                 && strpos($auth->affiliation, "@") !== false) {
                 $msg_bademail = true;
-                $ov->msg_at("authors:{$n}", null, MessageSet::WARNING);
+                $ov->append_item(MessageItem::warning_at("authors:{$n}"));
             }
             if ($auth->email !== ""
                 && !validate_email($auth->email)
                 && !$ov->prow->author_by_email($auth->email)) {
                 $ov->estop(null);
-                $ov->msg_at("authors:{$n}", "<0>Invalid email address ‘{$auth->email}’", MessageSet::ESTOP);
+                $ov->append_item(MessageItem::estop_at("authors:{$n}", "<0>Invalid email address ‘{$auth->email}’"));
                 continue;
             }
             if ($req_orcid > 0) {
                 if ($auth->email === "") {
                     $msg_missing = true;
-                    $ov->msg_at("authors:{$n}:email", null, MessageSet::WARNING);
+                    $ov->append_item(MessageItem::warning_at("authors:{$n}:email"));
                 } else if (!($u = $this->conf->user_by_email($auth->email))
                            || !$u->confirmed_orcid()) {
                     $msg_orcid[] = $auth->email;
-                    $ov->msg_at("authors:{$n}", null, MessageSet::WARNING);
+                    $ov->append_item(MessageItem::warning_at("authors:{$n}"));
                 }
             }
             if ($auth->email !== ""
                 && ($n2 = array_search(strtolower($auth->email), $lemails)) !== $n - 1) {
                 $msg_dupemail = true;
-                $ov->msg_at("authors:{$n}:email", null, MessageSet::WARNING);
-                $ov->msg_at("authors:" . ($n2 + 1) . ":email", null, MessageSet::WARNING);
+                $ov->append_item(MessageItem::warning_at("authors:{$n}:email"));
+                $ov->append_item(MessageItem::warning_at("authors:" . ($n2 + 1) . ":email"));
             }
         }
 
@@ -117,7 +117,7 @@ class Authors_PaperOption extends PaperOption {
         }
         if ($msg_orcid) {
             $ov->warning($this->conf->_("<5>Some authors have not configured their <a href=\"https://orcid.org\">ORCID iDs</a>"));
-            $ov->msg($this->conf->_("<0>This site requests that authors provide ORCID iDs. Please ask {0:list} to sign in and update their profiles.", new FmtArg(0, $msg_orcid, 0)), MessageSet::INFORM);
+            $ov->inform($this->conf->_("<0>This site requests that authors provide ORCID iDs. Please ask {0:list} to sign in and update their profiles.", new FmtArg(0, $msg_orcid, 0)));
         }
     }
 

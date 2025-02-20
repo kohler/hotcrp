@@ -215,28 +215,43 @@ class PaperValue implements JsonSerializable {
         }
         return $this->_ms;
     }
+    /** @param MessageItem $mi
+     * @return MessageItem */
+    function append_item($mi) {
+        return $this->message_set()->append_item($mi);
+    }
     /** @param string $field
      * @param ?string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status */
+     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
+     * @deprecated */
     function msg_at($field, $msg, $status) {
-        $this->message_set()->msg_at($field, $msg, $status);
+        return $this->append_item(new MessageItem($status, $field, $msg));
     }
     /** @param ?string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status */
+     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
+     * @deprecated */
     function msg($msg, $status) {
-        $this->message_set()->msg_at($this->option->field_key(), $msg, $status);
+        return $this->append_item(new MessageItem($status, $this->option->field_key(), $msg));
     }
-    /** @param ?string $msg */
+    /** @param ?string $msg
+     * @return MessageItem */
     function estop($msg) {
-        $this->msg($msg, MessageSet::ESTOP);
+        return $this->append_item(MessageItem::estop_at($this->option->field_key(), $msg));
     }
-    /** @param ?string $msg */
+    /** @param ?string $msg
+     * @return MessageItem */
     function error($msg) {
-        $this->msg($msg, MessageSet::ERROR);
+        return $this->append_item(MessageItem::error_at($this->option->field_key(), $msg));
     }
-    /** @param ?string $msg */
+    /** @param ?string $msg
+     * @return MessageItem */
     function warning($msg) {
-        $this->msg($msg, MessageSet::WARNING);
+        return $this->append_item(MessageItem::warning_at($this->option->field_key(), $msg));
+    }
+    /** @param ?string $msg
+     * @return MessageItem */
+    function inform($msg) {
+        return $this->append_item(MessageItem::inform_at($this->option->field_key(), $msg));
     }
     /** @return int */
     function problem_status() {

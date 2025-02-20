@@ -1,6 +1,6 @@
 <?php
 // savepapers.php -- HotCRP command-line paper modification script
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
@@ -267,10 +267,10 @@ class SavePapers_Batch {
             $prow = $this->conf->paper_by_id($pid, $this->user);
             foreach ($j->reviews as $reviewindex => $reviewj) {
                 if (!$this->tf->parse_json($reviewj)) {
-                    $this->tf->msg_at(null, "<0>review #" . ($reviewindex + 1) . ": invalid review", MessageSet::ERROR);
+                    $this->tf->error_at(null, "<0>review #" . ($reviewindex + 1) . ": invalid review");
                 } else if (!isset($this->tf->req["reviewerEmail"])
                            || !validate_email($this->tf->req["reviewerEmail"])) {
-                    $this->tf->msg_at(null, "<0>review #" . ($reviewindex + 1) . ": invalid reviewer email " . ($this->tf->req["reviewerEmail"] ?? "<missing>"), MessageSet::ERROR);
+                    $this->tf->error_at(null, "<0>review #" . ($reviewindex + 1) . ": invalid reviewer email " . ($this->tf->req["reviewerEmail"] ?? "<missing>"));
                 } else {
                     $this->tf->set_req_override(true);
                     $user = Contact::make_keyed($this->conf, [

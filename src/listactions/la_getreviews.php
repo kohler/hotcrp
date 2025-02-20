@@ -1,6 +1,6 @@
 <?php
 // listactions/la_getreviews.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class GetReviews_ListAction extends GetReviewBase_ListAction {
     /** @var bool */
@@ -70,7 +70,7 @@ class GetReviews_ListAction extends GetReviewBase_ListAction {
                     $ms->append_item($mi);
                 }
             } else {
-                $ms->msg_at(null, "<0>{$prow->paperId} has no visible reviews", MessageSet::WARNING_NOTE);
+                $ms->append_item(MessageItem::warning_note("<0>#{$prow->paperId} has no visible reviews"));
             }
             $viewer->set_overrides($old_viewer_overrides);
         }

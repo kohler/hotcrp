@@ -34,7 +34,9 @@ class ReviewVisibility_SettingParser extends SettingParser {
         $srch = new PaperSearch($sv->conf->root_user(), $q);
         foreach ($srch->message_list() as $mi) {
             $sv->append_item_at($name, $mi);
-            $parent_setting && $sv->msg_at($parent_setting, "", $mi->status);
+            if ($parent_setting) {
+                $sv->append_item_at($parent_setting, new MessageItem($mi->status));
+            }
         }
         foreach ($srch->main_term()->preorder() as $qe) {
             if ($qe instanceof Tag_SearchTerm) {
@@ -43,7 +45,9 @@ class ReviewVisibility_SettingParser extends SettingParser {
                         && !$sv->conf->tags()->is_readonly($tag)) {
                         $sv->warning_at($name, "<5>PC members can change the tag ‘" . htmlspecialchars($tag) . "’. Tags referenced in visibility conditions should usually be " . $sv->setting_link("read-only", "tag_readonly") . ".");
                         $sv->warning_at("tag_readonly");
-                        $parent_setting && $sv->msg_at($parent_setting, "", 1);
+                        if ($parent_setting) {
+                            $sv->append_item_at($parent_setting, new MessageItem(1));
+                        }
                     }
                 }
             }

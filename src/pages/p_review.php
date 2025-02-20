@@ -1,6 +1,6 @@
 <?php
 // pages/p_review.php -- HotCRP paper review display/edit page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Review_Page {
     /** @var Conf */
@@ -146,12 +146,12 @@ class Review_Page {
             $rv->clear_req();
         }
         if (!$match && !$other) {
-            $rv->msg_at(null, "<0>Uploaded file had no valid review forms", MessageSet::ERROR);
+            $rv->error_at(null, "<0>Uploaded file had no valid review forms");
         } else if (!$match) {
-            $rv->msg_at(null, "<0>Uploaded form was not for this {submission}", MessageSet::ERROR);
+            $rv->error_at(null, "<0>Uploaded form was not for this {submission}");
         } else if ($other) {
-            $rv->msg_at(null, "<0>Reviews for other {submissions} ignored", MessageSet::WARNING);
-            $rv->msg_at(null, "<5>Upload multiple-review files " . Ht::link("here", $this->conf->hoturl("offline")) . ".", MessageSet::INFORM);
+            $rv->warning_at(null, "<0>Reviews for other {submissions} ignored");
+            $rv->inform_at(null, "<5>Upload multiple-review files " . Ht::link("here", $this->conf->hoturl("offline")) . ".");
         }
         $rv->report();
         if (!$rv->has_error()) {

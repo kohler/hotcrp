@@ -1,6 +1,6 @@
 <?php
 // formulagraph.php -- HotCRP class for drawing graphs
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Scatter_GraphData implements JsonSerializable {
     /** @var int|float|bool */
@@ -415,7 +415,7 @@ class FormulaGraph extends MessageSet {
                 $this->fy->check($this->user);
             } else if (!$this->fy->support_combiner()) {
                 $this->error_at("fy", "<0>Y axis formula cannot be used for this chart");
-                $this->msg_at("fy", "<0>Try an aggregate function like ‘sum({$fy})’.", MessageSet::INFORM);
+                $this->inform_at("fy", "<0>Try an aggregate function like ‘sum({$fy})’.");
                 $this->fy = new Formula("sum(0)", Formula::ALLOW_INDEXED);
                 $this->fy->check($this->user);
             }

@@ -1,6 +1,6 @@
 <?php
 // reviewvalues.php -- HotCRP parsed review data
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ReviewValues extends MessageSet {
     /** @var Conf
@@ -164,8 +164,17 @@ class ReviewValues extends MessageSet {
     /** @param int|string $field
      * @param string $msg
      * @param int $status
-     * @return MessageItem */
+     * @return MessageItem
+     * @deprecated */
     function rmsg($field, $msg, $status) {
+        return $this->rvmsg($status, $field, $msg);
+    }
+
+    /** @param int $status
+     * @param int|string $field
+     * @param string $msg
+     * @return MessageItem */
+    function rvmsg($status, $field, $msg) {
         if (is_int($field)) {
             $lineno = $field;
             $field = null;
@@ -174,7 +183,7 @@ class ReviewValues extends MessageSet {
         } else {
             $lineno = $this->lineno;
         }
-        $mi = $this->msg_at($field, $msg, $status);
+        $mi = $this->append_item(new MessageItem($status, $field, $msg));
         if ($this->filename) {
             $mi->landmark = "{$this->filename}:{$lineno}";
             if (($pid = $this->req_pid()) > 0) {
@@ -186,7 +195,7 @@ class ReviewValues extends MessageSet {
 
     private function check_garbage() {
         if ($this->garbage_lineno) {
-            $this->rmsg($this->garbage_lineno, "<0>Review form appears to begin with garbage; ignoring it.", self::WARNING);
+            $this->rvmsg(self::WARNING, $this->garbage_lineno, "<0>Review form appears to begin with garbage; ignoring it.");
         }
         $this->garbage_lineno = null;
     }
@@ -224,8 +233,8 @@ class ReviewValues extends MessageSet {
                 if (preg_match('/\A==\+==\s+(.*?)\s+(Paper Review(?: Form)?s?)\s*\z/', $line, $m)
                     && $m[1] !== $this->conf->short_name) {
                     $this->check_garbage();
-                    $this->rmsg("confid", "<0>Ignoring review form, which appears to be for a different conference.", self::ERROR);
-                    $this->rmsg("confid", "<5>(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($this->conf->short_name) . " " . $m[2] . "</code>” and upload again.)", self::INFORM);
+                    $this->rvmsg(self::ERROR, "confid", "<0>Ignoring review form, which appears to be for a different conference.");
+                    $this->rvmsg(self::INFORM, "confid", "<5>(If this message is in error, replace the line that reads “<code>" . htmlspecialchars(rtrim($line)) . "</code>” with “<code>==+== " . htmlspecialchars($this->conf->short_name) . " " . $m[2] . "</code>” and upload again.)");
                     return false;
                 } else if (preg_match('/\A==\+== Begin Review/i', $line)) {
                     if ($nfields > 0) {
@@ -287,7 +296,7 @@ class ReviewValues extends MessageSet {
                     } else {
                         $field = null;
                         $this->check_garbage();
-                        $this->rmsg(null, "<0>Review field ‘{$match[1]}’ is not used for {$this->conf->short_name} reviews. Ignoring this section.", self::ERROR);
+                        $this->rvmsg(self::ERROR, null, "<0>Review field ‘{$match[1]}’ is not used for {$this->conf->short_name} reviews. Ignoring this section.");
                     }
                     $mode = 1;
                 } else {
@@ -317,7 +326,7 @@ class ReviewValues extends MessageSet {
         $this->textpos = $pos;
 
         if ($nfields === 0 && $this->first_lineno === 1) {
-            $this->rmsg(null, "<0>That didn’t appear to be a review form; I was not able to extract any information from it. Please check its formatting and try again.", self::ERROR);
+            $this->rvmsg(self::ERROR, null, "<0>That didn’t appear to be a review form; I was not able to extract any information from it. Please check its formatting and try again.");
         }
 
         if (isset($this->req["readiness"])) {
@@ -382,7 +391,7 @@ class ReviewValues extends MessageSet {
         foreach ($j as $k => $v) {
             if ($k === "object") {
                 if (($v ?? "review") !== "review") {
-                    $this->rmsg("object", "<0>JSON does not represent a review", self::ERROR);
+                    $this->rvmsg(self::ERROR, "object", "<0>JSON does not represent a review");
                     return false;
                 }
             } else if ($k === "round") {
@@ -543,7 +552,7 @@ class ReviewValues extends MessageSet {
     /** @param ?string $msg */
     private function reviewer_error($msg) {
         $msg = $msg ?? $this->conf->_("<0>Can’t edit a review for {}", $this->req["reviewerEmail"]);
-        $this->rmsg("reviewerEmail", $msg, self::ERROR);
+        $this->rvmsg(self::ERROR, "reviewerEmail", $msg);
     }
 
     /** @param ReviewInfo $rrow
@@ -553,8 +562,8 @@ class ReviewValues extends MessageSet {
             || $this->req["if_vtag_match"] === $rrow->reviewTime) {
             return true;
         }
-        $this->rmsg("if_vtag_match", "<5><strong>Edit conflict</strong>: The review changed since you last loaded this page", self::ERROR);
-        $this->rmsg("if_vtag_match", "<0>Your changes were not saved, but you can check the form and save again.", self::INFORM);
+        $this->rvmsg(self::ERROR, "if_vtag_match", "<5><strong>Edit conflict</strong>: The review changed since you last loaded this page");
+        $this->rvmsg(self::INFORM, "if_vtag_match", "<0>Your changes were not saved, but you can check the form and save again.");
         return false;
     }
 
@@ -566,8 +575,8 @@ class ReviewValues extends MessageSet {
         // look up paper
         if (!$prow) {
             if (($pid = $this->req_pid()) === null) {
-                $this->rmsg("paperId", $this->conf->_("<0>{Submission} ID required"), self::ERROR);
-                $this->rmsg("paperId", $this->conf->_("<0>Enter the {submission} number in the right place and try again."), self::INFORM);
+                $this->rvmsg(self::ERROR, "paperId", $this->conf->_("<0>{Submission} ID required"));
+                $this->rvmsg(self::INFORM, "paperId", $this->conf->_("<0>Enter the {submission} number in the right place and try again."));
                 return false;
             }
             $prow = $user->paper_by_id($pid);
@@ -578,8 +587,8 @@ class ReviewValues extends MessageSet {
         }
         $this->req["paperId"] = $this->req_pid() ?? $prow->paperId;
         if ($this->req["paperId"] !== $prow->paperId) {
-            $this->rmsg("paperId", $this->conf->_("<0>{Submission} mismatch: expected #{}, form is for #{}", $prow->paperId, $this->req["paperId"]), self::ERROR);
-            $this->rmsg("paperId", $this->conf->_("<0>It looks like you tried to upload a form intended for a different {submission}."), self::INFORM);
+            $this->rvmsg(self::ERROR, "paperId", $this->conf->_("<0>{Submission} mismatch: expected #{}, form is for #{}", $prow->paperId, $this->req["paperId"]));
+            $this->rvmsg(self::INFORM, "paperId", $this->conf->_("<0>It looks like you tried to upload a form intended for a different {submission}."));
             return false;
         }
 
@@ -621,7 +630,7 @@ class ReviewValues extends MessageSet {
                 "selfassign" => $reviewer === $user, "round_number" => $round
             ]);
             if (!$new_rrid) {
-                $this->rmsg(null, "<0>Internal error while creating review", self::ERROR);
+                $this->rvmsg(self::ERROR, null, "<0>Internal error while creating review");
                 return false;
             }
             $rrow = $prow->fresh_review_by_id($new_rrid);
@@ -665,13 +674,11 @@ class ReviewValues extends MessageSet {
             return true;
         }
         // otherwise complain
-        $this->rmsg("reviewerEmail",
-            $this->conf->_("<0>Reviewer conflict: review is for {}, but uploaded form is for {}", Text::nameo($reviewer, NAME_EB), Text::name($reqfirst, $reqlast, $reqemail, NAME_EB)),
-            self::ERROR);
+        $this->rvmsg(self::ERROR, "reviewerEmail",
+            $this->conf->_("<0>Reviewer conflict: review is for {}, but uploaded form is for {}", Text::nameo($reviewer, NAME_EB), Text::name($reqfirst, $reqlast, $reqemail, NAME_EB)));
         if ($this->text !== null) {
-            $this->rmsg("reviewerEmail",
-                $this->conf->_("<5>To upload the form anyway, remove its ‘<code class=\"nw\">==+== Reviewer</code>’ section."),
-                self::INFORM);
+            $this->rvmsg(self::INFORM, "reviewerEmail",
+                $this->conf->_("<5>To upload the form anyway, remove its ‘<code class=\"nw\">==+== Reviewer</code>’ section."));
         }
         return false;
     }
@@ -732,7 +739,7 @@ class ReviewValues extends MessageSet {
         // can only edit reviews you own or administer
         if (!$user->is_owned_review($rrow)
             && !$user->can_administer($prow)) {
-            $this->rmsg(null, "<0>You don’t have permission to edit this review", self::ERROR);
+            $this->rvmsg(self::ERROR, null, "<0>You don’t have permission to edit this review");
             return false;
         }
 
@@ -774,7 +781,7 @@ class ReviewValues extends MessageSet {
                 continue;
             }
             if ($fval === false) {
-                $this->rmsg($f->short_id, $this->conf->_("<0>{} cannot be ‘{}’", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$f->short_id]), 100)), self::ERROR);
+                $this->rvmsg(self::ERROR, $f->short_id, $this->conf->_("<0>{} cannot be ‘{}’", $f->name, UnicodeHelper::utf8_abbreviate(trim($this->req[$f->short_id]), 100)));
                 $fval = $old_fval;
                 $allow_new_submit = false;
             }
@@ -819,8 +826,8 @@ class ReviewValues extends MessageSet {
                        && !($this->req["override"] ?? false)
                        && !$this->conf->time_review($rrow->reviewRound, $rrow->reviewType, true)) {
                 $this->clear_messages_since($before_msgcount);
-                $this->rmsg(null, "<5>The <a href=\"" . $this->conf->hoturl("deadlines") . "\">deadline</a> for editing this review has passed", self::ERROR);
-                $this->rmsg(null, "<0>Select “Override deadlines” and try again if you need to override the deadline.", self::INFORM);
+                $this->rvmsg(self::ERROR, null, "<5>The <a href=\"" . $this->conf->hoturl("deadlines") . "\">deadline</a> for editing this review has passed");
+                $this->rvmsg(self::INFORM, null, "<0>Select “Override deadlines” and try again if you need to override the deadline.");
                 return false;
             }
         }
@@ -836,8 +843,8 @@ class ReviewValues extends MessageSet {
             && $rrow->reviewId
             && $rrow->reviewEditVersion > ($this->req["edit_version"] ?? 0)) {
             $this->clear_messages_since($before_msgcount);
-            $this->rmsg($this->first_lineno, "<5><strong>Edit conflict</strong>: This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.", self::ERROR);
-            $this->rmsg($this->first_lineno, "<5>To override your online edits, add a line “<code class=\"nw\">==+== Version {$rrow->reviewEditVersion}</code>” to your offline review form for paper #{$prow->paperId} and upload the form again.", self::INFORM);
+            $this->rvmsg(self::ERROR, $this->first_lineno, "<5><strong>Edit conflict</strong>: This review has been edited online since you downloaded this offline form, so for safety I am not replacing the online version.");
+            $this->rvmsg(self::INFORM, $this->first_lineno, "<5>To override your online edits, add a line “<code class=\"nw\">==+== Version {$rrow->reviewEditVersion}</code>” to your offline review form for paper #{$prow->paperId} and upload the form again.");
             return false;
         }
 
@@ -846,10 +853,10 @@ class ReviewValues extends MessageSet {
             $want_ready = $this->req["ready"] ?? $oldstatus >= ReviewInfo::RS_DELIVERED;
             $status = $want_ready ? self::ERROR : self::WARNING;
             foreach ($fmissing as $f) {
-                $this->rmsg($f->short_id, $this->conf->_("<0>{}: Entry required", $f->name), $status);
+                $this->rvmsg($status, $f->short_id, $this->conf->_("<0>{}: Entry required", $f->name));
             }
             if ($status === self::ERROR) {
-                $this->rmsg("ready", $this->conf->_("<0>The review can’t be submitted until entries are provided for all required fields."), self::ERROR);
+                $this->rvmsg(self::ERROR, "ready", $this->conf->_("<0>The review can’t be submitted until entries are provided for all required fields."));
             }
         }
 
@@ -1064,7 +1071,7 @@ class ReviewValues extends MessageSet {
 
         if ($result < 0) {
             if ($result === ReviewInfo::SAVE_PROP_CONFLICT) {
-                $this->rmsg(null, "<0>Review was edited concurrently, please try again", self::ERROR);
+                $this->rvmsg(self::ERROR, null, "<0>Review was edited concurrently, please try again");
             }
             return false;
         }
@@ -1328,7 +1335,7 @@ class ReviewValues extends MessageSet {
             $pids = join("+", $pids);
             $t = "<5><span class=\"has-hotlist\" data-hotlist=\"p/s/{$pids}\">" . substr($t, 3) . "</span>";
         }
-        $this->msg_at(null, $t, $status);
+        $this->append_item(new MessageItem($status, null, $t));
     }
 
     /** @return null|'approvable'|'draft' */
@@ -1412,7 +1419,7 @@ class ReviewValues extends MessageSet {
                 array_unshift($mis, MessageItem::inform($this->conf->_("<0>There were {$errtype} while parsing the uploaded review file.")));
             }
             if (($status = $this->summary_status()) !== MessageSet::PLAIN) {
-                $this->conf->feedback_msg($mis, new MessageItem(null, "", $status));
+                $this->conf->feedback_msg($mis, new MessageItem($status));
             }
             $this->finished = 3;
         }

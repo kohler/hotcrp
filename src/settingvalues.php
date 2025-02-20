@@ -1,6 +1,6 @@
 <?php
 // settingvalues.php -- HotCRP conference settings manager
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class SettingValues extends MessageSet {
     /** @var Conf
@@ -283,7 +283,7 @@ class SettingValues extends MessageSet {
     function session_highlight(Qrequest $qreq) {
         if (($sh = $qreq->csession("settings_highlight"))) {
             foreach ($sh as $f => $v) {
-                $this->msg_at($f, null, $v);
+                $this->append_item_at(new MessageItem($v, $f));
             }
             $qreq->unset_csession("settings_highlight");
         }
@@ -427,13 +427,14 @@ class SettingValues extends MessageSet {
     /** @param null|string|Si $field
      * @param ?string $msg
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem */
+     * @return MessageItem
+     * @deprecated */
     function msg_at($field, $msg, $status) {
         $fname = $field instanceof Si ? $field->name : $field;
         if ($this->_jp !== null) {
-            $mi = $this->with_jfield(new MessageItem(null, $msg ?? "", $status), $fname);
+            $mi = $this->with_jfield(new MessageItem($status, null, $msg), $fname);
         } else {
-            $mi = new MessageItem($fname, $msg ?? "", $status);
+            $mi = new MessageItem($status, $fname, $msg ?? "");
         }
         return $this->append_item($mi);
     }
@@ -442,21 +443,21 @@ class SettingValues extends MessageSet {
      * @param ?string $msg
      * @return MessageItem */
     function error_at($field, $msg = null) {
-        return $this->msg_at($field, $msg, MessageSet::ERROR);
+        return $this->append_item_at($field, MessageItem::error($msg));
     }
 
     /** @param null|string|Si $field
      * @param ?string $msg
      * @return MessageItem */
     function warning_at($field, $msg = null) {
-        return $this->msg_at($field, $msg, MessageSet::WARNING);
+        return $this->append_item_at($field, MessageItem::warning($msg));
     }
 
     /** @param null|string|Si $field
      * @param ?string $msg
      * @return MessageItem */
     function inform_at($field, $msg = null) {
-        return $this->msg_at($field, $msg, MessageSet::INFORM);
+        return $this->append_item_at($field, MessageItem::inform($msg));
     }
 
     /** @param MessageItem $mi
@@ -1089,7 +1090,7 @@ class SettingValues extends MessageSet {
             }
             if (!$errored) {
                 $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} settings are ambiguous");
-                $this->msg_at("{$pfx}{$ctr}{$sfx}", "<0>Values should differ substantively, not just in punctuation, case, or spacing.", MessageSet::INFORM);
+                $this->inform_at("{$pfx}{$ctr}{$sfx}", "<0>Values should differ substantively, not just in punctuation, case, or spacing.");
                 $errored = true;
             }
             foreach ($fval as $ctr1) {

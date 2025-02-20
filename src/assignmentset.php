@@ -534,7 +534,7 @@ class AssignmentState extends MessageSet {
             && $mi->message === $msg) {
             $this->change_item_status($mi, $status);
         } else {
-            $mi = $this->msg_at(null, $msg, $status);
+            $mi = $this->append_item(new MessageItem($status, null, $msg));
             $mi->landmark = $l;
         }
         return $mi;

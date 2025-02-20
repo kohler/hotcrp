@@ -1,6 +1,6 @@
 <?php
 // o_collaborators.php -- HotCRP helper class for collaborators intrinsic
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Collaborators_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
@@ -24,7 +24,7 @@ class Collaborators_PaperOption extends PaperOption {
             && !$ov->prow->allow_absent()
             && ($ov->prow->outcome_sign <= 0 || !$user->can_view_decision($ov->prow))) {
             $ov->warning($this->conf->_("<0>Enter the authors’ external conflicts of interest"));
-            $ov->msg($this->conf->_("<0>If none of the authors have external conflicts, enter “None”."), MessageSet::INFORM);
+            $ov->inform($this->conf->_("<0>If none of the authors have external conflicts, enter “None”."));
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
@@ -57,7 +57,7 @@ class Collaborators_PaperOption extends PaperOption {
         $fix = (string) AuthorMatcher::fix_collaborators($s);
         if ($s !== $fix) {
             $ov->warning("<0>Field changed to follow our required format");
-            $ov->msg("<0>Please check that the result is what you expect.", MessageSet::INFORM);
+            $ov->inform("<0>Please check that the result is what you expect.");
             $ov->set_value_data([1], [$fix]);
         }
     }

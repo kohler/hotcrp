@@ -66,7 +66,7 @@ class Contacts_PaperOption extends PaperOption {
         if ($ov->prow->conflict_type($user) >= CONFLICT_CONTACTAUTHOR
             && self::ca_index(self::users_anno($ov), $user->email) === false) {
             $ov->error($this->conf->_("<0>You can’t remove yourself from the submission’s contacts"));
-            $ov->msg("<0>(Ask another contact to remove you.)", MessageSet::INFORM);
+            $ov->inform("<0>(Ask another contact to remove you.)");
         } else if (empty($ov->value_list())
                    && $ov->prow->paperId > 0
                    && !empty($ov->prow->contact_list())) {
@@ -144,9 +144,9 @@ class Contacts_PaperOption extends PaperOption {
             if (validate_email($email)) {
                 $specau[] = $au;
             } else if ($email !== "") {
-                $ov->msg_at("contacts:{$n}", "<0>Invalid email address ‘{$email}’", MessageSet::ERROR);
+                $ov->append_item(MessageItem::error_at("contacts:{$n}", "<0>Invalid email address ‘{$email}’"));
             } else if ($name !== "") {
-                $ov->msg_at("contacts:{$n}", "<0>Email address required", MessageSet::ERROR);
+                $ov->append_item(MessageItem::error_at("contacts:{$n}", "<0>Email address required"));
             }
         }
         // apply specified values

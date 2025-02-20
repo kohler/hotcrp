@@ -1,6 +1,6 @@
 <?php
 // search/st_option.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 abstract class Option_SearchTerm extends SearchTerm {
     /** @var Contact */
@@ -80,7 +80,7 @@ abstract class Option_SearchTerm extends SearchTerm {
             if (($os2 = $srch->conf->abbrev_matcher()->find_all($oname, Conf::MFLAG_OPTION))) {
                 $ts = array_map(function ($o) { return "‘" . $o->search_keyword() . "’"; }, $os2);
                 $srch->lwarning($sword, "<0>Submission field ‘{$oname}’ is ambiguous");
-                $srch->message_set()->msg_at(null, "<0>Submission fields include " . commajoin($ts, " and ") . ".", MessageSet::INFORM);
+                $srch->message_set()->inform_at(null, "<0>Submission fields include " . commajoin($ts, " and ") . ".");
             } else {
                 $srch->lwarning($sword, "<0>Submission field ‘{$oname}’ not found");
             }

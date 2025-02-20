@@ -1,6 +1,6 @@
 <?php
 // search/st_pdf.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class PaperPDF_SearchTerm extends SearchTerm {
     /** @var Contact */
@@ -187,7 +187,7 @@ class Pages_SearchTerm extends SearchTerm {
         } else if ($this->cf->need_recheck()) {
             if (!$this->cf_warn) {
                 $this->srch->warning("<0>Submitted PDFs have not been fully analyzed");
-                $this->srch->msg_at(null, "<0>Reloading this page later may give more precise results.", MessageSet::INFORM);
+                $this->srch->inform_at(null, "<0>Reloading this page later may give more precise results.");
                 $this->cf_warn = true;
             }
             return true;

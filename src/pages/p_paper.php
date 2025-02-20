@@ -307,7 +307,7 @@ class Paper_Page {
         }
         $notes_ftext = Ftext::join_nonempty(" ", $notes);
         if ($notes_ftext !== "") {
-            $this->ps->append_item(new MessageItem(null, $notes_ftext, $note_status));
+            $this->ps->append_item(new MessageItem($note_status, null, $notes_ftext));
         }
         $conf->feedback_msg($ml, $this->ps->decorated_message_list());
 

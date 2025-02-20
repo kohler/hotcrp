@@ -559,7 +559,7 @@ class MailSender {
             foreach ($prep->message_list() as $mi) {
                 $this->recip->append_item($mi);
                 if (!$has_decoration) {
-                    $this->recip->msg_at($mi->field, "<0>Put names in \"double quotes\" and email addresses in <angle brackets>, and separate destinations with commas.", MessageSet::INFORM);
+                    $this->recip->inform_at($mi->field, "<0>Put names in \"double quotes\" and email addresses in <angle brackets>, and separate destinations with commas.");
                     $has_decoration = true;
                 }
             }

@@ -455,10 +455,17 @@ class PaperTable {
     /** @param string $field
      * @param string $msg
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem */
+     * @return MessageItem
+     * @deprecated */
     function msg_at($field, $msg, $status) {
         $this->edit_status = $this->edit_status ?? new MessageSet;
-        return $this->edit_status->msg_at($field, $msg, $status);
+        return $this->edit_status->append_item(new MessageItem($status, $field, $msg));
+    }
+    /** @param MessageItem $mi
+     * @return MessageItem */
+    function append_item($mi) {
+        $this->edit_status = $this->edit_status ?? new MessageSet;
+        return $this->edit_status->append_item($mi);
     }
     /** @param string $field
      * @return bool */
@@ -1879,10 +1886,10 @@ class PaperTable {
         }
     }
 
-    /** @param string $m
-     * @param int $status */
-    private function _main_message($m, $status) {
-        $this->edit_status->msg_at(":main", $m, $status);
+    /** @param int $status
+     * @param string $m */
+    private function _main_message($status, $m) {
+        $this->edit_status->append_item(new MessageItem($status, ":main", $m));
     }
 
     private function _edit_message_new_paper_deadline(SubmissionRound $sr) {
@@ -1891,7 +1898,7 @@ class PaperTable {
         } else {
             $msg = '<5>The <a href="' . $this->conf->hoturl("deadlines") . "\">deadline</a> for registering {$this->conf->snouns[1]} has passed." . $this->deadline_is($sr->register) . $this->_deadline_override_message();
         }
-        $this->_main_message($msg, $this->admin ? 1 : 2);
+        $this->_main_message($this->admin ? 1 : 2, $msg);
     }
 
     private function _edit_message_new_paper() {
@@ -1909,13 +1916,13 @@ class PaperTable {
                 }
             }
             if (($mtx = Ftext::join_nonempty(" ", $mt)) !== "") {
-                $this->_main_message($mtx, 0);
+                $this->_main_message(0, $mtx);
             }
             if (($v = $this->conf->_i("submit"))) {
                 if (!Ftext::is_ftext($v)) {
                     $v = "<5>{$v}";
                 }
-                $this->_main_message($v, 0);
+                $this->_main_message(0, $v);
             }
         }
         if (!$sr->time_register(true)) {
@@ -1929,19 +1936,19 @@ class PaperTable {
             if ($is_author
                 || $this->prow->author_user()->can_revive_paper($this->prow)) {
                 $sr = $this->prow->submission_round();
-                $this->_main_message("<5>This {$this->conf->snouns[0]} has been withdrawn, but can still be revived." . $this->deadline_is($sr->update), 1);
+                $this->_main_message(1, "<5>This {$this->conf->snouns[0]} has been withdrawn, but can still be revived." . $this->deadline_is($sr->update));
             } else {
-                $this->_main_message("<5>This {$this->conf->snouns[0]} has been withdrawn. As an administrator, you can revive it.", 1);
+                $this->_main_message(1, "<5>This {$this->conf->snouns[0]} has been withdrawn. As an administrator, you can revive it.");
             }
         } else {
-            $this->_main_message("<5>This {$this->conf->snouns[0]} has been withdrawn.", 1);
+            $this->_main_message(1, "<5>This {$this->conf->snouns[0]} has been withdrawn.");
         }
     }
 
     private function _edit_message_not_submitted($is_author) {
         $missing = PaperTable::missing_required_fields($this->prow);
         if ($missing) {
-            $this->_main_message($this->conf->_("<5>This {submission} is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title")), MessageSet::URGENT_NOTE);
+            $this->_main_message(MessageSet::URGENT_NOTE, $this->conf->_("<5>This {submission} is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title")));
         }
 
         $auuser = $is_author ? $this->user : $this->prow->author_user();
@@ -1949,9 +1956,9 @@ class PaperTable {
         $whyNot = $auuser->perm_edit_paper($this->prow);
         if (!$whyNot) {
             if (!$missing) {
-                $this->_main_message("<5><strong>" . $this->conf->_5("<5>This {submission} is marked as not ready for review.") . "</strong>", MessageSet::URGENT_NOTE);
+                $this->_main_message(MessageSet::URGENT_NOTE, "<5><strong>" . $this->conf->_5("<5>This {submission} is marked as not ready for review.") . "</strong>");
             }
-            $this->_main_message($this->conf->_c("paper_edit", "<0>Incomplete {submissions} will not be evaluated.", new FmtArg("deadline", $sr->update)), MessageSet::URGENT_NOTE);
+            $this->_main_message(MessageSet::URGENT_NOTE, $this->conf->_c("paper_edit", "<0>Incomplete {submissions} will not be evaluated.", new FmtArg("deadline", $sr->update)));
             return;
         }
 
@@ -1959,18 +1966,18 @@ class PaperTable {
         if (isset($whyNot["frozen"])
             && $auuser->can_finalize_paper($this->prow)
             && !$missing) {
-            $this->_main_message("<5>This {$this->conf->snouns[0]} is not ready for review. Its content is frozen, but the current version can be still be submitted for review." . $this->deadline_is($sr->submit) . $this->_deadline_override_message(), 1);
+            $this->_main_message(1, "<5>This {$this->conf->snouns[0]} is not ready for review. Its content is frozen, but the current version can be still be submitted for review." . $this->deadline_is($sr->submit) . $this->_deadline_override_message());
             return;
         }
 
         if (isset($whyNot["deadline"])) {
             if ($this->conf->time_between(null, $sr->submit, $sr->grace) > 0) {
-                $this->_main_message('<5>The site is not open for updates at the moment.' . $this->_deadline_override_message(), 1);
+                $this->_main_message(1, '<5>The site is not open for updates at the moment.' . $this->_deadline_override_message());
             } else {
-                $this->_main_message("<5>The <a href=\"" . $this->conf->hoturl("deadlines") . "\">submission deadline</a> has passed and this {$this->conf->snouns[0]} will not be reviewed." . $this->deadline_is($sr->submit) . $this->_deadline_override_message(), 1);
+                $this->_main_message(1, "<5>The <a href=\"" . $this->conf->hoturl("deadlines") . "\">submission deadline</a> has passed and this {$this->conf->snouns[0]} will not be reviewed." . $this->deadline_is($sr->submit) . $this->_deadline_override_message());
             }
         } else {
-            $this->_main_message("<5>This {$this->conf->snouns[0]} is not ready for review and can’t be changed further. It will not be reviewed." . $this->_deadline_override_message(), MessageSet::URGENT_NOTE);
+            $this->_main_message(MessageSet::URGENT_NOTE, "<5>This {$this->conf->snouns[0]} is not ready for review and can’t be changed further. It will not be reviewed." . $this->_deadline_override_message());
         }
     }
 
@@ -1981,19 +1988,19 @@ class PaperTable {
             && $viewable_decision->sign > 0) {
             if ($this->user->can_edit_paper($this->prow)) {
                 if (($t = $this->conf->_i("finalsubmit", new FmtArg("deadline", $this->deadline_setting_is("final_soft"))))) {
-                    $this->_main_message("<5>" . $t, MessageSet::SUCCESS);
+                    $this->_main_message(MessageSet::SUCCESS, "<5>" . $t);
                 }
             } else if ($this->mode === "edit") {
-                $this->_main_message("<5>The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message(), 1);
+                $this->_main_message(1, "<5>The deadline for updating final versions has passed. You can still change contact information." . $this->_deadline_override_message());
             }
         } else if ($this->user->can_edit_paper($this->prow)) {
             if ($this->mode === "edit"
                 && (!$this->edit_status || !$this->edit_status->has_error())) {
                 if ($is_author) {
                     $sr = $this->prow->submission_round();
-                    $this->_main_message("<5>This {$this->conf->snouns[0]} is ready for review. You do not need to take further action, but you can still make changes if you wish." . $this->deadline_is($sr->update, "submission deadline"), MessageSet::SUCCESS);
+                    $this->_main_message(MessageSet::SUCCESS, "<5>This {$this->conf->snouns[0]} is ready for review. You do not need to take further action, but you can still make changes if you wish." . $this->deadline_is($sr->update, "submission deadline"));
                 } else {
-                    $this->_main_message("<5>This {$this->conf->snouns[0]} is ready for review.", MessageSet::SUCCESS);
+                    $this->_main_message(MessageSet::SUCCESS, "<5>This {$this->conf->snouns[0]} is ready for review.");
                 }
             }
         } else if ($this->mode === "edit") {
@@ -2002,7 +2009,7 @@ class PaperTable {
             } else {
                 $t = "<5>This {$this->conf->snouns[0]} is under review and can’t be changed or withdrawn. You can still <a href=\"#contacts\">change its contacts</a>.";
             }
-            $this->_main_message($t . $this->_deadline_override_message(), MessageSet::MARKED_NOTE);
+            $this->_main_message(MessageSet::MARKED_NOTE, $t . $this->_deadline_override_message());
         }
     }
 
@@ -2035,15 +2042,15 @@ class PaperTable {
             if ($this->conf->allow_final_versions()
                 && $this->prow->outcome_sign > 0
                 && !$this->prow->can_author_view_decision()) {
-                $this->_main_message("<5>This {$this->conf->snouns[0]} has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.", 1);
+                $this->_main_message(1, "<5>This {$this->conf->snouns[0]} has been accepted, but its authors can’t see that yet. Once decisions are visible, the system will allow accepted authors to upload final versions.");
             } else if (!$this->prow->author_user()->can_edit_paper($this->prow)) {
-                $this->_main_message("<5>Authors cannot edit this {$this->conf->snouns[0]} now, but as an administrator you can still make changes.", MessageSet::MARKED_NOTE);
+                $this->_main_message(MessageSet::MARKED_NOTE, "<5>Authors cannot edit this {$this->conf->snouns[0]} now, but as an administrator you can still make changes.");
             }
         }
 
         $viewable_decision = $this->prow->viewable_decision($this->user);
         if ($viewable_decision->sign < 0) {
-            $this->_main_message("<5>This {$this->conf->snouns[0]} was not accepted.", 1);
+            $this->_main_message(1, "<5>This {$this->conf->snouns[0]} was not accepted.");
         } else if ($this->prow->timeWithdrawn > 0) {
             $this->_edit_message_withdrawn($is_author);
         } else if ($this->prow->timeSubmitted <= 0) {
@@ -2057,7 +2064,7 @@ class PaperTable {
             if (!Ftext::is_ftext($v)) {
                 $v = "<5>{$v}";
             }
-            $this->_main_message($v, 0);
+            $this->_main_message(0, $v);
         }
 
         if ($this->edit_status->has_problem()
@@ -2072,7 +2079,7 @@ class PaperTable {
                 }
             }
             if (!empty($fields)) {
-                $this->_main_message($this->conf->_c("paper_edit", "<5>Please check {:list} for potential issues.", self::field_title_links($fields, "edit_title")), $maxps);
+                $this->_main_message($maxps, $this->conf->_c("paper_edit", "<5>Please check {:list} for potential issues.", self::field_title_links($fields, "edit_title")));
             }
         }
     }
@@ -2086,7 +2093,7 @@ class PaperTable {
         if ($include_required && !$this->quit) {
             foreach ($this->prow->form_fields() as $o) {
                 if ($o->required) {
-                    $this->_main_message('<5><span class="field-required-explanation">* Required</span>', 0);
+                    $this->_main_message(0, '<5><span class="field-required-explanation">* Required</span>');
                     break;
                 }
             }

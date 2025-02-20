@@ -1,6 +1,6 @@
 <?php
 // listactions/la_getscores.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class GetScores_ListAction extends ListAction {
     function allow(Contact $user, Qrequest $qreq) {
@@ -74,7 +74,7 @@ class GetScores_ListAction extends ListAction {
                 ->append($texts);
         } else {
             if (!$ms->has_message()) {
-                $ms->msg_at(null, "<0>Nothing to download", MessageSet::MARKED_NOTE);
+                $ms->append_item(MessageItem::marked_note("<0>Nothing to download"));
             }
             $user->conf->feedback_msg($ms);
         }

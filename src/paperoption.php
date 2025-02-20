@@ -701,8 +701,9 @@ class PaperOption implements JsonSerializable {
             return true;
         }
         if ($this->required === self::REQ_SUBMIT) {
+            $status = $ov->prow->want_submitted() ? MessageSet::ERROR : MessageSet::WARNING;
             $m = $this->conf->_("<0>Entry required to complete {submission}");
-            $ov->msg($m, $ov->prow->want_submitted() ? MessageSet::ERROR : MessageSet::WARNING);
+            $ov->append_item(new MessageItem($status, $ov->option->field_key(), $m));
         } else {
             $ov->error("<0>Entry required");
         }
@@ -1047,12 +1048,12 @@ class PaperOption implements JsonSerializable {
             if (($vs2 = $ts->find_all($sword->cword, ~TopicSet::MFLAG_SPECIAL))) {
                 $srch->lwarning($sword, $this->conf->_("<0>{title} ‘{0}’ is ambiguous", $sword->cword, new FmtArg("title", $this->title()), new FmtArg("id", $this->readable_formid())));
                 $txts = array_map(function ($x) use ($ts) { return "‘{$ts[$x]}’"; }, $vs2);
-                $srch->msg_at(null, "<0>Try " . commajoin($txts, " or ") . ", or use ‘{$sword->cword}*’ to match them all.", MessageSet::INFORM);
+                $srch->inform_at(null, "<0>Try " . commajoin($txts, " or ") . ", or use ‘{$sword->cword}*’ to match them all.");
             } else {
                 $srch->lwarning($sword, $this->conf->_("<0>{title} ‘{0}’ not found", $sword->cword, new FmtArg("title", $this->title()), new FmtArg("id", $this->formid)));
                 if ($ts->count() <= 10) {
                     $txts = array_map(function ($t) { return "‘{$t}’"; }, $ts->as_array());
-                    $srch->msg_at(null, "<0>Choices are " . commajoin($txts, " and ") . ".", MessageSet::INFORM);
+                    $srch->inform_at(null, "<0>Choices are " . commajoin($txts, " and ") . ".");
                 }
             }
             return null;

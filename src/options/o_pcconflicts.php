@@ -1,6 +1,6 @@
 <?php
 // o_pcconflicts.php -- HotCRP helper class for PC conflicts intrinsic
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class PCConflicts_PaperOption extends PaperOption {
     /** @var ?string */
@@ -176,7 +176,7 @@ class PCConflicts_PaperOption extends PaperOption {
                 && (is_bool($v) || is_int($v) || is_string($v))) {
                 $ct = $confset->parse_json($v);
                 if ($ct === false) {
-                    $pv->msg("<0>Invalid conflict type ‘{$v}’", MessageSet::WARNING);
+                    $pv->warning("<0>Invalid conflict type ‘{$v}’");
                     $ct = Conflict::GENERAL;
                 }
                 $emails[] = $email;
@@ -200,7 +200,7 @@ class PCConflicts_PaperOption extends PaperOption {
             if ($pc && $pc->isPC) {
                 $this->update_value_map($vm, $pc->contactId, $values[$i]);
             } else {
-                $pv->msg("<0>Email address ‘{$emails[$i]}’ does not match a PC member", MessageSet::WARNING);
+                $pv->warning("<0>Email address ‘{$emails[$i]}’ does not match a PC member");
             }
         }
         /** @phan-suppress-next-line PhanTypeMismatchArgument */

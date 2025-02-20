@@ -391,7 +391,7 @@ class FailureReason extends Exception
             }
             $ms = [$tt];
         }
-        $ml = [new MessageItem($field, $ms[0], $status)];
+        $ml = [new MessageItem($status, $field, $ms[0])];
 
         // add context messages
         if ($this->_a["expand"] ?? false) {
@@ -413,7 +413,7 @@ class FailureReason extends Exception
                 $mx = ["<5><ul class=\"midpoint\">" . join("", $mxl) . "</ul>"];
             }
             if (count($mx) === 1) {
-                $ml[] = new MessageItem($field, $mx[0], MessageSet::PLAIN);
+                $ml[] = new MessageItem(MessageSet::PLAIN, $field, $mx[0]);
             }
         }
 

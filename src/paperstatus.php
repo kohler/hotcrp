@@ -1,6 +1,6 @@
 <?php
 // paperstatus.php -- HotCRP helper for reading/storing papers as JSON
-// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class PaperStatus extends MessageSet {
     /** @var Conf
@@ -167,9 +167,10 @@ class PaperStatus extends MessageSet {
 
     /** @param ?string $msg
      * @param int $status
-     * @return MessageItem */
+     * @return MessageItem
+     * @deprecated */
     function msg_at_option(PaperOption $o, $msg, $status) {
-        return $this->msg_at($this->option_key($o), $msg, $status);
+        return $this->append_item(new MessageItem($status, $this->option_key($o), $msg));
     }
 
     /** @param ?string $msg
@@ -275,7 +276,7 @@ class PaperStatus extends MessageSet {
         if ($doc->paperStorageId === 0
             && ($doc->has_error() || !$doc->save($this->doc_savef))) {
             foreach ($doc->message_list() as $mi) {
-                $mi = $this->msg_at_option($o, $mi->message, $mi->status);
+                $mi = $this->append_item($mi->with_field($this->option_key($o)));
                 $mi->landmark = $doc->error_filename();
             }
             return null;

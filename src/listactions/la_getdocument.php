@@ -1,6 +1,6 @@
 <?php
 // listactions/la_getdocument.php -- HotCRP helper classes for list actions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class GetDocument_ListAction extends ListAction {
     private $dt;
@@ -40,7 +40,7 @@ class GetDocument_ListAction extends ListAction {
                     $docset->add_as($doc, $doc->export_filename());
                 }
             } else {
-                $docset->message_set()->msg_at(null, "<0>#{$row->paperId} has no ‘" . $opt->title() . "’ documents", MessageSet::WARNING_NOTE);
+                $docset->message_set()->append_item(MessageItem::warning_note("<0>#{$row->paperId} has no ‘" . $opt->title() . "’ documents"));
             }
         }
         $user->set_overrides($old_overrides);

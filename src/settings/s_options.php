@@ -1,6 +1,6 @@
 <?php
 // settings/s_options.php -- HotCRP settings > submission form page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Options_SettingParser extends SettingParser {
     /** @var Conf
@@ -380,31 +380,31 @@ class Options_SettingParser extends SettingParser {
             '<div class="settings-xf-viewport"><div class="settings-xf-view">';
         if ($disabled) {
             if ($io->id === PaperOption::PCCONFID) {
-                $this->pt->msg_at($io->formid, "<0>Field disabled for submitters (but accessible to administrators)", MessageSet::URGENT_NOTE);
+                $this->pt->append_item(MessageItem::urgent_note_at($io->formid, "<0>Field disabled for submitters (but accessible to administrators)"));
             } else {
-                $this->pt->msg_at($io->formid, "<0>Field disabled", MessageSet::URGENT_NOTE);
+                $this->pt->append_item(MessageItem::urgent_note_at($io->formid, "<0>Field disabled"));
             }
         } else if (strcasecmp($this->sfs->exists_if, "all") !== 0
                    && strcasecmp($this->sfs->exists_if, "phase:final") !== 0) {
-            $this->pt->msg_at($io->formid, "<0>Present on submissions matching ‘" . $this->sfs->exists_if . "’", MessageSet::WARNING_NOTE);
+            $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Present on submissions matching ‘" . $this->sfs->exists_if . "’"));
         }
         if ($io->is_final()) {
-            $this->pt->msg_at($io->formid, "<0>Present in the final-version phase", MessageSet::WARNING_NOTE);
+            $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Present in the final-version phase"));
         }
         if ($disabled
             || strcasecmp($this->sfs->editable_if, "all") === 0) {
             // no editable comment
         } else if (strcasecmp($this->sfs->editable_if, "none") === 0) {
-            $this->pt->msg_at($io->formid, "<0>Frozen on all submissions (not editable)", MessageSet::WARNING_NOTE);
+            $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Frozen on all submissions (not editable)"));
         } else if (strcasecmp($this->sfs->editable_if, "phase:review") === 0) {
-            $this->pt->msg_at($io->formid, "<0>Editable in the review phase", MessageSet::WARNING_NOTE);
+            $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Editable in the review phase"));
         } else if (strcasecmp($this->sfs->editable_if, "phase:final") !== 0) {
-            $this->pt->msg_at($io->formid, "<0>Editable in the final-version phase", MessageSet::WARNING_NOTE);
+            $this->pt->append_item(MessageItem::warning_note_at($io->formid, "<0>Editable in the final-version phase"));
         } else {
-            $this->pt->msg_at($io->formid, "<0>Editable on submissions matching ‘" . $this->sfs->editable_if . "’", MessageSet::WARNING_NOTE);
+            $this->pt->append_item(MessageItem::warning_note_at("<0>Editable on submissions matching ‘" . $this->sfs->editable_if . "’"));
         }
         foreach ($sv->message_list_at_prefix("sf/{$ctr}/") as $mi) {
-            $this->pt->msg_at($io->formid, $mi->message, $mi->status > 0 ? MessageSet::WARNING_NOTE : $mi->status);
+            $this->pt->append_item(new MessageItem($mi->status > 0 ? MessageSet::WARNING_NOTE : $mi->status, $io->formid, $mi->message));
         }
         $ei = $io->editable_condition();
         $io->set_editable_condition(true);

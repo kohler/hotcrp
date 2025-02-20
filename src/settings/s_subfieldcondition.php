@@ -59,7 +59,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
 
         // check script expression
         if ($ps->main_term()->script_expression($prow, SearchTerm::ABOUT_PAPER | SearchTerm::ABOUT_NO_SHORT_CIRCUIT) === null) {
-            $sv->msg_at($siname, "<0>Invalid search in field condition", $status);
+            $sv->append_item_at($siname, new MessageItem($status, null, "<0>Invalid search in field condition"));
             $sv->inform_at($siname, "<0>Field conditions are limited to simple search keywords.");
         }
 
@@ -78,7 +78,7 @@ class SubFieldCondition_SettingParser extends SettingParser {
         if ($sv->conf->setting("__sf_condition_recursion") > 0
             || isset($oids[$field->id])
             || ($status === 1 && $scr === $field->id && $scrd === $type)) {
-            $sv->msg_at($siname, "<0>Self-referential search in field condition", 2);
+            $sv->error_at($siname, "<0>Self-referential search in field condition");
         }
         $sv->conf->change_setting("__sf_condition_recursion", $scr, $scrd);
     }
