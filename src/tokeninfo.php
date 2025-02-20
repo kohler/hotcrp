@@ -436,6 +436,12 @@ class TokenInfo {
         return $key ? $this->_jdata->$key ?? null : $this->_jdata;
     }
 
+    /** @param string $key
+     * @return bool */
+    final function has_data($key) {
+        return $this->data($key) !== null;
+    }
+
     final function load_data() {
         /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
         $this->data = Dbl::fetch_value($this->dblink(), "select `data` from Capability where salt=?", $this->salt);

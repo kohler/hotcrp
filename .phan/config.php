@@ -107,6 +107,10 @@ $config = [
         Config::projectPath("lib/polyfills.php")
     ],
 
+    "exclude_analysis_directory_list" => [
+        Config::projectPath("test/oauth")
+    ],
+
     "suppress_issue_types" => [
         "PhanUnusedPublicMethodParameter",
         "PhanUnusedVariableValueOfForeachWithKey",

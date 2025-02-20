@@ -86,6 +86,8 @@ class OAuth_Page {
     public $qreq;
     /** @var ?string */
     public $site_uri;
+    /** @var ?string */
+    public $email;
 
     function __construct(Contact $viewer, Qrequest $qreq) {
         $this->conf = $viewer->conf;
@@ -160,25 +162,25 @@ class OAuth_Page {
         } else if ($tok->timeUsed) {
             return MessageItem::error("<0>Authentication request reused");
         } else if ($tok->capabilityType !== TokenInfo::OAUTHSIGNIN
-                   || !($tokdata = json_decode($tok->data ?? "null"))) {
+                   || !$tok->data()) {
             return MessageItem::error("<0>Invalid authentication request ‘{$state}’, internal error");
         }
 
-        if (isset($tokdata->nonce)) {
-            $noncematch = isset($_COOKIE["oauth-{$tokdata->nonce}"]);
-            $this->qreq->set_httponly_cookie("oauth-{$tokdata->nonce}", "", Conf::$now - 86400);
+        if (($nonce = $tok->data("nonce")) !== null) {
+            $noncematch = isset($_COOKIE["oauth-{$nonce}"]);
+            $this->qreq->set_httponly_cookie("oauth-{$nonce}", "", Conf::$now - 86400);
         } else {
             $noncematch = true;
         }
 
-        if (($tokdata->session ?? "<NO SESSION>") !== $this->qreq->qsid()) {
+        if (($tok->data("session") ?? "<NO SESSION>") !== $this->qreq->qsid()) {
             return MessageItem::error("<0>Authentication request ‘{$state}’ was for a different session");
         } else if (!$noncematch) {
             return MessageItem::error("<0>Authentication request ‘{$state}’ may have been replayed");
         } else if (!isset($this->qreq->code)) {
             return MessageItem::error("<0>Authentication failed");
-        } else if (($authi = OAuthProvider::find($this->conf, $tokdata->authtype ?? null))) {
-            return $this->instance_response($authi, $tok, $tokdata);
+        } else if (($authi = OAuthProvider::find($this->conf, $tok->data("authtype")))) {
+            return $this->instance_response($authi, $tok);
         } else {
             return MessageItem::error("<0>OAuth authentication internal error");
         }
@@ -186,9 +188,8 @@ class OAuth_Page {
 
     /** @param OAuthProvider $authi
      * @param TokenInfo $tok
-     * @param object $tokdata
      * @return MessageItem|list<MessageItem> */
-    private function instance_response($authi, $tok, $tokdata) {
+    private function instance_response($authi, $tok) {
         // make authentication request
         $authtitle = $authi->title ?? $authi->name;
         $tok->delete();
@@ -224,7 +225,7 @@ class OAuth_Page {
 
         // parse returned JSON web token
         $jwt = new JWTParser;
-        $authi->nonce = $tokdata->nonce ?? null;
+        $authi->nonce = $tok->data("nonce");
         if (!($jid = $jwt->validate($response->id_token))
             || !$jwt->validate_id_token($jid, $authi)) {
             return MessageItem::error("<0>Invalid {$authtitle} authentication response (code {$jwt->errcode})");
@@ -249,12 +250,13 @@ class OAuth_Page {
                 MessageItem::inform("<0>HotCRP requires a verified email to sign you in.")
             ];
         }
+        $this->email = $jid->email;
 
         // handle reauthentication requests
-        if (isset($tokdata->reauth)) {
-            $ml = $this->instance_reauth($authi, $tok, $tokdata, $jid);
+        if ($tok->data("reauth")) {
+            $ml = $this->instance_reauth($authi, $tok, $jid);
         } else {
-            $ml = $this->instance_signin($authi, $tok, $tokdata, $jid);
+            $ml = $this->instance_signin($authi, $tok, $jid);
         }
         if ($ml) {
             return $ml;
@@ -262,33 +264,33 @@ class OAuth_Page {
 
         $uri = $this->site_uri;
         if (count(Contact::session_users($this->qreq)) > 1
-            && ($uindex = Contact::session_user_index($this->qreq, $jid->email)) >= 0) {
+            && ($uindex = Contact::session_index_by_email($this->qreq, $jid->email)) >= 0) {
             $uri .= "u/{$uindex}/";
         }
-        if ($tokdata->redirect) {
+        if ($tok->data("redirect")) {
             $rnav = NavigationState::make_base($uri);
-            $uri = $rnav->resolve_within($tokdata->redirect) ?? $uri;
+            $uri = $rnav->resolve_within($tok->data("redirect")) ?? $uri;
         }
         throw new Redirection($uri);
     }
 
     /** @param OAuthProvider $authi
      * @param TokenInfo $tok
-     * @param object $tokdata
      * @param object $jid
      * @return null|MessageItem|list<MessageItem> */
-    private function instance_reauth($authi, $tok, $tokdata, $jid) {
-        $use = UserSecurityEvent::make($tokdata->reauth, UserSecurityEvent::TYPE_OAUTH)
+    private function instance_reauth($authi, $tok, $jid) {
+        $reauth = $tok->data("reauth");
+        $use = UserSecurityEvent::make($reauth, UserSecurityEvent::TYPE_OAUTH)
             ->set_subtype($authi->name)
             ->set_reason(UserSecurityEvent::REASON_REAUTH);
-        if (strcasecmp($tokdata->reauth, $jid->email) !== 0) {
+        if (strcasecmp($reauth, $jid->email) !== 0) {
             $use->set_success(false)->store($this->qreq);
             return [
                 MessageItem::error("<0>The {$authtitle} authenticator verified the wrong email"),
-                MessageItem::inform("<0>You must provide reauthentication for {$tokdata->reauth}.")
+                MessageItem::inform("<0>You must provide reauthentication for {$reauth}.")
             ];
         }
-        if (!$tokdata->quiet) {
+        if (!$tok->data("quiet")) {
             $this->conf->feedback_msg(MessageItem::success("<0>Reauthentication succeeded"));
         }
         $use->store($this->qreq);
@@ -297,10 +299,9 @@ class OAuth_Page {
 
     /** @param OAuthProvider $authi
      * @param TokenInfo $tok
-     * @param object $tokdata
      * @param object $jid
      * @return null|MessageItem|list<MessageItem> */
-    private function instance_signin($authi, $tok, $tokdata, $jid) {
+    private function instance_signin($authi, $tok, $jid) {
         $reg = ["email" => $jid->email];
         if (isset($jid->given_name) && is_string($jid->given_name)) {
             $reg["firstName"] = $jid->given_name;
@@ -325,7 +326,7 @@ class OAuth_Page {
                 ->set_subtype($authi->name)
                 ->set_success(false)
                 ->store($this->qreq);
-            throw new Redirection($tokdata->site_uri);
+            throw new Redirection($this->site_uri);
         }
 
         $user = $info["user"];
@@ -343,7 +344,7 @@ class OAuth_Page {
             $user->save_roles($user_roles, $user);
         }
 
-        if (!$tokdata->quiet) {
+        if (!$tok->data("quiet")) {
             $this->conf->feedback_msg(MessageItem::success("<0>Signed in"));
         }
         UserSecurityEvent::session_user_add($this->qreq, $user->email);
