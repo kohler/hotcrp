@@ -91,7 +91,7 @@ class Profile_Page {
         if (($p = $this->qreq->path_component(0)) !== null) {
             if (in_array($p, ["", "me", "self", "new", "bulk"])
                 || strpos($p, "@") !== false
-                || !$this->ustatus->cs()->canonical_group($p)) {
+                || !$this->ustatus->cs()->might_exist($p)) {
                 if ($this->qreq->u === null) {
                     $this->qreq->u = urldecode($p);
                 }
@@ -575,8 +575,12 @@ class Profile_Page {
 
     function print() {
         // canonicalize topic
+        $this->ustatus->set_user($this->user);
+        $reqtopic = $this->qreq->t ? : "main";
         if ($this->page_type === 0
-            && ($g = $this->ustatus->cs()->canonical_group($this->qreq->t ? : "main"))) {
+            && $reqtopic !== "main"
+            && !str_starts_with($reqtopic, "__")
+            && ($g = $this->ustatus->cs()->canonical_group($reqtopic))) {
             $this->topic = $g;
         } else {
             $this->topic = "main";
@@ -587,7 +591,6 @@ class Profile_Page {
             $this->qreq->t = $this->topic === "main" ? null : $this->topic;
             $this->conf->redirect_self($this->qreq);
         }
-        $this->ustatus->set_user($this->user);
         $this->ustatus->cs()->set_root($this->topic);
 
         // set session list

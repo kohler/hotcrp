@@ -167,6 +167,12 @@ class ComponentSet {
 
 
     /** @param string $name
+     * @return bool */
+    function might_exist($name) {
+        return !empty($this->_jall[$name]);
+    }
+
+    /** @param string $name
      * @return ?object */
     private function get_noalias($name) {
         if (array_key_exists($name, $this->_raw)) {
