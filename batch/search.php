@@ -48,54 +48,40 @@ class Search_Batch {
         if ($this->search->has_problem()) {
             fwrite(STDERR, $this->search->full_feedback_text());
         }
-        if (!empty($body)) {
-            $csv = new CsvGenerator;
-            $siteid = $this->search->conf->opt("confid");
-            $siteclass = $this->search->conf->opt("siteclass");
-            if ($this->header ?? count($header) > 1) {
-                $header = array_keys($header);
-                $this->sitename && array_unshift($header, "sitename", "siteclass");
-                $csv->add_row($header);
-            }
-            foreach ($body as $row) {
-                $this->sitename && array_unshift($row, $siteid, $siteclass);
-                $csv->add_row($row);
-            }
-            fwrite(STDOUT, $csv->unparse());
+        if (empty($body)) {
+            return 0;
         }
+        $csv = new CsvGenerator;
+        $siteid = $this->search->conf->opt("confid");
+        $siteclass = $this->search->conf->opt("siteclass");
+        if ($this->header ?? (count($header) > 1)) {
+            $header = array_keys($header);
+            $this->sitename && array_unshift($header, "sitename", "siteclass");
+            $csv->add_row($header);
+        }
+        foreach ($body as $row) {
+            $this->sitename && array_unshift($row, $siteid, $siteclass);
+            $csv->add_row($row);
+        }
+        fwrite(STDOUT, $csv->unparse());
         return 0;
-    }
-
-    static function help() {
-        fwrite(STDOUT, "Usage: php batch/search.php [-n CONFID] [-t COLLECTION] [-f FIELD]+ [QUERY...]
-Output a CSV file containing the FIELDs for the papers matching QUERY.
-
-Options include:
-  -t, --type COLLECTION  Search COLLECTION “s” (submitted) or “all” [s].
-  -f, --show FIELD       Include FIELD in output.
-  -N, --sitename         Include site name and class in CSV.
-  --header               Always include CSV header.
-  --no-header            Omit CSV header.
-  QUERY...               A search term.\n");
     }
 
     /** @return Search_Batch */
     static function make_args($argv) {
         $arg = (new Getopt)->long(
-            "name:,n:",
-            "config:",
-            "t:,type:",
-            "f[],field[],show[]",
-            "N,sitename",
-            "header",
-            "no-header",
-            "help,h"
-        )->parse($argv);
-
-        if (isset($arg["help"])) {
-            self::help();
-            exit(0);
-        }
+            "name:,n: !",
+            "config: !",
+            "t:,type: =COLLECTION Search “s” (submitted) or “all” [default s]",
+            "f[],show[],field[] =FIELD Include FIELD in output",
+            "N,sitename Include site name and class in output",
+            "header Always include CSV header",
+            "no-header Omit CSV header",
+            "help,h !"
+        )->description("Output CSV of the papers matching HotCRP search QUERY.
+Usage: php batch/search.php [-n CONFID] [-t COLLECTION] [-f FIELD]+ QUERY...")
+         ->helpopt("help")
+         ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
         return new Search_Batch($conf->root_user(), $arg);

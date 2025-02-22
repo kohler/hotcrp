@@ -182,12 +182,12 @@ class Log_Page {
         $leg->set_consolidate_mail(false);
 
         $csvg = $this->conf->make_csvg("log")->set_emit_live(true);
-        $csvg->select($leg->csv_narrow_header());
+        $csvg->select($leg->narrow_csv_fields());
         set_time_limit(300); // might take a while
 
         for ($page = 1; ($rows = $leg->page_rows($page)); ++$page) {
             foreach ($rows as $row) {
-                $leg->add_csv_narrow($row, $csvg);
+                $csvg->append($leg->narrow_csv_data_list($row));
             }
         }
 

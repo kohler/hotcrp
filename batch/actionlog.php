@@ -18,11 +18,14 @@ class ActionLog_Batch {
     public $uids;
     /** @var resource */
     public $out;
+    /** @var bool */
+    public $sitename;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
         $this->narrow = !isset($arg["wide"]);
         $this->page_size = $arg["pagesize"] ?? 10000;
+        $this->sitename = isset($arg["N"]);
         foreach ($arg["u"] ?? [] as $u) {
             $this->add_user_clause($u);
         }
@@ -69,14 +72,35 @@ class ActionLog_Batch {
         if ($this->narrow) {
             $leg->set_consolidate_mail(false);
         }
+        $sitename = $this->conf->opt("confid");
+        $siteclass = $this->conf->opt("siteclass");
 
         $csvg = (new CsvGenerator)->set_stream($this->out);
-        $csvg->select($this->narrow ? $leg->csv_narrow_header() : $leg->csv_wide_header());
+        $sitename = $this->conf->opt("confid");
+        $siteclass = $this->conf->opt("siteclass");
+        $header = $this->narrow ? $leg->narrow_csv_fields() : $leg->wide_csv_fields();
+        if ($this->sitename) {
+            array_unshift($header, "sitename", "siteclass");
+        }
+        $csvg->select($header);
 
-        $f = $this->narrow ? "add_csv_narrow" : "add_csv_wide";
         for ($page = 1; ($rows = $leg->page_rows($page)); ++$page) {
             foreach ($rows as $row) {
-                $leg->$f($row, $csvg);
+                if ($this->narrow && !$this->sitename) {
+                    $csvg->append($leg->narrow_csv_data_list($row));
+                } else if (!$this->sitename) {
+                    $csvg->add_row($leg->wide_csv_data($row));
+                } else {
+                    if ($this->narrow) {
+                        $dlist = $leg->narrow_csv_data_list($row);
+                    } else {
+                        $dlist = [$leg->wide_csv_data($row)];
+                    }
+                    foreach ($dlist as $data) {
+                        array_unshift($data, $sitename, $siteclass);
+                        $csvg->add_row($data);
+                    }
+                }
             }
         }
 
@@ -94,6 +118,7 @@ class ActionLog_Batch {
             "narrow !",
             "pagesize:,page-size: {n} !",
             "u[],user[] =USER Include entries about USER",
+            "N,sitename,siteclass Include siteclass and sitename in CSV",
             "wide Generate wide CSV",
             "o:,output: =FILE Write output to FILE"
         )->description("Output HotCRP action log as CSV.

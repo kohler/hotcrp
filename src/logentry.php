@@ -555,7 +555,7 @@ class LogEntryGenerator {
     }
 
     /** @return list<string> */
-    function csv_narrow_header() {
+    function narrow_csv_fields() {
         return [
             "date", "ipaddr", "email", "roles", "affected_email", "via",
             "paper", "action"
@@ -563,7 +563,7 @@ class LogEntryGenerator {
     }
 
     /** @return list<string> */
-    function csv_wide_header() {
+    function wide_csv_fields() {
         return [
             "date", "ipaddr", "email", "affected_email", "via",
             "papers", "action"
@@ -571,8 +571,8 @@ class LogEntryGenerator {
     }
 
     /** @param LogEntry $row
-     * @param CsvGenerator $csvg */
-    function add_csv_narrow($row, $csvg) {
+     * @return list<list<string>> */
+    function narrow_csv_data_list($row) {
         $date = date("Y-m-d H:i:s O", $row->timestamp);
         $xusers = $this->users_for($row, "contactId");
         $xdest_users = $this->users_for($row, "destContactId");
@@ -592,24 +592,23 @@ class LogEntryGenerator {
         }
 
         // one row per (user, dest_user, pid)
+        $rows = [];
         foreach ($xusers as $u1) {
             $u1e = $u1 ? $u1->email : "";
             $u1r = $u1 ? self::$csv_role_map[$u1->roles & 7] : "";
             foreach ($xdest_users as $u2) {
                 $u2e = $u2 ? $u2->email : "";
                 foreach ($pids as $p) {
-                    $csvg->add_row([
-                        $date, $row->ipaddr ?? "", $u1e, $u1r, $u2e,
-                        $via, $p, $action
-                    ]);
+                    $rows[] = [$date, $row->ipaddr ?? "", $u1e, $u1r, $u2e, $via, $p, $action];
                 }
             }
         }
+        return $rows;
     }
 
     /** @param LogEntry $row
-     * @param CsvGenerator $csvg */
-    function add_csv_wide($row, $csvg) {
+     * @return list<string> */
+    function wide_csv_data($row) {
         $date = date("Y-m-d H:i:s O", $row->timestamp);
         $xusers = $this->users_for($row, "contactId");
         $xdest_users = $this->users_for($row, "destContactId");
@@ -627,9 +626,6 @@ class LogEntryGenerator {
             }
         }
 
-        $csvg->add_row([
-            $date, $row->ipaddr ?? "", join(" ", $u1es), join(" ", $u2es),
-            $via, join(" ", $pids), $action
-        ]);
+        return [$date, $row->ipaddr ?? "", join(" ", $u1es), join(" ", $u2es), $via, join(" ", $pids), $action];
     }
 }
