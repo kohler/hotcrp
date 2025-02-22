@@ -91,7 +91,7 @@ class LogEntryGenerator {
     /** @var bool */
     private $consolidate_mail = true;
     /** @var ?LogEntry */
-    private $mail_stash;
+    private $consolidate_row;
     /** @var array<int,Contact> */
     private $users;
     /** @var array<int,true> */
@@ -116,7 +116,7 @@ class LogEntryGenerator {
         $this->first_index = $this->last_known_index = 0;
         $this->nrows = PHP_INT_MAX;
         $this->signpost_rows = [];
-        $this->mail_stash = null;
+        $this->consolidate_row = null;
     }
 
     /** @param ?LogEntryFilter $filter
@@ -292,9 +292,11 @@ class LogEntryGenerator {
         // constrain [$first, $last) to existing rows, exit if satisfied
         $last = min($last, $this->nrows);
         $first = min($first, $last);
+        // the last row isn't valid if still being consolidated
+        $valid_last = $this->first_index + count($this->rows)
+            - ($this->consolidate_row ? 1 : 0);
         if ($first === $last
-            || ($first >= $this->first_index
-                && $last <= $this->first_index + count($this->rows))) {
+            || ($first >= $this->first_index && $last <= $valid_last)) {
             return;
         }
         if ($expand && $last - $first < 2000) {
@@ -306,6 +308,7 @@ class LogEntryGenerator {
             || $first >= $this->first_index + count($this->rows)) {
             $this->rows = [];
             $this->first_index = $first;
+            $this->consolidate_row = null;
         } else if ($first >= $this->first_index + 10000) {
             $this->rows = array_slice($this->rows, $first - $this->first_index);
             $this->first_index = $first;
@@ -342,8 +345,7 @@ class LogEntryGenerator {
         $qbase = $this->unparse_query_base();
         while ($last > $this->first_index + count($this->rows)
                || ($last === $this->first_index + count($this->rows)
-                   && $last !== $this->nrows
-                   && $this->mail_stash)) {
+                   && $this->consolidate_row)) {
             // construct query
             $q = $qbase;
             if ($limit_logid !== null && $ordinal !== 0) {
@@ -374,12 +376,13 @@ class LogEntryGenerator {
                 $this->need_users[$destuid] = true;
 
                 // consolidate mail rows
-                if ($this->mail_stash
-                    && $this->mail_stash->action === $row->action) {
-                    $this->mail_stash->destContactIdArray[] = $destuid;
+                if ($this->consolidate_row
+                    && $this->consolidate_row->action === $row->action) {
+                    $this->consolidate_row->destContactIdArray[] = $destuid;
                     if ($row->paperId) {
-                        $this->mail_stash->paperIdArray[] = $row->paperId;
+                        $this->consolidate_row->paperIdArray[] = $row->paperId;
                     }
+                    $this->consolidate_row->logId = $row->logId;
                     if ($ordinal % 1000 === 0) {
                         $row->ordinal = $ordinal - 1;
                         $this->add_signpost_row($row);
@@ -402,12 +405,12 @@ class LogEntryGenerator {
                     $this->add_signpost_row($row);
                 }
 
-                // maybe mark mail for consolidation
+                // maybe mark row for consolidation
                 if (!$this->consolidate_mail) {
                     continue;
                 }
                 if (str_starts_with($row->action, "Sent mail #")) {
-                    $this->mail_stash = $row;
+                    $this->consolidate_row = $row;
                     $row->destContactIdArray = [$destuid];
                     $row->destContactId = null;
                     $row->paperIdArray = [];
@@ -416,7 +419,7 @@ class LogEntryGenerator {
                         $row->paperId = null;
                     }
                 } else {
-                    $this->mail_stash = null;
+                    $this->consolidate_row = null;
                 }
             }
             $result->close();
@@ -426,6 +429,7 @@ class LogEntryGenerator {
             if ($n < $xlimit) {
                 $this->nrows = $ordinal;
                 $last = min($last, $ordinal);
+                $this->consolidate_row = null;
             }
         }
     }

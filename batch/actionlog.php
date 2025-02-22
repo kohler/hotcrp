@@ -12,6 +12,8 @@ class ActionLog_Batch {
     public $conf;
     /** @var bool */
     public $narrow = true;
+    /** @var int */
+    public $page_size;
     /** @var ?list<int> */
     public $uids;
     /** @var resource */
@@ -20,6 +22,7 @@ class ActionLog_Batch {
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
         $this->narrow = !isset($arg["wide"]);
+        $this->page_size = $arg["pagesize"] ?? 10000;
         foreach ($arg["u"] ?? [] as $u) {
             $this->add_user_clause($u);
         }
@@ -59,7 +62,7 @@ class ActionLog_Batch {
 
     /** @return int */
     function run() {
-        $leg = new LogEntryGenerator($this->conf, 10000);
+        $leg = new LogEntryGenerator($this->conf, $this->page_size);
         if ($this->uids !== null) {
             $leg->set_user_ids($this->uids);
         }
@@ -89,6 +92,7 @@ class ActionLog_Batch {
             "config: !",
             "help,h !",
             "narrow !",
+            "pagesize:,page-size: {n} !",
             "u[],user[] =USER Include entries about USER",
             "wide Generate wide CSV",
             "o:,output: =FILE Write output to FILE"
