@@ -81,6 +81,7 @@ signout.php
 users.php
 
 batch/.htaccess
+batch/actionlog.php
 batch/assign.php
 batch/autoassign.php
 batch/backupdb.php

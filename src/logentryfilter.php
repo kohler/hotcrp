@@ -9,6 +9,7 @@ class LogEntryFilter {
     private $pidset;
     /** @var bool */
     private $want;
+    /** @var ?array<int,mixed> */
     private $includes;
 
     /** @param array<int,true> $pidset
@@ -24,28 +25,28 @@ class LogEntryFilter {
         if ($row->paperId) {
             return isset($pidset[$row->paperId]) === $want
                 && (!$includes || isset($includes[$row->paperId]));
-        } else if (preg_match('/\A(.*) \(papers ([\d, ]+)\)?\z/', $row->action, $m)) {
-            preg_match_all('/\d+/', $m[2], $mm);
-            $pids = [];
-            $included = !$includes;
-            foreach ($mm[0] as $pid) {
-                if (isset($pidset[$pid]) === $want) {
-                    $pids[] = $pid;
-                    $included = $included || isset($includes[$pid]);
-                }
-            }
-            if (empty($pids) || !$included) {
-                return false;
-            } else if (count($pids) === 1) {
-                $row->action = $m[1];
-                $row->paperId = $pids[0];
-            } else {
-                $row->action = $m[1] . " (papers " . join(", ", $pids) . ")";
-            }
-            return true;
-        } else {
+        }
+        if (!preg_match('/\A(.*) \(papers ([\d, ]+)\)?\z/', $row->action, $m)) {
             return $this->user->privChair;
         }
+        preg_match_all('/\d+/', $m[2], $mm);
+        $pids = [];
+        $included = !$includes;
+        foreach ($mm[0] as $pid) {
+            if (isset($pidset[$pid]) === $want) {
+                $pids[] = $pid;
+                $included = $included || isset($includes[$pid]);
+            }
+        }
+        if (empty($pids) || !$included) {
+            return false;
+        } else if (count($pids) === 1) {
+            $row->action = $m[1];
+            $row->paperId = (int) $pids[0];
+        } else {
+            $row->action = $m[1] . " (papers " . join(", ", $pids) . ")";
+        }
+        return true;
     }
 
     /** @param LogEntry $row

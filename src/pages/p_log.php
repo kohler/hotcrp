@@ -10,13 +10,11 @@ class Log_Page {
     /** @var Qrequest */
     public $qreq;
     /** @var int */
-    public $nlinks = 6;
+    public $nlinks;
     /** @var null|false|int */
     public $first_timestamp = false;
     /** @var array<int,string> */
     public $user_html = [];
-    /** @var list<string> */
-    private $lef_clauses = [];
     /** @var ?array<int,mixed> */
     private $include_pids;
     /** @var ?array<int,mixed> */
@@ -28,7 +26,8 @@ class Log_Page {
     /** @var MessageSet */
     private $ms;
 
-    function __construct(Contact $viewer, Qrequest $qreq) {
+    /** @param int $count */
+    function __construct(Contact $viewer, Qrequest $qreq, $count) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
         $this->qreq = $qreq;
@@ -40,38 +39,36 @@ class Log_Page {
         }
         $this->document_regexp = join("|", $x);
         $this->unix_timestamp = $qreq->time === "u";
+        $this->nlinks = $count <= 0 ? 6 : max(3, min(6, (int) ceil(1000 / $count)));
     }
 
 
-    /** @param string $query
-     * @param ?string $field */
-    private function add_search_clause($query, $field) {
+    private function parse_papers(LogEntryGenerator $leg) {
+        $query = $this->qreq->p ?? "";
+        if (trim($query) === "") {
+            return;
+        }
         $search = new PaperSearch($this->viewer, ["t" => "all", "q" => $query]);
         $search->set_allow_deleted(true);
         $pids = $search->paper_ids();
         if ($search->has_problem()) {
-            $this->ms->warning_at($field, $search->full_feedback_html());
+            $this->ms->warning_at("p", $search->full_feedback_html());
+        } else if (empty($pids)) {
+            $this->ms->warning_at("p", "No papers match that search");
         }
         if (!empty($pids)) {
-            $w = [];
-            foreach ($pids as $p) {
-                $w[] = "paperId={$p}";
-                $w[] = "action like '%(papers% {$p},%'";
-                $w[] = "action like '%(papers% {$p})%'";
-            }
-            $this->lef_clauses[] = "(" . join(" or ", $w) . ")";
             $this->include_pids = array_flip($pids);
-        } else {
-            if (!$search->has_problem()) {
-                $this->ms->warning_at($field, "No papers match that search.");
-            }
-            $this->lef_clauses[] = "false";
         }
+        $leg->set_paper_ids($pids);
     }
 
-    private function add_user_clause() {
+    private function add_user_clause(LogEntryGenerator $leg) {
+        $query = $this->qreq->u ?? "";
+        if (trim($query) === "") {
+            return;
+        }
         $ids = [];
-        $accts = new SearchParser($this->qreq->u);
+        $accts = new SearchParser($query);
         while (($word = $accts->shift_balanced_parens()) !== "") {
             $flags = ContactSearch::F_TAG | ContactSearch::F_USER | ContactSearch::F_ALLOW_DELETED;
             if (substr($word, 0, 1) === "\"") {
@@ -80,28 +77,17 @@ class Log_Page {
             }
             $search = new ContactSearch($flags, $word, $this->viewer);
             foreach ($search->user_ids() as $id) {
-                $ids[$id] = $id;
+                $ids[$id] = true;
             }
         }
-        $w = [];
-        if (!empty($ids)) {
-            $result = $this->conf->qe("select contactId, email from ContactInfo where contactId?a union select contactId, email from DeletedContactInfo where contactId?a", $ids, $ids);
-            while (($row = $result->fetch_row())) {
-                $w[] = "contactId={$row[0]}";
-                $w[] = "destContactId={$row[0]}";
-                $x = sqlq(Dbl::escape_like($row[1]));
-                $w[] = "action like " . Dbl::utf8ci("'% {$x}%'");
-            }
+        if (empty($ids)) {
+            $this->ms->warning_at("u", "No matching users");
         }
-        if (!empty($w)) {
-            $this->lef_clauses[] = "(" . join(" or ", $w) . ")";
-        } else {
-            $this->ms->warning_at("u", "No matching users.");
-            $this->lef_clauses[] = "false";
-        }
+        ksort($ids);
+        $leg->set_user_ids(array_keys($ids));
     }
 
-    private function add_action_clause() {
+    private function add_action_clause(LogEntryGenerator $leg) {
         $w = [];
         $str = $this->qreq->q;
         while (($str = ltrim($str)) !== "") {
@@ -112,11 +98,10 @@ class Log_Page {
             }
             $str = (string) substr($str, strlen($m[0]));
             if ($m[1] !== "") {
-                $x = sqlq(Dbl::escape_like($m[1]));
-                $w[] = "action like " . Dbl::utf8ci("'%{$x}%'");
+                $w[] = $m[1];
             }
         }
-        $this->lef_clauses[] = "(" . join(" or ", $w) . ")";
+        $leg->set_action_matchers($w);
     }
 
     private function set_date() {
@@ -130,7 +115,7 @@ class Log_Page {
     /** @param int $count
      * @return LogEntryGenerator */
     private function make_generator($count) {
-        $leg = new LogEntryGenerator($this->conf, $this->lef_clauses, $count, $this->nlinks);
+        $leg = new LogEntryGenerator($this->conf, $count);
 
         $this->exclude_pids = $this->viewer->hidden_papers ? : [];
         if ($this->viewer->privChair && $this->conf->has_any_manager()) {
@@ -162,21 +147,24 @@ class Log_Page {
     function choose_page($leg, $page) {
         if ($this->first_timestamp) {
             $page = 1;
-            while ($leg->page_after($page, $this->first_timestamp, ceil(2000 / $leg->page_size()))) {
-                ++$page;
-            }
-            $delta = 0;
-            foreach ($leg->page_rows($page) as $row) {
-                if ($row->timestamp > $this->first_timestamp)
-                    ++$delta;
-            }
-            if ($delta) {
-                $leg->set_page_delta($delta);
+            while (true) {
+                $delta = $n = 0;
+                foreach ($leg->page_rows($page, true) as $row) {
+                    ++$n;
+                    if ($row->timestamp > $this->first_timestamp)
+                        ++$delta;
+                }
+                if ($n === 0) {
+                    return max($page - 1, 1);
+                } else if ($delta !== $n) {
+                    $leg->set_page_delta($delta);
+                    return $delta ? $page + 1 : $page;
+                }
                 ++$page;
             }
         } else if (!$page) { // handle `earliest`
             $page = 1;
-            while ($leg->has_page($page + 1, ceil(2000 / $leg->page_size()))) {
+            while ($leg->has_page($page + 1)) {
                 ++$page;
             }
         } else if ($this->qreq->offset
@@ -191,70 +179,18 @@ class Log_Page {
     /** @param LogEntryGenerator $leg */
     function handle_download($leg) {
         $this->qreq->qsession()->commit();
-        assert(Contact::ROLE_PC === 1 && Contact::ROLE_ADMIN === 2 && Contact::ROLE_CHAIR === 4);
-        $role_map = ["", "pc", "sysadmin", "pc sysadmin", "chair", "chair", "chair", "chair"];
+        $leg->set_consolidate_mail(false);
 
         $csvg = $this->conf->make_csvg("log")->set_emit_live(true);
-        $narrow = true;
-        $headers = ["date", "ipaddr", "email"];
-        if ($narrow) {
-            $headers[] = "roles";
-        }
-        array_push($headers, "affected_email", "via", $narrow ? "paper" : "papers", "action");
-        $csvg->select($headers);
+        $csvg->select($leg->csv_narrow_header());
         set_time_limit(300); // might take a while
-        foreach ($leg->page_rows(1) as $row) {
-            $date = date("Y-m-d H:i:s O", (int) $row->timestamp);
-            $xusers = $leg->users_for($row, "contactId");
-            $xdest_users = $leg->users_for($row, "destContactId");
-            if ($xdest_users == $xusers) {
-                $xdest_users = [];
-            }
-            $via = "";
-            if (($trueContactId = (int) $row->trueContactId) !== 0) {
-                if ($trueContactId > 0) {
-                    $via = "admin";
-                } else if ($trueContactId == -1) {
-                    $via = "link";
-                } else if ($trueContactId == -2) {
-                    $via = "API token";
-                } else if ($trueContactId == -3) {
-                    $via = "command line";
-                }
-            }
-            $pids = $leg->paper_ids($row);
-            $action = $leg->cleaned_action($row);
-            if ($narrow) {
-                empty($xusers) && ($xusers[] = null);
-                empty($xdest_users) && ($xdest_users[] = null);
-                empty($pids) && ($pids[] = "");
-                foreach ($xusers as $u1) {
-                    $u1e = $u1 ? $u1->email : "";
-                    $u1r = $u1 ? $role_map[$u1->roles & 7] : "";
-                    foreach ($xdest_users as $u2) {
-                        $u2e = $u2 ? $u2->email : "";
-                        foreach ($pids as $p) {
-                            $csvg->add_row([
-                                $date, $row->ipaddr ?? "", $u1e, $u1r, $u2e,
-                                $via, $p, $action
-                            ]);
-                        }
-                    }
-                }
-            } else {
-                $u1es = $u2es = [];
-                foreach ($xusers as $u) {
-                    $u1es[] = $u->email;
-                }
-                foreach ($xdest_users as $u) {
-                    $u2es[] = $u->email;
-                }
-                $csvg->add_row([
-                    $date, $row->ipaddr ?? "", join(" ", $u1es), join(" ", $u2es),
-                    $via, join(" ", $pids), $action
-                ]);
+
+        for ($page = 1; ($rows = $leg->page_rows($page)); ++$page) {
+            foreach ($rows as $row) {
+                $leg->add_csv_narrow($row, $csvg);
             }
         }
+
         $csvg->emit();
         exit(0);
     }
@@ -270,9 +206,9 @@ class Log_Page {
         } else if ($page === 1) {
             $dplaceholder = "now";
         } else if (($rows = $leg->page_rows($page))) {
-            $dplaceholder = $this->conf->unparse_time_log((int) $rows[0]->timestamp);
+            $dplaceholder = $this->conf->unparse_time_log($rows[0]->timestamp);
         } else if ($this->first_timestamp) {
-            $dplaceholder = $this->conf->unparse_time_log((int) $this->first_timestamp);
+            $dplaceholder = $this->conf->unparse_time_log($this->first_timestamp);
         }
 
         echo Ht::form($this->conf->hoturl("log"), ["method" => "get", "id" => "f-search", "class" => "mx-auto clearfix"]);
@@ -310,7 +246,7 @@ class Log_Page {
             $urls = ["q=" . urlencode($this->qreq->q)];
             foreach (["p", "u", "n", "forceShow"] as $x) {
                 if ($this->qreq[$x])
-                    $urls[] = "$x=" . urlencode($this->qreq[$x]);
+                    $urls[] = "{$x}=" . urlencode($this->qreq[$x]);
             }
             $leg->set_log_url_base($this->conf->hoturl("log", join("&amp;", $urls)));
             echo "<table class=\"lognav\"><tr><td><div class=\"lognavdr\">";
@@ -362,7 +298,7 @@ class Log_Page {
         if (($viewable = $user->viewable_tags($this->viewer))) {
             $dt = $this->conf->tags();
             if (($colors = $dt->color_classes($viewable))) {
-                $t = '<span class="' . $colors . ' taghh">' . $t . '</span>';
+                $t = "<span class=\"{$colors} taghh\">{$t}</span>";
             }
         }
         $url = $this->conf->hoturl("log", ["q" => "", "u" => $user->email, "n" => $this->qreq->n]);
@@ -437,7 +373,7 @@ class Log_Page {
                 . expander(null, 0)
                 . '</button>'
                 . '<span class="fn"><button type="button" class="q ui js-foldup">'
-                . sprintf($this->conf->_($fmt, count($ts)), count($ts))
+                . $this->conf->_($fmt, count($ts))
                 . '</button></span><span class="fx">' . join(", ", $ts)
                 . '</span></div>';
         }
@@ -448,7 +384,10 @@ class Log_Page {
     function print_page($leg, $page) {
         $conf = $this->conf;
         $this->qreq->print_header("Log", "actionlog");
+        file_put_contents("/tmp/x.txt", "");
 
+        $leg->load_row_range($leg->page_index($page),
+                             $leg->page_index($page + $this->nlinks + 1) + 1);
         $trs = $leg->page_rows($page);
 
         if (!$this->viewer->privChair || !empty($this->exclude_pids)) {
@@ -508,13 +447,13 @@ class Log_Page {
         if ($this->unix_timestamp) {
             $time = "@{$row->timestamp}";
         } else {
-            $time = $conf->unparse_time_log((int) $row->timestamp);
+            $time = $conf->unparse_time_log($row->timestamp);
         }
         echo '<td class="pl pl_logtime">', $time, '</td>';
 
         // users
         $xusers = $leg->users_for($row, "contactId");
-        $xusers_html = $this->users_html($xusers, (int) $row->trueContactId);
+        $xusers_html = $this->users_html($xusers, $row->trueContactId);
         $xdest_users = $leg->users_for($row, "destContactId");
 
         if ($xdest_users && $xusers != $xdest_users) {
@@ -628,22 +567,22 @@ class Log_Page {
         }
 
         // parse filter parts
-        $lp = new Log_Page($viewer, $qreq);
+        $lp = new Log_Page($viewer, $qreq, $count);
         if ($bad_count) {
             $lp->ms->error_at("n", "Expected a number greater than 0");
         }
-        if ($qreq->p !== "") {
-            $lp->add_search_clause($qreq->p, "p");
-        }
-        if ($qreq->u !== "") {
-            $lp->add_user_clause();
-        }
-        if ($qreq->q !== "") {
-            $lp->add_action_clause();
-        }
 
         // create entry generator
-        $leg = $lp->make_generator($qreq->download ? 10000000 : $count);
+        $leg = $lp->make_generator($qreq->download ? 10000 : $count);
+        if ($qreq->p !== "") {
+            $lp->parse_papers($leg);
+        }
+        if ($qreq->u !== "") {
+            $lp->add_user_clause($leg);
+        }
+        if ($qreq->q !== "") {
+            $lp->add_action_clause($leg);
+        }
 
         if ($qreq->download) {
             $lp->handle_download($leg);

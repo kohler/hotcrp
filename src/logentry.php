@@ -1,23 +1,23 @@
 <?php
 // logentry.php -- HotCRP action log entries and generator
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class LogEntry {
-    /** @var non-empty-string */
+    /** @var int */
     public $logId;
-    /** @var non-empty-string */
+    /** @var int */
     public $timestamp;
-    /** @var non-empty-string */
+    /** @var int */
     public $contactId;
-    /** @var ?non-empty-string */
+    /** @var ?int */
     public $destContactId;
-    /** @var ?non-empty-string */
+    /** @var ?int */
     public $trueContactId;
     /** @var ?string */
     public $ipaddr;
     /** @var string */
     public $action;
-    /** @var ?non-empty-string */
+    /** @var ?int */
     public $paperId;
     public $data;
 
@@ -27,65 +27,156 @@ class LogEntry {
     public $paperIdArray;
     /** @var ?list<int> */
     public $destContactIdArray;
+    /** @var int */
+    public $ordinal;
+
+    function incorporate() {
+        $this->logId = (int) $this->logId;
+        $this->timestamp = (int) $this->timestamp;
+        $this->contactId = (int) $this->contactId;
+        $this->destContactId = (int) $this->destContactId;
+        $this->trueContactId = (int) $this->trueContactId;
+        if ($this->paperId !== null) {
+            $this->paperId = (int) $this->paperId;
+        }
+    }
+
+    /** @return string */
+    function unparse_via() {
+        $tcid = $this->trueContactId ?? 0;
+        if ($tcid === 0) {
+            return "";
+        } else if ($tcid > 0) {
+            return "admin";
+        } else if ($tcid === -1) {
+            return "link";
+        } else if ($tcid === -2) {
+            return "API token";
+        } else if ($tcid === -3) {
+            return "command line";
+        } else {
+            return "unknown";
+        }
+    }
 }
 
 class LogEntryGenerator {
     /** @var Conf */
     private $conf;
-    private $wheres;
+    /** @var ?list<int> */
+    private $pids;
+    /** @var ?list<int> */
+    private $uids;
+    /** @var ?string */
+    private $email_regex;
+    /** @var null|false|string */
+    private $action_regex;
     /** @var int */
     private $page_size;
     /** @var int */
-    private $nlinks;
-    /** @var int */
     private $delta = 0;
-    /** @var int|float */
-    private $lower_offset_bound;
-    /** @var int|float */
-    private $upper_offset_bound;
-    /** @var int */
-    private $rows_offset;
-    /** @var int */
-    private $rows_max_offset;
     /** @var list<LogEntry> */
     private $rows = [];
     /** @var ?LogEntryFilter */
     private $filter;
-    /** @var array<int,int> */
-    private $page_to_offset;
+    /** @var list<LogEntry> */
+    private $signpost_rows;
+    /** @var int */
+    private $nrows;
+    /** @var int */
+    private $first_index;
+    /** @var int */
+    private $last_known_index;
     private $log_url_base;
     /** @var bool */
-    private $explode_mail = false;
+    private $consolidate_mail = true;
+    /** @var ?LogEntry */
     private $mail_stash;
     /** @var array<int,Contact> */
     private $users;
     /** @var array<int,true> */
     private $need_users;
 
-    /** @param int $page_size
-     * @param int $nlinks */
-    function __construct(Conf $conf, $wheres, $page_size, $nlinks) {
+    private static $csv_role_map = [
+        "", "pc", "sysadmin", "pc sysadmin", "chair", "chair", "chair", "chair"
+    ];
+
+    /** @param int $page_size */
+    function __construct(Conf $conf, $page_size) {
+        assert(Contact::ROLE_PC === 1 && Contact::ROLE_ADMIN === 2 && Contact::ROLE_CHAIR === 4);
         $this->conf = $conf;
-        $this->wheres = $wheres;
         $this->page_size = $page_size;
-        $this->nlinks = $nlinks;
         $this->set_filter(null);
         $this->users = $conf->pc_users();
         $this->need_users = [];
     }
 
-    /** @param ?LogEntryFilter $filter */
-    function set_filter($filter) {
-        $this->filter = $filter;
+    private function reset() {
         $this->rows = [];
-        $this->lower_offset_bound = 0;
-        $this->upper_offset_bound = INF;
-        $this->page_to_offset = [];
+        $this->first_index = $this->last_known_index = 0;
+        $this->nrows = PHP_INT_MAX;
+        $this->signpost_rows = [];
+        $this->mail_stash = null;
     }
 
-    /** @param bool $explode_mail */
-    function set_explode_mail($explode_mail) {
-        $this->explode_mail = $explode_mail;
+    /** @param ?LogEntryFilter $filter
+     * @return $this */
+    function set_filter($filter) {
+        $this->filter = $filter;
+        $this->reset();
+        return $this;
+    }
+
+    /** @param bool $consolidate_mail
+     * @return $this */
+    function set_consolidate_mail($consolidate_mail) {
+        if ($consolidate_mail !== $this->consolidate_mail) {
+            $this->consolidate_mail = $consolidate_mail;
+            $this->reset();
+        }
+        return $this;
+    }
+
+    /** @param ?list<int> $pids
+     * @return $this */
+    function set_paper_ids($pids) {
+        $this->pids = $pids;
+        $this->reset();
+        return $this;
+    }
+
+    /** @param ?list<int> $uids
+     * @return $this */
+    function set_user_ids($uids) {
+        $this->uids = $uids;
+        if ($uids !== null) {
+            $ex = [];
+            foreach (Dbl::fetch_first_columns($this->conf->dblink, "select email from ContactInfo where contactId?a union select email from DeletedContactInfo where contactId?a", $uids, $uids) as $email) {
+                $ex[] = addcslashes($email, '^$.*+?|(){}[]\\');
+            }
+            $this->email_regex = ' (' . join("|", $ex) . ')';
+        }
+        $this->reset();
+        return $this;
+    }
+
+    /** @param ?list<string> $matchers
+     * @return $this */
+    function set_action_matchers($matchers) {
+        if ($matchers === null) {
+            $this->action_regex = null;
+        } else if ($matchers === []) {
+            $this->action_regex = false;
+        } else {
+            $ex = [];
+            foreach ($matchers as $m) {
+                $t = addcslashes($m, '^$.*+?|(){}[]\\');
+                $ex[] = str_replace('\\*', ".*", $t);
+            }
+            $this->action_regex = '(' . join("|", $ex) . ')';
+        }
+        $this->reset();
+        return $this;
     }
 
     /** @return bool */
@@ -119,133 +210,253 @@ class LogEntryGenerator {
         return $offset;
     }
 
-    private function load_rows($pageno, $limit, $delta_adjusted = false) {
-        $limit = (int) $limit;
-        if ($pageno > 1 && $this->delta > 0 && !$delta_adjusted) {
-            --$pageno;
-            $limit += $this->page_size;
+    /** @param int $pageno
+     * @return int */
+    function page_index($pageno) {
+        $index = ($pageno - 1) * $this->page_size;
+        if ($index > 0 && $this->delta > 0) {
+            $index -= $this->page_size - $this->delta;
         }
-        $offset = ($pageno - 1) * $this->page_size;
-        $db_offset = $offset;
-        if (($this->filter || !$this->explode_mail) && $db_offset !== 0) {
-            if (!isset($this->page_to_offset[$pageno])) {
-                $xlimit = min(4 * $this->page_size + $limit, 2000);
-                $xpageno = max($pageno - floor($xlimit / $this->page_size), 1);
-                $this->load_rows($xpageno, $xlimit, true);
-                if ($this->rows_offset <= $offset && $offset + $limit <= $this->rows_max_offset)
-                    return;
-            }
-            $xpageno = $pageno;
-            while ($xpageno > 1 && !isset($this->page_to_offset[$xpageno])) {
-                --$xpageno;
-            }
-            $db_offset = $xpageno > 1 ? $this->page_to_offset[$xpageno] : 0;
+        return $index;
+    }
+
+    /** @return string */
+    private function unparse_pids_where(&$qv) {
+        if (empty($this->pids)) {
+            return "false";
+        }
+        $qv[] = $this->pids;
+        $qv[] = "\\(papers.* (" . join("|", $this->pids) . ")[,)]";
+        return "(paperId?a or action rlike " . Dbl::utf8ci($this->conf->dblink, "?") . ")";
+    }
+
+    /** @return string */
+    private function unparse_uids_where(&$qv) {
+        if (empty($this->uids)) {
+            return "false";
+        }
+        $qv[] = $this->uids;
+        $qv[] = $this->uids;
+        $qv[] = $this->email_regex;
+        // XXX trueContactId (actas)?
+        return "(contactId?a or destContactId?a or action rlike " . Dbl::utf8ci($this->conf->dblink, "?") . ")";
+    }
+
+    /** @return string */
+    private function unparse_action_where(&$qv) {
+        if ($this->action_regex === false) {
+            return "false";
+        }
+        $qv[] = $this->action_regex;
+        return "action rlike " . Dbl::utf8ci($this->conf->dblink, "?");
+    }
+
+    /** @return string */
+    private function unparse_query_base() {
+        $wheres = $qv = [];
+        if ($this->pids !== null) {
+            $wheres[] = $this->unparse_pids_where($qv);
+        }
+        if ($this->uids !== null) {
+            $wheres[] = $this->unparse_uids_where($qv);
+        }
+        if ($this->action_regex !== null) {
+            $wheres[] = $this->unparse_action_where($qv);
+        }
+        if (empty($wheres)) {
+            $wheres[] = "true";
+        }
+        return Dbl::format_query_apply($this->conf->dblink,
+            "select logId, ipaddr, timestamp, contactId, destContactId, trueContactId, action, paperId
+            from ActionLog where " . join(" and ", $wheres),
+            $qv);
+    }
+
+    /** @param LogEntry $row */
+    private function add_signpost_row($row) {
+        $n = count($this->signpost_rows);
+        while ($n > 0 && $row->ordinal < $this->signpost_rows[$n - 1]->ordinal) {
+            --$n;
+        }
+        if ($n > 0 && $row->ordinal === $this->signpost_rows[$n - 1]->ordinal) {
+            $this->signpost_rows[$n - 1] = $row;
+        } else {
+            array_splice($this->signpost_rows, $n, 0, [$row]);
+        }
+    }
+
+    /** @param int $first
+     * @param int $last
+     * @param bool $expand */
+    function load_row_range($first, $last, $expand = false) {
+        // constrain [$first, $last) to existing rows, exit if satisfied
+        $last = min($last, $this->nrows);
+        $first = min($first, $last);
+        if ($first === $last
+            || ($first >= $this->first_index
+                && $last <= $this->first_index + count($this->rows))) {
+            return;
+        }
+        if ($expand && $last - $first < 2000) {
+            $last = min($first + 2000, $this->nrows);
         }
 
-        $q = "select logId, ipaddr, timestamp, contactId, destContactId, trueContactId, action, paperId from ActionLog";
-        if (!empty($this->wheres)) {
-            $q .= " where " . join(" and ", $this->wheres);
+        // remove unneeded rows
+        if ($first < $this->first_index
+            || $first >= $this->first_index + count($this->rows)) {
+            $this->rows = [];
+            $this->first_index = $first;
+        } else if ($first >= $this->first_index + 10000) {
+            $this->rows = array_slice($this->rows, $first - $this->first_index);
+            $this->first_index = $first;
         }
-        $q .= " order by logId desc";
 
-        $this->rows = [];
-        $this->rows_offset = $offset;
-        $n = 0;
-        $exhausted = false;
-        while ($n < $limit && !$exhausted) {
-            $result = $this->conf->qe_raw($q . " limit $db_offset,$limit");
-            $first_db_offset = $db_offset;
+        // if loading from scratch, find reasonable boundary
+        if (!empty($this->rows)) {
+            assert($first <= $this->first_index + count($this->rows));
+            $br = $this->rows[count($this->rows) - 1];
+            $ordinal = $br->ordinal + 1;
+            $limit_logid = $br->logId;
+        } else {
+            $bi = 0;
+            while ($bi !== count($this->signpost_rows)
+                   && $this->signpost_rows[$bi]->ordinal < $first) {
+                ++$bi;
+            }
+            $br = $bi > 0 ? $this->signpost_rows[$bi - 1] : null;
+            if ((!$br || $first - $br->ordinal > 2000)
+                && !$this->filter
+                && !$this->consolidate_mail) {
+                $ordinal = $first;
+                $limit_logid = null;
+            } else if ($br) {
+                $ordinal = $br->ordinal + 1;
+                $limit_logid = $br->logId;
+            } else {
+                $ordinal = 0;
+                $limit_logid = 0;
+            }
+        }
+
+        // loop until satisfied
+        $qbase = $this->unparse_query_base();
+        while ($last > $this->first_index + count($this->rows)
+               || ($last === $this->first_index + count($this->rows)
+                   && $last !== $this->nrows
+                   && $this->mail_stash)) {
+            // construct query
+            $q = $qbase;
+            if ($limit_logid !== null && $ordinal !== 0) {
+                $q .= " and logId<{$limit_logid}";
+            }
+            $q .= " order by logId desc";
+            $xlimit = $last - ($this->first_index + count($this->rows));
+            if ($this->filter || $this->consolidate_mail) {
+                $xlimit += 200;
+            }
+            if ($limit_logid !== null || $ordinal === 0) {
+                $q .= " limit {$xlimit}";
+            } else {
+                $q .= " limit {$ordinal},{$xlimit}";
+            }
+
+            // fetch results
+            $result = $this->conf->qe_raw($q);
+            $n = 0;
             while (($row = $result->fetch_object("LogEntry"))) {
                 '@phan-var LogEntry $row';
-                $this->need_users[(int) $row->contactId] = true;
-                $destuid = (int) ($row->destContactId ? : $row->contactId);
+                $row->incorporate();
+                $limit_logid = $row->logId;
+                ++$n;
+
+                $destuid = $row->destContactId ? : $row->contactId;
+                $this->need_users[$row->contactId] = true;
                 $this->need_users[$destuid] = true;
-                ++$db_offset;
-                if (!$this->explode_mail
-                    && $this->mail_stash
+
+                // consolidate mail rows
+                if ($this->mail_stash
                     && $this->mail_stash->action === $row->action) {
                     $this->mail_stash->destContactIdArray[] = $destuid;
                     if ($row->paperId) {
-                        $this->mail_stash->paperIdArray[] = (int) $row->paperId;
+                        $this->mail_stash->paperIdArray[] = $row->paperId;
+                    }
+                    if ($ordinal % 1000 === 0) {
+                        $row->ordinal = $ordinal - 1;
+                        $this->add_signpost_row($row);
                     }
                     continue;
                 }
-                if (!$this->filter || call_user_func($this->filter, $row)) {
+
+                // skip filtered rows
+                if ($this->filter && !call_user_func($this->filter, $row)) {
+                    continue;
+                }
+
+                // incorporate row
+                $row->ordinal = $ordinal;
+                if ($ordinal >= $first) {
                     $this->rows[] = $row;
-                    ++$n;
-                    if ($n % $this->page_size === 0) {
-                        $this->page_to_offset[$pageno + ($n / $this->page_size)] = $db_offset;
+                }
+                ++$ordinal;
+                if ($ordinal % 1000 === 0) {
+                    $this->add_signpost_row($row);
+                }
+
+                // maybe mark mail for consolidation
+                if (!$this->consolidate_mail) {
+                    continue;
+                }
+                if (str_starts_with($row->action, "Sent mail #")) {
+                    $this->mail_stash = $row;
+                    $row->destContactIdArray = [$destuid];
+                    $row->destContactId = null;
+                    $row->paperIdArray = [];
+                    if ($row->paperId) {
+                        $row->paperIdArray[] = $row->paperId;
+                        $row->paperId = null;
                     }
-                    if (!$this->explode_mail) {
-                        if (substr($row->action, 0, 11) === "Sent mail #") {
-                            $this->mail_stash = $row;
-                            $row->destContactIdArray = [$destuid];
-                            $row->destContactId = null;
-                            $row->paperIdArray = [];
-                            if ($row->paperId) {
-                                $row->paperIdArray[] = (int) $row->paperId;
-                                $row->paperId = null;
-                            }
-                        } else {
-                            $this->mail_stash = null;
-                        }
-                    }
+                } else {
+                    $this->mail_stash = null;
                 }
             }
-            Dbl::free($result);
-            $exhausted = $first_db_offset + $limit !== $db_offset;
-        }
+            $result->close();
 
-        if ($n > 0) {
-            $this->lower_offset_bound = max($this->lower_offset_bound, $this->rows_offset + $n);
+            // maybe mark end
+            $this->last_known_index = max($this->last_known_index, $ordinal);
+            if ($n < $xlimit) {
+                $this->nrows = $ordinal;
+                $last = min($last, $ordinal);
+            }
         }
-        if ($exhausted) {
-            $this->upper_offset_bound = min($this->upper_offset_bound, $this->rows_offset + $n);
-        }
-        $this->rows_max_offset = $exhausted ? INF : $this->rows_offset + $n;
     }
 
     /** @param int $pageno
      * @return bool */
-    function has_page($pageno, $load_npages = null) {
+    function has_page($pageno) {
         assert(is_int($pageno) && $pageno >= 1);
-        $offset = $this->page_offset($pageno);
-        if ($offset >= $this->lower_offset_bound
-            && $offset < $this->upper_offset_bound) {
-            if ($load_npages) {
-                $limit = $load_npages * $this->page_size;
-            } else {
-                $limit = ($this->nlinks + 1) * $this->page_size + 30;
-            }
-            if ($this->filter) {
-                $limit = max($limit, 2000);
-            }
-            $this->load_rows($pageno, $limit);
+        $idx = $this->page_index($pageno);
+        if ($idx >= $this->nrows) {
+            return false;
         }
-        return $offset < $this->lower_offset_bound;
+        if ($idx >= $this->last_known_index) {
+            $this->load_row_range($idx, $idx + 2000);
+        }
+        return $idx < $this->last_known_index;
     }
 
     /** @param int $pageno
-     * @param int $timestamp
-     * @return bool */
-    function page_after($pageno, $timestamp, $load_npages = null) {
-        $rows = $this->page_rows($pageno, $load_npages);
-        return !empty($rows) && $rows[count($rows) - 1]->timestamp > $timestamp;
-    }
-
-    /** @param int $pageno
+     * @param bool $expand
      * @return list<LogEntry> */
-    function page_rows($pageno, $load_npages = null) {
+    function page_rows($pageno, $expand = false) {
         assert(is_int($pageno) && $pageno >= 1);
-        if (!$this->has_page($pageno, $load_npages)) {
+        $first = $this->page_index($pageno);
+        $this->load_row_range($first, $first + $this->page_size, $expand);
+        $i0 = max($first, $this->first_index);
+        $i1 = min($first + $this->page_size, $this->first_index + count($this->rows));
+        if ($i0 >= $i1) {
             return [];
         }
-        $offset = $this->page_offset($pageno);
-        if ($offset < $this->rows_offset
-            || $offset + $this->page_size > $this->rows_max_offset) {
-            $this->load_rows($pageno, $this->page_size);
-        }
-        return array_slice($this->rows, $offset - $this->rows_offset, $this->page_size);
+        return array_slice($this->rows, $i0 - $this->first_index, $i1 - $i0);
     }
 
     /** @param string $url */
@@ -311,31 +522,110 @@ class LogEntryGenerator {
     /** @param LogEntry $row
      * @return list<int> */
     function paper_ids($row) {
-        if (!isset($row->cleanedAction)) {
-            if (!isset($row->paperIdArray)) {
-                $row->paperIdArray = [];
-            }
-            if (preg_match('/\A(.* |)\(papers ([\d, ]+)\)?\z/', $row->action, $m)) {
-                $row->cleanedAction = rtrim($m[1]);
-                foreach (preg_split('/[\s,]+/', $m[2]) as $p) {
-                    if ($p !== "")
-                        $row->paperIdArray[] = (int) $p;
-                }
-            } else {
-                $row->cleanedAction = $row->action;
-            }
-            if ($row->paperId) {
-                $row->paperIdArray[] = (int) $row->paperId;
-            }
-            $row->paperIdArray = array_values(array_unique($row->paperIdArray));
+        if (isset($row->cleanedAction)) {
+            return $row->paperIdArray;
         }
+        $row->paperIdArray = $row->paperIdArray ?? [];
+        if (preg_match('/\A(.* |)\(papers ([\d, ]+)\)?\z/', $row->action, $m)) {
+            $row->cleanedAction = rtrim($m[1]);
+            foreach (preg_split('/[\s,]+/', $m[2]) as $p) {
+                if ($p !== "")
+                    $row->paperIdArray[] = (int) $p;
+            }
+        } else {
+            $row->cleanedAction = $row->action;
+        }
+        if ($row->paperId) {
+            $row->paperIdArray[] = (int) $row->paperId;
+        }
+        $row->paperIdArray = array_values(array_unique($row->paperIdArray));
         return $row->paperIdArray;
     }
 
+    /** @param LogEntry $row */
     function cleaned_action($row) {
         if (!isset($row->cleanedAction)) {
             $this->paper_ids($row);
         }
         return $row->cleanedAction;
+    }
+
+    /** @return list<string> */
+    function csv_narrow_header() {
+        return [
+            "date", "ipaddr", "email", "roles", "affected_email", "via",
+            "paper", "action"
+        ];
+    }
+
+    /** @return list<string> */
+    function csv_wide_header() {
+        return [
+            "date", "ipaddr", "email", "affected_email", "via",
+            "papers", "action"
+        ];
+    }
+
+    /** @param LogEntry $row
+     * @param CsvGenerator $csvg */
+    function add_csv_narrow($row, $csvg) {
+        $date = date("Y-m-d H:i:s O", $row->timestamp);
+        $xusers = $this->users_for($row, "contactId");
+        $xdest_users = $this->users_for($row, "destContactId");
+        $via = $row->unparse_via();
+        $pids = $this->paper_ids($row);
+        $action = $this->cleaned_action($row);
+
+        // ensure one of each
+        if (empty($xusers)) {
+            $xusers = [null];
+        }
+        if ($xdest_users === $xusers || empty($xdest_users)) {
+            $xdest_users = [null];
+        }
+        if (empty($pids)) {
+            $pids = [""];
+        }
+
+        // one row per (user, dest_user, pid)
+        foreach ($xusers as $u1) {
+            $u1e = $u1 ? $u1->email : "";
+            $u1r = $u1 ? self::$csv_role_map[$u1->roles & 7] : "";
+            foreach ($xdest_users as $u2) {
+                $u2e = $u2 ? $u2->email : "";
+                foreach ($pids as $p) {
+                    $csvg->add_row([
+                        $date, $row->ipaddr ?? "", $u1e, $u1r, $u2e,
+                        $via, $p, $action
+                    ]);
+                }
+            }
+        }
+    }
+
+    /** @param LogEntry $row
+     * @param CsvGenerator $csvg */
+    function add_csv_wide($row, $csvg) {
+        $date = date("Y-m-d H:i:s O", $row->timestamp);
+        $xusers = $this->users_for($row, "contactId");
+        $xdest_users = $this->users_for($row, "destContactId");
+        $via = $row->unparse_via();
+        $pids = $this->paper_ids($row);
+        $action = $this->cleaned_action($row);
+
+        $u1es = $u2es = [];
+        foreach ($xusers as $u) {
+            $u1es[] = $u->email;
+        }
+        if ($xdest_users !== $xusers) {
+            foreach ($xdest_users as $u) {
+                $u2es[] = $u->email;
+            }
+        }
+
+        $csvg->add_row([
+            $date, $row->ipaddr ?? "", join(" ", $u1es), join(" ", $u2es),
+            $via, join(" ", $pids), $action
+        ]);
     }
 }

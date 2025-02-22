@@ -538,7 +538,7 @@ class Dbl {
             }
             // combine
             $suffix = substr($qstr, $nextpos);
-            $qstr = "$prefix$arg$suffix";
+            $qstr = "{$prefix}{$arg}{$suffix}";
             $strpos = strlen($qstr) - strlen($suffix);
         }
         if ($simpleargs && $argpos !== count($argv)) {
