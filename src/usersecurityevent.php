@@ -113,18 +113,19 @@ class UserSecurityEvent {
     }
 
 
-    /** @return Generator<UserSecurityEvent> */
-    static function session_list(Qrequest $qreq) {
-        foreach ($qreq->gsession("usec") ?? [] as $x) {
+    /** @param Qsession $qs
+     * @return Generator<UserSecurityEvent> */
+    static function session_list($qs) {
+        foreach ($qs->get("usec") ?? [] as $x) {
             yield UserSecurityEvent::make_array($x);
         }
     }
 
     /** @param string $email
      * @return Generator<UserSecurityEvent> */
-    static function session_list_by_email(Qrequest $qreq, $email) {
-        $uindex = Contact::session_index_by_email($qreq, $email);
-        foreach ($qreq->gsession("usec") ?? [] as $x) {
+    static function session_list_by_email(Qsession $qs, $email) {
+        $uindex = Contact::session_index_by_email($qs, $email);
+        foreach ($qs->get("usec") ?? [] as $x) {
             if (isset($x["e"])
                 ? strcasecmp($x["e"], $email) !== 0
                 : ($x["u"] ?? 0) !== $uindex) {
@@ -135,16 +136,16 @@ class UserSecurityEvent {
     }
 
 
-    function store(Qrequest $qreq) {
+    function store(Qsession $qs) {
         assert(isset($this->email));
-        $uindex = Contact::session_index_by_email($qreq, $this->email);
+        $uindex = Contact::session_index_by_email($qs, $this->email);
         assert(($this->uindex ?? -1) < 0 || $this->uindex === $uindex);
         $this->uindex = $uindex;
         $this->timestamp = $this->timestamp ?? Conf::$now;
 
-        $nusec = count($qreq->gsession("usec") ?? []);
+        $nusec = count($qs->get("usec") ?? []);
         $result = [];
-        foreach (self::session_list($qreq) as $use) {
+        foreach (self::session_list($qs) as $use) {
             // skip old reauths
             if ($use->reason === self::REASON_REAUTH
                 && $use->timestamp < Conf::$now - 86400) {
@@ -177,38 +178,38 @@ class UserSecurityEvent {
 
         // add self
         $result[] = $this->as_array();
-        $qreq->set_gsession("usec", $result);
+        $qs->set("usec", $result);
     }
 
 
-    /** @param Qrequest $qreq
+    /** @param Qsession $qs
      * @param list<string> $us */
-    static private function session_user_set($qreq, $us) {
+    static private function session_user_set($qs, $us) {
         while (!empty($us) && $us[count($us) - 1] === "") {
             array_pop($us);
         }
         if (empty($us)) {
-            $qreq->unset_gsession("us");
-            $qreq->unset_gsession("u");
+            $qs->unset("us");
+            $qs->unset("u");
             return;
         }
         if (count($us) > 1) {
-            $qreq->set_gsession("us", $us);
+            $qs->set("us", $us);
         } else {
-            $qreq->unset_gsession("us");
+            $qs->unset("us");
         }
         $i = 0;
         while ($us[$i] === "") {
             ++$i;
         }
-        $qreq->set_gsession("u", $us[$i]);
+        $qs->set("u", $us[$i]);
     }
 
-    /** @param Qrequest $qreq
+    /** @param Qsession $qs
      * @param string $email
      * @return int */
-    static function session_user_add($qreq, $email) {
-        $us = Contact::session_users($qreq);
+    static function session_user_add($qs, $email) {
+        $us = Contact::session_users($qs);
         $empty = null;
         for ($ui = 0; $ui !== count($us); ++$ui) {
             if ($us[$ui] === "") {
@@ -221,30 +222,30 @@ class UserSecurityEvent {
             $ui = $empty;
         }
         $us[$ui] = $email;
-        self::session_user_set($qreq, $us);
+        self::session_user_set($qs, $us);
         return $ui;
     }
 
-    /** @param Qrequest $qreq
+    /** @param Qsession $qs
      * @param string $email */
-    static function session_user_remove($qreq, $email) {
-        $us = Contact::session_users($qreq);
+    static function session_user_remove($qs, $email) {
+        $us = Contact::session_users($qs);
         for ($ui = 0; $ui !== count($us); ++$ui) {
             if (strcasecmp($us[$ui], $email) === 0) {
                 $us[$ui] = "";
                 break;
             }
         }
-        self::session_user_set($qreq, $us);
+        self::session_user_set($qs, $us);
 
         // remove now-irrelevant `usec` entries
         $usec = [];
-        foreach ($qreq->gsession("usec") ?? [] as $x) {
+        foreach ($qs->get("usec") ?? [] as $x) {
             if (isset($x["e"]) ? strcasecmp($x["e"], $email) === 0 : ($x["u"] ?? 0) === $ui) {
                 continue;
             }
             $usec[] = $x;
         }
-        $qreq->set_gsession("usec", $usec);
+        $qs->set("usec", $usec);
     }
 }

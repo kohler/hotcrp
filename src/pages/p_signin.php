@@ -92,7 +92,7 @@ class Signin_Page {
     static function signin_request_success(Contact $user, Qrequest $qreq, $cs, $info)  {
         if (!$info["ok"]) {
             foreach ($info["usec"] ?? [] as $use) {
-                $use->store($qreq);
+                $use->store($qreq->qsession());
             }
             return $info;
         }

@@ -703,21 +703,22 @@ class Contact implements JsonSerializable {
 
     // initialization
 
-    /** @param Qrequest $qreq
+    /** @param Qrequest|Qsession $qreq
      * @return list<string> */
     static function session_users($qreq) {
         if (isset(self::$session_users)) {
             return self::$session_users;
-        } else if (($us = $qreq->gsession("us")) !== null) {
-            return $us;
-        } else if (($u = $qreq->gsession("u")) !== null) {
-            return [$u];
-        } else {
-            return [];
         }
+        $qs = $qreq instanceof Qsession ? $qreq : $qreq->qsession();
+        if (($us = $qs->get("us")) !== null) {
+            return $us;
+        } else if (($u = $qs->get("u")) !== null) {
+            return [$u];
+        }
+        return [];
     }
 
-    /** @param Qrequest $qreq
+    /** @param Qrequest|Qsession $qreq
      * @param string $email
      * @return int */
     static function session_index_by_email($qreq, $email) {

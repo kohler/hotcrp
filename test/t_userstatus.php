@@ -18,10 +18,10 @@ class UserStatus_Tester {
         $u = $this->conf->fresh_user_by_email($email);
         $qreq = (new Qrequest("POST", $req))->approve_token();
         $qreq->set_qsession(new TestQsession);
-        UserSecurityEvent::session_user_add($qreq, $email);
+        UserSecurityEvent::session_user_add($qreq->qsession(), $email);
         UserSecurityEvent::make($email)
             ->set_reason(UserSecurityEvent::REASON_REAUTH)
-            ->store($qreq);
+            ->store($qreq->qsession());
         $u = $u->activate($qreq, true);
         $qreq->set_user($u);
         return [$u, $qreq];
@@ -46,7 +46,7 @@ class UserStatus_Tester {
 
     static function reauth_query($qreq, $email, $bound) {
         $x = false;
-        foreach (UserSecurityEvent::session_list_by_email($qreq, $email) as $use) {
+        foreach (UserSecurityEvent::session_list_by_email($qreq->qsession(), $email) as $use) {
             if ($use->type === UserSecurityEvent::TYPE_PASSWORD
                 && $use->reason === UserSecurityEvent::REASON_REAUTH
                 && $use->timestamp >= $bound)

@@ -63,6 +63,24 @@ class UpdateSession {
         }
     }
 
+    /** @param Qsession $qs
+     * @param string $actions */
+    static function apply_actions($qs, $actions) {
+        foreach (explode("\x1e" /* RS */, $actions) as $action) {
+            if ($action === "") {
+                continue;
+            }
+            $aj = json_decode($action);
+            if (!is_object($aj)) {
+                continue;
+            }
+            if (($aj->action ?? null) === "signout"
+                && is_string($aj->email ?? null)) {
+                UserSecurityEvent::session_user_remove($qs, $aj->email);
+            }
+        }
+    }
+
     /** @param Qrequest $qreq
      * @param string $email
      * @param bool $add
@@ -70,9 +88,9 @@ class UpdateSession {
      * @deprecated */
     static function user_change($qreq, $email, $add) {
         if ($add) {
-            return UserSecurityEvent::session_user_add($qreq, $email);
+            return UserSecurityEvent::session_user_add($qreq->qsession(), $email);
         } else {
-            UserSecurityEvent::session_user_remove($qreq, $email);
+            UserSecurityEvent::session_user_remove($qreq->qsession(), $email);
             return -1;
         }
     }
@@ -85,7 +103,7 @@ class UpdateSession {
      * @deprecated */
     static function usec_query(Qrequest $qreq, $email, $type, $reason, $bound = 0) {
         $success = false;
-        foreach (UserSecurityEvent::session_list_by_email($qreq, $email) as $use) {
+        foreach (UserSecurityEvent::session_list_by_email($qreq->qsession(), $email) as $use) {
             if ($use->type === $type
                 && $use->reason === $reason
                 && $use->timestamp >= $bound)
@@ -102,7 +120,7 @@ class UpdateSession {
     static function usec_add(Qrequest $qreq, $email, $type, $reason, $success) {
         UserSecurityEvent::make($email, $type, $reason)
             ->set_success($success)
-            ->store($qreq);
+            ->store($qreq->qsession());
     }
 
     /** @param string $email

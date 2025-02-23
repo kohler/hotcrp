@@ -38,8 +38,7 @@ class Qsession {
             return;
         }
         if ($this->opentype === 2 && $this->sid !== null) {
-            $sid = $this->start($this->sid);
-            assert($sid === $this->sid);
+            $this->start($this->sid);
             return;
         }
         if (headers_sent($hsfn, $hsln)) {
@@ -50,12 +49,13 @@ class Qsession {
         $sn = session_name();
         $cookie_sid = $_COOKIE[$sn] ?? null;
         if (!$this->sopen) {
-            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-            $this->sid = $this->start($cookie_sid);
-            if ($this->sid === null) {
+            $x = $this->start($cookie_sid);
+            if ($x !== null) { /* backward compat */
+                $this->set_start_sid($x);
+            }
+            if (!$this->sopen) {
                 return;
             }
-            $this->sopen = true;
         }
 
         // reset session while reopened, empty [session fixation], or deleted
@@ -129,10 +129,20 @@ class Qsession {
     }
 
 
-    /** @param ?string $sid
-     * @return ?string */
+    /** @param ?string $sid */
     protected function start($sid) {
-        return null;
+    }
+
+    /** @param ?string $sid
+     * @suppress PhanAccessReadOnlyProperty */
+    protected function set_start_sid($sid) {
+        assert(!$this->sopen || $sid === $this->sid);
+        if ($sid !== null && $sid !== "") {
+            $this->sid = $sid;
+            $this->sopen = true;
+        } else {
+            $this->sid = null;
+        }
     }
 
     /** @return bool */

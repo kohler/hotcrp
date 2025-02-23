@@ -147,10 +147,11 @@ class LoginHelper {
         $xuser->mark_login();
 
         // store authentication
-        $qreq->qsession()->open_new_sid();
-        UserSecurityEvent::session_user_add($qreq, $xuser->email);
+        $qs = $qreq->qsession();
+        $qs->open_new_sid();
+        UserSecurityEvent::session_user_add($qs, $xuser->email);
         foreach ($info["usec"] ?? [] as $use) {
-            $use->set_email($xuser->email)->store($qreq);
+            $use->set_email($xuser->email)->store($qs);
         }
 
         // activate
@@ -160,7 +161,7 @@ class LoginHelper {
         $nav = $qreq->navigation();
         $url = $nav->server . $nav->base_path;
         if ($qreq->has_gsession("us")) {
-            $url .= "u/" . Contact::session_index_by_email($qreq, $user->email) . "/";
+            $url .= "u/" . Contact::session_index_by_email($qs, $user->email) . "/";
         }
         $url .= "?postlogin=1";
         if ($qreq->redirect !== null && $qreq->redirect !== "1") {

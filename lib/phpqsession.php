@@ -11,8 +11,7 @@ class PHPQsession extends Qsession {
             session_id($sid);
         }
         session_start();
-        $sid = session_id();
-        return $sid !== "" ? $sid : null;
+        $this->set_start_sid(session_id());
     }
 
     function new_sid() {

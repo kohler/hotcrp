@@ -197,7 +197,8 @@ class UserStatus extends MessageSet {
         $info = $this->viewer->check_password_info($pw);
         if ($info["ok"]) {
             foreach ($info["usec"] ?? [] as $use) {
-                $use->set_reason(UserSecurityEvent::REASON_REAUTH)->store($this->qreq);
+                $use->set_reason(UserSecurityEvent::REASON_REAUTH)
+                    ->store($this->qreq->qsession());
             }
         } else {
             $info["field"] = "reauth:password";
@@ -287,7 +288,7 @@ class UserStatus extends MessageSet {
         if ($this->viewer->is_root_user()) {
             $this->_reauth_status = true;
         } else if (!$this->viewer->is_empty()) {
-            foreach (UserSecurityEvent::session_list_by_email($this->qreq, $this->viewer->email) as $use) {
+            foreach (UserSecurityEvent::session_list_by_email($this->qreq->qsession(), $this->viewer->email) as $use) {
                 if ($use->reason === UserSecurityEvent::REASON_REAUTH
                     && $use->timestamp >= Conf::$now - 600) {
                     $this->_reauth_status = $use->success;

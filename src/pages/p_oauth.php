@@ -259,7 +259,7 @@ class OAuth_Page {
             UserSecurityEvent::make($jid->email, UserSecurityEvent::TYPE_OAUTH)
                 ->set_subtype($authi->name)
                 ->set_success(false)
-                ->store($this->qreq);
+                ->store($this->qreq->qsession());
             throw new Redirection($tokdata->site_uri);
         }
 
@@ -280,13 +280,14 @@ class OAuth_Page {
         if (!$tokdata->quiet) {
             $this->conf->feedback_msg(MessageItem::success("<0>Signed in"));
         }
-        $uindex = UserSecurityEvent::session_user_add($this->qreq, $user->email);
+        $qs = $this->qreq->qsession();
+        $uindex = UserSecurityEvent::session_user_add($qs, $user->email);
         UserSecurityEvent::make($user->email, UserSecurityEvent::TYPE_OAUTH)
             ->set_subtype($authi->name)
-            ->store($this->qreq);
+            ->store($qs);
 
         $uri = $this->site_uri;
-        if (count(Contact::session_users($this->qreq)) > 1) {
+        if (count(Contact::session_users($qs)) > 1) {
             $uri .= "u/{$uindex}/";
         }
         if ($tokdata->redirect) {
