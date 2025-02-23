@@ -49,10 +49,7 @@ class Qsession {
         $sn = session_name();
         $cookie_sid = $_COOKIE[$sn] ?? null;
         if (!$this->sopen) {
-            $x = $this->start($cookie_sid);
-            if ($x !== null) { /* backward compat */
-                $this->set_start_sid($x);
-            }
+            $this->start($cookie_sid);
             if (!$this->sopen) {
                 return;
             }
@@ -111,11 +108,10 @@ class Qsession {
             $this->commit();
 
             /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-            $this->sid = $this->start($nsid);
-            if ($this->sid === null) {
+            $this->start($nsid);
+            if (!$this->sopen) {
                 return;
             }
-            $this->sopen = true;
 
             if ($transfer) {
                 // `unset` should be a no-op, because we never transfer data
