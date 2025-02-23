@@ -20,18 +20,29 @@ class ActionLog_Batch {
     public $out;
     /** @var bool */
     public $sitename;
+    /** @var bool */
+    public $header;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
         $this->narrow = !isset($arg["wide"]);
         $this->page_size = $arg["pagesize"] ?? 10000;
         $this->sitename = isset($arg["N"]);
+        $this->header = !isset($arg["no-header"]) || isset($arg["header"]);
         foreach ($arg["u"] ?? [] as $u) {
             $this->add_user_clause($u);
         }
+
         if (isset($arg["o"]) && $arg["o"] !== "-") {
-            if (!($this->out = @fopen($arg["o"], "wb"))) {
+            $omode = isset($arg["append"]) ? "ab" : "wb";
+            if (!($this->out = @fopen($arg["o"], $omode))) {
                 throw new CommandLineException($arg["o"] . ": Cannot create output file");
+            }
+            if (isset($arg["append"])
+                && ($stat = fstat($this->out))
+                && $stat["size"] > 0
+                && !isset($arg["header"])) {
+                $this->header = false;
             }
         } else {
             $this->out = STDOUT;
@@ -78,11 +89,14 @@ class ActionLog_Batch {
         $csvg = (new CsvGenerator)->set_stream($this->out);
         $sitename = $this->conf->opt("confid");
         $siteclass = $this->conf->opt("siteclass");
-        $header = $this->narrow ? $leg->narrow_csv_fields() : $leg->wide_csv_fields();
+        $fields = $this->narrow ? $leg->narrow_csv_fields() : $leg->wide_csv_fields();
         if ($this->sitename) {
-            array_unshift($header, "sitename", "siteclass");
+            array_unshift($fields, "sitename", "siteclass");
         }
-        $csvg->select($header);
+        $csvg->set_keys($fields);
+        if ($this->header) {
+            $csvg->set_header($fields);
+        }
 
         for ($page = 1; ($rows = $leg->page_rows($page)); ++$page) {
             foreach ($rows as $row) {
@@ -119,8 +133,11 @@ class ActionLog_Batch {
             "pagesize:,page-size: {n} !",
             "u[],user[] =USER Include entries about USER",
             "N,sitename,siteclass Include siteclass and sitename in CSV",
+            "no-header Omit CSV header",
+            "header !",
             "wide Generate wide CSV",
-            "o:,output: =FILE Write output to FILE"
+            "o:,output: =FILE Write output to FILE",
+            "append Append to `--output` file"
         )->description("Output HotCRP action log as CSV.
 Usage: php batch/actionlog.php [-n CONFID|--config CONFIG]")
          ->helpopt("help")
