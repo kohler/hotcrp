@@ -2,7 +2,7 @@
 // papervalue.php -- HotCRP helper class for paper options
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
-class PaperValue implements JsonSerializable {
+final class PaperValue implements JsonSerializable {
     /** @var PaperInfo
      * @readonly */
     public $prow;
@@ -264,6 +264,10 @@ class PaperValue implements JsonSerializable {
     /** @return list<MessageItem> */
     function message_list() {
         return $this->_ms ? $this->_ms->message_list() : [];
+    }
+    /** @return string */
+    function field_key() {
+        return $this->option->field_key();
     }
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
