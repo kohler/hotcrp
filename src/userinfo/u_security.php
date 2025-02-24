@@ -105,7 +105,8 @@ class Security_UserInfo {
                 Ht::button("Change password", ["class" => "ui js-foldup"]),
                 '</div><div class="fx">';
         }
-        echo '<div class="', $us->control_class("password", "f-i w-text"), '">',
+        echo $us->feedback_html_at("password:context", ["class" => "mb-3"]),
+            '<div class="', $us->control_class("password", "f-i w-text"), '">',
             '<label for="upassword">New password</label>',
             $us->feedback_html_at("password"),
             $us->feedback_html_at("upassword"),

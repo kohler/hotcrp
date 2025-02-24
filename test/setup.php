@@ -35,27 +35,28 @@ class MailChecker {
     static public $messagedb = [];
 
     /** @param MailPreparation $prep */
-    static function send_hook($fh, $prep) {
-        if (self::$disabled === 0) {
-            $prep->landmark = "";
-            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $trace) {
-                if (isset($trace["file"])
-                    && preg_match('/\/(?:test\d|t_)/', $trace["file"])) {
-                    if (str_starts_with($trace["file"], SiteLoader::$root)) {
-                        $trace["file"] = substr($trace["file"], strlen(SiteLoader::$root) + 1);
-                    }
-                    $prep->landmark = $trace["file"] . ":" . $trace["line"];
-                    break;
+    static function send_hook($prep) {
+        if (self::$disabled !== 0) {
+            return;
+        }
+        $prep->landmark = "";
+        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $trace) {
+            if (isset($trace["file"])
+                && preg_match('/\/(?:test\d|t_)/', $trace["file"])) {
+                if (str_starts_with($trace["file"], SiteLoader::$root)) {
+                    $trace["file"] = substr($trace["file"], strlen(SiteLoader::$root) + 1);
                 }
+                $prep->landmark = $trace["file"] . ":" . $trace["line"];
+                break;
             }
-            self::$preps[] = $prep;
-            if (self::$print) {
-                fwrite(STDOUT, "********\n"
-                       . "To: " . join(", ", $prep->recipient_texts()) . "\n"
-                       . "Subject: " . str_replace("\r", "", $prep->subject) . "\n"
-                       . ($prep->landmark ? "X-Landmark: {$prep->landmark}\n" : "") . "\n"
-                       . $prep->body);
-            }
+        }
+        self::$preps[] = $prep;
+        if (self::$print) {
+            fwrite(STDOUT, "********\n"
+                   . "To: " . join(", ", $prep->recipient_texts()) . "\n"
+                   . "Subject: " . str_replace("\r", "", $prep->subject) . "\n"
+                   . ($prep->landmark ? "X-Landmark: {$prep->landmark}\n" : "") . "\n"
+                   . $prep->body);
         }
     }
 
@@ -228,11 +229,6 @@ class MailChecker {
 }
 
 MailChecker::add_messagedb(file_get_contents(SiteLoader::find("test/emails.txt")), "test/emails.txt");
-Conf::$main->add_hook((object) [
-    "event" => "send_mail",
-    "function" => "MailChecker::send_hook",
-    "priority" => 1000
-]);
 
 
 class ProfileTimer {

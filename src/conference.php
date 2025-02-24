@@ -204,8 +204,6 @@ class Conf {
     private $_token_types;
     /** @var ?array<string,object> */
     private $_oauth_providers;
-    private $_hook_map;
-    private $_hook_factories;
     /** @var ?array<string,FileFilter> */
     public $_file_filters; // maintained externally
     /** @var ?SettingInfoSet */
@@ -5875,87 +5873,11 @@ class Conf {
 
     // hooks
 
-    function _add_hook_json($fj) {
-        if (isset($fj->function) && is_string($fj->function)) {
-            if (isset($fj->event) && is_string($fj->event)) {
-                return self::xt_add($this->_hook_map, $fj->event, $fj);
-            } else if (isset($fj->match) && is_string($fj->match)) {
-                $this->_hook_factories[] = $fj;
-                return true;
-            }
-        }
-        return false;
-    }
-    function add_hook($name, $function = null, $priority = null) {
-        if ($this->_hook_map === null) {
-            $this->hook_map();
-        }
-        $fj = is_object($name) ? $name : $function;
-        if (is_string($fj)) {
-            $fj = (object) ["function" => $fj];
-        }
-        if (is_string($name)) {
-            $fj->event = $name;
-        }
-        if ($priority !== null) {
-            $fj->priority = $priority;
-        }
-        return $this->_add_hook_json($fj) ? $fj : false;
-    }
-    function remove_hook($fj) {
-        if (isset($fj->event) && is_string($fj->event)
-            && isset($this->_hook_map[$fj->event])
-            && ($i = array_search($fj, $this->_hook_map[$fj->event], true)) !== false) {
-            array_splice($this->_hook_map[$fj->event], $i, 1);
-            return true;
-        } else if (isset($fj->match) && is_string($fj->match)
-                   && ($i = array_search($fj, $this->_hook_factories, true)) !== false) {
-            array_splice($this->_hook_factories, $i, 1);
-            return true;
-        }
-        return false;
-    }
-    private function hook_map() {
-        if ($this->_hook_map === null) {
-            $this->_hook_map = $this->_hook_factories = [];
-            if (($hlist = $this->opt("hooks"))) {
-                expand_json_includes_callback($hlist, [$this, "_add_hook_json"]);
-            }
-        }
-        return $this->_hook_map;
-    }
-    function call_hooks($name, ?Contact $user, ...$args) {
-        $hs = ($this->hook_map())[$name] ?? null;
-        foreach ($this->_hook_factories as $fj) {
-            if ($fj->match === ".*"
-                || preg_match("\1\\A(?:{$fj->match})\\z\1", $name, $m)) {
-                $xfj = clone $fj;
-                $xfj->event = $name;
-                $xfj->match_data = $m;
-                $hs = $hs ?? [];
-                $hs[] = $xfj;
-            }
-        }
-        if ($hs !== null) {
-            usort($hs, "Conf::xt_priority_compare");
-            $ids = [];
-            foreach ($hs as $fj) {
-                if ((!isset($fj->id) || !isset($ids[$fj->id]))
-                    && XtParams::static_allowed($fj, $this, $user)) {
-                    if (isset($fj->id)) {
-                        $ids[$fj->id] = true;
-                    }
-                    if (self::xt_enabled($fj)) {
-                        $fj->conf = $this;
-                        $fj->user = $user;
-                        $x = call_user_func($fj->function, $fj, ...$args);
-                        unset($fj->conf, $fj->user);
-                        if ($x === false) {
-                            return false;
-                        }
-                    }
-                }
-            }
+    function call_hooks($name, ...$args) {
+        $a = $this->opt["hooks"][$name] ?? [];
+        foreach (is_array($a) ? $a : [$a] as $f) {
+            if (call_user_func($f, ...$args) === false)
+                return false;
         }
     }
 

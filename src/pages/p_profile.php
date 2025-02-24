@@ -230,6 +230,10 @@ class Profile_Page {
     private function decorated_message_list(MessageSet $msx, ?UserStatus $us = null) {
         $ms = new MessageSet(MessageSet::IGNORE_DUPS_FIELD);
         foreach ($msx->message_list() as $mi) {
+            if (($mi->field ?? "") !== ""
+                && str_ends_with($mi->field, ":context")) {
+                continue;
+            }
             if ($us
                 && $mi->field
                 && ($l = $us->field_label($mi->field))

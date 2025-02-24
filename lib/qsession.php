@@ -1,6 +1,6 @@
 <?php
 // qsession.php -- HotCRP session handling; default is empty
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Qsession {
     /** @var ?string
@@ -107,7 +107,6 @@ class Qsession {
             }
             $this->commit();
 
-            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->start($nsid);
             if (!$this->sopen) {
                 return;

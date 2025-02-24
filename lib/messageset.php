@@ -931,9 +931,10 @@ class MessageSet {
     }
 
     /** @param string $field
+     * @param ?array<string,mixed> $js
      * @return string */
-    function feedback_html_at($field) {
-        return self::feedback_html($this->message_list_at($field));
+    function feedback_html_at($field, $js = null) {
+        return self::feedback_html($this->message_list_at($field), $js);
     }
 
     /** @return string */

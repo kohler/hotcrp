@@ -233,7 +233,7 @@ class MailPreparation implements JsonSerializable {
         if (!$this->finalized) {
             $this->finalize();
         }
-        if ($this->conf->call_hooks("send_mail", null, $this) === false) {
+        if ($this->conf->call_hooks("send_mail", $this) === false) {
             return false;
         }
         $headers = $this->headers;

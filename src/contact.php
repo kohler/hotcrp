@@ -2738,6 +2738,7 @@ class Contact implements JsonSerializable {
             $this->set_prop("cflags", $saveu->cflags & ~self::CF_PLACEHOLDER);
             $this->save_prop();
         }
+        $this->conf->call_hooks("change_password", $this, null);
     }
 
 
