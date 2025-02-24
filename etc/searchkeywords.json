@@ -257,6 +257,9 @@
         "expand_function": "Comment_SearchTerm::response_factory"
     },
     {
+        "name": "cmtafter", "parse_function": "CmtAfter_SearchTerm::parse"
+    },
+    {
         "match": "[-_.a-zA-Z0-9\\s\\x80-\\xFF]+", "priority": -1,
         "expand_function": "Review_SearchTerm::review_field_factory"
     },

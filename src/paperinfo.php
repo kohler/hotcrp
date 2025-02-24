@@ -3455,7 +3455,7 @@ class PaperInfo {
                 return $this->all_comments();
             }
             $this->_comment_skeleton_array = [];
-            preg_match_all('/(\d+);(\d+);(\d+);(\d+);([^|]*)/',
+            preg_match_all('/(\d+);(\d+);(\d+);(\d+);(\d+);([^|]*)/',
                            $this->commentSkeletonInfo, $ms, PREG_SET_ORDER);
             foreach ($ms as $m) {
                 $c = new CommentInfo($this);
@@ -3463,7 +3463,8 @@ class PaperInfo {
                 $c->contactId = (int) $m[2];
                 $c->commentType = (int) $m[3];
                 $c->commentRound = (int) $m[4];
-                $c->commentTags = $m[5];
+                $c->timeModified = (int) $m[5];
+                $c->commentTags = $m[6];
                 $this->_comment_skeleton_array[] = $c;
             }
         }

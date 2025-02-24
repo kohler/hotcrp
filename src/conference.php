@@ -3212,22 +3212,23 @@ class Conf {
         if ($this->opt["dateFormatTimezoneRemover"]) {
             $d = preg_replace($this->opt["dateFormatTimezoneRemover"], " ", $d);
         }
-        if (preg_match('/\A(.*)\b(utc(?=[-+])|aoe(?=\s|\z))(.*)\z/i', $d, $m)) {
-            if (strcasecmp($m[2], "aoe") === 0) {
-                $d = strtotime($m[1] . "GMT-1200" . $m[3], $reference);
-                if ($d !== false
-                    && $d % 86400 == 43200
-                    && ($dx = strtotime($m[1] . " T23:59:59 GMT-1200" . $m[3], $reference)) === $d + 86399) {
-                    return $dx;
-                } else {
-                    return $d;
-                }
-            } else {
-                return strtotime($m[1] . "GMT" . $m[3], $reference);
-            }
-        } else {
+        $d = trim($d);
+        if (str_ends_with($d, " ago")) {
+            return $this->parse_time_relative($d, $reference);
+        }
+        if (!preg_match('/\A(.*)\b(utc(?=[-+])|aoe(?=\s|\z))(.*)\z/i', $d, $m)) {
             return strtotime($d, $reference);
         }
+        if (strcasecmp($m[2], "aoe") !== 0) {
+            return strtotime($m[1] . "GMT" . $m[3], $reference);
+        }
+        $t = strtotime($m[1] . "GMT-1200" . $m[3], $reference);
+        if ($t !== false
+            && $t % 86400 == 43200
+            && ($tx = strtotime($m[1] . " T23:59:59 GMT-1200" . $m[3], $reference)) === $t + 86399) {
+            return $tx;
+        }
+        return $t;
     }
 
     // NB must return HTML-safe plaintext
@@ -3315,11 +3316,11 @@ class Conf {
     }
 
     /** @param int $timestamp
-     * @param int $now
+     * @param int $reference
      * @return string */
-    function unparse_time_relative($timestamp, $now = 0, $format = 0) {
-        $now = $now ? : Conf::$now;
-        $d = abs($timestamp - $now);
+    function unparse_time_relative($timestamp, $reference = 0, $format = 0) {
+        $reference = $reference ? : Conf::$now;
+        $d = abs($timestamp - $reference);
         if ($d >= 5227200) {
             if (!($format & 1)) {
                 return ($format & 8 ? "on " : "") . $this->_date_unparse($timestamp, "obscure");
@@ -3353,8 +3354,71 @@ class Conf {
         if ($format & 2) {
             return $d;
         } else {
-            return $timestamp < $now ? $d . " ago" : "in " . $d;
+            return $timestamp < $reference ? $d . " ago" : "in " . $d;
         }
+    }
+
+    /** @param string $s
+     * @param int $reference
+     * @return int|float|false */
+    private function parse_time_relative($s, $reference) {
+        $upos = -1;
+        $yr = $mo = $sec = 0;
+        while (preg_match('/\A\s*+(\d++\.?+\d*+|\.\d++)\s*+(y(?:|r|ear)s?|mo(?:|nth)s?|w(?:|k|eek)s?|d(?:|ay)s?|h(?:|r|our)s?|m(?:|in|inute)s?|s(?:|ec|econd)s?)(?![a-z])/i', $s, $m)) {
+            $unit = $m[2];
+            $s = substr($s, strlen($m[0]));
+            if ($unit[0] === "y") {
+                $u = 0;
+            } else if (str_starts_with($unit, "mo")) {
+                $u = 1;
+            } else if ($unit[0] === "w") {
+                $u = 2;
+            } else if ($unit[0] === "d") {
+                $u = 3;
+            } else if ($unit[0] === "h") {
+                $u = 4;
+            } else if ($unit[0] === "m") {
+                $u = 5;
+            } else {
+                $u = 6;
+            }
+            if ($u <= $upos) {
+                return false;
+            }
+            $upos = $u;
+            $amt = floatval($m[1]);
+            $amti = (int) $amt;
+            if ($u === 0) {
+                $yr += $amti;
+                $amt = ($amt - $amti) * 12;
+                $amti = (int) $amt;
+                $u = 1;
+            }
+            if ($u === 1) {
+                $mo += $amti;
+                $amt = ($amt - $amti) * 30;
+                $u = 3;
+            }
+            if ($u === 2) {
+                $sec += $amt * 86400 * 7;
+            } else if ($u === 3) {
+                $sec += $amt * 86400;
+            } else if ($u === 4) {
+                $sec += $amt * 3600;
+            } else if ($u === 5) {
+                $sec += $amt * 60;
+            } else {
+                $sec += $amt;
+            }
+        }
+        if (trim($s) !== "ago") {
+            return false;
+        }
+        if ($yr !== 0 || $mo !== 0) {
+            error_log("{$yr} years {$mo} months ago");
+            $reference = strtotime("{$yr} years {$mo} months ago", $reference);
+        }
+        return $reference - $sec;
     }
 
     /** @param string $lo

@@ -39,7 +39,7 @@ class Badge_SearchTerm extends SearchTerm {
         } else if (($ks = $srch->conf->tags()->known_badge($word))) {
             return new Badge_SearchTerm($srch->user, $ks->style);
         } else {
-            $srch->lwarning($sword, "<0>Unknown badge color ‘{$word}’");
+            $srch->lwarning($sword, "<0>Badge color ‘{$word}’ not found");
             return new False_SearchTerm;
         }
     }

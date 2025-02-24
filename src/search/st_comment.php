@@ -112,9 +112,7 @@ class Comment_SearchTerm extends SearchTerm {
         return $this->tags->test($t);
     }
     function sqlexpr(SearchQueryInfo $sqi) {
-        if (!isset($sqi->columns["commentSkeletonInfo"])) {
-            $sqi->add_column("commentSkeletonInfo", "coalesce((select group_concat(commentId, ';', contactId, ';', commentType, ';', commentRound, ';', coalesce(commentTags,'') separator '|') from PaperComment where paperId=Paper.paperId), '')");
-        }
+        $sqi->add_comment_signature_columns();
         $where = [];
         if ($this->type_mask) {
             $where[] = "(commentType&{$this->type_mask})={$this->type_value}";

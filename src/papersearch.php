@@ -147,6 +147,11 @@ class SearchQueryInfo {
             $this->add_column("reviewWordCountSignature", "coalesce((select group_concat(coalesce(reviewWordCount,'.') order by reviewId) from PaperReview force index (primary) where PaperReview.paperId=Paper.paperId), '')");
         }
     }
+    function add_comment_signature_columns() {
+        if (!isset($this->columns["commentSkeletonInfo"])) {
+            $this->add_column("commentSkeletonInfo", "coalesce((select group_concat(commentId, ';', contactId, ';', commentType, ';', commentRound, ';', timeModified, ';', coalesce(commentTags,'') separator '|') from PaperComment where paperId=Paper.paperId), '')");
+        }
+    }
     function add_allConflictType_column() {
         if (!isset($this->columns["allConflictType"])) {
             $this->add_column("allConflictType", "coalesce((select group_concat(contactId, ' ', conflictType) from PaperConflict force index (paperId) where PaperConflict.paperId=Paper.paperId), '')");
