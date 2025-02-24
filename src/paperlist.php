@@ -379,8 +379,8 @@ class PaperList {
 
         if ($this->search->then_term()) {
             $this->_then_map = $this->search->groups_by_paper_id();
-            $this->_highlight_map = $this->search->highlights_by_paper_id();
         }
+        $this->_highlight_map = $this->search->highlights_by_paper_id();
         foreach ($this->search->view_commands() as $svc) {
             if (!$svc->is_sort()) {
                 $this->set_view($svc->keyword, $svc->is_show(), self::VIEWORIGIN_SEARCH, $svc->view_options);
