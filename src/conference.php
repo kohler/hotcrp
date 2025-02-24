@@ -3214,7 +3214,7 @@ class Conf {
         }
         $d = trim($d);
         if (str_ends_with($d, " ago")) {
-            return $this->parse_time_relative($d, $reference);
+            return $this->parse_time_relative(strtolower($d), $reference);
         }
         if (!preg_match('/\A(.*)\b(utc(?=[-+])|aoe(?=\s|\z))(.*)\z/i', $d, $m)) {
             return strtotime($d, $reference);
@@ -3364,7 +3364,7 @@ class Conf {
     private function parse_time_relative($s, $reference) {
         $upos = -1;
         $yr = $mo = $sec = 0;
-        while (preg_match('/\A\s*+(\d++\.?+\d*+|\.\d++)\s*+(y(?:|r|ear)s?|mo(?:|nth)s?|w(?:|k|eek)s?|d(?:|ay)s?|h(?:|r|our)s?|m(?:|in|inute)s?|s(?:|ec|econd)s?)(?![a-z])/i', $s, $m)) {
+        while (preg_match('/\A\s*+(\d++\.?+\d*+|\.\d++)\s*+(y(?:|r|ear)s?|mo(?:|n|nth)s?|w(?:|k|eek)s?|d(?:|ay)s?|h(?:|r|our)s?|m(?:|in|inute)s?|s(?:|ec|econd)s?)(?![a-z])/', $s, $m)) {
             $unit = $m[2];
             $s = substr($s, strlen($m[0]));
             if ($unit[0] === "y") {
