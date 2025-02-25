@@ -146,6 +146,11 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         return $jr;
     }
 
+    /** @return JsonResult */
+    static function make_ok() {
+        return new JsonResult(200);
+    }
+
     /** @param int $status
      * @param string $ftext
      * @return JsonResult */
@@ -225,6 +230,26 @@ class JsonResult implements JsonSerializable, ArrayAccess {
      * @return $this */
     function append_item($mi) {
         $this->content["message_list"][] = $mi;
+        return $this;
+    }
+
+
+    /** @return bool */
+    function ok() {
+        return $this->content["ok"];
+    }
+
+    /** @param string $key
+     * @return mixed */
+    function get($key) {
+        return $this->content[$key] ?? null;
+    }
+
+    /** @param string $key
+     * @param mixed $value
+     * @return $this */
+    function set($key, $value) {
+        $this->content[$key] = $value;
         return $this;
     }
 

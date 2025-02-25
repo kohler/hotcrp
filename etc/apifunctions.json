@@ -1,6 +1,6 @@
 [
     {
-        "name": "acceptreview", "post": true, "redirect": true,
+        "name": "acceptreview", "post": true,
         "function": "RequestReview_API::acceptreview",
         "parameters": "p r",
         "response": "action review_site_relative"
@@ -34,7 +34,7 @@
         "response": "p ?ids ?groups ?hotlist ?search_params"
     },
     {
-        "name": "claimreview", "post": true, "paper": true, "redirect": true,
+        "name": "claimreview", "post": true, "paper": true,
         "function": "RequestReview_API::claimreview",
         "parameters": "r email",
         "response": "action review_site_relative"
@@ -59,7 +59,7 @@
         "response_deprecated": "cmt"
     },
     {
-        "name": "declinereview", "post": true, "redirect": true,
+        "name": "declinereview", "post": true,
         "function": "RequestReview_API::declinereview",
         "parameters": "p r ?=reason",
         "response": "action ?reason review_site_relative"
@@ -327,6 +327,12 @@
         "response": "shepherd shepherd_html ?color_classes"
     },
     {
+        "name": "stashmessages", "post": true,
+        "function": "Session_API::stashmessages",
+        "parameters": "=message_list",
+        "response": "_smsg"
+    },
+    {
         "name": "submissionfieldlibrary", "get": true, "allow_if": "chair",
         "function": "Settings_API::submissionfieldlibrary",
         "response": "samples types"
@@ -395,7 +401,7 @@
     },
     {
         "name": "whoami", "get": true,
-        "function": "User_API::whoami",
+        "function": "Session_API::whoami",
         "response": "?email ?given_name ?family_name ?affiliation"
     }
 ]

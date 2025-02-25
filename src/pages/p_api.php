@@ -38,6 +38,7 @@ class API_Page {
         $jr = $jr ?? self::status_api($fn, $user, $qreq);
 
         // maybe save messages in session under a token
+        // XXX this is obsolete
         if ($qreq->smsg
             && !isset($jr->content["_smsg"])) {
             $conf->feedback_msg(self::export_messages($jr));

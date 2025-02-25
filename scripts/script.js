@@ -13194,20 +13194,32 @@ handle_ui.on("js-profile-token-delete", function () {
 
 
 // review UI
+function redirect_with_messages(url, message_list) {
+    if (!message_list || !message_list.length) {
+        location = url;
+        return;
+    }
+    $.post(hoturl("=api/stashmessages"),
+        {message_list: JSON.stringify(message_list)},
+        function (data) {
+            if (data && data._smsg) {
+                url = hoturl_add(url, "_smsg=" + urlencode(data._smsg));
+            }
+            location = url;
+        });
+}
+
 handle_ui.on("js-acceptish-review", function (evt) {
     evt.preventDefault();
     $.ajax(this.formAction || this.action, {
         method: "POST", data: $(this.form || this).serialize(),
         success: function (data) {
-            var url = location.href, rsr = data && data.review_site_relative;
+            let url = location.href, rsr = data && data.review_site_relative;
             if (rsr) {
                 url = rsr.startsWith("u/") ? siteinfo.base : siteinfo.site_relative;
                 url += rsr;
             }
-            if (data && data._smsg) {
-                url = hoturl_add(url, "_smsg=" + urlencode(data._smsg));
-            }
-            location = url;
+            redirect_with_messages(url, data.message_list);
         }
     });
 });

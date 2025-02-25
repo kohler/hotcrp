@@ -152,4 +152,61 @@ class Session_API {
             $qreq->set_csession("uldisplay", " " . join(" ", $curl) . " ");
         }
     }
+
+    static function whoami(Contact $user, Qrequest $qreq) {
+        return [
+            "ok" => true,
+            "email" => $user->email,
+            "given_name" => $user->firstName,
+            "family_name" => $user->lastName,
+            "affiliation" => $user->affiliation
+        ];
+    }
+
+    static function stashmessages(Contact $user, Qrequest $qreq) {
+        if (isset($qreq->smsg)
+            && (strlen($qreq->smsg) < 10 || strlen($qreq->smsg) > 64 || !ctype_alnum($qreq->smsg))) {
+            return JsonResult::make_parameter_error("smsg");
+        }
+        if (!isset($qreq->message_list)) {
+            return JsonResult::make_missing_error("message_list");
+        }
+        $mlj = json_decode($qreq->message_list);
+        if (!is_array($mlj)) {
+            return JsonResult::make_parameter_error("message_list");
+        }
+        $ml = [];
+        foreach ($mlj as $mx) {
+            $status = $mx->status ?? null;
+            $message = $mx->message ?? "";
+            if (!is_int($status)
+                || $status < MessageSet::MIN_STATUS
+                || $status > MessageSet::MAX_STATUS
+                || !is_string($message)) {
+                continue;
+            }
+            if ($message === "") {
+                $ml[] = new MessageItem($status);
+                continue;
+            }
+            // If nonempty, only formats <0>, <1>, and clean <5> allowed
+            $fmt = Ftext::format($message);
+            if ($fmt === null) {
+                $ml[] = new MessageItem($status, null, "<0>{$message}");
+            } else if ($fmt === 0
+                       || $fmt === 1
+                       || ($fmt === 5 && CleanHtml::basic_clean(substr($message, 3)))) {
+                $ml[] = new MessageItem($status, null, $message);
+            }
+        }
+        if (empty($ml)) {
+            return JsonResult::make_ok()->set("_smsg", false);
+        }
+        $smsg = $qreq->smsg ?? base48_encode(random_bytes(6));
+        $qreq->open_session();
+        $smsgs = $qreq->gsession("smsg") ?? [];
+        $smsgs[] = [$smsg, Conf::$now, Ht::feedback_msg_content($ml)];
+        $qreq->set_gsession("smsg", $smsgs);
+        return (new JsonResult(200))->set("_smsg", $smsg);
+    }
 }

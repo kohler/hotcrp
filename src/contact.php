@@ -1773,9 +1773,8 @@ class Contact implements JsonSerializable {
         $pid = is_int($p) ? $p : $p->paperId;
         if (($rcid = $this->_capabilities["@ra{$pid}"] ?? null)) {
             return $this->conf->user_by_id($rcid, USER_SLICE);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $name
@@ -1783,20 +1782,19 @@ class Contact implements JsonSerializable {
      * @return bool */
     function set_capability($name, $value) {
         $oldval = $this->capability($name);
-        if (($value ? : null) !== $oldval) {
-            if ($value) {
-                $this->_capabilities[$name] = $value;
-            } else {
-                unset($this->_capabilities[$name]);
-                if (empty($this->_capabilities)) {
-                    $this->_capabilities = null;
-                }
-            }
-            $this->update_my_rights();
-            return true;
-        } else {
+        if (($value ? : null) === $oldval) {
             return false;
         }
+        if ($value) {
+            $this->_capabilities[$name] = $value;
+        } else {
+            unset($this->_capabilities[$name]);
+            if (empty($this->_capabilities)) {
+                $this->_capabilities = null;
+            }
+        }
+        $this->update_my_rights();
+        return true;
     }
 
     /** @param string $text */

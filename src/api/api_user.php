@@ -3,16 +3,6 @@
 // Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class User_API {
-    static function whoami(Contact $user, Qrequest $qreq) {
-        return [
-            "ok" => true,
-            "email" => $user->email,
-            "given_name" => $user->firstName,
-            "family_name" => $user->lastName,
-            "affiliation" => $user->affiliation
-        ];
-    }
-
     /** @return JsonResult */
     static function user(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (!$user->can_lookup_user()) {

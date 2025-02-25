@@ -1215,10 +1215,10 @@ class PaperTable {
         }
         echo '</div><div class="aabr align-self-center">';
         if ($acc) {
-            echo '<div class="aabut">', Ht::submit("Decline review after all", ["class" => "btn-danger ui js-acceptish-review", "formaction" => $this->conf->hoturl("=api/declinereview", ["p" => $rrow->paperId, "r" => $rrow->reviewId, "smsg" => 1])]), '</div>';
+            echo '<div class="aabut">', Ht::submit("Decline review after all", ["class" => "btn-danger ui js-acceptish-review", "formaction" => $this->conf->hoturl("=api/declinereview", ["p" => $rrow->paperId, "r" => $rrow->reviewId])]), '</div>';
         } else {
-            echo '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger ui js-acceptish-review", "formaction" => $this->conf->hoturl("=api/declinereview", ["p" => $rrow->paperId, "r" => $rrow->reviewId, "smsg" => 1])]), '</div>',
-                '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success ui js-acceptish-review", "formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $rrow->paperId, "r" => $rrow->reviewId, "smsg" => 1])]), '</div>';
+            echo '<div class="aabut">', Ht::submit("Decline", ["class" => "btn-danger ui js-acceptish-review", "formaction" => $this->conf->hoturl("=api/declinereview", ["p" => $rrow->paperId, "r" => $rrow->reviewId])]), '</div>',
+                '<div class="aabut">', Ht::submit("Accept", ["class" => "btn-success ui js-acceptish-review", "formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $rrow->paperId, "r" => $rrow->reviewId])]), '</div>';
         }
         echo '</div></form>';
         if ($rrow->reviewStatus === ReviewInfo::RS_EMPTY) {
@@ -1227,7 +1227,7 @@ class PaperTable {
     }
 
     private function _print_decline_reason(Contact $capu, ReviewRefusalInfo $refusal) {
-        echo Ht::form($this->conf->hoturl("=api/declinereview", ["p" => $this->prow->paperId, "r" => $refusal->refusedReviewId, "smsg" => 1]),
+        echo Ht::form($this->conf->hoturl("=api/declinereview", ["p" => $this->prow->paperId, "r" => $refusal->refusedReviewId]),
             ["class" => "msg msg-warning demargin remargin-left remargin-right ui-submit js-acceptish-review"]);
         echo '<p>You have declined to complete this review. Thank you for informing us.</p>',
             '<div class="f-i mt-3"><label for="declinereason">Optional explanation</label>',
@@ -1236,7 +1236,7 @@ class PaperTable {
             '</div><div class="aab mt-3">',
             '<div class="aabut">', Ht::submit("Save explanation", ["class" => "btn-primary"]), '</div>';
         if ($this->conf->time_review($refusal->reviewRound, $refusal->refusedReviewType, true)) {
-            echo '<div class="aabut">', Ht::submit("Accept review after all", ["formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $this->prow->paperId, "r" => $refusal->refusedReviewId, "smsg" => 1]), "class" => "ui js-acceptish-review"]), '</div>';
+            echo '<div class="aabut">', Ht::submit("Accept review after all", ["formaction" => $this->conf->hoturl("=api/acceptreview", ["p" => $this->prow->paperId, "r" => $refusal->refusedReviewId]), "class" => "ui js-acceptish-review"]), '</div>';
         }
         echo '</div></form>';
     }

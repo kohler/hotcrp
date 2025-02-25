@@ -324,18 +324,14 @@ class RequestReview_API {
             return JsonResult::make_parameter_error("r");
         }
         $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
-        if ($qreq->redirect === "1") {
-            $qreq->redirect = $review_site_relative;
-        }
 
         $rrow = $prow->review_by_id($r);
         $refrow = $prow->review_refusal_by_id($r);
         if (!$rrow && !$refrow) {
             if ($user->can_view_submitted_review($prow)) {
                 return JsonResult::make_not_found_error("r", "<0>No such review");
-            } else {
-                return JsonResult::make_permission_error("r");
             }
+            return JsonResult::make_permission_error("r");
         } else if (!self::allow_accept_decline($user, $prow, $rrow ?? $refrow)) {
             return JsonResult::make_permission_error("r");
         }
@@ -390,10 +386,6 @@ class RequestReview_API {
         }
         $r = intval($qreq->r);
         $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
-        $redirect_in = $qreq->redirect;
-        if ($redirect_in === "1") {
-            $qreq->redirect = $review_site_relative;
-        }
 
         $reason = trim($qreq->reason ?? "");
         if ($reason === "" || $reason === "Optional explanation") {
@@ -405,9 +397,8 @@ class RequestReview_API {
         if (!$rrow && !$refrow) {
             if ($user->can_view_submitted_review($prow)) {
                 return JsonResult::make_not_found_error("r", "<0>Review not found");
-            } else {
-                return JsonResult::make_permission_error("r");
             }
+            return JsonResult::make_permission_error("r");
         } else if (!self::allow_accept_decline($user, $prow, $rrow ?? $refrow)) {
             return JsonResult::make_permission_error("r");
         } else if ($rrow && $rrow->reviewStatus >= ReviewInfo::RS_DELIVERED) {
@@ -442,7 +433,7 @@ class RequestReview_API {
                 $prow->conf->update_rev_tokens_setting(-1);
             }
             $prow->conf->update_automatic_tags($prow, "review");
-            $user->log_activity_for($rrow->contactId, "Review $rrow->reviewId declined", $prow);
+            $user->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} declined", $prow);
 
             // send mail to requesters
             // XXX delay this mail by a couple minutes
@@ -460,9 +451,6 @@ class RequestReview_API {
             if ($user->contactXid === $rrow->contactId
                 && ($tok = ReviewAccept_Capability::make($rrow, true))) {
                 $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r, "cap" => $tok->salt], Conf::HOTURL_SITEREL);
-                if ($redirect_in === "1") {
-                    $qreq->redirect = $review_site_relative;
-                }
             }
         } else if (isset($qreq->reason)) {
             $prow->conf->qe("update PaperReviewRefused set reason=? where paperId=? and refusedReviewId=?", $reason, $prow->paperId, $rrid);
@@ -488,10 +476,6 @@ class RequestReview_API {
         }
         $r = intval($qreq->r);
         $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
-        $redirect_in = $qreq->redirect;
-        if ($redirect_in === "1") {
-            $qreq->redirect = $review_site_relative;
-        }
 
         $rrow = $prow->review_by_id($r);
         if (!$rrow) {
@@ -528,9 +512,6 @@ class RequestReview_API {
 
         if ($destu->contactXid !== $user->contactXid) {
             $review_site_relative = "u/{$useridx}/{$review_site_relative}";
-            if ($redirect_in === "1") {
-                $qreq->redirect = $review_site_relative;
-            }
         }
         return new JsonResult([
             "ok" => true,

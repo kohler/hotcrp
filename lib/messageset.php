@@ -272,6 +272,8 @@ class MessageSet {
     const WARNING = 1;
     const ERROR = 2;
     const ESTOP = 3;
+    const MIN_STATUS = -5;
+    const MAX_STATUS = 3;
 
     /** @param 0|1|2|3|6|7 $flags */
     function __construct($flags = 0) {
