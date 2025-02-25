@@ -247,21 +247,33 @@ class PaperRequest {
      * @param Qrequest $qreq
      * @return ?ReviewInfo */
     function find_review($user, $qreq) {
-        if (isset($qreq->reviewId) && str_ends_with($qreq->reviewId, "new")) {
-            return null;
-        } else if (isset($qreq->reviewId)) {
-            $rrow = $this->prow->review_by_ordinal_id($qreq->reviewId);
-            $whynot = $rrow ? $user->perm_view_review($this->prow, $rrow) : null;
-            if (!$rrow || $whynot) {
-                throw $user->perm_view_review($this->prow, null)
-                    ?? $whynot
-                    ?? new FailureReason($user->conf, ["invalidId" => "review"]);
-            }
-            return $rrow;
-        } else if (($racid = $user->reviewer_capability($this->prow))) {
-            return $this->prow->review_by_user($racid);
-        } else {
+        // no review set? maybe use capability to find review
+        if (!isset($qreq->reviewId)) {
+            $capuid = $user->reviewer_capability($this->prow);
+            return $capuid ? $this->prow->review_by_user($capuid) : null;
+        }
+        // `new` reviewId will definitey not exist
+        if (str_ends_with($qreq->reviewId, "new")) {
             return null;
         }
+        // check for viewable review
+        $rrow = $this->prow->review_by_ordinal_id($qreq->reviewId);
+        if ($rrow) {
+            $whynot = $user->perm_view_review($this->prow, $rrow);
+            if (!$whynot) {
+                return $rrow;
+            }
+            throw $user->perm_view_review($this->prow, null) ?? $whynot;
+        }
+        // numbered review that corresponds to our refusal is a special case
+        if (ctype_digit($qreq->reviewId)
+            && ($refrow = $this->prow->review_refusal_by_id(intval($qreq->reviewId)))
+            && ($refrow->contactId === $user->contactId
+                || (($capu = $user->reviewer_capability_user($this->prow))
+                    && $refrow->contactId === $capu->contactId))) {
+            return null;
+        }
+        // error
+        throw $user->perm_view_review($this->prow, null) ?? new FailureReason($user->conf, ["invalidId" => "review"]);
     }
 }
