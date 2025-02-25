@@ -113,7 +113,7 @@ class UpdateSession {
     }
 
     /** @param string $email
-     * @param 0|1|2 $type - 0 password, 2 MFA
+     * @param 0|1|2 $type - 0 password, 1 OAuth, 2 MFA
      * @param 0|1 $reason - 0 login, 1 confirmation
      * @param bool $success
      * @deprecated */
@@ -126,7 +126,8 @@ class UpdateSession {
     /** @param string $email
      * @param list<array{0|1|2,bool}> $useclist
      * @param 0|1 $reason
-     * @deprecated */
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     static function usec_add_list(Qrequest $qreq, $email, $useclist, $reason) {
         foreach ($useclist as $elt) {
             self::usec_add($qreq, $email, $elt[0], $reason, $elt[1]);

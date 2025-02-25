@@ -15,6 +15,8 @@ class ManageEmail_API extends MessageSet {
     private $dstuser;
     /** @var bool */
     private $dry_run = false;
+    /** @var bool */
+    private $global = false;
 
     function __construct(Contact $viewer, Contact $user, ?Contact $dstuser) {
         $this->conf = $user->conf;
@@ -27,6 +29,13 @@ class ManageEmail_API extends MessageSet {
      * @return $this */
     function set_dry_run($x) {
         $this->dry_run = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_global($x) {
+        $this->global = $x;
         return $this;
     }
 
@@ -141,10 +150,13 @@ class ManageEmail_API extends MessageSet {
 
         // actually go
         $meapi = new ManageEmail_API($viewer, $user, $dstuser);
-        $meapi->set_dry_run(friendly_boolean($qreq->dry_run) ?? false);
+        $meapi->set_dry_run(friendly_boolean($qreq->dry_run) ?? false)
+            ->set_global(friendly_boolean($qreq->global) ?? false);
         return $meapi->run($qreq->action);
     }
 
+    /** @param string $action
+     * @return JsonResult */
     function run($action) {
         if ($action === "transferreview") {
             $ec = $this->run_transferreview();
@@ -181,7 +193,7 @@ class ManageEmail_API extends MessageSet {
             return "not_reviewer";
         }
         assert($this->user->contactId > 0);
-        if (($this->srcuser->roles & Contact::ROLE_PCLIKE) !== 0
+        if (($this->user->roles & Contact::ROLE_PCLIKE) !== 0
             && ($this->dstuser->roles & Contact::ROLE_PCLIKE) !== 0) {
             $this->error_at("email", "<0>Both accounts are already members of the PC");
             return "pc_conflict";
@@ -351,12 +363,11 @@ class ManageEmail_API extends MessageSet {
     }
 
     private function run_unlink() {
-        $global = friendly_boolean($qreq->global);
         $luser = $this->user->is_cdb_user() ? null : $this->user;
-        $guser = $global ? $this->user->cdb_user() : null;
+        $guser = $this->global ? $this->user->cdb_user() : null;
         if ((!$luser || $luser->primaryContactId <= 0)
             && (!$guser || $guser->primaryContactId <= 0)) {
-            $this->warning("<0>No changes");
+            $this->warning_at(null, "<0>No changes");
             return null;
         }
         if ($this->dry_run) {
@@ -372,9 +383,8 @@ class ManageEmail_API extends MessageSet {
     }
 
     private function run_link() {
-        $global = friendly_boolean($qreq->global);
         $luser = $this->user->is_cdb_user() ? null : $this->user;
-        $guser = $global ? $this->user->cdb_user() : null;
+        $guser = $this->global ? $this->user->cdb_user() : null;
         $gdstuser = $guser ? $this->dstuser->cdb_user() : null;
         if ((!$luser
              || (!$this->dstuser->is_cdb_user()
@@ -382,7 +392,7 @@ class ManageEmail_API extends MessageSet {
             && (!$guser
                 || ($gdstuser
                     && $guser->primaryContactId === $gdstuser->contactDbId))) {
-            $this->warning("<0>No changes");
+            $this->warning_at(null, "<0>No changes");
             return null;
         }
         if ($this->dry_run) {
