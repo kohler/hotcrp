@@ -1,6 +1,6 @@
 <?php
 // reviewdiffinfo.php -- HotCRP class representing review diffs
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ReviewDiffInfo {
     /** @var ReviewInfo
@@ -15,6 +15,8 @@ class ReviewDiffInfo {
     /** @var int */
     private $_x_view_score = VIEWSCORE_EMPTY;
     /** @var bool */
+    private $_disable_patch = false;
+    /** @var bool */
     public $notify = false;
     /** @var bool */
     public $notify_author = false;
@@ -27,6 +29,13 @@ class ReviewDiffInfo {
 
     function __construct(ReviewInfo $rrow) {
         $this->rrow = $rrow;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_disable_patch($x) {
+        $this->_disable_patch = $x;
+        return $this;
     }
 
     /** @return bool */
@@ -118,7 +127,8 @@ class ReviewDiffInfo {
             $v = [$oldv, $this->rrow->finfoval($f)];
             if (is_string($v[0])
                 && is_string($v[1])
-                && $f instanceof Text_ReviewField) {
+                && $f instanceof Text_ReviewField
+                && !$this->_disable_patch) {
                 $hcdelta = $this->dmp_hcdelta($v[1 - $dir], $v[$dir], true);
                 if ($hcdelta !== null
                     && strlen($hcdelta) < strlen($v[$dir]) - 32) {
@@ -270,5 +280,22 @@ class ReviewDiffInfo {
         $rrow->_seal_fstorage();
         $rrow->_assign_fields();
         return $ok;
+    }
+
+    /** @param array $patch
+     * @param array<string,true> &$known
+     * @return bool */
+    static function apply_patch_reconstruct(ReviewInfo $rrow, $patch, &$known) {
+        foreach ($patch as $n => $v) {
+            $nl = strlen($n);
+            if (($nl <= 2 || $n[$nl - 2] !== ":")
+                && !isset($known[$n])
+                && ($fi = ReviewFieldInfo::find($rrow->conf, $n))) {
+                $rrow->_set_finfoval($fi, $v);
+                $known[$n] = true;
+            }
+        }
+        $rrow->_seal_fstorage();
+        $rrow->_assign_fields();
     }
 }

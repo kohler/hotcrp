@@ -403,7 +403,6 @@ CREATE TABLE `PaperReview` (
 
   `tfields` longblob DEFAULT NULL,
   `sfields` varbinary(2048) DEFAULT NULL,
-  `data` varbinary(8192) DEFAULT NULL,
 
   PRIMARY KEY (`paperId`,`reviewId`),
   UNIQUE KEY `reviewId` (`reviewId`),
@@ -481,7 +480,6 @@ CREATE TABLE `PaperReviewRefused` (
   `timeRequested` bigint(11) DEFAULT NULL,
   `refusedBy` int(11) DEFAULT NULL,
   `timeRefused` bigint(11) DEFAULT NULL,
-  `data` varbinary(8192) DEFAULT NULL,
   `reason` varbinary(32767) DEFAULT NULL,
   PRIMARY KEY (`paperId`,`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -656,7 +654,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 307, null),   -- schema version
+  ('allowPaperOption', 308, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

@@ -642,12 +642,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             }
         }
         Dbl::free($result);
-        if (!empty($qv)) {
-            $result = $this->conf->ql("insert into Capability (capabilityType, contactId, paperId, otherId, timeCreated, timeUsed, timeInvalid, timeExpires, salt, data) values ?v", $qv);
-            return !Dbl::is_error($result);
-        } else {
+        if (empty($qv)) {
             return true;
         }
+        $result = $this->conf->ql("insert into Capability (capabilityType, contactId, paperId, otherId, timeCreated, timeUsed, timeInvalid, timeExpires, salt, data) values ?v", $qv);
+        return !Dbl::is_error($result);
     }
 
     private function v257_update_response_settings() {
@@ -3174,6 +3173,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")) {
                 $conf->update_schema_version(307);
             }
+        }
+        if ($conf->sversion === 307
+            && $conf->ql_ok("alter table PaperReview drop `data`")
+            && $conf->ql_ok("alter table PaperReviewRefused drop `data`")) {
+            $conf->update_schema_version(308);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");

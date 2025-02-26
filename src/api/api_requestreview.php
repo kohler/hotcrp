@@ -1,6 +1,6 @@
 <?php
 // api_requestreview.php -- HotCRP review-request API calls
-// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class RequestReview_API {
     /** @param Contact $user
@@ -337,21 +337,18 @@ class RequestReview_API {
         }
 
         if (!$rrow) {
-            $reviewBlind = $prow->conf->is_review_blind(null) ? 1 : 0;
-            $prow->conf->qe("insert into PaperReview
-                set paperId=?, reviewId=?, contactId=?,
-                    requestedBy=?, timeRequested=?,
-                    reviewType=?, reviewRound=?, data=?,
-                    reviewBlind=?,
-                    rflags=?",
-                $prow->paperId, $refrow->refusedReviewId, $refrow->contactId,
-                $refrow->requestedBy, $refrow->timeRequested,
-                $refrow->refusedReviewType, $refrow->reviewRound, $refrow->data,
-                $reviewBlind,
-                ReviewInfo::RF_LIVE | (1 << $refrow->refusedReviewType) | ($reviewBlind ? ReviewInfo::RF_BLIND : 0));
+            $rxrow = ReviewInfo::make_reconstruct_refusal($refrow);
+            $rxrow->insert_full();
             $prow->conf->qe("delete from PaperReviewRefused where refusedReviewId=?",
                 $refrow->refusedReviewId);
-            $rrow = $prow->fresh_review_by_id($refrow->refusedReviewId);
+            $rrow = $prow->fresh_review_by_id($r);
+            if ($rrow->reviewType < REVIEW_SECONDARY && $rrow->requestedBy > 0) {
+                $prow->conf->update_review_delegation($prow->paperId, $rrow->requestedBy, 1);
+            }
+            if ($rrow->reviewToken) {
+                $prow->conf->update_rev_tokens_setting(1);
+            }
+            $prow->conf->update_automatic_tags($prow, "review");
         }
 
         if ($rrow->reviewStatus < ReviewInfo::RS_ACKNOWLEDGED) {
@@ -416,13 +413,18 @@ class RequestReview_API {
                 set paperId=?, email=?, contactId=?,
                     requestedBy=?, timeRequested=?, refusedBy=?,
                     timeRefused=?, reason=?, refusedReviewType=?,
-                    refusedReviewId=?, reviewRound=?, data=?
+                    refusedReviewId=?, reviewRound=?
                 on duplicate key update reason=coalesce(?,reason)",
                 $prow->paperId, $rrow->reviewer()->email, $rrow->contactId,
                 $rrow->requestedBy, $rrow->timeRequested, $user->contactId,
                 Conf::$now, $reason, $rrow->reviewType,
-                $rrid, $rrow->reviewRound, $rrow->data_string(),
+                $rrid, $rrow->reviewRound,
                 $reason);
+
+            // record snapshot of review, then delete review
+            $rrow->set_prop("reviewType", REVIEW_REFUSAL);
+            $rrow->snapshot_fval_prop();
+            $rrow->save_prop();
             $prow->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
                 $prow->paperId, $rrid);
 
