@@ -40,6 +40,9 @@ class BackupDB_Batch {
     private $pc_only;
     /** @var list<string>
      * @readonly */
+    private $only_tables;
+    /** @var list<string>
+     * @readonly */
     private $my_opts = [];
     /** @var list<string>
      * @readonly */
@@ -148,8 +151,13 @@ class BackupDB_Batch {
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
         $this->single_transaction = true;
         $this->tablespaces = isset($arg["tablespaces"]);
-        $this->pc_only = isset($arg["pc"]);
         $this->count = $arg["count"] ?? 1;
+
+        $this->pc_only = isset($arg["pc"]);
+        $this->only_tables = $arg["only"] ?? [];
+        if ($this->pc_only && !empty($this->only_tables)) {
+            $this->throw_error("`--pc` and `--only` conflict");
+        }
 
         foreach ($arg["-"] ?? [] as $arg) {
             if (str_starts_with($arg, "--s3-")) {
@@ -822,7 +830,7 @@ class BackupDB_Batch {
         } else if ($this->pc_only) {
             $this->run_pc_only_transfer();
         } else {
-            $this->run_mysqldump_transfer([], []);
+            $this->run_mysqldump_transfer([], $this->only_tables);
         }
 
         if (!empty($this->_checked_tables)) {
@@ -889,6 +897,7 @@ class BackupDB_Batch {
             "skip-comments Omit comments",
             "tablespaces Include tablespaces",
             "check-table[] =TABLE Exit with error if TABLE is not present",
+            "only[] =TABLE Only include TABLE",
             "pc Restrict to PC information",
             "output-md5 Write MD5 hash of uncompressed dump to stdout",
             "output-sha1 Same for SHA-1 hash",
