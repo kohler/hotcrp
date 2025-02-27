@@ -3,18 +3,23 @@
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class AuthenticationChecker {
-    /** @var Conf */
-    private $conf;
-    /** @var Contact */
-    private $user;
-    /** @var Qrequest */
-    private $qreq;
-    /** @var string */
+    /** @var Conf
+     * @readonly */
+    protected $conf;
+    /** @var Contact
+     * @readonly */
+    protected $user;
+    /** @var Qrequest
+     * @readonly */
+    protected $qreq;
+    /** @var string
+     * @readonly */
     public $reason;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $max_age;
     /** @var ?bool */
-    private $ok;
+    protected $ok;
 
     function __construct(Contact $user, Qrequest $qreq, $reason) {
         $this->conf = $user->conf;
@@ -58,14 +63,14 @@ class AuthenticationChecker {
         if (!$use) {
             return false;
         }
-        echo Ht::hidden("reason", $this->reason, ["form" => "f-reauth"]);
+        echo Ht::hidden("reason", $this->reason, ["form" => "f-reauth", "class" => "ignore-diff"]);
 
         // password
         if ($use->type === UserSecurityEvent::TYPE_PASSWORD) {
             echo '<div class="f-i"><label for="k-reauth-password">Current password for ',
                 htmlspecialchars($this->user->email), '</label>',
                 Ht::entry("email", $this->user->email, ["autocomplete" => "username", "class" => "ignore-diff", "readonly" => true, "form" => "f-reauth", "hidden" => true]),
-                Ht::password("password", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff", "id" => "k-reauth-password", "form" => "f-reauth"]),
+                Ht::password("password", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff", "id" => "k-reauth-password", "form" => "f-reauth", "required" => true]),
                 '</div><div class="mt-3">',
                 Ht::submit("Confirm account", [
                     "class" => "btn-success w-100 flex-grow-1",

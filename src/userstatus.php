@@ -260,7 +260,8 @@ class UserStatus extends MessageSet {
     /** @return AuthenticationChecker */
     function authentication_checker() {
         if (!$this->_authchecker) {
-            $this->_authchecker = new AuthenticationChecker($this->viewer, $this->qreq, "profile_security");
+            $class = $this->conf->opt("authenticationCheckerClass") ?? "AuthenticationChecker";
+            $this->_authchecker = new $class($this->viewer, $this->qreq, "profile_security");
         }
         return $this->_authchecker;
     }

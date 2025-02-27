@@ -72,7 +72,7 @@
         "request_function": "*Developer_UserInfo::request",
         "save_function": "*Developer_UserInfo::save"   },
     {   "name": "developer/reauthenticate",
-        "order": 999999, "alias": "__reauthenticate"   },
+        "order": 1, "alias": "__reauthenticate"   },
     {   "name": "developer/tokens", "title": "API tokens", "order": 10,
         "print_function": "*Developer_UserInfo::print_bearer_tokens",
         "inputs": false   },
