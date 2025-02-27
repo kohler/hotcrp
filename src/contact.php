@@ -818,28 +818,16 @@ class Contact implements JsonSerializable {
         // print, resave, and/or gc named saved messages
         if (($cmsgs = $qreq->csession("msgs"))) {
             foreach ($cmsgs as $mx) {
-                if (is_array($mx) && is_string($mx[0] ?? null) && is_int($mx[1] ?? null)) {
+                if (is_array($mx)
+                    && is_string($mx[0] ?? null)
+                    && is_int($mx[1] ?? null)) {
                     Conf::msg_on($this->conf, $mx[0], $mx[1]);
                 }
             }
             $qreq->unset_csession("msgs");
         }
         if (($smsgs = $qreq->gsession("smsg"))) {
-            $nsmsgs = [];
-            foreach ($smsgs as $ml) {
-                if ($ml[0] === $qreq->_smsg) {
-                    for ($i = 2; $i !== count($ml); ++$i) {
-                        Conf::msg_on($this->conf, $ml[$i][0], $ml[$i][1]);
-                    }
-                } else if ($ml[1] >= Conf::$now - 30) {
-                    $nsmsgs[] = $ml;
-                }
-            }
-            if (empty($nsmsgs)) {
-                $qreq->unset_gsession("smsg");
-            } else if (count($nsmsgs) !== count($smsgs)) {
-                $qreq->set_gsession("smsg", $nsmsgs);
-            }
+            $this->_activate_smsg($qreq, $smsgs);
         }
 
         // maybe auto-create a user
@@ -880,6 +868,26 @@ class Contact implements JsonSerializable {
         }
 
         return $this;
+    }
+
+    /** @param Qrequest $qreq */
+    function _activate_smsg($qreq, $smsgs) {
+        $nsmsgs = [];
+        foreach ($smsgs as $ml) {
+            if ($ml[0] === $qreq->_smsg
+                || isset($_COOKIE["hotcrp-smsg-{$ml[0]}"])) {
+                for ($i = 2; $i !== count($ml); ++$i) {
+                    Conf::msg_on($this->conf, $ml[$i][0], $ml[$i][1]);
+                }
+            } else if ($ml[1] >= Conf::$now - 30) {
+                $nsmsgs[] = $ml;
+            }
+        }
+        if (empty($nsmsgs)) {
+            $qreq->unset_gsession("smsg");
+        } else if (count($nsmsgs) !== count($smsgs)) {
+            $qreq->set_gsession("smsg", $nsmsgs);
+        }
     }
 
     /** @return int */

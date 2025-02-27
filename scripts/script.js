@@ -1637,6 +1637,33 @@ function hoturl_get_form(action) {
     return form;
 }
 
+function hoturl_cookie_params() {
+    let p = siteinfo.cookie_params, m;
+    if (siteinfo.site_relative
+        && (m = /^[a-z][-a-z0-9+.]*:\/\/[^/]*(\/.*)/i.exec(hoturl_absolute_base()))) {
+        p += "; Path=" + m[1];
+    }
+    return p;
+}
+
+function redirect_with_messages(url, message_list) {
+    if (!message_list || !message_list.length) {
+        url === ".reload" ? location.replace(location.href) : (location = url);
+        return;
+    }
+    $.post(hoturl("=api/stashmessages"),
+        {message_list: JSON.stringify(message_list)},
+        function (data) {
+            if (data
+                && data._smsg
+                && typeof data._smsg === "string"
+                && /^[a-zA-Z0-9_]*$/.test(data._smsg)) {
+                document.cookie = "hotcrp-smsg-".concat(data._smsg, "=", now_msec(), "; Max-Age=20", hoturl_cookie_params());
+            }
+            url === ".reload" ? location.replace(location.href) : (location = url);
+        });
+}
+
 
 // text rendering
 var render_text = (function ($) {
@@ -1891,12 +1918,51 @@ function append_item_near(elt, mi) {
     return true;
 }
 
+function name_map(container) {
+    if (container.elements) {
+        return container.elements;
+    }
+    const map = {};
+    for (const e of container.querySelectorAll("[id], [name]")) {
+        if (e.id && !map[e.id]) {
+            map[e.id] = e;
+        }
+        if (e.name && !map[e.name]) {
+            map[e.name] = e;
+        }
+    }
+    return map;
+}
+
+function render_list_within(container, ml, options) {
+    $(container).find(".msg-error, .feedback, .feedback-list").remove();
+    const gmlist = [], nmap = name_map(container), summary = options && options.summary;
+    for (const mi of ml || []) {
+        const e = mi.field && nmap[mi.field];
+        if ((e && feedback.append_item_near(e, mi))
+            || summary === false
+            || summary === "none"
+            || (summary === "fieldless" && mi.field)) {
+            continue;
+        }
+        gmlist.push(mi);
+    }
+    if (gmlist.length) {
+        let context = container.firstElementChild;
+        while (context && context.nodeName !== "H2" && context.nodeName !== "H3") {
+            context = context.nextElementSibling;
+        }
+        container.insertBefore(feedback.render_alert(gmlist), context);
+    }
+}
+
 return {
     append_item: append_item,
     append_item_near: append_item_near,
     list_status: message_list_status,
     render_list: render_list,
     maybe_render_list: maybe_render_list,
+    render_list_within: render_list_within,
     render_alert: render_alert,
     render_alert_onto: render_alert_onto
 };
@@ -3069,19 +3135,6 @@ function $popup(options) {
     document.body.addEventListener("keydown", dialog_keydown);
     let prior_focus, actionse;
 
-    function show_errors(data, filter_fields) {
-        $(forme).find(".msg-error, .feedback, .feedback-list").remove();
-        const gmlist = [];
-        for (const mi of data.message_list || []) {
-            const e = mi.field && forme.elements[mi.field];
-            if (e ? !feedback.append_item_near(e, mi) : !filter_fields || !mi.field) {
-                gmlist.push(mi);
-            }
-        }
-        if (gmlist.length) {
-            $(forme).find("h2").after(feedback.render_alert(gmlist));
-        }
-    }
     function close() {
         removeClass(document.body, "modal-open");
         document.body.removeEventListener("keydown", dialog_keydown);
@@ -3162,7 +3215,10 @@ function $popup(options) {
         form: function () {
             return forme;
         },
-        show_errors: show_errors,
+        show_errors: function (message_list, options) {
+            const ml = (message_list && message_list.message_list) || message_list;
+            feedback.render_list_within(forme, ml, options);
+        },
         close: close
     };
     return self;
@@ -9253,11 +9309,7 @@ Hotlist.prototype.id_search = function () {
     return "pidcode:" + this.obj.sorted_ids;
 };
 function set_cookie(info, pid) {
-    let p = siteinfo.cookie_params, m;
-    if (siteinfo.site_relative
-        && (m = /^[a-z][-a-z0-9+.]*:\/\/[^/]*(\/.*)/i.exec(hoturl_absolute_base()))) {
-        p += "; Path=" + m[1];
-    }
+    const p = hoturl_cookie_params();
     if (cookie_set_at) {
         document.cookie = "hotlist-info-".concat(cookie_set_at, "=; Max-Age=0", p);
     }
@@ -13194,20 +13246,6 @@ handle_ui.on("js-profile-token-delete", function () {
 
 
 // review UI
-function redirect_with_messages(url, message_list) {
-    if (!message_list || !message_list.length) {
-        location = url;
-        return;
-    }
-    $.post(hoturl("=api/stashmessages"),
-        {message_list: JSON.stringify(message_list)},
-        function (data) {
-            if (data && data._smsg) {
-                url = hoturl_add(url, "_smsg=" + urlencode(data._smsg));
-            }
-            location = url;
-        });
-}
 
 handle_ui.on("js-acceptish-review", function (evt) {
     evt.preventDefault();
@@ -13542,7 +13580,9 @@ handle_ui.on("js-named-search", function (evt) {
             $pu.append_actions($e("button", {type: "submit", class: "btn-primary"}, "OK"));
         }
         $pu.show().on("click", "button", click).on("submit", submit);
-        si.id === "new" || $pu.show_errors(data, true);
+        if (si.id !== "new") {
+            feedback.render_list_within($pu.form(), data.message_list, {summary: "fieldless"});
+        }
     }
     function create_new() {
         const qe = $$("f-search");

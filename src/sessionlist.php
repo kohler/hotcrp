@@ -392,9 +392,8 @@ class SessionList {
     static function load_cookie(Contact $user, $type) {
         $found = null;
         foreach ($_COOKIE as $k => $v) {
-            if (($k === "hotlist-info" && $found === null)
-                || (str_starts_with($k, "hotlist-info-")
-                    && ($found === null || strnatcmp($k, $found) > 0)))
+            if (str_starts_with($k, "hotlist-info-")
+                && ($found === null || strnatcmp($k, $found) > 0))
                 $found = $k;
         }
         if ($found

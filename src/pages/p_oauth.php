@@ -147,7 +147,7 @@ class OAuth_Page {
         if (!$tok->stored()) {
             return MessageItem::error("<0>Authentication attempt failed");
         }
-        $this->qreq->set_cookie_opt("oauth-" . $tokdata["nonce"], "1", [
+        $this->qreq->set_cookie_opt("hotcrp-oauth-nonce-" . $tokdata["nonce"], "1", [
             "expires" => Conf::$now + 600, "path" => "/", "httponly" => true
         ]);
         $params = "client_id=" . urlencode($authi->client_id)
@@ -195,8 +195,8 @@ class OAuth_Page {
         }
 
         if (($nonce = $tok->data("nonce")) !== null) {
-            $noncematch = isset($_COOKIE["oauth-{$nonce}"]);
-            $this->qreq->set_httponly_cookie("oauth-{$nonce}", "", Conf::$now - 86400);
+            $noncematch = isset($_COOKIE["hotcrp-oauth-nonce-{$nonce}"]);
+            $this->qreq->set_httponly_cookie("hotcrp-oauth-nonce-{$nonce}", "", Conf::$now - 86400);
         } else {
             $noncematch = true;
         }

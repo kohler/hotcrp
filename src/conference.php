@@ -4652,7 +4652,8 @@ class Conf {
         // clear session list cookies
         foreach ($_COOKIE as $k => $v) {
             if (str_starts_with($k, "hotlist-info")
-                || str_starts_with($k, "hc-uredirect-"))
+                || str_starts_with($k, "hc-uredirect-")
+                || str_starts_with($k, "hotcrp-smsg-"))
                 $qreq->set_cookie($k, "", Conf::$now - 86400);
         }
 
