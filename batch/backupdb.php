@@ -414,9 +414,10 @@ class BackupDB_Batch {
         }
     }
 
-    /** @param list<string> $args
+    /** @param list<string> $flagargs
+     * @param list<string> $restargs
      * @return list<string> */
-    function mysqlcmd($cmd, $args) {
+    function mysqlcmd($cmd, $flagargs, $restargs) {
         $a = [$cmd];
         if (($this->connp->password ?? "") !== "") {
             if ($this->_pwfile === null) {
@@ -458,10 +459,13 @@ class BackupDB_Batch {
         foreach ($this->my_opts as $opt) {
             $a[] = $opt;
         }
-        foreach ($args as $opt) {
+        foreach ($flagargs as $opt) {
             $a[] = $opt;
         }
         $a[] = $this->connp->name;
+        foreach ($restargs as $opt) {
+            $a[] = $opt;
+        }
         return $a;
     }
 
@@ -671,7 +675,7 @@ class BackupDB_Batch {
 
     /** @return int */
     private function run_restore() {
-        $cmd = $this->mysqlcmd("mysql", []);
+        $cmd = $this->mysqlcmd("mysql", [], []);
         $pipes = [];
         $proc = $this->my_proc_open($cmd, [0 => ["pipe", "rb"], 1 => ["file", "/dev/null", "w"]], $pipes);
         $this->out = $pipes[0];
@@ -708,9 +712,10 @@ class BackupDB_Batch {
         }
     }
 
-    /** @param string ...$args */
-    private function run_mysqldump_transfer(...$args) {
-        $cmd = $this->mysqlcmd("mysqldump", $args);
+    /** @param list<string> $flagargs
+     * @param list<string> $restargs */
+    private function run_mysqldump_transfer($flagargs, $restargs) {
+        $cmd = $this->mysqlcmd("mysqldump", $flagargs, $restargs);
         $pipes = [];
         $proc = $this->my_proc_open($cmd, [["file", "/dev/null", "r"], ["pipe", "wb"]], $pipes);
         $this->in = $pipes[1];
@@ -724,9 +729,9 @@ class BackupDB_Batch {
             $pc[] = -1;
         }
         $where = "contactId in (" . join(",", $pc) . ")";
-        $this->run_mysqldump_transfer("--where={$where}", "ContactInfo");
-        $this->run_mysqldump_transfer("Settings", "TopicArea");
-        $this->run_mysqldump_transfer("--where={$where}", "TopicInterest");
+        $this->run_mysqldump_transfer(["--where={$where}"], ["ContactInfo"]);
+        $this->run_mysqldump_transfer([], ["Settings", "TopicArea"]);
+        $this->run_mysqldump_transfer(["--where={$where}"], ["TopicInterest"]);
     }
 
     private function open_streams() {
@@ -817,7 +822,7 @@ class BackupDB_Batch {
         } else if ($this->pc_only) {
             $this->run_pc_only_transfer();
         } else {
-            $this->run_mysqldump_transfer();
+            $this->run_mysqldump_transfer([], []);
         }
 
         if (!empty($this->_checked_tables)) {
