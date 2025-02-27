@@ -270,11 +270,11 @@ class Response_SettingParser extends SettingParser {
         foreach ($sv->oblist_keys("response") as $ctr) {
             $rs = $sv->newv("response/{$ctr}");
             '@phan-var-force Response_Setting $rs';
-            if ($rs->deleted) {
-                $this->round_delete[] = $rs->id;
-            } else {
+            if (!$rs->deleted) {
                 $sv->check_date_before("response/{$ctr}/open", "response/{$ctr}/done", false);
                 array_splice($rss, $rs->name === "" ? 0 : count($rss), 0, [$rs]);
+            } else if ($rs->id !== null) {
+                $this->round_delete[] = $rs->id;
             }
         }
 
