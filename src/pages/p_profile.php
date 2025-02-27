@@ -766,7 +766,9 @@ class Profile_Page {
             echo "</div>"; // foldaccount
         }
 
-        echo "</main></form>";
+        echo "</main></form>",
+            // include #f-reauth in case we need to reauthenticate
+            '<form id="f-reauth" class="ui-submit js-reauth"></form>';
 
         if ($this->page_type === 0) {
             Ht::stash_script('$("#f-profile").awaken()');

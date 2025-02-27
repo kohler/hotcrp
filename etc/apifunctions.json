@@ -206,6 +206,10 @@
         "response": "pc ?tags ?sort ?p"
     },
     {
+        "name": "reauth", "post": true,
+        "function": "Session_API::reauth"
+    },
+    {
         "name": "requestreview", "post": true, "paper": true,
         "function": "RequestReview_API::requestreview",
         "parameters": "?round =email ?=given_name ?=family_name ?=name ?=affiliation ?=override ?=reason"

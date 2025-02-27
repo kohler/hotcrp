@@ -67,8 +67,8 @@ class UserStatus extends MessageSet {
     private $_xcs;
     /** @var bool */
     private $_inputs_printed = false;
-    /** @var ?bool */
-    private $_reauth_status;
+    /** @var ?AuthenticationChecker */
+    private $_authchecker;
 
     static private $web_to_message_map = [
         "preferredEmail" => "preferred_email",
@@ -180,30 +180,8 @@ class UserStatus extends MessageSet {
      * @suppress PhanAccessReadOnlyProperty */
     function set_qreq(Qrequest $qreq) {
         $this->qreq = $qreq;
-
-        // maybe reauthenticate
-        if ($qreq->valid_post()
-            && isset($qreq["reauth:password"])
-            && !$this->viewer->is_root_user()
-            && !$this->viewer->is_empty()) {
-            $this->check_reauth_password();
-        }
-
+        $this->_authchecker = null;
         return $this;
-    }
-
-    private function check_reauth_password() {
-        $pw = trim($this->qreq["reauth:password"]);
-        $info = $this->viewer->check_password_info($pw);
-        if ($info["ok"]) {
-            foreach ($info["usec"] ?? [] as $use) {
-                $use->set_reason(UserSecurityEvent::REASON_REAUTH)
-                    ->store($this->qreq->qsession());
-            }
-        } else {
-            $info["field"] = "reauth:password";
-            LoginHelper::login_error($this->conf, $this->viewer->email, $info, $this);
-        }
     }
 
     /** @return ?Contact */
@@ -279,23 +257,17 @@ class UserStatus extends MessageSet {
         return $this->_cs;
     }
 
+    /** @return AuthenticationChecker */
+    function authentication_checker() {
+        if (!$this->_authchecker) {
+            $this->_authchecker = new AuthenticationChecker($this->viewer, $this->qreq, "profile_security");
+        }
+        return $this->_authchecker;
+    }
+
     /** @return bool */
     function has_recent_authentication() {
-        if ($this->_reauth_status !== null) {
-            return $this->_reauth_status;
-        }
-        $this->_reauth_status = false;
-        if ($this->viewer->is_root_user()) {
-            $this->_reauth_status = true;
-        } else if (!$this->viewer->is_empty()) {
-            foreach (UserSecurityEvent::session_list_by_email($this->qreq->qsession(), $this->viewer->email) as $use) {
-                if ($use->reason === UserSecurityEvent::REASON_REAUTH
-                    && $use->timestamp >= Conf::$now - 600) {
-                    $this->_reauth_status = $use->success;
-                }
-            }
-        }
-        return $this->_reauth_status;
+        return $this->authentication_checker()->test();
     }
 
     /** @return ?bool */

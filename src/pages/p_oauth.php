@@ -305,7 +305,7 @@ class OAuth_Page {
         }
         $use->store($this->qreq->qsession());
         $this->success = true;
-        return $tok->data("quiet") ? [] : [MessageItem::success("<0>Reauthentication succeeded")];
+        return $tok->data("quiet") ? [] : [MessageItem::success("<0>Authentication confirmed")];
     }
 
     /** @param OAuthProvider $authi

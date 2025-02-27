@@ -209,4 +209,10 @@ class Session_API {
         $qreq->set_gsession("smsg", $smsgs);
         return (new JsonResult(200))->set("_smsg", $smsg);
     }
+
+    static function reauth(Contact $user, Qrequest $qreq) {
+        $class = $user->conf->opt("authenticationCheckerClass") ?? "AuthenticationChecker";
+        $ac = new $class($user, $qreq, $qreq->reason ?? "api");
+        return $ac->api();
+    }
 }

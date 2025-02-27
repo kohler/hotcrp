@@ -49,7 +49,7 @@
         "save_function": "*Security_UserInfo::save",
         "inputs": false   },
     {   "name": "security/reauthenticate",
-        "order": 999999, "alias": "__reauthenticate"   },
+        "order": 1, "alias": "__reauthenticate"   },
     {   "name": "security/newpassword", "order": 100,
         "title": "Change password",
         "print_function": "*Security_UserInfo::print_new_password",

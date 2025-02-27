@@ -3541,6 +3541,12 @@ tr.plx {
 	color: #a16300;
 }
 
+/* profile pages */
+.reauthentication-section {
+	border-width: 3px;
+	border-color: red;
+}
+
 
 /* tags and badges */
 .tagbg, .badge {

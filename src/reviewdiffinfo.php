@@ -283,8 +283,7 @@ class ReviewDiffInfo {
     }
 
     /** @param array $patch
-     * @param array<string,true> &$known
-     * @return bool */
+     * @param array<string,true> &$known */
     static function apply_patch_reconstruct(ReviewInfo $rrow, $patch, &$known) {
         foreach ($patch as $n => $v) {
             $nl = strlen($n);

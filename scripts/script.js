@@ -12027,6 +12027,28 @@ handle_ui.on("js-href-add-email", function () {
     }
 });
 
+handle_ui.on("js-reauth", function (evt) {
+    const oevt = (evt && evt.originalEvent) || evt,
+        submitter = oevt.submitter, form = this;
+    if (submitter && submitter.hasAttribute("formaction")) {
+        return;
+    }
+    const f = this;
+    evt.preventDefault();
+    $.post(hoturl("=api/reauth?confirm=1"),
+        $(form).serialize(),
+        function (data) {
+            if (data.ok) {
+                redirect_with_messages(".reload", data.message_list);
+            } else {
+                feedback.render_list_within(
+                    (submitter && submitter.closest(".reauthentication-section")) || form,
+                    data.message_list
+                );
+            }
+        });
+});
+
 
 // paper UI
 handle_ui.on("js-check-format", function () {

@@ -72,22 +72,10 @@ class Security_UserInfo {
         if ($us->has_recent_authentication()) {
             return;
         }
-        $us->cs()->add_section_class("form-outline-section tag-yellow w-text")
+        $us->cs()->add_section_class("form-outline-section reauthentication-section maxw-480")
             ->print_start_section("Confirm account", "reauth");
-        echo '<p>Please re-enter your signin credentials if you want to change these security-sensitive settings.</p>';
-        $original_ignore_msgs = $us->swap_ignore_messages(false);
-        $us->swap_ignore_messages($original_ignore_msgs);
-        echo '<div class="', $us->control_class("reauth:password", "f-i w-text"), '">',
-            '<label for="reauth:password">',
-            $us->is_auth_self() ? "Current password" : "Current password for " . htmlspecialchars($us->viewer->email),
-            '</label>',
-            $us->feedback_html_at("reauth:password"),
-            Ht::entry("reauth:email", $us->viewer->email, ["autocomplete" => "username", "class" => "hidden ignore-diff", "readonly" => true]),
-            Ht::password("reauth:password", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff", "id" => "reauth:password"]),
-            '</div>',
-            '<div class="aab aabig mb-0">',
-            Ht::submit("reauth", "Confirm account", ["class" => "btn-success mt-0"]),
-            '</div>';
+        echo '<p>You must confirm your account to make changes to security settings.</p>';
+        $us->authentication_checker()->print();
     }
 
     function print_new_password(UserStatus $us) {
