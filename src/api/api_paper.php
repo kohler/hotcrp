@@ -477,7 +477,7 @@ class Paper_API extends MessageSet {
                                            PaperOption $o, PaperStatus $pstatus) {
         $stat = $zip->statName($filename);
         if (!$stat) {
-            $pstatus->error_at_option($o, "{$filename}: File not found");
+            $pstatus->error_at_option($o, "<0>{$filename}: File not found");
             return false;
         }
         // use resources to store large files
@@ -491,7 +491,7 @@ class Paper_API extends MessageSet {
             $content = $zip->getFromIndex($stat["index"]);
         }
         if ($content === false) {
-            $pstatus->error_at_option($o, "{$filename}: File not found");
+            $pstatus->error_at_option($o, "<0>{$filename}: File not found");
             return false;
         }
         if (is_string($content)) {
