@@ -22,7 +22,7 @@ file. The response will include a `token` field, a string like
 requests for the upload must include the `token` as parameter.
 
 Each request adds a chunk of data to the upload. The `offset` parameter gives
-the byte offset of the uploaded chunk; the `blob` attachment parameter
+the byte offset of the uploaded chunk. The `blob` attachment parameter
 contains the chunk itself. The request that completes the upload should set
 `finish=1`; this request will fail unless all chunks have been received.
 

@@ -30,7 +30,7 @@ class UpdateEmojiCodes_Batch {
                      : (isset($arg["absent"]) ? "absent"
                         : (isset($arg["regex"]) ? "regex" : "parse")))));
         if ($this->mode === "absent") {
-            if (count($arg["_"])) {
+            if (count($arg["_"]) !== 2) {
                 throw new ErrorException("Expected arguments `EMOJIDATA.TXT NAMESLIST.TXT`");
             }
             $this->args = $arg["_"];
@@ -62,10 +62,15 @@ class UpdateEmojiCodes_Batch {
         if (posix_isatty(STDIN)) {
             $context = stream_context_create([
                 "http" => [
-                    "protocol_version" => 1.1
+                    "method" => "GET",
+                    "protocol_version" => 1.1,
+                    "user_agent" => "HotCRP/3.0"
                 ]
             ]);
-            $file = fopen("https://api.github.com/emojis", "rb");
+            $file = fopen("https://api.github.com/emojis", "rb", false, $context);
+            if (!$file) {
+                exit(1);
+            }
         } else {
             $file = STDIN;
         }
@@ -406,19 +411,20 @@ class UpdateEmojiCodes_Batch {
     /** @param list<string> $argv
      * @return UpdateEmojiCodes_Batch */
     static function make_args($argv) {
+        global $Opt;
         $arg = (new Getopt)->long(
-            "absent,a",
+            "absent,a Arguments `emoji-data.txt NamesList.txt`",
             "common,c",
             "dups,d",
             "terminators,t",
             "modifier-bases,m",
-            "regex,r",
+            "regex,r Standard input `emoji-data.txt`",
             "help,h !"
         )->description("Update HotCRP emojicodes.json.
 Usage: php batch/updateemojicodes.php -[acdtmr]")
          ->helpopt("help")
          ->parse($argv);
-
+        $Opt["__no_main"] = true;
         return new UpdateEmojiCodes_Batch($arg);
     }
 }
