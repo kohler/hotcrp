@@ -22,7 +22,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @var ?string */
     private $_body;
     /** @var ?string */
-    private $_body_filename;
+    private $_body_file;
     /** @var array<string,string> */
     private $_v;
     /** @var array<string,list> */
@@ -198,21 +198,21 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         if ($this->_body !== null || $this->_body_type === self::BODY_NONE) {
             return $this->_body;
         }
-        $s = @file_get_contents($this->_body_filename ?? "php://input");
+        $s = @file_get_contents($this->_body_file ?? "php://input");
         if ($s !== false) {
             $this->_body = $s;
         } else {
             $this->_body_type = self::BODY_NONE;
-            $this->_body_filename = null;
+            $this->_body_file = null;
         }
         return $this->_body;
     }
 
     /** @param ?string $extension
      * @return ?string */
-    function body_filename($extension = null) {
-        if ($this->_body_filename !== null || $this->_body_type === self::BODY_NONE) {
-            return $this->_body_filename;
+    function body_file($extension = null) {
+        if ($this->_body_file !== null || $this->_body_type === self::BODY_NONE) {
+            return $this->_body_file;
         }
         if (!($tmpdir = tempdir())) {
             return null;
@@ -237,11 +237,18 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         fclose($f);
         if ($ok) {
-            $this->_body_filename = $fn;
+            $this->_body_file = $fn;
         } else {
             $this->_body_type = self::BODY_NONE;
         }
-        return $this->_body_filename;
+        return $this->_body_file;
+    }
+
+    /** @param ?string $extension
+     * @return ?string
+     * @deprecated */
+    function body_filename($extension = null) {
+        return $this->body_file($extension);
     }
 
     /** @return ?string */
@@ -266,7 +273,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @return $this */
     function set_body($body, $content_type = null) {
         $this->_body_type = self::BODY_STRING;
-        $this->_body_filename = null;
+        $this->_body_file = null;
         $this->_body = $body;
         if ($content_type !== null) {
             $this->set_header("Content-Type", $content_type);

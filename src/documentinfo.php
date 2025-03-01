@@ -257,10 +257,11 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @param string $token
-     * @param int $paperId
-     * @param int $documentType
+     * @param ?int $paperId
+     * @param ?int $documentType
      * @return ?DocumentInfo */
-    static function make_capability(Conf $conf, $token, $paperId, $documentType) {
+    static function make_capability(Conf $conf, $token, $paperId = null,
+                                    $documentType = null) {
         if (!$token
             || !($toki = TokenInfo::find($token, $conf))
             || !$toki->is_active()
@@ -514,20 +515,21 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return $this */
     function analyze_content() {
-        if (($info = Mimetype::content_info(null, $this->mimetype, $this))) {
-            $this->mimetype = $info["type"];
-            if (isset($info["width"])) {
-                $this->set_prop("width", $info["width"]);
-            }
-            if (isset($info["height"])) {
-                $this->set_prop("height", $info["height"]);
-            }
-            if (str_starts_with($this->mimetype, "video/")
-                || str_starts_with($this->mimetype, "audio/")) {
-                if (isset($info["duration"])) {
-                    $this->set_prop("npages", (int) ($info["duration"] * 10 + 0.5));
-                }
-            }
+        $info = Mimetype::content_info(null, $this->mimetype, $this);
+        if (!$info) {
+            return $this;
+        }
+        $this->mimetype = $info["type"];
+        if (isset($info["width"])) {
+            $this->set_prop("width", $info["width"]);
+        }
+        if (isset($info["height"])) {
+            $this->set_prop("height", $info["height"]);
+        }
+        if (isset($info["duration"])
+            && (str_starts_with($this->mimetype, "video/")
+                || str_starts_with($this->mimetype, "audio/"))) {
+            $this->set_prop("npages", (int) ($info["duration"] * 10 + 0.5));
         }
         return $this;
     }
@@ -1845,19 +1847,20 @@ class DocumentInfo implements JsonSerializable {
     }
 
     function load_metadata() {
-        if ($this->paperStorageId > 0) {
-            $row = Dbl::fetch_first_object($this->conf->dblink,
-                    "select " . $this->conf->document_metadata_query_fields() . " from PaperStorage where paperId=? and paperStorageId=?",
-                    $this->paperId, $this->paperStorageId)
-                ?? (object) ["infoJson" => null, "npages" => -1, "width" => -1, "height" => -1];
-            foreach ((array) $row as $prop => $v) {
-                if ($prop !== "infoJson") {
-                    $v = (int) $v;
-                }
-                $this->$prop = $v;
-            }
-            $this->_metadata = null;
+        if ($this->paperStorageId <= 0) {
+            return;
         }
+        $row = Dbl::fetch_first_object($this->conf->dblink,
+                "select " . $this->conf->document_metadata_query_fields() . " from PaperStorage where paperId=? and paperStorageId=?",
+                $this->paperId, $this->paperStorageId)
+            ?? (object) ["infoJson" => null, "npages" => -1, "width" => -1, "height" => -1];
+        foreach ((array) $row as $prop => $v) {
+            if ($prop !== "infoJson") {
+                $v = (int) $v;
+            }
+            $this->$prop = $v;
+        }
+        $this->_metadata = null;
     }
 
     /** @return object */

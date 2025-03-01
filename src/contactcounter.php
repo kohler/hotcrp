@@ -201,15 +201,14 @@ class ContactCounter {
     /** @param bool $complete_request
      * @return false */
     private function api_account_fail($complete_request) {
-        if ($complete_request) {
-            $this->api_ratelimit_headers();
-            if ($this->apiLimit === 0 || $this->apiLimit2 === 0) {
-                JsonResult::make_error(403, "<0>API access disabled")->complete();
-            } else {
-                JsonResult::make_error(429, "<0>Rate limit exceeded")->complete();
-            }
-        } else {
+        if (!$complete_request) {
             return false;
+        }
+        $this->api_ratelimit_headers();
+        if ($this->apiLimit === 0 || $this->apiLimit2 === 0) {
+            JsonResult::make_error(403, "<0>API access disabled")->complete();
+        } else {
+            JsonResult::make_error(429, "<0>Rate limit exceeded")->complete();
         }
     }
 

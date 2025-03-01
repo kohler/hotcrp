@@ -12742,23 +12742,25 @@ edit_conditions.numeric = function (ec, form) {
     return v !== "" && !isNaN((n = parseFloat(v))) ? n : null;
 };
 edit_conditions.document_count = function (ec, form) {
-    var n = 0;
+    let n = 0;
     $(form).find(".has-document").each(function () {
-        if (this.getAttribute("data-dtype") == ec.dtype) {
-            var name = this.getAttribute("data-document-name"),
-                preve = form.elements[name],
-                removee = form.elements[name + ":delete"],
-                filee = form.elements[name + ":file"],
-                uploade = form.elements[name + ":upload"];
-            if (!removee || !removee.value) {
-                if (uploade && uploade.value) {
-                    n += 1;
-                } else if (filee && filee.files && filee.files.length > 0) {
-                    n += filee.files.length;
-                } else if (preve && preve.value) {
-                    n += 1;
-                }
-            }
+        if (this.getAttribute("data-dtype") != ec.dtype) {
+            return;
+        }
+        const name = this.getAttribute("data-document-name"),
+            removee = form.elements[name + ":delete"];
+        if (removee && removee.value) {
+            return;
+        }
+        const preve = form.elements[name],
+            filee = form.elements[name + ":file"],
+            uploade = form.elements[name + ":upload"];
+        if (uploade && uploade.value) {
+            n += 1;
+        } else if (filee && filee.files && filee.files.length > 0) {
+            n += filee.files.length;
+        } else if (preve && preve.value) {
+            n += 1;
         }
     });
     return n;

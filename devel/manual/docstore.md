@@ -14,16 +14,16 @@ filename pattern that sets where documents are stored on the filesystem.
 To determine the filename for a document, HotCRP expands `%` escapes in
 `$Opt["docstore"]` using document information. The escapes are:
 
-| Escape | Meaning | Examples  |
-|:-------|:--------|:---------|
-| `%H`   | Content hash | `d16c7976d9081368c7dca2da3a771065c3222069a1ad80dcd99d972b2efadc8b` |
+| Escape | Meaning                         | Examples |
+|:-------|:--------------------------------|:---------|
+| `%H`   | Content hash                    | `d16c7976d9081368c7dca2da3a771065c3222069a1ad80dcd99d972b2efadc8b` |
 | `%NH`  | First `N` bytes of content hash | `d16` (for `%3H`) |
-| `%a`   | Hash algorithm | `sha256`, `sha1` |
-| `%A`   | Hash algorithm prefix | `sha2-` (for SHA-256), empty string (for SHA-1) |
+| `%a`   | Hash algorithm                  | `sha256`, `sha1`  |
+| `%A`   | Hash algorithm prefix           | `sha2-` (for SHA-256), empty string (for SHA-1) |
 | `%h`   | Content hash with algorithm prefix | `sha2-d16c7976d9081368c7dca2da3a771065c3222069a1ad80dcd99d972b2efadc8b` |
 | `%Nh`  | First `N` bytes of content hash with algorithm prefix | `sha2-d16` (for `%3h`) |
-| `%x`   | File extension | `.pdf`, `.txt` |
-| `%%`   | Literal `%` | `%` |
+| `%x`   | File extension                  | `.pdf`, `.txt`    |
+| `%%`   | Literal `%`                     | `%`               |
 
 A full `$Opt["docstore"]` setting must include a full hash (`%H` or `%h`). If
 `$Opt["docstore"]` does not include a `%` sign, then HotCRP automatically

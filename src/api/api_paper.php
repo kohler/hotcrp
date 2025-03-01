@@ -157,7 +157,7 @@ class Paper_API extends MessageSet {
             $jsonstr = $qreq->body();
         } else if ($ct === "application/zip") {
             $this->ziparchive = new ZipArchive;
-            $cf = $qreq->body_filename(".zip");
+            $cf = $qreq->body_file(".zip");
             if (!$cf) {
                 return JsonResult::make_error(500, "<0>Uploaded content unreadable");
             }
@@ -402,13 +402,12 @@ class Paper_API extends MessageSet {
             }
         }
         $pid = $j->pid ?? $j->id ?? null;
-        if ($pid === null
-            || (is_int($pid) && $pid > 0 && $pid <= PaperInfo::PID_MAX)
-            || $pid === "new") {
-            return $pid ?? "new";
-        } else {
-            return null;
+        if ($pid === null || $pid === "new") {
+            return "new";
+        } else if (is_int($pid) && $pid > 0 && $pid <= PaperInfo::PID_MAX) {
+            return $pid;
         }
+        return null;
     }
 
     private function set_json_landmark($index, $jp, $expected = null) {

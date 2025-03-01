@@ -12,12 +12,12 @@
 
 > Upload file
 
-The `POST /upload` endpoint uploads documents to the server. It is intended
-for large documents, and can upload a file over multiple requests, each
-containing a slice of the data.
+The `POST /upload` endpoint uploads files to the server. It is intended for
+large documents, and can upload a file over multiple requests, each containing
+a slice of the data.
 
-To start an upload, set `start=1` and include the `size` of the whole uploaded
-file. The response will include a `token` field, a string like
+To start an upload, set `start=1` and (if available) include the `size` of the
+whole uploaded file. The response will include a `token` field, a string like
 `hcupwhvGDVmHNYyDKdqeqA` that identifies the upload in progress. All further
 requests for the upload must include the `token` as parameter.
 
