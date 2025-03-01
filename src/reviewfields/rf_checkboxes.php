@@ -166,8 +166,8 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
                 $word = $m[1];
                 $text = substr($text, strlen($word));
                 if (str_starts_with($text, ".") && $this->complex()) {
-                    $pos = strpos($text, ";;;;", strlen($word));
-                    $text = $pos === false ? "" : substr($text, $pos + 4);
+                    $pos = strpos($text, ";;;;");
+                    $text = $pos === false ? "" : (string) substr($text, $pos + 4);
                 }
                 $text = preg_replace('/\A(?:[\s.,;]|\(.*?\))+/', "", $text);
             } else {
