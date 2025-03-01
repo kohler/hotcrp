@@ -96,7 +96,7 @@ class ContactCounter {
                 $this->_api_refresh_bits |= 2;
             }
             if ($this->apiRefreshAmount === 0) {
-                $this->apiRefreshAmount = $this->conf->opt("apiRefreshAmount") ?? 1000;
+                $this->apiRefreshAmount = $this->conf->opt("apiRefreshAmount") ?? 5000;
                 $this->_api_refresh_bits |= 4;
             }
             if ($this->apiRefreshWindow < 0 && $this->apiRefreshAmount < 0) {
@@ -109,7 +109,7 @@ class ContactCounter {
                 $this->_api_refresh_bits |= 8;
             }
             if ($this->apiRefreshAmount2 === 0) {
-                $this->apiRefreshAmount2 = $this->conf->opt("apiRefreshAmount2") ?? 100;
+                $this->apiRefreshAmount2 = $this->conf->opt("apiRefreshAmount2") ?? 250;
                 $this->_api_refresh_bits |= 16;
             }
             if ($this->apiRefreshWindow2 < 0 && $this->apiRefreshAmount2 < 0) {
