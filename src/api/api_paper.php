@@ -152,12 +152,24 @@ class Paper_API extends MessageSet {
             }
         }
 
+        // check for uploaded file
+        if ($ct_form && isset($qreq->upload)) {
+            $updoc = DocumentInfo::make_capability($this->conf, $qreq->upload);
+            if (!$updoc) {
+                return JsonResult::make_missing_error("upload", "<0>Upload not found");
+            }
+            $ct = $updoc->mimetype;
+            $ct_form = false;
+        } else {
+            $updoc = null;
+        }
+
         // from here on, expect JSON
         if ($ct === "application/json") {
-            $jsonstr = $qreq->body();
+            $jsonstr = $updoc ? $updoc->content() : $qreq->body();
         } else if ($ct === "application/zip") {
             $this->ziparchive = new ZipArchive;
-            $cf = $qreq->body_file(".zip");
+            $cf = $updoc ? $updoc->content_file() : $qreq->body_file(".zip");
             if (!$cf) {
                 return JsonResult::make_error(500, "<0>Uploaded content unreadable");
             }
@@ -221,7 +233,7 @@ class Paper_API extends MessageSet {
 
     /** @return bool */
     private function post_form_is_json(Qrequest $qreq) {
-        if (!isset($qreq->json)) {
+        if (!isset($qreq->json) && !isset($qreq->upload)) {
             return false;
         }
         foreach ($qreq as $k => $v) {

@@ -293,8 +293,11 @@ class DocumentInfo implements JsonSerializable {
         if (ctype_xdigit($tokd->crc32) && strlen($tokd->crc32) === 8) {
             $doc->crc32 = hex2bin($tokd->crc32);
         }
-        if ($content_file !== null) {
+        if (isset($content_file)) {
             $doc->content_file = $content_file;
+        } else if (isset($tokd->content_file) && file_exists($tokd->content_file)) {
+            // file may have moved to permanent location
+            $doc->content_file = $tokd->content_file;
         }
         if ($doc->content_available() || $doc->load_docstore()) {
             $doc->analyze_content();
@@ -845,8 +848,7 @@ class DocumentInfo implements JsonSerializable {
             return true;
         }
         if ($this->content_file !== null
-            && copy($this->content_file, $dspath)
-            && @filesize($dspath) === @filesize($this->content_file)) {
+            && $this->_store_docstore_content_file($dspath)) {
             $ok = true;
         } else {
             $content = $this->content();
@@ -866,6 +868,19 @@ class DocumentInfo implements JsonSerializable {
             $this->message_set()->warning_at(".content", "<0>Internal error while saving document to file system");
         }
         return $ok;
+    }
+
+    /** @return bool */
+    private function _store_docstore_content_file($dspath) {
+        $tmppath = Filer::docstore_tempdir($this->conf);
+        if ($tmppath
+            && str_starts_with($this->content_file, "{$tmppath}upload-hcup")
+            && rename($this->content_file, $dspath)) {
+            $this->content_file = $dspath;
+            return true;
+        }
+        return copy($this->content_file, $dspath)
+            && @filesize($dspath) === @filesize($this->content_file);
     }
 
     /** @param string $text_hash

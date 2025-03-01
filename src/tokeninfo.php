@@ -80,9 +80,7 @@ class TokenInfo {
     /** @param ?int $capabilityType */
     function __construct(Conf $conf, $capabilityType = null) {
         $this->conf = $conf;
-        if ($capabilityType !== null) {
-            $this->capabilityType = $capabilityType;
-        }
+        $this->capabilityType = $this->capabilityType ?? $capabilityType;
     }
 
     /** @return bool */
