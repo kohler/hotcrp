@@ -1,6 +1,6 @@
 <?php
 // api_upload.php -- HotCRP upload manager
-// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class Upload_API {
     const MIN_MULTIPART_SIZE = 5 << 20;
@@ -28,8 +28,8 @@ class Upload_API {
     public $no_s3_move = false;
     /** @var bool */
     public $synchronous = false;
-    /** @var ?string */
-    private $_error_ftext;
+    /** @var list<MessageItem> */
+    private $_ml = [];
     /** @var ?HashContext */
     private $_hashctx;
     /** @var ?HashContext */
@@ -69,24 +69,29 @@ class Upload_API {
     private function segment_boundaries($segi) {
         if ($segi < count($this->segments)) {
             return $this->segments[$segi];
-        } else {
-            $segl = count($this->segments) - 1;
-            list($seg0, $seg1) = $this->segments[$segl];
-            $segsz = $seg1 - $seg0;
-            $segx = $segi - $segl;
-            return [$seg0 + $segx * $segsz, $seg0 + ($segx + 1) * $segsz];
         }
+        $segl = count($this->segments) - 1;
+        list($seg0, $seg1) = $this->segments[$segl];
+        $segsz = $seg1 - $seg0;
+        $segx = $segi - $segl;
+        return [$seg0 + $segx * $segsz, $seg0 + ($segx + 1) * $segsz];
     }
 
     /** @param ?int $segno
      * @return string */
-    private function segment_file($segno = null) {
+    private function segment_file($segno) {
         return $this->tmpdir . $this->_cap->salt . ($segno ? "-{$segno}" : "");
     }
 
     /** @return string */
     private function assembly_file() {
         return $this->tmpdir . $this->_cap->salt . "-asm";
+    }
+
+    /** @param DocumentInfo $doc
+     * @return string */
+    private function final_file($doc) {
+        return $this->tmpdir . "upload-" . $this->_cap->salt . Mimetype::extension($doc->mimetype);
     }
 
     /** @param list<int> $range
@@ -118,28 +123,16 @@ class Upload_API {
     private function assign_token() {
         for ($tries = 1; $tries !== 10; ++$tries) {
             $this->_cap->set_salt("hcup" . base48_encode(random_bytes(12)));
-            if (($handle = fopen($this->segment_file(), "x"))) {
+            if (($handle = fopen($this->segment_file(0), "x"))) {
                 fclose($handle);
                 $this->_cap->insert();
                 if ($this->_cap->stored()) {
                     return true;
                 }
-                unlink($this->segment_file());
+                unlink($this->segment_file(0));
             }
         }
         return false;
-    }
-
-    /** @param int $status
-     * @param string $error_ftext
-     * @return array<string,mixed> */
-    static private function _make_simple_error($status, $error_ftext) {
-        $j = ["ok" => false];
-        if ($status) {
-            $j["status"] = $status;
-        }
-        $j["message_list"] = [MessageItem::error($error_ftext)];
-        return $j;
     }
 
     /** @param ?mixed $x
@@ -149,18 +142,19 @@ class Upload_API {
             return $x;
         } else if (is_string($x) && ctype_digit($x)) {
             return intval($x);
-        } else {
-            return null;
         }
+        return null;
     }
 
-    /** @return array<string,mixed> */
+    /** @return JsonResult */
     function exec_start(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         $size = self::qreqint($qreq->size);
         if ($size === null) {
-            return self::_make_simple_error(400, "<0>Missing `size` parameter");
+            if (isset($qreq->size)) {
+                return JsonResult::make_parameter_error("size");
+            }
         } else if ($size > $this->max_size) {
-            return self::_make_simple_error(400, "<0>`size` too large") + ["maxsize" => $this->max_size];
+            return JsonResult::make_parameter_error("size", "<0>File too large")->set("maxsize", $this->max_size);
         }
         $this->_cap = (new TokenInfo($this->conf, TokenInfo::UPLOAD))
             ->set_user($user)->set_paper($prow)->set_expires_after(7200);
@@ -171,13 +165,21 @@ class Upload_API {
         } else {
             $filename = "_upload_";
         }
+        if (is_int($qreq->dtype)) {
+            $dtype = $qreq->dtype;
+        } else if ($qreq->dtype && preg_match('/\A-?\d+\z/', $qreq->dtype)) {
+            $dtype = intval($qreq->dtype);
+        } else {
+            $dtype = null;
+        }
         $data = [
             "size" => $size,
             "ranges" => [0, 0],
             "filename" => $filename,
             "mimetype" => $qreq->mimetype,
             "pid" => $prow ? $prow->paperId : -1,
-            "dtype" => is_numeric($qreq->dtype) ? intval($qreq->dtype) : null,
+            "dtype" => $dtype,
+            "temp" => friendly_boolean($qreq->temp) ?? $dtype === null,
             "hash" => null,
             "crc32" => null,
             "s3_parts" => [],
@@ -198,15 +200,14 @@ class Upload_API {
         $this->_cap->assign_data($data);
         if ($this->assign_token()) {
             $qreq->token = $this->_cap->salt;
-            return ["ok" => true];
-        } else {
-            return self::_make_simple_error(503, "<0>Cannot initiate upload");
+            return JsonResult::make_ok();
         }
+        return JsonResult::make_message_list(503, MessageItem::error("<0>Cannot initiate upload"));
     }
 
     private function delete_files() {
-        foreach (glob($this->segment_file() . "*") as $f) {
-            unlink($f);
+        foreach (glob($this->segment_file(null) . "*") as $f) {
+            @unlink($f);
         }
     }
 
@@ -348,13 +349,14 @@ class Upload_API {
      * @param int $segindex
      * @return string|false */
     private function s3_transfer_segment($s3c, $segindex) {
-        if ($this->_capd->size <= self::MIN_MULTIPART_SIZE) {
+        if (isset($this->_capd->size)
+            && $this->_capd->size <= self::MIN_MULTIPART_SIZE) {
             return "whole";
         }
         if (!$this->_capd->s3_uploadid) {
             $uploadid = $s3c->multipart_create($this->s3_key(), $this->_capd->mimetype, $this->dest_user_data());
             if (!$uploadid) {
-                $this->_error_ftext = "<0>S3 multipart upload error";
+                $this->_ml[] = MessageItem::error("<0>S3 multipart upload error");
                 return false;
             }
             $this->modify_capd(function ($d) use ($uploadid) {
@@ -363,7 +365,7 @@ class Upload_API {
         }
         $file = $this->segment_file($segindex);
         if (!is_readable($file)) {
-            $this->_error_ftext = "<0>Cannot read content file";
+            $this->_ml[] = MessageItem::error("<0>Cannot read content file");
             return false;
         }
         $r = $s3c->start_put_file($this->s3_key() . "?partNumber=" . ($segindex + 1)
@@ -373,7 +375,7 @@ class Upload_API {
         if ($r->status === 200) {
             return $r->response_header("etag");
         } else {
-            $this->_error_ftext = "<0>S3 upload error";
+            $this->_ml[] = MessageItem::error("<0>S3 upload error");
             error_log($r->method() . " " . $r->url() . " -> " . $r->status . " " . json_encode($r->response_headers) . " " . $r->response_body() . "\n\n" . json_encode($this->_capd));
             return false;
         }
@@ -400,16 +402,24 @@ class Upload_API {
             }
         }
         fflush($file);
+        $ok = false;
         if ($segi === $nseg) {
             $doc = DocumentInfo::make_token($this->conf, $this->_cap, $asmfn);
-            $finalfn = Filer::docstore_path($doc, Filer::FPATH_MKDIR);
-            $ok = $finalfn && rename($asmfn, $finalfn);
-        } else {
-            $ok = false;
+            if ($this->_capd->temp) {
+                $finalfn = Filer::docstore_path($doc, Filer::FPATH_MKDIR);
+            } else {
+                $finalfn = $this->final_file($doc);
+            }
+            if ($finalfn && rename($asmfn, $finalfn)) {
+                $this->modify_capd(function ($d) use ($finalfn) {
+                    $d->content_file = $finalfn;
+                });
+                $ok = true;
+            }
         }
         fclose($file);
         if (!$ok) {
-            unlink($asmfn);
+            @unlink($asmfn);
         }
         return $ok;
     }
@@ -417,10 +427,16 @@ class Upload_API {
     /** @param ?S3Client $s3c */
     private function complete_transfer($s3c) {
         $nseg = count($this->_capd->s3_parts);
-        assert($nseg > 0);
+        if ($nseg === 0) {
+            $this->_ml[] = MessageItem::error("<0>Empty upload");
+            $this->delete_files();
+            return;
+        }
+        assert($this->_capd->size !== null);
         assert(($this->segment_boundaries($nseg))[0] >= $this->_capd->size);
         assert(!array_filter($this->_capd->s3_parts, function ($p) { return $p === null; }));
 
+        // status 0: hash not yet computed
         if ($this->_capd->status === 0) {
             // compute hash
             $this->_make_hashctx();
@@ -445,7 +461,7 @@ class Upload_API {
                 $this->_hashpos = min($seg1, $this->_capd->size);
             }
             if ($this->_hashpos !== $this->_capd->size) {
-                $this->_error_ftext = "<0>Hash computation error";
+                $this->_ml[] = MessageItem::error("<0>Hash computation error");
                 return;
             }
             $ha = new HashAnalysis($this->conf->content_hash_algorithm());
@@ -458,6 +474,7 @@ class Upload_API {
             });
         }
 
+        // status 1: hash computed, docstore not ready
         if ($this->_capd->status === 1
             && $this->complete_docstore_transfer()) {
             $this->modify_capd(function ($d) {
@@ -465,6 +482,7 @@ class Upload_API {
             });
         }
 
+        // status 2: hash computed, docstore ready, S3 not ready
         if ($this->_capd->status === 2
             && $s3c) {
             $doc = DocumentInfo::make_token($this->conf, $this->_cap, $this->segment_file(0));
@@ -486,6 +504,8 @@ class Upload_API {
             }
         }
 
+        // status 2: hash computed, docstore ready,
+        // S3 multipart complete but not moved to destination
         if ($this->_capd->status === 3
             && $s3c
             && !$this->no_s3_move) {
@@ -506,7 +526,7 @@ class Upload_API {
             // success; clean up
             $this->delete_files();
         } else {
-            $this->_error_ftext = "<0>Upload error";
+            $this->_ml[] = MessageItem::error("<0>Upload error");
         }
     }
 
@@ -536,7 +556,7 @@ class Upload_API {
             $this->_cap->load_data();
             $this->_capd = json_decode($this->_cap->data);
             if (!$this->_capd) {
-                $this->_error_ftext = "<0>Capability changed underneath us";
+                $this->_ml[] = MessageItem::error("<0>Capability changed underneath us");
                 return;
             }
         }
@@ -544,12 +564,15 @@ class Upload_API {
         // walk parts, transfer to S3 if available
         $segindex = count($this->_capd->s3_parts);
         list($seg0, $seg1) = $this->segment_boundaries($segindex);
-        $s3c = $this->no_s3 ? null : $this->conf->s3_client();
+        $s3c = null;
+        if (!$this->no_s3 && !$this->_capd->temp) {
+            $s3c = $this->conf->s3_client();
+        }
         if ($s3c) {
             //$s3c->result_class = "CurlS3Result";
         }
         while ($seg0 < $this->_capd->ranges[1]
-               && min($seg1, $this->_capd->size) <= $this->_capd->ranges[1]) {
+               && min($seg1, $this->_capd->size ?? $seg1) <= $this->_capd->ranges[1]) {
             set_time_limit(120);
             assert($seg1 - $seg0 >= self::MIN_MULTIPART_SIZE);
             if ($segindex === 0) {
@@ -559,7 +582,7 @@ class Upload_API {
                     $d->mimetype = $mimetype;
                 });
             }
-            $part = $s3c ? $this->s3_transfer_segment($s3c, $segindex) : "null";
+            $part = $s3c ? $this->s3_transfer_segment($s3c, $segindex) : "x";
             if ($part === false) {
                 return false;
             }
@@ -574,7 +597,8 @@ class Upload_API {
         }
 
         // complete
-        if ($seg0 >= $this->_capd->size) {
+        if (isset($this->_capd->size)
+            && $seg0 >= $this->_capd->size) {
             $this->complete_transfer($s3c);
         }
 
@@ -586,43 +610,44 @@ class Upload_API {
         });
     }
 
-    /** @return array<string,mixed> */
-    private function _make_result() {
+    /** @param MessageItem ...$ml
+     * @return JsonResult */
+    private function _make_result(...$ml) {
+        foreach ($ml as $mi) {
+            $this->_ml[] = $mi;
+        }
+        $status = MessageSet::list_status($this->_ml);
         $j = [
-            "ok" => !$this->_error_ftext,
+            "ok" => $status < MessageSet::ERROR,
             "token" => $this->_cap->salt,
             "dtype" => $this->_capd->dtype,
             "filename" => $this->_capd->filename,
             "mimetype" => $this->_capd->mimetype,
-            "size" => $this->_capd->size,
             "ranges" => $this->_capd->ranges
         ];
-        list($unused, $seg1) = $this->segment_boundaries(count($this->_capd->s3_parts));
-        $spl = min($seg1, $this->_capd->size);
+        if (isset($this->_capd->size)) {
+            $j["size"] = $this->_capd->size;
+        }
         if (isset($this->_capd->hash)) {
             $j["hash"] = $this->_capd->hash;
-            $spl += 1 << 20;
         }
-        $j["server_progress_loaded"] = (int) ($spl * self::SERVER_PROGRESS_FACTOR);
-        $j["server_progress_max"] = (int) (($this->_capd->size + (1 << 20)) * self::SERVER_PROGRESS_FACTOR);
-        if ($this->_error_ftext) {
-            $j["message_list"] = [MessageItem::error($this->_error_ftext)];
+        if (isset($this->_capd->size)) {
+            list($unused, $seg1) = $this->segment_boundaries(count($this->_capd->s3_parts));
+            $spl = min($seg1, $this->_capd->size) + (isset($this->_capd->hash) ? 1 << 20 : 0);
+            $j["server_progress_loaded"] = (int) ($spl * self::SERVER_PROGRESS_FACTOR);
+            $j["server_progress_max"] = (int) (($this->_capd->size + (1 << 20)) * self::SERVER_PROGRESS_FACTOR);
         }
-        return $j;
+        if (!empty($this->_ml)) {
+            $j["message_list"] = $this->_ml;
+        }
+        return new JsonResult($status < MessageSet::ERROR ? 200 : 400, $j);
     }
 
-    /** @param string $error_ftext
-     * @return array<string,mixed> */
-    private function _make_error($error_ftext) {
-        $this->_error_ftext = $error_ftext;
-        return $this->_make_result();
-    }
-
-    /** @return array<string,mixed> */
+    /** @return JsonResult */
     function exec(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         $this->_cap = $this->_capd = null;
         if (!$this->tmpdir) {
-            return self::_make_simple_error(501, "<0>Upload API not available on this site");
+            return JsonResult::make_message_list(501, MessageItem::error("<0>Upload API not available on this site"));
         } else {
             $user->ensure_account_here();
         }
@@ -630,85 +655,113 @@ class Upload_API {
 
         if (friendly_boolean($qreq->start)) {
             $j = $this->exec_start($user, $qreq, $prow);
-            if (!$j["ok"]) {
+            if (!$j->ok()) {
                 return $j;
             }
         } else if ($qreq->token) {
             $this->_cap = TokenInfo::find($qreq->token, $user->conf);
         } else {
-            return self::_make_simple_error(400, "<0>Missing `token` parameter");
+            return JsonResult::make_missing_error("token");
         }
 
-        if (!$this->_cap) {
-            return self::_make_simple_error(404, "<0>No such `token`");
-        } else if ($this->_cap->capabilityType !== TokenInfo::UPLOAD) {
-            return self::_make_simple_error(400, "<0>Bad `token`");
+        if (!$this->_cap || $this->_cap->capabilityType !== TokenInfo::UPLOAD) {
+            return JsonResult::make_not_found_error("token", "<0>Upload token not found");
         } else if (!$this->_cap->is_active()) {
             error_log("token {$qreq->token} inactive: expires {$this->_cap->timeExpires}, invalid {$this->_cap->timeInvalid}");
-            return self::_make_simple_error(404, "<0>Token inactive or expired");
+            return JsonResult::make_not_found_error("token", "<0>Upload inactive or expired");
         } else if ($this->_cap->contactId !== $user->contactId) {
-            return self::_make_simple_error(400, "<0>That upload belongs to another user");
+            return JsonResult::make_parameter_error("token", "<0>That upload belongs to another user");
         }
         $this->_capd = json_decode($this->_cap->data);
 
         if (friendly_boolean($qreq->cancel)) {
             $this->delete_all();
             $this->_cap->delete();
-            return ["ok" => true, "token" => $qreq->token, "message_list" => [MessageItem::marked_note("<0>Upload canceled")]];
-        } else if (isset($qreq->size) && self::qreqint($qreq->size) !== $this->_capd->size) {
-            return $this->_make_error("<0>Bad `size` parameter");
+            return JsonResult::make_message_list(MessageItem::marked_note("<0>Upload canceled"))->set("token", $qreq->token);
+        }
+
+        if (isset($qreq->size)) {
+            $size = self::qreqint($qreq->size);
+            if ($size === null) {
+                return $this->_make_result(MessageItem::error_at("size", "<0>Parameter error"));
+            }
+            if (!isset($this->_capd->size)) {
+                $this->modify_capd(function ($d) use ($size) {
+                    $this->_capd->size = $size;
+                });
+            } else if ($size !== $this->_capd->size) {
+                return $this->_make_result(MessageItem::error_at("size", "<0>Wrong size"));
+            }
         }
 
         $offset = isset($qreq->offset) ? self::qreqint($qreq->offset) : 0;
         if ($offset === null) {
-            return $this->_make_error("<0>Bad `offset` parameter");
+            return $this->_make_result(MessageItem::error_at("offset", "<0>Parameter error"));
         }
         $length = isset($qreq->length) ? self::qreqint($qreq->length) : null;
         if (isset($qreq->length) && $length === null) {
-            return $this->_make_error("<0>Bad `length` parameter");
+            return $this->_make_result(MessageItem::error_at("length", "<0>Parameter error"));
         }
 
-        if ($qreq->has_file("blob") && !$this->_capd->hash) {
-            $size = $qreq->file_size("blob");
-            if ($size > $this->max_blob) {
-                return $this->_make_error("<0>Uploaded segment too large") + ["maxblob" => $this->max_blob];
+        $blob = $qreq->file("blob");
+        if (!$blob && $qreq->blob !== null) {
+            $blob = QrequestFile::make_string($qreq->blob);
+        }
+        if ($blob && !$this->_capd->hash) {
+            if ($blob->size > $this->max_blob) {
+                $mi = MessageItem::error_at("blob", "<0>Uploaded segment too large");
+                return $this->_make_result($mi)->set("maxblob", $this->max_blob);
             }
-            $length = $length ?? $size;
-            if ($length > $size) {
-                return $this->_make_error("<0>Uploaded file smaller than claimed blob `length`");
-            } else if ($offset + $length > $this->_capd->size) {
-                return $this->_make_error("<0>Uploaded segment bigger than claimed upload size");
+            $length = $length ?? $blob->size;
+            if ($length > $blob->size) {
+                return $this->_make_result(MessageItem::error_at("blob", "<0>Uploaded file smaller than claimed `length`"));
+            } else if ($offset + $length > $this->max_size) {
+                return $this->_make_result(MessageItem::error_at("blob", "<0>Uploaded segment extends past maximum upload size"));
+            } else if (isset($this->_capd->size) && $offset + $length > $this->_capd->size) {
+                return $this->_make_result(MessageItem::error_at("blob", "<0>Uploaded segment extends past claimed upload size"));
             }
-            $data = $qreq->file_content("blob", 0, $length);
+            $data = $blob->content(0, $length);
             if ($data === false || strlen($data) !== $length) {
-                return $this->_make_error("<0>Problem reading uploaded file");
+                return $this->_make_result(MessageItem::error_at("blob", "<0>Problem reading uploaded file"));
             }
             if (!$this->exec_upload($user, $offset, $data)) {
-                return $this->_make_error("<0>Upload failed");
+                return $this->_make_result(MessageItem::error("<0>Upload failed"));
             }
         } else if ($qreq->has_annex("upload_errors")) {
-            return $this->_make_error("<0>Problem with uploaded file");
+            return $this->_make_result(MessageItem::error_at("blob", "<0>Problem with uploaded file"));
         }
 
         $finish = friendly_boolean($qreq->finish);
-        if ($finish && $this->_capd->ranges !== [0, $this->_capd->size]) {
-            return $this->_make_error("<0>Upload incomplete");
+        if ($finish) {
+            if (count($this->_capd->ranges) !== 2) {
+                return $this->_make_result(MessageItem::error("<0>Upload has holes"));
+            }
+            if ($this->_capd->size === null) {
+                $this->modify_capd(function ($d) {
+                    if (count($this->_capd->ranges) === 2
+                        && $this->_capd->ranges[0] === 0) {
+                        $this->_capd->size = $this->_capd->ranges[1];
+                    }
+                });
+            }
+            if ($this->_capd->ranges !== [0, $this->_capd->size]) {
+                return $this->_make_result(MessageItem::error("<0>Upload incomplete"));
+            }
         }
 
         if (!$finish
             && !$this->synchronous
             && JsonCompletion::$allow_short_circuit) {
-            $json = new JsonResult($this->_make_result());
-            $json->emit($qreq);
+            $this->_make_result()->emit($qreq);
             if (PHP_SAPI === "fpm-fcgi") {
                 fastcgi_finish_request();
             }
             $this->transfer(false, "{$offset}+{$length}");
             exit(0);
-        } else {
-            $this->transfer(true, "finish");
-            return $this->_make_result();
         }
+
+        $this->transfer(true, "finish");
+        return $this->_make_result();
     }
 
     static function run(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {

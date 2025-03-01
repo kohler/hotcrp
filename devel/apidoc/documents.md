@@ -16,15 +16,16 @@ The `POST /upload` endpoint uploads files to the server. It is intended for
 large documents, and can upload a file over multiple requests, each containing
 a slice of the data.
 
-To start an upload, set `start=1` and (if available) include the `size` of the
-whole uploaded file. The response will include a `token` field, a string like
-`hcupwhvGDVmHNYyDKdqeqA` that identifies the upload in progress. All further
-requests for the upload must include the `token` as parameter.
+To start an upload, set `start=1` and (if available) set `size` to the size of
+the whole uploaded file. The response will include a `token` field, a string
+like `hcupwhvGDVmHNYyDKdqeqA` that identifies the upload in progress. All
+further requests for the upload must include the `token` as parameter.
 
 Each request adds a chunk of data to the upload. The `offset` parameter gives
-the byte offset of the uploaded chunk. The `blob` attachment parameter
-contains the chunk itself. The request that completes the upload should set
-`finish=1`; this request will fail unless all chunks have been received.
+the byte offset of the uploaded chunk. The `blob` parameter (which can be an
+attached file or a normal parameter) contains the chunk itself. The request
+that completes the upload should set `finish=1`; this request will fail unless
+all chunks have been received.
 
 The `ranges` response field represents the ranges of bytes received so far.
 The response to a `finish=1` request will include a `hash` field, which is the
@@ -37,6 +38,7 @@ store.
 * param ?start boolean
 * param ?finish boolean
 * param ?cancel boolean
+* param ?temp boolean
 * param ?token upload_token
 * param ?offset nonnegative_integer: Offset of `blob` in uploaded file
 * param ?size nonnegative_integer: Size of uploaded file
