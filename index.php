@@ -34,7 +34,8 @@ function handle_request($nav) {
             API_Page::go_nav($nav, $conf);
             return;
         }
-        list($user, $qreq) = initialize_request();
+        $qreq = initialize_request($conf, $nav);
+        $user = initialize_user($qreq);
         $pc = $user->conf->page_components($user, $qreq);
         $pagej = $pc->get($nav->page);
         if (!$pagej || str_starts_with($pagej->name, "__")) {

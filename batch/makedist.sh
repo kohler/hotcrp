@@ -247,7 +247,6 @@ src/autoassigners/aa_review.php
 src/backuppattern.php
 src/banal
 src/capabilities/cap_authorview.php
-src/capabilities/cap_bearer.php
 src/capabilities/cap_job.php
 src/capabilities/cap_reviewaccept.php
 src/cdbuserupdate.php

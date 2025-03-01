@@ -187,6 +187,46 @@ function initialize_conf($config_file = null, $confid = null) {
 }
 
 
+/** @param Conf $conf
+ * @param NavigationState $nav
+ * @return Qrequest */
+function initialize_request($conf, $nav) {
+    // check PHP suffix
+    if (($php_suffix = $conf->opt("phpSuffix")) !== null) {
+        $nav->set_php_suffix($php_suffix);
+    }
+
+    // maybe redirect to base or to https
+    if ($nav->above_base) {
+        Navigation::redirect_absolute($nav->self());
+    } else if ($conf->opt("redirectToHttps") && $nav->protocol === "http://") {
+        $nav->redirect_http_to_https($conf->opt("allowLocalHttp"));
+    }
+
+    // collect $qreq
+    $qreq = Qrequest::make_global($nav);
+    $qreq->set_conf($conf);
+    Qrequest::set_main_request($qreq);
+
+    // check method
+    if ($qreq->method() !== "GET"
+        && $qreq->method() !== "POST"
+        && $qreq->method() !== "HEAD") {
+        header("HTTP/1.0 405 Method Not Allowed");
+        exit(0);
+    }
+
+    // mark as already expired to discourage caching, but allow the browser
+    // to cache for history buttons
+    header("Cache-Control: max-age=0,must-revalidate,private");
+
+    // set up Content-Security-Policy if appropriate
+    $conf->prepare_security_headers();
+
+    return $qreq;
+}
+
+
 /** @param Qrequest $qreq
  * @param int $uindex
  * @param int $nusers
@@ -242,57 +282,29 @@ function initialize_user_preferred_uindex($qreq, $uindex) {
     }
 }
 
-
-/** @param ?array{no_main_user?:bool,bearer?:bool} $kwarg
- * @return array{Contact,Qrequest} */
-function initialize_request($kwarg = null) {
-    $conf = Conf::$main;
-    $nav = Navigation::get();
-
-    // check PHP suffix
-    if (($php_suffix = $conf->opt("phpSuffix")) !== null) {
-        $nav->set_php_suffix($php_suffix);
-    }
-
-    // maybe redirect to base or to https
-    if ($nav->above_base) {
-        Navigation::redirect_absolute($nav->self());
-    } else if ($conf->opt("redirectToHttps") && $nav->protocol === "http://") {
-        $nav->redirect_http_to_https($conf->opt("allowLocalHttp"));
-    }
-
-    // collect $qreq
-    $qreq = Qrequest::make_global($nav);
-    $qreq->set_conf($conf);
-    Qrequest::set_main_request($qreq);
-
-    // check method
-    if ($qreq->method() !== "GET"
-        && $qreq->method() !== "POST"
-        && $qreq->method() !== "HEAD") {
-        header("HTTP/1.0 405 Method Not Allowed");
-        exit(0);
-    }
-
-    // mark as already expired to discourage caching, but allow the browser
-    // to cache for history buttons
-    header("Cache-Control: max-age=0,must-revalidate,private");
-
-    // set up Content-Security-Policy if appropriate
-    $conf->prepare_security_headers();
-
-    // skip user initialization if requested
-    if ($kwarg["no_main_user"] ?? false) {
-        return [null, $qreq];
-    }
+/** @param Qrequest $qreq
+ * @param ?array{bearer?:bool} $kwarg
+ * @return ?Contact */
+function initialize_user($qreq, $kwarg = null) {
+    $conf = $qreq->conf();
 
     // check for bearer token
     if (($kwarg["bearer"] ?? false)
-        && isset($_SERVER["HTTP_AUTHORIZATION"])
-        && ($token = Bearer_Capability::header_token($conf, $_SERVER["HTTP_AUTHORIZATION"]))
-        && ($user = $token->local_user())) {
+        && ($htauth = $_SERVER["HTTP_AUTHORIZATION"] ?? null)
+        && preg_match('/\A\s*+Bearer\s++(hct_[A-Za-z0-9]++)\s*+\z/i', $htauth, $m)) {
+        $qreq->approve_token(); // explicit authorization
+        $user = null;
+        $token = TokenInfo::find($m[1], $conf, true)
+            ?? TokenInfo::find($m[1], $conf, false);
+        if ($token
+            && $token->capabilityType === TokenInfo::BEARER
+            && $token->is_active()) {
+            $user = $token->local_user();
+        }
+        if (!$user) {
+            JsonResult::make_error(401, "<0>Unauthorized")->complete();
+        }
         $qreq->set_user($user);
-        $qreq->approve_token();
         $user->set_bearer_authorized();
         Contact::set_main_user($user);
         Contact::$session_users = [$user->email];
@@ -300,8 +312,7 @@ function initialize_request($kwarg = null) {
         $ucounter->api_refresh();
         $ucounter->api_account(true);
         $token->update_use(86400)->update(); // mark use once a day
-        $user = $user->activate($qreq, true);
-        return [$user, $qreq];
+        return $user->activate($qreq, true);
     }
 
     // set up session
@@ -331,6 +342,7 @@ function initialize_request($kwarg = null) {
     $uindex = 0;
     $reqemail = $_GET["i"] ?? "";
 
+    $nav = $qreq->navigation();
     if (str_starts_with($nav->shifted_path, "u/")) {
         // use explicit account index
         $uindex = (int) substr($nav->shifted_path, 2);
@@ -449,5 +461,5 @@ function initialize_request($kwarg = null) {
         }
     }
 
-    return [$muser, $qreq];
+    return $muser;
 }

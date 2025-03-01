@@ -194,11 +194,12 @@ class API_Page {
 
         // trackerstatus is a special case: prevent session creation
         if ($_GET["fn"] === "trackerstatus") {
-            initialize_request(["no_main_user" => true]);
+            initialize_request($conf, $nav);
             MeetingTracker::trackerstatus_api(Contact::make($conf));
         } else {
-            list($user, $qreq) = initialize_request(["bearer" => true]);
+            $qreq = initialize_request($conf, $nav);
             try {
+                $user = initialize_user($qreq, ["bearer" => true]);
                 $jr = self::go($user, $qreq);
             } catch (JsonCompletion $jc) {
                 $jr = $jc->result;

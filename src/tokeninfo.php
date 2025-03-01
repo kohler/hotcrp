@@ -355,9 +355,8 @@ class TokenInfo {
         } else if ($this->email !== null) {
             return $this->conf->user_by_email($this->email)
                 ?? Contact::make_email($this->conf, $this->email);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return string */
