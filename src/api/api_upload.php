@@ -406,9 +406,9 @@ class Upload_API {
         if ($segi === $nseg) {
             $doc = DocumentInfo::make_token($this->conf, $this->_cap, $asmfn);
             if ($this->_capd->temp) {
-                $finalfn = Filer::docstore_path($doc, Filer::FPATH_MKDIR);
-            } else {
                 $finalfn = $this->final_file($doc);
+            } else {
+                $finalfn = Filer::docstore_path($doc, Filer::FPATH_MKDIR);
             }
             if ($finalfn && rename($asmfn, $finalfn)) {
                 $this->modify_capd(function ($d) use ($finalfn) {
@@ -630,6 +630,9 @@ class Upload_API {
         }
         if (isset($this->_capd->hash)) {
             $j["hash"] = $this->_capd->hash;
+        }
+        if (isset($this->_capd->crc32)) {
+            $j["crc32"] = $this->_capd->crc32;
         }
         if (isset($this->_capd->size)) {
             list($unused, $seg1) = $this->segment_boundaries(count($this->_capd->s3_parts));

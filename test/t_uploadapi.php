@@ -77,6 +77,7 @@ In thee!
         $user = $this->conf->checked_user_by_email("marina@poema.ru");
         $qreq = (new Qrequest("POST", [
                 "start" => 1,
+                "temp" => 0,
                 "size" => strlen(self::TEXT),
                 "filename" => "where.txt",
                 "mimetype" => "text/plain",
@@ -131,6 +132,7 @@ In thee!
         $user = $this->conf->checked_user_by_email("marina@poema.ru");
         $qreq = (new Qrequest("POST", [
                 "start" => 1,
+                "temp" => 0,
                 "size" => strlen(self::TEXT),
                 "filename" => "where.txt",
                 "mimetype" => "text/plain",
@@ -185,6 +187,7 @@ In thee!
         $user = $this->conf->checked_user_by_email("marina@poema.ru");
         $qreq = (new Qrequest("POST", [
                 "start" => 1,
+                "temp" => 0,
                 "size" => strlen(self::TEXT),
                 "filename" => "where.txt",
                 "mimetype" => "text/plain",
@@ -261,6 +264,7 @@ In thee!
         $user = $this->conf->checked_user_by_email("marina@poema.ru");
         $qreq = (new Qrequest("POST", [
                 "start" => 1,
+                "temp" => 0,
                 "size" => strlen($s),
                 "filename" => "where.txt",
                 "mimetype" => "text/plain",
