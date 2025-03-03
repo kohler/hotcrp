@@ -9,15 +9,14 @@ These endpoints query and modify HotCRP submissions.
 
 This endpoint retrieves JSON-formatted information about a submission. All
 visible information about submission fields, tags, and overall status are
-returned in as the response’s `paper` property. Error messages—for instance,
-about permission errors or nonexistent submissions—are returned in
-`message_list`.
+returned in the `paper` response property, which defines a submission object.
+Error messages—for instance, about permission errors or nonexistent
+submissions—are returned in `message_list`.
 
-The returned `paper` property is a submission object. Submission objects are
-formatted based on the submission form. Every paper object has an `object`
-property set to `"paper"`, a `pid`, and a `status`. Other properties are
-provided based on which submission fields exist and whether the accessing user
-can see them.
+Submission objects are formatted based on the submission form. They have an
+`object` property set to `"paper"`, a `pid`, and a `status`. Other properties
+are provided based on which submission fields exist and whether the accessing
+user can see them.
 
 * param forceShow boolean: False to not override administrator conflict
 * response ?paper paper
@@ -31,22 +30,27 @@ This endpoint modifies the submission specified by the `p` parameter. Setting
 `p=new` will create a new submission; the response will contain the chosen
 submission ID.
 
-Modifications are specified using a JSON object. There are three ways to
-provide that JSON, depending on the content-type of the request:
+The modification may be specified:
 
-1. As a JSON request body with content-type `application/json`.
-2. In a ZIP archive request body with content-type `application/zip`, as a
-   file named `data.json`.
-3. As a parameter named `json` in a normal `application/x-www-form-urlencoded`
-   or `multipart/form-data` body.
+1. As a JSON request body (when the request body has content-type
+   `application/json`).
+2. As a ZIP archive (when the request body has content-type
+   `application/zip`). The archive must contain a file named `data.json`; it
+   may contain other files too.
+3. As a JSON-formatted request parameter named `json` (when the request body
+   has content-type `application/x-www-form-urlencoded` or
+   `multipart/form-data`).
+4. As a previously-uploaded JSON or ZIP file, represented by a upload token in
+   the `upload` parameter.
 
-However it is provided, the JSON must define an object interpretable as a
-submission (or a subset of a submission). The properties of this object define
-the modifications to be applied to the submission.
+In all of these, the modification is defined by a JSON submission object. The
+properties of this object define the modifications applied to the submission.
+The object need not specify all submission properties; absent properties
+remain unchanged.
 
-The `p` parameter is optional; if unset, HotCRP uses the `pid` from the
-supplied JSON. If the `p` parameter and the JSON `pid` property are both
-present, then they must match.
+The `p` request parameter is optional. If it is unset, HotCRP uses the `pid`
+from the supplied JSON. If both the `p` parameter and the JSON `pid` property
+are present, however, then they must match.
 
 To test a modification, supply a `dry_run=1` parameter. This will test the
 uploaded JSON but make no changes to the database.
@@ -112,6 +116,7 @@ existing submission, set the JSON’s `status`.`if_unmodified_since` to `0`.
 * param add_topics boolean: True automatically adds topics from input papers (administrators only)
 * param notify boolean: False does not notify contacts of changes (administrators only)
 * param ?json string
+* param ?upload upload_token: Defines upload token for large input file
 * response ?dry_run boolean: True for `dry_run` requests
 * response ?paper paper: JSON version of modified paper
 * response ?+change_list [string]: List of changed fields
@@ -130,7 +135,7 @@ too. The response property `papers` is an array of matching submission objects.
 Since searches silently filter out non-viewable submissions, `/papers?q=1010`
 and `/paper?p=1010` can return different error messages. The `/paper` request
 might return an error like `Submission #1010 does not exist` or `You aren’t
-allowed to view submission #10110`, whereas the `/papers` request will return
+allowed to view submission #1010`, whereas the `/papers` request will return
 no errors. To obtain warnings for missing submissions that were explicitly
 listed in a query, supply a `warn_missing=1` parameter.
 
@@ -166,7 +171,8 @@ relevant submission in the input JSON.
 * param disable_users boolean: True disables any newly-created users (administrators only)
 * param add_topics boolean: True automatically adds topics from input papers (administrators only)
 * param notify boolean: False does not notify contacts of changes (administrators only)
-* param json string
+* param ?json string
+* param ?upload upload_token: Defines upload token for large input file
 * param ?q search_string: Search query for match requests
 * param ?t search_collection: Collection to search; defaults to `viewable`
 * response ?dry_run boolean: True for `dry_run` requests
