@@ -249,24 +249,23 @@ class Getopt {
         return false;
     }
 
-    /** @param null|string|array<string,mixed> $arg
+    /** @param null|string|array<string,mixed> $subarg
      * @return string */
-    function help($arg = null) {
-        if (($subcommand = $arg["_subcommand"] ?? "") === "{help}") {
-            $subcommand = "";
-        }
-        if (is_string($arg)) {
-            $subtype = $arg;
-            $arg = null;
-        } else if (is_array($arg)) {
-            $subtype = $arg[$this->helpopt] ?? false;
-        } else {
-            $subtype = false;
-        }
-        if (($subtype === false || $subtype === "")
-            && !empty($this->subcommand)
-            && $subcommand !== "") {
-            $subtype = $subcommand;
+    function help($subarg = null) {
+        $subtype = "";
+        if (is_string($subarg)) {
+            $subtype = $subarg;
+        } else if (is_array($subarg)) {
+            if (!empty($subarg[$this->helpopt])) {
+                $subtype = $subarg[$this->helpopt];
+            } else if (($subarg["_subcommand"] ?? "") === "{help}") {
+                if (!empty($subarg["_"])
+                    && ($x = $this->find_subcommand($subarg["_"][0])) !== null) {
+                    $subtype = $x;
+                }
+            } else if (!empty($subarg["_subcommand"])) {
+                $subtype = $subarg["_subcommand"];
+            }
         }
         $s = [];
         if ($this->description) {
@@ -278,7 +277,7 @@ class Getopt {
             }
         }
         if (!empty($this->subcommand)
-            && $subcommand === "") {
+            && $subtype === "") {
             $s[] = "Subcommands:\n";
             foreach ($this->subcommand as $sc) {
                 if (($space = strpos($sc, " ")) !== false) {
@@ -370,7 +369,7 @@ class Getopt {
             $s[] = "\n";
         }
         if ($this->helpcallback
-            && ($t = call_user_func($this->helpcallback, $arg, $this) ?? "") !== "") {
+            && ($t = call_user_func($this->helpcallback, $subarg, $this, $subtype) ?? "") !== "") {
             $s[] = rtrim($t) . "\n\n";
         }
         return join("", $s);
@@ -646,5 +645,14 @@ class CommandLineException extends Exception {
     function add_context(...$context) {
         $this->context = array_merge($this->context ?? [], $context);
         return $this;
+    }
+    /** @param string $filename
+     * @return CommandLineException */
+    static function make_file_error($filename) {
+        $m = preg_replace('/\A.*:\s*(?=[^:]+\z)/', "", (error_get_last())["message"]);
+        if (($filename ?? "") === "") {
+            return new CommandLineException($m);
+        }
+        return new CommandLineException("{$filename}: {$m}");
     }
 }
