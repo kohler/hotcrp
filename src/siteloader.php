@@ -50,6 +50,7 @@ class SiteLoader {
         "_autoassigner.php" => ["aa_", "src/autoassigners"],
         "_batch.php" => ["", "batch"],
         "_capability.php" => ["cap_", "src/capabilities"],
+        "_clibatch.php" => ["cli_", "batch/cli"],
         "_fexpr.php" =>  ["f_", "src/formulas"],
         "_helptopic.php" => ["h_", "src/help"],
         "_listaction.php" => ["la_", "src/listactions"],

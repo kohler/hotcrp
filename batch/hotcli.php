@@ -1,279 +1,376 @@
 <?php
-// upload.php -- HotCRP script for uploading data
+// hotcli.php -- HotCRP script for interacting with site APIs
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
     require_once(dirname(__DIR__) . "/src/init.php");
 }
 
-class Upload_Batch extends MessageSet {
+interface CLIBatchCommand {
+    /** @return int */
+    function run(HotCLI_Batch $clib);
+}
+
+class HotCLI_Batch_Site {
     /** @var string */
     public $site;
     /** @var string */
-    public $authtoken;
-    /** @var ?string */
-    private $upload;
-    /** @var resource */
-    public $stream;
-    /** @var ?int */
-    public $size;
-    /** @var string */
-    public $mimetype;
-    /** @var string */
-    public $filename;
-    /** @var int */
-    public $chunk = 8 << 20;
-    /** @var ?string */
-    public $input_filename;
-    /** @var bool */
-    private $quiet;
-    /** @var bool */
-    private $verbose;
-    /** @var string */
-    private $response;
+    public $apitoken;
+}
 
-    function __construct($site, $token, $stream, $arg) {
-        if (!str_starts_with($site, "http://")
-            && !str_starts_with($site, "https://")) {
-            $site = "https://{$site}";
+class HotCLI_Batch extends MessageSet {
+    /** @var string
+     * @readonly */
+    public $site;
+    /** @var string
+     * @readonly */
+    public $apitoken;
+    /** @var bool
+     * @readonly */
+    public $quiet = false;
+    /** @var bool
+     * @readonly */
+    public $verbose = false;
+    /** @var int
+     * @readonly */
+    public $chunk = 8 << 20;
+
+    /** @var CurlHandle */
+    public $curlh;
+    /** @var resource */
+    public $headerf;
+    /** @var int */
+    public $status_code;
+    /** @var string */
+    public $content_string;
+    /** @var ?object */
+    public $content_json;
+
+    /** @var CLIBatchCommand */
+    private $command;
+    /** @var ?string */
+    private $output;
+
+    /** @var array<string,HotCLI_Batch_Site> */
+    private $siteconfig = [];
+    /** @var ?HotCLI_Batch_Site */
+    private $default_siteconfig;
+
+    function __construct() {
+        $this->curlh = curl_init();
+        curl_setopt($this->curlh, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($this->curlh, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($this->curlh, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
+        $this->headerf = fopen("php://memory", "w+b");
+        curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->headerf);
+    }
+
+    /** @param bool $x
+     * @suppress PhanAccessReadOnlyProperty
+     * @return $this */
+    function set_quiet($x) {
+        $this->quiet = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @suppress PhanAccessReadOnlyProperty
+     * @return $this */
+    function set_verbose($x) {
+        $this->verbose = $x;
+        return $this;
+    }
+
+    /** @param int $x
+     * @suppress PhanAccessReadOnlyProperty
+     * @return $this */
+    function set_chunk($x) {
+        $this->chunk = $x;
+        return $this;
+    }
+
+    /** @suppress PhanAccessReadOnlyProperty
+     * @return $this */
+    function set_command(CLIBatchCommand $command) {
+        $this->command = $command;
+        return $this;
+    }
+
+    /** @param ?string $s
+     * @suppress PhanAccessReadOnlyProperty
+     * @return $this */
+    function set_output($s) {
+        $this->output = $s;
+        return $this;
+    }
+
+    /** @param string $s
+     * @return string */
+    static private function unquote($s) {
+        return str_starts_with($s, "\"") ? substr($s, 1, -1) : $s;
+    }
+
+    /** @param ?string $f
+     * @suppress PhanAccessReadOnlyProperty
+     * @return $this */
+    function load_config_file($f) {
+        if ($f === "none") {
+            return $this;
         }
-        if (!preg_match('/\/api(?:\.php|)\z/', $site)) {
-            $site .= (str_ends_with($site, "/") ? "" : "/") . "api";
+        if (!isset($f)) {
+            $f = getenv("HOME") . "/.hotcliconfig";
+            if (!file_exists($f)) {
+                return $this;
+            }
         }
-        $this->site = $site;
-        $this->authtoken = $token;
-        $this->stream = $stream;
-        $this->mimetype = $arg["mimetype"] ?? null;
-        $this->filename = $arg["filename"] ?? null;
-        $this->input_filename = $arg["input_filename"] ?? null;
-        $this->quiet = $arg["quiet"] ?? false;
-        $this->verbose = $arg["verbose"] ?? false;
-        $stat = fstat($stream);
-        if ($stat && $stat["size"] > 0) {
-            $this->size = $stat["size"];
+        if ($f === "-") {
+            $s = stream_get_contents(STDIN);
+            $fname = "<stdin>";
+        } else {
+            $s = file_get_contents($f);
+            if ($s === false) {
+                throw CommandLineException::make_file_error($f);
+            }
+            $fname = $f;
         }
-        if (isset($arg["chunk"])) {
-            if (is_int($arg["chunk"])) {
-                $this->chunk = $arg["chunk"];
-            } else if (is_string($arg["chunk"])
-                       && preg_match('/\A([\d+]\.?\d*|\.\d+)([kmg]i?b?|)\z/i', $arg["chunk"], $m)) {
-                $n = (float) $m[1];
-                if ($m[2] !== "") {
-                    /** @phan-suppress-next-line PhanParamSuspiciousOrder */
-                    $x = (int) strpos(".kmg", strtolower($m[2][0]));
-                    if (strlen($m[2]) === 2) {
-                        $n *= 10 ** (3 * $x);
-                    } else {
-                        $n *= 1 << (10 * $x);
-                    }
+
+        $sn = null;
+        $line = 0;
+        foreach (preg_split('/\r\n?|\n/', $s) as $l) {
+            ++$line;
+            if (preg_match('/\A\s*+\[\s*+site\s*+(\w+|\".*?\"|(?=\]))\s*+\]\s*+\z/', $l, $m)) {
+                $sn = self::unquote($m[1]);
+                $this->siteconfig[$sn] = $this->siteconfig[$sn] ?? new HotCLI_Batch_Site;
+            } else if (preg_match('/\A\s*+\[/', $l)) {
+                $sn = null;
+            } else if ($sn === null) {
+                continue;
+            } else if (preg_match('/\A\s*+(?:site|url)\s*+=\s*+([^\"]++|\".*?\")\s*+\z/', $l, $m)) {
+                $s = self::unquote($m[1]);
+                if (!preg_match('/\Ahttps?:\/\//', $s)) {
+                    throw new CommandLineException("{$fname}:{$line}: Invalid `site`");
                 }
-                $this->chunk = (int) $n;
-            } else {
-                throw new CommandLineException("Invalid `chunk`");
+                $this->siteconfig[$sn]->site = $s;
+            } else if (preg_match('/\A\s*+apitoken\s*+=\s*+([^\"]++|\".*?\")\s*+\z/', $l, $m)) {
+                $s = self::unquote($m[1]);
+                if (!preg_match('/\Ahct_[A-Za-z0-9]{30,}/', $s)) {
+                    throw new CommandLineException("{$fname}:{$line}: Invalid `apitoken`");
+                }
+                $this->siteconfig[$sn]->apitoken = $s;
+            } else if (preg_match('/\A\s*+default\s*+=\s*+true\s*+\z/', $l, $m)) {
+                $this->default_siteconfig = $this->siteconfig[$sn];
             }
         }
     }
 
-    /** @param CurlHandle $curlh
-     * @param resource $headerf
-     * @param int $offset
-     * @return null|object|'retry' */
-    private function execute_curl($curlh, $headerf, $offset) {
-        if ($this->verbose) {
-            fwrite(STDERR, curl_getinfo($curlh, CURLINFO_EFFECTIVE_URL));
+    /** @return ?HotCLI_Batch_Site */
+    function default_site() {
+        return $this->default_siteconfig;
+    }
+
+    /** @param string|HotCLI_Batch_Site $s
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_site($s) {
+        if ($s instanceof HotCLI_Batch_Site) {
+            if ($s->site !== null) {
+                $this->site = $s->site;
+            }
+            if ($s->apitoken !== null) {
+                $this->set_apitoken($s->apitoken);
+            }
+        } else {
+            $this->site = $s;
         }
-        rewind($headerf);
-        ftruncate($headerf, 0);
-        $this->response = curl_exec($curlh);
-        $rc = curl_getinfo($curlh, CURLINFO_RESPONSE_CODE);
-        if ($this->verbose) {
-            fwrite(STDERR, ": {$rc}\n");
+        if (!$this->site) {
+            $this->site = null;
+            return $this;
         }
-        $j = json_decode($this->response);
-        if (!is_object($j)) {
+        if (!str_starts_with($this->site, "http://")
+            && !str_starts_with($this->site, "https://")) {
+            $this->site = "https://{$this->site}";
+        }
+        if (!preg_match('/\/api(?:\.php|)\z/', $this->site)) {
+            $this->site .= (str_ends_with($this->site, "/") ? "" : "/") . "api";
+        }
+        return $this;
+    }
+
+    /** @return bool */
+    function has_site() {
+        return $this->site !== null;
+    }
+
+    /** @param string $t
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_apitoken($t) {
+        if (!preg_match('/\Ahct_[A-Za-z0-9]{30,}\z/', $t)) {
+            throw new CommandLineException("Invalid APITOKEN");
+        }
+        $this->apitoken = $t;
+        curl_setopt($this->curlh, CURLOPT_XOAUTH2_BEARER, $this->apitoken);
+        return $this;
+    }
+
+    /** @return bool */
+    function has_apitoken() {
+        return $this->apitoken !== null;
+    }
+
+    /** @param ?callable(HotCLI_Batch):bool $skip_function
+     * @return bool */
+    function exec_api($skip_function = null) {
+        if ($this->verbose) {
+            fwrite(STDERR, curl_getinfo($this->curlh, CURLINFO_EFFECTIVE_URL));
+        }
+        rewind($this->headerf);
+        ftruncate($this->headerf, 0);
+        $this->content_string = curl_exec($this->curlh);
+        $this->status_code = curl_getinfo($this->curlh, CURLINFO_RESPONSE_CODE);
+        if ($this->verbose) {
+            fwrite(STDERR, ": {$this->status_code}\n");
+        }
+        $this->content_json = json_decode($this->content_string);
+        if (!is_object($this->content_json)) {
+            $this->content_json = null;
+        }
+        if ($skip_function && call_user_func($skip_function, $this)) {
+            return true;
+        }
+        if (!$this->content_json) {
             $this->error_at(null, "<0>Invalid response from server");
             if ($this->verbose) {
-                fwrite(STDERR, $this->response);
+                fwrite(STDERR, $this->content_string);
             }
-            return null;
+            return false;
         }
-        if ($rc > 399
-            && isset($j->maxblob)
-            && is_int($j->maxblob)
-            && $j->maxblob + 2000 < $this->chunk
-            && $offset === 0) {
-            $this->chunk = max(1, $j->maxblob - 2000);
-            return "retry";
+        if (($this->content_json->ok ?? null) === false
+            && isset($this->content_json->status_code)
+            && is_int($this->content_json->status_code)
+            && $this->content_json->status_code >= 100
+            && $this->content_json->status_code <= 599) {
+            $this->status_code = $this->content_json->status_code;
         }
-        foreach ($j->message_list ?? [] as $mj) {
+        foreach ($this->content_json->message_list ?? [] as $mj) {
             $this->append_item(MessageItem::from_json($mj));
         }
-        if ($rc === 429) {
-            rewind($headerf);
-            $hdata = stream_get_contents($headerf);
+        if ($this->status_code === 429) {
+            rewind($this->headerf);
+            $hdata = stream_get_contents($this->headerf);
             if (preg_match('/^x-ratelimit-reset:\s*(\d+)\s*/mi', $hdata, $m)) {
                 $this->append_item(MessageItem::inform("<0>The rate limit will reset in " . plural(intval($m[1]) - Conf::$now, "second") . "."));
             }
         }
-        if ($rc > 299) {
-            if (!$this->has_error()) {
-                $this->error_at(null, "<0>Server returned {$rc} error response");
-            }
-            return null;
+        if ($this->status_code <= 299
+            && ($this->content_json->ok ?? false)) {
+            return true;
         }
-        return $j;
-    }
-
-    /** @return bool */
-    function execute() {
-        $offset = 0;
-        $curlh = curl_init();
-        curl_setopt($curlh, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($curlh, CURLOPT_XOAUTH2_BEARER, $this->authtoken);
-        curl_setopt($curlh, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
-        $hstream = fopen("php://memory", "w+b");
-        curl_setopt($curlh, CURLOPT_WRITEHEADER, $hstream);
-        $token = null;
-        $startargs = "start=1";
-        if ($this->filename) {
-            $startargs .= "&filename=" . urlencode($this->filename);
+        if (!$this->has_error()) {
+            $this->error_at(null, "<0>Server returned {$this->status_code} error response");
         }
-        if ($this->mimetype) {
-            $startargs .= "&mimetype=" . urlencode($this->mimetype);
-        }
-        if (isset($this->size)) {
-            $startargs .= "&size={$this->size}";
-        }
-        $buf = "";
-        while (true) {
-            if (strlen($buf) < $this->chunk) {
-                $x = fread($this->stream, $this->chunk - strlen($buf));
-                if ($x === false) {
-                    $mi = $this->error_at(null, "<0>Error reading file");
-                    $mi->landmark = $this->input_filename;
-                    return false;
-                }
-                $buf .= $x;
-            }
-            $breakpos = min($this->chunk, strlen($buf));
-            $s = substr($buf, 0, $breakpos);
-            if ($s === "" && $offset === 0) {
-                $mi = $this->error_at(null, "<0>Empty file");
-                $mi->landmark = $this->input_filename;
-                return false;
-            }
-            $eof = $buf === "" && feof($this->stream);
-            curl_setopt($curlh, CURLOPT_URL, $this->site
-                . "/upload?"
-                . ($offset === 0 ? $startargs : "token={$token}")
-                . ($s === "" ? "" : "&offset={$offset}")
-                . ($eof ? "&finish=1" : ""));
-            curl_setopt($curlh, CURLOPT_POSTFIELDS, $s === "" ? [] : ["blob" => $s]);
-            $j = $this->execute_curl($curlh, $hstream, $offset);
-            if (!$j) {
-                return false;
-            } else if ($j === "retry") {
-                continue;
-            }
-            if ($token === null) {
-                if (!is_string($j->token ?? null)
-                    || !preg_match('/\Ahcup[A-Za-z0-9]++\z/', $j->token)) {
-                    if (!$this->has_error()) {
-                        $this->error_at(null, "<0>Upload token missing from server response");
-                    }
-                    return false;
-                }
-                $this->upload = $token = $j->token;
-            }
-            if ($this->verbose && $eof) {
-                fwrite(STDERR, $this->response);
-            }
-            if ($eof) {
-                return true;
-            }
-            $offset += $breakpos;
-            $buf = (string) substr($buf, $breakpos);
-        }
+        return false;
     }
 
     /** @return int */
     function run() {
-        $ok = $this->execute();
+        if (!$this->has_site()) {
+            throw new CommandLineException("`-s SITE` required");
+        }
+        if (!$this->has_apitoken()) {
+            throw new CommandLineException("`-t APITOKEN` required");
+        }
+        $status = $this->command->run($this);
         if (!$this->quiet) {
             fwrite(STDERR, $this->full_feedback_text(true));
         }
-        if (!$ok) {
-            return 1;
+        if (($this->output ?? "") !== "") {
+            fwrite(STDOUT, $this->output);
         }
-        fwrite(STDOUT, $this->upload . "\n");
-        return 0;
+        return $status;
     }
 
     /** @param list<string> $argv
-     * @return Upload_Batch */
+     * @return HotCLI_Batch */
     static function make_args($argv) {
         global $Opt;
         $arg = (new Getopt)->long(
             "help,h !",
             "verbose,V Be verbose",
-            "s:,siteurl:,url:,u: =URL Site URL",
+            "F:,config: =FILE Set configuration file",
+            "s:,siteurl:,url:,u: =SITE Site URL",
             "t:,token: =APITOKEN API token",
-            "filename:,f: =FILENAME Filename for uploaded file",
+            "filename:,f: =FILENAME !upload Filename for uploaded file",
             "no-filename !",
-            "mimetype:,m: =MIMETYPE Type for uploaded file",
-            "chunk: =CHUNKSIZE Maximum chunk size [5M]",
+            "mimetype:,m: =MIMETYPE !upload Type for uploaded file",
+            "chunk: =CHUNKSIZE Maximum upload chunk size [5M]",
             "quiet,q Do not print error messages"
-        )->description("Upload file to HotCRP site.
-Usage: php batch/upload.php -u SITEURL -t APITOKEN FILE")
+        )->subcommand(true,
+            "upload Upload file to HotCRP and return token"
+        )->description("Interact with HotCRP site using APIs.
+Usage: php batch/hotcli.php -u SITEURL -t APITOKEN COMMAND ARGS...")
          ->helpopt("help")
          ->maxarg(1)
          ->parse($argv);
 
-        if (!isset($arg["s"])) {
-            throw new CommandLineException("`-s SITEURL` required");
+        $hcli = new HotCLI_Batch;
+        $hcli->load_config_file($arg["F"] ?? null);
+
+        if (isset($arg["s"])) {
+            $hcli->set_site($arg["s"]);
+        } else if (isset($_ENV["HOTCLI_SITE"])) {
+            $hcli->set_site($_ENV["HOTCLI_SITE"]);
+        } else if (($s = $hcli->default_site())) {
+            $hcli->set_site($s);
         }
-        if (!isset($arg["t"])) {
-            throw new CommandLineException("`-t APITOKEN` required");
-        }
-        if (str_starts_with($arg["t"], "<")) {
-            $s = @file_get_contents(substr($arg["t"], 1));
-            if ($s === false) {
-                $m = preg_replace('/\A.*:\s*(?=[^:]+\z)/', "", (error_get_last())["message"]);
-                throw new CommandLineException(substr($arg["t"], 1) . ": " . $m);
+
+        if (isset($arg["t"])) {
+            if (str_starts_with($arg["t"], "<")) {
+                $t = @file_get_contents(substr($arg["t"], 1));
+                if ($t === false) {
+                    throw CommandLineException::make_file_error(substr($arg["t"], 1));
+                }
+            } else {
+                $t = $arg["t"];
             }
-            $arg["t"] = trim($s);
+            $hcli->set_apitoken($t);
+        } else if (isset($_ENV["HOTCLI_APITOKEN"])) {
+            $hcli->set_apitoken($_ENV["HOTCLI_APITOKEN"]);
         }
-        if (!preg_match('/\Ahct_[A-Za-z0-9]{30,}\z/', $arg["t"])) {
-            throw new CommandLineException("APITOKEN has bad format");
-        }
-        if (empty($arg["_"])) {
-            $f = STDIN;
-        } else {
-            $f = @fopen($arg["_"][0], "rb");
-            if (!$f) {
-                $m = preg_replace('/\A.*:\s*(?=[^:]+\z)/', "", (error_get_last())["message"]);
-                throw new CommandLineException($arg["_"][0] . ": " . $m);
-            }
-            if (!isset($arg["filename"])
-                && preg_match('/\/([^\/]+)\z/', $arg["_"][0], $m)) {
-                $arg["filename"] = $m[1];
-            }
-            $arg["input_filename"] = $arg["_"][0];
-        }
-        if (isset($arg["no-filename"])) {
-            unset($arg["filename"]);
-        }
+
         if (isset($arg["quiet"])) {
-            $arg["quiet"] = true;
+            $hcli->set_quiet(true);
         }
         if (isset($arg["verbose"])) {
-            $arg["verbose"] = true;
+            $hcli->set_verbose(true);
         }
-        return new Upload_Batch($arg["s"], $arg["t"], $f, $arg);
+        if (isset($arg["chunk"])) {
+            if (!preg_match('/\A([\d+]\.?\d*|\.\d+)([kmg]i?b?|)\z/i', $arg["chunk"], $m)) {
+                throw new CommandLineException("Invalid `--chunk`");
+            }
+            $n = (float) $m[1];
+            if ($m[2] !== "") {
+                /** @phan-suppress-next-line PhanParamSuspiciousOrder */
+                $x = (int) strpos(".kmg", strtolower($m[2][0]));
+                if (strlen($m[2]) === 2) {
+                    $n *= 10 ** (3 * $x);
+                } else {
+                    $n *= 1 << (10 * $x);
+                }
+            }
+            $hcli->set_chunk((int) $n);
+        }
+
+        if ($arg["_subcommand"] === "upload") {
+            $hcli->set_command(Upload_CLIBatch::make_arg($hcli, $arg));
+        } else {
+            throw new CommandLineException("Subcommand required");
+        }
+
+        return $hcli;
     }
 }
 
 if (realpath($_SERVER["PHP_SELF"]) === __FILE__) {
-    exit(Upload_Batch::make_args($argv)->run());
+    exit(HotCLI_Batch::make_args($argv)->run());
 }
