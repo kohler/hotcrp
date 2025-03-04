@@ -395,8 +395,9 @@ class Paper_API extends MessageSet {
 
     /** @param object $j
      * @param 0|1|2|3 $pidflags
+     * @param int|'new' $nullvalue
      * @return null|int|'new' */
-    static function analyze_json_pid(Conf $conf, $j, $pidflags = 0) {
+    static function analyze_json_pid(Conf $conf, $j, $pidflags = 0, $nullvalue = "new") {
         if (($pidflags & self::PIDFLAG_IGNORE_PID) !== 0) {
             if (isset($j->pid)) {
                 $j->__original_pid = $j->pid;
@@ -414,16 +415,17 @@ class Paper_API extends MessageSet {
             }
         }
         $pid = $j->pid ?? $j->id ?? null;
-        if ($pid === null || $pid === "new") {
-            return "new";
-        } else if (is_int($pid) && $pid > 0 && $pid <= PaperInfo::PID_MAX) {
+        if ($pid === "new"
+            || (is_int($pid) && $pid > 0 && $pid <= PaperInfo::PID_MAX)) {
             return $pid;
+        } else if ($pid === null) {
+            return $nullvalue;
         }
         return null;
     }
 
     private function set_json_landmark($index, $jp, $expected = null) {
-        $pidish = self::analyze_json_pid($this->conf, $jp, 0);
+        $pidish = self::analyze_json_pid($this->conf, $jp, 0, $expected ?? "new");
         if ($pidish && ($expected === null || $pidish === $expected)) {
             $this->landmark = $index;
             return true;

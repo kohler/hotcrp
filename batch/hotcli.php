@@ -18,6 +18,40 @@ class HotCLI_Batch_Site {
     public $apitoken;
 }
 
+class HotCLI_File {
+    /** @var resource */
+    public $stream;
+    /** @var string */
+    public $filename;
+    /** @var string */
+    public $input_filename;
+    /** @var ?int */
+    public $size;
+
+    /** @param string $fn
+     * @return HotCLI_File */
+    static function make($fn, $mode = "rb") {
+        if ($fn === "") {
+            throw new CommandLineException("Empty filename");
+        }
+        $cf = new HotCLI_File;
+        if ($fn === "-") {
+            $cf->stream = STDIN;
+            $cf->filename = null;
+            $cf->input_filename = "<stdin>";
+        } else if (($cf->stream = @fopen($fn, $mode))) {
+            $cf->filename = preg_replace('/\A.*\/(?=[^\/]+\z)/', "", $fn);
+            $cf->input_filename = $fn;
+        } else {
+            throw CommandLineException::make_file_error($fn);
+        }
+        if (($stat = fstat($cf->stream)) && $stat["size"] > 0) {
+            $cf->size = $stat["size"];
+        }
+        return $cf;
+    }
+}
+
 class HotCLI_Batch extends MessageSet {
     /** @var string
      * @readonly */
@@ -63,6 +97,7 @@ class HotCLI_Batch extends MessageSet {
         curl_setopt($this->curlh, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
         $this->headerf = fopen("php://memory", "w+b");
         curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->headerf);
+        curl_setopt($this->curlh, CURLOPT_SAFE_UPLOAD, true);
     }
 
     /** @param bool $x
@@ -101,6 +136,14 @@ class HotCLI_Batch extends MessageSet {
      * @return $this */
     function set_output($s) {
         $this->output = $s;
+        return $this;
+    }
+
+    /** @param mixed $x
+     * @suppress PhanAccessReadOnlyProperty
+     * @return $this */
+    function set_json_output($x) {
+        $this->output = json_encode_db($x, JSON_PRETTY_PRINT) . "\n";
         return $this;
     }
 
@@ -294,7 +337,7 @@ class HotCLI_Batch extends MessageSet {
      * @return HotCLI_Batch */
     static function make_args($argv) {
         global $Opt;
-        $arg = (new Getopt)->long(
+        $getopt = (new Getopt)->long(
             "help,h !",
             "verbose,V Be verbose",
             "F:,config: =FILE Set configuration file",
@@ -303,15 +346,20 @@ class HotCLI_Batch extends MessageSet {
             "filename:,f: =FILENAME !upload Filename for uploaded file",
             "no-filename !",
             "mimetype:,m: =MIMETYPE !upload Type for uploaded file",
+            "p:,paper: =PID !paper Submission ID",
+            "q:,query: =SEARCH !paper Submission search",
+            "e,edit !paper Change papers",
+            "dry-run,d !paper Don’t actually edit",
             "chunk: =CHUNKSIZE Maximum upload chunk size [5M]",
-            "quiet,q Do not print error messages"
+            "quiet Do not print error messages",
         )->subcommand(true,
-            "upload Upload file to HotCRP and return token"
+            "upload Upload file to HotCRP and return token",
+            "paper Retrieve or change submissions"
         )->description("Interact with HotCRP site using APIs.
 Usage: php batch/hotcli.php -u SITEURL -t APITOKEN COMMAND ARGS...")
          ->helpopt("help")
-         ->maxarg(1)
-         ->parse($argv);
+         ->maxarg(1);
+        $arg = $getopt->parse($argv);
 
         $hcli = new HotCLI_Batch;
         $hcli->load_config_file($arg["F"] ?? null);
@@ -362,7 +410,9 @@ Usage: php batch/hotcli.php -u SITEURL -t APITOKEN COMMAND ARGS...")
         }
 
         if ($arg["_subcommand"] === "upload") {
-            $hcli->set_command(Upload_CLIBatch::make_arg($hcli, $arg));
+            $hcli->set_command(Upload_CLIBatch::make_arg($hcli, $getopt, $arg));
+        } else if ($arg["_subcommand"] === "paper") {
+            $hcli->set_command(Paper_CLIBatch::make_arg($hcli, $getopt, $arg));
         } else {
             throw new CommandLineException("Subcommand required");
         }

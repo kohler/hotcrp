@@ -18,12 +18,12 @@ class Upload_CLIBatch implements CLIBatchCommand {
     /** @var bool */
     private $retry;
 
-    function __construct($stream) {
-        $this->stream = $stream;
-        $stat = fstat($stream);
-        if ($stat && $stat["size"] > 0) {
-            $this->size = $stat["size"];
-        }
+    /** @param HotCLI_File $cf */
+    function __construct($cf) {
+        $this->stream = $cf->stream;
+        $this->filename = $cf->filename;
+        $this->input_filename = $cf->input_filename;
+        $this->size = $cf->size;
     }
 
     /** @return bool */
@@ -118,27 +118,15 @@ class Upload_CLIBatch implements CLIBatchCommand {
         return 0;
     }
 
-    /** @return Upload_CLIBatch */
-    static function make_arg(HotCLI_Batch $clib, $arg) {
-        if (empty($arg["_"])) {
-            $f = STDIN;
-        } else {
-            $f = @fopen($arg["_"][0], "rb");
-            if (!$f) {
-                throw CommandLineException::make_file_error($arg["_"][0]);
-            }
-            if (!isset($arg["filename"])) {
-                $arg["filename"] = preg_replace('/\A.*\/(?=[^\/]+\z)/', "", $arg["_"][0]);
-            }
+    /** @param @return Upload_CLIBatch */
+    static function make_arg(HotCLI_Batch $clib, Getopt $getopt, $arg) {
+        if (count($arg["_"]) > 1) {
+            throw new CommandLineException("Too many arguments", $getopt);
         }
-        $ucb = new Upload_CLIBatch($f);
+        $ucb = new Upload_CLIBatch(HotCLI_File::make($arg["_"][0] ?? "-"));
         $ucb->mimetype = $arg["mimetype"] ?? null;
-        $ucb->input_filename = $arg["_"][0] ?? "<stdin>";
-        if (isset($arg["filename"]) && !isset($arg["no-filename"])) {
-            $ucb->filename = $arg["filename"];
-        }
         if (isset($arg["no-filename"])) {
-            unset($arg["filename"]);
+            $ucb->filename = null;
         }
         return $ucb;
     }
