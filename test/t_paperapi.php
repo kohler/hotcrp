@@ -1,6 +1,6 @@
 <?php
 // t_paperapi.php -- HotCRP tests
-// Copyright (c) 2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2024-2025 Eddie Kohler; see LICENSE.
 
 class PaperAPI_Tester {
     /** @var Conf
@@ -284,6 +284,15 @@ class PaperAPI_Tester {
         $qreq = $this->make_post_json_qreq(["calories" => 10, "pid" => 1], ["q" => "1-10"]);
         $jr = call_api("=papers", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, false);
+    }
+
+    function test_no_pid() {
+        $qreq = $this->make_post_json_qreq(["calories" => 9], ["p" => "1"]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list, ["calories"]);
+        xassert_eqq($jr->paper->pid, 1);
+        xassert_eqq($jr->paper->calories, 9);
     }
 
     function test_new_paper_after_deadline() {

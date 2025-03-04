@@ -1,6 +1,6 @@
 <?php
 // api_paper.php -- HotCRP paper API call
-// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class Paper_API extends MessageSet {
     /** @var Conf
