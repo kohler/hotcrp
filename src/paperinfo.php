@@ -2255,12 +2255,14 @@ class PaperInfo {
             return [$dec->status_class(), $dec->name];
         } else if ($this->timeSubmitted > 0) {
             return ["ps-submitted", "Submitted"];
-        } else if ($this->paperStorageId <= 1
-                   && (int) $this->conf->opt("noPapers") !== 1) {
-            return ["ps-draft", "No submission"];
-        } else {
-            return ["ps-draft", "Draft"];
         }
+        if ($this->paperStorageId <= 1) {
+            $subopt = $this->conf->option_by_id(DTYPE_SUBMISSION);
+            if ($subopt->test_exists($this) && $subopt->test_required($this)) {
+                return ["ps-draft", "No submission"];
+            }
+        }
+        return ["ps-draft", "Draft"];
     }
 
 

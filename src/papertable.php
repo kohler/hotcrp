@@ -759,11 +759,17 @@ class PaperTable {
     /** @param bool $checkbox
      * @return bool */
     private function is_ready($checkbox) {
-        return $this->prow->timeSubmitted > 0
-            || ($checkbox
-                && !$this->prow->submission_round()->freeze
-                && (!$this->prow->paperId
-                    || (!$this->conf->opt("noPapers") && $this->prow->paperStorageId <= 1)));
+        if ($this->prow->timeSubmitted > 0) {
+            return true;
+        } else if (!$checkbox || $this->prow->submission_round()->freeze) {
+            return false;
+        } else if (!$this->prow->paperId) {
+            return true;
+        } else if ($this->prow->paperStorageId > 1) {
+            return false;
+        }
+        $subopt = $this->conf->option_by_id(DTYPE_SUBMISSION);
+        return $subopt->test_exists($this->prow) && $subopt->test_required($this->prow);
     }
 
     /** @return -1|0|1 */
