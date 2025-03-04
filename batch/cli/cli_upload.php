@@ -118,7 +118,7 @@ class Upload_CLIBatch implements CLIBatchCommand {
         return 0;
     }
 
-    /** @param @return Upload_CLIBatch */
+    /** @return Upload_CLIBatch */
     static function make_arg(HotCLI_Batch $clib, Getopt $getopt, $arg) {
         if (count($arg["_"]) > 1) {
             throw new CommandLineException("Too many arguments", $getopt);

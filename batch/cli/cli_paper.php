@@ -56,7 +56,7 @@ class Paper_CLIBatch implements CLIBatchCommand {
         } else {
             $s = stream_get_contents($this->cf->stream);
             if ($s === false) {
-                return CommandLineException::make_file_error($this->cf->input_filename);
+                throw CommandLineException::make_file_error($this->cf->input_filename);
             }
             $mt = Mimetype::content_type($s);
             if ($mt !== Mimetype::ZIP_TYPE) {

@@ -9398,7 +9398,7 @@ function default_click(evt) {
     if (location.hash) {
         base = base.substring(0, base.length - location.hash.length);
     }
-    if (this.href.substring(0, base.length + 1) === base + "#") {
+    if (this.href.startsWith(base + "#")) {
         if (jump_hash(this.href)) {
             push_history_state(this.href);
             evt.preventDefault();

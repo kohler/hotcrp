@@ -12,7 +12,7 @@ class PaperListTableRender {
     /** @var ?string */
     public $tfoot;
     /** @var ?string */
-    public $error;
+    public $error_html;
 
     /** @var int */
     public $ncol = 0;
@@ -49,7 +49,7 @@ class PaperListTableRender {
      * @return PaperListTableRender */
     static function make_error($error) {
         $tr = new PaperListTableRender([]);
-        $tr->error = $error;
+        $tr->error_html = $error;
         return $tr;
     }
     /** @return int */
@@ -1815,8 +1815,7 @@ class PaperList {
         return "<th class=\"{$thclass}\" data-pc=\"{$sort_name_h}\" data-pc-sort=\"{$sortattr}\"{$aria_sort}><a class=\"{$aclass}\" href=\"{$sort_url}\" rel=\"nofollow\">{$title}</a></th>";
     }
 
-    private function _analyze_folds() {
-        $classes = &$this->table_attr["class"];
+    private function _analyze_fields_folds() {
         $jscol = [];
         $has_sel = $has_statistics = $has_anonau = false;
         foreach ($this->_vcolumns as $fdef) {
@@ -1835,7 +1834,9 @@ class PaperList {
                 $has_anonau = true;
             }
         }
-        // authorship requires special handling
+        $this->table_attr["data-fields"] = $jscol;
+
+        $classes = &$this->table_attr["class"];
         $classes[] = "fold2" . ($has_anonau ? "o" : "c");
         if ($this->user->is_track_manager()) {
             $classes[] = "fold5" . ($this->viewing("force") ? "o" : "c");
@@ -1845,7 +1846,13 @@ class PaperList {
         }
         $classes[] = "fold7" . ($this->viewing("statistics") ? "o" : "c");
         $classes[] = "fold8" . ($has_statistics ? "o" : "c");
-        $this->table_attr["data-fields"] = $jscol;
+        if ($this->_table_fold_session) {
+            $this->table_attr["data-fold-session-prefix"] = $this->_table_fold_session;
+            $this->table_attr["data-fold-session"] = json_encode_browser([
+                "2" => "anonau", "5" => "force",
+                "6" => "rownum", "7" => "statistics"
+            ]);
+        }
     }
 
     /** @param int $stat
@@ -2127,7 +2134,7 @@ class PaperList {
             if (($altq = $this->search->alternate_query())) {
                 $altqh = htmlspecialchars($altq);
                 $url = $this->search->url_site_relative_raw(["q" => $altq]);
-                if (substr($url, 0, 5) == "search") {
+                if (str_starts_with($url, "search")) {
                     $altqh = "<a href=\"" . htmlspecialchars($this->siteurl() . $url) . "\">" . $altqh . "</a>";
                 }
                 $m .= ". Did you mean ‘{$altqh}’?";
@@ -2135,8 +2142,7 @@ class PaperList {
             return PaperListTableRender::make_error($m);
         }
 
-        // analyze columns and folds
-        // folds: anonau:2, force:5, rownum:6, statistics:7, statistics-exist:8
+        // analyze presence of content
         foreach ($this->_vcolumns as $fdef) {
             foreach ($rows as $row) {
                 $this->row_overridable = $this->user->has_overridable_conflict($row);
@@ -2146,9 +2152,6 @@ class PaperList {
                 }
             }
             $fdef->reset($this);
-            if (!$fdef->has_content) {
-                continue;
-            }
         }
 
         // create render state
@@ -2169,13 +2172,6 @@ class PaperList {
         }
         if (!empty($views)) {
             $this->table_attr["data-search-view"] = join(" ", $views);
-        }
-        if ($this->_table_fold_session) {
-            $this->table_attr["data-fold-session-prefix"] = $this->_table_fold_session;
-            $this->table_attr["data-fold-session"] = json_encode_browser([
-                "2" => "anonau", "5" => "force",
-                "6" => "rownum", "7" => "statistics"
-            ]);
         }
         if ($this->_groups) {
             $this->table_attr["data-groups"] = json_encode_browser($this->_groups);
@@ -2225,9 +2221,6 @@ class PaperList {
         if ($rstate->group_count() === 1) {
             $this->_view_facets = false;
         }
-        if ($this->count === 0) {
-            return PaperListTableRender::make_error("No matching papers");
-        }
 
         // analyze `has`, including authors
         foreach ($this->_vcolumns as $fdef) {
@@ -2245,8 +2238,8 @@ class PaperList {
             $tfoot = $this->_statistics_rows($rstate);
         }
 
-        // analyze folds
-        $this->_analyze_folds();
+        // analyze fields and folds
+        $this->_analyze_fields_folds();
 
         // header cells
         if (($this->_table_decor & (self::DECOR_HEADER | self::DECOR_EVERYHEADER)) !== 0) {
@@ -2309,13 +2302,13 @@ class PaperList {
 
     function print_table_html() {
         $rstate = $this->table_render();
-        if ($rstate->error) {
+        if ($rstate->error_html) {
             if (($this->_table_decor & self::DECOR_FULLWIDTH) !== 0) {
                 echo '<div class="msg in-demargin remargin-left remargin-right"><div class="mx-auto"><ul class="inline"><li>',
-                    $rstate->error,
+                    $rstate->error_html,
                     '</li></ul></div></div>';
             } else {
-                echo $rstate->error;
+                echo $rstate->error_html;
             }
             return;
         }

@@ -15,6 +15,8 @@ class Search_Page {
     public $headers = [];
     /** @var array<int,list<string>> */
     public $items = [];
+    /** @var string */
+    public $stab;
 
     /** @param Contact $user
      * @param SearchSelection $ssel */
@@ -183,8 +185,10 @@ class Search_Page {
 
     /** @param Qrequest $qreq */
     private function print_display_options($qreq) {
-        echo '<div class="tld is-tla pb-2" id="view" role="tabpanel" aria-labelledby="k-view-tab">',
-            Ht::form($this->conf->hoturl("=search", "redisplay=1"), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
+        echo '<div class="tld is-tla',
+            $this->stab === "view" ? " active" : "",
+            ' pb-2" id="view" role="tabpanel" aria-labelledby="k-view-tab">',
+            Ht::form($this->conf->hoturl("=search", ["redisplay" => 1]), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
         foreach (["q", "qa", "qo", "qx", "qt", "t", "sort"] as $x) {
             if (isset($qreq[$x]) && ($x !== "q" || !isset($qreq->qa)))
                 echo Ht::hidden($x, $qreq[$x]);
@@ -267,6 +271,16 @@ class Search_Page {
         }
     }
 
+    private function print_tab_selector($id, $html) {
+        echo '<div class="tll',
+            $this->stab === $id ? " active" : "",
+            "\" role=\"tab\" id=\"k-{$id}-tab\" aria-controls=\"{$id}\" aria-selected=\"",
+            $this->stab === $id ? "true" : "false",
+            "\"><a class=\"ui tla nw\" href=\"",
+            $id === "default" ? "" : "#{$id}",
+            "\">{$html}</a></div>";
+    }
+
     /** @param Qrequest $qreq */
     function print($qreq) {
         $user = $this->user;
@@ -312,8 +326,19 @@ class Search_Page {
         $limits = PaperSearch::viewable_limits($user, $search->limit());
         $qtOpt = $this->field_search_types();
 
+        // Search tabs
+        $this->stab = $qreq->tab ?? "default";
+        if ($this->stab !== "default"
+            && $this->stab !== "advanced"
+            && ($this->stab !== "saved-searches" || !$user->isPC)
+            && ($this->stab !== "view" || $this->pl->is_empty())) {
+            $this->stab = "default";
+        }
+
         // Basic search tab
-        echo '<div class="tld is-tla active" id="default" role="tabpanel" aria-labelledby="k-default-tab">',
+        echo '<div class="tld is-tla',
+            $this->stab === "default" ? " active" : "",
+            '" id="default" role="tabpanel" aria-labelledby="k-default-tab">',
             Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "form-basic-search"]),
             Ht::entry("q", (string) $qreq->q, [
                 "size" => 40, "tabindex" => 1,
@@ -327,7 +352,9 @@ class Search_Page {
             '</div></form></div>';
 
         // Advanced search tab
-        echo '<div class="tld is-tla" id="advanced" role="tabpanel" aria-labelledby="k-advanced-tab">',
+        echo '<div class="tld is-tla',
+            $this->stab === "advanced" ? " active" : "",
+            '" id="advanced" role="tabpanel" aria-labelledby="k-advanced-tab">',
             Ht::form($this->conf->hoturl("search"), ["method" => "get"]),
             '<div class="d-inline-block">',
             '<div class="entryi medium"><label for="k-advanced-qt">Search</label><div class="entry">',
@@ -359,7 +386,9 @@ class Search_Page {
 
         // Saved searches tab
         if ($user->isPC) {
-            echo '<div class="tld is-tla pb-2 ui-fold js-named-search-tabpanel" id="saved-searches" role="tabpanel" aria-labelledby="k-saved-searches-tab"></div>';
+            echo '<div class="tld is-tla',
+                $this->stab === "saved-searches" ? " active" : "",
+                ' pb-2 ui-fold js-named-search-tabpanel" id="saved-searches" role="tabpanel" aria-labelledby="k-saved-searches-tab"></div>';
         }
 
         // Display options tab
@@ -368,14 +397,14 @@ class Search_Page {
         }
 
         // Tab selectors
-        echo '<div class="tllx" role="tablist">',
-            '<div class="tll active" role="tab" id="k-default-tab" aria-controls="default" aria-selected="true"><a class="ui tla" href="">Search</a></div>',
-            '<div class="tll" role="tab" id="k-advanced-tab" aria-controls="advanced" aria-selected="false"><a class="ui tla nw" href="#advanced">Advanced search</a></div>';
+        echo '<div class="tllx" role="tablist">';
+        $this->print_tab_selector("default", "Search");
+        $this->print_tab_selector("advanced", "Advanced search");
         if ($user->isPC) {
-            echo '<div class="tll" role="tab" id="k-saved-searches-tab" aria-controls="saved-searches" aria-selected="false"><a class="ui tla nw" href="#saved-searches">Saved searches</a></div>';
+            $this->print_tab_selector("saved-searches", "Saved searches");
         }
         if (!$this->pl->is_empty()) {
-            echo '<div class="tll" role="tab" id="k-view-tab" aria-controls="view" aria-selected="false"><a class="ui tla nw" href="#view">View options</a></div>';
+            $this->print_tab_selector("view", "Display options");
         }
         echo '</div></div>', Ht::unstash(), "\n\n";
 
