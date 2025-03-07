@@ -186,7 +186,7 @@ class Paper_Page {
             }
         }
         if ($whynot) {
-            $this->conf->feedback_msg($whynot->set("expand", true)->message_list());
+            $conf->feedback_msg($whynot->set("expand", true)->message_list());
             $this->useRequest = !$is_new; // XXX used to have more complex logic
             return;
         }
@@ -196,8 +196,10 @@ class Paper_Page {
 
         $new_prow = $this->ps->saved_prow();
         if (!$new_prow) {
-            $this->ps->prepend_item(MessageItem::error($conf->_("<0>{Submission} not saved; please correct these errors and try again")));
-            $conf->feedback_msg($this->ps->decorated_message_list());
+            $conf->feedback_msg(
+                MessageItem::error($conf->_("<0>{Submission} not saved; please correct these errors and try again")),
+                $this->ps->decorated_message_list()
+            );
             return;
         }
         if (!$this->user->can_view_paper($new_prow)) {
@@ -208,22 +210,8 @@ class Paper_Page {
         // submit paper if no error so far
         $_GET["paperId"] = $_GET["p"] = $this->qreq->paperId = $this->qreq->p = $this->ps->paperId;
 
-        if ($is_new) {
-            $new_prow->set_is_new(true);
-        }
         $newsubmit = $new_prow->timeSubmitted > 0 && !$was_submitted;
         $sr = $new_prow->submission_round();
-
-        // confirmation message
-        if ($is_final) {
-            $template = "@submitfinalpaper";
-        } else if ($newsubmit) {
-            $template = "@submitpaper";
-        } else if ($is_new) {
-            $template = "@registerpaper";
-        } else {
-            $template = "@updatepaper";
-        }
 
         // log message
         $this->ps->log_save_activity();
@@ -234,7 +222,7 @@ class Paper_Page {
             if (!$this->ps->has_error()) {
                 $ml[] = MessageItem::warning_note($conf->_("<0>No changes"));
             }
-        } else if ($is_new) {
+        } else if ($new_prow->is_new()) {
             $ml[] = MessageItem::success($conf->_("<0>Registered {submission} as #{}", $new_prow->paperId));
         } else {
             $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
@@ -253,51 +241,21 @@ class Paper_Page {
         $notes_mi = $this->ps->save_notes_message();
         $conf->feedback_msg($ml, $this->ps->decorated_message_list(), $notes_mi);
 
-        // mail confirmation to all contact authors if changed
+        // mail notification
         if ($this->ps->has_change()) {
-            if (!$this->user->can_administer($new_prow) || $this->qreq["status:notify"]) {
-                $options = [];
-                if ($this->user->can_administer($new_prow)) {
-                    if (!$new_prow->has_author($this->user)) {
-                        $options["confirm_message_for"] = $this->user;
-                        $options["adminupdate"] = true;
-                    }
-                    if (isset($this->qreq["status:notify_reason"])) {
-                        $options["reason"] = $this->qreq["status:notify_reason"];
-                    }
+            if ($this->user->can_administer($new_prow)) {
+                if (friendly_boolean($this->qreq["status:notify"])) {
+                    $this->ps->set_notify_reason($this->qreq["status:notify_reason"] ?? "");
+                } else {
+                    $this->ps->set_notify_authors(false);
                 }
-                if ($notes_mi->message !== "") {
-                    $options["notes"] = Ftext::as(0, $notes_mi->message);
-                }
-                if (!$is_new) {
-                    $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
-                    if (!empty($chf)) {
-                        $options["change"] = $conf->_("{:list} were changed.", $chf);
-                    }
-                }
-                HotCRPMailer::send_contacts($template, $new_prow, $options);
             }
-
-            // other mail confirmations
-            if ($is_final && $new_prow->timeFinalSubmitted > 0) {
-                $followers = $new_prow->final_update_followers();
-                $template = "@finalsubmitnotify";
-            } else if ($is_new || $newsubmit) {
-                $followers = $new_prow->submission_followers();
-                $template = $newsubmit ? "@newsubmitnotify" : "@registernotify";
-            } else {
-                $followers = [];
-                $template = "@none";
-            }
-            foreach ($followers as $minic) {
-                if ($minic->contactId !== $this->user->contactId)
-                    HotCRPMailer::send_to($minic, $template, ["prow" => $new_prow]);
-            }
+            $this->ps->notify_followers($notes_mi);
         }
 
         $this->qreq->set_paper($new_prow);
         $this->prow = $new_prow;
-        if (!$this->ps->has_error() || ($is_new && $new_prow)) {
+        if (!$this->ps->has_error() || $new_prow->is_new()) {
             $conf->redirect_self($this->qreq, ["p" => $new_prow->paperId, "m" => "edit"]);
         }
         $this->useRequest = false;

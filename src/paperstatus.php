@@ -17,6 +17,10 @@ class PaperStatus extends MessageSet {
     private $allow_hash_without_content = false;
     /** @var bool */
     private $notify = true;
+    /** @var bool */
+    private $notify_authors = true;
+    /** @var ?string */
+    private $notify_reason;
     /** @var ?bool */
     private $override_json_fields;
     /** @var bool */
@@ -67,13 +71,14 @@ class PaperStatus extends MessageSet {
     /** @var int */
     private $_save_status;
 
-    const SAVE_STATUS_PREPARED = 1;
-    const SAVE_STATUS_SAVED = 2;
-    const SAVE_STATUS_NEW = 4;
-    const SAVE_STATUS_SUBMIT = 8;
-    const SAVE_STATUS_NEWSUBMIT = 16;
-    const SAVE_STATUS_FINALSUBMIT = 32;
-    const SAVE_STATUS_WASFINAL = 64;
+    const SSF_PREPARED = 1;
+    const SSF_SAVED = 2;
+    const SSF_NEW = 4;
+    const SSF_FINAL_PHASE = 8;
+    const SSF_SUBMIT = 16;
+    const SSF_NEWSUBMIT = 32;
+    const SSF_FINALSUBMIT = 64;
+    const SSF_ADMIN_UPDATE = 128;
 
     function __construct(Contact $user, $options = []) {
         $this->conf = $user->conf;
@@ -101,6 +106,20 @@ class PaperStatus extends MessageSet {
      * @return $this */
     function set_notify($x) {
         $this->notify = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_notify_authors($x) {
+        $this->notify_authors = $x;
+        return $this;
+    }
+
+    /** @param ?string $x
+     * @return $this */
+    function set_notify_reason($x) {
+        $this->notify_reason = $x;
         return $this;
     }
 
@@ -728,7 +747,7 @@ class PaperStatus extends MessageSet {
      * @return list<string> */
     function changed_keys($full = false) {
         $s = [];
-        if ($full && ($this->_save_status & self::SAVE_STATUS_NEW) !== 0) {
+        if ($full && ($this->_save_status & (self::SSF_SAVED | self::SSF_NEW)) === (self::SSF_SAVED | self::SSF_NEW)) {
             $s[] = "pid";
         }
         foreach ($this->_fdiffs ?? [] as $field) {
@@ -1083,9 +1102,16 @@ class PaperStatus extends MessageSet {
         $this->_noncontacts_changed = $prow->is_new();
         $this->_dids = $this->_joindocs = $this->_tags_changed = [];
         $this->_save_status = 0;
+        if ($this->user->can_administer($this->prow)) {
+            $this->_save_status |= self::SSF_ADMIN_UPDATE;
+        }
         if (!$prow->is_new()) {
+            if ($this->user->edit_paper_state($this->prow) === 2) {
+                $this->_save_status |= self::SSF_FINAL_PHASE;
+            }
             return true;
         }
+        $this->_save_status |= self::SSF_NEW;
         if ($prow->paperId === 0) {
             $this->prow->set_prop("paperId", $this->conf->id_randomizer()->reserve(DatabaseIDRandomizer::PAPERID));
         } else if (!$this->user->privChair) {
@@ -1098,6 +1124,7 @@ class PaperStatus extends MessageSet {
         foreach (Tagger::split_unpack($prow->all_tags_text()) as $tv) {
             $this->_tags_changed[] = $tv;
         }
+
         return true;
     }
 
@@ -1230,7 +1257,7 @@ class PaperStatus extends MessageSet {
     /** @param object $pj
      * @return bool */
     private function _normalize_and_check($pj) {
-        assert(($this->_save_status & self::SAVE_STATUS_PREPARED) === 0);
+        assert(($this->_save_status & self::SSF_PREPARED) === 0);
         $pid = $this->prow->is_new() ? "new" : $this->prow->paperId;
         if (($perm = $this->user->perm_view_paper($this->prow, false, $pid))) {
             $perm->append_to($this, null, MessageSet::ESTOP);
@@ -1306,7 +1333,7 @@ class PaperStatus extends MessageSet {
 
         // validate contacts
         $this->_check_contacts_last($pj);
-        $this->_save_status |= self::SAVE_STATUS_PREPARED;
+        $this->_save_status |= self::SSF_PREPARED;
         return true;
     }
 
@@ -1380,9 +1407,6 @@ class PaperStatus extends MessageSet {
             }
         }
         $this->paperId = $this->prow->paperId;
-        if ($this->prow->is_new()) {
-            $this->_save_status |= self::SAVE_STATUS_NEW;
-        }
         return true;
     }
 
@@ -1551,11 +1575,11 @@ class PaperStatus extends MessageSet {
     /** @return bool */
     function execute_save() {
         // refuse to save if not prepared
-        if (($this->_save_status & (self::SAVE_STATUS_PREPARED | self::SAVE_STATUS_SAVED)) !== self::SAVE_STATUS_PREPARED) {
+        if (($this->_save_status & (self::SSF_PREPARED | self::SSF_SAVED)) !== self::SSF_PREPARED) {
             throw new ErrorException("Refusing to save paper with errors");
         }
         assert($this->paperId === null);
-        $this->_save_status |= self::SAVE_STATUS_SAVED;
+        $this->_save_status |= self::SSF_SAVED;
 
         // call back to fields that need a second store pass
         // (this stage must not error)
@@ -1598,16 +1622,23 @@ class PaperStatus extends MessageSet {
 
         // track submit-type flags
         if ($this->_paper_submitted) {
-            $this->_save_status |= self::SAVE_STATUS_SUBMIT;
+            $this->_save_status |= self::SSF_SUBMIT;
             if (!$was_submitted) {
-                $this->_save_status |= self::SAVE_STATUS_NEWSUBMIT;
+                $this->_save_status |= self::SSF_NEWSUBMIT;
             }
         }
         if ($this->prow->timeFinalSubmitted > 0) {
-            $this->_save_status |= self::SAVE_STATUS_FINALSUBMIT;
+            $this->_save_status |= self::SSF_FINALSUBMIT;
         }
-        if ($this->user->edit_paper_state($this->prow) === 2) {
-            $this->_save_status |= self::SAVE_STATUS_WASFINAL;
+
+        // correct ADMIN_UPDATE for new papers: if administrator created the
+        // paper and is not an author or contact, it's an admin update
+        if (($this->_save_status & (self::SSF_NEW | self::SSF_ADMIN_UPDATE)) === self::SSF_NEW
+            && $this->user->allow_administer($this->prow)) {
+            $cv = $this->_conflict_values[$this->user->contactId] ?? null;
+            if ((self::new_conflict_value($cv) & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) === 0) {
+                $this->_save_status |= self::SSF_ADMIN_UPDATE;
+            }
         }
 
         // update automatic tags
@@ -1635,22 +1666,26 @@ class PaperStatus extends MessageSet {
 
     /** @return PaperInfo */
     function saved_prow() {
+        assert(($this->_save_status & self::SSF_SAVED) !== 0);
         if (!$this->saved_prow) {
             $this->saved_prow = $this->conf->paper_by_id($this->paperId, $this->user, ["topics" => true, "options" => true]);
+            if (($this->_save_status & self::SSF_NEW) !== 0) {
+                $this->saved_prow->set_is_new(true);
+            }
         }
         return $this->saved_prow;
     }
 
     function log_save_activity($via = null) {
         // log message
-        assert(($this->_save_status & self::SAVE_STATUS_SAVED) !== 0);
+        assert(($this->_save_status & self::SSF_SAVED) !== 0);
         $actions = [];
-        if (($this->_save_status & self::SAVE_STATUS_NEW) !== 0) {
+        if (($this->_save_status & self::SSF_NEW) !== 0) {
             $actions[] = "started";
         }
-        if (($this->_save_status & self::SAVE_STATUS_NEWSUBMIT) !== 0) {
+        if (($this->_save_status & self::SSF_NEWSUBMIT) !== 0) {
             $actions[] = "submitted";
-        } else if (($this->_save_status & self::SAVE_STATUS_NEW) === 0
+        } else if (($this->_save_status & self::SSF_NEW) === 0
                    && (!empty($this->_fdiffs) || !empty($this->_xdiffs))) {
             $actions[] = "edited";
         }
@@ -1658,11 +1693,11 @@ class PaperStatus extends MessageSet {
             $actions[] = "saved";
         }
         $logtext = "Paper " . join(", ", $actions);
-        if (($this->_save_status & self::SAVE_STATUS_WASFINAL) !== 0) {
+        if (($this->_save_status & self::SSF_FINAL_PHASE) !== 0) {
             $logtext .= " final";
-            $subbit = self::SAVE_STATUS_FINALSUBMIT;
+            $subbit = self::SSF_FINALSUBMIT;
         } else {
-            $subbit = self::SAVE_STATUS_SUBMIT;
+            $subbit = self::SSF_SUBMIT;
         }
         if (($this->_save_status & $subbit) === 0) {
             $logtext .= " draft";
@@ -1759,9 +1794,10 @@ class PaperStatus extends MessageSet {
         }
 
         // final version
+        $prow = $this->saved_prow();
         $n = [];
-        if (($this->_save_status & self::SAVE_STATUS_WASFINAL) !== 0) {
-            if (($this->_save_status & self::SAVE_STATUS_FINALSUBMIT) === 0) {
+        if ($prow->phase() === PaperInfo::PHASE_FINAL) {
+            if (($this->_save_status & self::SSF_FINALSUBMIT) === 0) {
                 $n[] = $this->conf->_("<0>The final version has not yet been submitted.");
             }
             $n[] = $this->time_note($this->conf->setting("final_soft") ?? 0,
@@ -1771,8 +1807,8 @@ class PaperStatus extends MessageSet {
         }
 
         // submission
-        $sr = $this->saved_prow()->submission_round();
-        if (($this->_save_status & self::SAVE_STATUS_SUBMIT) !== 0) {
+        $sr = $prow->submission_round();
+        if (($this->_save_status & self::SSF_SUBMIT) !== 0) {
             $n[] = $this->conf->_("<0>The {submission} is ready for review.");
             if (!$sr->freeze) {
                 $n[] = $this->time_note($sr->update,
@@ -1785,7 +1821,7 @@ class PaperStatus extends MessageSet {
         // draft
         if ($sr->freeze) {
             $n[] = $this->conf->_("<0>This {submission} has not yet been completed.");
-        } else if (($missing = PaperTable::missing_required_fields($this->saved_prow()))) {
+        } else if (($missing = PaperTable::missing_required_fields($prow))) {
             $n[] = $this->conf->_("<5>This {submission} is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
         } else {
             $first = $this->conf->_("<5>This {submission} is marked as not ready for review.");
@@ -1800,6 +1836,85 @@ class PaperStatus extends MessageSet {
         return MessageItem::urgent_note(Ftext::join_nonempty(" ", $n));
     }
 
+    /** @param ?MessageItem $notes_mi */
+    function notify_followers($notes_mi = null) {
+        assert(($this->_save_status & self::SSF_SAVED) !== 0);
+        if (!$this->notify) {
+            return;
+        }
+        if ($this->notify_authors) {
+            $this->_notify_authors($notes_mi ?? $this->save_notes_message());
+        }
+        $this->_notify_others();
+    }
+
+    private function _notify_authors($notes_mi) {
+        $options = [];
+        if (($this->_save_status & self::SSF_ADMIN_UPDATE) !== 0) {
+            $options["confirm_message_for"] = $this->user;
+            $options["adminupdate"] = true;
+        }
+        if (($this->notify_reason ?? "") !== "") {
+            $options["reason"] = $this->notify_reason;
+        }
+        if ($notes_mi->message !== "") {
+            $options["notes"] = Ftext::as(0, $notes_mi->message);
+        }
+        if (($this->_save_status & self::SSF_NEW) === 0) {
+            $chf = array_map(function ($f) { return $f->edit_title(); }, $this->changed_fields());
+            if (!empty($chf)) {
+                $options["change"] = $this->conf->_("{:list} were changed.", $chf);
+            }
+        }
+        // confirmation message
+        if (($this->_save_status & self::SSF_FINAL_PHASE) !== 0) {
+            $template = "@submitfinalpaper";
+        } else if (($this->_save_status & self::SSF_NEWSUBMIT) !== 0) {
+            $template = "@submitpaper";
+        } else if (($this->_save_status & self::SSF_NEW) !== 0) {
+            $template = "@registerpaper";
+        } else {
+            $template = "@updatepaper";
+        }
+        HotCRPMailer::send_contacts($template, $this->saved_prow(), $options);
+    }
+
+    private function _notify_others() {
+        $flags = 0;
+        $template = null;
+        if (($this->_save_status & self::SSF_FINALSUBMIT) !== 0) {
+            $flags = Contact::WATCH_FINAL_UPDATE_ALL;
+            $template = "@finalsubmitnotify";
+        } else {
+            if (($this->_save_status & self::SSF_NEW) !== 0) {
+                $flags |= Contact::WATCH_PAPER_REGISTER_ALL;
+                $template = "@registernotify";
+            }
+            if (($this->_save_status & self::SSF_NEWSUBMIT) !== 0) {
+                $flags |= Contact::WATCH_PAPER_NEWSUBMIT_ALL;
+                $template = "@newsubmitnotify";
+            }
+        }
+        if ($flags === 0 || $template === null) {
+            return;
+        }
+        $prow = $this->saved_prow();
+        $options = ["prow" => $prow];
+        if (($this->_save_status & self::SSF_ADMIN_UPDATE) !== 0) {
+            $options["adminupdate"] = true;
+        }
+        if (($this->notify_reason ?? "") !== "") {
+            $options["reason"] = $this->notify_reason;
+        }
+        $final = ($flags === Contact::WATCH_FINAL_UPDATE_ALL);
+        foreach ($prow->generic_followers([], "(defaultWatch&{$flags})!=0 and roles!=0") as $u) {
+            if ($u->contactId !== $this->user->contactId
+                && ($final ? $u->following_final_update($prow) : $u->following_submission($prow))) {
+                HotCRPMailer::send_to($u, $template, $options);
+            }
+        }
+    }
+
     /** @return int */
     function save_status() {
         return $this->_save_status;
@@ -1807,6 +1922,6 @@ class PaperStatus extends MessageSet {
 
     /** @return bool */
     function save_status_prepared() {
-        return ($this->_save_status & self::SAVE_STATUS_PREPARED) !== 0;
+        return ($this->_save_status & self::SSF_PREPARED) !== 0;
     }
 }

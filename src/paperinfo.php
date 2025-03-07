@@ -3664,32 +3664,10 @@ class PaperInfo {
     }
 
     /** @return list<Contact> */
-    function submission_followers() {
-        $fl = ($this->is_new() ? Contact::WATCH_PAPER_REGISTER_ALL : 0)
-            | ($this->timeSubmitted > 0 ? Contact::WATCH_PAPER_NEWSUBMIT_ALL : 0);
-        $us = [];
-        foreach ($this->generic_followers([], "(defaultWatch&{$fl})!=0 and roles!=0") as $u) {
-            if ($u->following_submission($this))
-                $us[] = $u;
-        }
-        return $us;
-    }
-
-    /** @return list<Contact> */
     function late_withdrawal_followers() {
         $us = [];
         foreach ($this->generic_followers([], "(defaultWatch&" . Contact::WATCH_LATE_WITHDRAWAL_ALL . ")!=0 and roles!=0") as $u) {
             if ($u->following_late_withdrawal($this))
-                $us[] = $u;
-        }
-        return $us;
-    }
-
-    /** @return list<Contact> */
-    function final_update_followers() {
-        $us = [];
-        foreach ($this->generic_followers([], "(defaultWatch&" . Contact::WATCH_FINAL_UPDATE_ALL . ")!=0 and roles!=0") as $u) {
-            if ($u->following_final_update($this))
                 $us[] = $u;
         }
         return $us;
