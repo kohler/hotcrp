@@ -1633,10 +1633,11 @@ class PaperStatus extends MessageSet {
         return true;
     }
 
-    /** @param array<string,mixed> $options
-     * @return PaperInfo */
-    function saved_prow($options = null) {
-        $this->saved_prow = $this->saved_prow ?? $this->conf->paper_by_id($this->paperId, $this->user, $options ?? ["topics" => true, "options" => true]);
+    /** @return PaperInfo */
+    function saved_prow() {
+        if (!$this->saved_prow) {
+            $this->saved_prow = $this->conf->paper_by_id($this->paperId, $this->user, ["topics" => true, "options" => true]);
+        }
         return $this->saved_prow;
     }
 
@@ -1730,6 +1731,73 @@ class PaperStatus extends MessageSet {
             }
         }
         return $fl;
+    }
+
+    /** @param int $t
+     * @param string $future_msg
+     * @param string $past_msg
+     * @return string */
+    private function time_note($t, $future_msg, $past_msg) {
+        if ($t <= 0) {
+            return "";
+        }
+        $msg = $t < Conf::$now ? $past_msg : $future_msg;
+        if ($msg !== "") {
+            $msg = $this->conf->_($msg, $this->conf->unparse_time_with_local_span($t));
+        }
+        if ($msg !== "" && $t < Conf::$now) {
+            $msg = "<5><strong>" . Ftext::as(5, $msg) . "</strong>";
+        }
+        return $msg;
+    }
+
+    /** @return MessageItem */
+    function save_notes_message() {
+        // no complex message if save failed
+        if ($this->has_error()) {
+            return MessageItem::plain("");
+        }
+
+        // final version
+        $n = [];
+        if (($this->_save_status & self::SAVE_STATUS_WASFINAL) !== 0) {
+            if (($this->_save_status & self::SAVE_STATUS_FINALSUBMIT) === 0) {
+                $n[] = $this->conf->_("<0>The final version has not yet been submitted.");
+            }
+            $n[] = $this->time_note($this->conf->setting("final_soft") ?? 0,
+                "<5>You have until {} to make further changes.",
+                "<5>The deadline for submitting final versions was {}.");
+            return MessageItem::plain(Ftext::join_nonempty(" ", $n));
+        }
+
+        // submission
+        $sr = $this->saved_prow()->submission_round();
+        if (($this->_save_status & self::SAVE_STATUS_SUBMIT) !== 0) {
+            $n[] = $this->conf->_("<0>The {submission} is ready for review.");
+            if (!$sr->freeze) {
+                $n[] = $this->time_note($sr->update,
+                    "<5>You have until {} to make further changes.",
+                    "");
+            }
+            return MessageItem::success(Ftext::join_nonempty(" ", $n));
+        }
+
+        // draft
+        if ($sr->freeze) {
+            $n[] = $this->conf->_("<0>This {submission} has not yet been completed.");
+        } else if (($missing = PaperTable::missing_required_fields($this->saved_prow()))) {
+            $n[] = $this->conf->_("<5>This {submission} is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
+        } else {
+            $first = $this->conf->_("<5>This {submission} is marked as not ready for review.");
+            $n[] = "<5><strong>" . Ftext::as(5, $first) . "</strong>";
+        }
+        $n[] = $this->time_note($sr->update,
+            "<5>You have until {} to make further changes.",
+            "<5>The deadline for updating {submissions} was {}.");
+        $n[] = $this->time_note($sr->submit,
+            "<5>{Submissions} incomplete as of {} will not be considered.",
+            "");
+        return MessageItem::urgent_note(Ftext::join_nonempty(" ", $n));
     }
 
     /** @return int */

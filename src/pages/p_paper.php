@@ -133,24 +133,6 @@ class Paper_Page {
         }
     }
 
-    /** @param int $t
-     * @param string $future_msg
-     * @param string $past_msg
-     * @return string */
-    private function time_note($t, $future_msg, $past_msg) {
-        if ($t <= 0) {
-            return "";
-        }
-        $msg = $t < Conf::$now ? $past_msg : $future_msg;
-        if ($msg !== "") {
-            $msg = $this->conf->_($msg, $this->conf->unparse_time_with_local_span($t));
-        }
-        if ($msg !== "" && $t < Conf::$now) {
-            $msg = "<5><strong>" . Ftext::as(5, $msg) . "</strong>";
-        }
-        return $msg;
-    }
-
     private function handle_if_unmodified_since() {
         $stripfields = $this->ps->strip_unchanged_fields_qreq($this->qreq, $this->prow);
         $fields = $this->ps->changed_fields_qreq($this->qreq, $this->prow);
@@ -246,44 +228,6 @@ class Paper_Page {
         // log message
         $this->ps->log_save_activity();
 
-        // additional information
-        $notes = [];
-        $note_status = MessageSet::PLAIN;
-        if ($this->ps->has_error()) {
-            // only print save error message; to do otherwise is confusing
-        } else if ($is_final) {
-            if ($new_prow->timeFinalSubmitted <= 0) {
-                $notes[] = $conf->_("<0>The final version has not yet been submitted.");
-            }
-            $notes[] = $this->time_note($this->conf->setting("final_soft") ?? 0,
-                "<5>You have until {} to make further changes.",
-                "<5>The deadline for submitting final versions was {}.");
-        } else if ($new_prow->timeSubmitted > 0) {
-            $note_status = MessageSet::SUCCESS;
-            $notes[] = $conf->_("<0>The {submission} is ready for review.");
-            if (!$sr->freeze) {
-                $notes[] = $this->time_note($sr->update,
-                    "<5>You have until {} to make further changes.", "");
-            }
-        } else {
-            $note_status = MessageSet::URGENT_NOTE;
-            if ($sr->freeze) {
-                $notes[] = $conf->_("<0>This {submission} has not yet been completed.");
-            } else if (($missing = PaperTable::missing_required_fields($new_prow))) {
-                $notes[] = $conf->_("<5>This {submission} is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
-            } else {
-                $first = $conf->_("<5>This {submission} is marked as not ready for review.");
-                $notes[] = "<5><strong>" . Ftext::as(5, $first) . "</strong>";
-            }
-            $notes[] = $this->time_note($sr->update,
-                "<5>You have until {} to make further changes.",
-                "<5>The deadline for updating {submissions} was {}.");
-            if (($msg = $this->time_note($sr->submit,
-                "<5>{Submissions} incomplete as of {} will not be considered.", "")) !== "") {
-                $notes[] = $msg;
-            }
-        }
-
         // HTML confirmation
         $ml = [];
         if (!$this->ps->has_change()) {
@@ -302,12 +246,13 @@ class Paper_Page {
             } else {
                 $ml[] = MessageItem::urgent_note($conf->_("<0>Please correct these issues and save again."));
             }
-        } else if ($this->ps->has_problem() && !$sr->freeze) {
+        } else if ($this->ps->has_problem()
+                   && $this->user->can_edit_paper($new_prow)) {
             $ml[] = MessageItem::warning_note($conf->_("<0>Please check these issues before completing the {submission}."));
         }
-        $notes_ftext = Ftext::join_nonempty(" ", $notes);
-        if ($notes_ftext !== "") {
-            $this->ps->append_item(new MessageItem($note_status, null, $notes_ftext));
+        $notes_mi = $this->ps->save_notes_message();
+        if ($notes_mi->message !== "") {
+            $this->ps->append_item($notes_mi);
         }
         $conf->feedback_msg($ml, $this->ps->decorated_message_list());
 
@@ -324,8 +269,8 @@ class Paper_Page {
                         $options["reason"] = $this->qreq["status:notify_reason"];
                     }
                 }
-                if ($notes_ftext !== "") {
-                    $options["notes"] = Ftext::as(0, $notes_ftext) . "\n\n";
+                if ($notes_mi->message !== "") {
+                    $options["notes"] = Ftext::as(0, $notes_mi->message);
                 }
                 if (!$is_new) {
                     $chf = array_map(function ($f) { return $f->edit_title(); }, $this->ps->changed_fields());
