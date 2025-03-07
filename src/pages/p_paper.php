@@ -251,10 +251,7 @@ class Paper_Page {
             $ml[] = MessageItem::warning_note($conf->_("<0>Please check these issues before completing the {submission}."));
         }
         $notes_mi = $this->ps->save_notes_message();
-        if ($notes_mi->message !== "") {
-            $this->ps->append_item($notes_mi);
-        }
-        $conf->feedback_msg($ml, $this->ps->decorated_message_list());
+        $conf->feedback_msg($ml, $this->ps->decorated_message_list(), $notes_mi);
 
         // mail confirmation to all contact authors if changed
         if ($this->ps->has_change()) {
@@ -324,13 +321,15 @@ class Paper_Page {
         }
 
         if (!$this->ps->has_change()) {
-            $this->ps->prepend_item(MessageItem::warning_note($conf->_("<0>No changes", $this->prow->paperId)));
-            $this->ps->warning_at(null, "");
-            $conf->feedback_msg($this->ps->decorated_message_list([PaperOption::CONTACTSID]));
-        } else if ($this->ps->execute_save()) {
-            $this->ps->prepend_item(MessageItem::success($conf->_("<0>Updated contacts", $this->prow->paperId)));
-            $conf->feedback_msg($this->ps->decorated_message_list([PaperOption::CONTACTSID]));
+            $ml = [MessageItem::warning_note("<0>No changes"), MessageItem::warning("")];
+        } else  if ($this->ps->execute_save()) {
+            $ml = [MessageItem::success($conf->_("<0>Updated contacts"))];
             $this->ps->log_save_activity();
+        } else {
+            $ml = [];
+        }
+        if (!empty($ml)) {
+            $conf->feedback_msg($ml, $this->ps->decorated_message_list([PaperOption::CONTACTSID]));
         }
 
         if (!$this->ps->has_error()) {

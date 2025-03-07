@@ -931,7 +931,7 @@ function xassert_paper_status(PaperStatus $ps, $maxstatus = null) {
 
 /** @param int $maxstatus */
 function xassert_paper_status_saved_nonrequired(PaperStatus $ps, $maxstatus = MessageSet::PLAIN) {
-    xassert($ps->save_status() !== 0);
+    xassert($ps->save_status_prepared());
     if ($ps->problem_status() > $maxstatus) {
         $asserted = false;
         foreach ($ps->problem_list() as $mx) {

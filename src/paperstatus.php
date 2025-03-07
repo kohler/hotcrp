@@ -1230,7 +1230,7 @@ class PaperStatus extends MessageSet {
     /** @param object $pj
      * @return bool */
     private function _normalize_and_check($pj) {
-        assert($this->_save_status === 0);
+        assert(($this->_save_status & self::SAVE_STATUS_PREPARED) === 0);
         $pid = $this->prow->is_new() ? "new" : $this->prow->paperId;
         if (($perm = $this->user->perm_view_paper($this->prow, false, $pid))) {
             $perm->append_to($this, null, MessageSet::ESTOP);
@@ -1551,11 +1551,11 @@ class PaperStatus extends MessageSet {
     /** @return bool */
     function execute_save() {
         // refuse to save if not prepared
-        if ($this->_save_status !== self::SAVE_STATUS_PREPARED) {
+        if (($this->_save_status & (self::SAVE_STATUS_PREPARED | self::SAVE_STATUS_SAVED)) !== self::SAVE_STATUS_PREPARED) {
             throw new ErrorException("Refusing to save paper with errors");
         }
         assert($this->paperId === null);
-        $this->_save_status = self::SAVE_STATUS_SAVED;
+        $this->_save_status |= self::SAVE_STATUS_SAVED;
 
         // call back to fields that need a second store pass
         // (this stage must not error)
@@ -1803,5 +1803,10 @@ class PaperStatus extends MessageSet {
     /** @return int */
     function save_status() {
         return $this->_save_status;
+    }
+
+    /** @return bool */
+    function save_status_prepared() {
+        return ($this->_save_status & self::SAVE_STATUS_PREPARED) !== 0;
     }
 }

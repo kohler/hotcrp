@@ -50,7 +50,7 @@ class Topics_PaperOption extends CheckboxesBase_PaperOption {
             return true;
         }
         if ($ov->anno("new_values")) {
-            if ($ps->save_status() < PaperStatus::SAVE_STATUS_PREPARED) {
+            if (!$ps->save_status_prepared()) {
                 $ps->request_resave($this);
                 $ps->change_at($this);
             } else {
