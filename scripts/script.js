@@ -5226,10 +5226,6 @@ handle_ui.on("input.js-email-populate", function () {
             && self.getAttribute("data-populated-email") === v) {
             return;
         }
-        if (data.given_name == null && data.family_name == null) { // XXX backward compat
-            data.given_name = data.firstName;
-            data.family_name = data.lastName;
-        }
         fn && populate(fn, data.given_name || "", placeholder);
         ln && populate(ln, data.last_name || "", placeholder);
         if (nn && data.name == null) {

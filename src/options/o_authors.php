@@ -255,6 +255,9 @@ class Authors_PaperOption extends PaperOption {
         }
         if ($val !== $auval) {
             $js["data-default-value"] = $auval;
+            if ($component !== "email" && $pt->prow->is_new()) {
+                $js["data-populated-value"] = $val;
+            }
         }
         return Ht::entry("authors:{$n}:{$component}", $val, $js);
     }
