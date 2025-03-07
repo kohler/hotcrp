@@ -493,7 +493,7 @@ class Log_Page {
             $at = $m[1] . " <a href=\"" . $conf->hoturl("mail", "mailid=$m[2]") . "\">mail #$m[2]</a>";
             $act = $m[3];
         } else if (substr($act, 0, 3) === "Tag"
-                   && preg_match('{\ATag:? ((?:[-+]#[^\s#]*(?:#[-+\d.]+|)(?: |\z))+)(.*)\z}s', $act, $m)) {
+                   && preg_match('/\ATag:? ((?:[-+]\#[^\s\#]*(?:\#[-+\d.]+|)(?: |\z))+)(.*)\z/s', $act, $m)) {
             $at = "Tag";
             $act = $m[2];
             foreach (explode(" ", rtrim($m[1])) as $word) {
@@ -511,7 +511,7 @@ class Log_Page {
                    && $this->document_regexp !== "") {
             $at = substr($act, 0, $colon);
             $act = substr($act, $colon);
-            while (preg_match("/\\A(.* )({$this->document_regexp})((?:,| |\\z).*)\\z/", $act, $m)) {
+            while (preg_match("/\\A(.*? )({$this->document_regexp})((?:,| |\\z).*)\\z/", $act, $m)) {
                 $at .= htmlspecialchars($m[1])
                     . "<a href=\"" . $conf->hoturl("doc", ["p" => $row->paperId, "dt" => $m[2], "at" => $row->timestamp])
                     . "\">{$m[2]}</a>";
