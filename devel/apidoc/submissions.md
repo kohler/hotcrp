@@ -112,11 +112,17 @@ submission or create a new submission with that ID. To avoid overwriting an
 existing submission, set the JSON’s `status`.`if_unmodified_since` to `0`.
 
 * param dry_run boolean: True checks input for errors, but does not save changes
-* param disable_users boolean: True disables any newly-created users (administrators only)
-* param add_topics boolean: True automatically adds topics from input papers (administrators only)
-* param notify boolean: False does not notify contacts of changes (administrators only)
+* param disable_users boolean: True disables any newly-created users (site
+  administrators only)
+* param add_topics boolean: True automatically adds topics from input papers
+  (site administrators only)
+* param notify boolean: False disables all email notifications (site
+  administrators only)
+* param notify_authors boolean: False disables email notifications to authors
+  (paper administrators only)
+* param reason string: Optional text included in notification emails
 * param ?json string
-* param ?upload upload_token: Defines upload token for large input file
+* param ?upload upload_token: Upload token for large input file
 * response ?dry_run boolean: True for `dry_run` requests
 * response ?paper paper: JSON version of modified paper
 * response ?+change_list [string]: List of changed fields

@@ -329,28 +329,6 @@ class APISpec_Batch {
         }
     }
 
-    /** @param object $j */
-    private function parse_basic_parameters($j) {
-        $this->cur_fieldf = [];
-        $this->cur_fields = [];
-        $this->cur_fieldd = [];
-
-        if ($j->paper ?? false) {
-            $this->cur_fieldf["p"] = self::F_REQUIRED;
-        }
-        $parameters = $j->parameters ?? [];
-        if (is_string($parameters)) {
-            $parameters = explode(" ", trim($parameters));
-        }
-        foreach ($parameters as $p) {
-            list($name, $f) = self::parse_field_name($p);
-            $this->add_field($name, $f);
-        }
-        if ($j->redirect ?? false) {
-            $this->add_field("redirect", 0);
-        }
-    }
-
     /** @param string $fn */
     private function expand_paths($fn) {
         foreach (["get", "post"] as $lmethod) {
@@ -360,7 +338,20 @@ class APISpec_Batch {
             if ($lmethod === "post" && !($uf->post ?? false) && ($uf->get ?? false)) {
                 continue;
             }
-            $this->parse_basic_parameters($uf);
+
+            $this->cur_fieldf = [];
+            $this->cur_fields = [];
+            $this->cur_fieldd = [];
+            if ($uf->paper ?? false) {
+                $this->add_field("p", self::F_REQUIRED);
+            }
+            if ($uf->redirect ?? false) {
+                $this->add_field("redirect", 0);
+            }
+            if (isset($uf->parameters)) {
+                $this->parse_json_parameters($uf->parameters, ["p"]);
+            }
+
             $p = $this->cur_fieldf["p"] ?? 0;
             if (($p & self::F_REQUIRED) !== 0) {
                 $this->cur_fieldf["p"] |= self::F_PATH;
@@ -369,6 +360,21 @@ class APISpec_Batch {
                 $path = "/{$fn}";
             }
             $this->expand_path_method($path, $lmethod, $uf);
+        }
+    }
+
+    /** @param string|list<string> $parameters
+     * @param list<string> $only */
+    private function parse_json_parameters($parameters, $only = []) {
+        if (is_string($parameters)) {
+            $parameters = explode(" ", trim($parameters));
+        }
+        foreach ($parameters as $p) {
+            list($name, $f) = self::parse_field_name($p);
+            if ($name !== ""
+                && (empty($only) || in_array($name, $only))) {
+                $this->add_field($name, $f);
+            }
         }
     }
 
@@ -711,6 +717,9 @@ class APISpec_Batch {
     private function expand_request($x, $uf, $dj) {
         if ($dj && isset($dj->fields)) {
             $this->parse_description_fields($dj->fields, false, $dj->landmark);
+        }
+        if (isset($uf->parameters)) {
+            $this->parse_json_parameters($uf->parameters);
         }
         if (isset($uf->parameter_info)) {
             $this->parse_field_info($uf->parameter_info);

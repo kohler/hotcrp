@@ -2,9 +2,9 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-03-02:e11c872c9",
+        "version": "2025-03-07:9d86dfbfc",
         "summary": "HotCRP conference management software API",
-        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST-like API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nMost parameters are provided using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST),\neither in query strings or in the request body. Some parameters are formatted\nas JSON. Some complex requests use structured keys, such as\n`named_search/1/q`. Use `multipart/form-data` for requests that include\nuploaded files. Since servers limit upload size, you may need to use the\nupload API to upload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property; `ok` is\n`true` if the request succeeded and `false` otherwise. Messages about the\nrequest, if any, are expressed in a `message_list` property.\n\nThe `GET` method is used to retrieve information and the `POST` method to\nmodify information. Other methods are generally not used; for instance,\ndeleting a comment uses a `delete=1` parameter for a `POST` request, rather\nthan a `DELETE` request.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n"
+        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST-like API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nParameters are provided in query strings or the request body, typically using\n[form encoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST).\nSome parameters are formatted as JSON. Some complex requests define logical\nobjects using structured keys, such as `named_search/1/q`. Use\n`multipart/form-data` encoding for requests that include uploaded files.\nSince servers limit upload size, you may need to use the upload API to upload\na large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property; `ok` is\n`true` if the request succeeded and `false` otherwise. Messages about the\nrequest, if any, are expressed in a `message_list` property.\n\nThe `GET` method is used to retrieve information and the `POST` method to\nmodify information. Other methods are generally not used; for instance,\ndeleting a comment uses a `delete=1` parameter for a `POST` request, rather\nthan a `DELETE` request.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n"
     },
     "servers": [
         {
@@ -100,7 +100,7 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "True disables any newly-created users (administrators only)"
+                        "description": "True disables any newly-created users (site\n  administrators only)"
                     },
                     {
                         "name": "add_topics",
@@ -109,7 +109,7 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "True automatically adds topics from input papers (administrators only)"
+                        "description": "True automatically adds topics from input papers\n  (site administrators only)"
                     },
                     {
                         "name": "notify",
@@ -118,10 +118,25 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "False does not notify contacts of changes (administrators only)"
+                        "description": "False disables all email notifications (site\n  administrators only)"
                     },
                     {
-                        "$ref": "#/components/parameters/forceShow"
+                        "name": "notify_authors",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "False disables email notifications to authors\n  (paper administrators only)"
+                    },
+                    {
+                        "name": "reason",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Optional text included in notification emails"
                     },
                     {
                         "name": "json",
@@ -138,7 +153,10 @@
                         "schema": {
                             "$ref": "#/components/schemas/upload_token"
                         },
-                        "description": "Defines upload token for large input file"
+                        "description": "Upload token for large input file"
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow"
                     }
                 ],
                 "responses": {
@@ -202,6 +220,15 @@
                 ],
                 "parameters": [
                     {
+                        "name": "warn_missing",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Get warnings for missing submissions"
+                    },
+                    {
                         "$ref": "#/components/parameters/q"
                     },
                     {
@@ -218,15 +245,6 @@
                     },
                     {
                         "$ref": "#/components/parameters/reviewer"
-                    },
-                    {
-                        "name": "warn_missing",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean"
-                        },
-                        "description": "Get warnings for missing submissions"
                     },
                     {
                         "$ref": "#/components/parameters/forceShow"
@@ -278,14 +296,6 @@
                 ],
                 "parameters": [
                     {
-                        "name": "json",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "dry_run",
                         "in": "query",
                         "required": false,
@@ -322,7 +332,21 @@
                         "description": "False does not notify contacts of changes (administrators only)"
                     },
                     {
-                        "$ref": "#/components/parameters/forceShow"
+                        "name": "json",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "upload",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/upload_token"
+                        },
+                        "description": "Defines upload token for large input file"
                     },
                     {
                         "name": "q",
@@ -355,13 +379,19 @@
                         "$ref": "#/components/parameters/reviewer"
                     },
                     {
-                        "name": "upload",
+                        "name": "notify_authors",
                         "in": "query",
                         "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/upload_token"
-                        },
-                        "description": "Defines upload token for large input file"
+                        "schema": {}
+                    },
+                    {
+                        "name": "reason",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow"
                     }
                 ],
                 "responses": {
@@ -444,14 +474,6 @@
                         }
                     },
                     {
-                        "name": "soft",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean"
-                        }
-                    },
-                    {
                         "name": "dt",
                         "in": "query",
                         "required": false,
@@ -465,6 +487,14 @@
                         "required": false,
                         "schema": {
                             "$ref": "#/components/schemas/document_id"
+                        }
+                    },
+                    {
+                        "name": "soft",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
                         }
                     }
                 ],
@@ -516,21 +546,13 @@
         "/upload": {
             "post": {
                 "summary": "Upload file",
-                "description": "The `POST /upload` endpoint uploads files to the server. It is intended for\nlarge documents, and can upload a file over multiple requests, each containing\na slice of the data.\n\nTo start an upload, set `start=1` and (if available) set `size` to the size of\nthe whole uploaded file. The response will include a `token` field, a string\nlike `hcupwhvGDVmHNYyDKdqeqA` that identifies the upload in progress. All\nfurther requests for the upload must include the `token` as parameter.\n\nEach request adds a chunk of data to the upload. The `offset` parameter gives\nthe byte offset of the uploaded chunk. The `blob` parameter (which can be an\nattached file or a normal parameter) contains the chunk itself. The request\nthat completes the upload should set `finish=1`; this request will fail unless\nall chunks have been received.\n\nThe `ranges` response field represents the ranges of bytes received so far.\nThe response to a `finish=1` request will include a `hash` field, which is the\nhash of the uploaded document.\n\nThe upload API is only available on sites that have enabled the document\nstore.\n",
+                "description": "Upload large files to HotCRP for later use.\n\nServers limit how much data they will accept in a single request. The upload\nAPI allows larger files to be sent in multiple requests; later requests can\nrefer to the uploaded file using an *upload token*.\n\nThe lifecycle of an upload is as follows.\n\n1. A request with `start=1` begins a new upload. This request should also\n   include a `size` parameter to define the size of the uploaded file, if that\n   is known.\n2. The response to this request will include the upload token for the uploaded\n   file in its `token` field. This is a string like `hcupwhvGDVmHNYyDKdqeqA`.\n   All subsequent requests relating to the upload must include this token as a\n   `token` parameter.\n3. Subsequent requests upload the contents of the file in chunks. The `blob`\n   parameter (which can be an attached file) contains the chunk itself; the\n   `offset` parameter defines the offset of chunk relative to the file.\n4. A request with `finish=1` completes the upload. The server seals the upload\n   and responds with the file’s content hash. A `finish=1` request will fail\n   unless all expected chunks have been received.\n\n`start=1` and `finish=1` requests can also include a chunk. The `ranges`\nresponse field represents the ranges of bytes received so far.\n\nThe upload API is only available on sites that have enabled the document\nstore.\n",
                 "tags": [
                     "Documents"
                 ],
                 "parameters": [
                     {
                         "$ref": "#/components/parameters/p.opt"
-                    },
-                    {
-                        "name": "dtype",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/document_type"
-                        }
                     },
                     {
                         "name": "start",
@@ -541,7 +563,7 @@
                         }
                     },
                     {
-                        "name": "temp",
+                        "name": "finish",
                         "in": "query",
                         "required": false,
                         "schema": {
@@ -549,27 +571,7 @@
                         }
                     },
                     {
-                        "name": "offset",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "minimum": 0
-                        },
-                        "description": "Offset of `blob` in uploaded file"
-                    },
-                    {
-                        "name": "size",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "minimum": 0
-                        },
-                        "description": "Size of uploaded file"
-                    },
-                    {
-                        "name": "finish",
+                        "name": "cancel",
                         "in": "query",
                         "required": false,
                         "schema": {
@@ -585,12 +587,52 @@
                         }
                     },
                     {
-                        "name": "cancel",
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "description": "Offset of `blob` in uploaded file"
+                    },
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "description": "Length of `blob` in bytes (must match\n  actual length of `blob`)"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "description": "Size of uploaded file in bytes"
+                    },
+                    {
+                        "name": "dtype",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/document_type"
+                        },
+                        "description": "(start only) Purpose of uploaded document;\n  typically corresponds to a submission field ID"
+                    },
+                    {
+                        "name": "temp",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "boolean"
-                        }
+                        },
+                        "description": "(start only) If true, the uploaded file is\n  expected to be temporary"
                     }
                 ],
                 "requestBody": {
@@ -600,13 +642,14 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
+                                    "blob": {},
                                     "mimetype": {
                                         "$ref": "#/components/schemas/mimetype"
                                     },
                                     "filename": {
-                                        "type": "string"
-                                    },
-                                    "blob": {}
+                                        "type": "string",
+                                        "description": "(start only) Name of uploaded file"
+                                    }
                                 }
                             }
                         }
@@ -690,10 +733,10 @@
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/redirect"
                     },
                     {
-                        "$ref": "#/components/parameters/redirect"
+                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "requestBody": {
@@ -1466,6 +1509,9 @@
                 ],
                 "parameters": [
                     {
+                        "$ref": "#/components/parameters/p.opt"
+                    },
+                    {
                         "name": "action",
                         "in": "query",
                         "required": false,
@@ -1494,9 +1540,6 @@
                     },
                     {
                         "$ref": "#/components/parameters/reviewer"
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "responses": {
@@ -2947,9 +2990,6 @@
                         "$ref": "#/components/parameters/p.path"
                     },
                     {
-                        "$ref": "#/components/parameters/c.opt"
-                    },
-                    {
                         "name": "content",
                         "in": "query",
                         "required": false,
@@ -2957,6 +2997,9 @@
                             "type": "boolean"
                         },
                         "description": "False omits comment content from response"
+                    },
+                    {
+                        "$ref": "#/components/parameters/c.opt"
                     }
                 ],
                 "responses": {
@@ -3011,9 +3054,6 @@
                         "$ref": "#/components/parameters/p.path"
                     },
                     {
-                        "$ref": "#/components/parameters/c"
-                    },
-                    {
                         "name": "override",
                         "in": "query",
                         "required": false,
@@ -3028,6 +3068,9 @@
                         "schema": {
                             "type": "boolean"
                         }
+                    },
+                    {
+                        "$ref": "#/components/parameters/c"
                     }
                 ],
                 "requestBody": {
@@ -3040,7 +3083,6 @@
                                     "text": {
                                         "type": "string"
                                     },
-                                    "attachment": {},
                                     "tags": {
                                         "type": "string"
                                     },
@@ -3049,6 +3091,9 @@
                                     },
                                     "visibility": {
                                         "$ref": "#/components/schemas/comment_visibility"
+                                    },
+                                    "response": {
+                                        "type": "string"
                                     },
                                     "ready": {
                                         "type": "boolean"
@@ -3059,15 +3104,13 @@
                                     "blind": {
                                         "type": "boolean"
                                     },
-                                    "response": {
-                                        "type": "string"
-                                    },
                                     "by_author": {
                                         "type": "boolean"
                                     },
                                     "review_token": {
                                         "type": "string"
-                                    }
+                                    },
+                                    "attachment": {}
                                 }
                             }
                         }
@@ -3164,6 +3207,9 @@
                 ],
                 "parameters": [
                     {
+                        "$ref": "#/components/parameters/p.opt"
+                    },
+                    {
                         "name": "track",
                         "in": "query",
                         "required": true,
@@ -3174,9 +3220,6 @@
                         "in": "query",
                         "required": false,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.opt"
                     }
                 ],
                 "requestBody": {
@@ -3317,13 +3360,13 @@
                 ],
                 "parameters": [
                     {
+                        "$ref": "#/components/parameters/p.opt"
+                    },
+                    {
                         "name": "email",
                         "in": "query",
                         "required": true,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.opt"
                     },
                     {
                         "name": "potential_conflict",
@@ -3616,13 +3659,13 @@
                 ],
                 "parameters": [
                     {
+                        "$ref": "#/components/parameters/p.opt"
+                    },
+                    {
                         "name": "template",
                         "in": "query",
                         "required": false,
                         "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/p.opt"
                     },
                     {
                         "$ref": "#/components/parameters/r.opt"
@@ -4316,6 +4359,35 @@
                 }
             }
         },
+        "/reauth": {
+            "post": {
+                "tags": [
+                    "Session"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/minimal_response"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/session": {
             "get": {
                 "tags": [
@@ -4406,76 +4478,11 @@
                 }
             }
         },
-        "/whoami": {
-            "get": {
+        "/stashmessages": {
+            "post": {
                 "tags": [
                     "Session"
                 ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
-                                        },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "email": {},
-                                                "given_name": {},
-                                                "family_name": {},
-                                                "affiliation": {}
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/reauth": {
-            "post": {
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/stashmessages": {
-            "post": {
                 "requestBody": {
                     "description": "",
                     "content": {
@@ -4509,6 +4516,48 @@
                                             ],
                                             "properties": {
                                                 "_smsg": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/whoami": {
+            "get": {
+                "tags": [
+                    "Session"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "email": {},
+                                                "given_name": {},
+                                                "family_name": {},
+                                                "affiliation": {}
                                             }
                                         }
                                     ]

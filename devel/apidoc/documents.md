@@ -12,39 +12,49 @@
 
 > Upload file
 
-The `POST /upload` endpoint uploads files to the server. It is intended for
-large documents, and can upload a file over multiple requests, each containing
-a slice of the data.
+Upload large files to HotCRP for later use.
 
-To start an upload, set `start=1` and (if available) set `size` to the size of
-the whole uploaded file. The response will include a `token` field, a string
-like `hcupwhvGDVmHNYyDKdqeqA` that identifies the upload in progress. All
-further requests for the upload must include the `token` as parameter.
+Servers limit how much data they will accept in a single request. The upload
+API allows larger files to be sent in multiple requests; later requests can
+refer to the uploaded file using an *upload token*.
 
-Each request adds a chunk of data to the upload. The `offset` parameter gives
-the byte offset of the uploaded chunk. The `blob` parameter (which can be an
-attached file or a normal parameter) contains the chunk itself. The request
-that completes the upload should set `finish=1`; this request will fail unless
-all chunks have been received.
+The lifecycle of an upload is as follows.
 
-The `ranges` response field represents the ranges of bytes received so far.
-The response to a `finish=1` request will include a `hash` field, which is the
-hash of the uploaded document.
+1. A request with `start=1` begins a new upload. This request should also
+   include a `size` parameter to define the size of the uploaded file, if that
+   is known.
+2. The response to this request will include the upload token for the uploaded
+   file in its `token` field. This is a string like `hcupwhvGDVmHNYyDKdqeqA`.
+   All subsequent requests relating to the upload must include this token as a
+   `token` parameter.
+3. Subsequent requests upload the contents of the file in chunks. The `blob`
+   parameter (which can be an attached file) contains the chunk itself; the
+   `offset` parameter defines the offset of chunk relative to the file.
+4. A request with `finish=1` completes the upload. The server seals the upload
+   and responds with the file’s content hash. A `finish=1` request will fail
+   unless all expected chunks have been received.
+
+`start=1` and `finish=1` requests can also include a chunk. The `ranges`
+response field represents the ranges of bytes received so far.
 
 The upload API is only available on sites that have enabled the document
 store.
 
-* param ?dtype document_type
 * param ?start boolean
 * param ?finish boolean
 * param ?cancel boolean
-* param ?temp boolean
 * param ?token upload_token
 * param ?offset nonnegative_integer: Offset of `blob` in uploaded file
-* param ?size nonnegative_integer: Size of uploaded file
-* param ?mimetype mimetype
-* param ?filename string
+* param ?length nonnegative_integer: Length of `blob` in bytes (must match
+  actual length of `blob`)
 * param blob
+* param ?size nonnegative_integer: Size of uploaded file in bytes
+* param ?dtype document_type: (start only) Purpose of uploaded document;
+  typically corresponds to a submission field ID
+* param ?temp boolean: (start only) If true, the uploaded file is
+  expected to be temporary
+* param ?mimetype mimetype: (start only) Type of uploaded file
+* param ?filename string: (start only) Name of uploaded file
 * response token upload_token
 * response dtype document_type
 * response filename string

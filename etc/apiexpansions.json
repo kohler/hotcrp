@@ -288,5 +288,13 @@
   {
     "name": "whoami", "get": true, "merge": true,
     "tags": ["Session"]
+  },
+  {
+    "name": "reauth", "post": true, "merge": true,
+    "tags": ["Session"]
+  },
+  {
+    "name": "stashmessages", "post": true, "merge": true,
+    "tags": ["Session"]
   }
 ]
