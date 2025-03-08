@@ -127,25 +127,7 @@ class Paper_API extends MessageSet {
         }
 
         // set parameters
-        if ($this->user->privChair) {
-            if (friendly_boolean($qreq->disable_users)) {
-                $this->disable_users = true;
-            }
-            if (friendly_boolean($qreq->notify) === false) {
-                $this->notify = false;
-            }
-            if (friendly_boolean($qreq->add_topics)) {
-                $this->conf->topic_set()->set_auto_add(true);
-                $this->conf->options()->refresh_topics();
-            }
-        }
-        if (friendly_boolean($qreq->notify_authors) === false) {
-            $this->notify_authors = false;
-        }
-        $this->reason = $qreq->reason ?? "";
-        if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun)) {
-            $this->dry_run = true;
-        }
+        $this->set_post_param($qreq);
 
         // check Content-Type
         $ct = $qreq->body_content_type();
@@ -235,6 +217,28 @@ class Paper_API extends MessageSet {
             return $this->run_post_match_json($qreq, $jp);
         } else {
             return $this->run_post_multi_json($jp);
+        }
+    }
+
+    private function set_post_param(Qrequest $qreq) {
+        if ($this->user->privChair) {
+            if (friendly_boolean($qreq->disable_users)) {
+                $this->disable_users = true;
+            }
+            if (friendly_boolean($qreq->notify) === false) {
+                $this->notify = false;
+            }
+            if (friendly_boolean($qreq->add_topics)) {
+                $this->conf->topic_set()->set_auto_add(true);
+                $this->conf->options()->refresh_topics();
+            }
+        }
+        if (friendly_boolean($qreq->notify_authors) === false) {
+            $this->notify_authors = false;
+        }
+        $this->reason = $qreq->reason ?? "";
+        if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun)) {
+            $this->dry_run = true;
         }
     }
 
@@ -586,6 +590,54 @@ class Paper_API extends MessageSet {
 
 
     /** @return JsonResult */
+    private function run_delete(Qrequest $qreq, ?PaperInfo $prow) {
+        if (!$prow) {
+            return JsonResult::make_missing_error("p");
+        }
+
+        $this->set_post_param($qreq);
+        $this->single = true;
+
+        $if_unmodified_since = null;
+        if (isset($qreq->if_unmodified_since)) {
+            if (is_int($qreq->if_unmodified_since)) {
+                $if_unmodified_since = $qreq->if_unmodified_since;
+            } else if (ctype_digit($qreq->if_unmodified_since)) {
+                $if_unmodified_since = intval($qreq->if_unmodified_since);
+            } else {
+                $if_unmodified_since = $this->conf->parse_time($qreq->if_unmodified_since, Conf::$now);
+            }
+            if ($if_unmodified_since === false || $if_unmodified_since < 0) {
+                return JsonResult::make_parameter_error("if_unmodified_since");
+            }
+        }
+
+        if (!$this->user->can_administer($prow)) {
+            return JsonResult::make_permission_error(null, "<0>Only administrators can permanently delete a {$this->conf->snouns[0]}");
+        }
+
+        $this->change_lists[] = ["delete"];
+        if ($if_unmodified_since !== null
+            && $if_unmodified_since < $prow->timeModified) {
+            $this->error_at("if_unmodified_since", $this->conf->_("<5><strong>Edit conflict</strong>: The {submission} has changed"));
+            $this->valid[] = false;
+        } else if ($this->dry_run) {
+            $this->valid[] = true;
+        } else {
+            if ($this->notify && $this->notify_authors) {
+                HotCRPMailer::send_contacts("@deletepaper", $prow, [
+                    "reason" => (string) $this->reason,
+                    "confirm_message_for" => $this->user
+                ]);
+            }
+            $this->valid[] = $prow->delete_from_database($this->user);
+        }
+        $this->ok = $this->valid[0];
+        return $this->make_result();
+    }
+
+
+    /** @return JsonResult */
     static private function run(Contact $user, Qrequest $qreq, ?PaperInfo $prow, $mode) {
         $old_overrides = $user->overrides();
         if (friendly_boolean($qreq->forceShow) !== false) {
@@ -593,6 +645,8 @@ class Paper_API extends MessageSet {
         }
         if ($qreq->is_get()) {
             $jr = self::run_get($user, $qreq, $prow, $mode);
+        } else if ($qreq->method() === "DELETE") {
+            $jr = (new Paper_API($user))->run_delete($qreq, $prow);
         } else {
             $jr = (new Paper_API($user))->run_post($qreq, $prow, $mode);
         }

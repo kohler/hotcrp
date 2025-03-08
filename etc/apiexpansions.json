@@ -8,6 +8,10 @@
     "tags": ["Submissions"], "order": 0
   },
   {
+    "name": "paper", "delete": true, "merge": true,
+    "tags": ["Submissions"], "order": 0
+  },
+  {
     "name": "papers", "get": true, "merge": true,
     "tags": ["Submissions"], "order": 1
   },

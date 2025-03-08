@@ -209,9 +209,12 @@ function initialize_request($conf, $nav) {
     Qrequest::set_main_request($qreq);
 
     // check method
-    if ($qreq->method() !== "GET"
-        && $qreq->method() !== "POST"
-        && $qreq->method() !== "HEAD") {
+    $method = $qreq->method();
+    if ($method !== "GET"
+        && $method !== "POST"
+        && $method !== "HEAD"
+        && ($qreq->page() !== "api"
+            || $method !== "DELETE")) {
         header("HTTP/1.0 405 Method Not Allowed");
         exit(0);
     }

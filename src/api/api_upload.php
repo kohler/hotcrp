@@ -149,7 +149,7 @@ class Upload_API {
     /** @return JsonResult */
     function exec_start(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (isset($qreq->token)) {
-            return Json::make_parameter_error("start", "<0>Start requests must not specify a token");
+            return JsonResult::make_parameter_error("start", "<0>Start requests must not specify a token");
         }
         $size = self::qreqint($qreq->size);
         if ($size === null) {

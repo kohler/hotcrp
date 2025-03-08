@@ -29,10 +29,9 @@ Responses are formatted as JSON. Every response has an `ok` property; `ok` is
 `true` if the request succeeded and `false` otherwise. Messages about the
 request, if any, are expressed in a `message_list` property.
 
-The `GET` method is used to retrieve information and the `POST` method to
-modify information. Other methods are generally not used; for instance,
-deleting a comment uses a `delete=1` parameter for a `POST` request, rather
-than a `DELETE` request.
+`GET` operations retrieve system state and `POST` operations modify system
+state. Other operations are occasionally used when semantically meaningful—for
+example, the `/paper` endpoint supports `DELETE`.
 
 
 ### Common parameters

@@ -188,6 +188,11 @@
         "response": "?paper ?+dry_run ?+change_list ?+valid"
     },
     {
+        "name": "paper", "delete": true, "paper": true,
+        "function": "Paper_API::run_one",
+        "parameters": "p ?dry_run ?notify ?notify_authors ?reason ?forceShow"
+    },
+    {
         "name": "papers", "get": true,
         "function": "Paper_API::run_multi",
         "parameters": "q ?t ?qt ?scoresort ?sort ?reviewer ?warn_missing ?forceShow",

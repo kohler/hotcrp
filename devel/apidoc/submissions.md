@@ -131,6 +131,22 @@ existing submission, set the JSON’s `status`.`if_unmodified_since` to `0`.
 * response ?+valid boolean: True if the modification was valid
 
 
+# delete /{p}/paper
+
+> Delete submission
+
+Delete the submission specified by `p`, a submission ID.
+
+* param ?dry_run boolean: True checks input for errors, but does not save changes
+* param ?notify boolean: False disables all email notifications (site
+  administrators only)
+* param ?notify_authors boolean: False disables email notifications to authors
+  (paper administrators only)
+* param ?reason string: Optional text included in notification emails
+* param ?if_unmodified_since string: Don’t delete if modified since this time
+* badge admin
+
+
 # get /papers
 
 > Retrieve multiple submissions

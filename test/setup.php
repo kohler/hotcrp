@@ -974,6 +974,9 @@ function call_api($fn, $user, $qreq, $prow = null) {
     Qrequest::set_main_request($qreq);
     $uf = $user->conf->api($fn, $user, $qreq->method());
     $jr = $user->conf->call_api_on($uf, $fn, $user, $qreq);
+    if (!isset($jr->content["status_code"]) && $jr->status > 299) {
+        $jr->content["status_code"] = $jr->status;
+    }
     return (object) $jr->content;
 }
 

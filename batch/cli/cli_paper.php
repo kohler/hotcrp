@@ -17,7 +17,13 @@ class Paper_CLIBatch implements CLIBatchCommand {
     /** @var bool */
     public $edit;
     /** @var bool */
+    public $delete;
+    /** @var bool */
     public $dry_run;
+    /** @var bool */
+    public $notify = true;
+    /** @var bool */
+    public $notify_authors = true;
     /** @var HotCLI_File */
     public $cf;
 
@@ -28,9 +34,27 @@ class Paper_CLIBatch implements CLIBatchCommand {
         } else {
             $this->urlbase = "{$clib->site}/papers?q=" . urlencode($this->q);
         }
+        if (!$this->edit && !$this->delete) {
+            return $this->run_get($clib);
+        }
+        if ($this->dry_run) {
+            $this->urlbase .= "&dry_run=1";
+        }
+        if (!$this->notify) {
+            $this->urlbase .= "&notify=0";
+        }
+        if (!$this->notify_authors) {
+            $this->urlbase .= "&notify_authors=0";
+        }
         if ($this->edit) {
             return $this->run_edit($clib);
+        } else {
+            return $this->run_delete($clib);
         }
+    }
+
+    /** @return int */
+    function run_get(HotCLI_Batch $clib) {
         curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "GET");
         curl_setopt($clib->curlh, CURLOPT_URL, $this->urlbase);
         if (!$clib->exec_api(null)) {
@@ -73,11 +97,13 @@ class Paper_CLIBatch implements CLIBatchCommand {
             ]);
         }
         $ok = $clib->exec_api(null);
-        if ($this->p) {
+        if ($this->p && isset($clib->content_json->valid)) {
             if (!$clib->content_json->valid) {
                 $clib->error_at(null, "<0>Changes invalid");
             } else if (empty($clib->content_json->change_list)) {
                 $clib->success("<0>No changes");
+            } else if ($clib->content_json->dry_run ?? false) {
+                $clib->success("<0>Would change " . commajoin($clib->content_json->change_list));
             } else {
                 $clib->success("<0>Saved changes to " . commajoin($clib->content_json->change_list));
             }
@@ -87,6 +113,26 @@ class Paper_CLIBatch implements CLIBatchCommand {
         }
         if ($this->p && isset($clib->content_json->paper)) {
             $clib->set_json_output($clib->content_json->paper);
+        }
+        return $ok ? 0 : 1;
+    }
+
+    /** @return int */
+    function run_delete(HotCLI_Batch $clib) {
+        curl_setopt($clib->curlh, CURLOPT_URL, $this->urlbase);
+        curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "DELETE");
+        $ok = $clib->exec_api(null);
+        if (isset($clib->content_json->valid)) {
+            if (!$clib->content_json->valid) {
+                $clib->error_at(null, "<0>Delete invalid");
+            } else if ($clib->content_json->dry_run ?? false) {
+                $clib->error_at(null, "<0>Would delete #{$this->p}");
+            } else {
+                $clib->success("<0>Deleted #{$this->p}");
+            }
+        }
+        if ($clib->verbose) {
+            fwrite(STDERR, $clib->content_string);
         }
         return $ok ? 0 : 1;
     }
@@ -115,13 +161,26 @@ class Paper_CLIBatch implements CLIBatchCommand {
             }
         }
 
+        $pcb->delete = isset($arg["delete"]);
         $pcb->edit = isset($arg["e"]);
         if ($pcb->edit) {
             $pcb->cf = HotCLI_File::make($arg["_"][$narg] ?? "-");
             ++$narg;
         }
         $pcb->dry_run = isset($arg["dry-run"]);
+        if (isset($arg["no-notify"])) {
+            $pcb->notify = false;
+        }
+        if (isset($arg["no-notify-authors"])) {
+            $pcb->notify_authors = false;
+        }
 
+        if ($pcb->delete && $pcb->edit) {
+            throw new CommandLineException("`--delete` conflicts with `--edit`");
+        }
+        if ($pcb->delete && !$pcb->p) {
+            throw new CommandLineException("`--delete` requires `-p`");
+        }
         if (count($arg["_"]) > $narg) {
             throw new CommandLineException("Too many arguments");
         }

@@ -52,6 +52,14 @@ class PaperAPI_Tester {
             ->set_body(json_encode_db($body), "application/json");
     }
 
+    /** @param array<string,mixed> $args
+     * @return Qrequest */
+    function make_delete_qreq($args) {
+        return (new Qrequest("DELETE", $args))
+            ->approve_token()
+            ->set_body(null, "application/x-www-form-urlencoded");
+    }
+
     /** @param array<string,mixed> $contents
      * @param array<string,mixed> $args
      * @return Qrequest */
@@ -293,6 +301,47 @@ class PaperAPI_Tester {
         xassert_eqq($jr->change_list, ["calories"]);
         xassert_eqq($jr->paper->pid, 1);
         xassert_eqq($jr->paper->calories, 9);
+    }
+
+    function test_delete() {
+        $qreq = $this->make_post_json_qreq([
+            "pid" => "new", "title" => "Softer Timers for Scalable Protocols",
+            "abstract" => "These timers are the softest yet!",
+            "authors" => [["name" => "Shilpa Shamzi", "email" => $this->u_puneet->email]],
+            "submission" => ["content" => "%PDF-2"],
+            "status" => "draft"
+        ], ["p" => "new"]);
+        $jr = call_api("=paper", $this->u_puneet, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->paper->object, "paper");
+        xassert_eqq($jr->paper->title, "Softer Timers for Scalable Protocols");
+        $pid = $jr->paper->pid;
+        $modified_at = $jr->paper->modified_at;
+
+        $qreq = $this->make_delete_qreq(["p" => $pid]);
+        $jr = call_api("=paper", $this->u_puneet, $qreq);
+        xassert_eqq($jr->status_code, 403);
+
+        $qreq = $this->make_delete_qreq(["p" => $pid, "dry_run" => 1]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list, ["delete"]);
+        xassert_eqq($jr->valid, true);
+
+        $qreq = $this->make_delete_qreq(["p" => $pid, "dry_run" => 1, "if_unmodified_since" => $modified_at - 1]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($jr->valid, false);
+
+        $qreq = $this->make_delete_qreq(["p" => $pid]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq($jr->change_list, ["delete"]);
+        xassert_eqq($jr->valid, true);
+
+        $qreq = $this->make_delete_qreq(["p" => $pid, "dry_run" => 1]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->status_code, 404);
     }
 
     function test_new_paper_after_deadline() {

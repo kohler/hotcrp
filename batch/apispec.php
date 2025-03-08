@@ -92,6 +92,7 @@ class APISpec_Batch {
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
+        $this->conf->set_opt("allowApiPostGet", false);
         $this->user = $conf->root_user();
         $this->xtp = new XtParams($this->conf, null);
         $this->base = isset($arg["x"]);
@@ -333,11 +334,8 @@ class APISpec_Batch {
 
     /** @param string $fn */
     private function expand_paths($fn) {
-        foreach (["get", "post"] as $lmethod) {
+        foreach (["get", "post", "delete"] as $lmethod) {
             if (!($uf = $this->conf->api($fn, null, strtoupper($lmethod)))) {
-                continue;
-            }
-            if ($lmethod === "post" && !($uf->post ?? false) && ($uf->get ?? false)) {
                 continue;
             }
 
@@ -1235,7 +1233,7 @@ class APISpec_Batch {
             }
         }
         foreach ($this->description_map as $name => $djs) {
-            if (preg_match('/\A(get|post)\s+(\S+)\z/', $name, $m)
+            if (preg_match('/\A(get|post|delete)\s+(\S+)\z/', $name, $m)
                 && !isset($this->paths->{$m[2]}->{$m[1]})
                 && ($dj = $this->find_description($name))) {
                 fwrite(STDERR, "{$dj->landmark}: description path {$m[1]}.{$m[2]} not specified\n");

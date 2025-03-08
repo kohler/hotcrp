@@ -144,7 +144,7 @@ class API_Page {
                     header("Access-Control-Allow-Headers: {$hdrs}");
                 }
                 header("Access-Control-Allow-Credentials: true");
-                header("Access-Control-Allow-Methods: OPTIONS, GET, HEAD, POST");
+                header("Access-Control-Allow-Methods: OPTIONS, GET, HEAD, POST, DELETE");
                 header("Access-Control-Max-Age: 86400");
             } else if (in_array($nav->page, ["cacheable", "scorechart", "images", "scripts", "stylesheets"])) {
                 header("Access-Control-Allow-Origin: *");

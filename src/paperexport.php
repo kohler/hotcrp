@@ -7,10 +7,6 @@ class PaperExport {
      * @readonly */
     public $conf;
     /** @var Contact
-     * @deprecated
-     * @readonly */
-    public $user;
-    /** @var Contact
      * @readonly */
     public $viewer;
     /** @var bool
@@ -42,8 +38,7 @@ class PaperExport {
     function __construct(Contact $viewer) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
-        /** @phan-suppress-next-line PhanDeprecatedProperty */
-        $this->user = $viewer;
+
     }
 
     /** @param bool $x
@@ -181,16 +176,18 @@ class PaperExport {
         }
 
         foreach ($prow->form_fields() as $opt) {
-            if ($this->viewer->can_view_option($prow, $opt)) {
-                $ov = $prow->force_option($opt);
-                $oj = $opt->value_export_json($ov, $this);
-                if ($oj !== null) {
-                    if ($this->use_ids) {
-                        $pj->{$opt->field_key()} = $oj;
-                    } else {
-                        $pj->{$opt->json_key()} = $oj;
-                    }
-                }
+            if (!$this->viewer->can_view_option($prow, $opt)) {
+                continue;
+            }
+            $ov = $prow->force_option($opt);
+            $oj = $opt->value_export_json($ov, $this);
+            if ($oj === null) {
+                continue;
+            }
+            if ($this->use_ids) {
+                $pj->{$opt->field_key()} = $oj;
+            } else {
+                $pj->{$opt->json_key()} = $oj;
             }
         }
 
@@ -228,6 +225,10 @@ class PaperExport {
         if ($prow->timeFinalSubmitted > 0) {
             $pj->final_submitted = true;
             $pj->final_submitted_at = $prow->timeFinalSubmitted;
+        }
+
+        if ($prow->timeModified > 0) {
+            $pj->modified_at = $prow->timeModified;
         }
 
         if (($tlist = $prow->sorted_viewable_tags($this->viewer))) {
