@@ -102,6 +102,7 @@ class PaperStatus_Tester {
         xassert_eqq($paper1b->title, "Scalable Timers? for Soft State Protocols");
         $paper1b->title = $this->paper1a->title;
         $paper1b->submitted_at = $this->paper1a->submitted_at;
+        $paper1b->modified_at = $this->paper1a->modified_at;
         $s1 = json_encode($this->paper1a);
         $s2 = json_encode($paper1b);
         xassert_eqq($s1, $s2);
