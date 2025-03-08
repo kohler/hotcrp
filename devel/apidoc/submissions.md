@@ -144,6 +144,9 @@ Delete the submission specified by `p`, a submission ID.
   (paper administrators only)
 * param ?reason string: Optional text included in notification emails
 * param ?if_unmodified_since string: Don’t delete if modified since this time
+* response ?dry_run boolean: True for `dry_run` requests
+* response change_list [string]: `["delete"]`
+* response valid boolean: True if the delete request was valid
 * badge admin
 
 
