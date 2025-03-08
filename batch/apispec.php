@@ -73,6 +73,8 @@ class APISpec_Batch {
     private $cur_fields;
     /** @var array<string,string> */
     private $cur_fieldd;
+    /** @var list<object> */
+    private $cur_badge;
     /** @var list<string> */
     private $cur_fieldsch;
 
@@ -240,7 +242,7 @@ class APISpec_Batch {
                 $x["summary"] = simplify_whitespace(str_replace("\n> ", "", substr($mx[0], 2)));
                 $d = ltrim(substr($d, strlen($mx[0])));
             }
-            if (preg_match('/(?:\n|\A)(?=\*)(?:\* (?:param|parameter|response|response_schema) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
+            if (preg_match('/(?:\n|\A)(?=\*)(?:\* (?:param|parameter|response|response_schema|badge) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
                 $d = cleannl(substr($d, 0, -strlen($mx[0])));
                 $x["fields"] = ltrim($mx[0]);
             }
@@ -339,9 +341,11 @@ class APISpec_Batch {
                 continue;
             }
 
+            // parse subset of parameters
             $this->cur_fieldf = [];
             $this->cur_fields = [];
             $this->cur_fieldd = [];
+            $this->cur_badge = [];
             if ($uf->paper ?? false) {
                 $this->add_field("p", self::F_REQUIRED);
             }
@@ -352,6 +356,7 @@ class APISpec_Batch {
                 $this->parse_json_parameters($uf->parameters, ["p"]);
             }
 
+            // choose path
             $p = $this->cur_fieldf["p"] ?? 0;
             if (($p & self::F_REQUIRED) !== 0) {
                 $this->cur_fieldf["p"] |= self::F_PATH;
@@ -359,7 +364,36 @@ class APISpec_Batch {
             } else {
                 $path = "/{$fn}";
             }
-            $this->expand_path_method($path, $lmethod, $uf);
+            $this->cur_path = $path;
+            $this->cur_lmethod = $lmethod;
+
+            // create `paths` object
+            $pathj = $this->paths->$path = $this->paths->$path ?? (object) [];
+            $pathj->__path = $path;
+            if (!isset($this->setj->paths->$path)) {
+                $this->merge_description($path, $pathj);
+                $this->setj->paths->$path = (object) [];
+            }
+
+            // create operation object
+            $opj = $pathj->$lmethod = $pathj->$lmethod ?? (object) [];
+            if (!isset($this->setj->paths->$path->$lmethod)) {
+                if ($this->override_description
+                    || ($opj->summary ?? "") === "") {
+                    $opj->summary = $path;
+                }
+                $this->setj->paths->$path->$lmethod = true;
+            }
+
+            // apply description, tags, request, response
+            $dj = $this->find_description("{$this->cur_lmethod} {$this->cur_path}");
+            if ($dj) {
+                $this->merge_description_from($opj, $dj);
+            }
+
+            $this->expand_tags($opj, $uf, $dj);
+            $this->expand_request($opj, $uf, $dj);
+            $this->expand_response($opj, $uf, $dj);
         }
     }
 
@@ -378,40 +412,10 @@ class APISpec_Batch {
         }
     }
 
-    /** @param string $path
-     * @param 'get'|'post' $lmethod
-     * @param object $uf */
-    private function expand_path_method($path, $lmethod, $uf) {
-        $this->cur_path = $path;
-        $this->cur_lmethod = $lmethod;
-
-        $pathj = $this->paths->$path = $this->paths->$path ?? (object) [];
-        $pathj->__path = $path;
-        if (!isset($this->setj->paths->$path)) {
-            $this->merge_description($path, $pathj);
-            $this->setj->paths->$path = (object) [];
-        }
-        $xj = $pathj->$lmethod = $pathj->$lmethod ?? (object) [];
-        if (!isset($this->setj->paths->$path->$lmethod)) {
-            if ($this->override_description || ($xj->summary ?? "") === "") {
-                $xj->summary = $path;
-            }
-            $this->setj->paths->$path->$lmethod = true;
-        }
-
-        $dj = $this->find_description("{$this->cur_lmethod} {$this->cur_path}");
-        $this->expand_metadata($xj, $uf, $dj);
-        $this->expand_request($xj, $uf, $dj);
-        $this->expand_response($xj, $uf, $dj);
-    }
-
     /** @param object $xj
      * @param object $uf
      * @param ?object $dj */
-    private function expand_metadata($xj, $uf, $dj) {
-        if ($dj) {
-            $this->merge_description_from($xj, $dj);
-        }
+    private function expand_tags($xj, $uf, $dj) {
         if (isset($uf->tags)
             && (!isset($xj->tags) || $this->override_tags)) {
             $xj->tags = $uf->tags;
@@ -628,10 +632,32 @@ class APISpec_Batch {
         }
     }
 
+    private function resolve_badge($name) {
+        if ($name === "admin") {
+            return (object) [
+                "name" => "Admin only"
+            ];
+        }
+        return null;
+    }
+
+    /** @param string $params
+     * @param bool $response
+     * @param string $landmark */
     private function parse_description_fields($params, $response, $landmark) {
         $pos = 0;
-        while (preg_match('/\G\* (param|parameter|response|response_schema)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)(?:  [^\n]++\n|[ \t]++\n)*+|\n)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
+        while (preg_match('/\G\* (param|parameter|response|response_schema|badge)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)(?:  [^\n]++\n|[ \t]++\n)*+|\n)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
             $pos += strlen($m[0]);
+            if ($m[1] === "badge") {
+                if (!$response) {
+                    if (($b = $this->resolve_badge($m[2]))) {
+                        $this->cur_badge[] = $b;
+                    } else {
+                        fwrite(STDERR, $this->cur_prefix() . "unknown badge `{$m[2]}`\n");
+                    }
+                }
+                continue;
+            }
             if (str_starts_with($m[1], "response") !== $response) {
                 continue;
             }
@@ -724,6 +750,7 @@ class APISpec_Batch {
         if (isset($uf->parameter_info)) {
             $this->parse_field_info($uf->parameter_info);
         }
+        $this->apply_badges($x);
 
         $params = $bprop = $breq = [];
         $query_plausible = isset($this->cur_fieldf["q"]);
@@ -777,6 +804,32 @@ class APISpec_Batch {
             $xbschema = $bodyj->schema = $bodyj->schema ?? (object) [];
             $xbschema->type = "object";
             $this->apply_body_parameters($xbschema, $bprop, $breq, $formtype);
+        }
+    }
+
+    private function apply_badges($x) {
+        if ($this->override_tags) {
+            if (empty($this->cur_badge)) {
+                unset($x->{"x-badges"});
+            } else {
+                $x->{"x-badges"} = $this->cur_badge;
+            }
+            return;
+        }
+        foreach ($this->cur_badge as $bj) {
+            if (!isset($x->{"x-badges"})) {
+                $x->{"x-badges"} = [];
+            }
+            $found = false;
+            foreach ($x->{"x-badges"} as $xbj) {
+                if ($xbj->name === $bj->name) {
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $x->{"x-badges"}[] = $bj;
+            }
         }
     }
 

@@ -15,8 +15,8 @@
 Upload large files to HotCRP for later use.
 
 Servers limit how much data they will accept in a single request. The upload
-API allows larger files to be sent in multiple requests; later requests can
-refer to the uploaded file using an *upload token*.
+API uploads larger files over multiple requests. When an upload is complete,
+later requests can refer to that file using an *upload token*.
 
 The lifecycle of an upload is as follows.
 

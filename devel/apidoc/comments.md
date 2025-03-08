@@ -23,6 +23,8 @@ decision).
 
 > Retrieve comment
 
+Return a comment object specified by ID.
+
 The `c` parameter specifies the comment to return. If the comment exists and
 the user can view it, it will be returned in the `comment` component of the
 response. Otherwise, an error response is returned.
@@ -35,6 +37,8 @@ If `c` is omitted, all viewable comments are returned in a `comments` list.
 # post /{p}/comment
 
 > Create, modify, or delete comment
+
+Create, modify, or delete a comment specified by ID.
 
 The `c` parameter specifies the comment to modify. It can be a numeric comment
 ID; `new`, to create a new comment; or `response` (or a compound like

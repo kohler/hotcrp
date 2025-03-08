@@ -7,8 +7,9 @@ These endpoints query and modify HotCRP submissions.
 
 > Retrieve submission
 
-This endpoint retrieves JSON-formatted information about a submission. All
-visible information about submission fields, tags, and overall status are
+Return a submission object specified by `p`, a submission ID.
+
+All visible information about submission fields, tags, and overall status are
 returned in the `paper` response property, which defines a submission object.
 Error messages—for instance, about permission errors or nonexistent
 submissions—are returned in `message_list`.
@@ -26,9 +27,10 @@ user can see them.
 
 > Create or modify submission
 
-This endpoint modifies the submission specified by the `p` parameter. Setting
-`p=new` will create a new submission; the response will contain the chosen
-submission ID.
+Create or modify a submission specified by `p`, a submission ID.
+
+Setting `p=new` will create a new submission; the response will contain the
+chosen submission ID.
 
 The modification may be specified:
 
@@ -133,10 +135,11 @@ existing submission, set the JSON’s `status`.`if_unmodified_since` to `0`.
 
 > Retrieve multiple submissions
 
-This endpoint retrieves JSON-formatted information about multiple submissions
-based on a search. The search is specified in the `q` parameter; all matching
-visible papers are returned. Other search parameters (`t`, `qt`) are accepted
-too. The response property `papers` is an array of matching submission objects.
+Retrieve submission objects matching a search.
+
+The search is specified in the `q` parameter; all matching visible papers are
+returned. Other search parameters (`t`, `qt`) are accepted too. The response
+property `papers` is an array of matching submission objects.
 
 Since searches silently filter out non-viewable submissions, `/papers?q=1010`
 and `/paper?p=1010` can return different error messages. The `/paper` request
@@ -152,6 +155,8 @@ listed in a query, supply a `warn_missing=1` parameter.
 # post /papers
 
 > Create or modify multiple submissions
+
+Create or modify multiple submissions.
 
 This administrator-only endpoint modifies multiple submissions at once. Its
 request formats are similar to that of `POST /{p}/paper`: it can accept a
@@ -185,3 +190,4 @@ relevant submission in the input JSON.
 * response ?papers [paper]: List of JSON versions of modified papers
 * response ?+change_lists [[string]]: List of lists of changed fields
 * response ?+valid [boolean]: List of validity checks
+* badge admin

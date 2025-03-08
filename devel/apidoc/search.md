@@ -7,8 +7,7 @@ These endpoints perform searches on submissions.
 
 > Retrieve search results
 
-Use this endpoint to return the list of submission IDs corresponding to a
-search.
+Return IDs of submissions that match a search.
 
 Pass the search query in the `q` parameter. The list of matching IDs is
 returned in the `ids` response property.
