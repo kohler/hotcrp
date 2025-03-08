@@ -12,6 +12,10 @@ class Paper_API extends MessageSet {
     /** @var bool */
     private $notify = true;
     /** @var bool */
+    private $notify_authors = true;
+    /** @var ?string */
+    private $reason;
+    /** @var bool */
     private $disable_users = false;
     /** @var bool */
     private $dry_run = false;
@@ -135,6 +139,10 @@ class Paper_API extends MessageSet {
                 $this->conf->options()->refresh_topics();
             }
         }
+        if (friendly_boolean($qreq->notify_authors) === false) {
+            $this->notify_authors = false;
+        }
+        $this->reason = $qreq->reason ?? "";
         if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun)) {
             $this->dry_run = true;
         }
@@ -330,6 +338,8 @@ class Paper_API extends MessageSet {
         return (new PaperStatus($this->user))
             ->set_disable_users($this->disable_users)
             ->set_notify($this->notify)
+            ->set_notify_authors($this->notify_authors)
+            ->set_notify_reason($this->reason)
             ->set_any_content_file(true)
             ->on_document_import([$this, "on_document_import"]);
     }
@@ -348,7 +358,7 @@ class Paper_API extends MessageSet {
         $this->change_lists[] = $ps->changed_keys(true);
         if ($ok && !$this->dry_run) {
             if ($ps->has_change()) {
-                $ps->log_save_activity("via API");
+                $this->execute_change($ps);
             }
             $pj = (new PaperExport($this->user))->paper_json($ps->saved_prow());
             $this->papers[] = $pj;
@@ -358,6 +368,18 @@ class Paper_API extends MessageSet {
         }
         $this->valid[] = $ok;
         $this->ok = $this->ok && $ok;
+    }
+
+    /** @param PaperStatus $ps */
+    private function execute_change($ps) {
+        $ps->log_save_activity("via API");
+        if ($this->notify) {
+            if (!$this->notify_authors
+                && !$this->user->allow_administer($ps->saved_prow())) {
+                $ps->set_notify_authors(true);
+            }
+            $ps->notify_followers();
+        }
     }
 
     private function execute_fail() {
