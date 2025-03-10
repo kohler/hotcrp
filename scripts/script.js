@@ -11647,9 +11647,13 @@ handle_ui.on("js-plinfo", function (evt) {
     if (this.type !== "checkbox" || !this.name.startsWith("show")) {
         throw new Error("bad plinfo");
     }
-    const plistui = make_plist.call(mainlist()),
-        fname = this.name.substring(4),
-        hidden = !this.checked;
+    const plistui = make_plist.call(mainlist()), hidden = !this.checked;
+    let fname;
+    if (this.name === "show" || this.name === "show[]") {
+        fname = this.value;
+    } else {
+        fname = this.name.substring(4);
+    }
     if (fname === "force") {
         fold_override(plistui.pltable, hidden);
     } else if (fname === "rownum") {
@@ -11665,7 +11669,9 @@ handle_ui.on("js-plinfo", function (evt) {
         const showau = this.form && (this.form.elements.showau || this.form.elements.showanonau);
         if (!hidden && showau && !showau.disabled) {
             showau.checked = true;
-            showau.name === "showanonau" && fold(plistui.pltable, false, 2);
+            if (showau.id === "showanonau" || /* XXX */ showau.name === "showanonau") {
+                fold(plistui.pltable, false, 2);
+            }
         }
         plinfo(plistui, "authors", showau ? !showau.checked : false, this.form);
     } else {

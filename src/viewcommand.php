@@ -19,6 +19,7 @@ class ViewCommand {
     const F_SHOW = 1;
     const F_HIDE = 2;
     const F_SORT = 4;
+    const FM_VISIBILITY = 3;
     const FM_ACTION = 7;
 
     const ORIGIN_REPORT = 0x000;

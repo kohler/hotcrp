@@ -47,18 +47,16 @@ class Search_Page {
      * @param string $title */
     private function checkbox_item($column, $type, $title, $options = []) {
         $options["class"] = "uich js-plinfo";
+        $options["id"] = "show{$type}";
         $xtype = $type === "anonau" ? "authors" : $type;
-        if ($this->pl->view_origin($xtype) >= PaperList::VIEWORIGIN_SEARCH) {
+        $lclass = "checki";
+        if ($this->pl->view_origin($xtype) === PaperList::VIEWORIGIN_SEARCH) {
             $options["disabled"] = true;
-            $this->item($column, '<label class="checki disabled"><span class="checkc">'
-                . Ht::checkbox("show{$type}", 1, $this->pl->viewing($type), $options)
-                . "</span>{$title}</label>");
-            return;
+            $lclass .= " disabled";
         }
-        $x = '<label class="checki"><span class="checkc">'
-            . Ht::checkbox("show{$type}", 1, $this->pl->viewing($type), $options)
-            . '</span>' . $title . '</label>';
-        $this->item($column, $x);
+        $this->item($column, "<label class=\"{$lclass}\"><span class=\"checkc\">"
+            . Ht::checkbox("show[]", $type, $this->pl->viewing($type), $options)
+            . "</span>{$title}</label>");
     }
 
     private function prepare_display_options() {
@@ -188,7 +186,7 @@ class Search_Page {
         echo '<div class="tld is-tla',
             $this->stab === "view" ? " active" : "",
             ' pb-2" id="view" role="tabpanel" aria-labelledby="k-view-tab">',
-            Ht::form($this->conf->hoturl("=search", ["redisplay" => 1]), ["id" => "foldredisplay", "class" => "fn3 fold5c"]);
+            Ht::form($this->conf->hoturl("search"), ["id" => "foldredisplay", "class" => "fn3 fold5c", "method" => "get"]);
         foreach (["q", "qa", "qo", "qx", "qt", "t", "sort"] as $x) {
             if (isset($qreq[$x]) && ($x !== "q" || !isset($qreq->qa)))
                 echo Ht::hidden($x, $qreq[$x]);
@@ -418,36 +416,6 @@ class Search_Page {
         $qreq->print_footer();
     }
 
-    static function redisplay(Contact $user, Qrequest $qreq) {
-        // change session based on request
-        if ($qreq->qsession()->is_open()) {
-            $qreq->unset_csession("pldisplay");
-            Session_API::parse_view($qreq, "pl", $qreq);
-        }
-        // redirect, including differences between search and request
-        // create PaperList
-        if (isset($qreq->q)) {
-            $search = new PaperSearch($user, $qreq);
-        } else {
-            $search = new PaperSearch($user, ["t" => $qreq->t, "q" => "NONE"]);
-        }
-        $pl = new PaperList("pl", $search, ["sort" => true], $qreq);
-        $pl->apply_view_report_default();
-        $pl->apply_view_session($qreq);
-        $pl->apply_view_qreq($qreq);
-        $param = ["#" => "view"];
-        foreach ($pl->unparse_view(PaperList::VIEWORIGIN_SEARCH, false) as $vx) {
-            if (str_starts_with($vx, "sort:score[")) {
-                $param["scoresort"] = substr($vx, 11, -1);
-            } else if (strpos($vx, "[") === false) {
-                $name = substr($vx, 5);
-                $show = str_starts_with($vx, "show:") ? 1 : 0;
-                $param[$name === "force" ? "forceShow" : "show{$name}"] = $show;
-            }
-        }
-        $user->conf->redirect_self($qreq, $param);
-    }
-
     /** @param Contact $user
      * @param Qrequest $qreq */
     static function go($user, $qreq) {
@@ -500,11 +468,6 @@ class Search_Page {
                 $fn .= "/" . $qreq[$subkey];
             }
             ListAction::call($fn, $user, $qreq, $ssel);
-        }
-
-        // request and session parsing
-        if ($qreq->redisplay) {
-            self::redisplay($user, $qreq);
         }
 
         // display

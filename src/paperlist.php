@@ -787,6 +787,10 @@ class PaperList {
     }
 
     function apply_view_qreq(Qrequest $qreq) {
+        if (isset($qreq->show)) {
+            $this->_apply_view_qreq_full($qreq);
+            return;
+        }
         foreach ($qreq as $k => $v) {
             if (str_starts_with($k, "show")) {
                 $name = substr($k, 4);
@@ -798,6 +802,35 @@ class PaperList {
             if ($name !== "" && ($x = friendly_boolean($v)) !== null) {
                 $this->set_view($name, $x, self::VIEWORIGIN_REQUEST, $this->_view_options[$name] ?? null);
             }
+        }
+    }
+
+    private function _apply_view_qreq_full(Qrequest $qreq) {
+        // Explicit `show`/`show[]` parameters should completely replace
+        // session & default display columns.
+        $ignores = [];
+        foreach ($this->_viewf as $name => $vf) {
+            if (($vf & 0xF) >= self::VIEWORIGIN_DEFAULT_DISPLAY
+                && ($vf & 0xF) <= self::VIEWORIGIN_SESSION
+                && ($vf & self::VIEW_SHOW) !== 0) {
+                $ignores[] = $name;
+            }
+        }
+        foreach ($ignores as $name) {
+            $this->set_view($name, false, self::VIEWORIGIN_REQUEST, $this->_view_options[$name] ?? null);
+        }
+        // parse request parameters
+        if ($qreq->has_a("show")) {
+            $vcs = [];
+            foreach ($qreq->get_a("show") as $x) {
+                array_push($vcs, ...ViewCommand::split_parse($x, ViewCommand::ORIGIN_REQUEST));
+            }
+        } else {
+            $vcs = ViewCommand::split_parse($qreq->show, ViewCommand::ORIGIN_REQUEST);
+        }
+        foreach ($vcs as $vc) {
+            if (($vc->flags & ViewCommand::FM_VISIBILITY) !== 0)
+                $this->set_view($vc->keyword, ($vc->flags & ViewCommand::F_SHOW) !== 0, self::VIEWORIGIN_REQUEST, $vc->view_options ?? $this->_view_options[$vc->keyword] ?? null);
         }
     }
 
@@ -1479,21 +1512,19 @@ class PaperList {
     function viewable_author_types() {
         // Bit 2: If set, then some authors may be plainly visible.
         // Bit 1: If set, then some authors may be visible through deblinding.
-        $sb = $this->conf->submission_blindness();
         if ($this->search->limit_term()->is_author()
-            || $sb === Conf::BLIND_NEVER
+            || $this->conf->submission_blindness() === Conf::BLIND_NEVER
             || ($this->search->limit_term()->is_accepted()
                 && $this->conf->time_all_author_view_decision()
                 && !$this->conf->setting("seedec_hideau"))) {
             return 2;
-        } else {
-            $bits = $this->user->is_manager() ? 1 : 0;
-            if ($this->user->is_reviewer()
-                && $this->conf->time_some_reviewer_view_authors($this->user->isPC)) {
-                $bits |= 2;
-            }
-            return $bits;
         }
+        $bits = $this->user->is_manager() ? 1 : 0;
+        if ($this->user->is_reviewer()
+            && $this->conf->time_some_reviewer_view_authors($this->user->isPC)) {
+            $bits |= 2;
+        }
+        return $bits;
     }
 
     /** @param string $main_content
