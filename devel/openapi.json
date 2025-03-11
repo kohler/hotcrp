@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-03-08:f396f797c",
+        "version": "2025-03-08:d50674cfe",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST-like API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nParameters are provided in query strings or the request body, typically using\n[form encoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST).\nSome parameters are formatted as JSON. Some complex requests define logical\nobjects using structured keys, such as `named_search/1/q`. Use\n`multipart/form-data` encoding for requests that include uploaded files.\nSince servers limit upload size, you may need to use the upload API to upload\na large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property; `ok` is\n`true` if the request succeeded and `false` otherwise. Messages about the\nrequest, if any, are expressed in a `message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n"
     },
@@ -45,19 +45,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "paper": {
-                                                    "$ref": "#/components/schemas/paper"
-                                                }
-                                            }
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "paper": {
+                                            "$ref": "#/components/schemas/paper"
                                         }
-                                    ]
+                                    }
                                 }
                             }
                         }
@@ -165,35 +167,37 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "paper": {
-                                                    "$ref": "#/components/schemas/paper",
-                                                    "description": "JSON version of modified paper"
-                                                },
-                                                "dry_run": {
-                                                    "type": "boolean",
-                                                    "description": "True for `dry_run` requests"
-                                                },
-                                                "change_list": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string"
-                                                    },
-                                                    "description": "List of changed fields"
-                                                },
-                                                "valid": {
-                                                    "type": "boolean",
-                                                    "description": "True if the modification was valid"
-                                                }
-                                            }
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "paper": {
+                                            "$ref": "#/components/schemas/paper",
+                                            "description": "JSON version of modified paper"
+                                        },
+                                        "dry_run": {
+                                            "type": "boolean",
+                                            "description": "True for `dry_run` requests"
+                                        },
+                                        "change_list": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "List of changed fields"
+                                        },
+                                        "valid": {
+                                            "type": "boolean",
+                                            "description": "True if the modification was valid"
                                         }
-                                    ]
+                                    }
                                 }
                             }
                         }
@@ -282,35 +286,33 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "change_list",
-                                                "valid"
-                                            ],
-                                            "properties": {
-                                                "dry_run": {
-                                                    "type": "boolean",
-                                                    "description": "True for `dry_run` requests"
-                                                },
-                                                "change_list": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "string"
-                                                    },
-                                                    "description": "`[\"delete\"]`"
-                                                },
-                                                "valid": {
-                                                    "type": "boolean",
-                                                    "description": "True if the delete request was valid"
-                                                }
-                                            }
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "dry_run": {
+                                            "type": "boolean",
+                                            "description": "True for `dry_run` requests"
+                                        },
+                                        "change_list": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "`[\"delete\"]`"
+                                        },
+                                        "valid": {
+                                            "type": "boolean",
+                                            "description": "True if the delete request was valid"
                                         }
-                                    ]
+                                    }
                                 }
                             }
                         }
@@ -373,22 +375,24 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "papers": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/paper"
-                                                    }
-                                                }
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "papers": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/paper"
                                             }
                                         }
-                                    ]
+                                    }
                                 }
                             }
                         }
@@ -522,44 +526,46 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "papers": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/paper"
-                                                    },
-                                                    "description": "List of JSON versions of modified papers"
-                                                },
-                                                "dry_run": {
-                                                    "type": "boolean",
-                                                    "description": "True for `dry_run` requests"
-                                                },
-                                                "change_lists": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "type": "string"
-                                                        }
-                                                    },
-                                                    "description": "List of lists of changed fields"
-                                                },
-                                                "valid": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "boolean"
-                                                    },
-                                                    "description": "List of validity checks"
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "papers": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/paper"
+                                            },
+                                            "description": "List of JSON versions of modified papers"
+                                        },
+                                        "dry_run": {
+                                            "type": "boolean",
+                                            "description": "True for `dry_run` requests"
+                                        },
+                                        "change_lists": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
                                                 }
-                                            }
+                                            },
+                                            "description": "List of lists of changed fields"
+                                        },
+                                        "valid": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "boolean"
+                                            },
+                                            "description": "List of validity checks"
                                         }
-                                    ]
+                                    }
                                 }
                             }
                         }
@@ -626,28 +632,23 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "npages",
-                                                "nwords",
-                                                "problem_fields",
-                                                "has_error",
-                                                "docid"
-                                            ],
-                                            "properties": {
-                                                "npages": {},
-                                                "nwords": {},
-                                                "problem_fields": {},
-                                                "has_error": {},
-                                                "docid": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "npages": {},
+                                        "nwords": {},
+                                        "problem_fields": {},
+                                        "has_error": {},
+                                        "docid": {}
+                                    }
                                 }
                             }
                         }
@@ -783,53 +784,52 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "token"
-                                            ],
-                                            "properties": {
-                                                "token": {
-                                                    "$ref": "#/components/schemas/upload_token"
-                                                },
-                                                "dtype": {
-                                                    "$ref": "#/components/schemas/document_type"
-                                                },
-                                                "filename": {
-                                                    "type": "string"
-                                                },
-                                                "mimetype": {
-                                                    "$ref": "#/components/schemas/mimetype"
-                                                },
-                                                "size": {
-                                                    "type": "integer",
-                                                    "minimum": 0
-                                                },
-                                                "ranges": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/offset_range"
-                                                    }
-                                                },
-                                                "hash": {
-                                                    "type": "string"
-                                                },
-                                                "crc32": {
-                                                    "type": "string"
-                                                },
-                                                "server_progress_loaded": {
-                                                    "type": "integer"
-                                                },
-                                                "server_progress_max": {
-                                                    "type": "integer"
-                                                }
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "token": {
+                                            "$ref": "#/components/schemas/upload_token"
+                                        },
+                                        "dtype": {
+                                            "$ref": "#/components/schemas/document_type"
+                                        },
+                                        "filename": {
+                                            "type": "string"
+                                        },
+                                        "mimetype": {
+                                            "$ref": "#/components/schemas/mimetype"
+                                        },
+                                        "size": {
+                                            "type": "integer",
+                                            "minimum": 0
+                                        },
+                                        "ranges": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/offset_range"
                                             }
+                                        },
+                                        "hash": {
+                                            "type": "string"
+                                        },
+                                        "crc32": {
+                                            "type": "string"
+                                        },
+                                        "server_progress_loaded": {
+                                            "type": "integer"
+                                        },
+                                        "server_progress_max": {
+                                            "type": "integer"
                                         }
-                                    ]
+                                    }
                                 }
                             }
                         }
@@ -883,7 +883,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -918,23 +929,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "decision",
-                                                "decision_html"
-                                            ],
-                                            "properties": {
-                                                "decision": {},
-                                                "decision_html": {},
-                                                "editable": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "decision": {},
+                                        "decision_html": {},
+                                        "editable": {}
+                                    }
                                 }
                             }
                         }
@@ -983,23 +992,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "decision",
-                                                "decision_html"
-                                            ],
-                                            "properties": {
-                                                "decision": {},
-                                                "decision_html": {},
-                                                "editable": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "decision": {},
+                                        "decision_html": {},
+                                        "editable": {}
+                                    }
                                 }
                             }
                         }
@@ -1034,23 +1041,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "lead",
-                                                "lead_html"
-                                            ],
-                                            "properties": {
-                                                "lead": {},
-                                                "lead_html": {},
-                                                "color_classes": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "lead": {},
+                                        "lead_html": {},
+                                        "color_classes": {}
+                                    }
                                 }
                             }
                         }
@@ -1099,23 +1104,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "lead",
-                                                "lead_html"
-                                            ],
-                                            "properties": {
-                                                "lead": {},
-                                                "lead_html": {},
-                                                "color_classes": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "lead": {},
+                                        "lead_html": {},
+                                        "color_classes": {}
+                                    }
                                 }
                             }
                         }
@@ -1150,23 +1153,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "manager",
-                                                "manager_html"
-                                            ],
-                                            "properties": {
-                                                "manager": {},
-                                                "manager_html": {},
-                                                "color_classes": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "manager": {},
+                                        "manager_html": {},
+                                        "color_classes": {}
+                                    }
                                 }
                             }
                         }
@@ -1215,23 +1216,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "manager",
-                                                "manager_html"
-                                            ],
-                                            "properties": {
-                                                "manager": {},
-                                                "manager_html": {},
-                                                "color_classes": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "manager": {},
+                                        "manager_html": {},
+                                        "color_classes": {}
+                                    }
                                 }
                             }
                         }
@@ -1266,7 +1265,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1301,23 +1311,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "shepherd",
-                                                "shepherd_html"
-                                            ],
-                                            "properties": {
-                                                "shepherd": {},
-                                                "shepherd_html": {},
-                                                "color_classes": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "shepherd": {},
+                                        "shepherd_html": {},
+                                        "color_classes": {}
+                                    }
                                 }
                             }
                         }
@@ -1366,23 +1374,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "shepherd",
-                                                "shepherd_html"
-                                            ],
-                                            "properties": {
-                                                "shepherd": {},
-                                                "shepherd_html": {},
-                                                "color_classes": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "shepherd": {},
+                                        "shepherd_html": {},
+                                        "color_classes": {}
+                                    }
                                 }
                             }
                         }
@@ -1447,10 +1453,21 @@
                                 "schema": {
                                     "allOf": [
                                         {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                            "$ref": "#/components/schemas/search_response"
                                         },
                                         {
-                                            "$ref": "#/components/schemas/search_response"
+                                            "type": "object",
+                                            "required": [
+                                                "ok"
+                                            ],
+                                            "properties": {
+                                                "ok": {
+                                                    "type": "boolean"
+                                                },
+                                                "message_list": {
+                                                    "$ref": "#/components/schemas/message_list"
+                                                }
+                                            }
                                         }
                                     ]
                                 }
@@ -1514,25 +1531,23 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "fields",
-                                                "data"
-                                            ],
-                                            "properties": {
-                                                "fields": {},
-                                                "data": {},
-                                                "stat": {},
-                                                "classes": {},
-                                                "attr": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "fields": {},
+                                        "data": {},
+                                        "stat": {},
+                                        "classes": {},
+                                        "attr": {}
+                                    }
                                 }
                             }
                         }
@@ -1562,7 +1577,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1592,20 +1618,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "actions"
-                                            ],
-                                            "properties": {
-                                                "actions": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "actions": {}
+                                    }
                                 }
                             }
                         }
@@ -1670,7 +1695,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1699,7 +1735,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1728,20 +1775,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "searches"
-                                            ],
-                                            "properties": {
-                                                "searches": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "searches": {}
+                                    }
                                 }
                             }
                         }
@@ -1768,20 +1814,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "searches"
-                                            ],
-                                            "properties": {
-                                                "searches": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "searches": {}
+                                    }
                                 }
                             }
                         }
@@ -1810,20 +1855,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "searchcompletion"
-                                            ],
-                                            "properties": {
-                                                "searchcompletion": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "searchcompletion": {}
+                                    }
                                 }
                             }
                         }
@@ -1863,28 +1907,23 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "report",
-                                                "display_current",
-                                                "display_default",
-                                                "display_difference",
-                                                "display_default_message_list"
-                                            ],
-                                            "properties": {
-                                                "report": {},
-                                                "display_current": {},
-                                                "display_default": {},
-                                                "display_difference": {},
-                                                "display_default_message_list": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "report": {},
+                                        "display_current": {},
+                                        "display_default": {},
+                                        "display_difference": {},
+                                        "display_default_message_list": {}
+                                    }
                                 }
                             }
                         }
@@ -1938,28 +1977,23 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "report",
-                                                "display_current",
-                                                "display_default",
-                                                "display_difference",
-                                                "display_default_message_list"
-                                            ],
-                                            "properties": {
-                                                "report": {},
-                                                "display_current": {},
-                                                "display_default": {},
-                                                "display_difference": {},
-                                                "display_default_message_list": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "report": {},
+                                        "display_current": {},
+                                        "display_default": {},
+                                        "display_difference": {},
+                                        "display_default_message_list": {}
+                                    }
                                 }
                             }
                         }
@@ -1996,10 +2030,21 @@
                                 "schema": {
                                     "allOf": [
                                         {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                            "$ref": "#/components/schemas/tag_response"
                                         },
                                         {
-                                            "$ref": "#/components/schemas/tag_response"
+                                            "type": "object",
+                                            "required": [
+                                                "ok"
+                                            ],
+                                            "properties": {
+                                                "ok": {
+                                                    "type": "boolean"
+                                                },
+                                                "message_list": {
+                                                    "$ref": "#/components/schemas/message_list"
+                                                }
+                                            }
                                         }
                                     ]
                                 }
@@ -2052,13 +2097,24 @@
                                 "schema": {
                                     "allOf": [
                                         {
-                                            "$ref": "#/components/schemas/minimal_response"
-                                        },
-                                        {
                                             "$ref": "#/components/schemas/tag_response"
                                         },
                                         {
                                             "$ref": "#/components/schemas/search_response"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "ok"
+                                            ],
+                                            "properties": {
+                                                "ok": {
+                                                    "type": "boolean"
+                                                },
+                                                "message_list": {
+                                                    "$ref": "#/components/schemas/message_list"
+                                                }
+                                            }
                                         }
                                     ]
                                 }
@@ -2090,24 +2146,23 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "tags"
-                                            ],
-                                            "properties": {
-                                                "tags": {
-                                                    "$ref": "#/components/schemas/tag_list"
-                                                },
-                                                "readonly_tagmap": {},
-                                                "sitewide_tagmap": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "tags": {
+                                            "$ref": "#/components/schemas/tag_list"
+                                        },
+                                        "readonly_tagmap": {},
+                                        "sitewide_tagmap": {}
+                                    }
                                 }
                             }
                         }
@@ -2161,17 +2216,20 @@
                                 "schema": {
                                     "allOf": [
                                         {
-                                            "$ref": "#/components/schemas/minimal_response"
-                                        },
-                                        {
                                             "$ref": "#/components/schemas/search_response"
                                         },
                                         {
                                             "type": "object",
                                             "required": [
-                                                "p"
+                                                "ok"
                                             ],
                                             "properties": {
+                                                "ok": {
+                                                    "type": "boolean"
+                                                },
+                                                "message_list": {
+                                                    "$ref": "#/components/schemas/message_list"
+                                                },
                                                 "p": {}
                                             }
                                         }
@@ -2225,19 +2283,20 @@
                                 "schema": {
                                     "allOf": [
                                         {
-                                            "$ref": "#/components/schemas/minimal_response"
-                                        },
-                                        {
                                             "$ref": "#/components/schemas/search_response"
                                         },
                                         {
                                             "type": "object",
                                             "required": [
-                                                "tag",
-                                                "editable",
-                                                "anno"
+                                                "ok"
                                             ],
                                             "properties": {
+                                                "ok": {
+                                                    "type": "boolean"
+                                                },
+                                                "message_list": {
+                                                    "$ref": "#/components/schemas/message_list"
+                                                },
                                                 "tag": {
                                                     "$ref": "#/components/schemas/tag"
                                                 },
@@ -2317,19 +2376,20 @@
                                 "schema": {
                                     "allOf": [
                                         {
-                                            "$ref": "#/components/schemas/minimal_response"
-                                        },
-                                        {
                                             "$ref": "#/components/schemas/search_response"
                                         },
                                         {
                                             "type": "object",
                                             "required": [
-                                                "tag",
-                                                "editable",
-                                                "anno"
+                                                "ok"
                                             ],
                                             "properties": {
+                                                "ok": {
+                                                    "type": "boolean"
+                                                },
+                                                "message_list": {
+                                                    "$ref": "#/components/schemas/message_list"
+                                                },
                                                 "tag": {
                                                     "$ref": "#/components/schemas/tag"
                                                 },
@@ -2379,20 +2439,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "pid"
-                                            ],
-                                            "properties": {
-                                                "pid": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "pid": {}
+                                    }
                                 }
                             }
                         }
@@ -2435,22 +2494,20 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "tag",
-                                                "report"
-                                            ],
-                                            "properties": {
-                                                "tag": {},
-                                                "report": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "tag": {},
+                                        "report": {}
+                                    }
                                 }
                             }
                         }
@@ -2490,24 +2547,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "value",
-                                                "pref"
-                                            ],
-                                            "properties": {
-                                                "value": {},
-                                                "pref": {},
-                                                "prefexp": {},
-                                                "topic_score": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "value": {},
+                                        "pref": {},
+                                        "prefexp": {},
+                                        "topic_score": {}
+                                    }
                                 }
                             }
                         }
@@ -2561,24 +2616,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "value",
-                                                "pref"
-                                            ],
-                                            "properties": {
-                                                "value": {},
-                                                "pref": {},
-                                                "prefexp": {},
-                                                "topic_score": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "value": {},
+                                        "pref": {},
+                                        "prefexp": {},
+                                        "topic_score": {}
+                                    }
                                 }
                             }
                         }
@@ -2612,7 +2665,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -2644,7 +2708,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -2678,7 +2753,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -2715,22 +2801,20 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "action",
-                                                "review_site_relative"
-                                            ],
-                                            "properties": {
-                                                "action": {},
-                                                "review_site_relative": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "action": {},
+                                        "review_site_relative": {}
+                                    }
                                 }
                             }
                         }
@@ -2773,22 +2857,20 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "action",
-                                                "review_site_relative"
-                                            ],
-                                            "properties": {
-                                                "action": {},
-                                                "review_site_relative": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "action": {},
+                                        "review_site_relative": {}
+                                    }
                                 }
                             }
                         }
@@ -2838,23 +2920,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "action",
-                                                "review_site_relative"
-                                            ],
-                                            "properties": {
-                                                "action": {},
-                                                "reason": {},
-                                                "review_site_relative": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "action": {},
+                                        "reason": {},
+                                        "review_site_relative": {}
+                                    }
                                 }
                             }
                         }
@@ -2916,7 +2996,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -2953,18 +3044,20 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "ratings": {},
-                                                "user_rating": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "ratings": {},
+                                        "user_rating": {}
+                                    }
                                 }
                             }
                         }
@@ -3015,18 +3108,20 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "ratings": {},
-                                                "user_rating": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "ratings": {},
+                                        "user_rating": {}
+                                    }
                                 }
                             }
                         }
@@ -3055,7 +3150,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -3082,7 +3188,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -3130,25 +3247,27 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "comment": {
-                                                    "$ref": "#/components/schemas/comment"
-                                                },
-                                                "comments": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "$ref": "#/components/schemas/comment"
-                                                    }
-                                                }
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "comment": {
+                                            "$ref": "#/components/schemas/comment"
+                                        },
+                                        "comments": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/comment"
                                             }
                                         }
-                                    ]
+                                    }
                                 }
                             }
                         }
@@ -3244,20 +3363,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "comment": {
-                                                    "$ref": "#/components/schemas/comment"
-                                                },
-                                                "conflict": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "comment": {
+                                            "$ref": "#/components/schemas/comment"
+                                        },
+                                        "conflict": {}
+                                    }
                                 }
                             }
                         }
@@ -3291,20 +3412,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "mentioncompletion"
-                                            ],
-                                            "properties": {
-                                                "mentioncompletion": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "mentioncompletion": {}
+                                    }
                                 }
                             }
                         }
@@ -3363,7 +3483,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -3392,7 +3523,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -3436,28 +3578,26 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "tracker_status_at",
-                                                "tracker_eventid"
-                                            ],
-                                            "properties": {
-                                                "tracker": {},
-                                                "tracker_recent": {},
-                                                "tracker_status": {},
-                                                "now": {},
-                                                "tracker_status_at": {},
-                                                "tracker_eventid": {},
-                                                "new_trackerid": {},
-                                                "tracker_site": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "tracker": {},
+                                        "tracker_recent": {},
+                                        "tracker_status": {},
+                                        "now": {},
+                                        "tracker_status_at": {},
+                                        "tracker_eventid": {},
+                                        "new_trackerid": {},
+                                        "tracker_site": {}
+                                    }
                                 }
                             }
                         }
@@ -3503,27 +3643,26 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "found"
-                                            ],
-                                            "properties": {
-                                                "found": {},
-                                                "email": {},
-                                                "given_name": {},
-                                                "family_name": {},
-                                                "affiliation": {},
-                                                "potential_conflict": {},
-                                                "orcid": {},
-                                                "country": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "found": {},
+                                        "email": {},
+                                        "given_name": {},
+                                        "family_name": {},
+                                        "affiliation": {},
+                                        "potential_conflict": {},
+                                        "orcid": {},
+                                        "country": {}
+                                    }
                                 }
                             }
                         }
@@ -3560,23 +3699,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "pc"
-                                            ],
-                                            "properties": {
-                                                "pc": {},
-                                                "tags": {},
-                                                "sort": {},
-                                                "p": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "pc": {},
+                                        "tags": {},
+                                        "sort": {},
+                                        "p": {}
+                                    }
                                 }
                             }
                         }
@@ -3631,7 +3769,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -3668,26 +3817,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "from",
-                                                "to",
-                                                "rows",
-                                                "more"
-                                            ],
-                                            "properties": {
-                                                "from": {},
-                                                "to": {},
-                                                "rows": {},
-                                                "more": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "from": {},
+                                        "to": {},
+                                        "rows": {},
+                                        "more": {}
+                                    }
                                 }
                             }
                         }
@@ -3743,20 +3888,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "following"
-                                            ],
-                                            "properties": {
-                                                "following": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "following": {}
+                                    }
                                 }
                             }
                         }
@@ -3853,19 +3997,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "templates": {},
-                                                "subject": {},
-                                                "body": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "templates": {},
+                                        "subject": {},
+                                        "body": {}
+                                    }
                                 }
                             }
                         }
@@ -3902,24 +4048,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "email",
-                                                "disabled",
-                                                "placeholder"
-                                            ],
-                                            "properties": {
-                                                "email": {},
-                                                "disabled": {},
-                                                "placeholder": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "email": {},
+                                        "disabled": {},
+                                        "placeholder": {}
+                                    }
                                 }
                             }
                         }
@@ -3972,24 +4115,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "email",
-                                                "disabled",
-                                                "placeholder"
-                                            ],
-                                            "properties": {
-                                                "email": {},
-                                                "disabled": {},
-                                                "placeholder": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "email": {},
+                                        "disabled": {},
+                                        "placeholder": {}
+                                    }
                                 }
                             }
                         }
@@ -4018,20 +4158,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "formulas"
-                                            ],
-                                            "properties": {
-                                                "formulas": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "formulas": {}
+                                    }
                                 }
                             }
                         }
@@ -4074,20 +4213,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "formulas"
-                                            ],
-                                            "properties": {
-                                                "formulas": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "formulas": {}
+                                    }
                                 }
                             }
                         }
@@ -4116,20 +4254,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "settings"
-                                            ],
-                                            "properties": {
-                                                "settings": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "settings": {}
+                                    }
                                 }
                             }
                         }
@@ -4189,22 +4326,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "settings"
-                                            ],
-                                            "properties": {
-                                                "dry_run": {},
-                                                "change_list": {},
-                                                "settings": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "dry_run": {},
+                                        "change_list": {},
+                                        "settings": {}
+                                    }
                                 }
                             }
                         }
@@ -4233,22 +4369,20 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "samples",
-                                                "types"
-                                            ],
-                                            "properties": {
-                                                "samples": {},
-                                                "types": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "samples": {},
+                                        "types": {}
+                                    }
                                 }
                             }
                         }
@@ -4277,20 +4411,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "setting_descriptions"
-                                            ],
-                                            "properties": {
-                                                "setting_descriptions": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "setting_descriptions": {}
+                                    }
                                 }
                             }
                         }
@@ -4319,22 +4452,20 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "samples",
-                                                "types"
-                                            ],
-                                            "properties": {
-                                                "samples": {},
-                                                "types": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "samples": {},
+                                        "types": {}
+                                    }
                                 }
                             }
                         }
@@ -4371,21 +4502,20 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "update_at"
-                                            ],
-                                            "properties": {
-                                                "update_at": {},
-                                                "status": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "update_at": {},
+                                        "status": {}
+                                    }
                                 }
                             }
                         }
@@ -4434,7 +4564,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -4463,7 +4604,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -4492,7 +4644,18 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -4521,20 +4684,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "sessioninfo"
-                                            ],
-                                            "properties": {
-                                                "sessioninfo": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "sessioninfo": {}
+                                    }
                                 }
                             }
                         }
@@ -4569,20 +4731,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "sessioninfo"
-                                            ],
-                                            "properties": {
-                                                "sessioninfo": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "sessioninfo": {}
+                                    }
                                 }
                             }
                         }
@@ -4627,20 +4788,19 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "_smsg"
-                                            ],
-                                            "properties": {
-                                                "_smsg": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "_smsg": {}
+                                    }
                                 }
                             }
                         }
@@ -4669,20 +4829,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "allOf": [
-                                        {
-                                            "$ref": "#/components/schemas/minimal_response"
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
                                         },
-                                        {
-                                            "type": "object",
-                                            "properties": {
-                                                "email": {},
-                                                "given_name": {},
-                                                "family_name": {},
-                                                "affiliation": {}
-                                            }
-                                        }
-                                    ]
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "email": {},
+                                        "given_name": {},
+                                        "family_name": {},
+                                        "affiliation": {}
+                                    }
                                 }
                             }
                         }
@@ -5358,8 +5520,9 @@
                 ],
                 "properties": {
                     "object": {
-                        "type": "string",
-                        "const": "paper"
+                        "enum": [
+                            "paper"
+                        ]
                     },
                     "pid": {
                         "$ref": "#/components/schemas/pid"
@@ -5378,8 +5541,9 @@
                 ],
                 "properties": {
                     "object": {
-                        "type": "string",
-                        "const": "comment"
+                        "enum": [
+                            "comment"
+                        ]
                     },
                     "pid": {
                         "$ref": "#/components/schemas/pid"
@@ -5543,7 +5707,9 @@
     ],
     "security": [
         {
-            "apiToken": [],
+            "apiToken": []
+        },
+        {
             "session": []
         }
     ]

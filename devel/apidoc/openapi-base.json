@@ -665,8 +665,7 @@
                 ],
                 "properties": {
                     "object": {
-                        "type": "string",
-                        "const": "paper"
+                        "enum": ["paper"]
                     },
                     "pid": {
                         "$ref": "#/components/schemas/pid"
@@ -685,8 +684,7 @@
                 ],
                 "properties": {
                     "object": {
-                        "type": "string",
-                        "const": "comment"
+                        "enum": ["comment"]
                     },
                     "pid": {
                         "$ref": "#/components/schemas/pid"
@@ -798,7 +796,9 @@
     "tags": [],
     "security": [
         {
-            "apiToken": [],
+            "apiToken": []
+        },
+        {
             "session": []
         }
     ]

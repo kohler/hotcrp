@@ -55,6 +55,8 @@ class APISpec_Batch {
     /** @var bool */
     private $override_description;
     /** @var bool */
+    private $merge_allOf;
+    /** @var bool */
     private $sort;
     /** @var array<string,int> */
     private $tag_order;
@@ -150,6 +152,7 @@ class APISpec_Batch {
         $this->override_tags = isset($arg["override-tags"]);
         $this->override_schema = isset($arg["override-schema"]);
         $this->override_description = !isset($arg["no-override-description"]);
+        $this->merge_allOf = !isset($arg["no-merge"]);
         $this->sort = !isset($arg["no-sort"]);
     }
 
@@ -186,7 +189,10 @@ class APISpec_Batch {
                 $jpath .= ".properties[\"{$paramid}\"]";
             }
         } else if ($this->cur_ptype === self::PT_RESPONSE && is_string($paramid)) {
-            $jpath .= ".responses[200].content[\"application/json\"].schema.allOf[{$this->cur_psubtype}]";
+            $jpath .= ".responses[200].content[\"application/json\"].schema";
+            if (!$this->merge_allOf) {
+                $jpath .= ".allOf[{$this->cur_psubtype}]";
+            }
             if ($paramid === "\$required") {
                 $jpath .= ".required";
             } else {
@@ -951,6 +957,16 @@ class APISpec_Batch {
         $this->apply_response($x, $bprop, $breq);
     }
 
+    private static function deep_clone($x) {
+        $x = (array) $x;
+        foreach ($x as $k => &$v) {
+            if (is_object($v)) {
+                $v = self::deep_clone($v);
+            }
+        }
+        return (object) $x;
+    }
+
     private function apply_response($x, $bprop, $breq) {
         $x->responses = $x->responses ?? (object) [];
         $resp200 = $x->responses->{"200"} = $x->responses->{"200"} ?? (object) [];
@@ -972,7 +988,11 @@ class APISpec_Batch {
         $respc = $resp200->content = $resp200->content ?? (object) [];
         $respj = $respc->{"application/json"} = $respc->{"application/json"} ?? (object) [];
         if ($this->override_response || !isset($respj->{"schema"})) {
-            $resps = $respj->{"schema"} = $this->reference_common_schema("minimal_response");
+            $resps = $this->reference_common_schema("minimal_response");
+            if ($this->merge_allOf) {
+                $resps = self::deep_clone($this->schemas->minimal_response);
+            }
+            $respj->{"schema"} = $resps;
         } else {
             $resps = $respj->{"schema"};
         }
@@ -1003,7 +1023,8 @@ class APISpec_Batch {
         }
 
         // enumerate known properties
-        $knownparam = $knownreq = [];
+        $knownparam = ["ok" => true, "message_list" => true];
+        $knownreq = ["ok" => true];
         foreach ($rsch as $respx) {
             if (($j = $this->resolve_reference($respx, "schemas"))
                 && is_object($j)
@@ -1102,19 +1123,6 @@ class APISpec_Batch {
             }
         }
         return false;
-    }
-
-    static private function allOf_object_position($j) {
-        $found = -1;
-        foreach ($j as $i => $jx) {
-            if (($jx->type ?? null) === "object") {
-                if ($found >= 0) {
-                    return -1;
-                }
-                $found = $i;
-            }
-        }
-        return $found;
     }
 
 
@@ -1288,6 +1296,7 @@ class APISpec_Batch {
             "x,base Produce the base API",
             "w,watch Watch for updates",
             "i:,input: =FILE Modify existing specification in FILE",
+            "no-merge Do not merge response schemas",
             "override-ref Overwrite conflicting \$refs in input",
             "override-param",
             "override-response",
