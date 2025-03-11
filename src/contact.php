@@ -961,6 +961,15 @@ class Contact implements JsonSerializable {
         }
     }
 
+    /** @param int $id */
+    function prefetch_similar_user_by_id($id) {
+        if ($this->is_cdb_user()) {
+            $this->conf->prefetch_cdb_user_by_id($id);
+        } else {
+            $this->conf->prefetch_user_by_id($id);
+        }
+    }
+
     /** @return $this */
     function ensure_account_here() {
         assert($this->has_email());
@@ -2099,12 +2108,16 @@ class Contact implements JsonSerializable {
 
     /** @param string $tag
      * @param false|int|float $value
+     * @param bool $ifunset
      * @return void */
-    function change_tag_prop($tag, $value) {
+    function change_tag_prop($tag, $value, $ifunset = false) {
         assert(strcasecmp($tag, "pc") !== 0 && strcasecmp($tag, "chair") !== 0);
         $shape = self::$props["contactTags"];
         $svalue = $this->prop1("contactTags", $shape) ?? "";
         if (($pos = stripos($svalue, " {$tag}#")) !== false) {
+            if ($ifunset) {
+                return;
+            }
             $epos = $pos + strlen($tag) + 2;
             $space = strpos($svalue, " ", $epos);
             $space = $space === false ? strlen($svalue) : $space;

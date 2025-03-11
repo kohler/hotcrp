@@ -237,7 +237,7 @@ class Paper_API extends MessageSet {
             $this->notify_authors = false;
         }
         $this->reason = $qreq->reason ?? "";
-        if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun)) {
+        if (friendly_boolean($qreq->dry_run ?? $qreq->dryrun /* XXX */)) {
             $this->dry_run = true;
         }
     }

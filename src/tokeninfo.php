@@ -284,12 +284,15 @@ class TokenInfo {
         return $cap;
     }
 
-    /** @param string $token
+    /** @param ?string $token
      * @param bool $is_cdb
      * @return ?TokenInfo */
     static function find($token, Conf $conf, $is_cdb = false) {
+        if ($token === null || strlen($token) < 5) {
+            return null;
+        }
         $dblink = $is_cdb ? $conf->contactdb() : $conf->dblink;
-        if (strlen($token) < 5 || !$dblink) {
+        if (!$dblink) {
             return null;
         }
         $email = $is_cdb ? ", (select email from ContactInfo where contactDbId=Capability.contactId) email" : "";
