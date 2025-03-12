@@ -123,7 +123,7 @@ class ManageEmail_API extends MessageSet {
                     ->set("error_code", "signin");
             } else if ($dstuser->cdb_user()
                        && ($dstuser->cdb_user()->disabled_flags() & Contact::CF_GDISABLED) !== 0) {
-                return JsonResult::make_parameter_error("email", "<0>Destination account globally disabled")
+                return JsonResult::make_parameter_error("email", "<0>Destination account disabled on all sites")
                     ->set("error_code", "disabled");
             } else if ($dstuser->is_disabled()) {
                 return JsonResult::make_parameter_error("email", "<0>Destination account disabled")

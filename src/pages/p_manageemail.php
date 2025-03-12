@@ -160,7 +160,7 @@ class ManageEmail_Page {
     private function print_start_link() {
         echo '<div class="form-section">',
             '<h3>Link accounts</h3>',
-            '<p>Use this option to link multiple accounts together. New review requests and email will be automatically redirected from this account (<strong class="font-weight-semibold">', htmlspecialchars($this->user->email), '</strong>) to the primary account. Papers authored by any of the linked accounts will also be accessible to the primary account.</p>',
+            '<p>Use this option to link accounts together. New review requests and email will be automatically redirected to the primary account you select. Papers authored by any of the linked accounts will also be accessible to the primary account.</p>',
             Ht::link("Link accounts", $this->conf->selfurl($this->qreq, ["step" => "link"]), ["class" => "btn btn-primary"]),
             '</div>';
     }
@@ -180,9 +180,6 @@ class ManageEmail_Page {
     private function run_transferreview() {
         if ($this->qreq->step === "transferreview-prepare"
             && $this->qreq->valid_post()) {
-
-            if (!isset($this->qreq->u)
-                || !validate_email($))
         }
 
         $tok = TokenInfo::find_active($this->qreq->token, TokenInfo::MANAGEEMAIL, $this->conf);
