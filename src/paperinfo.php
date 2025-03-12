@@ -3641,7 +3641,7 @@ class PaperInfo {
      * @param string $clause
      * @return list<Contact> */
     function generic_followers($cids, $clause) {
-        $result = $this->conf->qe("select " . $this->conf->user_query_fields(Contact::SLICE_MINIMAL - Contact::SLICEBIT_PASSWORD) . ", preferredEmail, defaultWatch from ContactInfo where (contactId?a or ({$clause})) and (cflags&?)=0",
+        $result = $this->conf->qe("select " . $this->conf->user_query_fields(Contact::SLICE_MINIMAL - Contact::SLICEBIT_PASSWORD - Contact::SLICEBIT_DEFAULTWATCH) . " from ContactInfo where (contactId?a or ({$clause})) and (cflags&?)=0",
             $cids, Contact::CFM_DISABLEMENT);
         $us = [];
         while (($minic = Contact::fetch($result, $this->conf))) {

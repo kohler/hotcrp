@@ -1,6 +1,6 @@
 <?php
 // login.php -- HotCRP login helpers
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class LoginHelper {
     /** @var bool */
@@ -39,12 +39,6 @@ class LoginHelper {
             exit(0);
         }
         $qreq->email = $_SERVER["REMOTE_USER"];
-        if (validate_email($qreq->email)) {
-            $qreq->preferredEmail = $qreq->email;
-        } else if (($x = $conf->opt("defaultEmailDomain"))
-                   && validate_email($qreq->email . "@" . $x)) {
-            $qreq->preferredEmail = $qreq->email . "@" . $x;
-        }
 
         $info = self::login_info($conf, $qreq); // XXX
         if ($info["ok"]) {
@@ -77,9 +71,22 @@ class LoginHelper {
                 $qreq[$k] = rawurldecode($qreq[$k]);
             }
         }
-        if (!($u = $conf->user_by_email($qreq->email))) {
-            $keys = $qreq->subset_as_array("firstName", "first", "lastName", "last", "name", "email", "affiliation");
-            $u = Contact::make_keyed($conf, $keys);
+        $u = $conf->user_by_email($qreq->email);
+        if (!$u) {
+            $keys = ["firstName", "first", "lastName", "last", "name", "email", "affiliation", "country"];
+            // maybe include preferredEmail
+            $lt = $conf->login_type();
+            if ($lt === "htauth") {
+                if (!validate_email($qreq->email)
+                    && ($domain = $conf->opt("defaultEmailDomain"))
+                    && validate_email("{$qreq->email}@{$domain}")) {
+                    $qreq->preferredEmail = "{$qreq->email}@{$domain}";
+                    $keys[] = "preferredEmail";
+                }
+            } else if ($lt === "ldap") {
+                $keys[] = "preferredEmail";
+            }
+            $u = Contact::make_keyed($conf, $qreq->subset_as_array(...$keys));
         }
         return ["ok" => true, "user" => $u];
     }

@@ -1168,6 +1168,13 @@ class UserStatus extends MessageSet {
                 }
             }
         }
+        if ($user->conf->allow_preferred_email()
+            && ($v = $this->jval->preferred_email ?? null) !== null) {
+            $user->set_prop("preferredEmail", $v, $ifempty);
+            if ($user->prop_changed("preferredEmail")) {
+                $this->diffs["preferred_email"] = true;
+            }
+        }
     }
 
     function save_main() {

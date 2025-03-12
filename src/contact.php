@@ -80,8 +80,10 @@ class Contact implements JsonSerializable {
     const SLICEBIT_PASSWORD = 0x2;
     const SLICEBIT_COUNTRY = 0x4;
     const SLICEBIT_ORCID = 0x8;
-    const SLICEBIT_REST = 0x10;
-    const SLICE_MINIMAL = 0x1F;
+    const SLICEBIT_DEFAULTWATCH = 0x10;
+    const SLICEBIT_PREFERREDEMAIL = 0x20;
+    const SLICEBIT_REST = 0x40;
+    const SLICE_MINIMAL = 0x7F;
 
     /** @var ?bool */
     public $nameAmbiguous;
@@ -263,7 +265,7 @@ class Contact implements JsonSerializable {
         "email" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE,
         "firstName" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_NAME | self::PROP_UPDATE | self::PROP_IMPORT,
         "lastName" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_NAME | self::PROP_UPDATE | self::PROP_IMPORT,
-        "preferredEmail" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY,
+        "preferredEmail" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_IMPORT,
         "affiliation" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_SLICE | self::PROP_UPDATE | self::PROP_IMPORT,
         "phone" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT,
         "country" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_NULL | self::PROP_STRING | self::PROP_SIMPLIFY | self::PROP_UPDATE | self::PROP_IMPORT,
@@ -360,11 +362,26 @@ class Contact implements JsonSerializable {
         $u->email = trim($args["email"] ?? "");
         $u->firstName = $args["given_name"] ?? $args["firstName"] ?? $args["first"] ?? "";
         $u->lastName = $args["family_name"] ?? $args["lastName"] ?? $args["last"] ?? "";
-        if (isset($args["name"]) && $u->firstName === "" && $u->lastName === "") {
+        if (isset($args["name"])
+            && $u->firstName === ""
+            && $u->lastName === "") {
             list($u->firstName, $u->lastName, $unused) = Text::split_name($args["name"]);
         }
         $u->affiliation = simplify_whitespace($args["affiliation"] ?? "");
-        $u->orcid = trim($args["orcid"] ?? "");
+        if (isset($args["orcid"])
+            && strlen($args["orcid"]) <= 25) {
+            $u->orcid = trim($args["orcid"]);
+        }
+        if (isset($args["country"])
+            && ctype_alpha($args["country"])
+            && strlen($args["country"]) <= 3) {
+            $u->country = $args["country"];
+        }
+        if (isset($args["preferredEmail"])
+            && ($preferred_email = trim($args["preferredEmail"])) !== ""
+            && validate_email($preferred_email)) {
+            $u->preferredEmail = $preferred_email;
+        }
         $u->cflags = ($args["disablement"] ?? 0) | self::CF_UNCONFIRMED;
         /** @phan-suppress-next-line PhanDeprecatedProperty */
         $u->disabled = $u->cflags & self::CFM_DISABLEMENT & self::CFM_DB;
@@ -2307,9 +2324,10 @@ class Contact implements JsonSerializable {
         return $new_roles;
     }
 
-    static function importable_props() {
+    private function importable_props() {
+        $f = self::PROP_IMPORT | ($this->cdb_confid !== 0 ? self::PROP_CDB : self::PROP_LOCAL);
         foreach (self::$props as $prop => $shape) {
-            if (($shape & self::PROP_IMPORT) !== 0)
+            if (($shape & $f) === $f)
                 yield $prop => $shape;
         }
     }
@@ -2317,7 +2335,7 @@ class Contact implements JsonSerializable {
     /** @param Contact $src
      * @param 0|1|2 $ifempty */
     function import_prop($src, $ifempty) {
-        foreach (self::importable_props() as $prop => $shape) {
+        foreach ($this->importable_props() as $prop => $shape) {
             if (($value = $src->prop1($prop, $shape)) !== null
                 && $value !== "") {
                 $this->set_prop($prop, $value, $ifempty);
@@ -2421,7 +2439,7 @@ class Contact implements JsonSerializable {
      * @return ?Contact */
     private function _store_create($cdbu, $actor) {
         $this->_mod_undo = ["disabled" => -1, "cflags" => -1];
-        foreach (self::importable_props() as $prop => $shape) {
+        foreach ($this->importable_props() as $prop => $shape) {
             $this->_mod_undo[$prop] = ($shape & self::PROP_NULL) !== 0 ? null : "";
         }
 

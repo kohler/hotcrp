@@ -734,6 +734,21 @@ class Conf {
         }
         $this->_dkim_signer = false;
 
+        // login type
+        if (!array_key_exists("loginType", $this->opt)) {
+            if ($this->opt["ldapLogin"] ?? false) {
+                $this->opt["loginType"] = "ldap";
+            } else if ($this->opt["httpAuthLogin"] ?? false) {
+                $this->opt["loginType"] = "htauth";
+            } else {
+                $this->opt["loginType"] = null;
+            }
+        }
+        if (($this->_slice & Contact::SLICEBIT_PREFERREDEMAIL) !== 0
+            && ($this->opt["loginType"] === "ldap" || $this->opt["loginType"] === "htauth")) {
+            $this->_slice -= Contact::SLICEBIT_PREFERREDEMAIL;
+        }
+
         // other caches
         $sort_by_last = !!($this->opt["sortByLastName"] ?? false);
         if (!$this->sort_by_last != !$sort_by_last) {
@@ -1914,15 +1929,6 @@ class Conf {
 
     /** @return null|'ldap'|'htauth'|'none'|'oauth' */
     function login_type() {
-        if (!array_key_exists("loginType", $this->opt)) {
-            if ($this->opt["ldapLogin"] ?? false) {
-                $this->opt["loginType"] = "ldap";
-            } else if ($this->opt["httpAuthLogin"] ?? false) {
-                $this->opt["loginType"] = "htauth";
-            } else {
-                $this->opt["loginType"] = null;
-            }
-        }
         return $this->opt["loginType"];
     }
 
@@ -2010,10 +2016,17 @@ class Conf {
      * @param string $prefix
      * @return string */
     function user_query_fields($slice = Contact::SLICE_MINIMAL, $prefix = "") {
+        // maybe request everything
         if (($slice & Contact::SLICEBIT_REST) === 0) {
             return "{$prefix}*, 0 _slice";
         }
+        // site configuration may require preferredEmail
+        $slice &= $this->_slice | ~Contact::SLICEBIT_PREFERREDEMAIL;
+
         $f = "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}roles, {$prefix}primaryContactId, {$prefix}contactTags, {$prefix}cflags";
+        if (($slice & Contact::SLICEBIT_PREFERREDEMAIL) === 0) {
+            $f .= ", {$prefix}preferredEmail";
+        }
         if (($slice & Contact::SLICEBIT_COLLABORATORS) === 0) {
             $f .= ", {$prefix}collaborators";
         }
@@ -2025,6 +2038,9 @@ class Conf {
         }
         if (($slice & Contact::SLICEBIT_ORCID) === 0) {
             $f .= ", {$prefix}orcid";
+        }
+        if (($slice & Contact::SLICEBIT_DEFAULTWATCH) === 0) {
+            $f .= ", {$prefix}defaultWatch";
         }
         return "{$f}, {$slice} _slice";
     }
@@ -2361,6 +2377,14 @@ class Conf {
             // will rarely happen -- unslicing a user who has been deleted
             $u->_slice = 0;
         }
+    }
+
+
+    // preferred emails
+
+    /** @return bool */
+    function allow_preferred_email() {
+        return ($this->_slice & Contact::SLICEBIT_PREFERREDEMAIL) === 0;
     }
 
 
@@ -3415,7 +3439,6 @@ class Conf {
             return false;
         }
         if ($yr !== 0 || $mo !== 0) {
-            error_log("{$yr} years {$mo} months ago");
             $reference = strtotime("{$yr} years {$mo} months ago", $reference);
         }
         return $reference - $sec;

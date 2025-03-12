@@ -1,10 +1,10 @@
 <?php
 // ldaplogin.php -- HotCRP helper function for LDAP login
-// Copyright (c) 2009-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2009-2025 Eddie Kohler; see LICENSE.
 
 class LDAPLogin {
     static function ldap_login_info(Conf $conf, Qrequest $qreq) {
-        if (!preg_match('/\A\s*(\S+)\s+(\d+\s+)?([^*]+)\*(.*?)\s*\z/s',
+        if (!preg_match('/\A\s*+(\S++)\s++(\d+\s+)?([^*]++)\*(.*?)\s*+\z/s',
             $conf->opt("ldapLogin"), $m)) {
             return [
                 "ok" => false, "ldap" => true, "internal" => true, "email" => true,
@@ -21,7 +21,7 @@ class LDAPLogin {
         if (!$ldapc) {
             return [
                 "ok" => false, "ldap" => true, "internal" => true, "email" => true,
-                "ldap_detail" => "<5>Internal error: ldap_connect. Logins disabled until this error is fixed."
+                "ldap_detail" => "<0>Internal error: Cannot connect to LDAP server"
             ];
         }
         @ldap_set_option($ldapc, LDAP_OPT_PROTOCOL_VERSION, 3);
@@ -40,10 +40,10 @@ class LDAPLogin {
 
         // use LDAP information to prepopulate the database with names
         $sr = @ldap_search($ldapc, $dn, "(cn=*)",
-                           array("sn", "givenname", "cn", "mail", "telephonenumber"));
+                           ["sn", "givenname", "cn", "mail", "telephonenumber", "c"]);
         if ($sr) {
             $e = @ldap_get_entries($ldapc, $sr);
-            $e = ($e["count"] == 1 ? $e[0] : array());
+            $e = ($e["count"] == 1 ? $e[0] : []);
             if (isset($e["cn"]) && $e["cn"]["count"] == 1) {
                 list($qreq->firstName, $qreq->lastName) = Text::split_name($e["cn"][0]);
             }
@@ -58,6 +58,9 @@ class LDAPLogin {
             }
             if (isset($e["telephonenumber"]) && $e["telephonenumber"]["count"] == 1) {
                 $qreq->phone = $e["telephonenumber"][0];
+            }
+            if (isset($e["c"]) && $e["c"]["count"] == 1) {
+                $qreq->country = $e["c"][0];
             }
         }
 
