@@ -94,7 +94,8 @@ class Contact implements JsonSerializable {
 
     /** @var ?string */
     private $collaborators;
-    public $preferredEmail = "";
+    /** @var ?string */
+    public $preferredEmail;
     /** @var ?string */
     private $country;
     /** @var ?string */
@@ -1188,7 +1189,7 @@ class Contact implements JsonSerializable {
                    && $this->conf->opt("sendEmailUnconfirmed") === false) {
             $disabled |= self::CF_UNCONFIRMED;
         }
-        $e = $this->preferredEmail ? : $this->email;
+        $e = $this->preferredEmail ?? $this->email;
         return ($this->cflags & $disabled) === 0 && self::is_real_email($e);
     }
 

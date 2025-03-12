@@ -120,7 +120,7 @@ class FakeNames_Batch {
         $q = $qv = [];
         $email_map = [];
         foreach ($users as $c) {
-            $q[] = "update ContactInfo set firstName=?, lastName=?, unaccentedName=?, email=?, preferredEmail='', affiliation=?, country=?, password=? where contactId={$c->contactId}";
+            $q[] = "update ContactInfo set firstName=?, lastName=?, unaccentedName=?, email=?, affiliation=?, country=?, password=? where contactId={$c->contactId}";
             $qv[] = $f = $this->first();
             $qv[] = $l = $this->last();
             $aff = $this->affiliation();

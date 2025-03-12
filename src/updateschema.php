@@ -3149,6 +3149,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(304);
         }
         if ($conf->sversion === 304
+            && $conf->ql_ok("DROP TABLE IF EXISTS `IDReservation`")
             && $conf->ql_ok("CREATE TABLE `IDReservation` (
   `type` int(11) NOT NULL,
   `id` int(11) NOT NULL,
@@ -3178,6 +3179,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table PaperReview drop `data`")
             && $conf->ql_ok("alter table PaperReviewRefused drop `data`")) {
             $conf->update_schema_version(308);
+        }
+        if ($conf->sversion === 308
+            && $conf->ql_ok("update ContactInfo set preferredEmail=null where preferredEmail=''")) {
+            $conf->update_schema_version(309);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
