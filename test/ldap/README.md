@@ -9,26 +9,27 @@ LDAP support.
 Installation
 ------------
 
-1. Run `docker compose up` in this directory
+1. Run `docker compose up` in this directory.
 
-2. Sign in to the LLDAP server at `http://localhost:17170` with username
-   `admin` and password `aequee0Oe1ee1A`
+2. (Optional) Create users using the LLDAP admin interface.
 
-3. Create users using the LLDAP admin interface (for instance, see the example
-   user table below)
+	HotCRP ships with an LLDAP SQLite database whose users are listed below in
+	“Default users.” If you want to change these users or create other ones,
+	sign in to the LLDAP administration server at `http://localhost:17170`
+	using username `admin` and password `aequee0Oe1ee1A` .
 
-4. Configure HotCRP to use LDAP authentication by setting `$Opt["ldapLogin"]`
-   in `conf/options.php`:
+3. Configure HotCRP to use the running LLDAP server for authentication by
+   setting `$Opt["ldapLogin"]` in `conf/options.php`:
 
    	```php
 	$Opt["ldapLogin"] = "ldap://localhost:17169/ uid=*,ou=people,dc=hotcrp,dc=org";
 	```
 
-5. Sign in to HotCRP as one of the users you created
+4. Sign in to HotCRP as one of the LDAP users.
 
 
-Example user table
-------------------
+Default users
+-------------
 
 | User     | Name         | Mail                   | Password       |
 |----------|--------------|------------------------|----------------|

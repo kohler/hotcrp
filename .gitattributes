@@ -1,2 +1,3 @@
-scripts/*.min.js -diff
-scripts/*.map -diff
+/scripts/*.min.js -diff
+/scripts/*.map -diff
+/test/ldap/lldap_data/*.db -diff
