@@ -1,0 +1,15 @@
+services:
+  lldap:
+    image: lldap/lldap:stable
+    ports:
+      # LDAP
+      - "17169:3890"
+      # Web front end
+      - "17170:17170"
+    volumes:
+      - "./lldap_data:/data"
+    environment:
+      - LLDAP_JWT_SECRET=ybke34;H~a0sb6iM9RTZ&I|~l,9qsF21
+      - LLDAP_KEY_SEED=Lg57%.J*EG42YwYq}_}g@cFEoJ^E_F=r
+      - LLDAP_KEY_FILE=
+      - LLDAP_LDAP_USER_PASS=aequee0Oe1ee1A
