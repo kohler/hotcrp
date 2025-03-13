@@ -52,9 +52,11 @@ class Log_Page {
         $search->set_allow_deleted(true);
         $pids = $search->paper_ids();
         if ($search->has_problem()) {
-            $this->ms->warning_at("p", $search->full_feedback_html());
+            foreach ($search->message_list() as $mi) {
+                $this->ms->append_item_at("p", $mi);
+            }
         } else if (empty($pids)) {
-            $this->ms->warning_at("p", "No papers match that search");
+            $this->ms->warning_at("p", "<0>No papers match that search");
         }
         if (!empty($pids)) {
             $this->include_pids = array_flip($pids);
@@ -81,7 +83,8 @@ class Log_Page {
             }
         }
         if (empty($ids)) {
-            $this->ms->warning_at("u", "No matching users");
+            $this->ms->warning_at("u", "<0>User not found");
+
         }
         ksort($ids);
         $leg->set_user_ids(array_keys($ids));
@@ -107,7 +110,7 @@ class Log_Page {
     private function set_date() {
         $this->first_timestamp = $this->conf->parse_time($this->qreq->date);
         if ($this->first_timestamp === false) {
-            $this->ms->error_at("date", "Invalid date. Try format “YYYY-MM-DD HH:MM:SS”.");
+            $this->ms->error_at("date", "<0>Invalid date. Try format “YYYY-MM-DD HH:MM:SS”.");
         }
     }
 

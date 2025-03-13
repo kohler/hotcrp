@@ -307,7 +307,7 @@ class Mail_Page {
                 $this->recip->append_item_at("q", $mi);
             }
             if ($plist->is_empty()) {
-                $this->recip->warning_at("q", "<0>No papers match that search.");
+                $this->recip->warning_at("q", "<0>No papers match that search");
             }
         }
         echo '<div class="', $this->recip->control_class("q", "fx8 mt-1 d-flex"), '">';

@@ -905,6 +905,10 @@ class PaperOption implements JsonSerializable {
         ob_start();
         $pt = new PaperTable($user, new Qrequest("POST"), $prow);
         $ov = $prow->force_option($this);
+        $this->value_check($ov, $user);
+        foreach ($ov->message_list() as $mi) {
+            $pt->append_item($mi);
+        }
         $this->print_web_edit($pt, $ov, $ov);
         return ob_get_clean();
     }
