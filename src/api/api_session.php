@@ -200,14 +200,14 @@ class Session_API {
             }
         }
         if (empty($ml)) {
-            return JsonResult::make_ok()->set("_smsg", false);
+            return JsonResult::make_ok()->set("smsg", false)->set("_smsg" /* XXX */, false);
         }
         $smsg = $qreq->smsg ?? base48_encode(random_bytes(6));
         $qreq->open_session();
         $smsgs = $qreq->gsession("smsg") ?? [];
         $smsgs[] = [$smsg, Conf::$now, Ht::feedback_msg_content($ml)];
         $qreq->set_gsession("smsg", $smsgs);
-        return (new JsonResult(200))->set("_smsg", $smsg);
+        return (new JsonResult(200))->set("smsg", $smsg)->set("_smsg" /* XXX */, $smsg);
     }
 
     static function reauth(Contact $user, Qrequest $qreq) {

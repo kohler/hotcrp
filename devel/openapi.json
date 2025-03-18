@@ -4799,7 +4799,7 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "_smsg": {}
+                                        "smsg": {}
                                     }
                                 }
                             }

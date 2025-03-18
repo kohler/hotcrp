@@ -1654,11 +1654,10 @@ function redirect_with_messages(url, message_list) {
     $.post(hoturl("=api/stashmessages"),
         {message_list: JSON.stringify(message_list)},
         function (data) {
-            if (data
-                && data._smsg
-                && typeof data._smsg === "string"
-                && /^[a-zA-Z0-9_]*$/.test(data._smsg)) {
-                document.cookie = "hotcrp-smsg-".concat(data._smsg, "=", now_msec(), "; Max-Age=20", hoturl_cookie_params());
+            const smsg = data ? data.smsg || data._smsg /* XXX */ : false;
+            if (typeof smsg === "string"
+                && /^[a-zA-Z0-9_]*$/.test(smsg)) {
+                document.cookie = "hotcrp-smsg-".concat(smsg, "=", now_msec(), "; Max-Age=20", hoturl_cookie_params());
             }
             url === ".reload" ? location.replace(location.href) : (location = url);
         });

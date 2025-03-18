@@ -339,7 +339,7 @@
         "name": "stashmessages", "post": true,
         "function": "Session_API::stashmessages",
         "parameters": "=message_list",
-        "response": "_smsg"
+        "response": "smsg"
     },
     {
         "name": "submissionfieldlibrary", "get": true, "allow_if": "chair",

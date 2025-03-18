@@ -35,27 +35,7 @@ class API_Page {
                 $jr = MeetingTracker::track_api($user, $qreq);
             }
         }
-        $jr = $jr ?? self::status_api($fn, $user, $qreq);
-
-        // maybe save messages in session under a token
-        // XXX this is obsolete
-        if ($qreq->smsg
-            && !isset($jr->content["_smsg"])) {
-            $conf->feedback_msg(self::export_messages($jr));
-            $ml = $conf->take_saved_messages();
-            if (empty($ml)) {
-                $jr->content["_smsg"] = false;
-            } else {
-                $jr->content["_smsg"] = $smsg = base48_encode(random_bytes(6));
-                $qreq->open_session();
-                $smsgs = $qreq->gsession("smsg") ?? [];
-                array_unshift($ml, $smsg, Conf::$now);
-                $smsgs[] = $ml;
-                $qreq->set_gsession("smsg", $smsgs);
-            }
-        }
-
-        return $jr;
+        return $jr ?? self::status_api($fn, $user, $qreq);
     }
 
     /** @param string $fn
