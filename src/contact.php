@@ -1215,6 +1215,14 @@ class Contact implements JsonSerializable {
         return $this->_activated > 0 ? $this->_activated >> 8 : -1;
     }
 
+    /** @param Qrequest $qreq
+     * @param string $reason
+     * @return AuthenticationChecker */
+    function authentication_checker($qreq, $reason) {
+        $class = $this->conf->opt("authenticationCheckerClass") ?? "AuthenticationChecker";
+        return new $class($this, $qreq, $reason);
+    }
+
     /** @param int $flags
      * @return string */
     function name($flags = 0) {

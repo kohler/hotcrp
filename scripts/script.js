@@ -12036,7 +12036,13 @@ handle_ui.on("js-reauth", function (evt) {
     }
     const f = this;
     evt.preventDefault();
-    $.post(hoturl("=api/reauth?confirm=1"),
+    let url;
+    if (f.hasAttribute("data-session-index")) {
+        url = `${siteinfo.base}u/${f.getAttribute("data-session-index")}/api/reauth`;
+    } else {
+        url = `${siteinfo.site_relative}api/reauth`;
+    }
+    $.post(`${url}?confirm=1&post=${siteinfo.postvalue}`,
         $(form).serialize(),
         function (data) {
             if (data.ok) {

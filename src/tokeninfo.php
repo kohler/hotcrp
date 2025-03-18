@@ -250,20 +250,6 @@ class TokenInfo {
         return $this;
     }
 
-    /** @param null|string|associative-array|object $data
-     * @return $this
-     * @suppress PhanAccessReadOnlyProperty */
-    final function assign_data($data) {
-        if ($data !== null && !is_string($data)) {
-            $data = json_encode_db($data);
-        }
-        /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
-        $this->data = $data;
-        $this->_jdata = null;
-        $this->_changes &= ~self::CHF_DATA;
-        return $this;
-    }
-
     /** @param mysqli_result|Dbl_Result $result
      * @param bool $is_cdb
      * @return ?TokenInfo
@@ -475,6 +461,20 @@ class TokenInfo {
         if (json_encode_object_change($this->data, $this->_jdata, $data, $value, func_num_args())) {
             $this->_changes |= self::CHF_DATA;
         }
+        return $this;
+    }
+
+    /** @param null|string|associative-array|object $data
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    final function assign_data($data) {
+        if ($data !== null && !is_string($data)) {
+            $data = json_encode_db($data);
+        }
+        /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
+        $this->data = $data;
+        $this->_jdata = null;
+        $this->_changes &= ~self::CHF_DATA;
         return $this;
     }
 

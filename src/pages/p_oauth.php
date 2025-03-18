@@ -378,7 +378,7 @@ class OAuth_Page {
         $r = $this->success ? $this->success_redirect : $this->failure_redirect;
         if ($r) {
             $rnav = NavigationState::make_base($uri);
-            $uri = $rnav->resolve_within($r) ?? $uri;
+            $uri = $rnav->resolve_within($r, $this->site_uri) ?? $uri;
         }
         throw new Redirection($uri);
     }

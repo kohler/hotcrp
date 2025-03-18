@@ -211,8 +211,6 @@ class Session_API {
     }
 
     static function reauth(Contact $user, Qrequest $qreq) {
-        $class = $user->conf->opt("authenticationCheckerClass") ?? "AuthenticationChecker";
-        $ac = new $class($user, $qreq, $qreq->reason ?? "api");
-        return $ac->api();
+        return $user->authentication_checker($qreq, $qreq->reason ?? "api")->api();
     }
 }

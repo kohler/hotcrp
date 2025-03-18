@@ -5,10 +5,10 @@
 class AuthenticationChecker {
     /** @var Conf
      * @readonly */
-    protected $conf;
+    public $conf;
     /** @var Contact
      * @readonly */
-    protected $user;
+    public $user;
     /** @var Qrequest
      * @readonly */
     protected $qreq;
@@ -20,6 +20,12 @@ class AuthenticationChecker {
     public $max_age;
     /** @var ?bool */
     protected $ok;
+    /** @var ?string */
+    protected $actions_class;
+    /** @var ?list<string> */
+    protected $additional_actions;
+    /** @var ?string */
+    protected $redirect;
 
     function __construct(Contact $user, Qrequest $qreq, $reason) {
         $this->conf = $user->conf;
@@ -28,6 +34,50 @@ class AuthenticationChecker {
         $this->reason = $reason;
         $this->max_age = 600;
     }
+
+    /** @param string $url
+     * @return $this */
+    function set_redirect($url) {
+        $this->redirect = $url;
+        return $this;
+    }
+
+    /** @param ?string $class
+     * @return $this */
+    function set_actions_class($class) {
+        $this->actions_class = $class;
+        return $this;
+    }
+
+    /** @param string ...$actions
+     * @return $this */
+    function add_actions(...$actions) {
+        $this->additional_actions = $this->additional_actions ?? [];
+        array_push($this->additional_actions, ...$actions);
+        return $this;
+    }
+
+
+    /** @return string */
+    function redirect() {
+        if ($this->redirect !== null) {
+            return $this->redirect;
+        }
+        $nav = $this->qreq->navigation();
+        return $nav->site_path . $nav->raw_page . $nav->query;
+    }
+
+    /** @return string */
+    function actions_class() {
+        return $this->actions_class ?? "aax fullw mt-3";
+    }
+
+    /** @return list<string> */
+    function additional_actions() {
+        return $this->additional_actions ?? [];
+    }
+
+
 
     /** @return Generator<UserSecurityEvent> */
     function security_events() {
@@ -43,6 +93,11 @@ class AuthenticationChecker {
         if (!$this->user->has_email()) {
             return false;
         }
+        if ($this->user === $this->qreq->user()
+            && $this->user->is_bearer_authorized()) {
+            $this->ok = true;
+            return true;
+        }
         foreach ($this->security_events() as $use) {
             if ($use->reason === UserSecurityEvent::REASON_REAUTH
                 && $use->timestamp >= Conf::$now - $this->max_age) {
@@ -50,6 +105,12 @@ class AuthenticationChecker {
             }
         }
         return $this->ok;
+    }
+
+    protected function print_actions(...$actions) {
+        echo '<div class="', $this->actions_class(), '">',
+            join("", $actions), join("", $this->additional_actions()),
+            '</div>';
     }
 
     function print() {
@@ -71,12 +132,11 @@ class AuthenticationChecker {
                 htmlspecialchars($this->user->email), '</label>',
                 Ht::entry("email", $this->user->email, ["autocomplete" => "username", "class" => "ignore-diff", "readonly" => true, "form" => "f-reauth", "hidden" => true]),
                 Ht::password("password", "", ["size" => 52, "autocomplete" => "current-password", "class" => "ignore-diff", "id" => "k-reauth-password", "form" => "f-reauth", "required" => true]),
-                '</div><div class="mt-3">',
-                Ht::submit("Confirm account", [
-                    "class" => "btn-success w-100 flex-grow-1",
-                    "form" => "f-reauth"
-                ]),
                 '</div>';
+            $this->print_actions(Ht::submit("Confirm account", [
+                "class" => "btn-success",
+                "form" => "f-reauth"
+            ]));
             return true;
         }
 
@@ -91,12 +151,20 @@ class AuthenticationChecker {
         if (!$authi) {
             return false;
         }
-        echo Ht::submit("Confirm account", [
-            "class" => "btn-success w-100 flex-grow-1",
+        $url = $this->conf->hoturl("oauth", [
+            "reauth" => 1, "max_age" => $this->max_age, "redirect" => $this->redirect()
+        ], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);
+        if (($uindex = Contact::session_index_by_email($this->qreq, $this->user->email)) >= 0) {
+            $url = $this->qreq->navigation()->base_path . "u/{$uindex}/" . $url;
+        } else {
+            $url = $this->qreq->navigation()->site_path . $url;
+        }
+        $this->print_actions(Ht::submit("Confirm account", [
+            "class" => "btn-success",
             "form" => "f-reauth",
-            "formaction" => $this->conf->hoturl("oauth", ["reauth" => 1, "max_age" => $this->max_age, "redirect" => $this->conf->selfurl($this->qreq, null, Conf::HOTURL_SITEREL)]),
+            "formaction" => htmlspecialchars($url),
             "formmethod" => "post"
-        ]);
+        ]));
         return true;
     }
 

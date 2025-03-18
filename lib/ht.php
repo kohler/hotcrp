@@ -228,15 +228,15 @@ class Ht {
                 }
             }
 
-            $label = $info["label"];
+            $value = $info["value"] = $info["value"] ?? (string) $key;
+            $label = $info["label"] ?? $value;
             unset($info["label"], $info["type"], $info["optgroup"], $info["exclude"]);
-            $info["value"] = $info["value"] ?? (string) $key;
             if (!isset($first_value)) {
-                $first_value = $info["value"];
+                $first_value = $value;
             }
             if ($selected !== null
-                && strcmp($info["value"], $selected) === 0
-                && !$has_selected) {
+                && !$has_selected
+                && strcmp($selected, $value) === 0) {
                 $info["selected"] = true;
                 $has_selected = true;
             }

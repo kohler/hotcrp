@@ -649,9 +649,8 @@ class MessageSet {
     function control_class($field, $rest = "", $prefix = "has-") {
         if ($field && ($st = $this->errf[$field] ?? 0) !== 0) {
             return self::status_class($st, $rest, $prefix);
-        } else {
-            return $rest;
         }
+        return $rest;
     }
     /** @param ?int $st1
      * @param int $st2
@@ -662,9 +661,8 @@ class MessageSet {
             || ($st1 === 0 && $st2 !== self::INFORM)
             || ($st1 < $st2 && ($st2 !== 0 || $st1 === self::INFORM))) {
             return $st2;
-        } else {
-            return $st1;
         }
+        return $st1;
     }
     /** @param string $field_prefix
      * @param string $rest
