@@ -22,7 +22,7 @@ class TagAnno_Assignable extends Assignable {
      * @param ?string $infoJson */
     function __construct($tag, $annoId, $index = null, $heading = null, $infoJson = null) {
         $this->pid = 0;
-        $this->ltag = strtolower($tag);
+        $this->ltag = $tag !== null ? strtolower($tag) : null;
         $this->annoId = $annoId;
         $this->_tag = $tag;
         $this->_tagIndex = $index;

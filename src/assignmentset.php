@@ -805,6 +805,17 @@ abstract class AssignmentParser {
         return (string) $req["paper"];
     }
 
+    // Initialize parser for a request.
+    // The request passed to `set_req` is used for subsequent `user_universe`,
+    // `paper_filter`, `expand_*user`, `allow_user`, `allow_paper`, and `apply`
+    // calls. Returns false if `$req` is erroneous and should not be parsed
+    // further.
+    /** @param CsvRow $req
+     * @return bool */
+    function set_req($req, AssignmentState $state) {
+        return true;
+    }
+
     // Load relevant state from the database into `$state`.
     function load_state(AssignmentState $state) {
     }
@@ -1703,6 +1714,11 @@ class AssignmentSet {
 
         // reset search properties
         $this->astate->paper_exact_match = false;
+
+        // check request
+        if (!$aparser->set_req($req, $this->astate)) {
+            return;
+        }
 
         // parse paper
         $paper_universe = $aparser->paper_universe($req, $this->astate);

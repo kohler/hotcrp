@@ -500,6 +500,11 @@ class PaperInfoSet implements IteratorAggregate, Countable {
         return $this->by_pid[$pid] ?? null;
     }
     /** @param int $pid
+     * @return PaperInfo */
+    function cget($pid) {
+        return $this->checked_paper_by_id($pid);
+    }
+    /** @param int $pid
      * @return bool */
     function contains($pid) {
         return isset($this->by_pid[$pid]);

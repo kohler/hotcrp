@@ -4465,9 +4465,8 @@ class Conf {
         $v = $this->_paper_result($options, $user, true);
         if ($v instanceof PaperInfoSet) {
             return $v;
-        } else {
-            return PaperInfoSet::make_result($v, $user, $this);
         }
+        return PaperInfoSet::make_result($v, $user, $this);
     }
 
     /** @param int $pid

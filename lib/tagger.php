@@ -288,7 +288,7 @@ class TagAnno implements JsonSerializable {
     static function make_tag_fencepost($tag) {
         $ta = new TagAnno;
         $ta->tag = $tag;
-        $ta->tagIndex = $ta->endTagIndex = (float) TAG_INDEXBOUND;
+        $ta->tagIndex = $ta->endTagIndex = TAG_INDEXBOUND;
         $ta->heading = "Untagged";
         return $ta;
     }
@@ -299,7 +299,7 @@ class TagAnno implements JsonSerializable {
     }
     /** @return bool */
     function is_fencepost() {
-        return $this->tagIndex >= (float) TAG_INDEXBOUND;
+        return $this->tagIndex >= TAG_INDEXBOUND;
     }
     private function decode_props() {
         $j = json_decode($this->infoJson ?? "{}");
@@ -1633,9 +1633,8 @@ class Tagger {
             if (preg_match('/\A([-a-zA-Z0-9!@*_:.\/\#=]+)[\s,]+\S+/', $tag, $m)
                 && $this->check($m[1], $flags)) {
                 return $this->set_error_code(self::EMULTIPLE, $tag);
-            } else {
-                return $this->set_error_code(self::EINVAL, $tag);
             }
+            return $this->set_error_code(self::EINVAL, $tag);
         }
         if (($flags & self::ALLOWSTAR) === 0
             && strpos($tag, "*") !== false) {
