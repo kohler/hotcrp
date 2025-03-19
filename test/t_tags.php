@@ -9,10 +9,18 @@ class Tags_Tester {
     /** @var Contact
      * @readonly */
     public $u_chair;
+    /** @var Contact
+     * @readonly */
+    public $u_varghese;
+    /** @var Contact
+     * @readonly */
+    public $u_floyd;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
         $this->u_chair = $conf->checked_user_by_email("chair@_.com");
+        $this->u_varghese = $conf->checked_user_by_email("varghese@ccrc.wustl.edu");
+        $this->u_floyd = $conf->checked_user_by_email("floyd@ee.lbl.gov");
     }
 
     function test_mutual_automatic_search() {
@@ -224,7 +232,8 @@ class Tags_Tester {
         $dt->invalidate_order_anno();
         xassert($dt->has_order_anno());
 
-        $sv = [[-1, null], [0, 1], [1, 1], [10, 4], [10, 4], [12, 4], [30, 5], [31, 6], [32, 7], [33, 7], [49, 7], [50, 8], [60, 8]];
+        $sv = [[-1, null], [0, 1], [1, 1], [10, 4], [10, 4], [12, 4], [30, 5],
+               [31, 6], [32, 7], [33, 7], [49, 7], [50, 8], [60, 8]];
         foreach ($sv as $m) {
             xassert_eqq($dt->order_anno_search($m[0])->annoId ?? null, $m[1]);
         }
@@ -252,20 +261,21 @@ class Tags_Tester {
         $dtt->invalidate_order_anno();
         xassert(!$dtt->has_order_anno());
 
-        xassert_assign($this->u_chair, "action,paper,tag,new_tag\ncopytag,all,t,tt\n");
+        xassert_assign($this->u_chair, "action,paper,tag,new_tag,tag_anno\ncopytag,all,t,tt,true\n");
 
         $dt->invalidate_order_anno();
         xassert($dt->has_order_anno());
         $dtt->invalidate_order_anno();
         xassert($dtt->has_order_anno());
 
-        $sv = [[-1, null], [0, 1], [1, 1], [10, 4], [10, 4], [12, 4], [30, 5], [31, 6], [32, 7], [33, 7], [49, 7], [50, 8], [60, 8]];
+        $sv = [[-1, null], [0, 1], [1, 1], [10, 4], [10, 4], [12, 4], [30, 5],
+               [31, 6], [32, 7], [33, 7], [49, 7], [50, 8], [60, 8]];
         foreach ($sv as $m) {
             xassert_eqq($dt->order_anno_search($m[0])->annoId ?? null, $m[1]);
             xassert_eqq($dtt->order_anno_search($m[0])->annoId ?? null, $m[1]);
         }
 
-        xassert_assign($this->u_chair, "action,paper,tag,new_tag\nmovetag,all,tt,tu\n");
+        xassert_assign($this->u_chair, "action,paper,tag,new_tag,tag_anno\nmovetag,#tt,tt,tu,true\n");
 
         $dtu = $this->conf->tags()->ensure("tu");
         $dt->invalidate_order_anno();
@@ -275,7 +285,8 @@ class Tags_Tester {
         $dtu->invalidate_order_anno();
         xassert($dtu->has_order_anno());
 
-        $sv = [[-1, null], [0, 1], [1, 1], [10, 4], [10, 4], [12, 4], [30, 5], [31, 6], [32, 7], [33, 7], [49, 7], [50, 8], [60, 8]];
+        $sv = [[-1, null], [0, 1], [1, 1], [10, 4], [10, 4], [12, 4], [30, 5],
+               [31, 6], [32, 7], [33, 7], [49, 7], [50, 8], [60, 8]];
         foreach ($sv as $m) {
             xassert_eqq($dt->order_anno_search($m[0])->annoId ?? null, $m[1]);
             xassert_eqq($dtu->order_anno_search($m[0])->annoId ?? null, $m[1]);
@@ -286,9 +297,8 @@ class Tags_Tester {
 
     function test_next() {
         $root = $this->conf->root_user();
-        $u_varghese = $this->conf->checked_user_by_email("varghese@ccrc.wustl.edu");
         $p4 = $this->conf->checked_paper_by_id(4);
-        xassert(!$u_varghese->can_view_tags($p4));
+        xassert(!$this->u_varghese->can_view_tags($p4));
         xassert_search_all($root, "#order", "");
 
         // create order
@@ -322,7 +332,7 @@ class Tags_Tester {
         xassert_assign($root, "action,paper,tag\ntag,5-,order#clear\n");
         $p8->load_tags();
         xassert_eqq($p8->tag_value("order"), null);
-        xassert_assign($u_varghese, "action,paper,tag\nseqnexttag,5,order\n");
+        xassert_assign($this->u_varghese, "action,paper,tag\nseqnexttag,5,order\n");
         $p5->load_tags();
         xassert_eqq($p5->tag_value("order"), 4.0);
 
@@ -330,6 +340,69 @@ class Tags_Tester {
         xassert_assign($root, "action,paper,tag\ntag,7,order#seqnext\n");
         $p7 = $this->conf->checked_paper_by_id(7);
         xassert_eqq($p7->tag_value("order"), 5.0);
+    }
+
+    function test_copy_tag_pattern() {
+        xassert_search_all($this->u_chair, "#fart", "1 8 2 3 6 5 4 7");
+        xassert_search_all($this->u_chair, "#xfart", "");
+        xassert_assign($this->u_chair, "action,paper,tag,new_tag\ncopytag,all,*art,x*art\n");
+        xassert_search_all($this->u_chair, "#fart", "1 8 2 3 6 5 4 7");
+        xassert_search_all($this->u_chair, "#xfart", "1 8 2 3 6 5 4 7");
+
+        xassert_assign($this->u_chair, "action,paper,tag,new_tag\ncopytag,all,11~*,x*\n");
+
+        xassert_assign($this->u_varghese, "action,paper,tag\ntag,5,xnone#0\ntag,10,xfun#1\ntag,10,fun#3\ntag,11,xfun#4\ntag,11,fun#1\ntag,12,xfun#100\n");
+
+        // This assignment would create an invalid tag (`none`) so should fail
+        xassert_assign_fail($this->u_varghese, "action,paper,tag,new_tag,tag_value\ncopytag,5 10 11 12,x*,*,max\n");
+
+        // This one succeeds
+        xassert_assign($this->u_varghese, "action,paper,tag,new_tag,tag_value\ncopytag,10 11 12,x*,*,max\n");
+        $pset = $this->conf->paper_set(["paperId" => [5, 10, 11, 12]]);
+        xassert_eqq($pset->cget(5)->tag_value("xnone"), 0.0);
+        xassert_eqq($pset->cget(5)->tag_value("none"), null);
+        xassert_eqq($pset->cget(10)->tag_value("xfun"), 1.0);
+        xassert_eqq($pset->cget(10)->tag_value("fun"), 3.0);
+        xassert_eqq($pset->cget(11)->tag_value("xfun"), 4.0);
+        xassert_eqq($pset->cget(11)->tag_value("fun"), 4.0);
+        xassert_eqq($pset->cget(12)->tag_value("xfun"), 100.0);
+        xassert_eqq($pset->cget(12)->tag_value("fun"), 100.0);
+    }
+
+    function test_move_private_tags() {
+        xassert_assign($this->u_varghese, "action,paper,tag\ntag,1 2 3,~pttest\n");
+        xassert_assign($this->u_floyd, "action,paper,tag\ntag,3 4 5,~pttest#1\n");
+        $vcid = $this->u_varghese->contactId;
+        $fcid = $this->u_floyd->contactId;
+
+        xassert_assign($this->u_chair, "action,paper,tag,new_tag,tag_value\ncopytag,#{$vcid}~*,{$vcid}~*,{$fcid}~*,max\n");
+        $pset = $this->conf->paper_set(["paperId" => [1, 2, 3, 4, 5]]);
+        xassert_eqq($pset->cget(1)->tag_value("{$vcid}~pttest"), 0.0);
+        xassert_eqq($pset->cget(2)->tag_value("{$vcid}~pttest"), 0.0);
+        xassert_eqq($pset->cget(3)->tag_value("{$vcid}~pttest"), 0.0);
+        xassert_eqq($pset->cget(4)->tag_value("{$vcid}~pttest"), null);
+        xassert_eqq($pset->cget(5)->tag_value("{$vcid}~pttest"), null);
+        xassert_eqq($pset->cget(1)->tag_value("{$fcid}~pttest"), 0.0);
+        xassert_eqq($pset->cget(2)->tag_value("{$fcid}~pttest"), 0.0);
+        xassert_eqq($pset->cget(3)->tag_value("{$fcid}~pttest"), 1.0);
+        xassert_eqq($pset->cget(4)->tag_value("{$fcid}~pttest"), 1.0);
+        xassert_eqq($pset->cget(5)->tag_value("{$fcid}~pttest"), 1.0);
+
+        xassert_assign($this->u_chair, "action,paper,tag,new_tag,tag_value\nmovetag,2 3,{$vcid}~*,{$fcid}~*,min\n");
+        $pset = $this->conf->paper_set(["paperId" => [1, 2, 3, 4, 5]]);
+        xassert_eqq($pset->cget(1)->tag_value("{$vcid}~pttest"), 0.0);
+        xassert_eqq($pset->cget(2)->tag_value("{$vcid}~pttest"), null);
+        xassert_eqq($pset->cget(3)->tag_value("{$vcid}~pttest"), null);
+        xassert_eqq($pset->cget(4)->tag_value("{$vcid}~pttest"), null);
+        xassert_eqq($pset->cget(5)->tag_value("{$vcid}~pttest"), null);
+        xassert_eqq($pset->cget(1)->tag_value("{$fcid}~pttest"), 0.0);
+        xassert_eqq($pset->cget(2)->tag_value("{$fcid}~pttest"), 0.0);
+        xassert_eqq($pset->cget(3)->tag_value("{$fcid}~pttest"), 0.0);
+        xassert_eqq($pset->cget(4)->tag_value("{$fcid}~pttest"), 1.0);
+        xassert_eqq($pset->cget(5)->tag_value("{$fcid}~pttest"), 1.0);
+
+        // invalid patterns are caught
+        xassert_assign_fail($this->u_chair, "action,paper,tag,new_tag,tag_value\ncopytag,all,{$vcid}*,{$fcid}*,max\n");
     }
 
     function test_track_data() {

@@ -1722,13 +1722,13 @@ class AssignmentSet {
 
         // parse paper
         $paper_universe = $aparser->paper_universe($req, $this->astate);
-        if ($paper_universe === "none") {
-            $pids = [];
-        } else {
+        if ($paper_universe !== "none") {
             $pids = $this->collect_papers((string) $req["paper"], true);
-            if (empty($pids)) {
-                return;
-            }
+        } else {
+            $pids = [];
+        }
+        if (empty($pids) && $paper_universe === "req") {
+            return;
         }
 
         // load state

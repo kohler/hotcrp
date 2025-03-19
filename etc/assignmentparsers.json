@@ -205,16 +205,16 @@
     {
         "name": "copytag", "parser_class": "CopyTag_AssignmentParser",
         "move": false,
-        "parameters": ["tag", "new_tag"], "group": "tag",
+        "parameters": ["tag", "new_tag", "?tag_value", "?tag_anno"], "group": "tag",
         "description": "Copy tag"
     },
     {
-        "name": "renametag", "parser_class": "CopyTag_AssignmentParser",
+        "name": "movetag", "parser_class": "CopyTag_AssignmentParser",
         "move": true,
-        "parameters": ["tag", "new_tag"], "group": "tag",
+        "parameters": ["tag", "new_tag", "?tag_value", "?tag_anno"], "group": "tag",
         "description": "Rename tag"
     },
-    {   "name": "movetag", "alias": "renametag"   },
+    {   "name": "renametag", "alias": "movetag"   },
     {
         "name": "pref", "parser_class": "Preference_AssignmentParser",
         "parameters": ["user", "preference", "?expertise"],
