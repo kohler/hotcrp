@@ -411,6 +411,9 @@ class PaperConflictInfo {
 }
 
 class PaperInfoSet implements IteratorAggregate, Countable {
+    /** @var Conf
+     * @readonly */
+    public $conf;
     /** @var list<PaperInfo> */
     private $prows = [];
     /** @var array<int,PaperInfo> */
@@ -420,10 +423,14 @@ class PaperInfoSet implements IteratorAggregate, Countable {
     /** @var bool */
     public $prefetched_conflict_users = false;
 
+    /** @param Conf $conf */
+    function __construct($conf) {
+        $this->conf = $conf;
+    }
     /** @param PaperInfo $row
      * @return PaperInfoSet */
     static function make_singleton($row) {
-        $set = new PaperInfoSet;
+        $set = new PaperInfoSet($row->conf);
         $set->add_paper($row);
         return $set;
     }
@@ -432,18 +439,17 @@ class PaperInfoSet implements IteratorAggregate, Countable {
      * @param ?Conf $conf
      * @return PaperInfoSet */
     static function make_result($result, $user, $conf = null) {
-        $set = new PaperInfoSet;
-        $set->add_result($result, $user, $conf);
+        $set = new PaperInfoSet($conf);
+        $set->add_result($result, $user);
         return $set;
     }
     function add_paper(PaperInfo $prow) {
         $this->prows[] = $this->by_pid[$prow->paperId] = $prow;
     }
     /** @param Dbl_Result $result
-     * @param ?Contact $user
-     * @param ?Conf $conf */
-    function add_result($result, $user, $conf = null) {
-        while (PaperInfo::fetch($result, $user, $conf, $this)) {
+     * @param ?Contact $user */
+    function add_result($result, $user) {
+        while (PaperInfo::fetch($result, $user, $this->conf, $this)) {
         }
         Dbl::free($result);
     }
@@ -512,7 +518,7 @@ class PaperInfoSet implements IteratorAggregate, Countable {
     /** @param callable(PaperInfo):bool $func
      * @return PaperInfoSet|Iterable<PaperInfo> */
     function filter($func) {
-        $next_set = new PaperInfoSet;
+        $next_set = new PaperInfoSet($this->conf);
         foreach ($this->prows as $prow) {
             if (call_user_func($func, $prow))
                 $next_set->add_paper($prow);
@@ -800,7 +806,7 @@ class PaperInfo {
     private function __construct(Conf $conf, $paperset = null) {
         $this->conf = $conf;
         $this->paperXid = ++self::$next_uid;
-        $this->_row_set = $paperset ?? new PaperInfoSet;
+        $this->_row_set = $paperset ?? new PaperInfoSet($conf);
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
@@ -1921,9 +1927,8 @@ class PaperInfo {
         if ($this->paperTags !== ""
             && ($pos = stripos($this->paperTags, " {$tag}#")) !== false) {
             return (float) substr($this->paperTags, $pos + strlen($tag) + 2);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return string */

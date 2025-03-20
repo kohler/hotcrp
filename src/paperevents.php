@@ -72,7 +72,7 @@ class PaperEvents {
             || ($user->is_track_manager()
                 && ($user->defaultWatch & Contact::WATCH_REVIEW_MANAGED) != 0)) {
             $this->all_papers = true;
-            $this->prows = new PaperInfoSet;
+            $this->prows = new PaperInfoSet($this->conf);
         } else {
             // Papers (perhaps limited to those being watched) whose reviews
             // are viewable.

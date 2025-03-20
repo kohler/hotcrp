@@ -2945,7 +2945,11 @@ class Contact implements JsonSerializable {
     function authored_papers() {
         $this->check_rights_version();
         if ($this->_authored_papers === null) {
-            $this->_authored_papers = $this->is_author() ? $this->paper_set(["author" => true, "tags" => true]) : new PaperInfoSet;
+            if ($this->is_author()) {
+                $this->_authored_papers = $this->paper_set(["author" => true, "tags" => true]);
+            } else {
+                $this->_authored_papers = new PaperInfoSet($this->conf);
+            }
         }
         return $this->_authored_papers;
     }
