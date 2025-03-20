@@ -203,7 +203,7 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
         }
         if ($this->move
             && ($this->pattern === null
-                || !$state->conf->tagmap()->is_automatic($tag))) {
+                || !$state->conf->tags()->is_automatic($tag))) {
             foreach ($ares as $taa) {
                 $x = $state->remove($taa);
             }
