@@ -1,13 +1,11 @@
 <?php
 // t_fmt.php -- HotCRP tests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Fmt_Tester {
-    function test_1() {
+    function test_percent_templates() {
         $ms = new Fmt;
         $ms->addj(["Hello", "Bonjour"]);
-        $ms->addj(["%d friend", "%d amis", ["$1 ≠ 1"]]);
-        $ms->addj(["%d friend", "%d ami"]);
         $ms->addj(["ax", "a"]);
         $ms->addj(["ax", "b"]);
         $ms->addj(["bx", "a", 2]);
@@ -17,23 +15,17 @@ class Fmt_Tester {
         $ms->addj(["fart", "fart example C"]);
         $ms->addj(["in" => "fox-saying", "out" => "What the fox said"]);
         $ms->addj(["in" => "fox-saying", "out" => "What the {fox} said", "require" => ["{fox}"]]);
-        $ms->addj(["in" => "butt", "out" => "%1\$s", "template" => true]);
+        $ms->addj(["in" => "butt", "out" => "Ass", "template" => true]);
         $ms->define_override("test103", "%BUTT% %% %s %BU%%MAN%%BUTT%");
         xassert_eqq($ms->_("Hello"), "Bonjour");
-        xassert_eqq($ms->_("%d friend", 1), "1 ami");
-        xassert_eqq($ms->_("%d friend", 0), "0 amis");
-        xassert_eqq($ms->_("%d friend", 2), "2 amis");
-        xassert_eqq($ms->_("%1[foo]\$s friend", ["foo" => 3]), "3 friend");
         xassert_eqq($ms->_("ax"), "b");
         xassert_eqq($ms->_("bx"), "a");
-        xassert_eqq($ms->_("%xOOB%x friend", 10, 11), "aOOBb friend");
-        xassert_eqq($ms->_("%xOOB%x%% friend", 10, 11), "aOOBb% friend");
         xassert_eqq($ms->_("fart"), "fart example C");
         xassert_eqq($ms->_("fart", "bobby"), "fart example B");
         xassert_eqq($ms->_("fart", "bob"), "fart example A");
         xassert_eqq($ms->_i("fox-saying"), "What the fox said");
         xassert_eqq($ms->_i("fox-saying", new FmtArg("fox", "Animal")), "What the Animal said");
-        xassert_eqq($ms->_i("test103", "Ass"), "Ass %% %s %BU%%MAN%Ass");
+        xassert_eqq($ms->_i("test103"), "Ass %% %s %BU%%MAN%Ass");
 
         $ms->addj(["in" => "butt", "out" => "normal butt"]);
         $ms->addj(["in" => "butt", "out" => "fat butt", "require" => ["$1[fat]"]]);
@@ -84,6 +76,53 @@ class Fmt_Tester {
         xassert_eqq($ms->_("{0[foo]:list} friend", ["foo" => ["a", "b"]]), "a and b friend");
         xassert_eqq($ms->_("{0[foo]", ["foo" => "a"]), "{0[foo]");
         xassert_eqq($ms->_("{ hello {{", ["foo" => "a"]), "{ hello {");
+    }
+
+    function test_2() {
+        $ms = new Fmt;
+        $ms->addj(["Hello", "Bonjour"]);
+        $ms->addj(["{:d} friend", "{:d} amis", ["$1 ≠ 1"]]);
+        $ms->addj(["{:d} friend", "{:d} ami"]);
+        $ms->addj(["ax", "a"]);
+        $ms->addj(["ax", "b"]);
+        $ms->addj(["bx", "a", 2]);
+        $ms->addj(["bx", "b"]);
+        $ms->addj(["fart", "fart example A", ["{0}=bob", "{0}=bob"]]);
+        $ms->addj(["fart", "fart example B", ["{0}^=bob"]]);
+        $ms->addj(["fart", "fart example C"]);
+        $ms->addj(["in" => "fox-saying", "out" => "What the fox said"]);
+        $ms->addj(["in" => "fox-saying", "out" => "What the {fox} said", "require" => ["{fox}"]]);
+        $ms->addj(["in" => "butt", "out" => "{x}", "template" => true]);
+        $ms->define_override("test103", "{butt} %% {} {BU}{MAN}{butt}");
+        xassert_eqq($ms->_("Hello"), "Bonjour");
+        xassert_eqq($ms->_("{:d} friend", 1), "1 ami");
+        xassert_eqq($ms->_("{:d} friend", 0), "0 amis");
+        xassert_eqq($ms->_("{:d} friend", 2), "2 amis");
+        xassert_eqq($ms->_("{0[foo]} friend", ["foo" => 3]), "3 friend");
+        xassert_eqq($ms->_("ax"), "b");
+        xassert_eqq($ms->_("bx"), "a");
+        xassert_eqq($ms->_("{:x}OOB{:x} friend", 10, 11), "aOOBb friend");
+        xassert_eqq($ms->_("{:x}OOB{:x}% friend", 10, 11), "aOOBb% friend");
+        xassert_eqq($ms->_("fart"), "fart example C");
+        xassert_eqq($ms->_("fart", "bobby"), "fart example B");
+        xassert_eqq($ms->_("fart", "bob"), "fart example A");
+        xassert_eqq($ms->_i("fox-saying"), "What the fox said");
+        xassert_eqq($ms->_i("fox-saying", new FmtArg("fox", "Animal")), "What the Animal said");
+        xassert_eqq($ms->_i("test103", new FmtArg("x", "Ass")), "Ass %% {} {BU}{MAN}Ass");
+
+        $ms->addj(["in" => "butt", "out" => "normal butt"]);
+        $ms->addj(["in" => "butt", "out" => "fat butt", "require" => ["{0[fat]}"]]);
+        $ms->addj(["in" => "butt", "out" => "two butts", "require" => ["{0[count]}>1"], "priority" => 1]);
+        $ms->addj(["in" => "butt", "out" => "three butts", "require" => ["{0[count]}>2"], "priority" => 2]);
+        xassert_eqq($ms->_("butt"), "normal butt");
+        xassert_eqq($ms->_("butt", []), "normal butt");
+        xassert_eqq($ms->_("butt", ["thin" => true]), "normal butt");
+        xassert_eqq($ms->_("butt", ["fat" => true]), "fat butt");
+        xassert_eqq($ms->_("butt", ["fat" => false]), "normal butt");
+        xassert_eqq($ms->_("butt", ["fat" => true, "count" => 2]), "two butts");
+        xassert_eqq($ms->_("butt", ["fat" => false, "count" => 2]), "two butts");
+        xassert_eqq($ms->_("butt", ["fat" => true, "count" => 3]), "three butts");
+        xassert_eqq($ms->_("butt", ["fat" => false, "count" => 2.1]), "three butts");
     }
 
     function test_ftext() {
@@ -192,5 +231,12 @@ class Fmt_Tester {
         $ms = new Fmt;
         xassert_eqq($ms->_("{:plural Hello}", 0), "Hellos");
         xassert_eqq($ms->_("{:plural Hello}", 1), "Hello");
+    }
+
+    function test_plural_template() {
+        $ms = new Fmt;
+        $ms->define_template("submission", "paper");
+        xassert_eqq($ms->_("{:plural {submission}}", 0), "papers");
+        xassert_eqq($ms->_("{:plural {submission}}", 1), "paper");
     }
 }

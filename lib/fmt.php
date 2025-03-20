@@ -143,16 +143,17 @@ class FmtItem {
 }
 
 class FmtContext {
-    /** @var ?Conf */
-    public $conf;
+    /** @var Fmt
+     * @readonly */
+    public $fmt;
+    /** @var ?string */
+    public $context;
     /** @var list */
     public $args;
     /** @var int */
     public $argnum = 0;
-    /** @var ?string */
-    public $context;
-    /** @var -1|0|1 */
-    public $expand = 0;
+    /** @var bool */
+    private $need_format = true;
     /** @var ?int */
     public $format;
     /** @var ?int */
@@ -160,17 +161,20 @@ class FmtContext {
     /** @var ?string */
     public $replacement;
 
-    /** @param ?Conf $conf
-     * @param list $args
+    /** @param Fmt $fmt
      * @param ?string $context
-     * @param -1|0|1 $expand
-     * @param ?int $format */
-    function __construct($conf, $args, $context, $expand, $format) {
-        $this->conf = $conf;
-        $this->args = $args;
+     * @param list $args */
+    function __construct($fmt, $context, $args) {
+        $this->fmt = $fmt;
         $this->context = $context;
-        $this->expand = $expand;
+        $this->args = $args;
+    }
+
+    /** @param ?int $format
+     * @return $this */
+    function set_format($format) {
         $this->format = $format;
+        return $this;
     }
 
     /** @param string $detail
@@ -183,8 +187,9 @@ class FmtContext {
     /** @param string $fspec
      * @param ?int $vformat
      * @param array $value
+     * @param -1|0|1 $expansion
      * @return array{?int,mixed} */
-    private function apply_fmtspec_array($fspec, $vformat, $value) {
+    private function apply_fmtspec_array($fspec, $vformat, $value, $expansion) {
         if ($fspec === ":list") {
             return [$vformat, commajoin($value)];
         } else if ($fspec === ":lcrestlist") {
@@ -222,6 +227,7 @@ class FmtContext {
             unset($x);
             return [$vformat, commajoin($a)];
         } else if (str_starts_with($fspec, ":plural ")) {
+            $word = $this->expand(ltrim(substr($fspec, 8)), $expansion);
             return [$vformat, plural_word(count($value), substr($fspec, 8))];
         } else {
             return $this->complain("{$fspec} does not expect array");
@@ -231,10 +237,11 @@ class FmtContext {
     /** @param string $fspec
      * @param ?int $vformat
      * @param mixed $value
+     * @param -1|0|1 $expansion
      * @return array{?int,mixed} */
-    function apply_fmtspec($fspec, $vformat, $value) {
+    function apply_fmtspec($fspec, $vformat, $value, $expansion) {
         if (is_array($value)) {
-            return $this->apply_fmtspec_array($fspec, $vformat, $value);
+            return $this->apply_fmtspec_array($fspec, $vformat, $value, $expansion);
         }
 
         if ($fspec === ":time" || $fspec === ":expandedtime") {
@@ -243,11 +250,11 @@ class FmtContext {
             } else if (!is_int($value)) {
                 return $this->complain("unexpected value type for `{$fspec}`");
             }
-            if ($this->conf) {
+            if ($this->fmt->conf) {
                 if ($fspec === ":expandedtime" && ($this->format ?? 5) === 5) {
-                    return [5, $this->conf->unparse_time_with_local_span($value)];
+                    return [5, $this->fmt->conf->unparse_time_with_local_span($value)];
                 } else {
-                    return [0, $this->conf->unparse_time_long($value)];
+                    return [0, $this->fmt->conf->unparse_time_long($value)];
                 }
             } else if ($value <= 0) {
                 return [0, "N/A"];
@@ -278,16 +285,219 @@ class FmtContext {
             }
             return [$vformat, $value];
         } else if (str_starts_with($fspec, ":plural ")) {
-            return [$vformat, plural_word($value, substr($fspec, 8))];
+            $word = $this->expand(ltrim(substr($fspec, 8)), $expansion);
+            return [$vformat, plural_word($value, $word)];
         } else if (preg_match('/\A:[-+]?\d*(?:|\.\d+)[difgGxX]\z/', $fspec)) {
-            if (is_numeric($value)) {
-                return [$vformat, sprintf("%" . substr($fspec, 1), $value)];
-            } else {
+            if (!is_numeric($value)) {
                 return $this->complain("{$fspec} expected number");
             }
+            return [$vformat, sprintf("%" . substr($fspec, 1), $value)];
         } else {
             return $this->complain("unknown format specification {$fspec}");
         }
+    }
+
+    /** @param string $s
+     * @param -1|0|1 $expansion
+     * @return string */
+    function expand($s, $expansion = 0) {
+        if ($s === null || $s === false || $s === "" || $expansion === -1) {
+            return $s;
+        }
+
+        $pos = $bpos = 0;
+        $len = strlen($s);
+        $ppos = $lpos = $rpos = -1;
+        $t = "";
+
+        while (true) {
+            if ($ppos < $pos) {
+                $ppos = strpos($s, "%", $pos);
+                $ppos = $ppos !== false ? $ppos : $len;
+            }
+            if ($lpos < $pos) {
+                $lpos = strpos($s, "{", $pos);
+                $lpos = $lpos !== false ? $lpos : $len;
+            }
+            if ($rpos < $pos) {
+                $rpos = strpos($s, "}", $pos);
+                $rpos = $rpos !== false ? $rpos : $len;
+            }
+
+            $pos = min($ppos, $lpos, $rpos);
+            if ($pos === $len) {
+                $t .= (string) substr($s, $bpos);
+                break;
+            }
+
+            $x = null;
+            $npos = $pos + 1;
+            if ($npos < $len && $s[$pos] === $s[$npos]) {
+                if ($expansion === 0) {
+                    $x = $s[$pos];
+                    ++$npos;
+                }
+            } else {
+                if ($this->need_format) {
+                    $this->format = Ftext::format($s) ?? $this->format;
+                    $this->need_format = false;
+                }
+                if ($pos === $ppos) {
+                    list($npos, $x) = $this->expand_percent($s, $pos, $expansion);
+                } else if ($pos === $lpos) {
+                    list($npos, $x) = $this->expand_brace($s, $pos, $expansion);
+                }
+            }
+
+            if ($x !== null) {
+                $t .= substr($s, $bpos, $pos - $bpos) . $x;
+                $bpos = $npos;
+            }
+            $pos = $npos;
+        }
+
+        return $t;
+    }
+
+    /** @param string $s
+     * @param int $pos
+     * @param -1|0|1 $expansion
+     * @return array{int,?string} */
+    private function expand_percent($s, $pos, $expansion) {
+        if (preg_match('/%((?!\d)\w+)%/A', $s, $m, 0, $pos)) {
+            if (($fa = Fmt::find_arg($this->args, strtolower($m[1])))) {
+                return [$pos + strlen($m[0]), $fa->convert_to($this->format)];
+            } else if (($imt = $this->fmt->find($this->context, strtolower($m[1]), [], null, 2))
+                       && $imt->template) {
+                return [$pos + strlen($m[0]), $this->expand($imt->out, $imt->expand)];
+            }
+        }
+
+        if ($expansion === 0
+            && count($this->args) > 0
+            && preg_match('/%(?:(\d+)(\[[^\[\]\$]*\]|)\$|)(\#[AON]?|)(\d*(?:\.\d+|))([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
+            error_log("Old percent specification in Fmt: " . debug_string_backtrace());
+            $argi = $m[1] ? +$m[1] : ++$this->argnum;
+            if (($fa = Fmt::find_arg($this->args, $argi - 1))) {
+                $val = $fa->convert_to($this->format);
+                if ($m[2]) {
+                    assert(is_array($val));
+                    $val = $val[substr($m[2], 1, -1)] ?? null;
+                }
+                if ($m[3] && is_array($val)) {
+                    if ($m[3] === "#N") {
+                        $val = numrangejoin($val);
+                    } else if ($m[3] === "#O") {
+                        $val = commajoin($val, "or");
+                    } else {
+                        $val = commajoin($val, "and");
+                    }
+                }
+                $conv = $m[4];
+                if ($m[5] === "H") {
+                    $x = htmlspecialchars($conv === "" ? $val : sprintf("%{$conv}s", $val));
+                } else if ($m[5] === "U") {
+                    $x = urlencode($conv === "" ? $val : sprintf("%{$conv}s", $val));
+                } else if ($m[5] === "s" && $conv === "") {
+                    $x = (string) $val;
+                } else {
+                    $x = sprintf("%{$conv}{$m[5]}", $val);
+                }
+                return [$pos + strlen($m[0]), $x];
+            }
+        }
+
+        return [$pos + 1, null];
+    }
+
+    static private function skip_fmtspec($s, $pos, &$fmtspecs) {
+        $br = 0;
+        $len = strlen($s);
+        $pos0 = $pos;
+        ++$pos;
+        while ($pos !== $len) {
+            $ch = $s[$pos];
+            if ($ch === "{") {
+                ++$br;
+            } else if ($ch === "}") {
+                if ($br === 0) {
+                    $fmtspecs[] = substr($s, $pos0, $pos - $pos0);
+                    return $pos + 1;
+                }
+                --$br;
+            } else if ($ch === ":") {
+                if ($pos === $pos0 + 1) {
+                    return false;
+                }
+                $fmtspecs[] = substr($s, $pos0, $pos - $pos0);
+                $pos0 = $pos;
+            }
+            ++$pos;
+        }
+        return false;
+    }
+
+    /** @param string $s
+     * @param int $pos
+     * @param -1|0|1 $expansion
+     * @return array{int,?string} */
+    private function expand_brace($s, $pos, $expansion) {
+        if (!preg_match('/\{(|0|[1-9]\d*+|[a-zA-Z_]\w*+)(|\[[^\]]*+\])(:(?!\})|\})/A', $s, $m, 0, $pos)
+            || ($m[1] === "" && ($this->argnum === null || $m[2] !== ""))
+            || ($expansion !== 0 && ($m[1] === "" || ctype_digit($m[1])))) {
+            return [$pos + 1, null];
+        }
+        $fmtspecs = [];
+        $epos = $pos + strlen($m[0]);
+        if ($m[3] === ":") {
+            $epos = self::skip_fmtspec($s, $epos - 1, $fmtspecs);
+            if ($epos === false) {
+                return [$pos + 1, null];
+            }
+        }
+        if ($m[1] === "") {
+            $fa = Fmt::find_arg($this->args, $this->argnum);
+            ++$this->argnum;
+        } else if (ctype_digit($m[1])) {
+            $fa = Fmt::find_arg($this->args, intval($m[1]));
+        } else {
+            $fa = Fmt::find_arg($this->args, $m[1]);
+        }
+        if (!$fa
+            && ($imt = $this->fmt->find($this->context, $m[1], [], null, 2))
+            && $imt->template) {
+            list($format, $out) = Ftext::parse($this->expand($imt->out, $imt->expand));
+            $fa = new FmtArg("", $out, $format);
+        }
+        if (!$fa) {
+            return [$pos + 1, null];
+        }
+        if ($m[2]) {
+            assert(is_array($fa->value));
+            $value = $fa->value[substr($m[2], 1, -1)] ?? null;
+        } else {
+            $value = $fa->value;
+        }
+        $vformat = $fa->format;
+
+        $this->pos = $pos;
+        if ($this->format === null && $pos !== 0) {
+            $this->format = Ftext::format($s);
+        }
+        $this->replacement = substr($s, $pos, $epos - $pos);
+
+        foreach ($fmtspecs as $fmtspec) {
+            list($vformat, $value) = $this->apply_fmtspec($fmtspec, $vformat, $value, $expansion);
+        }
+
+        if (!is_scalar($value)) {
+            if ($value instanceof DateTimeInterface) {
+                list($vformat, $value) = $this->apply_fmtspec(":time", $vformat, $value, $expansion);
+            } else {
+                list($vformat, $value) = $this->complain("require scalar value");
+            }
+        }
+        return [$epos, Ftext::convert_to($this->format, $vformat, $value)];
     }
 }
 
@@ -565,7 +775,7 @@ class Fmt {
      * @param ?float $priobound
      * @param 0|1|2 $source
      * @return ?FmtItem */
-    private function find($context, $in, $args, $priobound, $source) {
+    function find($context, $in, $args, $priobound, $source) {
         if ($this->_sources !== null && $source !== 2) {
             $this->_record_source($context, $in);
         }
@@ -697,183 +907,11 @@ class Fmt {
         return true;
     }
 
-    /** @param string $s
-     * @param int $pos
-     * @param FmtContext $fctx
-     * @return array{int,?string} */
-    private function expand_percent($s, $pos, $fctx) {
-        if (preg_match('/%((?!\d)\w+)%/A', $s, $m, 0, $pos)) {
-            if (($fa = self::find_arg($fctx->args, strtolower($m[1])))) {
-                return [$pos + strlen($m[0]), $fa->convert_to($fctx->format)];
-            } else if (($imt = $this->find($fctx->context, strtolower($m[1]), [], null, 2))
-                       && $imt->template) {
-                return [$pos + strlen($m[0]), $this->expand($fctx->context, $imt->out, $fctx->args, $imt->expand, $fctx->format)];
-            }
-        }
-
-        if ($fctx->expand === 0
-            && count($fctx->args) > 0
-            && preg_match('/%(?:(\d+)(\[[^\[\]\$]*\]|)\$|)(#[AON]?|)(\d*(?:\.\d+|))([deEifgosxXHU])/A', $s, $m, 0, $pos)) {
-            $argi = $m[1] ? +$m[1] : ++$fctx->argnum;
-            if (($fa = self::find_arg($fctx->args, $argi - 1))) {
-                $val = $fa->convert_to($fctx->format);
-                if ($m[2]) {
-                    assert(is_array($val));
-                    $val = $val[substr($m[2], 1, -1)] ?? null;
-                }
-                if ($m[3] && is_array($val)) {
-                    if ($m[3] === "#N") {
-                        $val = numrangejoin($val);
-                    } else if ($m[3] === "#O") {
-                        $val = commajoin($val, "or");
-                    } else {
-                        $val = commajoin($val, "and");
-                    }
-                }
-                $conv = $m[4];
-                if ($m[5] === "H") {
-                    $x = htmlspecialchars($conv === "" ? $val : sprintf("%{$conv}s", $val));
-                } else if ($m[5] === "U") {
-                    $x = urlencode($conv === "" ? $val : sprintf("%{$conv}s", $val));
-                } else if ($m[5] === "s" && $conv === "") {
-                    $x = (string) $val;
-                } else {
-                    $x = sprintf("%{$conv}{$m[5]}", $val);
-                }
-                return [$pos + strlen($m[0]), $x];
-            }
-        }
-
-        return [$pos + 1, null];
-    }
-
-    /** @param string $s
-     * @param int $pos
-     * @param FmtContext $fctx
-     * @return array{int,?string} */
-    private function expand_brace($s, $pos, $fctx) {
-        if (!preg_match('/\{(|0|[1-9]\d*+|[a-zA-Z_]\w*+)(|\[[^\]]*+\])(|:(?:[^\}]|\}\})*+)\}/A', $s, $m, 0, $pos)
-            || ($m[1] === "" && ($fctx->argnum === null || $m[2] !== ""))
-            || ($fctx->expand && ($m[1] === "" || ctype_digit($m[1])))) {
-            return [$pos + 1, null];
-        }
-        if ($m[1] === "") {
-            $fa = self::find_arg($fctx->args, $fctx->argnum);
-            ++$fctx->argnum;
-        } else if (ctype_digit($m[1])) {
-            $fa = self::find_arg($fctx->args, intval($m[1]));
-        } else {
-            $fa = self::find_arg($fctx->args, $m[1]);
-        }
-        if (!$fa
-            && ($imt = $this->find($fctx->context, $m[1], [], null, 2))
-            && $imt->template) {
-            list($fmt, $out) = Ftext::parse($this->expand($fctx->context, $imt->out, $fctx->args, $imt->expand, $fctx->format));
-            $fa = new FmtArg("", $out, $fmt);
-        }
-        if (!$fa) {
-            return [$pos + 1, null];
-        }
-        if ($m[2]) {
-            assert(is_array($fa->value));
-            $value = $fa->value[substr($m[2], 1, -1)] ?? null;
-        } else {
-            $value = $fa->value;
-        }
-        $vformat = $fa->format;
-
-        $fctx->pos = $pos;
-        if ($fctx->format === null && $pos !== 0) {
-            $fctx->format = Ftext::format($s);
-        }
-        $fctx->replacement = $m[0];
-
-        $cpos = 0;
-        $clen = strlen($m[3]);
-        while ($cpos < $clen) {
-            if (($colon = strpos($m[3], ":", $cpos + 1)) === false) {
-                $colon = strlen($m[3]);
-            }
-            list($vformat, $value) = $fctx->apply_fmtspec(substr($m[3], $cpos, $colon), $vformat, $value);
-            $cpos = $colon;
-        }
-
-        if (!is_scalar($value)) {
-            if ($value instanceof DateTimeInterface) {
-                list($vformat, $value) = $fctx->apply_fmtspec(":time", $vformat, $value);
-            } else {
-                list($vformat, $value) = $fctx->complain("require scalar value");
-            }
-        }
-        return [$pos + strlen($m[0]), Ftext::convert_to($fctx->format, $vformat, $value)];
-    }
-
-    /** @param ?string $context
-     * @param string $s
-     * @param list<mixed> $args
-     * @param -1|0|1 $expand
-     * @param ?int $default_format
-     * @return string */
-    private function expand($context, $s, $args, $expand = 0, $default_format = null) {
-        if ($s === null || $s === false || $s === "" || $expand === -1) {
-            return $s;
-        }
-
-        $pos = $bpos = 0;
-        $len = strlen($s);
-        $ppos = $lpos = $rpos = -1;
-        $t = "";
-        $fctx = null;
-
-        while (true) {
-            if ($ppos < $pos) {
-                $ppos = strpos($s, "%", $pos);
-                $ppos = $ppos !== false ? $ppos : $len;
-            }
-            if ($lpos < $pos) {
-                $lpos = strpos($s, "{", $pos);
-                $lpos = $lpos !== false ? $lpos : $len;
-            }
-            if ($rpos < $pos) {
-                $rpos = strpos($s, "}", $pos);
-                $rpos = $rpos !== false ? $rpos : $len;
-            }
-
-            $pos = min($ppos, $lpos, $rpos);
-            if ($pos === $len) {
-                return $t . substr($s, $bpos);
-            }
-
-            $x = null;
-            $npos = $pos + 1;
-            if ($npos < $len && $s[$pos] === $s[$npos]) {
-                if ($expand === 0) {
-                    $x = $s[$pos];
-                    ++$npos;
-                }
-            } else {
-                if (!$fctx) {
-                    $fctx = new FmtContext($this->conf, $args, $context, $expand, Ftext::format($s) ?? $default_format);
-                }
-                if ($pos === $ppos) {
-                    list($npos, $x) = $this->expand_percent($s, $pos, $fctx);
-                } else if ($pos === $lpos) {
-                    list($npos, $x) = $this->expand_brace($s, $pos, $fctx);
-                }
-            }
-
-            if ($x !== null) {
-                $t .= substr($s, $bpos, $pos - $bpos) . $x;
-                $bpos = $npos;
-            }
-            $pos = $npos;
-        }
-    }
-
     /** @param string $out
      * @return string */
     function _x($out, ...$args) {
-        return $this->expand(null, $out, $args);
+        $fctx = new FmtContext($this, null, $args);
+        return $fctx->expand($out, 0);
     }
 
     /** @param string $in
@@ -882,7 +920,8 @@ class Fmt {
         if (($im = $this->find(null, $in, $args, null, 0))) {
             $in = $im->out;
         }
-        return $this->expand(null, $in, $args, $im ? $im->expand : 0);
+        $fctx = new FmtContext($this, null, $args);
+        return $fctx->expand($in, $im ? $im->expand : 0);
     }
 
     /** @param ?string $context
@@ -892,32 +931,42 @@ class Fmt {
         if (($im = $this->find($context, $in, $args, null, 0))) {
             $in = $im->out;
         }
-        return $this->expand($context, $in, $args, $im ? $im->expand : 0);
+        $fctx = new FmtContext($this, $context, $args);
+        return $fctx->expand($in, $im ? $im->expand : 0);
     }
 
     /** @param string $id
      * @return ?string */
     function _i($id, ...$args) {
-        $im = $this->find(null, $id, $args, null, 1);
-        return $im ? $this->expand(null, $im->out, $args, $im->expand) : null;
+        if (!($im = $this->find(null, $id, $args, null, 1))) {
+            return null;
+        }
+        $fctx = new FmtContext($this, null, $args);
+        return $fctx->expand($im->out, $im->expand);
     }
 
     /** @param ?string $context
      * @param string $id
      * @return ?string */
     function _ci($context, $id, ...$args) {
-        $im = $this->find($context, $id, $args, null, 1);
-        return $im ? $this->expand($context, $im->out, $args, $im->expand) : null;
+        if (!($im = $this->find($context, $id, $args, null, 1))) {
+            return null;
+        }
+        $fctx = new FmtContext($this, $context, $args);
+        return $fctx->expand($im->out, $im->expand);
     }
 
     /** @param FieldRender $fr
      * @param ?string $context
      * @param string $id */
     function render_ci($fr, $context, $id, ...$args) {
-        if (($im = $this->find($context, $id, $args, null, 1))) {
-            $s = $this->expand($context, $im->out, $args, $im->expand, $fr->value_format);
-            list($fr->value_format, $fr->value) = Ftext::parse($s, $fr->value_format);
+        if (!($im = $this->find($context, $id, $args, null, 1))) {
+            return;
         }
+        $fctx = new FmtContext($this, $context, $args);
+        $fctx->set_format($fr->value_format);
+        $s = $fctx->expand($im->out, $im->expand);
+        list($fr->value_format, $fr->value) = Ftext::parse($s, $fr->value_format);
     }
 
     /** @param string $id
@@ -930,6 +979,7 @@ class Fmt {
     /** @param string $text
      * @return string */
     static function simple($text, ...$args) {
-        return (new Fmt)->expand(null, $text, $args);
+        $fctx = new FmtContext(new Fmt, null, $args);
+        return $fctx->expand($text, 0);
     }
 }
