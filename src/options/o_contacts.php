@@ -77,56 +77,47 @@ class Contacts_PaperOption extends PaperOption {
         // do not mark diff (will be marked later)
         $ps->clear_conflict_values(CONFLICT_CONTACTAUTHOR);
         foreach (self::users_anno($ov) as $u) {
-            $ps->update_conflict_value($u, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
+            if (($u->conflictType & CONFLICT_CONTACTAUTHOR) !== 0) {
+                $ps->update_conflict_value($u, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
+            }
         }
         $ps->checkpoint_conflict_values();
         return true;
     }
     /** @param list<Author> $specau */
     private function apply_parsed_users(PaperValue $ov, $specau) {
-        // look up primary emails
-        $emails = [];
-        foreach ($specau as $au) {
-            $emails[] = $au->email;
-        }
-        $pemails = $this->conf->resolve_primary_emails($emails);
-        // apply changes
         $curau = self::users_anno($ov);
         $modified = false;
-        for ($i = 0; $i !== count($specau); ++$i) {
-            $j = self::ca_index($curau, $pemails[$i]);
-            if ($j !== false) {
-                if ($specau[$i]->conflictType !== 0) {
-                    $curau[$j]->author_index = $specau[$i]->author_index;
-                    $modified = $modified || $curau[$j]->is_placeholder();
-                } else {
-                    // only remove contacts on exact email match
-                    // (removing by a non-primary email has no effect)
-                    if ((($curau[$j]->conflictType ?? 0) & CONFLICT_AUTHOR) === 0
-                        && strcasecmp($specau[$i]->email, $pemails[$i]) === 0) {
-                        array_splice($curau, $j, 1);
-                        $modified = true;
-                    }
-                }
-            } else {
-                if ($specau[$i]->conflictType !== 0) {
-                    $specau[$i]->email = $pemails[$i];
-                    $curau[] = $specau[$i];
+        foreach ($specau as $sau) {
+            $j = self::ca_index($curau, $sau->email);
+            $cau = $j !== false ? $curau[$j] : null;
+            if (!$cau) {
+                // add new contact
+                if ($sau->conflictType !== 0) {
+                    $curau[] = $sau;
                     $modified = true;
                 }
+            } else if ($sau->conflictType !== 0) {
+                // requested contact: copy author index, activate placeholder
+                $cau->author_index = $sau->author_index;
+                $modified = $modified || $curau[$j]->is_placeholder();
+            } else {
+                array_splice($curau, $j, 1);
+                $modified = true;
             }
+        }
+        if (!$modified) {
+            return;
         }
         // mark changes on value
-        if ($modified) {
-            $emails = $cids = [];
-            foreach ($curau as $au) {
-                $cids[] = $au->contactId;
-                $emails[] = $au->email;
-            }
-            $ov->set_value_data($cids, $emails);
-            $ov->set_anno("users", $curau);
-            $ov->set_anno("modified", true);
+        $emails = $cids = [];
+        foreach ($curau as $au) {
+            $cids[] = $au->contactId;
+            $emails[] = $au->email;
         }
+        $ov->set_value_data($cids, $emails);
+        $ov->set_anno("users", $curau);
+        $ov->set_anno("modified", true);
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $ov = PaperValue::make_force($prow, $this);

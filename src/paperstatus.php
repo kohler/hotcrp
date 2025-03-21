@@ -46,6 +46,8 @@ class PaperStatus extends MessageSet {
     private $_xdiffs;
     /** @var ?list<PaperOption> */
     private $_resave_fields;
+    /** @var int */
+    private $_conflict_changemask;
     /** @var associative-array<int,array{int,int,int}> */
     private $_conflict_values;
     /** @var ?list<array{int,int,int}> */
@@ -951,11 +953,10 @@ class PaperStatus extends MessageSet {
 
     /** @param int $bit */
     function clear_conflict_values($bit) {
+        $this->_conflict_changemask |= $bit;
         foreach ($this->_conflict_values as &$cv) {
-            if (((($cv[0] & ~$cv[1]) | $cv[2]) & $bit) !== 0) {
-                $cv[1] |= $bit;
-                $cv[2] &= ~$bit;
-            }
+            $cv[1] |= $bit;
+            $cv[2] &= ~$bit;
         }
     }
 
@@ -979,7 +980,10 @@ class PaperStatus extends MessageSet {
                 $this->_created_contacts[] = $uu;
             }
         }
-        if ($uu && $uu->is_placeholder()) {
+        if (!$uu) {
+            return null;
+        }
+        if ($uu->is_placeholder()) {
             foreach (["firstName", "lastName", "affiliation"] as $nprop) {
                 if ($au->$nprop !== ""
                     && ($uu->$nprop === "" || $ctype >= CONFLICT_CONTACTAUTHOR)) {
@@ -1013,6 +1017,7 @@ class PaperStatus extends MessageSet {
             || ((($cv[0] & ~$cv[1]) | $cv[2]) & 1) === 0) {
             $cv[1] |= $mask;
             $cv[2] = ($cv[2] & ~$mask) | $new;
+            $this->_conflict_changemask |= ($cv[0] ^ $cv[2]) & $mask;
         }
     }
 
@@ -1034,6 +1039,38 @@ class PaperStatus extends MessageSet {
         return $cv ? ($cv[0] & ~$cv[1]) | $cv[2] : 0;
     }
 
+    private function _apply_primary_authors() {
+        // must apply authors to distinguish actual authors from
+        // leftover primaryContactId markers
+        if (!in_array(PaperOption::AUTHORSID, $this->prow->overridden_option_ids())) {
+            $ov = $this->prow->force_option(PaperOption::AUTHORSID);
+            $ov->option->value_save_conflict_values($ov, $this);
+        }
+
+        $primaries = [];
+        foreach ($this->_conflict_values as $uid => &$cv) {
+            $ncv = self::new_conflict_value($cv);
+            if (($ncv & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) === 0) {
+                continue;
+            }
+            $uu = $this->conf->user_by_id($uid, USER_SLICE);
+            if (($ncv & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) === CONFLICT_AUTHOR
+                && ($cv[0] & CONFLICT_CONTACTAUTHOR) !== 0) {
+                // can’t remove contact author who’s still on the author list
+                $cv[2] |= CONFLICT_CONTACTAUTHOR;
+            }
+            if ($uu && $uu->primaryContactId > 0) {
+                $primaries[] = $uu->primaryContactId;
+            }
+        }
+        foreach ($primaries as $puid) {
+            $this->_conflict_values[$puid] = $this->_conflict_values[$puid] ?? [0, 0, 0];
+            $this->_conflict_values[$puid][1] |= CONFLICT_AUTHOR;
+            $this->_conflict_values[$puid][2] |= CONFLICT_AUTHOR;
+        }
+        $this->checkpoint_conflict_values();
+    }
+
     /** @return bool */
     private function check_conflict_diff() {
         $changes = 0;
@@ -1050,7 +1087,7 @@ class PaperStatus extends MessageSet {
         return ($changes & (CONFLICT_PCMASK | CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) !== 0;
     }
 
-    private function _check_contacts_last($pj) {
+    private function _check_contacts_last() {
         // if creating a paper, user has account here
         if ($this->user->has_email()) {
             $this->user->ensure_account_here();
@@ -1068,6 +1105,11 @@ class PaperStatus extends MessageSet {
                 $this->update_conflict_value($this->user, CONFLICT_CONTACTAUTHOR, CONFLICT_CONTACTAUTHOR);
                 $this->checkpoint_conflict_values();
             }
+        }
+
+        // primary contacts require work
+        if (($this->_conflict_changemask & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) !== 0) {
+            $this->_apply_primary_authors();
         }
 
         // exit if no change
@@ -1094,6 +1136,7 @@ class PaperStatus extends MessageSet {
         $this->paperId = $this->saved_prow = $this->title = null;
         $this->_fdiffs = $this->_xdiffs = [];
         $this->_unknown_fields = $this->_resave_fields = null;
+        $this->_conflict_changemask = 0;
         $this->_conflict_values = [];
         $this->_conflict_ins = $this->_created_contacts = null;
         $this->_author_change_cids = null;
@@ -1332,7 +1375,7 @@ class PaperStatus extends MessageSet {
         }
 
         // validate contacts
-        $this->_check_contacts_last($pj);
+        $this->_check_contacts_last();
         $this->_save_status |= self::SSF_PREPARED;
         return true;
     }
@@ -1714,23 +1757,21 @@ class PaperStatus extends MessageSet {
     /** @param object $pj
      * @return int|false */
     function save_paper_json($pj) {
-        if ($this->prepare_save_paper_json($pj)) {
-            $this->execute_save();
-            return $this->paperId;
-        } else {
+        if (!$this->prepare_save_paper_json($pj)) {
             return false;
         }
+        $this->execute_save();
+        return $this->paperId;
     }
 
     /** @param ?PaperInfo $prow
      * @return int|false */
     function save_paper_web(Qrequest $qreq, $prow) {
-        if ($this->prepare_save_paper_web($qreq, $prow)) {
-            $this->execute_save();
-            return $this->paperId;
-        } else {
+        if (!$this->prepare_save_paper_web($qreq, $prow)) {
             return false;
         }
+        $this->execute_save();
+        return $this->paperId;
     }
 
     /** @return list<PaperOption> */

@@ -13,6 +13,8 @@ class ContactPrimary {
     private $sec;
     /** @var ?Contact */
     private $pri;
+    /** @var list<int> */
+    private $uids;
 
     function __construct(?Contact $actor = null) {
         $this->actor = $actor;
@@ -31,6 +33,9 @@ class ContactPrimary {
         $this->sec = $sec;
         if ($pri && strcasecmp($pri->email, $sec->email) !== 0) {
             $this->pri = $pri;
+        }
+        if (!$this->cdb) {
+            $this->uids = [$this->sec->contactId];
         }
 
         // resolve pri
@@ -56,6 +61,9 @@ class ContactPrimary {
             $this->pri->set_prop("cflags", $this->pri->cflags | Contact::CF_PRIMARY);
             $this->pri->set_prop("primaryContactId", 0);
             $this->pri->save_prop();
+            if (!$this->cdb) {
+                $this->uids[] = $this->pri->contactId;
+            }
         }
         if (!$this->cdb && $this->actor) {
             $this->conf->log_for($this->actor, $this->sec, "Primary account" . ($this->pri ? " set to {$this->pri->email}" : " removed"));
@@ -64,8 +72,7 @@ class ContactPrimary {
         $this->conf->release_logs();
         // authorship changes
         if (!$this->cdb) {
-            self::_update_author_records($this->sec->conf,
-                $this->sec->contactId, $this->pri ? $this->pri->contactId : 0);
+            $this->_update_author_records();
         }
     }
 
@@ -78,6 +85,9 @@ class ContactPrimary {
             && ($xpri = $this->sec->similar_user_by_id($oldid))) {
             $xpri->set_prop("cflags", $xpri->cflags & ~Contact::CF_PRIMARY);
             $xpri->save_prop();
+        }
+        if (!$this->cdb) {
+            $this->uids[] = $oldid;
         }
     }
 
@@ -137,50 +147,57 @@ class ContactPrimary {
                 }
             }
         }
+        if (!$this->cdb) {
+            array_push($this->uids, ...$redir);
+        }
     }
 
-    static private function _update_author_records(Conf $conf, ...$ids) {
-        $rowset = $conf->paper_set(["minimal" => true, "authorInformation" => true, "allConflictType" => true, "where" => "paperId in (select paperId from PaperConflict where contactId>0 and contactId" . sql_in_int_list($ids) . " and conflictType>=" . CONFLICT_AUTHOR . ")"]);
+    private function _update_author_records() {
+        $rowset = $this->conf->paper_set(["minimal" => true, "authorInformation" => true, "allConflictType" => true, "where" => "paperId in (select paperId from PaperConflict where contactId>0 and contactId" . sql_in_int_list($this->uids) . " and conflictType>=" . CONFLICT_AUTHOR . ")"]);
 
         // prefetch authors and contact authors
         foreach ($rowset as $prow) {
             foreach ($prow->author_list() as $auth) {
-                $conf->prefetch_user_by_email($auth->email);
+                $this->conf->prefetch_user_by_email($auth->email);
             }
             foreach ($prow->conflict_type_list() as $pci) {
                 if ($pci->conflictType & CONFLICT_CONTACTAUTHOR)
-                    $conf->prefetch_user_by_id($pci->contactId);
+                    $this->conf->prefetch_user_by_id($pci->contactId);
             }
         }
 
         // make changes
-        $cfltf = Dbl::make_multi_qe_stager($conf->dblink);
+        $cfltf = Dbl::make_multi_qe_stager($this->conf->dblink);
         $changes = [];
         foreach ($rowset as $prow) {
             $cfltv = [];
             // record current conflicts and new contacts
             foreach ($prow->conflict_type_list() as $pci) {
                 $ct = $pci->conflictType & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
-                if ($ct !== 0) {
-                    $cfltv[$pci->contactId] = $cfltv[$pci->contactId] ?? [0, 0];
-                    $cfltv[$pci->contactId][0] |= $ct;
-                }
-                if (($ct & CONFLICT_CONTACTAUTHOR) === 0
-                    || !($u = $conf->user_by_id($pci->contactId, USER_SLICE))) {
+                if ($ct === 0) {
                     continue;
                 }
-                $id = $u->primaryContactId ? : $u->contactId;
-                $cfltv[$id] = $cfltv[$id] ?? [0, 0];
-                $cfltv[$id][1] |= CONFLICT_CONTACTAUTHOR;
+                $cfltv[$pci->contactId] = $cfltv[$pci->contactId] ?? [0, 0];
+                $cfltv[$pci->contactId][0] |= $ct;
+                if (($ct & CONFLICT_CONTACTAUTHOR) === 0) {
+                    continue;
+                }
+                $cfltv[$pci->contactId][1] |= CONFLICT_CONTACTAUTHOR;
+                if (($u = $this->conf->user_by_id($pci->contactId, USER_SLICE))
+                    && $u->primaryContactId > 0) {
+                    $cfltv[$u->primaryContactId] = $cfltv[$u->primaryContactId] ?? [0, 0];
+                    $cfltv[$u->primaryContactId][1] |= CONFLICT_AUTHOR;
+                }
             }
             // record new authors
             foreach ($prow->author_list() as $auth) {
-                if (!($u = $conf->user_by_email($auth->email, USER_SLICE))) {
+                if ($auth->email === ""
+                    || !($u = $this->conf->user_by_email($auth->email, USER_SLICE))) {
                     continue;
                 }
                 $cfltv[$u->contactId] = $cfltv[$u->contactId] ?? [0, 0];
                 $cfltv[$u->contactId][1] |= CONFLICT_AUTHOR;
-                if ($u->primaryContactId !== 0) {
+                if ($u->primaryContactId > 0) {
                     $cfltv[$u->primaryContactId] = $cfltv[$u->primaryContactId] ?? [0, 0];
                     $cfltv[$u->primaryContactId][1] |= CONFLICT_AUTHOR;
                 }
@@ -209,9 +226,9 @@ class ContactPrimary {
         $cfltf(null);
 
         // maybe update cdb roles
-        if ($conf->contactdb()) {
+        if ($this->conf->contactdb()) {
             foreach (array_keys($changes) as $uid) {
-                $u = $conf->user_by_id($uid);
+                $u = $this->conf->user_by_id($uid);
                 $u->update_my_rights();
                 $u->update_cdb_roles();
             }

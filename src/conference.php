@@ -2557,6 +2557,21 @@ class Conf {
         return $u && ($u->roles & Contact::ROLE_PC) !== 0 ? $u : null;
     }
 
+    /** @param int $uid
+     * @return ?Contact */
+    function pc_member_by_primary_id($uid) {
+        $u = $this->pc_set()->get($uid);
+        if ($u && ($u->roles & Contact::ROLE_PC) !== 0) {
+            return $u;
+        }
+        foreach ($this->pc_set() as $u) {
+            if ($u->primaryContactId === $uid
+                && ($u->roles & Contact::ROLE_PC) !== 0)
+                return $u;
+        }
+        return null;
+    }
+
     /** @param string $email
      * @return ?Contact */
     function pc_member_by_email($email) {

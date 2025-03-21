@@ -125,39 +125,29 @@ class Authors_PaperOption extends PaperOption {
         // construct property
         $authlist = $this->author_list($ov);
         $d = "";
-        $emails = [];
         foreach ($authlist as $auth) {
             if (!$auth->is_empty()) {
                 $d .= ($d === "" ? "" : "\n") . $auth->unparse_tabbed();
             }
-            $emails[] = $auth->email;
         }
-
-        // check for change
-        if ($d === $ov->prow->base_option($this->id)->data()) {
-            return true;
+        // apply change
+        if ($d !== $ov->prow->base_option($this->id)->data()) {
+            $ps->change_at($this);
+            $ov->prow->set_prop("authorInformation", $d);
+            $this->value_save_conflict_values($ov, $ps);
         }
-        $ps->change_at($this);
-        $ov->prow->set_prop("authorInformation", $d);
-
-        // set conflicts
+        return true;
+    }
+    function value_save_conflict_values(PaperValue $ov, PaperStatus $ps) {
         $ps->clear_conflict_values(CONFLICT_AUTHOR);
-        $pemails = $this->conf->resolve_primary_emails($emails);
-        foreach ($authlist as $i => $auth) {
-            if ($auth->email === "") {
-                continue;
+        foreach ($this->author_list($ov) as $i => $auth) {
+            if ($auth->email !== "") {
+                $cflags = CONFLICT_AUTHOR
+                    | ($ov->anno("contact:{$auth->email}") ? CONFLICT_CONTACTAUTHOR : 0);
+                $ps->update_conflict_value($auth, $cflags, $cflags);
             }
-            if (strcasecmp($auth->email, $pemails[$i]) !== 0) {
-                $ps->update_conflict_value($auth, CONFLICT_AUTHOR, CONFLICT_AUTHOR);
-                $auth = clone $auth;
-                $auth->email = $pemails[$i];
-            }
-            $cflags = CONFLICT_AUTHOR
-                | ($ov->anno("contact:{$auth->email}") ? CONFLICT_CONTACTAUTHOR : 0);
-            $ps->update_conflict_value($auth, $cflags, $cflags);
         }
         $ps->checkpoint_conflict_values();
-        return true;
     }
     static private function expand_author(Author $au, PaperInfo $prow) {
         if ($au->email !== ""
