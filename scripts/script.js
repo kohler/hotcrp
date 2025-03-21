@@ -5226,7 +5226,7 @@ handle_ui.on("input.js-email-populate", function () {
             return;
         }
         fn && populate(fn, data.given_name || "", placeholder);
-        ln && populate(ln, data.last_name || "", placeholder);
+        ln && populate(ln, data.family_name || "", placeholder);
         if (nn && data.name == null) {
             if (data.given_name && data.family_name) {
                 data.name = data.given_name + " " + data.family_name;
