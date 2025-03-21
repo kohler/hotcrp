@@ -1044,6 +1044,7 @@ class PaperStatus extends MessageSet {
         // leftover primaryContactId markers
         if (!in_array(PaperOption::AUTHORSID, $this->prow->overridden_option_ids())) {
             $ov = $this->prow->force_option(PaperOption::AUTHORSID);
+            /** @phan-suppress-next-line PhanUndeclaredMethod */
             $ov->option->value_save_conflict_values($ov, $this);
         }
 
