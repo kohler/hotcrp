@@ -131,7 +131,7 @@ class Sround_SettingParser extends SettingParser {
 
         echo '</div><template id="settings-submission-round-new" class="hidden">';
         self::print_round($sv, '$');
-        echo '</template><hr class="form-sep form-nearby">',
+        echo '</template><hr class="form-sep nearby">',
             Ht::button("Add submission class", ["class" => "ui js-settings-submission-round-new"]);
     }
 

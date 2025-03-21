@@ -179,7 +179,7 @@ class Review_SettingParser extends SettingParser {
         }
         echo '</div><template id="settings-review-round-new" class="hidden">';
         self::print_round($sv, '$', []);
-        echo '</template><hr class="form-sep form-nearby">',
+        echo '</template><hr class="form-sep nearby">',
             Ht::button("Add round", ["class" => "ui js-settings-review-round-new"]),
             ' &nbsp; <span class="hint"><a href="', $sv->conf->hoturl("help", "t=revround"), '">What is this?</a></span>';
 

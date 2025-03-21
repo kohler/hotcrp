@@ -585,11 +585,14 @@ input.wide {
 .font-weight-bold {
 	font-weight: bold;
 }
-.font-weight-semibold {
+.font-weight-semibold, strong.sb {
 	font-weight: 500;
 }
 .font-italic {
 	font-style: italic;
+}
+p + .nearby {
+	margin-top: -0.5em;
 }
 
 .mb-0 {
@@ -1967,7 +1970,7 @@ td.padls, th.padls, div.padls {
 	margin-top: 0.5rem;
 	margin-bottom: 0;
 }
-.form-sep.form-nearby {
+.form-sep.nearby {
 	margin-top: 1.25rem;
 }
 hr.form-sep, hr.form-sep-2 {
@@ -1983,7 +1986,7 @@ hr.form-sep, hr.form-sep-2 {
 .form-g-3 {
 	margin-bottom: 1em;
 }
-.form-g + .form-nearby {
+.form-g + .nearby {
 	margin-top: -1em;
 }
 fieldset.form-g > legend {
@@ -2317,7 +2320,7 @@ a:hover .settings-jpath {
 .f-i {
 	margin-bottom: 1.25em;
 }
-.f-i + .f-i-nearby, .f-mcol + .f-i-nearby, .f-eqcol + .f-i-nearby {
+.f-i + .nearby, .f-mcol + .nearby, .f-eqcol + .nearby {
 	margin-top: -1.25em;
 }
 label.f-c, .f-i > label, .f-i > .label {
