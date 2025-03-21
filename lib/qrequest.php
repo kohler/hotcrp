@@ -553,7 +553,7 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
 
     /** @param ?NavigationState $nav */
     static function make_minimal($nav = null) : Qrequest {
-        $qreq = new Qrequest($_SERVER["REQUEST_METHOD"]);
+        $qreq = new Qrequest($_SERVER["REQUEST_METHOD"] ?? "NONE");
         $qreq->set_navigation($nav ?? Navigation::get());
         if (array_key_exists("post", $_GET)) {
             $qreq->set_req("post", $_GET["post"]);

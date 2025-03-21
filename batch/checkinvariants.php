@@ -21,12 +21,15 @@ class CheckInvariants_Batch {
     /** @var ?bool */
     public $pad_prefix;
     /** @var int */
+    public $level;
+    /** @var int */
     private $width = 47;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
         $this->verbose = isset($arg["verbose"]);
         $this->fix = $arg["fix"] ?? [];
+        $this->level = $arg["level"] ?? 0;
         if (isset($arg["fix-autosearch"])) {
             $this->fix[] = "autosearch";
         }
@@ -64,7 +67,7 @@ class CheckInvariants_Batch {
 
     /** @return int */
     function run() {
-        $ic = new ConfInvariants($this->conf);
+        $ic = (new ConfInvariants($this->conf))->set_level($this->level);
         $ncheck = 0;
         $ro = new ReflectionObject($ic);
         $color = $this->color = $this->color ?? posix_isatty(STDERR);
@@ -145,6 +148,10 @@ class CheckInvariants_Batch {
             $this->report_fix("whitespace");
             $this->fix_whitespace();
         }
+        if (isset($ic->problems["cdbRoles"]) && $this->want_fix("cdbroles")) {
+            $this->report_fix("cdbroles");
+            $this->fix_cdbroles();
+        }
         return 0;
     }
 
@@ -192,6 +199,50 @@ class CheckInvariants_Batch {
         $mq(null);
     }
 
+    private function fix_cdbroles() {
+        $confid = $this->conf->cdb_confid();
+        $result = Dbl::qe($this->conf->contactdb(), "select contactDbId, email, roles from ContactInfo join Roles using (contactDbId) where confid=?", $confid);
+        $cdbr = [];
+        while (($row = $result->fetch_row())) {
+            $cdbr[strtolower($row[1])] = [(int) $row[0], (int) $row[2]];
+        }
+        $result->close();
+
+        $fixl = $insc = $delc = $insce = [];
+        foreach (ConfInvariants::generate_cdb_roles($this->conf) as $err) {
+            if ($err->cdbRoles !== $err->computed_roles) {
+                $fixl[$err->computed_roles][] = $err->contactId;
+            }
+            $x = $cdbr[strtolower($err->email)] ?? [0, 0];
+            if ($x[1] !== $err->computed_roles) {
+                if ($x[0] === 0) {
+                    $insce[strtolower($err->email)] = $err->computed_roles;
+                } else if ($err->computed_roles > 0) {
+                    $insc[] = [$x[0], $confid, $err->computed_roles];
+                } else {
+                    $delc[] = $x[0];
+                }
+            }
+        }
+
+        foreach ($fixl as $rolevalue => $cids) {
+            $this->conf->qe("update ContactInfo set cdbRoles=? where contactId?a", $rolevalue, $cids);
+        }
+        if (!empty($insce)) {
+            $result = Dbl::qe($this->conf->contactdb(), "select email, contactDbId from ContactInfo where email?a", array_keys($insce));
+            while (($row = $result->fetch_row())) {
+                $insc[] = [(int) $row[1], $confid, $insce[strtolower($row[0])]];
+            }
+            $result->close();
+        }
+        if (!empty($insc)) {
+            Dbl::qe($this->conf->contactdb(), "insert into Roles (contactDbId, confid, roles) values ?v ?U on duplicate key update roles=?U(roles)", $insc);
+        }
+        if (!empty($delc)) {
+            Dbl::qe($this->conf->contactdb(), "delete from Roles where contactDbId?a and confid=?", $delc, $confid);
+        }
+    }
+
     /** @return CheckInvariants_Batch */
     static function make_args($argv) {
         $arg = (new Getopt)->long(
@@ -199,9 +250,10 @@ class CheckInvariants_Batch {
             "config:,c: !",
             "help,h !",
             "verbose,V Be verbose",
+            "level:,l: {n} Set invariant level [0]",
             "fix-autosearch ! Repair any incorrect autosearch tags",
             "fix-inactive ! Repair any inappropriately inactive documents",
-            "fix[] =PROBLEM Repair PROBLEM [all, autosearch, inactive, setting, document-match, whitespace]",
+            "fix[] =PROBLEM Repair PROBLEM [all, autosearch, inactive, setting, document-match, whitespace, cdbroles]",
             "color",
             "no-color !",
             "pad-prefix !"

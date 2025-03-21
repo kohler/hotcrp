@@ -5,11 +5,13 @@
 class ConfInvariants {
     /** @var Conf */
     public $conf;
+    /** @var int */
+    public $level = 0;
     /** @var array<string,true> */
     public $problems = [];
     /** @var string */
     public $prefix;
-    /** @var ?list<string> */
+    /** @var ?list<string|int|float> */
     private $irow;
     /** @var ?list<string> */
     private $msgbuf;
@@ -17,6 +19,13 @@ class ConfInvariants {
     function __construct(Conf $conf, $prefix = "") {
         $this->conf = $conf;
         $this->prefix = $prefix;
+    }
+
+    /** @param int $level
+     * @return $this */
+    function set_level($level) {
+        $this->level = $level;
+        return $this;
     }
 
     function buffer_messages() {
@@ -611,6 +620,47 @@ class ConfInvariants {
         return $this;
     }
 
+    /** @return \Generator<ConfInvariant_CdbRole> */
+    static function generate_cdb_roles(Conf $conf) {
+        $result = $conf->qe("select contactId, email, cdbRoles, roles,
+            (select bit_or(conflictType) from PaperConflict where contactId=ContactInfo.contactId),
+            exists(select * from PaperReview where contactId=ContactInfo.contactId and reviewType>0)
+            from ContactInfo");
+        while (($row = $result->fetch_row())) {
+            $roles = (int) $row[3]
+                | ((int) $row[4] >= CONFLICT_AUTHOR ? Contact::ROLE_AUTHOR : 0)
+                | ((int) $row[5] ? Contact::ROLE_REVIEWER : 0);
+            yield new ConfInvariant_CdbRole((int) $row[0], $row[1], (int) $row[2], $roles);
+        }
+        $result->close();
+    }
+
+    /** @return $this */
+    function check_cdb_roles() {
+        $cdb = Conf::main_contactdb();
+        if (!$cdb || $this->level < 1 || ($confid = $this->conf->cdb_confid()) <= 0) {
+            return $this;
+        }
+
+        $result = Dbl::qe($cdb, "select email, roles from ContactInfo join Roles using (contactDbId) where confid=?", $confid);
+        $cdbr = [];
+        while (($row = $result->fetch_row())) {
+            $cdbr[strtolower($row[0])] = (int) $row[1];
+        }
+        $result->close();
+
+        foreach (self::generate_cdb_roles($this->conf) as $err) {
+            if ($err->cdbRoles !== $err->computed_roles) {
+                $this->irow = [$err->email, $err->computed_roles, $err->cdbRoles];
+                $this->invariant_error("cdbRoles", "user {0} has cdbRoles 0x{2:x}, expected 0x{1:x}");
+            }
+            if (($cdb_cdbr = $cdbr[strtolower($err->email)] ?? 0) !== $err->computed_roles) {
+                $this->irow = [$err->email, $err->computed_roles, $cdb_cdbr];
+                $this->invariant_error("cdbRoles", "user {0} has contactdb roles 0x{2:x}, expected 0x{1:x}");
+            }
+        }
+    }
+
     /** @return $this */
     function check_all() {
         $ro = new ReflectionObject($this);
@@ -699,5 +749,23 @@ class ConfInvariant_AutomaticTagChecker {
         } else {
             return $this->value_constant;
         }
+    }
+}
+
+class ConfInvariant_CdbRole {
+    /** @var int */
+    public $contactId;
+    /** @var string */
+    public $email;
+    /** @var int */
+    public $cdbRoles;
+    /** @var int */
+    public $computed_roles;
+
+    function __construct($cid, $email, $cdbRoles, $computed_roles) {
+        $this->contactId = $cid;
+        $this->email = $email;
+        $this->cdbRoles = $cdbRoles;
+        $this->computed_roles = $computed_roles;
     }
 }

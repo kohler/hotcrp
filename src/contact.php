@@ -1081,7 +1081,7 @@ class Contact implements JsonSerializable {
         }
     }
 
-    /** @return int|false */
+    /** @return bool */
     function update_cdb() {
         if (!$this->conf->contactdb()
             || !$this->has_account_here()
@@ -1112,17 +1112,19 @@ class Contact implements JsonSerializable {
         if (($this->cflags & self::CF_UNCONFIRMED) === 0) {
             $cdbux->set_prop("cflags", $cdbux->cflags & ~Contact::CF_UNCONFIRMED);
         }
+        $changed = false;
         if (!empty($cdbux->_mod_undo)) {
             assert($cdbux->cdb_confid !== 0);
             $cdbux->save_prop();
             $cdbur = $cdbux;
+            $changed = true;
         }
         $this->_cdb_user = $cdbur;
         if (!$cdbur) {
             return false;
         }
         $this->update_cdb_roles();
-        return $cdbur->contactDbId;
+        return $changed;
     }
 
     /** @return Contact */
