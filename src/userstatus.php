@@ -58,6 +58,8 @@ class UserStatus extends MessageSet {
     public $created;
     /** @var bool */
     public $notified;
+    /** @var ?string */
+    public $linked_secondary;
     /** @var associative-array<string,true|string> */
     public $diffs = [];
 
@@ -935,6 +937,7 @@ class UserStatus extends MessageSet {
         $this->jval = $cj ?? (object) [];
         $this->diffs = [];
         $this->created = $this->notified = false;
+        $this->linked_secondary = null;
         $this->set_user(null);
         return $this;
     }
@@ -985,6 +988,7 @@ class UserStatus extends MessageSet {
                 && $old_user->primaryContactId > 0
                 && $this->follow_primary
                 && !$xuser) {
+                $this->linked_secondary = $old_user->email;
                 $old_user = $this->conf->fresh_user_by_id($old_user->primaryContactId)
                     ?? /* should never happen */ $old_user;
                 $email = $old_user->email;
@@ -1000,6 +1004,7 @@ class UserStatus extends MessageSet {
                 && $old_cdb_user->primaryContactId > 0
                 && $this->follow_primary
                 && !$old_user) {
+                $this->linked_secondary = $old_cdb_user->email;
                 $old_cdb_user = $this->conf->fresh_cdb_user_by_id($old_cdb_user->primaryContactId)
                     ?? /* should never happen */ $old_cdb_user;
                 $email = $old_cdb_user->email;

@@ -249,6 +249,11 @@ class Profile_Page {
         }
     }
 
+    /** @return MessageItem */
+    private function linked_secondary_warning_note(UserStatus $ustatus, Contact $user) {
+        return MessageItem::warning_note("<5>" . htmlspecialchars($ustatus->linked_secondary) . " is linked to primary account " . Ht::link(htmlspecialchars($user->email), $this->conf->hoturl("profile", ["u" => $user->email])));
+    }
+
     /** @param string $text
      * @param string $filename */
     private function save_bulk($text, $filename) {
@@ -322,9 +327,11 @@ class Profile_Page {
             if ($saved_user) {
                 $url = $this->conf->hoturl("profile", "u=" . urlencode($saved_user->email));
                 $link = "<a class=\"nb\" href=\"{$url}\">" . $saved_user->name_h(NAME_E) . "</a>";
+                if ($ustatus->linked_secondary) {
+                    $ms->append_item($this->linked_secondary_warning_note($ustatus, $saved_user));
+                }
                 if ($ustatus->notified) {
                     $notified[] = $link;
-                    $success[] = $link;
                 } else if (!empty($ustatus->diffs)) {
                     $success[] = $link;
                 } else {
@@ -345,22 +352,23 @@ class Profile_Page {
         if (!empty($ustatus->unknown_topics)) {
             $ms->warning_at(null, $this->conf->_("<0>Unknown topics ignored ({:list})", array_keys($ustatus->unknown_topics)));
         }
-        $ml = [];
-        if (!empty($success)) {
-            $ml[] = MessageItem::success($this->conf->_("<5>Accounts {:list} saved", $success));
-        } else if ($ms->has_error()) {
-            $ml[] = MessageItem::error($this->conf->_("<0>Changes not saved; please correct these errors and try again"));
-        }
+        $ml1 = $ml2 = [];
         if (!empty($notified)) {
-            $ml[] = MessageItem::success($this->conf->_("<5>Accounts {:list} activated and notified", $notified));
+            $ml2[] = MessageItem::success($this->conf->_("<5>Accounts {:list} saved and notified", $notified));
         }
-        if (!empty($nochanges)) {
-            $ml[] = MessageItem::warning_note($this->conf->_("<5>No changes to accounts {:list}", $nochanges));
+        if (!empty($success)) {
+            $ml2[] = MessageItem::success($this->conf->_("<5>Accounts {:list} saved", $success));
         }
-        if (empty($ml) && !$ms->has_message()) {
-            $ml[] = MessageItem::warning_note("<0>No changes");
+        if (empty($notified) && empty($success) && $ms->has_error()) {
+            $ml1[] = MessageItem::error($this->conf->_("<0>Changes not saved; please correct these errors and try again"));
         }
-        $this->conf->feedback_msg($ml, $this->decorated_message_list($ms));
+        if ((!empty($notified) || !empty($success)) && !empty($nochanges)) {
+            $ml2[] = MessageItem::warning_note($this->conf->_("<5>No changes to accounts {:list}", $nochanges));
+        }
+        if (empty($ml1) && empty($ml2) && !$ms->has_message()) {
+            $ml1[] = MessageItem::warning_note("<0>No changes");
+        }
+        $this->conf->feedback_msg($ml1, $this->decorated_message_list($ms), $ml2);
         return !$ms->has_error();
     }
 
@@ -395,6 +403,9 @@ class Profile_Page {
         } else if ($this->ustatus->created) {
             $ml[] = MessageItem::success("<5>Account " . Ht::link($saved_user->name_h(NAME_E), $purl) . " created, but not notified");
         } else {
+            if ($this->ustatus->linked_secondary) {
+                $ml[] = $this->linked_secondary_warning_note($this->ustatus, $saved_user);
+            }
             if ($this->page_type !== 0) {
                 $ml[] = MessageItem::warning_note("<5>User " . Ht::link($saved_user->name_h(NAME_E), $purl) . " already had an account on this site");
             }

@@ -174,7 +174,7 @@
     ["<0>Accounts {:list} enabled", "<0>Account {:list} enabled", ["#{0}=1"]],
     ["<0>Skipped disabled accounts {:list}", "<0>Skipped disabled account {:list}", ["#{0}=1"]],
     ["<5>Accounts {:list} saved", "<5>Account {:list} saved", ["#{0}=1"]],
-    ["<5>Accounts {:list} activated and notified", "<5>Account {:list} activated and notified", ["#{0}=1"]],
+    ["<5>Accounts {:list} saved and notified", "<5>Account {:list} saved and notified", ["#{0}=1"]],
     ["<5>No changes to accounts {:list}", "<5>No changes to account {:list}", ["#{0}=1"]],
     ["<0>“{}” in global profile", "<0>Empty in global profile", ["!{0}"]],
     ["<0>“{}” in global profile", "<0>Differs in global profile", ["{field}=collaborators"]],

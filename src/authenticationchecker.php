@@ -159,7 +159,7 @@ class AuthenticationChecker {
         } else {
             $url = $this->qreq->navigation()->site_path . $url;
         }
-        $this->print_actions(Ht::submit("Confirm account", [
+        $this->print_actions(Ht::submit("Confirm " . htmlspecialchars($this->user->email), [
             "class" => "btn-success",
             "form" => "f-reauth",
             "formaction" => htmlspecialchars($url),
