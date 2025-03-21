@@ -2485,7 +2485,7 @@ class Contact implements JsonSerializable {
             && $cdbu->primaryContactId > 0
             && ($cdbpri = $this->conf->cdb_user_by_id($cdbu->primaryContactId))
             && ($pri = Contact::make_email($this->conf, $cdbpri->email)->store())) {
-            ContactPrimary::set_primary_user($this, $pri);
+            (new ContactPrimary($this))->link($this, $pri);
         }
 
         // we created the user, so no `$localu` (preexisting local user)

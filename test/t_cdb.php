@@ -966,7 +966,7 @@ class Cdb_Tester {
 
         $cu_leopard = $this->conf->cdb_user_by_email("leopard@fart.edu");
         $cu_puma = $this->conf->cdb_user_by_email("puma@fart.edu");
-        ContactPrimary::set_primary_user($cu_puma, $cu_leopard);
+        (new ContactPrimary)->link($cu_puma, $cu_leopard);
 
         $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
         $lu_puma = $this->conf->user_by_email("puma@fart.edu");
@@ -985,7 +985,7 @@ class Cdb_Tester {
         Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Mountain Lion', lastName='Face', email='mtnlion@fart.edu', affiliation='Place University', collaborators='Newsweek Magazine', password=' unset', cflags=0");
 
         $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");
-        ContactPrimary::set_primary_user($lu_leopard, $lu_mtnlion);
+        (new ContactPrimary)->link($lu_leopard, $lu_mtnlion);
         $lu_puma = $this->conf->user_by_email("puma@fart.edu");
         $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
         xassert_eqq($lu_mtnlion->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
@@ -995,7 +995,7 @@ class Cdb_Tester {
         xassert_eqq($lu_leopard->primaryContactId, $lu_mtnlion->contactId);
         xassert_eqq($lu_mtnlion->primaryContactId, 0);
 
-        ContactPrimary::set_primary_user($lu_mtnlion, $lu_leopard);
+        (new ContactPrimary)->link($lu_mtnlion, $lu_leopard);
         $lu_puma = $this->conf->user_by_email("puma@fart.edu");
         $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
         $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");
@@ -1007,7 +1007,7 @@ class Cdb_Tester {
         xassert_eqq($lu_leopard->primaryContactId, 0);
 
         // remove secondaries one at a time
-        ContactPrimary::set_primary_user($lu_mtnlion, null);
+        (new ContactPrimary)->link($lu_mtnlion, null);
         $lu_puma = $this->conf->user_by_email("puma@fart.edu");
         $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
         $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");
@@ -1018,7 +1018,7 @@ class Cdb_Tester {
         xassert_eqq($lu_puma->primaryContactId, $lu_leopard->contactId);
         xassert_eqq($lu_leopard->primaryContactId, 0);
 
-        ContactPrimary::set_primary_user($lu_puma, null);
+        (new ContactPrimary)->link($lu_puma, null);
         $lu_puma = $this->conf->user_by_email("puma@fart.edu");
         $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
         $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");
@@ -1032,10 +1032,10 @@ class Cdb_Tester {
         // link secondary groups
         Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Cougar', lastName='Brain', email='cougar@fart.edu', affiliation='Place University', collaborators='Newsweek Magazine', password=' unset', cflags=0");
         $lu_cougar = $this->conf->user_by_email("cougar@fart.edu");
-        ContactPrimary::set_primary_user($lu_puma, $lu_cougar);
-        ContactPrimary::set_primary_user($lu_leopard, $lu_mtnlion);
+        (new ContactPrimary)->link($lu_puma, $lu_cougar);
+        (new ContactPrimary)->link($lu_leopard, $lu_mtnlion);
         // cross-group link
-        ContactPrimary::set_primary_user($lu_cougar, $lu_leopard);
+        (new ContactPrimary)->link($lu_cougar, $lu_leopard);
         $lu_puma = $this->conf->user_by_email("puma@fart.edu");
         $lu_leopard = $this->conf->user_by_email("leopard@fart.edu");
         $lu_mtnlion = $this->conf->user_by_email("mtnlion@fart.edu");

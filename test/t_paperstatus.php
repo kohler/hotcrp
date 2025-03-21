@@ -1260,28 +1260,28 @@ Phil Porras.");
         xassert_eqq($p30->conflict_type($u_bajaj), CONFLICT_AUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj2), 0);
 
-        ContactPrimary::set_primary_user($u_bajaj, $u_bajaj2);
+        (new ContactPrimary)->link($u_bajaj, $u_bajaj2);
         $p30->invalidate_conflicts();
         xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
         xassert_eqq($p30->conflict_type($u_shenker2), CONFLICT_CONTACTAUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj), CONFLICT_AUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj2), CONFLICT_AUTHOR);
 
-        ContactPrimary::set_primary_user($u_bajaj, null);
+        (new ContactPrimary)->link($u_bajaj, null);
         $p30->invalidate_conflicts();
         xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
         xassert_eqq($p30->conflict_type($u_shenker2), CONFLICT_CONTACTAUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj), CONFLICT_AUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj2), 0);
 
-        ContactPrimary::set_primary_user($u_shenker, $u_shenker2);
+        (new ContactPrimary)->link($u_shenker, $u_shenker2);
         $p30->invalidate_conflicts();
         xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR);
         xassert_eqq($p30->conflict_type($u_shenker2), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj), CONFLICT_AUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj2), 0);
 
-        ContactPrimary::set_primary_user($u_shenker2, $u_shenker3);
+        (new ContactPrimary)->link($u_shenker2, $u_shenker3);
         $p30->invalidate_conflicts();
         xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR);
         xassert_eqq($p30->conflict_type($u_shenker2), 0);
@@ -1292,7 +1292,7 @@ Phil Porras.");
         // need to reload shenker, because the last `set_primary_user`
         // modified their primaryContactId
         $u_shenker = $this->conf->checked_user_by_email($u_shenker->email);
-        ContactPrimary::set_primary_user($u_shenker, null);
+        (new ContactPrimary)->link($u_shenker, null);
         $p30->invalidate_conflicts();
         xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR);
         xassert_eqq($p30->conflict_type($u_shenker2), 0);

@@ -3,6 +3,8 @@
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ContactPrimary {
+    /** @var ?Contact */
+    private $actor;
     /** @var Conf */
     private $conf;
     /** @var bool */
@@ -12,13 +14,8 @@ class ContactPrimary {
     /** @var ?Contact */
     private $pri;
 
-    function __construct(Contact $sec, ?Contact $pri) {
-        $this->conf = $sec->conf;
-        $this->cdb = $sec->is_cdb_user();
-        $this->sec = $sec;
-        if ($pri && strcasecmp($pri->email, $sec->email) !== 0) {
-            $this->pri = $pri;
-        }
+    function __construct(?Contact $actor = null) {
+        $this->actor = $actor;
     }
 
     // Change the primary account for `$sec` to `$pri`.
@@ -28,12 +25,14 @@ class ContactPrimary {
     // If `$sec` is local, then `$pri` is made local.
     // If any changes are made, then authorship in `PaperConflict` is also
     // updated.
-    static function set_primary_user(Contact $sec, ?Contact $pri) {
-        $cp = new ContactPrimary($sec, $pri);
-        $cp->run();
-    }
+    function link(Contact $sec, ?Contact $pri) {
+        $this->conf = $sec->conf;
+        $this->cdb = $sec->is_cdb_user();
+        $this->sec = $sec;
+        if ($pri && strcasecmp($pri->email, $sec->email) !== 0) {
+            $this->pri = $pri;
+        }
 
-    private function run() {
         // resolve pri
         if ($this->pri && !$this->cdb) {
             $this->pri->ensure_account_here();
@@ -45,6 +44,7 @@ class ContactPrimary {
             return;
         }
         // main changes
+        $this->conf->delay_logs();
         if ($this->sec->primaryContactId !== 0) {
             $this->_remove_old_primary();
         } else {
@@ -57,7 +57,11 @@ class ContactPrimary {
             $this->pri->set_prop("primaryContactId", 0);
             $this->pri->save_prop();
         }
+        if (!$this->cdb && $this->actor) {
+            $this->conf->log_for($this->actor, $this->sec, "Primary account" . ($this->pri ? " set to {$this->pri->email}" : " removed"));
+        }
         $this->sec->save_prop();
+        $this->conf->release_logs();
         // authorship changes
         if (!$this->cdb) {
             self::_update_author_records($this->sec->conf,
@@ -113,6 +117,9 @@ class ContactPrimary {
                 $u->set_prop("primaryContactId", $this->pri->$idk);
                 $u->set_prop("cflags", $u->cflags & ~Contact::CF_PRIMARY);
                 $u->save_prop();
+                if (!$this->cdb && $this->actor) {
+                    $this->conf->log_for($this->actor, $u, "Primary account set to {$this->pri->email}");
+                }
             }
         }
         if (!empty($ids)) {
@@ -124,7 +131,10 @@ class ContactPrimary {
                 $this->pri->$idk);
             if ($old_primary !== $this->sec->$idk) {
                 Dbl::qe($this->sec->dblink(), "insert into ContactPrimary set contactId=?, primaryContactId=?",
-                    $old_primary, $this->pri->$idk);
+                        $old_primary, $this->pri->$idk);
+                if (!$this->cdb && $this->actor) {
+                    $this->conf->log_for($this->actor, $old_primary, "Primary account set to {$this->pri->email}");
+                }
             }
         }
     }
