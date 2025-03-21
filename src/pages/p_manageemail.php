@@ -77,8 +77,15 @@ class ManageEmail_Page {
         $this->ms = new MessageSet;
     }
 
-    private function print_header($title = "Manage email") {
-        $this->qreq->print_header($title, "manageemail", ["body_class" => "body-text"]);
+    private function print_header($subtitle = null) {
+        if ($subtitle === null) {
+            $this->qreq->print_header("Manage email", "manageemail", ["body_class" => "body-text"]);
+        } else {
+            $title_div = "<div id=\"h-page\"><h1><a href=\""
+                . $this->conf->hoturl("manageemail", ["u" => $this->user ? $this->user->email : null])
+                . "\" class=\"q\">Manage email</a> <span class=\"pl-2 pr-2\">&#x2215;</span> <strong>{$subtitle}</strong></h1></div>";
+            $this->qreq->print_header($subtitle, "manageemail", ["body_class" => "body-text", "title_div" => $title_div]);
+        }
     }
 
     /** @return PageCompletion */
@@ -170,19 +177,46 @@ class ManageEmail_Page {
     private function choose_link() {
         echo '<div class="form-section">',
             '<h3>Link accounts</h3>',
-            '<p>Use this option if you have multiple accounts, but HotCRP should use a primary account for most purposes. Emails, new review requests, and new PC assignments sent to any of the linked accounts will be redirected to the primary account. Papers authored by any of the linked accounts will also be accessible to the primary account.</p>',
+            '<p>Use this option to select a primary account that HotCRP should use for most purposes. Emails, new review requests, and new PC assignments sent to a linked account will be redirected to the primary account, and papers authored by any of the linked accounts will be accessible to the primary account. Reviews, however, aren’t transferred automatically; use ',
+            Ht::link('“Transfer reviews”', $this->conf->selfurl($this->qreq, ["t" => "transferreview"])),
+            ' to move reviews between accounts.</p>',
             Ht::link("Link accounts", $this->conf->selfurl($this->qreq, ["t" => "link"]), ["class" => "btn btn-primary"]),
             '</div>';
     }
 
+    private function can_unlink() {
+        if ($this->user->primaryContactId > 0) {
+            return true;
+        }
+        $emails = Contact::session_users($this->qreq);
+        $this->conf->prefetch_users_by_email($emails);
+        $this->conf->prefetch_cdb_users_by_email($emails);
+        $any = null;
+        foreach ($emails as $e) {
+            if (($u = $this->conf->user_by_email($e))
+                && ($u->primaryContactId > 0
+                    || (($uu = $u->cdb_user()) && $uu->primaryContactId > 0))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private function choose_unlink() {
-        $pri = $this->user->similar_user_by_id($this->user->primaryContactId);
+        if (!$this->can_unlink()) {
+            return;
+        }
         echo '<div class="form-section">',
-            '<h3>Unlink account</h3>',
-            '<p>This account, <strong class="sb">', htmlspecialchars($this->user->email),
-            '</strong>, is currently linked to primary account <strong class="sb">',
-            htmlspecialchars($pri->email), '</strong>. Use this option to unlink it.</p>',
-            Ht::link("Unlink accounts", $this->conf->selfurl($this->qreq, ["t" => "unlink"]), ["class" => "btn btn-primary"]),
+            '<h3>Unlink accounts</h3>';
+        if ($this->user->primaryContactId > 0) {
+            $pri = $this->user->similar_user_by_id($this->user->primaryContactId);
+            echo '<p>This account, <strong class="sb">', htmlspecialchars($this->user->email),
+                '</strong>, is currently linked to primary account <strong class="sb">',
+                htmlspecialchars($pri->email), '</strong>. Use this option to unlink it.</p>';
+        } else {
+            echo '<p>Use this option to unlink an account from its primary account.</p>';
+        }
+        echo Ht::link("Unlink accounts", $this->conf->selfurl($this->qreq, ["t" => "unlink", "u" => $this->user->email]), ["class" => "btn btn-primary"]),
             '</div>';
     }
 
@@ -418,13 +452,13 @@ class ManageEmail_Page {
             $jr = $me->transferreview();
             echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST));
             if (!$jr->ok()) {
-                echo "<p>You can’t transfer reviews from {$srchemail} to {$dsthemail}.</p>";
+                echo "<p>You can’t transfer reviews from <strong class=\"sb\">{$srchemail}</strong> to <strong class=\"sb\">{$dsthemail}</strong>.</p>";
             }
             $this->conf->feedback_msg($jr->get("message_list") ?? []);
             if ($jr->ok()) {
                 echo '<p>Confirming will transfer ',
                     commajoin($jr->get("change_list")),
-                    " from {$srchemail} to {$dsthemail}.</p>";
+                    " from <strong class=\"sb\">{$srchemail}</strong> to <strong class=\"sb\">{$dsthemail}</strong>.</p>";
                 $this->print_step_actions();
             } else {
                 $this->print_step_actions("fail");
@@ -630,7 +664,7 @@ class ManageEmail_Page {
             $jr = $me->link();
             echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST));
             if (!$jr->ok()) {
-                echo "<p>You can’t link accounts {$sechemail} and {$prihemail}.</p>";
+                echo "<p>You can’t link accounts <strong class=\"sb\">{$sechemail}</strong> and <strong class=\"sb\">{$prihemail}</strong>.</p>";
             }
             $this->conf->feedback_msg($jr->get("message_list") ?? []);
             if ($jr->ok()) {
@@ -667,13 +701,13 @@ class ManageEmail_Page {
             echo '<label class="checki"><span class="checkc">',
                 Ht::radio("linktype", $type, $linktype === $type),
                 '</span>';
+            $args = [new FmtArg("sec", $this->dstuser->email, 0), new FmtArg("pri", $this->user->email, 0)];
             if ($type === "local") {
-                echo "Link accounts on this site only";
+                echo Ftext::as(5, $this->conf->_c("manageemail", "<0>Link accounts on this site only", ...$args));
             } else if ($type === "global") {
-                echo Ftext::as(5, $this->conf->_c("manageemail", "<0>Link accounts on this site and for future sites"));
+                echo Ftext::as(5, $this->conf->_c("manageemail", "<0>Link accounts on this site and future {affiliated-sites}", ...$args));
             } else {
-                echo Ftext::as(5, $this->conf->_c("manageemail", "<5>Link accounts on <strong>all</strong> sites, including sites where <strong class=\"sb\">{sec}</strong> already has an account",
-                    new FmtArg("sec", $this->dstuser->email, 0)));
+                echo Ftext::as(5, $this->conf->_c("manageemail", "<5>Link accounts on <strong>all</strong> {affiliated-sites}", ...$args));
             }
             echo '</label>';
         }
@@ -841,7 +875,7 @@ class ManageEmail_Page {
             $jr = $me->unlink();
             echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST));
             if (!$jr->ok()) {
-                echo "<p>You can’t unlink account {$prihemail}.</p>";
+                echo "<p>You can’t unlink account <strong class=\"sb\">{$prihemail}</strong>.</p>";
             }
             $this->conf->feedback_msg($jr->get("message_list") ?? []);
             if ($jr->ok()) {
@@ -885,16 +919,17 @@ class ManageEmail_Page {
         if ($types === ["local"]) {
             return;
         }
+        $args = [new FmtArg("sec", $this->user->email, 0)];
         foreach ($types as $type) {
             echo '<label class="checki"><span class="checkc">',
                 Ht::radio("linktype", $type, $linktype === $type),
                 '</span>';
             if ($type === "local") {
-                echo "Unlink account on this site only";
+                echo Ftext::as(5, $this->conf->_c("manageemail", "<0>Unlink account on this site only", ...$args));
             } else if ($type === "global") {
-                echo Ftext::as(5, $this->conf->_c("manageemail", "<0>Unlink account on this site and for future sites"));
+                echo Ftext::as(5, $this->conf->_c("manageemail", "<0>Unlink account on this site and future {affiliated-sites}", ...$args));
             } else {
-                echo Ftext::as(5, $this->conf->_c("manageemail", "<5>Unlink account on <strong>all</strong> sites"));
+                echo Ftext::as(5, $this->conf->_c("manageemail", "<5>Unlink account on <strong>all</strong> {affiliated-sites}", ...$args));
             }
             echo '</label>';
         }

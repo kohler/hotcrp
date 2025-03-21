@@ -25,8 +25,7 @@ $Opt["dbName"] = "FIXME";
 //                   strings. Wildcards are expanded (e.g., "conf/*.conf");
 //                   relative paths are interpreted based on HOTCRPDIR.
 //   multiconference, multiconferenceAnalyzer
-//                   Support multiple conferences from a single installation.
-//                   See README.md.
+//                   Serve multiple conferences from a single directory.
 
 
 // NAMES AND SITES

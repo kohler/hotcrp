@@ -180,30 +180,29 @@ class ManageEmail_API extends MessageSet {
         return null;
     }
 
-    /** @param bool $only_viewer
+    /** @param bool $allow_chair
      * @return ?string */
-    private function confirm_ec($only_viewer) {
+    private function confirm_ec($allow_chair) {
+        if ($allow_chair
+            && $this->global
+            && !$this->viewer->can_edit_any_password()) {
+            $allow_chair = false;
+        }
         // check whether accounts have been recently confirmed
         if (!$this->confirm($this->viewer)) {
             $this->error_at(null, "<0>Account confirmation required");
             return "confirm_self";
         }
-        if (!$only_viewer
+        if (!$allow_chair
             && !$this->confirm($this->user)) {
             $this->error_at("u", "<0>Account confirmation required");
             return "confirm";
         }
-        if (!$only_viewer
+        if (!$allow_chair
             && $this->dstuser
             && !$this->confirm($this->dstuser)) {
             $this->error_at("email", "<0>Account confirmation required");
             return "confirm";
-        }
-        if ($this->global
-            && !$this->viewer_involved
-            && !$this->viewer->can_edit_any_password()) {
-            $this->error_at("global", "<0>You can only make all-site updates on your own account");
-            return "global";
         }
         return null;
     }
@@ -230,9 +229,7 @@ class ManageEmail_API extends MessageSet {
         $allow_any_link = $this->viewer->privChair && $this->viewer->can_edit_any_password();
         if ($this->viewer_involved || $allow_any_link) {
             $actions[] = "link";
-            if ($this->user->primaryContactId > 0) {
-                $actions[] = "unlink";
-            }
+            $actions[] = "unlink";
         }
         return new JsonResult(200, ["ok" => true, "actions" => $actions]);
     }
@@ -544,16 +541,7 @@ class ManageEmail_API extends MessageSet {
         return $this->realize_ec($this->user_ec($this->user, "u")
             ?? $this->user_ec($this->dstuser, "email")
             ?? $this->confirm_ec(false)
-            ?? $this->link_ec()
             ?? $this->ecrun_link());
-    }
-
-    private function link_ec() {
-        if ($this->viewer_involved || $this->viewer->can_edit_any_password()) {
-            return null;
-        }
-        $this->error_at("u", "<0>You cannot link accounts other than your own");
-        return "self";
     }
 
     /** @return ?string */
@@ -568,7 +556,7 @@ class ManageEmail_API extends MessageSet {
                 || ($gdstuser
                     && $guser->primaryContactId === $gdstuser->contactDbId
                     && !$this->all_sites))) {
-            $this->warning_at(null, "<0>No changes");
+            $this->warning_at(null, "<0>Accounts already linked");
             return null;
         }
         if ($this->dry_run) {
@@ -581,7 +569,7 @@ class ManageEmail_API extends MessageSet {
         if ($guser && $gdstuser) {
             $cp->link($guser, $gdstuser);
             if ($this->all_sites
-                && ($cf = $this->conf->opt("linkAccountAllSitesFunction"))) {
+                && ($cf = $this->conf->opt("linkAccountsAllSitesFunction"))) {
                 call_user_func($cf, $this->conf, $guser, $gdstuser);
             }
         }
@@ -594,7 +582,6 @@ class ManageEmail_API extends MessageSet {
     function unlink() {
         return $this->realize_ec($this->user_ec($this->user, "u")
             ?? $this->confirm_ec(false)
-            ?? $this->link_ec()
             ?? $this->ecrun_unlink());
     }
 
@@ -604,7 +591,7 @@ class ManageEmail_API extends MessageSet {
         $guser = $this->global ? $this->user->cdb_user() : null;
         if ((!$luser || $luser->primaryContactId <= 0)
             && (!$guser || ($guser->primaryContactId <= 0 && !$this->all_sites))) {
-            $this->warning_at(null, "<0>No changes");
+            $this->warning_at(null, "<0>Account not currently linked");
             return null;
         }
         if ($this->dry_run) {
@@ -617,7 +604,7 @@ class ManageEmail_API extends MessageSet {
         if ($guser) {
             $cp->link($guser, null);
             if ($this->all_sites
-                && ($cf = $this->conf->opt("linkAccountAllSitesFunction"))) {
+                && ($cf = $this->conf->opt("linkAccountsAllSitesFunction"))) {
                 call_user_func($cf, $this->conf, $guser, null);
             }
         }

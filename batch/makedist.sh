@@ -255,6 +255,7 @@ src/cdbuserupdate.php
 src/checkformat.php
 src/commentinfo.php
 src/componentset.php
+src/confactions.php
 src/conference.php
 src/confinvariants.php
 src/conflict.php

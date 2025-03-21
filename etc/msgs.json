@@ -3,6 +3,7 @@
     {"in": "submissions", "out": "submissions", "template": true},
     {"in": "Submission", "out": "Submission", "template": true},
     {"in": "Submissions", "out": "Submissions", "template": true},
+    {"in": "affiliated-sites", "out": "affiliated sites", "template": true},
 
     ["average {0} score {1}", "{0} score {1}", ["{2}=1"]],
 

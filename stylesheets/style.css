@@ -585,7 +585,7 @@ input.wide {
 .font-weight-bold {
 	font-weight: bold;
 }
-.font-weight-semibold, strong.sb {
+.font-weight-semibold, .sb {
 	font-weight: 500;
 }
 .font-italic {

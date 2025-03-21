@@ -442,7 +442,7 @@ class FmtContext {
      * @param -1|0|1 $expansion
      * @return array{int,?string} */
     private function expand_brace($s, $pos, $expansion) {
-        if (!preg_match('/\{(|0|[1-9]\d*+|[a-zA-Z_]\w*+)(|\[[^\]]*+\])(:(?!\})|\})/A', $s, $m, 0, $pos)
+        if (!preg_match('/\{(|0|[1-9]\d*+|[a-zA-Z_][-\w]*+)(|\[[^\]]*+\])(:(?!\})|\})/A', $s, $m, 0, $pos)
             || ($m[1] === "" && ($this->argnum === null || $m[2] !== ""))
             || ($expansion !== 0 && ($m[1] === "" || ctype_digit($m[1])))) {
             return [$pos + 1, null];

@@ -386,7 +386,7 @@ class Conf {
 
         // apply conference actions
         if ($this->settingTexts["confactions"] ?? null) {
-            ConferenceActions::execute_settings($this);
+            ConfActions::execute_settings($this);
             unset($this->settings["confactions"], $this->settingTexts["confactions"]);
         }
     }
@@ -5057,7 +5057,7 @@ class Conf {
             $title_div = $extra["title_div"] ?? null;
             if ($title_div === null) {
                 if (($subtitle = $extra["subtitle"] ?? null)) {
-                    $title .= " &nbsp;&#x2215;&nbsp; <strong>{$subtitle}</strong>";
+                    $title .= " <span class=\"pl-2 pr-2\">&#x2215;</span> <strong>{$subtitle}</strong>";
                 }
                 if ($title && $title !== "Home") {
                     $title_div = "<div id=\"h-page\"><h1>{$title}</h1></div>";

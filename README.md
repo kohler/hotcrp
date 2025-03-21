@@ -179,6 +179,7 @@ You can set up everything else through the web site itself.
     `conf/options.php`: a Settings record with name `opt.XXX` takes
     precedence over option `$Opt["XXX"]`.
 
+
 Database access
 ---------------
 
@@ -193,6 +194,7 @@ database from a backup stored in `BACKUPFILE`.
 Run `lib/runsql.sh` at the shell prompt to get a SQL command prompt for the
 conference database.
 
+
 Updates
 -------
 
@@ -204,11 +206,13 @@ preserving `conf/options.php`. For instance, using GNU tar:
     % cd HOTCRPINSTALLATION
     % tar --strip=1 -xf ~/hotcrp-NEWVERSION.tar.gz
 
+
 License
 -------
 
 HotCRP is available under the Click license, a BSD-like license. See the
 LICENSE file for full license terms.
+
 
 Authors
 -------
