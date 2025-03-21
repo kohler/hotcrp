@@ -29,39 +29,41 @@ class Getopt {
     private $maxarg;
 
     // values matter
-    const NOARG = 0;   // no argument
-    const ARG = 1;     // mandatory argument
-    const OPTARG = 2;  // optional argument
-    const MARG = 3;    // multiple argument options (e.g., `-n a -n b -n c`)
-    const MARG2 = 5;   // multiple arguments (e.g., `-n a -n b c`)
+    const NOARG = 0;    // no argument
+    const ARG = 1;      // mandatory argument
+    const OPTARG = 2;   // optional argument
+    const COUNTARG = 4; // no argument, but count number of times given
+    const MARG = 9;     // multiple argument options (e.g., `-n a -n b -n c`)
+    const MARG2 = 11;   // multiple arguments (e.g., `-n a -n b c`)
+    const SOMEARGMASK = 3;
+    const MARGMASK = 8;
 
     /** @param string $options
      * @return $this */
     function short($options) {
         $olen = strlen($options ?? "");
         for ($i = 0; $i !== $olen; ) {
-            if (ctype_alnum($options[$i])) {
-                $opt = $options[$i];
-                $arg = self::NOARG;
-                ++$i;
-                if ($i < $olen && $options[$i] === ":") {
-                    ++$i;
-                    $arg = self::ARG;
-                    if ($i < $olen && $options[$i] === ":") {
-                        ++$i;
-                        $arg = self::OPTARG;
-                    }
-                } else if ($i + 2 < $olen && $options[$i] === "[" && $options[$i+1] === "]" && $options[$i+2] === "+") {
-                    $i += 3;
-                    $arg = self::MARG2;
-                } else if ($i + 2 < $olen && $options[$i] === "[" && $options[$i+1] === "]") {
-                    $i += 2;
-                    $arg = self::MARG;
-                }
-                $this->po[$opt] = new GetoptOption($opt, $arg, null, null);
-            } else {
-                throw new ErrorException("Getopt \$options");
+            if (!ctype_alnum($options[$i])) {
+                throw new ErrorException("Getopt::short: unexpected `{$options[$i]}`");
             }
+            $opt = $options[$i];
+            $t = self::NOARG;
+            $d = 0;
+            ++$i;
+            if ($i >= $olen) {
+                // end of string: no argument
+            } else if ($options[$i] === ":") {
+                $d = $i + 1 < $olen && $options[$i + 1] === ":" ? 2 : 1;
+                $t = $d;
+            } else if ($options[$i] === "#") {
+                $d = 1;
+                $t = self::COUNTARG;
+            } else if ($i + 1 < $olen && $options[$i] === "[" && $options[$i + 1] === "]") {
+                $d = $i + 2 < $olen && $options[$i + 2] === "+" ? 3 : 2;
+                $t = $d === 3 ? self::MARG2 : self::MARG;
+            }
+            $i += $d;
+            $this->po[$opt] = new GetoptOption($opt, $t, null, null);
         }
         return $this;
     }
@@ -82,6 +84,7 @@ class Getopt {
             // * `[]` - mandatory argument, option can be given multiple times
             // * `[]+` - mandatory argument, multiple times, can take multiple
             //   command line arguments (e.g., `-a a1 a2 a3 a4`)
+            // * `#` - no argument, but count number of times given
             // All `option`s must have the same argument description.
             // * `{ARGTYPE}` checks & transforms arguments. `{i}` means
             //    int, `{n}` means nonnegative int.
@@ -112,9 +115,17 @@ class Getopt {
                 }
                 $t = self::NOARG;
                 $d = 0;
-                if ($p + 1 < $co && $s[$co-1] === ":") {
-                    $d = $t = $p + 2 < $co && $s[$co-2] === ":" ? 2 : 1;
-                } else if ($p + 2 < $co && $s[$co-2] === "[" && $s[$co-1] === "]") {
+                if ($p + 1 >= $co) {
+                    // end of string: no argument
+                } else if ($s[$co - 1] === ":") {
+                    $d = $p + 2 < $co && $s[$co - 2] === ":" ? 2 : 1;
+                    $t = $d;
+                } else if ($s[$co - 1] === "#") {
+                    $d = 1;
+                    $t = self::COUNTARG;
+                } else if ($p + 2 >= $co) {
+                    // no argument
+                } else if ($s[$co-2] === "[" && $s[$co-1] === "]") {
                     $d = 2;
                     $t = self::MARG;
                 } else if ($p + 3 < $co && $s[$co-3] === "[" && $s[$co-2] === "]" && $s[$co-1] === "+") {
@@ -125,7 +136,8 @@ class Getopt {
                 $po = $po ?? new GetoptOption($n, $t, $type, $help);
                 if ($t !== $po->arg) {
                     throw new ErrorException("Getopt::long: option {$n} has conflicting argspec");
-                } else if ($t === 0 && ($type !== null || ($help !== null && str_starts_with($help, "=")))) {
+                } else if (($t & self::SOMEARGMASK) === 0
+                           && ($type !== null || ($help !== null && str_starts_with($help, "=")))) {
                     throw new ErrorException("Getopt::long: option {$n} should take argument");
                 }
                 $this->po[$n] = $po;
@@ -468,7 +480,7 @@ class Getopt {
                     $pot = $po->arg;
                     if ($eq !== false) {
                         $value = substr($arg, $eq + 1);
-                    } else if (($pot === self::ARG || $pot >= self::MARG)
+                    } else if (($pot & self::ARG) !== 0
                                && self::value_allowed($argv[$i + 1] ?? null)) {
                         $value = $argv[$i + 1];
                         ++$i;
@@ -484,13 +496,13 @@ class Getopt {
                     if (strlen($arg) > 2) {
                         if ($arg[2] === "=") {
                             $value = (string) substr($arg, 3);
-                        } else if ($pot !== self::NOARG) {
+                        } else if (($pot & self::SOMEARGMASK) !== 0) {
                             $value = substr($arg, 2);
                         } else {
                             $argv[$i] = "-" . substr($arg, 2);
                             --$i;
                         }
-                    } else if (($pot === self::ARG || $pot >= self::MARG)
+                    } else if (($pot & self::ARG) !== 0
                                && self::value_allowed($argv[$i + 1] ?? null)) {
                         $value = $argv[$i + 1];
                         ++$i;
@@ -513,10 +525,17 @@ class Getopt {
                 continue;
             }
 
-            if ($value !== false && $pot === self::NOARG) {
-                throw new CommandLineException("`{$oname}` takes no argument", $this);
-            } else if ($value === false && ($pot & 1) === 1) {
-                throw new CommandLineException("Missing argument for `{$oname}`", $this);
+            if ($value !== false) {
+                if (($pot & self::SOMEARGMASK) === 0) {
+                    throw new CommandLineException("`{$oname}` takes no argument", $this);
+                }
+            } else {
+                if (($pot & self::ARG) !== 0) {
+                    throw new CommandLineException("Missing argument for `{$oname}`", $this);
+                }
+                if ($pot === self::COUNTARG) {
+                    $value = ($res[$name] ?? 0) + 1;
+                }
             }
 
             $poty = $value !== false ? $po->argtype : null;
@@ -540,8 +559,8 @@ class Getopt {
                 throw new ErrorException("Bad Getopt type `{$poty}` for `{$oname}`");
             }
 
-            if (!array_key_exists($name, $res)) {
-                $res[$name] = $pot >= self::MARG ? [$value] : $value;
+            if (!array_key_exists($name, $res) || $pot === self::COUNTARG) {
+                $res[$name] = $pot & self::MARGMASK ? [$value] : $value;
             } else if ($pot < self::MARG && !$this->allmulti) {
                 if (!$this->dupopt) {
                     throw new CommandLineException("`{$oname}` was given multiple times", $this);
@@ -598,7 +617,7 @@ class Getopt {
 class GetoptOption {
     /** @var string */
     public $name;
-    /** @var 0|1|2|3|5 */
+    /** @var 0|1|2|4|9|11 */
     public $arg;
     /** @var ?string */
     public $argtype;
@@ -606,7 +625,7 @@ class GetoptOption {
     public $help;
 
     /** @param string $name
-     * @param 0|1|2|3|5 $arg
+     * @param 0|1|2|4|9|11 $arg
      * @param ?string $argtype
      * @param ?string $help */
     function __construct($name, $arg, $argtype, $help) {

@@ -1460,6 +1460,11 @@ class Unit_Tester {
         xassert_eqq(json_encode($arg), '{"a":"10","_":["c"]}');
     }
 
+    function test_getopt_count() {
+        $arg = (new Getopt)->short("vV#x")->parse(["fart", "-vVVxV"]);
+        xassert_eqq(json_encode($arg), '{"v":false,"V":3,"x":false,"_":[]}');
+    }
+
     function test_friendly_boolean() {
         xassert_eqq(friendly_boolean(""), false);
         xassert_eqq(friendly_boolean("0"), false);
