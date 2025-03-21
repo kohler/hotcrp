@@ -142,9 +142,10 @@ class Ht {
         $method = $extra["method"] ?? "post";
         if ($method === "get"
             && ($qpos = strpos($action, "?")) !== false) {
-            $pos = $qpos + 1;
-            while ($pos < strlen($action)
-                   && preg_match('/\G([^#=&;]*)=([^#&;]*)([#&;]|\z)/', $action, $m, 0, $pos)) {
+            $decoded_query = htmlspecialchars_decode(substr($action, $qpos + 1));
+            $pos = 0;
+            while ($pos < strlen($decoded_query)
+                   && preg_match('/\G([^\#=&;]*)=([^\#&;]*)([\#&;]|\z)/', $decoded_query, $m, 0, $pos)) {
                 $suffix .= self::hidden(urldecode($m[1]), urldecode($m[2]));
                 $pos += strlen($m[0]);
                 if ($m[3] === "#") {
@@ -152,7 +153,7 @@ class Ht {
                     break;
                 }
             }
-            $action = substr($action, 0, $qpos) . (string) substr($action, $pos);
+            $action = substr($action, 0, $qpos) . htmlspecialchars((string) substr($decoded_query, $pos));
         }
 
         $x = '<form';
