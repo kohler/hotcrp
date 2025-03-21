@@ -8,7 +8,6 @@
 			"{{PASSWORDLINK}}\n\n",
 			"If you did not make this request, it’s safe to ignore this email.\n\n",
 			"The link will work for 3 days. Should it expire, obtain a new link using \"Forgot my password\".\n\n",
-			"If you already have an account under a different email address, you may merge this new account into that one. Go to your account settings and select \"Merge with another account\".\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
@@ -26,7 +25,7 @@
 			"{{PASSWORDLINK}}\n\n",
 			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
 			"{{ENDIF}}\n\n",
-			"If you already have an account under a different email address, you may merge this new account into that one. Go to your account settings and select \"Merge with another account\".\n\n",
+			"**NEW IN 2025**: Manage multiple accounts with different email addresses using Account settings > Manage email.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
@@ -46,7 +45,7 @@
 			"{{PASSWORDLINK}}\n\n",
 			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
 			"{{ENDIF}}\n\n",
-			"If you already have an account under a different email address, you may merge this new account into that one. Go to your account settings and select \"Merge with another account\".\n\n",
+			"**NEW IN 2025**: Manage multiple accounts with different email addresses using Account settings > Manage email.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
@@ -65,7 +64,7 @@
 			"{{PASSWORDLINK}}\n\n",
 			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
 			"{{ENDIF}}\n\n",
-			"If you already have an account under a different email address, you may merge this new account into that one. Go to your account settings and select \"Merge with another account\".\n\n",
+			"**NEW IN 2025**: Manage multiple accounts with different email addresses using Account settings > Manage email.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
@@ -84,7 +83,6 @@
 			"{{PASSWORDLINK}}\n\n",
 			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
 			"{{ENDIF}}\n\n",
-			"If you already have an account under a different email address, you may merge this new account into that one. Go to your account settings and select \"Merge with another account\".\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
 		]

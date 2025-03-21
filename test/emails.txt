@@ -16,9 +16,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -43,9 +42,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -70,9 +68,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -99,9 +96,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -126,9 +122,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -153,9 +148,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -180,9 +174,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -207,9 +200,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -234,9 +226,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -261,9 +252,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -288,9 +278,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -315,9 +304,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -342,9 +330,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -369,9 +356,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -396,9 +382,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -423,9 +408,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -452,9 +436,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -479,9 +462,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.
@@ -508,9 +490,8 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
-If you already have an account under a different email address, you may
-merge this new account into that one. Go to your account settings and
-select "Merge with another account".
+**NEW IN 2025**: Manage multiple accounts with different email addresses
+using Account settings > Manage email.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
 concerns.

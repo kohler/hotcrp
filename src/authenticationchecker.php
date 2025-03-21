@@ -32,7 +32,11 @@ class AuthenticationChecker {
         $this->user = $user;
         $this->qreq = $qreq;
         $this->reason = $reason;
-        $this->max_age = 600;
+        if ($reason === "manageemail") {
+            $this->max_age = 3600;
+        } else {
+            $this->max_age = 600;
+        }
     }
 
     /** @param string $url

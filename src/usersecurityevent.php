@@ -135,6 +135,17 @@ class UserSecurityEvent {
         }
     }
 
+    /** @param string $email
+     * @return ?UserSecurityEvent */
+    static function session_latest_signin_by_email(Qsession $qs, $email) {
+        $signin = null;
+        foreach (self::session_list_by_email($qs, $email) as $use) {
+            if ($use->reason === self::REASON_SIGNIN)
+                $signin = $use;
+        }
+        return $signin;
+    }
+
 
     function store(Qsession $qs) {
         assert(isset($this->email));

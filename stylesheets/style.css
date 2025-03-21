@@ -1704,6 +1704,43 @@ button > .licon, .btn > .licon {
 	stroke-linecap: round;
 }
 
+/* Wizard accordion */
+.wizard-accordion {
+	border: 1px solid #9999cc;
+	border-radius: 4px;
+	padding: 0 0.75rem;
+}
+fieldset.wizard-accordion-step {
+	border: none;
+	padding: 0;
+}
+fieldset.wizard-accordion-step:first-child > legend {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+}
+fieldset.wizard-accordion-step > legend {
+	display: block;
+	margin: 0 -0.75rem;
+	padding: 0.25rem 1.5rem 0.25rem 0.75rem;
+	width: calc(100% + 1.5rem);
+}
+fieldset.wizard-accordion-step.past > legend {
+	background: var(--submission-bg);
+}
+fieldset.wizard-accordion-step.current {
+	padding-bottom: 0.75rem;
+}
+fieldset.wizard-accordion-step.current > legend {
+	background: var(--brand-bg-dark);
+	margin-bottom: 0.5rem;
+}
+fieldset.wizard-accordion-step.future {
+	color: #aaa;
+}
+fieldset.wizard-accordion-step.future > legend {
+	background: #eee;
+}
+
 
 /* Ajax checks */
 .mf-text, .mf-absolute {

@@ -1552,30 +1552,11 @@ class UserStatus extends MessageSet {
     static function print_main(UserStatus $us) {
         $user = $us->user;
         $qreq = $us->qreq;
-        $actas = "";
-        if ($user !== $us->viewer
-            && $user->email !== ""
-            && $us->viewer->privChair) {
-            $actas = '&nbsp;' . actas_link($user);
-        }
 
-        if (!$us->conf->external_login()) {
-            $email_class = "want-focus fullw";
-            if ($user->can_lookup_user()) {
-                $email_class .= " uii js-email-populate";
-            }
-            $us->print_field("uemail", "Email" . $actas,
-                Ht::entry("uemail", $qreq->uemail ?? $user->email, ["class" => $email_class, "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => $user->email, "type" => "email"]));
-        } else if (!$user->is_empty()) {
-            $us->print_field("", "Username" . $actas,
-                htmlspecialchars($user->email));
-            $us->print_field("preferredEmail", "Email",
-                Ht::entry("preferredEmail", $qreq->preferredEmail ?? $user->preferredEmail, ["class" => "want-focus fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => $user->preferredEmail, "type" => "email"]));
+        if ($us->conf->external_login()) {
+            $us->print_main_external_username();
         } else {
-            $us->print_field("uemail", "Username",
-                Ht::entry("newUsername", $qreq->uemail ?? $user->email, ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "autocomplete" => $us->autocomplete("username"), "data-default-value" => $user->email]));
-            $us->print_field("preferredEmail", "Email",
-                      Ht::entry("preferredEmail", $qreq->preferredEmail ?? $user->preferredEmail, ["class" => "fullw", "size" => 52, "id" => "preferredEmail", "autocomplete" => $us->autocomplete("email"), "data-default-value" => $user->preferredEmail, "type" => "email"]));
+            $us->print_main_email();
         }
 
         echo '<div class="f-mcol w-text">';
@@ -1588,6 +1569,50 @@ class UserStatus extends MessageSet {
 
         $t = Ht::entry("affiliation", $qreq->affiliation ?? $user->affiliation, ["size" => 52, "autocomplete" => $us->autocomplete("organization"), "class" => "fullw", "id" => "affiliation", "data-default-value" => $user->affiliation]) . $us->global_profile_difference("affiliation");
         $us->print_field("affiliation", "Affiliation", $t);
+    }
+
+    function actas_link() {
+        if ($this->user !== $this->viewer
+            && $this->user->email !== ""
+            && $this->viewer->privChair) {
+            return "&nbsp;" . actas_link($this->user);
+        }
+        return "";
+    }
+
+    function print_main_email() {
+        if ($this->user->is_empty()) {
+            $class = "want-focus fullw";
+            if ($this->viewer->can_lookup_user()) {
+                $class .= " uii js-email-populate";
+            }
+            $this->print_field("uemail", "Email" . $this->actas_link(),
+                Ht::entry("uemail", $this->qreq->uemail ?? $this->user->email, ["class" => $class, "size" => 52, "id" => "uemail", "autocomplete" => $this->autocomplete("username"), "data-default-value" => $this->user->email, "type" => "email"]));
+        } else {
+            if (Contact::session_index_by_email($this->qreq->qsession(), $this->user->email) >= 0) {
+                $link = "<p class=\"nearby\">" . Ht::link("Manage email →", $this->conf->hoturl("manageemail", ["u" => $this->user->email]), ["class" => "btn btn-success btn-sm"]) . "</p>";
+            } else if ($this->viewer->privChair && $this->user->is_reviewer()) {
+                $link = "<p class=\"nearby\">" . Ht::link("Transfer reviews →", $this->conf->hoturl("manageemail", ["t" => "transferreview", "u" => $this->user->email]), ["class" => "btn btn-primary btn-sm"]) . "</p>";
+            } else {
+                $link = "";
+            }
+            $this->print_field("uemail", "Email" . $this->actas_link(),
+                "<p><strong class=\"sb\">" . htmlspecialchars($this->user->email) . "</strong></p>{$link}");
+        }
+    }
+
+    function print_main_external_username() {
+        if ($this->user->is_empty()) {
+            $this->print_field("uemail", "Username",
+                Ht::entry("newUsername", $this->qreq->uemail ?? $this->user->email, ["class" => "want-focus fullw", "size" => 52, "id" => "uemail", "autocomplete" => $this->autocomplete("username"), "data-default-value" => $this->user->email]));
+            $peclass = "fullw";
+        } else {
+            $this->print_field("", "Username" . $this->actas_link(),
+                "<strong class=\"sb\">" . htmlspecialchars($this->user->email) . "</strong>");
+            $peclass = "want-focus fullw";
+        }
+        $this->print_field("preferredEmail", "Email",
+            Ht::entry("preferredEmail", $this->qreq->preferredEmail ?? $this->user->preferredEmail, ["class" => $peclass, "size" => 52, "id" => "preferredEmail", "autocomplete" => $this->autocomplete("email"), "data-default-value" => $this->user->preferredEmail, "type" => "email"]));
     }
 
     static function print_country(UserStatus $us) {
@@ -1868,15 +1893,13 @@ topics. We use this information to help match papers to reviewers.</p>',
             Ht::submit("cancel", "Cancel", ["formnovalidate" => true])
         ];
         if ($this->can_update_cdb()
+            && $this->cdb_user()
             && $this->cs()->root === "main") {
-            if ($this->cdb_user()) {
-                echo '<label class="checki mt-7"><span class="checkc">',
-                    Ht::hidden("has_update_global", 1),
-                    Ht::checkbox("update_global", 1, !$this->qreq->has_updateglobal || $this->qreq->updateglobal, ["class" => "ignore-diff"]),
-                    '</span>Update global profile</label>';
-                $klass = "mt-3";
-            }
-            array_push($buttons, "", Ht::submit("merge", "Merge with another account"));
+            echo '<label class="checki mt-7"><span class="checkc">',
+                Ht::hidden("has_update_global", 1),
+                Ht::checkbox("update_global", 1, !$this->qreq->has_updateglobal || $this->qreq->updateglobal, ["class" => "ignore-diff"]),
+                '</span>Update global profile</label>';
+            $klass = "mt-3";
         }
         echo Ht::actions($buttons, ["class" => "aab aabig {$klass}"]);
     }

@@ -205,6 +205,7 @@ src/api/api_formatcheck.php
 src/api/api_graphdata.php
 src/api/api_job.php
 src/api/api_mail.php
+src/api/api_manageemail.php
 src/api/api_paper.php
 src/api/api_paperpc.php
 src/api/api_preference.php
@@ -248,6 +249,7 @@ src/backuppattern.php
 src/banal
 src/capabilities/cap_authorview.php
 src/capabilities/cap_job.php
+src/capabilities/cap_manageemail.php
 src/capabilities/cap_reviewaccept.php
 src/cdbuserupdate.php
 src/checkformat.php
@@ -379,6 +381,7 @@ src/pages/p_help.php
 src/pages/p_home.php
 src/pages/p_log.php
 src/pages/p_mail.php
+src/pages/p_manageemail.php
 src/pages/p_manualassign.php
 src/pages/p_mergeaccounts.php
 src/pages/p_oauth.php

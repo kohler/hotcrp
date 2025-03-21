@@ -127,6 +127,7 @@ class Profile_Page {
             && !$user->lastName
             && !$user->affiliation
             && !$this->qreq->is_post()) {
+            /* XXX this code is dead */
             $result = $this->conf->qe_raw("select Paper.paperId, authorInformation from Paper join PaperConflict on (PaperConflict.paperId=Paper.paperId and PaperConflict.contactId={$user->contactId} and PaperConflict.conflictType>=" . CONFLICT_AUTHOR . ")");
             while (($prow = PaperInfo::fetch($result, $this->viewer))) {
                 foreach ($prow->author_list() as $au) {
@@ -165,6 +166,7 @@ class Profile_Page {
 
         // check email
         if (!$acct || ($uemail && strcasecmp($uemail, $acct->email) !== 0)) {
+            /* XXX this code is all dead */
             if ($acct && $acct->security_locked()) {
                 $ustatus->error_at("email", "<0>This account’s security settings are locked, so you can’t change its email address");
                 return null;
@@ -536,10 +538,6 @@ class Profile_Page {
         } else if ($this->qreq->save
                    && $this->qreq->valid_post()) {
             $this->handle_save();
-        } else if ($this->qreq->merge
-                   && $this->page_type === 0
-                   && $this->user === $this->viewer) {
-            $this->conf->redirect_hoturl("mergeaccounts");
         } else if ($this->qreq->delete
                    && $this->qreq->valid_post()) {
             $this->handle_delete();

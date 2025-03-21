@@ -136,6 +136,7 @@ class Contact implements JsonSerializable {
     const WATCH_REVIEW_ALL = 0x04;
     const WATCH_REVIEW_MANAGED = 0x08;
     const WATCH_REVIEW_ANY = 0x0E; // REVIEW + REVIEW_ALL + REVIEW_MANAGED
+    const WATCH_REVIEW_MASK = 0x0F;
     const WATCH_PAPER_NEWSUBMIT_ALL = 0x10;
     const WATCH_FINAL_UPDATE_ALL = 0x20;
     const WATCH_PAPER_REGISTER_ALL = 0x40;

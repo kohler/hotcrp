@@ -383,6 +383,12 @@ class Conf {
             unset($this->settings["__recompute_automatic_tags"], $this->settingTexts["__recompute_automatic_tags"]);
             $this->update_automatic_tags();
         }
+
+        // apply conference actions
+        if ($this->settingTexts["confactions"] ?? null) {
+            ConferenceActions::execute_settings($this);
+            unset($this->settings["confactions"], $this->settingTexts["confactions"]);
+        }
     }
 
     /** @suppress PhanAccessReadOnlyProperty */
@@ -872,6 +878,12 @@ class Conf {
             $this->refresh_settings(!str_starts_with($name, "opt."));
         }
         return $change;
+    }
+
+    /** @param object $action */
+    function append_conference_action($action) {
+        $this->qe("insert into Settings (name, value, data) values ('confactions', 1, ?) ?U on duplicate key update data=concat(Settings.data,?U(data))",
+            "\x1e" /* RS */ . json_encode_db($action) . "\n");
     }
 
 
