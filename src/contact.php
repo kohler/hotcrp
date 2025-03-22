@@ -6198,6 +6198,9 @@ class Contact implements JsonSerializable {
         if (!($extra["no_autosearch"] ?? false)) {
             $this->conf->update_automatic_tags($pid, "review");
         }
+        if (($type > 0) !== ($oldtype > 0)) {
+            $reviewer->update_cdb_roles();
+        }
         return $reviewId;
     }
 

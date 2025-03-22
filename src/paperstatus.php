@@ -1575,10 +1575,8 @@ class PaperStatus extends MessageSet {
             }
             $this->conf->prefetch_cdb_user_by_email($u->email);
         }
-        if ($this->conf->contactdb()) {
-            foreach ($us as $u) {
-                $u->update_cdb_roles();
-            }
+        foreach ($us as $u) {
+            $u->update_cdb_roles();
         }
     }
 

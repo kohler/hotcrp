@@ -436,6 +436,7 @@ class RequestReview_API {
             }
             $prow->conf->update_automatic_tags($prow, "review");
             $user->log_activity_for($rrow->contactId, "Review {$rrow->reviewId} declined", $prow);
+            $user->update_cdb_roles();
 
             // send mail to requesters
             // XXX delay this mail by a couple minutes

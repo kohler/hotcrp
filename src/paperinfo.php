@@ -3716,6 +3716,17 @@ class PaperInfo {
         }
         $rrows = $this->all_reviews();
 
+        // deleting a paper can change author/reviewer state & thus cdbRoles
+        $uids = [];
+        foreach ($this->conflict_types() as $uid => $ctype) {
+            if ($ctype >= CONFLICT_AUTHOR)
+                $uids[] = $ctype;
+        }
+        foreach ($rrows as $rrow) {
+            if ($rrow->reviewType > 0)
+                $uids[] = $rrow->contactId;
+        }
+
         $qs = [];
         foreach (["PaperWatch", "PaperReviewPreference", "PaperReviewRefused", "ReviewRequest", "PaperTag", "PaperComment", "PaperReview", "PaperTopic", "PaperOption", "PaperConflict", "Paper", "PaperStorage", "Capability"] as $table) {
             $qs[] = "delete from {$table} where paperId={$this->paperId}";
@@ -3723,28 +3734,38 @@ class PaperInfo {
         $mresult = Dbl::multi_qe($this->conf->dblink, join(";", $qs));
         $mresult->free_all();
 
-        if (!Dbl::$nerrors) {
-            $this->conf->update_papersub_setting(-1);
-            if ($this->outcome_sign > 0) {
-                $this->conf->update_paperacc_setting(-1);
-            }
-            if ($this->leadContactId > 0 || $this->shepherdContactId > 0) {
-                $this->conf->update_paperlead_setting(-1);
-            }
-            if ($this->managerContactId > 0) {
-                $this->conf->update_papermanager_setting(-1);
-            }
-            if ($rrows && array_filter($rrows, function ($rrow) { return $rrow->reviewToken > 0; })) {
-                $this->conf->update_rev_tokens_setting(-1);
-            }
-            if ($rrows && array_filter($rrows, function ($rrow) { return $rrow->reviewType == REVIEW_META; })) {
-                $this->conf->update_metareviews_setting(-1);
-            }
-            $this->conf->log_for($user, $user, "Paper deleted", $this->paperId);
-            return true;
-        } else {
+        if (Dbl::$nerrors) {
             return false;
         }
+
+        $this->conf->log_for($user, $user, "Paper deleted", $this->paperId);
+
+        // update settings
+        $this->conf->update_papersub_setting(-1);
+        if ($this->outcome_sign > 0) {
+            $this->conf->update_paperacc_setting(-1);
+        }
+        if ($this->leadContactId > 0 || $this->shepherdContactId > 0) {
+            $this->conf->update_paperlead_setting(-1);
+        }
+        if ($this->managerContactId > 0) {
+            $this->conf->update_papermanager_setting(-1);
+        }
+        if (array_filter($rrows, function ($rrow) { return $rrow->reviewToken > 0; })) {
+            $this->conf->update_rev_tokens_setting(-1);
+        }
+        if (array_filter($rrows, function ($rrow) { return $rrow->reviewType == REVIEW_META; })) {
+            $this->conf->update_metareviews_setting(-1);
+        }
+
+        // update cdbRoles
+        $this->conf->prefetch_users_by_id($uids);
+        foreach ($uids as $uid) {
+            if (($u = $this->conf->user_by_id($uid)))
+                $u->update_cdb_roles();
+        }
+
+        return true;
     }
 }
 
