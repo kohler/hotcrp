@@ -369,22 +369,29 @@ function log_jserror(errormsg, error, noconsole) {
     if (!error && errormsg instanceof Error) {
         error = errormsg;
         errormsg = {"error": error.toString()};
-    } else if (typeof errormsg === "string")
+    } else if (typeof errormsg === "string") {
         errormsg = {"error": errormsg};
-    if (error && error.fileName && !errormsg.url)
+    }
+    if (error && error.fileName && !errormsg.url) {
         errormsg.url = error.fileName;
-    if (error && error.lineNumber && !errormsg.lineno)
+    }
+    if (error && error.lineNumber && !errormsg.lineno) {
         errormsg.lineno = error.lineNumber;
-    if (error && error.columnNumber && !errormsg.colno)
+    }
+    if (error && error.columnNumber && !errormsg.colno) {
         errormsg.colno = error.columnNumber;
-    if (error && error.stack)
+    }
+    if (error && error.stack) {
         errormsg.stack = error.stack;
-    if (errormsg.lineno == null || errormsg.lineno > 1)
-        $.ajax(hoturl("api/jserror"), {
+    }
+    if (errormsg.lineno == null || errormsg.lineno > 1) {
+        $.ajax(hoturl("=api/jserror"), {
             global: false, method: "POST", cache: false, data: errormsg
         });
-    if (error && !noconsole && typeof console === "object" && console.error)
+    }
+    if (error && !noconsole && typeof console === "object" && console.error) {
         console.error(errormsg.error);
+    }
 }
 
 (function () {
