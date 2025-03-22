@@ -3184,6 +3184,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("update ContactInfo set preferredEmail=null where preferredEmail=''")) {
             $conf->update_schema_version(309);
         }
+        if ($conf->sversion === 309
+            && $conf->ql_ok("alter table PaperReview add key `contactIdReviewType` (`contactId`,`reviewType`)")
+            && $conf->ql_ok("alter table PaperReview drop key `contactId`")) {
+            $conf->update_schema_version(310);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
