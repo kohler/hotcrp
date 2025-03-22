@@ -165,6 +165,7 @@ class Contact implements JsonSerializable {
     const ROLE_EXPLICIT_MANAGER = 0x8000;
     const ROLE_APPROVABLE = 0x10000;
     const ROLE_VIEW_SOME_REVIEW_ID = 0x20000;
+    const ROLE_OUTSTANDING_REQUEST = 0x40000;
 
     const ROLE_DBMASK = 0x000F;
     const ROLE_CDBMASK = 0x003F; // DBMASK | AUTHOR | REVIEWER
@@ -3024,6 +3025,19 @@ class Contact implements JsonSerializable {
             }
         }
         return ($this->roles & self::ROLE_OUTSTANDING_REVIEW) !== 0;
+    }
+
+    /** @return bool */
+    function has_outstanding_request() {
+        $this->check_rights_version();
+        if (($this->role_mask & self::ROLE_OUTSTANDING_REQUEST) === 0) {
+            $this->role_mask |= self::ROLE_OUTSTANDING_REQUEST;
+            if ($this->has_email()
+                && $this->conf->fetch_ivalue("select exists (select * from ReviewRequest where email=?) from dual", $this->email)) {
+                $this->roles |= self::ROLE_OUTSTANDING_REQUEST;
+            }
+        }
+        return ($this->roles & self::ROLE_OUTSTANDING_REQUEST) !== 0;
     }
 
     /** @return bool */

@@ -177,9 +177,7 @@ class ManageEmail_Page {
     private function choose_link() {
         echo '<div class="form-section">',
             '<h3>Link accounts</h3>',
-            '<p>Use this option to select a primary account that HotCRP should use for most purposes. Emails, new review requests, and new PC assignments sent to a linked account will be redirected to the primary account, and papers authored by any of the linked accounts will be accessible to the primary account. Reviews, however, aren’t transferred automatically; use ',
-            Ht::link('“Transfer reviews”', $this->conf->selfurl($this->qreq, ["t" => "transferreview"])),
-            ' to move reviews between accounts.</p>',
+            '<p>If you have multiple accounts, this option can define a primary account for site use. Emails, new review requests, and new PC assignments will be redirected from linked accounts to the primary account, and papers authored by any of the linked accounts will be accessible to the primary account.</p>',
             Ht::link("Link accounts", $this->conf->selfurl($this->qreq, ["t" => "link"]), ["class" => "btn btn-primary"]),
             '</div>';
     }
@@ -575,6 +573,20 @@ class ManageEmail_Page {
         }
     }
 
+    private function transferreview_jump_start() {
+        $u = $this->parse_user("u", $this->qreq->u);
+        $email = $this->parse_user("email", $this->qreq->email);
+        $this->ms->clear_messages();
+        if (!$u || !$email) {
+            return;
+        }
+        $this->create_token()
+            ->change_data("u", $this->qreq->u)
+            ->change_data("email", $this->qreq->email)
+            ->change_data("step", "reauth");
+        $this->qreq->step = "reauth";
+    }
+
     private function transferreview() {
         // select step
         $this->register_step("start", "Select source account");
@@ -582,6 +594,12 @@ class ManageEmail_Page {
         $this->register_step("reauth", "Authenticate accounts")->set_skip_back(true);
         $this->register_step("confirm", "Confirm")->set_next("Transfer", "btn-success");
         $this->register_step("done", "Done");
+        if (!isset($this->qreq->step)
+            && isset($this->qreq->u)
+            && isset($this->qreq->email)
+            && !$this->token) {
+            $this->transferreview_jump_start();
+        }
         $this->set_step($this->qreq->step ?? "start");
         $this->allow_any = $this->viewer->privChair;
 
@@ -622,8 +640,8 @@ class ManageEmail_Page {
 
 
     private function link_print_step() {
-        $prihemail = htmlspecialchars($this->user ? $this->user->email : "<unknown>");
-        $sechemail = htmlspecialchars($this->dstuser ? $this->dstuser->email : "<unknown>");
+        $prihemail = '<strong class="sb">' . htmlspecialchars($this->user ? $this->user->email : "<unknown>") . '</strong>';
+        $sechemail = '<strong class="sb">' . htmlspecialchars($this->dstuser ? $this->dstuser->email : "<unknown>") . '</strong>';
         if ($this->curstep->name === "start") {
             // maybe there's a user in the query; check it
             if (($this->qreq->u ?? "") !== ""
@@ -633,13 +651,13 @@ class ManageEmail_Page {
             }
 
             echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST)),
-                '<p>Select the <strong>primary</strong> account you’d like to link. This should be the main account you’d like HotCRP to use. You must be signed in to the account you want to link.</p>';
+                '<p>Select the <strong>primary</strong> account to link. This is the main account you’d like to use for email and reviewing. You must be signed in to the account.</p>';
             $this->print_user_selector("u");
             $this->print_step_actions();
             echo '</form>';
         } else if ($this->curstep->name === "secondary") {
             echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST)),
-                '<p>Select the <strong>secondary</strong> account you’d like to link. Review requests sent to this account will be redirected to the primary account, <strong class="sb">', $prihemail, '</strong>. You must be signed in to the account you want to link.</p>';
+                '<p>Select the <strong>secondary</strong> account to link. Review requests sent to this account will be redirected to the primary account, ', $prihemail, '. You must be signed in to the account.</p>';
             $this->print_user_selector("email");
             $this->print_step_actions();
             echo '</form>';
@@ -664,11 +682,11 @@ class ManageEmail_Page {
             $jr = $me->link();
             echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST));
             if (!$jr->ok()) {
-                echo "<p>You can’t link accounts <strong class=\"sb\">{$sechemail}</strong> and <strong class=\"sb\">{$prihemail}</strong>.</p>";
+                echo "<p>You can’t link accounts {$sechemail} and {$prihemail}.</p>";
             }
             $this->conf->feedback_msg($jr->get("message_list") ?? []);
             if ($jr->ok()) {
-                echo '<p>Confirming will make <strong class="sb">', $prihemail, '</strong> the primary account for <strong class="sb">', $sechemail, '</strong>.</p>';
+                echo '<p>Confirming will make ', $prihemail, ' the primary account for ', $sechemail, '.</p>';
                 $this->link_print_confirm_options();
                 $this->print_step_actions();
             } else {
@@ -681,7 +699,7 @@ class ManageEmail_Page {
             if ($change_list === null) {
                 echo '<p>Account link failed.</p>';
             } else {
-                $this->conf->success_msg("<5><strong class=\"sb\">{$prihemail}</strong> is now the primary account for <strong class=\"sb\">{$sechemail}</strong>.");
+                $this->link_print_success($prihemail, $sechemail);
             }
             echo '<div class="aab mt-4"><div class="aabut">',
                 Ht::submit("Link another account", ["class" => "btn-primary"]),
@@ -713,6 +731,25 @@ class ManageEmail_Page {
         }
     }
 
+    private function link_print_success($prihemail, $sechemail) {
+        $this->conf->success_msg("<5><strong class=\"sb\">{$prihemail}</strong> is now the primary account for <strong class=\"sb\">{$sechemail}</strong>.");
+        if ($this->dstuser->is_reviewer()
+            || $this->dstuser->has_outstanding_request()) {
+            echo "<p>{$sechemail}’s existing reviews on this site have not been moved. If you would like to transfer them to {$prihemail}, use <a href=\"",
+                $this->conf->hoturl("manageemail", ["t" => "transferreview", "u" => $this->dstuser->email, "email" => $this->user->email]),
+                "\">“Transfer reviews”</a>.</p>";
+        } else if ($this->token->data("linktype") === "all_sites"
+                   && ($cdb = $this->conf->contactdb())
+                   && ($seccdbu = $this->dstuser->cdb_user())
+                   && Dbl::fetch_ivalue($cdb, "select exists (select * from Roles where contactDbId=? and (roles&?)!=0) from dual",
+                            $seccdbu->contactDbId,
+                            Contact::ROLE_PCLIKE | Contact::ROLE_REVIEWER)) {
+            echo "<p>", Ftext::as(5, $this->conf->_c("manageemail", "<5>{sec}’s reviews on {affiliated-sites} have not been moved. If you would like to transfer them to {pri}, use “Transfer reviews” on the relevant sites.",
+                new FmtArg("sec", $sechemail, 5),
+                new FmtArg("pri", $prihemail, 5))), "</p>";
+        }
+    }
+
     private function link_post() {
         if ($this->curstep->name === "start") {
             $this->post_set_user("u");
@@ -726,10 +763,13 @@ class ManageEmail_Page {
             $me = (new ManageEmail_API($this->viewer, $this->qreq))
                 ->set_user($this->dstuser)
                 ->set_dstuser($this->user);
+            $linktype = "local";
             if ($this->qreq->linktype === "global") {
                 $me->set_global(true);
+                $linktype = "global";
             } else if ($this->qreq->linktype === "all_sites") {
                 $me->set_global(true)->set_all_sites(true);
+                $linktype = "all_sites";
             }
             $jr = $me->link();
             $ml = $jr->get("message_list");
@@ -737,7 +777,8 @@ class ManageEmail_Page {
                 $this->token->change_data("change_list", $jr->get("change_list") ?? []);
             }
             $this->token->change_data("ms", $ml)
-                ->change_data("step", $this->delta_step(1)->name);
+                ->change_data("step", $this->delta_step(1)->name)
+                ->change_data("linktype", $linktype);
             $this->redirect_token();
         }
     }

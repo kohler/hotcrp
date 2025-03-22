@@ -249,7 +249,9 @@ class ManageEmail_API extends MessageSet {
             $this->warning_at("email", "<0>No changes");
             return null;
         }
-        if ($this->user->contactId <= 0 || !$this->user->is_reviewer()) {
+        if ($this->user->contactId <= 0
+            || (!$this->user->is_reviewer()
+                && !$this->user->has_outstanding_request())) {
             $this->error_at("u", "<0>{$this->user->email} is not a reviewer on this site");
             return "not_reviewer";
         }
@@ -336,18 +338,23 @@ class ManageEmail_API extends MessageSet {
         }
         $row = $this->conf->fetch_first_row("select
             (select count(*) from PaperReview where contactId=?) reviews,
+            (select count(*) from ReviewRequest where email=?) requests,
             (select count(*) from PaperComment where contactId=? and (commentType&?)=0) comments,
             (select count(*) from PaperTag where tag like '{$this->user->contactId}~%') tags
             from dual",
             $this->user->contactId,
+            $this->user->email,
             $this->user->contactId, CommentInfo::CTM_BYAUTHOR);
         if ($row[0] > 0) {
             $this->change_list[] = plural((int) $row[0], "review");
         }
         if ($row[1] > 0) {
-            $this->change_list[] = plural((int) $row[1], "comment");
+            $this->change_list[] = plural((int) $row[1], "review request");
         }
         if ($row[2] > 0) {
+            $this->change_list[] = plural((int) $row[2], "comment");
+        }
+        if ($row[3] > 0) {
             $this->change_list[] = "private tags";
         }
     }
@@ -499,8 +506,11 @@ class ManageEmail_API extends MessageSet {
             $this->dstuser->contactId, $this->user->contactId);
         $this->conf->qe("update PaperReviewRefused set requestedBy=? where requestedBy=?",
             $this->dstuser->contactId, $this->user->contactId);
-        $this->conf->qe("update ReviewRequest set email=? where email=?",
+        $result = $this->conf->qe("update ReviewRequest set email=? where email=?",
             $this->dstuser->email, $this->user->email);
+        if ($result->affected_rows) {
+            $this->change_list[] = plural($result->affected_rows, "review request");
+        }
         $this->conf->qe("update ReviewRequest set requestedBy=? where requestedBy=?",
             $this->dstuser->contactId, $this->user->contactId);
     }
