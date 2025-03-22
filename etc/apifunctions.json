@@ -115,7 +115,7 @@
         "response": "update_at ?status *"
     },
     {
-        "name": "jserror", "post": true,
+        "name": "jserror", "post": true, "check_token": false,
         "function": "Error_API::jserror",
         "parameters": "=error ?=url ?=lineno ?=colno ?=stack"
     },
