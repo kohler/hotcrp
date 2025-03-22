@@ -3651,14 +3651,25 @@ class PaperInfo {
      * @param string $clause
      * @return list<Contact> */
     function generic_followers($cids, $clause) {
+        // collect followers
         $result = $this->conf->qe("select " . $this->conf->user_query_fields(Contact::SLICE_MINIMAL - Contact::SLICEBIT_PASSWORD - Contact::SLICEBIT_DEFAULTWATCH) . " from ContactInfo where (contactId?a or ({$clause})) and (cflags&?)=0",
             $cids, Contact::CFM_DISABLEMENT);
-        $us = [];
-        while (($minic = Contact::fetch($result, $this->conf))) {
-            if ($minic->can_view_paper($this))
-                $us[] = $minic;
+        $byuid = [];
+        while (($u = Contact::fetch($result, $this->conf))) {
+            if ($u->can_view_paper($this))
+                $byuid[$u->contactId] = $u;
         }
         Dbl::free($result);
+        // remove linked accounts with primaries in the list
+        $us = [];
+        foreach ($byuid as $u) {
+            if ($u->primaryContactId <= 0
+                || $u->primaryContactId === $u->contactId /* should not happen */
+                || !isset($byuid[$u->primaryContactId])) {
+                $us[] = $u;
+            }
+        }
+        // sort and return
         usort($us, [$this, "notify_user_compare"]);
         return $us;
     }
