@@ -35,6 +35,7 @@ class UserActions {
             foreach ($users as $u) {
                 $conf->log_for($user, $u, "Account disabled");
                 $j->disabled_users[] = $u->name(NAME_E);
+                $u->update_cdb_roles();
             }
             $conf->release_logs();
         }
@@ -67,6 +68,7 @@ class UserActions {
                         array_push($j->message_list, ...$prep->message_list());
                     }
                 }
+                $u->update_cdb_roles();
             }
             $conf->release_logs();
         }

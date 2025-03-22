@@ -460,6 +460,7 @@ class Contact implements JsonSerializable {
     }
 
     private function set_roles_properties() {
+        // see also ConfInvariants::generate_cdb_roles
         $this->_session_roles = (($this->_session_roles ?? 0) & ~self::ROLE_DBMASK)
             | ($this->roles & self::ROLE_DBMASK);
         $this->isPC = ($this->roles & self::ROLE_PCLIKE) !== 0;
@@ -3004,6 +3005,7 @@ class Contact implements JsonSerializable {
 
     /** @return int */
     function cdb_roles() {
+        // see also ConfInvariants::generate_cdb_roles
         if ($this->is_disabled()) {
             return 0;
         }

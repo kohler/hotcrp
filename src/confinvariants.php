@@ -622,18 +622,22 @@ class ConfInvariants {
 
     /** @return \Generator<ConfInvariant_CdbRole> */
     static function generate_cdb_roles(Conf $conf) {
-        $result = $conf->qe("select u.contactId, email, cdbRoles, roles, cf.ct, r.rt
+        $result = $conf->qe("select u.contactId, email, cflags, roles, cf.ct, r.rt, cdbRoles
             from ContactInfo u
             left join (select contactId, max(conflictType) ct from PaperConflict group by contactId) cf using (contactId)
             left join (select contactId, max(reviewType) rt from PaperReview group by contactId) r using (contactId)");
+        $disnonpc = $conf->disable_non_pc();
         while (($row = $result->fetch_row())) {
+            $cflags = (int) $row[2];
             $roles = (int) $row[3]
                 | ((int) $row[4] >= CONFLICT_AUTHOR ? Contact::ROLE_AUTHOR : 0)
                 | ((int) $row[5] > 0 ? Contact::ROLE_REVIEWER : 0);
-            if (!Contact::cdb_allows_email($row[1])) {
+            if (($cflags & Contact::CFM_DISABLEMENT & ~Contact::CF_PLACEHOLDER) !== 0
+                || !Contact::cdb_allows_email($row[1])
+                || ($disnonpc && ($roles & Contact::ROLE_PCLIKE) === 0)) {
                 $roles = 0;
             }
-            yield new ConfInvariant_CdbRole((int) $row[0], $row[1], (int) $row[2], $roles);
+            yield new ConfInvariant_CdbRole((int) $row[0], $row[1], (int) $row[6], $roles);
         }
         $result->close();
     }
