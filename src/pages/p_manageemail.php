@@ -445,7 +445,7 @@ class ManageEmail_Page {
             $this->authchecker->print();
             echo '</form>';
         } else if ($this->curstep->name === "confirm") {
-            $me = new ManageEmail_API($this->viewer, $this->qreq)
+            $me = (new ManageEmail_API($this->viewer, $this->qreq))
                 ->set_user($this->user)
                 ->set_dstuser($this->dstuser)
                 ->set_dry_run(true);
@@ -508,7 +508,7 @@ class ManageEmail_Page {
             return;
         }
         if ($this->curstep->name === "confirm") {
-            $me = new ManageEmail_API($this->viewer, $this->qreq)
+            $me = (new ManageEmail_API($this->viewer, $this->qreq))
                 ->set_user($this->user)
                 ->set_dstuser($this->dstuser);
             $jr = $me->transferreview();
@@ -657,7 +657,7 @@ class ManageEmail_Page {
             $this->authchecker->print();
             echo '</form>';
         } else if ($this->curstep->name === "confirm") {
-            $me = new ManageEmail_API($this->viewer, $this->qreq)
+            $me = (new ManageEmail_API($this->viewer, $this->qreq))
                 ->set_user($this->dstuser)
                 ->set_dstuser($this->user)
                 ->set_dry_run(true);
@@ -723,7 +723,7 @@ class ManageEmail_Page {
             return;
         }
         if ($this->curstep->name === "confirm") {
-            $me = new ManageEmail_API($this->viewer, $this->qreq)
+            $me = (new ManageEmail_API($this->viewer, $this->qreq))
                 ->set_user($this->dstuser)
                 ->set_dstuser($this->user);
             if ($this->qreq->linktype === "global") {
@@ -869,7 +869,7 @@ class ManageEmail_Page {
             $this->authchecker->print();
             echo '</form>';
         } else if ($this->curstep->name === "confirm") {
-            $me = new ManageEmail_API($this->viewer, $this->qreq)
+            $me = (new ManageEmail_API($this->viewer, $this->qreq))
                 ->set_user($this->user)
                 ->set_dry_run(true);
             $jr = $me->unlink();
@@ -941,7 +941,7 @@ class ManageEmail_Page {
             return;
         }
         if ($this->curstep->name === "confirm") {
-            $me = new ManageEmail_API($this->viewer, $this->qreq)
+            $me = (new ManageEmail_API($this->viewer, $this->qreq))
                 ->set_user($this->user);
             if ($this->qreq->linktype === "global") {
                 $me->set_global(true);
