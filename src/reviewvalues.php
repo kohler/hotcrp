@@ -905,6 +905,9 @@ class ReviewValues extends MessageSet {
         // new status #2
         $newstatus2 = $this->_compute_new_status($user, $prow, $rrow, $view_score, $allow_new_submit, $approvable);
         assert($newstatus === $newstatus2);
+        if ($newstatus !== $newstatus2) {
+            error_log("{$this->conf->dbname}: #{$prow->paperId}/{$rrow->reviewId}: old status computation {$newstatus} ≠ new status computation {$newstatus2}");
+        }
 
         // get the current time
         $now = max(time(), $rrow->reviewModified + 1);
