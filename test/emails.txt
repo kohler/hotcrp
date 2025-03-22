@@ -1821,3 +1821,22 @@ concerns.
 
 - Testconf I Submissions
 http://hotcrp.lcdf.org/test
+******** t_paperstatus-primary-01
+To: David Attenborough <atten@_.com>, Deborah Estrin <estrin@usc.edu>, Feborah Festrin <festrin@fusc.fedu>
+Subject: [Testconf I] Updated #{{}} "Paper about mantis shrimp"
+
+Submission #{{}} has been updated on the Test Conference I (Testconf I)
+site. The Abstract field was changed.
+
+* Title: Paper about mantis shrimp
+* Authors: David Attenborough (BBC);
+  Geborah Gestrin
+* Site: http://hotcrp.lcdf.org/test/paper/{{}}?cap={{}}
+
+The submission is ready for review. You have until {{}} to make further changes.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+http://hotcrp.lcdf.org/test

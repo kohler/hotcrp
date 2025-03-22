@@ -1168,18 +1168,31 @@ Phil Porras.");
     }
 
     function test_save_authors_resolve_primary() {
+        // input: gestrin -linksto-> festrin
         $ps = new PaperStatus($this->u_estrin);
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:2:name" => "Geborah Gestrin", "authors:2:email" => "gestrin@gusc.gedu"]), $nprow1);
         xassert(!$ps->has_problem());
         xassert_array_eqq($ps->changed_keys(), ["authors", "contacts"], true);
 
+        // *primary* contacts are atten, estrin, festrin (not gestrin)
         $nprow1 = $this->conf->checked_paper_by_id($this->pid2);
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS | TESTSC_DISABLED), "atten@_.com estrin@usc.edu festrin@fusc.fedu gestrin@gusc.gedu");
         xassert_eqq($nprow1->conflict_type($this->u_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
         xassert_eqq($nprow1->conflict_type($this->festrin_cid), CONFLICT_AUTHOR);
         xassert_eqq($nprow1->conflict_type($this->gestrin_cid), CONFLICT_AUTHOR);
         xassert_eqq($nprow1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
+
+        // primary gets mail, secondary doesn’t
+        MailChecker::clear();
+        $ps2 = (new PaperStatus($this->u_estrin))
+            ->set_notify(true)
+            ->set_notify_authors(true);
+        $ps2->save_paper_web(new Qrequest("POST", ["abstract" => "They see lots and LOTS of colors."]), $nprow1);
+        $ps2->notify_followers();
+        xassert(!$ps2->has_problem());
+        xassert_array_eqq($ps2->changed_keys(), ["abstract"], true);
+        MailChecker::check_db("t_paperstatus-primary-01");
 
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com"]), $nprow1);
         xassert(!$ps->has_problem());
