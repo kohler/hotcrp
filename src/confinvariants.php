@@ -622,14 +622,17 @@ class ConfInvariants {
 
     /** @return \Generator<ConfInvariant_CdbRole> */
     static function generate_cdb_roles(Conf $conf) {
-        $result = $conf->qe("select contactId, email, cdbRoles, roles,
-            (select bit_or(conflictType) from PaperConflict where contactId=ContactInfo.contactId),
-            exists(select * from PaperReview where contactId=ContactInfo.contactId and reviewType>0)
-            from ContactInfo");
+        $result = $conf->qe("select u.contactId, email, cdbRoles, roles, cf.ct, r.rt
+            from ContactInfo u
+            left join (select contactId, max(conflictType) ct from PaperConflict group by contactId) cf using (contactId)
+            left join (select contactId, max(reviewType) rt from PaperReview group by contactId) r using (contactId)");
         while (($row = $result->fetch_row())) {
             $roles = (int) $row[3]
                 | ((int) $row[4] >= CONFLICT_AUTHOR ? Contact::ROLE_AUTHOR : 0)
-                | ((int) $row[5] ? Contact::ROLE_REVIEWER : 0);
+                | ((int) $row[5] > 0 ? Contact::ROLE_REVIEWER : 0);
+            if (!Contact::is_real_email($row[1])) {
+                $roles = 0;
+            }
             yield new ConfInvariant_CdbRole((int) $row[0], $row[1], (int) $row[2], $roles);
         }
         $result->close();
