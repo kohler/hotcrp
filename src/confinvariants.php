@@ -630,7 +630,7 @@ class ConfInvariants {
             $roles = (int) $row[3]
                 | ((int) $row[4] >= CONFLICT_AUTHOR ? Contact::ROLE_AUTHOR : 0)
                 | ((int) $row[5] > 0 ? Contact::ROLE_REVIEWER : 0);
-            if (!Contact::is_real_email($row[1])) {
+            if (!Contact::cdb_allows_email($row[1])) {
                 $roles = 0;
             }
             yield new ConfInvariant_CdbRole((int) $row[0], $row[1], (int) $row[2], $roles);

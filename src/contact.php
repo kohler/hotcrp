@@ -1012,7 +1012,8 @@ class Contact implements JsonSerializable {
         } else if ($this->_cdb_user !== false) {
             return $this->_cdb_user;
         }
-        if ($this->conf->prefetch_cdb_user_by_email($this->email) && $this->_row_set) {
+        if ($this->conf->prefetch_cdb_user_by_email($this->email)
+            && $this->_row_set) {
             foreach ($this->_row_set as $u) {
                 if ($u->email)
                     $this->conf->prefetch_cdb_user_by_email($u->email);
@@ -1036,7 +1037,7 @@ class Contact implements JsonSerializable {
         if (!$u
             && $this->conf->contactdb()
             && $this->has_email()
-            && self::is_real_email($this->email)) {
+            && self::cdb_allows_email($this->email)) {
             $u = $this->_cdb_user = Contact::make_cdb_email($this->conf, $this->email);
             if ($this->contactId > 0) {
                 $u->contactXid = $this->contactId;
@@ -1055,7 +1056,8 @@ class Contact implements JsonSerializable {
         foreach (array_unique($uids) as $uid) {
             $u = $conf->user_by_id($uid);
             $cu = $u ? $u->cdb_user() : null;
-            if (!$cu) {
+            if (!$cu
+                || !self::cdb_allows_email($u->email)) {
                 continue;
             }
             $r = $u->cdb_roles();
@@ -1085,7 +1087,7 @@ class Contact implements JsonSerializable {
     function update_cdb() {
         if (!$this->conf->contactdb()
             || !$this->has_account_here()
-            || !self::is_real_email($this->email)) {
+            || !self::cdb_allows_email($this->email)) {
             return false;
         }
 
@@ -1131,9 +1133,8 @@ class Contact implements JsonSerializable {
     function populated_user() {
         if ($this->contactId <= 0 && $this->has_email()) {
             return $this->cdb_user() ?? $this;
-        } else {
-            return $this;
         }
+        return $this;
     }
 
 
@@ -1487,7 +1488,8 @@ class Contact implements JsonSerializable {
         return !!$this->email;
     }
 
-    /** @return bool */
+    /** @param string $email
+     * @return bool */
     static function is_anonymous_email($email) {
         // see also PaperSearch, Mailer
         return substr_compare($email, "anonymous", 0, 9, true) === 0
@@ -1504,6 +1506,14 @@ class Contact implements JsonSerializable {
                 || ($at + 12 <= $len
                     && (ord($email[$len - 11]) | 0x20) === 0x65 /* 'e' */
                     && preg_match('/\G[@.]example\.(?:com|net|org|edu)\z/i', $email, $m, 0, $len - 12)));
+    }
+
+    /** @param string $email
+     * @return bool */
+    static function cdb_allows_email($email) {
+        return $email !== ""
+            && !self::is_anonymous_email($email)
+            && !self::is_example_email($email);
     }
 
     /** @param string $email
@@ -2413,8 +2423,7 @@ class Contact implements JsonSerializable {
 
         // look up cdb account
         $cdbu = null;
-        if ($valid_email
-            && self::is_real_email($this->email)
+        if (self::cdb_allows_email($this->email)
             && ($cdb = $this->conf->contactdb())) {
             $cdbu = $this->cdb_user() ?? Contact::make_cdb_email($this->conf, $this->email);
         }
