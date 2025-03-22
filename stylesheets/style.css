@@ -1715,12 +1715,12 @@ fieldset.wizard-accordion-step {
 	padding: 0;
 }
 fieldset.wizard-accordion-step:first-child > legend {
-	border-top-left-radius: 4px;
-	border-top-right-radius: 4px;
+	border-top-left-radius: 3px;
+	border-top-right-radius: 3px;
 }
 fieldset.wizard-accordion-step.future:last-child > legend {
-	border-bottom-left-radius: 4px;
-	border-bottom-right-radius: 4px;
+	border-bottom-left-radius: 3px;
+	border-bottom-right-radius: 3px;
 }
 fieldset.wizard-accordion-step > legend {
 	display: block;
