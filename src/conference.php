@@ -4134,10 +4134,9 @@ class Conf {
     function qreq_redirect_url($qreq) {
         if (($r = $qreq->redirect ?? "") !== "" && $r !== "1") {
             $nav = $qreq->navigation();
-            return $nav->resolve_within($r, $nav->siteurl());
-        } else {
-            return null;
+            return $nav->resolve_within($r, $nav->base_path);
         }
+        return null;
     }
 
 
