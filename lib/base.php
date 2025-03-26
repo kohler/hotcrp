@@ -186,9 +186,12 @@ function convert_to_utf8($str) {
         return UnicodeHelper::to_utf8("UTF-16LE", substr($str, 2));
     } else if (str_starts_with($str, "\xFF\xFE")) {
         return UnicodeHelper::to_utf8("UTF-16BE", substr($str, 2));
-    } else if (substr_count($str, "\0", 0, min(strlen($str), 128)) >= min(5, strlen($str) / 2)) {
-        $zp = strpos($str, "\0");
-        return UnicodeHelper::to_utf8($zp & 1 ? "UTF-16LE" : "UTF-16BE", $str);
+    } else {
+        $n = min(strlen($str), 256);
+        if (substr_count($str, "\0", 0, $n) >= min(5, $n / 2)) {
+            $zp = strpos($str, "\0");
+            return UnicodeHelper::to_utf8($zp & 1 ? "UTF-16LE" : "UTF-16BE", $str);
+        }
     }
     if (is_valid_utf8($str)) {
         return $str;

@@ -176,7 +176,7 @@ class Unit_Tester {
         xassert_eqq(DocumentInfo::sanitize_filename("a/b.txt"), "a_b.txt");
         xassert_eqq(DocumentInfo::sanitize_filename("a/\\b.txt"), "a__b.txt");
         xassert_eqq(DocumentInfo::sanitize_filename("a\nb.txt"), "a_b.txt");
-        xassert_eqq(DocumentInfo::sanitize_filename("a/\x80M.txt"), "a_\x7fM.txt");
+        xassert_eqq(DocumentInfo::sanitize_filename("a/\x80M.txt"), "a_\xEF\xBF\xBDM.txt");
         xassert_eqq(DocumentInfo::sanitize_filename(str_repeat("i", 1024) . ".txt"), str_repeat("i", 248) . "....txt");
         xassert_eqq(strlen(DocumentInfo::sanitize_filename(str_repeat("i", 1024) . ".txt")), 255);
         xassert_eqq(DocumentInfo::sanitize_filename(str_repeat("i", 1024)), str_repeat("i", 252) . "...");
@@ -930,19 +930,19 @@ class Unit_Tester {
 
         xassert_eqq(UnicodeHelper::utf8_replace_invalid(""), "");
         xassert_eqq(UnicodeHelper::utf8_replace_invalid("abc"), "abc");
-        xassert_eqq(UnicodeHelper::utf8_replace_invalid("\x80bc"), "\x7fbc");
+        xassert_eqq(UnicodeHelper::utf8_replace_invalid("\x80bc"), "\xEF\xBF\xBDbc");
         xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xc3\xa5"), "abå");
-        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xc3"), "ab\x7f");
-        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xa5"), "ab\x7f");
+        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xc3"), "ab\xEF\xBF\xBD");
+        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xa5"), "ab\xEF\xBF\xBD");
         xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab"), "ab");
         xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xe4\xba\x9c"), "ab亜");
-        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xe4\xba"), "ab\x7f\x7f");
-        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xe4"), "ab\x7f");
+        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xe4\xba"), "ab\xEF\xBF\xBD");
+        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xe4"), "ab\xEF\xBF\xBD");
         xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0\x9d\x84\x9e"), "ab𝄞");
-        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0\x9d\x84"), "ab\x7f\x7f\x7f");
-        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0\x9d"), "ab\x7f\x7f");
-        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0"), "ab\x7f");
-        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0å"), "ab\x7få");
+        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0\x9d\x84"), "ab\xEF\xBF\xBD");
+        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0\x9d"), "ab\xEF\xBF\xBD");
+        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0"), "ab\xEF\xBF\xBD");
+        xassert_eqq(UnicodeHelper::utf8_replace_invalid("ab\xf0å"), "ab\xEF\xBF\xBDå");
     }
 
     function test_utf8_entities() {
@@ -961,6 +961,12 @@ class Unit_Tester {
         xassert_eqq(Text::highlight("Is foo bar føo bar fóó bar highlit right? foö", $regex),
                     "Is <span class=\"match\">foo</span> bar <span class=\"match\">føo</span> bar <span class=\"match\">fóó</span> bar highlit right? <span class=\"match\">foö</span>");
         xassert_eqq(UnicodeHelper::remove_f_ligatures("Héllo ﬀ,ﬁ:fi;ﬂ,ﬃ:ﬄ-ﬅ"), "Héllo ff,fi:fi;fl,ffi:ffl-ﬅ");
+    }
+
+    function test_utf16_to_utf8() {
+        xassert_eqq(UnicodeHelper::to_utf8("UTF-16BE", "\x00A\x00B\x00C"), "ABC");
+        xassert_eqq(UnicodeHelper::to_utf8("UTF-16BE", "\x00A\x00B\x00C\xD8\x3D\xDE\x0A"), "ABC😊");
+        xassert_eqq(UnicodeHelper::to_utf8("UTF-16BE", "\x00A\x00B\x00C\xD8\x3D\xDE"), "ABC�");
     }
 
     function test_prefix_word_wrap() {

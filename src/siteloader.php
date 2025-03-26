@@ -38,6 +38,7 @@ class SiteLoader {
         "TextPregexes" => "lib/text.php",
         "Text_PaperOption" => "src/paperoption.php",
         "True_SearchTerm" => "src/searchterm.php",
+        "UConverter" => "lib/uconvertershim.php",
         "XlsxGenerator" => "lib/xlsx.php",
         "dmp\\diff_match_patch" => "lib/diff_match_patch.php"
     ];

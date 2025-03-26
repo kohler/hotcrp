@@ -189,6 +189,7 @@ lib/subprocess.php
 lib/tagger.php
 lib/testqsession.php
 lib/text.php
+lib/uconvertershim.php
 lib/unicodehelper.php
 lib/xlsx.php
 
