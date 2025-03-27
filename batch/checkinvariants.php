@@ -177,6 +177,10 @@ class CheckInvariants_Batch {
             $this->report_fix("whitespace");
             $this->fix_whitespace();
         }
+        if (isset($ic->problems["roles"]) && $this->want_fix("roles")) {
+            $this->report_fix("roles");
+            $this->fix_roles();
+        }
         if (isset($ic->problems["cdbRoles"]) && $this->want_fix("cdbroles")) {
             $this->report_fix("cdbroles");
             $this->fix_cdbroles();
@@ -226,6 +230,11 @@ class CheckInvariants_Batch {
             }
         }
         $mq(null);
+    }
+
+    private function fix_roles() {
+        $this->conf->qe("update ContactInfo set roles=roles&? where (roles&~?)!=0",
+            Contact::ROLE_DBMASK, Contact::ROLE_DBMASK);
     }
 
     private function fix_cdbroles() {
