@@ -370,8 +370,8 @@ class ManageEmail_API extends MessageSet {
         if ($pcr === 0) {
             return;
         }
-        $this->dstuser->save_roles($this->dstuser->roles | $pcr, $this->viewer);
-        $this->user->save_roles($this->user->roles & ~$pcr, $this->viewer);
+        $this->dstuser->save_roles(($this->dstuser->roles | $pcr) & Contact::ROLE_DBMASK, $this->viewer);
+        $this->user->save_roles($this->user->roles & ~$pcr & Contact::ROLE_DBMASK, $this->viewer);
     }
 
     private function transfer_paperpc() {
