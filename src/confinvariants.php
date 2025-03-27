@@ -2,6 +2,16 @@
 // confinvariants.php -- HotCRP invariant checker
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
+#[Attribute]
+class ConfInvariantLevel {
+    /** @var int */
+    public $level;
+    /** @param int $level */
+    function __construct($level) {
+        $this->level = $level;
+    }
+}
+
 class ConfInvariants {
     /** @var Conf */
     public $conf;
@@ -643,6 +653,7 @@ class ConfInvariants {
     }
 
     /** @return $this */
+    #[ConfInvariantLevel(1)]
     function check_cdb_roles() {
         $cdb = Conf::main_contactdb();
         if (!$cdb || $this->level < 1 || ($confid = $this->conf->cdb_confid()) <= 0) {

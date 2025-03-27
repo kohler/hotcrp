@@ -20,6 +20,8 @@ class CheckInvariants_Batch {
     public $color;
     /** @var ?bool */
     public $pad_prefix;
+    /** @var bool */
+    public $list;
     /** @var int */
     public $level;
     /** @var int */
@@ -30,6 +32,7 @@ class CheckInvariants_Batch {
         $this->verbose = isset($arg["verbose"]);
         $this->fix = $arg["fix"] ?? [];
         $this->level = $arg["level"] ?? 0;
+        $this->list = isset($arg["list"]);
         if (isset($arg["fix-autosearch"])) {
             $this->fix[] = "autosearch";
         }
@@ -66,6 +69,16 @@ class CheckInvariants_Batch {
     }
 
     /** @return int */
+    private function method_level(ReflectionMethod $m) {
+        if (PHP_MAJOR_VERSION >= 8) {
+            foreach ($m->getAttributes("ConfInvariantLevel") ?? [] as $attr) {
+                return $attr->newInstance()->level;
+            }
+        }
+        return 0;
+    }
+
+    /** @return int */
     function run() {
         $ic = (new ConfInvariants($this->conf))->set_level($this->level);
         $ncheck = 0;
@@ -73,39 +86,55 @@ class CheckInvariants_Batch {
         $color = $this->color = $this->color ?? posix_isatty(STDERR);
         $dbname = $this->conf->dbname;
         foreach ($ro->getMethods() as $m) {
-            if (str_starts_with($m->name, "check_")
-                && $m->name !== "check_all"
-                && (!$this->regex || preg_match($this->regex, $m->name))) {
-                if ($this->verbose) {
-                    $mpfx = str_pad("{$dbname}: {$m->name} ", $this->width, ".") . " ";
-                    if ($color) {
-                        fwrite(STDERR, "{$mpfx}\x1b[01;36mRUN\x1b[m");
-                    } else {
-                        fwrite(STDERR, $mpfx);
+            if (!str_starts_with($m->name, "check_")
+                || $m->name === "check_all"
+                || ($this->regex && !preg_match($this->regex, $m->name))) {
+                continue;
+            }
+            $mlevel = $this->method_level($m);
+            if ($this->list) {
+                $lpfx = $lsfx = "";
+                if ($mlevel > 0) {
+                    $lsfx = " (level {$mlevel})";
+                    if ($mlevel > $this->level && $color) {
+                        $lpfx = "\x1b[2m";
+                        $lsfx .= "\x1b[m";
                     }
-                    $ic->buffer_messages();
-                    $ic->{$m->name}();
-                    $msgs = $ic->take_buffered_messages();
-                    if ($color && $msgs !== "") {
-                        $msgs = preg_replace('/^' . preg_quote($this->conf->dbname) . ' invariant violation:/m',
-                            "\x1b[0;31m{$this->conf->dbname} invariant violation:\x1b[m", $msgs);
-                        fwrite(STDERR, "\r{$mpfx}\x1b[01;31mFAIL\x1b[m\n{$msgs}");
-                    } else if ($color) {
-                        fwrite(STDERR, "\r{$mpfx}\x1b[01;32m OK\x1b[m\x1b[K\n");
-                    } else if ($msgs !== "") {
-                        fwrite(STDERR, "FAIL\n{$msgs}");
-                    } else {
-                        fwrite(STDERR, "OK\n");
-                    }
-                } else {
-                    $ic->{$m->name}();
                 }
-                ++$ncheck;
+                fwrite(STDOUT, $lpfx . substr($m->name, 6) . "{$lsfx}\n");
+                continue;
+            }
+            if ($this->verbose) {
+                $mpfx = str_pad("{$dbname}: {$m->name} ", $this->width, ".") . " ";
+                if ($color) {
+                    fwrite(STDERR, "{$mpfx}\x1b[01;36mRUN\x1b[m");
+                } else {
+                    fwrite(STDERR, $mpfx);
+                }
+                $ic->buffer_messages();
+                $ic->{$m->name}();
+                $msgs = $ic->take_buffered_messages();
+                if ($color && $msgs !== "") {
+                    $msgs = preg_replace('/^' . preg_quote($this->conf->dbname) . ' invariant violation:/m',
+                        "\x1b[0;31m{$this->conf->dbname} invariant violation:\x1b[m", $msgs);
+                    fwrite(STDERR, "\r{$mpfx}\x1b[01;31mFAIL\x1b[m\n{$msgs}");
+                } else if ($color) {
+                    fwrite(STDERR, "\r{$mpfx}\x1b[01;32m OK\x1b[m\x1b[K\n");
+                } else if ($msgs !== "") {
+                    fwrite(STDERR, "FAIL\n{$msgs}");
+                } else {
+                    fwrite(STDERR, "OK\n");
+                }
+            } else {
+                $ic->{$m->name}();
             }
         }
         if ($this->regex && $ncheck === 0) {
             fwrite(STDERR, "No matching invariants\n");
             return 1;
+        }
+        if ($this->list) {
+            return 0;
         }
 
         if (isset($ic->problems["no_papersub"]) && $this->want_fix("summary")) {
@@ -251,6 +280,7 @@ class CheckInvariants_Batch {
             "help,h !",
             "verbose,V Be verbose",
             "level:,l: {n} Set invariant level [0]",
+            "list",
             "fix-autosearch ! Repair any incorrect autosearch tags",
             "fix-inactive ! Repair any inappropriately inactive documents",
             "fix[] =PROBLEM Repair PROBLEM [all, autosearch, inactive, setting, document-match, whitespace, cdbroles]",
