@@ -90,6 +90,14 @@ class ConfInvariants {
         } else if ($text === null) {
             $text = $abbrev;
         }
+        $check = "";
+        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $trace) {
+            if (($trace["class"] ?? null) === "ConfInvariants"
+                && str_starts_with($trace["function"], "check_")
+                && $trace["function"] !== "check_all") {
+                $check = substr($trace["function"], 6) . ".";
+            }
+        }
         $vs = [];
         foreach ($this->irow ?? [] as $t) {
             $t = $t ?? "<null>";
@@ -104,7 +112,7 @@ class ConfInvariants {
         $msg = $this->prefix
             . ($this->color ? "\x1b[1m" : "")
             . "{$this->conf->dbname} violation"
-            . ($this->color ? "\x1b[m [\x1b[91;1m{$abbrev}\x1b[m]: " : " [{$abbrev}]: ")
+            . ($this->color ? "\x1b[m [{$check}\x1b[91;1m{$abbrev}\x1b[m]: " : " [{$abbrev}]: ")
             . $this->conf->_($text, ...$vs);
         if ($this->msgbuf !== null) {
             $this->msgbuf[] = $msg . "\n";
@@ -538,8 +546,14 @@ class ConfInvariants {
 
             // cflags reflects ContactPrimary
             if ($uprimary !== isset($isprimary[$u->contactId])) {
-                $this->invariant_error("user_cflags_primary", "user {$u->email}/{$u->contactId} primary flag disagreement");
+                if ($uprimary) {
+                    $this->invariant_error("user_cflags_primary", "user {$u->email}/{$u->contactId} marked primary, has no secondary");
+                } else {
+                    $this->invariant_error("user_cflags_primary", "user {$u->email}/{$u->contactId} not marked primary, has secondary");
+                }
             }
+
+            // primaryContactId reflects ContactPrimary
             $cp = $primap[$u->contactId] ?? null;
             $cp_primary = $cp ? $cp->primaryContactId : 0;
             if ($u->primaryContactId !== $cp_primary) {
