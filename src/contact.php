@@ -2318,7 +2318,10 @@ class Contact implements JsonSerializable {
      * @param bool $skip_log
      * @return int */
     function save_roles($new_roles, $actor, $skip_log = false) {
-        assert(($new_roles & self::ROLE_DBMASK) === $new_roles);
+        if (($new_roles & self::ROLE_DBMASK) !== $new_roles) {
+            $new_roles &= self::ROLE_DBMASK;
+            error_log("bad \$new_roles {$new_roles}: " . debug_string_backtrace());
+        }
         $old_roles = $this->roles & self::ROLE_DBMASK;
         if (($old_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0
             && ($new_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) === 0) {
