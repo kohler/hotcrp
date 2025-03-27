@@ -17,6 +17,8 @@ class ConfInvariants {
     public $conf;
     /** @var int */
     public $level = 0;
+    /** @var bool */
+    public $color = false;
     /** @var array<string,true> */
     public $problems = [];
     /** @var string */
@@ -35,6 +37,13 @@ class ConfInvariants {
      * @return $this */
     function set_level($level) {
         $this->level = $level;
+        return $this;
+    }
+
+    /** @param bool $color
+     * @return $this */
+    function set_color($color) {
+        $this->color = $color;
         return $this;
     }
 
@@ -92,7 +101,10 @@ class ConfInvariants {
             }
             $vs[] = $t;
         }
-        $msg = "{$this->prefix}{$this->conf->dbname} invariant violation: "
+        $msg = $this->prefix
+            . ($this->color ? "\x1b[1m" : "")
+            . "{$this->conf->dbname} violation"
+            . ($this->color ? "\x1b[m [\x1b[91;1m{$abbrev}\x1b[m]: " : " [{$abbrev}]: ")
             . $this->conf->_($text, ...$vs);
         if ($this->msgbuf !== null) {
             $this->msgbuf[] = $msg . "\n";

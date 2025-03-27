@@ -84,6 +84,7 @@ class CheckInvariants_Batch {
         $ncheck = 0;
         $ro = new ReflectionObject($ic);
         $color = $this->color = $this->color ?? posix_isatty(STDERR);
+        $ic->set_color($this->color);
         $dbname = $this->conf->dbname;
         foreach ($ro->getMethods() as $m) {
             if (!str_starts_with($m->name, "check_")
@@ -91,6 +92,7 @@ class CheckInvariants_Batch {
                 || ($this->regex && !preg_match($this->regex, $m->name))) {
                 continue;
             }
+            ++$ncheck;
             $mlevel = $this->method_level($m);
             if ($this->list) {
                 $lpfx = $lsfx = "";
