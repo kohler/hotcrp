@@ -493,7 +493,7 @@ class ConfInvariants {
 
             // roles have only expected bits
             if (($u->roles & ~Contact::ROLE_DBMASK) !== 0) {
-                $this->invariant_error("user_roles", "user {$u->email} has funky roles {$u->roles}");
+                $this->invariant_error("roles", "user {$u->email} has funky roles {$u->roles}");
             }
 
             // disabled has only expected bits
