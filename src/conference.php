@@ -1941,7 +1941,7 @@ class Conf {
 
     /** @return null|'ldap'|'htauth'|'none'|'oauth' */
     function login_type() {
-        return $this->opt["loginType"];
+        return $this->opt["loginType"] ?? null;
     }
 
     /** @return bool */
@@ -3982,13 +3982,12 @@ class Conf {
         }
         if (($flags & self::HOTURL_ABSOLUTE) || $this !== Conf::$main) {
             return $this->opt("paperSite") . "/" . $t;
-        } else {
-            $siteurl = $nav->site_path_relative;
-            if ($need_site_path && $siteurl === "") {
-                $siteurl = $nav->site_path;
-            }
-            return $siteurl . $t;
         }
+        $siteurl = $nav->site_path_relative;
+        if ($need_site_path && $siteurl === "") {
+            $siteurl = $nav->site_path;
+        }
+        return $siteurl . $t;
     }
 
     /** @param string $page

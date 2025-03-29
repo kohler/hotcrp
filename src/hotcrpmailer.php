@@ -295,24 +295,23 @@ class HotCRPMailer extends Mailer {
                 return ($rrow1 ?? $rrow0)->deadline_name();
             }
         }
-        if ($this->recipient && $this->recipient->isPC) {
-            $bestdl = $bestdln = null;
-            foreach ($this->conf->defined_rounds() as $i => $round_name) {
-                $dln = "pcrev_soft" . ($i ? "_{$i}" : "");
-                if (($dl = $this->conf->setting($dln))) {
-                    if (!$bestdl
-                        || ($bestdl < Conf::$now
-                            ? $dl < $bestdl || $dl >= Conf::$now
-                            : $dl >= Conf::$now && $dl < $bestdl)) {
-                        $bestdl = $dl;
-                        $bestdln = $dln;
-                    }
-                }
-            }
-            return $bestdln;
-        } else {
+        if (!$this->recipient || !$this->recipient->isPC) {
             return null;
         }
+        $bestdl = $bestdln = null;
+        foreach ($this->conf->defined_rounds() as $i => $round_name) {
+            $dln = "pcrev_soft" . ($i ? "_{$i}" : "");
+            if (($dl = $this->conf->setting($dln))) {
+                if (!$bestdl
+                    || ($bestdl < Conf::$now
+                        ? $dl < $bestdl || $dl >= Conf::$now
+                        : $dl >= Conf::$now && $dl < $bestdl)) {
+                    $bestdl = $dl;
+                    $bestdln = $dln;
+                }
+            }
+        }
+        return $bestdln;
     }
 
     function kw_deadline($args, $isbool, $uf) {
