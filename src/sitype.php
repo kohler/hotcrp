@@ -417,6 +417,8 @@ class String_Sitype extends Sitype {
     /** @var bool */
     private $long = false;
     /** @var bool */
+    private $mailbody = false;
+    /** @var bool */
     private $allow_int = false;
     /** @var bool */
     private $condition = false;
@@ -438,6 +440,8 @@ class String_Sitype extends Sitype {
         } else if ($subtype === "formula") {
             $this->simple = true;
             $this->example = "formula expression";
+        } else if ($subtype === "mailbody") {
+            $this->long = $this->mailbody = true;
         }
     }
     function parse_reqv($vstr, Si $si, SettingValues $sv) {
@@ -447,6 +451,9 @@ class String_Sitype extends Sitype {
             $s = cleannl($vstr);
         } else {
             $s = trim($vstr);
+        }
+        if ($this->mailbody && $s !== "" && !str_ends_with($s, "\n")) {
+            $s .= "\n";
         }
         if ($s !== "" || $si->required !== true) {
             return $s;
@@ -476,9 +483,16 @@ class String_Sitype extends Sitype {
         return $v;
     }
     function nullable($v, Si $si, SettingValues $sv) {
-        return $v === ""
-            || (substr($si->name, 0, 9) === "mailbody_"
-                && ($sv->expand_mail_template(substr($si->name, 9), true))["body"] === $v);
+        if ($v === "") {
+            return true;
+        }
+        if ($this->mailbody && str_starts_with($si->name, "mailbody_")) {
+            $mt = $sv->expand_mail_template(substr($si->name, 9), true);
+            if ($mt["body"] === $v) {
+                return true;
+            }
+        }
+        return false;
     }
     function json_examples(Si $si, SettingValues $sv) {
         return $this->example ?? ($this->simple ? "short string" : "text");

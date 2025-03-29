@@ -104,7 +104,7 @@
     {
         "name": "mailbody_requestreview",
         "title": "Mail template for external review requests",
-        "type": "longstring"
+        "type": "string", "subtype": "mailbody"
     },
     {
         "name": "review_terms", "storage": "msg.clickthrough_review",
