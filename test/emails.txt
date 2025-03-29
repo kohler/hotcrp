@@ -1153,6 +1153,9 @@ http://hotcrp.lcdf.org/test/resetpassword/{{}}
 
 Should the link expire, obtain a new one using "Forgot my password".
 
+**NEW IN 2025**: You can redirect future review requests to a chosen
+email address using Account settings > Manage email.
+
 Thank you for your help -- we appreciate that reviewing is hard work.
 
 Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or

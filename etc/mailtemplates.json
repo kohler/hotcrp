@@ -365,6 +365,7 @@
 			"{{PASSWORDLINK}}\n\n",
 			"Should the link expire, obtain a new one using \"Forgot my password\".\n",
 			"{{ENDIF}}\n\n",
+			"**NEW IN 2025**: You can redirect future review requests to a chosen email address using Account settings > Manage email.\n\n",
 			"Thank you for your help -- we appreciate that reviewing is hard work.\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
