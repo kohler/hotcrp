@@ -5912,7 +5912,7 @@ class Contact implements JsonSerializable {
         for ($i = 0; $i !== count($graces); $i += 3) {
             $dlx = $graces[$i];
             foreach ($graces[$i + 2] as $k) {
-                if ($dlx->$k
+                if (($dlx->$k ?? 0) > 0
                     && $dlx->$k - 30 < Conf::$now
                     && $dlx->$k + $graces[$i + 1] >= Conf::$now) {
                     $kgrace = "{$k}_ingrace";
