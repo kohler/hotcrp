@@ -106,7 +106,7 @@ class Comment_SearchTerm extends SearchTerm {
     /** @return bool */
     private function test_tags_response() {
         $t = " response#0";
-        foreach ($this->user->conf->response_rounds() as $rrd) {
+        foreach ($this->user->conf->response_round_list() as $rrd) {
             $t .= " " . $rrd->tag_name() . "#0";
         }
         return $this->tags->test($t);

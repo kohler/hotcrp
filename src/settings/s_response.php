@@ -136,7 +136,7 @@ class Response_SettingParser extends SettingParser {
 
     function prepare_oblist(Si $si, SettingValues $sv) {
         $m = [];
-        foreach ($sv->conf->response_rounds() as $rrd) {
+        foreach ($sv->conf->response_round_list() as $rrd) {
             $m[] = Response_Setting::make($sv->conf, $rrd);
         }
         $sv->append_oblist("response", $m, "name");
@@ -319,7 +319,7 @@ class Response_SettingParser extends SettingParser {
 
     static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("response")) {
-            foreach ($sv->conf->response_rounds() as $i => $rrd) {
+            foreach ($sv->conf->response_round_list() as $i => $rrd) {
                 $ctr = $i + 1;
                 if ($rrd->hard_wordlimit > 0
                     && $rrd->wordlimit > $rrd->hard_wordlimit) {

@@ -1811,7 +1811,7 @@ class PaperInfo {
         if ($this->conf->any_response_open === 2) {
             return true;
         } else if ($this->conf->any_response_open) {
-            foreach ($this->conf->response_rounds() as $rrd) {
+            foreach ($this->conf->response_round_list() as $rrd) {
                 if ($rrd->can_author_respond($this, true))
                     return true;
             }

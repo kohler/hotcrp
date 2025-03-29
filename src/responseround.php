@@ -65,12 +65,11 @@ class ResponseRound {
             return true;
         } else if ($user->isPC) {
             return $this->open > 0;
-        } else {
-            return $this->active
-                && $this->open > 0
-                && $this->open < Conf::$now
-                && ($this->condition === null || $this->_condition_relevant($user, $prow));
         }
+        return $this->active
+            && $this->open > 0
+            && $this->open < Conf::$now
+            && ($this->condition === null || $this->_condition_relevant($user, $prow));
     }
 
     /** @return bool */

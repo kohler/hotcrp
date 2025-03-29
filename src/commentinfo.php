@@ -226,7 +226,7 @@ class CommentInfo {
         $t = [];
         $crow = new CommentInfo($prow);
         $crow->commentType = self::CT_RESPONSE;
-        foreach ($prow->conf->response_rounds() as $rrd) {
+        foreach ($prow->conf->response_round_list() as $rrd) {
             $j = ["wl" => $rrd->wordlimit];
             if ($rrd->hard_wordlimit >= $rrd->wordlimit) {
                 $j["hwl"] = $rrd->hard_wordlimit;

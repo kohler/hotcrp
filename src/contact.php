@@ -4280,7 +4280,7 @@ class Contact implements JsonSerializable {
     /** @return list<ResponseRound> */
     function relevant_response_rounds() {
         $rrds = [];
-        foreach ($this->conf->response_rounds() as $rrd) {
+        foreach ($this->conf->response_round_list() as $rrd) {
             if ($rrd->relevant($this))
                 $rrds[] = $rrd;
         }
@@ -5081,7 +5081,7 @@ class Contact implements JsonSerializable {
     function preferred_response_round(PaperInfo $prow) {
         $rights = $this->rights($prow);
         if ($rights->is_author()) {
-            foreach ($prow->conf->response_rounds() as $rrd) {
+            foreach ($prow->conf->response_round_list() as $rrd) {
                 if ($rrd->time_allowed(true))
                     return $rrd;
             }
@@ -6009,7 +6009,10 @@ class Contact implements JsonSerializable {
             || $this->is_disabled()) {
             return [];
         }
-        return $relevant ? $this->relevant_response_rounds() : $this->conf->response_rounds();
+        if ($relevant) {
+            return $this->relevant_response_rounds();
+        }
+        return $this->conf->response_round_list();
     }
 
     /** @return array<int,string> */

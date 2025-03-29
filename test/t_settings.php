@@ -943,7 +943,7 @@ class Settings_Tester {
             $this->conf->qe("delete from PaperComment where (commentType&?)!=0", CommentInfo::CT_RESPONSE);
         }
 
-        $rrds = $this->conf->response_rounds();
+        $rrds = $this->conf->response_round_list();
         xassert_eqq(count($rrds), 1);
         xassert_eqq($rrds[0]->id, 1);
         xassert_eqq($rrds[0]->name, "1");
@@ -962,7 +962,7 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_array_eqq($sv->changed_keys(), ["responses"]);
 
-        $rrds = $this->conf->response_rounds();
+        $rrds = $this->conf->response_round_list();
         xassert_eqq(count($rrds), 1);
         xassert_eqq($rrds[0]->id, 1);
         xassert_eqq($rrds[0]->name, "Butt");
@@ -1009,7 +1009,7 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_array_eqq($sv->changed_keys(), ["responses"]);
 
-        $rrds = $this->conf->response_rounds();
+        $rrds = $this->conf->response_round_list();
         xassert_eqq(count($rrds), 2);
         xassert_eqq($rrds[0]->id, 1);
         xassert_eqq($rrds[0]->name, "1");
@@ -1036,7 +1036,7 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_array_eqq($sv->changed_keys(), ["responses"]);
 
-        $rrds = $this->conf->response_rounds();
+        $rrds = $this->conf->response_round_list();
         xassert_eqq(count($rrds), 2);
         xassert_eqq($rrds[0]->id, 1);
         xassert_eqq($rrds[0]->name, "1");
@@ -1068,7 +1068,7 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_array_eqq($sv->changed_keys(), ["responses"]);
 
-        $rrds = $this->conf->response_rounds();
+        $rrds = $this->conf->response_round_list();
         xassert_eqq($rrds[0]->instructions, "PANTS");
         xassert_eqq($rrds[0]->instructions($this->conf), "PANTS");
         xassert_eqq($rrds[1]->instructions, null);
@@ -1082,7 +1082,7 @@ class Settings_Tester {
         xassert($sv->execute());
         xassert_array_eqq($sv->changed_keys(), ["responses"]);
 
-        $rrds = $this->conf->response_rounds();
+        $rrds = $this->conf->response_round_list();
         xassert_eqq($rrds[0]->instructions, null);
         xassert_eqq($rrds[0]->instructions($this->conf), $definstrux);
         xassert_eqq($rrds[1]->instructions, null);

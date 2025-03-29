@@ -512,15 +512,14 @@ class Conf {
 
         $this->any_response_open = 0;
         if (($this->settings["resp_active"] ?? 0) > 0) {
-            foreach ($this->response_rounds() as $rrd) {
-                if ($rrd->time_allowed(true)) {
-                    if ($rrd->condition !== null) {
-                        $this->any_response_open = 1;
-                    } else {
-                        $this->any_response_open = 2;
-                        break;
-                    }
+            foreach ($this->response_round_list() as $rrd) {
+                if (!$rrd->time_allowed(true)) {
+                    continue;
+                } else if ($rrd->condition === null) {
+                    $this->any_response_open = 2;
+                    break;
                 }
+                $this->any_response_open = 1;
             }
         }
     }
@@ -1816,15 +1815,21 @@ class Conf {
 
 
     /** @return list<ResponseRound> */
-    function response_rounds() {
+    function response_round_list() {
         if ($this->_resp_rounds === null) {
-            $this->_resp_rounds = $this->_response_rounds();
+            $this->_resp_rounds = $this->_response_round_list();
         }
         return $this->_resp_rounds;
     }
 
+    /** @return list<ResponseRound>
+     * @deprecated */
+    function response_rounds() {
+        return $this->response_round_list();
+    }
+
     /** @return list<ResponseRound> */
-    private function _response_rounds() {
+    private function _response_round_list() {
         $rrds = [];
         $active = ($this->settings["resp_active"] ?? 0) > 0;
         $resptext = $this->settingTexts["responses"] ?? null;
@@ -1860,7 +1865,7 @@ class Conf {
     /** @param string $rname
      * @return ?ResponseRound */
     function response_round($rname) {
-        $rrds = $this->response_rounds();
+        $rrds = $this->response_round_list();
         foreach ($rrds as $rrd) {
             if (strcasecmp($rname, $rrd->name) === 0)
                 return $rrd;
@@ -1877,7 +1882,7 @@ class Conf {
     /** @param int $round
      * @return ?ResponseRound */
     function response_round_by_id($round) {
-        $rrds = $this->response_rounds();
+        $rrds = $this->response_round_list();
         return $rrds[$round - 1] ?? null;
     }
 
