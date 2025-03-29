@@ -1,6 +1,6 @@
 <?php
 // si.php -- HotCRP conference settings information class
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Si {
     /** @var Conf
@@ -551,9 +551,8 @@ class Si {
     function sv_hoturl($sv) {
         if ($this->hashid !== false && $this->has_tag($sv->canonical_page)) {
             return "#" . urlencode($this->hashid());
-        } else {
-            return $this->hoturl();
         }
+        return $this->hoturl();
     }
 
     /** @param SettingValues $sv
@@ -563,9 +562,8 @@ class Si {
             && $this->parser_class
             && ($v = $sv->si_parser($this)->values($this, $sv)) !== null) {
             return $v;
-        } else {
-            return $this->values !== "auto" ? $this->values : null;
         }
+        return $this->values !== "auto" ? $this->values : null;
     }
 
     /** @param SettingValues $sv
@@ -575,9 +573,8 @@ class Si {
             && $this->parser_class
             && ($v = $sv->si_parser($this)->json_values($this, $sv)) !== null) {
             return $v;
-        } else {
-            return $this->json_values !== "auto" ? $this->json_values : null;
         }
+        return $this->json_values !== "auto" ? $this->json_values : null;
     }
 
     /** @param SettingValues $sv
@@ -586,9 +583,8 @@ class Si {
         if ($this->placeholder === "auto"
             && $this->parser_class) {
             return $sv->si_parser($this)->placeholder($this, $sv);
-        } else {
-            return $this->placeholder;
         }
+        return $this->placeholder;
     }
 
     /** @param SettingValues $sv */
@@ -600,12 +596,10 @@ class Si {
         } else if (($this->storage_type & self::SI_DATA) !== 0) {
             if (str_starts_with($this->storage ?? "", "msg.")) {
                 return $sv->conf->fmt()->default_translation(substr($this->storage_name(), 4)) ?? "";
-            } else {
-                return $this->default_value ?? "";
             }
-        } else {
-            return $this->default_value;
+            return $this->default_value ?? "";
         }
+        return $this->default_value;
     }
 
     /** @param SettingValues $sv */
@@ -627,15 +621,15 @@ class Si {
     function parse_reqv($reqv, SettingValues $sv) {
         if ($reqv === null) {
             return $this->_tclass ? $this->_tclass->parse_null_vstr($this) : null;
-        } else if ($this->_tclass) {
-            $v = trim($reqv);
-            if ($v === $this->placeholder($sv)) {
-                $v = "";
-            }
-            return $this->_tclass->parse_reqv($v, $this, $sv);
-        } else {
+        }
+        if (!$this->_tclass) {
             throw new ErrorException("Don't know how to parse_reqv {$this->name}.");
         }
+        $v = trim($reqv);
+        if ($v === $this->placeholder($sv)) {
+            $v = "";
+        }
+        return $this->_tclass->parse_reqv($v, $this, $sv);
     }
 
     /** @param null|int|string $v
@@ -643,25 +637,23 @@ class Si {
     function base_unparse_reqv($v, SettingValues $sv) {
         if ($this->_tclass) {
             return $this->_tclass->unparse_reqv($v, $this, $sv);
-        } else {
-            return (string) $v;
         }
+        return (string) $v;
     }
 
     /** @param mixed $jv
      * @return ?string */
     function jsonv_reqstr($jv, SettingValues $sv) {
-        if ($this->_tclass) {
-            if (is_string($jv)) {
-                $jv = trim($jv);
-                if ($jv === $this->placeholder($sv)) {
-                    $jv = "";
-                }
-            }
-            return $this->_tclass->jsonv_reqstr($jv, $this, $sv);
-        } else {
+        if (!$this->_tclass) {
             throw new ErrorException("Don't know how to jsonv_reqstr {$this->name}.");
         }
+        if (is_string($jv)) {
+            $jv = trim($jv);
+            if ($jv === $this->placeholder($sv)) {
+                $jv = "";
+            }
+        }
+        return $this->_tclass->jsonv_reqstr($jv, $this, $sv);
     }
 
     /** @param null|int|string $v
@@ -669,14 +661,16 @@ class Si {
     function base_unparse_jsonv($v, SettingValues $sv) {
         if ($this->_tclass) {
             return $this->_tclass->unparse_jsonv($v, $this, $sv);
-        } else {
-            return $v;
         }
+        return $v;
     }
 
     /** @return mixed */
     function json_examples(SettingValues $sv) {
-        return $this->_tclass ? $this->_tclass->json_examples($this, $sv) : null;
+        if ($this->_tclass) {
+            return $this->_tclass->json_examples($this, $sv);
+        }
+        return null;
     }
 
     /** @param Si $xta

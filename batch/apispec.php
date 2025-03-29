@@ -238,7 +238,7 @@ class APISpec_Batch {
         if ($s !== "" && !str_ends_with($s, "\n")) {
             $s .= "\n";
         }
-        $m = preg_split('/^\#\s+([^\n]*?)\s*\n/m', cleannl($s), -1, PREG_SPLIT_DELIM_CAPTURE);
+        $m = preg_split('/^\#\s+([^\n]*?)\s*\n/m', $s, -1, PREG_SPLIT_DELIM_CAPTURE);
         $xs = [];
         $lineno = 1;
         for ($i = 1; $i < count($m); $i += 2) {

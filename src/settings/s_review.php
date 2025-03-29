@@ -296,10 +296,11 @@ class Review_SettingParser extends SettingParser {
             ["fold_values" => [3]]);
         echo "</div></div>\n";
     }
+
     static function print_extrev_requestmail(SettingValues $sv) {
         $t = $sv->expand_mail_template("requestreview", false);
         echo '<div id="foldmailbody_requestreview" class="form-g ',
-            ($t == $sv->expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
+            ($t === $sv->expand_mail_template("requestreview", true) ? "foldc" : "foldo"),
             '">';
         $sv->set_oldv("mailbody_requestreview", $t["body"]);
         echo '<div class="', $sv->control_class("mailbody_requestreview", "f-i"), '">',

@@ -5958,20 +5958,21 @@ class Conf {
         if (!$uf || !Conf::xt_resolve_require($uf)) {
             return null;
         }
-        if (!$default_only) {
-            $se = $this->has_setting("mailsubj_{$name}");
-            $s = $se ? $this->setting_data("mailsubj_{$name}") : null;
-            $be = $this->has_setting("mailbody_{$name}");
-            $b = $be ? $this->setting_data("mailbody_{$name}") : null;
-            if (($se && $s !== $uf->subject)
-                || ($be && $b !== $uf->body)) {
-                $uf = clone $uf;
-                if ($se) {
-                    $uf->subject = $s;
-                }
-                if ($be) {
-                    $uf->body = $b;
-                }
+        if ($default_only) {
+            return $uf;
+        }
+        $se = $this->has_setting("mailsubj_{$name}");
+        $s = $se ? $this->setting_data("mailsubj_{$name}") : null;
+        $be = $this->has_setting("mailbody_{$name}");
+        $b = $be ? $this->setting_data("mailbody_{$name}") : null;
+        if (($se && $s !== $uf->subject)
+            || ($be && $b !== $uf->body)) {
+            $uf = clone $uf;
+            if ($se) {
+                $uf->subject = $s;
+            }
+            if ($be) {
+                $uf->body = $b;
             }
         }
         return $uf;
