@@ -61,7 +61,7 @@ class CleanSettings_Batch {
             $diffs[] = __FILE__ . ":" . __LINE__ . ":\n" . $dmp->line_diff_toUnified($dmp->line_diff($null_mailer->expand($t0, "body"), $xmb));
             $t0 = str_replace("On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% submission #%NUMBER%.\n%IF(REASON)%\nThey supplied this note: %REASON%\n%ENDIF%\n",
                 "On behalf of the %CONFNAME% program committee, %REQUESTERCONTACT% has asked you to review %CONFNAME% submission #%NUMBER%.%IF(REASON)%\n\nThey supplied this note: %REASON%%ENDIF%\n\n", $t0);
-            $t0 = str_replace("* Author(s)", "* %_(Authors)%", $t0);
+            $t0 = str_replace("* Author(s)", "* Authors", $t0);
             $match = $xmb === $null_mailer->expand($t0, "body");
         }
         if (!$match) {
@@ -86,8 +86,8 @@ class CleanSettings_Batch {
         }
         if (!$match) {
             $diffs[] = __FILE__ . ":" . __LINE__ . ":\n" . $dmp->line_diff_toUnified($dmp->line_diff($null_mailer->expand($t0, "body"), $xmb));
-            $t0 = str_replace("* Title: %TITLE%\n* %_(Authors)%: %OPT(AUTHORS)%\n* Site: %URL(paper, p=%NUMBER%)%\n\n",
-                "       Title: %TITLE%\n %_(Authors, 11)%: %OPT(AUTHORS)%\n        Site: %URL(paper, p=%NUMBER%)%\n\n", $t0);
+            $t0 = str_replace("* Title: %TITLE%\n* Authors: %OPT(AUTHORS)%\n* Site: %URL(paper, p=%NUMBER%)%\n\n",
+                "       Title: %TITLE%\n     Authors: %OPT(AUTHORS)%\n        Site: %URL(paper, p=%NUMBER%)%\n\n", $t0);
             $t0 = str_replace("* Accept: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&accept=1)%\n* Decline: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&decline=1)%\n\n",
                 "      Accept: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&accept=1)%\n     Decline: %URL(review, p=%NUMBER%&cap=%REVIEWACCEPTOR%&decline=1)%\n\n", $t0);
             $match = $xmb === $null_mailer->expand($t0, "body");
@@ -96,7 +96,7 @@ class CleanSettings_Batch {
             $this->conf->save_setting("mailbody_requestreview", null);
         }
         if ($this->verbose) {
-            if ($this->match) {
+            if ($match) {
                 fwrite(STDERR, "{$this->conf->dbname}: Cleaned\n  " . rtrim(str_replace("\n", "\n  ", $xmb)) . "\n");
             } else {
                 fwrite(STDERR, "{$this->conf->dbname}: Failed\n" . join("", $diffs));
