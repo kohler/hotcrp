@@ -4277,6 +4277,16 @@ class Contact implements JsonSerializable {
         }
     }
 
+    /** @return list<SubmissionRound> */
+    function relevant_submission_rounds() {
+        $srds = [];
+        foreach ($this->conf->submission_round_list() as $srd) {
+            if ($srd->relevant($this))
+                $srds[] = $srd;
+        }
+        return $srds;
+    }
+
     /** @return list<ResponseRound> */
     function relevant_response_rounds() {
         $rrds = [];
@@ -5796,9 +5806,12 @@ class Contact implements JsonSerializable {
         $graces = [];
 
         // submissions
+        // XXX submission rounds
         $sr = $prows ? $prows[0]->submission_round() : $this->conf->unnamed_submission_round();
         $dl->sub->open = $sr->open > 0 && $sr->open <= Conf::$now;
-        $dl->sub->sub = $sr->submit;
+        if ($sr->submit > 0) {
+            $dl->sub->sub = $sr->submit;
+        }
         $sub_graces = [];
         if ($sr->register > 0
             && ($sr->update <= 0 || $sr->register < $sr->update)) {
@@ -6027,24 +6040,12 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function has_reportable_deadline() {
-        $dl = $this->status_json();
-        // XXX multiple submission rounds
-        if (isset($dl->sub->reg) || isset($dl->sub->update) || isset($dl->sub->sub)) {
-            return true;
+        foreach ($this->relevant_submission_rounds() as $sr) {
+            if ($sr->register > 0 || $sr->update > 0 || $sr->submit > 0)
+                return true;
         }
-        if (isset($dl->resps)) {
-            foreach ($dl->resps as $dlr) {
-                if (isset($dlr->open) && $dlr->open < Conf::$now && ($dlr->done ?? null))
-                    return true;
-            }
-        }
-        if (isset($dl->rev) && isset($dl->rev->open) && $dl->rev->open < Conf::$now) {
-            foreach ($dl->revs as $dlr) {
-                if ($dlr->done ?? null)
-                    return true;
-            }
-        }
-        return false;
+        return !empty($this->reportable_response_rounds(true))
+            || !empty($this->reportable_review_rounds());
     }
 
 

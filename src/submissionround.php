@@ -97,6 +97,29 @@ class SubmissionRound {
                 || $this->submit + ($with_grace ? $this->grace : 0) >= Conf::$now);
     }
 
+    /** @return bool */
+    function relevant(Contact $user, ?PaperInfo $prow = null) {
+        if ($user->isPC) {
+            return true;
+        }
+        return ($this->open > 0
+                && $this->open <= Conf::$now + 604800)
+            && ($this->register <= 0
+                || $this->register >= Conf::$now - 604800
+                || (($this->submit <= 0
+                     || $this->submit >= Conf::$now - 604800)
+                    && $this->_paper_relevant($user, $prow)));
+    }
+
+    /** @return bool */
+    private function _paper_relevant(Contact $user, ?PaperInfo $prow) {
+        foreach ($prow ? [$prow] : $user->authored_papers() as $row) {
+            if ($prow->submission_round() === $this)
+                return true;
+        }
+        return false;
+    }
+
     /** @param SubmissionRound|Sround_Setting $a
      * @param SubmissionRound|Sround_Setting $b
      * @return -1|0|1 */
