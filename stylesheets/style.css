@@ -3581,10 +3581,6 @@ tr.plx {
 	background-position: top left;
 }
 
-.my-mention {
-	color: #a16300;
-}
-
 /* profile pages */
 .reauthentication-section {
 	border-width: 3px;
@@ -4654,9 +4650,9 @@ a:hover .t-editor,
 	font-size: 200%;
 	line-height: 1.125;
 }
-.my-mention::after {
+.my-mention::before {
 	content: "✪";
-	padding-left: 0.1em;
+	padding-right: 0.1em;
 	font-size: 95%;
 	display: inline-block;
 	position: relative;
