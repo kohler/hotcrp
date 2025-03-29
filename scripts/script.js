@@ -478,7 +478,7 @@ $(document).ajaxError(function (evt, jqxhr, options, httperror) {
         }
     }
     check_message_list(data, options);
-    if (jqxhr.status !== 502) {
+    if (jqxhr.status !== 502 && !data) {
         var msg = url_absolute(options.url) + " API failure: ";
         if (siteinfo.user && siteinfo.user.email)
             msg += "user " + siteinfo.user.email + ", ";
