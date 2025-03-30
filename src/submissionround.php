@@ -114,7 +114,7 @@ class SubmissionRound {
     /** @return bool */
     private function _paper_relevant(Contact $user, ?PaperInfo $prow) {
         foreach ($prow ? [$prow] : $user->authored_papers() as $row) {
-            if ($prow->submission_round() === $this)
+            if ($row->submission_round() === $this)
                 return true;
         }
         return false;
