@@ -103,8 +103,10 @@ class AuthenticationChecker {
             return true;
         }
         foreach ($this->security_events() as $use) {
-            if ($use->reason === UserSecurityEvent::REASON_REAUTH
-                && $use->timestamp >= Conf::$now - $this->max_age) {
+            if (($use->reason === UserSecurityEvent::REASON_REAUTH
+                 && $use->timestamp >= Conf::$now - $this->max_age)
+                || ($use->reason === UserSecurityEvent::REASON_SIGNIN
+                    && $use->timestamp >= Conf::$now - min(120, $this->max_age))) {
                 $this->ok = $use->success;
             }
         }
@@ -125,7 +127,15 @@ class AuthenticationChecker {
                     || $usex->type === UserSecurityEvent::TYPE_OAUTH))
                 $use = $usex;
         }
+        if (!$use && $this->user->can_use_password()) {
+            $use = new UserSecurityEvent($this->user->email, UserSecurityEvent::TYPE_PASSWORD);
+        }
         if (!$use) {
+            echo Ht::feedback_msg(MessageItem::error("<5><strong>Account {$this->user->email} cannot be confirmed using this session.</strong> Please sign out and sign in again and retry.")),
+                '<div class="', $this->actions_class(), '">',
+                Ht::submit("Sign out", ["type" => "submit", "class" => "btn-danger", "form" => "f-signout"]),
+                '</div>';
+            Ht::stash_html(Ht::form($this->conf->hoturl("=signout", ["cap" => null]), ["id" => "f-signout"]) . "</form>", "f-signout");
             return false;
         }
         echo Ht::hidden("reason", $this->reason, ["form" => "f-reauth", "class" => "ignore-diff"]);
