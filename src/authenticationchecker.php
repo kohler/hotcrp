@@ -128,7 +128,7 @@ class AuthenticationChecker {
                 $use = $usex;
         }
         if (!$use && $this->user->can_use_password()) {
-            $use = new UserSecurityEvent($this->user->email, UserSecurityEvent::TYPE_PASSWORD);
+            $use = UserSecurityEvent::make($this->user->email, UserSecurityEvent::TYPE_PASSWORD);
         }
         if (!$use) {
             echo Ht::feedback_msg(MessageItem::error("<5><strong>Account {$this->user->email} cannot be confirmed using this session.</strong> Please sign out and sign in again and retry.")),
