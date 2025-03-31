@@ -2524,7 +2524,8 @@ class Contact implements JsonSerializable {
     //   on successful login.
     // * " [hashmethod] [keyid] [salt][hash_hmac]": Legacy hashed password
     //   using hash_hmac. `salt` is 16 bytes. Reset to hashed password on
-    //   successful login.
+    //   successful login. As of 2025 the code to check legacy hashed passwords
+    //   has been removed.
     //
     // Password checking guiding principles
     // * Contactdb password generally takes preference. On successful signin
@@ -2556,6 +2557,19 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
+    function can_use_password() {
+        if ($this->conf->external_login()) {
+            return false;
+        }
+        list($cdbpw, $localpw) = $this->effective_passwords();
+        return ($cdbpw !== ""
+                && ($cdbpw[0] !== " " || $cdbpw[1] === "\$"))
+            || ($localpw !== ""
+                && ($localpw[0] !== " " || $localpw[1] === "\$")
+                && ($cdbpw === "" || str_starts_with($cdbpw, " unset")));
+    }
+
+    /** @return bool */
     function can_reset_password() {
         if ($this->conf->external_login() || $this->security_locked()) {
             return false;
@@ -2565,25 +2579,6 @@ class Contact implements JsonSerializable {
             && !str_starts_with($localpw, " nologin");
     }
 
-
-    // obsolete
-    private function password_hmac_key($keyid) {
-        if ($keyid === null) {
-            $keyid = $this->conf->opt("passwordHmacKeyid") ?? 0;
-        }
-        $key = $this->conf->opt("passwordHmacKey.$keyid");
-        if (!$key && $keyid == 0) {
-            $key = $this->conf->opt("passwordHmacKey");
-        }
-        if (!$key) { /* backwards compatibility */
-            $key = $this->conf->setting_data("passwordHmacKey.$keyid");
-        }
-        if (!$key) {
-            error_log("missing passwordHmacKey.{$keyid}, using default");
-            $key = "NdHHynw6JwtfSZyG3NYPTSpgPFG8UN8NeXp4tduTk2JhnSVy";
-        }
-        return $key;
-    }
 
     /** @param string $input
      * @param string $pwhash
@@ -2598,18 +2593,8 @@ class Contact implements JsonSerializable {
             return $pwhash === $input;
         } else if ($pwhash[1] === "\$") {
             return password_verify($input, substr($pwhash, 2));
-        } else if (($method_pos = strpos($pwhash, " ", 1)) !== false
-                   && ($keyid_pos = strpos($pwhash, " ", $method_pos + 1)) !== false
-                   && strlen($pwhash) > $keyid_pos + 17
-                   && function_exists("hash_hmac")) {
-            $method = substr($pwhash, 1, $method_pos - 1);
-            $keyid = substr($pwhash, $method_pos + 1, $keyid_pos - $method_pos - 1);
-            $salt = substr($pwhash, $keyid_pos + 1, 16);
-            return hash_hmac($method, $salt . $input, $this->password_hmac_key($keyid), true)
-                === substr($pwhash, $keyid_pos + 17);
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return int|string */
