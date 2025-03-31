@@ -33,9 +33,12 @@ class ContactPrimary {
         $this->sec = $sec;
         if ($pri && strcasecmp($pri->email, $sec->email) !== 0) {
             $this->pri = $pri;
+        } else {
+            $this->pri = null;
         }
+        $this->uids = [];
         if (!$this->cdb) {
-            $this->uids = [$this->sec->contactId];
+            $this->uids[] = $this->sec->contactId;
         }
 
         // resolve pri
@@ -43,6 +46,9 @@ class ContactPrimary {
             $this->pri->ensure_account_here();
         }
         assert(!$this->pri || $this->cdb === $this->pri->is_cdb_user());
+        if ($this->pri && $this->cdb !== $this->pri->is_cdb_user()) {
+            error_log(json_encode([$this->cdb, $this->pri->is_cdb_user(), $sec->email]) . ": " . debug_string_backtrace());
+        }
         // do not assign to self
         $idk = $this->cdb ? "contactDbId" : "contactId";
         if ($this->sec->primaryContactId === ($this->pri ? $this->pri->$idk : 0)) {
