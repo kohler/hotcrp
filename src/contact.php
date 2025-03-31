@@ -2536,25 +2536,33 @@ class Contact implements JsonSerializable {
         return strlen($input) > 5 && trim($input) === $input;
     }
 
-    /** @return bool */
-    function password_unset() {
+    /** @return array{string,string} */
+    private function effective_passwords() {
         assert(($this->_slice & self::SLICEBIT_PASSWORD) === 0);
         $cdbu = $this->cdb_user();
-        return (!$cdbu
-                || (string) $cdbu->password === ""
-                || str_starts_with($cdbu->password, " unset"))
-            && ((string) $this->password === ""
-                || str_starts_with($this->password, " unset")
-                || ($cdbu && (string) $cdbu->password !== "" && $cdbu->passwordTime >= $this->passwordTime));
+        $cdbpw = $cdbu ? (string) $cdbu->password : "";
+        if ($this->contactId <= 0
+            || ($cdbpw !== "" && $cdbu->passwordTime >= $this->passwordTime)) {
+            return [$cdbpw, ""];
+        }
+        return [$cdbpw, (string) $this->password];
+    }
+
+    /** @return bool */
+    function password_unset() {
+        list($cdbpw, $localpw) = $this->effective_passwords();
+        return ($cdbpw === "" || str_starts_with($cdbpw, " unset"))
+            && ($localpw === "" || str_starts_with($localpw, " unset"));
     }
 
     /** @return bool */
     function can_reset_password() {
-        assert(($this->_slice & self::SLICEBIT_PASSWORD) === 0);
-        $cdbu = $this->cdb_user();
-        return !$this->conf->external_login()
-            && !str_starts_with((string) $this->password, " nologin")
-            && (!$cdbu || !str_starts_with((string) $cdbu->password, " nologin"));
+        if ($this->conf->external_login() || $this->security_locked()) {
+            return false;
+        }
+        list($cdbpw, $localpw) = $this->effective_passwords();
+        return !str_starts_with($cdbpw, " nologin")
+            && !str_starts_with($localpw, " nologin");
     }
 
 
@@ -2630,15 +2638,11 @@ class Contact implements JsonSerializable {
         assert(!$this->conf->external_login());
         assert($this->_slice === 0);
         $cdbu = $this->cdb_user();
+        list($cdbpw, $localpw) = $this->effective_passwords();
 
         // check passwords
-        $local_ok = $this->contactId > 0
-            && $this->password
-            && $this->check_hashed_password($input, $this->password);
-        $cdb_password = $cdbu ? (string) $cdbu->password : "";
-        $cdb_ok = $cdb_password
-            && $this->check_hashed_password($input, $cdbu->password);
-        $cdb_older = !$cdbu || $cdbu->passwordTime < $this->passwordTime;
+        $local_ok = $localpw && $this->check_hashed_password($input, $localpw);
+        $cdb_ok = $cdbpw && $this->check_hashed_password($input, $cdbpw);
 
         // invalid passwords cannot be used to log in
         if (trim($input) === "") {
@@ -2648,27 +2652,26 @@ class Contact implements JsonSerializable {
         }
 
         // users with reset passwords cannot log in
-        if (str_starts_with($cdb_password, " reset")
-            || ($cdb_older
-                && !$cdb_ok
-                && str_starts_with($this->password, " reset"))) {
+        if (str_starts_with($cdbpw, " reset")
+            || (!$cdb_ok && str_starts_with($localpw, " reset"))) {
             return ["ok" => false, "reset" => true];
+        }
+
+        // users with nologin passwords cannot log in
+        if (str_starts_with($cdbpw, " nologin")
+            || (!$cdb_ok && str_starts_with($localpw, " nologin"))) {
+            return ["ok" => false, "email" => true, "disabled" => true];
         }
 
         // users with unset passwords cannot log in
         // This logic should match Contact::password_unset().
-        if (((!$cdb_older || !$local_ok)
-             && str_starts_with($cdb_password, " unset"))
-            || ($cdb_password === ""
-                && str_starts_with($this->password, " unset"))
-            || ($cdb_password === ""
-                && (string) $this->password === "")) {
+        if (($cdbpw === "" || str_starts_with($cdbpw, " unset"))
+            && ($localpw === "" || str_starts_with($localpw, " unset"))) {
             if (($this->contactId > 0 && !$this->is_dormant())
                 || ($cdbu && !$cdbu->is_dormant())) {
                 return ["ok" => false, "email" => true, "unset" => true, "can_reset" => $this->can_reset_password()];
-            } else {
-                return ["ok" => false, "email" => true, "noaccount" => true];
             }
+            return ["ok" => false, "email" => true, "noaccount" => true];
         }
 
         // deny if no match
@@ -2679,19 +2682,19 @@ class Contact implements JsonSerializable {
                 "can_reset" => $this->can_reset_password()
             ];
             // report information about passwords
-            if ($this->password) {
-                if ($this->password[0] === " "
-                    && $this->password[1] !== "$") {
-                    $x["local_password"] = $this->password;
+            if ($localpw) {
+                if ($localpw[0] === " "
+                    && $localpw[1] !== "$") {
+                    $x["local_password"] = $localpw;
                 }
                 if ($this->passwordTime > 0) {
                     $x["local_password_age"] = ceil((Conf::$now - $this->passwordTime) / 8640) / 10;
                 }
             }
-            if ($cdb_password !== "") {
-                if ($cdb_password[0] === " "
-                    && $cdb_password[1] !== "$") {
-                    $x["cdbu_password"] = $cdb_password;
+            if ($cdbpw !== "") {
+                if ($cdbpw[0] === " "
+                    && $cdbpw[1] !== "$") {
+                    $x["cdb_password"] = $cdbpw;
                 }
                 if ($cdbu->passwordTime > 0) {
                     $x["cdb_password_age"] = ceil((Conf::$now - $cdbu->passwordTime) / 8640) / 10;
@@ -2717,8 +2720,8 @@ class Contact implements JsonSerializable {
 
         // update cdb password
         if ($cdb_ok
-            || ($cdbu && $cdb_password === "")) {
-            if (!$cdb_ok || $this->password_needs_rehash($cdb_password)) {
+            || ($cdbu && $cdbpw === "")) {
+            if (!$cdb_ok || $this->password_needs_rehash($cdbpw)) {
                 $cdbu->set_prop("password", $this->hash_password($input));
             }
             if (!$cdb_ok || !$cdbu->passwordTime) {
@@ -2728,7 +2731,7 @@ class Contact implements JsonSerializable {
             $cdbu->save_prop();
 
             // clear local password
-            if ($this->contactId > 0 && (string) $this->password !== "") {
+            if ($this->contactId > 0 && $localpw !== "") {
                 $this->set_prop("password", "");
                 $this->set_prop("passwordTime", Conf::$now);
                 $this->set_prop("passwordUseTime", Conf::$now);
@@ -2739,7 +2742,7 @@ class Contact implements JsonSerializable {
 
         // update local password
         if ($local_ok) {
-            if ($this->password_needs_rehash($this->password)) {
+            if ($this->password_needs_rehash($localpw)) {
                 $this->set_prop("password", $this->hash_password($input));
             }
             if (!$this->passwordTime) {
@@ -3556,9 +3559,8 @@ class Contact implements JsonSerializable {
     function view_conflict_type(?PaperInfo $prow) {
         if ($prow) {
             return $this->rights($prow)->view_conflict_type;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     /** @return bool */
