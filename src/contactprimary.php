@@ -47,7 +47,7 @@ class ContactPrimary {
         }
         assert(!$this->pri || $this->cdb === $this->pri->is_cdb_user());
         if ($this->pri && $this->cdb !== $this->pri->is_cdb_user()) {
-            error_log(json_encode([$this->cdb, $this->pri->is_cdb_user(), $sec->email]) . ": " . debug_string_backtrace());
+            error_log(json_encode([$this->cdb, $this->pri->is_cdb_user(), $this->pri->contactDbId, $sec->email]) . ": " . debug_string_backtrace());
         }
         // do not assign to self
         $idk = $this->cdb ? "contactDbId" : "contactId";

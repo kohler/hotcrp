@@ -575,6 +575,10 @@ class ManageEmail_API extends MessageSet {
         $cp = new ContactPrimary($this->viewer);
         if ($luser) {
             $cp->link($luser, $this->dstuser);
+            // The link operation may modify `$this->dstuser`, for instance by
+            // creating it in the local DB (& making it no longer global).
+            // So look up $gdstuser again.
+            $gdstuser = $guser ? $this->dstuser->cdb_user() : null;
         }
         if ($guser && $gdstuser) {
             $cp->link($guser, $gdstuser);
