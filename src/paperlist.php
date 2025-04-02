@@ -847,7 +847,7 @@ class PaperList {
             }
             $pos = self::$view_fake[$name] ?? null;
             if ($pos === null) {
-                $fs = $this->conf->paper_columns($name, $this->xtp);
+                $fs = $this->conf->paper_columns((string) $name, $this->xtp);
                 if (count($fs) && isset($fs[0]->order)) {
                     $pos = $fs[0]->order;
                     $name = $fs[0]->name;
@@ -1306,10 +1306,9 @@ class PaperList {
     private function _expand_view_column($k) {
         if (!isset(self::$view_fake[$k])
             && ($this->_viewf[$k] ?? 0) >= self::VIEW_SHOW) {
-            return $this->ensure_columns_by_name($k);
-        } else {
-            return [];
+            return $this->ensure_columns_by_name((string) $k);
         }
+        return [];
     }
 
     /** @param string $name
