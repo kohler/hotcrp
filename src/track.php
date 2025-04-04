@@ -49,15 +49,34 @@ class Track {
         $this->is_default = $tag === "";
     }
 
-    /** @param int $perm
+    /** @param int $right
      * @return bool */
-    static function perm_required($perm) {
-        return $perm === self::ADMIN || $perm === self::HIDDENTAG;
+    static function right_required($right) {
+        return $right === self::ADMIN || $right === self::HIDDENTAG;
     }
 
-    /** @param int $perm
+    /** @param string $right
+     * @return bool */
+    static function right_name_required($right) {
+        return $right === "admin" || $right === "hiddentag" || str_ends_with($right, "!");
+    }
+
+    /** @param int $right
+     * @return bool
+     * @deprecated */
+    static function perm_required($right) {
+        return self::right_required($right);
+    }
+
+    /** @param string $right
+     * @return ?int */
+    static function parse_right($right) {
+        return self::$perm_name_map[$right] ?? null;
+    }
+
+    /** @param int $right
      * @return string */
-    static function perm_name($perm) {
-        return array_search($perm, self::$perm_name_map);
+    static function unparse_right($right) {
+        return array_search($right, self::$perm_name_map);
     }
 }

@@ -1521,7 +1521,7 @@ class Conf {
     /** @param int $ttype
      * @return bool */
     function check_default_track(Contact $user, $ttype) {
-        $required = Track::perm_required($ttype);
+        $required = Track::right_required($ttype);
         if (($this->_track_sensitivity & (1 << $ttype)) === 0) {
             return !$required;
         }
