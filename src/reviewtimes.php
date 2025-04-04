@@ -89,9 +89,9 @@ class ReviewTimes {
             $this->r = [];
             foreach ($rs as $cid => $r) {
                 if (isset($rs_isvis[$cid])) {
-                    $this->r[$cid] = array_filter($r, function ($x) {
+                    $this->r[$cid] = array_values(array_filter($r, function ($x) {
                         return $x[2];
-                    });
+                    }));
                 } else {
                     do {
                         $ncid = "x" . mt_rand(1, 9999);
