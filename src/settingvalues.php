@@ -15,10 +15,8 @@ class SettingValues extends MessageSet {
     public $all_interest = false;
     /** @var bool */
     public $link_json = false;
-    /** @var list<string|bool> */
-    private $perm;
     /** @var bool */
-    private $all_perm;
+    private $allowed;
 
     /** @var array<string,?string> */
     public $req = [];
@@ -85,15 +83,7 @@ class SettingValues extends MessageSet {
         $this->set_want_ftext(true, 5);
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->all_perm = $user->privChair;
-        foreach (Tagger::split_unpack($user->contactTags ?? "") as $ti) {
-            if (strcasecmp($ti[0], "perm:write-setting") === 0) {
-                $this->all_perm = $ti[1] >= 0;
-            } else if (stri_starts_with($ti[0], "perm:write-setting:")) {
-                $this->perm[] = substr($ti[0], strlen("perm:write-setting:"));
-                $this->perm[] = $ti[1] >= 0;
-            }
-        }
+        $this->allowed = $user->privChair || $user->check_xtrack("settings!");
         $this->_icollator = new Collator("en_US.utf8");
         $this->_icollator->setAttribute(Collator::NUMERIC_COLLATION, Collator::ON);
         $this->_icollator->setAttribute(Collator::STRENGTH, Collator::SECONDARY);
@@ -291,11 +281,7 @@ class SettingValues extends MessageSet {
 
     /** @return bool */
     function viewable_by_user() {
-        for ($i = 0; $i !== count($this->perm ?? []); $i += 2) {
-            if ($this->perm[$i + 1])
-                return true;
-        }
-        return $this->all_perm;
+        return $this->allowed;
     }
 
 
@@ -543,22 +529,7 @@ class SettingValues extends MessageSet {
      * @return bool */
     function editable($id) {
         $si = is_string($id) ? $this->conf->si($id) : $id;
-        if (!$si || !$si->configurable) {
-            return false;
-        }
-        $perm = $this->all_perm;
-        if ($this->perm !== null) {
-            for ($i = 0; $i !== count($this->perm); $i += 2) {
-                if ($si->has_tag($this->perm[$i])) {
-                    if ($this->perm[$i + 1]) {
-                        $perm = true;
-                    } else {
-                        return false;
-                    }
-                }
-            }
-        }
-        return $perm;
+        return $si && $si->configurable && $this->allowed;
     }
 
 
