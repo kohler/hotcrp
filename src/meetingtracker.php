@@ -216,7 +216,7 @@ class MeetingTracker {
                     "ts" => $tis
                 ];
             }
-            if (($perm = $user->conf->track_permission("", Track::VIEWTRACKER))) {
+            if (($perm = $user->conf->xtrack_permission("viewtracker"))) {
                 $dl->tracker->global_visibility = $perm;
             }
             $dl->tracker_status = $tracker->status();
@@ -914,7 +914,7 @@ class MeetingTracker_Permissionizer {
 
         // otherwise, non-privChair users can administer some papers
         // check if user can view tracker
-        $vtperm = $this->conf->track_permission("", Track::VIEWTRACKER);
+        $vtperm = $this->conf->xtrack_permission("viewtracker");
         if ($vtperm === "+none") {
             return;
         } else if ($vtperm) {
@@ -977,7 +977,7 @@ class MeetingTracker_Permissionizer {
 
     /** @return string */
     function default_visibility() {
-        if (($p = $this->conf->track_permission("", Track::VIEWTRACKER))) {
+        if (($p = $this->conf->xtrack_permission("viewtracker"))) {
             return $p;
         }
         foreach ($this->track_tag_combinations() as $ttcombo) {

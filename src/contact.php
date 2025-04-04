@@ -1689,7 +1689,15 @@ class Contact implements JsonSerializable {
     /** @param string $perm
      * @return bool */
     function has_permission($perm) {
+        // other code assumes `has_permission(null)` is always true
         return !$perm || $this->has_tag(substr($perm, 1)) === ($perm[0] === "+");
+    }
+
+    /** @param string $xright
+     * @return bool */
+    function check_xtrack($xright) {
+        $p = $this->conf->xtrack_permission($xright);
+        return $p ? $this->has_permission($p) : !str_ends_with($xright, "!");
     }
 
 
@@ -3520,7 +3528,7 @@ class Contact implements JsonSerializable {
     function can_view_tracker($tracker_json = null) {
         return $this->privChair
             || ($this->isPC
-                && $this->conf->check_default_track($this, Track::VIEWTRACKER)
+                && $this->check_xtrack("viewtracker")
                 && (!$tracker_json
                     || ($tracker_json->visibility ?? "") === ""
                     || ($this->has_tag(substr($tracker_json->visibility, 1))
@@ -3531,7 +3539,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function include_tracker_conflict($tracker_json = null) {
         return $this->isPC
-            && (!($perm = $this->conf->track_permission("", Track::VIEWTRACKER))
+            && (!($perm = $this->conf->xtrack_permission("viewtracker"))
                 || $perm === "+none"
                 || $this->has_permission($perm))
             && (!$tracker_json

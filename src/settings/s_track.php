@@ -31,15 +31,41 @@ class Track_Setting {
                 && !isset($this->j->viewpdf)) {
                 $perm = null;
             }
-            if ((Track::right_required($right) && $perm === null)
-                || $perm === "+none") {
-                $perm = "none";
-            } else if ($perm === null
-                       || $perm === "") {
-                $perm = "all";
-            }
-            $this->permmap[Track::unparse_right($right)] = $perm;
+            $this->set_perm(Track::unparse_right($right), $perm);
         }
+    }
+
+    /** @param string $right
+     * @return string */
+    function perm($right) {
+        $perm = $this->permmap[$right] ?? null;
+        if ($perm === null) {
+            $perm = Track::right_name_required($right) ? "none" : "all";
+        }
+        return $perm;
+    }
+
+    /** @param string $right
+     * @param ?string $perm
+     * @return $this */
+    function set_perm($right, $perm) {
+        if (($perm === null && Track::right_name_required($right))
+            || $perm === "+none") {
+            $perm = "none";
+        } else if ($perm === null || $perm === "") {
+            $perm = "all";
+        }
+        $this->permmap[$right] = $perm;
+        return $this;
+    }
+
+    /** @return bool */
+    function is_empty() {
+        foreach ($this->permmap as $right => $p) {
+            if ($p !== (Track::right_name_required($right) ? "none" : "all"))
+                return false;
+        }
+        return !$this->is_new;
     }
 
     /** @param string $p
@@ -52,15 +78,6 @@ class Track_Setting {
      * @return string */
     static function perm_tag($p) {
         return $p === "all" || $p === "none" ? "" : substr($p, 1);
-    }
-
-    /** @return bool */
-    function is_empty() {
-        foreach ($this->permmap as $right => $p) {
-            if ($p !== (Track::right_name_required($right) ? "none" : "all"))
-                return false;
-        }
-        return !$this->is_new;
     }
 
     static function right_title($right) {
@@ -109,6 +126,13 @@ class Track_SettingParser extends SettingParser {
         for ($i = 0; $i < Track::NPERM; ++$i) {
             $sis[] = $si->conf->si("{$si->name}/" . Track::unparse_right($i));
         }
+        if ($sv->oldv("{$si->name0}{$si->name1}/id") === "any") {
+            $sis[] = $si->conf->si("{$si->name}/viewtracker");
+            foreach ($si->conf->xtracks() as $right => $perm) {
+                if ($right !== "viewtracker")
+                    $sis[] = $si->conf->si("{$si->name}/{$right}");
+            }
+        }
         return $sis;
     }
 
@@ -134,7 +158,7 @@ class Track_SettingParser extends SettingParser {
             }
         } else if ($si->name_matches("track/", "*", "/perm/", "*", "*")) {
             $trx = $sv->oldv($si->name_prefix(2));
-            $p = $trx !== null ? $trx->permmap[$si->name1] : "all";
+            $p = $trx !== null ? $trx->perm($si->name1) : "all";
             if ($si->name2 === "") {
                 $sv->set_oldv($si->name, $p);
             } else if ($si->name2 === "/type") {
@@ -155,8 +179,11 @@ class Track_SettingParser extends SettingParser {
                 $m[] = new Track_Setting($sv->conf->track($tag),
                                          $this->settings_json->{$tag} ?? null);
             }
-            $m[] = new Track_Setting($sv->conf->track("") ?? new Track(""),
-                                     $this->settings_json->_ ?? null);
+            $m[] = $ts = new Track_Setting($sv->conf->track("") ?? new Track(""),
+                                           $this->settings_json->_ ?? null);
+            foreach ($sv->conf->xtracks() as $right => $perm) {
+                $ts->set_perm($right, $perm);
+            }
             $sv->append_oblist("track", $m, "tag");
         }
     }
@@ -176,11 +203,11 @@ class Track_SettingParser extends SettingParser {
         $deftype = Track::right_name_required($right) ? "none" : "all";
         $trx = $this->cur_trx;
         $pfx = "track/{$this->ctr}/perm/{$right}";
-        $p = $sv->reqstr($pfx) ?? $trx->permmap[$right];
+        $p = $sv->reqstr($pfx) ?? $trx->perm($right);
         $reqtype = $sv->reqstr("{$pfx}/type") ?? Track_Setting::perm_type($p);
         $reqtag = $sv->reqstr("{$pfx}/tag") ?? Track_Setting::perm_tag($p);
 
-        $unfolded = Track_Setting::perm_type($trx->permmap[$right]) !== $deftype
+        $unfolded = Track_Setting::perm_type($trx->perm($right)) !== $deftype
             || $reqtype !== $deftype
             || (($flags & self::PERM_DEFAULT_UNFOLDED) !== 0 && $trx->is_empty())
             || $sv->problem_status_at("track/{$this->ctr}");
