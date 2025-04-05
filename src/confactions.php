@@ -15,49 +15,102 @@ class ConfActions {
     private $actor;
 
     static function execute_settings(Conf $conf) {
+        // Goal: Execute the actions stored in `confactions`, in order.
+        // Requires a locking strategy so that other loads don't execute
+        // confactions out of order.
         $actions = $conf->setting_data("confactions") ?? "";
-        while ($actions !== "") {
-            $rs = strpos($actions, "\x1e" /* RS */, $actions[0] === "\x1e" ? 1 : 0);
-            $rs = $rs === false ? strlen($actions) : $rs;
-            $nl = strpos($actions, "\n", $actions[0] === "\n" ? 1 : 0);
-            $nl = $nl === false ? strlen($actions) : $nl + 1;
-            $endpos = min($rs, $nl);
+        $myid = bin2hex(random_bytes(16));
 
-            $first = substr($actions, 0, $endpos);
-            $rest = substr($actions, $endpos);
-            if ($rest === "") {
-                $result = $conf->qe("delete from Settings where name='confactions' and data=?", $actions);
-            } else {
-                $result = $conf->qe("update Settings set data=? where name='confactions' and data=?", $rest, $actions);
+        while (true) {
+            list($aj, $rest) = self::first_action($conf, $actions, $myid);
+
+            // special action: complete
+            if ($aj->action === "done") {
+                if (self::store_actions($conf, "", $actions)) {
+                    return;
+                }
+                continue;
             }
 
-            if ($result->affected_rows) {
-                if (str_ends_with($first, "\n")) { // otherwise database truncated an action
-                    self::execute($conf, $first);
-                } else {
-                    error_log("WARNING: confactions setting truncated");
+            // special action: wait for lock
+            if ($aj->action === "lock") {
+                if ($aj->t < Conf::$now - 10) {
+                    // 10 seconds waiting for a lock? locker is stuck
+                    error_log("{$conf->dbname}: Stuck confaction");
+                    self::store_actions($conf, $rest, $actions);
+                    continue;
                 }
-                $actions = $rest;
-            } else {
-                $actions = $conf->fetch_value("select data from Settings where name='confactions'") ?? "";
+                // otherwise, wait 0.1s and try again
+                usleep(100000);
+                Conf::set_current_time();
+                $actions = self::load_actions($conf);
+                continue;
+            }
+
+            // otherwise, claim lock and execute action
+            $lockj = "\x1e" . json_encode_db([
+                "action" => "lock", "id" => $myid, "t" => Conf::$now
+            ]) . "\n";
+            if (!self::store_actions($conf, $lockj . $rest, $actions)) {
+                continue;
+            }
+
+            // perform action
+            if ($aj->action === "link") {
+                self::link($conf, $aj);
             }
         }
     }
 
-    static function execute(Conf $conf, $actionstr) {
-        if (str_starts_with($actionstr, "\x1e")) {
-            $actionstr = substr($actionstr, 1);
+    static private function first_action(Conf $conf, $actions, $myid) {
+        if ($actions === "") {
+            return [(object) ["action" => "done"], ""];
         }
-        if ($actionstr === "") {
-            return;
+
+        $start = str_starts_with($actions, "\x1e") ? 1 : 0;
+        $rs = strpos($actions, "\x1e" /* RS */, $start);
+        $rs = $rs !== false ? $rs : strlen($actions);
+        $nl = strpos($actions, "\n", str_starts_with($actions, "\n") ? 1 : 0);
+        $nl = $nl !== false ? $nl + 1 : strlen($actions);
+        $endpos = min($rs, $nl);
+
+        $first = substr($actions, $start, $endpos - $start);
+        $rest = substr($actions, $endpos);
+
+        // ignore truncated or invalid action
+        if (!str_ends_with($first, "\n")
+            || !($aj = json_decode($first))
+            || !is_object($aj)
+            || !is_string($aj->action ?? null)) {
+            error_log("{$conf->dbname}: Invalid confactions " . substr($actions, 0, 100));
+            return self::first_action($conf, $rest, $myid);
         }
-        $aj = json_decode($actionstr);
-        if (!is_object($aj) || !isset($aj->action)) {
-            return;
+
+        // skip our own lock to find next action
+        if ($aj->action === "lock" && $aj->id === $myid) {
+            return self::first_action($conf, $rest, $myid);
         }
-        if ($aj->action === "link") {
-            self::link($conf, $aj);
+
+        // otherwise, use current action
+        return [$aj, $rest];
+    }
+
+    static private function store_actions(Conf $conf, $new_actions, &$actions) {
+        if ($new_actions === "") {
+            $result = $conf->qe("delete from Settings where name='confactions' and data=?", $actions);
+        } else {
+            $result = $conf->qe("update Settings set value=?, data=? where name='confactions' and data=?", Conf::$now, $new_actions, $actions);
         }
+        if ($result->affected_rows) {
+            $actions = $new_actions;
+            return true;
+        }
+        $actions = self::load_actions($conf);
+        return false;
+    }
+
+    static private function load_actions(Conf $conf) {
+        return $conf->fetch_value("select data from Settings where name='confactions'") ?? "";
     }
 
     static function link(Conf $conf, $aj) {

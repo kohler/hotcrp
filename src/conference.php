@@ -297,8 +297,9 @@ class Conf {
     static function set_current_time($t = null) {
         $t = $t ?? microtime(true);
         self::$unow = $t;
+        $old_now = Conf::$now;
         Conf::$now = (int) $t;
-        if (Conf::$main) {
+        if (Conf::$main && Conf::$now !== $old_now) {
             Conf::$main->refresh_time_settings();
         }
     }
