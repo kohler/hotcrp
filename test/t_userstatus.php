@@ -139,12 +139,31 @@ class UserStatus_Tester {
         xassert(!$us->execute_update());
     }
 
+    private function delete_secondary($cdb, $email) {
+        $db = $cdb ? $this->conf->contactdb() : $this->conf->dblink;
+        $id = $cdb ? "contactDbId" : "contactId";
+        if (($uid = Dbl::fetch_ivalue($db, "select {$id} from ContactInfo where email=?", $email)) > 0) {
+            Dbl::qe($db, "delete from ContactInfo where {$id}=?", $uid);
+            Dbl::qe($db, "delete from ContactPrimary where contactId=?", $uid);
+        }
+    }
+
+    private function insert_secondary($cdb, $sec_email, $pri_id) {
+        $db = $cdb ? $this->conf->contactdb() : $this->conf->dblink;
+        $result = Dbl::qe($db, "insert into ContactInfo set email=?, password=' unset', primaryContactId=?",
+            $sec_email, $pri_id);
+        xassert_gt($result->insert_id ?? 0, 0);
+        Dbl::qe($db, "insert into ContactPrimary set contactId=?, primaryContactId=?",
+            $result->insert_id, $pri_id);
+        return $result->insert_id;
+    }
+
     function test_no_follow_primary() {
-        $this->conf->qe("delete from ContactInfo where email='xvan@usc.edu'");
+        $this->delete_secondary(false, "xvan@usc.edu");
+
         $van = $this->conf->user_by_email("van@ee.lbl.gov");
         xassert(!$van->isPC);
-        $result = $this->conf->qe("insert into ContactInfo set email='xvan@usc.edu', password=' unset', primaryContactId=?", $van->contactId);
-        xassert_gt($result->insert_id ?? 0, 0);
+        $this->insert_secondary(false, "xvan@usc.edu", $van->contactId);
         $van->set_prop("cflags", $van->cflags | Contact::CF_PRIMARY);
         $van->save_prop();
 
@@ -180,15 +199,14 @@ class UserStatus_Tester {
 
     #[RequireCdb(true)]
     function test_follow_primary_cdb() {
-        if (!$this->conf->contactdb()) {
+        if (!($cdb = $this->conf->contactdb())) {
             return;
         }
 
-        $this->conf->qe("delete from ContactInfo where email='yvan@usc.edu'");
-        Dbl::qe($this->conf->contactdb(), "delete from ContactInfo where email='yvan@usc.edu'");
+        $this->delete_secondary(false, "yvan@usc.edu");
+        $this->delete_secondary(true, "yvan@usc.edu");
         $c_van = $this->conf->cdb_user_by_email("van@ee.lbl.gov");
-        $result = Dbl::qe($this->conf->contactdb(), "insert into ContactInfo set email='yvan@usc.edu', password=' unset', primaryContactId=?", $c_van->contactDbId);
-        xassert_gt($result->insert_id ?? 0, 0);
+        $this->insert_secondary(true, "yvan@usc.edu", $c_van->contactDbId);
         $c_van->set_prop("cflags", $c_van->cflags | Contact::CF_PRIMARY);
         $c_van->save_prop();
 
@@ -208,10 +226,12 @@ class UserStatus_Tester {
     }
 
     function test_cleanup() {
-        $this->conf->qe("delete from ContactInfo where email='xvan@usc.edu' or email='yvan@usc.edu'");
+        $this->delete_secondary(false, "xvan@usc.edu");
+        $this->delete_secondary(false, "yvan@usc.edu");
         $this->conf->qe("update ContactInfo set roles=0, cflags=cflags&~? where email='van@ee.lbl.gov'", Contact::CF_PRIMARY);
         if (($cdb = $this->conf->contactdb())) {
-            $this->conf->qe("delete from ContactInfo where email='xvan@usc.edu' or email='yvan@usc.edu'");
+            $this->delete_secondary(true, "xvan@usc.edu");
+            $this->delete_secondary(true, "yvan@usc.edu");
             $this->conf->qe("update ContactInfo set cflags=cflags&~? where email='van@ee.lbl.gov'", Contact::CF_PRIMARY);
         }
     }
