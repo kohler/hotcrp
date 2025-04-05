@@ -78,9 +78,8 @@ class Profile_Page {
 
         if ($user->contactId > 0 && $user->contactId === $this->viewer->contactId) {
             return $this->viewer;
-        } else {
-            return $user;
         }
+        return $user;
     }
 
     private function find_user() {
@@ -533,7 +532,7 @@ class Profile_Page {
             return;
         }
         // insert deletion marker
-        $this->conf->q("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?, affiliation=?", $this->user->contactId, $this->user->firstName, $this->user->lastName, $this->user->unaccentedName, $this->user->email, $this->user->affiliation);
+        $this->conf->qe("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?, affiliation=?", $this->user->contactId, $this->user->firstName, $this->user->lastName, $this->user->unaccentedName, $this->user->email, $this->user->affiliation);
         // remove roles (and update contactdb)
         if (($this->user->roles & Contact::ROLE_DBMASK) !== 0) {
             $this->user->save_roles(0, $this->viewer);

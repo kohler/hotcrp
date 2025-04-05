@@ -498,6 +498,8 @@ class Contact implements JsonSerializable {
                 }
             }
         }
+        // unaccentedName is special--it's not listed in $props
+        $this->unaccentedName = $x->unaccentedName;
         if ($all) {
             $this->contactId = $this->contactXid = $x->contactId;
             $this->cdb_confid = $this->contactDbId = 0;
