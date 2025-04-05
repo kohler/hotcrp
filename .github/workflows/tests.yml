@@ -43,8 +43,8 @@ jobs:
     - name: Run tests
       run: sh test/check.sh --all
 
-  build-20:
-    runs-on: ubuntu-20.04
+  build-22:
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
