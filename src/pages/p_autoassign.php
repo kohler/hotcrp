@@ -318,7 +318,7 @@ class Autoassign_Page {
           <dt>', review_type_icon(REVIEW_META), ' Metareview</dt><dd>Can view all other reviews before completing their own</dd></dl>
         </div></div>', "\n";
         echo Ht::unstash_script("\$(\"#autoassignform\").awaken()"),
-            Ht::feedback_msg($this->ms);
+            Ht::fmt_feedback_msg($this->conf, $this->ms);
 
 
         // paper selection
@@ -639,14 +639,14 @@ class Autoassign_Page {
             $this->ms->error_at(null, "<5><strong>Assignment failure</strong>");
             $this->ms->inform_at(null, "<0>The autoassigner appears to have failed. This can happen if it runs out of memory or times out. You may want to retry, or to change the assignment parameters; for example, consider assigning a subset of submissions first.");
             echo '<h3 class="form-h">Preparing assignment</h3>',
-                Ht::feedback_msg($this->ms),
+                Ht::fmt_feedback_msg($this->conf, $this->ms),
                 '<div class="aab aabig btnp">',
                 Ht::link("Revise assignment", $this->conf->selfurl($this->qreq, $this->qreq_parameters()), ["class" => "btn btn-primary"]),
                 '</div>';
         } else {
             echo '<div id="propass" class="propass">',
                 '<h3 class="form-h">Preparing assignment</h3>';
-            echo Ht::feedback_msg($this->ms);
+            echo Ht::fmt_feedback_msg($this->conf, $this->ms);
             if (($s = $tok->data("progress"))) {
                 echo '<p class="is-job-progress"><strong>Status:</strong> ', htmlspecialchars($s), '</p>';
             }
@@ -661,7 +661,7 @@ class Autoassign_Page {
         $this->ms->inform_at(null, "<0>Your assignment parameters are already satisfied, or I was unable to make any assignments given your constraints. You may want to check the parameters and try again.");
         $this->jobid = null;
         echo '<h3 class="form-h">Proposed assignment</h3>',
-            Ht::feedback_msg($this->ms),
+            Ht::fmt_feedback_msg($this->conf, $this->ms),
             '<div class="aab aabig btnp">',
             Ht::link("Revise assignment", $this->conf->selfurl($this->qreq, $this->qreq_parameters()), ["class" => "btn btn-primary"]),
             '</div>';
@@ -709,7 +709,7 @@ class Autoassign_Page {
 
         $atype = $aset->type_description();
         echo '<h3 class="form-h">Proposed ', $atype ? "{$atype} " : "", 'assignment</h3>';
-        echo Ht::feedback_msg($this->ms);
+        echo Ht::fmt_feedback_msg($this->conf, $this->ms);
         $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         $this->conf->feedback_msg(
             MessageItem::marked_note("<0>Select “Apply changes” to make the checked assignments."),

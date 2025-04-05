@@ -388,7 +388,10 @@ class CheckFormat extends MessageSet {
     /** @return string */
     function document_report(DocumentInfo $doc) {
         $ms = $this->document_messages($doc);
-        return $ms->has_message() ? Ht::feedback_msg($ms) : "";
+        if (!$ms->has_message()) {
+            return "";
+        }
+        return Ht::fmt_feedback_msg($doc->conf, $ms);
     }
 
     /** @param int $dtype
@@ -818,6 +821,6 @@ class Default_FormatChecker implements FormatChecker {
     function report(CheckFormat $cf, FormatSpec $spec, DocumentInfo $doc) {
         $ms = new MessageSet;
         $this->append_report($cf, $spec, $doc, $ms);
-        return Ht::feedback_msg($ms);
+        return Ht::fmt_feedback_msg($doc->conf, $ms);
     }
 }

@@ -575,8 +575,11 @@ class Conf {
         }
     }
 
+    /** @suppress PhanTypeArraySuspicious */
     private function refresh_track_settings() {
-        $this->_tracks = $this->_track_tags = $this->_xtracks = null;
+        $this->_tracks = null;
+        $this->_track_tags = null;
+        $this->_xtracks = null;
         $this->_track_sensitivity = 0;
         $j = $this->settingTexts["tracks"] ?? null;
         if (is_string($j)) {
@@ -4593,23 +4596,23 @@ class Conf {
 
     /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls */
     function feedback_msg(...$mls) {
-        $ms = Ht::feedback_msg_content(...$mls);
+        $ms = Ht::fmt_feedback_msg_content($this, ...$mls);
         $ms[0] === "" || self::msg_on($this, $ms[0], $ms[1]);
     }
 
     /** @param string $msg */
-    function error_msg($msg) {
-        $this->feedback_msg(MessageItem::error($msg));
+    function error_msg($msg, ...$args) {
+        $this->feedback_msg(MessageItem::error($msg, ...$args));
     }
 
     /** @param string $msg */
-    function warning_msg($msg) {
-        $this->feedback_msg(MessageItem::warning($msg));
+    function warning_msg($msg, ...$args) {
+        $this->feedback_msg(MessageItem::warning($msg, ...$args));
     }
 
     /** @param string $msg */
-    function success_msg($msg) {
-        $this->feedback_msg(MessageItem::success($msg));
+    function success_msg($msg, ...$args) {
+        $this->feedback_msg(MessageItem::success($msg, ...$args));
     }
 
     /** @param mixed $text */

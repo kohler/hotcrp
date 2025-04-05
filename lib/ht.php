@@ -734,15 +734,33 @@ class Ht {
         $mlx = MessageSet::make_list(...$mls);
         if (($h = MessageSet::feedback_html($mlx)) !== "") {
             return [$h, MessageSet::list_status($mlx)];
-        } else {
-            return ["", 0];
         }
+        return ["", 0];
+    }
+
+    /** @param Fmt|Conf $fmt
+     * @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
+     * @return array{string,int} */
+    static function fmt_feedback_msg_content($fmt, ...$mls) {
+        $mlx = MessageSet::fmt_list($fmt, ...$mls);
+        if (($h = MessageSet::feedback_html($mlx)) !== "") {
+            return [$h, MessageSet::list_status($mlx)];
+        }
+        return ["", 0];
     }
 
     /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
      * @return string */
     static function feedback_msg(...$mls) {
         $ms = self::feedback_msg_content(...$mls);
+        return $ms[0] === "" ? "" : self::msg($ms[0], $ms[1]);
+    }
+
+    /** @param Fmt|Conf $fmt
+     * @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
+     * @return string */
+    static function fmt_feedback_msg($fmt, ...$mls) {
+        $ms = self::fmt_feedback_msg_content($fmt, ...$mls);
         return $ms[0] === "" ? "" : self::msg($ms[0], $ms[1]);
     }
 }

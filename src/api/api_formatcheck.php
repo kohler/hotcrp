@@ -21,7 +21,7 @@ class FormatCheck_API {
                 "ok" => $cf->check_ok(),
                 "npages" => $cf->npages,
                 "nwords" => $cf->nwords,
-                "result" => $ms->has_message() ? Ht::feedback_msg($ms) : "",
+                "result" => $ms->has_message() ? Ht::fmt_feedback_msg($doc->conf, $ms) : "",
                 "problem_fields" => $cf->problem_fields(),
                 "has_error" => $cf->has_error(),
                 "docid" => $doc->paperStorageId,
