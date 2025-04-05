@@ -545,12 +545,8 @@ class ConfInvariants {
             }
 
             // cflags reflects ContactPrimary
-            if ($uprimary !== isset($isprimary[$u->contactId])) {
-                if ($uprimary) {
-                    $this->invariant_error("user_cflags_primary", "user {$u->email}/{$u->contactId} marked primary, has no secondary");
-                } else {
-                    $this->invariant_error("user_cflags_primary", "user {$u->email}/{$u->contactId} not marked primary, has secondary");
-                }
+            if (!$uprimary && isset($isprimary[$u->contactId])) {
+                $this->invariant_error("user_cflags_primary", "user {$u->email}/{$u->contactId} not marked primary, has secondary");
             }
 
             // primaryContactId reflects ContactPrimary
