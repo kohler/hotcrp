@@ -114,21 +114,17 @@ class ConfActions {
     }
 
     static function link(Conf $conf, $aj) {
-        if (!is_string($aj->u ?? null)
-            || !($srcuser = $conf->user_by_email($aj->u))) {
+        $srcemail = $aj->u ?? null;
+        $dstemail = $aj->email ?? null;
+        if (!is_string($srcemail) || !is_string($dstemail ?? "")) {
             return;
         }
-        if (isset($aj->email)) {
-            if (!is_string($aj->email)) {
-                return;
-            }
-            $dstuser = $conf->user_by_email($aj->email)
-                ?? $conf->cdb_user_by_email($aj->email);
-            if (!$dstuser) {
-                return;
-            }
-        } else {
-            $dstuser = null;
+        $srcuser = $conf->user_by_email($srcemail);
+        $dstuser = $dstemail !== null
+            ? ($conf->user_by_email($dstemail) ?? $conf->cdb_user_by_email($dstemail))
+            : null;
+        if (!$srcuser || (isset($dstemail) && !$dstuser)) {
+            return;
         }
         (new ContactPrimary($conf->root_user()))->link($srcuser, $dstuser);
     }

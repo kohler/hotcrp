@@ -2508,9 +2508,8 @@ class Contact implements JsonSerializable {
         // if importing a secondary user, automatically import the primary
         if ($cdbu
             && $cdbu->primaryContactId > 0
-            && ($cdbpri = $this->conf->cdb_user_by_id($cdbu->primaryContactId))
-            && ($pri = Contact::make_email($this->conf, $cdbpri->email)->store())) {
-            (new ContactPrimary($this))->link($this, $pri);
+            && ($cdbpri = $this->conf->cdb_user_by_id($cdbu->primaryContactId))) {
+            (new ContactPrimary($this))->link($this, $cdbpri);
         }
 
         // we created the user, so no `$localu` (preexisting local user)

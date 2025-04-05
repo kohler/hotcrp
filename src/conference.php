@@ -2151,6 +2151,19 @@ class Conf {
         return $acct;
     }
 
+    /** @param string $email
+     * @return ?Contact */
+    function ensure_user_by_email($email) {
+        if (($u = $this->user_by_email($email))) {
+            return $u;
+        }
+        $email = trim((string) $email);
+        if ($email === "" || !is_valid_utf8($email)) {
+            return null;
+        }
+        return Contact::make_email($this, $email)->store();
+    }
+
 
     // user cache
 

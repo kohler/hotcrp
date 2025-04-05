@@ -6,9 +6,17 @@ class UserStatus_Tester {
     /** @var Conf
      * @readonly */
     public $conf;
+    /** @var int
+     * @readonly */
+    public $raju_uid;
+    /** @var int
+     * @readonly */
+    public $chris_uid;
 
     function __construct(Conf $conf) {
         $this->conf = $conf;
+        $this->raju_uid = $this->conf->fetch_ivalue("select contactId from ContactInfo where email='raju@watson.ibm.com'");
+        $this->chris_uid = $this->conf->fetch_ivalue("select contactId from ContactInfo where email='chris@w3.org'");
     }
 
     /** @param string $email
@@ -225,14 +233,72 @@ class UserStatus_Tester {
         xassert_eqq($us->user->privChair, true);
     }
 
+    function test_confactions_link() {
+        ConfActions::link($this->conf, (object) ["u" => "raju@watson.ibm.com", "email" => "chris@w3.org"]);
+        xassert_eqq($this->conf->fetch_ivalue("select primaryContactId from ContactInfo where contactId=?", $this->raju_uid), $this->chris_uid);
+        (new ConfInvariants($this->conf))->check_users();
+    }
+
+    function test_confactions_unlink() {
+        ConfActions::link($this->conf, (object) ["u" => "raju@watson.ibm.com"]);
+        xassert_eqq($this->conf->fetch_ivalue("select primaryContactId from ContactInfo where contactId=?", $this->raju_uid), 0);
+        (new ConfInvariants($this->conf))->check_users();
+    }
+
+    function test_confactions_relink() {
+        ConfActions::link($this->conf, (object) ["u" => "raju@watson.ibm.com", "email" => "chris@w3.org"]);
+        ConfActions::link($this->conf, (object) ["u" => "chris@w3.org", "email" => "raju@watson.ibm.com"]);
+        xassert_eqq($this->conf->fetch_ivalue("select primaryContactId from ContactInfo where contactId=?", $this->chris_uid), $this->raju_uid);
+        $this->conf->invalidate_caches(["users" => true]);
+        (new ConfInvariants($this->conf))->check_users();
+    }
+
+    #[RequireCdb(true)]
+    function test_confactions_delay() {
+        if (!($cdb = $this->conf->contactdb())) {
+            return;
+        }
+        $this->delete_secondary(false, "rajuu@watson.edu");
+        $this->delete_secondary(true, "rajuu@watson.edu");
+
+        $u_raju = $this->conf->user_by_id($this->raju_uid)->cdb_user();
+        $u_rajuu = $this->conf->fresh_user_by_email("rajuu@watson.edu");
+        xassert(!!$u_raju);
+        xassert(!$u_rajuu);
+        $this->insert_secondary(true, "rajuu@watson.edu", $u_raju->contactDbId);
+        $this->conf->qe("insert into Settings set name='confactions', value=1, data=?",
+            "\x1e{\"action\":\"link\",\"u\":\"raju@watson.ibm.com\",\"email\":\"rajuu@watson.edu\"}\n"
+            . "\x1e{\"action\":\"link\",\"u\":\"rajuu@watson.edu\",\"email\":\"raju@watson.ibm.com\"}\n");
+        $this->conf->invalidate_caches(["users" => true]);
+        $this->conf->load_settings();
+        $u_raju = $this->conf->fresh_user_by_id($this->raju_uid);
+        $u_rajuu = $this->conf->fresh_user_by_email("rajuu@watson.edu");
+        $u_chris = $this->conf->fresh_user_by_id($this->chris_uid);
+        xassert(!!$u_raju);
+        xassert(!!$u_rajuu);
+        xassert(!!$u_chris);
+        xassert_eqq($u_rajuu->primaryContactId, $u_raju->contactId);
+        xassert_eqq($u_chris->primaryContactId, $u_raju->contactId);
+        xassert_eqq($u_raju->primaryContactId, 0);
+        xassert_eqq($u_raju->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
+        xassert_eqq($u_rajuu->cflags & Contact::CF_PRIMARY, 0);
+        $this->conf->invalidate_caches(["users" => true]);
+        (new ConfInvariants($this->conf))->check_users();
+    }
+
     function test_cleanup() {
+        $emails = ["van@ee.lbl.gov", "raju@watson.ibm.com", "chris@w3.org"];
         $this->delete_secondary(false, "xvan@usc.edu");
         $this->delete_secondary(false, "yvan@usc.edu");
-        $this->conf->qe("update ContactInfo set roles=0, cflags=cflags&~? where email='van@ee.lbl.gov'", Contact::CF_PRIMARY);
+        $this->delete_secondary(false, "rajuu@watson.edu");
+        $this->conf->qe("update ContactInfo set roles=0, cflags=cflags&~? where email?a", Contact::CF_PRIMARY, $emails);
+        $this->conf->qe("delete from ContactPrimary where contactId?a", [$this->raju_uid, $this->chris_uid]);
         if (($cdb = $this->conf->contactdb())) {
             $this->delete_secondary(true, "xvan@usc.edu");
             $this->delete_secondary(true, "yvan@usc.edu");
-            $this->conf->qe("update ContactInfo set cflags=cflags&~? where email='van@ee.lbl.gov'", Contact::CF_PRIMARY);
+            $this->delete_secondary(true, "rajuu@watson.edu");
+            Dbl::qe($cdb, "update ContactInfo set cflags=cflags&~? where email?a", Contact::CF_PRIMARY, $emails);
+            Dbl::qe($cdb, "delete from ContactPrimary where contactId in (select contactDbId from ContactInfo where email?a)", $emails);
         }
     }
 }

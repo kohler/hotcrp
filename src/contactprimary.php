@@ -42,8 +42,10 @@ class ContactPrimary {
         }
 
         // resolve pri
-        if ($this->pri && !$this->cdb) {
-            $this->pri->ensure_account_here();
+        if (!$this->cdb && $this->pri && !$this->pri->has_account_here()) {
+            // Don't use ensure_account_here: that changes CDBness of
+            // `$this->pri`, which caller might be depending on
+            $this->pri = $this->conf->ensure_user_by_email($this->pri->email);
         }
         assert(!$this->pri || $this->cdb === $this->pri->is_cdb_user());
         if ($this->pri && $this->cdb !== $this->pri->is_cdb_user()) {
