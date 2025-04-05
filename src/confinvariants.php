@@ -698,10 +698,20 @@ class ConfInvariants {
                 $this->irow = [$err->email, $err->computed_roles, $err->cdbRoles];
                 $this->invariant_error("cdbRoles", "user {0} has cdbRoles 0x{2:x}, expected 0x{1:x}");
             }
-            if (($cdb_cdbr = $cdbr[strtolower($err->email)] ?? 0) !== $err->computed_roles) {
-                $this->irow = [$err->email, $err->computed_roles, $cdb_cdbr];
+            $lemail = strtolower($err->email);
+            $cdb_cdbr = $cdbr[$lemail] ?? null;
+            if ($cdb_cdbr !== null) {
+                unset($cdbr[$lemail]);
+            }
+            if (($cdb_cdbr ?? 0) !== $err->computed_roles) {
+                $this->irow = [$err->email, $err->computed_roles, $cdb_cdbr ?? 0];
                 $this->invariant_error("cdbRoles", "user {0} has contactdb roles 0x{2:x}, expected 0x{1:x}");
             }
+        }
+
+        foreach ($cdbr as $lemail => $roles) {
+            $this->irow = [$lemail, 0, $roles];
+            $this->invariant_error("cdbRoles", "user {0} has contactdb roles 0x{2:x}, expected null");
         }
     }
 
