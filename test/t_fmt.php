@@ -239,4 +239,11 @@ class Fmt_Tester {
         xassert_eqq($ms->_("{:plural {submission}}", 0), "papers");
         xassert_eqq($ms->_("{:plural {submission}}", 1), "paper");
     }
+
+    function test_j() {
+        $ms = new Fmt;
+        xassert_eqq($ms->_("{:j}", null), "null");
+        xassert_eqq($ms->_("<5>{:j}", "&"), "<5>&quot;&amp;&quot;");
+        xassert_eqq($ms->_("<5>{:jx}", 1), "<5>0x1");
+    }
 }

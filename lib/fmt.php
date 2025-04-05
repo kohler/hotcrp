@@ -240,6 +240,15 @@ class FmtContext {
      * @param -1|0|1 $expansion
      * @return array{?int,mixed} */
     function apply_fmtspec($fspec, $vformat, $value, $expansion) {
+        if ($fspec === ":j") {
+            return [0, json_encode_db($value)];
+        } else if ($fspec === ":jx") {
+            if (is_int($value)) {
+                return [0, sprintf("0x%x", $value)];
+            }
+            return [0, json_encode_db($value)];
+        }
+
         if (is_array($value)) {
             return $this->apply_fmtspec_array($fspec, $vformat, $value, $expansion);
         }
@@ -282,6 +291,7 @@ class FmtContext {
             }
             if ($this->pos === 0 && $this->format === null) {
                 $value = "<{$vformat}>{$value}";
+                $vformat = null;
             }
             return [$vformat, $value];
         } else if (str_starts_with($fspec, ":plural ")) {
