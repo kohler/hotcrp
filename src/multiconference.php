@@ -148,7 +148,7 @@ class Multiconference {
         if ($maintenance) {
             $status = 503;
             $title = "Maintenance";
-            $mis = [Messageitem::error(Ftext::concat("<0>The site is down for maintenance. ", is_string($maintenance) ? $maintenance : "<0>Please check back later."))];
+            $mis = [MessageItem::error(Ftext::concat("<0>The site is down for maintenance. ", is_string($maintenance) ? $maintenance : "<0>Please check back later."))];
             $link = false;
             $fr = null;
         }
