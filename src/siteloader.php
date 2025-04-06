@@ -1,6 +1,6 @@
 <?php
 // siteloader.php -- HotCRP autoloader
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class SiteLoader {
     static $map = [
@@ -164,7 +164,7 @@ class SiteLoader {
         global $Opt;
 
         $root = $root ?? self::$root;
-        $autoload = $expansions["autoload"] ?? 0;
+        $autoload = $expansions["autoload"] ?? false;
         $includepath = null;
 
         $results = [];
@@ -278,9 +278,10 @@ class SiteLoader {
         }
     }
 
-    /** @param string $class_name */
-    static function autoload($class_name) {
-        $f = self::$map[$class_name] ?? strtolower($class_name) . ".php";
+    /** @param string $class */
+    static function autoload($class) {
+        $x = str_starts_with($class, "HotCRP\\") ? substr($class, 7) : $class;
+        $f = self::$map[$x] ?? strtolower($x) . ".php";
         foreach (self::expand_includes(self::$root, $f, ["autoload" => true]) as $fx) {
             require_once($fx);
         }

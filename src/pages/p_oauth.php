@@ -2,6 +2,10 @@
 // pages/p_oauth.php -- HotCRP OAuth 2 authentication page
 // Copyright (c) 2022-2025 Eddie Kohler; see LICENSE.
 
+namespace HotCRP;
+use Conf, Contact, MessageItem, NavigationState, Qrequest, Redirection;
+use LoginHelper, TokenInfo, UserSecurityEvent, UserStatus;
+
 class OAuthProvider {
     /** @var string */
     public $name;

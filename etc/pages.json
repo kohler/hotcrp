@@ -218,10 +218,10 @@
     [   "graph/reviewerlameness", false, "graph/procrastination"    ],
 
 
-    {   "name": "authorize", "print_function": "*Authorize_Page::go", "allow_disabled": true   },
-    [   "authorize/form/title", 1, "*Authorize_Page::print_form_title"   ],
-    [   "authorize/form/main", 15, "*Authorize_Page::print_form_main"   ],
-    [   "authorize/form/annotation", 2000, "*Authorize_Page::print_form_annotation"   ],
+    {   "name": "authorize", "print_function": "*HotCRP\\Authorize_Page::go", "allow_disabled": true   },
+    [   "authorize/form/title", 1, "*HotCRP\\Authorize_Page::print_form_title"   ],
+    [   "authorize/form/main", 15, "*HotCRP\\Authorize_Page::print_form_main"   ],
+    [   "authorize/form/annotation", 2000, "*HotCRP\\Authorize_Page::print_form_annotation"   ],
     [   "authorize/other/local", 15, "signin/form/local"   ],
     [   "authorize/other/oauth", 1000, "signin/form/oauth"   ],
 
@@ -241,7 +241,7 @@
     {   "name": "manageemail", "print_function": "ManageEmail_Page::go"   },
     {   "name": "manualassign", "print_function": "ManualAssign_Page::go"   },
     {   "name": "mergeaccounts", "print_function": "MergeAccounts_Page::go"   },
-    {   "name": "oauth", "print_function": "OAuth_Page::go", "allow_disabled": true   },
+    {   "name": "oauth", "print_function": "HotCRP\\OAuth_Page::go", "allow_disabled": true   },
     {   "name": "offline", "print_function": "Offline_Page::go"   },
     {   "name": "paper", "print_function": "Paper_Page::go"   },
     {   "name": "profile", "print_function": "Profile_Page::go"   },

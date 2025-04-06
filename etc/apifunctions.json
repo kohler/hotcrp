@@ -179,7 +179,7 @@
     },
     {
         "name": "oauthtoken", "post": true, "allow_disabled": true, "check_token": false,
-        "function": "Authorize_Page::oauthtoken_api"
+        "function": "HotCRP\\Authorize_Page::oauthtoken_api"
     },
     {
         "name": "paper", "get": true, "post": true,

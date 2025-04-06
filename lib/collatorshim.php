@@ -1,8 +1,8 @@
 <?php
 // collatorshim.php -- PHP Collator polyfill
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
-class Collator {
+class CollatorShim {
     const ALTERNATE_HANDLING = 1;
     const NON_IGNORABLE = 20;
     const SHIFTED = 21;
@@ -54,4 +54,8 @@ class Collator {
             asort($v, SORT_FLAG_CASE);
         }
     }
+}
+
+if (!class_exists("Collator", false)) {
+    class_alias("CollatorShim", "Collator");
 }

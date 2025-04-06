@@ -1,6 +1,10 @@
 <?php
 // pages/p_authorize.php -- HotCRP OAuth 2.0 authorization provider page
-// Copyright (c) 2022-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2022-2025 Eddie Kohler; see LICENSE.
+
+namespace HotCRP;
+use Conf, ComponentSet, Contact, Ht, JsonResult, Qrequest, Redirection;
+use TokenInfo, Signin_Page;
 
 class OAuthClient {
     /** @var string */
