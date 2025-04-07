@@ -541,10 +541,26 @@ class Profile_Page {
         if ($this->user->primaryContactId > 0) {
             (new ContactPrimary($this->viewer))->link($this->user, null);
         }
-        // clean database
-        foreach (["ContactInfo", "PaperComment", "PaperConflict", "PaperReview",
-                  "PaperReviewPreference", "PaperReviewRefused", "PaperWatch",
-                  "ReviewRating", "TopicInterest"] as $table) {
+        // load paper set for reviews and comments
+        $prows = $this->conf->paper_set([
+            "where" => "paperId in (select paperId from PaperReview where contactId={$this->user->contactId} union select paperId from PaperComment where contactId={$this->user->contactId})"
+        ]);
+        // delete reviews (needs to be logged, might update other information)
+        $result = $this->conf->qe("select * from PaperReview where contactId=?", $this->user->contactId);
+        while (($rrow = ReviewInfo::fetch($result, $prows, $this->conf))) {
+            $rrow->delete($this->viewer, ["no_autosearch" => true]);
+        }
+        Dbl::free($result);
+        // delete comments (needs to be logged)
+        $result = $this->conf->qe("select * from PaperComment where contactId=?", $this->user->contactId);
+        while (($crow = CommentInfo::fetch($result, $prows, $this->conf))) {
+            $crow->delete($this->viewer, ["no_autosearch" => true]);
+        }
+        Dbl::free($result);
+        // delete from other tables database
+        foreach (["PaperConflict", "PaperWatch",
+                  "PaperReviewPreference", "PaperReviewRefused", "ReviewRating",
+                  "TopicInterest", "ContactInfo"] as $table) {
             $this->conf->qe_raw("delete from {$table} where contactId={$this->user->contactId}");
         }
         // delete twiddle tags
@@ -552,6 +568,8 @@ class Profile_Page {
         $assigner->set_override_conflicts(true);
         $assigner->parse("paper,tag\nall,{$this->user->contactId}~all#clear\n");
         $assigner->execute();
+        // automatic tags may have changed
+        $this->conf->update_automatic_tags();
         // clear caches
         if ($this->user->isPC || $this->user->privChair) {
             $this->conf->invalidate_caches(["pc" => true]);

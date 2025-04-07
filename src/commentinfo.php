@@ -935,7 +935,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         return $this->fix_type($ctype);
     }
 
-    /** @param array{docs?:list<DocumentInfo>,tags?:?string} $req
+    /** @param array{docs?:list<DocumentInfo>,tags?:?string,no_autosearch?:bool} $req
      * @return bool */
     function save_comment($req, Contact $acting_user) {
         assert($this->paperId > 0 && (!$this->prow || $this->prow->paperId === $this->paperId));
@@ -1127,7 +1127,9 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         $acting_user->log_activity_for($this->contactId ? : $user->contactId, $log, $this->paperId);
 
         // update automatic tags
-        $this->conf->update_automatic_tags($this->prow, "comment");
+        if (!($req["no_autosearch"] ?? false)) {
+            $this->conf->update_automatic_tags($this->prow, "comment");
+        }
 
         // ordinal
         if ($text !== false && $this->ordinal_missing($ctype)) {
@@ -1190,6 +1192,13 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         }
 
         return true;
+    }
+
+    function delete(Contact $actor, $req = []) {
+        return $this->save_comment([
+            "text" => false,
+            "no_autosearch" => $req["no_autosearch"] ?? null
+        ], $actor);
     }
 
     /** @param Contact $user

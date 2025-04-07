@@ -241,38 +241,24 @@ class Review_Page {
         } else if (!$this->user->can_administer($this->prow)) {
             return;
         }
-        $result = $this->conf->qe("delete from PaperReview where paperId=? and reviewId=?", $this->prow->paperId, $this->rrow->reviewId);
-        if ($result->affected_rows) {
-            $this->user->log_activity_for($this->rrow->contactId, "Review {$this->rrow->reviewId} deleted", $this->prow);
+        if ($this->rrow->delete($this->user)) {
             $this->conf->success_msg("<0>Review deleted");
-            $this->conf->qe("delete from ReviewRating where paperId=? and reviewId=?", $this->prow->paperId, $this->rrow->reviewId);
-            if ($this->rrow->reviewToken !== 0) {
-                $this->conf->update_rev_tokens_setting(-1);
-            }
-            if ($this->rrow->reviewType === REVIEW_META) {
-                $this->conf->update_metareviews_setting(-1);
-            }
-
-            // perhaps a delegator needs to redelegate
-            if ($this->rrow->reviewType < REVIEW_SECONDARY
-                && $this->rrow->requestedBy > 0) {
-                $this->conf->update_review_delegation($this->prow->paperId, $this->rrow->requestedBy, -1);
-            }
         }
         $this->conf->redirect_self($this->qreq, ["r" => null, "reviewId" => null]);
     }
 
     function handle_unsubmit() {
-        if ($this->rrow
-            && $this->rrow->reviewStatus >= ReviewInfo::RS_DELIVERED
-            && $this->user->can_administer($this->prow)) {
-            $rv = new ReviewValues($this->conf);
-            $rv->set_can_unsubmit(true)->set_req_ready(false);
-            if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
-                $this->conf->success_msg("<0>Review unsubmitted");
-            }
-            $this->conf->redirect_self($this->qreq);
+        if (!$this->rrow
+            || $this->rrow->reviewStatus < ReviewInfo::RS_DELIVERED
+            || !$this->user->can_administer($this->prow)) {
+            return;
         }
+        $rv = new ReviewValues($this->conf);
+        $rv->set_can_unsubmit(true)->set_req_ready(false);
+        if ($rv->check_and_save($this->user, $this->prow, $this->rrow)) {
+            $this->conf->success_msg("<0>Review unsubmitted");
+        }
+        $this->conf->redirect_self($this->qreq);
     }
 
     function handle_valid_post() {

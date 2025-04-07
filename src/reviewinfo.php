@@ -1303,6 +1303,37 @@ class ReviewInfo implements JsonSerializable {
         return $this->conf->qe("insert into PaperReview (" . join(", ", $qf) . ") values ?v", [$qv]);
     }
 
+    /** @return bool */
+    function delete(Contact $actor, $opts = []) {
+        if ($this->reviewId <= 0) {
+            return false;
+        }
+        $result = $this->conf->qe("delete from PaperReview where paperId=? and reviewId=?",
+            $this->paperId, $this->reviewId);
+        if (!$result->affected_rows) {
+            return false;
+        }
+        $actor->log_activity_for($this->contactId, "Review {$this->reviewId} deleted", $this->paperId);
+        $this->conf->qe("delete from ReviewRating where paperId=? and reviewId=?",
+            $this->paperId, $this->reviewId);
+        // update global settings
+        if ($this->reviewToken !== 0) {
+            $this->conf->update_rev_tokens_setting(-1);
+        }
+        if ($this->reviewType === REVIEW_META) {
+            $this->conf->update_metareviews_setting(-1);
+        }
+        // perhaps a delegator needs to redelegate
+        if ($this->reviewType < REVIEW_SECONDARY && $this->requestedBy > 0) {
+            $this->conf->update_review_delegation($this->paperId, $this->requestedBy, -1);
+        }
+        // run autosearch
+        if (!($opts["no_autosearch"] ?? false)) {
+            $this->conf->update_automatic_tags($this->prow, "review");
+        }
+        return true;
+    }
+
     /** @param ReviewInfo $a
      * @param ReviewInfo $b
      * @return -1|0|1 */
