@@ -109,17 +109,17 @@ class CommentInfo {
 
 
     function __construct(?PaperInfo $prow = null, ?Conf $conf = null) {
-        assert(($prow || $conf) && (!$prow || !$conf || $prow->conf === $conf));
         if ($prow) {
             $this->conf = $prow->conf;
             $this->prow = $prow;
-            $this->paperId = $this->paperId ? : $prow->paperId;
-        } else {
-            $this->conf = $conf;
+            $this->paperId = $prow->paperId;
         }
     }
 
-    private function fetch_incorporate() {
+    /** @suppress PhanAccessReadOnlyProperty */
+    private function _incorporate(?PaperInfo $prow, Conf $conf) {
+        $this->conf = $conf;
+        $this->prow = $prow;
         $this->commentId = (int) $this->commentId;
         $this->paperId = (int) $this->paperId;
         $this->contactId = (int) $this->contactId;
@@ -141,13 +141,15 @@ class CommentInfo {
     }
 
     /** @param Dbl_Result $result
+     * @param PaperInfo|PaperInfoSet|null $prowx
      * @return ?CommentInfo */
-    static function fetch($result, ?PaperInfo $prow, ?Conf $conf) {
-        $cinfo = $result->fetch_object("CommentInfo", [$prow, $conf]);
-        if ($cinfo) {
-            $cinfo->fetch_incorporate();
+    static function fetch($result, $prowx, Conf $conf) {
+        $crow = $result->fetch_object("CommentInfo");
+        if ($crow) {
+            $prow = $prowx instanceof PaperInfoSet ? $prowx->get((int) $crow->paperId) : $prowx;
+            $crow->_incorporate($prow, $conf);
         }
-        return $cinfo;
+        return $crow;
     }
 
     /** @return CommentInfo */
@@ -936,14 +938,15 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
     /** @param array{docs?:list<DocumentInfo>,tags?:?string} $req
      * @return bool */
     function save_comment($req, Contact $acting_user) {
+        assert($this->paperId > 0 && (!$this->prow || $this->prow->paperId === $this->paperId));
         $this->notifications = [];
 
         $user = $acting_user;
         if (!$user->contactId) {
-            $user = $acting_user->reviewer_capability_user($this->prow->paperId);
+            $user = $acting_user->reviewer_capability_user($this->paperId);
         }
         if (!$user || !$user->contactId) {
-            error_log("Comment::save({$this->prow->paperId}): no such user");
+            error_log("Comment::save({$this->paperId}): no such user");
             return false;
         }
 
@@ -998,12 +1001,12 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         $qv = [];
         if ($text === false) {
             if ($this->commentId) {
-                $q = "delete from PaperComment where commentId={$this->commentId}";
+                $q = "delete from PaperComment where paperId={$this->paperId} and commentId={$this->commentId}";
             }
             $docs = [];
         } else if (!$this->commentId) {
             $qa = ["contactId, paperId, commentType, comment, commentOverflow, timeModified, replyTo"];
-            $qb = [$user->contactId, $this->prow->paperId, $ctype, "?", "?", Conf::$now, 0];
+            $qb = [$user->contactId, $this->paperId, $ctype, "?", "?", Conf::$now, 0];
             if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
             } else {
@@ -1030,7 +1033,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             $q = "insert into PaperComment (" . join(", ", $qa) . ") select " . join(", ", $qb) . "\n";
             if ($is_response) {
                 // make sure there is exactly one response
-                $q .= "from dual where not exists (select * from PaperComment where paperId={$this->prow->paperId} and (commentType&" . self::CT_RESPONSE . ")!=0 and commentRound={$this->commentRound})";
+                $q .= "from dual where not exists (select * from PaperComment where paperId={$this->paperId} and (commentType&" . self::CT_RESPONSE . ")!=0 and commentRound={$this->commentRound})";
             }
         } else {
             if ($this->timeModified >= Conf::$now) {
@@ -1050,7 +1053,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 && $displayed) {
                 $qa .= ", timeDisplayed=" . Conf::$now;
             }
-            $q = "update PaperComment set timeModified=" . Conf::$now . $qa . ", commentType={$ctype}, comment=?, commentOverflow=?, commentTags=?, commentData=? where commentId={$this->commentId}";
+            $q = "update PaperComment set timeModified=" . Conf::$now . $qa . ", commentType={$ctype}, comment=?, commentOverflow=?, commentTags=?, commentData=? where paperId={$this->paperId} and commentId={$this->commentId}";
             if (strlen($text) <= 32000) {
                 array_push($qv, $text, null);
             } else {
@@ -1121,7 +1124,7 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 $log .= ": " . join(", ", $ch);
             }
         }
-        $acting_user->log_activity_for($this->contactId ? : $user->contactId, $log, $this->prow->paperId);
+        $acting_user->log_activity_for($this->contactId ? : $user->contactId, $log, $this->paperId);
 
         // update automatic tags
         $this->conf->update_automatic_tags($this->prow, "comment");
@@ -1133,26 +1136,26 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
 
         // reload contents
         if ($text !== false) {
-            if (($cobject = $this->conf->fetch_first_object("select * from PaperComment where paperId={$this->prow->paperId} and commentId={$cmtid}"))) {
-                foreach (get_object_vars($cobject) as $k => $v) {
-                    $this->$k = $v;
-                }
-                $this->fetch_incorporate();
-            } else {
+            $cobject = $this->conf->fetch_first_object("select * from PaperComment where paperId=? and commentId=?", $this->paperId, $cmtid);
+            if (!$cobject) {
                 return false;
             }
+            foreach (get_object_vars($cobject) as $k => $v) {
+                $this->$k = $v;
+            }
+            $this->_incorporate($this->prow, $this->conf);
         }
 
         // document links
         if ($docs_differ) {
             if ($old_docids) {
-                $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType>=? and linkType<?", $this->prow->paperId, $this->commentId, DocumentInfo::LINKTYPE_COMMENT_BEGIN, DocumentInfo::LINKTYPE_COMMENT_END);
+                $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType>=? and linkType<?", $this->paperId, $this->commentId, DocumentInfo::LINKTYPE_COMMENT_BEGIN, DocumentInfo::LINKTYPE_COMMENT_END);
             }
             $need_mark = !!$old_docids;
             if ($docs) {
                 $qv = [];
                 foreach ($docs as $i => $doc) {
-                    $qv[] = [$this->prow->paperId, $this->commentId, $i, $doc->paperStorageId];
+                    $qv[] = [$this->paperId, $this->commentId, $i, $doc->paperStorageId];
                     // just in case we're linking an inactive document
                     // (this should never happen, though, because upload
                     // marks as active explicitly)

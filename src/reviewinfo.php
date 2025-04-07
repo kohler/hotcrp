@@ -379,7 +379,8 @@ class ReviewInfo implements JsonSerializable {
         }
     }
 
-    /** @param PaperInfo|PaperInfoSet|null $prowx
+    /** @param Dbl_Result $result
+     * @param PaperInfo|PaperInfoSet|null $prowx
      * @return ?ReviewInfo */
     static function fetch($result, $prowx = null, ?Conf $conf = null) {
         $rrow = $result ? $result->fetch_object("ReviewInfo") : null;
