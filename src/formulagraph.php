@@ -1168,7 +1168,7 @@ class FormulaGraph extends MessageSet {
             $newticks = [];
             foreach ($named_ticks as $n => $x) {
                 if (isset($this->_xorder_map[$n]))
-                    $named_ticks[$this->_xorder_map[$n]] = $x;
+                    $newticks[$this->_xorder_map[$n]] = $x;
             }
             $named_ticks = $newticks;
         }
