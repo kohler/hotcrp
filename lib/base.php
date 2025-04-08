@@ -573,16 +573,15 @@ function str_list_lower_bound($needle, $haystack) {
 
 /** @param mixed $a */
 function array_to_object_recursive($a) {
-    if (is_array($a) && is_associative_array($a)) {
-        $o = (object) [];
-        foreach ($a as $k => $v) {
-            if ($k !== "")
-                $o->$k = array_to_object_recursive($v);
-        }
-        return $o;
-    } else {
+    if (!is_array($a) || !is_associative_array($a)) {
         return $a;
     }
+    $o = (object) [];
+    foreach ($a as $k => $v) {
+        if ($k !== "")
+            $o->$k = array_to_object_recursive($v);
+    }
+    return $o;
 }
 
 function object_replace($a, $b) {
