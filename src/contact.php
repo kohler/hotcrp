@@ -964,35 +964,6 @@ class Contact implements JsonSerializable {
         return $this->is_cdb_user() ? $this->conf->contactdb() : $this->conf->dblink;
     }
 
-    /** @param int $id
-     * @param 0|1 $sliced
-     * @return ?Contact */
-    function similar_user_by_id($id, $sliced = 0) {
-        if ($this->is_cdb_user()) {
-            return $this->conf->cdb_user_by_id($id);
-        } else {
-            return $this->conf->user_by_id($id, $sliced);
-        }
-    }
-
-    /** @param int $id */
-    function invalidate_similar_user_by_id($id) {
-        if ($this->is_cdb_user()) {
-            $this->conf->invalidate_cdb_user_by_id($id);
-        } else {
-            $this->conf->invalidate_user_by_id($id);
-        }
-    }
-
-    /** @param int $id */
-    function prefetch_similar_user_by_id($id) {
-        if ($this->is_cdb_user()) {
-            $this->conf->prefetch_cdb_user_by_id($id);
-        } else {
-            $this->conf->prefetch_user_by_id($id);
-        }
-    }
-
     /** @return $this */
     function ensure_account_here() {
         assert($this->has_email());

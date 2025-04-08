@@ -58,12 +58,17 @@ class ContactPrimary {
         }
         // main changes
         $this->conf->delay_logs();
+        if ($this->pri && $this->pri->primaryContactId !== 0) {
+            $this->_remove_old_primary($this->pri);
+        }
         if ($this->sec->primaryContactId !== 0) {
-            $this->_remove_old_primary();
-        } else {
-            $this->_relink_to_new_primary();
+            $this->_remove_old_primary($this->sec);
+        } else if (($this->sec->cflags & Contact::CF_PRIMARY) !== 0) {
+            assert(!!$this->pri);
+            $this->_redirect_to_new_primary();
         }
         if ($this->pri) {
+            $this->sec->set_prop("cflags", $this->sec->cflags & ~Contact::CF_PRIMARY);
             $this->sec->set_prop("primaryContactId", $this->pri->$idk);
             Dbl::qe($this->sec->dblink(), "insert into ContactPrimary set contactId=?, primaryContactId=?", $this->sec->$idk, $this->pri->$idk);
             $this->pri->set_prop("cflags", $this->pri->cflags | Contact::CF_PRIMARY);
@@ -84,13 +89,34 @@ class ContactPrimary {
         }
     }
 
-    private function _remove_old_primary() {
+    private function prefetch_user_by_id($id) {
+        if ($this->cdb) {
+            $this->conf->prefetch_cdb_user_by_id($id);
+        } else {
+            $this->conf->prefetch_user_by_id($id);
+        }
+    }
+
+    private function user_by_id($id) {
         $idk = $this->cdb ? "contactDbId" : "contactId";
-        $oldid = $this->sec->primaryContactId;
-        $this->sec->set_prop("primaryContactId", 0);
-        Dbl::qe($this->sec->dblink(), "delete from ContactPrimary where contactId=? and primaryContactId=?", $this->sec->$idk, $oldid);
-        if (!Dbl::fetch_ivalue($this->sec->dblink(), "select exists(select * from ContactPrimary where primaryContactId=?) from dual", $oldid)
-            && ($xpri = $this->sec->similar_user_by_id($oldid))) {
+        if ($this->sec->$idk === $id) {
+            return $this->sec;
+        } else if ($this->pri && $this->pri->$idk === $id) {
+            return $this->pri;
+        } else if ($this->cdb) {
+            return $this->conf->cdb_user_by_id($id);
+        } else {
+            return $this->conf->user_by_id($id);
+        }
+    }
+
+    private function _remove_old_primary(Contact $u) {
+        $idk = $this->cdb ? "contactDbId" : "contactId";
+        $oldid = $u->primaryContactId;
+        $u->set_prop("primaryContactId", 0);
+        Dbl::qe($u->dblink(), "delete from ContactPrimary where contactId=? and primaryContactId=?", $u->$idk, $oldid);
+        if (!Dbl::fetch_ivalue($u->dblink(), "select exists(select * from ContactPrimary where primaryContactId=?) from dual", $oldid)
+            && ($xpri = $this->user_by_id($oldid))) {
             $xpri->set_prop("cflags", $xpri->cflags & ~Contact::CF_PRIMARY);
             $xpri->save_prop();
         }
@@ -99,39 +125,22 @@ class ContactPrimary {
         }
     }
 
-    private function _relink_to_new_primary() {
+    private function _redirect_to_new_primary() {
         $idk = $this->cdb ? "contactDbId" : "contactId";
-        $redir = [];
-        if (($this->sec->cflags & Contact::CF_PRIMARY) !== 0) {
-            $this->sec->set_prop("cflags", $this->sec->cflags & ~Contact::CF_PRIMARY);
-            $redir[] = $this->sec->$idk;
-        }
-        $old_primary = $this->pri ? $this->pri->primaryContactId : 0;
-        if ($old_primary > 0) {
-            $redir[] = $old_primary;
-        }
-        assert(empty($redir) || $this->pri);
-        if (empty($redir)) {
-            return;
-        }
-
-        $result = Dbl::qe($this->sec->dblink(), "select contactId from ContactPrimary where primaryContactId?a", $redir);
+        $result = Dbl::qe($this->sec->dblink(), "select contactId from ContactPrimary where primaryContactId=?", $this->sec->$idk);
         $ids = [];
         while (($row = $result->fetch_row())) {
             $id = (int) $row[0];
-            if ($id !== $this->pri->$idk) {
-                $this->sec->prefetch_similar_user_by_id($id);
-                $ids[] = $id;
+            $ids[] = $id;
+            $this->prefetch_user_by_id($id);
+            if (!$this->cdb) {
+                $this->uids[] = $id;
             }
-        }
-        if ($old_primary > 0 && $old_primary !== $this->sec->$idk) {
-            $this->sec->prefetch_similar_user_by_id($old_primary);
-            $ids[] = $old_primary;
         }
         $result->close();
 
         foreach ($ids as $id) {
-            if (($u = $this->sec->similar_user_by_id($id))) {
+            if (($u = $this->user_by_id($id))) {
                 $u->set_prop("primaryContactId", $this->pri->$idk);
                 $u->set_prop("cflags", $u->cflags & ~Contact::CF_PRIMARY);
                 $u->save_prop();
@@ -143,20 +152,6 @@ class ContactPrimary {
         if (!empty($ids)) {
             Dbl::qe($this->sec->dblink(), "update ContactPrimary set primaryContactId=? where contactId?a",
                 $this->pri->$idk, $ids);
-        }
-        if ($old_primary > 0) {
-            Dbl::qe($this->sec->dblink(), "delete from ContactPrimary where contactId=?",
-                $this->pri->$idk);
-            if ($old_primary !== $this->sec->$idk) {
-                Dbl::qe($this->sec->dblink(), "insert into ContactPrimary set contactId=?, primaryContactId=?",
-                        $old_primary, $this->pri->$idk);
-                if (!$this->cdb && $this->actor) {
-                    $this->conf->log_for($this->actor, $old_primary, "Primary account set to {$this->pri->email}");
-                }
-            }
-        }
-        if (!$this->cdb) {
-            array_push($this->uids, ...$redir);
         }
     }
 

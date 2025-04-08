@@ -286,6 +286,37 @@ class UserStatus_Tester {
         (new ConfInvariants($this->conf))->check_users();
     }
 
+    private function cps_text($ids) {
+        return json_encode(Dbl::fetch_iimap($this->conf->dblink, "select * from ContactPrimary where contactId?a or primaryContactId?a", $ids, $ids));
+    }
+
+    function test_relink_series() {
+        $u1 = $this->conf->ensure_user_by_email("yue1@x.com");
+        $u2 = $this->conf->ensure_user_by_email("yue2@x.com");
+        $u3 = $this->conf->ensure_user_by_email("yue3@x.com");
+        $ids = [$u1->contactId, $u2->contactId, $u3->contactId];
+        //error_log("$u1->contactId $u2->contactId $u3->contactId");
+        //error_log("$u1->primaryContactId $u2->primaryContactId $u3->primaryContactId " . $this->cps_text($ids));
+
+        (new ContactPrimary($u1))->link($u2, $u1);
+        //error_log(". $u1->primaryContactId $u2->primaryContactId $u3->primaryContactId " . $this->cps_text($ids));
+        (new ContactPrimary($u1))->link($u1, $u3);
+        //error_log(". $u1->primaryContactId $u2->primaryContactId $u3->primaryContactId " . $this->cps_text($ids));
+        (new ContactPrimary($u1))->link($u2, $u1);
+        //error_log(". $u1->primaryContactId $u2->primaryContactId $u3->primaryContactId " . $this->cps_text($ids));
+
+        $u1 = $this->conf->fresh_user_by_id($u1->contactId);
+        $u2 = $this->conf->fresh_user_by_id($u2->contactId);
+        $u3 = $this->conf->fresh_user_by_id($u3->contactId);
+        xassert_eqq($u1->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
+        xassert_eqq($u2->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($u3->cflags & Contact::CF_PRIMARY, 0);
+        xassert_eqq($u1->primaryContactId, 0);
+        xassert_eqq($u2->primaryContactId, $u1->contactId);
+        xassert_eqq($u3->primaryContactId, 0);
+        (new ConfInvariants($this->conf))->check_users();
+    }
+
     function test_cleanup() {
         $emails = ["van@ee.lbl.gov", "raju@watson.ibm.com", "chris@w3.org"];
         $this->delete_secondary(false, "xvan@usc.edu");
