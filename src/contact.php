@@ -6135,7 +6135,8 @@ class Contact implements JsonSerializable {
                 "paperId" => $pid, "contactId" => $reviewer->contactId,
                 "reviewType" => $type, "reviewRound" => $round,
                 "timeRequested" => $time, "requestedBy" => $new_requester_cid,
-                "reviewBlind" => $reviewBlind, "rflags" => $rflags
+                "reviewBlind" => $reviewBlind, "rflags" => $rflags,
+                "reviewNeedsSubmit" => 1
             ];
             if ($extra["mark_notify"] ?? null) {
                 $fields["timeRequestNotified"] = $time;
@@ -6191,6 +6192,11 @@ class Contact implements JsonSerializable {
             }
             if ($type < REVIEW_SECONDARY) {
                 $this->conf->update_review_delegation($pid, $new_requester_cid, 1);
+            } else if ($type === REVIEW_SECONDARY) {
+                // We must update delegation even on a newly inserted review
+                // because maybe this reviewer requested reviews before being
+                // assigned. (e.g. a previous secondary review got deleted)
+                $this->conf->update_review_delegation($pid, $reviewer->contactId, -2);
             }
             if ($type >= REVIEW_PC
                 && ($this->conf->setting("pcrev_assigntime") ?? 0) < Conf::$now) {

@@ -179,6 +179,10 @@ class CheckInvariants_Batch {
             $this->report_fix("whitespace");
             $this->fix_whitespace();
         }
+        if (isset($ic->problems["reviewNeedsSubmit"]) && $this->want_fix("reviews")) {
+            $this->report_fix("reviewNeedsSubmit");
+            $this->fix_reviewNeedsSubmit();
+        }
         if (isset($ic->problems["roles"]) && $this->want_fix("roles")) {
             $this->report_fix("roles");
             $this->fix_roles();
@@ -215,6 +219,20 @@ class CheckInvariants_Batch {
 
         $this->conf->qe("update Paper p join PaperStorage s on (s.paperId=p.paperId and s.paperStorageId=p.paperStorageId) set p.size=s.size where p.size<0 and p.finalPaperStorageId<=1");
         $this->conf->qe("update Paper p join PaperStorage s on (s.paperId=p.paperId and s.paperStorageId=p.finalPaperStorageId) set p.size=s.size where p.size<0 and p.finalPaperStorageId>1");
+    }
+
+    private function fix_reviewNeedsSubmit() {
+        // reviewNeedsSubmit is defined correctly for secondary
+        $result = $this->conf->qe(ConfInvariants::reviewNeedsSubmit_query(REVIEW_SECONDARY));
+        while (($row = $result->fetch_row())) {
+            $this->conf->update_review_delegation((int) $row[0], (int) $row[2], 0);
+        }
+        $result->close();
+
+        // reviewNeedsSubmit is defined correctly for others
+        $this->conf->qe("update PaperReview
+            set reviewNeedsSubmit=if(reviewSubmitted or (reviewType=" . REVIEW_EXTERNAL . " and timeApprovalRequested<0),0,1)
+            where reviewType>0 and reviewType!=" . REVIEW_SECONDARY);
     }
 
     private function fix_whitespace() {
@@ -283,6 +301,10 @@ class CheckInvariants_Batch {
         }
     }
 
+    static function list_fixes() {
+        return prefix_word_wrap("", "PROBLEMs for `--fix` include summary, autosearch, inactive, document-match, whitespace, reviews, roles, and cdbroles.", 0);
+    }
+
     /** @return CheckInvariants_Batch */
     static function make_args($argv) {
         $arg = (new Getopt)->long(
@@ -294,13 +316,14 @@ class CheckInvariants_Batch {
             "list",
             "fix-autosearch ! Repair any incorrect autosearch tags",
             "fix-inactive ! Repair any inappropriately inactive documents",
-            "fix[] =PROBLEM Repair PROBLEM [all, autosearch, inactive, setting, document-match, whitespace, cdbroles]",
+            "fix[] =PROBLEM Repair PROBLEM",
             "color",
             "no-color !",
             "pad-prefix !"
         )->helpopt("help")
          ->description("Check invariants in a HotCRP database.
 Usage: php batch/checkinvariants.php [-n CONFID] [--fix=WHAT] [INVARIANT...]\n")
+         ->helpcallback("CheckInvariants_Batch::list_fixes")
          ->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);

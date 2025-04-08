@@ -3018,7 +3018,7 @@ class Conf {
      * @return null|-1|0|1 */
     function compute_secondary_review_needs_submit($pid, $cid) {
         $secondary = REVIEW_SECONDARY;
-        $row = Dbl::fetch_first_row($this->qe("select sum(contactId={$cid} and reviewType={$secondary} and reviewSubmitted is null), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid} and reviewSubmitted is not null), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid}) from PaperReview where paperId={$pid}"));
+        $row = Dbl::fetch_first_row($this->qe("select sum(reviewType={$secondary} and contactId={$cid} and reviewSubmitted is null), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid} and reviewSubmitted is not null), sum(reviewType>0 and reviewType<{$secondary} and requestedBy={$cid}) from PaperReview where paperId={$pid}"));
         if (!$row || !$row[0]) {
             return null;
         } else if ($row[1]) {
@@ -3030,7 +3030,7 @@ class Conf {
 
     /** @param int $pid
      * @param int $cid
-     * @param 2|1|0|-1 $direction */
+     * @param 2|1|0|-1|-2 $direction */
     function update_review_delegation($pid, $cid, $direction) {
         if ($direction === 2) {
             $this->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=?", $pid, $cid);
@@ -3038,9 +3038,12 @@ class Conf {
             $this->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewNeedsSubmit=1", $pid, $cid);
         } else {
             $rns = $this->compute_secondary_review_needs_submit($pid, $cid);
-            if ($rns !== null && ($direction === 0 || $rns !== 0)) {
-                $this->qe("update PaperReview set reviewNeedsSubmit=if(reviewSubmitted,0,?) where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=?", $rns, $pid, $cid);
+            if ($rns === null
+                || ($direction === -1 && $rns === 0)
+                || ($direction === -2 && $rns === 1)) {
+                return;
             }
+            $this->qe("update PaperReview set reviewNeedsSubmit=if(reviewSubmitted,0,?) where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=?", $rns, $pid, $cid);
         }
     }
 

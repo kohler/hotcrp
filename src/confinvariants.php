@@ -237,6 +237,27 @@ class ConfInvariants {
         return $this;
     }
 
+    /** @param 1|3 $rtype
+     * @return string */
+    static function reviewNeedsSubmit_query($rtype) {
+        if ($rtype === REVIEW_SECONDARY) {
+            return "select r.paperId, r.reviewId, r.contactId, r.reviewNeedsSubmit
+                from PaperReview r
+                left join (select paperId, requestedBy, count(reviewId) ct, count(reviewSubmitted) cs
+                       from PaperReview
+                       where reviewType>0 and reviewType<" . REVIEW_SECONDARY . "
+                       group by paperId, requestedBy) q
+                    on (q.paperId=r.paperId and q.requestedBy=r.contactId)
+                where r.reviewType=" . REVIEW_SECONDARY . "
+                and reviewSubmitted is null
+                and if(coalesce(q.ct,0)=0,1,if(q.cs=0,-1,0))!=r.reviewNeedsSubmit";
+        }
+        return "select r.paperId, r.reviewId, r.contactId, r.reviewNeedsSubmit
+            from PaperReview r
+            where reviewType>0 and reviewType!=" . REVIEW_SECONDARY . "
+            and if(reviewSubmitted or (reviewType=" . REVIEW_EXTERNAL . " and timeApprovalRequested<0),0,1)!=r.reviewNeedsSubmit";
+    }
+
     /** @return $this */
     function check_reviews() {
         // reviewType is defined correctly
@@ -266,25 +287,15 @@ class ConfInvariants {
         }
 
         // reviewNeedsSubmit is defined correctly for secondary
-        $any = $this->invariantq("select r.paperId, r.reviewId, r.reviewNeedsSubmit from PaperReview r
-            left join (select paperId, requestedBy, count(reviewId) ct, count(reviewSubmitted) cs
-                       from PaperReview where reviewType>0 and reviewType<" . REVIEW_SECONDARY . "
-                       group by paperId, requestedBy) q
-                on (q.paperId=r.paperId and q.requestedBy=r.contactId)
-            where r.reviewType=" . REVIEW_SECONDARY . " and reviewSubmitted is null
-            and if(coalesce(q.ct,0)=0,1,if(q.cs=0,-1,0))!=r.reviewNeedsSubmit
-            limit 1");
+        $any = $this->invariantq(self::reviewNeedsSubmit_query(REVIEW_SECONDARY) . " limit 1");
         if ($any) {
-            $this->invariant_error("reviewNeedsSubmit", "bad reviewNeedsSubmit {2} for secondary review #{0}/{1}");
+            $this->invariant_error("reviewNeedsSubmit", "bad reviewNeedsSubmit {3} for secondary review #{0}/{1}");
         }
 
         // reviewNeedsSubmit is defined correctly for others
-        $any = $this->invariantq("select r.paperId, r.reviewId, r.reviewNeedsSubmit from PaperReview r
-            where reviewType!=" . REVIEW_SECONDARY . "
-            and reviewNeedsSubmit!=if(reviewSubmitted or (reviewType=" . REVIEW_EXTERNAL . " and timeApprovalRequested<0),0,1)
-            limit 1");
+        $any = $this->invariantq(self::reviewNeedsSubmit_query(REVIEW_EXTERNAL) . " limit 1");
         if ($any) {
-            $this->invariant_error("reviewNeedsSubmit", "bad reviewNeedsSubmit {2} for non-secondary review #{0}/{1}");
+            $this->invariant_error("reviewNeedsSubmit", "bad reviewNeedsSubmit {3} for non-secondary review #{0}/{1}");
         }
 
         // submitted and ordinaled reviews are displayed
