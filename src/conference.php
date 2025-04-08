@@ -3033,13 +3033,13 @@ class Conf {
      * @param 2|1|0|-1 $direction */
     function update_review_delegation($pid, $cid, $direction) {
         if ($direction === 2) {
-            $this->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewSubmitted is null", $pid, $cid);
+            $this->qe("update PaperReview set reviewNeedsSubmit=0 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=?", $pid, $cid);
         } else if ($direction === 1) {
-            $this->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewSubmitted is null and reviewNeedsSubmit=1", $pid, $cid);
+            $this->qe("update PaperReview set reviewNeedsSubmit=-1 where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=? and reviewNeedsSubmit=1", $pid, $cid);
         } else {
             $rns = $this->compute_secondary_review_needs_submit($pid, $cid);
             if ($rns !== null && ($direction === 0 || $rns !== 0)) {
-                $this->qe("update PaperReview set reviewNeedsSubmit=? where paperId=? and contactId=? and reviewSubmitted is null", $rns, $pid, $cid);
+                $this->qe("update PaperReview set reviewNeedsSubmit=if(reviewSubmitted,0,?) where paperId=? and reviewType=" . REVIEW_SECONDARY . " and contactId=?", $rns, $pid, $cid);
             }
         }
     }
