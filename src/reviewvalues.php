@@ -693,8 +693,8 @@ class ReviewValues extends MessageSet {
     private function _compute_new_status($user, $prow, $rrow, $view_score,
                                          $allow_new_submit, $approvable) {
         $oldstatus = $rrow->reviewStatus;
-        $minstatus = ReviewInfo::RS_EMPTY;
-        if ($oldstatus >= ReviewInfo::RS_DELIVERED
+        $olddelivered = $oldstatus >= ReviewInfo::RS_DELIVERED;
+        if ($olddelivered
             && (!$this->can_unsubmit
                 || !$user->can_administer($prow))) {
             $minstatus = $oldstatus;
@@ -704,22 +704,26 @@ class ReviewValues extends MessageSet {
         } else if ($user->is_my_review($rrow)
                    || $oldstatus >= ReviewInfo::RS_ACKNOWLEDGED) { // XXX decline via this API?
             $minstatus = ReviewInfo::RS_ACKNOWLEDGED;
+        } else {
+            $minstatus = ReviewInfo::RS_EMPTY;
         }
-        $ready = $this->req["ready"] ?? $oldstatus >= ReviewInfo::RS_DELIVERED;
-        if (!$ready) {
+
+        if (!($this->req["ready"] ?? $olddelivered)
+            || (!$allow_new_submit && !$olddelivered)) {
             return $minstatus;
         }
 
-        $maxstatus = ReviewInfo::RS_COMPLETED;
-        if (!$allow_new_submit && $oldstatus < ReviewInfo::RS_DELIVERED) {
-            $maxstatus = ReviewInfo::RS_DRAFTED;
-        } else if ($rrow->subject_to_approval()) {
+        if ($rrow->subject_to_approval()) {
             $approval = $approvable ? $this->req["approval"] ?? null : null;
-            if ($approval === "approved") {
+            if ($approval === "submitted") {
+                $maxstatus = ReviewInfo::RS_COMPLETED;
+            } else if ($approval === "approved") {
                 $maxstatus = ReviewInfo::RS_APPROVED;
-            } else if ($approval !== "submitted") {
+            } else {
                 $maxstatus = ReviewInfo::RS_DELIVERED;
             }
+        } else {
+            $maxstatus = ReviewInfo::RS_COMPLETED;
         }
         return max($maxstatus, $minstatus);
     }
@@ -904,10 +908,11 @@ class ReviewValues extends MessageSet {
 
         // new status #2
         $newstatus2 = $this->_compute_new_status($user, $prow, $rrow, $view_score, $allow_new_submit, $approvable);
-        assert($newstatus === $newstatus2);
         if ($newstatus !== $newstatus2) {
             error_log("{$this->conf->dbname}: #{$prow->paperId}/{$rrow->reviewId}: old status computation {$newstatus} ≠ new status computation {$newstatus2}");
+            error_log("{$this->conf->dbname}: " . json_encode(["view_score" => $view_score, "allow_new_submit" => $allow_new_submit, "approvable" => $approvable, "old_status" => $rrow->reviewStatus, "mtime" => $rrow->reviewModified, "ready" => $this->req["ready"] ?? null]));
         }
+        assert($newstatus === $newstatus2);
 
         // get the current time
         $now = max(time(), $rrow->reviewModified + 1);
