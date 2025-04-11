@@ -207,7 +207,11 @@ class ManageEmail_Page {
         echo '<div class="form-section">',
             '<h3>Unlink accounts</h3>';
         if ($this->user->primaryContactId > 0) {
-            $pri = $this->user->similar_user_by_id($this->user->primaryContactId);
+            if ($this->user->is_cdb_user()) {
+                $pri = $this->conf->cdb_user_by_id($this->user->primaryContactId);
+            } else {
+                $pri = $this->conf->user_by_id($this->user->primaryContactId);
+            }
             echo '<p>This account, <strong class="sb">', htmlspecialchars($this->user->email),
                 '</strong>, is currently linked to primary account <strong class="sb">',
                 htmlspecialchars($pri->email), '</strong>. Use this option to unlink it.</p>';
