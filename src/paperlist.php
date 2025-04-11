@@ -621,6 +621,10 @@ class PaperList {
         $origin = $origin ?? self::VIEWORIGIN_MAX;
         assert($origin >= self::VIEWORIGIN_REPORT && $origin <= self::VIEWORIGIN_MAX);
         assert(is_bool($v));
+        if (is_int($k)) {
+            error_log("{$k} is an int: " . debug_string_backtrace());
+            $k = (string) $k;
+        }
 
         if ($k !== "" && $k[0] === "\"" && $k[strlen($k) - 1] === "\"") {
             $k = substr($k, 1, -1);
