@@ -817,7 +817,7 @@ class PaperList {
             if (($vf & 0xF) >= self::VIEWORIGIN_DEFAULT_DISPLAY
                 && ($vf & 0xF) <= self::VIEWORIGIN_SESSION
                 && ($vf & self::VIEW_SHOW) !== 0) {
-                $ignores[] = $name;
+                $ignores[] = (string) $name;
             }
         }
         foreach ($ignores as $name) {
