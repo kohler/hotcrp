@@ -456,11 +456,10 @@ class ConfInvariants {
         return $this;
     }
 
-    /** @return $this */
-    function check_users() {
-        // load paper authors
+    /** @return array<string,list<int>> */
+    static function author_lcemail_map(Conf $conf) {
         $authors = [];
-        $result = $this->conf->qe("select paperId, authorInformation from Paper");
+        $result = $conf->qe("select paperId, authorInformation from Paper");
         while (($row = $result->fetch_row())) {
             $pid = intval($row[0]);
             foreach (explode("\n", $row[1]) as $auline) {
@@ -473,6 +472,13 @@ class ConfInvariants {
             }
         }
         Dbl::free($result);
+        return $authors;
+    }
+
+    /** @return $this */
+    function check_users() {
+        // load paper authors
+        $authors = self::author_lcemail_map($this->conf);
 
         // load primary contact links
         $primap = [];
