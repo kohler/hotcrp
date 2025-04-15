@@ -594,10 +594,8 @@ class ConfInvariants {
         }
 
         // authors are all accounted for
-        if (false) { // XXX currently violated by email changes
-            foreach ($authors as $lemail => $pids) {
-                $this->invariant_error("author_contacts", "author {$lemail} of #{$pids[0]} lacking from database");
-            }
+        foreach ($authors as $lemail => $pids) {
+            $this->invariant_error("author_contacts", "author {$lemail} of #{$pids[0]} lacking from database");
         }
 
         return $this;
