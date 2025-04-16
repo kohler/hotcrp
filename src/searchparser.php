@@ -5,8 +5,6 @@
 class SearchParser {
     /** @var string */
     private $str;
-    /** @var bool */
-    private $utf8q;
     /** @var int */
     public $pos;
     /** @var int */
@@ -29,7 +27,6 @@ class SearchParser {
             $this->str = substr($str, 0, $this->len);
         }
 
-        $this->utf8q = strpos($str, chr(0xE2)) !== false && is_valid_utf8($str);
         $this->set_span_and_pos(0);
     }
 
@@ -51,17 +48,69 @@ class SearchParser {
         return $this;
     }
 
+    /** @param string $s
+     * @param int $pos
+     * @param int $len
+     * @return int */
+    static function space_len($s, $pos, $len) {
+        if ($pos === $len) {
+            return 0;
+        }
+        // * C whitespace: HT U+0009, NL U+000A, VT U+000B, FF U+000C,
+        //   CR U+000D, SP U+0020
+        // * Unicode space category: SP U+0020, NBSP U+00A0 (*C2 A0),
+        //   U+1680 (*E1 9A 80), U+2000-200A (*E2 80 80-E2 80 8A),
+        //   U+202F (*E2 80 AF), U+205F (*E2 81 9F), U+3000 (*E3 80 80),
+        //   U+2028 LINE SEPARATOR (*E2 80 A8),
+        //   U+2029 PARAGRAPH SEPARATOR (*E2 80 A9)
+        $ch = ord($s[$pos]);
+        if ($ch === 0x20
+            || ($ch >= 0x09 && $ch <= 0x0D)) {
+            return 1;
+        }
+        if ($ch < 0xC2) {
+            return 0;
+        }
+        if ($ch === 0xC2) {
+            if ($pos + 1 < $len
+                && ord($s[$pos + 1]) === 0xA0) {
+                return 2;
+            }
+        } else if ($ch === 0xE1) {
+            if ($pos + 2 < $len
+                && ord($s[$pos + 1]) === 0x9A
+                && ord($s[$pos + 2]) === 0x80) {
+                return 3;
+            }
+        } else if ($ch === 0xE2) {
+            if ($pos + 2 < $len) {
+                $ch1 = ord($s[$pos + 1]);
+                $ch2 = ord($s[$pos + 2]);
+                if (($ch1 === 0x80
+                     && (($ch2 >= 0x80 && $ch2 <= 0x8A)
+                         || $ch2 === 0xA8
+                         || $ch2 === 0xA9
+                         || $ch2 === 0xAF))
+                    || ($ch1 === 0x81
+                        && $ch2 === 0x9F)) {
+                    return 3;
+                }
+            }
+        } else if ($ch === 0xE3) {
+            if ($pos + 2 < $len
+                && ord($s[$pos + 1]) === 0x80
+                && ord($s[$pos + 2]) === 0x80) {
+                return 3;
+            }
+        }
+        return 0;
+    }
+
     /** @param int $len */
     private function set_span_and_pos($len) {
         $this->last_pos = $this->pos = min($this->pos + $len, $this->len);
-        if ($this->utf8q) {
-            if (preg_match('/\G\s+/u', $this->str, $m, 0, $this->pos)) {
-                $this->pos = min($this->pos + strlen($m[0]), $this->len);
-            }
-        } else {
-            while ($this->pos < $this->len && ctype_space($this->str[$this->pos])) {
-                ++$this->pos;
-            }
+        while (($sp = self::space_len($this->str, $this->pos, $this->len)) > 0) {
+            $this->pos += $sp;
         }
     }
 
@@ -71,9 +120,8 @@ class SearchParser {
             && $this->pos + strlen($m[0]) < $this->len) {
             $this->set_span_and_pos(strlen($m[0]) + 1);
             return $m[0];
-        } else {
-            return "";
         }
+        return "";
     }
 
     /** @param string $str */
@@ -82,19 +130,25 @@ class SearchParser {
         $this->set_span_and_pos(strlen($str));
     }
 
-    /** @return bool */
-    function skip_whitespace() {
+    /** @return void */
+    function skip_space() {
         $this->set_span_and_pos(0);
-        return $this->pos < $this->len;
     }
 
-    /** @param string $chars
-     * @return bool */
-    function skip_span($chars) {
-        while ($this->pos < $this->len && strpos($chars, $this->str[$this->pos]) !== false) {
-            ++$this->pos;
+    /** @param string $span
+     * @return void */
+    function skip_span($span) {
+        $this->last_pos = $this->pos;
+        $skipsp = strpos($span, " ") !== false;
+        while ($this->pos < $this->len) {
+            if ($skipsp && ($sp = self::space_len($this->str, $this->pos, $this->len)) > 0) {
+                $this->pos += $sp;
+            } else if (strpos($span, $this->str[$this->pos]) !== false) {
+                ++$this->pos;
+            } else {
+                break;
+            }
         }
-        return $this->pos < $this->len;
     }
 
     /** @param ?string $endchars
@@ -140,15 +194,15 @@ class SearchParser {
         $plast = "";
         $quote = 0;
         $startpos = $allow_empty ? -1 : $pos;
-        $endchars = $endchars ?? " \n\r\t\x0B\x0C";
         $len = strlen($str);
+        $endsp = $endchars === null || strpos($endchars, " ") !== false;
         while ($pos < $len) {
             $ch = $str[$pos];
             // stop when done
             if ($plast === ""
                 && !$quote
-                && $endchars !== ""
-                && strpos($endchars, $ch) !== false) {
+                && (($endsp && self::space_len($str, $pos, $len) > 0)
+                    || ($endchars !== null && strpos($endchars, $ch) !== false))) {
                 break;
             }
             // translate “” -> "
@@ -200,9 +254,13 @@ class SearchParser {
     static function split_balanced_parens($s) {
         $w = [];
         if ($s !== "") {
-            $splitter = new SearchParser($s);
-            while ($splitter->skip_whitespace()) {
-                $w[] = $splitter->shift_balanced_parens();
+            $sp = new SearchParser($s);
+            while (true) {
+                $sp->skip_space();
+                if ($sp->is_empty()) {
+                    break;
+                }
+                $w[] = $sp->shift_balanced_parens();
             }
         }
         return $w;

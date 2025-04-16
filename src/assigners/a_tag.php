@@ -256,19 +256,16 @@ class Tag_AssignmentParser extends UserlessAssignmentParser {
     }
     function set_req($req, AssignmentState $state) {
         $this->pieces = [];
-        $tag = $req["tag"] ?? "";
-        $pos = 0;
+        $sp = new SearchParser($req["tag"] ?? "");
         $ok = true;
         $any = false;
         while (true) {
-            $pos += strspn($tag, " \n\r\t\v\f,;", $pos);
-            if ($pos === strlen($tag)) {
+            $sp->skip_span(" ,;");
+            if ($sp->is_empty()) {
                 break;
             }
             $any = true;
-            $pos2 = SearchParser::span_balanced_parens($tag, $pos, " \n\r\t\v\f,;");
-            $ok = $this->add_piece(substr($tag, $pos, $pos2 - $pos), $req, $state) && $ok;
-            $pos = $pos2;
+            $ok = $this->add_piece($sp->shift_balanced_parens(" ,;"), $req, $state) && $ok;
         }
         if (!$any && $ok) {
             $state->error("<0>Tag required");
