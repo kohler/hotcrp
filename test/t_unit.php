@@ -832,6 +832,26 @@ class Unit_Tester {
         xassert_eqq($pe->op->subtype, "f");
     }
 
+    function test_span_balanced_parens_nbsp() {
+        xassert_eqq(SearchParser::span_balanced_parens("abc def"), 3);
+        xassert_eqq(SearchParser::span_balanced_parens("abc() def"), 5);
+        xassert_eqq(SearchParser::span_balanced_parens("abc()def ghi"), 8);
+        xassert_eqq(SearchParser::span_balanced_parens("abc(def g)hi"), 13);
+        xassert_eqq(SearchParser::span_balanced_parens("abc(def g)hi jk"), 13);
+        xassert_eqq(SearchParser::span_balanced_parens("abc(def g)h)i jk"), 12);
+        xassert_eqq(SearchParser::span_balanced_parens("abc(def [g)h)i jk"), 13);
+        xassert_eqq(SearchParser::span_balanced_parens("abc(def sajf"), 13);
+        xassert_eqq(SearchParser::span_balanced_parens("() def"), 2);
+        xassert_eqq(SearchParser::span_balanced_parens("()a def"), 3);
+
+        $m = SearchParser::split_balanced_parens(" a(b) )c");
+        xassert_array_eqq($m, ["a(b)", ")c"]);
+
+        $sp = new SearchParser("a(b(c(d(e) ) ) ) ", 1);
+        $x = $sp->shift_balanced_parens();
+        xassert_eqq($x, "(b(c(d(e) ) ) )");
+    }
+
     function test_unpack_comparison() {
         xassert_eqq(CountMatcher::unpack_comparison("x:2"), ["x", 2, 2.0]);
         xassert_eqq(CountMatcher::unpack_comparison("x:2."), ["x", 2, 2.0]);
