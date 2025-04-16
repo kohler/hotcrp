@@ -256,7 +256,7 @@ class SearchConfig_API {
         if (strpos($name, "~") === false && $user->privChair) {
             $ps->main_term()->visit(function (SearchTerm $qe, ...$args) use ($ps) {
                 if ($qe instanceof Tag_SearchTerm
-                    && ($single_tag = $qe->tsm->single_tag()) !== false
+                    && ($single_tag = $qe->tsm->single_tag())
                     && $ps->conf->tags()->is_chair($single_tag)) {
                     $ps->lwarning($qe, "<0>Some parts of this PC-visible search only work for chairs");
                 }

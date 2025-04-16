@@ -200,7 +200,11 @@ class Tag_SearchTerm extends SearchTerm {
         return null;
     }
     function debug_json() {
-        return ["type" => $this->type, "tag_regex" => $this->tsm->regex()];
+        if (($t = $this->tsm->single_tag())) {
+            return ["type" => $this->type, "tag" => $t];
+        } else {
+            return ["type" => $this->type, "tag_regex" => $this->tsm->regex()];
+        }
     }
     function about() {
         return self::ABOUT_PAPER;

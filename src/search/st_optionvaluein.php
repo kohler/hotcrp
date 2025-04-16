@@ -11,7 +11,11 @@ class OptionValueIn_SearchTerm extends Option_SearchTerm {
         $this->values = $values;
     }
     function debug_json() {
-        return [$this->type, $this->option->search_keyword(), $this->values];
+        return [
+            "type" => $this->type,
+            "option" => $this->option->search_keyword(),
+            "values" => $this->values
+        ];
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $st = parent::sqlexpr($sqi);

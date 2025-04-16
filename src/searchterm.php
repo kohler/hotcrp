@@ -1518,9 +1518,8 @@ class TextMatch_SearchTerm extends SearchTerm {
             return $this->trivial === false;
         } else if ($this->trivial !== null) {
             return $this->trivial;
-        } else {
-            return $row->field_match_pregexes($this->regex, $this->field);
         }
+        return $row->field_match_pregexes($this->regex, $this->field);
     }
     function script_expression(PaperInfo $row, $about) {
         if ($about !== self::ABOUT_PAPER) {
@@ -1533,6 +1532,12 @@ class TextMatch_SearchTerm extends SearchTerm {
     }
     function about() {
         return self::ABOUT_PAPER;
+    }
+    function debug_json() {
+        if ($this->trivial !== null) {
+            return ["type" => $this->type, "any" => $this->trivial];
+        }
+        return ["type" => $this->type, "match" => $this->regex->preg_utf8 ?? $this->regex->preg_raw];
     }
 }
 

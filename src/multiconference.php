@@ -231,9 +231,9 @@ class Multiconference {
     /** @return string */
     static private function nonexistence_error() {
         if (PHP_SAPI === "cli") {
-            return "Conference not specified. Use `-n CONFID` to specify a conference.";
+            return "Conference ID missing, `-n CONFID` required";
         } else {
-            return "Conference not specified.";
+            return "Conference not found";
         }
     }
 

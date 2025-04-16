@@ -158,9 +158,9 @@ class TagSearchMatcher {
     }
 
 
-    /** @return string|false */
+    /** @return ?string */
     function single_tag() {
-        return $this->_mtype === 2 ? $this->_tagpat[0] : false;
+        return $this->_mtype === 2 ? $this->_tagpat[0] : null;
     }
 
     /** @return list<string> */

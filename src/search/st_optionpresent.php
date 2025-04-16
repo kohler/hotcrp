@@ -7,7 +7,10 @@ class OptionPresent_SearchTerm extends Option_SearchTerm {
         parent::__construct($user, $o, "optionpresent");
     }
     function debug_json() {
-        return [$this->type, $this->option->search_keyword()];
+        return [
+            "type" => $this->type,
+            "option" => $this->option->search_keyword()
+        ];
     }
     function is_sqlexpr_precise() {
         return $this->option->always_visible()
