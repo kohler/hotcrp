@@ -2084,8 +2084,8 @@ class Formula implements JsonSerializable {
      * @return int */
     private static function skip_whitespace($t, $pos) {
         $len = strlen($t);
-        while ($pos < $len && ctype_space($t[$pos])) {
-            ++$pos;
+        while (($sp = SearchParser::space_len($t, $pos, $len)) > 0) {
+            $pos += $sp;
         }
         return $pos;
     }
