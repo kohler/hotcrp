@@ -18,6 +18,8 @@ class Search_Batch {
     public $header;
     /** @var bool */
     public $sitename;
+    /** @var bool */
+    public $debug;
 
     function __construct(Contact $user, $arg) {
         $t = $arg["t"] ?? "s";
@@ -29,6 +31,7 @@ class Search_Batch {
         $this->search = new PaperSearch($user, ["q" => join(" ", $arg["_"]), "t" => $t]);
         $this->fields = $arg["f"] ?? [];
         $this->sitename = isset($arg["N"]);
+        $this->debug = isset($arg["debug"]);
         if (isset($arg["no-header"])) {
             $this->header = false;
         } else if (isset($arg["header"]) || $this->sitename) {
@@ -47,6 +50,9 @@ class Search_Batch {
 
         if ($this->search->has_problem()) {
             fwrite(STDERR, $this->search->full_feedback_text());
+        }
+        if ($this->debug) {
+            fwrite(STDERR, json_encode($this->search->main_term()->debug_json(), JSON_PRETTY_PRINT) . "\n");
         }
         if (empty($body)) {
             return 0;
@@ -77,6 +83,7 @@ class Search_Batch {
             "N,sitename Include site name and class in output",
             "header Always include CSV header",
             "no-header Omit CSV header",
+            "debug",
             "help,h !"
         )->description("Output CSV of the papers matching HotCRP search QUERY.
 Usage: php batch/search.php [-n CONFID] [-t COLLECTION] [-f FIELD]+ QUERY...")
