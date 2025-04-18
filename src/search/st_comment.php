@@ -1,6 +1,6 @@
 <?php
 // search/st_comment.php -- HotCRP helper class for searching for papers
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Comment_SearchTerm extends SearchTerm {
     /** @var Contact */
@@ -113,6 +113,9 @@ class Comment_SearchTerm extends SearchTerm {
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_comment_signature_columns();
+        if (!$sqi->included()) {
+            return "true";
+        }
         $where = [];
         if ($this->type_mask) {
             $where[] = "(commentType&{$this->type_mask})={$this->type_value}";
@@ -135,9 +138,8 @@ class Comment_SearchTerm extends SearchTerm {
         }
         if (($t = $sqi->try_add_table("Comments_", ["left join", "(select paperId, count(commentId) count from PaperComment" . ($where ? " where " . join(" and ", $where) : "") . " group by paperId)"]))) {
             return "coalesce({$t}.count,0)" . $this->csm->conservative_nonnegative_comparison();
-        } else {
-            return "true";
         }
+        return "true";
     }
     function test(PaperInfo $row, $xinfo) {
         $textless = $this->type_mask === (CommentInfo::CT_DRAFT | CommentInfo::CT_RESPONSE);

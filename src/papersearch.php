@@ -1,6 +1,6 @@
 <?php
 // papersearch.php -- HotCRP class for searching for papers
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class SearchScope {
     /** @var int */
@@ -46,11 +46,15 @@ class SearchQueryInfo {
     /** @var array<string,mixed> */
     public $query_options = [];
     /** @var int */
-    public $depth = 0;
+    private $context = 0;
     private $_has_my_review = false;
     private $_has_review_signatures = false;
     /** @var list<ReviewField> */
     private $_review_scores;
+
+    const CTX_REQUIRED = 0;
+    const CTX_OPTIONAL = 1;
+    const CTX_ANY = 2;
 
     function __construct(PaperSearch $srch) {
         $this->srch = $srch;
@@ -59,6 +63,30 @@ class SearchQueryInfo {
         }
         $this->tables["Paper"] = [];
     }
+
+    /** @return 0|1|2 */
+    function context() {
+        return $this->context;
+    }
+
+    /** @return bool */
+    function required() {
+        return $this->context === self::CTX_REQUIRED;
+    }
+
+    /** @return bool */
+    function included() {
+        return $this->context <= self::CTX_OPTIONAL;
+    }
+
+    /** @param 0|1|2 $context
+     * @return 0|1|2 */
+    function set_context($context) {
+        $old_context = $this->context;
+        $this->context = max($this->context, $context);
+        return $old_context;
+    }
+
     /** @param string $table
      * @param list<string> $joiner
      * @param bool $required
@@ -79,23 +107,25 @@ class SearchQueryInfo {
         }
         return $table;
     }
+
     /** @param string $table
      * @param list<string> $joiner
      * @return string */
     function add_table($table, $joiner = null) {
         return $this->try_add_table($table, $joiner, true);
     }
+
     function add_column($name, $expr) {
         assert(!isset($this->columns[$name]) || $this->columns[$name] === $expr);
         $this->columns[$name] = $expr;
     }
+
     /** @return ?string */
     function conflict_table(Contact $user) {
         if ($user->contactXid > 0) {
             return $this->add_table("PaperConflict{$user->contactXid}", ["left join", "PaperConflict", "{}.contactId={$user->contactXid}"]);
-        } else {
-            return null;
         }
+        return null;
     }
     function add_options_columns() {
         $this->columns["optionIds"] = "coalesce((select group_concat(PaperOption.optionId, '#', value) from PaperOption force index (primary) where paperId=Paper.paperId), '')";

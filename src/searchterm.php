@@ -1,6 +1,6 @@
 <?php
 // searchterm.php -- HotCRP paper search terms
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 abstract class SearchTerm {
     /** @var string
@@ -569,20 +569,16 @@ class Not_SearchTerm extends Op_SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        ++$sqi->depth;
+        $ctx = $sqi->set_context(SearchQueryInfo::CTX_ANY);
         $ff = $this->child[0]->sqlexpr($sqi);
-        --$sqi->depth;
-        if ($this->child[0]->is_sqlexpr_precise()) {
-            if ($ff === "false") {
-                return "true";
-            } else if ($ff === "true") {
-                return "false";
-            } else {
-                return "not coalesce({$ff},0)";
-            }
-        } else {
+        $sqi->set_context($ctx);
+        if (!$this->child[0]->is_sqlexpr_precise()
+            || $ff === "false") {
             return "true";
+        } else if ($ff === "true") {
+            return "false";
         }
+        return "not coalesce({$ff},0)";
     }
     function test(PaperInfo $row, $xinfo) {
         return !$this->child[0]->test($row, $xinfo);
@@ -711,9 +707,11 @@ class Or_SearchTerm extends Op_SearchTerm {
     }
 
     /** @param list<SearchTerm> $child
+     * @param 1|2 $context
      * @return list<string> */
-    static function or_sqlexprs($child, SearchQueryInfo $sqi) {
-        ++$sqi->depth;
+    static function or_sqlexprs($child, SearchQueryInfo $sqi,
+                                $context = SearchQueryInfo::CTX_OPTIONAL) {
+        $ctx = $sqi->set_context($context);
         $ff = $tsf = [];
         foreach ($child as $subt) {
             if ($subt instanceof Tag_SearchTerm) {
@@ -725,7 +723,7 @@ class Or_SearchTerm extends Op_SearchTerm {
         if ($tsf) {
             $ff[] = Tag_SearchTerm::combine_sqlexpr($tsf);
         }
-        --$sqi->depth;
+        $sqi->set_context($ctx);
         return $ff;
     }
 
@@ -770,14 +768,16 @@ class Xor_SearchTerm extends Op_SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        $ff = Or_SearchTerm::or_sqlexprs($this->child, $sqi);
+        $precise = $this->is_sqlexpr_precise();
+        $ctx = $precise ? SearchQueryInfo::CTX_OPTIONAL : SearchQueryInfo::CTX_ANY;
+        $ff = Or_SearchTerm::or_sqlexprs($this->child, $sqi, $ctx);
+        $sqi->set_context($ctx);
         if (empty($ff)) {
             return "false";
-        } else if ($this->is_sqlexpr_precise()) {
+        } else if ($precise) {
             return "(coalesce(" . join(",0) xor coalesce(", $ff) . ",0))";
-        } else {
-            return self::orjoin_sqlexpr($ff, "false");
         }
+        return self::orjoin_sqlexpr($ff, "false");
     }
     function test(PaperInfo $row, $xinfo) {
         $x = false;
@@ -907,12 +907,12 @@ class Then_SearchTerm extends Op_SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        ++$sqi->depth;
+        $ctx = $sqi->set_context(SearchQueryInfo::CTX_OPTIONAL);
         $ff = [];
         foreach ($this->child as $subt) {
             $ff[] = $subt->sqlexpr($sqi);
         }
-        --$sqi->depth;
+        $sqi->set_context($ctx);
         return self::orjoin_sqlexpr(array_slice($ff, 0, $this->nthen), "true");
     }
     function test(PaperInfo $row, $xinfo) {
@@ -1268,7 +1268,7 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     function sqlexpr(SearchQueryInfo $sqi) {
-        assert($sqi->depth > 0 || $sqi->srch->user === $this->user);
+        assert(!$sqi->required() || $sqi->srch->user === $this->user);
 
         $ff = [];
         if (($this->lflag & self::LFLAG_SUBMITTED) !== 0) {
@@ -1280,7 +1280,7 @@ class Limit_SearchTerm extends SearchTerm {
         $act_reviewer_sql = "error";
         if (in_array($this->limit, ["ar", "r", "rout"], true)) {
             $sqi->add_reviewer_columns();
-            if ($sqi->depth === 0) {
+            if ($sqi->required()) {
                 $act_reviewer_sql = $this->user->act_reviewer_sql("MyReviews");
                 if ($act_reviewer_sql !== "false") {
                     $sqi->add_table("MyReviews", [$this->limit === "ar" ? "left join" : "join", "PaperReview", $act_reviewer_sql]);
@@ -1304,7 +1304,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "ar":
             if ($act_reviewer_sql === "false") {
                 $r = "false";
-            } else if ($sqi->depth === 0) {
+            } else if ($sqi->required()) {
                 $r = "MyReviews.reviewType is not null";
             } else {
                 $r = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql})";
@@ -1314,7 +1314,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "r":
             if ($act_reviewer_sql === "false") {
                 $ff[] = "false";
-            } else if ($sqi->depth === 0) {
+            } else if ($sqi->required()) {
                 // the `join` with MyReviews suffices
             } else {
                 $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql})";
@@ -1323,7 +1323,7 @@ class Limit_SearchTerm extends SearchTerm {
         case "rout":
             if ($act_reviewer_sql === "false") {
                 $ff[] = "false";
-            } else if ($sqi->depth === 0) {
+            } else if ($sqi->required()) {
                 $ff[] = "MyReviews.reviewNeedsSubmit!=0";
             } else {
                 $ff[] = "exists (select * from PaperReview force index (primary) where paperId=Paper.paperId and {$act_reviewer_sql} and reviewNeedsSubmit!=0)";
