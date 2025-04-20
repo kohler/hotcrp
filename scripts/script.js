@@ -1500,7 +1500,117 @@ function hoturl_clean(x, page_component, allow_fail) {
     }
 }
 
+function hoturl_clean_param(x, k, value_match, allow_fail) {
+    let v;
+    if (x.last === false) {
+        /* do nothing */
+    } else if ((v = x.p.get(k)) && value_match.test(v)) {
+        x.last = v;
+        x.t += "/" + urlencode(v).replace(/%2F/g, "/");
+        x.p.delete(k);
+    } else if (!allow_fail) {
+        x.last = false;
+    }
+}
+
+function hoturl2(page, options) {
+    let anchor = "", want_forceShow = false;
+    if (siteinfo.site_relative == null || siteinfo.suffix == null) {
+        siteinfo.site_relative = siteinfo.suffix = "";
+        log_jserror("missing siteinfo");
+    }
+
+    let params, pos, v, m;
+    if (options == null && (pos = page.indexOf("?")) > 0) {
+        options = page.substring(pos);
+        page = page.substring(0, pos);
+    }
+    if (typeof options === "string") {
+        if ((pos = options.indexOf("#")) >= 0) {
+            anchor = options.substring(pos);
+            params = new URLSearchParams(options.substring(0, pos));
+        } else {
+            params = new URLSearchParams(options);
+        }
+    } else if (!(options instanceof URLSearchParams)) {
+        params = new URLSearchParams;
+        for (const k in options) {
+            if ((v = options[k]) != null) {
+                k === "#" ? (anchor = v) : params.set(k, v);
+            }
+        }
+    }
+
+    if (page.startsWith("=")) {
+        params.set("post", siteinfo.postvalue);
+        page = page.substring(1);
+    }
+    if (page.substring(0, 3) === "api" && !params.has("base")) {
+        params.set("base", siteinfo.site_relative);
+    }
+
+    const x = {t: page, p: params};
+    if (page === "paper") {
+        hoturl_clean_param(x, "p", /^\d+$/);
+        hoturl_clean_param(x, "m", /^\w+$/);
+    } else if (page === "review") {
+        hoturl_clean_param(x, "p", /^\d+$/);
+        if (x.last !== false
+            && (v = params.get("r")) !== null
+            && (m = v.match(/^(\d+)([A-Z]+|r\d+|rnew)$/))
+            && x.t.endsWith("/" + m[1])) {
+            x.t += m[2];
+            params.delete("r");
+        }
+    } else if (page === "help") {
+        hoturl_clean_param(x, "t", /^\w+$/);
+    } else if (page.substring(0, 3) === "api") {
+        if (page.length > 3) {
+            x.t = "api";
+            params.set("fn", page.substring(4));
+        }
+        hoturl_clean_param(x, "p", /^(?:\d+|new)$/, true);
+        hoturl_clean_param(x, "fn", /^\w+$/);
+        want_forceShow = true;
+    } else if (page === "settings") {
+        hoturl_clean_param(x, "group", /^\w+$/);
+    } else if (page === "doc") {
+        hoturl_clean_param(x, "file", /^[\w\/]+$/);
+    }
+
+    if (siteinfo.suffix !== "") {
+        if ((i = x.t.indexOf("/")) <= 0) {
+            i = x.t.length;
+        }
+        k = x.t.substring(0, i);
+        if (!k.endsWith(siteinfo.suffix)) {
+            k += siteinfo.suffix;
+        }
+        x.t = k + x.t.substring(i);
+    }
+
+    if (siteinfo.want_override_conflict
+        && want_forceShow
+        && !params.has("forceShow")) {
+        params.set("forceShow", "1");
+    }
+    if (siteinfo.defaults) {
+        for (const k in siteinfo.defaults) {
+            if ((v = siteinfo.defaults[k]) != null
+                && !params.has(k)) {
+                params.set(k, v);
+            }
+        }
+    }
+    if (params.size > 0) {
+        x.t += "?" + params.toString();
+    }
+    return siteinfo.site_relative + x.t + anchor;
+
+}
+
 function hoturl(page, options) {
+    const page1 = page, options1 = options;
     var i, k, m, v, x, xv, anchor = "", want_forceShow;
     if (siteinfo.site_relative == null || siteinfo.suffix == null) {
         siteinfo.site_relative = siteinfo.suffix = "";
@@ -1520,6 +1630,14 @@ function hoturl(page, options) {
             anchor = m[2];
         }
         xv = options.split(/&/);
+    } else if (options instanceof URLSearchParams) {
+        xv = [];
+        for (kv of options.entries()) {
+            if (k === "#")
+                anchor = "#" + v;
+            else
+                xv.push(encodeURIComponent(k).concat("=", urlencode(v)));
+        }
     } else {
         xv = [];
         for (k in options) {
@@ -1595,7 +1713,11 @@ function hoturl(page, options) {
     if (xv.length){
         x.t += "?" + xv.join("&");
     }
-    return siteinfo.site_relative + x.t + anchor;
+    let result = siteinfo.site_relative + x.t + anchor;
+    if (result !== hoturl2(page1, options1)) {
+        log_jserror("hoturl difference on " + JSON.stringify([page1, options1]));
+    }
+    return result;
 }
 
 function hoturl_html(page, options) {
