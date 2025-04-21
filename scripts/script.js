@@ -1526,7 +1526,7 @@ function hoturl2(page, options) {
         page = page.substring(0, pos);
     }
     if (typeof options === "string") {
-        log_jserror("string to hoturl2");
+        log_jserror("string to hoturl2"); // XXX backward compat
         if ((pos = options.indexOf("#")) >= 0) {
             params = new URLSearchParams(options.substring(0, pos));
             params.set("#", options.substring(pos + 1));
@@ -1573,10 +1573,11 @@ function hoturl2(page, options) {
     } else if (page === "settings") {
         hoturl_clean_param(x, "group", /^\w+$/);
     } else if (page === "doc") {
-        hoturl_clean_param(x, "file", /^[-\w\/.]+$/);
+        hoturl_clean_param(x, "file", /^[-\w/.]+$/);
     }
 
     if (siteinfo.suffix !== "") {
+        let i, k;
         if ((i = x.t.indexOf("/")) <= 0) {
             i = x.t.length;
         }
@@ -5408,7 +5409,6 @@ handle_ui.on("input.js-email-populate", function () {
 })();
 
 function render_mail_preview(e, mp, fields) {
-    var i, f, e1;
     e.replaceChildren();
     function make_field_div(label, text) {
         var e1 = document.createElement("div"),
@@ -5421,10 +5421,11 @@ function render_mail_preview(e, mp, fields) {
         e1.append(e2, e3);
         return e1;
     }
-    for (i = 0; i !== fields.length; ++i) {
-        f = fields[i];
+    for (let i = 0; i !== fields.length; ++i) {
+        const f = fields[i];
         if (!mp[f])
             continue;
+        let e1;
         if (f === "recipients") {
             if (!mp.recipient_description)
                 continue;
@@ -12134,7 +12135,7 @@ handle_ui.on("js-signin", function (evt) {
     }
     $(form).find("button").prop("disabled", true);
     evt.preventDefault();
-    $.get(hoturl("api/session"), function (r) {
+    $.get(hoturl("api/session"), function () {
         if (!submitter) {
             form.submit();
             return;

@@ -290,7 +290,7 @@ procrastination_seq.label = function (dl) {
 };
 
 function max_procrastination_seq(ri, dl) {
-    const now = now_sec();
+    const now = (new Date).getTime() / 1000;
     let dlx;
     for (const d of dl) {
         if (dlx == null
