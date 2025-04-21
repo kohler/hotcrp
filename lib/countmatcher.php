@@ -98,18 +98,16 @@ class CountMatcher {
         } else if (($this->op === 1 && $this->value > 0.0 && $this->value <= 1.0)
                    || ($this->op === 3 && $this->value < 1.0)) {
             return "=0";
-        } else {
-            return $this->comparison();
         }
+        return $this->comparison();
     }
 
     /** @return string */
     function conservative_nonnegative_comparison() {
         if ($this->op & 1) {
             return ">=0";
-        } else {
-            return ($this->op & 2 ? ">=" : ">") . $this->value;
         }
+        return ($this->op & 2 ? ">=" : ">") . $this->value;
     }
 
     /** @param int|float $n
@@ -147,9 +145,8 @@ class CountMatcher {
     static function canonical_relation($str) {
         if (($x = self::$opmap[trim($str)])) {
             return self::$oparray[$x];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param int $relation
@@ -176,9 +173,8 @@ class CountMatcher {
     static function parse_comparison($s) {
         if (preg_match('/\A(|[=!<>]=?|≠|≤|≥)\s*([-+]?(?:\d+\.?\d*|\.\d+))\z/', $s, $m)) {
             return [self::$opmap[$m[1]], (float) $m[2]];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param int $relation
@@ -193,9 +189,8 @@ class CountMatcher {
     static function canonical_comparison($s) {
         if (($a = self::parse_comparison($s))) {
             return self::$oparray[$a[0]] . $a[1];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $s
@@ -204,9 +199,8 @@ class CountMatcher {
         if (preg_match('/(?::\s*|(?=[=!<>\xE2]))(|[=!<>]=?|≤|≥|≠)\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*\z/', $s, $m)) {
             $p = rtrim(substr($s, 0, -strlen($m[0])));
             return [$p, self::$opmap[$m[1]], (float) $m[2]];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $s
@@ -215,9 +209,8 @@ class CountMatcher {
         if (preg_match('/(?::\s*|(?=[=!<>\xE2]))(|[=!<>]=?|≤|≥|≠)\s*([-+]?\d+)\s*\z/', $s, $m)) {
             $p = rtrim(substr($s, 0, -strlen($m[0])));
             return [$p, self::$opmap[$m[1]], (int) $m[2]];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $s
@@ -280,23 +273,19 @@ class CountMatcher {
         } else if (($compar === 6 && $y <= 0.0)
                    || ($compar === 4 && $y < 0.0)) {
             return true;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string|list<int|string> $compar_y
      * @return string */
     static function sqlexpr_using($compar_y) {
-        if (is_array($compar_y)) {
-            if (empty($compar_y)) {
-                return "=NULL";
-            } else {
-                return " in (" . join(",", $compar_y) . ")";
-            }
-        } else {
+        if (!is_array($compar_y)) {
             return $compar_y;
+        } else if (empty($compar_y)) {
+            return "=NULL";
         }
+        return " in (" . join(",", $compar_y) . ")";
     }
 
     /** @param int|float $x
@@ -318,9 +307,8 @@ class CountMatcher {
     static function filter_using($x, $compar_y) {
         if (is_array($compar_y)) {
             return array_intersect($x, $compar_y);
-        } else {
-            $cm = new CountMatcher($compar_y);
-            return $cm->filter($x);
         }
+        $cm = new CountMatcher($compar_y);
+        return $cm->filter($x);
     }
 }
