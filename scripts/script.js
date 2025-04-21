@@ -1536,7 +1536,7 @@ function hoturl2(page, options) {
         params = new URLSearchParams;
         for (const k in options) {
             if ((v = options[k]) != null) {
-                k === "#" ? (anchor = v) : params.set(k, v);
+                k === "#" ? (anchor = "#" + v) : params.set(k, v);
             }
         }
     }
@@ -9726,16 +9726,7 @@ function facet_tablelist(tfacet) {
 }
 
 function tablelist_search(tbl) {
-    var x = tbl.getAttribute("data-search-params");
-    if (x === "" && tbl === mainlist()) { /* XXX backward compat */
-        x = hoturl_search(window.location.href);
-        if (hoturl_search(x, "q") === null)
-            x = hoturl_search(x, "q", "");
-        if (hoturl_search(x, "sort") === null)
-            x = hoturl_search(x, "sort", "none");
-        tbl.setAttribute("data-search-params", x);
-    }
-    return x;
+    return tbl.getAttribute("data-search-params");
 }
 
 
