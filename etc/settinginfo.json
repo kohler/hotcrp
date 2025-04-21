@@ -4,43 +4,48 @@
         "title": "Conference abbreviation",
         "type": "simplestring", "size": 20, "autogrow": true,
         "parser_class": "Basics_SettingParser",
-        "tags": ["id"]
+        "tags": "id"
     },
     {
         "name": "conference_name", "storage": "opt.longName",
         "title": "Conference name", "placeholder": "(same as abbreviation)",
         "type": "simplestring", "size": 70,
         "parser_class": "Basics_SettingParser",
-        "tags": ["id"]
+        "tags": "id"
     },
 
     {
         "name": "comment_allow_always", "storage": "cmt_always",
         "title": "Allow comments even if reviewing is closed",
-        "type": "checkbox"
+        "type": "checkbox",
+        "tags": "comment"
     },
     {
         "name": "comment_author", "storage": "cmt_author",
         "title": "Allow authors to respond to reviewer comments",
         "type": "checkbox", "default_value": 0,
-        "parser_class": "Comment_SettingParser"
+        "parser_class": "Comment_SettingParser",
+        "tags": "comment"
     },
     {
         "name": "comment_author_initiate", "storage": "none",
         "title": "Allow authors to initiate comment exchanges",
         "type": "checkbox",
-        "parser_class": "Comment_SettingParser"
+        "parser_class": "Comment_SettingParser",
+        "tags": "comment"
     },
     {
         "name": "comment_visibility_reviewer", "storage": "cmt_revid",
         "title": "Comment visibility to reviewers",
         "type": "radio", "values": [0, 1], "default_value": 0,
-        "json_values": ["if_reviewers_visible", "yes"]
+        "json_values": ["if_reviewers_visible", "yes"],
+        "tags": "comment visibility"
     },
     {
         "name": "comment_visibility_anonymous", "storage": "cmt_revid",
         "title": "Anonymous PC discussion",
-        "type": "checkbox", "initial_value": 1, "json": "in"
+        "type": "checkbox", "initial_value": 1, "json": "in",
+        "tags": "comment visibility"
     },
 
     {
@@ -55,7 +60,8 @@
     {
         "name": "decision", "hashid": "decision-types",
         "type": "oblist", "parser_class": "Decision_SettingParser",
-        "title": "Decision types"
+        "title": "Decision types",
+        "tags": "decision"
     },
     {
         "name_pattern": "decision/$",
@@ -82,86 +88,98 @@
         "name": "final_done",
         "title": "Final version upload hard deadline",
         "type": "date",
-        "tags": ["time"]
+        "tags": "final deadline"
     },
     {
         "name": "final_grace",
         "title": "Final version upload grace period",
-        "type": "grace"
+        "type": "grace",
+        "tags": "final"
     },
     {
         "name": "final_open",
         "title": "Collect final versions setting",
         "type": "checkbox",
-        "tags": ["time"]
+        "tags": "final deadline"
     },
     {
         "name": "final_soft",
         "title": "Final version upload deadline",
         "type": "date",
-        "tags": ["time"]
+        "tags": "final deadline"
     },
     {
         "name": "mailbody_requestreview",
         "title": "Mail template for external review requests",
-        "type": "string", "subtype": "mailbody"
+        "type": "string", "subtype": "mailbody",
+        "tags": "review"
     },
     {
         "name": "review_terms", "storage": "msg.clickthrough_review",
         "title": "Clickthrough review terms",
         "type": "htmlstring", "size": 10,
-        "parser_class": "Messages_SettingParser"
+        "parser_class": "Messages_SettingParser",
+        "tags": "review"
     },
     {
         "name": "submission_terms", "storage": "msg.clickthrough_submit",
         "title": "Clickthrough submission terms",
         "type": "htmlstring", "size": 10,
-        "parser_class": "Messages_SettingParser"
+        "parser_class": "Messages_SettingParser",
+        "tags": "submission"
     },
     {
         "name": "conflict_description", "storage": "msg.conflictdef",
         "title": "Definition of conflict of interest",
-        "type": "htmlstring", "size": 5
+        "type": "htmlstring", "size": 5,
+        "tags": "conflict"
     },
     {
         "name": "conflict_visibility", "storage": "sub_pcconfvis",
         "title": "PC conflict visibility",
         "type": "radio",
         "values": [0, 1, 2], "default_value": 0,
-        "json_values": ["if_authors_visible", "no", "yes"]
+        "json_values": ["if_authors_visible", "no", "yes"],
+        "tags": "conflict visibility"
     },
     {
         "name": "final_edit_message", "storage": "msg.finalsubmit",
         "title": "Final version edit message",
-        "type": "htmlstring"
+        "type": "htmlstring",
+        "tags": "final"
     },
     {
         "name": "home_message", "storage": "msg.home",
         "title": "Home page message",
-        "type": "htmlstring"
+        "type": "htmlstring",
+        "tags": "home"
     },
     {
         "name": "preference_instructions", "storage": "msg.revprefdescription",
         "title": "Review preference instructions",
         "type": "htmlstring", "size": 20, "default_value": "auto",
-        "parser_class": "Messages_SettingParser"
+        "parser_class": "Messages_SettingParser",
+        "tags": "revpref"
     },
     {
         "name": "preference_min", "storage": "pref_min",
         "title": "Minimum allowed review preference",
         "type": "int", "default_value": -1000000,
-        "parser_class": "Preference_SettingParser"
+        "parser_class": "Preference_SettingParser",
+        "tags": "revpref"
     },
     {
         "name": "preference_max", "storage": "pref_max",
         "title": "Maximum allowed review preference",
         "type": "int", "default_value": 1000000,
-        "parser_class": "Preference_SettingParser"
+        "parser_class": "Preference_SettingParser",
+        "tags": "revpref"
     },
     {
         "name": "submission_edit_message", "storage": "msg.submit",
         "title": "Submission edit message",
-        "type": "htmlstring", "size": 5
+        "type": "htmlstring", "size": 5,
+        "tags": "submission"
     },
     {
         "name": "next_optionid", "internal": true, "type": "nonnegint"
@@ -177,29 +195,34 @@
     {
         "name": "conference_url", "storage": "opt.conferenceSite",
         "title": "Conference URL",
-        "type": "url", "required": false, "size": 70, "placeholder": "N/A"
+        "type": "url", "required": false, "size": 70, "placeholder": "N/A",
+        "tags": "id"
     },
     {
         "name": "site_contact_email", "storage": "opt.contactEmail",
         "title": "Email of site contact",
         "type": "email", "required": false, "size": 40,
-        "parser_class": "SiteContact_SettingParser", "parse_order": 1
+        "parser_class": "SiteContact_SettingParser", "parse_order": 1,
+        "tags": "mail id"
     },
     {
         "name": "site_contact_name", "storage": "opt.contactName",
         "title": "Name of site contact",
         "type": "simplestring", "size": 50,
-        "parser_class": "SiteContact_SettingParser", "placeholder": "(none)"
+        "parser_class": "SiteContact_SettingParser", "placeholder": "(none)",
+        "tags": "mail id"
     },
     {
         "name": "email_default_cc", "storage": "opt.emailCc",
         "title": "Default Cc for mail tool",
-        "type": "emailheader", "size": 80, "placeholder": "(none)"
+        "type": "emailheader", "size": 80, "placeholder": "(none)",
+        "tags": "mail id"
     },
     {
         "name": "email_default_reply_to", "storage": "opt.emailReplyTo",
         "title": "Default Reply-To for mail tool",
-        "type": "emailheader", "size": 80, "placeholder": "(none)"
+        "type": "emailheader", "size": 80, "placeholder": "(none)",
+        "tags": "mail id"
     },
     {
         "name": "options", "storage": "dat.options", "internal": true,
@@ -217,7 +240,8 @@
         "name": "sf",
         "type": "oblist", "parser_class": "Options_SettingParser",
         "title": "Submission form",
-        "parse_order": 1
+        "parse_order": 1,
+        "tags": "submission sf"
     },
     {
         "name_pattern": "sf/$",
@@ -344,7 +368,8 @@
         "type": "radio",
         "values": [0, 2, 1, -1], "default_value": 0,
         "json_values": ["required", "optional", "none", "other"],
-        "json": "in"
+        "json": "in",
+        "tags": "submission sf"
     },
     {
         "name": "sf_pdf_submission", "storage": "ova.noPapers",
@@ -352,40 +377,47 @@
         "type": "radio",
         "values": [0, 2, 1, -1], "default_value": 0,
         "json_values": ["required", "optional", "none", "other"],
-        "json": "in"
+        "json": "in",
+        "tags": "submission sf"
     },
     {
         "name": "author_visibility", "storage": "sub_blind",
         "title": "Submission anonymity",
         "type": "radio",
         "values": [0, 1, 2, 3], "default_value": 2,
-        "json_values": ["open", "optional", "blind", "blind_until_review"]
+        "json_values": ["open", "optional", "blind", "blind_until_review"],
+        "tags": "submission visibility"
     },
     {
         "name": "accepted_author_visibility", "storage": "negval.seedec_hideau",
         "title": "Show accepted submissions’ author lists to reviewers",
-        "type": "checkbox"
+        "type": "checkbox",
+        "tags": "final visibility"
     },
     {
         "name": "sf_author_max", "storage": "ova.maxAuthors", "type": "nonnegint",
         "title": "Maximum authors per submission",
         "default_value": 0,
-        "json": "in"
+        "json": "in",
+        "tags": "submission sf"
     },
     {
         "name": "sf_pc_conflicts", "storage": "sub_pcconf",
         "title": "Collect PC conflicts",
-        "type": "checkbox", "initial_value": 1
+        "type": "checkbox", "initial_value": 1,
+        "tags": "submission sf conflict"
     },
     {
         "name": "sf_pc_conflict_types", "storage": "sub_pcconfsel",
         "title": "Collect PC conflict types",
-        "type": "checkbox"
+        "type": "checkbox",
+        "tags": "submission sf conflict"
     },
     {
         "name": "sf_collaborators", "storage": "sub_collab",
         "title": "Collect other conflicts and collaborators",
-        "type": "checkbox"
+        "type": "checkbox",
+        "tags": "submission sf conflict"
     },
 
 
@@ -395,7 +427,8 @@
     {
         "name": "submission",
         "type": "oblist", "parser_class": "Sround_SettingParser",
-        "title": "Submission classes and deadlines"
+        "title": "Submission classes and deadlines",
+        "tags": "submission"
     },
     {
         "name_pattern": "submission/$",
@@ -416,40 +449,47 @@
     {
         "name_pattern": "submission/$/open",
         "title": "/Enable submissions",
-        "type": "cdate"
+        "type": "cdate",
+        "tags": "submission deadline"
     },
     {
         "name_pattern": "submission/$/registration", "storage": "member.register",
         "title": "/Registration deadline",
-        "type": "date", "placeholder": "none"
+        "type": "date", "placeholder": "none",
+        "tags": "submission deadline"
     },
     {
         "name_pattern": "submission/$/done", "storage": "member.submit",
         "title": "/Submission deadline",
-        "type": "date", "placeholder": "none"
+        "type": "date", "placeholder": "none",
+        "tags": "submission deadline"
     },
 
 
     {
         "name": "draft_submission_early_visibility", "storage": "pc_seeall",
         "title": "PC can see incomplete submissions",
-        "type": "checkbox"
+        "type": "checkbox",
+        "tags": "submission"
     },
     {
         "name": "submitted_document_early_visibility", "storage": "pc_seeallpdf",
         "title": "PC can see all submitted PDFs",
-        "type": "checkbox"
+        "type": "checkbox",
+        "tags": "submission"
     },
     {
         "name": "pc_warn_bulk_download", "storage": "ova.pcWarnBulkDownload",
         "title": "Warn PC about downloading submissions in bulk",
-        "type": "checkbox"
+        "type": "checkbox",
+        "tags": "submission"
     },
 
     {
         "name": "response_active", "storage": "resp_active",
         "title": "Collect authors’ responses",
-        "type": "checkbox"
+        "type": "checkbox",
+        "tags": "response"
     },
 
     {
@@ -459,7 +499,8 @@
     {
         "name": "response",
         "type": "oblist", "parser_class": "Response_SettingParser",
-        "title": "Response rounds and deadlines"
+        "title": "Response rounds and deadlines",
+        "tags": "response"
     },
     {
         "name_pattern": "response/$",
@@ -485,12 +526,12 @@
     {
         "name_pattern": "response/$/open",
         "title": "/Start time", "type": "date",
-        "tags": ["time"]
+        "tags": "response deadline"
     },
     {
         "name_pattern": "response/$/done",
         "title": "/Hard deadline", "type": "date",
-        "tags": ["time"]
+        "tags": "response deadline"
     },
     {
         "name_pattern": "response/$/grace",
@@ -524,32 +565,36 @@
         "name": "review_open", "storage": "rev_open",
         "title": "Enable reviewing",
         "type": "cdate",
-        "tags": ["time"]
+        "tags": "review deadline"
     },
     {
         "name": "review_blind", "storage": "rev_blind",
         "title": "Review anonymity",
         "type": "radio",
         "values": [0, 1, 2], "default_value": 2,
-        "json_values": ["open", "optional", "blind"]
+        "json_values": ["open", "optional", "blind"],
+        "tags": "review visibility"
     },
     {
         "name": "review_self_assign", "storage": "pcrev_any",
         "title": "PC can review any paper",
-        "type": "checkbox", "initial_value": 1
+        "type": "checkbox", "initial_value": 1,
+        "tags": "review"
     },
     {
         "name": "review_visibility_author", "storage": "val.au_seerev",
         "title": "Authors can see reviews",
         "type": "radio",
         "values": [0, 2, 3], "default_value": 0,
-        "json_values": ["no", "yes", "condition"]
+        "json_values": ["no", "yes", "condition"],
+        "tags": "review visibility"
     },
     {
         "name": "review_visibility_author_condition", "storage": "dat.au_seerev",
         "title": "Review visibility condition",
         "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
-        "parser_class": "ReviewVisibility_SettingParser"
+        "parser_class": "ReviewVisibility_SettingParser",
+        "tags": "review visibility"
     },
     {
         "name": "review_visibility_author_tags", "storage": "tag_au_seerev",
@@ -563,52 +608,60 @@
         "type": "radio",
         "values": [-1, 0], "default_value": 0,
         "json_values": ["never", "after_review"],
-        "parser_class": "Review_SettingParser"
+        "parser_class": "Review_SettingParser",
+        "tags": "review visibility"
     },
     {
         "name": "review_visibility_lead", "storage": "negval.lead_noseerev",
         "title": "Lead gets special access to submitted reviews",
-        "type": "checkbox"
+        "type": "checkbox",
+        "tags": "review visibility"
     },
     {
         "name": "review_visibility_pc", "storage": "viewrev",
         "title": "PC can see all review contents",
         "type": "radio",
         "values": [-1, 0, 1, 3, 4], "default_value": 0,
-        "json_values": ["never", "after_review", "always", "assignment_not_incomplete", "all_assignments_complete"]
+        "json_values": ["never", "after_review", "always", "assignment_not_incomplete", "all_assignments_complete"],
+        "tags": "review visibility"
     },
     {
         "name": "review_identity_visibility_external", "storage": "viewrevid_ext",
         "title": "External reviewers can view reviewer identities",
         "type": "radio",
         "values": [-1, 0, 1], "default_value": 0,
-        "json_values": ["never", "after_review", "always"]
+        "json_values": ["never", "after_review", "always"],
+        "tags": "review visibility"
     },
     {
         "name": "review_identity_visibility_pc", "storage": "viewrevid",
         "title": "PC can see anonymous reviewers’ identities",
         "type": "radio",
         "values": [-1, 0, 5, 1], "default_value": 0, "initial_value": 1,
-        "json_values": ["never", "after_review", "if_assigned", "always"]
+        "json_values": ["never", "after_review", "if_assigned", "always"],
+        "tags": "review visibility"
     },
     {
         "name": "review_proposal", "storage": "extrev_chairreq",
         "title": "PC proposals for external reviewers",
         "type": "radio",
         "values": [-1, 0, 1, 2], "default_value": 0, "initial_value": 2,
-        "json_values": ["no", "yes", "approval_required", "approval_required_potential_conflict"]
+        "json_values": ["no", "yes", "approval_required", "approval_required_potential_conflict"],
+        "tags": "review"
     },
     {
         "name": "review_proposal_editable", "storage": "pcrev_editdelegate",
         "title": "PC can edit external reviews they requested",
         "type": "radio", "values": [0, 1, 2, 3], "default_value": 0,
-        "json_values": ["no", "yes", "approval_required", "approval_private"]
+        "json_values": ["no", "yes", "approval_required", "approval_private"],
+        "tags": "review"
     },
 
     {
         "name": "review", "hashid": "rounds",
         "type": "oblist", "parser_class": "Review_SettingParser",
-        "title": "Review rounds and deadlines"
+        "title": "Review rounds and deadlines",
+        "tags": "review"
     },
     {
         "name_pattern": "review/$",
@@ -634,25 +687,25 @@
         "name_pattern": "review/$/soft",
         "title": "/Deadline",
         "type": "date", "placeholder": "none",
-        "tags": ["time"]
+        "tags": "review deadline"
     },
     {
         "name_pattern": "review/$/done",
         "title": "/Hard deadline",
         "type": "date", "placeholder": "none",
-        "tags": ["time"]
+        "tags": "review deadline"
     },
     {
         "name_pattern": "review/$/external_soft",
         "title": "/External deadline",
         "type": "date", "subtype": "explicit_none", "placeholder": "same as PC",
-        "tags": ["time"]
+        "tags": "review deadline"
     },
     {
         "name_pattern": "review/$/external_done",
         "title": "/External hard deadline",
         "type": "date", "subtype": "explicit_none", "placeholder": "same as PC",
-        "tags": ["time"]
+        "tags": "review deadline"
     },
     {
         "name": "review_default_round_index", "storage": "none", "json": false,
@@ -670,13 +723,15 @@
         "name": "review_default_round", "storage": "rev_roundtag",
         "title": "Default round for new reviews",
         "type": "tag", "required": false, "parser_class": "Review_SettingParser",
-        "parse_order": 1
+        "parse_order": 1,
+        "tags": "review"
     },
     {
         "name": "review_default_external_round", "storage": "extrev_roundtag",
         "title": "Default round for new external reviews",
         "type": "tag", "required": false, "parser_class": "Review_SettingParser",
-        "parse_order": 1
+        "parse_order": 1,
+        "tags": "review"
     },
     {   "name_pattern": "pcrev_soft_$", "internal": true, "type": "date"   },
     {   "name_pattern": "pcrev_hard_$", "internal": true, "type": "date"   },
@@ -691,7 +746,8 @@
         "title": "Collect ratings of reviews",
         "type": "radio",
         "values": [0, 1, -1], "default_value": 0,
-        "json_values": ["pc", "all", "no"]
+        "json_values": ["pc", "all", "no"],
+        "tags": "review"
     },
 
 
@@ -702,7 +758,8 @@
     {
         "name": "rf", "hashid": false,
         "type": "oblist", "parser_class": "ReviewForm_SettingParser",
-        "title": "Review form"
+        "title": "Review form",
+        "tags": "review rf"
     },
     {
         "name_pattern": "rf/$",
@@ -823,14 +880,14 @@
         "type": "radio",
         "values": [0, 2, 1], "default_value": 0,
         "json_values": ["no", "yes", "condition"],
-        "tags": ["final"]
+        "tags": "decision visibility"
     },
     {
         "name": "decision_visibility_author_condition", "storage": "dat.au_seedec",
         "title": "Decision visibility condition",
         "type": "string", "subtype": "search", "size": 30, "placeholder": "Search",
         "parser_class": "DecisionVisibility_SettingParser",
-        "tags": ["final"]
+        "tags": "decision visibility"
     },
     {
         "name": "decision_visibility_reviewer", "storage": "seedec",
@@ -838,7 +895,7 @@
         "type": "radio",
         "values": [0, 3, 1], "default_value": 0,
         "json_values": ["no", "unconflicted", "yes"],
-        "tags": ["final"]
+        "tags": "decision visibility"
     },
     {
         "name": "decision_visibility", "storage": "none",
@@ -852,7 +909,8 @@
     {
         "name": "shepherd_visibility", "storage": "negval.shepherd_hide",
         "title": "Shepherd visibility",
-        "type": "checkbox"
+        "type": "checkbox",
+        "tags": "decision visibility"
     },
     {
         "name_pattern": "fmtstore_v_$", "internal": true, "storage": "val.sub_banal_$"
@@ -865,7 +923,8 @@
     },
     {
         "name": "format", "type": "oblist", "parser_class": "Banal_SettingParser",
-        "title": "Format checker settings"
+        "title": "Format checker settings",
+        "tags": "submission sf"
     },
     {
         "name_pattern": "format/$",
@@ -925,31 +984,33 @@
         "name": "submission_freeze", "storage": "sub_freeze",
         "title": "Submitters can update until the deadline",
         "type": "radio",
-        "values": [0, 1], "default_value": 0
+        "values": [0, 1], "default_value": 0,
+        "tags": "submission"
     },
     {
         "name": "submission_grace", "storage": "sub_grace",
         "title": "Submission grace period",
-        "type": "grace"
+        "type": "grace",
+        "tags": "submission"
     },
     {
         "name": "submission_open", "storage": "sub_open",
         "title": "Enable submissions",
         "type": "cdate",
-        "tags": ["time"]
+        "tags": "submission deadline"
     },
     {
         "name": "submission_registration", "storage": "sub_reg",
         "title": "Submission registration deadline",
         "type": "date", "parse_order": 0,
-        "tags": ["time"]
+        "tags": "submission deadline"
     },
     {
         "name": "submission_done", "storage": "sub_sub",
         "title": "Submission deadline",
         "type": "date", "parse_order": 1,
         "parser_class": "Submissions_SettingParser",
-        "tags": ["time"]
+        "tags": "submission deadline"
     },
     {
         "name": "submission_update", "storage": "sub_update",
@@ -961,20 +1022,23 @@
         "name": "tag_readonly", "storage": "tag_chair",
         "title": "Read-only tags",
         "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true,
-        "parser_class": "Tags_SettingParser", "initial_value": "accept pcpaper reject"
+        "parser_class": "Tags_SettingParser", "initial_value": "accept pcpaper reject",
+        "tags": "tags"
     },
     {
         "name": "tag_hidden",
         "title": "Hidden tags",
         "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true,
-        "parser_class": "Tags_SettingParser"
+        "parser_class": "Tags_SettingParser",
+        "tags": "tags"
     },
 
     {   "name": "tag_color", "internal": true, "type": "string"   },
     {
         "name": "tag_style", "hashid": "colors-and-styles",
         "title": "Tag colors and styles",
-        "type": "oblist", "parser_class": "TagStyle_SettingParser"
+        "type": "oblist", "parser_class": "TagStyle_SettingParser",
+        "tags": "tags"
     },
     {
         "name_pattern": "tag_style/$",
@@ -1003,7 +1067,8 @@
         "name_pattern": "badge/$", "internal": true,
         "type": "object", "subtype": "TagStyle_Setting",
         "title": "Badge style", "title_pattern": "‘${sv badge/$/style}’",
-        "parser_class": "TagStyle_SettingParser"
+        "parser_class": "TagStyle_SettingParser",
+        "tags": "tags"
     },
     {   "name_pattern": "badge/$/id", "internal": true   },
     {
@@ -1020,35 +1085,41 @@
     {
         "name": "tag_rank",
         "title": "Ranking tags",
-        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true
+        "type": "taglist", "parser_class": "Tags_SettingParser", "size": 50, "autogrow": true,
+        "tags": "tags"
     },
     {
         "name": "tag_visibility_conflict", "storage": "tag_seeall",
         "title": "PC can see tags for conflicted papers",
-        "type": "checkbox"
+        "type": "checkbox",
+        "tags": "tags visibility"
     },
     {
         "name": "tag_sitewide", "title": "Site-wide tags",
         "type": "taglist", "subtype": "allow_wildcard", "size": 50, "autogrow": true,
-        "parser_class": "Tags_SettingParser"
+        "parser_class": "Tags_SettingParser",
+        "tags": "tags"
     },
     {
         "name": "tag_vote_allotment", "storage": "tag_vote",
         "title": "Allotment voting tags",
         "type": "taglist", "subtype": "allotment", "size": 50, "autogrow": true,
-        "parser_class": "Tags_SettingParser"
+        "parser_class": "Tags_SettingParser",
+        "tags": "tags"
     },
     {
         "name": "tag_vote_approval", "storage": "tag_approval",
         "title": "Approval voting tags",
         "type": "taglist", "size": 50, "autogrow": true,
-        "parser_class": "Tags_SettingParser"
+        "parser_class": "Tags_SettingParser",
+        "tags": "tags"
     },
     {   "name": "tag_autosearch", "internal": true, "type": "string"   },
     {
         "name": "automatic_tag",
         "type": "oblist", "parser_class": "AutomaticTag_SettingParser",
-        "title": "Automatic tags", "priority": -1
+        "title": "Automatic tags", "priority": -1,
+        "tags": "tags"
     },
     {
         "name_pattern": "automatic_tag/$", "internal": true,
@@ -1080,7 +1151,8 @@
     {
         "name": "topic", "title": "Topics",
         "type": "oblist", "subtype": "allow_bare_name",
-        "parser_class": "Topic_SettingParser"
+        "parser_class": "Topic_SettingParser",
+        "tags": "submission sf"
     },
     {
         "name_pattern": "topic/$",
@@ -1104,13 +1176,15 @@
         "name": "topic_max", "storage": "topic_max", "type": "nonnegint",
         "title": "Maximum topics per submission",
         "default_value": 0,
-        "json": "in"
+        "json": "in",
+        "tags": "submission sf"
     },
     {
         "name": "topic_min", "storage": "topic_min", "type": "nonnegint",
         "title": "Minimum topics per submission",
         "default_value": 0,
-        "json": "in"
+        "json": "in",
+        "tags": "submission sf"
     },
 
     {
@@ -1120,7 +1194,8 @@
     {
         "name": "track", "hashid": "tracks", "type": "oblist",
         "parser_class": "Track_SettingParser",
-        "title": "Tracks"
+        "title": "Tracks",
+        "tags": "tracks"
     },
     {
         "name_pattern": "track/$",
@@ -1173,7 +1248,8 @@
     {   "name": "named_searches", "internal": true, "type": "string"   },
     {
         "name": "named_search", "type": "oblist",
-        "parser_class": "NamedSearch_SettingParser"
+        "parser_class": "NamedSearch_SettingParser",
+        "tags": "search"
     },
     {
         "name_pattern": "named_search/$",
@@ -1208,13 +1284,15 @@
     {
         "name": "autoassign_review_max_load_tag",
         "title": "Autoassignment maximum PC review load tag",
-        "type": "tag", "subtype": "allow_chair", "required": false
+        "type": "tag", "subtype": "allow_chair", "required": false,
+        "tags": "assign"
     },
     {
         "name": "autoassign_review_preference_gadget",
         "title": "Review autoassignment method",
         "type": "radio", "values": ["default", "expertise"], "default_value": "default",
-        "storage": "opt.autoassignReviewGadget"
+        "storage": "opt.autoassignReviewGadget",
+        "tags": "assign"
     },
 
     {   "name": "extrev_hard_0", "merge": true, "storage": "extrev_hard"   },

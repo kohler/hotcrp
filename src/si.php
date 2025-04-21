@@ -123,7 +123,6 @@ class Si {
         "size" => "is_int",
         "subtype" => "is_string",
         "summary" => "is_string",
-        "tags" => "is_string_list",
         "title" => "is_string",
         "title_pattern" => "is_string",
         "type" => "is_string",
@@ -162,6 +161,15 @@ class Si {
         foreach ((array) $j as $k => $v) {
             if (isset(self::$key_storage[$k])) {
                 $this->store($k, $j, $k, self::$key_storage[$k]);
+            }
+        }
+        if (isset($j->tags)) {
+            if (is_string($j->tags)) {
+                $this->tags = preg_split('/\s+/', trim($j->tags));
+            } else if (isset($j->tags) && is_string_list($j->tags)) {
+                $this->tags = $j->tags;
+            } else {
+                trigger_error("setting {$j->name}.tags format error");
             }
         }
         if (isset($j->configurable) && is_bool($j->configurable)) {
