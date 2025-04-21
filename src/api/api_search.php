@@ -44,14 +44,17 @@ class Search_API {
             return $pl;
         }
         $ih = $pl->ids_and_groups();
-        return new JsonResult([
+        $jr = new JsonResult([
             "ok" => true,
             "message_list" => $pl->search->message_list(),
             "ids" => $ih[0],
             "groups" => $ih[1],
-            "hotlist" => $pl->session_list_object()->info_string(),
             "search_params" => $pl->encoded_search_params()
         ]);
+        if (friendly_boolean($qreq->hotlist) !== false) { // XXX should be `=== true`
+            "hotlist" => $pl->session_list_object()->info_string(),
+        }
+        return $jr;
     }
 
     static function apply_search(JsonResult $jr, Contact $user, Qrequest $qreq, $search) {

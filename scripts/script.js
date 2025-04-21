@@ -11525,17 +11525,17 @@ function make_callback(plistui, type) {
             if (tr.nodeName === "TR"
                 && tr.hasAttribute("data-pid")
                 && hasClass(tr, "pl")) {
-                let p = +tr.getAttribute("data-pid"),
+                const p = +tr.getAttribute("data-pid"),
                     data = values.data[p],
                     attr = values.attr && values.attr[p],
                     classes = values.classes && values.classes[p];
                 if (attr) {
-                    for (let k in attr) {
+                    for (const k in attr) {
                         tr.setAttribute(k, attr[k]);
                     }
                 }
                 if (data) {
-                    let e = plistui.pidfield(p, f, index);
+                    const e = plistui.pidfield(p, f, index);
                     set_pidfield(f, e, data[htmlk], classes && classes[htmlk]);
                 }
                 ++n;
