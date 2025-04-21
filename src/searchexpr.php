@@ -19,6 +19,8 @@ class SearchExpr {
     public $child;
     /** @var ?SearchExpr */
     public $parent;
+    /** @var mixed */
+    public $user_data; // reserved for callers
 
     /** @param string $text
      * @param int $pos1

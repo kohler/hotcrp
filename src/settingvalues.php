@@ -701,15 +701,16 @@ class SettingValues extends MessageSet {
     /** @param string|Si $id
      * @param bool $new
      * @return mixed */
-    function choosev($id, $new) {
+    private function choosev($id, $new) {
         return $new ? $this->newv($id) : $this->oldv($id);
     }
 
 
     /** @param string|Si $id
      * @param bool $new
+     * @param ?SearchExpr $exclude
      * @return mixed */
-    function json_choosev($id, $new) {
+    private function json_choosev($id, $new, $exclude = null) {
         $si = is_string($id) ? $this->si($id) : $id;
         if ($si->type === "oblist") {
             // a member object list might be null rather than empty
@@ -725,7 +726,7 @@ class SettingValues extends MessageSet {
                     if ($ov && $ov->deleted)
                         continue;
                 }
-                $a[] = $this->json_choosev("{$si->name}/{$ctr}", $new);
+                $a[] = $this->json_choosev("{$si->name}/{$ctr}", $new, $exclude);
             }
             return $a;
         }
@@ -740,8 +741,11 @@ class SettingValues extends MessageSet {
             }
             $o = [];
             foreach ($member_list as $msi) {
-                if ($msi->json_export()
-                    && ($v = $this->json_choosev($msi, $new)) !== null) {
+                if (!$msi->json_export()
+                    || ($exclude && $exclude->evaluate_simple([$msi, "expr_matches"]))) {
+                    continue;
+                }
+                if (($v = $this->json_choosev($msi, $new, $exclude)) !== null) {
                     $member = $msi->name2 === "" ? $msi->name1 : substr($msi->name2, 1);
                     $o[$member] = $v;
                 }
@@ -751,7 +755,7 @@ class SettingValues extends MessageSet {
         return $si->base_unparse_jsonv($this->choosev($si, $new), $this);
     }
 
-    /** @param array{new?:bool,reset?:?bool,filter?:SearchExpr} $args
+    /** @param array{new?:bool,reset?:?bool,filter?:SearchExpr,exclude?:SearchExpr} $args
      * @return object */
     function all_jsonv($args = []) {
         $new = $args["new"] ?? false;
@@ -760,10 +764,14 @@ class SettingValues extends MessageSet {
             $j["reset"] = true;
         }
         $include = $args["filter"] ?? null;
+        $exclude = $args["exclude"] ?? null;
         foreach ($this->conf->si_set()->top_list() as $si) {
-            if ($si->json_export()
-                && (!$include || $include->evaluate_simple([$si, "expr_matches"]))
-                && ($v = $this->json_choosev($si, $new)) !== null) {
+            if (!$si->json_export()
+                || ($include && !$include->evaluate_simple([$si, "expr_matches"]))
+                || ($exclude && $exclude->evaluate_simple([$si, "expr_matches"]))) {
+                continue;
+            }
+            if (($v = $this->json_choosev($si, $new, $exclude)) !== null) {
                 $j[$si->name] = $v;
             }
         }

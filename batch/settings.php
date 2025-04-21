@@ -26,6 +26,8 @@ class Settings_Batch {
     public $diff;
     /** @var ?SearchExpr */
     private $filter;
+    /** @var ?SearchExpr */
+    private $exclude;
 
     function __construct(Contact $user, $arg) {
         $this->conf = $user->conf;
@@ -42,25 +44,30 @@ class Settings_Batch {
         }
         $this->dry_run = isset($arg["dry-run"]);
         $this->diff = isset($arg["diff"]);
-        $filter = $exclude = null;
         foreach ($arg["filter"] ?? [] as $s) {
-            $ss = new SearchParser($s);
-            if (($expr = $ss->parse_expression(SearchOperatorSet::simple_operators()))) {
-                $filter = $filter ? SearchExpr::combine("or", $filter, $expr) : $expr;
+            $sp = new SearchParser($s);
+            $expr = $sp->parse_expression(SearchOperatorSet::simple_operators());
+            if (!$expr) {
+                // ignore it
+            } else if ($this->filter) {
+                $this->filter = SearchExpr::combine("or", $this->filter, $expr);
+            } else {
+                $this->filter = $expr;
             }
         }
         foreach ($arg["exclude"] ?? [] as $s) {
-            $ss = new SearchParser($s);
-            if (($expr = $ss->parse_expression(SearchOperatorSet::simple_operators()))) {
-                $exclude = $exclude ? SearchExpr::combine("or", $exclude, $expr) : $expr;
+            $sp = new SearchParser($s);
+            $expr = $sp->parse_expression(SearchOperatorSet::simple_operators());
+            if (!$expr) {
+                // ignore it
+            } else if ($this->exclude) {
+                $this->exclude = SearchExpr::combine("or", $this->exclude, $expr);
+            } else {
+                $this->exclude = $expr;
             }
         }
-        if ($exclude) {
-            $exclude = SearchExpr::combine("not", $exclude);
-            $filter = $filter ? SearchExpr::combine("and", $filter, $exclude) : $exclude;
-        }
-        $this->filter = $filter;
-        if ($this->filter && ($this->filename || $this->expr)) {
+        if (($this->filter || $this->exclude)
+            && ($this->filename || $this->expr)) {
             throw new CommandLineException("`--filter` and `--exclude` are incompatible with changing settings");
         }
     }
@@ -68,7 +75,7 @@ class Settings_Batch {
     /** @param bool $new
      * @return string */
     function output(SettingValues $sv, $new) {
-        return json_encode($sv->all_jsonv(["new" => $new, "filter" => $this->filter]), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+        return json_encode($sv->all_jsonv(["new" => $new, "filter" => $this->filter, "exclude" => $this->exclude]), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
     }
 
     /** @return int */
