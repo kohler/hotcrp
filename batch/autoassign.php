@@ -61,7 +61,7 @@ class Autoassign_Batch {
         $this->getopt = $getopt;
         $this->detacher = $detacher;
         if (isset($arg["job"])) {
-            $this->_jtok = Job_Capability::claim($this->conf, $arg["job"], "Autoassign");
+            $this->_jtok = Job_Capability::claim($arg["job"], $this->conf, "Autoassign");
             $this->user = $this->_jtok->user() ?? $conf->root_user();
         } else {
             $this->user = $conf->root_user();

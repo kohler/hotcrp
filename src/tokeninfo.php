@@ -266,11 +266,15 @@ class TokenInfo {
         $this->timeExpires = (int) $this->timeExpires;
     }
 
-    /** @param mysqli_result|Dbl_Result $result
+    /** @template T
+     * @param mysqli_result|Dbl_Result $result
      * @param bool $is_cdb
-     * @return ?TokenInfo */
-    static function fetch($result, Conf $conf, $is_cdb) {
-        if (($cap = $result->fetch_object("TokenInfo", [$conf]))) {
+     * @param class-string<T> $class
+     * @return ?T */
+    static function fetch($result, Conf $conf, $is_cdb, $class = "TokenInfo") {
+        $cap = $result->fetch_object($class, [$conf]);
+        '@phan-var ?T $cap';
+        if ($cap) {
             $cap->incorporate($conf, $is_cdb);
         }
         return $cap;

@@ -5941,7 +5941,7 @@ class Conf {
         }
         if (!empty($ct_cleanups)) {
             $result = TokenInfo::expired_result($this, array_keys($ct_cleanups));
-            while (($tok = TokenInfo::fetch($result, $this, false))) {
+            while (($tok = TokenInfo::fetch($result, $this, false, "TokenInfo"))) {
                 if (($tf = $this->token_type($tok->capabilityType))
                     && isset($tf->cleanup_function))
                     call_user_func($tf->cleanup_function, $tok, $this);
