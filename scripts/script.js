@@ -1536,7 +1536,7 @@ function hoturl2(page, options) {
     } else if (options instanceof URLSearchParams) {
         params = options;
     } else {
-        params = new URLSearchParams(options);
+        params = new URLSearchParams(options || {});
     }
 
     if (page.startsWith("=")) {
