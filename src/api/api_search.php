@@ -52,7 +52,7 @@ class Search_API {
             "search_params" => $pl->encoded_search_params()
         ]);
         if (friendly_boolean($qreq->hotlist) !== false) { // XXX should be `=== true`
-            "hotlist" => $pl->session_list_object()->info_string(),
+            $jr->set("hotlist", $pl->session_list_object()->info_string());
         }
         return $jr;
     }
