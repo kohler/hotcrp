@@ -297,8 +297,8 @@ function initialize_user($qreq, $kwarg = null) {
         && preg_match('/\A\s*+Bearer\s++(hct_[A-Za-z0-9]++)\s*+\z/i', $htauth, $m)) {
         $qreq->approve_token(); // explicit authorization
         $user = null;
-        $token = TokenInfo::find($m[1], $conf, true)
-            ?? TokenInfo::find($m[1], $conf, false);
+        $token = TokenInfo::find_cdb($m[1], $conf)
+            ?? TokenInfo::find($m[1], $conf);
         if ($token
             && $token->capabilityType === TokenInfo::BEARER
             && $token->is_active()) {

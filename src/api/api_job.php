@@ -22,6 +22,7 @@ class Job_API {
         }
 
         $ok = $tok->is_active();
+        // XXX is it meaningfully safer to treat inactive tokens as not found?
         $answer = ["ok" => $ok] + (array) $tok->data();
         $answer["ok"] = $ok;
         $answer["update_at"] = $answer["update_at"] ?? $tok->timeUsed;

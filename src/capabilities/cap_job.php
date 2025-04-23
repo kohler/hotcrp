@@ -15,28 +15,37 @@ class Job_Capability {
             ->set_input(["batch_class" => $batch_class, "argv" => $argv]);
     }
 
-    /** @param string $salt
+    /** @param string $token
      * @return ?string */
-    static function canonical_token($salt) {
-        if ($salt === false || $salt === "e") {
-            $salt = getenv("HOTCRP_JOB");
+    static function canonical_token($token) {
+        if ($token === "e") {
+            $token = getenv("HOTCRP_JOB");
         }
-        if ($salt && strpos($salt, "_") === false) {
-            $salt = "hcj_{$salt}";
+        if ($token && strpos($token, "_") === false) {
+            $token = "hcj_{$token}";
         }
-        return $salt ? : null;
+        if ($token !== null && strlen($token) >= 20) {
+            return $token;
+        }
+        return null;
     }
 
-    /** @param string $salt
+    /** @param ?string $batch_class
+     * @return bool */
+    static function validate(TokenInfo $tok, $batch_class) {
+        return $tok->capabilityType === TokenInfo::JOB
+            && is_string(($bc = $tok->input("batch_class")))
+            && ($batch_class === null || $batch_class === $bc);
+    }
+
+    /** @param string $token
      * @param ?string $batch_class
-     * @param bool $allow_inactive
      * @return TokenInfo */
-    static function find(Conf $conf, $salt, $batch_class = null, $allow_inactive = false) {
-        if (!($rsalt = self::canonical_token($salt))
-            || !($tok = TokenInfo::find($rsalt, $conf))
-            || !self::validate($tok, $batch_class)
-            || (!$allow_inactive && !$tok->is_active())) {
-            throw new CommandLineException("Invalid job token `{$salt}`");
+    static function find(Conf $conf, $token, $batch_class = null) {
+        if (!($rtoken = self::canonical_token($token))
+            || !($tok = TokenInfo::find($rtoken, $conf))
+            || !self::validate($tok, $batch_class)) {
+            throw new CommandLineException("Invalid job token `{$token}`");
         }
         return $tok;
     }
@@ -56,17 +65,9 @@ class Job_Capability {
             $user->contactId > 0 ? $user->contactId : 0,
             Conf::$now, Conf::$now,
             json_encode_db(["batch_class" => $batch_class, "argv" => $argv]));
-        $tok = TokenInfo::fetch($result, $user->conf);
+        $tok = TokenInfo::fetch($result, $user->conf, false);
         $result->close();
         return $tok;
-    }
-
-    /** @param ?string $batch_class
-     * @return bool */
-    static function validate(TokenInfo $tok, $batch_class) {
-        return $tok->capabilityType === TokenInfo::JOB
-            && is_string(($bc = $tok->input("batch_class")))
-            && ($batch_class === null || $batch_class === $bc);
     }
 
     /** @param string $salt

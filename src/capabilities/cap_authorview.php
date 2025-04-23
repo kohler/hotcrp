@@ -21,7 +21,7 @@ class AuthorView_Capability {
             $hi = "hcav{$prow->paperId}~";
         }
         $result = $prow->conf->qe("select * from Capability where salt>=? and salt<?", $lo, $hi);
-        while (($tok = TokenInfo::fetch($result, $prow->conf))) {
+        while (($tok = TokenInfo::fetch($result, $prow->conf, false))) {
             if (($xrow = $prow->_row_set->get($tok->paperId))
                 && $tok->capabilityType === TokenInfo::AUTHORVIEW) {
                 $xrow->_author_view_token = $tok;

@@ -251,50 +251,62 @@ class TokenInfo {
         return $this;
     }
 
+    /** @param bool $is_cdb
+     * @suppress PhanAccessReadOnlyProperty */
+    function incorporate(Conf $conf, $is_cdb) {
+        $this->conf = $conf;
+        $this->is_cdb = $is_cdb;
+        $this->capabilityType = (int) $this->capabilityType;
+        $this->contactId = (int) $this->contactId;
+        $this->paperId = (int) $this->paperId;
+        $this->reviewId = (int) $this->reviewId;
+        $this->timeCreated = (int) $this->timeCreated;
+        $this->timeUsed = (int) $this->timeUsed;
+        $this->timeInvalid = (int) $this->timeInvalid;
+        $this->timeExpires = (int) $this->timeExpires;
+    }
+
     /** @param mysqli_result|Dbl_Result $result
      * @param bool $is_cdb
-     * @return ?TokenInfo
-     * @suppress PhanAccessReadOnlyProperty */
-    static function fetch($result, Conf $conf, $is_cdb = false) {
+     * @return ?TokenInfo */
+    static function fetch($result, Conf $conf, $is_cdb) {
         if (($cap = $result->fetch_object("TokenInfo", [$conf]))) {
-            $cap->conf = $conf;
-            $cap->is_cdb = $is_cdb;
-            $cap->capabilityType = (int) $cap->capabilityType;
-            $cap->contactId = (int) $cap->contactId;
-            $cap->paperId = (int) $cap->paperId;
-            $cap->reviewId = (int) $cap->reviewId;
-            $cap->timeCreated = (int) $cap->timeCreated;
-            $cap->timeUsed = (int) $cap->timeUsed;
-            $cap->timeInvalid = (int) $cap->timeInvalid;
-            $cap->timeExpires = (int) $cap->timeExpires;
+            $cap->incorporate($conf, $is_cdb);
         }
         return $cap;
     }
 
     /** @param ?string $token
-     * @param bool $is_cdb
      * @return ?TokenInfo */
-    static function find($token, Conf $conf, $is_cdb = false) {
+    static function find($token, Conf $conf) {
         if ($token === null || strlen($token) < 5) {
             return null;
         }
-        $dblink = $is_cdb ? $conf->contactdb() : $conf->dblink;
-        if (!$dblink) {
+        $result = Dbl::qe($conf->dblink, "select * from Capability where salt=?", $token);
+        $cap = self::fetch($result, $conf, false);
+        $result->close();
+        return $cap;
+    }
+
+    /** @param ?string $token
+     * @return ?TokenInfo */
+    static function find_cdb($token, Conf $conf) {
+        if ($token === null || strlen($token) < 5 || !($cdb = $conf->contactdb())) {
             return null;
         }
-        $email = $is_cdb ? ", (select email from ContactInfo where contactDbId=Capability.contactId) email" : "";
-        $result = Dbl::qe($dblink, "select *{$email} from Capability where salt=?", $token);
-        $cap = self::fetch($result, $conf, $is_cdb);
-        Dbl::free($result);
+        $result = Dbl::qe($cdb, "select *, (select email from ContactInfo where contactDbId=Capability.contactId) email from Capability where salt=?", $token);
+        $cap = self::fetch($result, $conf, true);
+        $result->close();
         return $cap;
     }
 
     /** @param string $token
      * @param ?int $capabilityType
      * @param bool $is_cdb
-     * @return ?TokenInfo */
+     * @return ?TokenInfo
+     * @deprecated */
     static function find_active($token, $capabilityType, Conf $conf, $is_cdb = false) {
-        $tok = self::find($token, $conf, $is_cdb);
+        $tok = $is_cdb ? self::find_cdb($token, $conf) : self::find($token, $conf);
         return $tok && $tok->is_active($capabilityType) ? $tok : null;
     }
 

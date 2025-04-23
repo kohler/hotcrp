@@ -1105,8 +1105,10 @@ class ManageEmail_Page {
         }
         $this->type = $this->qreq->t ?? "";
 
-        $this->token = TokenInfo::find_active($this->qreq->mesess, TokenInfo::MANAGEEMAIL, $this->conf);
-        if (!$this->token || $this->token->contactId !== $this->viewer->contactId) {
+        $this->token = TokenInfo::find($this->qreq->mesess, $this->conf);
+        if (!$this->token
+            || !$this->token->is_active(TokenInfo::MANAGEEMAIL)
+            || $this->token->contactId !== $this->viewer->contactId) {
             $this->ms->error_at("mesession", "<0>Email management session expired");
             $this->token = null;
             unset($this->qreq->step, $this->qreq->mesess);

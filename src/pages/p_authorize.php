@@ -210,7 +210,8 @@ class Authorize_Page {
 
     private function handle_authconfirm() {
         if (!$this->qreq->code
-            || !($tok = TokenInfo::find_active($this->qreq->code, TokenInfo::OAUTHCODE, $this->conf))
+            || !($tok = TokenInfo::find($this->qreq->code, $this->conf))
+            || !$tok->is_active(TokenInfo::OAUTHCODE)
             || !($client = $this->find_client($tok->data("client_id")))) {
             $this->print_error_exit("<0>Invalid or expired authentication request");
         }
@@ -365,7 +366,8 @@ class Authorize_Page {
 
         // look up code
         if (!$this->qreq->code
-            || !($tok = TokenInfo::find_active($this->qreq->code, TokenInfo::OAUTHCODE, $this->conf))
+            || !($tok = TokenInfo::find($this->qreq->code, $this->conf))
+            || !$tok->is_active(TokenInfo::OAUTHCODE)
             || !$tok->data("id_token")
             || $tok->data("client_id") !== $this->qreq->client_id
             || $tok->data("redirect_uri") !== $this->qreq->redirect_uri) {

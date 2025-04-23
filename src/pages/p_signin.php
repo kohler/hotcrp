@@ -102,13 +102,16 @@ class Signin_Page {
     /** @param string $token
      * @return ?TokenInfo */
     static private function _find_reset_token(Conf $conf, $token) {
-        if ($token) {
-            $is_cdb = str_starts_with($token, "hcpw1");
-            if (($tok = TokenInfo::find($token, $conf, $is_cdb))
-                && $tok->is_active()
-                && $tok->capabilityType === TokenInfo::RESETPASSWORD) {
-                return $tok;
-            }
+        if (!$token) {
+            return null;
+        }
+        if (str_starts_with($token, "hcpw1")) {
+            $tok = TokenInfo::find_cdb($token, $conf);
+        } else {
+            $tok = TokenInfo::find($token, $conf);
+        }
+        if ($tok && $tok->is_active(TokenInfo::RESETPASSWORD)) {
+            return $tok;
         }
         return null;
     }
@@ -121,9 +124,8 @@ class Signin_Page {
             && ($capuser = $cap->user())
             && strcasecmp($capuser->email, trim($qreq->email)) === 0) {
             return $pw;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param ComponentSet $cs */

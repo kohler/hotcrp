@@ -176,7 +176,13 @@ class OAuth_Page {
         $state = $this->qreq->state;
         if (!isset($state)) {
             return MessageItem::error("<0>OAuth authentication response parameters required");
-        } else if (!($tok = TokenInfo::find($state, $this->conf, !!$this->conf->contactdb()))) {
+        }
+        if ($this->conf->contactdb()) {
+            $tok = TokenInfo::find_cdb($state, $this->conf);
+        } else {
+            $tok = TokenInfo::find($state, $this->conf);
+        }
+        if (!$tok) {
             return MessageItem::error("<0>Authentication request not found or expired");
         }
 

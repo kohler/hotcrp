@@ -14,7 +14,7 @@ class ReviewAccept_Capability {
         $result = $rrow->conf->qe("select * from Capability where salt>=? and salt<?",
             "hcra{$rrow->reviewId}@", "hcra{$rrow->reviewId}~");
         $tok = null;
-        while (($xtok = TokenInfo::fetch($result, $rrow->conf))) {
+        while (($xtok = TokenInfo::fetch($result, $rrow->conf, false))) {
             if ($xtok->capabilityType === TokenInfo::REVIEWACCEPT
                 && $xtok->reviewId === $rrow->reviewId
                 && (!$tok || $xtok->is_active()))
