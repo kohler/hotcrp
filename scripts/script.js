@@ -1536,7 +1536,12 @@ function hoturl2(page, options) {
     } else if (options instanceof URLSearchParams) {
         params = options;
     } else {
-        params = new URLSearchParams(options || {});
+        params = new URLSearchParams;
+        for (const k in options || {}) {
+            const v = options[k];
+            if (v != null)
+                params.set(k, v);
+        }
     }
 
     if (page.startsWith("=")) {
