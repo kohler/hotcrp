@@ -1526,7 +1526,7 @@ function hoturl2(page, options) {
         page = page.substring(0, pos);
     }
     if (typeof options === "string") {
-        log_jserror("string to hoturl2"); // XXX backward compat
+        log_jserror("string to hoturl2", new Error); // XXX backward compat
         if ((pos = options.indexOf("#")) >= 0) {
             params = new URLSearchParams(options.substring(0, pos));
             params.set("#", options.substring(pos + 1));
@@ -1719,7 +1719,7 @@ function hoturl(page, options) {
     }
     let result = siteinfo.site_relative + x.t + anchor;
     if (result !== hoturl2(page1, options1)) {
-        log_jserror("hoturl difference on " + JSON.stringify([page1, options1]));
+        log_jserror("hoturl difference on " + JSON.stringify([page1, options1]) + ", " + result + " vs. " + hoturl2(page1, options1));
     }
     return result;
 }
