@@ -1526,7 +1526,6 @@ function hoturl2(page, options) {
         page = page.substring(0, pos);
     }
     if (typeof options === "string") {
-        log_jserror("string to hoturl2", new Error); // XXX backward compat
         if ((pos = options.indexOf("#")) >= 0) {
             params = new URLSearchParams(options.substring(0, pos));
             params.set("#", options.substring(pos + 1));
