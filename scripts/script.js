@@ -1513,7 +1513,8 @@ function hoturl_clean_param(x, k, value_match, allow_fail) {
     }
 }
 
-function hoturl2(page, options) {
+function hoturl(page, options) {
+    const page1 = page, options1 = options;
     let want_forceShow = false;
     if (siteinfo.site_relative == null || siteinfo.suffix == null) {
         siteinfo.site_relative = siteinfo.suffix = "";
@@ -1613,11 +1614,14 @@ function hoturl2(page, options) {
     if (params.size > 0) {
         x.t += "?" + params.toString();
     }
-    return siteinfo.site_relative + x.t + anchor;
-
+    const result = siteinfo.site_relative + x.t + anchor;
+    if (result !== hoturl_old(page1, options1)) {
+        log_jserror("hoturl difference on " + JSON.stringify([page1, options1]) + ", " + result + " vs. " + hoturl_old(page1, options1));
+    }
+    return result;
 }
 
-function hoturl(page, options) {
+function hoturl_old(page, options) {
     const page1 = page, options1 = options;
     var i, k, m, v, x, xv, anchor = "", want_forceShow;
     if (siteinfo.site_relative == null || siteinfo.suffix == null) {
@@ -1721,11 +1725,7 @@ function hoturl(page, options) {
     if (xv.length){
         x.t += "?" + xv.join("&");
     }
-    let result = siteinfo.site_relative + x.t + anchor;
-    if (result !== hoturl2(page1, options1)) {
-        log_jserror("hoturl difference on " + JSON.stringify([page1, options1]) + ", " + result + " vs. " + hoturl2(page1, options1));
-    }
-    return result;
+    return siteinfo.site_relative + x.t + anchor;
 }
 
 function hoturl_html(page, options) {
