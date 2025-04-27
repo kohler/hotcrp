@@ -1227,7 +1227,7 @@ class Pid_Fexpr extends Fexpr {
 }
 
 class Score_Fexpr extends Fexpr {
-    function __construct(Score_ReviewField $field) {
+    function __construct(ReviewField $field) {
         parent::__construct("rf");
         $this->set_format(Fexpr::FREVIEWFIELD, $field);
     }
@@ -1250,6 +1250,9 @@ class Score_Fexpr extends Fexpr {
             $fval = "{$rrow}->fields[{$field->order}]";
         } else {
             $fval = "{$rrow}->fidval(" . json_encode($field->short_id) . ")";
+        }
+        if ($field instanceof Checkbox_ReviewField) {
+            $fval = "nbool({$fval})";
         }
         return "({$field->view_score} > {$rrow_vsb} ? {$fval} : null)";
     }
@@ -2426,7 +2429,8 @@ class Formula implements JsonSerializable {
         if ($f instanceof PaperOption) {
             return $this->_parse_one_option($pos1, $f);
         } else if ($f instanceof ReviewField) {
-            if ($f instanceof Score_ReviewField) {
+            if ($f instanceof Score_ReviewField
+                || $f instanceof Checkbox_ReviewField) {
                 return $this->_reviewer_decoration(new Score_Fexpr($f));
             }
             $this->lerror($pos1, $this->pos, "<0>Review field ‘{$f->name}’ can’t be used in formulas");

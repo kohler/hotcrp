@@ -16,9 +16,8 @@ class Checkbox_ReviewField extends Discrete_ReviewField {
     function unparse_value($fval) {
         if ($fval !== null) {
             return $fval > 0 ? "yes" : "no";
-        } else {
-            return "";
         }
+        return "";
     }
 
     function unparse_json($fval) {

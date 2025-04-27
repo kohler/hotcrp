@@ -372,9 +372,14 @@ function friendly_boolean($x) {
     } else if (is_string($x) || is_int($x)) {
         // 0, false, off, no: false; 1, true, on, yes: true
         return filter_var($x, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-    } else {
-        return null;
     }
+    return null;
+}
+
+/** @param ?int $x
+ * @return ?bool */
+function nbool($x) {
+    return $x !== null ? $x !== 0 : null;
 }
 
 /** @param ?string $varname
