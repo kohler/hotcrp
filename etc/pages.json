@@ -240,7 +240,7 @@
     {   "name": "mail", "print_function": "Mail_Page::go"   },
     {   "name": "manageemail", "print_function": "ManageEmail_Page::go"   },
     {   "name": "manualassign", "print_function": "ManualAssign_Page::go"   },
-    {   "name": "mergeaccounts", "print_function": "MergeAccounts_Page::go"   },
+    {   "name": "mergeaccounts", "print_function": "ManageEmail_Page::go_merge"   },
     {   "name": "oauth", "print_function": "HotCRP\\OAuth_Page::go", "allow_disabled": true   },
     {   "name": "offline", "print_function": "Offline_Page::go"   },
     {   "name": "paper", "print_function": "Paper_Page::go"   },

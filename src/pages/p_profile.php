@@ -174,7 +174,7 @@ class Profile_Page {
                     $ustatus->jval->id = $new_acct->contactId;
                 } else {
                     $ustatus->error_at("email", "<0>Email address ‘{$uemail}’ is already in use");
-                    $ustatus->inform_at("email", "<5>You may want to <a href=\"" . $this->conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.");
+                    $ustatus->inform_at("email", "<5>You may want to <a href=\"" . $this->conf->hoturl("manageemail") . "\">link these accounts</a>.");
                     return null;
                 }
             } else if ($this->conf->external_login()) {

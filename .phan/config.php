@@ -85,6 +85,7 @@ $config = [
         Config::projectPath("index.php"),
         Config::projectPath("log.php"),
         Config::projectPath("mail.php"),
+        Config::projectPath("manageemail.php"),
         Config::projectPath("manualassign.php"),
         Config::projectPath("mergeaccounts.php"),
         Config::projectPath("newaccount.php"),

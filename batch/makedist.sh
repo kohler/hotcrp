@@ -63,6 +63,7 @@ help.php
 index.php
 log.php
 mail.php
+manageemail.php
 manualassign.php
 mergeaccounts.php
 newaccount.php
@@ -385,7 +386,6 @@ src/pages/p_log.php
 src/pages/p_mail.php
 src/pages/p_manageemail.php
 src/pages/p_manualassign.php
-src/pages/p_mergeaccounts.php
 src/pages/p_oauth.php
 src/pages/p_offline.php
 src/pages/p_paper.php

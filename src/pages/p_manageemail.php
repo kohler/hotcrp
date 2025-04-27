@@ -1139,4 +1139,8 @@ class ManageEmail_Page {
         $pg = new ManageEmail_Page($user, $qreq);
         $pg->run();
     }
+
+    static function go_merge(Contact $user, Qrequest $qreq) {
+        $user->conf->redirect_hoturl("manageemail", ["t" => "link"]);
+    }
 }

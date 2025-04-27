@@ -294,30 +294,6 @@ class Cdb_Tester {
         $paper3 = $this->conf->checked_paper_by_id(3);
         xassert_eqq($paper3->tag_value("{$a1id}~butt"), null);
         xassert_eqq($paper3->tag_value("{$a2id}~butt"), 4.0);
-
-        $merger = new MergeContacts($user_anne2, $user_anne1);
-        xassert($merger->run());
-        $user_anne1 = user("anne1@dudfield.org");
-        $user_anne2 = maybe_user("anne2@dudfield.org");
-        xassert($user_anne1 && !$user_anne2);
-        xassert_eqq($user_anne1->firstName, "Anne");
-        xassert_eqq($user_anne1->lastName, "Dudfield");
-        xassert_eqq($user_anne1->collaborators(), "All (derpo)");
-        xassert_eqq($user_anne1->tag_value("a"), 1.0);
-        xassert_eqq($user_anne1->tag_value("b"), 3.0);
-        xassert_eqq($user_anne1->roles, Contact::ROLE_PC | Contact::ROLE_ADMIN);
-        xassert_eqq($user_anne1->data("data_test"), 139);
-        xassert_eqq($user_anne1->email, "anne1@dudfield.org");
-        $paper1 = $this->conf->checked_paper_by_id(1);
-        xassert($paper1->has_conflict($user_anne1));
-        xassert_eqq($paper1->tag_value("{$a2id}~butt"), null);
-        xassert_eqq($paper1->tag_value("{$a1id}~butt"), 1.0);
-        $paper2 = $this->conf->checked_paper_by_id(2);
-        xassert_eqq($paper2->tag_value("{$a2id}~butt"), null);
-        xassert_eqq($paper2->tag_value("{$a1id}~butt"), 2.0);
-        $paper3 = $this->conf->checked_paper_by_id(3);
-        xassert_eqq($paper3->tag_value("{$a2id}~butt"), null);
-        xassert_eqq($paper3->tag_value("{$a1id}~butt"), 4.0);
     }
 
     function test_role_save_formats() {

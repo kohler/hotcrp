@@ -35,7 +35,7 @@ class ChangeEmail_Page {
         if ($chuser && $conf->user_by_email($newemail)) {
             $conf->feedback_msg([
                 MessageItem::error("<0>The email address you requested, {$newemail}, is already in use on this site"),
-                MessageItem::inform("<5>You may want to <a href=\"" . $conf->hoturl("mergeaccounts") . "\">merge these accounts</a>.")
+                MessageItem::inform("<5>You may want to <a href=\"" . $conf->hoturl("manageemail") . "\">link these accounts</a>.")
             ]);
             return false;
         }
