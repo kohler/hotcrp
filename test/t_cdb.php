@@ -255,14 +255,14 @@ class Cdb_Tester {
         xassert($user_van->act_author_view($paper1));
     }
 
-    function test_merge_accounts() {
+    function test_add_annes() {
         // user merging
-        $this->us1->save_user((object) ["email" => "anne1@dudfield.org", "tags" => ["a#1"], "roles" => (object) ["pc" => true]]);
+        $this->us1->save_user((object) ["email" => "anne1@dudfield.org", "tags" => ["a#1"], "roles" => (object) ["pc" => true], "first" => "Anne Elizabeth", "last" => "Dudfield"]);
         $this->us1->save_user((object) ["email" => "anne2@dudfield.org", "first" => "Anne", "last" => "Dudfield", "data" => (object) ["data_test" => 139], "tags" => ["a#2", "b#3"], "roles" => (object) ["sysadmin" => true], "collaborators" => "derpo\n"]);
         $user_anne1 = user("anne1@dudfield.org");
         $a1id = $user_anne1->contactId;
-        xassert_eqq($user_anne1->firstName, "");
-        xassert_eqq($user_anne1->lastName, "");
+        xassert_eqq($user_anne1->firstName, "Anne Elizabeth");
+        xassert_eqq($user_anne1->lastName, "Dudfield");
         xassert_eqq($user_anne1->collaborators(), "");
         xassert_eqq($user_anne1->tag_value("a"), 1.0);
         xassert_eqq($user_anne1->tag_value("b"), null);

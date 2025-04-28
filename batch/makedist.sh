@@ -87,8 +87,10 @@ batch/assign.php
 batch/autoassign.php
 batch/backupdb.php
 batch/checkinvariants.php
+batch/createdb.php
 batch/deletepapers.php
 batch/fixdelegation.php
+batch/hotcli.php
 batch/killinactivedoc.php
 batch/paperjson.php
 batch/reviewcsv.php
