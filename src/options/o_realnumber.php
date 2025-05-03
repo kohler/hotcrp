@@ -98,8 +98,9 @@ class RealNumber_PaperOption extends PaperOption {
         return new RealNumberOption_Fexpr($this);
     }
 
-    /** @param PaperOption $oldopt @unused-param */
-    static function convert_from_numeric(PaperOption $newopt, PaperOption $oldopt) {
-        $newopt->conf->qe("update PaperOption set data=value where optionId=?", $newopt->id);
+    static function convert_from_numeric_setting(Si $si, Sf_Setting $sfs, SettingValues $sv) {
+        $sv->register_cleanup_function(null, function () use ($sv, $sfs) {
+            $sv->conf->qe("update PaperOption set data=value where optionId=?", $sfs->id);
+        });
     }
 }

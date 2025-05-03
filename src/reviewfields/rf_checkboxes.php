@@ -297,11 +297,18 @@ class Checkboxes_ReviewField extends DiscreteValues_ReviewField {
         return new Checkboxes_ReviewFieldSearch($this, $op | $rsm->rfop, $allow0, $fvm);
     }
 
-    function renumber_value($fmap, $fval) {
+    function map_value($fval, $fvmap) {
         $nv = 0;
         for ($b = $s = 1; $b <= $fval; $b <<= 1, ++$s) {
-            if (($fval & $b) !== 0) {
-                $ns = $fmap[$s] ?? $s;
+            if (($fval & $b) === 0) {
+                continue;
+            }
+            if (array_key_exists($s, $fvmap)) {
+                $ns = $fvmap[$s];
+            } else {
+                $ns = $s;
+            }
+            if ($ns > 0) {
                 $nv |= $ns === $s ? $b : 1 << ($ns - 1);
             }
         }

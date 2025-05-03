@@ -1,15 +1,15 @@
 [
     {
-        "name": "dropdown", "title": "Dropdown", "order": 200,
-        "convert_from_functions": {"radio": true},
+        "name": "dropdown", "title": "Dropdown", "order": 300,
         "properties": {"values_text": true, "scheme": true, "required": true},
-        "id_prefix": "s"
+        "id_prefix": "s",
+        "conversions": [{"from": "radio"}]
     },
     {
-        "name": "radio", "title": "Radio buttons", "order": 300,
-        "convert_from_functions": {"dropdown": true},
+        "name": "radio", "title": "Radio buttons", "order": 200,
         "properties": {"values_text": true, "scheme": true, "required": true},
-        "id_prefix": "s"
+        "id_prefix": "s",
+        "conversions": [{"from": "dropdown"}]
     },
     {
         "name": "text", "title": "Text", "order": 500,

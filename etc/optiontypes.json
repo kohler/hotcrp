@@ -6,13 +6,12 @@
     {
         "name": "dropdown", "title": "Dropdown", "order": 200,
         "function": "+Selector_PaperOption",
-        "convert_from_functions": {"radio": true},
+        "conversions": [{"from": "radio"}, {"to": "radio"}],
         "properties": ["common", "values"]
     },
     {
         "name": "radio", "title": "Radio buttons", "order": 300,
         "function": "+Selector_PaperOption",
-        "convert_from_functions": {"dropdown": true},
         "properties": ["common", "values"]
     },
     {
@@ -27,32 +26,34 @@
     {
         "name": "realnumber", "title": "Decimal number", "order": 401,
         "function": "+RealNumber_PaperOption",
-        "convert_from_functions": {"numeric": "RealNumber_PaperOption::convert_from_numeric"}
+        "conversions": [{"from": "numeric", "setting_function": "RealNumber_PaperOption::convert_from_numeric_setting"}]
     },
     {
         "name": "text", "title": "Text", "order": 500,
         "function": "+Text_PaperOption",
-        "convert_from_functions": {"mtext": true}
+        "conversions": [{"from": "mtext"}]
     },
     {
         "name": "mtext", "title": "Multiline text", "order": 550,
         "function": "+Text_PaperOption",
-        "convert_from_functions": {"text": true}
+        "conversions": [{"from": "text"}]
     },
     {
         "name": "pdf", "title": "PDF", "order": 600,
         "function": "+Document_PaperOption",
-        "convert_from_functions": {"slides": true, "document": true}
+        "conversions": [{"from": "document"}, {"to": "document"}]
     },
     {
         "name": "slides", "title": "Slides", "order": 610,
         "function": "+Document_PaperOption",
-        "convert_from_functions": {"pdf": true, "document": true}
+        "conversions": [
+            {"from": "document"}, {"to": "document"},
+            {"from": "pdf"}, {"to": "pdf"}
+        ]
     },
     {
         "name": "document", "title": "File upload", "order": 699,
-        "function": "+Document_PaperOption",
-        "convert_from_functions": {"pdf": true, "slides": true}
+        "function": "+Document_PaperOption"
     },
     {
         "name": "attachments", "title": "Attachments", "order": 700,

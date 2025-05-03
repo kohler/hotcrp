@@ -6775,6 +6775,8 @@ function ReviewField(fj) {
         this.required = fj.required;
     if (fj.exists_if != null)
         this.exists_if = fj.exists_if;
+    if (fj.convertible_to != null)
+        this.convertible_to = fj.convertible_to;
 }
 
 ReviewField.prototype.render_in = function (fv, rrow, fe) {

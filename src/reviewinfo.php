@@ -762,10 +762,9 @@ class ReviewInfo implements JsonSerializable {
         if ($finfo->main_storage) {
             $v = intval($this->{$finfo->main_storage} ?? "0");
             return $v > 0 ? $v : ($v < 0 ? 0 : null);
-        } else {
-            $a = &$this->_fstorage($finfo->is_sfield);
-            return $a[$finfo->json_storage] ?? null;
         }
+        $a = &$this->_fstorage($finfo->is_sfield);
+        return $a[$finfo->json_storage] ?? null;
     }
 
     /** @param ReviewField|ReviewFieldInfo $finfo

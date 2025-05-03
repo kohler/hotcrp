@@ -1,5 +1,5 @@
 // settings.js -- HotCRP JavaScript library for settings
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 "use strict";
 
@@ -215,11 +215,9 @@ function field_instantiate(ee, ftfinder, tname, instantiators) {
     for (let pe = ee.firstElementChild; pe; ) {
         const npe = pe.nextElementSibling,
             prop = pe.getAttribute("data-property");
-        if (prop === "type") {
-            field_instantiate_type(pe, ftfinder, ftype);
-        } else if (hasClass(pe, "property-optional")
-                   ? (ftype.properties || {})[prop]
-                   : (ftype.properties || {})[prop] !== false) {
+        if (hasClass(pe, "property-optional")
+            ? (ftype.properties || {})[prop]
+            : (ftype.properties || {})[prop] !== false) {
             if (instantiators && instantiators[prop])
                 instantiators[prop](pe, ftype);
             if ((ftype.placeholders || {})[prop])
@@ -713,9 +711,32 @@ function rf_order() {
 }
 
 function rf_fill_control(form, name, value, setdefault) {
-    var elt = form.elements[name];
+    const elt = form.elements[name];
     elt && $(elt).val(value);
     elt && setdefault && elt.setAttribute("data-default-value", value);
+}
+
+function rf_fill_type(form, name, fld, setdefault) {
+    const select = form.elements[name], ftype = rffinder(fld.type);
+    if (!select || !ftype) {
+        // intrinsic field
+        return;
+    }
+    if (!fld.convertible_to) {
+        // no conversion allowed
+        select.closest(".entry").replaceChildren(
+            ftype.title,
+            hidden_input(select.name, ftype.name, {id: select.id})
+        );
+        return;
+    }
+    select.replaceChildren(make_option_element(ftype.name, ftype.title),
+        $e("hr"));
+    for (const rft of rftypes) {
+        if (fld.convertible_to.includes(rft.name))
+            select.add(make_option_element(rft.name, rft.title));
+    }
+    rf_fill_control(form, name, ftype.name, setdefault);
 }
 
 function rf_color() {
@@ -744,7 +765,7 @@ function rf_fill(pos, fld, setdefault) {
     var form = document.getElementById("f-settings"),
         rfid = "rf/" + pos;
     rf_fill_control(form, rfid + "/name", fld.name || "", setdefault);
-    rf_fill_control(form, rfid + "/type", fld.type, setdefault);
+    rf_fill_type(form, rfid + "/type", fld, setdefault);
     rf_fill_control(form, rfid + "/description", fld.description || "", setdefault);
     rf_fill_control(form, rfid + "/visibility", fld.visibility || "re", setdefault);
     rf_fill_control(form, rfid + "/values_text", values_to_text(fld), setdefault);

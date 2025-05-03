@@ -271,7 +271,7 @@
     },
     {
         "name": "reviewform/main", "order": 10,
-        "print_function": "ReviewForm_SettingParser::print",
+        "print_function": "*ReviewForm_SettingParser::print",
         "settings": ["rf"]
     },
     {   "name": "rfo", "alias": "reviewform"   },

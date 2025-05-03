@@ -2,6 +2,7 @@
     {
         "legend": "Score",
         "type": "radio",
+        "convertible_to": ["dropdown"],
         "required": true,
         "visibility": "au",
         "sample_view": {
@@ -20,6 +21,7 @@
         "legend": "Dropdown score",
         "name": "Field name",
         "type": "dropdown",
+        "convertible_to": ["radio"],
         "required": true,
         "visibility": "au",
         "sample_view": {
@@ -63,6 +65,7 @@
         "legend": "Overall merit (1–5, Reject through Strong Accept)",
         "name": "Overall merit",
         "type": "radio",
+        "convertible_to": ["dropdown"],
         "values": [
             "Reject",
             "Weak reject",
@@ -77,6 +80,7 @@
         "legend": "Overall merit (A–D, Identify the Champion)",
         "name": "Overall merit",
         "type": "radio",
+        "convertible_to": ["dropdown"],
         "values": [
             "Reject",
             "Weak paper, though I will not fight strongly against it",
@@ -93,6 +97,7 @@
         "legend": "Overall merit (1–5, percentage rankings)",
         "name": "Overall merit",
         "type": "radio",
+        "convertible_to": ["dropdown"],
         "values": [
             "Bottom 50% of submitted papers",
             "Top 50% but not top 25% of submitted papers",
@@ -107,6 +112,7 @@
         "legend": "Reviewer confidence (1–3, Low through High)",
         "name": "Reviewer confidence",
         "type": "radio",
+        "convertible_to": ["dropdown"],
         "values": [
             "Low",
             "Medium",
@@ -120,6 +126,7 @@
         "legend": "Reviewer expertise (1–5)",
         "name": "Reviewer expertise",
         "type": "radio",
+        "convertible_to": ["dropdown"],
         "values": [
              "I know nothing about this area",
              "I have passing familiarity with this area",
@@ -135,6 +142,7 @@
         "legend": "Confidence (X–Z, Identify the Champion)",
         "name": "Confidence",
         "type": "radio",
+        "convertible_to": ["dropdown"],
         "values": [
             "I am not an expert; my evaluation is that of an informed outsider",
             "I am knowledgeable in this area, but not an expert",
@@ -183,6 +191,7 @@
         "legend": "Novelty (1–4)",
         "name": "Novelty",
         "type": "radio",
+        "convertible_to": ["dropdown"],
         "values": [
              "Published before or openly commercialized",
              "Incremental improvement",
@@ -196,6 +205,7 @@
         "legend": "Writing quality (1–5)",
         "name": "Writing quality",
         "type": "radio",
+        "convertible_to": ["dropdown"],
         "values": [
              "Unacceptable",
              "Needs improvement",
@@ -210,6 +220,7 @@
         "legend": "Experimental methodology (1–5)",
         "name": "Experimental methodology",
         "type": "radio",
+        "convertible_to": ["dropdown"],
         "values": [
              "Unacceptable",
              "Poor",

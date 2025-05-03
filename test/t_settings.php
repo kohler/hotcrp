@@ -594,7 +594,7 @@ class Settings_Tester {
         xassert(!$this->conf->find_review_field("B5"));
     }
 
-    function test_review_name_required() {
+    function test_rf_name_required() {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
             "rf/1/id" => "s90",
@@ -604,7 +604,7 @@ class Settings_Tester {
         xassert_str_contains($sv->full_feedback_text(), "Entry required");
     }
 
-    function test_review_renumber_choices() {
+    function test_rf_renumber_choices() {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
             "rf/1/id" => "s05",
@@ -756,7 +756,7 @@ class Settings_Tester {
         $this->conf->qe("delete from PaperReview where paperId=30");
     }
 
-    function test_review_conditions() {
+    function test_rf_conditions() {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_rf" => 1,
             "rf/1/id" => "s05",
@@ -837,7 +837,7 @@ class Settings_Tester {
         xassert($sv->execute());
     }
 
-    function test_review_field_id_new() {
+    function test_rf_id_new() {
         $rfkeys = array_keys($this->conf->all_review_fields());
 
         $sv = SettingValues::make_request($this->u_chair, [
@@ -1846,6 +1846,30 @@ class Settings_Tester {
         xassert(!$sv->execute());
         xassert_str_contains($sv->full_feedback_text(), "Entry required");
         xassert($sv->has_error_at("sf/1/name"));
+    }
+
+    function test_sf_realnumber_conversion() {
+        $brownies = $this->conf->options()->find("Brownies");
+        xassert(!!$brownies);
+        $this->conf->qe("insert into PaperOption (paperId, optionId, value) values (1, ?, 1), (2, ?, 4), (3, ?, 9), (4, ?, 16) on duplicate key update paperId=paperId",
+            $brownies->id, $brownies->id, $brownies->id, $brownies->id);
+
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_sf" => 1,
+            "sf/1/id" => $brownies->id,
+            "sf/1/type" => "realnumber"
+        ]);
+        xassert($sv->execute());
+
+        $result = $this->conf->qe("select * from PaperOption where optionId=? order by paperId asc", $brownies->id);
+        $n = 0;
+        while (($row = $result->fetch_object())) {
+            xassert_eq($row->paperId * $row->paperId, $row->value);
+            xassert_eq($row->paperId * $row->paperId, $row->data);
+            ++$n;
+        }
+        xassert_eqq($n, 4);
+        $result->close();
     }
 
     function test_ioptions_title() {

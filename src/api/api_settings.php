@@ -1,6 +1,6 @@
 <?php
 // api_settings.php -- HotCRP settings API
-// Copyright (c) 2008-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class Settings_API {
     static function run(Contact $user, Qrequest $qreq) {
@@ -150,9 +150,8 @@ class Settings_API {
 
         $l = [];
         foreach ($m as $name => $list) {
-            if (($j = $xtp->search_list($list))) {
+            if (($j = $xtp->search_list($list)))
                 $l[] = $j;
-            }
         }
 
         usort($l, "Conf::xt_pure_order_compare");
