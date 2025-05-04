@@ -1,6 +1,6 @@
 <?php
 // ht.php -- HotCRP HTML helper functions
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Ht {
     /** @var string */
@@ -209,7 +209,7 @@ class Ht {
             }
 
             if ($info === null) {
-                $opts[] = '<option label=" " disabled></option>';
+                $opts[] = '<hr>';
                 continue;
             }
             if (($info["exclude"] ?? false)
