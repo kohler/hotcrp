@@ -679,20 +679,20 @@ class SettingValues extends MessageSet {
      * @return object */
     function object_newv($name) {
         if (!array_key_exists($name, $this->_explicit_newv)) {
-            if (($x = $this->object_oldv($name))) {
-                $x = clone $x;
+            $oldv = $this->object_oldv($name);
+            $this->_explicit_newv[$name] = $newv = $oldv ? clone $oldv : null;
+            if ($newv) {
                 // skip member parsing if object is deleted (avoid errors)
                 if ($this->_use_req && $this->reqstr("{$name}/delete")) {
-                    $x->deleted = true;
+                    $newv->deleted = true;
                 } else {
-                    $this->_object_parsingv[$name] = $x;
+                    $this->_object_parsingv[$name] = $newv;
                     foreach ($this->req_member_list($name) as $si) {
                         $this->apply_req($si);
                     }
                     unset($this->_object_parsingv[$name]);
                 }
             }
-            $this->_explicit_newv[$name] = $x;
         }
         return $this->_explicit_newv[$name];
     }
