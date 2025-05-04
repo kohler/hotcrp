@@ -542,8 +542,9 @@ class ReviewValues extends MessageSet {
             }
         }
         foreach ($hasreqs as $k) {
-            if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))) {
-                $this->req[$f->short_id] = $this->req[$f->short_id] ?? "";
+            if (($f = $rf->field($k) ?? $this->conf->find_review_field($k))
+                && !isset($this->req[$f->short_id])) {
+                $this->req[$f->short_id] = $f->extract_qreq_has($qreq);
             }
         }
         return !empty($this->req);

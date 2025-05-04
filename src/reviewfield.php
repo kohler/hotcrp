@@ -1,6 +1,6 @@
 <?php
 // reviewfield.php -- HotCRP helper class for producing review forms and tables
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 // JSON schema for settings["review_form"]:
 // [{"id":FIELDID,"name":NAME,"description":DESCRIPTION,"order":ORDER,
@@ -434,6 +434,12 @@ abstract class ReviewField implements JsonSerializable {
      * @return ?string */
     function extract_qreq($qreq, $key) {
         return $qreq[$key];
+    }
+
+    /** @param Qrequest $qreq
+     * @return ?string */
+    function extract_qreq_has($qreq) {
+        return "";
     }
 
     /** @param string $s
