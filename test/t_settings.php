@@ -874,6 +874,95 @@ class Settings_Tester {
         xassert($sv->execute());
     }
 
+    function test_rf_checkbox() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/name" => "Goodness",
+            "rf/1/id" => "new",
+            "rf/1/type" => "checkbox"
+        ]);
+        xassert($sv->execute());
+
+        $rf = $this->conf->find_review_field("Goodness");
+        xassert(!!$rf);
+        xassert_eqq($rf->short_id[0], "s");
+        xassert_eqq($rf->type, "checkbox");
+
+        $this->conf->save_refresh_setting("rev_open", 1);
+        save_review(30, $this->u_mgbaker, [
+            "ovemer" => 2, "revexp" => 1, "goodness" => "yes"
+        ]);
+        $u_jj = $this->conf->checked_user_by_email("jj@cse.ucsc.edu");
+        save_review(30, $u_jj, [
+            "ovemer" => 2, "revexp" => 1, "goodness" => "no"
+        ]);
+        $u_floyd = $this->conf->checked_user_by_email("floyd@ee.lbl.gov");
+        save_review(30, $u_floyd, [
+            "ovemer" => 2, "revexp" => 1, "goodness" => "yes"
+        ]);
+        $u_leita = $this->conf->ensure_user_by_email("leita@library.berkeleyca.gov");
+        $this->u_chair->assign_review(30, $u_leita, REVIEW_EXTERNAL);
+        save_review(30, $u_leita, [
+            "ovemer" => 2, "revexp" => 1, "goodness" => ""
+        ]);
+
+        $p30 = $this->conf->checked_paper_by_id(30);
+        $rrow1 = $p30->review_by_user($this->u_mgbaker);
+        $rrow2 = $p30->review_by_user($u_jj);
+        $rrow3 = $p30->review_by_user($u_floyd);
+        $rrow4 = $p30->review_by_user($u_leita);
+        xassert_eqq($rrow1->fidval($rf->short_id), 1);
+        xassert_eqq($rrow2->fidval($rf->short_id), 0);
+        xassert_eqq($rrow3->fidval($rf->short_id), 1);
+        xassert_eqq($rrow4->fidval($rf->short_id), null);
+
+        // change field to dropdown
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => $rf->short_id,
+            "rf/1/type" => "dropdown"
+        ]);
+        xassert($sv->execute());
+
+        $rf = $this->conf->review_field($rf->short_id);
+        '@phan-var-force DiscreteValues_ReviewField $rf';
+        xassert(!!$rf);
+        xassert_eqq($rf->type, "dropdown");
+        xassert_eqq($rf->values(), ["No", "Yes"]);
+
+        $p30 = $this->conf->checked_paper_by_id(30);
+        $rrow1 = $p30->review_by_user($this->u_mgbaker);
+        $rrow2 = $p30->review_by_user($u_jj);
+        $rrow3 = $p30->review_by_user($u_floyd);
+        $rrow4 = $p30->review_by_user($u_leita);
+        xassert_eqq($rrow1->fidval($rf->short_id), 2);
+        xassert_eqq($rrow2->fidval($rf->short_id), 1);
+        xassert_eqq($rrow3->fidval($rf->short_id), 2);
+        xassert_eqq($rrow4->fidval($rf->short_id), null);
+
+        // change field back to checkbox
+        $sv = SettingValues::make_request($this->u_chair, [
+            "has_rf" => 1,
+            "rf/1/id" => $rf->short_id,
+            "rf/1/type" => "checkbox"
+        ]);
+        xassert($sv->execute());
+
+        $rf = $this->conf->review_field($rf->short_id);
+        xassert(!!$rf);
+        xassert_eqq($rf->type, "checkbox");
+
+        $p30 = $this->conf->checked_paper_by_id(30);
+        $rrow1 = $p30->review_by_user($this->u_mgbaker);
+        $rrow2 = $p30->review_by_user($u_jj);
+        $rrow3 = $p30->review_by_user($u_floyd);
+        $rrow4 = $p30->review_by_user($u_leita);
+        xassert_eqq($rrow1->fidval($rf->short_id), 1);
+        xassert_eqq($rrow2->fidval($rf->short_id), 0);
+        xassert_eqq($rrow3->fidval($rf->short_id), 1);
+        xassert_eqq($rrow4->fidval($rf->short_id), null);
+    }
+
     function test_review_rounds() {
         $tn = Conf::$now + 10;
 

@@ -159,4 +159,51 @@ class Checkbox_ReviewField extends Discrete_ReviewField {
         }
         return new Discrete_ReviewFieldSearch($this, CountMatcher::RELEQ, [$v]);
     }
+
+    static function convert_to_score_setting(Si $si, Rf_Setting $fs, SettingValues $sv) {
+        $parser = $sv->si_parser($si);
+        '@phan-var-force ReviewForm_SettingParser $parser';
+        $parser->set_field_value_map($fs->id, [0 => 1, 1 => 2]);
+        $sv->save("rf/{$si->name1}/values_storage", ["No", "Yes"]);
+        $sv->save("rf/{$si->name1}/ids", [1, 2]);
+        $sv->save("rf/{$si->name1}/start", 1);
+    }
+
+    static function allow_convert_from_score(Rf_Setting $fs, SettingValues $sv, ?Si $report) {
+        $vn = $vy = $vo = [];
+        foreach ($fs->xvalues as $i => $xv) {
+            if ($xv->symbol === "✓"
+                || strcasecmp($xv->symbol, "yes") === 0
+                || preg_match('/\Ayes(?:|\s*:.*)\z/i', $xv->name)) {
+                $vy[] = $i + 1;
+            } else if ($xv->symbol === "✗"
+                       || strcasecmp($xv->symbol, "no") === 0
+                       || preg_match('/\Ano(?:|\s*:.*)\z/i', $xv->name)) {
+                $vn[] = $i + 1;
+            } else {
+                $vo[] = $i + 1;
+            }
+        }
+        if (!empty($vo)
+            || count($vy) !== 1
+            || count($vn) > 1) {
+            if ($report) {
+                $sv->error_at($report, "<0>Cannot convert review field to checkbox");
+                $sv->inform_at($report, "<0>To convert to checkbox type, make sure the choices are labelled “Yes” and “No”.");
+            }
+            return false;
+        }
+        return [$vy[0], $vn[0] ?? null];
+    }
+
+    static function convert_from_score_setting(Si $si, Rf_Setting $fs, SettingValues $sv) {
+        $parser = $sv->si_parser($si);
+        '@phan-var-force ReviewForm_SettingParser $parser';
+        list($yes, $no) = self::allow_convert_from_score($fs, $sv, null);
+        $fvmap = [$yes => 1];
+        if ($no !== null) {
+            $fvmap[$no] = 0;
+        }
+        $parser->set_field_value_map($fs->id, $fvmap);
+    }
 }

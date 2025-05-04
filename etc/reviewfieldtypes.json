@@ -19,7 +19,13 @@
     {
         "name": "checkbox", "title": "Checkbox", "order": 600,
         "properties": {"scheme": true, "required": true, "checkbox": true},
-        "id_prefix": "s"
+        "id_prefix": "s",
+        "conversions": [
+            {"to": "radio", "setting_function": "Checkbox_ReviewField::convert_to_score_setting"},
+            {"to": "dropdown", "setting_function": "Checkbox_ReviewField::convert_to_score_setting"},
+            {"from": "radio", "allow_function": "Checkbox_ReviewField::allow_convert_from_score", "setting_function": "Checkbox_ReviewField::convert_from_score_setting"},
+            {"from": "dropdown", "allow_function": "Checkbox_ReviewField::allow_convert_from_score", "setting_function": "Checkbox_ReviewField::convert_from_score_setting"}
+        ]
     },
     {
         "name": "checkboxes", "title": "Checkboxes", "order": 700,
