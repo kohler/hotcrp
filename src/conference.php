@@ -764,7 +764,7 @@ class Conf {
             }
         }
         if (($this->_slice & Contact::SLICEBIT_PREFERREDEMAIL) !== 0
-            && ($this->opt["loginType"] === "ldap" || $this->opt["loginType"] === "htauth")) {
+            && $this->require_preferred_email()) {
             $this->_slice -= Contact::SLICEBIT_PREFERREDEMAIL;
         }
 
@@ -1983,6 +1983,11 @@ class Conf {
     }
 
     /** @return bool */
+    function require_preferred_email() {
+        return $this->external_login();
+    }
+
+    /** @return bool */
     function allow_local_signin() {
         $lt = $this->login_type();
         return $lt !== "none" && $lt !== "oauth";
@@ -2065,7 +2070,11 @@ class Conf {
             return "{$prefix}*, 0 _slice";
         }
         // site configuration may require preferredEmail
-        $slice &= $this->_slice | ~Contact::SLICEBIT_PREFERREDEMAIL;
+        if (($slice & Contact::SLICEBIT_PREFERREDEMAIL) !== 0
+            && ($this->_slice & Contact::SLICEBIT_PREFERREDEMAIL) === 0
+            && $this->require_preferred_email()) {
+            $slice -= Contact::SLICEBIT_PREFERREDEMAIL;
+        }
 
         $f = "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, {$prefix}roles, {$prefix}primaryContactId, {$prefix}contactTags, {$prefix}cflags";
         if (($slice & Contact::SLICEBIT_PREFERREDEMAIL) === 0) {
@@ -2092,7 +2101,9 @@ class Conf {
     /** @param string $prefix
      * @return string */
     function deleted_user_query_fields($prefix = "") {
-        return "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, 0 roles, 0 primaryContactId, '' contactTags, " . Contact::CF_DELETED . " cflags, 0 _slice";
+        // site configuration may require preferredEmail
+        $xf = $this->require_preferred_email() ? "null {$prefix}preferredEmail, " : "";
+        return "{$prefix}contactId, {$prefix}email, {$prefix}firstName, {$prefix}lastName, {$prefix}affiliation, 0 roles, 0 primaryContactId, '' contactTags, " . Contact::CF_DELETED . " cflags, {$xf}0 _slice";
     }
 
     /** @param int $slice
