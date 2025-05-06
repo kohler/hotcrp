@@ -1606,126 +1606,15 @@ function hoturl(page, options) {
             }
         }
     }
-    let anchor = "";
+    let tail = "";
     if (params.has("#")) {
-        anchor = "#" + params.get("#");
+        tail = "#" + params.get("#");
         params.delete("#");
     }
     if (params.size > 0) {
-        x.t += "?" + params.toString();
+        tail = "?" + params.toString() + tail;
     }
-    const result = siteinfo.site_relative + x.t + anchor;
-    if (result !== hoturl_old(page1, options1)) {
-        log_jserror("hoturl difference on " + JSON.stringify([page1, options1]) + ", " + result + " vs. " + hoturl_old(page1, options1));
-    }
-    return result;
-}
-
-function hoturl_old(page, options) {
-    const page1 = page, options1 = options;
-    var i, k, m, v, x, xv, anchor = "", want_forceShow;
-    if (siteinfo.site_relative == null || siteinfo.suffix == null) {
-        siteinfo.site_relative = siteinfo.suffix = "";
-        log_jserror("missing siteinfo");
-    }
-
-    x = {t: page};
-    if (options == null && (i = page.indexOf("?")) > 0) {
-        options = page.substring(i);
-        page = page.substring(0, i);
-    }
-    if (typeof options === "string") {
-        if (options.charAt(0) === "?")
-            options = options.substring(1);
-        if ((m = options.match(/^(.*?)(#.*)$/))) {
-            options = m[1];
-            anchor = m[2];
-        }
-        xv = options.split(/&/);
-    } else if (options instanceof URLSearchParams) {
-        xv = [];
-        for (const kv of options.entries()) {
-            if (kv[0] === "#")
-                anchor = "#" + kv[1];
-            else
-                xv.push(encodeURIComponent(kv[0]).concat("=", urlencode(kv[1])));
-        }
-    } else {
-        xv = [];
-        for (k in options) {
-            v = options[k];
-            if (v == null)
-                /* skip */;
-            else if (k === "#")
-                anchor = "#" + v;
-            else
-                xv.push(encodeURIComponent(k).concat("=", urlencode(v)));
-        }
-    }
-
-    if (page.startsWith("=")) {
-        xv.push("post=" + siteinfo.postvalue);
-        page = page.substring(1);
-    }
-    if (page.substring(0, 3) === "api" && !hoturl_find(xv, /^base=/)) {
-        xv.push("base=" + encodeURIComponent(siteinfo.site_relative));
-    }
-    x = {t: page, v: xv};
-
-    if (page === "paper") {
-        hoturl_clean(x, /^p=(\d+)$/);
-        hoturl_clean(x, /^m=(\w+)$/);
-        if (x.last === "api") {
-            hoturl_clean(x, /^fn=(\w+)$/);
-            want_forceShow = true;
-        }
-    } else if (page === "review") {
-        hoturl_clean(x, /^p=(\d+)$/);
-        if (x.last !== false
-            && (m = hoturl_find(xv, /^r=(\d+)([A-Z]+|r\d+|rnew)$/))
-            && x.t.endsWith("/" + m[1])) {
-            x.t += m[2];
-            x.v.splice(m[0], 1);
-        }
-    } else if (page === "help") {
-        hoturl_clean(x, /^t=(\w+)$/);
-    } else if (page.substring(0, 3) === "api") {
-        if (page.length > 3) {
-            x.t = "api";
-            x.v.push("fn=" + page.substring(4));
-        }
-        hoturl_clean(x, /^p=(\d+|new)$/, true);
-        hoturl_clean(x, /^fn=(\w+)$/);
-        want_forceShow = true;
-    } else if (page === "settings") {
-        hoturl_clean(x, /^group=(\w+)$/);
-    } else if (page === "doc") {
-        hoturl_clean(x, /^file=([^&]+)$/);
-    }
-
-    if (siteinfo.suffix !== "") {
-        if ((i = x.t.indexOf("/")) <= 0) {
-            i = x.t.length;
-        }
-        k = x.t.substring(0, i);
-        if (!k.endsWith(siteinfo.suffix)) {
-            k += siteinfo.suffix;
-        }
-        x.t = k + x.t.substring(i);
-    }
-
-    if (siteinfo.want_override_conflict
-        && want_forceShow
-        && !hoturl_find(xv, /^forceShow=/)) {
-        xv.push("forceShow=1");
-    }
-    if (siteinfo.defaults) {
-        xv.push(serialize_object(siteinfo.defaults));
-    }
-    if (xv.length){
-        x.t += "?" + xv.join("&");
-    }
-    return siteinfo.site_relative + x.t + anchor;
+    return siteinfo.site_relative + x.t + tail;
 }
 
 function hoturl_html(page, options) {
