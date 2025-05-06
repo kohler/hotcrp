@@ -1,4 +1,4 @@
-export VERSION=3.0.0
+export VERSION=3.1
 
 # check that schema.sql and updateschema.php agree on schema version
 updatenum=`grep 'settings.*allowPaperOption.*=\|update_schema_version' src/updateschema.php | tail -n 1 | sed 's/.*= *//;s/.*[(] *//;s/[;)].*//'`
@@ -506,6 +506,7 @@ src/settings/s_basics.php
 src/settings/s_comment.php
 src/settings/s_decision.php
 src/settings/s_decisionvisibility.php
+src/settings/s_fieldconversions.php
 src/settings/s_finalversions.php
 src/settings/s_json.php
 src/settings/s_messages.php
