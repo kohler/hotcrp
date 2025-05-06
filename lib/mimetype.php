@@ -1,6 +1,6 @@
 <?php
 // mimetype.php -- HotCRP helper file for MIME types
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Mimetype {
     // NB types listed here must also be present in `lib/mime.types`
@@ -404,9 +404,8 @@ class Mimetype {
                 $ivm = ISOVideoMimetype::make_string($content);
             }
             return $ivm->content_info();
-        } else {
-            return ["type" => $type];
         }
+        return ["type" => $type];
     }
 
     /** @param string $s

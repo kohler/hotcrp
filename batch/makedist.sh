@@ -87,6 +87,8 @@ batch/assign.php
 batch/autoassign.php
 batch/backupdb.php
 batch/checkinvariants.php
+batch/cli/cli_paper.php
+batch/cli/cli_upload.php
 batch/createdb.php
 batch/deletepapers.php
 batch/fixdelegation.php
@@ -104,6 +106,17 @@ batch/settings.php
 batch/updatecontactdb.php
 
 conf/.htaccess
+
+devel/hotcrp-daemonize.c
+devel/manual/components.md
+devel/manual/css.md
+devel/manual/docstore.md
+devel/manual/fmt.md
+devel/manual/index.md
+devel/manual/oauth.md
+devel/manual/pages.md
+devel/manual/sessions.md
+devel/openapi.json
 
 etc/.htaccess
 etc/affiliationmatchers.json
@@ -194,6 +207,7 @@ lib/testqsession.php
 lib/text.php
 lib/uconvertershim.php
 lib/unicodehelper.php
+lib/utf8conversionfilter.php
 lib/xlsx.php
 
 src/.htaccess
@@ -241,6 +255,7 @@ src/assigners/a_taganno.php
 src/assigners/a_unsubmitreview.php
 src/assignmentcountset.php
 src/assignmentset.php
+src/authenticationchecker.php
 src/author.php
 src/authormatcher.php
 src/autoassigner.php
@@ -291,6 +306,7 @@ src/formulas/f_decision.php
 src/formulas/f_now.php
 src/formulas/f_optionpresent.php
 src/formulas/f_optionvalue.php
+src/formulas/f_pagecount.php
 src/formulas/f_pdfsize.php
 src/formulas/f_pref.php
 src/formulas/f_realnumberoption.php
@@ -350,7 +366,6 @@ src/mailsender.php
 src/meetingtracker.php
 src/mentionlister.php
 src/mentionparser.php
-src/mergecontacts.php
 src/multiconference.php
 src/notificationinfo.php
 src/options/o_abstract.php
@@ -550,6 +565,7 @@ src/userinfo/u_developer.php
 src/userinfo/u_security.php
 src/usersecurityevent.php
 src/userstatus.php
+src/valueformat.php
 src/viewcommand.php
 src/viewoptionlist.php
 src/viewoptionschema.php
