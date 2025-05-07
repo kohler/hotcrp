@@ -7517,7 +7517,7 @@ function cmt_save_callback(cj) {
     var cid = cj_cid(cj), celt = $$(cid), form = celt.querySelector("form");
     return function (data) {
         if (!data.ok) {
-            if (data.loggedout) {
+            if (data.signedout || data.loggedout) {
                 has_unload = false;
                 form.method = "post";
                 var arg = {editcomment: 1, p: siteinfo.paperid};

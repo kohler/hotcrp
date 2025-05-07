@@ -417,14 +417,6 @@ function initialize_user($qreq, $kwarg = null) {
         header("X-Robots-Tag: noindex, noarchive");
     }
 
-    // redirect if disabled
-    if ($muser->is_disabled()) {
-        $gj = $conf->page_components($muser, $qreq)->get($nav->page);
-        if (!$gj || !($gj->allow_disabled ?? false)) {
-            $conf->redirect_hoturl("index");
-        }
-    }
-
     // if bounced through login, add post data
     $login_bounce = $qreq->gsession("login_bounce");
     if (isset($login_bounce[4]) && $login_bounce[4] <= Conf::$now) {

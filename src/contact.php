@@ -1887,7 +1887,8 @@ class Contact implements JsonSerializable {
             }
             $jr = JsonResult::make_error(403, $m);
             if (!$this->is_signed_in()) {
-                $jr->content["loggedout"] = true;
+                $jr->set("signedout", true);
+                $jr->set("loggedout", true); // XXX backward compat
             }
             json_exit($jr);
         }
@@ -1903,7 +1904,10 @@ class Contact implements JsonSerializable {
         $url = $this->conf->selfurl($qreq, $x, Conf::HOTURL_RAW | Conf::HOTURL_SITEREL);
 
         if (!$qreq->valid_post()) {
-            Multiconference::fail($qreq, 403, new FailureReason($this->conf, ["signin" => $qreq->page(), "signinUrl" => $this->conf->hoturl_raw("signin", ["redirect" => $url])]));
+            Multiconference::fail($qreq, 403, new FailureReason($this->conf, [
+                "signin" => $qreq->page(),
+                "signinUrl" => $this->conf->hoturl_raw("signin", ["redirect" => $url])
+            ]));
         }
 
         // Preserve post values across session expiration.
