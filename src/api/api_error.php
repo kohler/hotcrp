@@ -57,6 +57,7 @@ class Error_API {
     static function cspreport(Contact $user, Qrequest $qreq) {
         $bct = $qreq->body_content_type();
         $j = null;
+        error_log("CSP error: " . ($qreq->referrer() ?? "<unknown>"));
         if (($bct !== "application/reports+json" && $bct !== "application/json" && $bct !== "application/csp-report")
             || !($j = json_decode($qreq->body() ?? "null"))
             || !is_object($j)) {

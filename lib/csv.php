@@ -1288,8 +1288,6 @@ class CsvGenerator {
         $this->flags |= self::FLAG_HTTP_HEADERS;
         $inline = $this->inline ?? !$this->is_csv();
         header("Content-Disposition: " . ($inline ? "inline" : "attachment") . "; filename=" . mime_quote_string($this->filename()));
-        // reduce likelihood of XSS attacks in IE
-        header("X-Content-Type-Options: nosniff");
     }
 
     /** @return bool */

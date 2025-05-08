@@ -4761,6 +4761,10 @@ class Conf {
             $re = str_replace("\${siteurl}", $qreq->navigation()->site_absolute(), $re);
             header("Reporting-Endpoints: " . $re);
         }
+        $ctopt = $this->opt["httpXContentTypeOptions"] ?? "nosniff";
+        if ($ctopt !== false && $ctopt !== "") {
+            header("X-Content-Type-Options: " . $ctopt);
+        }
     }
 
     /** @param Qrequest $qreq

@@ -311,7 +311,6 @@ class Downloader {
         if ($this->etag !== null) {
             self::emit_header("ETag: {$this->etag}");
         }
-        self::emit_header("X-Content-Type-Options: nosniff");
         if ($this->_filename !== null) {
             $attachment = $this->attachment ?? !Mimetype::disposition_inline($this->mimetype);
             self::emit_header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($this->_filename));
