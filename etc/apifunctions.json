@@ -273,8 +273,8 @@
     {
         "name": "search", "get": true,
         "function": "Search_API::search",
-        "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing",
-        "response": "ids groups hotlist search_params"
+        "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing ?hotlist",
+        "response": "ids groups search_params ?hotlist"
     },
     {
         "name": "searchactions", "get": true,
