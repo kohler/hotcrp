@@ -14579,20 +14579,6 @@ $(function () {
         err.push(locator(this));
         elt.push(this);
     });
-    var example;
-    try {
-        example = (0, eval)("(function (a) { var j = 0; for (i of a) { j += i; } return j; })([1, 10, 200])");
-        example !== 211 && err.push("for..of loop produces unexpected result");
-    } catch (e) {
-        err.push("for..of loop not supported");
-    }
-    example = null;
-    try {
-        example = (0, eval)("(function (a) { let j = a.length; return j + a[0]; })([1, 10, 200])");
-        example !== 4 && err.push("let test produces unexpected result");
-    } catch (e) {
-        err.push("let not supported");
-    }
     if (document.documentMode || window.attachEvent) {
         var msg = $('<div class="msg msg-error"></div>').appendTo("#h-messages");
         feedback.append_item_near(msg[0], {message: "<0>This site no longer supports Internet Explorer", status: 2});
