@@ -224,7 +224,7 @@ function initialize_request($conf, $nav) {
     header("Cache-Control: max-age=0,must-revalidate,private");
 
     // set up Content-Security-Policy if appropriate
-    $conf->prepare_security_headers();
+    $conf->prepare_security_headers($qreq);
 
     return $qreq;
 }

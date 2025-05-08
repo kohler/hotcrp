@@ -59,6 +59,10 @@
         "response_deprecated": "cmt"
     },
     {
+        "name": "cspreport", "post": true, "check_token": false,
+        "function": "Error_API::cspreport"
+    },
+    {
         "name": "declinereview", "post": true,
         "function": "RequestReview_API::declinereview",
         "parameters": "p r ?=reason",

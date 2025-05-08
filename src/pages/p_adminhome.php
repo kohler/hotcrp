@@ -68,10 +68,6 @@ class AdminHome_Page {
         if (!$site_contact->email || $site_contact->email == "you@example.com") {
             $ml[] = MessageItem::urgent_note("<5><a href=\"" . $conf->hoturl("settings", "group=basics") . "\">Set the conference contact’s name and email</a> so submitters can reach someone if things go wrong");
         }
-        // Configuration updates
-        if ($conf->opt("oAuthTypes")) {
-            $ml[] = MessageItem::urgent_note("<5><code>\$Opt[\"oAuthTypes\"]</code> is deprecated; rename the setting to <code>\$Opt[\"oAuthProviders\"]</code>");
-        }
         // Can anyone view submissions?
         if ($conf->has_tracks()) {
             $any_visible = false;
@@ -122,6 +118,18 @@ class AdminHome_Page {
         if ($conf->setting("__sf_condition_recursion") > 0)  {
             $ml[] = MessageItem::error("<0>Self-referential search in submission field conditions");
             $ml[] = MessageItem::inform("<5>Some presence conditions in submission fields appear to be circularly defined. The fields involved will never appear. You should <a href=\"" . $conf->hoturl("settings", "group=subform") . "\">update the submission form settings</a> to fix this problem.");
+        }
+        // Obsolete options?
+        foreach ([["jqueryURL", "jqueryUrl"],
+                  ["assetsURL", "assetsUrl"],
+                  ["oAuthTypes", "oAuthProviders"],
+                  ["strictTransportSecurity", "httpStrictTransportSecurity"],
+                  ["contentSecurityPolicy", "httpContentSecurityPolicy"],
+                  ["crossOriginIsolation", "httpCrossOriginOpenerPolicy"]] as $m) {
+            if ($conf->opt($m[0]) !== null && $conf->opt($m[1]) === null) {
+                $ml[] = MessageItem::error("<5><code>\$Opt[\"{$m[0]}\"]</code> is deprecated");
+                $ml[] = MessageItem::inform("<5>Edit <code>options.php</code> to use <code>\$Opt[\"{$m[1]}\"]</code> instead.");
+            }
         }
 
         if (!empty($ml)) {

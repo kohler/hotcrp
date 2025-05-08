@@ -91,9 +91,8 @@ class SiteLoader {
     static function find($suffix) {
         if ($suffix[0] === "/") {
             return self::$root . $suffix;
-        } else {
-            return self::$root . "/" . $suffix;
         }
+        return self::$root . "/" . $suffix;
     }
 
     // Set up conference options

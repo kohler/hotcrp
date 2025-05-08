@@ -7,6 +7,9 @@ class Ht {
     public static $img_base = "";
     /** @var string */
     private static $_script_open = "<script";
+    /** @var ?non-empty-string
+     * @readonly */
+    public static $script_nonce;
     /** @var int */
     private static $_controlid = 0;
     /** @var int */
@@ -86,11 +89,14 @@ class Ht {
         return $x;
     }
 
-    /** @param ?string $nonce */
+    /** @param ?string $nonce
+     * @suppress PhanAccessReadOnlyProperty */
     static function set_script_nonce($nonce) {
-        if ($nonce === null || $nonce === "") {
+        if ((string) $nonce === "") {
+            self::$script_nonce = null;
             self::$_script_open = '<script';
         } else {
+            self::$script_nonce = $nonce;
             self::$_script_open = '<script nonce="' . htmlspecialchars($nonce) . '"';
         }
     }

@@ -2001,7 +2001,7 @@ class Conf {
     /** @return array<string,object> */
     function oauth_providers() {
         if ($this->_oauth_providers === null) {
-            $k = isset($this->opt["oAuthProviders"]) ? "oAuthProviders" : "oAuthTypes";
+            $k = isset($this->opt["oAuthProviders"]) ? "oAuthProviders" : "oAuthTypes" /* XXX */;
             $this->_oauth_providers = $this->_xtbuild_resolve([], $k);
         }
         return $this->_oauth_providers;
@@ -4723,32 +4723,43 @@ class Conf {
         return $this->make_script_file($jquery, true, $integrity);
     }
 
-    function prepare_security_headers() {
-        $csp = $this->opt("contentSecurityPolicy");
-        if ($csp === null || $csp === true) {
+    /** @param string $csp
+     * @return string */
+    static private function process_content_security_policy($csp) {
+        if (($pos = strpos($csp, "'js-nonce'")) !== false) {
+            if (Ht::$script_nonce === null) {
+                Ht::set_script_nonce(base64_encode(random_bytes(16)));
+            }
+            $csp = str_replace("'js-nonce'", "'nonce-" . Ht::$script_nonce . "'", $csp);
+        }
+        return $csp;
+    }
+
+    /** @param Qrequest $qreq */
+    function prepare_security_headers($qreq) {
+        $csp = $this->opt["httpContentSecurityPolicy"] ?? true;
+        if ($csp === true) {
             // disallow frame embedding by default
             header("Content-Security-Policy: frame-ancestors 'none'");
-        } else if ($csp !== false && $csp !== []) {
-            $csp = is_string($csp) ? [$csp] : $csp;
-            $report_only = false;
-            if (($pos = array_search("'report-only'", $csp)) !== false) {
-                $report_only = true;
-                array_splice($csp, $pos, 1);
-            }
-            if (($pos = array_search("'nonce'", $csp)) !== false) {
-                $nonceval = base64_encode(random_bytes(16));
-                $csp[$pos] = "'nonce-{$nonceval}'";
-                Ht::set_script_nonce($nonceval);
-            }
-            header("Content-Security-Policy"
-                   . ($report_only ? "-Report-Only: " : ": ")
-                   . join(" ", $csp));
+        } else if ($csp !== false && $csp !== "") {
+            header("Content-Security-Policy: " . self::process_content_security_policy($csp));
         }
-        if ($this->opt("crossOriginIsolation") !== false) {
-            header("Cross-Origin-Opener-Policy: same-origin");
+        $csp = $this->opt["httpContentSecurityPolicyReportOnly"] ?? null;
+        if (is_string($csp) && $csp !== "") {
+            header("Content-Security-Policy-Report-Only: " . self::process_content_security_policy($csp));
         }
-        if (($sts = $this->opt("strictTransportSecurity"))) {
-            header("Strict-Transport-Security: {$sts}");
+        $coop = $this->opt["httpCrossOriginOpenerPolicy"] ?? "same-origin";
+        if ($coop !== false && $coop !== "") {
+            header("Cross-Origin-Opener-Policy: " . $coop);
+        }
+        $sts = $this->opt["httpStrictTransportSecurity"] ?? $this->opt["strictTransportSecurity"] ?? false;
+        if ($sts !== false && $sts !== "") {
+            header("Strict-Transport-Security: " . $sts);
+        }
+        $re = $this->opt["httpReportingEndpoints"] ?? false;
+        if ($re !== false && $re !== "") {
+            $re = str_replace("\${siteurl}", $qreq->navigation()->site_absolute(), $re);
+            header("Reporting-Endpoints: " . $re);
         }
     }
 
