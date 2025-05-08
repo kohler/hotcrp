@@ -162,7 +162,7 @@ class Signin_Page {
 
         $folded = $cs->root !== "signin" && !$qreq->signin;
         self::print_form_start_for($qreq, "signin", $folded);
-        if (($redirect = $this->conf->qreq_redirect_url($qreq))) {
+        if (($redirect = $qreq->conf->qreq_redirect_url($qreq))) {
             echo Ht::hidden("redirect", $redirect);
         }
         if ($folded) {
