@@ -55,7 +55,6 @@ class Error_API {
     }
 
     static function cspreport(Contact $user, Qrequest $qreq) {
-        error_log("CSP error: " . ($qreq->referrer() ?? "<unknown>"));
         $bct = $qreq->body_content_type();
         $j = null;
         if ($bct === "application/reports+json" || $bct === "application/json" || $bct === "application/csp-report") {
@@ -65,23 +64,32 @@ class Error_API {
             $j = [$j];
         }
         $t = [];
-        if (is_list($j)) {
+        if (($ok = is_list($j))) {
             foreach ($j as $jx) {
-                if (is_object($jx)) {
-                    $t[] = "\x1E" /* RS */ . json_encode($jx, JSON_PRETTY_PRINT) . "\n";
+                if (!is_object($jx)) {
+                    $ok = false;
+                } else if (isset($jx->body)
+                           && is_object($jx->body)
+                           && isset($jx->body->sourceFile)
+                           && str_ends_with($jx->body->sourceFile, "-extension")) {
+                    /* skip */
                 } else {
-                    $t = [];
-                    break;
+                    $t[] = "\x1E" /* RS */ . json_encode($jx, JSON_PRETTY_PRINT) . "\n";
                 }
             }
         }
-        if (empty($t)) {
+        if (!$ok || !empty($t)) {
+            error_log("CSP error: " . ($qreq->referrer() ?? "<unknown>"));
+        }
+        if (!$ok) {
             return new JsonResult(400, [
                 "ok" => false,
                 "message_list" => [MessageItem::error("<0>Unexpected request")],
                 "body_content_type" => $qreq->body_content_type(),
                 "body_type" => gettype($j)
             ]);
+        } else if (empty($t)) {
+            return JsonResult::make_ok();
         }
         $f = $user->conf->opt("cspReportFile") ?? SiteLoader::find("var/cspreports.json-seq");
         if (!file_exists($f)
