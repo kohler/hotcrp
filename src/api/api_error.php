@@ -55,12 +55,27 @@ class Error_API {
     }
 
     static function cspreport(Contact $user, Qrequest $qreq) {
+        error_log("CSP error: " . ($qreq->referrer() ?? "<unknown>"));
         $bct = $qreq->body_content_type();
         $j = null;
-        error_log("CSP error: " . ($qreq->referrer() ?? "<unknown>"));
-        if (($bct !== "application/reports+json" && $bct !== "application/json" && $bct !== "application/csp-report")
-            || !($j = json_decode($qreq->body() ?? "null"))
-            || !is_object($j)) {
+        if ($bct === "application/reports+json" || $bct === "application/json" || $bct === "application/csp-report") {
+            $j = json_decode($qreq->body() ?? "null");
+        }
+        if (is_object($j)) {
+            $j = [$j];
+        }
+        $t = [];
+        if (is_list($j)) {
+            foreach ($j as $jx) {
+                if (is_object($jx)) {
+                    $t[] = "\x1E" /* RS */ . json_encode($jx, JSON_PRETTY_PRINT) . "\n";
+                } else {
+                    $t = [];
+                    break;
+                }
+            }
+        }
+        if (empty($t)) {
             return new JsonResult(400, [
                 "ok" => false,
                 "message_list" => [MessageItem::error("<0>Unexpected request")],
@@ -75,9 +90,7 @@ class Error_API {
             return JsonResult::make_error(503, "<0>Report cannot be saved");
         } else if (filesize($f) >= 3000000) {
             return JsonResult::make_error(503, "<0>Report quota reached");
-        } else if (@file_put_contents($f,
-                       "\x1E" /* RS */ . json_encode($j, JSON_PRETTY_PRINT) . "\n",
-                       FILE_APPEND) === false) {
+        } else if (@file_put_contents($f, join("", $t), FILE_APPEND) === false) {
             return JsonResult::make_error(500, "<0>Report not saved");
         }
         return JsonResult::make_ok();
