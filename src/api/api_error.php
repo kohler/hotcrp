@@ -74,12 +74,19 @@ class Error_API {
                            && str_ends_with($jx->body->sourceFile, "-extension")) {
                     /* skip */
                 } else {
+                    if ($user->has_email() && !isset($jx->user)) {
+                        $jx->user = $user->email;
+                    }
                     $t[] = "\x1E" /* RS */ . json_encode($jx, JSON_PRETTY_PRINT) . "\n";
                 }
             }
         }
         if (!$ok || !empty($t)) {
-            error_log("CSP error: " . ($qreq->referrer() ?? "<unknown>"));
+            $m = "CSP error: " . ($qreq->referrer() ?? "<unknown>");
+            if (!$ok) {
+                $m .= " [invalid {$bct}]";
+            }
+            error_log($m);
         }
         if (!$ok) {
             return new JsonResult(400, [
