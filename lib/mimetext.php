@@ -112,10 +112,11 @@ class MimeText {
         }
     }
 
-    /** @param string $header
+    /** @param string $field
      * @param string $str
      * @return false|string */
-    function encode_email_header($header, $str) {
+    function encode_email_header($field, $str) {
+        $header = $field === "" ? "" : "{$field}: ";
         $this->reset($header, $str);
         if (strpos($this->in, chr(0xE2)) !== false) {
             $this->in = str_replace(["“", "”"], ["\"", "\""], $this->in);
@@ -150,7 +151,7 @@ class MimeText {
                 $email = $m[1];
                 $str = $m[3];
             } else {
-                $this->mi = $mi = MessageItem::error("");
+                $this->mi = $mi = MessageItem::error_at($field);
                 $mi->pos1 = $inlen - strlen($str);
                 $mi->context = $this->in;
                 if (preg_match('/[\s<>@]/', $str)) {
@@ -167,7 +168,7 @@ class MimeText {
             if (!validate_email($email)
                 && $email !== "none"
                 && $email !== "hidden") {
-                $this->mi = $mi = MessageItem::error("<0>Invalid email address");
+                $this->mi = $mi = MessageItem::error_at($field, "<0>Invalid email address");
                 $mi->pos1 = $emailpos;
                 $mi->pos2 = $emailpos + strlen($email);
                 $mi->context = $this->in;
@@ -179,7 +180,7 @@ class MimeText {
                 && $str[0] !== ","
                 && $str[0] !== ";") {
                 if (!$this->mi) {
-                    $this->mi = $mi = MessageItem::error("<0>Destinations must be separated with commas");
+                    $this->mi = $mi = MessageItem::error_at($field, "<0>Destinations must be separated with commas");
                     $mi->pos1 = $mi->pos2 = $inlen - strlen($str);
                     $mi->context = $this->in;
                 }

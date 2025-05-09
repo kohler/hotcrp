@@ -256,7 +256,7 @@ class MailPreparation implements JsonSerializable {
 
         // create valid To: header
         $eol = $this->conf->opt("postfixEOL") ?? "\r\n";
-        $to = (new MimeText($eol))->encode_email_header("To: ", join(", ", $vto));
+        $to = (new MimeText($eol))->encode_email_header("To", join(", ", $vto));
         $headers["to"] = $to . $eol;
         $headers["content-transfer-encoding"] = "Content-Transfer-Encoding: quoted-printable" . $eol;
         // XXX following assumes body is text

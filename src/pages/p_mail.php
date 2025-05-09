@@ -178,7 +178,7 @@ class Mail_Page {
     }
 
     function print_keyword_help() {
-        echo '<div id="mailref">Keywords enclosed in double braces signs, such as <code>{{NAME}}</code> or <code>{{REVIEWDEADLINE}}</code>, are expanded for each mail. Use the following syntax:
+        echo '<div id="mailref">Keywords enclosed in double braces, such as <code>{{NAME}}</code> or <code>{{REVIEWDEADLINE}}</code>, are expanded for each mail. Use the following syntax:
 <hr class="g">
 
 <div class="ctable no-hmargin">
@@ -198,7 +198,7 @@ class Mail_Page {
 <dt><code>{{REVIEWDEADLINE}}</code></dt>
     <dd>Reviewing deadline appropriate for recipient.</dd>
 </dl><dl class="ctelt">
-<dt><code>{{NUMBER}}</code></dt>
+<dt><code>{{PID}}</code></dt>
     <dd>Paper number relevant for mail.</dd>
 <dt><code>{{TITLE}}</code></dt>
     <dd>Paper title.</dd>

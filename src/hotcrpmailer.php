@@ -454,7 +454,7 @@ class HotCRPMailer extends Mailer {
         } else if ($value !== null) {
             return (string) $value;
         } else {
-            $this->warning_at($uf->input_string ?? null, "<0>Submission #{$this->row->paperId} has no #{$tag} tag");
+            $this->warning("<0>Submission #{$this->row->paperId} has no #{$tag} tag");
             return "(none)";
         }
     }
@@ -534,9 +534,9 @@ class HotCRPMailer extends Mailer {
 
     function handle_unexpanded_keyword($kw, $xref) {
         if ($kw === $this->_unexpanded_paper_keyword) {
-            return "<0>Keyword not expanded because this mail isn’t linked to submissions or reviews";
+            return "<0>‘{$xref}’ keyword ignored because this mail isn’t linked to submissions or reviews";
         } else if (preg_match('/\AAUTHORVIEWCAPABILITY/', $kw)) {
-            return "<0>Keyword not expanded because this mail isn’t meant for submission authors";
+            return "<0>‘{$xref}’ keyword ignored because this mail isn’t meant for submission authors";
         } else {
             return parent::handle_unexpanded_keyword($kw, $xref);
         }

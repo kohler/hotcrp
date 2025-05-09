@@ -44,6 +44,8 @@ class Mailer {
     protected $preparation;
     /** @var int */
     protected $context = 0;
+    /** @var string */
+    protected $field;
     /** @var ?string */
     protected $line_prefix;
 
@@ -305,7 +307,6 @@ class Mailer {
 
         $mks = $this->conf->mail_keywords($name);
         foreach ($mks as $uf) {
-            $uf->input_string = $what;
             $ok = $this->recipient || (isset($uf->global) && $uf->global);
 
             $xchecks = $uf->expand_if ?? [];
@@ -339,7 +340,7 @@ class Mailer {
         }
         if (!isset($this->_unexpanded[$what])) {
             $this->_unexpanded[$what] = true;
-            $this->unexpanded_warning_at($what);
+            $this->unexpanded_warning($what);
         }
         return null;
     }
@@ -504,7 +505,7 @@ class Mailer {
         }
 
         if (!empty($ifstack)) {
-            $this->warning_at(null, "<0>Incomplete {{IF}}");
+            $this->warning("<0>Incomplete {{IF}}");
         }
 
         while (!empty($ifstack)) {
@@ -652,6 +653,7 @@ class Mailer {
         $old_context = $this->context;
         $old_width = $this->width;
         $old_line_prefix = $this->line_prefix;
+        $old_field = $this->field;
         if (isset(self::$email_fields[$field])) {
             $this->context = self::CONTEXT_EMAIL;
             $this->width = 10000000;
@@ -661,6 +663,7 @@ class Mailer {
         } else {
             $this->context = self::CONTEXT_BODY;
         }
+        $this->field = $field;
 
         // expand out conditionals first to avoid confusion with wordwrapping
         $text = $this->_expand_conditionals(cleannl($text));
@@ -755,6 +758,7 @@ class Mailer {
         $this->context = $old_context;
         $this->width = $old_width;
         $this->line_prefix = $old_line_prefix;
+        $this->field = $old_field;
         return $text;
     }
 
@@ -762,9 +766,10 @@ class Mailer {
      * @return array<string,string> */
     function expand_all($x) {
         $r = [];
-        foreach ((array) $x as $k => $t) {
-            if (in_array($k, self::$template_fields))
-                $r[$k] = $this->expand($t, $k);
+        $x = (array) $x;
+        foreach (self::$template_fields as $k) {
+            if (isset($x[$k]))
+                $r[$k] = $this->expand($x[$k], $k);
         }
         return $r;
     }
@@ -821,7 +826,7 @@ class Mailer {
         // parse headers
         $fromHeader = $this->conf->opt("emailFromHeader");
         if ($fromHeader === null) {
-            $fromHeader = $mimetext->encode_email_header("From: ", $this->conf->opt("emailFrom"));
+            $fromHeader = $mimetext->encode_email_header("From", $this->conf->opt("emailFrom"));
             $this->conf->set_opt("emailFromHeader", $fromHeader);
         }
         $prep->headers = [];
@@ -834,11 +839,10 @@ class Mailer {
             if (($text = $mail[$lcfield] ?? "") === "" || $text === "<none>") {
                 continue;
             }
-            if (($hdr = $mimetext->encode_email_header($field . ": ", $text))) {
+            if (($hdr = $mimetext->encode_email_header($field, $text))) {
                 $prep->headers[$lcfield] = $hdr . $this->eol;
             } else {
                 $mimetext->mi->field = $lcfield;
-                $mimetext->mi->landmark = "{$field} field";
                 $prep->append_item($mimetext->mi);
                 $logmsg = "{$lcfield}: {$text}";
                 if (!in_array($logmsg, $this->_errors_reported)) {
@@ -888,31 +892,48 @@ class Mailer {
         return $this->_ms ? $this->_ms->message_list() : [];
     }
 
+    /** @param MessageItem $mi
+     * @return MessageItem */
+    static function decorated_message($mi) {
+        if ($mi->field && ($f = self::$email_fields[$mi->field] ?? null)) {
+            return $mi->with_landmark($f);
+        }
+        return $mi;
+    }
+
+    /** @return \Generator<MessageItem> */
+    function decorated_message_list() {
+        foreach ($this->message_list() as $mi) {
+            yield self::decorated_message($mi);
+        }
+    }
+
     /** @return string */
     function full_feedback_text() {
         return $this->_ms ? $this->_ms->full_feedback_text() : "";
     }
 
-    /** @param ?string $field
-     * @param string $message
+    /** @param string $message
      * @return MessageItem */
-    function warning_at($field, $message) {
-        $this->_ms = $this->_ms ?? (new MessageSet)->set_ignore_duplicates(true)->set_want_ftext(true, 5);
-        return $this->_ms->warning_at($field, $message);
+    function warning($message) {
+        $this->_ms = $this->_ms ?? (new MessageSet)
+            ->set_ignore_duplicates(true)
+            ->set_want_ftext(true, 5);
+        return $this->_ms->warning_at($this->field, $message);
     }
 
     /** @param string $ref */
-    final function unexpanded_warning_at($ref) {
+    final function unexpanded_warning($ref) {
         if (preg_match('/\A(?:%|\{\{)(\w+)/', $ref, $m)) {
             $kw = $m[1];
             $xref = $ref;
         } else {
             $kw = $ref;
-            $xref = "%{$kw}%";
+            $xref = $kw;
         }
         $text = $this->handle_unexpanded_keyword($kw, $xref);
         if ($text !== "") {
-            $this->warning_at($xref, $text);
+            $this->warning($text);
         }
     }
 
@@ -922,11 +943,11 @@ class Mailer {
     function handle_unexpanded_keyword($kw, $xref) {
         if (preg_match('/\A(?:RESET|)PASSWORDLINK/', $kw)) {
             if ($this->conf->login_type()) {
-                return "<0>This site does not use password links";
+                return "<0>‘{$xref}’ ignored, this site does not use password links";
             } else if ($this->censor === self::CENSOR_ALL) {
-                return "<0>Password links cannot appear in mails with Cc or Bcc";
+                return "<0>‘{$xref}’ ignored, password links cannot appear in mails with Cc or Bcc";
             }
         }
-        return "<0>Keyword not found";
+        return "<0>‘{$xref}’ keyword not found";
     }
 }

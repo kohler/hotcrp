@@ -185,7 +185,6 @@ class MailSender {
     static function check(MailRecipients $recip, Qrequest $qreq) {
         $ms = new MailSender($recip, $qreq);
         $ms->run();
-        throw new PageCompletion;
     }
 
     static function send1(MailRecipients $recip, Qrequest $qreq) {
@@ -581,18 +580,14 @@ class MailSender {
             if ($nwarnings !== $mailer->message_count()) {
                 $this->print_prologue();
                 $nwarnings = $mailer->message_count();
-                echo "<div id=\"foldmailwarn{$nwarnings}\" class=\"hidden\"><div class=\"msg msg-warning\"><ul class=\"feedback-list\">";
-                foreach ($mailer->message_list() as $mx) {
-                    if ($mx->field) {
-                        $mx = $mx->with_prefix("{$mx->field}: ");
-                    }
-                    echo '<li>', join("", MessageSet::feedback_html_items([$mx])), '</li>';
-                }
-                echo "</ul></div></div>", Ht::unstash_script("document.getElementById('mailwarnings').innerHTML = document.getElementById('foldmailwarn{$nwarnings}').innerHTML;");
+                echo "<div id=\"foldmailwarn{$nwarnings}\" class=\"hidden\"><div class=\"msg msg-warning\">",
+                    MessageSet::feedback_html($mailer->decorated_message_list()),
+                    "</ul></div></div>",
+                    Ht::unstash_script("document.getElementById('mailwarnings').innerHTML = document.getElementById('foldmailwarn{$nwarnings}').innerHTML;");
             }
 
             if ($this->sending && $revinform !== null && $prow) {
-                $revinform[] = "(paperId=$prow->paperId and contactId=$contact->contactId)";
+                $revinform[] = "(paperId={$prow->paperId} and contactId={$contact->contactId})";
             }
         }
 
@@ -605,11 +600,11 @@ class MailSender {
             } else {
                 $this->recip->warning_at(null, "<0>Mail not sent: no users match this search");
             }
-            $this->conf->feedback_msg($this->recip);
+            $this->recip->append_list($mailer->message_list());
+            $this->conf->feedback_msg($this->recip->decorated_message_list());
             echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('mailform').action=" . json_encode_browser($this->conf->hoturl_raw("mail", "check=1", Conf::HOTURL_POST)));
-            return false;
+            return;
         }
-
 
         $this->conf->feedback_msg($this->recip);
         if (!$this->sending) {
@@ -623,5 +618,6 @@ class MailSender {
         echo "</form>";
         echo Ht::unstash_script("hotcrp.fold('mail', null);");
         $this->qreq->print_footer();
+        throw new PageCompletion;
     }
 }

@@ -66,6 +66,13 @@ class MailRecipients extends MessageSet {
         $this->rect = $this->recipts[0];
     }
 
+    /** @return \Generator<MessageItem> */
+    function decorated_message_list() {
+        foreach ($this->message_list() as $mi) {
+            yield Mailer::decorated_message($mi);
+        }
+    }
+
     private function dcounts() {
         if ($this->_dcounts === null) {
             if ($this->user->allow_administer_all()) {
