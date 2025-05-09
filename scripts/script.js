@@ -3244,6 +3244,9 @@ function $popup(options) {
             const ml = (message_list && message_list.message_list) || message_list;
             feedback.render_list_within(forme, ml, options);
         },
+        awaken: function () {
+            $(forme).awaken();
+        },
         close: close
     };
     return self;
@@ -3866,8 +3869,7 @@ handle_ui.on("js-tracker", function (evt) {
                     start();
                     $pu.find("button[name=new]").click();
                 }
-                if ($pu)
-                    $pu.show_errors(data);
+                $pu && $pu.show_errors(data);
             }
         };
     }
