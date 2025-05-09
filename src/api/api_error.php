@@ -6,7 +6,8 @@ class Error_API {
     static function jserror(Contact $user, Qrequest $qreq) {
         $errormsg = trim((string) $qreq->error);
         if ($errormsg === ""
-            || preg_match('/(?:moz|safari|chrome)-extension/', $errormsg . ($qreq->stack ?? ""))) {
+            || str_contains($errormsg . ($qreq->stack ?? ""), "-extension")
+            || (($ua = $qreq->user_agent()) && str_contains($ua, "Googlebot"))) {
             return new JsonResult(["ok" => true]);
         }
         $url = $qreq->url ?? "";
@@ -71,7 +72,7 @@ class Error_API {
                 } else if (isset($jx->body)
                            && is_object($jx->body)
                            && isset($jx->body->sourceFile)
-                           && str_ends_with($jx->body->sourceFile, "-extension")) {
+                           && str_contains($jx->body->sourceFile, "-extension")) {
                     /* skip */
                 } else {
                     if ($user->has_email() && !isset($jx->user)) {

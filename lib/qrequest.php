@@ -180,6 +180,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function referrer() {
         return $this->_referrer;
     }
+    /** @return ?string */
+    function user_agent() {
+        return $this->_headers["HTTP_USER_AGENT"] ?? null;
+    }
 
     /** @param string $k
      * @return ?string */
