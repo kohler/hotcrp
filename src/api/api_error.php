@@ -90,6 +90,7 @@ class Error_API {
             error_log($m);
         }
         if (!$ok) {
+            @file_put_contents("/tmp/cspreport-invalid.txt", $bct . "\n" . $qreq->body());
             return new JsonResult(400, [
                 "ok" => false,
                 "message_list" => [MessageItem::error("<0>Unexpected request")],
