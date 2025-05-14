@@ -229,6 +229,7 @@ src/api/api_paperpc.php
 src/api/api_preference.php
 src/api/api_requestreview.php
 src/api/api_review.php
+src/api/api_reviewmeta.php
 src/api/api_reviewtoken.php
 src/api/api_search.php
 src/api/api_searchconfig.php

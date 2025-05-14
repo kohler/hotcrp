@@ -2938,9 +2938,8 @@ class PaperInfo {
     function checked_review_by_user($u) {
         if (($rrow = $this->review_by_user($u))) {
             return $rrow;
-        } else {
-            throw new Exception("PaperInfo::checked_review_by_user failure");
         }
+        throw new Exception("PaperInfo::checked_review_by_user failure");
     }
 
     /** @param int|Contact $contact

@@ -1,5 +1,5 @@
 <?php
-// api/api_follow.php -- HotCRP paper-related API calls
+// api_follow.php -- HotCRP paper-related API calls
 // Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
 
 class Follow_API {

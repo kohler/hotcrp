@@ -6,5 +6,6 @@ declare(strict_types=1);
 require_once(__DIR__ . '/setup.php');
 TestRunner::run(
     "reset_db",
-    "PaperAPI_Tester"
+    "PaperAPI_Tester",
+    "ReviewAPI_Tester"
 );

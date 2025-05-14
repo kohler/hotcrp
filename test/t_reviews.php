@@ -617,6 +617,18 @@ class Reviews_Tester {
         xassert_eqq($sv->changed_keys(), ["review_form"]);
     }
 
+    static function add_questions_for_response(Conf $conf) {
+        $sv = SettingValues::make_request($conf->root_user(), [
+            "has_rf" => 1,
+            "rf/1/name" => "Questions for authors’ response",
+            "rf/1/description" => "Specific questions that could affect your accept/reject decision. Remember that the authors have limited space and must respond to all reviewers.",
+            "rf/1/visibility" => "au",
+            "rf/1/order" => 5,
+            "rf/1/id" => "t04"
+        ]);
+        xassert($sv->execute());
+    }
+
     function test_body() {
         $conf = $this->conf;
         $user_chair = $this->u_chair;
@@ -734,15 +746,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($rrow18d2->fidval("t01"), $gettysburg);
 
         // offline review parsing for UTF-8 review questions
-        $sv = SettingValues::make_request($user_chair, [
-            "has_rf" => 1,
-            "rf/1/name" => "Questions for authors’ response",
-            "rf/1/description" => "Specific questions that could affect your accept/reject decision. Remember that the authors have limited space and must respond to all reviewers.",
-            "rf/1/visibility" => "au",
-            "rf/1/order" => 5,
-            "rf/1/id" => "t04"
-        ]);
-        xassert($sv->execute());
+        self::add_questions_for_response($this->conf);
 
         $review18A = file_get_contents(SiteLoader::find("test/review18A.txt"));
         $tf = (new ReviewValues($conf))->set_text($review18A, "review18A.txt");

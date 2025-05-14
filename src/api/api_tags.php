@@ -1,5 +1,5 @@
 <?php
-// api/api_tags.php -- HotCRP tags API call
+// api_tags.php -- HotCRP tags API call
 // Copyright (c) 2008-2023 Eddie Kohler; see LICENSE.
 
 class Tags_API {

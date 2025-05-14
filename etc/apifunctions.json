@@ -224,12 +224,12 @@
         "parameters": "?round =email ?=given_name ?=family_name ?=name ?=affiliation ?=override ?=reason"
     },
     {
-        "name": "review", "get": true, "post": true, "paper": true,
-        "function": "Review_API::review"
+        "name": "review", "get": true, "paper": true,
+        "function": "Review_API::run_one"
     },
     {
         "name": "reviewhistory", "get": true, "paper": true,
-        "function": "Review_API::reviewhistory"
+        "function": "ReviewMeta_API::reviewhistory"
     },
     {
         "name": "reviewfieldlibrary", "get": true, "allow_if": "chair",
@@ -238,19 +238,19 @@
     },
     {
         "name": "reviewrating", "get": true, "paper": true,
-        "function": "Review_API::reviewrating",
+        "function": "ReviewMeta_API::reviewrating",
         "parameters": "r",
         "response": "?ratings ?user_rating"
     },
     {
         "name": "reviewrating", "post": true, "paper": true,
-        "function": "Review_API::reviewrating",
+        "function": "ReviewMeta_API::reviewrating",
         "parameters": "r =user_rating",
         "response": "?ratings ?user_rating"
     },
     {
         "name": "reviewround", "post": true, "xxx": true, "paper": true,
-        "function": "Review_API::reviewround"
+        "function": "ReviewMeta_API::reviewround"
     },
     {
         "name": "reviewtoken", "get": true, "post": true,
