@@ -54,8 +54,22 @@ class Paper_API extends MessageSet {
         $this->user = $user;
     }
 
+    /** @return JsonResult */
+    static function run_get_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
+        if (!isset($qreq->p)) {
+            return JsonResult::make_missing_error("p");
+        }
+        $fr = $prow ? $user->perm_view_paper($prow) : $qreq->annex("paper_whynot");
+        if (!$prow || $fr) {
+            return Conf::paper_error_json_result($fr);
+        }
+        $pj = (new PaperExport($user))->paper_json($prow);
+        assert(!!$pj);
+        return new JsonResult(["ok" => true, "paper" => $pj]);
+    }
+
     /** @return array{PaperSearch,PaperInfoSet} */
-    static private function make_search(Contact $user, Qrequest $qreq) {
+    static function make_search(Contact $user, Qrequest $qreq) {
         $qreq->t = $qreq->t ?? "viewable";
         $srch = new PaperSearch($user, $qreq);
         if (friendly_boolean($qreq->warn_missing)) {
@@ -65,30 +79,15 @@ class Paper_API extends MessageSet {
             "paperId" => $srch->paper_ids(),
             "options" => true, "topics" => true, "allConflictType" => true
         ]);
-        if ($srch->nontrivial_sort()) {
-            $pidmap = array_flip($srch->sorted_paper_ids());
-            $prows->sort_by(function ($a, $b) use ($pidmap) {
-                return $pidmap[$a->paperId] <=> $pidmap[$b->paperId];
-            });
-        }
+        $prows->sort_by_search($srch);
         return [$srch, $prows];
     }
 
-    /** @param 1|2|3 $mode
-     * @return JsonResult */
-    static function run_get(Contact $user, Qrequest $qreq, ?PaperInfo $prow, $mode) {
-        if (isset($qreq->p) && ($mode & self::M_ONE) !== 0) {
-            if ($prow && ($pj = (new PaperExport($user))->paper_json($prow))) {
-                return new JsonResult(["ok" => true, "paper" => $pj]);
-            }
-            $fr = $prow ? $user->perm_view_paper($prow) : $qreq->annex("paper_whynot");
-            return Conf::paper_error_json_result($fr);
-        } else if ($mode === self::M_ONE) {
-            return JsonResult::make_missing_error("p");
-        } else if (!isset($qreq->q)) {
+    /** @return JsonResult */
+    static function run_get_multi(Contact $user, Qrequest $qreq) {
+        if (!isset($qreq->q)) {
             return JsonResult::make_missing_error("q");
         }
-
         list($srch, $prows) = self::make_search($user, $qreq);
 
         $pex = new PaperExport($user);
@@ -613,7 +612,7 @@ class Paper_API extends MessageSet {
         }
 
         if (!$this->user->can_administer($prow)) {
-            return JsonResult::make_permission_error(null, "<0>Only administrators can permanently delete a {$this->conf->snouns[0]}");
+            return JsonResult::make_permission_error(null, "<0>Only administrators can permanently delete {$this->conf->snouns[1]}");
         }
 
         $this->change_lists[] = ["delete"];
@@ -644,7 +643,11 @@ class Paper_API extends MessageSet {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
         if ($qreq->is_get()) {
-            $jr = self::run_get($user, $qreq, $prow, $mode);
+            if ($mode === self::M_ONE) {
+                $jr = self::run_get_one($user, $qreq, $prow);
+            } else {
+                $jr = self::run_get_multi($user, $qreq);
+            }
         } else if ($qreq->method() === "DELETE") {
             $jr = (new Paper_API($user))->run_delete($qreq, $prow);
         } else {

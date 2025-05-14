@@ -262,6 +262,9 @@ class FailureReason extends Exception
         if ($this->_a["notUploaded"] ?? false) {
             $ms[] = $this->conf->_("<0>A PDF upload is required to submit");
         }
+        if ($this->_a["reviewNonexistent"] ?? false) {
+            $ms[] = $this->conf->_("<0>Review not found");
+        }
         if ($this->_a["reviewNotSubmitted"] ?? false) {
             $ms[] = $this->conf->_("<0>This review is not yet ready for others to see");
         }
@@ -269,7 +272,7 @@ class FailureReason extends Exception
             $ms[] = $this->conf->_("<0>Your own review for #{} is not complete, so you can’t view other people’s reviews", $paperId);
         }
         if ($this->_a["responseNonexistent"] ?? false) {
-            $ms[] = $this->conf->_("<0>That response is not allowed on {submission} #{}", $paperId);
+            $ms[] = $this->conf->_("<0>Response not allowed on {submission} #{}", $paperId);
         }
         if ($this->_a["responseNotReady"] ?? false) {
             $ms[] = $this->conf->_("<0>The authors’ response is not yet ready for reviewers to view");

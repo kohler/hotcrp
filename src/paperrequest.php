@@ -105,7 +105,7 @@ class PaperRequest {
         }
         // check reviewId
         if (($rid = $qreq->reviewId) !== null) {
-            assert(ctype_digit($rid));
+            assert(is_int($rid) || ctype_digit($rid));
             if (($p = $conf->fetch_ivalue("select paperId from PaperReview where reviewId=?", $rid)) > 0) {
                 return $p;
             } else {
@@ -274,6 +274,7 @@ class PaperRequest {
             return null;
         }
         // error
-        throw $user->perm_view_review($this->prow, null) ?? new FailureReason($user->conf, ["invalidId" => "review"]);
+        throw $user->perm_view_review($this->prow, null)
+            ?? $this->prow->failure_reason(["invalidId" => "review"]);
     }
 }

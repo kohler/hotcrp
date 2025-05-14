@@ -482,6 +482,16 @@ class PaperInfoSet implements IteratorAggregate, Countable {
             $this->by_pid[$prow->paperId] = $prow;
         }
     }
+    function sort_by_search(PaperSearch $srch) {
+        if ($srch->nontrivial_sort()) {
+            $pidmap = array_flip($srch->sorted_paper_ids());
+            $this->sort_by(function ($a, $b) use ($pidmap) {
+                $ai = $pidmap[$a->paperId] ?? PHP_INT_MAX;
+                $bi = $pidmap[$b->paperId] ?? PHP_INT_MAX;
+                return $ai <=> $bi;
+            });
+        }
+    }
     /** @return list<int> */
     function paper_ids() {
         return array_keys($this->by_pid);
@@ -2801,12 +2811,16 @@ class PaperInfo {
 
     /** @return int|false */
     function parse_ordinal_id($oid) {
-        if ($oid === "") {
+        if (is_int($oid)) {
+            return $oid;
+        } else if ($oid === "") {
             return 0;
         } else if (ctype_digit($oid)) {
             return intval($oid);
-        } else if (str_starts_with($oid, (string) $this->paperId)) {
-            $oid = (string) substr($oid, strlen((string) $this->paperId));
+        }
+        $pidstr = (string) $this->paperId;
+        if (str_starts_with($oid, $pidstr)) {
+            $oid = (string) substr($oid, strlen($pidstr));
             if (strlen($oid) > 1 && $oid[0] === "r" && ctype_digit(substr($oid, 1))) {
                 return intval(substr($oid, 1));
             }
@@ -2815,9 +2829,8 @@ class PaperInfo {
             return -$n;
         } else if ($oid === "rnew" || $oid === "new") {
             return 0;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return array<int,ReviewInfo> */
