@@ -69,10 +69,15 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     }
 
     /** @param string $page
-     * @param ?string $path
      * @return $this */
-    function set_page($page, $path = null) {
+    function set_page($page) {
         $this->_page = $page;
+        return $this;
+    }
+
+    /** @param string $path
+     * @return $this */
+    function set_path($path) {
         $this->_path = $path;
         return $this;
     }
@@ -347,10 +352,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this->_v[$name] ?? null;
     }
     /** @param string $name
-     * @param string $value */
+     * @param string $value
+     * @return $this */
     function set($name, $value) {
         $this->_v[$name] = $value;
         unset($this->_a[$name]);
+        return $this;
     }
     /** @param string $name
      * @return bool */
@@ -363,10 +370,12 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         return $this->_a[$name] ?? null;
     }
     /** @param string $name
-     * @param list $value */
+     * @param list $value
+     * @return $this */
     function set_a($name, $value) {
         $this->_v[$name] = self::ARRAY_MARKER;
         $this->_a[$name] = $value;
+        return $this;
     }
     /** @return $this */
     function set_req($name, $value) {

@@ -36,7 +36,7 @@ class Login_Tester {
         $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
 
         $user = Contact::make($this->conf);
-        $qreq = TestRunner::make_qreq($user, "newaccount?email={$email}", "POST");
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("newaccount");
         $info = LoginHelper::new_account_info($this->conf, $qreq);
         xassert_eqq($info["ok"], true);
         $u = $info["user"];
@@ -51,7 +51,7 @@ class Login_Tester {
         $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
 
         $user = Contact::make_email($this->conf, $email);
-        $qreq = TestRunner::make_qreq($user, "resetpassword?email={$email}", "POST");
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
         $qreq->set_req("password", $prep->reset_capability);
         xassert_eqq(Signin_Page::check_password_as_reset_code($user, $qreq),
                     $prep->reset_capability);
@@ -59,7 +59,7 @@ class Login_Tester {
         $this->conf->invalidate_caches(["users" => true]);
 
         $user = Contact::make_email($this->conf, $email);
-        $qreq = TestRunner::make_qreq($user, "resetpassword?email={$email}", "POST");
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
         $qreq->set_req("resetcap", $prep->reset_capability);
         $qreq->set_req("password", "newuserpassword!");
         $qreq->set_req("password2", "newuserpassword!");
@@ -81,7 +81,7 @@ class Login_Tester {
             $user = Contact::make($this->conf);
             xassert_eqq($user->contactId, 0);
             xassert_eqq($user->contactDbId, 0);
-            $qreq = TestRunner::make_qreq($user, "signin?email={$email}&password=newuserpassword!", "POST");
+            $qreq = TestQreq::post(["email" => $email, "password" => "newuserpassword!"])->set_user($user)->set_page("signin");
             $info = LoginHelper::login_info($this->conf, $qreq);
             xassert_eqq($info["ok"], true);
             $info = LoginHelper::login_complete($info, $qreq);
@@ -111,7 +111,7 @@ class Login_Tester {
 
         // `newaccount` request
         $user = Contact::make($this->conf);
-        $qreq = TestRunner::make_qreq($user, "newaccount?email={$email}", "POST");
+        $qreq = TestQreq::post(["email" => $email])->set_page("newaccount")->set_user($user);
         $info = LoginHelper::new_account_info($this->conf, $qreq);
         xassert_eqq($info["ok"], true);
         $u = $info["user"];
@@ -138,7 +138,7 @@ class Login_Tester {
 
         // `resetpassword` request with capability
         $user = Contact::make_email($this->conf, $email);
-        $qreq = TestRunner::make_qreq($user, "resetpassword?email={$email}", "POST");
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
         $qreq->set_req("resetcap", $prep->reset_capability);
         $qreq->set_req("password", "newuserpassword!");
         $qreq->set_req("password2", "newuserpassword!");
@@ -167,7 +167,7 @@ class Login_Tester {
 
         // logging in confirms user
         $user = Contact::make($this->conf);
-        $qreq = TestRunner::make_qreq($user, "signin?email={$email}&password=newuserpassword!", "POST");
+        $qreq = TestQreq::post(["email" => $email, "password" => "newuserpassword!"])->set_user($user)->set_page("signin");
         $result = null;
         try {
             $cs = $this->conf->page_components($user, $qreq);
@@ -192,7 +192,7 @@ class Login_Tester {
         $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
 
         $user = Contact::make($this->conf);
-        $qreq = TestRunner::make_qreq($user, "newaccount?email={$email}", "POST");
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("newaccount");
         $info = LoginHelper::new_account_info($this->conf, $qreq);
         xassert_eqq($info["ok"], true);
         $u = $info["user"];
@@ -206,7 +206,7 @@ class Login_Tester {
         $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
 
         $user = Contact::make_email($this->conf, $email);
-        $qreq = TestRunner::make_qreq($user, "resetpassword?email={$email}", "POST");
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
         $qreq->set_req("password", $prep->reset_capability);
         xassert_eqq(Signin_Page::check_password_as_reset_code($user, $qreq),
                     $prep->reset_capability);
@@ -214,7 +214,7 @@ class Login_Tester {
         $this->conf->invalidate_caches(["users" => true, "cdb" => true]);
 
         $user = Contact::make_email($this->conf, $email);
-        $qreq = TestRunner::make_qreq($user, "resetpassword?email={$email}", "POST");
+        $qreq = TestQreq::post(["email" => $email])->set_user($user)->set_page("resetpassword");
         $qreq->set_req("resetcap", $prep->reset_capability);
         $qreq->set_req("password", "newuserpassword!");
         $qreq->set_req("password2", "newuserpassword!");

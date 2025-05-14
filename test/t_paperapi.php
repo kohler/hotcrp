@@ -35,54 +35,8 @@ class PaperAPI_Tester {
         $this->u_puneet = $conf->checked_user_by_email("puneet@catarina.usc.edu");
     }
 
-    /** @param array<string,mixed> $args
-     * @return Qrequest */
-    function make_post_form_qreq($args) {
-        return (new Qrequest("POST", $args))
-            ->approve_token()
-            ->set_body(null, "application/x-www-form-urlencoded");
-    }
-
-    /** @param mixed $body
-     * @param array<string,mixed> $args
-     * @return Qrequest */
-    function make_post_json_qreq($body, $args = []) {
-        return (new Qrequest("POST", $args))
-            ->approve_token()
-            ->set_body(json_encode_db($body), "application/json");
-    }
-
-    /** @param array<string,mixed> $args
-     * @return Qrequest */
-    function make_delete_qreq($args) {
-        return (new Qrequest("DELETE", $args))
-            ->approve_token()
-            ->set_body(null, "application/x-www-form-urlencoded");
-    }
-
-    /** @param array<string,mixed> $contents
-     * @param array<string,mixed> $args
-     * @return Qrequest */
-    function make_post_zip_qreq($contents, $args = []) {
-        if (($fn = tempnam("/tmp", "hctz")) === false) {
-            throw new ErrorException("Failed to create temporary file");
-        }
-        unlink($fn);
-        $zip = new ZipArchive;
-        $zip->open($fn, ZipArchive::CREATE);
-        foreach ($contents as $name => $value) {
-            $zip->addFromString($name, is_string($value) ? $value : json_encode_db($value));
-        }
-        $zip->close();
-        $qreq = (new Qrequest("POST", $args))
-            ->approve_token()
-            ->set_body(file_get_contents($fn), "application/zip");
-        unlink($fn);
-        return $qreq;
-    }
-
     function test_save_submit_new_paper() {
-        $qreq = $this->make_post_form_qreq(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission", "%PDF-2", null, "application/pdf");
+        $qreq = TestQreq::post(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission", "%PDF-2", null, "application/pdf");
         $jr = call_api("=paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->paper->object, "paper");
@@ -92,7 +46,7 @@ class PaperAPI_Tester {
     }
 
     function test_save_submit_new_paper_zip() {
-        $qreq = $this->make_post_zip_qreq([
+        $qreq = TestQreq::post_zip([
             "data.json" => ["pid" => "new", "title" => "Jans paper", "abstract" => "Swafford 4eva\r\n", "authors" => [["name" => "Jan Swafford", "email" => "swafford@_.com"]], "submission" => ["content_file" => "janspaper.pdf"], "status" => "submitted"],
             "janspaper.pdf" => "%PDF-JAN"
         ], ["p" => "new"]);
@@ -109,7 +63,7 @@ class PaperAPI_Tester {
     }
 
     function test_submit_new_paper_pleb() {
-        $qreq = $this->make_post_json_qreq([
+        $qreq = TestQreq::post_json([
             "pid" => "new", "title" => "Soft Timers for Scalable Protocols",
             "abstract" => "The softest timers are the most scalable. So delicious, so delightful",
             "authors" => [["name" => "Puneet Sharma", "email" => $this->u_puneet->email]],
@@ -123,7 +77,7 @@ class PaperAPI_Tester {
     }
 
     function test_update_paper_pleb() {
-        $qreq = $this->make_post_json_qreq([
+        $qreq = TestQreq::post_json([
             "pid" => 1, "title" => "Scalable Timers for Soft State Protocols: Taylor’s Version"
         ]);
         $jr = call_api("=paper", $this->u_puneet, $qreq);
@@ -134,7 +88,7 @@ class PaperAPI_Tester {
     function test_update_attack_paper_pleb() {
         $prow = $this->conf->checked_paper_by_id(2);
         xassert_eqq($this->u_puneet->can_view_paper($prow), false);
-        $qreq = $this->make_post_json_qreq([
+        $qreq = TestQreq::post_json([
             "pid" => 2, "title" => "Scalable Timers for Soft State Protocols: Taylor’s Version"
         ]);
         $jr = call_api("=paper", $this->u_puneet, $qreq);
@@ -142,7 +96,7 @@ class PaperAPI_Tester {
         xassert_eqq($jr->change_list, []);
         xassert_eqq($jr->message_list[0]->message, "<0>You aren’t allowed to view submission #2");
 
-        $qreq = $this->make_post_json_qreq([
+        $qreq = TestQreq::post_json([
             "pid" => 10000, "title" => "Scalable Timers for Soft State Protocols: Taylor’s Version"
         ], ["p" => "10000"]);
         $jr = call_api("=paper", $this->u_puneet, $qreq);
@@ -153,7 +107,7 @@ class PaperAPI_Tester {
 
     function test_assigned_paper_id() {
         // Only chairs can assign papers with a specific ID
-        $qreq = $this->make_post_json_qreq([
+        $qreq = TestQreq::post_json([
             "pid" => 10000, "title" => "Scalable Timers for Soft State Protocols: György’s Version",
             "abstract" => "Hello", "authors" => [["name" => "My Name"]],
             "status" => "draft"
@@ -176,7 +130,7 @@ class PaperAPI_Tester {
     function test_dry_run() {
         $prow = $this->conf->checked_paper_by_id($this->npid);
         $original_title = $prow->title;
-        $qreq = $this->make_post_form_qreq(["dry_run" => 1, "title" => "New paper with changed ID", "p" => $prow->paperId]);
+        $qreq = TestQreq::post(["dry_run" => 1, "title" => "New paper with changed ID", "p" => $prow->paperId]);
         $jr = call_api("=paper", $this->u_estrin, $qreq, $prow);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->paper ?? null, null);
@@ -187,7 +141,7 @@ class PaperAPI_Tester {
 
         // dry run does not create new paper
         $npapers = $this->conf->fetch_ivalue("select count(*) from Paper");
-        $qreq = $this->make_post_form_qreq(["p" => "new", "status:submit" => 1, "title" => "Goddamnit", "abstract" => "This is an abstract", "has_authors" => 1, "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "dry_run" => 1]);
+        $qreq = TestQreq::post(["p" => "new", "status:submit" => 1, "title" => "Goddamnit", "abstract" => "This is an abstract", "has_authors" => 1, "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "dry_run" => 1]);
         $jr = call_api("=paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->paper ?? null, null);
@@ -196,25 +150,26 @@ class PaperAPI_Tester {
     }
 
     function test_pid_mismatch() {
-        $qreq = $this->make_post_json_qreq(["title" => "Foo", "pid" => $this->npid + 1], ["p" => 1, "dry_run" => 1]);
+        $qreq = TestQreq::post_json(["title" => "Foo", "pid" => $this->npid + 1],
+            ["p" => 1, "dry_run" => 1]);
         $jr = call_api("=paper", $this->u_estrin, $qreq, $this->conf->checked_paper_by_id(1));
         xassert_eqq($jr->ok, false);
     }
 
     function test_decision() {
-        $qreq = $this->make_post_json_qreq(["decision" => "Rejected", "pid" => $this->npid]);
+        $qreq = TestQreq::post_json(["decision" => "Rejected", "pid" => $this->npid]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         $prow = $this->conf->checked_paper_by_id($this->npid);
         xassert_lt($prow->outcome, 0);
 
-        $qreq = $this->make_post_json_qreq(["decision" => "Accepted", "pid" => $this->npid]);
+        $qreq = TestQreq::post_json(["decision" => "Accepted", "pid" => $this->npid]);
         $jr = call_api("=paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, true);
         $prow = $this->conf->checked_paper_by_id($this->npid);
         xassert_lt($prow->outcome, 0);
 
-        $qreq = $this->make_post_json_qreq(["decision" => "Accepted", "pid" => $this->npid]);
+        $qreq = TestQreq::post_json(["decision" => "Accepted", "pid" => $this->npid]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         $prow = $this->conf->checked_paper_by_id($this->npid);
@@ -222,7 +177,7 @@ class PaperAPI_Tester {
     }
 
     function test_multiple() {
-        $qreq = $this->make_post_json_qreq([
+        $qreq = TestQreq::post_json([
             ["title" => "Fun with people", "pid" => 1],
             ["title" => "Fun with animals", "pid" => $this->npid]
         ]);
@@ -238,17 +193,17 @@ class PaperAPI_Tester {
     }
 
     function test_if_unmodified_since_create() {
-        $qreq = $this->make_post_json_qreq(["pid" => 200, "title" => "Fart", "abstract" => "Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]]]);
+        $qreq = TestQreq::post_json(["pid" => 200, "title" => "Fart", "abstract" => "Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]]]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->change_list[0], "pid");
 
-        $qreq = $this->make_post_json_qreq(["pid" => 201, "title" => "Fart Again", "abstract" => "Extra Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]], "status" => ["if_unmodified_since" => 0]]);
+        $qreq = TestQreq::post_json(["pid" => 201, "title" => "Fart Again", "abstract" => "Extra Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]], "status" => ["if_unmodified_since" => 0]]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->change_list[0], "pid");
 
-        $qreq = $this->make_post_json_qreq(["pid" => 201, "title" => "Fart", "abstract" => "Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]], "status" => ["if_unmodified_since" => 0]]);
+        $qreq = TestQreq::post_json(["pid" => 201, "title" => "Fart", "abstract" => "Fart", "authors" => [["name" => "Dan Bisers", "email" => "farterchild@example.net"]], "status" => ["if_unmodified_since" => 0]]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, false);
     }
@@ -280,7 +235,7 @@ class PaperAPI_Tester {
     }
 
     function test_match() {
-        $qreq = $this->make_post_json_qreq(["calories" => 10], ["q" => "1-10"]);
+        $qreq = TestQreq::post_json(["calories" => 10], ["q" => "1-10"]);
         $jr = call_api("=papers", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         for ($i = 0; $i !== 10; ++$i) {
@@ -289,13 +244,13 @@ class PaperAPI_Tester {
             xassert_eqq($jr->papers[$i]->calories, 10);
         }
 
-        $qreq = $this->make_post_json_qreq(["calories" => 10, "pid" => 1], ["q" => "1-10"]);
+        $qreq = TestQreq::post_json(["calories" => 10, "pid" => 1], ["q" => "1-10"]);
         $jr = call_api("=papers", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, false);
     }
 
     function test_no_pid() {
-        $qreq = $this->make_post_json_qreq(["calories" => 9], ["p" => "1"]);
+        $qreq = TestQreq::post_json(["calories" => 9], ["p" => "1"]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->change_list, ["calories"]);
@@ -304,7 +259,7 @@ class PaperAPI_Tester {
     }
 
     function test_delete() {
-        $qreq = $this->make_post_json_qreq([
+        $qreq = TestQreq::post_json([
             "pid" => "new", "title" => "Softer Timers for Scalable Protocols",
             "abstract" => "These timers are the softest yet!",
             "authors" => [["name" => "Shilpa Shamzi", "email" => $this->u_puneet->email]],
@@ -318,28 +273,28 @@ class PaperAPI_Tester {
         $pid = $jr->paper->pid;
         $modified_at = $jr->paper->modified_at;
 
-        $qreq = $this->make_delete_qreq(["p" => $pid]);
+        $qreq = TestQreq::delete(["p" => $pid]);
         $jr = call_api("=paper", $this->u_puneet, $qreq);
         xassert_eqq($jr->status_code, 403);
 
-        $qreq = $this->make_delete_qreq(["p" => $pid, "dry_run" => 1]);
+        $qreq = TestQreq::delete(["p" => $pid, "dry_run" => 1]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->change_list, ["delete"]);
         xassert_eqq($jr->valid, true);
 
-        $qreq = $this->make_delete_qreq(["p" => $pid, "dry_run" => 1, "if_unmodified_since" => $modified_at - 1]);
+        $qreq = TestQreq::delete(["p" => $pid, "dry_run" => 1, "if_unmodified_since" => $modified_at - 1]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->valid, false);
 
-        $qreq = $this->make_delete_qreq(["p" => $pid]);
+        $qreq = TestQreq::delete(["p" => $pid]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->change_list, ["delete"]);
         xassert_eqq($jr->valid, true);
 
-        $qreq = $this->make_delete_qreq(["p" => $pid, "dry_run" => 1]);
+        $qreq = TestQreq::delete(["p" => $pid, "dry_run" => 1]);
         $jr = call_api("=paper", $this->u_chair, $qreq);
         xassert_eqq($jr->status_code, 404);
     }
@@ -349,12 +304,12 @@ class PaperAPI_Tester {
         $this->conf->save_setting("sub_sub", Conf::$now - 10);
         $this->conf->refresh_settings();
 
-        $qreq = $this->make_post_form_qreq(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission", "%PDF-2", null, "application/pdf");
+        $qreq = TestQreq::post(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission", "%PDF-2", null, "application/pdf");
         $jr = call_api("=paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->message_list[0]->field, "status:submitted");
 
-        $qreq = $this->make_post_json_qreq([
+        $qreq = TestQreq::post_json([
             "pid" => "new", "title" => "New paper", "abstract" => "This is an abstract\r\n", "authors" => [["name" => "Bobby Flay", "email" => "flay@_.com"]], "submission" => ["content" => "%PDF-2"], "status" => "draft"
         ]);
         $jr = call_api("=paper", $this->u_estrin, $qreq);

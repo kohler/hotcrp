@@ -874,7 +874,7 @@ class Cdb_Tester {
 
         // reset gussie's password
         $gussie = $this->conf->fresh_user_by_email("gussie@cat.com");
-        $qreq = TestRunner::make_qreq($gussie, "newaccount?email=gussie@cat.com", "POST");
+        $qreq = TestQreq::post_page("newaccount", ["email" => "gussie@cat.com"])->set_user($gussie);
         $cs = $this->conf->page_components($gussie, $qreq);
         $sp = $cs->callable("Signin_Page");
         try {
@@ -883,7 +883,7 @@ class Cdb_Tester {
         }
         xassert_str_starts_with($sp->_reset_tokstr ?? "", "hcpw1");
 
-        $qreq = TestRunner::make_qreq($gussie, "resetpassword?email=gussie@cat.com", "POST");
+        $qreq = TestQreq::post_page("resetpassword", ["email" => "gussie@cat.com"])->set_user($gussie);
         $qreq->set_req("resetcap", $sp->_reset_tokstr);
         $qreq->set_req("password", "Tiny dancer");
         $qreq->set_req("password2", "Tiny dancer");

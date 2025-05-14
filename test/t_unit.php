@@ -1346,21 +1346,21 @@ class Unit_Tester {
 
     function test_qreq_make_url() {
         $user = Contact::make($this->conf);
-        $qreq = TestRunner::make_qreq($user, "signin?email=foo@x.com", "POST");
+        $qreq = TestQreq::post(["email" => "foo@x.com"])->set_page("signin")->set_path("");
         xassert_eqq($qreq->page(), "signin");
         xassert_eqq($qreq->path(), "");
         xassert_eqq($qreq->method(), "POST");
         xassert($qreq->valid_post());
         xassert_eqq($qreq["email"], "foo@x.com");
 
-        $qreq = TestRunner::make_qreq($user, "signin/shit/yeah/?email=foo@x.com", "POST");
+        $qreq = TestQreq::post(["email" => "foo@x.com"])->set_page("signin")->set_path("/shit/yeah/");
         xassert_eqq($qreq->page(), "signin");
         xassert_eqq($qreq->path(), "/shit/yeah/");
         xassert_eqq($qreq->method(), "POST");
         xassert($qreq->valid_post());
         xassert_eqq($qreq["email"], "foo@x.com");
 
-        $qreq = TestRunner::make_qreq($user, "signin/shit/yeah/?%65%3Dmail=foo%40x.com&password=x", "POST");
+        $qreq = TestQreq::post_page("signin/shit/yeah/", ["e=mail" => "foo@x.com", "password" => "x"]);
         xassert_eqq($qreq->page(), "signin");
         xassert_eqq($qreq->path(), "/shit/yeah/");
         xassert_eqq($qreq->method(), "POST");

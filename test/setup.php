@@ -1287,27 +1287,6 @@ class TestRunner {
         MailChecker::clear();
     }
 
-    /** @param Contact $user
-     * @param string $urlpart
-     * @param 'GET'|'PUT' $method
-     * @return Qrequest */
-    static function make_qreq($user, $urlpart, $method = "GET") {
-        $qreq = (new Qrequest($method))->set_user($user)->set_navigation(Navigation::get());
-        if (preg_match('/\A\/?([^\/?#]+)(\/.*?|)(?:\?|(?=#)|\z)([^#]*)(?:#.*|)\z/', $urlpart, $m)) {
-            $qreq->set_page($m[1], $m[2]);
-            if ($m[3] !== "") {
-                preg_match_all('/([^&;=]*)=([^&;]*)/', $m[3], $n, PREG_SET_ORDER);
-                foreach ($n as $x) {
-                    $qreq->set_req(urldecode($x[1]), urldecode($x[2]));
-                }
-            }
-        }
-        if ($method === "POST") {
-            $qreq->approve_token();
-        }
-        return $qreq;
-    }
-
     /** @param string $url */
     static function set_navigation_base($url) {
         $nav = Navigation::get();
@@ -1559,3 +1538,80 @@ class TestRunner {
 
 TestRunner::$original_opt = $Opt;
 TestRunner::set_navigation_base("/");
+
+
+class TestQreq {
+    /** @param array<string,mixed> $args
+     * @return Qrequest */
+    static function get($args = []) {
+        return (new Qrequest("GET", $args))
+            ->set_navigation(Navigation::get());
+    }
+
+    /** @param string $page
+     * @param array<string,mixed> $args
+     * @return Qrequest */
+    static function get_page($page, $args = []) {
+        $slash = strlpos($page, "/");
+        return self::get($args)
+            ->set_page(substr($page, 0, $slash))
+            ->set_path((string) substr($page, $slash));
+    }
+
+    /** @param array<string,mixed> $args
+     * @return Qrequest */
+    static function post($args = []) {
+        return (new Qrequest("POST", $args))
+            ->set_navigation(Navigation::get())
+            ->approve_token()
+            ->set_body(null, "application/x-www-form-urlencoded");
+    }
+
+    /** @param string $page
+     * @param array<string,mixed> $args
+     * @return Qrequest */
+    static function post_page($page, $args = []) {
+        $slash = strlpos($page, "/");
+        return self::post($args)
+            ->set_page(substr($page, 0, $slash))
+            ->set_path((string) substr($page, $slash));
+    }
+
+    /** @param mixed $json
+     * @param array<string,mixed> $args
+     * @return Qrequest */
+    static function post_json($json, $args = []) {
+        return self::post($args)
+            ->set_body(is_string($json) ? $json : json_encode_db($json),
+                       "application/json");
+    }
+
+    /** @param array<string,mixed> $contents
+     * @param array<string,mixed> $args
+     * @return Qrequest */
+    static function post_zip($contents, $args = []) {
+        if (($fn = tempnam("/tmp", "hctz")) === false) {
+            throw new ErrorException("Failed to create temporary file");
+        }
+        unlink($fn);
+        $zip = new ZipArchive;
+        $zip->open($fn, ZipArchive::CREATE);
+        foreach ($contents as $name => $value) {
+            $zip->addFromString($name, is_string($value) ? $value : json_encode_db($value));
+        }
+        $zip->close();
+        $qreq = (new Qrequest("POST", $args))
+            ->approve_token()
+            ->set_body(file_get_contents($fn), "application/zip");
+        unlink($fn);
+        return $qreq;
+    }
+
+    /** @param array<string,mixed> $args
+     * @return Qrequest */
+    static function delete($args = []) {
+        return (new Qrequest("DELETE", $args))
+            ->approve_token()
+            ->set_body(null, "application/x-www-form-urlencoded");
+    }
+}
