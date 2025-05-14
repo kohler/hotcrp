@@ -5,17 +5,17 @@ These endpoints query and modify HotCRP submissions.
 
 # get /paper
 
-> Retrieve submission
+> Fetch submission
 
-Return a submission object specified by `p`, a submission ID.
+Fetch a submission object specified by `p`, a submission ID.
 
-All visible information about submission fields, tags, and overall status are
-returned in the `paper` response property, which defines a submission object.
-Error messages—for instance, about permission errors or nonexistent
-submissions—are returned in `message_list`.
+All visible submission fields, tags, and status information is returned in a
+submission object. The `paper` response property holds this object. Error
+messages—for instance, about permission errors or nonexistent submissions—are
+returned in `message_list`.
 
-Submission objects are formatted based on the submission form. They have an
-`object` property set to `"paper"`, a `pid`, and a `status`. Other properties
+Submission objects always have an `object` property (set to the constant
+string `"paper"`), a `pid` property, and a `status` property. Other properties
 are provided based on which submission fields exist and whether the accessing
 user can see them.
 
@@ -52,7 +52,7 @@ remain unchanged.
 
 The `p` request parameter is optional. If it is unset, HotCRP uses the `pid`
 from the supplied JSON. If both the `p` parameter and the JSON `pid` property
-are present, however, then they must match.
+are present, they must match.
 
 To test a modification, supply a `dry_run=1` parameter. This will test the
 uploaded JSON but make no changes to the database.
@@ -108,10 +108,11 @@ properties, since no modifications are performed.
 Administrators can use this endpoint to set some submission properties, such
 as `decision`, that have other endpoints as well.
 
-Administrators can choose specific IDs for new submissions; just set `p` (or
+Administrators can choose specific IDs for new submissions by setting `p` (or
 JSON `pid`) to the chosen ID. Such a request will either modify an existing
 submission or create a new submission with that ID. To avoid overwriting an
-existing submission, set the JSON’s `status`.`if_unmodified_since` to `0`.
+existing submission, set the submission JSON’s `status`.`if_unmodified_since`
+to `0`.
 
 * param dry_run boolean: True checks input for errors, but does not save changes
 * param disable_users boolean: True disables any newly-created users (site
@@ -152,13 +153,13 @@ Delete the submission specified by `p`, a submission ID.
 
 # get /papers
 
-> Retrieve multiple submissions
+> Fetch multiple submissions
 
-Retrieve submission objects matching a search.
+Fetch submission objects matching a search.
 
-The search is specified in the `q` parameter; all matching visible papers are
-returned. Other search parameters (`t`, `qt`) are accepted too. The response
-property `papers` is an array of matching submission objects.
+The search is specified in the `q` parameter (and other search parameters,
+such as `t` and `qt`). All matching visible submissions are returned, as an
+array of submission objects, in the response property `papers`.
 
 Since searches silently filter out non-viewable submissions, `/papers?q=1010`
 and `/paper?p=1010` can return different error messages. The `/paper` request
