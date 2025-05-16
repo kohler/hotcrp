@@ -5,7 +5,7 @@ HotCRP NEWS
 
 * Upgrade notes
 
-    * PHP 8.4 is supported.
+    * PHP 8.4 is supported, PHP 7.2 is not.
 
 * Accounts
 

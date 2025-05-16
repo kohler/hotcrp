@@ -23,8 +23,8 @@ class AdminHome_Page {
     static function print(Contact $user) {
         $conf = $user->conf;
         $ml = [];
-        if (PHP_VERSION_ID <= 70200) {
-            $ml[] = MessageItem::error("<0>HotCRP requires PHP version 7.2 or higher.  You are running PHP version " . phpversion());
+        if (PHP_VERSION_ID <= 70300) {
+            $ml[] = MessageItem::error("<0>HotCRP requires PHP version 7.3 or higher. You are running PHP version " . phpversion());
         }
         $max_file_size = ini_get_bytes("upload_max_filesize");
         if (!$conf->opt("dbNoPapers")) {
