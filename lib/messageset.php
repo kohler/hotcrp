@@ -719,10 +719,12 @@ class MessageSet {
     function message_field_map() {
         return $this->errf;
     }
+
     /** @return list<string> */
     function message_fields() {
         return array_keys($this->errf);
     }
+
     /** @param int $min_status
      * @return list<string> */
     private function min_status_fields($min_status) {
@@ -736,6 +738,7 @@ class MessageSet {
         }
         return $fs;
     }
+
     /** @param int $min_status
      * @return \Generator<MessageItem> */
     private function min_status_list($min_status) {
@@ -747,26 +750,33 @@ class MessageSet {
             }
         }
     }
+
     /** @return list<string> */
     function error_fields() {
         return $this->min_status_fields(self::ERROR);
     }
+
     /** @return list<string> */
     function problem_fields() {
         return $this->min_status_fields(self::WARNING);
     }
+
+
     /** @return list<MessageItem> */
     function message_list() {
         return $this->msgs;
     }
+
     /** @return \Generator<MessageItem> */
     function error_list() {
         return $this->min_status_list(self::ERROR);
     }
+
     /** @return \Generator<MessageItem> */
     function problem_list() {
         return $this->min_status_list(self::WARNING);
     }
+
     /** @param string $field
      * @return \Generator<MessageItem> */
     function message_list_at($field) {
@@ -778,6 +788,7 @@ class MessageSet {
             }
         }
     }
+
     /** @param string $pfx
      * @return \Generator<MessageItem> */
     function message_list_at_prefix($pfx) {
@@ -786,6 +797,19 @@ class MessageSet {
                 yield $mi;
             }
         }
+    }
+
+    /** @param string $field
+     * @return list<MessageItem> */
+    function message_list_with_default_field($field) {
+        $ml = [];
+        foreach ($this->msgs as $mi) {
+            if ($mi->field === null) {
+                $mi = $mi->with_field($field);
+            }
+            $ml[] = $mi;
+        }
+        return $ml;
     }
 
 
@@ -829,20 +853,7 @@ class MessageSet {
      * @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
      * @return list<MessageItem> */
     static function fmt_list($fmt, ...$mls) {
-        $mlx = [];
-        foreach ($mls as $ml) {
-            if ($ml instanceof MessageItem) {
-                $mlx[] = $ml;
-            } else if ($ml instanceof MessageSet) {
-                if ($ml->has_message()) { // old PHPs require at least 2 args
-                    array_push($mlx, ...$ml->message_list());
-                }
-            } else {
-                foreach ($ml ?? [] as $mi) {
-                    $mlx[] = $mi;
-                }
-            }
-        }
+        $mlx = self::make_list(...$mls);
         $xfmt = null;
         foreach ($mlx as $mi) {
             if ($mi->need_fmt()) {

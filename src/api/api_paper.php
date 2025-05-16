@@ -99,7 +99,7 @@ class Paper_API extends MessageSet {
 
         return new JsonResult([
             "ok" => true,
-            "message_list" => $srch->message_list(),
+            "message_list" => $srch->message_list_with_default_field("q"),
             "papers" => $pjs
         ]);
     }
