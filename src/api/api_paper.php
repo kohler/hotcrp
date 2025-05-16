@@ -57,19 +57,20 @@ class Paper_API extends MessageSet {
     /** @return JsonResult */
     static function run_get_one(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (!isset($qreq->p)) {
-            return JsonResult::make_missing_error("p");
+            JsonResult::make_missing_error("p")->complete();
         }
         $fr = $prow ? $user->perm_view_paper($prow) : $qreq->annex("paper_whynot");
         if (!$prow || $fr) {
-            return Conf::paper_error_json_result($fr);
+            Conf::paper_error_json_result($fr)->complete();
         }
         $pj = (new PaperExport($user))->paper_json($prow);
         assert(!!$pj);
         return new JsonResult(["ok" => true, "paper" => $pj]);
     }
 
-    /** @return array{PaperSearch,PaperInfoSet} */
-    static function make_search(Contact $user, Qrequest $qreq) {
+    /** @param array<string,mixed> $args
+     * @return array{PaperSearch,PaperInfoSet} */
+    static function make_search(Contact $user, Qrequest $qreq, $args = []) {
         $qreq->t = $qreq->t ?? "viewable";
         $srch = new PaperSearch($user, $qreq);
         if (friendly_boolean($qreq->warn_missing)) {
@@ -78,7 +79,7 @@ class Paper_API extends MessageSet {
         $prows = $srch->user->paper_set([
             "paperId" => $srch->paper_ids(),
             "options" => true, "topics" => true, "allConflictType" => true
-        ]);
+        ] + $args);
         $prows->sort_by_search($srch);
         return [$srch, $prows];
     }
@@ -642,16 +643,20 @@ class Paper_API extends MessageSet {
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
-        if ($qreq->is_get()) {
-            if ($mode === self::M_ONE) {
-                $jr = self::run_get_one($user, $qreq, $prow);
+        try {
+            if ($qreq->is_get()) {
+                if ($mode === self::M_ONE) {
+                    $jr = self::run_get_one($user, $qreq, $prow);
+                } else {
+                    $jr = self::run_get_multi($user, $qreq);
+                }
+            } else if ($qreq->method() === "DELETE") {
+                $jr = (new Paper_API($user))->run_delete($qreq, $prow);
             } else {
-                $jr = self::run_get_multi($user, $qreq);
+                $jr = (new Paper_API($user))->run_post($qreq, $prow, $mode);
             }
-        } else if ($qreq->method() === "DELETE") {
-            $jr = (new Paper_API($user))->run_delete($qreq, $prow);
-        } else {
-            $jr = (new Paper_API($user))->run_post($qreq, $prow, $mode);
+        } catch (JsonResult $jrex) {
+            $jr = $jrex;
         }
         $user->set_overrides($old_overrides);
         if (($jr->content["message_list"] ?? null) === []) {

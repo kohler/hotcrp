@@ -316,4 +316,17 @@ class PaperAPI_Tester {
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->message_list[0]->field, "status:submitted");
     }
+
+    function test_get_fail() {
+        $qreq = TestQreq::get(["p" => 100101]);
+        $jr = call_api("paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_str_contains($jr->message_list[0]->message, "does not exist");
+
+        $qreq = TestQreq::get();
+        $jr = call_api("paper", $this->u_estrin, $qreq);
+        xassert_eqq($jr->ok, false);
+        xassert_eqq($jr->message_list[0]->field, "p");
+        xassert_eqq($jr->message_list[0]->message, "<0>Parameter missing");
+    }
 }
