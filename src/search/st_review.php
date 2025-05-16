@@ -7,6 +7,7 @@ class Review_SearchTerm extends SearchTerm {
     private $user;
     /** @var ReviewSearchMatcher */
     private $rsm;
+    /** @var array<string,string> */
     private static $recompleteness_map = [
         "c" => "complete", "i" => "incomplete", "p" => "partial"
     ];
@@ -70,9 +71,8 @@ class Review_SearchTerm extends SearchTerm {
                    && ($a = CountMatcher::parse_comparison($components[count($components) - 1]))) {
             array_pop($components);
             return $a;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param list<string> $components
@@ -128,10 +128,9 @@ class Review_SearchTerm extends SearchTerm {
         }
         if (($qr = self::parse_components($rsm, self::split($sword->qword), 0, $srch))) {
             return $qr;
-        } else {
-            $srch->lwarning($sword, "<0>Invalid reviewer search");
-            return new False_SearchTerm;
         }
+        $srch->lwarning($sword, "<0>Invalid reviewer search");
+        return new False_SearchTerm;
     }
 
     /** @return SearchTerm */
@@ -146,10 +145,9 @@ class Review_SearchTerm extends SearchTerm {
         $rsm->apply_round_list($round_list);
         if (($qr = self::parse_components($rsm, $components, 1, $srch))) {
             return $qr;
-        } else {
-            $srch->lwarning($sword, "<0>Invalid review round search");
-            return new False_SearchTerm;
         }
+        $srch->lwarning($sword, "<0>Invalid review round search");
+        return new False_SearchTerm;
     }
 
     /** @return SearchTerm */
@@ -169,17 +167,16 @@ class Review_SearchTerm extends SearchTerm {
 
     static function review_field_factory($keyword, XtParams $xtp, $kwfj, $m) {
         $f = $xtp->conf->find_all_fields($keyword);
-        if (count($f) == 1 && $f[0] instanceof ReviewField) {
-            return (object) [
-                "name" => $keyword,
-                "parse_function" => "Review_SearchTerm::parse_review_field",
-                "review_field" => $f[0],
-                "has" => "any",
-                "needs_relation" => true
-            ];
-        } else {
+        if (count($f) !== 1 || !($f[0] instanceof ReviewField)) {
             return null;
         }
+        return (object) [
+            "name" => $keyword,
+            "parse_function" => "Review_SearchTerm::parse_review_field",
+            "review_field" => $f[0],
+            "has" => "any",
+            "needs_relation" => true
+        ];
     }
 
     /** @return SearchTerm */
@@ -223,9 +220,8 @@ class Review_SearchTerm extends SearchTerm {
         if (($rfsrch = ReviewFieldSearch::parse($sword, $f, $rsm, $srch))) {
             $rsm->apply_field($rfsrch);
             return new Review_SearchTerm($srch->user, $rsm);
-        } else {
-            return new False_SearchTerm;
         }
+        return new False_SearchTerm;
     }
 
     function paper_requirements(&$options) {

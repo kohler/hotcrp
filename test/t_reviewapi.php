@@ -69,4 +69,26 @@ class ReviewAPI_Tester {
         xassert_eqq($jr->review->OveMer, 2);
         xassert_eqq($jr->review->ComAut, "No comments\n");
     }
+
+    function test_multi_fetch() {
+        $qreq = TestQreq::get(["p" => 18, "u" => $this->u_diot->email]);
+        $jr = call_api("reviews", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count($jr->reviews), 1);
+        xassert_eqq($jr->reviews[0]->object, "review");
+        xassert_eqq($jr->reviews[0]->OveMer, 2);
+        xassert_eqq($jr->reviews[0]->ComAut, "No comments\n");
+
+        $qreq = TestQreq::get(["p" => 18]);
+        $jr = call_api("reviews", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count($jr->reviews), 3);
+
+        $qreq = TestQreq::get(["q" => "consistent overhead", "rq" => "re:complete"]);
+        $jr = call_api("reviews", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_eqq(count($jr->reviews), 1);
+        xassert_eqq($jr->reviews[0]->pid, 18);
+        xassert_eqq($jr->reviews[0]->reviewer_email, $this->u_diot->email);
+    }
 }

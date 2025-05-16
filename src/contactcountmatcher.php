@@ -57,17 +57,21 @@ class ContactCountMatcher extends CountMatcher {
         return $this->_contacts === null || in_array($cid, $this->_contacts, true);
     }
 
-    /** @param int $cid */
+    /** @param int $cid
+     * @return $this */
     function add_contact($cid) {
         $this->_contacts = $this->_contacts ?? [];
         if (!in_array($cid, $this->_contacts, true)) {
             $this->_contacts[] = $cid;
         }
+        return $this;
     }
 
-    /** @param null|int|list<int> $contacts */
+    /** @param null|int|list<int> $contacts
+     * @return $this */
     function set_contacts($contacts) {
         assert($contacts === null || is_array($contacts) || is_int($contacts));
         $this->_contacts = is_int($contacts) ? [$contacts] : $contacts;
+        return $this;
     }
 }

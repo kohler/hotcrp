@@ -1451,9 +1451,8 @@ class Limit_SearchTerm extends SearchTerm {
     function about() {
         if (in_array($this->limit, ["viewable", "reviewable", "ar", "r", "rout", "req"])) {
             return self::ABOUT_REVIEW_SET;
-        } else {
-            return self::ABOUT_PAPER;
         }
+        return self::ABOUT_PAPER;
     }
 }
 

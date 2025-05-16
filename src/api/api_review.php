@@ -11,6 +11,7 @@ single review download
 multiple review download
 - p may be set
 - q may be set
+- one of p, q must be set
 - rq may be set
 - u may be set
 
@@ -19,7 +20,6 @@ single review upload
 - r must be set (might be `new`)
 - u may be set
 - round may be set */
-
 
 class Review_API extends MessageSet {
     /** @var Conf
@@ -74,15 +74,80 @@ class Review_API extends MessageSet {
     }
 
     /** @return JsonResult */
+    static function run_get_multi(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
+        $ml = [];
+        if (!isset($qreq->q)) {
+            if (!isset($qreq->p)) {
+                JsonResult::make_missing_error("q")->complete();
+            }
+            $fr = $prow ? $user->perm_view_paper($prow) : $qreq->annex("paper_whynot");
+            if (!$prow || $fr) {
+                Conf::paper_error_json_result($fr)->complete();
+            }
+            $srch = null;
+            $prows = PaperInfoSet::make_singleton($prow);
+        } else {
+            list($srch, $prows) = Paper_API::make_search($user, $qreq);
+            $ml = $srch->message_list_with_default_field("q");
+        }
+
+        if (isset($qreq->rq) && isset($qreq->u)) {
+            JsonResult::make_parameter_error("rq", "<0>Supply at most one of `rq` and `u`")->complete();
+        }
+
+        $rst = null;
+        if (isset($qreq->u)) {
+            if (($u = $user->conf->user_by_email($qreq->u))) {
+                $rsm = new ReviewSearchMatcher;
+                $rsm->add_contact($u->contactId);
+                $rst = new Review_SearchTerm($user, $rsm);
+            } else {
+                $rst = new False_SearchTerm;
+            }
+        } else if (isset($qreq->rq)) {
+            $query = [
+                "q" => $qreq->rq,
+                "reviewer" => $qreq->reviewer ?? null
+            ];
+            $srch = new PaperSearch($user, $query);
+            array_push($ml, ...$srch->message_list_with_default_field("rq"));
+            $rst = $srch->main_term();
+        }
+
+        $pex = new PaperExport($user);
+        $rjs = [];
+        foreach ($prows as $prow) {
+            foreach ($prow->viewable_reviews_as_display($user) as $rrow) {
+                if (!$rst || $rst->test($prow, $rrow))
+                    $rjs[] = $pex->review_json($prow, $rrow);
+            }
+        }
+
+        return new JsonResult([
+            "ok" => true,
+            "message_list" => $ml,
+            "reviews" => $rjs
+        ]);
+    }
+
+    /** @return JsonResult */
     static private function run(Contact $user, Qrequest $qreq, ?PaperInfo $prow, $mode) {
         $old_overrides = $user->overrides();
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
-        if ($qreq->is_get()) {
-            $jr = self::run_get_one($user, $qreq, $prow);
-        } else {
-            $jr = JsonResult::make_not_found_error();
+        try {
+            if ($qreq->is_get()) {
+                if ($mode === self::M_ONE) {
+                    $jr = self::run_get_one($user, $qreq, $prow);
+                } else {
+                    $jr = self::run_get_multi($user, $qreq, $prow);
+                }
+            } else {
+                $jr = JsonResult::make_not_found_error();
+            }
+        } catch (JsonResult $jrx) {
+            $jr = $jrx;
         }
         $user->set_overrides($old_overrides);
         if (($jr->content["message_list"] ?? null) === []) {
@@ -97,8 +162,8 @@ class Review_API extends MessageSet {
     }
 
     /** @return JsonResult */
-    static function run_multi(Contact $user, Qrequest $qreq) {
-        return self::run($user, $qreq, null, self::M_MULTI | self::M_MATCH);
+    static function run_multi(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
+        return self::run($user, $qreq, $prow, self::M_MULTI | self::M_MATCH);
     }
 
 

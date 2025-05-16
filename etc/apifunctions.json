@@ -228,6 +228,10 @@
         "function": "Review_API::run_one"
     },
     {
+        "name": "reviews", "get": true,
+        "function": "Review_API::run_multi"
+    },
+    {
         "name": "reviewhistory", "get": true, "paper": true,
         "function": "ReviewMeta_API::reviewhistory"
     },
