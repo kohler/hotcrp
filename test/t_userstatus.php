@@ -25,7 +25,7 @@ class UserStatus_Tester {
     private function make_qreq_for($email, $req = []) {
         $u = $this->conf->fresh_user_by_email($email);
         $qreq = (new Qrequest("POST", $req))->approve_token();
-        $qreq->set_qsession(new TestQsession);
+        $qreq->set_qsession(new MemoryQsession);
         UserSecurityEvent::session_user_add($qreq->qsession(), $email);
         UserSecurityEvent::make($email)
             ->set_reason(UserSecurityEvent::REASON_REAUTH)

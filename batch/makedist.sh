@@ -183,6 +183,7 @@ lib/ldaplogin.php
 lib/login.php
 lib/mailer.php
 lib/mailpreparation.php
+lib/memoryqsession.php
 lib/messageset.php
 lib/mime.types
 lib/mimetext.php
@@ -203,7 +204,6 @@ lib/s3result.php
 lib/scoreinfo.php
 lib/subprocess.php
 lib/tagger.php
-lib/testqsession.php
 lib/text.php
 lib/uconvertershim.php
 lib/unicodehelper.php

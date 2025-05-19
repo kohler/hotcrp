@@ -497,17 +497,21 @@ class Cdb_Tester {
         xassert_eqq($rrow->contactId, $user_cengiz->contactId);
 
         // current user is logged in as both Cengiz and Sophia
-        Contact::$session_users = ["cengiz@isi.edu", "sophia@dros.nl"];
+        $qsession = new MemoryQsession("dfnoafndwqf", ["us" => ["cengiz@isi.edu", "sophia@dros.nl"]]);
 
         // current user cannot edit Cengiz's review for some random user
-        $result = RequestReview_API::claimreview($user_cengiz, new Qrequest("POST", ["p" => "3", "r" => "$rrid", "email" => "betty6@manchette.net"]), $paper3);
+        $qreq = (new Qrequest("POST", ["p" => "3", "r" => "{$rrid}", "email" => "betty6@manchette.net"]))
+            ->set_qsession($qsession);
+        $result = RequestReview_API::claimreview($user_cengiz, $qreq, $paper3);
         xassert_eqq($result->content["ok"], false);
         $rrow = $paper3->fresh_review_by_id($rrid);
         xassert(!!$rrow);
         xassert_eqq($rrow->contactId, $user_cengiz->contactId);
 
         // current user can claim Sophia's review, even as Cengiz
-        $result = RequestReview_API::claimreview($user_cengiz, new Qrequest("POST", ["p" => "3", "r" => "$rrid", "email" => "sophia@dros.nl"]), $paper3);
+        $qreq = (new Qrequest("POST", ["p" => "3", "r" => "{$rrid}", "email" => "sophia@dros.nl"]))
+            ->set_qsession($qsession);
+        $result = RequestReview_API::claimreview($user_cengiz, $qreq, $paper3);
         xassert_eqq($result->content["ok"], true);
         $user_sophia = $this->conf->checked_user_by_email("sophia@dros.nl");
         xassert(!!$user_sophia);
@@ -515,8 +519,6 @@ class Cdb_Tester {
         xassert(!!$rrow);
         xassert_neqq($rrow->contactId, $user_cengiz->contactId);
         xassert_eqq($rrow->contactId, $user_sophia->contactId);
-
-        Contact::$session_users = null;
     }
 
     function test_cdb_roles_1() {

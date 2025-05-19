@@ -30,8 +30,6 @@ class Contact implements JsonSerializable {
     static public $no_main_user = false;
     /** @var int */
     static public $next_xid = -2;
-    /** @var ?list<string> */
-    static public $session_users;
 
     /** @var Conf */
     public $conf;
@@ -729,9 +727,6 @@ class Contact implements JsonSerializable {
     /** @param Qrequest|Qsession $qreq
      * @return list<string> */
     static function session_users($qreq) {
-        if (isset(self::$session_users)) {
-            return self::$session_users;
-        }
         $qs = $qreq instanceof Qsession ? $qreq : $qreq->qsession();
         if (($us = $qs->get("us")) !== null) {
             return $us;

@@ -1,8 +1,8 @@
 <?php
-// testqsession.php -- HotCRP session handler for tests
+// memoryqsession.php -- HotCRP session handler for ephemeral per-request sessions
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
-class TestQsession extends Qsession {
+class MemoryQsession extends Qsession {
     /** @var array<string,mixed> */
     private $a;
 

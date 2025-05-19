@@ -308,9 +308,9 @@ function initialize_user($qreq, $kwarg = null) {
             JsonResult::make_error(401, "<0>Unauthorized")->complete();
         }
         $qreq->set_user($user);
+        $qreq->set_qsession(new MemoryQsession($m[1], ["u" => $user->email]));
         $user->set_bearer_authorized();
         Contact::set_main_user($user);
-        Contact::$session_users = [$user->email];
         $ucounter = ContactCounter::find_by_uid($conf, $token->is_cdb, $token->contactId);
         $ucounter->api_refresh();
         $ucounter->api_account(true);
