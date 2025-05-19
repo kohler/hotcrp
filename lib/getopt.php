@@ -261,6 +261,23 @@ class Getopt {
         return false;
     }
 
+    /** @param string $scline
+     * @return array{string,string,string} */
+    static private function parse_subcommand_line($scline) {
+        $len = strlen($scline);
+        if (($space = strpos($scline, " ")) === false) {
+            $space = $len;
+        }
+        if (($comma = strpos($scline, ",")) === false || $comma > $space) {
+            $comma = $space;
+        }
+        return [
+            substr($scline, 0, $comma),
+            $comma < $space ? substr($scline, $comma + 1, $space - $comma - 1) : "",
+            $space + 1 < $len ? ltrim(substr($scline, $space + 1)) : ""
+        ];
+    }
+
     /** @param null|string|array<string,mixed> $subarg
      * @return string */
     function help($subarg = null) {
@@ -291,20 +308,10 @@ class Getopt {
         if (!empty($this->subcommand)
             && $subtype === "") {
             $s[] = "Subcommands:\n";
-            foreach ($this->subcommand as $sc) {
-                if (($space = strpos($sc, " ")) !== false) {
-                    ++$space;
-                } else {
-                    $space = strlen($sc);
-                }
-                if (($comma = strpos($sc, ",")) === false
-                    || $comma >= $space) {
-                    $comma = $space;
-                }
-                $on = substr($sc, 0, $comma);
-                $desc = ltrim(substr($sc, $space));
+            foreach ($this->subcommand as $scline) {
+                list($first, $rest, $desc) = self::parse_subcommand_line($scline);
                 if ($desc !== "!") {
-                    $s[] = self::format_help_line("  {$on}", $desc);
+                    $s[] = self::format_help_line("  {$first}", $desc);
                 }
             }
             $s[] = "\n";
@@ -581,7 +588,15 @@ class Getopt {
             exit(0);
         }
         if ($this->require_subcommand && !isset($res["_subcommand"])) {
-            throw (new CommandLineException("Subcommand required", $this))->add_context("Subcommands are " . join(", ", $this->subcommand));
+            $subcommands = [];
+            foreach ($this->subcommand as $scline) {
+                list($first, $rest, $desc) = self::parse_subcommand_line($scline);
+                if ($desc !== "!") {
+                    $subcommands[] = $first;
+                }
+            }
+            throw (new CommandLineException("Subcommand required", $this))
+                ->add_context("Subcommands are " . join(", ", $subcommands));
         }
         if ($this->maxarg !== null && count($rest) > $this->maxarg) {
             throw new CommandLineException("Too many arguments", $this);

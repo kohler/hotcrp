@@ -359,7 +359,7 @@ class HotCLI_Batch extends MessageSet {
             "upload Upload file to HotCRP and return token",
             "paper Retrieve or change submissions"
         )->description("Interact with HotCRP site using APIs.
-Usage: php batch/hotcli.php -u SITEURL -t APITOKEN COMMAND ARGS...")
+Usage: php batch/hotcli.php -u SITEURL -t APITOKEN SUBCOMMAND ARGS...")
          ->helpopt("help")
          ->maxarg(1);
         $arg = $getopt->parse($argv);
