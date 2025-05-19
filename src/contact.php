@@ -726,7 +726,7 @@ class Contact implements JsonSerializable {
 
     /** @param Qrequest|Qsession $qreq
      * @return list<string> */
-    static function session_users($qreq) {
+    static function session_emails($qreq) {
         $qs = $qreq instanceof Qsession ? $qreq : $qreq->qsession();
         if (($us = $qs->get("us")) !== null) {
             return $us;
@@ -737,13 +737,20 @@ class Contact implements JsonSerializable {
     }
 
     /** @param Qrequest|Qsession $qreq
+     * @return list<string>
+     * @deprecated */
+    static function session_users($qreq) {
+        return self::session_emails($qreq);
+    }
+
+    /** @param Qrequest|Qsession $qreq
      * @param string $email
      * @return int */
     static function session_index_by_email($qreq, $email) {
         if (!$email) {
             return -1;
         }
-        foreach (self::session_users($qreq) as $i => $u) {
+        foreach (self::session_emails($qreq) as $i => $u) {
             if (strcasecmp($u, $email) === 0) {
                 return $i;
             }

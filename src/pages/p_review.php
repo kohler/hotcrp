@@ -311,7 +311,7 @@ class Review_Page {
                     $m = "<5><p class=\"mb-0\">{$mx} If you wish, you can reassign the linked review to one your current accounts.</p>"
                         . Ht::form("", ["class" => "has-fold foldo"])
                         . '<div class="aab mt-2 fx">';
-                    foreach ($this->user->session_users($this->qreq) as $e) {
+                    foreach ($this->user->session_emails($this->qreq) as $e) {
                         if ($e === "") {
                             continue;
                         }

@@ -4916,7 +4916,7 @@ class Conf {
                 || $qreq->navigation()->shifted_path !== "") {
                 $userinfo["session_index"] = $uindex;
             }
-            $susers = Contact::session_users($qreq);
+            $susers = Contact::session_emails($qreq);
             if ($user->is_actas_user() || count($susers) > 1) {
                 $userinfo["session_users"] = $susers;
             }
@@ -5008,7 +5008,7 @@ class Conf {
             if ($sfx === "index" . $nav->php_suffix) {
                 $sfx = "";
             }
-            foreach (Contact::session_users($qreq) as $i => $email) {
+            foreach (Contact::session_emails($qreq) as $i => $email) {
                 if ($actas_email !== null && strcasecmp($email, $actas_email) === 0) {
                     $actas_email = null;
                 }

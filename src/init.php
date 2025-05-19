@@ -340,7 +340,7 @@ function initialize_user($qreq, $kwarg = null) {
     $qreq->qsession()->maybe_open();
 
     // determine desired account
-    $us = Contact::session_users($qreq);
+    $us = Contact::session_emails($qreq);
     $nus = count($us);
     $uindex = 0;
     $reqemail = $_GET["i"] ?? "";

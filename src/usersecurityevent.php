@@ -220,7 +220,7 @@ class UserSecurityEvent {
      * @param string $email
      * @return int */
     static function session_user_add($qs, $email) {
-        $us = Contact::session_users($qs);
+        $us = Contact::session_emails($qs);
         $empty = null;
         for ($ui = 0; $ui !== count($us); ++$ui) {
             if ($us[$ui] === "") {
@@ -240,7 +240,7 @@ class UserSecurityEvent {
     /** @param Qsession $qs
      * @param string $email */
     static function session_user_remove($qs, $email) {
-        $us = Contact::session_users($qs);
+        $us = Contact::session_emails($qs);
         for ($ui = 0; $ui !== count($us); ++$ui) {
             if (strcasecmp($us[$ui], $email) === 0) {
                 $us[$ui] = "";

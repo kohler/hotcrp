@@ -381,7 +381,7 @@ class OAuth_Page {
         $uri = $this->site_uri;
         $qs = $this->qreq->qsession();
         if ($this->success
-            && count(Contact::session_users($qs)) > 1
+            && count(Contact::session_emails($qs)) > 1
             && ($uindex = Contact::session_index_by_email($qs, $this->email)) >= 0) {
             $uri .= "u/{$uindex}/";
         }

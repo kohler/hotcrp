@@ -185,7 +185,7 @@ class Authorize_Page {
         $buttons = [];
         $nav = $this->qreq->navigation();
         $top = "";
-        foreach (Contact::session_users($this->qreq) as $i => $email) {
+        foreach (Contact::session_emails($this->qreq) as $i => $email) {
             if ($email === "") {
                 continue;
             }

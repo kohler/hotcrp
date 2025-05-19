@@ -182,7 +182,7 @@ class Signin_Page {
     }
 
     static function print_signin_form_accounts(Contact $user, Qrequest $qreq) {
-        if (($su = Contact::session_users($qreq))) {
+        if (($su = Contact::session_emails($qreq))) {
             $nav = $qreq->navigation();
             $links = [];
             foreach ($su as $i => $email) {

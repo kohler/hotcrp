@@ -186,7 +186,7 @@ class ManageEmail_Page {
         if ($this->user->primaryContactId > 0) {
             return true;
         }
-        $emails = Contact::session_users($this->qreq);
+        $emails = Contact::session_emails($this->qreq);
         $this->conf->prefetch_users_by_email($emails);
         $this->conf->prefetch_cdb_users_by_email($emails);
         $any = null;
@@ -332,7 +332,7 @@ class ManageEmail_Page {
         }
         if ($curval === "" && $this->qreq->signedin) {
             $latest_use = null;
-            foreach (Contact::session_users($this->qreq) as $e) {
+            foreach (Contact::session_emails($this->qreq) as $e) {
                 $use = UserSecurityEvent::session_latest_signin_by_email($this->qreq->qsession(), $e);
                 if ($use && (!$latest_use || $use->timestamp > $latest_use->timestamp)) {
                     $latest_use = $use;
@@ -344,7 +344,7 @@ class ManageEmail_Page {
         }
         $selected = null;
         $opts = [];
-        foreach (Contact::session_users($this->qreq) as $e) {
+        foreach (Contact::session_emails($this->qreq) as $e) {
             $opt = ["value" => $e];
             if ($key === "email"
                 && $this->token

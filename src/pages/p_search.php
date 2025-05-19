@@ -416,9 +416,33 @@ class Search_Page {
         $qreq->print_footer();
     }
 
-    /** @param Contact $user
-     * @param Qrequest $qreq */
-    static function go($user, $qreq) {
+    /** @return never */
+    static private function not_allowed(Contact $user, Qrequest $qreq) {
+        http_response_code(403);
+        $qreq->print_header("Search", "search");
+        $ml = [MessageItem::error("<0>Account {} can’t search {submissions}", $user->email)];
+
+        $semails = Contact::session_emails($qreq);
+        $user->conf->prefetch_users_by_email($semails);
+        $links = [];
+        foreach ($semails as $i => $email) {
+            if (strcasecmp($email, $user->email) !== 0
+                && ($u = $user->conf->user_by_email($email))
+                && PaperSearch::viewable_limits($u)) {
+                $links[] = Ht::link(htmlspecialchars($email),
+                    $qreq->navigation()->base_path . "u/{$i}/" . $user->conf->selfurl($qreq, [], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW));
+            }
+        }
+        if ($links) {
+            $ml[] = MessageItem::inform("<5>You may want to try a different account ({:nblist}).", new FmtArg(0, $links, 5));
+        }
+
+        $user->conf->feedback_msg($ml);
+        $qreq->print_footer();
+        throw new PageCompletion;
+    }
+
+    static function go(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
         if ($user->is_empty()) {
             $user->escape();
@@ -447,10 +471,7 @@ class Search_Page {
 
         // paper group
         if (!PaperSearch::viewable_limits($user, $qreq->t)) {
-            $qreq->print_header("Search", "search");
-            $conf->error_msg($conf->_("<0>You aren’t allowed to search {submissions}"));
-            $qreq->print_footer();
-            exit(0);
+            self::not_allowed($user, $qreq);
         }
 
         // paper selection
