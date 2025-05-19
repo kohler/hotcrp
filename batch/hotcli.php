@@ -336,7 +336,6 @@ class HotCLI_Batch extends MessageSet {
     /** @param list<string> $argv
      * @return HotCLI_Batch */
     static function make_args($argv) {
-        global $Opt;
         $getopt = (new Getopt)->long(
             "help,h !",
             "verbose,V Be verbose",
@@ -351,17 +350,19 @@ class HotCLI_Batch extends MessageSet {
             "e,edit !paper Change submissions",
             "delete !paper Delete submission",
             "dry-run,d !paper Don’t actually edit",
+            "disable-users !paper Disable newly created users",
+            "add-topics !paper Add all referenced topics to conference",
+            "reason: !paper Reason for update (included in notifications)",
             "no-notify Don’t notify users",
             "no-notify-authors Don’t notify authors",
             "chunk: =CHUNKSIZE Maximum upload chunk size [5M]",
             "quiet Do not print error messages",
         )->subcommand(true,
             "upload Upload file to HotCRP and return token",
-            "paper Retrieve or change submissions"
-        )->description("Interact with HotCRP site using APIs.
+            "paper Retrieve or change HotCRP submissions"
+        )->description("Interact with HotCRP site using APIs
 Usage: php batch/hotcli.php -u SITEURL -t APITOKEN SUBCOMMAND ARGS...")
-         ->helpopt("help")
-         ->maxarg(1);
+         ->helpopt("help");
         $arg = $getopt->parse($argv);
 
         $hcli = new HotCLI_Batch;

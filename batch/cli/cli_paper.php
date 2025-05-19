@@ -2,11 +2,6 @@
 // paper_cli.php -- HotCRP script for interacting with site APIs
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
-// hotcli paper 10
-// hotcli paper -q XXXX
-// hotcli paper -e -q XXXX
-// hotcli paper -e 10 FILE
-
 class Paper_CLIBatch implements CLIBatchCommand {
     /** @var ?int */
     public $p;
@@ -24,6 +19,12 @@ class Paper_CLIBatch implements CLIBatchCommand {
     public $notify = true;
     /** @var bool */
     public $notify_authors = true;
+    /** @var bool */
+    public $disable_users = false;
+    /** @var bool */
+    public $add_topics = false;
+    /** @var ?string */
+    public $reason;
     /** @var HotCLI_File */
     public $cf;
 
@@ -45,6 +46,15 @@ class Paper_CLIBatch implements CLIBatchCommand {
         }
         if (!$this->notify_authors) {
             $this->urlbase .= "&notify_authors=0";
+        }
+        if ($this->disable_users) {
+            $this->urlbase .= "&disable_users=1";
+        }
+        if ($this->add_topics) {
+            $this->urlbase .= "&add_topics=1";
+        }
+        if ((string) $this->reason !== "") {
+            $this->urlbase .= "&reason=" . urlencode($this->reason);
         }
         if ($this->edit) {
             return $this->run_edit($clib);
@@ -174,6 +184,9 @@ class Paper_CLIBatch implements CLIBatchCommand {
         if (isset($arg["no-notify-authors"])) {
             $pcb->notify_authors = false;
         }
+        $pcb->disable_users = isset($arg["disable-users"]);
+        $pcb->add_topics = isset($arg["add-topics"]);
+        $pcb->reason = $arg["reason"] ?? null;
 
         if ($pcb->delete && $pcb->edit) {
             throw new CommandLineException("`--delete` conflicts with `--edit`");
