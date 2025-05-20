@@ -440,6 +440,26 @@ class Upload_API {
     }
 
     /** @param ?S3Client $s3c */
+    private function assemble_s3($s3c) {
+        if (!$this->_capd->s3_uploadid) {
+            // small file, move directly to destination
+            $doc = DocumentInfo::make_token($this->conf, $this->_cap);
+            if ($doc && $doc->store_s3()) {
+                $this->modify_capd(function ($d) {
+                    $d->s3_ready = true;
+                    $d->status = max($d->status, 5);
+                });
+            }
+        } else if ($s3c->multipart_complete($this->s3_key(),
+                                            $this->_capd->s3_uploadid,
+                                            $this->_capd->s3_parts)) {
+            $this->modify_capd(function ($d) {
+                $d->status = max($d->status, 4);
+            });
+        }
+    }
+
+    /** @param ?S3Client $s3c */
     private function complete_transfer($s3c) {
         $nseg = count($this->_capd->s3_parts);
         if ($nseg === 0) {
@@ -502,23 +522,7 @@ class Upload_API {
         // status 3: hash computed, docstore ready, S3 not ready
         if ($this->_capd->status === 3
             && $s3c) {
-            $doc = DocumentInfo::make_token($this->conf, $this->_cap, $this->segment_file(0));
-            if ($this->_capd->size <= self::MIN_MULTIPART_SIZE) {
-                // upload small file directly to destination
-                if ($doc->store_s3()) {
-                    $this->modify_capd(function ($d) {
-                        $d->s3_ready = true;
-                        $d->status = max($d->status, 5);
-                    });
-                }
-            } else {
-                // complete multipart upload
-                if ($s3c->multipart_complete($this->s3_key(), $this->_capd->s3_uploadid, $this->_capd->s3_parts)) {
-                    $this->modify_capd(function ($d) {
-                        $d->status = max($d->status, 4);
-                    });
-                }
-            }
+            $this->assemble_s3($s3c);
         }
 
         // status 4: hash computed, docstore ready,

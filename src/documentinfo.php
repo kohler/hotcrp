@@ -265,7 +265,8 @@ class DocumentInfo implements JsonSerializable {
         if (!$token
             || !($toki = TokenInfo::find($token, $conf))
             || !$toki->is_active()
-            || $toki->capabilityType !== TokenInfo::UPLOAD) {
+            || $toki->capabilityType !== TokenInfo::UPLOAD
+            || !$toki->data("ready")) {
             return null;
         }
         return self::make_token($conf, $toki, null, $paperId, $documentType);
@@ -278,8 +279,8 @@ class DocumentInfo implements JsonSerializable {
     static function make_token(Conf $conf, TokenInfo $toki, $content_file = null,
                                $paperId = null, $documentType = null) {
         assert($toki->capabilityType === TokenInfo::UPLOAD);
-        $tokd = json_decode($toki->data);
-        if (!($tokd->ready ?? false)) {
+        $tokd = $toki->data();
+        if (!$tokd->hash) {
             return null;
         }
         $doc = new DocumentInfo(null, $conf);
