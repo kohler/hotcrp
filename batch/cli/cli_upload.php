@@ -74,7 +74,7 @@ class Upload_CLIBatch implements CLIBatchCommand {
                 $mi->landmark = $this->input_filename;
                 return null;
             }
-            $eof = $buf === "" && feof($this->stream);
+            $eof = strlen($buf) < $clib->chunk && feof($this->stream);
             curl_setopt($clib->curlh, CURLOPT_URL, $clib->site
                 . "/upload?"
                 . ($this->offset === 0 ? $startargs : "token={$token}")
