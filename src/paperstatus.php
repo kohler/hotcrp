@@ -353,6 +353,7 @@ class PaperStatus extends MessageSet {
                 $filename = $docj->content_file;
             }
         }
+        $safe_filename = DocumentInfo::sanitize_filename($filename);
 
         // extract requested hash
         $ha = $want_algorithm = null;
@@ -422,20 +423,29 @@ class PaperStatus extends MessageSet {
         }
 
         // check for existing document
-        if (!$this->prow->is_new()
-            && isset($docj->docid)
+        $docid = -1;
+        if (isset($docj->docid)
             && is_int($docj->docid)
             && $docj->docid > 0) {
+            $docid = $docj->docid;
+        }
+        if (!$this->prow->is_new()
+            && ($docid > 0 || $hash !== null)) {
             $qx = [
                 "paperId=?" => $this->prow->paperId,
-                "documentType=?" => $o->id,
-                "paperStorageId=?" => $docj->docid
+                "documentType=?" => $o->id
             ];
+            if ($docid > 0) {
+                $qx["paperStorageId=?"] = $docj->docid;
+            }
             if ($hash !== null) {
                 $qx["sha1=?"] = $hash;
             }
             if ($mimetype !== null) {
                 $qx["mimetype=?"] = $mimetype;
+            }
+            if ($safe_filename !== null) {
+                $qx["filename=?"] = $safe_filename;
             }
             $result = $this->conf->qe_apply("select * from PaperStorage where " . join(" and ", array_keys($qx)), array_values($qx));
             $edoc = DocumentInfo::fetch($result, $this->conf, $this->prow);
@@ -465,8 +475,8 @@ class PaperStatus extends MessageSet {
         if (isset($docj->timestamp) && is_int($docj->timestamp)) {
             $doc->set_timestamp($docj->timestamp);
         }
-        if ($filename) {
-            $doc->set_filename(DocumentInfo::sanitize_filename($filename));
+        if ($safe_filename !== null) {
+            $doc->set_filename($safe_filename);
         }
         if ($content !== null) {
             $doc->set_simple_content($content);
