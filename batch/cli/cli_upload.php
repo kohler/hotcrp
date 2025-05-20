@@ -59,7 +59,7 @@ class Upload_CLIBatch implements CLIBatchCommand {
         $buf = "";
         while (true) {
             if (strlen($buf) < $clib->chunk) {
-                $x = fread($this->stream, $clib->chunk - strlen($buf));
+                $x = stream_get_contents($this->stream, $clib->chunk - strlen($buf));
                 if ($x === false) {
                     $mi = $clib->error_at(null, "<0>Error reading file");
                     $mi->landmark = $this->input_filename;
