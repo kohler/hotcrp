@@ -337,7 +337,7 @@ class HotCLI_Batch extends MessageSet {
      * @return HotCLI_Batch */
     static function make_args($argv) {
         $getopt = (new Getopt)->long(
-            "help,h !",
+            "help::,h:: !",
             "verbose,V Be verbose",
             "F:,config: =FILE Set configuration file",
             "s:,siteurl:,url:,u: =SITE Site URL",
@@ -355,7 +355,7 @@ class HotCLI_Batch extends MessageSet {
             "reason: !paper Reason for update (included in notifications)",
             "no-notify Don’t notify users",
             "no-notify-authors Don’t notify authors",
-            "chunk: =CHUNKSIZE Maximum upload chunk size [5M]",
+            "chunk: =CHUNKSIZE Maximum upload chunk size [8M]",
             "quiet Do not print error messages",
         )->subcommand(true,
             "upload Upload file to HotCRP and return token",

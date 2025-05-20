@@ -30,36 +30,45 @@ class Paper_CLIBatch implements CLIBatchCommand {
 
     /** @return int */
     function run(HotCLI_Batch $clib) {
+        $args = [];
         if (isset($this->p)) {
-            $this->urlbase = "{$clib->site}/paper?p={$this->p}";
+            $this->urlbase = "{$clib->site}/paper";
+            $args[] = "p={$this->p}";
         } else {
-            $this->urlbase = "{$clib->site}/papers?q=" . urlencode($this->q);
+            $this->urlbase = "{$clib->site}/papers";
+            if (isset($this->q)) {
+                $args[] = "q=" . urlencode($this->q);
+            }
         }
-        if (!$this->edit && !$this->delete) {
-            return $this->run_get($clib);
+        if ($this->edit || $this->delete) {
+            if ($this->dry_run) {
+                $args[] = "dry_run=1";
+            }
+            if (!$this->notify) {
+                $args[] = "notify=0";
+            }
+            if (!$this->notify_authors) {
+                $args[] = "notify_authors=0";
+            }
+            if ($this->disable_users) {
+                $args[] = "disable_users=1";
+            }
+            if ($this->add_topics) {
+                $args[] = "add_topics=1";
+            }
+            if ((string) $this->reason !== "") {
+                $args[] = "reason=" . urlencode($this->reason);
+            }
         }
-        if ($this->dry_run) {
-            $this->urlbase .= "&dry_run=1";
-        }
-        if (!$this->notify) {
-            $this->urlbase .= "&notify=0";
-        }
-        if (!$this->notify_authors) {
-            $this->urlbase .= "&notify_authors=0";
-        }
-        if ($this->disable_users) {
-            $this->urlbase .= "&disable_users=1";
-        }
-        if ($this->add_topics) {
-            $this->urlbase .= "&add_topics=1";
-        }
-        if ((string) $this->reason !== "") {
-            $this->urlbase .= "&reason=" . urlencode($this->reason);
+        if (!empty($args)) {
+            $this->urlbase .= "?" . join("&", $args);
         }
         if ($this->edit) {
             return $this->run_edit($clib);
-        } else {
+        } else if ($this->delete) {
             return $this->run_delete($clib);
+        } else {
+            return $this->run_get($clib);
         }
     }
 
@@ -75,6 +84,16 @@ class Paper_CLIBatch implements CLIBatchCommand {
         return 0;
     }
 
+    /** @param array<string,mixed> $args
+     * @return string */
+    private function url_with($args) {
+        $url = $this->urlbase;
+        if (($x = http_build_query($args)) !== "") {
+            $url .= (strpos($url, "?") === false ? "?" : "&") . $x;
+        }
+        return $url;
+    }
+
     /** @return int */
     function run_edit(HotCLI_Batch $clib) {
         if ($this->cf->size === null
@@ -84,7 +103,7 @@ class Paper_CLIBatch implements CLIBatchCommand {
             if (!$upload) {
                 return 1;
             }
-            curl_setopt($clib->curlh, CURLOPT_URL, "{$this->urlbase}&upload=" . urlencode($upload));
+            curl_setopt($clib->curlh, CURLOPT_URL, $this->url_with(["upload" => $upload]));
             curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "POST");
             curl_setopt($clib->curlh, CURLOPT_POSTFIELDS, "");
         } else {
@@ -150,33 +169,29 @@ class Paper_CLIBatch implements CLIBatchCommand {
     /** @return Paper_CLIBatch */
     static function make_arg(HotCLI_Batch $clib, Getopt $getopt, $arg) {
         $pcb = new Paper_CLIBatch;
-        $narg = 0;
+        $pcb->delete = isset($arg["delete"]);
+        $pcb->edit = isset($arg["e"]);
 
         $parg = null;
+        $narg = 0;
         if (isset($arg["q"])) {
             $pcb->q = $arg["q"];
         } else if (isset($arg["p"])) {
-            $parg = $arg["p"];
-        } else if (count($arg["_"]) > $narg) {
-            $parg = $arg["_"][$narg];
-            ++$narg;
-        } else {
-            throw new CommandLineException("Submission ID missing", $getopt);
-        }
-        if ($parg !== null) {
-            if (ctype_digit($parg)) {
-                $pcb->p = intval($parg);
-            } else {
+            if (!ctype_digit($arg["p"])) {
                 throw new CommandLineException("Invalid paper", $getopt);
             }
+            $pcb->p = intval($arg["p"]);
+        } else if (count($arg["_"]) > $narg
+                   && ctype_digit($arg["_"][$narg])) {
+            $pcb->p = intval($arg["_"][$narg]);
+            ++$narg;
         }
 
-        $pcb->delete = isset($arg["delete"]);
-        $pcb->edit = isset($arg["e"]);
         if ($pcb->edit) {
             $pcb->cf = HotCLI_File::make($arg["_"][$narg] ?? "-");
             ++$narg;
         }
+
         $pcb->dry_run = isset($arg["dry-run"]);
         if (isset($arg["no-notify"])) {
             $pcb->notify = false;
@@ -189,12 +204,12 @@ class Paper_CLIBatch implements CLIBatchCommand {
         $pcb->reason = $arg["reason"] ?? null;
 
         if ($pcb->delete && $pcb->edit) {
-            throw new CommandLineException("`--delete` conflicts with `--edit`");
-        }
-        if ($pcb->delete && !$pcb->p) {
-            throw new CommandLineException("`--delete` requires `-p`");
-        }
-        if (count($arg["_"]) > $narg) {
+            throw new CommandLineException("`--delete` conflicts with `--edit`", $getopt);
+        } else if ($pcb->delete && !$pcb->p) {
+            throw new CommandLineException("`--delete` requires `-p`", $getopt);
+        } else if (!$pcb->edit && !$pcb->p && $pcb->q === null) {
+            throw new CommandLineException("Submission ID or query missing", $getopt);
+        } else if (count($arg["_"]) > $narg) {
             throw new CommandLineException("Too many arguments");
         }
 
