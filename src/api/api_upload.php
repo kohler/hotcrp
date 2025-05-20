@@ -188,7 +188,6 @@ class Upload_API {
             "s3_parts" => [],
             "s3_uploadid" => false,
             "s3_lock" => null,
-            "s3_status" => false,
             "status" => 0,
             "hashctx" => null,
             "crc32ctx" => null,
@@ -435,6 +434,7 @@ class Upload_API {
             if ($d->status === 2) {
                 $d->content_file = $finalfn;
                 $d->status = 3;
+                $d->ready = true;
             }
         });
     }
@@ -507,7 +507,7 @@ class Upload_API {
                 // upload small file directly to destination
                 if ($doc->store_s3()) {
                     $this->modify_capd(function ($d) {
-                        $d->s3_status = true;
+                        $d->s3_ready = true;
                         $d->status = max($d->status, 5);
                     });
                 }
@@ -531,7 +531,7 @@ class Upload_API {
             if ($s3c->head_size($this->dest_s3_key()) === $this->_capd->size
                 || $s3c->copy($this->s3_key(), $this->dest_s3_key(), $doc->s3_user_data() + ["content_type" => $doc->mimetype])) {
                 $this->modify_capd(function ($d) {
-                    $d->s3_status = true;
+                    $d->s3_ready = true;
                     $d->status = max($d->status, 5);
                 });
                 $s3c->delete($this->s3_key());
@@ -553,8 +553,9 @@ class Upload_API {
         // obtain lock
         $start = time();
         $have_lock = false;
+        $delay = 50000;
         while (true) {
-            if ($this->_capd->hash
+            if (($this->_capd->ready ?? false)
                 || time() > $start + 5) {
                 return;
             } else if (!$this->_capd->s3_lock) {
@@ -569,7 +570,8 @@ class Upload_API {
             } else if (!$synchronous) {
                 return;
             }
-            usleep(250000);
+            usleep($delay);
+            $delay = min($delay * 2, 250000);
             $this->_cap->load_data();
             $this->_capd = json_decode($this->_cap->data);
             if (!$this->_capd) {
