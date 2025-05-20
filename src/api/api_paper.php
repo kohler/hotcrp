@@ -461,7 +461,7 @@ class Paper_API extends MessageSet {
             if ($pidish === null && $expected !== null) {
                 $jp->pid = $expected;
             }
-            if ($pidish === null || $pidish === $expected) {
+            if (($pidish ?? $expected) === ($expected ?? $pidish)) {
                 $this->landmark = $index;
                 return true;
             }
