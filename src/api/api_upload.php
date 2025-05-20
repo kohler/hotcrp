@@ -218,9 +218,9 @@ class Upload_API {
         $this->delete_files();
         if ($this->_capd->s3_uploadid
             && ($s3d = $this->conf->s3_client())) {
-            if ($this->_capd->status < 2) {
+            if ($this->_capd->status < 3) {
                 $s3d->delete($this->s3_key() . "?uploadId=" . $this->_capd->s3_uploadid);
-            } else if ($this->_capd->status < 3) {
+            } else if ($this->_capd->status < 4) {
                 $s3d->delete($this->s3_key());
             }
         }
@@ -342,7 +342,7 @@ class Upload_API {
     }
 
     /** @return int */
-    private function reload_capd() {
+    private function reload_capd_status() {
         $this->_cap->load_data();
         $this->_capd = json_decode($this->_cap->data);
         return $this->_capd->status ?? -1;
@@ -375,21 +375,19 @@ class Upload_API {
                                   . "&uploadId=" . $this->_capd->s3_uploadid,
                                   $file,
                                   "application/octet-stream", [])->run();
-        if ($r->status === 200) {
-            return $r->response_header("etag");
-        } else {
+        if ($r->status !== 200) {
             $this->_ml[] = MessageItem::error("<0>S3 upload error");
             error_log($r->method() . " " . $r->url() . " -> " . $r->status . " " . json_encode($r->response_headers) . " " . $r->response_body() . "\n\n" . json_encode($this->_capd));
             return false;
         }
+        return $r->response_header("etag");
     }
 
-    /** @return bool */
-    private function complete_docstore_transfer() {
+    private function assemble_docstore() {
         $asmfn = $this->assembly_file();
         if (!($file = fopen($asmfn, "cb"))
             || !flock($file, LOCK_EX | LOCK_NB)) {
-            return false;
+            return;
         }
         ftruncate($file, 0);
         $nseg = count($this->_capd->s3_parts);
@@ -404,27 +402,41 @@ class Upload_API {
                 break;
             }
         }
+        if ($segi !== $nseg) {
+            fclose($file);
+            @unlink($this->assembly_file());
+            return;
+        }
         fflush($file);
-        $ok = false;
-        if ($segi === $nseg) {
-            $doc = DocumentInfo::make_token($this->conf, $this->_cap, $asmfn);
-            if ($this->_capd->temp) {
-                $finalfn = $this->final_file($doc);
-            } else {
-                $finalfn = Filer::docstore_path($doc, Filer::FPATH_MKDIR);
-            }
-            if ($finalfn && rename($asmfn, $finalfn)) {
-                $this->modify_capd(function ($d) use ($finalfn) {
-                    $d->content_file = $finalfn;
-                });
-                $ok = true;
-            }
-        }
+        $this->modify_capd(function ($d) {
+            $d->status = max($d->status, 2);
+        });
+        flock($file, LOCK_UN);
         fclose($file);
-        if (!$ok) {
-            @unlink($asmfn);
+    }
+
+    private function complete_docstore() {
+        $asmfn = $this->assembly_file();
+        $doc = DocumentInfo::make_token($this->conf, $this->_cap, $asmfn);
+        if ($this->_capd->temp) {
+            $finalfn = $this->final_file($doc);
+        } else {
+            $finalfn = Filer::docstore_path($doc, Filer::FPATH_MKDIR);
         }
-        return $ok;
+        if (!$finalfn) {
+            return;
+        }
+        if (!rename($asmfn, $finalfn)) {
+            usleep(100);
+            $this->reload_capd_status();
+            return;
+        }
+        $this->modify_capd(function ($d) use ($finalfn) {
+            if ($d->status === 2) {
+                $d->content_file = $finalfn;
+                $d->status = 3;
+            }
+        });
     }
 
     /** @param ?S3Client $s3c */
@@ -477,16 +489,18 @@ class Upload_API {
             });
         }
 
-        // status 1: hash computed, docstore not ready
-        if ($this->_capd->status === 1
-            && $this->complete_docstore_transfer()) {
-            $this->modify_capd(function ($d) {
-                $d->status = max($d->status, 2);
-            });
+        // status 1: hash computed, docstore not assembled
+        if ($this->_capd->status === 1) {
+            $this->assemble_docstore();
         }
 
-        // status 2: hash computed, docstore ready, S3 not ready
-        if ($this->_capd->status === 2
+        // status 2: docstore assembled, not ready
+        if ($this->_capd->status === 2) {
+            $this->complete_docstore();
+        }
+
+        // status 3: hash computed, docstore ready, S3 not ready
+        if ($this->_capd->status === 3
             && $s3c) {
             $doc = DocumentInfo::make_token($this->conf, $this->_cap, $this->segment_file(0));
             if ($this->_capd->size <= self::MIN_MULTIPART_SIZE) {
@@ -494,22 +508,22 @@ class Upload_API {
                 if ($doc->store_s3()) {
                     $this->modify_capd(function ($d) {
                         $d->s3_status = true;
-                        $d->status = max($d->status, 4);
+                        $d->status = max($d->status, 5);
                     });
                 }
             } else {
                 // complete multipart upload
                 if ($s3c->multipart_complete($this->s3_key(), $this->_capd->s3_uploadid, $this->_capd->s3_parts)) {
                     $this->modify_capd(function ($d) {
-                        $d->status = max($d->status, 3);
+                        $d->status = max($d->status, 4);
                     });
                 }
             }
         }
 
-        // status 2: hash computed, docstore ready,
+        // status 4: hash computed, docstore ready,
         // S3 multipart complete but not moved to destination
-        if ($this->_capd->status === 3
+        if ($this->_capd->status === 4
             && $s3c
             && !$this->no_s3_move) {
             // move to final location
@@ -518,14 +532,14 @@ class Upload_API {
                 || $s3c->copy($this->s3_key(), $this->dest_s3_key(), $doc->s3_user_data() + ["content_type" => $doc->mimetype])) {
                 $this->modify_capd(function ($d) {
                     $d->s3_status = true;
-                    $d->status = max($d->status, 4);
+                    $d->status = max($d->status, 5);
                 });
                 $s3c->delete($this->s3_key());
             }
         }
 
-        if ($this->_capd->status >= 2
-            || $this->reload_capd() >= 2) {
+        if ($this->_capd->status >= 3
+            || $this->reload_capd_status() >= 3) {
             // success; clean up
             $this->delete_files();
         } else {
