@@ -272,9 +272,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
             return "application/zip";
         } else if (preg_match('/\A\s*[\[\{]/s', $b)) {
             return "application/json";
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $body

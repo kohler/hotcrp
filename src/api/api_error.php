@@ -82,15 +82,11 @@ class Error_API {
                 }
             }
         }
-        if (!$ok || !empty($t)) {
-            $m = "CSP error: " . ($qreq->referrer() ?? "<unknown>");
-            if (!$ok) {
-                $m .= " [invalid {$bct}]";
-            }
-            error_log($m);
-        }
         if (!$ok) {
-            @file_put_contents("/tmp/cspreport-invalid.txt", $bct . "\n" . $qreq->body());
+            if (($body = $qreq->body())
+                && ($f = SiteLoader::find("var/cspreport-invalid.txt"))) {
+                @file_put_contents($f, $bct . "\n" . $body);
+            }
             return new JsonResult(400, [
                 "ok" => false,
                 "message_list" => [MessageItem::error("<0>Unexpected request")],
