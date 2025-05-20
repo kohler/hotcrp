@@ -142,7 +142,7 @@ class Getopt {
                 $p = $co + 1;
             }
 
-            if (empty($on)) {
+            if ($ot === null) {
                 continue;
             }
 
