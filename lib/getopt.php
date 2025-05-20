@@ -5,10 +5,8 @@
 class Getopt {
     /** @var array<string,GetoptOption> */
     private $po = [];
-    /** @var ?array<string,string> */
+    /** @var ?array<string,GetoptSubcommand> */
     private $subcommand;
-    /** @var ?list<array{string,string}> */
-    private $subcommand_help;
     /** @var ?string */
     private $helpopt;
     /** @var ?callable(?array<string,mixed>,Getopt):(?string) */
@@ -285,37 +283,58 @@ class Getopt {
             }
             $a = is_array($x) ? $x : [$x];
             foreach ($a as $s) {
-                $sclen = strlen($s);
-                if (($sp = strpos($s, " ")) === false) {
-                    $sp = $sclen;
+                $this->subcommand_description($s, "");
+            }
+        }
+        return $this;
+    }
+
+    /** @param string $name
+     * @param string $description
+     * @return $this */
+    function subcommand_description($name, $description) {
+        $namelen = strlen($name);
+        if (($sp = strpos($name, " ")) === false) {
+            $sp = $namelen;
+        }
+        $help = $sp + 1 < $namelen ? ltrim(substr($name, $sp + 1)) : "";
+        if ($help === "" && ($nl = strpos($description, "\n")) > 0) {
+            $help = substr($description, 0, $nl);
+        }
+        $sc = null;
+        foreach (explode(",", substr($name, 0, $sp)) as $n) {
+            if ($n === "") {
+                continue;
+            }
+            if (!$sc) {
+                $sc = $this->subcommand[$n] ?? null;
+                if (!$sc || $sc->name !== $n) {
+                    $sc = new GetoptSubcommand;
+                    $sc->name = $n;
                 }
-                $sc1 = null;
-                $help = $sp + 1 < $sclen ? ltrim(substr($s, $sp + 1)) : "";
-                foreach (explode(",", substr($s, 0, $sp)) as $sc) {
-                    if ($sc === "") {
-                        continue;
-                    }
-                    $sc1 = $sc1 ?? $sc;
-                    $this->subcommand[$sc] = $sc1;
-                    if ($sc === $sc1 && $help !== "!") {
-                        $this->subcommand_help[] = [$sc1, $help];
-                    }
+                if ($help !== "") {
+                    $sc->help = $help;
+                }
+                if ($description !== "") {
+                    $sc->description = $description;
                 }
             }
+            $this->subcommand[$n] = $sc;
         }
         return $this;
     }
 
     /** @param string $opt
      * @param string $help
+     * @param int $len
      * @return string */
-    static function format_help_line($opt, $help) {
+    static function format_help_line($opt, $help, $len = 24) {
         if ($help === "") {
             $sep = "";
-        } else if (strlen($opt) <= 24) {
-            $sep = str_repeat(" ", 26 - strlen($opt));
+        } else if (strlen($opt) <= $len) {
+            $sep = str_repeat(" ", $len + 2 - strlen($opt));
         } else {
-            $sep = "\n                          ";
+            $sep = "\n  " . str_repeat(" ", $len);
         }
         return "{$opt}{$sep}{$help}\n";
     }
@@ -377,21 +396,27 @@ class Getopt {
             }
         }
         $s = [];
-        if ($this->description) {
-            $s[] = $this->description;
-            if (!str_ends_with($this->description, "\n")) {
-                $s[] = "\n\n";
-            } else {
-                $s[] = "\n";
-            }
+        $description = $this->description;
+        if ($subcommand !== ""
+            && ($sc = $this->subcommand[$subcommand] ?? null)
+            && $sc->description !== "") {
+            $description = $sc->description;
         }
-        if (!empty($this->subcommand_help)
-            && $subcommand === "") {
-            $s[] = "Subcommands:\n";
-            foreach ($this->subcommand_help as $scpair) {
-                $s[] = self::format_help_line("  {$scpair[0]}", $scpair[1]);
+        if ($description !== "" && $description !== "!") {
+            $s[] = $description;
+            $s[] = str_ends_with($description, "\n") ? "\n" : "\n\n";
+        }
+        if ($subcommand === "") {
+            $schelp = [];
+            foreach ($this->subcommand as $sc) {
+                if ($sc->help !== "!") {
+                    $schelp[] = self::format_help_line("  {$sc->name}", $sc->help);
+                }
             }
-            $s[] = "\n";
+            if (!empty($schelp)) {
+                $schelp[] = "\n";
+                array_push($s, "Subcommands:\n", ...$schelp);
+            }
         }
         $od = [];
         '@phan-var array<string,GetoptOptionHelp> $od';
@@ -429,11 +454,12 @@ class Getopt {
     /** @param string $arg
      * @return ?string */
     function find_subcommand($arg) {
-        $sc = $this->subcommand[$arg] ?? null;
-        if ($sc === null && $arg === "help" && $this->helpopt) {
-            $sc = "{help}";
+        if (($sc = $this->subcommand[$arg] ?? null)) {
+            return $sc->name;
+        } else if ($arg === "help" && $this->helpopt) {
+            return "{help}";
         }
-        return $sc;
+        return null;
     }
 
     /** @param ?string $s
@@ -626,11 +652,15 @@ class Getopt {
             exit(0);
         } else if ($this->require_subcommand && $subcommand === "") {
             $subcommands = [];
-            foreach ($this->subcommand_help as $scpair) {
-                $subcommands[] = $scpair[0];
+            foreach ($this->subcommand as $sc) {
+                if ($sc->help !== "!")
+                    $subcommands[] = $sc->name;
             }
-            throw (new CommandLineException("Subcommand required", $this))
-                ->add_context("Subcommands are " . join(", ", $subcommands));
+            $cex = new CommandLineException("Subcommand required", $this);
+            if (!empty($subcommands)) {
+                $cex->add_context("Subcommands are " . join(", ", $subcommands));
+            }
+            throw $cex;
         } else if ($this->maxarg !== null && count($rest) > $this->maxarg) {
             throw new CommandLineException("Too many arguments", $this);
         } else if ($this->minarg !== null && count($rest) < $this->minarg) {
@@ -698,6 +728,15 @@ class GetoptOptionHelp {
     public $help = "";
     /** @var int */
     public $prio = 1;
+}
+
+class GetoptSubcommand {
+    /** @var string */
+    public $name;
+    /** @var string */
+    public $help = "";
+    /** @var string */
+    public $description = "";
 }
 
 class CommandLineException extends Exception {

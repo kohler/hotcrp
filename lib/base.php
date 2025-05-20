@@ -555,6 +555,14 @@ function json_encode_object_change(&$s, &$x, $k, $v, $n) {
     return true;
 }
 
+if (!function_exists("json_validate")) {
+    /** @suppress PhanRedefineFunctionInternal */
+    function json_validate($s, $depth = 512, $flags = 0) {
+        json_decode($s, null, $depth, $flags);
+        return json_last_error() === JSON_ERROR_NONE;
+    }
+}
+
 
 // array and object helpers
 

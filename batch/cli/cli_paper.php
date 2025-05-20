@@ -1,5 +1,5 @@
 <?php
-// paper_cli.php -- HotCRP script for interacting with site APIs
+// paper_cli.php -- Hotcrapi script for interacting with site APIs
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Paper_CLIBatch implements CLIBatchCommand {
@@ -7,10 +7,12 @@ class Paper_CLIBatch implements CLIBatchCommand {
     public $p;
     /** @var ?string */
     public $q;
+    /** @var ?string */
+    public $t;
     /** @var string */
     public $urlbase;
     /** @var bool */
-    public $edit;
+    public $save;
     /** @var bool */
     public $delete;
     /** @var bool */
@@ -25,11 +27,11 @@ class Paper_CLIBatch implements CLIBatchCommand {
     public $add_topics = false;
     /** @var ?string */
     public $reason;
-    /** @var HotCLI_File */
+    /** @var Hotcrapi_File */
     public $cf;
 
     /** @return int */
-    function run(HotCLI_Batch $clib) {
+    function run(Hotcrapi_Batch $clib) {
         $args = [];
         if (isset($this->p)) {
             $this->urlbase = "{$clib->site}/paper";
@@ -38,9 +40,12 @@ class Paper_CLIBatch implements CLIBatchCommand {
             $this->urlbase = "{$clib->site}/papers";
             if (isset($this->q)) {
                 $args[] = "q=" . urlencode($this->q);
+                if (isset($this->t)) {
+                    $args[] = "t=" . urlencode($this->t);
+                }
             }
         }
-        if ($this->edit || $this->delete) {
+        if ($this->save || $this->delete) {
             if ($this->dry_run) {
                 $args[] = "dry_run=1";
             }
@@ -63,8 +68,8 @@ class Paper_CLIBatch implements CLIBatchCommand {
         if (!empty($args)) {
             $this->urlbase .= "?" . join("&", $args);
         }
-        if ($this->edit) {
-            return $this->run_edit($clib);
+        if ($this->save) {
+            return $this->run_save($clib);
         } else if ($this->delete) {
             return $this->run_delete($clib);
         } else {
@@ -72,8 +77,13 @@ class Paper_CLIBatch implements CLIBatchCommand {
         }
     }
 
+    /** @return bool */
+    function valid_pid($pid) {
+        return ctype_digit($pid) || ($this->save && $pid === "new");
+    }
+
     /** @return int */
-    function run_get(HotCLI_Batch $clib) {
+    function run_get(Hotcrapi_Batch $clib) {
         curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "GET");
         curl_setopt($clib->curlh, CURLOPT_URL, $this->urlbase);
         if (!$clib->exec_api(null)) {
@@ -95,7 +105,7 @@ class Paper_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return int */
-    function run_edit(HotCLI_Batch $clib) {
+    function run_save(Hotcrapi_Batch $clib) {
         if ($this->cf->size === null
             || $this->cf->size > $clib->chunk) {
             $upb = new Upload_CLIBatch($this->cf);
@@ -140,14 +150,16 @@ class Paper_CLIBatch implements CLIBatchCommand {
         if ($clib->verbose) {
             fwrite(STDERR, $clib->content_string);
         }
-        if ($this->p && isset($clib->content_json->paper)) {
+        if (isset($clib->content_json->paper)) {
             $clib->set_json_output($clib->content_json->paper);
+        } else if (isset($clib->content_json->papers)) {
+            $clib->set_json_output($clib->content_json->papers);
         }
         return $ok ? 0 : 1;
     }
 
     /** @return int */
-    function run_delete(HotCLI_Batch $clib) {
+    function run_delete(Hotcrapi_Batch $clib) {
         curl_setopt($clib->curlh, CURLOPT_URL, $this->urlbase);
         curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "DELETE");
         $ok = $clib->exec_api(null);
@@ -167,29 +179,59 @@ class Paper_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return Paper_CLIBatch */
-    static function make_arg(HotCLI_Batch $clib, Getopt $getopt, $arg) {
+    static function make_arg(Hotcrapi_Batch $clib, Getopt $getopt, $arg) {
         $pcb = new Paper_CLIBatch;
-        $pcb->delete = isset($arg["delete"]);
-        $pcb->edit = isset($arg["e"]);
+        $argv = $arg["_"];
+        $argc = count($argv);
 
-        $parg = null;
-        $narg = 0;
-        if (isset($arg["q"])) {
-            $pcb->q = $arg["q"];
+        $mode = "fetch";
+        $argi = 0;
+        if ($argi < $argc && in_array($argv[$argi], ["fetch", "save", "delete"])) {
+            $mode = $argv[$argi];
+            ++$argi;
+        }
+        $pcb->delete = $mode === "delete";
+        $pcb->save = $mode === "save";
+
+        if ($argi < $argc && $pcb->valid_pid($argv[$argi])) {
+            if (isset($arg["p"])) {
+                throw new CommandLineException("`-p` specified twice", $getopt);
+            }
+            $arg["p"] = $argv[$argi];
+            ++$argi;
+        }
+        if (isset($arg["q"]) && isset($arg["p"])) {
+            throw new CommandLineException("`-q` conflicts with `-p`", $getopt);
         } else if (isset($arg["p"])) {
-            if (!ctype_digit($arg["p"])) {
-                throw new CommandLineException("Invalid paper", $getopt);
+            if (!$pcb->valid_pid($arg["p"])) {
+                throw new CommandLineException("Invalid `-p PID`", $getopt);
             }
             $pcb->p = intval($arg["p"]);
-        } else if (count($arg["_"]) > $narg
-                   && ctype_digit($arg["_"][$narg])) {
-            $pcb->p = intval($arg["_"][$narg]);
-            ++$narg;
+        } else if ($pcb->delete) {
+            throw new CommandLineException("Missing `-p PID`", $getopt);
+        } else if (isset($arg["q"])) {
+            $pcb->q = $arg["q"];
+            $pcb->t = $arg["t"] ?? null;
+        } else if (!$pcb->save) {
+            throw new CommandLineException("Missing `-p PID` or `-q SEARCH`", $getopt);
         }
 
-        if ($pcb->edit) {
-            $pcb->cf = HotCLI_File::make($arg["_"][$narg] ?? "-");
-            ++$narg;
+        if ($pcb->save) {
+            if ($argi < $argc
+                && preg_match('/\A[\[\{]/', $argv[$argi])
+                && json_validate($argv[$argi])) {
+                $pcb->cf = Hotcrapi_File::make_data($argv[$argi]);
+                ++$argi;
+            } else if ($argi < $argc) {
+                $pcb->cf = Hotcrapi_File::make($argv[$argi]);
+                ++$argi;
+            } else {
+                $pcb->cf = Hotcrapi_File::make("-");
+            }
+        }
+
+        if ($argi < $argc) {
+            throw new CommandLineException("Too many arguments");
         }
 
         $pcb->dry_run = isset($arg["dry-run"]);
@@ -202,17 +244,26 @@ class Paper_CLIBatch implements CLIBatchCommand {
         $pcb->disable_users = isset($arg["disable-users"]);
         $pcb->add_topics = isset($arg["add-topics"]);
         $pcb->reason = $arg["reason"] ?? null;
-
-        if ($pcb->delete && $pcb->edit) {
-            throw new CommandLineException("`--delete` conflicts with `--edit`", $getopt);
-        } else if ($pcb->delete && !$pcb->p) {
-            throw new CommandLineException("`--delete` requires `-p`", $getopt);
-        } else if (!$pcb->edit && !$pcb->p && $pcb->q === null) {
-            throw new CommandLineException("Submission ID or query missing", $getopt);
-        } else if (count($arg["_"]) > $narg) {
-            throw new CommandLineException("Too many arguments");
-        }
-
         return $pcb;
+    }
+
+    static function register_options(Getopt $getopt) {
+        $getopt->subcommand_description(
+            "paper",
+            "Retrieve or change HotCRP submissions
+Usage: php batch/hotcrapi.php paper [PID | -q SEARCH]
+       php batch/hotcrapi.php paper save [JSONFILE | ZIPFILE]
+       php batch/hotcrapi.php paper delete PID"
+        )->long(
+            "p:,paper: =PID !paper Submission ID",
+            "q:,query: =SEARCH !paper Submission search",
+            "t:,type: =TYPE !paper Collection to search [viewable]",
+            "dry-run,d !paper Don’t actually save",
+            "disable-users !paper Disable newly created users",
+            "add-topics !paper Add all referenced topics to conference",
+            "reason: !paper Reason for update (included in notifications)",
+            "no-notify Don’t notify users",
+            "no-notify-authors Don’t notify authors"
+        );
     }
 }

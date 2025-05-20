@@ -87,7 +87,7 @@ HotCRP NEWS
 
     * Settings can be filtered by tag.
     * Add `batch/actionlog.php` script.
-    * Add `batch/hotcli.php` script for contacting HotCRP APIs.
+    * Add `batch/hotcrapi.php` script for contacting HotCRP APIs.
 
 * Many other bug fixes and improvements.
 

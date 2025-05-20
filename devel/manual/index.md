@@ -15,6 +15,10 @@ configuring features inaccessible through the public settings UI.
 
 * [**Configuring OAuth authentication**](./oauth.md)
 
+## Command-line scripts
+
+* [**API access with `hotcrapi`**](./hotcrapi.md)
+
 ## Notes
 
 * [CSS notes](./css.md)

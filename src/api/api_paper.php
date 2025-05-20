@@ -210,7 +210,7 @@ class Paper_API extends MessageSet {
 
         // process result
         if ($mode === self::M_ONE) {
-            return $this->run_post_single_json($prow, $jp);
+            return $this->run_post_single_json($prow, $jp, $qreq->p);
         } else if (!$this->user->privChair) {
             return JsonResult::make_permission_error();
         } else if ($mode === self::M_MATCH) {
@@ -289,9 +289,12 @@ class Paper_API extends MessageSet {
     }
 
     /** @return JsonResult */
-    private function run_post_single_json(?PaperInfo $prow, $jp) {
+    private function run_post_single_json(?PaperInfo $prow, $jp, $parg) {
         $this->single = true;
-        if ($this->set_json_landmark(0, $jp, $prow ? $prow->paperId : null)) {
+        if (is_string($parg) && ctype_digit($parg)) {
+            $parg = intval($parg);
+        }
+        if ($this->set_json_landmark(0, $jp, $parg)) {
             $ps = $this->paper_status();
             $ok = $ps->prepare_save_paper_json($jp, $prow);
             $this->execute_save($ok, $ps);
@@ -421,9 +424,8 @@ class Paper_API extends MessageSet {
 
     /** @param object $j
      * @param 0|1|2|3 $pidflags
-     * @param int|'new' $nullvalue
      * @return null|int|'new' */
-    static function analyze_json_pid(Conf $conf, $j, $pidflags = 0, $nullvalue = "new") {
+    static function analyze_json_pid(Conf $conf, $j, $pidflags = 0) {
         if (($pidflags & self::PIDFLAG_IGNORE_PID) !== 0) {
             if (isset($j->pid)) {
                 $j->__original_pid = $j->pid;
@@ -441,23 +443,33 @@ class Paper_API extends MessageSet {
             }
         }
         $pid = $j->pid ?? $j->id ?? null;
-        if ($pid === "new"
+        if ($pid === null
+            || $pid === "new"
             || (is_int($pid) && $pid > 0 && $pid <= PaperInfo::PID_MAX)) {
             return $pid;
-        } else if ($pid === null) {
-            return $nullvalue;
         }
-        return null;
+        throw new ErrorException;
     }
 
+    /** @param int $index
+     * @param object $jp
+     * @param ?int $expected
+     * @return bool */
     private function set_json_landmark($index, $jp, $expected = null) {
-        $pidish = self::analyze_json_pid($this->conf, $jp, 0, $expected ?? "new");
-        if ($pidish && ($expected === null || $pidish === $expected)) {
-            $this->landmark = $index;
-            return true;
+        try {
+            $pidish = self::analyze_json_pid($this->conf, $jp, 0);
+            if ($pidish === null && $expected !== null) {
+                $jp->pid = $expected;
+            }
+            if ($pidish === null || $pidish === $expected) {
+                $this->landmark = $index;
+                return true;
+            }
+            $msg = "<0>ID mismatch";
+        } catch (ErrorException $ex) {
+            $msg = "<0>Format error";
         }
         $pidkey = isset($jp->pid) || !isset($jp->id) ? "pid" : "id";
-        $msg = $pidish ? "<0>ID does not match" : "<0>Format error";
         $mi = $this->error_at($pidkey, $msg);
         if (!$this->single) {
             $mi->landmark = $index;

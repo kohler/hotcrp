@@ -18,7 +18,7 @@ class Upload_CLIBatch implements CLIBatchCommand {
     /** @var bool */
     private $retry;
 
-    /** @param HotCLI_File $cf */
+    /** @param Hotcrapi_File $cf */
     function __construct($cf) {
         $this->stream = $cf->stream;
         $this->filename = $cf->filename;
@@ -27,7 +27,7 @@ class Upload_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return bool */
-    function chunk_retry(HotCLI_Batch $clib) {
+    function chunk_retry(Hotcrapi_Batch $clib) {
         if ($clib->status_code > 399
             && $clib->content_json
             && is_int($clib->content_json->maxblob ?? null)
@@ -41,7 +41,7 @@ class Upload_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return ?string */
-    function execute(HotCLI_Batch $clib) {
+    function execute(Hotcrapi_Batch $clib) {
         $this->offset = 0;
         $this->retry = false;
         curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "POST");
@@ -109,7 +109,7 @@ class Upload_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return int */
-    function run(HotCLI_Batch $clib) {
+    function run(Hotcrapi_Batch $clib) {
         $token = $this->execute($clib);
         if ($token === null) {
             return 1;
@@ -119,15 +119,27 @@ class Upload_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return Upload_CLIBatch */
-    static function make_arg(HotCLI_Batch $clib, Getopt $getopt, $arg) {
+    static function make_arg(Hotcrapi_Batch $clib, Getopt $getopt, $arg) {
         if (count($arg["_"]) > 1) {
             throw new CommandLineException("Too many arguments", $getopt);
         }
-        $ucb = new Upload_CLIBatch(HotCLI_File::make($arg["_"][0] ?? "-"));
+        $ucb = new Upload_CLIBatch(Hotcrapi_File::make($arg["_"][0] ?? "-"));
         $ucb->mimetype = $arg["mimetype"] ?? null;
         if (isset($arg["no-filename"])) {
             $ucb->filename = null;
         }
         return $ucb;
+    }
+
+    static function register_options(Getopt $getopt) {
+        $getopt->subcommand_description(
+            "upload",
+            "Upload file to HotCRP and return token
+Usage: php batch/hotcrapi.php upload [-f NAME] [-m TYPE] FILE"
+        )->long(
+            "filename:,f: =NAME !upload Exposed name for uploaded file",
+            "no-filename !upload !",
+            "mimetype:,m: =MIMETYPE !upload Type for uploaded file"
+        );
     }
 }

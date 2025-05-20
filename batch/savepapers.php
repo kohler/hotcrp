@@ -193,8 +193,9 @@ class SavePapers_Batch {
     }
 
     function run_one($index, $j) {
-        $pidish = Paper_API::analyze_json_pid($this->conf, $j, $this->pidflags);
-        if (!$pidish) {
+        try {
+            $pidish = Paper_API::analyze_json_pid($this->conf, $j, $this->pidflags);
+        } catch (ErrorException $ex) {
             fwrite(STDERR, "paper @{$index}: bad pid\n");
             ++$this->nerrors;
             return false;

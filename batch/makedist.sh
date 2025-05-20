@@ -92,7 +92,7 @@ batch/cli/cli_upload.php
 batch/createdb.php
 batch/deletepapers.php
 batch/fixdelegation.php
-batch/hotcli.php
+batch/hotcrapi.php
 batch/killinactivedoc.php
 batch/paperjson.php
 batch/reviewcsv.php
@@ -112,6 +112,7 @@ devel/manual/components.md
 devel/manual/css.md
 devel/manual/docstore.md
 devel/manual/fmt.md
+devel/manual/hotcrapi.md
 devel/manual/index.md
 devel/manual/oauth.md
 devel/manual/pages.md
