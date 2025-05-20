@@ -120,9 +120,8 @@ class S3Client {
         if (!$this->reset_key) {
             $this->s3_scope = $this->s3_signing_key = "";
             return null;
-        } else {
-            return 403;
         }
+        return 403;
     }
 
     /** @param 'GET'|'POST'|'HEAD'|'PUT'|'DELETE' $method
@@ -276,9 +275,8 @@ class S3Client {
         if ($s3r->status === 200
             && ($fs = $s3r->response_header("content-length")) !== null) {
             return intval($fs);
-        } else {
-            return -1;
         }
+        return -1;
     }
 
     /** @return bool */
@@ -319,15 +317,14 @@ class S3Client {
     static function finish_get(S3Result $s3r) {
         if ($s3r->status === 200) {
             return $s3r->response_body();
-        } else {
-            if ($s3r->status !== 404 && $s3r->status !== 500) {
-                trigger_error("S3 warning: GET {$s3r->skey}: status {$s3r->status}", E_USER_WARNING);
-                if (self::$verbose) {
-                    trigger_error("S3 response: " . var_export($s3r->response_headers, true), E_USER_WARNING);
-                }
-            }
-            return null;
         }
+        if ($s3r->status !== 404 && $s3r->status !== 500) {
+            trigger_error("S3 warning: GET {$s3r->skey}: status {$s3r->status}", E_USER_WARNING);
+            if (self::$verbose) {
+                trigger_error("S3 response: " . var_export($s3r->response_headers, true), E_USER_WARNING);
+            }
+        }
+        return null;
     }
 
     /** @param string $skey
@@ -405,9 +402,8 @@ class S3Client {
         if ($s3r->status === 200
             && preg_match('/<UploadId>(.*?)<\/UploadId>/', $s3r->response_body(), $m)) {
             return $m[1];
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param string $skey
