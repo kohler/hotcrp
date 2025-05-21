@@ -35,17 +35,24 @@ class Hotcrapi_File {
             throw new CommandLineException("Empty filename");
         }
         $cf = new Hotcrapi_File;
-        if ($fn === "-") {
-            $cf->stream = STDIN;
-            $cf->filename = null;
-            $cf->input_filename = "<stdin>";
+        if ($fn === "-"
+            && ($mode === "rb" || $mode === "wb" || $mode === "ab")) {
+            if ($mode === "rb") {
+                $cf->stream = STDIN;
+                $cf->input_filename = "<stdin>";
+            } else {
+                $cf->stream = STDOUT;
+                $cf->input_filename = "<stdout>";
+            }
         } else if (($cf->stream = @fopen($fn, $mode))) {
             $cf->filename = preg_replace('/\A.*\/(?=[^\/]+\z)/', "", $fn);
             $cf->input_filename = $fn;
         } else {
             throw CommandLineException::make_file_error($fn);
         }
-        if (($stat = fstat($cf->stream)) && $stat["size"] > 0) {
+        if (preg_match('/[rac]/', $mode)
+            && ($stat = fstat($cf->stream))
+            && $stat["size"] > 0) {
             $cf->size = $stat["size"];
         }
         return $cf;
@@ -96,6 +103,8 @@ class Hotcrapi_Batch extends MessageSet {
     private $command;
     /** @var ?string */
     private $output;
+    /** @var ?string */
+    private $output_file;
 
     /** @var array<string,Hotcrapi_Batch_Site> */
     private $siteconfig = [];
@@ -143,6 +152,18 @@ class Hotcrapi_Batch extends MessageSet {
         return $this;
     }
 
+    /** @return ?string */
+    function output_file() {
+        return $this->output_file;
+    }
+
+    /** @param ?string $filename
+     * @return $this */
+    function set_output_file($filename) {
+        $this->output_file = $filename;
+        return $this;
+    }
+
     /** @param ?string $s
      * @suppress PhanAccessReadOnlyProperty
      * @return $this */
@@ -152,11 +173,11 @@ class Hotcrapi_Batch extends MessageSet {
     }
 
     /** @param mixed $x
+     * @param ?string $file
      * @suppress PhanAccessReadOnlyProperty
      * @return $this */
     function set_json_output($x) {
-        $this->output = json_encode_db($x, JSON_PRETTY_PRINT) . "\n";
-        return $this;
+        return $this->set_output(json_encode_db($x, JSON_PRETTY_PRINT) . "\n");
     }
 
     /** @param string $s
@@ -206,7 +227,7 @@ class Hotcrapi_Batch extends MessageSet {
                     throw new CommandLineException("{$fname}:{$line}: Invalid `site`");
                 }
                 $this->siteconfig[$sn]->site = $s;
-            } else if (preg_match('/\A\s*+apitoken\s*+=\s*+([^\"]++|\".*?\")\s*+\z/', $l, $m)) {
+            } else if (preg_match('/\A\s*+(?:api|)token\s*+=\s*+([^\"]++|\".*?\")\s*+\z/', $l, $m)) {
                 $s = self::unquote($m[1]);
                 if (!preg_match('/\Ahct_[A-Za-z0-9]{30,}/', $s)) {
                     throw new CommandLineException("{$fname}:{$line}: Invalid `apitoken`");
@@ -348,8 +369,9 @@ class Hotcrapi_Batch extends MessageSet {
         if (!$this->quiet) {
             fwrite(STDERR, $this->full_feedback_text(true));
         }
-        if (($this->output ?? "") !== "") {
-            fwrite(STDOUT, $this->output);
+        if ($this->output !== null) {
+            $of = Hotcrapi_File::make($this->output_file ?? "-", "wb");
+            fwrite($of->stream, $this->output);
         }
         return $status;
     }

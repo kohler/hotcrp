@@ -37,7 +37,7 @@ class Settings_Batch {
         $argc = count($argv);
         $mode = "fetch";
         $argi = 0;
-        if ($argi < $argc && in_array($argv[$argi], ["fetch", "save", "diff"])) {
+        if ($argi < $argc && in_array($argv[$argi], ["fetch", "save", "diff", "test"])) {
             $mode = $argv[$argi];
             ++$argi;
         }
@@ -72,7 +72,8 @@ class Settings_Batch {
         $this->diff = $mode === "diff"
             || ($mode === "save" && isset($arg["diff"]));
         $this->dry_run = isset($arg["dry-run"])
-            || ($mode === "diff" && !isset($arg["save"]));
+            || ($mode === "diff" && !isset($arg["save"]))
+            || $mode === "test";
 
         foreach ($arg["filter"] ?? [] as $s) {
             $sp = new SearchParser($s);

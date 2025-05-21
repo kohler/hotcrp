@@ -15,6 +15,8 @@ class Settings_CLIBatch implements CLIBatchCommand {
     public $exclude;
     /** @var Hotcrapi_File */
     public $cf;
+    /** @var ?string */
+    public $output;
 
     /** @return int */
     function run(Hotcrapi_Batch $clib) {
@@ -30,6 +32,7 @@ class Settings_CLIBatch implements CLIBatchCommand {
         }
         $this->url = "{$clib->site}/settings"
             . (empty($args) ? "" : "?" . join("&", $args));
+        $clib->set_output_file($this->output);
         if ($this->save) {
             return $this->run_save($clib);
         } else {
@@ -54,18 +57,11 @@ class Settings_CLIBatch implements CLIBatchCommand {
         if ($s === false) {
             throw CommandLineException::make_file_error($this->cf->input_filename);
         }
-        $mt = Mimetype::content_type($s);
-        if ($mt !== Mimetype::ZIP_TYPE) {
-            if (!preg_match('/\A\s*+\{/s', $s)) {
-                throw new CommandLineException("{$this->cf->input_filename}: Expected ZIP or JSON");
-            }
-            $mt = Mimetype::JSON_TYPE . "; charset=utf-8";
-        }
         curl_setopt($clib->curlh, CURLOPT_URL, $this->url);
         curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "POST");
         curl_setopt($clib->curlh, CURLOPT_POSTFIELDS, $s);
         curl_setopt($clib->curlh, CURLOPT_HTTPHEADER, [
-            "Content-Type: {$mt}", "Content-Length: " . strlen($s)
+            "Content-Type: " . Mimetype::JSON_UTF8_TYPE, "Content-Length: " . strlen($s)
         ]);
         $ok = $clib->exec_api(null);
         if (empty($clib->content_json->change_list)) {
@@ -74,6 +70,10 @@ class Settings_CLIBatch implements CLIBatchCommand {
             $clib->success("<0>Would change " . commajoin($clib->content_json->change_list));
         } else {
             $clib->success("<0>Saved changes to " . commajoin($clib->content_json->change_list));
+        }
+        if ($clib->output_file() !== null
+            && isset($clib->content_json->settings)) {
+            $clib->set_json_output($clib->content_json->settings);
         }
         if ($clib->verbose) {
             fwrite(STDERR, $clib->content_string);
@@ -89,16 +89,15 @@ class Settings_CLIBatch implements CLIBatchCommand {
 
         $mode = "fetch";
         $argi = 0;
-        if ($argi < $argc && in_array($argv[$argi], ["fetch", "save"])) {
+        if ($argi < $argc && in_array($argv[$argi], ["fetch", "save", "test"])) {
             $mode = $argv[$argi];
             ++$argi;
         }
-        $pcb->save = $mode === "save";
 
+        $pcb->save = $mode === "save" || $mode === "test";
         if ($pcb->save) {
             if ($argi < $argc
-                && preg_match('/\A[\[\{]/', $argv[$argi])
-                && json_validate($argv[$argi])) {
+                && preg_match('/\A[\[\{]/', $argv[$argi])) {
                 $pcb->cf = Hotcrapi_File::make_data($argv[$argi]);
                 ++$argi;
             } else if ($argi < $argc) {
@@ -113,9 +112,10 @@ class Settings_CLIBatch implements CLIBatchCommand {
             throw new CommandLineException("Too many arguments");
         }
 
-        $pcb->dry_run = isset($arg["dry-run"]);
+        $pcb->dry_run = isset($arg["dry-run"]) || $mode === "test";
         $pcb->filter = $arg["filter"] ?? null;
         $pcb->exclude = $arg["exclude"] ?? null;
+        $pcb->output = $arg["output"] ?? null;
         return $pcb;
     }
 
@@ -124,13 +124,15 @@ class Settings_CLIBatch implements CLIBatchCommand {
             "settings",
             "Retrieve or change HotCRP settings
 Usage: php batch/hotcrapi.php settings [--filter F | --exclude F]
-       php batch/hotcrapi.php settings save [-d] [-f FILE | -e JSON]"
+       php batch/hotcrapi.php settings save [-d] [-f FILE | -e JSON]
+       php batch/hotcrapi.php settings test [-d] [-f FILE | -e JSON]"
         )->long(
             "filter: !settings =EXPR Only include settings matching EXPR",
             "exclude: !settings =EXPR Exclude settings matching EXPR",
             "dry-run,d !settings Don’t actually save changes",
             "file:,f: !settings =FILE Change settings using FILE",
-            "expr:,e: !settings =JSON Change settings using JSON"
+            "expr:,e: !settings =JSON Change settings using JSON",
+            "output:,o: !settings =FILE Write settings to FILE"
         );
     }
 }

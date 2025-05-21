@@ -47,7 +47,11 @@ class Settings_API {
                 $cl[] = $si->name;
             }
             $content["change_list"] = $cl;
-            if ($dry_run || $sv->has_error()) {
+            if ($sv->has_error()) {
+                return new JsonResult($content);
+            } else if ($dry_run) {
+                $sv->set_si_filter(null)->set_si_exclude(null);
+                $content["settings"] = $sv->all_jsonv(["new" => true]);
                 return new JsonResult($content);
             }
         }
