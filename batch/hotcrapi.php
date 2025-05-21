@@ -200,7 +200,7 @@ class Hotcrapi_Batch extends MessageSet {
                 $sn = null;
             } else if ($sn === null) {
                 continue;
-            } else if (preg_match('/\A\s*+(?:site|url)\s*+=\s*+([^\"]++|\".*?\")\s*+\z/', $l, $m)) {
+            } else if (preg_match('/\A\s*+(?:site|url)\s*+=\s*+([^\"\s]++|\".*?\")\s*+\z/', $l, $m)) {
                 $s = self::unquote($m[1]);
                 if (!preg_match('/\Ahttps?:\/\//', $s)) {
                     throw new CommandLineException("{$fname}:{$line}: Invalid `site`");
@@ -218,10 +218,10 @@ class Hotcrapi_Batch extends MessageSet {
         }
 
         if (($dsc = $this->default_siteconfig)) {
-            if ($this->site !== null && $dsc->site !== null) {
-                $this->site = $dsc->site;
+            if ($this->site === null && $dsc->site !== null) {
+                $this->set_site($dsc->site);
             }
-            if ($this->apitoken !== null && $dsc->apitoken !== null) {
+            if ($this->apitoken === null && $dsc->apitoken !== null) {
                 $this->set_apitoken($dsc->apitoken);
             }
         }
