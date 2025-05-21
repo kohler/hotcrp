@@ -408,7 +408,7 @@ class Getopt {
         }
         if ($subcommand === "") {
             $schelp = [];
-            foreach ($this->subcommand as $sc) {
+            foreach ($this->subcommand ?? [] as $sc) {
                 if ($sc->help !== "!") {
                     $schelp[] = self::format_help_line("  {$sc->name}", $sc->help);
                 }
