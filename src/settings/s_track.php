@@ -404,11 +404,12 @@ class Track_SettingParser extends SettingParser {
                     $j[$this->cur_trx->tag] = $this->cur_trx->j;
                 }
             }
-            $sv->update("tracks", empty($j) ? "" : json_encode_db($j));
+            if ($sv->update("tracks", empty($j) ? "" : json_encode_db($j))) {
+                $sv->request_store_value($si);
+            }
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     static function crosscheck(SettingValues $sv) {

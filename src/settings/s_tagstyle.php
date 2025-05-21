@@ -130,6 +130,7 @@ class TagStyle_SettingParser extends SettingParser {
             }
         }
         if ($sv->update($badge ? "tag_badge" : "tag_color", join(" ", $bs))) {
+            $sv->request_store_value($si);
             $sv->mark_invalidate_caches(["tags" => true]);
         }
         return true;
@@ -150,8 +151,7 @@ class TagStyle_SettingParser extends SettingParser {
                 $sv->error_at($si, "<0>Unknown {$type} style ‘{$v}’");
             }
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 }

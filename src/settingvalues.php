@@ -1680,9 +1680,8 @@ class SettingValues extends MessageSet {
         $si = is_string($id) ? $this->si($id) : $id;
         if ($this->link_json && ($jpath = $si->json_path())) {
             return $this->json_path_link($html, $jpath, $js);
-        } else {
-            return Ht::link($html, $si->sv_hoturl($this), $js);
         }
+        return Ht::link($html, $si->sv_hoturl($this), $js);
     }
 
     /** @param string $html

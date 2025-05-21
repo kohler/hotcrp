@@ -173,7 +173,9 @@ class Sround_SettingParser extends SettingParser {
         foreach ($srs as $sr) {
             $srj[] = $sr->export_json();
         }
-        $sv->save("submission_rounds", empty($srj) ? "" : json_encode_db($srj));
+        if ($sv->update("submission_rounds", empty($srj) ? "" : json_encode_db($srj))) {
+            $sv->request_store_value($si);
+        }
         return true;
     }
 

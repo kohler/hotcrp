@@ -7,9 +7,9 @@ class Comment_SettingParser extends SettingParser {
 
     function set_oldv(Si $si, SettingValues $sv) {
         if ($si->name === "comment_author") {
-            $sv->set_oldv($si->name, ($sv->conf->setting("cmt_author") ?? 0) > 0);
+            $sv->set_oldv($si->name, $sv->oldv("cmt_author") > 0);
         } else if ($si->name === "comment_author_initiate") {
-            $v = $sv->conf->setting("cmt_author") ?? 0;
+            $v = $sv->oldv("cmt_author");
             $sv->set_oldv($si->name, $v === -1 || $v === 2);
         }
     }
@@ -37,12 +37,20 @@ class Comment_SettingParser extends SettingParser {
             $cav = $sv->base_parse_req("comment_author");
             $caiv = $sv->base_parse_req("comment_author_initiate");
             if ($cav !== null && $caiv !== null) {
-                $sv->save("cmt_author", $cav ? ($caiv ? 2 : 1) : ($caiv ? -1 : 0));
+                $scav = $sv->oldv("cmt_author");
+                $nscav = $cav ? ($caiv ? 2 : 1) : ($caiv ? -1 : 0);
+                if ($sv->update("cmt_author", $nscav)) {
+                    if (($scav > 0) !== ($nscav > 0)) {
+                        $sv->request_store_value($sv->si("comment_author"));
+                    }
+                    if (($scav === -1 || $scav === 2) !== ($nscav === -1 || $nscav === 2)) {
+                        $sv->request_store_value($sv->si("comment_author_initiate"));
+                    }
+                }
             }
             $this->saved_cmt_author = true;
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 }

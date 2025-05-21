@@ -100,7 +100,9 @@ class NamedSearch_SettingParser extends SettingParser {
                 $sjl[] = $sj;
         }
         usort($sjl, [$sv->conf, "named_search_compare"]);
-        $sv->update("named_searches", empty($sjl) ? "" : json_encode_db($sjl));
+        if ($sv->update("named_searches", empty($sjl) ? "" : json_encode_db($sjl))) {
+            $sv->request_store_value($si);
+        }
         return true;
     }
 
