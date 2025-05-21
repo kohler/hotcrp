@@ -291,11 +291,13 @@ class Response_SettingParser extends SettingParser {
             }
         }
 
+        $xform = !empty($this->round_transform) || !empty($this->round_delete);
         $jrt = json_encode_db($jrl);
-        $sv->update("responses", $jrt === "[{}]" || $jrt === "[]" ? "" : $jrt);
-        if (!empty($this->round_transform) || !empty($this->round_delete)) {
-            $sv->request_write_lock("PaperComment");
+        if ($sv->update("responses", $jrt === "[{}]" || $jrt === "[]" ? "" : $jrt) || $xform) {
             $sv->request_store_value($si);
+        }
+        if ($xform) {
+            $sv->request_write_lock("PaperComment");
         }
         return true;
     }

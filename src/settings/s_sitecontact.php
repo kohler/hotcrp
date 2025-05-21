@@ -38,12 +38,12 @@ class SiteContact_SettingParser extends SettingParser {
     function set_oldv(Si $si, SettingValues $sv) {
         $user = $sv->conf->site_contact();
         $s = $si->name === "site_contact_email" ? $user->email : $user->name();
-        $sv->set_oldv($si->name, self::cleanstr($s, $si));
+        $sv->set_oldv($si, self::cleanstr($s, $si));
     }
 
     function apply_req(Si $si, SettingValues $sv) {
-        if (($creqv = $sv->base_parse_req($si)) !== null) {
-            $sv->save($si, self::cleanstr($creqv, $si));
+        if (($creqv = $sv->base_parse_req($si)) !== null
+            && $sv->update($si, self::cleanstr($creqv, $si))) {
             $sv->request_store_value($si);
         }
         return true;

@@ -70,7 +70,7 @@
     },
     {
         "name_pattern": "decision/$/id", "type": "int",
-        "internal": true, "json": true
+        "internal": true, "json": true, "id_member": true
     },
     {
         "name_pattern": "decision/$/name",
@@ -251,7 +251,7 @@
     },
     {
         "name_pattern": "sf/$/id", "type": "int",
-        "internal": true, "json": true
+        "internal": true, "json": true, "id_member": true
     },
     {
         "name_pattern": "sf/$/name", "title": "Submission field name",
@@ -292,7 +292,7 @@
     },
     {
         "name_pattern": "sf/$/values/$$/id", "type": "int",
-        "internal": true, "json": true
+        "internal": true, "json": true, "id_member": true
     },
     {
         "name_pattern": "sf/$/values/$$/name",
@@ -428,7 +428,8 @@
         "name": "submission",
         "type": "oblist", "parser_class": "Sround_SettingParser",
         "title": "Submission classes and deadlines",
-        "tags": "submission"
+        "tags": "submission",
+        "member_tags": "deadline"
     },
     {
         "name_pattern": "submission/$",
@@ -436,7 +437,11 @@
         "title": "Submission class", "title_pattern": "${sv submission/$/title}",
         "parser_class": "Sround_SettingParser"
     },
-    {   "name_pattern": "submission/$/id", "internal": true, "type": "string"   },
+    {
+        "name_pattern": "submission/$/id",
+        "internal": true, "json": true, "id_member": true,
+        "type": "string"
+    },
     {
         "name_pattern": "submission/$/tag",
         "title": "Submission tag",
@@ -500,7 +505,8 @@
         "name": "response",
         "type": "oblist", "parser_class": "Response_SettingParser",
         "title": "Response rounds and deadlines",
-        "tags": "response"
+        "tags": "response",
+        "member_tags": "deadline"
     },
     {
         "name_pattern": "response/$",
@@ -510,12 +516,12 @@
     },
     {
         "name_pattern": "response/$/id", "type": "int",
-        "internal": true, "json": true
+        "internal": true, "json": true, "id_member": true
     },
     {
         "name_pattern": "response/$/name",
         "title": "Response name", "placeholder": "Response name",
-        "type": "tag", "required": false, "size": 20,
+        "type": "tag", "required": false, "size": 20, "id_member": true,
         "placeholder": "auto",
         "parser_class": "Response_SettingParser"
     },
@@ -661,7 +667,8 @@
         "name": "review", "hashid": "rounds",
         "type": "oblist", "parser_class": "Review_SettingParser",
         "title": "Review rounds and deadlines",
-        "tags": "review"
+        "tags": "review",
+        "member_tags": "deadline"
     },
     {
         "name_pattern": "review/$",
@@ -671,7 +678,7 @@
     },
     {
         "name_pattern": "review/$/id", "type": "int",
-        "internal": true, "json": true
+        "internal": true, "json": true, "id_member": true
     },
     {
         "name_pattern": "review/$/title", "internal": true, "parser_class": "Review_SettingParser"
@@ -679,7 +686,7 @@
     {
         "name_pattern": "review/$/name",
         "title": "Review round name",
-        "type": "tag", "required": false, "size": 12,
+        "type": "tag", "required": false, "size": 12, "id_member": true,
         "placeholder": "auto",
         "parser_class": "Review_SettingParser"
     },
@@ -769,7 +776,7 @@
     },
     {
         "name_pattern": "rf/$/id", "type": "string",
-        "internal": true, "json": true
+        "internal": true, "json": true, "id_member": true
     },
     {
         "name_pattern": "rf/$/name", "title": "Review field name",
@@ -837,7 +844,7 @@
     {   "name_pattern": "rf/$/values/$$/title", "internal": true, "parser_class": "ReviewForm_SettingParser"   },
     {
         "name_pattern": "rf/$/values/$$/id", "type": "int",
-        "internal": true, "json": true
+        "internal": true, "json": true, "id_member": true
     },
     {
         "name_pattern": "rf/$/values/$$/symbol",
@@ -1050,7 +1057,7 @@
     {
         "name_pattern": "tag_style/$/style",
         "title": "/Style", "type": "simplestring", "required": true,
-        "parser_class": "TagStyle_SettingParser"
+        "parser_class": "TagStyle_SettingParser", "id_member": true
     },
     {
         "name_pattern": "tag_style/$/tags",
@@ -1074,7 +1081,7 @@
     {
         "name_pattern": "badge/$/style",
         "title": "/Style", "type": "simplestring", "required": true,
-        "parser_class": "TagStyle_SettingParser"
+        "parser_class": "TagStyle_SettingParser", "id_member": true
     },
     {
         "name_pattern": "badge/$/tags",
@@ -1131,7 +1138,7 @@
     {
         "name_pattern": "automatic_tag/$/tag", "storage": "member.tag",
         "title": "Automatic tag name",
-        "type": "tag", "size": 28, "placeholder": "Tag"
+        "type": "tag", "size": 28, "placeholder": "Tag", "id_member": true
     },
     {
         "name_pattern": "automatic_tag/$/search", "storage": "member.q",
@@ -1161,7 +1168,7 @@
     },
     {
         "name_pattern": "topic/$/id", "type": "nonnegint",
-        "internal": true, "json": true
+        "internal": true, "json": true, "id_member": true
     },
     {
         "name_pattern": "topic/$/name", "title": "Topic name",
@@ -1207,7 +1214,8 @@
     {
         "name_pattern": "track/$/tag",
         "title": "Track tag",
-        "type": "tag", "subtype": "allow_reserved_chair", "size": 20, "autogrow": true
+        "type": "tag", "subtype": "allow_reserved_chair", "size": 20, "autogrow": true,
+        "id_member": true
     },
     {   "name_pattern": "track/$/title", "internal": true, "parser_class": "Track_SettingParser"   },
     {
@@ -1257,7 +1265,11 @@
         "title_pattern": "${sv named_search/$/title}",
         "parser_class": "NamedSearch_SettingParser"
     },
-    {   "name_pattern": "named_search/$/id", "internal": true, "json": true, "type": "string"   },
+    {
+        "name_pattern": "named_search/$/id",
+        "internal": true, "json": true, "id_member": true,
+        "type": "string"
+    },
     {
         "name_pattern": "named_search/$/name",
         "title": "Search name",

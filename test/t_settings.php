@@ -192,7 +192,7 @@ class Settings_Tester {
             "topic": [{"id": 1, "name": "Berf"}], "reset": true
         }');
         xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), ["topics"]);
+        xassert_eqq($sv->saved_keys(), ["topics"]);
         xassert_eqq(json_encode_db($this->conf->topic_set()->as_array()), '{"1":"Berf"}');
 
         $sv = (new SettingValues($this->u_chair))->add_json_string('{
@@ -615,7 +615,7 @@ class Settings_Tester {
             "rf/2/values_text" => "A. A\nB. B\nC. C"
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), ["review_form"]);
+        xassert_eqq($sv->saved_keys(), ["review_form"]);
 
         xassert_eqq($sv->conf->fetch_ivalue("select reviewId from PaperReview where paperId=30 limit 1"), null);
 
@@ -1049,7 +1049,7 @@ class Settings_Tester {
             "response/1/wordlimit" => "0"
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->changed_keys(), ["responses"]);
+        xassert_array_eqq($sv->saved_keys(), ["responses"]);
 
         $rrds = $this->conf->response_round_list();
         xassert_eqq(count($rrds), 1);
@@ -1080,7 +1080,7 @@ class Settings_Tester {
             "response/1/done" => "@" . ($t0 + 10001)
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->changed_keys(), []);
+        xassert_array_eqq($sv->saved_keys(), []);
         $rrd = $this->conf->response_round_by_id(1);
         xassert_eqq($rrd->name, "Butt");
         xassert_eqq($rrd->open, $t0);
@@ -1096,7 +1096,7 @@ class Settings_Tester {
             "response/1/wordlimit" => "0"
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->changed_keys(), ["responses"]);
+        xassert_array_eqq($sv->saved_keys(), ["responses"]);
 
         $rrds = $this->conf->response_round_list();
         xassert_eqq(count($rrds), 2);
@@ -1123,7 +1123,7 @@ class Settings_Tester {
             "response/2/name" => "unnamed"
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->changed_keys(), ["responses"]);
+        xassert_array_eqq($sv->saved_keys(), ["responses"]);
 
         $rrds = $this->conf->response_round_list();
         xassert_eqq(count($rrds), 2);
@@ -1155,7 +1155,7 @@ class Settings_Tester {
             "response/2/instructions" => $definstrux
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->changed_keys(), ["responses"]);
+        xassert_array_eqq($sv->saved_keys(), ["responses"]);
 
         $rrds = $this->conf->response_round_list();
         xassert_eqq($rrds[0]->instructions, "PANTS");
@@ -1169,7 +1169,7 @@ class Settings_Tester {
             "response/1/instructions" => $definstrux
         ]);
         xassert($sv->execute());
-        xassert_array_eqq($sv->changed_keys(), ["responses"]);
+        xassert_array_eqq($sv->saved_keys(), ["responses"]);
 
         $rrds = $this->conf->response_round_list();
         xassert_eqq($rrds[0]->instructions, null);
@@ -1397,13 +1397,13 @@ class Settings_Tester {
 
         $x = call_api("=settings", $this->u_chair, ["settings" => "{\"review_blind\":\"open\"}"]);
         xassert($x->ok);
-        xassert_eqq($x->change_list, ["rev_blind"]);
+        xassert_eqq($x->change_list, ["review_blind"]);
         xassert_eqq($x->settings->review_blind, "open");
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), 0);
 
         $x = call_api("=settings", $this->u_chair, ["settings" => "{\"review_blind\":\"blind\"}"]);
         xassert($x->ok);
-        xassert_eqq($x->change_list, ["rev_blind"]);
+        xassert_eqq($x->change_list, ["review_blind"]);
         xassert_eqq($x->settings->review_blind, "blind");
         xassert_eqq($this->conf->fetch_ivalue("select value from Settings where name='rev_blind'"), null);
 
@@ -1420,7 +1420,7 @@ class Settings_Tester {
             "submission_terms" => ""
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), []);
+        xassert_eqq($sv->saved_keys(), []);
         xassert_eqq($this->conf->opt("clickthrough_submit"), null);
         xassert_eqq($this->conf->_i("clickthrough_submit"), null);
 
@@ -1428,7 +1428,7 @@ class Settings_Tester {
             "submission_terms" => "xxx"
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
+        xassert_eqq($sv->saved_keys(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
         xassert_neqq($this->conf->opt("clickthrough_submit"), null);
         xassert_eqq($this->conf->_i("clickthrough_submit"), "xxx");
 
@@ -1436,7 +1436,7 @@ class Settings_Tester {
             "submission_terms" => "xxx"
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), []);
+        xassert_eqq($sv->saved_keys(), []);
         xassert_neqq($this->conf->opt("clickthrough_submit"), null);
         xassert_eqq($this->conf->_i("clickthrough_submit"), "xxx");
 
@@ -1444,7 +1444,7 @@ class Settings_Tester {
             "submission_terms" => ""
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
+        xassert_eqq($sv->saved_keys(), ["opt.clickthrough_submit", "msg.clickthrough_submit"]);
         xassert_eqq($this->conf->opt("clickthrough_submit"), null);
         xassert_eqq($this->conf->_i("clickthrough_submit"), null);
     }
@@ -1861,7 +1861,7 @@ class Settings_Tester {
             "sf/1/type" => "numeric"
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), ["options"]);
+        xassert_eqq($sv->saved_keys(), ["options"]);
         xassert_search($this->u_chair, "has:fudge", "1 2 3 4 5");
         xassert_search($this->u_mgbaker, "has:fudge", "1 2 3 4 5");
 
@@ -1889,7 +1889,7 @@ class Settings_Tester {
             "sf/2/order" => 101
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), ["options"]);
+        xassert_eqq($sv->saved_keys(), ["options"]);
         xassert_search($this->u_mgbaker, "has:fudge", "");
 
         // new field
@@ -1901,7 +1901,7 @@ class Settings_Tester {
             "sf/1/type" => "numeric"
         ]);
         xassert($sv->execute());
-        xassert_eqq($sv->changed_keys(), ["options"]);
+        xassert_eqq($sv->saved_keys(), ["options"]);
         xassert_search($this->u_mgbaker, "has:brownies", "");
 
         // `order` is obeyed

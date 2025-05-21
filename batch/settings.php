@@ -29,21 +29,51 @@ class Settings_Batch {
     /** @var ?SearchExpr */
     private $exclude;
 
-    function __construct(Contact $user, $arg) {
+    function __construct(Contact $user, $arg, Getopt $getopt) {
         $this->conf = $user->conf;
         $this->user = $user;
-        $this->sv = (new SettingValues($user))->set_link_json(true);
-        if ((isset($arg["file"]) ? 1 : 0) + (empty($arg["_"]) ? 0 : 1) + (isset($arg["expr"]) ? 1 : 0) > 1) {
-            throw new CommandLineException("Give at most one of `--file`, `--expr`, and FILE");
+
+        $argv = $arg["_"];
+        $argc = count($argv);
+        $mode = "fetch";
+        $argi = 0;
+        if ($argi < $argc && in_array($argv[$argi], ["fetch", "save", "diff"])) {
+            $mode = $argv[$argi];
+            ++$argi;
+        }
+
+        if ($argi < $argc
+            && preg_match('/\A[\[\{]/', $argv[$argi])
+            && json_validate($argv[$argi])) {
+            if (!isset($arg["expr"])) {
+                $arg["expr"] = $argv[$argi];
+                ++$argi;
+            }
+        } else if ($argi < $argc
+                   && !isset($arg["file"])) {
+            $arg["file"] = $argv[$argi];
+            ++$argi;
+        }
+
+        if ($argi < $argc) {
+            throw new CommandLineException("Too many arguments", $getopt);
+        } else if ((isset($arg["file"]) || isset($arg["expr"])) && $mode === "fetch") {
+            throw new CommandLineException("`save` or `diff` mode required", $getopt);
+        } else if (isset($arg["file"]) && isset($arg["expr"])) {
+            throw new CommandLineException("`--file` and `--expr` conflict", $getopt);
         } else if (isset($arg["file"])) {
             $this->filename = $arg["file"];
         } else if (isset($arg["expr"])) {
             $this->expr = $arg["expr"];
-        } else if (!empty($arg["_"])) {
-            $this->filename = $arg["_"][0];
+        } else if ($mode !== "fetch") {
+            $this->filename = "-";
         }
-        $this->dry_run = isset($arg["dry-run"]);
-        $this->diff = isset($arg["diff"]);
+
+        $this->diff = $mode === "diff"
+            || ($mode === "save" && isset($arg["diff"]));
+        $this->dry_run = isset($arg["dry-run"])
+            || ($mode === "diff" && !isset($arg["save"]));
+
         foreach ($arg["filter"] ?? [] as $s) {
             $sp = new SearchParser($s);
             $expr = $sp->parse_expression(SearchOperatorSet::simple_operators());
@@ -66,16 +96,22 @@ class Settings_Batch {
                 $this->exclude = $expr;
             }
         }
-        if (($this->filter || $this->exclude)
-            && ($this->filename || $this->expr)) {
-            throw new CommandLineException("`--filter` and `--exclude` are incompatible with changing settings");
-        }
+
+        $this->sv = $this->make_sv()
+            ->set_si_filter($this->filter)
+            ->set_si_exclude($this->exclude);
+    }
+
+    /** @return SettingValues */
+    private function make_sv() {
+        return (new SettingValues($this->user))
+            ->set_link_json(true);
     }
 
     /** @param bool $new
      * @return string */
     function output(SettingValues $sv, $new) {
-        return json_encode($sv->all_jsonv(["new" => $new, "filter" => $this->filter, "exclude" => $this->exclude]), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+        return json_encode($sv->all_jsonv(["new" => $new]), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
     }
 
     /** @return int */
@@ -86,7 +122,7 @@ class Settings_Batch {
         }
 
         if ($this->diff) {
-            $old_jsonstr = $this->output(new SettingValues($this->user), false);
+            $old_jsonstr = $this->output($this->make_sv(), false);
         } else {
             $old_jsonstr = null;
         }
@@ -111,8 +147,8 @@ class Settings_Batch {
             $this->sv->execute();
         }
         $fb = $this->sv->decorated_feedback_text();
-        if ($fb === "" && !$this->diff) {
-            if (empty($this->sv->changed_keys())) {
+        if ($fb === "" && !$this->dry_run) {
+            if (empty($this->sv->saved_keys())) {
                 $fb = "No changes\n";
             } else if ($this->dry_run) {
                 $fb = "No errors\n";
@@ -125,10 +161,11 @@ class Settings_Batch {
             $dmp = new dmp\diff_match_patch;
             $dmp->Line_Histogram = true;
             if ($this->dry_run) {
+                $this->sv->set_si_filter(null)->set_si_exclude(null);
                 assert($this->output($this->sv, false) === $old_jsonstr);
                 $new_jsonstr = $this->output($this->sv, true);
             } else {
-                $new_jsonstr = $this->output(new SettingValues($this->user), false);
+                $new_jsonstr = $this->output($this->make_sv(), false);
             }
             $diff = $dmp->line_diff($old_jsonstr, $new_jsonstr);
             fwrite(STDOUT, $dmp->line_diff_toUnified($diff));
@@ -138,25 +175,26 @@ class Settings_Batch {
 
     /** @return Settings_Batch */
     static function make_args($argv) {
-        $arg = (new Getopt)->long(
+        $getopt = (new Getopt)->long(
             "name:,n: !",
             "config: !",
             "help,h !",
-            "dry-run,d Do not modify settings",
-            "diff Write unified settings diff of changes",
-            "expr:,e: =JSON Change settings via JSON",
-            "file:,f: =FILE Change settings via FILE",
+            "save,s !",
+            "diff !",
+            "file:,f: =FILE Change settings using FILE",
+            "expr:,e: =JSON Change settings using JSON",
+            "dry-run,d Don’t actually save changes",
             "filter[] =EXPR Only include settings matching EXPR",
             "exclude[] =EXPR Exclude settings matching EXPR"
         )->description("Query or modify HotCRP settings in JSON format.
-Usage: php batch/settings.php > JSONFILE
-       php batch/settings.php FILE
-       php batch/settings.php -e JSON")
-         ->maxarg(1)
+Usage: php batch/settings.php [OPTIONS] > JSONFILE
+       php batch/settings.php save [-d] [FILE | -e JSON]
+       php batch/settings.php diff [FILE | -e JSON]")
          ->helpopt("help")
-         ->parse($argv);
+         ->interleave(true);
+        $arg = $getopt->parse($argv);
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
-        return new Settings_Batch($conf->root_user(), $arg);
+        return new Settings_Batch($conf->root_user(), $arg, $getopt);
     }
 }

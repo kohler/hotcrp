@@ -142,9 +142,8 @@ class Topic_SettingParser extends SettingParser {
             return $this->_apply_req_newlist($si, $sv);
         } else if ($si->name === "topic") {
             return $this->_apply_req_topics($si, $sv);
-        } else {
-            return false;
         }
+        return false;
     }
 
     function store_value(Si $si, SettingValues $sv) {

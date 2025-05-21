@@ -106,9 +106,8 @@ class SearchExpr {
             $p->child[] = $this;
             $p->pos2 = $this->pos2;
             return $p;
-        } else {
-            return $this;
         }
+        return $this;
     }
 
     /** @param int $pos1
@@ -149,7 +148,7 @@ class SearchExpr {
     /** @param string $str
      * @param string $indent
      * @return string */
-    function unparse($str, $indent = "") {
+    function debug_unparse($str, $indent = "") {
         if (!$this->op) {
             $ctx = $this->kword ? "{$this->kword}:{$this->text}" : $this->text;
             if (strlen($ctx) > 40) {
@@ -167,12 +166,11 @@ class SearchExpr {
             $ts = ["{$indent}[[{$this->op->type}]] @{$this->kwpos1}{$ctx}\n"];
             $nindent = $indent . "  ";
             foreach ($this->child as $sa) {
-                $ts[] = $sa->unparse($str, $nindent);
+                $ts[] = $sa->debug_unparse($str, $nindent);
             }
             return join("", $ts);
-        } else {
-            return "{$indent}@{$this->kwpos1} {$ctx}\n";
         }
+        return "{$indent}@{$this->kwpos1} {$ctx}\n";
     }
 
     /** @param ?string $str
@@ -180,42 +178,43 @@ class SearchExpr {
     function unparse_json($str = null) {
         if (!$this->op) {
             return $this->kword ? "{$this->kword}:{$this->text}" : $this->text;
-        } else {
-            $a = ["op" => $this->op->type];
-            foreach ($this->child as $sa) {
-                $a["child"][] = $sa->unparse_json($str);
-            }
-            if ($str !== null) {
-                $a["context"] = substr($str, $this->pos1, $this->pos2 - $this->pos1);
-            }
-            return (object) $a;
         }
+        $a = ["op" => $this->op->type];
+        foreach ($this->child as $sa) {
+            $a["child"][] = $sa->unparse_json($str);
+        }
+        if ($str !== null) {
+            $a["context"] = substr($str, $this->pos1, $this->pos2 - $this->pos1);
+        }
+        return (object) $a;
     }
 
-    /** @param callable(SearchExpr):bool $f
+    /** @param callable(SearchExpr,...):bool $f
+     * @param mixed ...$rest
      * @return bool
      * @suppress PhanTypeArraySuspiciousNullable */
-    function evaluate_simple($f) {
+    function evaluate_simple($f, ...$rest) {
         if (!$this->op) {
-            $ok = $f($this);
+            $ok = $f($this, ...$rest);
         } else if (($this->op->flags & SearchOperator::F_AND) !== 0) {
             $ok = true;
             foreach ($this->child as $ch) {
-                $ok = $ok && $ch->evaluate_simple($f);
+                $ok = $ok && $ch->evaluate_simple($f, ...$rest);
             }
         } else if (($this->op->flags & SearchOperator::F_OR) !== 0) {
             $ok = false;
             foreach ($this->child as $ch) {
-                $ok = $ok || $ch->evaluate_simple($f);
+                $ok = $ok || $ch->evaluate_simple($f, ...$rest);
             }
         } else if (($this->op->flags & SearchOperator::F_XOR) !== 0) {
             $ok = false;
             foreach ($this->child as $ch) {
-                if ($ch->evaluate_simple($f))
+                if ($ch->evaluate_simple($f, ...$rest))
                     $ok = !$ok;
             }
         } else if (($this->op->flags & SearchOperator::F_NOT) !== 0) {
-            $ok = !$this->child[0] || !$this->child[0]->evaluate_simple($f);
+            $ok = !$this->child[0]
+                || !$this->child[0]->evaluate_simple($f, ...$rest);
         } else {
             throw new ErrorException("unknown operator");
         }

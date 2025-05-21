@@ -812,9 +812,8 @@ class PaperSearch extends MessageSet {
     static private function _canonical_qt($qt) {
         if (in_array($qt, ["ti", "ab", "au", "ac", "co", "re", "tag"])) {
             return $qt;
-        } else {
-            return "n";
         }
+        return "n";
     }
 
     /** @param ?SearchExpr $sa
@@ -840,9 +839,8 @@ class PaperSearch extends MessageSet {
                 } else if (str_starts_with($child[0], "(")
                            || strpos($child[0], " ") !== false) {
                     return "NOT {$child[0]}";
-                } else {
-                    return "-{$child[0]}";
                 }
+                return "-{$child[0]}";
             }
             if ($sa->op->type === "space") {
                 $op = "";
@@ -884,9 +882,8 @@ class PaperSearch extends MessageSet {
             return $s;
         } else if ($qt === "tag") {
             return "#{$s}";
-        } else {
-            return "{$qt}:{$s}";
         }
+        return "{$qt}:{$s}";
     }
 
     static private function _canonical_expression($str, $type, $qt, Conf $conf, $depth = 0) {
@@ -1441,9 +1438,8 @@ class PaperSearch extends MessageSet {
             && !$this->_limit_explicit
             && $this->limit() !== ($this->user->can_view_some_incomplete() ? "active" : "s")) {
             return self::canonical_query($this->q, "", "", $this->_qt, $this->conf, $this->limit());
-        } else {
-            return $this->q;
         }
+        return $this->q;
     }
 
     /** @return string */

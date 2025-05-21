@@ -24,7 +24,7 @@ class SettingValues extends MessageSet {
     public $req_files = [];
     /** @var bool */
     private $_use_req = true;
-    /** @var 0|1|2 */
+    /** @var 0|1|2|3 */
     private $_req_parse_state = 0;
     /** @var bool */
     private $_req_sorted = false;
@@ -57,7 +57,11 @@ class SettingValues extends MessageSet {
     private $_explicit_newv = [];
 
     /** @var list<Si> */
-    private $_saved_si = [];
+    private $_saveable_si = [];
+    /** @var list<Si> */
+    private $_store_value_si = [];
+    /** @var list<Si> */
+    private $_changed_si = [];
     /** @var list<array{?string,callable()}> */
     private $_cleanup_callbacks = [];
     /** @var array<string,int> */
@@ -68,6 +72,11 @@ class SettingValues extends MessageSet {
     private $_no_diffs = [];
     /** @var associative-array<string,true> */
     private $_invalidate_caches = [];
+
+    /** @var ?SearchExpr */
+    private $_si_filter;
+    /** @var ?SearchExpr */
+    private $_si_exclude;
 
     /** @var ?ComponentSet */
     private $_cs;
@@ -120,6 +129,20 @@ class SettingValues extends MessageSet {
     function set_use_req($x) {
         assert($this->_use_req === $x || empty($this->_oblist_ensured));
         $this->_use_req = $x;
+        return $this;
+    }
+
+    /** @param ?SearchExpr $x
+     * @return $this */
+    function set_si_filter($x) {
+        $this->_si_filter = $x;
+        return $this;
+    }
+
+    /** @param ?SearchExpr $x
+     * @return $this */
+    function set_si_exclude($x) {
+        $this->_si_exclude = $x;
         return $this;
     }
 
@@ -520,16 +543,29 @@ class SettingValues extends MessageSet {
     function si($name) {
         if (($si = $this->conf->si($name))) {
             return $si;
-        } else {
-            throw new Exception(caller_landmark(2) . ": Unknown setting ‘{$name}’");
         }
+        throw new Exception(caller_landmark(2) . ": Unknown setting ‘{$name}’");
+    }
+
+    /** @param Si $si
+     * @return bool */
+    function test_si_filter($si) {
+        return (!$this->_si_filter
+                || $this->_si_filter->evaluate_simple([$si, "expr_matches"])
+                || ($si->member_tags !== null
+                    && $this->_si_filter->evaluate_simple([$si, "expr_matches"], true)))
+            && (!$this->_si_exclude
+                || !$this->_si_exclude->evaluate_simple([$si, "expr_matches"]));
     }
 
     /** @param string|Si $id
      * @return bool */
     function editable($id) {
         $si = is_string($id) ? $this->conf->si($id) : $id;
-        return $si && $si->configurable && $this->allowed;
+        return $si
+            && $si->configurable
+            && $this->allowed
+            && $this->test_si_filter($si);
     }
 
 
@@ -708,9 +744,8 @@ class SettingValues extends MessageSet {
 
     /** @param string|Si $id
      * @param bool $new
-     * @param ?SearchExpr $exclude
      * @return mixed */
-    private function json_choosev($id, $new, $exclude = null) {
+    private function json_choosev($id, $new) {
         $si = is_string($id) ? $this->si($id) : $id;
         if ($si->type === "oblist") {
             // a member object list might be null rather than empty
@@ -726,7 +761,9 @@ class SettingValues extends MessageSet {
                     if ($ov && $ov->deleted)
                         continue;
                 }
-                $a[] = $this->json_choosev("{$si->name}/{$ctr}", $new, $exclude);
+                if (($x = $this->json_choosev("{$si->name}/{$ctr}", $new)) !== null) {
+                    $a[] = $x;
+                }
             }
             return $a;
         }
@@ -740,22 +777,31 @@ class SettingValues extends MessageSet {
                 usort($member_list, "Conf::xt_pure_order_compare");
             }
             $o = [];
+            $nid_member = 0;
             foreach ($member_list as $msi) {
                 if (!$msi->json_export()
-                    || ($exclude && $exclude->evaluate_simple([$msi, "expr_matches"]))) {
+                    || ($v = $this->json_choosev($msi, $new)) === null) {
                     continue;
                 }
-                if (($v = $this->json_choosev($msi, $new, $exclude)) !== null) {
-                    $member = $msi->name2 === "" ? $msi->name1 : substr($msi->name2, 1);
-                    $o[$member] = $v;
+                if (!$this->test_si_filter($msi)) {
+                    if ($msi->id_member) {
+                        ++$nid_member;
+                    } else {
+                        continue;
+                    }
                 }
+                $member = $msi->name2 === "" ? $msi->name1 : substr($msi->name2, 1);
+                $o[$member] = $v;
+            }
+            if (count($o) === $nid_member) {
+                return null;
             }
             return (object) $o;
         }
         return $si->base_unparse_jsonv($this->choosev($si, $new), $this);
     }
 
-    /** @param array{new?:bool,reset?:?bool,filter?:SearchExpr,exclude?:SearchExpr} $args
+    /** @param array{new?:bool,reset?:?bool} $args
      * @return object */
     function all_jsonv($args = []) {
         $new = $args["new"] ?? false;
@@ -763,15 +809,12 @@ class SettingValues extends MessageSet {
         if ($args["reset"] ?? false) {
             $j["reset"] = true;
         }
-        $include = $args["filter"] ?? null;
-        $exclude = $args["exclude"] ?? null;
         foreach ($this->conf->si_set()->top_list() as $si) {
             if (!$si->json_export()
-                || ($include && !$include->evaluate_simple([$si, "expr_matches"]))
-                || ($exclude && $exclude->evaluate_simple([$si, "expr_matches"]))) {
+                || !$this->test_si_filter($si)) {
                 continue;
             }
-            if (($v = $this->json_choosev($si, $new, $exclude)) !== null) {
+            if (($v = $this->json_choosev($si, $new)) !== null) {
                 $j[$si->name] = $v;
             }
         }
@@ -1133,9 +1176,8 @@ class SettingValues extends MessageSet {
         } else if (($si = is_string($id) ? $this->conf->si($id) : $id)) {
             return $si->has_tag($this->canonical_page)
                 || array_key_exists($si->storage_name(), $this->_savedv);
-        } else {
-            return false;
         }
+        return false;
     }
 
 
@@ -1261,6 +1303,9 @@ class SettingValues extends MessageSet {
             $vp = [1, $value];
         }
         $this->_savedv[$sn] = $vp;
+        if ($si->is_top() && !in_array($si, $this->_saveable_si)) {
+            $this->_saveable_si[] = $si;
+        }
     }
 
     /** @param string|Si $id
@@ -1269,9 +1314,8 @@ class SettingValues extends MessageSet {
         if ($value !== $this->oldv($id)) {
             $this->save($id, $value);
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param string|Si $id
@@ -1298,9 +1342,8 @@ class SettingValues extends MessageSet {
             return $sv[$idx];
         } else if ($idx === 0) {
             return $this->conf->setting($name);
-        } else {
-            return $this->conf->setting_data($name);
         }
+        return $this->conf->setting_data($name);
     }
 
     /** @param string $name */
@@ -1310,9 +1353,8 @@ class SettingValues extends MessageSet {
             $sv = $this->_savedv[$svkey] ?? [0, null];
             $idx = Si::$option_is_value[$name] ? 0 : 1;
             return $sv[$idx];
-        } else {
-            return $this->conf->opt($name);
         }
+        return $this->conf->opt($name);
     }
 
 
@@ -1322,9 +1364,8 @@ class SettingValues extends MessageSet {
         $si = is_string($id) ? $this->si($id) : $id;
         if ($this->has_req($si->name)) {
             return $si->parse_reqv($this->reqstr($si->name), $this);
-        } else {
-            return $this->oldv($si);
         }
+        return $this->oldv($si);
     }
 
     /** @param Si $si */
@@ -1410,98 +1451,128 @@ class SettingValues extends MessageSet {
 
     /** @return bool */
     function execute() {
-        assert($this->_req_parse_state !== 1);
+        assert($this->_req_parse_state !== 1 && $this->_req_parse_state !== 3);
         if ($this->_req_parse_state === 0) {
             $this->parse();
         }
 
-        // obtain locks
-        $this->request_read_lock("ContactInfo");
-
-        // make settings
+        // exit on error or nothing to do
         $this->_diffs = [];
-        if (!$this->has_error()
-            && (!empty($this->_savedv) || !empty($this->_saved_si))) {
-            $tables = "Settings write";
-            foreach ($this->_table_lock as $t => $need) {
-                $tables .= ", $t " . ($need < 2 ? "read" : "write");
-            }
-            $this->conf->qe_raw("lock tables {$tables}");
-            $this->conf->delay_logs();
+        if ($this->has_error()) {
+            return false;
+        }
+        if (empty($this->_savedv) && empty($this->_store_value_si)) {
+            return true;
+        }
 
-            // load db settings, pre-crosscheck
-            $dbsettings = [];
-            $result = $this->conf->qe("select name, value, data from Settings");
-            while (($row = $result->fetch_row())) {
-                $row[1] = isset($row[1]) ? (int) $row[1] : null;
-                $dbsettings[$row[0]] = $row;
-            }
-            Dbl::free($result);
+        // lock
+        $this->_req_parse_state = 3;
+        $this->request_read_lock("ContactInfo");
+        $tables = "Settings write";
+        foreach ($this->_table_lock as $t => $need) {
+            $tables .= ", {$t} " . ($need < 2 ? "read" : "write");
+        }
+        $this->conf->qe_raw("lock tables {$tables}");
+        $this->conf->delay_logs();
 
-            // apply settings
-            foreach ($this->_saved_si as $si) {
-                $this->si_parser($si)->store_value($si, $this);
-            }
+        // load db settings, pre-crosscheck
+        $dbsettings = [];
+        $result = $this->conf->qe("select name, value, data from Settings");
+        while (($row = $result->fetch_row())) {
+            $row[1] = isset($row[1]) ? (int) $row[1] : null;
+            $dbsettings[$row[0]] = $row;
+        }
+        Dbl::free($result);
 
-            $dv = $av = [];
-            foreach ($this->_savedv as $n => $v) {
-                if (substr($n, 0, 4) === "opt.") {
-                    $okey = substr($n, 4);
-                    if (array_key_exists($okey, $this->conf->opt_override)) {
-                        $oldv = $this->conf->opt_override[$okey];
-                    } else {
-                        $oldv = $this->conf->opt($okey);
-                    }
-                    $vi = Si::$option_is_value[$okey] ? 0 : 1;
-                    $basev = $vi ? "" : 0;
-                    $newv = $v === null ? $basev : $v[$vi];
-                    if ($oldv === $newv
-                        || ($vi === 0 && is_bool($oldv) && (int) $oldv === $newv)) {
-                        $v = null; // delete override value in database
-                    } else if ($v === null && $oldv !== $basev && $oldv !== null) {
-                        $v = $vi ? [0, ""] : [0, null];
-                    }
-                }
-                if ($v === null
-                    ? !isset($dbsettings[$n])
-                    : isset($dbsettings[$n]) && $dbsettings[$n][1] === $v[0] && $dbsettings[$n][2] === $v[1]) {
-                    continue;
-                }
-                //error_log("{$n}: " . json_encode($dbsettings[$n][1] ?? null) . "=>" . json_encode($v[0] ?? null) . "; " . json_encode($dbsettings[$n][2] ?? null) . "=>" . json_encode($v[1] ?? null));
-                if (!isset($this->_no_diffs[$n])) {
-                    $this->_diffs[$n] = true;
-                }
-                if ($v !== null) {
-                    $av[] = [$n, $v[0], $v[1]];
+        // apply settings
+        foreach ($this->_store_value_si as $si) {
+            $this->si_parser($si)->store_value($si, $this);
+        }
+
+        $dv = $av = $chmap = [];
+        foreach ($this->_savedv as $n => $v) {
+            if (str_starts_with($n, "opt.")) {
+                $okey = substr($n, 4);
+                if (array_key_exists($okey, $this->conf->opt_override)) {
+                    $oldv = $this->conf->opt_override[$okey];
                 } else {
-                    $dv[] = $n;
+                    $oldv = $this->conf->opt($okey);
+                }
+                $vi = Si::$option_is_value[$okey] ? 0 : 1;
+                $basev = $vi ? "" : 0;
+                $newv = $v === null ? $basev : $v[$vi];
+                if ($oldv === $newv
+                    || ($vi === 0 && is_bool($oldv) && (int) $oldv === $newv)) {
+                    $v = null; // delete override value in database
+                } else if ($v === null && $oldv !== $basev && $oldv !== null) {
+                    $v = $vi ? [0, ""] : [0, null];
                 }
             }
-            if (!empty($dv)) {
-                $this->conf->qe("delete from Settings where name?a", $dv);
-                //Conf::msg_debugt(Dbl::format_query("delete from Settings where name?a", $dv));
+            // skip if nothing to do
+            if ($v === null
+                ? !isset($dbsettings[$n])
+                : isset($dbsettings[$n]) && $dbsettings[$n][1] === $v[0] && $dbsettings[$n][2] === $v[1]) {
+                continue;
             }
-            if (!empty($av)) {
-                $this->conf->qe("insert into Settings (name, value, data) values ?v ?U on duplicate key update value=?U(value), data=?U(data)", $av);
-                //Conf::msg_debugt(Dbl::format_query("insert into Settings (name, value, data) values ?v ?U on duplicate key update value=?U(value), data=?U(data)", $av));
+            //error_log("{$n}: " . json_encode($dbsettings[$n][1] ?? null) . "=>" . json_encode($v[0] ?? null) . "; " . json_encode($dbsettings[$n][2] ?? null) . "=>" . json_encode($v[1] ?? null));
+            // remember what changed
+            if (!isset($this->_no_diffs[$n])) {
+                $this->_diffs[$n] = true;
+                if ($v === null || !isset($dbsettings[$n])) {
+                    $chmap[$n] = 3;
+                } else if ($dbsettings[$n][1] === $v[0]) {
+                    $chmap[$n] = 2;
+                } else if ($dbsettings[$n][2] === $v[1]) {
+                    $chmap[$n] = 1;
+                } else {
+                    $chmap[$n] = 3;
+                }
             }
-
-            $this->conf->qe_raw("unlock tables");
-            $this->conf->release_logs();
-            if (!empty($this->_diffs)) {
-                $this->user->log_activity("Settings edited: " . join(", ", array_keys($this->_diffs)));
-            }
-
-            // clean up
-            $this->conf->load_settings();
-            foreach ($this->_cleanup_callbacks as $cba) {
-                $cb = $cba[1];
-                $cb();
-            }
-            if (!empty($this->_invalidate_caches)) {
-                $this->conf->invalidate_caches($this->_invalidate_caches);
+            if ($v !== null) {
+                $av[] = [$n, $v[0], $v[1]];
+            } else {
+                $dv[] = $n;
             }
         }
+        if (!empty($dv)) {
+            $this->conf->qe("delete from Settings where name?a", $dv);
+            //Conf::msg_debugt(Dbl::format_query("delete from Settings where name?a", $dv));
+        }
+        if (!empty($av)) {
+            $this->conf->qe("insert into Settings (name, value, data) values ?v ?U on duplicate key update value=?U(value), data=?U(data)", $av);
+            //Conf::msg_debugt(Dbl::format_query("insert into Settings (name, value, data) values ?v ?U on duplicate key update value=?U(value), data=?U(data)", $av));
+        }
+
+        $this->conf->qe_raw("unlock tables");
+        $this->conf->release_logs();
+        if (!empty($this->_diffs)) {
+            $this->user->log_activity("Settings edited: " . join(", ", array_keys($this->_diffs)));
+        }
+
+        // clean up
+        $this->conf->load_settings();
+        foreach ($this->_cleanup_callbacks as $cba) {
+            $cb = $cba[1];
+            $cb();
+        }
+        if (!empty($this->_invalidate_caches)) {
+            $this->conf->invalidate_caches($this->_invalidate_caches);
+        }
+
+        // create changed_si
+        foreach ($this->_saveable_si as $si) {
+            $ch = $chmap[$si->storage_name()] ?? 0;
+            $bit = ($si->storage_type & Si::SI_VALUE) !== 0 ? 1 : 2;
+            if (($ch & $bit) !== 0) {
+                $this->_changed_si[] = $si;
+            }
+        }
+        foreach ($this->_store_value_si as $si) {
+            if ($si->is_top())
+                $this->_changed_si[] = $si;
+        }
+        $this->_saveable_si = $this->_store_value_si = [];
+
         return !$this->has_error();
     }
 
@@ -1514,12 +1585,6 @@ class SettingValues extends MessageSet {
     /** @param string $siname */
     function mark_no_diff($siname)  {
         $this->_no_diffs[$siname] = false;
-    }
-
-    /** @param string $siname
-     * @return bool */
-    function has_diff($siname) {
-        return $this->_diffs[$siname] ?? false;
     }
 
     /** @param associative-array<string,true> $caches */
@@ -1545,7 +1610,9 @@ class SettingValues extends MessageSet {
 
     /** @param Si $si */
     function request_store_value($si) {
-        $this->_saved_si[] = $si;
+        if (!in_array($si, $this->_store_value_si)) {
+            $this->_store_value_si[] = $si;
+        }
     }
 
     /** @param ?string $name
@@ -1560,8 +1627,39 @@ class SettingValues extends MessageSet {
         $this->_cleanup_callbacks[] = [$name, $func];
     }
 
+    private function saveable_si_changed(Si $si) {
+        $sn = $si->storage_name();
+        $vp = $this->_savedv[$sn];
+        if (str_starts_with($sn, "opt.")) {
+            $okey = substr($sn, 4);
+            $oldv = $this->conf->opt($okey);
+            $vi = Si::$option_is_value[$okey] ? 0 : 1;
+            return $oldv !== ($vp[$vi] ?? null)
+                && (!is_bool($oldv) || (int) $oldv !== ($vp[$vi] ?? null));
+        } else if (($si->storage_type & Si::SI_VALUE) !== 0) {
+            return $this->conf->setting($sn) !== ($vp[0] ?? null);
+        } else {
+            return $this->conf->setting_data($sn) !== ($vp[1] ?? null);
+        }
+    }
+
+    /** @return list<Si> */
+    function changed_top_si() {
+        $ctsi = $this->_changed_si;
+        foreach ($this->_saveable_si as $si) {
+            if ($this->saveable_si_changed($si))
+                $ctsi[] = $si;
+        }
+        foreach ($this->_store_value_si as $si) {
+            if ($si->is_top())
+                $ctsi[] = $si;
+        }
+        usort($ctsi, "Conf::xt_pure_order_compare");
+        return $ctsi;
+    }
+
     /** @return list<string> */
-    function changed_keys() {
+    function saved_keys() {
         return array_keys($this->_diffs);
     }
 

@@ -470,7 +470,6 @@ class Review_SettingParser extends SettingParser {
                 $tag_rounds[] = $rs->name;
             }
         }
-        $sv->save("tag_rounds", join(" ", $tag_rounds));
 
         // update default rounds based on new names
         $first_nondeleted_name = $first_nondeleted ? $first_nondeleted->name : "unnamed";
@@ -505,9 +504,12 @@ class Review_SettingParser extends SettingParser {
             }
         }
 
+        if ($sv->update("tag_rounds", join(" ", $tag_rounds))
+            || !empty($this->round_transform)) {
+            $sv->request_store_value($si);
+        }
         if (!empty($this->round_transform)) {
             $sv->request_write_lock("PaperReview", "ReviewRequest", "PaperReviewRefused");
-            $sv->request_store_value($si);
         }
         return true;
     }

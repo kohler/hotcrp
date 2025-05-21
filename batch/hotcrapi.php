@@ -368,8 +368,10 @@ class Hotcrapi_Batch extends MessageSet {
         )->description("Interact with HotCRP site using APIs
 Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
          ->helpopt("help")
+         ->interleave(true)
          ->subcommand(true);
         Paper_CLIBatch::register_options($getopt);
+        Settings_CLIBatch::register_options($getopt);
         Upload_CLIBatch::register_options($getopt);
         $arg = $getopt->parse($argv);
 
@@ -423,6 +425,8 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
             $hcli->set_command(Upload_CLIBatch::make_arg($hcli, $getopt, $arg));
         } else if ($arg["_subcommand"] === "paper") {
             $hcli->set_command(Paper_CLIBatch::make_arg($hcli, $getopt, $arg));
+        } else if ($arg["_subcommand"] === "settings") {
+            $hcli->set_command(Settings_CLIBatch::make_arg($hcli, $getopt, $arg));
         } else {
             throw new CommandLineException("Subcommand required");
         }
