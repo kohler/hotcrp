@@ -984,12 +984,8 @@ class PaperStatus extends MessageSet {
         }
         if (!$uu && $ctype >= CONFLICT_AUTHOR) {
             $j = $au->unparse_nea_json();
-            $j["disablement"] = ($this->disable_users ? Contact::CF_UDISABLED : 0)
-                | ($ctype >= CONFLICT_CONTACTAUTHOR ? 0 : Contact::CF_PLACEHOLDER);
+            $j["disablement"] = Contact::CF_PLACEHOLDER;
             $uu = Contact::make_keyed($this->conf, $j)->store(0, $this->user);
-            if ($uu) {
-                $this->_created_contacts[] = $uu;
-            }
         }
         if (!$uu) {
             return null;
@@ -1580,9 +1576,20 @@ class PaperStatus extends MessageSet {
                 continue;
             }
             $us[] = $u;
-            if (self::new_conflict_value($this->_conflict_values[$u->contactId]) >= CONFLICT_CONTACTAUTHOR
-                && $u->activate_placeholder(false)) {
-                $this->_created_contacts[] = $u;
+            $ncv = self::new_conflict_value($this->_conflict_values[$u->contactId]);
+            if ($u->is_placeholder() && $ncv >= CONFLICT_AUTHOR) {
+                if ($this->disable_users) {
+                    $u->set_prop("cflags", $u->cflags | Contact::CF_UDISABLED);
+                }
+                if ($ncv >= CONFLICT_CONTACTAUTHOR
+                    || (($cdbu = $u->cdb_user()) && !$cdbu->is_placeholder())) {
+                    $u->set_prop("cflags", $u->cflags & ~Contact::CF_PLACEHOLDER);
+                }
+                if ($u->prop_changed()) {
+                    $u->save_prop();
+                    $u->log_create($this->user);
+                    $this->_created_contacts[] = $u;
+                }
             }
             $this->conf->prefetch_cdb_user_by_email($u->email);
         }

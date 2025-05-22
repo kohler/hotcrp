@@ -857,7 +857,7 @@ class Contact implements JsonSerializable {
 
         // maybe auto-create a user
         if (($this->_activated & 2) === 0 && $this->email) {
-            $this->activate_placeholder(($this->_activated & 7) === 1);
+            $this->activate_placeholder(($this->_activated & 7) === 1, $this);
             $trueuser_aucheck = $qreq->csession("trueuser_author_check") ?? 0;
             if (!$this->has_account_here()
                 && $trueuser_aucheck + 600 < Conf::$now) {
@@ -2288,14 +2288,20 @@ class Contact implements JsonSerializable {
     }
 
     /** @param bool $confirm
+     * @param ?Contact $actor
      * @return bool */
-    function activate_placeholder($confirm) {
+    function activate_placeholder($confirm, $actor = null) {
+        // see also PaperStatus::_execute_author_changes
         $mask = self::CF_PLACEHOLDER | ($confirm ? self::CF_UNCONFIRMED : 0);
         if (($this->cflags & $mask) === 0) {
             return false;
         }
+        $create = ($this->cflags & self::CF_PLACEHOLDER) !== 0;
         $this->set_prop("cflags", $this->cflags & ~$mask);
         $this->save_prop();
+        if ($actor && $create) {
+            $this->log_create($actor);
+        }
         return true;
     }
 
@@ -2477,11 +2483,7 @@ class Contact implements JsonSerializable {
 
         // log creation of non-placeholder accounts
         if (($this->cflags & self::CF_PLACEHOLDER) === 0) {
-            $msg = "Account created";
-            if (($this->cflags & self::CFM_DISABLEMENT & ~self::CF_ROLEDISABLED) !== 0) {
-                $msg .= ", disabled";
-            }
-            $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, $msg);
+            $this->log_create($actor);
         }
 
         // if importing a secondary user, automatically import the primary
@@ -2493,6 +2495,15 @@ class Contact implements JsonSerializable {
 
         // we created the user, so no `$localu` (preexisting local user)
         return null;
+    }
+
+    /** @param ?Contact $actor */
+    function log_create($actor) {
+        $msg = "Account created";
+        if (($this->cflags & self::CFM_DISABLEMENT & ~self::CF_ROLEDISABLED) !== 0) {
+            $msg .= ", disabled";
+        }
+        $this->conf->log_for($actor && $actor->has_email() ? $actor : $this, $this, $msg);
     }
 
 
@@ -6162,7 +6173,7 @@ class Contact implements JsonSerializable {
 
         // on new review, update PaperReviewRefused, ReviewRequest, delegation
         if ($type > 0 && $oldtype === 0) {
-            $reviewer->activate_placeholder(false);
+            $reviewer->activate_placeholder(false, $this);
             $this->conf->ql("delete from PaperReviewRefused where paperId={$pid} and contactId={$reviewer->contactId}");
             if (($req_email = $extra["requested_email"] ?? null)) {
                 $this->conf->qe("delete from ReviewRequest where paperId={$pid} and email=?", $req_email);

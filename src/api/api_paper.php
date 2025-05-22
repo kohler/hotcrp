@@ -359,7 +359,9 @@ class Paper_API extends MessageSet {
             $ok = $ps->execute_save();
         }
         foreach ($ps->message_list() as $mi) {
-            if ($mi->field && str_ends_with($mi->field, ":context")) {
+            if ($mi->field
+                && str_ends_with($mi->field, ":context")
+                && !str_starts_with($mi->field, "status:")) {
                 continue;
             }
             if (!$this->single) {

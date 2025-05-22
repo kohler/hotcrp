@@ -131,7 +131,7 @@ class User_API {
         if (!$viewer->privChair) {
             return JsonResult::make_permission_error();
         }
-        $user->activate_placeholder(false);
+        $user->activate_placeholder(false, $viewer);
         $prep = $user->prepare_mail("@accountinfo");
         if (!$prep->send()) {
             return new JsonResult(["ok" => false, "message_list" => $prep->message_list()]);

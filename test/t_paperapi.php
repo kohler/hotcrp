@@ -304,6 +304,119 @@ class PaperAPI_Tester {
         xassert_eqq($jr->status_code, 404);
     }
 
+    function test_dryrun_users() {
+        $u = $this->conf->fresh_user_by_email("vadhan@_.com");
+        xassert(!$u || ($u->is_placeholder() && !$u->is_explicitly_disabled()));
+        $u = $this->conf->fresh_user_by_email("vadhan2@_.com");
+        xassert(!$u || ($u->is_placeholder() && !$u->is_explicitly_disabled()));
+
+        $qreq = TestQreq::post_json([
+            "pid" => "new", "title" => "New paper", "abstract" => "This is an abstract\r\n",
+            "authors" => [
+                ["name" => "New User", "email" => "vadhan@_.com"],
+                ["name" => "Second New User", "email" => "vadhan2@_.com", "contact" => true]
+            ], "submission" => ["content" => "%PDF-2"], "status" => "draft"
+        ], ["dry_run" => 1, "disable_users" => 1]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+
+        $u = $this->conf->fresh_user_by_email("vadhan@_.com");
+        xassert(!$u || ($u->is_placeholder() && !$u->is_explicitly_disabled()));
+        $u = $this->conf->fresh_user_by_email("vadhan2@_.com");
+        xassert(!$u || ($u->is_placeholder() && !$u->is_explicitly_disabled()));
+
+        $qreq = TestQreq::post_json([
+            "pid" => "new", "title" => "New paper", "abstract" => "This is an abstract\r\n",
+            "authors" => [
+                ["name" => "New User", "email" => "vadhan@_.com"],
+                ["name" => "Second New User", "email" => "vadhan2@_.com", "contact" => true]
+            ], "submission" => ["content" => "%PDF-2"], "status" => "draft"
+        ], ["disable_users" => 1]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_gt($jr->pid, 0);
+
+        $u = $this->conf->fresh_user_by_email("vadhan@_.com");
+        xassert(!!$u);
+        xassert($u->is_placeholder());
+        xassert($u->is_explicitly_disabled());
+        $u = $this->conf->fresh_user_by_email("vadhan2@_.com");
+        xassert(!!$u);
+        xassert(!$u->is_placeholder());
+        xassert($u->is_explicitly_disabled());
+    }
+
+    function test_dryrun_users_cdb() {
+        if (!($cdb = $this->conf->contactdb())) {
+            return;
+        }
+
+        Dbl::qe($cdb, "insert into ContactInfo set firstName='Hello', lastName='Kitty', email='krist@toilet.edu', affiliation='University', password='', cflags=0");
+        Dbl::qe($cdb, "insert into ContactInfo set firstName='Hello', lastName='Kitty', email='kassi@toilet.edu', affiliation='University', password='', cflags=0");
+        Dbl::qe($cdb, "insert into ContactInfo set firstName='Hello', lastName='Kitty', email='tomie@toilet.edu', affiliation='University', password='', cflags=0");
+
+        $u = $this->conf->fresh_user_by_email("krist@toilet.edu");
+        xassert(!$u || ($u->is_placeholder() && !$u->is_explicitly_disabled()));
+        $u = $this->conf->fresh_user_by_email("kassi@toilet.edu");
+        xassert(!$u || ($u->is_placeholder() && !$u->is_explicitly_disabled()));
+
+        $qreq = TestQreq::post_json([
+            "pid" => "new", "title" => "New paper", "abstract" => "This is an abstract\r\n",
+            "authors" => [
+                ["name" => "New User", "email" => "krist@toilet.edu"],
+                ["name" => "Second New User", "email" => "kassi@toilet.edu", "contact" => true]
+            ], "submission" => ["content" => "%PDF-2"], "status" => "draft"
+        ], ["dry_run" => 1, "disable_users" => 1]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+
+        $u = $this->conf->fresh_user_by_email("krist@toilet.edu");
+        xassert(!$u || ($u->is_placeholder() && !$u->is_explicitly_disabled()));
+        $u = $this->conf->fresh_user_by_email("kassi@toilet.edu");
+        xassert(!$u || ($u->is_placeholder() && !$u->is_explicitly_disabled()));
+
+        $qreq = TestQreq::post_json([
+            "pid" => "new", "title" => "New paper", "abstract" => "This is an abstract\r\n",
+            "authors" => [
+                ["name" => "New User", "email" => "krist@toilet.edu"],
+                ["name" => "Second New User", "email" => "kassi@toilet.edu", "contact" => true]
+            ], "submission" => ["content" => "%PDF-2"], "status" => "draft"
+        ], ["disable_users" => 1]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_gt($jr->pid, 0);
+
+        $u = $this->conf->fresh_user_by_email("krist@toilet.edu");
+        xassert(!!$u);
+        xassert($u->is_explicitly_disabled());
+        $u = $this->conf->fresh_user_by_email("kassi@toilet.edu");
+        xassert(!!$u);
+        xassert($u->is_explicitly_disabled());
+
+        $qreq = TestQreq::post_json([
+            "pid" => "new", "title" => "New paper", "abstract" => "This is an abstract\r\n",
+            "authors" => [
+                ["name" => "New User", "email" => "krist@toilet.edu"],
+                ["name" => "Second New User", "email" => "kassi@toilet.edu", "contact" => true],
+                ["name" => "Third New User", "email" => "tomie@toilet.edu"]
+            ], "submission" => ["content" => "%PDF-2"], "status" => "draft"
+        ]);
+        $jr = call_api("=paper", $this->u_chair, $qreq);
+        xassert_eqq($jr->ok, true);
+        xassert_gt($jr->pid, 0);
+
+        $u = $this->conf->fresh_user_by_email("krist@toilet.edu");
+        xassert(!!$u);
+        xassert($u->is_explicitly_disabled());
+        $u = $this->conf->fresh_user_by_email("kassi@toilet.edu");
+        xassert(!!$u);
+        xassert($u->is_explicitly_disabled());
+        $u = $this->conf->fresh_user_by_email("tomie@toilet.edu");
+        xassert(!!$u);
+        xassert(!$u->is_placeholder());
+        xassert(!$u->is_explicitly_disabled());
+    }
+
     function test_new_paper_after_deadline() {
         $this->conf->save_setting("sub_update", Conf::$now - 10);
         $this->conf->save_setting("sub_sub", Conf::$now - 10);
