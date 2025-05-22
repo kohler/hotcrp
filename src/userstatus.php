@@ -370,21 +370,20 @@ class UserStatus extends MessageSet {
     /** @param int $roles
      * @return ?list<string> */
     static function unparse_roles_json($roles) {
-        if ($roles) {
-            $rj = [];
-            if ($roles & Contact::ROLE_CHAIR) {
-                $rj[] = "chair";
-            }
-            if ($roles & (Contact::ROLE_PC | Contact::ROLE_CHAIR)) {
-                $rj[] = "pc";
-            }
-            if ($roles & Contact::ROLE_ADMIN) {
-                $rj[] = "sysadmin";
-            }
-            return $rj;
-        } else {
+        if (!$roles) {
             return null;
         }
+        $rj = [];
+        if ($roles & Contact::ROLE_CHAIR) {
+            $rj[] = "chair";
+        }
+        if ($roles & (Contact::ROLE_PC | Contact::ROLE_CHAIR)) {
+            $rj[] = "pc";
+        }
+        if ($roles & Contact::ROLE_ADMIN) {
+            $rj[] = "sysadmin";
+        }
+        return $rj;
     }
 
     /** @param int $old_roles

@@ -154,13 +154,28 @@ class Session_API {
     }
 
     static function whoami(Contact $user, Qrequest $qreq) {
-        return [
+        $j = [
             "ok" => true,
             "email" => $user->email,
             "given_name" => $user->firstName,
             "family_name" => $user->lastName,
             "affiliation" => $user->affiliation
         ];
+        $roles = UserStatus::unparse_roles_json($user->roles) ?? [];
+        if (!$user->privChair
+            && ($user->is_manager() || $user->is_track_manager())) {
+            $roles[] = "manager";
+        }
+        if ($user->is_author()) {
+            $roles[] = "author";
+        }
+        if ($user->has_review()) {
+            $roles[] = "reviewer";
+        }
+        if (!empty($roles)) {
+            $j["roles"] = $roles;
+        }
+        return $j;
     }
 
     static function stashmessages(Contact $user, Qrequest $qreq) {

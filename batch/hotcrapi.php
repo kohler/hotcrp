@@ -392,6 +392,7 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
          ->helpopt("help")
          ->interleave(true)
          ->subcommand(true);
+        Test_CLIBatch::register_options($getopt);
         Paper_CLIBatch::register_options($getopt);
         Settings_CLIBatch::register_options($getopt);
         Upload_CLIBatch::register_options($getopt);
@@ -449,6 +450,8 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
             $hcli->set_command(Paper_CLIBatch::make_arg($hcli, $getopt, $arg));
         } else if ($arg["_subcommand"] === "settings") {
             $hcli->set_command(Settings_CLIBatch::make_arg($hcli, $getopt, $arg));
+        } else if ($arg["_subcommand"] === "test") {
+            $hcli->set_command(Test_CLIBatch::make_arg($hcli, $getopt, $arg));
         } else {
             throw new CommandLineException("Subcommand required");
         }
