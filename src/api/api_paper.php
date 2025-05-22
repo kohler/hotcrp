@@ -36,6 +36,8 @@ class Paper_API extends MessageSet {
     private $papers = [];
     /** @var list<bool> */
     private $valid = [];
+    /** @var list<null|int|'new'> */
+    private $pids = [];
     /** @var int */
     private $npapers = 0;
     /** @var null|int|string */
@@ -357,6 +359,9 @@ class Paper_API extends MessageSet {
             $ok = $ps->execute_save();
         }
         foreach ($ps->message_list() as $mi) {
+            if ($mi->field && str_ends_with($mi->field, ":context")) {
+                continue;
+            }
             if (!$this->single) {
                 $mi->landmark = $this->landmark;
             }
@@ -373,6 +378,7 @@ class Paper_API extends MessageSet {
         } else {
             $this->papers[] = null;
         }
+        $this->pids[] = $ps->saved_pid() ?? "new";
         $this->valid[] = $ok;
         $this->ok = $this->ok && $ok;
     }
@@ -393,6 +399,7 @@ class Paper_API extends MessageSet {
         $this->ok = false;
         $this->change_lists[] = null;
         $this->papers[] = null;
+        $this->pids[] = null;
         $this->valid[] = false;
     }
 
@@ -406,14 +413,30 @@ class Paper_API extends MessageSet {
             $jr->content["dry_run"] = true;
         }
         if ($this->single) {
-            $jr->content["change_list"] = $this->change_lists[0];
             $jr->content["valid"] = $this->valid[0];
+            $jr->content["change_list"] = $this->change_lists[0];
+            if ($this->pids[0] !== null) {
+                $jr->content["pid"] = $this->pids[0];
+            }
             if ($this->npapers > 0) {
                 $jr->content["paper"] = $this->papers[0];
             }
         } else {
-            $jr->content["change_lists"] = $this->change_lists;
-            $jr->content["valid"] = $this->valid;
+            $ul = [];
+            for ($i = 0; $i !== count($this->valid); ++$i) {
+                $u = [
+                    "valid" => $this->valid[$i],
+                    "change_list" => $this->change_lists[$i]
+                ];
+                if ($this->pids[$i] !== null) {
+                    $u["pid"] = $this->pids[$i];
+                }
+                if ($this->dry_run) {
+                    $u["dry_run"] = true;
+                }
+                $ul[] = (object) $u;
+            }
+            $jr->content["status_list"] = $ul;
             if (!$this->dry_run) {
                 $jr->content["papers"] = $this->papers;
             }
@@ -629,6 +652,7 @@ class Paper_API extends MessageSet {
         }
 
         $this->change_lists[] = ["delete"];
+        $this->pids[] = $prow->paperId;
         if ($if_unmodified_since !== null
             && $if_unmodified_since < $prow->timeModified) {
             $this->error_at("if_unmodified_since", $this->conf->_("<5><strong>Edit conflict</strong>: The {submission} has changed"));

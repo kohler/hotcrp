@@ -49,8 +49,17 @@ class MessageItem implements JsonSerializable {
     /** @param object $x
      * @return MessageItem */
     static function from_json($x) {
-        // XXX context, pos1, pos2?
-        return new MessageItem($x->status ?? 0, $x->field ?? null, $x->message ?? "");
+        $mi = new MessageItem($x->status ?? 0, $x->field ?? null, $x->message ?? "");
+        if (isset($x->pos1) && is_int($x->pos1)) {
+            $mi->pos1 = $x->pos1;
+        }
+        if (isset($x->pos2) && is_int($x->pos2)) {
+            $mi->pos2 = $x->pos2;
+        }
+        if (isset($x->landmark) && (is_int($x->landmark) || is_string($x->landmark))) {
+            $mi->landmark = $x->landmark;
+        }
+        return $mi;
     }
 
     /** @return bool */

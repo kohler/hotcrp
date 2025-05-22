@@ -188,8 +188,12 @@ class PaperAPI_Tester {
         xassert_eqq($jr->papers[0]->title, "Fun with people");
         xassert_eqq($jr->papers[1]->pid, $this->npid);
         xassert_eqq($jr->papers[1]->title, "Fun with animals");
-        xassert_eqq($jr->valid, [true, true]);
-        xassert_eqq($jr->change_lists, [["title"], ["title"]]);
+        xassert_eqq($jr->status_list[0]->valid, true);
+        xassert_eqq($jr->status_list[1]->valid, true);
+        xassert_eqq($jr->status_list[0]->change_list, ["title"]);
+        xassert_eqq($jr->status_list[1]->change_list, ["title"]);
+        xassert_eqq($jr->status_list[0]->pid, 1);
+        xassert_eqq($jr->status_list[1]->pid, $this->npid);
     }
 
     function test_if_unmodified_since_create() {
@@ -239,7 +243,8 @@ class PaperAPI_Tester {
         $jr = call_api("=papers", $this->u_chair, $qreq);
         xassert_eqq($jr->ok, true);
         for ($i = 0; $i !== 10; ++$i) {
-            xassert_eqq($jr->change_lists[$i], ["calories"]);
+            xassert_eqq($jr->status_list[$i]->change_list, ["calories"]);
+            xassert_eqq($jr->status_list[$i]->pid, $i + 1);
             xassert_eqq($jr->papers[$i]->pid, $i + 1);
             xassert_eqq($jr->papers[$i]->calories, 10);
         }

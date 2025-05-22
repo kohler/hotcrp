@@ -123,7 +123,7 @@ class Paper_CLIBatch implements CLIBatchCommand {
             }
             $mt = Mimetype::content_type($s);
             if ($mt !== Mimetype::ZIP_TYPE) {
-                if (!preg_match('/\A\s*+\{/s', $s)) {
+                if (!preg_match('/\A\s*+[\[\{]/s', $s)) {
                     throw new CommandLineException("{$this->cf->input_filename}: Expected ZIP or JSON");
                 }
                 $mt = Mimetype::JSON_TYPE . "; charset=utf-8";
@@ -136,17 +136,42 @@ class Paper_CLIBatch implements CLIBatchCommand {
             ]);
         }
         $ok = $clib->exec_api(null);
-        if ($this->p && isset($clib->content_json->valid)) {
-            if (!$clib->content_json->valid) {
-                $clib->error_at(null, "<0>Changes invalid");
-            } else if (empty($clib->content_json->change_list)) {
-                $clib->success("<0>No changes");
-            } else if ($clib->content_json->dry_run ?? false) {
-                $clib->success("<0>Would change " . commajoin($clib->content_json->change_list));
+
+        $ml = $clib->message_list();
+        $clib->clear_messages();
+
+        $cj = $clib->content_json;
+        $single = isset($cj->valid);
+        if ($single) {
+            $slist = [$cj];
+        } else if (isset($cj->status_list)) {
+            $slist = $cj->status_list;
+        } else {
+            $clib->error_at(null, "<0>Invalid server response");
+            $slist = [];
+        }
+
+        foreach ($slist as $idx => $sobj) {
+            if ($sobj->pid ?? null) {
+                $pfx = $sobj->pid === "new" ? "<new>: " : "#{$sobj->pid}: ";
+            }
+            if (!$sobj->valid) {
+                $clib->error_at(null, "<0>{$pfx}Changes invalid");
+            } else if (empty($sobj->change_list)) {
+                $clib->success("<0>{$pfx}No changes");
+            } else if ($sobj->dry_run ?? false) {
+                $clib->success("<0>{$pfx}Would change " . commajoin($sobj->change_list));
             } else {
-                $clib->success("<0>Saved changes to " . commajoin($clib->content_json->change_list));
+                $clib->success("<0>{$pfx}Saved changes to " . commajoin($sobj->change_list));
+            }
+            while (!empty($ml) && ($ml[0]->landmark === null || $ml[0]->landmark === $idx)) {
+                $ml[0]->field = "  " . ($ml[0]->field ?? "");
+                $ml[0]->landmark = null;
+                $clib->append_item(array_shift($ml));
             }
         }
+
+        $clib->append_list($ml);
         if ($clib->verbose) {
             fwrite(STDERR, $clib->content_string);
         }
@@ -186,12 +211,12 @@ class Paper_CLIBatch implements CLIBatchCommand {
 
         $mode = "fetch";
         $argi = 0;
-        if ($argi < $argc && in_array($argv[$argi], ["fetch", "save", "delete"])) {
+        if ($argi < $argc && in_array($argv[$argi], ["fetch", "save", "test", "delete"])) {
             $mode = $argv[$argi];
             ++$argi;
         }
         $pcb->delete = $mode === "delete";
-        $pcb->save = $mode === "save";
+        $pcb->save = $mode === "save" || $mode === "test";
 
         if ($argi < $argc && $pcb->valid_pid($argv[$argi])) {
             if (isset($arg["p"])) {
@@ -234,7 +259,7 @@ class Paper_CLIBatch implements CLIBatchCommand {
             throw new CommandLineException("Too many arguments");
         }
 
-        $pcb->dry_run = isset($arg["dry-run"]);
+        $pcb->dry_run = isset($arg["dry-run"]) || $mode === "test";
         if (isset($arg["no-notify"])) {
             $pcb->notify = false;
         }

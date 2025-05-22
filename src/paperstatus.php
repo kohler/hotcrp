@@ -81,6 +81,7 @@ class PaperStatus extends MessageSet {
     const SSF_NEWSUBMIT = 32;
     const SSF_FINALSUBMIT = 64;
     const SSF_ADMIN_UPDATE = 128;
+    const SSF_PIDFAIL = 256;
 
     function __construct(Contact $user, $options = []) {
         $this->conf = $user->conf;
@@ -759,7 +760,7 @@ class PaperStatus extends MessageSet {
      * @return list<string> */
     function changed_keys($full = false) {
         $s = [];
-        if ($full && ($this->_save_status & (self::SSF_SAVED | self::SSF_NEW)) === (self::SSF_SAVED | self::SSF_NEW)) {
+        if ($full && ($this->_save_status & (self::SSF_NEW | self::SSF_PIDFAIL)) === self::SSF_NEW) {
             $s[] = "pid";
         }
         foreach ($this->_fdiffs ?? [] as $field) {
@@ -1170,6 +1171,7 @@ class PaperStatus extends MessageSet {
             $this->prow->set_prop("paperId", $this->conf->id_randomizer()->reserve(DatabaseIDRandomizer::PAPERID));
         } else if (!$this->user->privChair) {
             $this->user->no_paper_whynot($prow->paperId)->append_to($this, null, MessageSet::ESTOP);
+            $this->_save_status |= self::SSF_PIDFAIL;
             return false;
         }
         $this->prow->set_prop("title", "");
@@ -1178,7 +1180,6 @@ class PaperStatus extends MessageSet {
         foreach (Tagger::split_unpack($prow->all_tags_text()) as $tv) {
             $this->_tags_changed[] = $tv;
         }
-
         return true;
     }
 
@@ -1973,5 +1974,16 @@ class PaperStatus extends MessageSet {
     /** @return bool */
     function save_status_prepared() {
         return ($this->_save_status & self::SSF_PREPARED) !== 0;
+    }
+
+    /** @return ?int */
+    function saved_pid() {
+        if (($this->_save_status & self::SSF_SAVED) !== 0) {
+            return $this->paperId;
+        } else if ($this->prow->paperId !== 0
+                   && (!$this->prow->is_new() || $this->user->privChair)) {
+            return $this->prow->paperId;
+        }
+        return null;
     }
 }

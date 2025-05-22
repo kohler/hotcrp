@@ -513,6 +513,36 @@
                     }
                 }
             },
+            "update_status": {
+                "type": "object",
+                "description": "Status of update operation",
+                "required": ["valid", "change_list"],
+                "properties": {
+                    "valid": {
+                        "type": "boolean"
+                    },
+                    "change_list": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "pid": {
+                        "oneOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ]
+                    },
+                    "dry_run": {
+                        "type": "boolean"
+                    }
+                }
+            },
             "tag": {
                 "type": "string",
                 "description": "Tag",

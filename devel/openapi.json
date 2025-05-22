@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-03-08:d50674cfe",
+        "version": "2025-05-16:c9ed0e065",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST-like API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nParameters are provided in query strings or the request body, typically using\n[form encoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST).\nSome parameters are formatted as JSON. Some complex requests define logical\nobjects using structured keys, such as `named_search/1/q`. Use\n`multipart/form-data` encoding for requests that include uploaded files.\nSince servers limit upload size, you may need to use the upload API to upload\na large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property; `ok` is\n`true` if the request succeeded and `false` otherwise. Messages about the\nrequest, if any, are expressed in a `message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n"
     },
@@ -20,8 +20,8 @@
     "paths": {
         "/paper": {
             "get": {
-                "summary": "Retrieve submission",
-                "description": "Return a submission object specified by `p`, a submission ID.\n\nAll visible information about submission fields, tags, and overall status are\nreturned in the `paper` response property, which defines a submission object.\nError messages—for instance, about permission errors or nonexistent\nsubmissions—are returned in `message_list`.\n\nSubmission objects are formatted based on the submission form. They have an\n`object` property set to `\"paper\"`, a `pid`, and a `status`. Other properties\nare provided based on which submission fields exist and whether the accessing\nuser can see them.\n",
+                "summary": "Fetch submission",
+                "description": "Fetch a submission object specified by `p`, a submission ID.\n\nAll visible submission fields, tags, and status information is returned in a\nsubmission object. The `paper` response property holds this object. Error\nmessages—for instance, about permission errors or nonexistent submissions—are\nreturned in `message_list`.\n\nSubmission objects always have an `object` property (set to the constant\nstring `\"paper\"`), a `pid` property, and a `status` property. Other properties\nare provided based on which submission fields exist and whether the accessing\nuser can see them.\n",
                 "tags": [
                     "Submissions"
                 ],
@@ -78,7 +78,7 @@
             },
             "post": {
                 "summary": "Create or modify submission",
-                "description": "Create or modify a submission specified by `p`, a submission ID.\n\nSetting `p=new` will create a new submission; the response will contain the\nchosen submission ID.\n\nThe modification may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a ZIP archive (when the request body has content-type\n   `application/zip`). The archive must contain a file named `data.json`; it\n   may contain other files too.\n3. As a JSON-formatted request parameter named `json` (when the request body\n   has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or ZIP file, represented by a upload token in\n   the `upload` parameter.\n\nIn all of these, the modification is defined by a JSON submission object. The\nproperties of this object define the modifications applied to the submission.\nThe object need not specify all submission properties; absent properties\nremain unchanged.\n\nThe `p` request parameter is optional. If it is unset, HotCRP uses the `pid`\nfrom the supplied JSON. If both the `p` parameter and the JSON `pid` property\nare present, however, then they must match.\n\nTo test a modification, supply a `dry_run=1` parameter. This will test the\nuploaded JSON but make no changes to the database.\n\n\n### ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n### Responses\n\nIf the modification succeeds, the response’s `paper` property contains the\nmodified submission object.\n\nThe `change_list` property is a list of names of the modified fields. New\nsubmissions have `\"pid\"` as the first item in the list. `change_list` contains\nfields that the request *attempted* to modify; successful requests, erroneous\nrequests, and dry-run requests can all return nonempty `change_list`s.\n\nThe `valid` property is `true` if and only if the modification was valid. In\nnon-dry-run requests, `valid: true` indicates that database changes were\ncommitted.\n\nDry-run requests return `change_list` and `valid` properties, but not `paper`\nproperties, since no modifications are performed.\n\n\n### Administrator use\n\nAdministrators can use this endpoint to set some submission properties, such\nas `decision`, that have other endpoints as well.\n\nAdministrators can choose specific IDs for new submissions; just set `p` (or\nJSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the JSON’s `status`.`if_unmodified_since` to `0`.\n",
+                "description": "Create or modify a submission specified by `p`, a submission ID.\n\nSetting `p=new` will create a new submission; the response will contain the\nchosen submission ID.\n\nThe modification may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a ZIP archive (when the request body has content-type\n   `application/zip`). The archive must contain a file named `data.json`; it\n   may contain other files too.\n3. As a JSON-formatted request parameter named `json` (when the request body\n   has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or ZIP file, represented by a upload token in\n   the `upload` parameter.\n\nIn all of these, the modification is defined by a JSON submission object. The\nproperties of this object define the modifications applied to the submission.\nThe object need not specify all submission properties; absent properties\nremain unchanged.\n\nThe `p` request parameter is optional. If it is unset, HotCRP uses the `pid`\nfrom the supplied JSON. If both the `p` parameter and the JSON `pid` property\nare present, they must match.\n\nTo test a modification, supply a `dry_run=1` parameter. This will test the\nuploaded JSON but make no changes to the database.\n\n\n### ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n### Responses\n\nIf the modification succeeds, the response’s `paper` property contains the\nmodified submission object.\n\nThe `change_list` property is a list of names of the modified fields. New\nsubmissions have `\"pid\"` as the first item in the list. `change_list` contains\nfields that the request *attempted* to modify; successful requests, erroneous\nrequests, and dry-run requests can all return nonempty `change_list`s.\n\nThe `valid` property is `true` if and only if the modification was valid. In\nnon-dry-run requests, `valid: true` indicates that database changes were\ncommitted.\n\nDry-run requests return `change_list` and `valid` properties, but not `paper`\nproperties, since no modifications are performed.\n\n\n### Administrator use\n\nAdministrators can use this endpoint to set some submission properties, such\nas `decision`, that have other endpoints as well.\n\nAdministrators can choose specific IDs for new submissions by setting `p` (or\nJSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the submission JSON’s `status`.`if_unmodified_since`\nto `0`.\n",
                 "tags": [
                     "Submissions"
                 ],
@@ -332,8 +332,8 @@
         },
         "/papers": {
             "get": {
-                "summary": "Retrieve multiple submissions",
-                "description": "Retrieve submission objects matching a search.\n\nThe search is specified in the `q` parameter; all matching visible papers are\nreturned. Other search parameters (`t`, `qt`) are accepted too. The response\nproperty `papers` is an array of matching submission objects.\n\nSince searches silently filter out non-viewable submissions, `/papers?q=1010`\nand `/paper?p=1010` can return different error messages. The `/paper` request\nmight return an error like `Submission #1010 does not exist` or `You aren’t\nallowed to view submission #1010`, whereas the `/papers` request will return\nno errors. To obtain warnings for missing submissions that were explicitly\nlisted in a query, supply a `warn_missing=1` parameter.\n",
+                "summary": "Fetch multiple submissions",
+                "description": "Fetch submission objects matching a search.\n\nThe search is specified in the `q` parameter (and other search parameters,\nsuch as `t` and `qt`). All matching visible submissions are returned, as an\narray of submission objects, in the response property `papers`.\n\nSince searches silently filter out non-viewable submissions, `/papers?q=1010`\nand `/paper?p=1010` can return different error messages. The `/paper` request\nmight return an error like `Submission #1010 does not exist` or `You aren’t\nallowed to view submission #1010`, whereas the `/papers` request will return\nno errors. To obtain warnings for missing submissions that were explicitly\nlisted in a query, supply a `warn_missing=1` parameter.\n",
                 "tags": [
                     "Submissions"
                 ],
@@ -411,7 +411,7 @@
             },
             "post": {
                 "summary": "Create or modify multiple submissions",
-                "description": "Create or modify multiple submissions.\n\nThis administrator-only endpoint modifies multiple submissions at once. Its\nrequest formats are similar to that of `POST /{p}/paper`: it can accept a\nJSON, ZIP, or form-encoded request body with a `json` parameter, and ZIP and\nform-encoded requests can also include attached files.\n\nThe JSON provided for `/papers` should be an *array* of JSON objects. Response\nproperties `papers`, `change_lists`, and `valid` are arrays with the same\nnumber of elements as the input JSON; component *i* of each response property\ncontains the result for the *i*th submission object in the input JSON.\n\nAlternately, you can provide a `q` search query parameter and a *single* JSON\nobject. The JSON object must not have a `pid` property. The JSON modification\nwill be applied to all papers returned by the `q` search query.\n\nThe response `message_list` contains messages relating to all modified\nsubmissions. To filter out the messages for a single submission, use the\nmessages’ `landmark` properties. `landmark` is set to the integer index of the\nrelevant submission in the input JSON.\n\n",
+                "description": "Create or modify multiple submissions.\n\nThis administrator-only endpoint modifies multiple submissions at once. Its\nrequest formats are similar to that of `POST /{p}/paper`: it can accept a\nJSON, ZIP, or form-encoded request body with a `json` parameter, and ZIP and\nform-encoded requests can also include attached files.\n\nThe JSON provided for `/papers` should be an *array* of JSON objects. The\n`status_list` response property is an array with the same number of elements\nas the input JSON. Component *i* of `status_list` reports the status of update\n*i* as an object with `valid`, `change_list`, and `pid` properties; these\nreport the validity of the update, the list of changed fields, and the\nsubmission ID of the modified submission.\n\nAlternately, you can provide a `q` search query parameter and a *single* JSON\nobject. The JSON object must not have a `pid` property. The JSON modification\nwill be applied to all papers returned by the `q` search query.\n\nThe response `message_list` contains messages relating to all modified\nsubmissions. To filter out the messages for a single submission, use the\nmessages’ `landmark` properties. `landmark` is set to the integer index of the\nrelevant submission in the input JSON.\n\n",
                 "tags": [
                     "Submissions"
                 ],
@@ -548,22 +548,12 @@
                                             "type": "boolean",
                                             "description": "True for `dry_run` requests"
                                         },
-                                        "change_lists": {
+                                        "status_list": {
                                             "type": "array",
                                             "items": {
-                                                "type": "array",
-                                                "items": {
-                                                    "type": "string"
-                                                }
+                                                "$ref": "#/components/schemas/update_status"
                                             },
                                             "description": "List of lists of changed fields"
-                                        },
-                                        "valid": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "boolean"
-                                            },
-                                            "description": "List of validity checks"
                                         }
                                     }
                                 }
@@ -1440,6 +1430,12 @@
                     },
                     {
                         "name": "warn_missing",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "hotlist",
                         "in": "query",
                         "required": false,
                         "schema": {}
@@ -2692,15 +2688,12 @@
                         }
                     }
                 }
-            },
+            }
+        },
+        "/review": {
             "post": {
                 "tags": [
                     "Reviews"
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    }
                 ],
                 "responses": {
                     "200": {
@@ -4305,6 +4298,18 @@
                         "in": "query",
                         "required": false,
                         "schema": {}
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "exclude",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
                     }
                 ],
                 "requestBody": {
@@ -4861,6 +4866,80 @@
                     }
                 }
             }
+        },
+        "/cspreport": {
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reviews": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -5365,6 +5444,39 @@
                     },
                     "search_params": {
                         "$ref": "#/components/schemas/encoded_search_parameters"
+                    }
+                }
+            },
+            "update_status": {
+                "type": "object",
+                "description": "Status of update operation",
+                "required": [
+                    "valid",
+                    "change_list"
+                ],
+                "properties": {
+                    "valid": {
+                        "type": "boolean"
+                    },
+                    "change_list": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "pid": {
+                        "oneOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ]
+                    },
+                    "dry_run": {
+                        "type": "boolean"
                     }
                 }
             },

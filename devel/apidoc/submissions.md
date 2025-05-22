@@ -183,10 +183,12 @@ request formats are similar to that of `POST /{p}/paper`: it can accept a
 JSON, ZIP, or form-encoded request body with a `json` parameter, and ZIP and
 form-encoded requests can also include attached files.
 
-The JSON provided for `/papers` should be an *array* of JSON objects. Response
-properties `papers`, `change_lists`, and `valid` are arrays with the same
-number of elements as the input JSON; component *i* of each response property
-contains the result for the *i*th submission object in the input JSON.
+The JSON provided for `/papers` should be an *array* of JSON objects. The
+`status_list` response property is an array with the same number of elements
+as the input JSON. Component *i* of `status_list` reports the status of update
+*i* as an object with `valid`, `change_list`, and `pid` properties; these
+report the validity of the update, the list of changed fields, and the
+submission ID of the modified submission.
 
 Alternately, you can provide a `q` search query parameter and a *single* JSON
 object. The JSON object must not have a `pid` property. The JSON modification
@@ -208,6 +210,5 @@ relevant submission in the input JSON.
 * param ?t search_collection: Collection to search; defaults to `viewable`
 * response ?dry_run boolean: True for `dry_run` requests
 * response ?papers [paper]: List of JSON versions of modified papers
-* response ?+change_lists [[string]]: List of lists of changed fields
-* response ?+valid [boolean]: List of validity checks
+* response ?+status_list [update_status]: List of lists of changed fields
 * badge admin
