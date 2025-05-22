@@ -41,9 +41,9 @@ url = https://sigcomm25.hotcrp.com
 token = hct_aephiFaiKiecieSah1oChoa6aaviejiechaeD1phaesh
 ```
 
-Given this configuration file, a command line like `php batch/hotcrapi.php -s
+Given this configuration file, a command line like `php batch/hotcrapi.php -S
 s23`  would contact `https://sigcomm23.hotcrp.com` with the default token
-(`hct_KYy...`), whereas a command line like `php batch/hotcrapi.php -s s25`
+(`hct_KYy...`), whereas a command line like `php batch/hotcrapi.php -S s25`
 would contact `https://sigcomm25.hotcrp.com` with token `hct_aep...`.
 
 
