@@ -46,9 +46,10 @@ s23`  would contact `https://sigcomm23.hotcrp.com` with the default token
 (`hct_KYy...`), whereas a command line like `php batch/hotcrapi.php -s s25`
 would contact `https://sigcomm25.hotcrp.com` with token `hct_aep...`.
 
-## `paper`: Fetching, modifying, and deleting submissions
+## `paper`
 
 Use the `paper` subcommand to fetch, modify, or delete submissions from a site.
+The subcommand writes textual error messages and warnings to standard error.
 
 To fetch a single submission, run `php batch/hotcrapi.php paper PID`, where
 `PID` is the relevant submission ID. The JSON representation of the submission
@@ -74,5 +75,31 @@ Here, the JSON in `FILE` should be an *array* of JSON objects.
 
 To delete a submission, run `php batch/hotcrapi.php paper delete PID`.
 
-All of these commands write textual error messages and warnings to standard
-error.
+
+## `settings`
+
+Use the `settings` subcommand to fetch or modify site settings in JSON format.
+Administrator privilege is required to access `settings`. The subcommand writes
+textual error messages and warnings to standard error.
+
+To fetch all site settings, run `php batch/hotcrapi.php settings`. The JSON
+settings are written to standard output.
+
+> ![INFO]
+> The format for JSON settings is described in [HotCRP Help > Advanced settings](https://help.hotcrp.com/help/jsonsettings).
+
+You can also output a subset of the settings. For instance, `php
+batch/hotcrapi.php settings --filter "#sf"` will output all settings relating to
+the submission form.
+
+To test a settings modification, run `php batch/hotcrapi.php settings test
+FILE`, where `FILE` contains a JSON text. (You can also supply a JSON on the
+command line instead of a file.) Information about the tested modification is
+written to standard error: either `No changes` or `Would change [LIST OF
+TOP-LEVEL SETTINGS]`. You can also save the full settings, including the
+modifications, to a file by adding `-o OUTPUT`.
+
+To actually change settings, run `php batch/hotcrapi.php settings save FILE`.
+Either `No changes` or `Saved changes to [LIST OF TOP-LEVEL SETTINGS]` is
+written to standard error. Again, you can save the resulting full settings by
+adding `-o OUTPUT`.
