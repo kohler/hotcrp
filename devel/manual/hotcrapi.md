@@ -46,6 +46,18 @@ s23`  would contact `https://sigcomm23.hotcrp.com` with the default token
 (`hct_KYy...`), whereas a command line like `php batch/hotcrapi.php -s s25`
 would contact `https://sigcomm25.hotcrp.com` with token `hct_aep...`.
 
+
+## `test`
+
+Use the `test` subcommand to check your configuration and API token. `php
+batch/hotcrapi.php test` will contact the site you specify and print `Success`
+if the connection succeeds. The command’s exit status is 0 on success and 1 on
+failure. Options change what’s printed; `-q` will print nothing (use the exit
+status to determine whether the connection succeeded), `--email` will print
+the user email who owns the token, and `--roles` will print the user email and
+any roles that user has on the given site.
+
+
 ## `paper`
 
 Use the `paper` subcommand to fetch, modify, or delete submissions from a site.

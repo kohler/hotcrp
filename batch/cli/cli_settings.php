@@ -121,7 +121,7 @@ class Settings_CLIBatch implements CLIBatchCommand {
         return $pcb;
     }
 
-    static function register_options(Getopt $getopt) {
+    static function register(Hotcrapi_Batch $clib, Getopt $getopt) {
         $getopt->subcommand_description(
             "settings",
             "Retrieve or change HotCRP settings
@@ -136,5 +136,6 @@ Usage: php batch/hotcrapi.php settings [--filter F | --exclude F]
             "expr:,e: !settings =JSON Change settings using JSON",
             "output:,o: !settings =FILE Write settings to FILE"
         );
+        $clib->register_command("settings", "Settings_CLIBatch");
     }
 }

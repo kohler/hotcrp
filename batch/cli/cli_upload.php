@@ -131,7 +131,7 @@ class Upload_CLIBatch implements CLIBatchCommand {
         return $ucb;
     }
 
-    static function register_options(Getopt $getopt) {
+    static function register(Hotcrapi_Batch $clib, Getopt $getopt) {
         $getopt->subcommand_description(
             "upload",
             "Upload file to HotCRP and return token
@@ -141,5 +141,6 @@ Usage: php batch/hotcrapi.php upload [-f NAME] [-m TYPE] FILE"
             "no-filename !upload !",
             "mimetype:,m: =MIMETYPE !upload Type for uploaded file"
         );
+        $clib->register_command("upload", "Upload_CLIBatch");
     }
 }

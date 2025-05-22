@@ -247,7 +247,7 @@ class Paper_CLIBatch implements CLIBatchCommand {
         return $pcb;
     }
 
-    static function register_options(Getopt $getopt) {
+    static function register(Hotcrapi_Batch $clib, Getopt $getopt) {
         $getopt->subcommand_description(
             "paper",
             "Retrieve or change HotCRP submissions
@@ -265,5 +265,6 @@ Usage: php batch/hotcrapi.php paper [PID | -q SEARCH]
             "no-notify Don’t notify users",
             "no-notify-authors Don’t notify authors"
         );
+        $clib->register_command("paper", "Paper_CLIBatch");
     }
 }

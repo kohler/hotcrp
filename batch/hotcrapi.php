@@ -100,16 +100,18 @@ class Hotcrapi_Batch extends MessageSet {
     public $content_json;
 
     /** @var CLIBatchCommand */
-    private $command;
+    private $_command;
     /** @var ?string */
-    private $output;
+    private $_output;
     /** @var ?string */
-    private $output_file;
+    private $_output_file;
 
     /** @var array<string,Hotcrapi_Batch_Site> */
-    private $siteconfig = [];
+    private $_siteconfig = [];
     /** @var ?Hotcrapi_Batch_Site */
-    private $default_siteconfig;
+    private $_default_siteconfig;
+    /** @var array<string,class-string<CLIBatchCommand>> */
+    private $_subcommand_class = [];
 
     function __construct() {
         $this->curlh = curl_init();
@@ -148,19 +150,27 @@ class Hotcrapi_Batch extends MessageSet {
     /** @suppress PhanAccessReadOnlyProperty
      * @return $this */
     function set_command(CLIBatchCommand $command) {
-        $this->command = $command;
+        $this->_command = $command;
+        return $this;
+    }
+
+    /** @param string $name
+     * @param class-string<CLIBatchCommand> $class
+     * @return $this */
+    function register_command($name, $class) {
+        $this->_subcommand_class[$name] = $class;
         return $this;
     }
 
     /** @return ?string */
     function output_file() {
-        return $this->output_file;
+        return $this->_output_file;
     }
 
     /** @param ?string $filename
      * @return $this */
     function set_output_file($filename) {
-        $this->output_file = $filename;
+        $this->_output_file = $filename;
         return $this;
     }
 
@@ -168,7 +178,7 @@ class Hotcrapi_Batch extends MessageSet {
      * @suppress PhanAccessReadOnlyProperty
      * @return $this */
     function set_output($s) {
-        $this->output = $s;
+        $this->_output = $s;
         return $this;
     }
 
@@ -216,7 +226,7 @@ class Hotcrapi_Batch extends MessageSet {
             ++$line;
             if (preg_match('/\A\s*+\[\s*+site\s*+(\w+|\".*?\"|(?=\]))\s*+\]\s*+\z/', $l, $m)) {
                 $sn = self::unquote($m[1]);
-                $this->siteconfig[$sn] = $this->siteconfig[$sn] ?? new Hotcrapi_Batch_Site;
+                $this->_siteconfig[$sn] = $this->_siteconfig[$sn] ?? new Hotcrapi_Batch_Site;
             } else if (preg_match('/\A\s*+\[/', $l)) {
                 $sn = null;
             } else if ($sn === null) {
@@ -226,19 +236,19 @@ class Hotcrapi_Batch extends MessageSet {
                 if (!preg_match('/\Ahttps?:\/\//', $s)) {
                     throw new CommandLineException("{$fname}:{$line}: Invalid `site`");
                 }
-                $this->siteconfig[$sn]->site = $s;
+                $this->_siteconfig[$sn]->site = $s;
             } else if (preg_match('/\A\s*+(?:api|)token\s*+=\s*+([^\"]++|\".*?\")\s*+\z/', $l, $m)) {
                 $s = self::unquote($m[1]);
                 if (!preg_match('/\Ahct_[A-Za-z0-9]{30,}/', $s)) {
                     throw new CommandLineException("{$fname}:{$line}: Invalid `apitoken`");
                 }
-                $this->siteconfig[$sn]->apitoken = $s;
+                $this->_siteconfig[$sn]->apitoken = $s;
             } else if (preg_match('/\A\s*+default\s*+=\s*+true\s*+\z/', $l, $m)) {
-                $this->default_siteconfig = $this->siteconfig[$sn];
+                $this->_default_siteconfig = $this->_siteconfig[$sn];
             }
         }
 
-        if (($dsc = $this->default_siteconfig)) {
+        if (($dsc = $this->_default_siteconfig)) {
             if ($this->site === null && $dsc->site !== null) {
                 $this->set_site($dsc->site);
             }
@@ -250,7 +260,7 @@ class Hotcrapi_Batch extends MessageSet {
 
     /** @return ?Hotcrapi_Batch_Site */
     function default_site() {
-        return $this->default_siteconfig;
+        return $this->_default_siteconfig;
     }
 
     /** @param string|Hotcrapi_Batch_Site $s
@@ -365,13 +375,13 @@ class Hotcrapi_Batch extends MessageSet {
         if (!$this->has_apitoken()) {
             throw new CommandLineException("`-T APITOKEN` required");
         }
-        $status = $this->command->run($this);
+        $status = $this->_command->run($this);
         if (!$this->quiet) {
             fwrite(STDERR, $this->full_feedback_text(true));
         }
-        if ($this->output !== null) {
-            $of = Hotcrapi_File::make($this->output_file ?? "-", "wb");
-            fwrite($of->stream, $this->output);
+        if ($this->_output !== null) {
+            $of = Hotcrapi_File::make($this->_output_file ?? "-", "wb");
+            fwrite($of->stream, $this->_output);
         }
         return $status;
     }
@@ -379,28 +389,32 @@ class Hotcrapi_Batch extends MessageSet {
     /** @param list<string> $argv
      * @return Hotcrapi_Batch */
     static function make_args($argv) {
+        $hcli = new Hotcrapi_Batch;
+
         $getopt = (new Getopt)->long(
             "help::,h:: !",
             "S:,siteurl:,url: =SITE Site URL",
             "T:,token: =APITOKEN API token",
             "F:,config: =FILE Set configuration file [~/.hotcrapi.conf]",
             "verbose,V Be verbose",
-            "quiet Do not print error messages",
+            "quiet,q Do not print error messages",
             "chunk: =CHUNKSIZE Maximum upload chunk size [8M]"
         )->description("Interact with HotCRP site using APIs
 Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
          ->helpopt("help")
          ->interleave(true)
          ->subcommand(true);
-        Test_CLIBatch::register_options($getopt);
-        Paper_CLIBatch::register_options($getopt);
-        Settings_CLIBatch::register_options($getopt);
-        Upload_CLIBatch::register_options($getopt);
+        Test_CLIBatch::register($hcli, $getopt);
+        Paper_CLIBatch::register($hcli, $getopt);
+        Settings_CLIBatch::register($hcli, $getopt);
+        Upload_CLIBatch::register($hcli, $getopt);
         $arg = $getopt->parse($argv);
 
-        $hcli = new Hotcrapi_Batch;
         $hcli->load_config_file($arg["F"] ?? null);
 
+        if (($sc = $hcli->default_site())) {
+            $hcli->set_site($sc);
+        }
         if (isset($arg["S"])) {
             $hcli->set_site($arg["S"]);
         } else if (isset($_ENV["HOTCRAPI_SITE"])) {
@@ -444,14 +458,11 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
             $hcli->set_chunk((int) $n);
         }
 
-        if ($arg["_subcommand"] === "upload") {
-            $hcli->set_command(Upload_CLIBatch::make_arg($hcli, $getopt, $arg));
-        } else if ($arg["_subcommand"] === "paper") {
-            $hcli->set_command(Paper_CLIBatch::make_arg($hcli, $getopt, $arg));
-        } else if ($arg["_subcommand"] === "settings") {
-            $hcli->set_command(Settings_CLIBatch::make_arg($hcli, $getopt, $arg));
-        } else if ($arg["_subcommand"] === "test") {
-            $hcli->set_command(Test_CLIBatch::make_arg($hcli, $getopt, $arg));
+        if (($callback = $hcli->_subcommand_class[$arg["_subcommand"]] ?? null)) {
+            if (is_string($callback) && class_exists($callback)) {
+                $callback = "{$callback}::make_arg";
+            }
+            $hcli->set_command(call_user_func($callback, $hcli, $getopt, $arg));
         } else {
             throw new CommandLineException("Subcommand required");
         }
