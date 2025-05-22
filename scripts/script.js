@@ -1621,10 +1621,19 @@ function hoturl_html(page, options) {
     return escape_html(hoturl(page, options));
 }
 
+function make_URL(url, loc) {
+    try {
+        return new URL(url, loc);
+    } catch (err) {
+        log_jserror(`failed to construct URL("${url}", "${loc}")`, err);
+        throw err;
+    }
+}
+
 function url_absolute(url, loc) {
     loc = loc || window.location.href;
     if (window.URL) {
-        return (new URL(url, loc)).href;
+        return make_URL(url, loc).href;
     }
     var x = "", m;
     if (!/^\w+:\/\//.test(url)
@@ -9947,7 +9956,7 @@ function tablelist_apply(tbl, data, searchp) {
     });
     const form = tbl.closest("form");
     if (form) {
-        const url = new URL(form.action, window.location.href);
+        const url = make_URL(form.action, window.location.href);
         url.searchParams.set("sort", searchp.get("sort"));
         const fs = searchp.get("forceShow");
         fs ? url.searchParams.set("forceShow", fs) : url.searchParams.delete("forceShow");
@@ -9959,7 +9968,7 @@ function tablelist_load(tbl, k, v) {
     let searchp = new URLSearchParams(tablelist_search(tbl));
     k && searchp.set(k, v != null ? v : "");
     function history_success(data) {
-        const url = new URL(window.location.href);
+        const url = make_URL(window.location.href);
         v == null ? url.searchParams.delete(k) : url.searchParams.set(k, v);
         if (data.ok && data.ids && tablelist_compatible(tbl, data)) {
             push_history_state();
