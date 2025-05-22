@@ -65,7 +65,9 @@ class Settings_CLIBatch implements CLIBatchCommand {
         ]);
         $ok = $clib->exec_api(null);
         if (empty($clib->content_json->change_list)) {
-            $clib->success("<0>No changes");
+            if (!$clib->has_error()) {
+                $clib->success("<0>No changes");
+            }
         } else if ($clib->content_json->dry_run ?? false) {
             $clib->success("<0>Would change " . commajoin($clib->content_json->change_list));
         } else {
