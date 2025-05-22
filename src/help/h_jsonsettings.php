@@ -97,24 +97,24 @@ a “Desk reject” decision:</p>
 }</code></pre></li>
 
 
-<li><p><strong>Resetting subsettings.</strong> Unmentioned subsettings are
-left unchanged by default. If you want instead to delete any unmentioned subsettings,
-set
-<code class=\"language-json\">\"reset\"</code>
-or
-<code class=\"language-json\">\"SETTINGNAME_reset\"</code>
-to true. For instance, this deletes all topics:</p>
+<li><p><strong>Resetting subsettings.</strong> Subsettings unmentioned in an
+update are not changed. For instance, this JSON update has no effect: it
+mentions no topics, so it changes no topics.</p>
 
-<pre class=\"sample\"><code class=\"langage-json\">{
+<pre class=\"sample\"><code class=\"language-json\">{
+    \"topic\": []
+}</code></pre>
+
+<p>You may want instead to automatically delete any unmentioned subsettings. To
+do this, add a JSON member <code class=\"language-json\">\"SETTINGNAME_reset\":
+true</code>. This JSON update will delete any existing topics.</p>
+
+<pre class=\"sample\"><code class=\"language-json\">{
     \"topic_reset\": true, \"topic\": []
 }</code></pre>
 
-<p>This, on the other hand, has no effect (the JSON mentions no
-topics, so <em>all</em> topic subsettings remain unchanged):
-
-<pre class=\"sample\"><code class=\"langage-json\">{
-    \"topic\": []
-}</code></pre></li>
+<p>You can also supply <code class=\"language-json\">\"reset\": true</code> to
+automatically delete unmentioned subsettings for all modified settings.</p></li>
 
 
 <li><p><strong>Copying settings between conferences.</strong> Beware of IDs
