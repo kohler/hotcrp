@@ -85,7 +85,7 @@ textual error messages and warnings to standard error.
 To fetch all site settings, run `php batch/hotcrapi.php settings`. The JSON
 settings are written to standard output.
 
-> ![NOTE]
+> [!NOTE]
 > The format for JSON settings is described in [HotCRP Help > Advanced settings](https://help.hotcrp.com/help/jsonsettings).
 
 You can also output a subset of the settings. For instance, `php
