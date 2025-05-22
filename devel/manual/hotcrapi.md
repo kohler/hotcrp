@@ -95,10 +95,9 @@ Administrator privilege is required to access `settings`. The subcommand writes
 textual error messages and warnings to standard error.
 
 To fetch all site settings, run `php batch/hotcrapi.php settings`. The JSON
-settings are written to standard output.
-
-> [!NOTE]
-> The format for JSON settings is described in [HotCRP Help > Advanced settings](https://help.hotcrp.com/help/jsonsettings).
+settings are written to standard output. (The format for JSON settings is
+described in [HotCRP Help > Advanced
+settings](https://help.hotcrp.com/help/jsonsettings).)
 
 You can also output a subset of the settings. For instance, `php
 batch/hotcrapi.php settings --filter "#sf"` will output all settings relating to
@@ -108,8 +107,8 @@ To test a settings modification, run `php batch/hotcrapi.php settings test
 FILE`, where `FILE` contains a JSON text. (You can also supply a JSON on the
 command line instead of a file.) Information about the tested modification is
 written to standard error: either `No changes` or `Would change [LIST OF
-TOP-LEVEL SETTINGS]`. You can also save the full settings, including the
-modifications, to a file by adding `-o OUTPUT`.
+TOP-LEVEL SETTINGS]`. You can also save a full list of settings, including
+the tested modifications, to a file by adding `-o OUTPUT`.
 
 To actually change settings, run `php batch/hotcrapi.php settings save FILE`.
 Either `No changes` or `Saved changes to [LIST OF TOP-LEVEL SETTINGS]` is
