@@ -784,7 +784,8 @@ class SettingValues extends MessageSet {
                     continue;
                 }
                 if (!$this->test_si_filter($msi)) {
-                    if ($msi->id_member) {
+                    if ($msi->id_member
+                        && (!$this->_si_exclude || !$this->_si_exclude->evaluate_simple([$msi, "expr_matches"]))) {
                         ++$nid_member;
                     } else {
                         continue;

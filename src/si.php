@@ -491,6 +491,10 @@ class Si {
             return $t !== null
                 && in_array(substr($expr->text, 1), $t);
         }
+        if ($expr->text === "id") {
+            return $this->name_parts !== null
+                && $this->name2 === "/id";
+        }
         $f = str_replace("\\*", ".*", preg_quote($expr->text, "/"));
         if (!str_starts_with($f, ".*")) {
             $f = "\\A" . $f;
