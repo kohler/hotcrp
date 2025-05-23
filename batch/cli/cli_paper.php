@@ -152,8 +152,12 @@ class Paper_CLIBatch implements CLIBatchCommand {
         }
 
         foreach ($slist as $idx => $sobj) {
-            if ($sobj->pid ?? null) {
-                $pfx = $sobj->pid === "new" ? "<new>: " : "#{$sobj->pid}: ";
+            if (is_int($sobj->pid ?? null)) {
+                $pfx = "#{$sobj->pid}: ";
+            } else if (!isset($this->p)) {
+                $pfx = "<@{$idx}>: ";
+            } else {
+                $pfx = "";
             }
             if (!$sobj->valid) {
                 $clib->error_at(null, "<0>{$pfx}Changes invalid");

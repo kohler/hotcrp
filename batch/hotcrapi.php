@@ -175,7 +175,6 @@ class Hotcrapi_Batch extends MessageSet {
     }
 
     /** @param ?string $s
-     * @suppress PhanAccessReadOnlyProperty
      * @return $this */
     function set_output($s) {
         $this->_output = $s;
@@ -183,8 +182,6 @@ class Hotcrapi_Batch extends MessageSet {
     }
 
     /** @param mixed $x
-     * @param ?string $file
-     * @suppress PhanAccessReadOnlyProperty
      * @return $this */
     function set_json_output($x) {
         return $this->set_output(json_encode_db($x, JSON_PRETTY_PRINT) . "\n");
