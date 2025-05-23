@@ -108,7 +108,7 @@ class Paper_CLIBatch implements CLIBatchCommand {
     function run_save(Hotcrapi_Batch $clib) {
         if ($this->cf->size === null
             || $this->cf->size > $clib->chunk) {
-            $upb = new Upload_CLIBatch($this->cf);
+            $upb = (new Upload_CLIBatch($this->cf))->set_temporary(true);
             $upload = $upb->execute($clib);
             if (!$upload) {
                 return 1;

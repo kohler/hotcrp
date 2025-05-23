@@ -9,6 +9,8 @@ class Upload_CLIBatch implements CLIBatchCommand {
     public $mimetype;
     /** @var ?string */
     public $filename;
+    /** @var bool */
+    public $temporary;
     /** @var ?string */
     public $input_filename;
     /** @var ?int */
@@ -17,6 +19,10 @@ class Upload_CLIBatch implements CLIBatchCommand {
     private $offset;
     /** @var bool */
     private $retry;
+    /** @var ?Hotcrapi_Batch */
+    private $clib;
+    /** @var int */
+    private $_progress_bloblen;
 
     /** @param Hotcrapi_File $cf */
     function __construct($cf) {
@@ -24,6 +30,13 @@ class Upload_CLIBatch implements CLIBatchCommand {
         $this->filename = $cf->filename;
         $this->input_filename = $cf->input_filename;
         $this->size = $cf->size;
+    }
+
+    /** @param bool $x
+     * @return $this */
+    function set_temporary($x) {
+        $this->temporary = $x;
+        return $this;
     }
 
     /** @return bool */
@@ -37,6 +50,20 @@ class Upload_CLIBatch implements CLIBatchCommand {
             $clib->set_chunk(max(1, $clib->content_json->maxblob));
             $this->retry = true;
             return true;
+        }
+    }
+
+    function curl_progress($curlh, $max_down, $down, $max_up, $up) {
+        if ($curlh !== $this->clib->curlh) {
+            return;
+        }
+        if ($this->_progress_bloblen > 0) {
+            if ($max_up > 0) {
+                $up = round($up * ($max_up / $this->_progress_bloblen));
+            }
+            $this->clib->progress_show($this->offset + $up, $this->size);
+        } else {
+            $this->clib->progress_show(null, null);
         }
     }
 
@@ -55,6 +82,18 @@ class Upload_CLIBatch implements CLIBatchCommand {
         }
         if (isset($this->size)) {
             $startargs .= "&size={$this->size}";
+        }
+        if ($this->temporary) {
+            $startargs .= "&temp=1";
+        }
+        $this->clib = $clib;
+        if ($clib->progress) {
+            $x = "↑";
+            if ($this->filename || $this->mimetype) {
+                $x .= " " . ($this->filename ?? $this->mimetype);
+            }
+            $x .= " |";
+            $clib->progress_start()->progress_prefix($x);
         }
         $buf = "";
         while (true) {
@@ -81,6 +120,8 @@ class Upload_CLIBatch implements CLIBatchCommand {
                 . ($s === "" ? "" : "&offset={$this->offset}")
                 . ($eof ? "&finish=1" : ""));
             curl_setopt($clib->curlh, CURLOPT_POSTFIELDS, $s === "" ? [] : ["blob" => $s]);
+            $this->_progress_bloblen = strlen($s);
+            $clib->set_curl_progress([$this, "curl_progress"]);
             if (!$clib->exec_api([$this, "chunk_retry"])) {
                 return null;
             }
@@ -101,6 +142,7 @@ class Upload_CLIBatch implements CLIBatchCommand {
                 fwrite(STDERR, $clib->content_string);
             }
             if ($eof) {
+                $clib->progress_show($this->size, $this->size);
                 return $token;
             }
             $this->offset += $breakpos;
@@ -128,6 +170,9 @@ class Upload_CLIBatch implements CLIBatchCommand {
         if (isset($arg["no-filename"])) {
             $ucb->filename = null;
         }
+        if (isset($arg["temporary"])) {
+            $ucb->temporary = true;
+        }
         return $ucb;
     }
 
@@ -139,7 +184,8 @@ Usage: php batch/hotcrapi.php upload [-f NAME] [-m TYPE] FILE"
         )->long(
             "filename:,f: =NAME !upload Exposed name for uploaded file",
             "no-filename !upload !",
-            "mimetype:,m: =MIMETYPE !upload Type for uploaded file"
+            "mimetype:,m: =MIMETYPE !upload Type for uploaded file",
+            "temporary,temp !upload Uploaded file is temporary"
         );
         $clib->register_command("upload", "Upload_CLIBatch");
     }

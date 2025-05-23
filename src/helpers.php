@@ -586,6 +586,22 @@ function unparse_byte_size_binary($n) {
     }
 }
 
+/** @param int|float $n
+ * @return string */
+function unparse_byte_size_binary_f($n) {
+    if ($n > 1073689395) {
+        return sprintf("%.2fGiB", round($n / 10737418.24) / 100);
+    } else if ($n > 1048063) {
+        return sprintf("%.1fMiB", round($n / 104857.6) / 10);
+    } else if ($n > 10188) {
+        return sprintf("%.0fKiB", $n / 1024);
+    } else if ($n > 0) {
+        return sprintf("%.1fKiB", max(round($n / 102.4), 1) / 10);
+    } else {
+        return "0B";
+    }
+}
+
 /** @param string $t
  * @return int */
 function parse_latin_ordinal($t) {

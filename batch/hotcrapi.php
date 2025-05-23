@@ -87,6 +87,9 @@ class Hotcrapi_Batch extends MessageSet {
     /** @var int
      * @readonly */
     public $chunk = 8 << 20;
+    /** @var bool
+     * @readonly */
+    public $progress = false;
 
     /** @var CurlHandle */
     public $curlh;
@@ -112,6 +115,17 @@ class Hotcrapi_Batch extends MessageSet {
     private $_default_siteconfig;
     /** @var array<string,class-string<CLIBatchCommand>> */
     private $_subcommand_class = [];
+
+    /** @var ?int */
+    private $_progress_start_time;
+    /** @var string */
+    private $_progress_prefix = "";
+    /** @var ?int */
+    private $_progress_time;
+    /** @var bool */
+    private $_progress_active = false;
+    /** @var bool */
+    private $_progress_printed = false;
 
     function __construct() {
         $this->curlh = curl_init();
@@ -144,6 +158,14 @@ class Hotcrapi_Batch extends MessageSet {
      * @return $this */
     function set_chunk($x) {
         $this->chunk = $x;
+        return $this;
+    }
+
+    /** @param bool $x
+     * @suppress PhanAccessReadOnlyProperty
+     * @return $this */
+    function set_progress($x) {
+        $this->progress = $x;
         return $this;
     }
 
@@ -310,18 +332,102 @@ class Hotcrapi_Batch extends MessageSet {
         return $this->apitoken !== null;
     }
 
+    /** @return $this */
+    function progress_start() {
+        $this->_progress_start_time = hrtime(true);
+        return $this;
+    }
+
+    /** @param string $prefix
+     * @return $this */
+    function progress_prefix($prefix) {
+        $this->_progress_prefix = $prefix;
+        return $this;
+    }
+
+    function progress_show($amount, $max) {
+        if (!$this->progress) {
+            return;
+        }
+        $now = hrtime(true);
+        if ($this->_progress_time === null
+            ? $now - $this->_progress_start_time < 500000000
+            : $now - $this->_progress_time < 100000000) {
+            return;
+        }
+        $m = $this->_progress_printed ? "\r" : "";
+        $this->_progress_time = $now;
+        if ($max === null || $amount === null) {
+            // bounce a 3-character spaceship every 4 seconds
+            // 0 seconds: 0 spaces; 2 seconds: 40 spaces; 4 seconds: 80 spaces (= 0 spaces)
+            $mod4sec = (int) (($now - $this->_progress_start_time) / 1000) % 4000000;
+            $xsp = (int) floor($mod4sec * 80 / 4000000);
+            $sp = $xsp > 40 ? 80 - $xsp : $xsp;
+            $s = sprintf("%s%s%*s===%*s | %s\x1b[K", $m,
+                         $this->_progress_prefix,
+                         $sp, "", 40 - $sp, "",
+                         $amount === null ? "" : unparse_byte_size_binary_f($amount));
+        } else {
+            $barw = $max === 0 ? 40 : (int) round($amount / $max * 40);
+            $s = sprintf("%s%s%s%3d%% | %-40s | %s\x1b[K", $m,
+                         $this->_progress_prefix,
+                         $this->_progress_prefix === "" ? "" : " ",
+                         $max === 0 ? 100 : (int) round($amount / $max * 100),
+                         str_repeat("#", $barw),
+                         unparse_byte_size_binary_f($amount));
+        }
+        fwrite(STDERR, $s);
+        $this->_progress_printed = true;
+    }
+
+    function progress_snapshot() {
+        if ($this->_progress_printed) {
+            fwrite(STDERR, "\n");
+            $this->_progress_printed = false;
+        }
+    }
+
+    function progress_end() {
+        $this->progress_snapshot();
+        $this->_progress_start_time = $this->_progress_time = null;
+    }
+
+    /** @param callable(resource,int,int,int,int) $progressf
+     * @return $this */
+    function set_curl_progress($progressf) {
+        if ($this->progress) {
+            $curlopt = defined("CURLOPT_XFERINFOFUNCTION") ? CURLOPT_XFERINFOFUNCTION : CURLOPT_PROGRESSFUNCTION;
+            curl_setopt($this->curlh, $curlopt, $progressf);
+            curl_setopt($this->curlh, CURLOPT_NOPROGRESS, 0);
+            $this->_progress_active = true;
+        }
+        return $this;
+    }
+
     /** @param ?callable(Hotcrapi_Batch):bool $skip_function
      * @return bool */
     function exec_api($skip_function = null) {
         if ($this->verbose) {
-            fwrite(STDERR, curl_getinfo($this->curlh, CURLINFO_EFFECTIVE_URL));
+            $url = curl_getinfo($this->curlh, CURLINFO_EFFECTIVE_URL);
+            if ($this->_progress_active) {
+                $this->progress_snapshot();
+                fwrite(STDERR, "{$url}\n");
+            } else {
+                fwrite(STDERR, $url);
+            }
         }
         rewind($this->headerf);
         ftruncate($this->headerf, 0);
         $this->content_string = curl_exec($this->curlh);
+        curl_setopt($this->curlh, CURLOPT_NOPROGRESS, 1);
         $this->status_code = curl_getinfo($this->curlh, CURLINFO_RESPONSE_CODE);
         if ($this->verbose) {
-            fwrite(STDERR, ": {$this->status_code}\n");
+            if ($this->_progress_active) {
+                $this->progress_snapshot();
+                fwrite(STDERR, curl_getinfo($this->curlh, CURLINFO_EFFECTIVE_URL) . " → {$this->status_code}\n");
+            } else {
+                fwrite(STDERR, " → {$this->status_code}\n");
+            }
         }
         $this->content_json = json_decode($this->content_string);
         if (!is_object($this->content_json)) {
@@ -373,6 +479,7 @@ class Hotcrapi_Batch extends MessageSet {
             throw new CommandLineException("`-T APITOKEN` required");
         }
         $status = $this->_command->run($this);
+        $this->progress_snapshot();
         if (!$this->quiet) {
             fwrite(STDERR, $this->full_feedback_text(true));
         }
@@ -395,6 +502,8 @@ class Hotcrapi_Batch extends MessageSet {
             "F:,config: =FILE Set configuration file [~/.hotcrapi.conf]",
             "verbose,V Be verbose",
             "quiet,q Do not print error messages",
+            "no-progress Do not print progress bars",
+            "progress !",
             "chunk: =CHUNKSIZE Maximum upload chunk size [8M]"
         )->description("Interact with HotCRP site using APIs
 Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
@@ -437,6 +546,12 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
         }
         if (isset($arg["verbose"])) {
             $hcli->set_verbose(true);
+        }
+        if (isset($arg["progress"])
+            || (!isset($arg["quiet"])
+                && !isset($arg["no-progress"])
+                && posix_isatty(STDERR))) {
+            $hcli->set_progress(true);
         }
         if (isset($arg["chunk"])) {
             if (!preg_match('/\A([\d+]\.?\d*|\.\d+)([kmg]i?b?|)\z/i', $arg["chunk"], $m)) {
