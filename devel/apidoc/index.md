@@ -17,17 +17,19 @@ API calls use paths under `api`. For instance, to call the `paper` endpoint on
 a server at `https://example.hotcrp.org/funconf25`, you might use a URL like
 `https://example.hotcrp.org/funconf25/api/paper?p=1`.
 
-Parameters are provided in query strings or the request body, typically using
-[form encoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST).
-Some requests use groups of parameters to define logical objects using
-structured keys, such as `named_search/1/q`; other parameters define objects
-using JSON format. Use `multipart/form-data` encoding for requests that include
-uploaded files. Since servers limit upload size, you may need to use the upload
-API to upload a large file before processing it with another call.
+Provide parameters in query strings or the request body, typically using [form
+encoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some
+requests use groups of parameters to define logical objects using structured
+keys, such as `named_search/1/q`; other parameters define objects using JSON
+format. Use `multipart/form-data` encoding for requests that include uploaded
+files. Since servers limit upload size, you may need to use the upload API to
+upload a large file before processing it with another call.
 
 Responses are formatted as JSON. Every response has an `ok` property, which is
-`true` if the request succeeded and `false` otherwise. Messages about the
-request, if any, are expressed in a `message_list` property.
+`true` if the request format succeeded and `false` otherwise. Typically `"ok":
+false` indicates a serious error with the request that prevented proper
+processing. Messages about the request, if any, are expressed in a
+`message_list` property.
 
 `GET` operations retrieve system state and `POST` operations modify system
 state. Other operations are occasionally used when semantically meaningful—for

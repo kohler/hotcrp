@@ -28,8 +28,6 @@ class Paper_API extends MessageSet {
     /** @var ?string */
     private $docdir;
 
-    /** @var bool */
-    private $ok = true;
     /** @var list<list<string>> */
     private $change_lists = [];
     /** @var list<object> */
@@ -382,7 +380,6 @@ class Paper_API extends MessageSet {
         }
         $this->pids[] = $ps->saved_pid() ?? "new";
         $this->valid[] = $ok;
-        $this->ok = $this->ok && $ok;
     }
 
     /** @param PaperStatus $ps */
@@ -398,7 +395,6 @@ class Paper_API extends MessageSet {
     }
 
     private function execute_fail() {
-        $this->ok = false;
         $this->change_lists[] = null;
         $this->papers[] = null;
         $this->pids[] = null;
@@ -407,8 +403,9 @@ class Paper_API extends MessageSet {
 
     /** @return JsonResult */
     private function make_result() {
+        $ok = empty($this->valid) || array_find($this->valid, function ($x) { return !!$x; });
         $jr = new JsonResult([
-            "ok" => $this->ok,
+            "ok" => $ok,
             "message_list" => $this->message_list()
         ]);
         if ($this->dry_run) {
@@ -670,7 +667,6 @@ class Paper_API extends MessageSet {
             }
             $this->valid[] = $prow->delete_from_database($this->user);
         }
-        $this->ok = $this->valid[0];
         return $this->make_result();
     }
 
