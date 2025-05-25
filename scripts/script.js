@@ -5238,7 +5238,7 @@ handle_ui.on("input.js-email-populate", function () {
 
     function success(data) {
         data = data || {};
-        if (data.ok) {
+        if (data.match || (data.ok && !data.email)) {
             if (data.email) {
                 data.lemail = data.email.toLowerCase();
             } else {
@@ -5255,7 +5255,7 @@ handle_ui.on("input.js-email-populate", function () {
                 email_info.push(v, data);
             }
         }
-        if (!data.ok || data.lemail !== v) {
+        if (!data.match) {
             data = {};
         }
         if (self.value.trim() !== v
