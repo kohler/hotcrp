@@ -189,7 +189,7 @@
         "name": "paper", "get": true, "post": true,
         "function": "Paper_API::run_one",
         "parameters": "?p ?+dry_run ?+disable_users ?+add_topics ?+notify ?+notify_authors ?+reason ?+json ?forceShow",
-        "response": "?paper ?+dry_run ?+change_list ?+valid"
+        "response": "?paper ?dry_run ?change_list ?valid"
     },
     {
         "name": "paper", "delete": true, "paper": true,
@@ -216,7 +216,8 @@
     },
     {
         "name": "reauth", "post": true,
-        "function": "Session_API::reauth"
+        "function": "Session_API::reauth",
+        "parameters": "?confirm ?=reason =email ?=password ?=totpcode"
     },
     {
         "name": "requestreview", "post": true, "paper": true,
@@ -330,7 +331,7 @@
         "name": "settings", "get": true, "post": true,
         "function": "Settings_API::run",
         "parameters": "?=settings ?+dry_run ?+reset ?+filename ?+filter ?+exclude",
-        "response": "?+dry_run ?+change_list settings"
+        "response": "?dry_run ?change_list settings"
     },
     {
         "name": "shepherd", "get": true, "paper": true,
@@ -396,7 +397,7 @@
         "name": "user", "get": true,
         "function": "User_API::user",
         "parameters": "email ?p ?potential_conflict",
-        "response": "found ?email ?given_name ?family_name ?affiliation ?potential_conflict ?orcid ?country"
+        "response": "match ?email ?given_name ?family_name ?affiliation ?potential_conflict ?orcid ?country"
     },
     {
         "name": "viewoptions", "get": true,

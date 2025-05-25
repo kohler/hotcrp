@@ -121,49 +121,49 @@ Installation
 
 4. Update PHP settings.
 
-    The first three settings, `upload_max_filesize`, `post_max_size`, and
-`max_input_vars`, may be changed system-wide or in HotCRP’s `.htaccess` and
-`.user.ini` files.
+   The first three settings, `upload_max_filesize`, `post_max_size`, and
+  `max_input_vars`, may be changed system-wide or in HotCRP’s `.htaccess` and
+  `.user.ini` files.
 
-  * `upload_max_filesize`: Set to the largest file upload HotCRP should accept.
-    `15M` is a good default.
+   * `upload_max_filesize`: Set to the largest file upload HotCRP should accept.
+     `15M` is a good default.
 
-  * `post_max_size`: Set to the largest total upload HotCRP should accept. Must
-    be at least as big as `upload_max_filesize`. `20M` is a good default.
+   * `post_max_size`: Set to the largest total upload HotCRP should accept. Must
+     be at least as big as `upload_max_filesize`. `20M` is a good default.
 
-  * `max_input_vars`: Set to the largest number of distinct input variables
-    HotCRP should accept. `4096` is a good default.
+   * `max_input_vars`: Set to the largest number of distinct input variables
+     HotCRP should accept. `4096` is a good default.
 
-    The last setting, `session.gc_maxlifetime`, must be changed globally. This
-provides an upper bound on HotCRP session lifetimes (the amount of idle time
-before a user is logged out automatically). On Unix machines, systemwide PHP
-settings are often stored in `/etc/php.ini`. The suggested value for this
-setting is 86400, e.g., 24 hours:
+  The last setting, `session.gc_maxlifetime`, must be changed globally. This
+  provides an upper bound on HotCRP session lifetimes (the amount of idle time
+  before a user is logged out automatically). On Unix machines, systemwide PHP
+  settings are often stored in `/etc/php.ini`. The suggested value for this
+  setting is 86400, e.g., 24 hours:
 
         session.gc_maxlifetime = 86400
 
-    If you want sessions to expire sooner, we recommend you set
-`session.gc_maxlifetime` to 86400 anyway, then edit `conf/options.php`
-to set `$Opt["sessionLifetime"]` to the correct session timeout.
+   If you want sessions to expire sooner, we recommend you set
+   `session.gc_maxlifetime` to 86400 anyway, then edit `conf/options.php` to set
+   `$Opt["sessionLifetime"]` to the correct session timeout.
 
 5. Edit MariaDB’s my.cnf (typical locations: `/etc/mariadb/my.cnf` or
-`/etc/mariadb/mysql.conf.d/mysqld.cnf`) to ensure that MySQL can handle
-paper-sized objects.  It should contain something like this:
+   `/etc/mariadb/mysql.conf.d/mysqld.cnf`) to ensure that MySQL can handle
+   paper-sized objects.  It should contain something like this:
 
         [mysqld]
         max_allowed_packet=32M
 
-    max_allowed_packet must be at least as large as the largest paper you are
-willing to accept. It defaults to 1M on some systems, which is not nearly
-large enough. HotCRP will warn you if it is too small. Some MariaDB or MySQL
-setups, such as on Mac OS X, may not have a my.cnf by default; just create
-one. If you edit my.cnf, also restart the database server.
+   max_allowed_packet must be at least as large as the largest paper you are
+   willing to accept. It defaults to 1M on some systems, which is not nearly
+   large enough. HotCRP will warn you if it is too small. Some MariaDB or MySQL
+   setups, such as on Mac OS X, may not have a my.cnf by default; just create
+   one. If you edit my.cnf, also restart the database server.
 
-6. Enable a mail transport agent, such as Postfix or Sendmail. You may need
-help from an administrator to ensure HotCRP can send mail.
+6. Enable a mail transport agent, such as Postfix or Sendmail. You may need help
+   from an administrator to ensure HotCRP can send mail.
 
 7. Sign in to the site to create an account. The first account created
-automatically receives system administrator privilege.
+   automatically receives system administrator privilege.
 
 You can set up everything else through the web site itself.
 

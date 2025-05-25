@@ -295,7 +295,6 @@ class Comment_API {
         }
         if ($crow && $crow->commentId > 0) {
             $jr["comment"] = $crow->unparse_json($this->user, !$content);
-            $jr["cmt"] = $jr["comment"]; // XXX backward compat
         }
         return $jr;
     }

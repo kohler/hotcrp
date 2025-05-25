@@ -52,7 +52,7 @@ remain unchanged.
 
 The `p` request parameter is optional. If it is unset, HotCRP uses the `pid`
 from the supplied JSON. If both the `p` parameter and the JSON `pid` property
-are present, they must match.
+are present, then they must match.
 
 To test a modification, supply a `dry_run=1` parameter. This will test the
 uploaded JSON but make no changes to the database.
@@ -87,17 +87,17 @@ $ curl -H "Authorization: bearer hct_XXX" -F "json=<data.json" -F paper.pdf=@pap
 
 ### Responses
 
-If the modification succeeds, the response’s `paper` property contains the
-modified submission object.
+The `valid` response property is `true` if and only if the modification was
+valid. In non-dry-run requests, `"valid": true` indicates that database changes
+were committed.
 
-The `change_list` property is a list of names of the modified fields. New
+The `change_list` response property lists any modified field names. New
 submissions have `"pid"` as the first item in the list. `change_list` contains
 fields that the request *attempted* to modify; successful requests, erroneous
 requests, and dry-run requests can all return nonempty `change_list`s.
 
-The `valid` property is `true` if and only if the modification was valid. In
-non-dry-run requests, `valid: true` indicates that database changes were
-committed.
+The response returns the modified submission object `paper` property contains
+the modified submission object.
 
 Dry-run requests return `change_list` and `valid` properties, but not `paper`
 properties, since no modifications are performed.
