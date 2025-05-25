@@ -6921,14 +6921,13 @@ hotcrp.make_review_field = function (fj) {
         return new ReviewField(fj);
 };
 
-hotcrp.set_review_form = function (j) {
-    var i;
+hotcrp.set_review_form = function (rfj) {
     formj = formj || {};
-    for (i in j) {
-        formj[j[i].uid] = hotcrp.make_review_field(j[i]);
-        form_order = $.map(formj, function (v) { return v; });
-        form_order.sort(function (a, b) { return a.order - b.order; });
+    for (const j of rfj) {
+        formj[j.uid] = hotcrp.make_review_field(j);
     }
+    form_order = $.map(formj, function (v) { return v; });
+    form_order.sort(function (a, b) { return a.order - b.order; });
 };
 
 })($);
