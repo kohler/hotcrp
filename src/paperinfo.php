@@ -740,7 +740,7 @@ class PaperInfo {
     private $_desirability;
     /** @var ?list<int> */
     private $_topic_array;
-    /** @var ?array<int,float> */
+    /** @var ?array<int,int> */
     private $_topic_interest_score_array;
     /** @var ?array<int,list<int>> */
     private $_option_values;
@@ -2159,13 +2159,10 @@ class PaperInfo {
                 }
             }
         }
-        if ($score) {
-            // * Strong interest in the paper's single topic gets
-            //   score 10.
-            $score = (int) ($score / sqrt(count($topics)) * 10 + 0.5);
-        }
-        $this->_topic_interest_score_array[$contact->contactId] = $score;
-        return $score;
+        // Scale so strong interest in the paper's single topic gets score 10
+        $iscore = $score ? (int) ($score / sqrt(count($topics)) * 10 + 0.5) : 0;
+        $this->_topic_interest_score_array[$contact->contactId] = $iscore;
+        return $iscore;
     }
 
     function invalidate_topics() {
