@@ -203,10 +203,9 @@ class Tags_API {
                 $result[] = $user->reviewer_html_for($k) . " ({$v})";
             }
         }
-        if (empty($result)) {
-            return ["ok" => true, "vote_report" => ""];
-        } else {
+        if (!empty($result)) {
             return ["ok" => true, "vote_report" => '<span class="nw">' . join(',</span> <span class="nw">', $result) . '</span>'];
         }
+        return ["ok" => true, "vote_report" => ""];
     }
 }

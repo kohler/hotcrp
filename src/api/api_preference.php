@@ -30,7 +30,7 @@ class Preference_API {
         // non-viewable papers, we only return the entered preference for viewable papers.
         if (!$prow) {
             $fr = $qreq->annex("paper_whynot");
-            if (isset($fr["invalidId"]) || isset($fr["noPaper"])) {
+            if (!$fr || isset($fr["invalidId"]) || isset($fr["noPaper"])) {
                 return Conf::paper_error_json_result($fr);
             }
             if ($postpref && $fr->prow) {

@@ -9571,11 +9571,8 @@ function rp_blur() {
 }
 
 function rp_change() {
-    var self = this, pid = this.name.substr(7), data = {pref: self.value}, pos;
-    if ((pos = pid.indexOf("u")) > 0) {
-        data.u = pid.substr(pos + 1);
-        pid = pid.substr(0, pos);
-    }
+    const self = this, name = this.name.substr(7), pos = name.indexOf("u"),
+        q = pos > 0 ? {p: name.substr(0, pos), u: name.substr(pos + 1)} : {p: name};
     function success(rv) {
         minifeedback(self, rv);
         if (rv && rv.ok && rv.value != null) {
@@ -9584,8 +9581,8 @@ function rp_change() {
         }
     }
     $ajax.condition(function () {
-        $.ajax(hoturl("=api/revpref", {p: pid}), {
-            method: "POST", data: data,
+        $.ajax(hoturl("=api/revpref", q), {
+            method: "POST", data: {pref: self.value},
             success: success, trackOutstanding: true
         });
     });

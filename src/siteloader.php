@@ -27,6 +27,7 @@ class SiteLoader {
         "MessageItem" => "lib/messageset.php",
         "Numeric_ValueFormat" => "src/valueformat.php",
         "PaperInfoSet" => "src/paperinfo.php",
+        "PaperReviewPreference" => "src/paperinfo.php",
         "Present_ReviewFieldSearch" => "src/reviewfieldsearch.php",
         "QrequestFile" => "lib/qrequest.php",
         "ReviewFieldInfo" => "src/reviewfield.php",

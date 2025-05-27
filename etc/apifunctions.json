@@ -415,7 +415,7 @@
         "name": "votereport", "get": true, "paper": true,
         "function": "Tags_API::votereport_api",
         "parameters": "tag",
-        "response": "tag report"
+        "response": "vote_report"
     },
     {
         "name": "whoami", "get": true,
