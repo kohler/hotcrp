@@ -1611,8 +1611,9 @@ function hoturl(page, options) {
         tail = "#" + params.get("#");
         params.delete("#");
     }
-    if (params.size > 0) {
-        tail = "?" + params.toString() + tail;
+    const paramstr = params.toString();
+    if (paramstr !== "") {
+        tail = "?" + paramstr + tail;
     }
     return siteinfo.site_relative + x.t + tail;
 }
