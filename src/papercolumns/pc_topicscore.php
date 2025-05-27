@@ -47,12 +47,17 @@ class TopicScore_PaperColumn extends PaperColumn {
     function statistics() {
         return $this->statistics;
     }
+
+    /** @param int|float $v
+     * @return string */
     static function unparse_value($v) {
-        if (is_int($v)) {
-            return $v < 0 ? "−" /*U+2122*/ . (-$v) : (string) $v;
-        } else {
-            return $v < 0 ? sprintf("−%.2f", -$v) : sprintf("%.2f", $v);
+        if (!is_int($v)) {
+            if (abs(fmod($v, 1)) >= 0.01) {
+                return $v < 0 ? sprintf("−%.2f", -$v) : sprintf("%.2f", $v);
+            }
+            $v = (int) round($v);
         }
+        return $v < 0 ? "−" /*U+2122*/ . (-$v) : (string) $v;
     }
 
     static function expand($name, XtParams $xtp, $xfj, $m) {
