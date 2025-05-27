@@ -20,6 +20,9 @@ class SpecValidator_API {
             self::error($qreq, "POST request handled by get handler");
         }
 
+        if (!isset($uf->parameters)) {
+            return;
+        }
         $parameters = $uf->parameters ?? [];
         if (is_string($parameters)) {
             $parameters = explode(" ", trim($parameters));
@@ -70,7 +73,7 @@ class SpecValidator_API {
                     && ($n !== "redirect" || !($uf->redirect ?? false))) {
                     self::error($qreq, "query param `{$n}` unknown");
                 }
-            } else if (($t & self::F_QUERY) !== 0) {
+            } else if (($t & self::F_QUERY) === 0) {
                 self::error($qreq, "query param `{$n}` should be in body");
             }
         }
@@ -97,10 +100,11 @@ class SpecValidator_API {
     }
 
     static function response($uf, Qrequest $qreq, $jr) {
-        if (!($jr instanceof JsonResult)) {
+        if (!($jr instanceof JsonResult)
+            || !isset($uf->response)) {
             return;
         }
-        $response = $uf->response ?? [];
+        $response = $uf->response;
         if (is_string($response)) {
             $response = explode(" ", trim($response));
         }
@@ -185,9 +189,8 @@ class SpecValidator_API {
             return "file param";
         } else if (($t & self::F_BODY) !== 0) {
             return "body param";
-        } else {
-            return "query param";
         }
+        return "query param";
     }
 
     static function error(Qrequest $qreq, $error) {
