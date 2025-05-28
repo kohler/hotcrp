@@ -8,7 +8,7 @@ if (!function_exists("array_find")) {
      * @return mixed */
     function array_find($array, $callback) {
         foreach ($array as $key => $value) {
-            if ($array($value, $key)) {
+            if ($callback($value, $key)) {
                 return $value;
             }
         }
