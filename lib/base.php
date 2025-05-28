@@ -555,14 +555,6 @@ function json_encode_object_change(&$s, &$x, $k, $v, $n) {
     return true;
 }
 
-if (!function_exists("json_validate")) {
-    /** @suppress PhanRedefineFunctionInternal */
-    function json_validate($s, $depth = 512, $flags = 0) {
-        json_decode($s, null, $depth, $flags);
-        return json_last_error() === JSON_ERROR_NONE;
-    }
-}
-
 
 // array and object helpers
 
@@ -702,17 +694,6 @@ function debug_string_backtrace($ex = null, $limit = 32) {
         $s[] = "#{$frame} {$fi}{$ln}{$fn}\n";
     }
     return join("", $s);
-}
-
-
-// zlib helper
-
-if (!function_exists("zlib_get_coding_type")) {
-    /** @return bool
-     * @phan-suppress-next-line PhanRedefineFunctionInternal */
-    function zlib_get_coding_type() {
-        return false;
-    }
 }
 
 

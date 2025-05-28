@@ -1,6 +1,20 @@
 <?php
 // polyfills.php -- HotCRP GMP shim functions
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
+
+if (!function_exists("array_find")) {
+    /** @param array $array
+     * @param callable(mixed,mixed):bool $callback
+     * @return mixed */
+    function array_find($array, $callback) {
+        foreach ($array as $key => $value) {
+            if ($array($value, $key)) {
+                return $value;
+            }
+        }
+        return null;
+    }
+}
 
 if (!function_exists("str_starts_with")) {
     /** @param string $haystack
@@ -65,6 +79,14 @@ if (!function_exists("json_last_error_msg")) {
         return false;
     }
 }
+if (!function_exists("json_validate")) {
+    /** @suppress PhanRedefineFunctionInternal */
+    function json_validate($s, $depth = 512, $flags = 0) {
+        json_decode($s, null, $depth, $flags);
+        return json_last_error() === JSON_ERROR_NONE;
+    }
+}
+
 
 if (!function_exists("normalizer_normalize")) {
     function normalizer_normalize($text) {
@@ -87,5 +109,13 @@ if (!function_exists("gmp_init")) {
     }
     function gmp_scan1($a, $start) {
         return GMPShim::scan1($a, $start);
+    }
+}
+
+if (!function_exists("zlib_get_coding_type")) {
+    /** @return bool
+     * @phan-suppress-next-line PhanRedefineFunctionInternal */
+    function zlib_get_coding_type() {
+        return false;
     }
 }
