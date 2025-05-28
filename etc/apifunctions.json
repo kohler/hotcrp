@@ -217,7 +217,7 @@
     {
         "name": "reauth", "post": true,
         "function": "Session_API::reauth",
-        "parameters": "?confirm ?=reason =email ?=password ?=totpcode"
+        "parameters": "?confirm ?=reason ?=email ?=password ?=totpcode"
     },
     {
         "name": "requestreview", "post": true, "paper": true,
