@@ -15,6 +15,7 @@ class Sround_Setting {
     public $submit;
     public $grace;
     public $freeze;
+    public $deleted = false;
 
     static function make_json($jx) {
         $sr = new Sround_Setting;

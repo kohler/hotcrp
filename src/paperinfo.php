@@ -1019,8 +1019,9 @@ class PaperInfo {
     /** @param int $cid
      * @return PaperContactInfo */
     function _get_contact_info($cid) {
-        if (($ci = $this->_contact_info[$cid]) === null) {
-            $ci = $this->_contact_info[$cid] = new PaperContactInfo($this->paperId, $cid);
+        $ci =& $this->_contact_info[$cid];
+        if ($ci === null) {
+            $ci = new PaperContactInfo($this->paperId, $cid);
         }
         return $ci;
     }
