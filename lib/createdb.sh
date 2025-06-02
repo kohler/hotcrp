@@ -23,6 +23,8 @@ help () {
     echo "      --host=HOST         Specify database host."
     echo "      --grant-host=HOST   HOST is granted DB access privilege (in addition"
     echo '                          to `localhost`).'
+    echo "      --allow-all-hosts   Allow database access from any host (overrides"
+    echo "                          --grant-host and localhost restriction)."
     echo "      --no-dbuser         Do not create database user."
     echo "      --no-schema         Do not load initial schema."
     echo "      --no-setup-phase    Don't give special treatment to the first user."
@@ -72,6 +74,7 @@ minimal_options=
 mycreatedb_args=" --defaults-group-suffix=_hotcrp_createdb"
 has_host=false
 granthosts=""
+allow_all_hosts=false
 needpassword=false
 force=false
 batch=false
@@ -117,6 +120,8 @@ while [ $# -gt 0 ]; do
         minimal_options=y;;
     --replace)
         replace=true;;
+    --allow-all-hosts)
+        allow_all_hosts=true;;
     -q|--quie|--quiet)
         quiet=true; qecho=true; qecho_n=true;;
     -c|--co|--con|--conf|--confi|--config|-c*|--co=*|--con=*|--conf=*|--confi=*|--config=*)
@@ -209,14 +214,18 @@ if ! $batch; then
     else
         echo "Creating the database and database user for your conference."
     fi
-    if test -z "$granthosts"; then
+    if $allow_all_hosts; then
+        echo "* Access for the database user is allowed from ANY host."
+        echo "* WARNING: This is less secure than restricting to specific hosts."
+    elif test -z "$granthosts"; then
         echo "* Access for the database user is allowed only from the local host."
         if test "$has_host" = true; then
             echo
             echo "* Since you are running MySQL on a remote host, it will likely"
             echo "* cause problems that HotCRP is restricting the database user"
             echo "* to localhost access only. Add \`--grant-host=HOST\` arguments"
-            echo "* to also allow access from other hosts."
+            echo "* to also allow access from other hosts, or use \`--allow-all-hosts\`"
+            echo "* to allow access from any host."
         fi
     fi
     echo
@@ -394,7 +403,11 @@ if [ "$createdb" = y ]; then
     eval $MYSQLADMIN $mycreatedb_args $myargs $FLAGS --default-character-set=utf8 create $DBNAME || exit 1
 fi
 
-allhosts="localhost 127.0.0.1 localhost.localdomain$granthosts"
+if $allow_all_hosts; then
+    allhosts="%"
+else
+    allhosts="localhost 127.0.0.1 localhost.localdomain$granthosts"
+fi
 
 if [ "$createuser" = y ]; then
     $qecho "Creating $DBUSER user and password..."
