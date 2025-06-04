@@ -315,7 +315,7 @@ class Conf {
 
     function close() {
         $this->save_cdb_user_updates();
-        Dbl::close($this->dblink);
+        $this->dblink->close();
         $this->dblink = null;
     }
 
