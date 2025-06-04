@@ -237,6 +237,8 @@ class Conf {
     static public $blocked_time = 0.0;
     /** @var false|null|\mysqli */
     static private $_cdb = false;
+    /** @var ?list<Conf> */
+    static private $_conf_update_list;
 
     /** @var bool */
     static public $test_mode;
@@ -309,6 +311,12 @@ class Conf {
         if ($advance_past + 1 > Conf::$now) {
             self::set_current_time($advance_past + 1);
         }
+    }
+
+    function close() {
+        $this->save_cdb_user_updates();
+        Dbl::close($this->dblink);
+        $this->dblink = null;
     }
 
 
@@ -2910,7 +2918,11 @@ class Conf {
      * @param 0|1|2|3 $type */
     function register_cdb_user_update($user, $type) {
         if ($this->_cdb_user_update_list === null) {
-            register_shutdown_function([$this, "save_cdb_user_updates"]);
+            if (self::$_conf_update_list === null) {
+                register_shutdown_function("Conf::perform_conf_updates");
+                self::$_conf_update_list = [];
+            }
+            self::$_conf_update_list[] = $this;
             $this->_cdb_user_update_list = [];
         }
         if ($type === self::CDB_UPDATE_PROFILE) {
@@ -2922,12 +2934,23 @@ class Conf {
         }
     }
 
+    static function perform_conf_updates() {
+        $culist = self::$_conf_update_list;
+        self::$_conf_update_list = [];
+        foreach ($culist as $conf) {
+            $conf->save_cdb_user_updates();
+        }
+    }
+
     function save_cdb_user_updates() {
         $ulist = $this->_cdb_user_update_list;
         $this->_cdb_user_update_list = null;
+        while (($cuindex = array_search($this, self::$_conf_update_list ?? [], true)) !== false) {
+            array_splice(self::$_conf_update_list, $cuindex, 1);
+        }
+
         $cdb = $this->contactdb();
         $cdb_confid = $this->cdb_confid();
-
         if (empty($ulist) || !$cdb || $cdb_confid < 0) {
             return;
         }
