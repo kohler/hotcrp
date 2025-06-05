@@ -50,7 +50,7 @@ set_dbuserpass () {
 }
 
 add_granthost () {
-    if expr "$1" : '[-a-zA-Z0-9.*][-a-zA-Z0-9.*]*$' >/dev/null; then
+    if [ "$1" = "%" ] || expr "$1" : '[a-zA-Z][a-zA-Z0-9._-]*[a-zA-Z0-9]$' >/dev/null; then
         granthosts="$granthosts $1"
     else
         echo "Expected --grant-host=HOSTNAME" 1>&2
