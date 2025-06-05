@@ -37,7 +37,9 @@ class Admin_SearchTerm extends SearchTerm {
     function sqlexpr(SearchQueryInfo $sqi) {
         $sqi->add_column("managerContactId", "Paper.managerContactId");
         if ($this->user->conf->check_track_admin_sensitivity()
-            || ($this->flags & self::ALLOW_NONE)) {
+            || ($this->flags & self::ALLOW_NONE) !== 0
+            || (!$this->user->privChair
+                && $this->match !== [$this->user])) {
             return "true";
         } else if ($this->match === true) {
             return "Paper.managerContactId!=0";

@@ -3429,7 +3429,8 @@ class Contact implements JsonSerializable {
                 && ($prow->managerContactId
                     ? $prow->managerContactId === $this->contactXid
                     : !$this->privChair
-                      || !$this->conf->check_paper_track_sensitivity($prow, Track::ADMIN));
+                      || !$this->conf->check_paper_track_sensitivity($prow, Track::ADMIN)
+                      || $this->conf->check_admin_tracks($prow, $this));
         }
         return $rights->primary_administrator;
     }
