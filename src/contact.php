@@ -3405,13 +3405,12 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function has_overridable_conflict(PaperInfo $prow) {
-        if ($this->is_manager()) {
-            $rights = $this->rights($prow);
-            return $rights->allow_administer()
-                && $rights->conflicted();
-        } else {
+        if (!$this->is_manager()) {
             return false;
         }
+        $rights = $this->rights($prow);
+        return $rights->allow_administer()
+            && $rights->conflicted();
     }
 
     /** @return bool */
@@ -3439,9 +3438,8 @@ class Contact implements JsonSerializable {
     function act_pc(?PaperInfo $prow = null) {
         if ($prow) {
             return $this->rights($prow)->allow_pc();
-        } else {
-            return $this->isPC;
         }
+        return $this->isPC;
     }
 
     /** @return bool */
@@ -3960,17 +3958,16 @@ class Contact implements JsonSerializable {
             return true;
         } else if (!$this->can_view_pc()) {
             return false;
-        } else if ($prow) {
-            $rights = $this->rights($prow);
-            return $rights->allow_administer()
-                || (($rights->allow_pc() || $rights->is_reviewer())
-                    && !$this->conf->opt("hideManager"));
-        } else {
+        } else if (!$prow) {
             return ($this->isPC
                     && $this->is_explicit_manager())
                 || ($this->is_reviewer()
                     && !$this->conf->opt("hideManager"));
         }
+        $rights = $this->rights($prow);
+        return $rights->allow_administer()
+            || (($rights->allow_pc() || $rights->is_reviewer())
+                && !$this->conf->opt("hideManager"));
     }
 
     /** @return bool */

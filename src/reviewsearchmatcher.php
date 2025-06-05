@@ -308,7 +308,7 @@ class ReviewSearchMatcher extends ContactCountMatcher {
             $this->status = self::COMPLETE;
             $this->sensitivity |= self::HAS_STATUS;
         }
-        if ($this->status & self::PENDINGAPPROVAL) {
+        if (($this->status & self::PENDINGAPPROVAL) !== 0) {
             $this->apply_review_type("ext");
         }
         if ($this->has_contacts()) {

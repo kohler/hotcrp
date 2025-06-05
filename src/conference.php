@@ -313,6 +313,7 @@ class Conf {
         }
     }
 
+    /** @suppress PhanAccessReadOnlyProperty */
     function close() {
         $this->save_cdb_user_updates();
         $this->dblink->close();
