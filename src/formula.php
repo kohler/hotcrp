@@ -1701,9 +1701,6 @@ class FormulaCompiler {
                 $tx = $this->term_compiler->_addltemp($e->args[(int) $i]->compile($this->term_compiler));
                 $this->term_compiler->term_list[] = $tx;
                 $t = "\$v{$p}[{$n}]";
-            } else if ($this->term_list !== null) {
-                $this->term_error = true;
-                $t = "null";
             } else {
                 $t = $this->_addltemp($e->args[(int) $i]->compile($this));
             }
