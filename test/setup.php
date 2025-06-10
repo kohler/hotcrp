@@ -1255,7 +1255,7 @@ class TestRunner {
         $us = new UserStatus($conf->root_user());
         $ok = true;
         foreach ($json->contacts as $c) {
-            $us->set_notify(in_array("pc", $c->roles ?? []));
+            $us->set_notify(in_array("pc", $c->roles ?? [], true));
             $user = $us->save_user($c);
             if ($user) {
                 MailChecker::check_db("create-{$c->email}");

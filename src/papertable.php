@@ -224,7 +224,7 @@ class PaperTable {
         }
 
         $amode = $qreq->page();
-        assert(in_array($amode, ["paper", "review", "assign"]));
+        assert(in_array($amode, ["paper", "review", "assign"], true));
         if ($qreq->m === "edit"
             && (!$paperTable || $paperTable->mode === "edit")) {
             $amode = "edit";
@@ -2540,7 +2540,7 @@ class PaperTable {
         $hideUnviewable = ($cflttype > 0 && !$this->admin)
             || (!$user->act_pc($prow) && ($conf->setting("viewrev_ext") ?? 0) < 0);
         $show_ratings = $user->can_view_review_ratings($prow);
-        $want_scores = !in_array($this->mode, ["assign", "edit", "re"]);
+        $want_scores = !in_array($this->mode, ["assign", "edit", "re"], true);
         $want_requested_by = false;
         $score_header = array_map(function ($x) { return ""; },
                                   $conf->review_form()->forder);
@@ -2828,7 +2828,7 @@ class PaperTable {
         }
 
         // new comment
-        $nocmt = in_array($this->mode, ["assign", "contact", "edit", "re"]);
+        $nocmt = in_array($this->mode, ["assign", "contact", "edit", "re"], true);
         if (!$this->allreviewslink
             && !$nocmt
             && $this->user->new_comment_flags($prow) !== 0) {

@@ -74,7 +74,7 @@ class ReviewCSV_Batch {
             }
         }
         $this->t = $arg["t"] ?? "s";
-        if (!in_array($this->t, PaperSearch::viewable_limits($this->user, $this->t))) {
+        if (!in_array($this->t, PaperSearch::viewable_limits($this->user, $this->t), true)) {
             throw new CommandLineException("No search collection ‘{$this->t}’");
         }
         if (isset($arg["before"])) {

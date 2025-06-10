@@ -20,7 +20,7 @@ class Emoji_SearchTerm extends SearchTerm {
     function test(PaperInfo $row, $xinfo) {
         $tags = $row->viewable_tags($this->user);
         foreach ($row->conf->tags()->emoji($tags) as $code => $ts) {
-            if ($this->codes === null || in_array($code, $this->codes))
+            if ($this->codes === null || in_array($code, $this->codes, true))
                 return true;
         }
         return false;

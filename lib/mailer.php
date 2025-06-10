@@ -845,7 +845,7 @@ class Mailer {
                 $mimetext->mi->field = $lcfield;
                 $prep->append_item($mimetext->mi);
                 $logmsg = "{$lcfield}: {$text}";
-                if (!in_array($logmsg, $this->_errors_reported)) {
+                if (!in_array($logmsg, $this->_errors_reported, true)) {
                     error_log("mailer error on {$logmsg}");
                     $this->_errors_reported[] = $logmsg;
                 }

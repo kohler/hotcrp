@@ -279,11 +279,11 @@ class ReviewForm_SettingParser extends SettingParser {
                 if ($rfv->old_value !== $want_value) {
                     $fvmap[$rfv->old_value] = $want_value;
                 }
-            } else if (!in_array($want_value, $known_ids)) {
+            } else if (!in_array($want_value, $known_ids, true)) {
                 $id = $want_value;
                 $known_ids[] = $id;
             } else {
-                for ($id = 1; in_array($id, $known_ids); ++$id) {
+                for ($id = 1; in_array($id, $known_ids, true); ++$id) {
                 }
                 $known_ids[] = $id;
             }
@@ -322,7 +322,7 @@ class ReviewForm_SettingParser extends SettingParser {
             if (!$rfj->existed) {
                 $pattern = self::type_is_text($rfj->type) ? "t%02d" : "s%02d";
                 $i = 0;
-                while (in_array($rfj->id, $known_ids)) {
+                while (in_array($rfj->id, $known_ids, true)) {
                     $rfj->id = sprintf($pattern, ++$i);
                 }
                 $known_ids[] = $rfj->id;

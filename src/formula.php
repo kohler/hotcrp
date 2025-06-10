@@ -561,7 +561,7 @@ class Equality_Fexpr extends Fexpr {
 
 class Inequality_Fexpr extends Fexpr {
     function __construct($op, $e0, $e1) {
-        assert(in_array($op, ["<", ">", "<=", ">="]));
+        assert(in_array($op, ["<", ">", "<=", ">="], true));
         parent::__construct($op, [$e0, $e1]);
         $this->set_format(Fexpr::FBOOL);
     }
@@ -987,7 +987,7 @@ class Variance_Fexpr extends Aggregate_Fexpr {
     static function parse_modifier(FormulaCall $ff, $arg) {
         if (!$ff->modifier
             && strpos($ff->text, "_") === false
-            && in_array($arg, [".p", ".pop", ".s", ".samp"])) {
+            && in_array($arg, [".p", ".pop", ".s", ".samp"], true)) {
             $ff->modifier = true;
             if ($arg === ".p" || $arg === ".pop") {
                 $ff->name .= "_pop";
@@ -1616,7 +1616,7 @@ class FormulaCompiler {
 
     /** @param ReviewField $f */
     function _ensure_rrow_score($f) {
-        if (!in_array($f, $this->queryOptions["scores"] ?? [])) {
+        if (!in_array($f, $this->queryOptions["scores"] ?? [], true)) {
             $this->queryOptions["scores"][] = $f;
         }
         if ($this->check_gvar('$ensure_score_' . $f->short_id)) {

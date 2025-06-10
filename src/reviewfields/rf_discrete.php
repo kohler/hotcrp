@@ -35,7 +35,7 @@ class Discrete_ReviewFieldSearch extends ReviewFieldSearch {
     }
 
     function test_value($rrow, $fv) {
-        if (!in_array($fv ?? 0, $this->scores)) {
+        if (!in_array($fv ?? 0, $this->scores, true)) {
             if (($this->op & CountMatcher::RELALL) !== 0 && $fv !== null) {
                 $this->finished = -1;
             }

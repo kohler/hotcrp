@@ -167,7 +167,7 @@ class SearchQueryInfo {
             $f = $this->srch->conf->review_field($f);
         }
         $this->add_review_signature_columns();
-        if ($f && $f->main_storage && !in_array($f, $this->_review_scores ?? [])) {
+        if ($f && $f->main_storage && !in_array($f, $this->_review_scores ?? [], true)) {
             $this->_review_scores[] = $f;
         }
     }
@@ -404,7 +404,7 @@ class PaperSearch extends MessageSet {
     }
     /** @return bool */
     function show_submitted_status() {
-        return in_array($this->limit(), ["a", "active", "all"])
+        return in_array($this->limit(), ["a", "active", "all"], true)
             && $this->q !== "re:me";
     }
     /** @return bool */
@@ -810,7 +810,7 @@ class PaperSearch extends MessageSet {
 
 
     static private function _canonical_qt($qt) {
-        if (in_array($qt, ["ti", "ab", "au", "ac", "co", "re", "tag"])) {
+        if (in_array($qt, ["ti", "ab", "au", "ac", "co", "re", "tag"], true)) {
             return $qt;
         }
         return "n";
@@ -1251,7 +1251,8 @@ class PaperSearch extends MessageSet {
      * @return array{int,int} */
     private static function strip_show_atom($a, $top) {
         if (!$a
-            || ($a->kword && in_array($a->kword, ["show", "hide", "edit", "sort", "showsort", "editsort"]))) {
+            || ($a->kword
+                && in_array($a->kword, ["show", "hide", "edit", "sort", "showsort", "editsort"], true))) {
             return [0, 0];
         }
         if ($a->op && $a->op->type === "(" && $top && ($ch = $a->child[0] ?? null)) {
@@ -1667,14 +1668,13 @@ class PaperSearch extends MessageSet {
      * @param ?string $reqtype
      * @return string */
     static function default_limit(Contact $user, $limits, $reqtype = null) {
-        if ($reqtype && in_array($reqtype, $limits)) {
+        if ($reqtype && in_array($reqtype, $limits, true)) {
             return $reqtype;
-        } else if (in_array("active", $limits)
+        } else if (in_array("active", $limits, true)
                    && $user->conf->can_pc_view_some_incomplete()) {
             return "active";
-        } else {
-            return $limits[0] ?? "";
         }
+        return $limits[0] ?? "";
     }
 
     /** @return list<string> */

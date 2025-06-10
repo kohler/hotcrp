@@ -126,7 +126,7 @@ class API_Page {
                 header("Access-Control-Allow-Credentials: true");
                 header("Access-Control-Allow-Methods: OPTIONS, GET, HEAD, POST, DELETE");
                 header("Access-Control-Max-Age: 86400");
-            } else if (in_array($nav->page, ["cacheable", "scorechart", "images", "scripts", "stylesheets"])) {
+            } else if (in_array($nav->page, ["cacheable", "scorechart", "images", "scripts", "stylesheets"], true)) {
                 header("Access-Control-Allow-Origin: *");
                 header("Access-Control-Allow-Methods: OPTIONS, GET, HEAD");
                 header("Access-Control-Max-Age: 86400");

@@ -349,7 +349,7 @@ class Getopt {
         }
         if (!$po->subcommands) {
             $prio = 1;
-        } else if (in_array($subcommand, $po->subcommands)) {
+        } else if (in_array($subcommand, $po->subcommands, true)) {
             $prio = 0;
         } else {
             return;
@@ -473,7 +473,7 @@ class Getopt {
      * @return bool */
     private function subcommand_match($po, $subcommand) {
         if ($po->subcommands
-            && !in_array($subcommand, $po->subcommands)) {
+            && !in_array($subcommand, $po->subcommands, true)) {
             foreach ($po->subcommands as $sc) {
                 if (isset($this->subcommand[$sc]))
                     return false;

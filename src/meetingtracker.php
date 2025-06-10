@@ -894,9 +894,9 @@ class MeetingTracker_Permissionizer {
         for ($i = 0; $i !== count($requirements); ) {
             $req = $requirements[$i];
             if ($req === $perms
-                || (count($req) === 1 && in_array($req[0], $perms))) {
+                || (count($req) === 1 && in_array($req[0], $perms, true))) {
                 return;
-            } else if ($nperms === 1 && in_array($perms[0], $req)) {
+            } else if ($nperms === 1 && in_array($perms[0], $req, true)) {
                 array_splice($requirements, $i, 1);
             } else {
                 ++$i;

@@ -274,7 +274,7 @@ class Options_SettingParser extends SettingParser {
             } else {
                 $sel = [$curt->name => $curt->title, "_sep" => null];
                 foreach ($types as $t) {
-                    if (in_array($t->name, $conversions))
+                    if (in_array($t->name, $conversions, true))
                         $sel[$t->name] = $t->title;
                 }
                 $content = $sv->select("sf/{$this->ctr}/type", $sel);
@@ -456,12 +456,12 @@ class Options_SettingParser extends SettingParser {
             echo Ht::hidden("sf/{$ctr}/template", $sv->reqstr("sf/{$ctr}/template"));
         }
         $props = $this->typej->properties ?? ["common"];
-        $has_common = in_array("common", $props);
+        $has_common = in_array("common", $props, true);
         foreach ($sv->cs()->members("submissionfield/properties") as $j) {
             $prop = substr($j->name, strlen($j->group) + 1);
-            if (in_array($prop, ["name", "type", "actions"])
+            if (in_array($prop, ["name", "type", "actions"], true)
                 || ($has_common && ($j->common ?? false))
-                || in_array($prop, $props)) {
+                || in_array($prop, $props, true)) {
                 $sv->print($j->name);
             }
         }
@@ -626,7 +626,7 @@ class Options_SettingParser extends SettingParser {
 
     private function _apply_req_values(Si $si, Sf_Setting $fs, SettingValues $sv) {
         $jtype = $sv->conf->option_type($sv->vstr("sf/{$si->name1}/type"));
-        if (!$jtype || !in_array("values", $jtype->properties ?? [])) {
+        if (!$jtype || !in_array("values", $jtype->properties ?? [], true)) {
             return;
         }
         $fpfx = "sf/{$si->name1}";
@@ -673,11 +673,11 @@ class Options_SettingParser extends SettingParser {
                 if ($sfv->old_value !== $want_value) {
                     $renumberings[$sfv->old_value] = $want_value;
                 }
-            } else if (!in_array($want_value, $known_ids)) {
+            } else if (!in_array($want_value, $known_ids, true)) {
                 $id = $want_value;
                 $known_ids[] = $id;
             } else {
-                for ($id = 1; in_array($id, $known_ids); ++$id) {
+                for ($id = 1; in_array($id, $known_ids, true); ++$id) {
                 }
                 $known_ids[] = $id;
             }
@@ -829,7 +829,7 @@ class Options_SettingParser extends SettingParser {
                 continue;
             }
             $mname = $msi->storage_name();
-            if (!in_array($mname, $isfsj->properties)) {
+            if (!in_array($mname, $isfsj->properties, true)) {
                 if ($sfs->$mname !== $osfs->$mname) {
                     $sv->error_at($msi, "<0>This property cannot be configured");
                 }

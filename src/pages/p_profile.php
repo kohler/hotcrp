@@ -88,7 +88,7 @@ class Profile_Page {
             $this->qreq->u = $this->qreq->user ? : $this->qreq->contact;
         }
         if (($p = $this->qreq->path_component(0)) !== null) {
-            if (in_array($p, ["", "me", "self", "new", "bulk"])
+            if (in_array($p, ["", "me", "self", "new", "bulk"], true)
                 || strpos($p, "@") !== false
                 || !$this->ustatus->cs()->might_exist($p)) {
                 if ($this->qreq->u === null) {
@@ -439,14 +439,14 @@ class Profile_Page {
         $xcj = [];
         if ($this->page_type !== 0) {
             $roles = $this->ustatus->jval->roles ?? [];
-            if (in_array("chair", $roles)) {
+            if (in_array("chair", $roles, true)) {
                 $xcj["pctype"] = "chair";
-            } else if (in_array("pc", $roles)) {
+            } else if (in_array("pc", $roles, true)) {
                 $xcj["pctype"] = "pc";
             } else {
                 $xcj["pctype"] = "none";
             }
-            if (in_array("sysadmin", $roles)) {
+            if (in_array("sysadmin", $roles, true)) {
                 $xcj["ass"] = 1;
             }
             $xcj["contactTags"] = join(" ", $this->ustatus->jval->tags ?? []);
@@ -629,7 +629,7 @@ class Profile_Page {
         if ($this->viewer->privChair
             && $this->page_type !== 0
             && empty($this->ustatus->jval->roles)) {
-            if (in_array($this->qreq->role, ["pc", "chair"])) {
+            if (in_array($this->qreq->role, ["pc", "chair"], true)) {
                 $this->qreq->pctype = $this->qreq->role;
             } else if ($this->qreq->role === "sysadmin") {
                 $this->qreq->ass = "1";

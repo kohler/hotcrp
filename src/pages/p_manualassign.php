@@ -306,7 +306,7 @@ class ManualAssign_Page {
         $overrides = $this->viewer->add_overrides(Contact::OVERRIDE_CONFLICT);
 
         $this->limits = PaperSearch::viewable_manager_limits($this->viewer);
-        if (!$this->qreq->t || !in_array($this->qreq->t, $this->limits)) {
+        if (!$this->qreq->t || !in_array($this->qreq->t, $this->limits, true)) {
             $this->qreq->t = $this->limits[0];
         }
         if (!$this->qreq->q || trim($this->qreq->q) == "(All)") {

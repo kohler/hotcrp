@@ -353,7 +353,7 @@ class JsonParser {
             if (($this->flags & (self::JSON5 | self::JSON_EXTENDED_WHITESPACE)) !== 0
                 && ($ch < 0x20 || $ch >= 0xC2)) {
                 $ch = UnicodeHelper::utf8_ord($s, $pos);
-                if (in_array($ch, self::$json5_additional_whitespace)) {
+                if (in_array($ch, self::$json5_additional_whitespace, true)) {
                     $pos += UnicodeHelper::utf8_chrlen($ch);
                     continue;
                 }

@@ -37,7 +37,7 @@ class ReviewRequestSearchMatcher extends ContactCountMatcher {
 
     function test_review_request(Contact $user, PaperInfo $prow, ReviewRequestInfo $rqrow) {
         if (($this->round !== null
-             && !in_array($rqrow->reviewRound, $this->round))
+             && !in_array($rqrow->reviewRound, $this->round, true))
             || !$user->can_view_review_identity($prow, $rqrow)
             || ($this->has_contacts()
                 && !$this->test_contact($rqrow->contactId))

@@ -63,7 +63,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
                 }
             } else {
                 $removepred = function ($item) use ($dlist) {
-                    return in_array($item->_decision, $dlist);
+                    return in_array($item->_decision, $dlist, true);
                 };
             }
         } else if (!$this->remove) {

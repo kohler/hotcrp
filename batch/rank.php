@@ -39,7 +39,7 @@ class Rank_Batch {
     /** @param array<string,mixed> $arg */
     function __construct($arg) {
         if (isset($arg["m"])) {
-            if (in_array($arg["m"], PaperRank::method_list())) {
+            if (in_array($arg["m"], PaperRank::method_list(), true)) {
                 $this->method = $arg["m"];
             } else {
                 throw new CommandLineException("No such `--method`");

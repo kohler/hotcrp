@@ -43,7 +43,7 @@ class Pref_Fexpr extends Fexpr {
         $cid = $state->loop_cid(!$this->cids);
         $condition = "isset({$pref}[{$cid}])";
         if ($this->cids) {
-            $condition .= " && in_array({$cid}, [" . join(",", $this->cids) . "])";
+            $condition .= " && in_array({$cid}, [" . join(",", $this->cids) . "], true)";
         }
         $property = $this->is_expertise ? "expertise" : "preference";
         return "({$condition} ? {$pref}[{$cid}]->{$property} : null)";

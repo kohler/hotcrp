@@ -234,7 +234,7 @@ class Status_Assigner extends Assigner {
 
         // email reviewers
         foreach ($prow->reviewers_as_display() as $minic) {
-            if (!in_array($minic->contactId, $sent)
+            if (!in_array($minic->contactId, $sent, true)
                 && $minic->following_reviews($prow, CommentInfo::CT_TOPIC_PAPER)
                 && ($p = HotCRPMailer::prepare_to($minic, "@withdrawreviewer", $rest))) {
                 if (!$minic->can_view_review_identity($prow, null)) {
@@ -249,7 +249,7 @@ class Status_Assigner extends Assigner {
         if ($this->item->pre("_submitted") > 0
             && !$prow->submission_round()->time_submit(true)) {
             foreach ($prow->late_withdrawal_followers() as $minic) {
-                if (!in_array($minic->contactId, $sent)
+                if (!in_array($minic->contactId, $sent, true)
                     && ($p = HotCRPMailer::prepare_to($minic, $tmpl, $rest))) {
                     $preps[] = $p;
                     $sent[] = $minic->contactId;

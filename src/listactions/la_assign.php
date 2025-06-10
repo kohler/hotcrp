@@ -31,7 +31,10 @@ class Assign_ListAction extends ListAction {
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $mt = $qreq->assignfn;
         if ($mt === "auto") {
-            $t = in_array($qreq->t, ["accepted", "s"]) ? $qreq->t : "all";
+            $t = $qreq->t;
+            if ($t !== "s" && $t !== "accepted") {
+                $t = "all";
+            }
             $q = join("+", $ssel->selection());
             $user->conf->redirect_hoturl("autoassign", "q={$q}&t={$t}&pap={$q}");
         }
@@ -51,7 +54,7 @@ class Assign_ListAction extends ListAction {
 
         if (!in_array($mt, ["lead", "shepherd", "conflict", "clearconflict",
                             "optionalreview", "pcreview" /* backward compat */,
-                            "secondaryreview", "primaryreview", "clearreview"])) {
+                            "secondaryreview", "primaryreview", "clearreview"], true)) {
             return JsonResult::make_parameter_error("assignfn", "<0>Unknown assignment type");
         }
 

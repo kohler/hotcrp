@@ -238,7 +238,7 @@ class PaperStatus extends MessageSet {
                 continue;
             }
             if (($o = $this->conf->options()->option_by_key($mi->field))) {
-                if ($oids !== null && !in_array($o->id, $oids)) {
+                if ($oids !== null && !in_array($o->id, $oids, true)) {
                     continue;
                 }
                 $link = Ht::link(htmlspecialchars($o->edit_title()), "#" . $o->readable_formid());
@@ -579,7 +579,7 @@ class PaperStatus extends MessageSet {
         } else if ($v !== null) {
             $this->syntax_error_at("status:withdraw_reason");
         }
-        if (in_array($istatusstr, ["submitted", "accepted", "accept", "deskrejected", "desk_reject", "deskreject", "rejected", "reject"])) {
+        if (in_array($istatusstr, ["submitted", "accepted", "accept", "deskrejected", "desk_reject", "deskreject", "rejected", "reject"], true)) {
             $xstatus->submitted = $xstatus->submitted ?? true;
             $xstatus->draft = $xstatus->draft ?? false;
             $xstatus->withdrawn = $xstatus->withdrawn ?? false;
@@ -684,7 +684,7 @@ class PaperStatus extends MessageSet {
             if (isset($xpj->$k)
                 || isset($ikeys[$k])
                 || isset($xstatus->$k)
-                || in_array($k, ["object", "pid", "id", "options", "status", "decision", "reviews", "comments", "tags", "submission_class"])
+                || in_array($k, ["object", "pid", "id", "options", "status", "decision", "reviews", "comments", "tags", "submission_class"], true)
                 || $k[0] === "_"
                 || $k[0] === "\$") {
                 continue;
@@ -712,7 +712,7 @@ class PaperStatus extends MessageSet {
 
     /** @param PaperOption $field */
     function change_at($field) {
-        if (!in_array($field, $this->_fdiffs)) {
+        if (!in_array($field, $this->_fdiffs, true)) {
             $this->_fdiffs[] = $field;
         }
         if (!$this->_documents_changed && $field->has_document()) {
@@ -725,7 +725,7 @@ class PaperStatus extends MessageSet {
 
     /** @param 'status'|'final_status'|'decision' $field */
     private function status_change_at($field) {
-        if (!in_array($field, $this->_xdiffs)) {
+        if (!in_array($field, $this->_xdiffs, true)) {
             $this->_xdiffs[] = $field;
         }
     }
@@ -744,13 +744,13 @@ class PaperStatus extends MessageSet {
      * @return bool */
     function has_change_at($field) {
         if (!is_string($field)) {
-            return in_array($field, $this->_fdiffs);
+            return in_array($field, $this->_fdiffs, true);
         }
-        if (in_array($field, $this->_xdiffs)) {
+        if (in_array($field, $this->_xdiffs, true)) {
             return true;
         }
         foreach ($this->conf->find_all_fields($field, Conf::MFLAG_OPTION) as $f) {
-            if (in_array($f, $this->_fdiffs))
+            if (in_array($f, $this->_fdiffs, true))
                 return true;
         }
         return false;
@@ -1049,7 +1049,7 @@ class PaperStatus extends MessageSet {
     private function _apply_primary_authors() {
         // must apply authors to distinguish actual authors from
         // leftover primaryContactId markers
-        if (!in_array(PaperOption::AUTHORSID, $this->prow->overridden_option_ids())) {
+        if (!in_array(PaperOption::AUTHORSID, $this->prow->overridden_option_ids(), true)) {
             $ov = $this->prow->force_option(PaperOption::AUTHORSID);
             /** @phan-suppress-next-line PhanUndeclaredMethod */
             $ov->option->value_save_conflict_values($ov, $this);

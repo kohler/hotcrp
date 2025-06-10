@@ -271,7 +271,7 @@ class SiteLoader {
         $root = $root ?? self::$root;
         for ($i = 0; $i !== count($Opt["include"]); ++$i) {
             foreach (self::expand_includes($root, $Opt["include"][$i]) as $f) {
-                if (!in_array($f, $Opt["loaded"])) {
+                if (!in_array($f, $Opt["loaded"], true)) {
                     self::read_options_file($f);
                 }
             }

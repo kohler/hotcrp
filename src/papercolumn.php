@@ -899,7 +899,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         if ($this->format_field->view_score <= $bound) {
             return false;
         }
-        if ($visible && !in_array($this->format_field, $pl->qopts["scores"] ?? [])) {
+        if ($visible && !in_array($this->format_field, $pl->qopts["scores"] ?? [], true)) {
             $pl->qopts["scores"][] = $this->format_field;
         }
         parent::prepare($pl, $visible);

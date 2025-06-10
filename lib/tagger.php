@@ -86,7 +86,7 @@ class TagInfo {
             return $l2;
         }
         foreach ($l2 as $x) {
-            if (!in_array($x, $l1))
+            if (!in_array($x, $l1, true))
                 $l1[] = $x;
         }
         return $l1;
@@ -353,7 +353,7 @@ class TagAnno implements JsonSerializable {
         }
         if ($this->_props !== null) {
             foreach ($this->_props as $k => $v) {
-                if (!in_array($k, ["pos", "annoid", "tag", "tagval", "blank", "legend", "format"]))
+                if (!in_array($k, ["pos", "annoid", "tag", "tagval", "blank", "legend", "format"], true))
                     $j[$k] = $v;
             }
         }
@@ -1000,7 +1000,7 @@ class TagMap {
             }
             foreach ($t->styles as $ks) {
                 if (($ks->styleflags & $stylematch) !== 0
-                    && !in_array($ks, $kss))
+                    && !in_array($ks, $kss, true))
                     $kss[] = $ks;
             }
         }

@@ -24,7 +24,8 @@ class Authors_PaperOption extends PaperOption {
         $au = [];
         foreach (PaperInfo::parse_author_list($ov->data() ?? "") as $auth) {
             $au[] = $j = (object) $auth->unparse_nea_json();
-            if ($auth->email !== "" && in_array(strtolower($auth->email), $lemails)) {
+            if ($auth->email !== ""
+                && in_array(strtolower($auth->email), $lemails, true)) {
                 $j->contact = true;
             }
         }

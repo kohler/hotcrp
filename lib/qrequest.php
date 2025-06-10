@@ -540,20 +540,21 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
      * @return ?bool */
     function xt_allow($e) {
         if ($e === "post") {
-            return $this->_post_ok && $this->_method === "POST";
+            return $this->_post_ok
+                && $this->_method === "POST";
         } else if ($e === "anypost") {
             return $this->_method === "POST";
         } else if ($e === "getpost") {
-            return in_array($this->_method, ["POST", "GET", "HEAD"]) && $this->_post_ok;
+            return $this->_post_ok
+                && in_array($this->_method, ["POST", "GET", "HEAD"], true);
         } else if ($e === "get") {
             return $this->_method === "GET";
         } else if ($e === "head") {
             return $this->_method === "HEAD";
         } else if (str_starts_with($e, "req.")) {
             return $this->has(substr($e, 4));
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param ?NavigationState $nav */

@@ -154,7 +154,7 @@ class FormatSpec {
             if (is_associative_array($pages)) {
                 return $pages[$pageno] ?? false;
             } else {
-                return !in_array($pageno, $pages);
+                return !in_array($pageno, $pages, true);
             }
         } else if (is_int($pages)) {
             return $pages != $pageno;

@@ -308,7 +308,7 @@ class Users_Page {
                     || $tagfn === "d") {
                     $us->jval->change_tags[] = "-" . Tagger::tv_tag($t);
                 }
-                if (($tagfn === "s" && in_array($u->contactId, $this->papersel))
+                if (($tagfn === "s" && in_array($u->contactId, $this->papersel, true))
                     || $tagfn === "a") {
                     $us->jval->change_tags[] = $t;
                 }
@@ -386,7 +386,7 @@ class Users_Page {
             return $this->viewer->privChair
                 && $qreq->valid_post()
                 && !empty($this->papersel)
-                && in_array($qreq->tagfn, ["a", "d", "s"])
+                && in_array($qreq->tagfn, ["a", "d", "s"], true)
                 && $this->handle_tags();
         }
         if ($qreq->redisplay) {
@@ -455,7 +455,7 @@ class Users_Page {
         if (!empty($viewable_fields)) {
             $ss = [];
             foreach (ScoreInfo::score_sort_selector_options() as $k => $v) {
-                if (in_array($k, ["average", "variance", "maxmin"]))
+                if (in_array($k, ["average", "variance", "maxmin"], true))
                     $ss[$k] = $v;
             }
             echo '<tr><td colspan="3"><hr class="g"><b>Sort scores by:</b> &nbsp;',

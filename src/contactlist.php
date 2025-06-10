@@ -330,7 +330,7 @@ class ContactList {
         if ($col->order >= self::FIELD_SCORE
             && ($f = $this->_rfields[$col->order - self::FIELD_SCORE] ?? null)) {
             $this->qopt["reviews"] = true;
-            if (!in_array($f, $this->_wfields)) {
+            if (!in_array($f, $this->_wfields, true)) {
                 $this->_wfields[] = $f;
             }
         }
@@ -660,7 +660,7 @@ class ContactList {
 
     private function collect_paper_data() {
         $limit = $this->limit;
-        $review_limit = in_array($limit, ["re", "req", "ext", "extsub", "extrev-not-accepted", "all"]) ? $limit : null;
+        $review_limit = in_array($limit, ["re", "req", "ext", "extsub", "extrev-not-accepted", "all"], true) ? $limit : null;
 
         $args = [];
         if (isset($this->qopt["papers"])) {

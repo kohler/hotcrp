@@ -277,8 +277,9 @@ class UpdateEmojiCodes_Batch {
         $pref = $emoji->preferred_codes ?? [];
         foreach ((array) $emoji->emoji as $code => $text) {
             if (!isset($codes[$text])
-                || (!in_array($codes[$text], $pref)
-                    && (in_array($code, $pref) || strlen($code) < strlen($codes[$text]))))
+                || (!in_array($codes[$text], $pref, true)
+                    && (in_array($code, $pref, true)
+                        || strlen($code) < strlen($codes[$text]))))
                 $codes[$text] = $code;
         }
         return $codes;
@@ -290,9 +291,9 @@ class UpdateEmojiCodes_Batch {
         $pref = $emoji->preferred_codes ?? [];
         foreach ((array) $emoji->emoji as $code => $text) {
             if (!isset($codes[$text])
-                || in_array($code, $pref)) {
+                || in_array($code, $pref, true)) {
                 $codes[$text] = [$code];
-            } else if (!in_array($codes[$text][0], $pref)) {
+            } else if (!in_array($codes[$text][0], $pref, true)) {
                 $codes[$text][] = $code;
             }
         }

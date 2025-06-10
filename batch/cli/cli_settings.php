@@ -91,7 +91,8 @@ class Settings_CLIBatch implements CLIBatchCommand {
 
         $mode = "fetch";
         $argi = 0;
-        if ($argi < $argc && in_array($argv[$argi], ["fetch", "save", "test"])) {
+        if ($argi < $argc
+            && in_array($argv[$argi], ["fetch", "save", "test"], true)) {
             $mode = $argv[$argi];
             ++$argi;
         }

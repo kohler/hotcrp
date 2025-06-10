@@ -99,7 +99,7 @@ class SettingInfoSet {
      * @param bool $members */
     private function _assign_pages($gj, $pages, $members) {
         if (strpos($gj->group, "/") === false
-            && !in_array($gj->group, $pages)) {
+            && !in_array($gj->group, $pages, true)) {
             $pages[] = $gj->group;
         }
         foreach ($gj->settings ?? [] as $s) {

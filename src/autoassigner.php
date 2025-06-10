@@ -236,7 +236,7 @@ abstract class Autoassigner extends MessageSet {
     function avoid_coassignment($cid1, $cid2) {
         assert($cid1 > 0 && $cid2 > 0);
         if ($cid1 !== $cid2
-            && !in_array($cid2, $this->avoid_lists[$cid1] ?? [])) {
+            && !in_array($cid2, $this->avoid_lists[$cid1] ?? [], true)) {
             $this->avoid_lists[$cid1][] = $cid2;
             $this->avoid_lists[$cid2][] = $cid1;
         }
@@ -400,7 +400,7 @@ abstract class Autoassigner extends MessageSet {
 
     /** @param string $column */
     function set_computed_assignment_column($column) {
-        assert(in_array($column, ["preference", "expertise", "topic_score", "unhappiness", "name"]));
+        assert(in_array($column, ["preference", "expertise", "topic_score", "unhappiness", "name"], true));
         /** @phan-suppress-next-line PhanTypeMismatchArgumentProbablyReal */
         $this->set_assignment_column($column, new AutoassignerComputed);
     }
@@ -1072,7 +1072,7 @@ abstract class Autoassigner extends MessageSet {
      * @return bool */
     private function mcmf_assignment_conflicts($acp, $cid, $pid) {
         foreach ($this->avoid_lists[$cid] as $cid2) {
-            if (in_array($pid, $acp[$cid2] ?? []))
+            if (in_array($pid, $acp[$cid2] ?? [], true))
                 return true;
         }
         return false;
@@ -1092,7 +1092,7 @@ abstract class Autoassigner extends MessageSet {
                 $pids = $acp[$cid] ?? [];
                 foreach ($this->ainfo[$cid] as $a) {
                     if ($a->eass === self::ENEWASSIGN
-                        && !in_array($a->pid, $pids)) {
+                        && !in_array($a->pid, $pids, true)) {
                         $this->unassign1($ac, $a->pid);
                         $changed = true;
                     }

@@ -220,7 +220,7 @@ class ReviewPrefs_Page {
         }
         if (isset($qreq->fn)
             && !str_starts_with($qreq->fn, "get/")
-            && !in_array($qreq->fn, ["uploadpref", "tryuploadpref", "applyuploadpref", "setpref", "saveprefs"])) {
+            && !in_array($qreq->fn, ["uploadpref", "tryuploadpref", "applyuploadpref", "setpref", "saveprefs"], true)) {
             unset($qreq->fn);
         }
 

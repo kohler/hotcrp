@@ -57,7 +57,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
             return new PaperPDF_SearchTerm($srch, $dtype, true, false);
         } else if ($lword === "bad" || $lword === "problem") {
             return new PaperPDF_SearchTerm($srch, $dtype, true, true);
-        } else if (in_array($lword, $errf) || $lword === "error") {
+        } else if (in_array($lword, $errf, true) || $lword === "error") {
             return new PaperPDF_SearchTerm($srch, $dtype, true, true, $lword);
         } else {
             $srch->lwarning($sword, "<0>Format error not found");
@@ -130,7 +130,7 @@ class PaperPDF_SearchTerm extends SearchTerm {
             }
             $errf = $this->cf->problem_fields();
             if (empty($errf) === $this->format_problem
-                || ($this->format_errf && !in_array($this->format_errf, $errf))) {
+                || ($this->format_errf && !in_array($this->format_errf, $errf, true))) {
                 return false;
             }
         }

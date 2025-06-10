@@ -917,7 +917,7 @@ abstract class DiscreteValues_ReviewField extends Discrete_ReviewField {
     static function check_none($s) {
         if ($s === "" || $s[0] === "(" || $s === "undefined") {
             return null;
-        } else if (in_array(strtolower($s), ["none", "n/a", "0", "-", "–", "—", "no entry", "empty"])
+        } else if (in_array(strtolower($s), ["none", "n/a", "0", "-", "–", "—", "no entry", "empty"], true)
                    || substr_compare($s, "none ", 0, 5, true) === 0) {
             return 0;
         } else {

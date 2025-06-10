@@ -215,7 +215,8 @@ class Paper_CLIBatch implements CLIBatchCommand {
 
         $mode = "fetch";
         $argi = 0;
-        if ($argi < $argc && in_array($argv[$argi], ["fetch", "save", "test", "delete"])) {
+        if ($argi < $argc
+            && in_array($argv[$argi], ["fetch", "save", "test", "delete"], true)) {
             $mode = $argv[$argi];
             ++$argi;
         }

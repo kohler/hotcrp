@@ -1304,7 +1304,7 @@ class SettingValues extends MessageSet {
             $vp = [1, $value];
         }
         $this->_savedv[$sn] = $vp;
-        if ($si->is_top() && !in_array($si, $this->_saveable_si)) {
+        if ($si->is_top() && !in_array($si, $this->_saveable_si, true)) {
             $this->_saveable_si[] = $si;
         }
     }
@@ -1611,7 +1611,7 @@ class SettingValues extends MessageSet {
 
     /** @param Si $si */
     function request_store_value($si) {
-        if (!in_array($si, $this->_store_value_si)) {
+        if (!in_array($si, $this->_store_value_si, true)) {
             $this->_store_value_si[] = $si;
         }
     }
@@ -1809,7 +1809,7 @@ class SettingValues extends MessageSet {
         if (isset($js["fold_values"]) && !empty($js["fold_values"])) {
             $fv = $js["fold_values"];
             assert(is_array($fv));
-            $fold = "fold" . (in_array($this->vstr($si->name), $fv) ? "o" : "c");
+            $fold = "fold" . (in_array($this->vstr($si->name), $fv, true) ? "o" : "c");
             $xjs["class"] = Ht::add_tokens($xjs["class"], "has-fold {$fold}");
             $xjs["data-fold-values"] = join(" ", $fv);
         }

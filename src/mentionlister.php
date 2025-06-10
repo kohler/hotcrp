@@ -114,7 +114,7 @@ class MentionLister {
         $au->contactId = $prow->shepherdContactId;
         $au->status = Author::STATUS_ANONYMOUS_REVIEWER;
         $this->lists["reviewers"][] = $au;
-        if (!in_array($prow->shepherdContactId, $this->rcids)
+        if (!in_array($prow->shepherdContactId, $this->rcids, true)
             && $user->can_view_shepherd($prow)
             && ($shepherd = $user->conf->user_by_id($prow->shepherdContactId, USER_SLICE))
             && !$shepherd->is_dormant()) {
@@ -128,7 +128,7 @@ class MentionLister {
      * @param int $cvis */
     private function add_commenters($prow, $user, $cvis) {
         foreach ($prow->viewable_comment_skeletons($user) as $crow) {
-            if (!in_array($crow->contactId, $this->rcids)
+            if (!in_array($crow->contactId, $this->rcids, true)
                 && $user->can_view_comment_identity($prow, $crow)
                 && ($commenter = $crow->commenter())
                 && !$commenter->is_dormant()) {
@@ -163,7 +163,7 @@ class MentionLister {
                 $x = [$skey => $n];
                 if ($isau) {
                     $x["au"] = true;
-                    if (in_array($n, $aunames)) { // duplicate contact names are common
+                    if (in_array($n, $aunames, true)) { // duplicate contact names are common
                         continue;
                     }
                     $aunames[] = $n;

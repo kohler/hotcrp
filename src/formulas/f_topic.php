@@ -38,16 +38,15 @@ class Topic_Fexpr extends Fexpr {
             return "count({$texpr})";
         } else if ($this->match === []) {
             return "false";
+        }
+        $none = $this->match[0] === 0;
+        $ts = $none ? array_slice($this->match, 1) : $this->match;
+        if ($ts === []) {
+            return "empty({$texpr})";
+        } else if (count($ts) === 1) {
+            return ($none ? "!" : "") . "in_array({$ts[0]}, {$texpr}, true)";
         } else {
-            $none = $this->match[0] === 0;
-            $ts = $none ? array_slice($this->match, 1) : $this->match;
-            if ($ts === []) {
-                return "empty({$texpr})";
-            } else if (count($ts) === 1) {
-                return ($none ? "!" : "") . "in_array({$ts[0]},{$texpr})";
-            } else {
-                return ($none ? "empty" : "count") . "(array_intersect({$texpr}," . json_encode($ts) . "))";
-            }
+            return ($none ? "empty" : "count") . "(array_intersect({$texpr}," . json_encode($ts) . "))";
         }
     }
 }

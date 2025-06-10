@@ -46,15 +46,14 @@ class Follow_AssignmentParser extends AssignmentParser {
     }
     static function parse_follow($s) {
         $s = strtolower(trim($s));
-        if (in_array($s, ["yes", "follow", "follows", "true"])) {
+        if (in_array($s, ["yes", "follow", "follows", "true"], true)) {
             return Contact::WATCH_REVIEW_EXPLICIT | Contact::WATCH_REVIEW;
-        } else if (in_array($s, ["no", "unfollow", "unfollows", "block", "blocks", "false"])) {
+        } else if (in_array($s, ["no", "unfollow", "unfollows", "block", "blocks", "false"], true)) {
             return Contact::WATCH_REVIEW_EXPLICIT;
         } else if ($s === "default" || $s === "clear") {
             return 0;
-        } else {
-            return false;
         }
+        return false;
     }
     function make_follow_state($req, AssignmentState $state) {
         $s = trim((string) $req["following"]);

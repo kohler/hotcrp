@@ -21,7 +21,7 @@ class Color_SearchTerm extends SearchTerm {
         $tags = $row->viewable_tags($this->user);
         $styles = $row->conf->tags()->styles($tags, 0, true);
         return !empty($styles)
-            && ($this->word === "any" || in_array($this->word, $styles));
+            && ($this->word === "any" || in_array($this->word, $styles, true));
     }
     function debug_json() {
         return ["type" => $this->type, "style" => $this->word];

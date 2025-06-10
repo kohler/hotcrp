@@ -336,7 +336,7 @@ class AuthorMatcher extends Author {
         foreach ($am_words as $w) { // $am_words contains no alternates
             $aw = $wordinfo[$w] ?? null;
             $weak = $aw && isset($aw->weak) && $aw->weak;
-            $saw_w = in_array($w, $m[0]);
+            $saw_w = in_array($w, $m[0], true);
             if (!$saw_w && $aw && isset($aw->alternate)) {
                 // We didn't see a requested word; did we see one of its alternates?
                 foreach ($aw->alternate as $alt) {
@@ -351,7 +351,7 @@ class AuthorMatcher extends Author {
                     $saw_w = true;
                     $altws = explode(" ", $alt);
                     foreach ($altws as $altw) {
-                        if ($altw !== "" && !in_array($altw, $m[0])) {
+                        if ($altw !== "" && !in_array($altw, $m[0], true)) {
                             $saw_w = false;
                             break;
                         }
@@ -377,7 +377,7 @@ class AuthorMatcher extends Author {
                     $syncws = explode(" ", $syncws);
                     $has_any_syncs = false;
                     foreach ($syncws as $syncw) {
-                        if ($syncw !== "" && in_array($syncw, $am_words)) {
+                        if ($syncw !== "" && in_array($syncw, $am_words, true)) {
                             $has_any_syncs = true;
                             break;
                         }
@@ -385,7 +385,7 @@ class AuthorMatcher extends Author {
                     if ($has_any_syncs) {
                         $saw_w = false;
                         foreach ($syncws as $syncw) {
-                            if ($syncw !== "" && in_array($syncw, $m[0])) {
+                            if ($syncw !== "" && in_array($syncw, $m[0], true)) {
                                 $saw_w = true;
                                 break;
                             }
@@ -393,7 +393,7 @@ class AuthorMatcher extends Author {
                     } else {
                         $saw_w = true;
                         foreach ($syncws as $syncw) {
-                            if ($syncw !== "" && in_array($syncw, $m[0])) {
+                            if ($syncw !== "" && in_array($syncw, $m[0], true)) {
                                 $saw_w = false;
                                 break;
                             }
@@ -420,7 +420,7 @@ class AuthorMatcher extends Author {
      * @return bool */
     private static function match_if($iftext, $ws) {
         foreach (explode(" ", $iftext) as $w) {
-            if ($w !== "" && !in_array($w, $ws))
+            if ($w !== "" && !in_array($w, $ws, true))
                 return false;
         }
         return true;

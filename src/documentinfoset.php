@@ -94,18 +94,19 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             }
             while ($slash !== false) {
                 $dir = substr($fn, 0, $slash);
-                if (in_array($dir, $this->ufn)) {
+                if (in_array($dir, $this->ufn, true)) {
                     return $this->_add_fail($doc, $fn);
-                } else if (!in_array($dir, $this->_dirfn ?? [])) {
+                }
+                if (!in_array($dir, $this->_dirfn ?? [], true)) {
                     $this->_dirfn[] = $dir;
                 }
                 $slash = strpos($fn, "/", $slash + 1);
             }
-            if ($this->_dirfn !== null && in_array($fn, $this->_dirfn)) {
+            if ($this->_dirfn !== null && in_array($fn, $this->_dirfn, true)) {
                 return $this->_add_fail($doc, $fn);
             }
         }
-        while ($fn !== "" && in_array($fn, $this->ufn)) {
+        while ($fn !== "" && in_array($fn, $this->ufn, true)) {
             if (preg_match('/\A(.*\()(\d+)(\)(?:\.\w+|))\z/', $fn, $m)) {
                 $fn = $m[1] . ((int) $m[2] + 1) . $m[3];
             } else if (preg_match('/\A(.*?)(\.\w+|)\z/', $fn, $m) && $m[1] !== "") {
@@ -186,7 +187,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     function offsetExists($offset) {
         return is_int($offset)
             ? isset($this->docs[$offset])
-            : $offset !== "" && in_array($offset, $this->ufn);
+            : $offset !== "" && in_array($offset, $this->ufn, true);
     }
     #[\ReturnTypeWillChange]
     /** @param int|string $offset

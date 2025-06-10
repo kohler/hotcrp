@@ -2949,7 +2949,7 @@ class PaperInfo {
             if ($rrow->contactId == $cid
                 || ($rev_tokens
                     && $rrow->reviewToken
-                    && in_array($rrow->reviewToken, $rev_tokens))) {
+                    && in_array($rrow->reviewToken, $rev_tokens, true))) {
                 $rrows[] = $rrow;
             }
         }

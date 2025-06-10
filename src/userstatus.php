@@ -487,7 +487,7 @@ class UserStatus extends MessageSet {
      * @return ?int */
     static function parse_follow_bit($s) {
         foreach (self::$follow_keywords as $b => $ns) {
-            if (in_array($s, $ns))
+            if (in_array($s, $ns, true))
                 return $b;
         }
         return null;
@@ -1526,9 +1526,9 @@ class UserStatus extends MessageSet {
     static function pc_role_text($cj) {
         if (isset($cj->roles)) {
             assert(is_array($cj->roles) && !is_associative_array($cj->roles));
-            if (in_array("chair", $cj->roles)) {
+            if (in_array("chair", $cj->roles, true)) {
                 return "chair";
-            } else if (in_array("pc", $cj->roles)) {
+            } else if (in_array("pc", $cj->roles, true)) {
                 return "pc";
             }
         }
@@ -1710,7 +1710,7 @@ class UserStatus extends MessageSet {
             $pcrole = $cpcrole = "none";
         }
         if (isset($us->qreq->pctype)
-            && in_array($us->qreq->pctype, ["chair", "pc", "none"])) {
+            && in_array($us->qreq->pctype, ["chair", "pc", "none"], true)) {
             $pcrole = $us->qreq->pctype;
         }
         $diffclass = $us->user->email ? "" : " ignore-diff";

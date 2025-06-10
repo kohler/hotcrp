@@ -68,19 +68,17 @@ class Conflict_AssignmentParser extends AssignmentParser {
         if ($this->remove) {
             $min = $this->iscontact ? CONFLICT_CONTACTAUTHOR : CONFLICT_MAXUNCONFLICTED + 1;
             return new CountMatcher(">=$min");
-        } else if (!$this->iscontact
-                   && ($pos = strpos((string) $req["conflict"], ":")) !== false) {
+        }
+        if (!$this->iscontact
+            && ($pos = strpos((string) $req["conflict"], ":")) !== false) {
             $x = strtolower(substr($req["conflict"], 0, $pos));
-            if (in_array($x, ["", "any", "all", "y", "yes", "conflict", "conflicted"])) {
+            if (in_array($x, ["", "any", "all", "y", "yes", "conflict", "conflicted"], true)) {
                 return new CountMatcher(">" . CONFLICT_MAXUNCONFLICTED);
             } else if (($ct = $conf->conflict_set()->parse_assignment($x, 0)) !== false) {
                 return new CountMatcher("=" . $ct);
-            } else {
-                return null;
             }
-        } else {
-            return null;
         }
+        return null;
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         $matcher = $this->_matcher($req, $state->conf);
@@ -88,9 +86,8 @@ class Conflict_AssignmentParser extends AssignmentParser {
             $m = $state->query(new Conflict_Assignable($prow->paperId, null));
             $cids = array_map(function ($x) { return $x->cid; }, $m);
             return $state->users_by_id($cids);
-        } else {
-            return null;
         }
+        return null;
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         return $contact->contactId != 0;

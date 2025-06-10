@@ -2123,7 +2123,7 @@ class Contact implements JsonSerializable {
             $this->updateTime = Conf::$now;
         }
         if ($this->_aucollab_matchers
-            && in_array($prop, ["firstName", "lastName", "email", "affiliation"])) {
+            && in_array($prop, ["firstName", "lastName", "email", "affiliation"], true)) {
             $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
         }
         if ($prop === "roles" || $prop === "cflags") {
@@ -3085,12 +3085,12 @@ class Contact implements JsonSerializable {
                     $search = new PaperSearch($this, "re:pending-approval OR (has:proposal admin:me) HIGHLIGHT:pink re:pending-my-approval HIGHLIGHT:green re:pending-approval HIGHLIGHT:yellow (has:proposal admin:me)");
                     if (($hmap = $search->highlights_by_paper_id())) {
                         $colors = call_user_func_array("array_merge", array_values($hmap));
-                        if (in_array("pink", $colors)) {
+                        if (in_array("pink", $colors, true)) {
                             $this->_has_approvable |= 3;
-                        } else if (in_array("green", $colors)) {
+                        } else if (in_array("green", $colors, true)) {
                             $this->_has_approvable |= 1;
                         }
-                        if (in_array("yellow", $colors)) {
+                        if (in_array("yellow", $colors, true)) {
                             $this->_has_approvable |= 4;
                         }
                     }

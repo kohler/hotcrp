@@ -46,7 +46,7 @@ class ScoreInfo {
     /** @param ?string $x
      * @return null|'counts'|'average'|'median'|'variance'|'maxmin'|'my' */
     static function parse_score_sort($x) {
-        if ($x === null || in_array($x, self::$score_sorts)) {
+        if ($x === null || in_array($x, self::$score_sorts, true)) {
             return $x;
         }
         return ViewOptionSchema::validate_enum($x, self::$score_sort_enum);

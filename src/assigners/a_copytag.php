@@ -82,7 +82,7 @@ class CopyTag_AssignmentParser extends UserlessAssignmentParser {
         $value = trim((string) $req["tag_value"]);
         if ($value === "" || $value === "old") {
             $this->value = "old";
-        } else if (in_array($value, ["new", "min", "max", "sum"])) {
+        } else if (in_array($value, ["new", "min", "max", "sum"], true)) {
             $this->value = $value;
         } else {
             $state->error("<0>Tag value should be ‘old’, ‘new’, ‘min’, ‘max’, or ‘sum’");

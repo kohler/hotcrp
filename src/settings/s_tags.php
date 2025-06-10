@@ -43,7 +43,7 @@ class Tags_SettingParser extends SettingParser {
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
-        if (in_array($si->name, ["tag_hidden", "tag_readonly", "tag_sitewide", "tag_vote_approval"])) {
+        if (in_array($si->name, ["tag_hidden", "tag_readonly", "tag_sitewide", "tag_vote_approval"], true)) {
             $sv->set_oldv($si->name, self::render_tags(self::sorted_settings_for($sv->conf->tags(), $si)));
         } else if ($si->name === "tag_vote_allotment") {
             $x = [];

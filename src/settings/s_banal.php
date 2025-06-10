@@ -40,7 +40,7 @@ class Banal_SettingParser extends SettingParser {
         $ctr = $sv->search_oblist("format", "id", $id);
 
         $open = $sv->vstr("format/{$ctr}/active") > 0;
-        $uropen = !in_array($sv->vstr("format/{$ctr}/pagelimit"), ["", "any", "N/A"]);
+        $uropen = !in_array((string) $sv->vstr("format/{$ctr}/pagelimit"), ["", "any", "N/A"], true);
         $editable = $sv->editable("format/{$ctr}");
         echo Ht::hidden("has_format", 1),
             Ht::hidden("format/{$ctr}/id", $id);

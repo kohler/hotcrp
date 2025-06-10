@@ -68,7 +68,7 @@ class SpecValidator_API {
         $param = [];
         foreach (array_keys($_GET) as $n) {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
-                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_"])
+                if (!in_array($n, ["post", "base", "fn", "forceShow", "cap", "actas", "smsg", "_"], true)
                     && ($n !== "p" || !($uf->paper ?? false))
                     && ($n !== "redirect" || !($uf->redirect ?? false))) {
                     self::error($qreq, "query param `{$n}` unknown");
@@ -138,7 +138,7 @@ class SpecValidator_API {
         }
         foreach (array_keys($jr->content) as $n) {
             if (($t = self::lookup_type($n, $known, $has_suffix)) === null) {
-                if (!in_array($n, ["ok", "message_list"])) {
+                if (!in_array($n, ["ok", "message_list"], true)) {
                     self::error($qreq, "response component `{$n}` unknown");
                 }
             }

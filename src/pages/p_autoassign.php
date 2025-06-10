@@ -45,7 +45,7 @@ class Autoassign_Page {
             $qreq->t = "all";
         }
         $limits = PaperSearch::viewable_manager_limits($this->user);
-        if (!isset($qreq->t) || !in_array($qreq->t, $limits)) {
+        if (!isset($qreq->t) || !in_array($qreq->t, $limits, true)) {
             $qreq->t = $limits[0];
         }
         if (!isset($qreq->q) || trim($qreq->q) === "(All)") {
@@ -157,7 +157,7 @@ class Autoassign_Page {
         $x["a"] = $this->qreq->a ?? "review";
         $pfx = $x["a"] . ":";
         foreach ($this->qreq as $k => $v) {
-            if (in_array($k, ["q", "t", "a", "badpairs"])
+            if (in_array($k, ["q", "t", "a", "badpairs"], true)
                 || str_starts_with($k, "pcc")
                 || (str_starts_with($k, "bp")
                     && $v !== "none")

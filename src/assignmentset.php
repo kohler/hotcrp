@@ -448,7 +448,9 @@ class AssignmentState extends MessageSet {
     function prow($pid) {
         $p = $this->prows[$pid] ?? null;
         if (!$p) {
-            assert(!empty($this->pid_attempts) && ($this->pid_attempts[0] === -1 || in_array($pid, $this->pid_attempts)));
+            assert(!empty($this->pid_attempts)
+                   && ($this->pid_attempts[0] === -1
+                       || in_array((int) $pid, $this->pid_attempts, true)));
         }
         return $p;
     }
@@ -1562,7 +1564,7 @@ class AssignmentSet {
             }
             if (count($defaults) == 1) {
                 $def_action = $this->astate->defaults["action"] = $defaults[0];
-                if (in_array($defaults[0], ["lead", "shepherd", "manager"])) {
+                if (in_array($defaults[0], ["lead", "shepherd", "manager"], true)) {
                     $csv->add_synonym("user", $defaults[0]);
                 }
             }

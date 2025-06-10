@@ -94,7 +94,7 @@ class FailureReason extends Exception
     function count() {
         $n = 0;
         foreach ($this->_a as $k => $v) {
-            if (!in_array($k, ["paperId", "reviewId", "option", "override", "forceShow", "listViewable", "expand"]))
+            if (!in_array($k, ["paperId", "reviewId", "option", "override", "forceShow", "listViewable", "expand"], true))
                 ++$n;
         }
         return $n;
@@ -125,7 +125,7 @@ class FailureReason extends Exception
             $fr->prow = $this->prow;
         }
         foreach ($this->_a as $k => $v) {
-            if ($k === "paperId" || in_array($k, $offsets))
+            if ($k === "paperId" || in_array($k, $offsets, true))
                 $fr->_a[$k] = $v;
         }
         return $fr;

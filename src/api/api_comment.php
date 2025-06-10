@@ -118,7 +118,7 @@ class Comment_API {
         $suser = $this->user;
         if (($token = $qreq->review_token)
             && ($token = decode_token($token, "V"))
-            && in_array($token, $this->user->review_tokens())
+            && in_array($token, $this->user->review_tokens(), true)
             && ($rrow = $this->prow->review_by_token($token))) {
             $suser = $this->conf->user_by_id($rrow->contactId);
         }

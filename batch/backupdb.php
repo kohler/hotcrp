@@ -231,11 +231,11 @@ class BackupDB_Batch {
         $input = $arg["input"] ?? null;
         $output = $arg["output"] ?? null;
         if ($input !== null
-            && in_array($this->subcommand, [self::S3_LIST, self::S3_GET, self::S3_RESTORE])) {
+            && in_array($this->subcommand, [self::S3_LIST, self::S3_GET, self::S3_RESTORE], true)) {
             $this->throw_error("Mode incompatible with `-i`");
         }
         if ($output !== null
-            && in_array($this->subcommand, [self::RESTORE, self::S3_LIST, self::S3_PUT, self::S3_RESTORE])) {
+            && in_array($this->subcommand, [self::RESTORE, self::S3_LIST, self::S3_PUT, self::S3_RESTORE], true)) {
             $this->throw_error("Mode incompatible with `-o`");
         }
 

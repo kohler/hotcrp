@@ -707,7 +707,7 @@ class Conf {
 
         // check passwordHashMethod
         if (isset($this->opt["passwordHashMethod"])
-            && !in_array($this->opt["passwordHashMethod"], password_algos())) {
+            && !in_array($this->opt["passwordHashMethod"], password_algos(), true)) {
             unset($this->opt["passwordHashMethod"]);
         }
 
@@ -5342,7 +5342,7 @@ class Conf {
                 foreach ($paper->reviews_as_display() as $rrow) {
                     if ($rrow->reviewType === REVIEW_EXTERNAL
                         && !$rrow->reviewToken
-                        && !in_array($rrow->contactId, $ercids)) {
+                        && !in_array($rrow->contactId, $ercids, true)) {
                         $erlist[] = $this->user_json(null, $rrow->reviewer(), $flags);
                         $ercids[] = $rrow->contactId;
                     }

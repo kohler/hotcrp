@@ -1357,7 +1357,7 @@ class ReviewInfo implements JsonSerializable {
         foreach (get_object_vars($this) as $k => $v) {
             if ($k[0] !== "_"
                 && $v !== null
-                && !in_array($k, ["conf", "prow", "sfields", "tfields", "fields"])
+                && !in_array($k, ["conf", "prow", "sfields", "tfields", "fields"], true)
                 && strlen($k) > 3) {
                 $j[$k] = $v;
             }

@@ -57,7 +57,8 @@ class CheckInvariants_Batch {
     /** @param string $problem
      * @return bool */
     function want_fix($problem) {
-        return in_array($problem, $this->fix) || in_array("all", $this->fix);
+        return in_array($problem, $this->fix, true)
+            || in_array("all", $this->fix, true);
     }
 
     /** @param string $report */

@@ -37,7 +37,8 @@ class Settings_Batch {
         $argc = count($argv);
         $mode = "fetch";
         $argi = 0;
-        if ($argi < $argc && in_array($argv[$argi], ["fetch", "save", "diff", "test"])) {
+        if ($argi < $argc
+            && in_array($argv[$argi], ["fetch", "save", "diff", "test"], true)) {
             $mode = $argv[$argi];
             ++$argi;
         }

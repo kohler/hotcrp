@@ -259,7 +259,7 @@ abstract class SearchTerm {
                     $hl = $qehl;
                 } else {
                     foreach ($qehl as $h) {
-                        if (!in_array($h, $hl)) {
+                        if (!in_array($h, $hl, true)) {
                             $hl[] = $h;
                         }
                     }
@@ -937,7 +937,7 @@ class Then_SearchTerm extends Op_SearchTerm {
         }
         $hl = isset($match->float["hl"]) ? $match->highlight_list($row) : [];
         for ($i = $this->nthen; $i !== count($this->child); ++$i) {
-            if (!in_array($this->_colors[$i - $this->nthen], $hl)
+            if (!in_array($this->_colors[$i - $this->nthen], $hl, true)
                 && $this->child[$i]->test($row, null)) {
                 $hl[] = $this->_colors[$i - $this->nthen];
             }
@@ -1236,7 +1236,7 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     function paper_requirements(&$options) {
-        if (in_array($this->limit, ["reviewable", "ar", "r", "rout"])) {
+        if (in_array($this->limit, ["reviewable", "ar", "r", "rout"], true)) {
             $options["reviewSignatures"] = true;
         }
     }
@@ -1426,7 +1426,7 @@ class Limit_SearchTerm extends SearchTerm {
                 || !$user->can_view_decision($row);
         case "dec":
             $outcome = $user->can_view_decision($row) ? $row->outcome : 0;
-            return in_array($outcome, $this->xlist);
+            return in_array($outcome, $this->xlist, true);
         case "unsub":
             return $row->timeSubmitted <= 0 && $row->timeWithdrawn <= 0;
         case "lead":
@@ -1449,7 +1449,7 @@ class Limit_SearchTerm extends SearchTerm {
     }
 
     function about() {
-        if (in_array($this->limit, ["viewable", "reviewable", "ar", "r", "rout", "req"])) {
+        if (in_array($this->limit, ["viewable", "reviewable", "ar", "r", "rout", "req"], true)) {
             return self::ABOUT_REVIEW_SET;
         }
         return self::ABOUT_PAPER;

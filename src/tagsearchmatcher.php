@@ -77,7 +77,7 @@ class TagSearchMatcher {
             }
             if ($this->user->can_view_some_peruser_tag()) {
                 $xcids = $cids;
-            } else if (in_array($this->user->contactId, $cids)) {
+            } else if (in_array($this->user->contactId, $cids, true)) {
                 $xcids = [$this->user->contactId];
             } else {
                 $this->_errors[] = "<0>You can’t search other users’ twiddle tags";

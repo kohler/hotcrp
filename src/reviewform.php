@@ -124,7 +124,7 @@ class ReviewForm {
         foreach ($this->viewable_fields($user) as $f) {
             if (!($f instanceof Text_ReviewField)
                 && $f->search_keyword()) {
-                if (in_array($f, $hfs)) {
+                if (in_array($f, $hfs, true)) {
                     array_splice($fs, $hpos, 0, [$f]);
                     ++$hpos;
                 } else {

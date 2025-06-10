@@ -139,15 +139,15 @@ class ManageEmail_Page {
             ->list();
         $actions = $jr->content["actions"] ?? [];
         $nactions = 0;
-        if (in_array("transferreview", $actions)) {
+        if (in_array("transferreview", $actions, true)) {
             $this->choose_transferreview();
             ++$nactions;
         }
-        if (in_array("link", $actions)) {
+        if (in_array("link", $actions, true)) {
             $this->choose_link();
             ++$nactions;
         }
-        if (in_array("unlink", $actions)) {
+        if (in_array("unlink", $actions, true)) {
             $this->choose_unlink();
             ++$nactions;
         }

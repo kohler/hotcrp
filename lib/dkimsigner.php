@@ -28,7 +28,7 @@ class DKIMSigner {
      * @return $this */
     function add_signed_header($header) {
         $header = strtolower($header);
-        if (!in_array($header, $this->h)) {
+        if (!in_array($header, $this->h, true)) {
             $this->h[] = $header;
         }
         return $this;

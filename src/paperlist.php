@@ -346,7 +346,7 @@ class PaperList {
         $this->_reviewer_user = $search->reviewer_user();
         $this->_rowset = $args["rowset"] ?? null;
 
-        if (in_array($qreq->linkto, ["paper", "assign", "paperedit", "finishreview"])) {
+        if (in_array($qreq->linkto, ["paper", "assign", "paperedit", "finishreview"], true)) {
             $vol = (new ViewOptionList)->add("page", $qreq->linkto);
             $this->set_view("linkto", true, self::VIEWORIGIN_REQUEST, $vol);
         }
@@ -935,7 +935,8 @@ class PaperList {
             return $x;
         }
         foreach ($this->_sortcol as $s) {
-            if (($s->sort_subset === null || in_array($a->_search_group, $s->sort_subset))
+            if (($s->sort_subset === null
+                 || in_array($a->_search_group, $s->sort_subset, true))
                 && ($x = $s->compare($a, $b, $this))) {
                 return ($x < 0) === $s->sort_descending ? 1 : -1;
             }
@@ -2161,7 +2162,7 @@ class PaperList {
         $rows = $this->rowset();
         if ($rows->is_empty()) {
             $m = "No matches";
-            if (!in_array($this->search->limit(), ["s", "all", "active", "viewable"])) {
+            if (!in_array($this->search->limit(), ["s", "all", "active", "viewable"], true)) {
                 $ld = PaperSearch::limit_description($this->conf, $this->search->limit(), new FmtArg("full", true), new FmtArg("lcfirst", true));
                 $m .= " in " . lcfirst(Ftext::as(0, $ld, 0));
             }

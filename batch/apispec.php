@@ -410,7 +410,7 @@ class APISpec_Batch {
         foreach ($parameters as $p) {
             list($name, $f) = self::parse_field_name($p);
             if ($name !== ""
-                && (empty($only) || in_array($name, $only))) {
+                && (empty($only) || in_array($name, $only, true))) {
                 $this->add_field($name, $f);
             }
         }
@@ -452,7 +452,7 @@ class APISpec_Batch {
     /** @param string $name
      * @return object */
     private function reference_common_schema($name) {
-        if (in_array($name, ["string", "number", "integer", "boolean", "null"])) {
+        if (in_array($name, ["string", "number", "integer", "boolean", "null"], true)) {
             return (object) ["type" => $name];
         } else if ($name === "nonnegative_integer") {
             return (object) ["type" => "integer", "minimum" => 0];
@@ -667,7 +667,7 @@ class APISpec_Batch {
             }
             if ($m[1] === "response_schema") {
                 if ($this->reference_common_schema($m[2])) {
-                    if (!in_array($m[2], $this->cur_fieldsch)) {
+                    if (!in_array($m[2], $this->cur_fieldsch, true)) {
                         $this->cur_fieldsch[] = $m[2];
                     }
                 } else {
@@ -732,7 +732,7 @@ class APISpec_Batch {
             return $f & self::F_REQUIRED ? "q" : "q.opt";
         } else if ((($name === "redirect" || $name === "forceShow")
                     && $f === 0)
-                   || (in_array($name, ["t", "qt", "reviewer", "sort", "scoresort"])
+                   || (in_array($name, ["t", "qt", "reviewer", "sort", "scoresort"], true)
                        && $query_plausible
                        && ($f & self::F_REQUIRED) === 0)) {
             return $name;
@@ -899,14 +899,14 @@ class APISpec_Batch {
 
         foreach ($xreq as $p) {
             if (isset($bprop[$p])
-                && !in_array($p, $breq)
-                && !in_array($p, $ignore)) {
+                && !in_array($p, $breq, true)
+                && !in_array($p, $ignore, true)) {
                 fwrite(STDERR, $this->cur_prefix("\$required") . $this->cur_field_description() . " `{$p}` expected optional\n");
             }
         }
         foreach ($breq as $p) {
-            if (!in_array($p, $ignore)
-                && !in_array($p, $xreq)) {
+            if (!in_array($p, $ignore, true)
+                && !in_array($p, $xreq, true)) {
                 $xreq[] = $p;
             }
         }

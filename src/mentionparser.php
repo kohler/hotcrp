@@ -143,7 +143,7 @@ class MentionParser {
             $uset = $matchuids = [];
             foreach ($ulists as $listindex => $ulist) {
                 foreach ($ulist as $u) {
-                    if (in_array($u->contactId, $matchuids)) {
+                    if (in_array($u->contactId, $matchuids, true)) {
                         continue;
                     }
                     // check name

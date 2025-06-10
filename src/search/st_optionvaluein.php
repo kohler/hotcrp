@@ -39,7 +39,7 @@ class OptionValueIn_SearchTerm extends Option_SearchTerm {
             && ($ov = $row->option($this->option))) {
             $vl = $ov->value_list();
             foreach ($this->values as $v) {
-                if (in_array($v, $vl))
+                if (in_array($v, $vl, true))
                     return true;
             }
         }

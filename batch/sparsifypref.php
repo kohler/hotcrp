@@ -41,7 +41,7 @@ class SparsifyPref_Batch {
         }
         $epid = $eaction = $euser = $epref = null;
         foreach ($req as $i => $t) {
-            if (in_array($t, ["pid", "paperid", "paper_id", "paper", "action", "email", "user", "preference", "pref", "revpref"])) {
+            if (in_array($t, ["pid", "paperid", "paper_id", "paper", "action", "email", "user", "preference", "pref", "revpref"], true)) {
                 $csvp->set_header($req);
                 $csvp->next_list();
                 break;

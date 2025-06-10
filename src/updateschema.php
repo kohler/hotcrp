@@ -62,7 +62,7 @@ class UpdateSchema {
             if (in_array($row->fieldName, ["overAllMerit", "technicalMerit", "novelty",
                                     "grammar", "reviewerQualification", "potential",
                                     "fixability", "interestToCommunity", "longevity",
-                                    "likelyPresentation", "suitableForShort"])) {
+                                    "likelyPresentation", "suitableForShort"], true)) {
                 $field->options = [];
                 if ((int) $row->levelChar > 1) {
                     $field->option_letter = (int) $row->levelChar;
@@ -305,7 +305,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         $indexes = Dbl::fetch_first_columns($this->conf->dblink, "select distinct index_name from information_schema.statistics where table_schema=database() and `table_name`='$table'");
         $drops = [];
         foreach (is_array($key) ? $key : [$key] as $k) {
-            if (in_array($k, $indexes))
+            if (in_array($k, $indexes, true))
                 $drops[] = ($k === "PRIMARY" ? "drop primary key" : "drop key `$k`");
         }
         if (count($drops)) {
@@ -731,7 +731,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                     $fj->visibility = "au";
                 } else if ($fj->view_score === "authordec") {
                     $fj->visibility = "audec";
-                } else if (in_array($fj->view_score, ["secret", "admin", "pc", "audec", "au"])) {
+                } else if (in_array($fj->view_score, ["secret", "admin", "pc", "audec", "au"], true)) {
                     $fj->visibility = $fj->view_score;
                 } else {
                     error_log("{$this->conf->dbname}: review_form.{$fj->id}.view_score not found");
@@ -959,7 +959,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                     $diff = true;
                 }
                 if (isset($v->selector)
-                    && in_array($v->type ?? "", ["dropdown", "radio"])) {
+                    && in_array($v->type ?? "", ["dropdown", "radio"], true)) {
                     $v->values = $v->values ?? $v->selector;
                     unset($v->selector);
                     $diff = true;
