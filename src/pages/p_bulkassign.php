@@ -122,8 +122,11 @@ class BulkAssign_Page {
     function complete_assignment($callback) {
         if (isset($this->qreq->data)) {
             $content = $this->qreq->data;
+        } else if (isset($this->qreq->data_source)
+                   && ($ds = $this->conf->docstore())) {
+            $content = $ds->open_tempfile($this->qreq->data_source, "bulkassign-%s.csv");
         } else {
-            $content = Filer::check_docstore_tempfile($this->qreq->data_source, "bulkassign-%s.csv", $this->conf);
+            $content = null;
         }
         if (!$content) {
             return false;

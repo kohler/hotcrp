@@ -414,14 +414,14 @@ class Downloader {
         // using SameSite cookies!
         if ($this->_content_file !== null
             && ($dar = Conf::$main->opt("docstoreAccelRedirect"))
-            && ($dsp = Filer::docstore_fixed_prefix(Conf::$main->docstore()))
+            && ($ds = Conf::$main->docstore())
             && !$this->no_accel
             && !$this->head) {
-            assert(str_ends_with($dsp, "/"));
-            if (str_starts_with($this->_content_file, $dsp)
-                && strlen($this->_content_file) > strlen($dsp)
-                && $this->_content_file[strlen($dsp)] !== "/") {
-                $this->_content_redirect = "{$dar}" . substr($this->_content_file, strlen($dsp));
+            $dsroot = $ds->root();
+            if (str_starts_with($this->_content_file, $dsroot)
+                && strlen($this->_content_file) > strlen($dsroot)
+                && $this->_content_file[strlen($dsroot)] !== "/") {
+                $this->_content_redirect = "{$dar}" . substr($this->_content_file, strlen($dsroot));
                 $this->_content_file = null;
             }
         }

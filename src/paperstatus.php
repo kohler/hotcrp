@@ -509,11 +509,11 @@ class PaperStatus extends MessageSet {
     /** @return ?string */
     private function _upload_content_stream($f, $mimetype, PaperOption $o) {
         $content_file = null;
-        $fp = "upf-" . time() . "-%08d" . Mimetype::extension($mimetype);
-        if (($x = Filer::tempfile($fp, $this->conf))) {
-            $ok = stream_copy_to_stream($f, $x[0]) !== false;
-            fclose($x[0]);
-            $content_file = $ok ? $x[1] : null;
+        $template = "upf-%s" . Mimetype::extension($mimetype);
+        if (($finfo = Filer::create_tempfile($this->conf->docstore_tempdir(), $template))) {
+            $ok = stream_copy_to_stream($f, $finfo[1]) !== false;
+            fclose($finfo[1]);
+            $content_file = $ok ? $finfo[0] : null;
         }
         fclose($f);
         return $content_file;

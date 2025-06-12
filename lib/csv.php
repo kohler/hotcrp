@@ -1061,9 +1061,12 @@ class CsvGenerator {
             $this->stream = false;
             if (($this->flags & self::FLAG_EMIT_LIVE) !== 0) {
                 $this->stream = fopen("php://output", "wb");
-            } else if (($x = Filer::tempfile("csvtmp-" . time() . "-%08d.csv", Conf::$main))) {
-                $this->stream = $x[0];
-                $this->stream_filename = $x[1];
+            } else {
+                $tempdir = Conf::$main ? Conf::$main->docstore_tempdir() : null;
+                if (($finfo = Filer::create_tempfile($tempdir, "csvtmp-%s.csv"))) {
+                    $this->stream_filename = $finfo[0];
+                    $this->stream = $finfo[1];
+                }
             }
         }
         if ($this->stream === false) {

@@ -27,9 +27,8 @@ To determine the filename for a document, HotCRP expands `%` escapes in
 
 A full `$Opt["docstore"]` setting must include a full hash (`%H` or `%h`). If
 `$Opt["docstore"]` does not include a `%` sign, then HotCRP automatically
-appends `/%h%x` to the setting value, and if `$Opt["docstore"]` is `true`,
-HotCRP uses `docs/%h%x`. Relative paths are interpreted relative to the HotCRP
-installation directory.
+appends `/%h%x`, and if `$Opt["docstore"]` is `true`, HotCRP uses `docs/%h%x`.
+Relative paths are interpreted relative to the HotCRP installation directory.
 
 The HotCRP PHP server must have read and write permission to the document
 store. `php-fpm` and/or `httpd` typically own the docstore directory, or they

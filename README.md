@@ -41,8 +41,8 @@ software:
 * Poppler’s version of pdftohtml, https://poppler.freedesktop.org/ (only
   required for format checking)
 
-You may need to install additional packages, such as php82, php82-fpm,
-php82-intl, php82-mysqlnd, zip, poppler-utils, and sendmail or postfix.
+You may need to install additional packages, such as php84, php84-fpm,
+php84-intl, php84-mysqlnd, zip, poppler-utils, and sendmail or postfix.
 
 
 Installation

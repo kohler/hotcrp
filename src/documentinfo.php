@@ -722,10 +722,16 @@ class DocumentInfo implements JsonSerializable {
         }
     }
 
+    /** @return ?string */
+    private function docstore_path($flags) {
+        $ds = $this->conf->docstore();
+        return $ds ? $ds->path_for($this, $flags) : null;
+    }
+
     /** @return bool */
     private function load_docstore() {
         if (!$this->has_hash()
-            || !($path = Filer::docstore_path($this, Filer::FPATH_EXISTS))) {
+            || !($path = $this->docstore_path(Docstore::FPATH_EXISTS))) {
             return false;
         }
         if ($this->size > 0) {
@@ -838,8 +844,7 @@ class DocumentInfo implements JsonSerializable {
     /** @param int $savef
      * @return ?bool */
     private function store_docstore($savef) {
-        $dspath = Filer::docstore_path($this, Filer::FPATH_MKDIR);
-        if (!$dspath) {
+        if (!($dspath = $this->docstore_path(Docstore::FPATH_MKDIR))) {
             return null;
         }
         if (file_exists($dspath)
@@ -873,7 +878,7 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return bool */
     private function _store_docstore_content_file($dspath) {
-        $tmppath = Filer::docstore_tempdir($this->conf);
+        $tmppath = $this->conf->docstore_tempdir();
         if ($tmppath
             && str_starts_with($this->content_file, "{$tmppath}upload-hcup")
             && rename($this->content_file, $dspath)) {
@@ -957,7 +962,7 @@ class DocumentInfo implements JsonSerializable {
             || !($s3k = $this->s3_key())) {
             return false;
         }
-        $dspath = Filer::docstore_path($this, Filer::FPATH_MKDIR);
+        $dspath = $this->docstore_path(Docstore::FPATH_MKDIR);
         if (!function_exists("curl_init")) {
             return $this->load_s3_direct($s3, $s3k, $dspath);
         }
@@ -1201,14 +1206,15 @@ class DocumentInfo implements JsonSerializable {
             return $this->filestore;
         }
         $this->content_file = null;
-        $fp = "doc-" . time() . "-%08d" . Mimetype::extension($this->mimetype);
-        if (!($x = Filer::tempfile($fp, strlen($this->content) > 10000000 ? $this->conf : null))) {
+        $fp = "doc-%s" . Mimetype::extension($this->mimetype);
+        $tempdir = strlen($this->content) > 10000000 ? $this->conf->docstore_tempdir() : null;
+        if (!($finfo = Filer::create_tempfile($tempdir, $fp))) {
             return null;
         }
-        if (Filer::tempfile_write($x[0], $this->content)) {
-            $this->content_file = $x[1];
+        if (Filer::write_tempfile($finfo[1], $this->content)) {
+            $this->content_file = $finfo[0];
         }
-        fclose($x[0]);
+        fclose($finfo[1]);
         return $this->content_file;
     }
 
@@ -1312,7 +1318,7 @@ class DocumentInfo implements JsonSerializable {
                 $s3 = $doc->conf->s3_client();
                 $s3l = $s3->start_curl_get($s3k)->set_timeout_size($doc->size(self::SIZE_NO_CONTENT));
                 if ($docstore
-                    && ($dspath = Filer::docstore_path($doc, Filer::FPATH_MKDIR))
+                    && ($dspath = $doc->docstore_path(Docstore::FPATH_MKDIR))
                     && ($dsstmp = self::fopen_docstore($dspath))) {
                     $s3l->set_response_body_stream($dsstmp[0]);
                     $adocs[] = [$doc, $s3l, 0, $dspath, $dsstmp[1]];

@@ -37,7 +37,7 @@ class S3Transfer_Batch {
         }
         Dbl::free($result);
 
-        Filer::$no_touch = true;
+        Docstore::$no_touch = true;
         $failures = 0;
         foreach ($dids as $did) {
             if ($activedocs !== null && !isset($activedocs[$did])) {

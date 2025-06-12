@@ -292,6 +292,7 @@ src/contactset.php
 src/databaseidrandomizer.php
 src/decisioninfo.php
 src/decisionset.php
+src/docstore.php
 src/documentfiletree.php
 src/documentinfo.php
 src/documentinfoset.php

@@ -725,20 +725,20 @@ function rm_rf_tempdir($tempdir) {
 }
 
 /** @param int $mode
- * @return string|false */
+ * @return ?string */
 function tempdir($mode = 0700) {
     $dir = sys_get_temp_dir() ? : "/";
-    while (substr($dir, -1) === "/") {
+    while (str_ends_with($dir, "/")) {
         $dir = substr($dir, 0, -1);
     }
     for ($i = 0; $i !== 100; $i++) {
-        $path = sprintf("%s/hotcrptmp%07d", $dir, mt_rand(0, 9999999));
-        if (mkdir($path, $mode)) {
+        $path = sprintf("%s/hotcrptmp%09d", $dir, mt_rand(0, 999999999));
+        if (@mkdir($path, $mode)) {
             register_shutdown_function("rm_rf_tempdir", $path);
-            return $path;
+            return $path . "/";
         }
     }
-    return false;
+    return null;
 }
 
 

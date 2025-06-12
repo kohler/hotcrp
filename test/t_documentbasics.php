@@ -42,17 +42,31 @@ class DocumentBasics_Tester {
         xassert_eqq($sig["signature"], "fea454ca298b7da1c68078a5d1bdbfbbe0d65c699e0f91ac7a200a0136783543");
     }
 
-    function test_docstore_fixed_prefix() {
-        xassert_eqq(Filer::docstore_fixed_prefix(null), null);
-        xassert_eqq(Filer::docstore_fixed_prefix(""), null);
-        xassert_eqq(Filer::docstore_fixed_prefix("/"), "/");
-        xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e"), "/a/b/c/d/e/");
-        xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e///"), "/a/b/c/d/e///");
-        xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e/%%/a/b"), "/a/b/c/d/e/%/a/b/");
-        xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e/%%/a/b%"), "/a/b/c/d/e/%/a/b%/");
-        xassert_eqq(Filer::docstore_fixed_prefix("/a/b/c/d/e/%%/a/b%h%x"), "/a/b/c/d/e/%/a/");
-        xassert_eqq(Filer::docstore_fixed_prefix("/%02h%x"), "/");
-        xassert_eqq(Filer::docstore_fixed_prefix("%02h%x"), null);
+    function test_docstore_root() {
+        $d = Docstore::make(null);
+        xassert_eqq($d, null);
+        $d = Docstore::make("");
+        xassert_eqq($d, null);
+        $d = Docstore::make("/");
+        xassert_eqq($d->root(), "/");
+        xassert_eqq($d->pattern(), "%h%x");
+        $d = Docstore::make("/a/b/c/d/e");
+        xassert_eqq($d->root(), "/a/b/c/d/e/");
+        xassert_eqq($d->pattern(), "%h%x");
+        $d = Docstore::make("/a/b/c/d/e///");
+        xassert_eqq($d, null);
+        $d = Docstore::make("/a/b/c/d/e/%%/a/b", 3);
+        xassert_eqq($d->root(), "/a/b/c/d/e/%/a/b/");
+        xassert_eqq($d->pattern(), "%3h/%h%x");
+        $d = Docstore::make("/a/b/c/d/e/%%/a/b%");
+        xassert_eqq($d->root(), "/a/b/c/d/e/%/a/b%/");
+        $d = Docstore::make("/a/b/c/d/e/%%/a/b%h%x");
+        xassert_eqq($d->root(), "/a/b/c/d/e/%/a/");
+        $d = Docstore::make("/%02h%x");
+        xassert_eqq($d->root(), "/");
+        $d = Docstore::make("/%%%02h%x");
+        xassert_eqq($d->root(), "/");
+        xassert_eqq($d->pattern(), "%%%02h%x");
     }
 
     function test_content_binary_hash() {
@@ -86,23 +100,26 @@ class DocumentBasics_Tester {
     function test_docstore_path() {
         $this->conf->save_refresh_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
         $this->conf->save_setting("opt.contentHashMethod", 1, "sha1");
+        $ds = $this->conf->docstore();
 
         $doc = DocumentInfo::make_content($this->conf, "");
         $doc->set_content("Hello\n", "text/plain");
-        xassert_eqq(Filer::docstore_path($doc), "/foo/bar/1d2/1d229/1d229271928d3f9e2bb0375bd6ce5db6c6d348d9");
+        xassert_eqq($ds->path_for($doc), "/foo/bar/1d2/1d229/1d229271928d3f9e2bb0375bd6ce5db6c6d348d9");
 
         $this->conf->save_refresh_setting("opt.docstore", 1, "/foo/bar");
         $this->conf->save_refresh_setting("opt.docstoreSubdir", 1, true);
+        $ds = $this->conf->docstore();
 
-        xassert_eqq(Filer::docstore_path($doc), "/foo/bar/1d/1d229271928d3f9e2bb0375bd6ce5db6c6d348d9.txt");
+        xassert_eqq($ds->path_for($doc), "/foo/bar/1d/1d229271928d3f9e2bb0375bd6ce5db6c6d348d9.txt");
         xassert_eqq($doc->s3_key(), "doc/1d/1d229271928d3f9e2bb0375bd6ce5db6c6d348d9.txt");
 
         $this->conf->save_setting("opt.contentHashMethod", 1, "sha256");
         $doc->set_content("Hello\n", "text/plain");
-        xassert_eqq(Filer::docstore_path($doc), "/foo/bar/sha2-66/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.txt");
+        xassert_eqq($ds->path_for($doc), "/foo/bar/sha2-66/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.txt");
 
         $this->conf->save_refresh_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");
-        xassert_eqq(Filer::docstore_path($doc), "/foo/bar/sha2-66a/sha2-66a04/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18");
+        $ds = $this->conf->docstore();
+        xassert_eqq($ds->path_for($doc), "/foo/bar/sha2-66a/sha2-66a04/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18");
         xassert_eqq($doc->s3_key(), "doc/66a/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.txt");
 
         $this->conf->save_setting("opt.docstore", null);

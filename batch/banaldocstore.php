@@ -21,12 +21,12 @@ class BanalDocstore_Batch {
         $this->conf = $conf;
         $this->count = $arg["count"] ?? 10;
 
-        if (!($dp = $this->conf->docstore())) {
+        if (!($ds = $this->conf->docstore())) {
             throw new ErrorException("Conference has no document store");
         }
         $matcher = new DocumentHashMatcher($arg["match"] ?? null);
         $matcher->set_extension(".pdf");
-        $this->fparts = new DocumentFileTree($dp, $matcher);
+        $this->fparts = new DocumentFileTree($ds->full_pattern(), $matcher);
         $this->cf = new CheckFormat($conf);
     }
 

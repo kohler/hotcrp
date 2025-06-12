@@ -141,10 +141,10 @@ class SavePapers_Batch {
             && str_starts_with($content, "\x50\x4B\x03\x04")) {
             if (!($tmpdir = tempdir())) {
                 throw new CommandLineException("{$this->errprefix}Cannot create temporary directory");
-            } else if (file_put_contents("{$tmpdir}/data.zip", $content) !== strlen($content)) {
-                throw new CommandLineException("{$this->errprefix}{$tmpdir}/data.zip: Cannot write file");
+            } else if (file_put_contents("{$tmpdir}data.zip", $content) !== strlen($content)) {
+                throw new CommandLineException("{$this->errprefix}{$tmpdir}data.zip: Cannot write file");
             }
-            $this->set_zipfile("{$tmpdir}/data.zip");
+            $this->set_zipfile("{$tmpdir}data.zip");
             $content = null;
         }
 

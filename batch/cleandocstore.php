@@ -186,7 +186,8 @@ class CleanDocstore_Batch {
                 $this->ftrees[] = new DocumentFileTree($dp, $this->hash_matcher, 0);
             }
             if (!$this->keep_temp) {
-                $this->ftrees[] = new DocumentFileTree(Filer::docstore_fixed_prefix($dp) . "tmp/%w", $this->hash_matcher, 1);
+                $ds = Docstore::make($dp);
+                $this->ftrees[] = new DocumentFileTree($ds->root_pattern() . "tmp/%w", $this->hash_matcher, 1);
             }
         }
 
@@ -253,9 +254,9 @@ Usage: php batch/cleandocstore.php [-c COUNT|-u FRAC] [-V] [-d] [DOCSTORES...]\n
         }
 
         $conf = initialize_conf($arg["config"] ?? null, $arg["name"] ?? null);
-        $confdp = $conf->docstore();
-        if ($confdp) {
-            $confdps = array_merge([$confdp], $arg["_"]);
+        $confds = $conf->docstore();
+        if ($confds) {
+            $confdps = array_merge([$confds->full_pattern()], $arg["_"]);
         } else {
             $confdps = $arg["_"];
         }

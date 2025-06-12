@@ -130,7 +130,9 @@ class Revpref_ListAction extends ListAction {
             $qf = $qf->content_or_docstore("prefassign-%s.csv", $user->conf);
         } else if ($qreq->data) {
             $qf = QrequestFile::make_string($qreq->data, $qreq->filename);
-        } else if (($f = Filer::check_docstore_tempfile($qreq->data_source, "prefassign-%s.csv", $user->conf))) {
+        } else if ($qreq->data_source
+                   && ($ds = $user->conf->docstore())
+                   && ($f = $ds->open_tempfile($qreq->data_source, "prefassign-%s.csv"))) {
             $qf = QrequestFile::make_stream($f, $qreq->filename);
         } else {
             return MessageItem::error("<0>File upload required");

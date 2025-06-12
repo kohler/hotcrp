@@ -42,7 +42,7 @@ class Upload_API {
         $this->max_size = $conf->opt("uploadApiMaxSize") ?? self::MAX_SIZE;
         $this->max_blob = $conf->opt("uploadApiMaxBlob") ?? self::MAX_BLOB;
         $this->segments = [[0, 5<<20], [5<<20, 13<<20], [13<<20, 29<<20]];
-        $this->tmpdir = Filer::docstore_tempdir($conf);
+        $this->tmpdir = $conf->docstore_tempdir();
         //S3Client::$verbose = true;
     }
 
@@ -420,7 +420,7 @@ class Upload_API {
         if ($this->_capd->temp) {
             $finalfn = $this->final_file($doc);
         } else {
-            $finalfn = Filer::docstore_path($doc, Filer::FPATH_MKDIR);
+            $finalfn = $this->conf->docstore()->path_for($doc, Docstore::FPATH_MKDIR);
         }
         if (!$finalfn) {
             return;

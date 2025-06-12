@@ -161,8 +161,8 @@ class Conf {
     private $_dtz;
     /** @var array<int,FormatSpec> */
     private $_formatspec_cache = [];
-    /** @var ?non-empty-string */
-    private $_docstore;
+    /** @var false|null|Docstore */
+    private $_docstore = false;
     /** @var array<int,Formula> */
     private $_defined_formulas;
     private $_emoji_codes;
@@ -711,34 +711,10 @@ class Conf {
             unset($this->opt["passwordHashMethod"]);
         }
 
-        // docstore
-        $docstore = $this->opt["docstore"] ?? null;
-        $dpath = "";
-        $dpsubdir = $this->opt["docstoreSubdir"] ?? null;
-        if (is_string($docstore)) {
-            $dpath = $docstore;
-        } else if ($docstore === true) {
-            $dpath = "docs";
-        }
-        if ($dpath !== "") {
-            if ($dpath[0] !== "/") {
-                $dpath = SiteLoader::$root . "/" . $dpath;
-            }
-            if (strpos($dpath, "%") === false) {
-                $dpath .= ($dpath[strlen($dpath) - 1] === "/" ? "" : "/");
-                if ($dpsubdir && ($dpsubdir === true || $dpsubdir > 0)) {
-                    $dpath .= "%" . ($dpsubdir === true ? 2 : $dpsubdir) . "h/";
-                }
-                $dpath .= "%h%x";
-            }
-            $this->_docstore = $dpath;
-        } else {
-            $this->_docstore = null;
-        }
-
-        // S3 settings and dbNoPapers
+        // docstore, S3, dbNoPapers
+        $this->_docstore = false;
         if (($this->opt["dbNoPapers"] ?? null)
-            && !$this->_docstore
+            && !($this->opt["docstore"] ?? null)
             && !($this->opt["s3_bucket"] ?? null)) {
             unset($this->opt["dbNoPapers"]);
         }
@@ -1119,9 +1095,18 @@ class Conf {
         return $this->_formatspec_cache[$dtype];
     }
 
-    /** @return ?non-empty-string */
+    /** @return ?Docstore */
     function docstore() {
+        if ($this->_docstore === false) {
+            $this->_docstore = Docstore::make($this->opt["docstore"] ?? null, $this->opt["docstoreSubdir"] ?? null);
+        }
         return $this->_docstore;
+    }
+
+    /** @return ?string */
+    function docstore_tempdir() {
+        $ds = $this->docstore();
+        return $ds ? $ds->tempdir() : null;
     }
 
     /** @return ?S3Client */

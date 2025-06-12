@@ -61,7 +61,7 @@ In thee!
     function test_initialize_docstore() {
         $this->tmpdir = tempdir();
         $this->old_docstore = $this->conf->opt("docstore");
-        $this->conf->set_opt("docstore", "{$this->tmpdir}/%h%x");
+        $this->conf->set_opt("docstore", "{$this->tmpdir}%h%x");
         if ($this->s3c) {
             $this->old_s3_opt = S3_Tester::install_s3_options($this->conf, $this->s3c);
             $this->s3c->delete_many([
@@ -125,7 +125,7 @@ In thee!
         xassert_eqq($j->ranges, [0, 615]);
         $expected_hash = "sha2-32f67cf69678d2ac17ab979b926e18cb830b96cbdb46866362bd083c619c4d6c";
         xassert_eqq($j->hash, $expected_hash);
-        xassert(file_exists("{$this->tmpdir}/{$expected_hash}.txt"));
+        xassert(file_exists("{$this->tmpdir}{$expected_hash}.txt"));
     }
 
     function test_overlapping_upload() {
@@ -180,7 +180,7 @@ In thee!
         xassert_eqq($j->ranges, [0, 615]);
         $expected_hash = "sha2-32f67cf69678d2ac17ab979b926e18cb830b96cbdb46866362bd083c619c4d6c";
         xassert_eqq($j->hash, $expected_hash);
-        xassert(file_exists("{$this->tmpdir}/{$expected_hash}.txt"));
+        xassert(file_exists("{$this->tmpdir}{$expected_hash}.txt"));
     }
 
     function test_reordered_upload() {
@@ -252,7 +252,7 @@ In thee!
         xassert_eqq($j->ranges, [0, 615]);
         $expected_hash = "sha2-32f67cf69678d2ac17ab979b926e18cb830b96cbdb46866362bd083c619c4d6c";
         xassert_eqq($j->hash, $expected_hash);
-        xassert(file_exists("{$this->tmpdir}/{$expected_hash}.txt"));
+        xassert(file_exists("{$this->tmpdir}{$expected_hash}.txt"));
     }
 
     function test_big_upload() {
@@ -301,7 +301,7 @@ In thee!
         xassert_eqq($j->ranges, [0, strlen($s)]);
         $expected_hash = "sha2-054bfbd046e415952829e66856a1c7d6240d97ea2c08de3069d1578052b9b7a7";
         xassert_eqq($j->hash, $expected_hash);
-        xassert(file_exists("{$this->tmpdir}/{$expected_hash}.txt"));
+        xassert(file_exists("{$this->tmpdir}{$expected_hash}.txt"));
     }
 
     function test_cleanup_docstore() {
