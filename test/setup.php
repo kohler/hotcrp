@@ -452,7 +452,7 @@ class Xassert {
  * @param string $file
  * @param int $line */
 function xassert_error_handler($errno, $emsg, $file, $line) {
-    if ((!error_reporting() && $errno == E_NOTICE)
+    if ((error_reporting() & $errno) === 0
         || Xassert::$disabled > 0) {
         return;
     }

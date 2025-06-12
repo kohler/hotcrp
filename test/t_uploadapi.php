@@ -1,6 +1,6 @@
 <?php
 // t_uploadapi.php -- HotCRP tests
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class UploadAPI_Tester {
     /** @var Conf

@@ -127,6 +127,38 @@ class DocumentBasics_Tester {
         xassert_eqq($this->conf->docstore(), null);
     }
 
+    function test_backup_docstore() {
+        $td1 = tempdir();
+        $td2 = tempdir();
+        assert($td1 && $td2);
+
+        mkdir($td1 . "tmp");
+        mkdir($td2 . "tmp");
+        file_put_contents("{$td1}tmp/xxxxaaaaaaa.txt", "HELLO");
+        file_put_contents("{$td2}tmp/xxxyaaaaaaa.txt", "GOODBYE");
+
+        $this->conf->save_setting("opt.docstoreBackup", 1, $td2);
+        $this->conf->save_refresh_setting("opt.docstore", 1, $td1);
+        $ds = $this->conf->docstore();
+        xassert_eqq($ds->path("tmp/xxxxaaaaaaa.txt"), "{$td1}tmp/xxxxaaaaaaa.txt");
+        xassert_eqq($ds->path("tmp/xxxyaaaaaaa.txt"), "{$td1}tmp/xxxyaaaaaaa.txt");
+        xassert_eqq($ds->path("tmp/xxxxaaaaaaa.txt", Docstore::FPATH_EXISTS), "{$td1}tmp/xxxxaaaaaaa.txt");
+        xassert_eqq($ds->path("tmp/xxxyaaaaaaa.txt", Docstore::FPATH_EXISTS), "{$td2}tmp/xxxyaaaaaaa.txt");
+
+        $f = $ds->open_tempfile("xxxxaaaaaaa.txt", "%s.txt");
+        xassert_neqq($f, null);
+        xassert_eqq(stream_get_contents($f), "HELLO");
+        fclose($f);
+
+        $f = $ds->open_tempfile("xxxyaaaaaaa.txt", "%s.txt");
+        xassert_neqq($f, null);
+        xassert_eqq(stream_get_contents($f), "GOODBYE");
+        fclose($f);
+
+        $this->conf->save_setting("opt.docstoreBackup", null);
+        $this->conf->save_refresh_setting("opt.docstore", null);
+    }
+
     function test_create_s3() {
         if (!$this->s3c) {
             return;

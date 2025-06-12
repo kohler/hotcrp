@@ -7,6 +7,8 @@ class Docstore {
     private $_root;
     /** @var non-empty-string */
     private $_pattern;
+    /** @var ?Docstore */
+    private $_backup;
 
     /** @var ?string */
     static public $tempdir;
@@ -16,6 +18,18 @@ class Docstore {
     private function __construct($root, $pattern) {
         $this->_root = $root;
         $this->_pattern = $pattern;
+    }
+
+    /** @param Docstore $x
+     * @return $this */
+    function append_backup($x) {
+        assert($x->_backup === null);
+        $ds = $this;
+        while ($ds->_backup) {
+            $ds = $ds->_backup;
+        }
+        $ds->_backup = $x;
+        return $this;
     }
 
     /** @param ?string $s
@@ -78,9 +92,8 @@ class Docstore {
         return str_replace("%", "%%", $this->_root) . $this->_pattern;
     }
 
-    /** @param bool $no_extension
-     * @return ?string */
-    function expand(DocumentInfo $doc, $no_extension = false) {
+    /** @return ?string */
+    function expand(DocumentInfo $doc) {
         $x = "";
         $hash = false;
         $offset = 0;
@@ -92,9 +105,7 @@ class Docstore {
             if ($fn === "%") {
                 $x .= "%";
             } else if ($fn === "x") {
-                if (!$no_extension) {
-                    $x .= Mimetype::extension($doc->mimetype);
-                }
+                $x .= Mimetype::extension($doc->mimetype);
             } else {
                 if ($hash === false
                     && ($hash = $doc->text_hash()) === false) {
@@ -130,39 +141,46 @@ class Docstore {
 
     // filestore path functions
     const FPATH_EXISTS = 1;
-    const FPATH_MKDIR = 2;
-    /** @param int $flags
+    const FPATH_REQUIRED = 2;
+    const FPATH_MKDIR = 4;
+    /** @param string $file
+     * @param int $flags
      * @return ?string */
-    function path_for(DocumentInfo $doc, $flags = 0) {
-        if ($doc->has_error()
-            || !($exp = $this->expand($doc))) {
-            return null;
-        }
-        $path = $this->root() . $exp;
+    function path($file, $flags = 0) {
+        $path = $this->root() . $file;
         if (($flags & self::FPATH_EXISTS) !== 0) {
-            if (!is_readable($path)) {
-                // clean up old files saved w/o extension
-                $exp2 = $this->expand($doc, true);
-                if (!$exp2 || $exp2 === $exp) {
-                    return null;
-                }
-                $path2 = $this->root() . $exp2;
-                if (!is_readable($path2)) {
-                    return null;
-                }
-                if (!@rename($path2, $path)) {
-                    $path = $path2;
-                    $exp = $exp2;
-                }
+            if (is_readable($path)) {
+                $rpath = $path;
+            } else if ($this->_backup) {
+                $rpath = $this->_backup->path($file, $flags | self::FPATH_REQUIRED);
+            } else {
+                $rpath = null;
             }
+            if ($rpath === null && ($flags & self::FPATH_REQUIRED) !== 0) {
+                return null;
+            }
+            $path = $rpath;
             if (filemtime($path) < Conf::$now - 172800 && !self::$no_touch) {
                 @touch($path, Conf::$now);
             }
         }
         if (($flags & self::FPATH_MKDIR) !== 0
-            && !$this->prepare_parent($exp)) {
-            $doc->message_set()->warning_at(null, "<0>File system storage cannot be initialized");
+            && !$this->prepare_parent($file)) {
             return null;
+        }
+        return $path;
+    }
+
+    /** @param int $flags
+     * @return ?string */
+    function path_for(DocumentInfo $doc, $flags = 0) {
+        if ($doc->has_error()
+            || !($file = $this->expand($doc))) {
+            return null;
+        }
+        $path = $this->path($file, $flags);
+        if ($path === null && ($flags & self::FPATH_MKDIR) !== 0) {
+            $doc->message_set()->warning_at(null, "<0>File system storage cannot be initialized");
         }
         return $path;
     }
@@ -176,11 +194,18 @@ class Docstore {
      * @param string $template
      * @return ?resource */
     function open_tempfile($name, $template) {
-        if ($name !== null
-            && preg_match('/\A[-_A-Za-z0-9]+%s(?:\.[A-Za-z0-9]+|)\z/', $template)
-            && preg_match('/\A' . str_replace(".", '\\.', str_replace("%s", '\w{10,}', $template)) . '\z/', $name)
-            && ($tmpdir = $this->tempdir())
-            && ($f = @fopen($tmpdir . $name, "rb"))) {
+        if ($name === null
+            || !preg_match('/\A[-_A-Za-z0-9]*%s(?:\.[A-Za-z0-9]+|)\z/', $template)
+            || !preg_match('/\A' . str_replace(".", '\\.', str_replace("%s", '\w{10,}', $template)) . '\z/', $name)) {
+            return null;
+        }
+        if ($this->prepare("tmp")
+            && ($f = @fopen("{$this->_root}tmp/{$name}", "rb"))) {
+            return $f;
+        }
+        if ($this->_backup
+            && ($fn = $this->_backup->path("tmp/{$name}", self::FPATH_EXISTS | self::FPATH_REQUIRED))
+            && ($f = @fopen($fn, "rb"))) {
             return $f;
         }
         return null;

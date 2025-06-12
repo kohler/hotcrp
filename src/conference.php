@@ -1099,6 +1099,13 @@ class Conf {
     function docstore() {
         if ($this->_docstore === false) {
             $this->_docstore = Docstore::make($this->opt["docstore"] ?? null, $this->opt["docstoreSubdir"] ?? null);
+            if ($this->_docstore
+                && ($dsbus = $this->opt["docstoreBackup"] ?? null)) {
+                foreach (is_string($dsbus) ? [$dsbus] : $dsbus as $dsp) {
+                    if (($ds = Docstore::make($dsp, $this->opt["docstoreSubdir"] ?? null)))
+                        $this->_docstore->append_backup($ds);
+                }
+            }
         }
         return $this->_docstore;
     }
