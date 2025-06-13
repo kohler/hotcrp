@@ -156,11 +156,13 @@ class Docstore {
             } else {
                 $rpath = null;
             }
-            if ($rpath === null && ($flags & self::FPATH_REQUIRED) !== 0) {
+            if ($rpath !== null) {
+                $path = $rpath;
+            } else if (($flags & self::FPATH_REQUIRED) !== 0) {
                 return null;
             }
-            $path = $rpath;
-            if (filemtime($path) < Conf::$now - 172800 && !self::$no_touch) {
+            if (!self::$no_touch
+                && filemtime($path) < Conf::$now - 172800) {
                 @touch($path, Conf::$now);
             }
         }
