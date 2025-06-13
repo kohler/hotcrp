@@ -141,8 +141,7 @@ class Docstore {
 
     // filestore path functions
     const FPATH_EXISTS = 1;
-    const FPATH_REQUIRED = 2;
-    const FPATH_MKDIR = 4;
+    const FPATH_MKDIR = 2;
     /** @param string $file
      * @param int $flags
      * @return ?string */
@@ -152,15 +151,14 @@ class Docstore {
             if (is_readable($path)) {
                 $rpath = $path;
             } else if ($this->_backup) {
-                $rpath = $this->_backup->path($file, $flags | self::FPATH_REQUIRED);
+                $rpath = $this->_backup->path($file, $flags);
             } else {
                 $rpath = null;
             }
-            if ($rpath !== null) {
-                $path = $rpath;
-            } else if (($flags & self::FPATH_REQUIRED) !== 0) {
+            if ($rpath === null) {
                 return null;
             }
+            $path = $rpath;
             if (!self::$no_touch
                 && filemtime($path) < Conf::$now - 172800) {
                 @touch($path, Conf::$now);
@@ -206,7 +204,7 @@ class Docstore {
             return $f;
         }
         if ($this->_backup
-            && ($fn = $this->_backup->path("tmp/{$name}", self::FPATH_EXISTS | self::FPATH_REQUIRED))
+            && ($fn = $this->_backup->path("tmp/{$name}", self::FPATH_EXISTS))
             && ($f = @fopen($fn, "rb"))) {
             return $f;
         }
