@@ -413,17 +413,10 @@ class Downloader {
         // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
         // using SameSite cookies!
         if ($this->_content_file !== null
-            && ($dar = Conf::$main->opt("docstoreAccelRedirect"))
-            && ($ds = Conf::$main->docstore())
             && !$this->no_accel
-            && !$this->head) {
-            $dsroot = $ds->root();
-            if (str_starts_with($this->_content_file, $dsroot)
-                && strlen($this->_content_file) > strlen($dsroot)
-                && $this->_content_file[strlen($dsroot)] !== "/") {
-                $this->_content_redirect = "{$dar}" . substr($this->_content_file, strlen($dsroot));
-                $this->_content_file = null;
-            }
+            && !$this->head
+            && ($dar = Conf::$main->opt("docstoreAccelRedirect"))) {
+            $this->_try_content_redirect($dar);
         }
         // check for X-Accel-Redirect
         if ($this->_content_redirect !== null) {
@@ -441,6 +434,31 @@ class Downloader {
                 self::readfile_subrange($out, $r[0], $r[1], 0, $this->_content_file, $this->content_length);
             } else {
                 self::print_subrange($out, $r[0], $r[1], 0, $this->_content);
+            }
+        }
+    }
+
+    /** @param string|list<string> $dars */
+    private function _try_content_redirect($dars) {
+        $ds = Conf::$main->docstore();
+        foreach (is_string($dars) ? [$dars] : $dars as $dar) {
+            if (($sp = strpos($dar, " "))) {
+                $root = substr($dar, $sp + 1);
+                if (!str_starts_with($root, "/") || !str_ends_with($root, "/")) {
+                    continue;
+                }
+                $dar = substr($dar, 0, $sp);
+            } else if ($ds) {
+                $root = $ds->root();
+            } else {
+                continue;
+            }
+            if (str_starts_with($this->_content_file, $root)
+                && strlen($this->_content_file) > strlen($root)
+                && $this->_content_file[strlen($root)] !== "/") {
+                $this->_content_redirect = $dar . substr($this->_content_file, strlen($root));
+                $this->_content_file = null;
+                return;
             }
         }
     }
