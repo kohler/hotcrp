@@ -4123,9 +4123,8 @@ class Contact implements JsonSerializable {
         } else if ($oview === PaperOption::VIS_REVIEW) {
             return $rights->review_status >= PaperContactInfo::CIRS_PROXIED
                 || $this->__can_view_submitted_review($prow, $rights) ? 2 : 0;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     /** @param PaperOption $opt

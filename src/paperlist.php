@@ -1428,18 +1428,6 @@ class PaperList {
     }
 
 
-    /** @param PaperInfo $row
-     * @return string */
-    function _contentDownload($row) {
-        if ($row->paperStorageId > 1
-            && $this->user->can_view_pdf($row)
-            && ($doc = $row->primary_document())) {
-            return "&nbsp;" . $doc->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
-        } else {
-            return "";
-        }
-    }
-
     /** @return string */
     function _paperLink(PaperInfo $row) {
         $pt = $this->_view_linkto ?? "paper";

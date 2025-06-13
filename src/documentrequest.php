@@ -233,9 +233,8 @@ class DocumentRequest implements JsonSerializable {
                 $this->linkid = "{$dtname}response"; // will not match
             }
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     function perm_view_document(Contact $user) {
@@ -253,9 +252,8 @@ class DocumentRequest implements JsonSerializable {
             return $this->perm_view_comment_document($user);
         } else if ($this->opt) {
             return $user->perm_view_option($this->prow, $this->opt);
-        } else {
-            return null;
         }
+        return null;
     }
 
     private function perm_view_comment_document(Contact $user) {
@@ -275,9 +273,8 @@ class DocumentRequest implements JsonSerializable {
             && ($xdoc = $doc_crow->attachments()->document_by_filename($this->attachment))) {
             $this->docid = $xdoc->paperStorageId;
             return null;
-        } else {
-            return $this->prow->failure_reason(["documentNotFound" => $this->req_filename]);
         }
+        return $this->prow->failure_reason(["documentNotFound" => $this->req_filename]);
     }
 
     #[\ReturnTypeWillChange]

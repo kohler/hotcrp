@@ -254,6 +254,11 @@ class Title_PaperColumn extends PaperColumn {
         if ($this->want_decoration) {
             $pl->qopts["tags"] = 1;
         }
+        if ($this->want_pdf
+            && !$pl->user->can_view_some_option($pl->conf->option_by_id(DTYPE_SUBMISSION))
+            && !$pl->user->can_view_some_option($pl->conf->option_by_id(DTYPE_FINAL))) {
+            $this->want_pdf = false;
+        }
         $this->highlight = $pl->search->has_field_highlighter("ti");
         return true;
     }
@@ -282,7 +287,12 @@ class Title_PaperColumn extends PaperColumn {
         $link = $pl->_paperLink($row);
         $t = "<a href=\"{$link}\" class=\"ptitle taghl{$klass_extra}\">{$highlight_text}</a>";
         if ($this->want_pdf) {
-            $t .= $pl->_contentDownload($row);
+            $dtype = $row->finalPaperStorageId > 0 ? DTYPE_FINAL : DTYPE_SUBMISSION;
+            if (($dtype === DTYPE_FINAL ? $row->finalPaperStorageId : $row->paperStorageId) > 1
+                && $pl->user->can_view_option($row, $pl->conf->option_by_id($dtype))
+                && ($doc = $row->document($dtype))) {
+                $t .= " " . $doc->link_html("", DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE | DocumentInfo::L_FINALTITLE);
+            }
         }
         if ($this->want_decoration
             && ($pl->row_tags !== "" || $pl->row_tags_override !== "")) {
