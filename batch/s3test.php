@@ -16,6 +16,8 @@ class S3Test_Batch {
     public $extensions;
     /** @var bool */
     public $verbose;
+    /** @var bool */
+    public $rm;
     /** @var list<string> */
     public $files;
 
@@ -24,6 +26,7 @@ class S3Test_Batch {
         $this->quiet = isset($arg["quiet"]);
         $this->extensions = isset($arg["extensions"]);
         $this->verbose = isset($arg["verbose"]);
+        $this->rm = isset($arg["rm"]);
         $this->files = $arg["_"];
         if (empty($this->files)) {
             $this->files[] = "-";
@@ -36,35 +39,51 @@ class S3Test_Batch {
         $status = 0;
 
         foreach ($this->files as $fn) {
-            if ($fn === "-") {
+            $stdin = $fn === "-";
+            if ($stdin) {
                 $content = @stream_get_contents(STDIN);
+                $fn = "<stdin>";
             } else {
                 $content = @file_get_contents($fn);
             }
             if ($content === false) {
                 $error = error_get_last();
-                $fn = ($fn === "-" ? "<stdin>" : $fn);
                 if (!$this->quiet) {
                     fwrite(STDERR, "{$fn}: " . $error["message"] . "\n");
                 }
                 $status = 2;
+                continue;
+            }
+            if ($this->extensions
+                && preg_match('/(\.\w+)\z/', $fn, $m)
+                && ($mtx = Mimetype::lookup($m[1]))) {
+                $mimetype = $mtx->mimetype;
             } else {
-                if ($this->extensions
-                    && preg_match('/(\.\w+)\z/', $fn, $m)
-                    && ($mtx = Mimetype::lookup($m[1]))) {
-                    $mimetype = $mtx->mimetype;
-                } else {
-                    $mimetype = Mimetype::content_type($content);
+                $mimetype = Mimetype::content_type($content);
+            }
+            $doc = DocumentInfo::make_content($this->conf, $content, $mimetype);
+            $s3fn = $doc->s3_key();
+            if (!$s3doc->head($s3fn)) {
+                if (!$this->quiet) {
+                    fwrite(STDOUT, "{$fn}: {$s3fn} not found\n");
                 }
-                $doc = DocumentInfo::make_content($this->conf, $content, $mimetype);
-                $s3fn = $doc->s3_key();
-                if (!$s3doc->head($s3fn)) {
+                $status = 1;
+                continue;
+            }
+            if ($this->verbose) {
+                fwrite(STDOUT, "{$fn}: {$s3fn} present\n");
+            }
+            if ($this->rm && !$stdin) {
+                if (@unlink($fn)) {
                     if (!$this->quiet) {
-                        fwrite(STDOUT, "{$fn}: {$s3fn} not found\n");
+                        fwrite(STDOUT, "{$fn}: removed\n");
+                    }
+                } else {
+                    $error = error_get_last();
+                    if (!$this->quiet) {
+                        fwrite(STDERR, "{$fn}: " . $error["message"] . "\n");
                     }
                     $status = 1;
-                } else if ($this->verbose) {
-                    fwrite(STDOUT, "{$fn}: {$s3fn} OK\n");
                 }
             }
         }
@@ -79,9 +98,10 @@ class S3Test_Batch {
             "name:,n: !",
             "config: !",
             "help,h !",
-            "quiet,q",
-            "extensions,x,e",
-            "verbose,V"
+            "quiet,q Do not report missing files",
+            "rm,remove Remove matching files",
+            "extensions,x,e Use file extensions to deduce file type",
+            "verbose,V Be verbose"
         )->description("Check whether named files are on HotCRP S3.
 Usage: php batch/s3test.php [-q] [--extensions] FILE...")
          ->helpopt("help")
