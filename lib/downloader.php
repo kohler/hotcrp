@@ -444,9 +444,6 @@ class Downloader {
         foreach (is_string($dars) ? [$dars] : $dars as $dar) {
             if (($sp = strpos($dar, " "))) {
                 $root = substr($dar, $sp + 1);
-                if (!str_starts_with($root, "/") || !str_ends_with($root, "/")) {
-                    continue;
-                }
                 $dar = substr($dar, 0, $sp);
             } else if ($ds) {
                 $root = $ds->root();
