@@ -118,7 +118,7 @@ class Multiconference {
         global $Opt;
 
         $qreq = null;
-        $mis1 = [];
+        $mis = [];
         $title = "";
         $status = 404;
         $link = null;
@@ -129,14 +129,20 @@ class Multiconference {
             } else if (is_int($x)) {
                 $status = $x;
             } else if (is_string($x)) {
-                $mis1[] = MessageItem::error($x);
+                $mis[] = MessageItem::error($x);
             } else if ($x instanceof MessageItem) {
-                $mis1[] = $x;
+                $mis[] = $x;
             } else if ($x instanceof Qrequest) {
                 $qreq = $x;
             } else if ($x instanceof FailureReason) {
                 assert(!$fr);
-                $mis1[] = $fr = $x;
+                $fr = $x;
+                if (PHP_SAPI !== "cli"
+                    && $qreq->page() !== "api"
+                    && !friendly_boolean($_GET["ajax"] ?? null)) {
+                    $fr->set("expand", true);
+                }
+                array_push($mis, ...$fr->message_list());
             } else {
                 assert(is_array($x));
                 $title = $x["title"] ?? $title;
@@ -145,12 +151,11 @@ class Multiconference {
         }
 
         $maintenance = $Opt["maintenance"] ?? null;
-        if ($maintenance) {
+        if ($maintenance && empty($mis)) {
             $status = 503;
             $title = "Maintenance";
-            $mis = [MessageItem::error(Ftext::concat("<0>The site is down for maintenance. ", is_string($maintenance) ? $maintenance : "<0>Please check back later."))];
+            $mis[] = MessageItem::error(Ftext::concat("<0>The site is down for maintenance. ", is_string($maintenance) ? $maintenance : "<0>Please check back later."));
             $link = false;
-            $fr = null;
         }
 
         $qreq = $qreq ?? Qrequest::$main_request ?? Qrequest::make_minimal();
@@ -159,27 +164,6 @@ class Multiconference {
         }
         if ($link === false) {
             $qreq->set_user(null);
-        }
-
-        // maybe expand FailureReason
-        if ($fr) {
-            if (PHP_SAPI !== "cli"
-                && $qreq->page() !== "api"
-                && !friendly_boolean($_GET["ajax"] ?? null)) {
-                $fr->set("expand", true);
-            }
-            $mis = [];
-            foreach ($mis1 as $x) {
-                if ($x instanceof FailureReason) {
-                    foreach ($x->message_list() as $mi) {
-                        $mis[] = $mi;
-                    }
-                } else {
-                    $mis[] = $x;
-                }
-            }
-        } else {
-            $mis = $mis1;
         }
 
         // print message
@@ -192,7 +176,7 @@ class Multiconference {
             http_response_code($status);
             header("Content-Type: application/json; charset=utf-8");
             $j = ["ok" => false, "message_list" => $mis];
-            if ($maintenance) {
+            if ($maintenance && $status === 503) {
                 $j["maintenance"] = true;
             }
             echo json_encode_browser($j), "\n";
