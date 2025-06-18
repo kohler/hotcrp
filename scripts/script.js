@@ -5536,11 +5536,20 @@ handle_ui.on("js-mail-preview-choose", function () {
     toggleClass(this.closest("fieldset"), "mail-preview-unchoose", !this.checked);
 });
 
+handle_ui.on("js-mail-send-phase-0", function () {
+    addClass(document.body, "wait");
+    const sendprep = [];
+    for (const e of this.querySelectorAll("input.js-mail-preview-choose:checked")) {
+        sendprep.push(e.value);
+    }
+    this.elements.sendprep.value = sendprep.join(" ");
+});
+
 handle_ui.on("js-mail-send-phase-1", function () {
-    var send = this.querySelector("button");
+    addClass(document.body, "wait");
+    const send = this.querySelector("button");
     send.disabled = true;
     send.textContent = "Sending mail…";
-    addClass(document.body, "wait");
 });
 
 

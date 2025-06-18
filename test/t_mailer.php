@@ -17,11 +17,10 @@ class Mailer_Tester {
         }
         ob_start();
         try {
-            $ms = new MailSender($mr, $qreq);
+            $ms = new MailSender($mr, $qreq, 2);
             $ms->set_template($template);
             $ms->set_no_print(true)->set_send_all(true);
             $ms->prepare_sending_mailid();
-            $ms->set_phase(2);
             $ms->run();
         } catch (PageCompletion $unused) {
         }

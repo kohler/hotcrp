@@ -282,7 +282,7 @@ class PCConflicts_PaperOption extends PaperOption {
                         $confx = "<strong>No conflict</strong>";
                     }
                 } else {
-                    $confx = Ht::checkbox(null, 1, Conflict::is_conflicted($pct), ["disabled" => true]);
+                    $confx = Ht::checkbox("", "", Conflict::is_conflicted($pct), ["disabled" => true]);
                 }
                 $hidden = Ht::hidden("pcconf:{$id}", $pct, ["class" => "conflict-entry", "disabled" => true]);
             } else if ($this->selectors) {

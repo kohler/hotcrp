@@ -283,9 +283,12 @@ class Ht {
             self::$_lastcontrolid = $js["id"];
         }
         $t = '<input type="checkbox"'; /* NB see Ht::radio */
-        if ($name) {
+        if ((string) $name !== "") {
+            $t .= " name=\"{$name}\"";
+        }
+        if ($value !== "" || (string) $name !== "") {
             $v = htmlspecialchars((string) $value);
-            $t .= " name=\"{$name}\" value=\"{$v}\"";
+            $t .= " value=\"{$v}\"";
         }
         if ($checked) {
             $t .= " checked";
