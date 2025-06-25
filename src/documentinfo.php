@@ -76,64 +76,8 @@ class DocumentInfo implements JsonSerializable {
 
     const FLAG_NO_DOCSTORE = 1;
 
-    /** @param array{paperId?:int,paperStorageId?:int,timestamp?:int,mimetype?:string,content?:string,content_base64?:string,content_file?:string,hash?:?string,crc32?:?string,documentType?:int,filename?:?string,metadata?:array|object,infoJson?:?string,size?:int,filterType?:?int,originalStorageId?:?int,sourceHash?:?string,filters_applied?:?list<FileFilter>,sha1?:void,filestore?:void} $p */
-    function __construct($p, Conf $conf, ?PaperInfo $prow = null) {
+    function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->prow = $prow;
-        if ($p !== null) {
-            $this->assign($p);
-        }
-    }
-
-    private function assign($p) {
-        $this->paperId = $p["paperId"] ?? 0;
-        $this->paperStorageId = $p["paperStorageId"] ?? 0;
-        $this->timestamp = $p["timestamp"] ?? 0;
-        $this->mimetype = $p["mimetype"] ?? "";
-        if (array_key_exists("content", $p)) {
-            $this->content = $p["content"];
-        } else if (isset($p["content_base64"])) {
-            $this->content = base64_decode($p["content_base64"]);
-        } else if (isset($p["content_file"])) {
-            $this->content_file = $p["content_file"];
-        }
-        if (($p["hash"] ?? "") !== "") {
-            $this->sha1 = HashAnalysis::hash_as_binary($p["hash"]);
-        }
-        if (($p["crc32"] ?? "") !== "") {
-            $this->crc32 = $p["crc32"];
-            if (strlen($this->crc32) === 8 && ctype_xdigit($this->crc32)) {
-                $this->crc32 = hex2bin($this->crc32);
-            } else if (strlen($this->crc32) === 4) {
-                $this->crc32 = null;
-            }
-        }
-        $this->documentType = $p["documentType"] ?? 0;
-        $this->filename = $p["filename"] ?? null;
-        if (isset($p["metadata"])) {
-            if (is_object($p["metadata"])) {
-                $this->_metadata = $p["metadata"];
-            } else if (is_array($p["metadata"])) {
-                $this->_metadata = array_to_object_recursive($p["metadata"]);
-            } else {
-                assert(false);
-            }
-        } else if (array_key_exists("infoJson", $p)) {
-            $this->infoJson = $p["infoJson"];
-            assert(is_string($this->infoJson ?? ""));
-        } else if ($this->paperStorageId > 0) {
-            $this->infoJson = false;
-        }
-        $this->size = $p["size"] ?? -1;
-        $this->filterType = $p["filterType"] ?? null;
-        $this->originalStorageId = $p["originalStorageId"] ?? null;
-        if (isset($p["sourceHash"])) {
-            $this->sourceHash = HashAnalysis::hash_as_binary($p["sourceHash"]);
-        }
-        $this->filters_applied = $p["filters_applied"] ?? null;
-
-        assert(!isset($p["sha1"]));
-        assert($this->sha1 === false || is_string($this->sha1));
     }
 
     private function fetch_incorporate() {
@@ -161,7 +105,8 @@ class DocumentInfo implements JsonSerializable {
     /** @param mysqli_result|Dbl_Result $result
      * @return ?DocumentInfo */
     static function fetch($result, Conf $conf, ?PaperInfo $prow = null) {
-        if (($doc = $result->fetch_object("DocumentInfo", [null, $conf, $prow]))) {
+        if (($doc = $result->fetch_object("DocumentInfo", [$conf]))) {
+            $doc->prow = $prow;
             $doc->fetch_incorporate();
         }
         return $doc;
@@ -170,13 +115,14 @@ class DocumentInfo implements JsonSerializable {
 
     /** @return DocumentInfo */
     static function make(Conf $conf) {
-        return new DocumentInfo(null, $conf);
+        return new DocumentInfo($conf);
     }
 
     /** @return DocumentInfo */
     static function make_empty(Conf $conf, ?PaperInfo $prow = null) {
         // matches paperStorageId 1 in schema
-        $doc = new DocumentInfo(null, $conf, $prow);
+        $doc = new DocumentInfo($conf);
+        $doc->prow = $prow;
         $doc->paperStorageId = 1;
         $doc->documentType = 0;
         $doc->mimetype = "text/plain";
@@ -190,7 +136,7 @@ class DocumentInfo implements JsonSerializable {
      * @param ?string $mimetype
      * @return DocumentInfo */
     static function make_content(Conf $conf, $content, $mimetype = null) {
-        $doc = new DocumentInfo(null, $conf);
+        $doc = new DocumentInfo($conf);
         $doc->mimetype = $mimetype;
         $doc->content = $content;
         $doc->size = strlen($content);
@@ -201,7 +147,7 @@ class DocumentInfo implements JsonSerializable {
      * @param ?string $mimetype
      * @return DocumentInfo */
     static function make_content_file(Conf $conf, $content_file, $mimetype = null) {
-        $doc = new DocumentInfo(null, $conf);
+        $doc = new DocumentInfo($conf);
         $doc->mimetype = $mimetype;
         $doc->content_file = $content_file;
         return $doc->analyze_content();
@@ -211,7 +157,7 @@ class DocumentInfo implements JsonSerializable {
      * @param ?string $mimetype
      * @return DocumentInfo */
     static function make_hash(Conf $conf, $hash, $mimetype = null) {
-        $doc = new DocumentInfo(null, $conf);
+        $doc = new DocumentInfo($conf);
         $doc->sha1 = HashAnalysis::hash_as_binary($hash);
         $doc->mimetype = $mimetype;
         return $doc;
@@ -226,7 +172,7 @@ class DocumentInfo implements JsonSerializable {
             return null;
         }
 
-        $doc = new DocumentInfo(null, $conf);
+        $doc = new DocumentInfo($conf);
         $doc->paperId = $paperId;
         $doc->documentType = $documentType;
         $doc->timestamp = time();
@@ -283,7 +229,7 @@ class DocumentInfo implements JsonSerializable {
         if (!$tokd->hash) {
             return null;
         }
-        $doc = new DocumentInfo(null, $conf);
+        $doc = new DocumentInfo($conf);
         $doc->paperId = $paperId ?? $toki->paperId;
         $doc->documentType = $documentType ?? $tokd->dtype;
         $doc->timestamp = time();
@@ -311,7 +257,8 @@ class DocumentInfo implements JsonSerializable {
      * @param ?int $size
      * @return DocumentInfo */
     static function make_primary_document(PaperInfo $prow, $dtype, $size) {
-        $doc = new DocumentInfo(null, $prow->conf, $prow);
+        $doc = new DocumentInfo($prow->conf);
+        $doc->prow = $prow;
         $doc->paperStorageId = $dtype < 0 ? $prow->finalPaperStorageId : $prow->paperStorageId;
         $doc->paperId = $prow->paperId;
         $doc->documentType = $dtype;
@@ -342,7 +289,8 @@ class DocumentInfo implements JsonSerializable {
     /** @param FileFilter $ff
      * @return DocumentInfo */
     function make_filtered(FileFilter $ff) {
-        $doc = new DocumentInfo(null, $this->conf, $this->prow);
+        $doc = new DocumentInfo($this->conf);
+        $doc->prow = $this->prow;
         $doc->paperId = $this->paperId;
         $doc->timestamp = $this->timestamp;
         $doc->mimetype = $this->mimetype;
@@ -446,15 +394,6 @@ class DocumentInfo implements JsonSerializable {
      * @return $this */
     function set_content($content, $mimetype = null) {
         $this->set_simple_content($content);
-        $this->mimetype = $mimetype ?? $this->mimetype;
-        return $this->analyze_content();
-    }
-
-    /** @param string $content_file
-     * @param ?string $mimetype
-     * @return $this */
-    function set_content_file($content_file, $mimetype = null) {
-        $this->set_simple_content_file($content_file);
         $this->mimetype = $mimetype ?? $this->mimetype;
         return $this->analyze_content();
     }

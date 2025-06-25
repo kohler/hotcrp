@@ -26,7 +26,7 @@ class Paper_API extends MessageSet {
     /** @var ?Qrequest */
     private $attachment_qreq;
     /** @var ?string */
-    private $docdir;
+    private $ziparchive_docdir;
 
     /** @var list<list<string>> */
     private $change_lists = [];
@@ -167,7 +167,7 @@ class Paper_API extends MessageSet {
             if ($ec !== true) {
                 return JsonResult::make_error(400, "<0>ZIP error " . json_encode($ec));
             }
-            list($this->docdir, $jsonname) = self::analyze_zip_contents($this->ziparchive);
+            list($this->ziparchive_docdir, $jsonname) = self::analyze_zip_contents($this->ziparchive);
             if (!$jsonname) {
                 return JsonResult::make_error(400, "<0>ZIP `data.json` not found");
             }
@@ -613,7 +613,7 @@ class Paper_API extends MessageSet {
         }
         if (is_string($docj->content_file)) {
             if ($this->ziparchive) {
-                return self::apply_zip_content_file($docj, $this->docdir . $docj->content_file, $this->ziparchive, $o, $pstatus);
+                return self::apply_zip_content_file($docj, $this->ziparchive_docdir . $docj->content_file, $this->ziparchive, $o, $pstatus);
             } else if ($this->attachment_qreq
                        && ($qf = $this->attachment_qreq->file($docj->content_file))) {
                 return self::apply_qrequest_file($docj, $qf);
