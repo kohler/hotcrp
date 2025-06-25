@@ -14,6 +14,8 @@ class PaperStatus extends MessageSet {
     /** @var bool */
     private $any_content_file = false;
     /** @var bool */
+    private $ignore_content_file = false;
+    /** @var bool */
     private $allow_hash_without_content = false;
     /** @var bool */
     private $notify = true;
@@ -133,6 +135,13 @@ class PaperStatus extends MessageSet {
         return $this;
     }
 
+    /** @param bool $x
+     * @return $this */
+    function set_ignore_content_file($x) {
+        $this->ignore_content_file = $x;
+        return $this;
+    }
+
     /** @param ?bool $x
      * @return $this */
     function set_json_fields($x) {
@@ -185,14 +194,6 @@ class PaperStatus extends MessageSet {
      * @return string */
     function option_key($o) {
         return $this->json_fields ? $o->json_key() : $o->field_key();
-    }
-
-    /** @param ?string $msg
-     * @param int $status
-     * @return MessageItem
-     * @deprecated */
-    function msg_at_option(PaperOption $o, $msg, $status) {
-        return $this->append_item(new MessageItem($status, $this->option_key($o), $msg));
     }
 
     /** @param ?string $msg
@@ -272,13 +273,15 @@ class PaperStatus extends MessageSet {
         assert(!isset($docj->filter));
 
         // check content_file
-        if (!$this->any_content_file
-            && !($docj instanceof DocumentInfo)
+        if (!($docj instanceof DocumentInfo)
             && isset($docj->content_file)
-            && is_string($docj->content_file)
-            && preg_match('/\A\/|(?:\A|\/)\.\.(?:\/|\z)/', $docj->content_file)) {
-            $this->error_at_option($o, "<0>Invalid `content_file`");
-            return null;
+            && $docj->content_file !== false) {
+            if ($this->ignore_content_file) {
+                $docj->content_file = null;
+            } else if (($problem = $this->check_content_file_first($docj->content_file))) {
+                $this->error_at_option($o, $problem);
+                return null;
+            }
         }
 
         // check on_document_import
@@ -316,6 +319,18 @@ class PaperStatus extends MessageSet {
         return $doc;
     }
 
+    /** @param mixed $content_file
+     * @return ?string */
+    private function check_content_file_first($content_file) {
+        if (!is_string($content_file)) {
+            return "<0>Invalid `content_file`";
+        } else if (!$this->any_content_file
+                   && preg_match('/\A\/|(?:\A|\/)\.\.(?:\/|\z)/', $content_file)) {
+            return "<0>`content_file` filename violates locality constraints";
+        }
+        return null;
+    }
+
     /** @param object $docj
      * @return ?DocumentInfo */
     private function _upload_json_document($docj, PaperOption $o) {
@@ -331,8 +346,14 @@ class PaperStatus extends MessageSet {
             $content = $docj->content;
         } else if (isset($docj->content_base64) && is_string($docj->content_base64)) {
             $content = base64_decode($docj->content_base64);
+        } else if ($this->ignore_content_file) {
+            /* no content */
         } else if (isset($docj->content_file) && is_string($docj->content_file)) {
-            $content_file = $docj->content_file;
+            if (is_readable($docj->content_file)) {
+                $content_file = $docj->content_file;
+            } else {
+                $this->error_at_option($o, "<0>Could not access `content_file`");
+            }
         } else if (isset($docj->content_file) && is_resource($docj->content_file)) {
             if (!($content_file = $this->_upload_content_stream($docj->content_file, $mimetype, $o))) {
                 $this->warning_at_option($o, "<0>Could not copy `content_file` to a temporary file");
