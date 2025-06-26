@@ -571,7 +571,7 @@ class PaperStatus extends MessageSet {
             $xstatus->submitted = $xstatus->submitted ?? !$xstatus->draft;
         }
         foreach (["submitted_at", "withdrawn_at", "final_submitted_at",
-                  "if_unmodified_since"] as $k) {
+                  "modified_at", "if_unmodified_since"] as $k) {
             $v = $istatus->$k ?? null;
             if (is_numeric($v)) {
                 $v = (float) $v;
