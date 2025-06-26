@@ -104,6 +104,12 @@ select, button {
 .main-column ul.ctable {
 	max-width: 732px;
 }
+
+@media print {
+body {
+	font-size: 12px;
+}
+}
 }
 
 
@@ -300,6 +306,7 @@ body.paper #p-header {
 	border-bottom-right-radius: 4px;
 	background: var(--brand-bg-dark);
 	color: var(--brand-fg);
+	print-color-adjust: exact;
 }
 #h-actas {
 	position: fixed;
@@ -934,6 +941,7 @@ body.paper #p-body {
 	border-top: 1px solid var(--brand-fg);
 	border-left: 1px solid var(--brand-fg);
 	z-index: 0;
+	print-color-adjust: exact;
 }
 
 
@@ -5366,6 +5374,11 @@ td.pl_logname {
 th.pl_logaction {
 	width: 40%;
 }
+@media print {
+.pltable-log {
+	font-size: 10px;
+}
+}
 
 /* graphs */
 .gcdf {
@@ -5447,4 +5460,10 @@ th.pl_logaction {
 	fill: none;
 	stroke: black;
 	shape-rendering: crispEdges;
+}
+
+@media print {
+.no-print {
+	display: none !important;
+}
 }

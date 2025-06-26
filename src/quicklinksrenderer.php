@@ -31,7 +31,7 @@ class QuicklinksRenderer {
         if ($qreq->user()->is_empty()) {
             return "";
         }
-        $x = Ht::form($qreq->conf()->hoturl($baseUrl ?? "paper"), ["method" => "get", "class" => "gopaper"]);
+        $x = Ht::form($qreq->conf()->hoturl($baseUrl ?? "paper"), ["method" => "get"]);
         if ($baseUrl === "profile") {
             $x .= Ht::entry("u", "", ["id" => "n-search", "size" => 15, "placeholder" => "User search", "aria-label" => "User search", "class" => "usersearch need-autogrow", "spellcheck" => false, "autocomplete" => "off"]);
         } else {
@@ -97,13 +97,13 @@ class QuicklinksRenderer {
             $x .= '</td>';
 
             if ($user->is_track_manager() && $listtype === "p") {
-                $x .= '<td id="tracker-connect" class="vbar"><button type="button" id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" aria-label="Start meeting tracker">&#9759;</button></td>';
+                $x .= '<td class="vbar no-print"><button type="button" id="tracker-connect-btn" class="ui js-tracker tbtn need-tooltip" aria-label="Start meeting tracker">&#9759;</button></td>';
             }
         }
 
         // paper search form
         if ($user->isPC || $user->is_reviewer() || $user->is_author()) {
-            $x .= '<td class="vbar gopaper">' . self::quicksearch_form($qreq, $goBase, $xmode) . '</td>';
+            $x .= '<td class="vbar no-print">' . self::quicksearch_form($qreq, $goBase, $xmode) . '</td>';
         }
 
         return '<table id="p-quicklinks"><tr>' . $x . '</tr></table>';
