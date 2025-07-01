@@ -555,6 +555,7 @@ src/settingvalues.php
 src/si.php
 src/siteloader.php
 src/sitype.php
+src/stableidpermutation.php
 src/submissionround.php
 src/tagmessagereport.php
 src/tagrankparser.php

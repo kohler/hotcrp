@@ -1647,18 +1647,16 @@ class Contact implements JsonSerializable {
         if ($viewer->can_view_user_tags() || $viewer->contactXid === $this->contactXid) {
             $tags = $this->all_user_tags();
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $tags, $viewer, null);
-        } else {
-            return "";
         }
+        return "";
     }
 
     /** @return string */
     function viewable_color_classes(Contact $viewer) {
         if (($tags = $this->viewable_tags($viewer))) {
             return $this->conf->tags()->color_classes($tags);
-        } else {
-            return "";
         }
+        return "";
     }
 
     /** @param string $perm

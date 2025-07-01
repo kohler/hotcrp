@@ -2691,9 +2691,8 @@ class Conf {
             $t = " " . join("#0 ", $this->pc_tags()) . "#0";
             $t = $this->tags()->censor(TagMap::CENSOR_VIEW, $t, $viewer, null);
             return explode("#0 ", substr($t, 1, -2));
-        } else {
-            return [];
         }
+        return [];
     }
 
 
@@ -2707,9 +2706,8 @@ class Conf {
                 "dsn" => $dsn,
                 "dbSocket" => $opt["contactdbSocket"] ?? $opt["dbSocket"] ?? null
             ]);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return ?\mysqli */
@@ -2726,9 +2724,8 @@ class Conf {
     static function main_cdb_qe(...$args) {
         if (($cdb = self::main_contactdb())) {
             return Dbl::do_query_on($cdb, $args, Dbl::F_ERROR);
-        } else {
-            return Dbl_Result::make_error();
         }
+        return Dbl_Result::make_error();
     }
 
     /** @return ?\mysqli */
