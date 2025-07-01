@@ -439,6 +439,7 @@ src/papercolumns/pc_preferencelist.php
 src/papercolumns/pc_reviewdelegation.php
 src/papercolumns/pc_reviewerlist.php
 src/papercolumns/pc_shepherd.php
+src/papercolumns/pc_shuffle.php
 src/papercolumns/pc_tag.php
 src/papercolumns/pc_tagreport.php
 src/papercolumns/pc_timestamp.php

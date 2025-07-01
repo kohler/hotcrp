@@ -12,6 +12,10 @@
     },
     {   "name": "pid", "alias": "id"   },
     {
+        "name": "shuffle", "title": "Shuffle",
+        "sort": true, "function": "+Shuffle_PaperColumn"
+    },
+    {
         "name": "title", "title": "Title",
         "sort": true, "completion": true, "function": "+Title_PaperColumn",
         "order": 120
