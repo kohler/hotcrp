@@ -15,6 +15,8 @@ class Autoassign_Page {
     public $ms;
     /** @var string */
     public $jobid;
+    /** @var string */
+    private $_pcsel_sep;
 
     function __construct(Contact $user, Qrequest $qreq) {
         assert($user->is_manager());
@@ -291,6 +293,11 @@ class Autoassign_Page {
         $this->conf->stash_hotcrp_pc($this->user);
     }
 
+    private function print_pc_selection_link($html, $data) {
+        echo $this->_pcsel_sep, "<a class=\"ui js-pcsel-tag\" href=\"#pc_{$data}\">{$html}</a>";
+        $this->_pcsel_sep = ", ";
+    }
+
     private function print() {
         // start page
         $conf = $this->conf;
@@ -372,30 +379,28 @@ class Autoassign_Page {
                 'Use enabled PC members</label></div>';
         }
 
-        echo '<div class="js-radio-focus checki"><label>',
-            '<span class="checkc">', Ht::radio("pctyp", "sel", $qreq->pctyp === "sel"), '</span>',
-            'Use selected PC members:</label>',
-            " &nbsp; (select ";
-        $pctyp_sel = [["all", "all"], ["none", "none"]];
-        if ($this->conf->has_disabled_pc_members()) {
-            $pctyp_sel[] = ["enabled", "enabled"];
-        }
         $tagsjson = [];
         foreach ($conf->pc_members() as $pc) {
             $tagsjson[$pc->contactId] = strtolower($pc->viewable_tags($this->user))
                 . ($pc->is_dormant() ? "" : " enabled#0");
         }
         Ht::stash_script("var hotcrp_pc_tags=" . json_encode($tagsjson) . ";");
+
+        echo '<div class="js-radio-focus checki"><label>',
+            '<span class="checkc">', Ht::radio("pctyp", "sel", $qreq->pctyp === "sel"), '</span>',
+            'Use selected PC members:</label>',
+            " &nbsp; (select ";
+        $this->_pcsel_sep = "";
+        $this->print_pc_selection_link("all", "all");
+        $this->print_pc_selection_link("none", "none");
+        if ($this->conf->has_disabled_pc_members()) {
+            $this->print_pc_selection_link("enabled", "enabled");
+        }
         foreach ($conf->viewable_user_tags($this->user) as $pctag) {
             if ($pctag !== "pc")
-                $pctyp_sel[] = [$pctag, "#{$pctag}"];
+                $this->print_pc_selection_link("#{$pctag}", $pctag);
         }
-        $pctyp_sel[] = ["__flip__", "flip"];
-        $sep = "";
-        foreach ($pctyp_sel as $pctyp) {
-            echo $sep, "<a class=\"ui js-pcsel-tag\" href=\"#pc_", $pctyp[0], "\">", $pctyp[1], "</a>";
-            $sep = ", ";
-        }
+        $this->print_pc_selection_link("flip", "__flip__");
         echo ")";
         Ht::stash_script('$(function(){$("input.js-pcsel-tag").first().trigger("change")});');
 
