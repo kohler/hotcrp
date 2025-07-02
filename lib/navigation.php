@@ -234,7 +234,6 @@ class NavigationState {
         $origsn = $server["ORIG_SCRIPT_NAME"] ?? null;
         $origsfn = $server["ORIG_SCRIPT_FILENAME"] ?? null;
         if ($origsn === null && $origsfn === null) {
-            $nsn = strlen($sn);
             $sfx = substr($sfn, strrpos($sfn, "/") + 1);
             $npfx = strlen($sn) - strlen($sfx);
             if ($npfx > 0
