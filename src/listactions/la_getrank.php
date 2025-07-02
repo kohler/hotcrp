@@ -36,7 +36,7 @@ class GetRank_ListAction extends ListAction {
             if ($user->can_edit_tag($prow, $tag, null, 1)) {
                 $csvt = CsvGenerator::quote($prow->title);
                 $tv = $prow->tag_value($tag);
-                $tail = ",$prow->paperId,$csvt\n";
+                $tail = ",{$prow->paperId},{$csvt}\n";
                 if ($tv === null || $lastIndex === null) {
                     $delta = $tv;
                 } else {

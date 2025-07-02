@@ -270,7 +270,7 @@ class TokenInfo {
      * @param mysqli_result|Dbl_Result $result
      * @param bool $is_cdb
      * @param class-string<T> $class
-     * @return ?T */
+     * @return T|null */
     static function fetch($result, Conf $conf, $is_cdb, $class = "TokenInfo") {
         $cap = $result->fetch_object($class, [$conf]);
         '@phan-var ?T $cap';

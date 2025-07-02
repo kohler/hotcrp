@@ -367,37 +367,6 @@ class DocumentInfo implements JsonSerializable {
         return $this;
     }
 
-    /** @param string $content
-     * @return $this */
-    function set_simple_content($content) {
-        assert($this->paperStorageId <= 0);
-        $this->content = $content;
-        $this->content_file = $this->filestore = $this->_content_prefix = null;
-        $this->size = strlen($content);
-        $this->sha1 = $this->crc32 = "";
-        return $this;
-    }
-
-    /** @param string $content_file
-     * @return $this */
-    function set_simple_content_file($content_file) {
-        assert($this->paperStorageId <= 0);
-        $this->content_file = $content_file;
-        $this->content = $this->filestore = $this->_content_prefix = null;
-        $this->size = -1;
-        $this->sha1 = $this->crc32 = "";
-        return $this;
-    }
-
-    /** @param string $content
-     * @param ?string $mimetype
-     * @return $this */
-    function set_content($content, $mimetype = null) {
-        $this->set_simple_content($content);
-        $this->mimetype = $mimetype ?? $this->mimetype;
-        return $this->analyze_content();
-    }
-
     /** @param ?string $hash
      * @return $this */
     function set_hash($hash) {
@@ -454,6 +423,38 @@ class DocumentInfo implements JsonSerializable {
         $this->_metadata = $this->_metadata ?? (object) [];
         $this->_metadata->$key = $value;
         return $this;
+    }
+
+    /** @param string $content
+     * @return $this */
+    function set_simple_content($content) {
+        assert($this->paperStorageId <= 0);
+        $this->content = $content;
+        $this->content_file = $this->filestore = $this->_content_prefix = null;
+        $this->size = strlen($content);
+        $this->sha1 = $this->crc32 = "";
+        return $this;
+    }
+
+    /** @param string $content_file
+     * @return $this */
+    function set_simple_content_file($content_file) {
+        assert($this->paperStorageId <= 0);
+        $this->content_file = $content_file;
+        $this->content = $this->filestore = $this->_content_prefix = null;
+        $this->size = -1;
+        $this->sha1 = $this->crc32 = "";
+        return $this;
+    }
+
+    /** @param string $content
+     * @param ?string $mimetype
+     * @return $this
+     * @deprecated */
+    function set_content($content, $mimetype = null) {
+        $this->set_simple_content($content);
+        $this->mimetype = $mimetype ?? $this->mimetype;
+        return $this->analyze_content();
     }
 
     /** @return $this */

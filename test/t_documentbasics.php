@@ -80,7 +80,7 @@ class DocumentBasics_Tester {
         xassert_eqq($doc->text_hash(), "da39a3ee5e6b4b0d3255bfef95601890afd80709");
         xassert_eqq($doc->content_binary_hash(), hex2bin("da39a3ee5e6b4b0d3255bfef95601890afd80709"));
 
-        $doc->set_content("Hello\n");
+        $doc->set_simple_content("Hello\n");
         xassert_eqq($doc->text_hash(), "1d229271928d3f9e2bb0375bd6ce5db6c6d348d9");
         xassert_eqq($doc->content_binary_hash(), hex2bin("1d229271928d3f9e2bb0375bd6ce5db6c6d348d9"));
 
@@ -88,11 +88,11 @@ class DocumentBasics_Tester {
         xassert_eqq($doc->text_hash(), "1d229271928d3f9e2bb0375bd6ce5db6c6d348d9");
         xassert_eqq($doc->content_binary_hash(), "sha2-" . hex2bin("66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18"));
 
-        $doc->set_content("");
+        $doc->set_simple_content("");
         xassert_eqq($doc->text_hash(), "sha2-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
         xassert_eqq($doc->content_binary_hash(), "sha2-" . hex2bin("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"));
 
-        $doc->set_content("Hello\n");
+        $doc->set_simple_content("Hello\n");
         xassert_eqq($doc->text_hash(), "sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18");
         xassert_eqq($doc->content_binary_hash(), "sha2-" . hex2bin("66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18"));
     }
@@ -103,7 +103,8 @@ class DocumentBasics_Tester {
         $ds = $this->conf->docstore();
 
         $doc = DocumentInfo::make_content($this->conf, "");
-        $doc->set_content("Hello\n", "text/plain");
+        $doc->set_mimetype("text/plain")
+            ->set_simple_content("Hello\n");
         xassert_eqq($ds->path_for($doc), "/foo/bar/1d2/1d229/1d229271928d3f9e2bb0375bd6ce5db6c6d348d9");
 
         $this->conf->save_refresh_setting("opt.docstore", 1, "/foo/bar");
@@ -114,7 +115,8 @@ class DocumentBasics_Tester {
         xassert_eqq($doc->s3_key(), "doc/1d/1d229271928d3f9e2bb0375bd6ce5db6c6d348d9.txt");
 
         $this->conf->save_setting("opt.contentHashMethod", 1, "sha256");
-        $doc->set_content("Hello\n", "text/plain");
+        $doc->set_mimetype("text/plain")
+            ->set_simple_content("Hello\n");
         xassert_eqq($ds->path_for($doc), "/foo/bar/sha2-66/sha2-66a045b452102c59d840ec097d59d9467e13a3f34f6494e539ffd32c1bb35f18.txt");
 
         $this->conf->save_refresh_setting("opt.docstore", 1, "/foo/bar/%3h/%5h/%h");

@@ -59,7 +59,7 @@ class Dbl_Result {
     }
     /** @template T
      * @param class-string<T> $class_name
-     * @return ?T
+     * @return T|null
      * @suppress PhanUnusedPublicNoOverrideMethodParameter */
     function fetch_object($class_name = "stdClass", $params = []) {
         return null;

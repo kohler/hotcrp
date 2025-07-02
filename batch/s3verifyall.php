@@ -107,7 +107,7 @@ class S3VerifyAll_Batch {
                     fwrite(STDOUT, "$last_key: ");
                 }
                 $content = $s3doc->get($last_key);
-                $doc->set_content($content);
+                $doc->set_simple_content($content);
                 $chash = $doc->content_binary_hash($khash);
                 if ($chash !== $khash) {
                     if (!$this->verbose) {
