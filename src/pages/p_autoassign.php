@@ -293,8 +293,8 @@ class Autoassign_Page {
         $this->conf->stash_hotcrp_pc($this->user);
     }
 
-    private function print_pc_selection_link($html, $data) {
-        echo $this->_pcsel_sep, "<a class=\"ui js-pcsel-tag\" href=\"#pc_{$data}\">{$html}</a>";
+    private function print_pc_selection_link($html, $uids) {
+        echo $this->_pcsel_sep, Ht::button($html, ["class" => "link ui js-pcsel", "data-uids" => join(" ", $uids)]);
         $this->_pcsel_sep = ", ";
     }
 
@@ -379,38 +379,42 @@ class Autoassign_Page {
                 'Use enabled PC members</label></div>';
         }
 
-        $tagsjson = [];
+        $pclist = [];
         foreach ($conf->pc_members() as $pc) {
-            $tagsjson[$pc->contactId] = strtolower($pc->viewable_tags($this->user))
-                . ($pc->is_dormant() ? "" : " enabled#0");
+            $pclist["all"][] = $pc->contactId;
+            if (!$pc->is_dormant()) {
+                $pclist["enabled"][] = $pc->contactId;
+            }
+            foreach (Tagger::split_unpack(strtolower($pc->viewable_tags($this->user))) as $tv) {
+                $pclist[$tv[0]][] = $pc->contactId;
+            }
         }
-        Ht::stash_script("var hotcrp_pc_tags=" . json_encode($tagsjson) . ";");
 
-        echo '<div class="js-radio-focus checki"><label>',
-            '<span class="checkc">', Ht::radio("pctyp", "sel", $qreq->pctyp === "sel"), '</span>',
+        echo '<div class="js-radio-focus js-pcsel-container checki"><label>',
+            '<span class="checkc">', Ht::radio("pctyp", "sel", $qreq->pctyp === "sel", ["class" => "want-pcsel"]), '</span>',
             'Use selected PC members:</label>',
             " &nbsp; (select ";
         $this->_pcsel_sep = "";
-        $this->print_pc_selection_link("all", "all");
-        $this->print_pc_selection_link("none", "none");
+        $this->print_pc_selection_link("all", $pclist["all"]);
+        $this->print_pc_selection_link("none", []);
         if ($this->conf->has_disabled_pc_members()) {
-            $this->print_pc_selection_link("enabled", "enabled");
+            $this->print_pc_selection_link("enabled", $pclist["enabled"]);
         }
         foreach ($conf->viewable_user_tags($this->user) as $pctag) {
             if ($pctag !== "pc")
-                $this->print_pc_selection_link("#{$pctag}", $pctag);
+                $this->print_pc_selection_link("#{$pctag}", $pclist[strtolower($pctag)]);
         }
-        $this->print_pc_selection_link("flip", "__flip__");
+        $this->print_pc_selection_link("flip", ["flip"]);
         echo ")";
-        Ht::stash_script('$(function(){$("input.js-pcsel-tag").first().trigger("change")});');
+        Ht::stash_script('$(function(){$("input.js-pcsel").first().trigger("change")});');
 
         $summary = [];
         $nrev = AssignmentCountSet::load($this->user, AssignmentCountSet::HAS_REVIEW);
         foreach ($conf->pc_members() as $id => $p) {
             $t = '<div class="ctelt"><label class="checki ctelti"><span class="checkc">'
-                . Ht::checkbox("pcc{$id}", 1, isset($qreq["pcc{$id}"]), [
+                . Ht::checkbox("pcc{$id}", 1, friendly_boolean($qreq["pcc{$id}"]), [
                     "id" => "pcc{$id}", "data-range-type" => "pcc",
-                    "class" => "uic js-range-click js-pcsel-tag"
+                    "class" => "uic js-range-click js-pcsel"
                 ]) . '</span>' . $this->user->reviewer_html_for($p)
                 . $nrev->unparse_counts_for($p)
                 . "</label></div>";

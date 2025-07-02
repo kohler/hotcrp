@@ -590,10 +590,10 @@ input.wide {
 	font-size: smaller;
 }
 .font-weight-bold {
-	font-weight: bold;
+	font-weight: bold !important;
 }
 .font-weight-semibold, .sb {
-	font-weight: 500;
+	font-weight: 500 !important;
 }
 .font-italic {
 	font-style: italic;

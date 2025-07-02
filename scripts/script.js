@@ -5554,74 +5554,37 @@ handle_ui.on("js-mail-send-phase-1", function () {
 
 
 // autoassignment
-(function () {
-function make_pcsel_members(tag) {
-    if (tag === "__flip__")
-        return function () { return !this.checked; };
-    else if (tag === "all")
-        return function () { return true; };
-    else if (tag === "none")
-        return function () { return false; };
-    else {
-        tag = " " + tag.toLowerCase() + "#";
-        return function () {
-            var tlist = window.hotcrp_pc_tags[this.name.substr(3)] || "";
-            return tlist.indexOf(tag) >= 0;
-        };
-    }
-}
-function pcsel_tag(evt) {
-    var $g = $(this).closest(".js-radio-focus");
-    if (this.tagName === "A") {
-        $g.find("input[type=radio]").first().click();
-        var tag = this.hash.substring(4),
-            f = make_pcsel_members(tag),
-            full = true;
-        if (tag !== "all" && tag !== "none" && tag !== "__flip__"
-            && !hasClass(this, "font-weight-bold")) {
-            $g.find("input").each(function () {
-                if (this.name.startsWith("pcc") && !this.checked)
-                    return (full = false);
-            });
-        }
-        $g.find("input").each(function () {
-            if (this.name.startsWith("pcc")) {
-                var on = f.call(this);
-                if (full || on)
-                    this.checked = on;
+handle_ui.on("js-pcsel", function (evt) {
+    const g = this.closest(".js-pcsel-container");
+    if (this.tagName === "A" || this.tagName === "BUTTON") {
+        const radio = g.querySelector(".want-pcsel");
+        radio && radio.click();
+        const uids = this.getAttribute("data-uids"),
+            a = uids.split(" ");
+        let i = 0;
+        for (const e of g.querySelectorAll("input.js-pcsel")) {
+            if (e.name.startsWith("pcc")) {
+                if (uids === "flip")
+                    e.checked = !e.checked;
+                else if (e.name.substring(3) === a[i]) {
+                    e.checked = true;
+                    ++i;
+                } else
+                    e.checked = false;
             }
-        });
+        }
         evt.preventDefault();
     }
-    var tags = [], functions = {}, isall = true;
-    $g.find("a.js-pcsel-tag").each(function () {
-        var tag = this.hash.substring(4);
-        if (tag !== "none") {
-            tags.push(tag);
-            functions[tag] = make_pcsel_members(tag);
-        }
-    });
-    $g.find("input").each(function () {
-        if (this.name.startsWith("pcc") && !this.checked) {
-            isall = false;
-            for (var i = 0; i < tags.length; ) {
-                if (functions[tags[i]].call(this))
-                    tags.splice(i, 1);
-                else
-                    ++i;
-            }
-            return isall || tags.length !== 0;
-        }
-    });
-    $g.find("a.js-pcsel-tag").each(function () {
-        var tag = this.hash.substring(4);
-        if ($.inArray(tag, tags) >= 0 && (tag === "all" || !isall))
-            addClass(this, "font-weight-bold");
-        else
-            removeClass(this, "font-weight-bold");
-    });
-}
-handle_ui.on("js-pcsel-tag", pcsel_tag);
+    const a = [];
+    for (const e of g.querySelectorAll("input.js-pcsel")) {
+        if (e.name.startsWith("pcc") && e.checked)
+            a.push(e.name.substring(3));
+    }
+    const uids = a.join(" ");
+    for (const a of g.querySelectorAll("a.js-pcsel, button.js-pcsel")) {
+        toggleClass(a, "font-weight-bold", a.getAttribute("data-uids") === uids);
+    }
+});
 
 handle_ui.on("badpairs", function () {
     if (this.value !== "none") {
@@ -5644,8 +5607,6 @@ handle_ui.on(".js-badpairs-row", function (evt) {
     evt.preventDefault();
     handle_ui.stopPropagation(evt);
 });
-
-})();
 
 handle_ui.on(".js-autoassign-prepare", function () {
     var k, v, a;
