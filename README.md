@@ -122,8 +122,8 @@ Installation
 4. Update PHP settings.
 
    The first three settings, `upload_max_filesize`, `post_max_size`, and
-  `max_input_vars`, may be changed system-wide or in HotCRP’s `.htaccess` and
-  `.user.ini` files.
+   `max_input_vars`, may be changed system-wide or in HotCRP’s `.htaccess` and
+   `.user.ini` files.
 
    * `upload_max_filesize`: Set to the largest file upload HotCRP should accept.
      `15M` is a good default.
@@ -134,13 +134,15 @@ Installation
    * `max_input_vars`: Set to the largest number of distinct input variables
      HotCRP should accept. `4096` is a good default.
 
-  The last setting, `session.gc_maxlifetime`, must be changed globally. This
-  provides an upper bound on HotCRP session lifetimes (the amount of idle time
-  before a user is logged out automatically). On Unix machines, systemwide PHP
-  settings are often stored in `/etc/php.ini`. The suggested value for this
-  setting is 86400, e.g., 24 hours:
+   The last setting, `session.gc_maxlifetime`, must be changed globally. This
+   provides an upper bound on HotCRP session lifetimes (the amount of idle time
+   before a user is logged out automatically). On Unix machines, systemwide PHP
+   settings are often stored in `/etc/php.ini`. The suggested value for this
+   setting is 86400, e.g., 24 hours:
 
-        session.gc_maxlifetime = 86400
+   ```
+   session.gc_maxlifetime = 86400
+   ```
 
    If you want sessions to expire sooner, we recommend you set
    `session.gc_maxlifetime` to 86400 anyway, then edit `conf/options.php` to set
