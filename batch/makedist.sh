@@ -42,7 +42,6 @@ mkdistdir () {
 mkdistdir <<EOF
 
 .htaccess
-.user.ini
 LICENSE
 NEWS.md
 README.md

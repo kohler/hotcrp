@@ -3,10 +3,10 @@ HotCRP Conference Review Software [![Build Status](https://github.com/kohler/hot
 
 HotCRP is awesome software for managing review processes, especially for
 academic conferences. It supports paper submission, review and comment
-management, rebuttals, and the PC meeting. Its main strengths are flexibility
-and ease of use in the review process, especially through smart paper search
-and tagging. It has been widely used in computer science conferences and for
-internal review processes at several large companies.
+management, rebuttals, and PC meetings. Its main strengths are flexibility and
+ease of use for reviewers, especially through smart paper search and tagging. It
+has been widely used in computer science conferences and for internal review
+processes at several large companies.
 
 HotCRP is the open-source version of the software running on
 [hotcrp.com](https://hotcrp.com). If you want to run HotCRP without setting
@@ -169,19 +169,14 @@ Installation
 
 You can set up everything else through the web site itself.
 
-* Configuration notes
+Configuration notes:
 
-  - Uploaded papers and reviews are limited in size by several PHP
-    configuration variables, set by default to 15 megabytes in the HotCRP
-    directory’s `.user.ini` (or `.htaccess` if using Apache).
+- HotCRP PHP scripts can take a lot of memory. By default HotCRP sets the
+  PHP memory limit to 128MB.
 
-  - HotCRP PHP scripts can take a lot of memory. By default HotCRP sets the
-    PHP memory limit to 128MB.
-
-  - Most HotCRP settings are assigned in the conference database’s
-    Settings table. The Settings table can also override values in
-    `conf/options.php`: a Settings record with name `opt.XXX` takes
-    precedence over option `$Opt["XXX"]`.
+- Most HotCRP settings are assigned in the conference database’s Settings table.
+  The Settings table can also override values in `conf/options.php`: a Settings
+  record with name `opt.XXX` takes precedence over option `$Opt["XXX"]`.
 
 
 Database access

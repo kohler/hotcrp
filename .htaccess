@@ -9,7 +9,7 @@
 #php_value max_input_vars 4096
 
 # A large memory_limit helps when sending very large zipped files.
-php_value memory_limit 128M
+#php_value memory_limit 128M
 
 # Default to UTF-8 (most scripts will override this with <meta>).
 AddDefaultCharset UTF-8
