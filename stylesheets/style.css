@@ -4662,11 +4662,11 @@ a:hover .t-editor,
 	content: "✪";
 	padding-right: 0.1em;
 	font-size: 95%;
-	display: inline-block;
 	position: relative;
 	bottom: 0.1em;
 	text-indent: 0;
 	color: #a16300;
+	white-space: nowrap;
 }
 .preview {
 	margin-bottom: 24px;
