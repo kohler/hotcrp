@@ -13,22 +13,28 @@ class Shuffle_PaperColumn extends PaperColumn {
         return ["key!"];
     }
     function prepare(PaperList $pl, $visible) {
-        $v = $this->view_option("key");
-        if (($v ?? "") === "" || strcasecmp($v, "me") === 0) {
-            $this->idperm = StableIDPermutation::make_user($pl->user);
-        } else if (ctype_xdigit($v)) {
+        $v = $this->view_option("key") ?? "";
+        if (ctype_xdigit($v)) {
             if (strlen($v) % 2 === 1) {
                 $v .= "0";
             }
             $this->idperm = new StableIDPermutation(hex2bin($v));
-        } else if ($pl->user->privChair) {
-            $cu = ContactSearch::make_pc($v, $pl->user);
-            if (count($cu->users()) === 1) {
-                $this->idperm = StableIDPermutation::make_user(($cu->users())[0]);
+        } else {
+            if ($v === "" || strcasecmp($v, "me") === 0) {
+                $u = $pl->user;
+            } else if (strcasecmp($v, "reviewer") === 0) {
+                $u = $pl->reviewer_user();
+            } else {
+                $cu = ContactSearch::make_pc($v, $pl->user);
+                if (count($cu->users()) !== 1) {
+                    return false;
+                }
+                $u = ($cu->users())[0];
             }
-        }
-        if (!$this->idperm) {
-            return false;
+            if ($u !== $pl->user && !$pl->user->privChair) {
+                return false;
+            }
+            $this->idperm = StableIDPermutation::make_user($u);
         }
         $this->idperm->prefetch($pl->unordered_rowset()->paper_ids());
         return true;

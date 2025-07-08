@@ -124,6 +124,15 @@
         "print_function": "Submissions_SettingParser::print_pcseeallpdf",
         "settings": ["submitted_document_early_visibility"]
     },
+    {
+        "name": "submissions/preferences", "order": 60,
+        "title": "Review preferences"
+    },
+    {
+        "name": "submissions/prefshuffle", "order": 65,
+        "print_function": "Submissions_SettingParser::print_pref_shuffle",
+        "settings": ["preference_shuffle"]
+    },
 
 
     {

@@ -176,6 +176,12 @@
         "tags": "revpref"
     },
     {
+        "name": "preference_shuffle", "storage": "pref_shuffle",
+        "title": "Shuffle paper order for review preference entry",
+        "type": "checkbox",
+        "tags": "revpref"
+    },
+    {
         "name": "submission_edit_message", "storage": "msg.submit",
         "title": "Submission edit message",
         "type": "htmlstring", "size": 5,

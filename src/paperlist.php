@@ -431,7 +431,8 @@ class PaperList {
         case "conflictassign:neg":
             return "id title authors[anon,full] potentialconflict revtype[simple] editconf[simple,pin=unconflicted] linkto[assign]";
         case "pf":
-            return "sel id title status revtype topicscore editmypref[topicscore]";
+            $t = $this->conf->setting("pref_shuffle") ? " sort:shuffle[reviewer]" : "";
+            return "sel id title status revtype topicscore editmypref[topicscore]" . $t;
         case "reviewers":
             return "sel[selected] id title status linkto[assign]";
         case "reviewersSel":
@@ -2083,7 +2084,7 @@ class PaperList {
         switch ($this->_report_id) {
         case "reviewAssignment":
             return "Review assignments";
-        case "editpref":
+        case "pf":
             return "Review preferences";
         case "reviewers":
         case "reviewersSel":
