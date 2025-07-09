@@ -1,6 +1,6 @@
 <?php
 // t_autoassign.php -- HotCRP tests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Autoassign_Tester {
     /** @var Conf
@@ -29,7 +29,7 @@ class Autoassign_Tester {
         $this->cflts = array_fill(1, 10, []);
         foreach ($this->conf->paper_set(["paperId" => range(1, 10)]) as $prow) {
             foreach ($prow->conflict_list() as $cflt) {
-                if (in_array($cflt->contactId, $this->pcc))
+                if (in_array($cflt->contactId, $this->pcc, true))
                     $this->cflts[$prow->paperId][$cflt->contactId] = true;
             }
         }
@@ -61,7 +61,7 @@ class Autoassign_Tester {
                         if (++$nt === 100) {
                             goto retry;
                         }
-                    } while (in_array($uid, $x) || isset($this->cflts[$pid][$uid]));
+                    } while (in_array($uid, $x, true) || isset($this->cflts[$pid][$uid]));
                     $x[] = $uid;
                     $qv[] = [$pid, $uid, 10];
                     $pcx[$pci] = $pcx[$npcx];
@@ -241,10 +241,10 @@ class Autoassign_Tester {
         $this->cur_pcc = [$this->pcc[0], $this->pcc[2], $this->pcc[3]];
         $aa = $this->xassert_autoassigner("review_ensure", $this->cur_pcc, [1, 2, 3], ["count" => 3]);
         $rbu = $this->reviews_by_user([1, 2, 3]);
-        xassert(in_array(1, $rbu[$this->pcc[0]]));
-        xassert(in_array(2, $rbu[$this->pcc[0]]));
-        xassert(in_array(1, $rbu[$this->pcc[2]]));
-        xassert(in_array(2, $rbu[$this->pcc[2]]));
+        xassert(in_array(1, $rbu[$this->pcc[0]], true));
+        xassert(in_array(2, $rbu[$this->pcc[0]], true));
+        xassert(in_array(1, $rbu[$this->pcc[2]], true));
+        xassert(in_array(2, $rbu[$this->pcc[2]], true));
         $pids = $aa->incompletely_assigned_paper_ids();
         xassert_eqq($pids, []);
     }
@@ -260,11 +260,11 @@ class Autoassign_Tester {
         $this->xassert_run_autoassigner($aa);
         $prows = $this->conf->paper_set(["paperId" => [1, 2, 3]]);
         $rbu = $this->reviews_by_user($prows);
-        xassert(!in_array(1, $rbu[$this->pcc[0]]));
-        xassert(in_array(2, $rbu[$this->pcc[0]]));
-        xassert(in_array(1, $rbu[$this->pcc[2]]));
-        xassert(!in_array(2, $rbu[$this->pcc[2]]));
-        xassert(in_array(3, $rbu[$this->pcc[0]]) === !in_array(3, $rbu[$this->pcc[2]]));
+        xassert(!in_array(1, $rbu[$this->pcc[0]], true));
+        xassert(in_array(2, $rbu[$this->pcc[0]], true));
+        xassert(in_array(1, $rbu[$this->pcc[2]], true));
+        xassert(!in_array(2, $rbu[$this->pcc[2]], true));
+        xassert(in_array(3, $rbu[$this->pcc[0]], true) === !in_array(3, $rbu[$this->pcc[2]], true));
         $pids = $aa->incompletely_assigned_paper_ids();
         xassert_eqq($pids, [1, 2, 3]);
         foreach ($prows as $prow) {
@@ -283,11 +283,11 @@ class Autoassign_Tester {
         $this->xassert_run_autoassigner($aa);
         $prows = $this->conf->paper_set(["paperId" => [1, 2, 3]]);
         $rbu = $this->reviews_by_user($prows);
-        xassert(!in_array(1, $rbu[$this->pcc[0]]));
-        xassert(in_array(2, $rbu[$this->pcc[0]]));
-        xassert(in_array(1, $rbu[$this->pcc[2]]));
-        xassert(!in_array(2, $rbu[$this->pcc[2]]));
-        xassert(in_array(3, $rbu[$this->pcc[0]]) === !in_array(3, $rbu[$this->pcc[2]]));
+        xassert(!in_array(1, $rbu[$this->pcc[0]], true));
+        xassert(in_array(2, $rbu[$this->pcc[0]], true));
+        xassert(in_array(1, $rbu[$this->pcc[2]], true));
+        xassert(!in_array(2, $rbu[$this->pcc[2]], true));
+        xassert(in_array(3, $rbu[$this->pcc[0]], true) === !in_array(3, $rbu[$this->pcc[2]], true));
         $pids = $aa->incompletely_assigned_paper_ids();
         xassert_eqq($pids, [1, 2, 3]);
         foreach ($prows as $prow) {

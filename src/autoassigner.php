@@ -1125,14 +1125,17 @@ abstract class Autoassigner extends MessageSet {
         // make those that are still valid
         $nacp_cost = [];
         foreach ($nacp as $a) {
-            $cost = 0;
+            $cost = null;
             foreach ($mcmf->paths_between("u{$a->cid}", "p{$a->pid}") as $p) {
+                $c0 = 0;
                 foreach ($p as $e) {
-                    $cost += $e->cost;
+                    $c0 += $e->cost;
                 }
-                break;
+                if ($cost === null || $cost < $c0) {
+                    $cost = $c0;
+                }
             }
-            $nacp_cost[] = $cost;
+            $nacp_cost[] = $cost ?? 0;
         }
         uksort($nacp, function ($i, $j) use ($nacp_cost) {
             return $nacp_cost[$i] <=> $nacp_cost[$j];
