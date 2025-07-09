@@ -1,6 +1,6 @@
 <?php
 // mincostmaxflow.php -- HotCRP min-cost max-flow
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class MinCostMaxFlow_Node {
     /** @var string */
@@ -295,9 +295,8 @@ class MinCostMaxFlow {
     function current_flow() {
         if ($this->maxflow !== null) {
             return $this->maxflow;
-        } else {
-            return min(-$this->source->excess, $this->sink->excess);
         }
+        return min(-$this->source->excess, $this->sink->excess);
     }
 
     /** @return int|float */
@@ -312,14 +311,23 @@ class MinCostMaxFlow {
 
     /** @param MinCostMaxFlow_Node|string $v
      * @return MinCostMaxFlow_Node */
-    private function start_dfs($v) {
+    private function find($v) {
+        if (is_string($v)) {
+            $v = $this->vmap[$v] ?? null;
+        }
+        if (!$v) {
+            throw new Exception("no such node `{$v}`");
+        }
+        return $v;
+    }
+
+    private function start_dfs() {
         foreach ($this->v as $vx) {
             $vx->npos = 0;
         }
         if (!$this->has_edges) {
             $this->initialize_edges();
         }
-        return is_string($v) ? $this->vmap[$v] : $v;
     }
 
     /** @param MinCostMaxFlow_Node $v
@@ -343,8 +351,9 @@ class MinCostMaxFlow {
      * @param ?string $klass
      * @return list<MinCostMaxFlow_Node> */
     function downstream($v, $klass) {
+        $this->start_dfs();
         $a = [];
-        $this->add_downstream($this->start_dfs($v), $klass, $a);
+        $this->add_downstream($this->find($v), $klass, $a);
         return $a;
     }
 
@@ -369,23 +378,25 @@ class MinCostMaxFlow {
      * @param ?string $klass
      * @return list<MinCostMaxFlow_Node> */
     function upstream($v, $klass) {
+        $this->start_dfs();
         $a = [];
-        $this->add_upstream($this->start_dfs($v), $klass, $a);
+        $this->add_upstream($this->find($v), $klass, $a);
         return $a;
     }
 
     /** @param MinCostMaxFlow_Node $v
      * @param list<MinCostMaxFlow_Node> &$a */
     private function topological_sort_visit($v, $klass, &$a) {
-        if ($v !== $this->sink && $v->npos === 0) {
-            $v->npos = 1;
-            foreach ($v->e as $e) {
-                if ($e->src === $v && $e->flow > 0 && $e->dst->npos === 0)
-                    $this->topological_sort_visit($e->dst, $klass, $a);
-            }
-            if ($v->klass === $klass) {
-                $a[] = $v;
-            }
+        if ($v === $this->sink || $v->npos !== 0) {
+            return;
+        }
+        $v->npos = 1;
+        foreach ($v->e as $e) {
+            if ($e->src === $v && $e->flow > 0 && $e->dst->npos === 0)
+                $this->topological_sort_visit($e->dst, $klass, $a);
+        }
+        if ($v->klass === $klass) {
+            $a[] = $v;
         }
     }
 
@@ -402,6 +413,52 @@ class MinCostMaxFlow {
         $a = [];
         $this->topological_sort_visit($v, $klass, $a);
         return array_reverse($a);
+    }
+
+    /** @param MinCostMaxFlow_Node|string $src
+     * @param MinCostMaxFlow_Node|string $dst
+     * @return Generator<list<MinCostMaxFlow_Edge>> */
+    function paths_between($src, $dst) {
+        $this->start_dfs();
+        $src = $this->find($src);
+        $dst = $this->find($dst);
+        // mark $dst and nodes upstream of it with bit 1
+        $stack = [$dst];
+        $dst->npos = 1;
+        while (($n = array_pop($stack)) !== null) {
+            foreach ($n->e as $e) {
+                if ($e->dst === $n
+                    && $e->flow > 0
+                    && $e->src->npos === 0) {
+                    $next = $e->src;
+                    $next->npos = 1;
+                    $stack[] = $next;
+                }
+            }
+        }
+        // enumerate paths between $src and $dst
+        // (assume no cycles)
+        $pstack = [[]];
+        while (($p = array_pop($pstack)) !== null) {
+            if (empty($p)) {
+                $last = $src;
+            } else {
+                $last = $p[count($p) - 1]->dst;
+            }
+            foreach ($last->e as $e) {
+                if ($e->src === $last
+                    && $e->flow > 0
+                    && $e->dst->npos === 1) {
+                    $p[] = $e;
+                    if ($e->dst === $dst) {
+                        yield $p;
+                    } else {
+                        $pstack[] = $p;
+                    }
+                    array_pop($p);
+                }
+            }
+        }
     }
 
 

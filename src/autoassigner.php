@@ -1,6 +1,6 @@
 <?php
 // autoassigner.php -- HotCRP helper classes for autoassignment
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class AutoassignerElement {
     /** @var int */
@@ -254,10 +254,9 @@ abstract class Autoassigner extends MessageSet {
         $tag = $tagger->check($tag, Tagger::NOVALUE | Tagger::ALLOWNONE);
         if ($tag !== false) {
             return $tag;
-        } else {
-            $this->error_at($field, $tagger->error_ftext(true));
-            return null;
         }
+        $this->error_at($field, $tagger->error_ftext(true));
+        return null;
     }
 
     /** @param array<string,mixed> $args */
@@ -1080,12 +1079,12 @@ abstract class Autoassigner extends MessageSet {
 
     /** @param bool $adjusting
      * @return bool */
-    private function mcmf_apply(MinCostMaxFlow $m, $adjusting) {
+    private function mcmf_apply(MinCostMaxFlow $mcmf, $adjusting) {
         // collect resulting assignments
         $changed = false;
         $acp = [];
         foreach ($this->aausers() as $cid => $ac) {
-            foreach ($m->downstream("u{$cid}", "p") as $v) {
+            foreach ($mcmf->downstream("u{$cid}", "p") as $v) {
                 $acp[$cid][] = (int) substr($v->name, 1);
             }
             if ($adjusting) {
@@ -1126,13 +1125,12 @@ abstract class Autoassigner extends MessageSet {
         // make those that are still valid
         $nacp_cost = [];
         foreach ($nacp as $a) {
-            $cost = $this->mcmf_assignment_preference_cost($a, $this->acs[$a->cid]);
-            if ($this->review_gadget === self::REVIEW_GADGET_EXPERTISE) {
-                if ($a->exp > 0) {
-                    $cost += $this->expertise_x_cost;
-                } else if ($a->exp === 0) {
-                    $cost += $this->expertise_y_cost;
+            $cost = 0;
+            foreach ($mcmf->paths_between("u{$a->cid}", "p{$a->pid}") as $p) {
+                foreach ($p as $e) {
+                    $cost += $e->cost;
                 }
+                break;
             }
             $nacp_cost[] = $cost;
         }
