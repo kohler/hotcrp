@@ -10,19 +10,6 @@ function $$(id) {
     return document.getElementById(id);
 }
 
-function serialize_object(x) {
-    if (typeof x === "string")
-        return x;
-    else if (x) {
-        var k, v, a = [];
-        for (k in x)
-            if ((v = x[k]) != null)
-                a.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
-        return a.join("&");
-    } else
-        return "";
-}
-
 if (!window.JSON || !window.JSON.parse) {
     window.JSON = {parse: $.parseJSON};
 }
@@ -1478,28 +1465,6 @@ function hoturl_search(url, key, value) {
         return url.substring(0, hash).concat(question < 0 || question > hash ? "?" : "&", key, "=", urlencode(value), url.substring(hash));
 }
 
-function hoturl_find(xv, page_component) {
-    var m;
-    for (var i = 0; i < xv.length; ++i)
-        if ((m = page_component.exec(xv[i]))) {
-            m[0] = i;
-            return m;
-        }
-    return null;
-}
-
-function hoturl_clean(x, page_component, allow_fail) {
-    if (x.last !== false && x.v.length) {
-        var im = hoturl_find(x.v, page_component);
-        if (im) {
-            x.last = im[1];
-            x.t += "/" + im[1];
-            x.v.splice(im[0], 1);
-        } else if (!allow_fail)
-            x.last = false;
-    }
-}
-
 function hoturl_clean_param(x, k, value_match, allow_fail) {
     let v;
     if (x.last === false) {
@@ -1514,7 +1479,6 @@ function hoturl_clean_param(x, k, value_match, allow_fail) {
 }
 
 function hoturl(page, options) {
-    const page1 = page, options1 = options;
     let want_forceShow = false;
     if (siteinfo.site_relative == null || siteinfo.suffix == null) {
         siteinfo.site_relative = siteinfo.suffix = "";
@@ -1616,10 +1580,6 @@ function hoturl(page, options) {
         tail = "?" + paramstr + tail;
     }
     return siteinfo.site_relative + x.t + tail;
-}
-
-function hoturl_html(page, options) {
-    return escape_html(hoturl(page, options));
 }
 
 function make_URL(url, loc) {
@@ -9624,30 +9584,31 @@ function tag_simplify(tag) {
 }
 
 function tagvalue_parse(s) {
-    if (s.match(/^\s*[-+]?(?:\d+(?:\.\d*)?|\.\d+)\s*$/))
+    if (s.match(/^\s*[-+]?(?:\d+(?:\.\d*)?|\.\d+)\s*$/)) {
         return +s;
+    }
     s = s.replace(/^\s+|\s+$/, "").toLowerCase();
-    if (s === "y" || s === "yes" || s === "t" || s === "true" || s === "✓")
+    if (s === "y" || s === "yes" || s === "t" || s === "true" || s === "✓") {
         return 0;
-    else if (s === "n" || s === "no" || s === "" || s === "f" || s === "false" || s === "na" || s === "n/a" || s === "clear")
+    } else if (s === "n" || s === "no" || s === "" || s === "f" || s === "false" || s === "na" || s === "n/a" || s === "clear") {
         return false;
-    else
-        return null;
+    }
+    return null;
 }
 
 function tagvalue_unparse(tv) {
-    if (tv === false || tv == null)
+    if (tv === false || tv == null) {
         return "";
-    else
-        return sprintf("%.2f", tv).replace(/\.0+$|0+$/, "");
+    }
+    return sprintf("%.2f", tv).replace(/\.0+$|0+$/, "");
 }
 
 function row_tagvalue(row, tag) {
-    var tags = row.getAttribute("data-tags"), m;
-    if (tags && (m = new RegExp("(?:^| )" + regexp_quote(tag) + "#(\\S+)", "i").exec(tags)))
+    let tags = row.getAttribute("data-tags"), m;
+    if (tags && (m = new RegExp("(?:^| )" + regexp_quote(tag) + "#(\\S+)", "i").exec(tags))) {
         return tagvalue_parse(m[1]);
-    else
-        return false;
+    }
+    return false;
 }
 
 
@@ -10352,8 +10313,8 @@ function DraggableTable(srctr, dragtag) {
     this.srcindex = null;
     this.dragindex = null;
 
-    var tr, tranal = null, groupindex = -1;
-    for (tr = this.tablelist.tBodies[0].firstChild; tr; tr = tr.nextSibling) {
+    let tranal = null, groupindex = -1;
+    for (let tr = this.tablelist.tBodies[0].firstChild; tr; tr = tr.nextSibling) {
         if (tr.nodeName === "TR") {
             if (hasClass(tr, "plx")) {
                 tranal.back = tr;
@@ -10382,9 +10343,8 @@ DraggableTable.prototype.group_back_index = function (i) {
 DraggableTable.prototype.content = function () {
     if (this.srcindex !== null) {
         return this.rs[this.srcindex].legend();
-    } else {
-        return "None";
     }
+    return "None";
 };
 
 function Tagval_DraggableTable(srctr, dragtag) {
@@ -10393,12 +10353,12 @@ function Tagval_DraggableTable(srctr, dragtag) {
     this.gapf = function () { return 1; };
     // annotated groups are assumed to be gapless
     if (this.grouprs.length > 0) {
-        var sd = 0, nd = 0, s2d = 0, lv = null, d, i;
-        for (i = 0; i < this.rs.length; ++i) {
+        let sd = 0, nd = 0, s2d = 0, lv = null;
+        for (let i = 0; i < this.rs.length; ++i) {
             if (this.rs[i].id && this.rs[i].tagval !== false) {
                 if (lv !== null) {
                     ++nd;
-                    d = this.rs[i].tagval - lv;
+                    const d = this.rs[i].tagval - lv;
                     sd += d;
                     s2d += d * d;
                 }
@@ -10412,10 +10372,11 @@ function Tagval_DraggableTable(srctr, dragtag) {
 }
 Object.setPrototypeOf(Tagval_DraggableTable.prototype, DraggableTable.prototype);
 Tagval_DraggableTable.prototype.content = function () {
-    var frag = document.createDocumentFragment(), newval,
+    const frag = document.createDocumentFragment(),
         unchanged = this.srcindex === this.dragindex,
         srcra = this.rs[this.srcindex];
     frag.append(srcra.legend());
+    let newval;
     if (unchanged) {
         newval = srcra.tagval;
     } else {
@@ -10431,9 +10392,9 @@ Tagval_DraggableTable.prototype.content = function () {
     return frag;
 };
 Tagval_DraggableTable.prototype.compute = function () {
-    var i, j, len = this.rs.length, d, tv,
-        si = this.srcindex, di = this.dragindex,
+    const len = this.rs.length, si = this.srcindex, di = this.dragindex,
         sigroup = this.rs[si].isgroup, nsi = this.group_back_index(si) - si + 1;
+    let i, j, d, tv;
     // initialize to unchanged, reset gap
     for (i = 0; i !== len; ++i) {
         this.rs[i].newtagval = this.rs[i].tagval;
@@ -10525,13 +10486,12 @@ Tagval_DraggableTable.prototype.compute = function () {
     }
 };
 Tagval_DraggableTable.prototype.commit = function () {
-    var saves = [], annosaves = [], i, e, row, nv,
-        srcra = this.rs[this.srcindex];
+    const saves = [], annosaves = [], srcra = this.rs[this.srcindex];
     this.compute();
-    for (i = 0; i !== this.rs.length; ++i) {
-        row = this.rs[i];
+    for (let i = 0; i !== this.rs.length; ++i) {
+        const row = this.rs[i];
         if (row.newtagval !== row.tagval) {
-            nv = tagvalue_unparse(row.newtagval);
+            const nv = tagvalue_unparse(row.newtagval);
             if (row.id) {
                 saves.push("".concat(row.id, " ", this.dragtag, "#", nv === "" ? "clear" : nv));
             } else if (row.annoid) {
@@ -10540,7 +10500,7 @@ Tagval_DraggableTable.prototype.commit = function () {
         }
     }
     if (saves.length) {
-        e = srcra.front.querySelector("input[name='tag:".concat(this.dragtag, " ", srcra.id, "']"));
+        const e = srcra.front.querySelector("input[name='tag:".concat(this.dragtag, " ", srcra.id, "']"));
         $.post(hoturl("=api/assigntags", {forceShow: 1}),
             {tagassignment: saves.join(","), search: tablelist_search(this.tablelist)},
             make_tag_save_callback(e));
@@ -10568,12 +10528,12 @@ Assign_DraggableTable.prototype.drag_groupindex = function () {
     }
 };
 Assign_DraggableTable.prototype.content = function () {
-    var frag = document.createDocumentFragment(),
+    const frag = document.createDocumentFragment(),
         srcra = this.rs[this.srcindex],
         oldidx = srcra.groupindex,
-        newidx = this.drag_groupindex(),
-        legend;
+        newidx = this.drag_groupindex();
     frag.append(srcra.legend());
+    let legend;
     if (newidx < this.assigninfo.length) {
         legend = this.groupinfo[newidx].legend;
     } else {
@@ -10588,14 +10548,14 @@ Assign_DraggableTable.prototype.content = function () {
     return frag;
 };
 Assign_DraggableTable.prototype.commit = function () {
-    var as = [], i,
+    const as = [],
         srcra = this.rs[this.srcindex],
         oldidx = srcra.groupindex,
         newidx = this.drag_groupindex();
     function doassignlist(as, assignlist, id, ondrag) {
-        var i, len = (assignlist || []).length, x;
-        for (i = 0; i !== len; ++i) {
-            x = assignlist[i];
+        const len = (assignlist || []).length;
+        for (let i = 0; i !== len; ++i) {
+            const x = assignlist[i];
             if (x.ondrag === ondrag) {
                 x = Object.assign({pid: id}, x);
                 delete x.ondrag;
@@ -10604,7 +10564,7 @@ Assign_DraggableTable.prototype.commit = function () {
         }
     }
     if (oldidx !== newidx) {
-        for (i = 0; i !== this.assigninfo.length; ++i) {
+        for (let i = 0; i !== this.assigninfo.length; ++i) {
             i !== newidx && doassignlist(as, this.assigninfo[i], srcra.id, "leave");
         }
         doassignlist(as, this.assigninfo[newidx], srcra.id, "enter");

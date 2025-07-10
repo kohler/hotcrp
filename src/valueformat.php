@@ -16,9 +16,8 @@ abstract class ValueFormat {
             return "N";
         } else if ($x === true) {
             return "Y";
-        } else {
-            return $this->vtext($x);
         }
+        return $this->vtext($x);
     }
 
     /** @param null|bool|int|float $x
@@ -34,9 +33,8 @@ abstract class ValueFormat {
             return "";
         } else if ($x === true) {
             return "✓";
-        } else {
-            return $this->vhtml($x);
         }
+        return $this->vhtml($x);
     }
 
     /** @return ValueFormat */
@@ -84,9 +82,8 @@ class Bool_ValueFormat extends ValueFormat {
             return $x ? "Y" : "N";
         } else if (is_int($x)) {
             return (string) $x;
-        } else {
-            return (string) (round($x * 100) / 100);
         }
+        return (string) (round($x * 100) / 100);
     }
 
     function vhtml($x) {
@@ -94,9 +91,8 @@ class Bool_ValueFormat extends ValueFormat {
             return $x ? "✓" : "";
         } else if (is_int($x)) {
             return (string) $x;
-        } else {
-            return (string) (round($x * 100) / 100);
         }
+        return (string) (round($x * 100) / 100);
     }
 
     function difference_format() {
@@ -131,9 +127,8 @@ class Numeric_ValueFormat extends ValueFormat {
             return sprintf($this->real_format, $x);
         } else if (is_int($x)) {
             return (string) $x;
-        } else {
-            return (string) (round($x * 100) / 100);
         }
+        return (string) (round($x * 100) / 100);
     }
 }
 

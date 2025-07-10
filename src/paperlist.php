@@ -61,15 +61,18 @@ class PaperListTableRender {
      * @param array<string,mixed> $attr
      * @return string */
     function heading_row($groupno, $heading, $attr) {
-        if (!$heading) {
-            return "  <tr class=\"plheading\"><td class=\"plheading-blank\" colspan=\"{$this->ncol}\"></td></tr>\n";
-        }
         $x = "  <tr class=\"plheading\"";
         foreach ($attr as $k => $v) {
-            if ($k !== "no_titlecol" && $k !== "tdclass")
+            if ($v === true) {
+                $x .= " {$k}";
+            } else if ($k !== "no_titlecol" && $k !== "tdclass") {
                 $x .= " {$k}=\"" . htmlspecialchars($v) . "\"";
+            }
         }
         $x .= ">";
+        if (!$heading) {
+            return $x . "<td class=\"plheading-blank\" colspan=\"{$this->ncol}\"></td></tr>\n";
+        }
         $tdclass = Ht::add_tokens("plheading", $attr["tdclass"] ?? null);
         $colpos = 0;
         if (!($attr["no_titlecol"] ?? false)) {
@@ -981,7 +984,8 @@ class PaperList {
             // default editable tag
             $this->_sort_etag = "";
             if ($this->_sortcol[0] instanceof Tag_PaperColumn
-                && !$this->_sortcol[0]->sort_descending) {
+                && !$this->_sortcol[0]->sort_descending
+                && $this->_sortcol[0]->sort_subset === null) {
                 $this->_sort_etag = $this->_sortcol[0]->etag();
             }
             // done
@@ -996,6 +1000,19 @@ class PaperList {
             $this->sorters();
         }
         return $this->_sort_etag;
+    }
+
+    /** @return ?PaperColumn */
+    private function first_sorter($grouppos = null) {
+        if ($this->_sortcol_fixed === 0) {
+            $this->sorters();
+        }
+        foreach ($this->_sortcol as $s) {
+            if ($s->sort_subset === null
+                || in_array($grouppos, $s->sort_subset, true))
+                return $s;
+        }
+        return null;
     }
 
     /** @param Conf $conf
@@ -1123,9 +1140,8 @@ class PaperList {
             && ($always || (string) $this->qreq->sort !== "")
             && ($sn = $s0->full_sort_name()) !== "id") {
             return $sn;
-        } else {
-            return "";
         }
+        return "";
     }
 
     /** @return string */
@@ -1759,20 +1775,31 @@ class PaperList {
                 assert(count($body) === 0);
             }
             $ginfo = $this->_groups[$grouppos];
+            $attr = [];
+            if ($ginfo->tag) {
+                $attr["data-anno-tag"] = $ginfo->tag;
+            }
+            if ($ginfo->annoId) {
+                $attr["data-anno-id"] = $ginfo->annoId;
+                $attr["data-tags"] = "{$ginfo->tag}#{$ginfo->tagIndex}";
+            }
+            if ($this->_then_map) {
+                $sorter = $this->first_sorter($grouppos);
+                if ($sorter
+                    && $sorter instanceof Tag_PaperColumn
+                    && !$sorter->sort_descending) {
+                    $attr["data-drag-order"] = "tagval:" . $sorter->etag();
+                } else {
+                    $attr["data-drag-order"] = "none";
+                }
+            }
             if ($ginfo->is_blank()) {
                 // elide heading row for initial blank section
-                if ($grouppos !== 0) {
-                    $body[] = $rstate->heading_row($grouppos, "", []);
+                if ($grouppos === 0) {
+                    $attr["hidden"] = true;
                 }
+                $body[] = $rstate->heading_row($grouppos, "", $attr);
             } else {
-                $attr = [];
-                if ($ginfo->tag) {
-                    $attr["data-anno-tag"] = $ginfo->tag;
-                }
-                if ($ginfo->annoId) {
-                    $attr["data-anno-id"] = $ginfo->annoId;
-                    $attr["data-tags"] = "{$ginfo->tag}#{$ginfo->tagIndex}";
-                }
                 $x = "<span class=\"plheading-group";
                 if ($ginfo->heading !== "") {
                     $x .= " pr-2";
@@ -2125,14 +2152,17 @@ class PaperList {
         $assign = [];
         foreach ($groups as $i => $qe) {
             $a = $qe->drag_assigners($this->user);
-            if (!empty($a)) {
-                $assign[] = $a;
-            } else if ($a === null
-                       || ($a === [] && $i !== count($groups) - 1)) {
+            if ($a === [] && $i === count($groups) - 1) {
+                break;
+            } else if (empty($a)) {
                 return null;
             }
+            $assign[] = $a;
         }
-        return empty($assign) ? null : "assign:" . json_encode_browser($assign);
+        if (empty($assign)) {
+            return null;
+        }
+        return "assign:" . json_encode_browser($assign);
     }
 
     /** @return PaperListTableRender */
@@ -2216,6 +2246,9 @@ class PaperList {
             && ($da = $this->_drag_action())) {
             $this->table_attr["class"][] = "pltable-draggable";
             $this->table_attr["data-drag-action"] = $da;
+        }
+        if ($this->_sort_etag) {
+            $this->table_attr["data-drag-order"] = "tagval:{$this->_sort_etag}";
         }
 
         // collect row data
