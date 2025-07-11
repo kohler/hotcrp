@@ -162,7 +162,7 @@ class Ht {
             $action = substr($action, 0, $qpos) . htmlspecialchars((string) substr($decoded_query, $pos));
         }
 
-        $x = '<form';
+        $x = '<form' . self::extra($extra);
         if ($action !== "" || isset($extra["method"])) {
             $x .= " method=\"{$method}\"";
         }
@@ -172,7 +172,7 @@ class Ht {
         if (!isset($extra["enctype"]) && $method !== "get") {
             $extra["enctype"] = "multipart/form-data";
         }
-        return $x . ' accept-charset="UTF-8"' . self::extra($extra) . $suffix;
+        return $x . ' accept-charset="UTF-8"' . $suffix;
     }
 
     /** @param string $name

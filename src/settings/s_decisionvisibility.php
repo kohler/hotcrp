@@ -47,8 +47,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
                 2 => "Yes",
                 1 => $dva
             ], 'Can <strong>authors see decisions</strong> (accept/reject) for their submissions?',
-            ["fold_values" => [2, 1],
-             "item_class" => "uich js-foldup js-settings-seedec"]);
+            ["item_class" => "uich js-settings-seedec"]);
     }
 
     static function print_reviewer(SettingValues $sv) {
@@ -63,7 +62,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
                 Conf::SEEDEC_REV => "Yes",
                 Conf::SEEDEC_NCREV => "Yes, unless they have a conflict"
             ], "Can <strong>{$rtext}</strong> see decisions as soon as they are made?",
-            ["group_class" => $accept_auview ? "fold2c" : "fold2o"]);
+            ["item_class" => "uich js-settings-seedec"]);
     }
 
     static function crosscheck(SettingValues $sv) {
