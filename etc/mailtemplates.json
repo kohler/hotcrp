@@ -173,7 +173,7 @@
 			"An administrator provided the following reason for this registration: {{REASON}}\n",
 			"{{ELSEIF(ADMINUPDATE)}}\n",
 			"An administrator performed this registration.\n",
-			"{{ENDIF}\n\n",
+			"{{ENDIF}}\n\n",
 			"Contact {{ADMIN}} with any questions or concerns.\n\n",
 			"{{SIGNATURE}}\n{{LINK}}\n"
 		]
