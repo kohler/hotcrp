@@ -36,7 +36,7 @@ class Autoassign_Tester {
         assert(count($this->pcc) === 17);
     }
 
-    function setup() {
+    function setup_clear() {
         $this->conf->qe("delete from PaperReview");
         $this->conf->qe("delete from PaperReviewHistory");
         $this->conf->qe("delete from PaperReviewRefused");
@@ -44,7 +44,7 @@ class Autoassign_Tester {
     }
 
     function setup_10x10_pref3() {
-        $this->setup();
+        $this->setup_clear();
         $this->cur_pids = range(1, 10);
         $this->cur_pcc = array_slice($this->pcc, 0, 10);
         do {
@@ -234,7 +234,7 @@ class Autoassign_Tester {
             Xassert::$context = null;
         }
 
-        $this->setup();
+        $this->setup_clear();
         $qv = [[1, $this->pcc[0], 10], [2, $this->pcc[0], 20],
                [1, $this->pcc[2], 20], [2, $this->pcc[2], 10]];
         $this->conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ?v", $qv);
@@ -250,7 +250,7 @@ class Autoassign_Tester {
     }
 
     function test_avoid_coassignment_active()  {
-        $this->setup();
+        $this->setup_clear();
         $qv = [[1, $this->pcc[0], 10], [2, $this->pcc[0], 20],
                [1, $this->pcc[2], 20], [2, $this->pcc[2], 10]];
         $this->conf->qe("insert into PaperReviewPreference (paperId, contactId, preference) values ?v", $qv);
@@ -273,7 +273,7 @@ class Autoassign_Tester {
     }
 
     function test_avoid_coassignment_active_expertise()  {
-        $this->setup();
+        $this->setup_clear();
         $qv = [[1, $this->pcc[0], 0, 0], [2, $this->pcc[0], 0, 1],
                [1, $this->pcc[2], 0, 1], [2, $this->pcc[2], 0, 0]];
         $this->conf->qe("insert into PaperReviewPreference (paperId, contactId, preference, expertise) values ?v", $qv);
@@ -375,5 +375,82 @@ class Autoassign_Tester {
         foreach ($rbu2 as $px) {
             xassert_in_eqq(count($px), [2, 3]);
         }
+    }
+
+    function setup_narrow_pref() {
+        $this->setup_clear();
+        $this->cur_pids = range(1, 10);
+        $this->cur_pcc = array_slice($this->pcc, 0, 10);
+        for ($i = 0; $i !== 3; ++$i) {
+            $uid = $this->cur_pcc[$i];
+            $pref = 8;
+            for ($pid = 1 + $i; $pref >= 2 && $pid <= 10; ++$pid) {
+                if (isset($this->cflt[$pid][$uid])) {
+                    continue;
+                }
+                $qv[] = [$pid, $uid, $pref];
+                $pref /= 2;
+            }
+        }
+        $this->conf->qe("insert into PaperReviewPreference (paperId,contactId,preference) values ?v", $qv);
+        $this->cur_pref = $qv;
+    }
+
+    function test_narrow_pref_no_fuzz() {
+        $this->setup_narrow_pref();
+        $an = [];
+        for ($i = 0; $i !== 10; ++$i) {
+            $aa = $this->autoassigner("review", $this->cur_pcc, $this->cur_pids, ["count" => 1]);
+            $aa->run();
+            foreach ($aa->csv_assignments() as $row) {
+                $u = $this->conf->pc_member_by_email($row["email"]);
+                $pf =& $an[$row["paper"]][$u->contactId];
+                $pf = ($pf ?? 0) + 1;
+            }
+        }
+        xassert_eqq($an[1][$this->cur_pcc[0]], 10);
+        xassert_eqq($an[2][$this->cur_pcc[1]], 10);
+        xassert_eqq($an[3][$this->cur_pcc[2]], 10);
+    }
+
+    function test_narrow_pref_fuzz_2() {
+        $this->setup_narrow_pref();
+        Xassert::retry(5, function () {
+            $an = [];
+            for ($i = 0; $i !== 10; ++$i) {
+                $aa = $this->autoassigner("review", $this->cur_pcc, $this->cur_pids, ["count" => 1, "preference_fuzz" => 2]);
+                $aa->run();
+                foreach ($aa->csv_assignments() as $row) {
+                    $u = $this->conf->pc_member_by_email($row["email"]);
+                    $pf =& $an[$row["paper"]][$u->contactId];
+                    $pf = ($pf ?? 0) + 1;
+                }
+            }
+            xassert_ge($an[1][$this->cur_pcc[0]] ?? 0, 2);
+            xassert_le($an[1][$this->cur_pcc[0]] ?? 0, 8);
+            xassert_ge($an[2][$this->cur_pcc[1]] ?? 0, 2);
+            xassert_le($an[2][$this->cur_pcc[1]] ?? 0, 8);
+            xassert_ge($an[3][$this->cur_pcc[2]] ?? 0, 2);
+            xassert_le($an[3][$this->cur_pcc[2]] ?? 0, 8);
+        });
+    }
+
+    function test_narrow_pref_fuzz_5() {
+        $this->setup_narrow_pref();
+        Xassert::retry(5, function () {
+            $an = [];
+            for ($i = 0; $i !== 10; ++$i) {
+                $aa = $this->autoassigner("review", $this->cur_pcc, $this->cur_pids, ["count" => 1, "preference_fuzz" => 5]);
+                $aa->run();
+                foreach ($aa->csv_assignments() as $row) {
+                    $u = $this->conf->pc_member_by_email($row["email"]);
+                    $pf =& $an[$row["paper"]][$u->contactId];
+                    $pf = ($pf ?? 0) + 1;
+                }
+            }
+            xassert_le($an[1][$this->cur_pcc[0]] ?? 0, 3);
+            xassert_le($an[2][$this->cur_pcc[1]] ?? 0, 3);
+            xassert_le($an[3][$this->cur_pcc[2]] ?? 0, 3);
+        });
     }
 }

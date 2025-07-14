@@ -277,6 +277,8 @@ class Xassert {
     static public $context = null;
     /** @var bool */
     static public $stop = false;
+    /** @var bool */
+    static public $retry = false;
     /** @var ?TestRunner */
     static public $test_runner;
     /** @var array<int,string> */
@@ -336,6 +338,9 @@ class Xassert {
 
     /** @param list<string> $sl */
     static private function fail_message($sl) {
+        if (self::$retry) {
+            return;
+        }
         if (self::$test_runner) {
             self::$test_runner->will_fail();
         }
@@ -410,9 +415,15 @@ class Xassert {
             if (preg_match('/\A[Xx]?assert|\AMailChecker::check|::x?assert/s', $fname)) {
                 continue;
             }
-            $refl = isset($tr["class"]) ? new ReflectionMethod($tr["class"], $tr["function"]) : new ReflectionFunction($tr["function"]);
-            if (PHP_MAJOR_VERSION >= 8 && $refl->getAttributes("SkipLandmark")) {
-                continue;
+            if (PHP_MAJOR_VERSION >= 8 && !str_contains($fname, "{closure")) {
+                if (isset($tr["class"])) {
+                    $refl = new ReflectionMethod($tr["class"], $tr["function"]);
+                } else {
+                    $refl = new ReflectionFunction($tr["function"]);
+                }
+                if ($refl->getAttributes("SkipLandmark")) {
+                    continue;
+                }
             }
             $loc = $fname;
             if (($file = $trace[$pos - 1]["file"] ?? null) !== null) {
@@ -444,6 +455,27 @@ class Xassert {
             }
         }
         return [$first, ""];
+    }
+
+    /** @param int $ntries
+     * @param callable $f */
+    static function retry($ntries, $f) {
+        $r = self::$retry;
+        self::$retry = true;
+        while ($ntries > 1) {
+            --$ntries;
+            $n = self::$n;
+            $nsuccess = self::$nsuccess;
+            $f();
+            if (self::$nsuccess === $nsuccess + self::$n - $n) {
+                self::$retry = $r;
+                return;
+            }
+            self::$n = $n;
+            self::$nsuccess = $nsuccess;
+        }
+        self::$retry = $r;
+        $f();
     }
 }
 

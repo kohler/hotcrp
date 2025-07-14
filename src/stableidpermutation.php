@@ -36,18 +36,35 @@ class StableIDPermutation {
         }
     }
 
+    /** @param Conf $conf
+     * @param string $keyname
+     * @return string */
+    static function conf_key($conf, $keyname) {
+        $x = $conf->setting_data($keyname);
+        if ($x === null) {
+            $conf->qe("insert into Settings set name=?, value=1, data=? on duplicate key update name=name",
+                $keyname, random_bytes(7));
+            $x = $conf->fetch_value("select data from Settings where name=?", $keyname);
+            assert($x !== null);
+            $conf->change_setting($keyname, 1, $x);
+        }
+        return substr($x, 0, 7);
+    }
+
     /** @param Contact $u
      * @return StableIDPermutation */
     static function make_user($u) {
         $u->ensure_account_here();
-        $ipk = $u->conf->setting_data("__id_permuter_key");
-        if ($ipk === null) {
-            $u->conf->qe("insert into Settings set name='__id_permuter_key', value=1, data=? on duplicate key update name=name", random_bytes(7));
-            $ipk = $u->conf->fetch_value("select data from Settings where name='__id_permuter_key'");
-            assert($ipk !== null);
-            $u->conf->change_setting("__id_permuter_key", 1, $ipk);
-        }
-        return new StableIDPermutation("U" . $ipk . pack("P", $u->contactId));
+        $pk = self::conf_key($u->conf, "__id_permuter_key");
+        return new StableIDPermutation("U" . $pk . pack("P", $u->contactId));
+    }
+
+    /** @param Contact $u
+     * @return StableIDPermutation */
+    static function make_assignment($u) {
+        $u->ensure_account_here();
+        $pk = $u->data("assignment_key") ?? self::conf_key($u->conf, "__assignment_key");
+        return new StableIDPermutation("U" . $pk . pack("P", $u->contactId));
     }
 
     /** @param int|list<int> ...$ids */

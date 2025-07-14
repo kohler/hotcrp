@@ -101,7 +101,7 @@ class PaperPC_Autoassigner extends Autoassigner {
             }
         }
 
-        $this->compute_pref_index();
+        $this->compute_pref_index_direct();
         $this->profile["preferences"] = microtime(true) - $time;
     }
 

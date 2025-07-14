@@ -78,6 +78,7 @@ class Review_Autoassigner extends Autoassigner {
         $this->extract_balance_method($subreq);
         $this->extract_max_load($subreq);
         $this->extract_gadget_costs($subreq);
+        $this->extract_preference_fuzz($subreq);
 
         $n = stoi($subreq["count"] ?? $gj->count ?? 1) ?? -1;
         if ($n <= 0) {

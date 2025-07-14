@@ -163,6 +163,8 @@ abstract class Autoassigner extends MessageSet {
     public $expertise_x_cost = -200;
     /** @var int */
     public $expertise_y_cost = -140;
+    /** @var int */
+    public $preference_fuzz = 0;
     private $progressf = [];
     /** @var ?MinCostMaxFlow */
     protected $mcmf;
@@ -348,6 +350,19 @@ abstract class Autoassigner extends MessageSet {
             if (($v = $this->extract_intval($args, $ncost, $mv)) !== null) {
                 $this->$ncost = $v;
             }
+        }
+    }
+
+    /** @param array<string,mixed> $args */
+    function extract_preference_fuzz($args) {
+        $fuzz = $args["preference_fuzz"] ?? false;
+        if (is_bool($fuzz)) {
+            $this->preference_fuzz = $fuzz ? 10 : 0;
+        } else if (is_int($fuzz)) {
+            $this->preference_fuzz = $fuzz;
+        } else {
+            $this->error_at("preference_fuzz", "<0>Preference fuzz factor should be an integer");
+            $this->preference_fuzz = 10;
         }
     }
 
@@ -542,6 +557,13 @@ abstract class Autoassigner extends MessageSet {
         return count($this->ass) > 1 ? $this->ass : [];
     }
 
+    /** @return CsvParser */
+    function csv_assignments() {
+        $csvp = new CsvParser($this->ass, CsvParser::TYPE_COMMA | CsvParser::TYPE_HEADER);
+        $csvp->add_synonym("pid", "paper");
+        return $csvp;
+    }
+
     /** @return array<int,int> */
     function pc_unhappiness() {
         $u = [];
@@ -720,10 +742,7 @@ abstract class Autoassigner extends MessageSet {
     }
 
 
-    protected function compute_pref_index() {
-        if ($this->has_pref_index) {
-            return;
-        }
+    protected function compute_pref_index_direct() {
         foreach ($this->acs as $ac) {
             $pf = $this->ainfo[$ac->cid] ?? [];
             usort($pf, function ($a1, $a2) {
@@ -734,13 +753,49 @@ abstract class Autoassigner extends MessageSet {
             foreach ($pf as $a) {
                 if (!$last || $a->cpref != $last->cpref) {
                     ++$pgidx;
-                    $last = $a;
                 }
                 $a->pref_index = $pgidx;
+                $last = $a;
             }
             $ac->pref_index_bound = $pgidx + 1;
         }
         $this->has_pref_index = true;
+    }
+
+    protected function compute_pref_index_fuzz() {
+        foreach ($this->acs as $ac) {
+            $idp = StableIDPermutation::make_assignment($ac->user);
+            $pf = $this->ainfo[$ac->cid] ?? [];
+            foreach ($pf as $a) {
+                $idp->prefetch($a->pid);
+            }
+            usort($pf, function ($a1, $a2) use ($idp) {
+                return $a2->cpref <=> $a1->cpref
+                    ? : $idp->get($a1->pid) <=> $idp->get($a2->pid);
+            });
+            $pgidx = -1;
+            $nidx = 0;
+            $last = null;
+            foreach ($pf as $a) {
+                if (!$last || ($a->cpref != $last->cpref && $nidx >= $this->preference_fuzz)) {
+                    ++$pgidx;
+                    $nidx = 0;
+                }
+                $a->pref_index = $pgidx;
+                ++$nidx;
+                $last = $a;
+            }
+            $ac->pref_index_bound = $pgidx + 1;
+        }
+        $this->has_pref_index = true;
+    }
+
+    protected function compute_pref_index() {
+        if ($this->preference_fuzz > 1) {
+            $this->compute_pref_index_fuzz();
+        } else {
+            $this->compute_pref_index_direct();
+        }
     }
 
     /** @param bool $prefsort */
@@ -831,7 +886,9 @@ abstract class Autoassigner extends MessageSet {
         Dbl::free($result);
         gc_collect_cycles();
 
-        $this->compute_pref_index();
+        if (!$this->has_pref_index) {
+            $this->compute_pref_index();
+        }
         $this->process_avoid_lists(true);
         $this->profile["preferences"] = microtime(true) - $time;
     }
