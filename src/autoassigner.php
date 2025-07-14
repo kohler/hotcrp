@@ -804,7 +804,10 @@ abstract class Autoassigner extends MessageSet {
                     || !$ac->user->pc_track_assignable($prow))) {
                 $a->eass = self::ENOASSIGN;
             }
-            $a->cpref = max($a->pref, -1000) + ((float) $a->topicscore / 100.0);
+            $a->cpref = max($a->pref, -1000);
+            if ($a->cpref == 0) {
+                $a->cpref = (float) $a->topicscore / 100.0;
+            }
         }
     }
 
