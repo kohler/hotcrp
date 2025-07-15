@@ -102,6 +102,20 @@ if (!function_exists("normalizer_normalize")) {
     }
 }
 
+if (!function_exists("openssl_cipher_key_length")) {
+    /** @param string $cipher
+     * @return int|false */
+    function openssl_cipher_key_length($cipher) {
+        if (!in_array($cipher, openssl_get_cipher_methods())) {
+            // XXX should warn
+            return false;
+        } else if (preg_match('/\A(?:aes-|aria-|camellia-)(128|192|256)(?:-cbc|-cbc-hmac.*|-ccm|-cfb.*|-ctr|-ecb|-gcm|-ocb|-ofb|-wrap|-wrap-pad)\z/', $cipher, $m)) {
+            return (int) $m[1] / 8;
+        }
+        return 0; /* XXX */
+    }
+}
+
 if (!function_exists("gmp_init")) {
     function gmp_init($v) {
         return GMPShim::init($v);
