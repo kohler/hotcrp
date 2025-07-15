@@ -654,7 +654,8 @@ class PaperStatus extends MessageSet {
         // Fields
         $ioptions = (object) [];
         if (isset($ipj->options)) {
-            if (is_associative_array($ipj->options) || is_object($ipj->options)) {
+            if (is_object($ipj->options)
+                || (is_array($ipj->options) && !array_is_list($ipj->options))) {
                 $ioptions = (object) $ipj->options;
             } else if (is_array($ipj->options)
                        && count($ipj->options) == 1

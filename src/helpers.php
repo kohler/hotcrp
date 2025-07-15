@@ -130,7 +130,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
                 $this->content = (array) $a2;
             }
         } else {
-            assert(is_associative_array($a2));
+            assert(is_array($a2) && !array_is_list($a2));
             $this->content = $a2;
         }
     }

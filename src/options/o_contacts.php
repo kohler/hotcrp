@@ -149,7 +149,7 @@ class Contacts_PaperOption extends PaperOption {
         $ov = PaperValue::make_force($prow, $this);
         // collect values
         $reqau = [];
-        if (is_object($j) || is_associative_array($j)) {
+        if (is_object($j) || (is_array($j) && !array_is_list($j))) {
             foreach ((array) $j as $k => $v) {
                 if (is_bool($v)) {
                     $reqau[] = $au = Author::make_email($k);

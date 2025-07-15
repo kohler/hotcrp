@@ -117,7 +117,7 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
 
     function parse_json(PaperInfo $prow, $j) {
         $bad = false;
-        if (is_object($j) || is_associative_array($j)) {
+        if (is_object($j) || (is_array($j) && !array_is_list($j))) {
             $j = array_keys(array_filter((array) $j, function ($x) use (&$bad) {
                 if ($x !== null && $x !== false && $x !== true) {
                     $bad = true;

@@ -739,7 +739,7 @@ function xassert_array_eqq($actual, $expected, $sort = false) {
         if (count($actual) !== count($expected)
             && !$sort) {
             $problem = "expected size " . count($expected) . ", got " . count($actual);
-        } else if (is_associative_array($actual) || is_associative_array($expected)) {
+        } else if (!array_is_list($actual) || !array_is_list($expected)) {
             $problem = "associative arrays";
         } else {
             if ($sort) {

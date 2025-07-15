@@ -1166,7 +1166,7 @@ class CsvGenerator {
         if (!$this->selection
             || empty($row)
             || ($this->selection_is_names
-                && !is_associative_array($row)
+                && (!is_array($row) || array_is_list($row))
                 && count($row) <= count($this->selection))) {
             return $row;
         }

@@ -499,7 +499,7 @@ class UserStatus extends MessageSet {
             $x = preg_split('/[\s,;]+/', $x);
         }
         $res = [];
-        if (is_object($x) || is_associative_array($x)) {
+        if (is_object($x) || (is_array($x) && !array_is_list($x))) {
             foreach ((array) $x as $k => $v) {
                 $res[$lc ? strtolower($k) : $k] = $v;
             }
@@ -790,7 +790,7 @@ class UserStatus extends MessageSet {
      * @param ?MessageSet $ms
      * @return int */
     static function parse_roles($j, $old_roles, $ms = null) {
-        if (is_object($j) || is_associative_array($j)) {
+        if (is_object($j) || (is_array($j) && !array_is_list($j))) {
             $reset_roles = true;
             $ij = [];
             foreach ((array) $j as $k => $v) {
@@ -1525,7 +1525,7 @@ class UserStatus extends MessageSet {
 
     static function pc_role_text($cj) {
         if (isset($cj->roles)) {
-            assert(is_array($cj->roles) && !is_associative_array($cj->roles));
+            assert(is_array($cj->roles) && array_is_list($cj->roles));
             if (in_array("chair", $cj->roles, true)) {
                 return "chair";
             } else if (in_array("pc", $cj->roles, true)) {

@@ -150,7 +150,7 @@ class PCConflicts_PaperOption extends PaperOption {
     }
     function parse_json(PaperInfo $prow, $j) {
         $ja = [];
-        if (is_object($j) || is_associative_array($j)) {
+        if (is_object($j) || (is_array($j) && !array_is_list($j))) {
             foreach ((array) $j as $k => $v) {
                 $ja[strtolower($k)] = $v;
             }

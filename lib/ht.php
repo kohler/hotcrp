@@ -476,7 +476,8 @@ class Ht {
 
     /** @return string */
     static function pre_text_wrap($text) {
-        if (is_array($text) && !is_associative_array($text)
+        if (is_array($text)
+            && array_is_list($text)
             && array_reduce($text, function ($x, $s) { return $x && is_string($s); }, true)) {
             $text = join("\n", $text);
         } else if (is_array($text) || is_object($text)) {

@@ -652,17 +652,17 @@ class Fmt {
 
     /** @param array{string,string}|array{string,string,int}|object|array<string,mixed> $m */
     function addj($m) {
-        if (is_associative_array($m)) {
+        if (is_array($m)) {
+            if (array_is_list($m)) {
+                return $this->_addj_list($m);
+            }
             return $this->_addj_object((object) $m);
-        } else if (is_array($m)) {
-            return $this->_addj_list($m);
         } else if (is_object($m)) {
             return $this->_addj_object($m);
         } else if (is_string($m)) {
             return $this->_addj_list([$m]);
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param string $in

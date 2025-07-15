@@ -16,6 +16,14 @@ if (!function_exists("array_find")) {
     }
 }
 
+if (!function_exists("array_is_list")) {
+    /** @param array $array
+     * @return bool */
+    function array_is_list($array) {
+        return array_values($array) === $array;
+    }
+}
+
 if (!function_exists("str_starts_with")) {
     /** @param string $haystack
      * @param string $needle
