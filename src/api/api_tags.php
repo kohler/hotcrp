@@ -152,7 +152,7 @@ class Tags_API {
         $pid = -1;
         foreach (preg_split('/[\s,]+/', $qreq->tagassignment) as $w) {
             if ($w !== "" && ctype_digit($w)) {
-                $pid = intval($w);
+                $pid = stoi($w);
             } else if ($w !== "" && $pid > 0) {
                 $x[] = "{$pid},tag," . CsvGenerator::quote($w);
             }

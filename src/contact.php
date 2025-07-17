@@ -761,8 +761,8 @@ class Contact implements JsonSerializable {
     /** @return Contact */
     private function actas_user($x) {
         // translate to email
-        if (ctype_digit($x)) {
-            $acct = $this->conf->user_by_id(intval($x));
+        if (ctype_digit($x) && ($uid = stoi($x)) > 0) {
+            $acct = $this->conf->user_by_id($uid);
             $email = $acct ? $acct->email : null;
         } else if ($x === "admin") {
             $email = $this->email;

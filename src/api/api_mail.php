@@ -26,8 +26,8 @@ class Mail_API {
         $rid = $qreq->r;
         if ($prow) {
             if (isset($rid)
-                && ctype_digit($rid)
-                && ($rrow = $prow->review_by_id(intval($rid)))
+                && ($ridn = stoi($rid)) > 0
+                && ($rrow = $prow->review_by_id($ridn))
                 && $user->can_view_review($prow, $rrow)) {
                 $mailinfo["rrow"] = $rrow;
             } else if ($qreq->template === "requestreview") {

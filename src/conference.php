@@ -4591,13 +4591,7 @@ class Conf {
         $qreq->set_paper(null);
         $prow = null;
         if ($qreq->p) {
-            if (is_int($qreq->p)) {
-                $pid = $qreq->p;
-            } else if (ctype_digit($qreq->p)) {
-                $pid = intval($qreq->p);
-            } else {
-                $pid = 0;
-            }
+            $pid = stoi($qreq->p) ?? 0;
             if ($pid > 0 && $pid <= PaperInfo::PID_MAX) {
                 $prow = $this->paper_by_id($pid, $user);
             }
@@ -4942,18 +4936,15 @@ class Conf {
         }
         $siteinfo["user"] = $userinfo;
 
-        $pid = $extra["paperId"] ?? 0;
-        if (!is_int($pid)) {
-            $pid = $pid && ctype_digit($pid) ? intval($pid) : 0;
-        }
+        $pid = stoi($extra["paperId"] ?? 0) ?? 0;
         if ($pid > 0 && $qreq->paper()) {
             $pid = $qreq->paper()->paperId;
         }
         if ($pid > 0) {
             $siteinfo["paperid"] = $pid;
-        }
-        if ($pid > 0 && $user && $user->is_admin_force()) {
-            $siteinfo["want_override_conflict"] = true;
+            if ($user && $user->is_admin_force()) {
+                $siteinfo["want_override_conflict"] = true;
+            }
         }
 
         Ht::stash_script("window.siteinfo=" . json_encode_browser($siteinfo));

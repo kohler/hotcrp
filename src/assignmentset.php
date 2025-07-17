@@ -1620,14 +1620,14 @@ class AssignmentSet {
             return [];
         }
 
-        if (ctype_digit($pfield)) {
-            $pids = [intval($pfield)];
+        if (ctype_digit($pfield) && ($pid = stoi($pfield)) > 0) {
+            $pids = [$pid];
             $this->astate->paper_exact_match = true;
         } else if (preg_match('/\A[\d,\s]+\z/', $pfield)) {
             $pids = [];
-            foreach (preg_split('/[,\s]+/', $pfield) as $pid) {
-                if ($pid !== "") {
-                    $pids[] = intval($pid);
+            foreach (preg_split('/[,\s]+/', $pfield) as $txt) {
+                if ($txt !== "" && ($pid = stoi($txt)) > 0) {
+                    $pids[] = $pid;
                 }
             }
             $this->astate->paper_exact_match = true;

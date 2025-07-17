@@ -288,19 +288,15 @@ class RequestReview_API {
      * @param Qrequest $qreq
      * @return ?PaperInfo */
     static private function review_refusal_paper($user, $qreq) {
-        if (is_int($qreq->p)) {
-            $pid = $qreq->p;
-        } else if (ctype_digit($qreq->p ?? "X")) {
-            $pid = intval($qreq->p);
-        } else {
+        $pid = stoi($qreq->p);
+        if ($pid === null) {
             return null;
         }
         $prow = $user->conf->paper_by_id($pid, $user);
         if ($prow && $prow->review_refusals_by_user($user)) {
             return $prow;
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param Contact $user
@@ -316,11 +312,8 @@ class RequestReview_API {
         }
 
         // check `r` parameter, set redirect
-        if (is_int($qreq->r)) {
-            $r = $qreq->r;
-        } else if (ctype_digit($qreq->r ?? "X")) {
-            $r = intval($qreq->r);
-        } else {
+        $r = stoi($qreq->r);
+        if ($r === null) {
             return JsonResult::make_parameter_error("r");
         }
         $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
@@ -378,10 +371,10 @@ class RequestReview_API {
         $prow->ensure_reviewer_names();
 
         // check `r` parameter, set redirect
-        if (!ctype_digit($qreq->r ?? "X")) {
+        $r = stoi($qreq->r);
+        if ($r === null) {
             return JsonResult::make_parameter_error("r");
         }
-        $r = intval($qreq->r);
         $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
 
         $reason = trim($qreq->reason ?? "");
@@ -474,10 +467,10 @@ class RequestReview_API {
      * @param PaperInfo $prow
      * @return JsonResult */
     static function claimreview($user, $qreq, $prow) {
-        if (!ctype_digit($qreq->r ?? "X")) {
+        $r = stoi($qreq->r);
+        if ($r === null) {
             return JsonResult::make_parameter_error("r");
         }
-        $r = intval($qreq->r);
         $review_site_relative = $prow->conf->hoturl_raw("review", ["p" => $prow->paperId, "r" => $r], Conf::HOTURL_SITEREL);
 
         $rrow = $prow->review_by_id($r);
@@ -615,9 +608,9 @@ class RequestReview_API {
         }
 
         if (!$prow
-            && ctype_digit($qreq->p ?? "X")
+            && ($pid = stoi($qreq->p)) > 0
             && strcasecmp($email, $user->email) === 0) {
-            $xprow = $user->conf->paper_by_id(intval($qreq->p), $user);
+            $xprow = $user->conf->paper_by_id($pid, $user);
             if ($xprow && $xprow->review_refusals_by_user($user)) {
                 $prow = $xprow;
             }

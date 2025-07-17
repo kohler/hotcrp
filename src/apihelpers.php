@@ -14,8 +14,8 @@ class APIHelpers {
             || ($viewer->has_email() && strcasecmp($text, $viewer->email) === 0)) {
             return $viewer;
         }
-        if (ctype_digit($text)) {
-            $u = $viewer->conf->user_by_id(intval($text), USER_SLICE);
+        if (ctype_digit($text) && ($uid = stoi($text)) > 0) {
+            $u = $viewer->conf->user_by_id($uid, USER_SLICE);
         } else {
             $u = $viewer->conf->user_by_email($text, USER_SLICE);
         }

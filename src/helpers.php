@@ -4,35 +4,17 @@
 
 // string helpers
 
-/** @param null|int|string $value
- * @return int
- * @deprecated */
-function cvtint($value, $default = -1) {
-    $v = trim((string) $value);
-    if (is_numeric($v)) {
-        $ival = intval($v);
-        if ($ival == floatval($v)) {
-            return $ival;
-        }
-    }
-    return $default;
-}
-
 /** @param null|int|string $s
  * @return ?int */
 function stoi($s) {
     if ($s === null || is_int($s)) {
         return $s;
-    }
-    $v = trim((string) $s);
-    if (!is_numeric($v)) {
+    } else if (!is_numeric($s)) {
         return null;
     }
-    $iv = intval($v);
-    if ($iv != floatval($v)) {
-        return null;
-    }
-    return $iv;
+    $iv = intval($s);
+    $fv = floatval($s);
+    return $iv == $fv ? $iv : null;
 }
 
 /** @param null|int|float|string $s
@@ -40,13 +22,11 @@ function stoi($s) {
 function stonum($s) {
     if ($s === null || is_int($s) || is_float($s)) {
         return $s;
-    }
-    $v = trim((string) $s);
-    if (!is_numeric($v)) {
+    } else if (!is_numeric($s)) {
         return null;
     }
-    $iv = intval($v);
-    $fv = floatval($v);
+    $iv = intval($s);
+    $fv = floatval($s);
     return $iv == $fv ? $iv : $fv;
 }
 

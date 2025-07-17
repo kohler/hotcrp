@@ -135,24 +135,13 @@ class Upload_API {
         return false;
     }
 
-    /** @param ?mixed $x
-     * @return ?int */
-    static function qreqint($x) {
-        if (is_int($x)) {
-            return $x;
-        } else if (is_string($x) && ctype_digit($x)) {
-            return intval($x);
-        }
-        return null;
-    }
-
     /** @return JsonResult */
     function exec_start(Contact $user, Qrequest $qreq, ?PaperInfo $prow) {
         if (isset($qreq->token)) {
             return JsonResult::make_parameter_error("start", "<0>Start requests must not specify a token");
         }
-        $size = self::qreqint($qreq->size);
-        if ($size === null) {
+        $size = stoi($qreq->size);
+        if ($size === null || $size < 0) {
             if (isset($qreq->size)) {
                 return JsonResult::make_parameter_error("size");
             }
@@ -707,8 +696,8 @@ class Upload_API {
         }
 
         if (isset($qreq->size)) {
-            $size = self::qreqint($qreq->size);
-            if ($size === null) {
+            $size = stoi($qreq->size);
+            if ($size === null || $size < 0) {
                 return $this->_make_result(MessageItem::error_at("size", "<0>Parameter error"));
             }
             if (!isset($this->_capd->size)) {
@@ -720,12 +709,12 @@ class Upload_API {
             }
         }
 
-        $offset = isset($qreq->offset) ? self::qreqint($qreq->offset) : 0;
-        if ($offset === null) {
+        $offset = isset($qreq->offset) ? stoi($qreq->offset) : 0;
+        if ($offset === null || $offset < 0) {
             return $this->_make_result(MessageItem::error_at("offset", "<0>Parameter error"));
         }
-        $length = isset($qreq->length) ? self::qreqint($qreq->length) : null;
-        if (isset($qreq->length) && $length === null) {
+        $length = isset($qreq->length) ? stoi($qreq->length) : null;
+        if (isset($qreq->length) && ($length === null || $length < 0)) {
             return $this->_make_result(MessageItem::error_at("length", "<0>Parameter error"));
         }
 

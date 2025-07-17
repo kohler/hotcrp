@@ -240,13 +240,16 @@ class ReviewValues extends MessageSet {
                     if ($nfields > 0) {
                         break;
                     }
-                } else if (preg_match('/\A==\+== (?:Paper|Submission) #?(\d+)/i', $line, $match)) {
+                } else if (preg_match('/\A==\+== (?:Paper|Submission) \#?(\d+)/i', $line, $match)) {
                     if ($nfields > 0) {
                         break;
+                    } else if (($pid = stoi($match[1])) === null || $pid === 0) {
+                        $this->rvmsg(self::ERROR, "paperId", "<0>Invalid submission ID");
+                    } else {
+                        $this->req["paperId"] = $pid;
+                        $this->req["blind"] = 1;
+                        $this->first_lineno = $this->field_lineno["paperId"] = $this->lineno;
                     }
-                    $this->req["paperId"] = intval($match[1]);
-                    $this->req["blind"] = 1;
-                    $this->first_lineno = $this->field_lineno["paperId"] = $this->lineno;
                 } else if (preg_match('/\A==\+== Reviewer:\s*(.*?)\s*\z/', $line, $match)
                            && ($user = Text::split_name($match[1], true))
                            && $user[2]) {
@@ -268,9 +271,10 @@ class ReviewValues extends MessageSet {
                     $this->req["ready"] = true;
                 } else if (preg_match('/\A==\+== Open Review\s*\z/i', $line)) {
                     $this->req["blind"] = 0;
-                } else if (preg_match('/\A==\+== Version\s*(\d+)\s*\z/i', $line, $match)) {
-                    if (($this->req["edit_version"] ?? 0) < intval($match[1])) {
-                        $this->req["edit_version"] = intval($match[1]);
+                } else if (preg_match('/\A==\+== Version\s*(\d+)\s*\z/i', $line, $match)
+                           && ($ev = stoi($match[1])) !== null) {
+                    if (($this->req["edit_version"] ?? 0) < $ev) {
+                        $this->req["edit_version"] = $ev;
                     }
                 } else if (preg_match('/\A==\+== Review Readiness\s*/i', $line)) {
                     $field = "readiness";
@@ -531,8 +535,8 @@ class ReviewValues extends MessageSet {
             } else if ($k === "edit_version") {
                 $this->req[$k] = stoi($v) ?? -1;
             } else if ($k === "if_vtag_match") {
-                if (ctype_digit($v)) {
-                    $this->req[$k] = intval($v);
+                if (ctype_digit($v) && ($iv = stoi($v)) !== null) {
+                    $this->req[$k] = $iv;
                 }
             } else if (str_starts_with($k, "has_")) {
                 $hasreqs[] = substr($k, 4);

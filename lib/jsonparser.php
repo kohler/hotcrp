@@ -512,7 +512,11 @@ class JsonParser {
         } else if (($ch === 45 || ($ch >= 48 && $ch <= 57))    // `[-0-9]`
                    && preg_match('/\G-?(?:0|[1-9]\d*+)((?:\.\d++)?(?:[Ee][-+]?\d++)?)/', $s, $m, 0, $pos)) {
             $this->pos = $pos + strlen($m[0]);
-            return $m[1] === "" ? intval($m[0]) : floatval($m[0]);
+            $x = stonum($m[0]);
+            if ($m[1] === "" && ($ix = (int) $x) == $x) {
+                return $ix;
+            }
+            return $x;
         } else if ($ch === 93) {     // `]`
             if ($context === self::CTX_ARRAY_ELEMENT) {
                 return $this->set_error($pos, JSON_ERROR_TRAILING_COMMA);

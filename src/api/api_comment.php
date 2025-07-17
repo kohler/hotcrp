@@ -234,8 +234,7 @@ class Comment_API {
             $crow = $rcrow;
         } else if ($c === "new" || $c === "response") {
             $crow = null;
-        } else if (is_int($c) || ctype_digit($c)) {
-            $cn = is_int($c) ? $c : intval($c);
+        } else if (($cn = stoi($c)) !== null) {
             $crow = $this->find_comment("commentId={$cn}");
         } else if ($c === "" && $qreq->is_post()) {
             $c = "new";

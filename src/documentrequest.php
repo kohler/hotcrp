@@ -1,6 +1,6 @@
 <?php
 // documentrequest.php -- HotCRP document request parsing
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class DocumentRequest implements JsonSerializable {
     /** @var int */
@@ -21,12 +21,12 @@ class DocumentRequest implements JsonSerializable {
     public $filters = [];
     public $req_filename;
 
-    private function set_paperid($pid) {
-        if (preg_match('/\A[-+]?\d+\z/', $pid)) {
-            $this->paperId = intval($pid);
-        } else {
-            throw new Exception("Document not found [submission {$pid}]");
+    private function set_paperid($s) {
+        $pid = stoi($s);
+        if ($pid === null || $s !== trim($s)) {
+            throw new Exception("Document not found [submission {$s}]");
         }
+        $this->paperId = $pid;
     }
 
     function __construct($req, $path, Contact $user) {
@@ -58,8 +58,9 @@ class DocumentRequest implements JsonSerializable {
             if (str_starts_with($s, $conf->download_prefix)) {
                 $s = substr($s, strlen($conf->download_prefix));
             }
-            if (preg_match('/\A(?:p|paper|sub|submission)(\d+)\/+(.*)\z/', $s, $m)) {
-                $this->paperId = intval($m[1]);
+            if (preg_match('/\A(?:p|paper|sub|submission)(\d+)\/+(.*)\z/', $s, $m)
+                && ($pid = stoi($m[1])) !== null) {
+                $this->paperId = $pid;
                 if (preg_match('/\A([^\/]+)\.[^\/]+\z/', $m[2], $mm)) {
                     $dtname = urldecode($mm[1]);
                 } else if (preg_match('/\A([^\/]+)\/+(.*)\z/', $m[2], $mm)) {
@@ -68,8 +69,9 @@ class DocumentRequest implements JsonSerializable {
                 } else if (isset($req["dt"])) {
                     $dtname = $req["dt"];
                 }
-            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^\/]+|\/+(.*))\z/', $s, $m)) {
-                $this->paperId = intval($m[2]);
+            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^\/]+|\/+(.*))\z/', $s, $m)
+                       && ($pid = stoi($m[2])) !== null) {
+                $this->paperId = $pid;
                 $dtname = $m[3];
                 if ($dtname === "" && $m[1] === "" && isset($req["dt"])) {
                     $dtname = $req["dt"];
@@ -80,8 +82,9 @@ class DocumentRequest implements JsonSerializable {
                 if ($m[1] !== "") {
                     $base_dtname = $m[1] === "final" ? "final" : "paper";
                 }
-            } else if (preg_match('/\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:|\.[^\/]+|\/+(.*))\z/', $s, $m)) {
-                $this->paperId = intval($m[2]);
+            } else if (preg_match('/\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:|\.[^\/]+|\/+(.*))\z/', $s, $m)
+                       && ($pid = stoi($m[2])) !== null) {
+                $this->paperId = $pid;
                 $dtname = $m[1];
                 if (isset($m[3])) {
                     $this->attachment = urldecode($m[3]);
@@ -260,7 +263,7 @@ class DocumentRequest implements JsonSerializable {
         $doc_crow = $cmtid = null;
         if (str_starts_with($this->linkid, "cx")
             && !str_ends_with($this->linkid, "response")) {
-            $cmtid = intval(substr($this->linkid, 2));
+            $cmtid = stoi(substr($this->linkid, 2));
         }
         foreach ($this->prow->viewable_comment_skeletons($user) as $crow) {
             if ($crow->unparse_html_id() === $this->linkid

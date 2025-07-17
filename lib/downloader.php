@@ -64,8 +64,8 @@ class Downloader {
             preg_match_all('/\d+-\d+|-\d+|\d+-/', $range, $m);
             foreach ($m[0] as $t) {
                 $dash = strpos($t, "-");
-                $r1 = $dash === 0 ? null : intval(substr($t, 0, $dash));
-                $r2 = $dash === strlen($t) - 1 ? null : intval(substr($t, $dash + 1));
+                $r1 = $dash === 0 ? null : stoi(substr($t, 0, $dash));
+                $r2 = $dash === strlen($t) - 1 ? null : stoi(substr($t, $dash + 1));
                 if ($r1 === null && $r2 !== 0) {
                     $dopt->range[] = $lastr = [$r1, $r2];
                 } else if ($r2 === null || ($r1 !== null && $r1 <= $r2)) {
@@ -106,8 +106,8 @@ class Downloader {
             preg_match_all('/\d+-\d+|-\d+|\d+-/', $range, $m);
             foreach ($m[0] as $t) {
                 $dash = strpos($t, "-");
-                $r1 = $dash === 0 ? null : intval(substr($t, 0, $dash));
-                $r2 = $dash === strlen($t) - 1 ? null : intval(substr($t, $dash + 1));
+                $r1 = $dash === 0 ? null : stoi(substr($t, 0, $dash));
+                $r2 = $dash === strlen($t) - 1 ? null : stoi(substr($t, $dash + 1));
                 if ($r1 === null && $r2 !== 0) {
                     $this->range[] = $lastr = [$r1, $r2];
                 } else if ($r2 === null || ($r1 !== null && $r1 <= $r2)) {
