@@ -4871,13 +4871,12 @@ class Contact implements JsonSerializable {
             return 0;
         }
         $ctype = 0;
-        if (($prow->timeSubmitted > 0
-             || $rights->review_status > 0
-             || $rights->allow_administer_forced())
-            && ($rights->can_administer()
-                || $rights->is_reviewer()
-                || $prow->leadContactId === $this->contactXid
-                || $prow->shepherdContactId === $this->contactXid)) {
+        if ($rights->can_administer()
+            || (($prow->timeSubmitted > 0
+                 || $rights->review_status > 0)
+                && ($rights->is_reviewer()
+                    || $prow->leadContactId === $this->contactXid
+                    || $prow->shepherdContactId === $this->contactXid))) {
             // administrator, assigned reviewer, lead, shepherd:
             // can comment on paper and on reviews
             $ctype |= CommentInfo::CT_TOPIC_PAPER | CommentInfo::CT_TOPIC_REVIEW;
