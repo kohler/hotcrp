@@ -587,7 +587,7 @@ function xassert_in_eqq($member, $list) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_match("expected ", $member, " ∈ ", $list);
+        Xassert::fail_match("expected ∈ ", $list, ", got ", $member);
     }
     return $ok;
 }
@@ -607,7 +607,7 @@ function xassert_not_in_eqq($member, $list) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_match("expected ", $member, " ∉ ", $list);
+        Xassert::fail_match("expected ∉ ", $list, ", got ", $member);
     }
     return $ok;
 }
@@ -724,7 +724,7 @@ function xassert_not_str_contains($haystack, $needle) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected `{$haystack}` not to contain `{$needle}`");
+        Xassert::fail_with("Expected `{$haystack}` to not contain `{$needle}`");
     }
     return $ok;
 }

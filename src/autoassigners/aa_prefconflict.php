@@ -1,13 +1,14 @@
 <?php
 // autoassigners/aa_prefconflict.php -- HotCRP helper classes for autoassignment
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class PrefConflict_Autoassigner extends Autoassigner {
-    /** @param ?list<int> $pcids
-     * @param list<int> $papersel */
-    function __construct(Contact $user, $pcids, $papersel) {
-        parent::__construct($user, $pcids, $papersel);
+    function __construct(Contact $user) {
+        parent::__construct($user);
         $this->set_assignment_action("conflict");
+    }
+
+    function configure() {
     }
 
     /** @param bool $exists_submitted

@@ -1,6 +1,6 @@
 <?php
 // autoassigners/aa_discussionorder.php -- HotCRP helper classes for autoassignment
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class DiscussionOrder_Autoassigner extends Autoassigner {
     /** @var string */
@@ -8,19 +8,16 @@ class DiscussionOrder_Autoassigner extends Autoassigner {
     /** @var bool */
     private $sequential = false;
 
-    /** @param ?list<int> $pcids
-     * @param list<int> $papersel
-     * @param array<string,mixed> $subreq
-     * @param object $gj */
-    function __construct(Contact $user, $pcids, $papersel, $subreq, $gj) {
-        parent::__construct($user, $pcids, $papersel);
-        $t = trim($subreq["tag"] ?? "");
-        $tagger = new Tagger($user);
-        if (($tag = $tagger->check($t, Tagger::NOVALUE))) {
-            $this->tag = $tag;
-        } else {
-            $this->error_at("tag", $tagger->error_ftext());
-        }
+    function __construct(Contact $user) {
+        parent::__construct($user);
+    }
+
+    function option_schema() {
+        return ["tag:tag"];
+    }
+
+    function configure() {
+        $this->tag = $this->tag_option("tag");
     }
 
     /** @param array<int,list<int>> $cflt */

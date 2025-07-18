@@ -80,11 +80,17 @@ class Autoassign_Tester {
         if (str_starts_with($gj->function, "+")) {
             $class = substr($gj->function, 1);
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
-            $aa = new $class($this->user, $pcc, $pids, $param, $gj);
+            $aa = new $class($this->user, $gj);
         } else {
-            $aa = call_user_func($gj->function, $this->user, $pcc, $pids, $param, $gj);
+            $aa = call_user_func($gj->function, $this->user, $gj);
         }
         '@phan-var-force Autoassigner $aa';
+        foreach ($param as $k => $v) {
+            $aa->set_option($k, $v);
+        }
+        $aa->set_user_ids($pcc);
+        $aa->set_paper_ids($pids);
+        $aa->configure();
         return $aa;
     }
 
@@ -92,7 +98,7 @@ class Autoassign_Tester {
         $aa->run();
         if ($aa->has_message()) {
             Xassert::print_landmark();
-            fwrite(STDERR, preg_replace('/^/m', "  ", $aa->full_feedback_text()));
+            fwrite(STDERR, preg_replace('/^/m', "  ", $aa->full_feedback_text(true)));
         }
         xassert($aa->has_assignment());
         xassert_assign($this->user, join("", $aa->assignments()), true);
@@ -381,11 +387,12 @@ class Autoassign_Tester {
         $this->setup_clear();
         $this->cur_pids = range(1, 10);
         $this->cur_pcc = array_slice($this->pcc, 0, 10);
+        $qv = [];
         for ($i = 0; $i !== 3; ++$i) {
             $uid = $this->cur_pcc[$i];
             $pref = 8;
             for ($pid = 1 + $i; $pref >= 2 && $pid <= 10; ++$pid) {
-                if (isset($this->cflt[$pid][$uid])) {
+                if (isset($this->cflts[$pid][$uid])) {
                     continue;
                 }
                 $qv[] = [$pid, $uid, $pref];
@@ -396,17 +403,23 @@ class Autoassign_Tester {
         $this->cur_pref = $qv;
     }
 
+    /** @param Autoassigner $aa
+     * @param array<int,array<int,int>> &$an */
+    private function count_assignments($aa, &$an) {
+        foreach ($aa->csv_assignments() as $row) {
+            $u = $this->conf->pc_member_by_email($row["email"]);
+            $pid = $row["paper"];
+            $an[$pid][$u->contactId] = ($an[$pid][$u->contactId] ?? 0) + 1;
+        }
+    }
+
     function test_narrow_pref_no_fuzz() {
         $this->setup_narrow_pref();
         $an = [];
         for ($i = 0; $i !== 10; ++$i) {
             $aa = $this->autoassigner("review", $this->cur_pcc, $this->cur_pids, ["count" => 1]);
             $aa->run();
-            foreach ($aa->csv_assignments() as $row) {
-                $u = $this->conf->pc_member_by_email($row["email"]);
-                $pf =& $an[$row["paper"]][$u->contactId];
-                $pf = ($pf ?? 0) + 1;
-            }
+            $this->count_assignments($aa, $an);
         }
         xassert_eqq($an[1][$this->cur_pcc[0]], 10);
         xassert_eqq($an[2][$this->cur_pcc[1]], 10);
@@ -420,11 +433,7 @@ class Autoassign_Tester {
             for ($i = 0; $i !== 10; ++$i) {
                 $aa = $this->autoassigner("review", $this->cur_pcc, $this->cur_pids, ["count" => 1, "preference_fuzz" => 2]);
                 $aa->run();
-                foreach ($aa->csv_assignments() as $row) {
-                    $u = $this->conf->pc_member_by_email($row["email"]);
-                    $pf =& $an[$row["paper"]][$u->contactId];
-                    $pf = ($pf ?? 0) + 1;
-                }
+                $this->count_assignments($aa, $an);
             }
             xassert_ge($an[1][$this->cur_pcc[0]] ?? 0, 2);
             xassert_le($an[1][$this->cur_pcc[0]] ?? 0, 8);
@@ -442,11 +451,7 @@ class Autoassign_Tester {
             for ($i = 0; $i !== 10; ++$i) {
                 $aa = $this->autoassigner("review", $this->cur_pcc, $this->cur_pids, ["count" => 1, "preference_fuzz" => 5]);
                 $aa->run();
-                foreach ($aa->csv_assignments() as $row) {
-                    $u = $this->conf->pc_member_by_email($row["email"]);
-                    $pf =& $an[$row["paper"]][$u->contactId];
-                    $pf = ($pf ?? 0) + 1;
-                }
+                $this->count_assignments($aa, $an);
             }
             xassert_le($an[1][$this->cur_pcc[0]] ?? 0, 3);
             xassert_le($an[2][$this->cur_pcc[1]] ?? 0, 3);

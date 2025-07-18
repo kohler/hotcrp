@@ -1,18 +1,25 @@
 <?php
 // autoassigners/aa_clear.php -- HotCRP helper classes for autoassignment
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Clear_Autoassigner extends Autoassigner {
     /** @var int|'conflict'|'lead'|'shepherd' */
     private $type;
+    /** @var ?string */
+    private $xtype;
 
-    /** @param ?list<int> $pcids
-     * @param list<int> $papersel
-     * @param array<string,mixed> $subreq
-     * @param object $gj */
-    function __construct(Contact $user, $pcids, $papersel, $subreq, $gj) {
-        parent::__construct($user, $pcids, $papersel);
-        $t = $gj->type ?? $subreq["type"] ?? null;
+    /** @param object $gj */
+    function __construct(Contact $user, $gj) {
+        parent::__construct($user);
+        $this->xtype = $gj->type ?? null;
+    }
+
+    function option_schema() {
+        return ["type$"];
+    }
+
+    function configure() {
+        $t = $this->xtype ?? $this->option("type");
         if (in_array($t, ["conflict", "lead", "shepherd"], true)) {
             $this->type = $t;
         } else if (is_string($t) && ($x = ReviewInfo::parse_type($t, true))) {

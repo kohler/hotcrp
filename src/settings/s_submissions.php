@@ -1,6 +1,6 @@
 <?php
 // settings/s_submissions.php -- HotCRP settings > submissions page
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Submissions_SettingParser extends SettingParser {
     static function print_open(SettingValues $sv) {
@@ -49,8 +49,8 @@ class Submissions_SettingParser extends SettingParser {
         $sv->print_checkbox("submitted_document_early_visibility", "PC can view submitted PDFs before submission deadline");
     }
     static function print_pref_shuffle(SettingValues $sv) {
-        $sv->print_checkbox("preference_shuffle", "Shuffle papers for review preference entry", [
-            "hint" => "The <a href=\"" . $sv->conf->hoturl("reviewprefs") . "\">review preferences page</a> will display submissions in a reviewer-specific random order."
+        $sv->print_checkbox("preference_shuffle", "Shuffle submissions on " . Ht::link("review preferences page", $sv->conf->hoturl("reviewprefs")), [
+            "hint" => "The page will display submissions in a reviewer-specific random order."
         ]);
     }
 

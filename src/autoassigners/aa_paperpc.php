@@ -1,6 +1,6 @@
 <?php
 // autoassigners/aa_paperpc.php -- HotCRP helper classes for autoassignment
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class PaperPC_Autoassigner extends Autoassigner {
     /** @var ?ReviewField */
@@ -10,25 +10,29 @@ class PaperPC_Autoassigner extends Autoassigner {
     /** @var bool */
     private $allow_incomplete = false;
 
-    /** @param ?list<int> $pcids
-     * @param list<int> $papersel
-     * @param array<string,mixed> $subreq
-     * @param object $gj */
-    function __construct(Contact $user, $pcids, $papersel, $subreq, $gj) {
-        parent::__construct($user, $pcids, $papersel);
+    /** @param object $gj */
+    function __construct(Contact $user, $gj) {
+        parent::__construct($user);
         $t = $gj->name ?? null;
         if ($t !== "lead" && $t !== "shepherd") {
             $this->error_at("type", "<0>Expected ‘lead’ or ‘shepherd’");
             $t = "lead";
         }
         $this->set_assignment_action($t);
-        $this->extract_balance_method($subreq);
-        $this->extract_max_load($subreq);
-        $this->extract_gadget_costs($subreq);
+    }
 
-        $this->allow_incomplete = $subreq["allow_incomplete"] ?? false;
+    function option_schema() {
+        return [
+            "score$",
+            "allow_incomplete",
+            ...Autoassigner::balance_method_schema(),
+            ...Autoassigner::max_load_schema(),
+            ...Autoassigner::costs_schema()
+        ];
+    }
 
-        $s = $subreq["score"] ?? "random";
+    function configure() {
+        $s = $this->option("score") ?? "random";
         if ($s === "" || $s === "random") {
             // nothing
         } else if ($s === "allow_incomplete") {
@@ -37,7 +41,7 @@ class PaperPC_Autoassigner extends Autoassigner {
             if ($s[0] !== "-" && $s[0] !== "+") {
                 $s = "+" . $s;
             }
-            $this->rf = $user->conf->find_review_field(substr($s, 1));
+            $this->rf = $this->conf->find_review_field(substr($s, 1));
             if (!$this->rf) {
                 $this->error_at("score", "<0>Review field not found");
             } else if (!$this->rf->is_sfield) {
@@ -46,6 +50,14 @@ class PaperPC_Autoassigner extends Autoassigner {
                 $this->rfdir = $s[0] === "+" ? 1 : -1;
             }
         }
+
+        if ($this->option("allow_incomplete")) {
+            $this->allow_incomplete = true;
+        }
+
+        $this->configure_balance_method();
+        $this->configure_max_load();
+        $this->configure_costs();
     }
 
     private function set_load() {

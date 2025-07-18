@@ -1,10 +1,12 @@
 <?php
 // autoassigners/aa_review.php -- HotCRP helper classes for autoassignment
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Review_Autoassigner extends Autoassigner {
     /** @var int */
     private $rtype;
+    /** @var ?string */
+    private $xrtype;
     /** @var int */
     private $count;
     /** @var 1|2|3 */
@@ -24,13 +26,9 @@ class Review_Autoassigner extends Autoassigner {
     const LOAD_RTYPE = 2;
     const LOAD_ROUND = 3;
 
-    /** @param ?list<int> $pcids
-     * @param list<int> $papersel
-     * @param array<string,mixed> $subreq
-     * @param object $gj */
-    function __construct(Contact $user, $pcids, $papersel, $subreq, $gj) {
-        parent::__construct($user, $pcids, $papersel);
-
+    /** @param object $gj */
+    function __construct(Contact $user, $gj) {
+        parent::__construct($user);
         if ($gj->name === "review_per_user" || $gj->name === "review_per_pc") {
             $this->kind = self::KIND_PER_USER;
         } else if ($gj->name === "review_ensure") {
@@ -41,8 +39,25 @@ class Review_Autoassigner extends Autoassigner {
         } else {
             $this->kind = self::KIND_ADD;
         }
+        $this->xrtype = $gj->rtype ?? null;
+    }
 
-        $t = $gj->rtype ?? $subreq["rtype"] ?? "primary";
+    function option_schema() {
+        return [
+            "rtype$",
+            "round$",
+            "count#+",
+            "load=all rtype round",
+            ...self::balance_method_schema(),
+            ...self::max_load_schema(),
+            ...self::gadget_schema(),
+            ...self::costs_schema(),
+            ...self::preference_fuzz_schema()
+        ];
+    }
+
+    function configure() {
+        $t = $this->xrtype ?? $this->option("rtype") ?? "primary";
         if (($rtype = ReviewInfo::parse_type($t, true))) {
             $this->rtype = $rtype;
         } else {
@@ -51,7 +66,7 @@ class Review_Autoassigner extends Autoassigner {
         }
         $this->set_assignment_action(ReviewInfo::unparse_assigner_action($this->rtype));
 
-        $roundname = trim($subreq["round"] ?? "");
+        $roundname = trim($this->option("round") ?? "");
         if ($roundname === "") {
             $roundname = $this->conf->assignment_round_option($this->rtype);
         }
@@ -66,26 +81,29 @@ class Review_Autoassigner extends Autoassigner {
         $this->set_computed_assignment_column("preference");
         $this->set_computed_assignment_column("topic_score");
 
-        $t = $subreq["load"] ?? "all";
-        if ($t === "all") {
+        $ld = $this->option("load") ?? "all";
+        if ($ld === "all") {
             $this->load = self::LOAD_ALL;
-        } else if ($t === "rtype") {
+        } else if ($ld === "rtype") {
             $this->load = self::LOAD_RTYPE;
-        } else if ($t === "round") {
+        } else if ($ld === "round") {
             $this->load = self::LOAD_ROUND;
+        } else {
+            $this->error_at("load", "<0>Expected ‘all’, ‘rtype’, or ‘round’");
         }
 
-        $this->extract_balance_method($subreq);
-        $this->extract_max_load($subreq);
-        $this->extract_gadget_costs($subreq);
-        $this->extract_preference_fuzz($subreq);
-
-        $n = stoi($subreq["count"] ?? $gj->count ?? 1) ?? -1;
+        $n = stoi($this->option("count") ?? 1) ?? -1;
         if ($n <= 0) {
             $this->error_at("count", "<0>Positive number expected");
             $n = 1;
         }
         $this->count = $n;
+
+        $this->configure_balance_method();
+        $this->configure_max_load();
+        $this->configure_gadget();
+        $this->configure_costs();
+        $this->configure_preference_fuzz();
     }
 
     function incompletely_assigned_paper_ids() {
