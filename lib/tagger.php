@@ -1,6 +1,6 @@
 <?php
 // tagger.php -- HotCRP helper class for dealing with tags
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 // Note that tags MUST NOT contain HTML or URL special characters:
 // no "'&<>.  If you add PHP-protected characters, such as $, make sure you
@@ -1545,7 +1545,8 @@ class Tagger {
     /** @param string $tag
      * @return bool */
     static function basic_check($tag) {
-        return $tag !== "" && strlen($tag) <= TAG_MAXLEN
+        return $tag !== ""
+            && strlen($tag) <= TAG_MAXLEN
             && preg_match('{\A' . TAG_REGEX . '\z}', $tag);
     }
 
