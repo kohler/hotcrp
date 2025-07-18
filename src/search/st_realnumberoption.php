@@ -26,15 +26,12 @@ class RealNumberOption_SearchTerm extends Option_SearchTerm {
     function script_expression(PaperInfo $row, $about) {
         if (($about & self::ABOUT_PAPER) === 0) {
             return parent::script_expression($row, $about);
-        } else if ($this->user->can_view_option($row, $this->option)) {
-            if (($se = $this->option->value_script_expression())) {
-                return ["type" => "compar", "child" => [$se, $this->value], "compar" => CountMatcher::unparse_relation($this->compar)];
-            } else {
-                return null;
-            }
-        } else {
+        } else if (!$this->user->can_view_option($row, $this->option, Contact::OVERRIDE_EDIT_CONDITIONS)) {
             return false;
+        } else if (!($se = $this->option->value_script_expression())) {
+            return null;
         }
+        return ["type" => "compar", "child" => [$se, $this->value], "compar" => CountMatcher::unparse_relation($this->compar)];
     }
     function about() {
         return self::ABOUT_PAPER;

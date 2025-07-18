@@ -48,11 +48,10 @@ class OptionValueIn_SearchTerm extends Option_SearchTerm {
     function script_expression(PaperInfo $row, $about) {
         if (($about & self::ABOUT_PAPER) === 0) {
             return parent::script_expression($row, $about);
-        } else if ($this->user->can_view_option($row, $this->option)) {
-            return $this->option->match_script_expression($this->values);
-        } else {
+        } else if (!$this->user->can_view_option($row, $this->option, Contact::OVERRIDE_EDIT_CONDITIONS)) {
             return false;
         }
+        return $this->option->match_script_expression($this->values);
     }
     function about() {
         return self::ABOUT_PAPER;

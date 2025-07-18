@@ -570,26 +570,25 @@ class PaperOption implements JsonSerializable {
             return false;
         } else if ($this->_exists_state !== 0) {
             return $this->_exists_state > 0;
-        } else if (++$this->_recursion > 5) {
+        } else if ($this->_recursion >= 5) {
             $this->mark_condition_recursion("exists_if");
             $this->_exists_state = -1;
             return false;
-        } else {
-            if ($use_script_expression) {
-                $x = !!($this->exists_script_expression($prow) ?? true);
-            } else {
-                $x = $this->exists_term()->test($prow, null);
-            }
-            --$this->_recursion;
-            return $x;
         }
+        ++$this->_recursion;
+        if ($use_script_expression) {
+            $x = !!($this->exists_script_expression($prow) ?? true);
+        } else {
+            $x = $this->exists_term()->test($prow, null);
+        }
+        --$this->_recursion;
+        return $x;
     }
     final function exists_script_expression(PaperInfo $prow) {
         if ($this->_exists_state > 0) {
             return null;
-        } else {
-            return $this->exists_term()->script_expression($prow, SearchTerm::ABOUT_PAPER);
         }
+        return $this->exists_term()->script_expression($prow, SearchTerm::ABOUT_PAPER);
     }
     private function mark_condition_recursion($name) {
         $scr = $this->conf->setting("__sf_condition_recursion") ?? 0;
@@ -627,7 +626,8 @@ class PaperOption implements JsonSerializable {
             $s = new PaperSearch($this->conf->root_user(), $this->editable_if);
             $this->_editable_term = $s->full_term();
         }
-        if (++$this->_recursion > 5) {
+        ++$this->_recursion;
+        if ($this->_recursion > 5) {
             $this->_editable_term = new False_SearchTerm;
             $this->mark_condition_recursion("editable_if");
         }
@@ -1022,11 +1022,10 @@ class PaperOption implements JsonSerializable {
      * @return array|bool|null */
     function match_script_expression($values) {
         $se = $this->value_script_expression();
-        if (is_array($se)) {
-            return ["type" => "in", "child" => [$se], "values" => $values];
-        } else {
+        if (!is_array($se)) {
             return $se;
         }
+        return ["type" => "in", "child" => [$se], "values" => $values];
     }
 
     /** @return ?Fexpr */
@@ -1223,10 +1222,9 @@ trait Multivalue_OptionTrait {
             return "none";
         } else if (($vx = $this->values[$v - 1] ?? null) === null) {
             return null;
-        } else {
-            $e = new AbbreviationEntry($vx, $v, TopicSet::MFLAG_TOPIC);
-            return $this->values_topic_set()->abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
         }
+        $e = new AbbreviationEntry($vx, $v, TopicSet::MFLAG_TOPIC);
+        return $this->values_topic_set()->abbrev_matcher()->find_entry_keyword($e, AbbreviationMatcher::KW_DASH);
     }
 }
 

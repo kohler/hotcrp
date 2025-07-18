@@ -4097,10 +4097,11 @@ class Contact implements JsonSerializable {
     }
 
     /** @param PaperOption $opt
+     * @param 0|4 $override
      * @return 0|1|2 */
-    function view_option_state(PaperInfo $prow, $opt) {
+    function view_option_state(PaperInfo $prow, $opt, $override = 0) {
         if (!$this->can_view_paper($prow, $opt->has_document())
-            || !$opt->test_exists($prow, ($this->_overrides & self::OVERRIDE_EDIT_CONDITIONS) !== 0)
+            || !$opt->test_exists($prow, (($override | $this->_overrides) & self::OVERRIDE_EDIT_CONDITIONS) !== 0)
             || ($opt->is_final() && !$this->can_view_decision($prow))) {
             return 0;
         }
@@ -4109,9 +4110,8 @@ class Contact implements JsonSerializable {
         if ($rights->allow_administer()) {
             if ($oview === PaperOption::VIS_AUTHOR) {
                 return $this->__view_authors_state($prow, $rights);
-            } else {
-                return 2;
             }
+            return 2;
         } else if ($oview === PaperOption::VIS_SUB || $rights->act_author_view()) {
             return 2;
         } else if ($oview === PaperOption::VIS_AUTHOR) {
@@ -4126,9 +4126,10 @@ class Contact implements JsonSerializable {
     }
 
     /** @param PaperOption $opt
+     * @param 0|4 $override
      * @return bool */
-    function can_view_option(PaperInfo $prow, $opt) {
-        $vos = $this->view_option_state($prow, $opt);
+    function can_view_option(PaperInfo $prow, $opt, $override = 0) {
+        $vos = $this->view_option_state($prow, $opt, $override);
         return $vos === 2
             || ($vos === 1 && $this->is_admin_force());
     }
@@ -4151,9 +4152,8 @@ class Contact implements JsonSerializable {
             return 0;
         } else if (!$opt->test_exists($prow)) {
             return $opt->exists_script_expression($prow) ? 1 : 0;
-        } else {
-            return 2;
         }
+        return 2;
     }
 
     /** @param PaperOption $opt

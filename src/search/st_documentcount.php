@@ -33,15 +33,14 @@ class DocumentCount_SearchTerm extends Option_SearchTerm {
     function script_expression(PaperInfo $row, $about) {
         if (($about & self::ABOUT_PAPER) !== 0) {
             return parent::script_expression($row, $about);
-        } else if ($this->user->can_view_option($row, $this->option)) {
-            return [
-                "type" => "compar",
-                "child" => [$this->option->present_script_expression(), $this->value],
-                "compar" => CountMatcher::unparse_relation($this->compar)
-            ];
-        } else {
+        } else if (!$this->user->can_view_option($row, $this->option, Contact::OVERRIDE_EDIT_CONDITIONS)) {
             return CountMatcher::compare(0, $this->compar, $this->value);
         }
+        return [
+            "type" => "compar",
+            "child" => [$this->option->present_script_expression(), $this->value],
+            "compar" => CountMatcher::unparse_relation($this->compar)
+        ];
     }
     function about() {
         return self::ABOUT_PAPER;
