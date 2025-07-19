@@ -154,7 +154,7 @@ abstract class Autoassigner extends MessageSet {
     /** @var int */
     protected $balance = self::BALANCE_NEW;
     /** @var int */
-    protected $review_gadget;
+    protected $review_gadget = self::REVIEW_GADGET_PLAIN;
     /** @var int */
     public $assignment_cost = 100;
     /** @var int */
@@ -204,12 +204,6 @@ abstract class Autoassigner extends MessageSet {
     // EOLDASSIGN: Prevents assignment, counts for ensure
     // ENEWASSIGN: Possibly reassignable, counts for ensure
 
-    /** @var array<string,?int> */
-    static private $known_costs = [
-        "assignment" => 1, "paper_assignment" => 1, "remove_assignment" => null,
-        "preference" => 1, "expertise_x" => null, "expertise_y" => null
-    ];
-
     function __construct(Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
@@ -218,11 +212,6 @@ abstract class Autoassigner extends MessageSet {
             $this->oschema->define($x);
         }
         $this->olist = new ViewOptionList;
-        if ($this->conf->opt("autoassignReviewGadget") === "expertise") {
-            $this->review_gadget = self::REVIEW_GADGET_EXPERTISE;
-        } else {
-            $this->review_gadget = self::REVIEW_GADGET_PLAIN;
-        }
         if (($jc = json_decode_object($this->conf->opt("autoassignCosts")))) {
             foreach ((array) $jc as $name => $value) {
                 $k = "{$name}_cost";
@@ -401,15 +390,20 @@ abstract class Autoassigner extends MessageSet {
 
     function configure_gadget() {
         $g = $this->option("review_gadget");
-        $exp = $this->option("expertise");
-        if (($g === null || $g === "default") && $exp !== null) {
-            $g = $exp ? "expertise" : "plain";
+        if ($g === null || $g === "default") {
+            $g = "plain";
+            $exp = $this->option("expertise");
+            if ($exp
+                || ($exp === null
+                    && $this->conf->opt("autoassignReviewGadget") === "expertise")) {
+                $g = "expertise";
+            }
         }
         if ($g === "expertise") {
             $this->review_gadget = self::REVIEW_GADGET_EXPERTISE;
         } else if ($g === "plain") {
             $this->review_gadget = self::REVIEW_GADGET_PLAIN;
-        } else if ($g !== null && $g !== "default") {
+        } else {
             $this->error_at("review_gadget", "<0>Expected ‘plain’ or ‘expertise’");
         }
     }
@@ -439,7 +433,9 @@ abstract class Autoassigner extends MessageSet {
     }
 
     function configure_preference_fuzz() {
-        if (($fuzz = $this->option("preference_fuzz")) !== null) {
+        $fuzz = $this->option("preference_fuzz")
+            ?? $this->conf->setting("pref_fuzz");
+        if ($fuzz !== null) {
             if (is_bool($fuzz)) {
                 $this->preference_fuzz = $fuzz ? 10 : 0;
             } else if (($ifuzz = stoi($fuzz)) !== null) {

@@ -176,8 +176,29 @@
         "tags": "revpref"
     },
     {
+        "name": "preference_fuzz", "storage": "pref_fuzz",
+        "title": "Preference fuzzing",
+        "type": "int", "default_value": 0,
+        "parser_class": "Preference_SettingParser",
+        "tags": "revpref"
+    },
+    {
+        "name": "preference_fuzz_enable", "storage": "none", "json": false,
+        "title": "Preference fuzzing",
+        "parser_class": "Preference_SettingParser",
+        "type": "checkbox",
+        "parse_order": 1
+    },
+    {
+        "name": "preference_fuzz_amount", "storage": "none", "json": false,
+        "title": "Preference fuzz factor",
+        "parser_class": "Preference_SettingParser",
+        "type": "nonnegint", "placeholder": "10", "size": 5, "default_value": 10,
+        "parse_order": 2
+    },
+    {
         "name": "preference_shuffle", "storage": "pref_shuffle",
-        "title": "Shuffle paper order for review preference entry",
+        "title": "Shuffle submissions on review preferences page",
         "type": "checkbox",
         "tags": "revpref"
     },

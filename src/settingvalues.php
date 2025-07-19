@@ -1827,7 +1827,7 @@ class SettingValues extends MessageSet {
      * @return void */
     function print_checkbox_only($name, $js = null) {
         $js["id"] = $name;
-        echo Ht::hidden("has_$name", 1),
+        echo Ht::hidden("has_{$name}", 1),
             Ht::checkbox($name, 1, !!$this->vstr($name), $this->sjs($name, $js));
     }
 

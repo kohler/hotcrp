@@ -130,8 +130,14 @@
     },
     {
         "name": "submissions/prefshuffle", "order": 65,
-        "print_function": "Submissions_SettingParser::print_pref_shuffle",
+        "print_function": "Preference_SettingParser::print_pref_shuffle",
         "settings": ["preference_shuffle"]
+    },
+    {
+        "name": "submissions/preffuzz", "order": 70,
+        "separator_before": true,
+        "print_function": "Preference_SettingParser::print_pref_fuzz",
+        "settings": ["preference_fuzz", "preference_fuzz_enable", "preference_fuzz_amount"]
     },
 
 

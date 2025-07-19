@@ -48,11 +48,6 @@ class Submissions_SettingParser extends SettingParser {
     static function print_pcseeallpdf(SettingValues $sv) {
         $sv->print_checkbox("submitted_document_early_visibility", "PC can view submitted PDFs before submission deadline");
     }
-    static function print_pref_shuffle(SettingValues $sv) {
-        $sv->print_checkbox("preference_shuffle", "Shuffle submissions on " . Ht::link("review preferences page", $sv->conf->hoturl("reviewprefs")), [
-            "hint" => "The page will display submissions in a reviewer-specific random order."
-        ]);
-    }
 
     function apply_req(Si $si, SettingValues $sv) {
         $v = $sv->base_parse_req($si);
