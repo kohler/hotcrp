@@ -15,9 +15,9 @@ class Preference_SettingParser extends SettingParser {
             "group_open" => true,
             "class" => "uich js-foldup"
         ]);
-        echo '<div class="fx mt-3"><label>Fuzz factor:';
+        echo '<div class="fx mt-3"><label>Fuzz width:';
         $sv->print_entry("preference_fuzz_amount", ["class" => "ml-2"]);
-        echo '</label><p class="f-d">At fuzz factor <em>F</em>, HotCRP rearranges each PC member’s preferences into bands, each containing <em>F</em> or more equally-preferred submissions. This means that a reviewer’s top preference will be among their first <em>N</em> assignments with probability roughly <em>N</em>/<em>F</em>.</p></div></div></div>';
+        echo '</label><p class="f-d">At fuzz width <em>F</em>, HotCRP’s autoassigner groups each reviewer’s preferences into bands of at least <em>F</em> submissions, treating all submissions in a band as equally preferred. This means a reviewer’s top choice will be among their first <em>N</em> assignments with chance roughly <em>N</em>/<em>F</em>.</p></div></div></div>';
     }
 
     function set_oldv(Si $si, SettingValues $sv) {
