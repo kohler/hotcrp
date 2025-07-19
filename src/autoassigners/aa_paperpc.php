@@ -22,13 +22,13 @@ class PaperPC_Autoassigner extends Autoassigner {
     }
 
     function option_schema() {
-        return [
+        return make_array(
             "score$",
             "allow_incomplete",
             ...Autoassigner::balance_method_schema(),
             ...Autoassigner::max_load_schema(),
             ...Autoassigner::costs_schema()
-        ];
+        );
     }
 
     function configure() {

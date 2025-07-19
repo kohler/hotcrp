@@ -43,7 +43,7 @@ class Review_Autoassigner extends Autoassigner {
     }
 
     function option_schema() {
-        return [
+        return make_array(
             "rtype$",
             "round$",
             "count#+",
@@ -53,7 +53,7 @@ class Review_Autoassigner extends Autoassigner {
             ...self::gadget_schema(),
             ...self::costs_schema(),
             ...self::preference_fuzz_schema()
-        ];
+        );
     }
 
     function configure() {
