@@ -125,11 +125,8 @@ function render_table(pcinfo) {
     if (dl.tracker) {
         ts = dl.tracker.ts || [dl.tracker];
     }
-    if (pcinfo && pcinfo.pc) {
-        pc_by_uid = {};
-        for (const pc of pcinfo.pc) {
-            pc_by_uid[pc.uid] = pc;
-        }
+    if (pcinfo && pcinfo.umap) {
+        pc_by_uid = pcinfo.umap;
     }
 
     // collect current html, assign existing
@@ -197,7 +194,7 @@ function render_table(pcinfo) {
 }
 
 function make_table() {
-    hotcrp.demand_load.pc().then(render_table);
+    hotcrp.demand_load.pc_map().then(render_table);
 }
 
 $(window).on("hotcrpdeadlines", function () {
