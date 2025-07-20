@@ -1,9 +1,7 @@
 hotcrp.start_buzzer_page = (function ($) {
 /* global hotcrp */
-var info, has_format, muted, show_papers, initial = true,
-    fold = hotcrp.fold,
-    $e = hotcrp.$e,
-    usere = hotcrp.usere;
+const fold = hotcrp.fold, $e = hotcrp.$e, usere = hotcrp.usere;
+let info, has_format, muted, show_papers, pc_by_uid = {}, initial = true;
 
 function append_conflict_list(l, frag) {
     var i, e;
@@ -21,10 +19,10 @@ function append_conflict_list(l, frag) {
     }
 }
 
-function render_conflicts(cur, prev, psig, pcm) {
+function render_conflicts(cur, prev, psig) {
     var i, pc, newconf = [], curconf = [], e;
     for (i = 0; i !== cur.length; ++i) {
-        if ((pc = pcm[cur[i]])) {
+        if ((pc = pc_by_uid[cur[i]])) {
             var isnew = prev && $.inArray(cur[i], prev) === -1;
             (isnew ? newconf : curconf).push(usere(pc));
         }
@@ -50,7 +48,7 @@ function render_conflicts(cur, prev, psig, pcm) {
     if (prev) {
         var oldconf = [];
         for (i = 0; i !== prev.length; ++i) {
-            if ($.inArray(prev[i], cur) < 0 && (pc = pcm[prev[i]]))
+            if ($.inArray(prev[i], cur) < 0 && (pc = pc_by_uid[prev[i]]))
                 oldconf.push(usere(pc));
         }
         if (oldconf.length) {
@@ -62,10 +60,10 @@ function render_conflicts(cur, prev, psig, pcm) {
     return frag;
 }
 
-function render_paper_into(tbody, idx, psig, pcm) {
+function render_paper_into(tbody, idx, psig) {
     var pcconf_frag = null;
     if (psig.conflicts) {
-        pcconf_frag = render_conflicts(psig.conflicts, psig.prev_conflicts, psig, pcm);
+        pcconf_frag = render_conflicts(psig.conflicts, psig.prev_conflicts, psig);
     }
 
     var title_td = $e("td", "tracker-table tracker-title"),
@@ -120,25 +118,31 @@ function tracker_signature(tr) {
     return trsig;
 }
 
-function render_table(pcm) {
-    var dl = hotcrp.status, ts = [];
+function render_table(pcinfo) {
+    const dl = hotcrp.status;
+    let ts = [];
     has_format = false;
     if (dl.tracker) {
         ts = dl.tracker.ts || [dl.tracker];
     }
+    if (pcinfo && pcinfo.pc) {
+        pc_by_uid = {};
+        for (const pc of pcinfo.pc) {
+            pc_by_uid[pc.uid] = pc;
+        }
+    }
 
     // collect current html, assign existing
-    var holder = document.getElementById("tracker-table"),
-        child = holder.firstChild, i, j, e, trsig, signaturestr,
-        any = false, changes = [];
-    for (i = 0; i !== ts.length; ++i) {
-        trsig = tracker_signature(ts[i]);
-        signaturestr = JSON.stringify(trsig);
+    const holder = document.getElementById("tracker-table");
+    let child = holder.firstChild, any = false, changes = [];
+    for (let i = 0; i !== ts.length; ++i) {
+        const trsig = tracker_signature(ts[i]),
+            signaturestr = JSON.stringify(trsig);
         any = any || trsig.papers.length > 0;
         if (child
             && child.getAttribute("data-trackerid") == ts[i].trackerid) {
             if (trsig.papers.length === 0) {
-                e = child.nextSibling;
+                const e = child.nextSibling;
                 child.remove();
                 child = e;
                 continue;
@@ -150,7 +154,7 @@ function render_table(pcm) {
         } else if (trsig.papers.length === 0) {
             continue;
         } else {
-            e = $e("table", {"class": "tracker-table-instance", "data-trackerid": ts[i].trackerid});
+            const e = $e("table", {"class": "tracker-table-instance", "data-trackerid": ts[i].trackerid});
             holder.insertBefore(e, child);
             child = e;
         }
@@ -161,14 +165,14 @@ function render_table(pcm) {
                 $e("td", {"class": "tracker-table remargin-left remargin-right", colspan: 4},
                     $e("span", "tracker-name", trsig.name))));
         }
-        for (j = 0; j !== trsig.papers.length; ++j) {
-            render_paper_into(child.tBodies[0], j, trsig.papers[j], pcm);
+        for (let j = 0; j !== trsig.papers.length; ++j) {
+            render_paper_into(child.tBodies[0], j, trsig.papers[j]);
         }
         changes.push(child);
         child = child.nextSibling;
     }
     while (child && (any || child.hasAttribute("data-trackerid"))) {
-        e = child.nextSibling;
+        const e = child.nextSibling;
         child.remove();
         child = e;
     }
@@ -182,8 +186,8 @@ function render_table(pcm) {
         hotcrp.render_text_page();
     }
     if (changes.length && !initial) {
-        for (i = 0; i !== changes.length; ++i) {
-            $(changes[i]).find(".tracker-table0").addClass("change");
+        for (const ch of changes) {
+            $(ch).find(".tracker-table0").addClass("change");
         }
         if (!muted) {
             play(false);

@@ -10555,7 +10555,7 @@ Assign_DraggableTable.prototype.commit = function () {
     function doassignlist(as, assignlist, id, ondrag) {
         const len = (assignlist || []).length;
         for (let i = 0; i !== len; ++i) {
-            const x = assignlist[i];
+            let x = assignlist[i];
             if (x.ondrag === ondrag) {
                 x = Object.assign({pid: id}, x);
                 delete x.ondrag;
