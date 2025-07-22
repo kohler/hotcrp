@@ -20,10 +20,9 @@ class Perm_SearchTerm extends SearchTerm {
         } else if (strcasecmp($word, "author-edit-final") === 0
                    || strcasecmp($word, "author-write-final") === 0) {
             return new Perm_SearchTerm($srch->user, "author-write-final");
-        } else {
-            $srch->lwarning($sword, "<0>Permission not found");
-            return new False_SearchTerm;
         }
+        $srch->lwarning($sword, "<0>Permission not found");
+        return new False_SearchTerm;
     }
     function sqlexpr(SearchQueryInfo $sqi) {
         if ($this->perm === "author-write-final") {
@@ -38,8 +37,7 @@ class Perm_SearchTerm extends SearchTerm {
         } else if ($this->perm === "author-write-final") {
             return $row->author_edit_state() === 2
                 && $this->user->can_view_decision($row);
-        } else {
-            return false;
         }
+        return false;
     }
 }

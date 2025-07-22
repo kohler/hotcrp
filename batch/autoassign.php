@@ -257,9 +257,9 @@ class Autoassign_Batch {
         if (str_starts_with($this->gj->function, "+")) {
             $class = substr($this->gj->function, 1);
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
-            $aa = new $class($this->user, $this->pcc, $pids, $this->param, $this->gj);
+            $aa = new $class($this->user, $this->gj);
         } else {
-            $aa = call_user_func($this->gj->function, $this->user, $this->pcc, $pids, $this->param, $this->gj);
+            $aa = call_user_func($this->gj->function, $this->user, $this->gj);
         }
         '@phan-var-force Autoassigner $aa';
         foreach ($this->no_coassign as $l) {
