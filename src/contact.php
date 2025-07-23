@@ -61,7 +61,7 @@ class Contact implements JsonSerializable {
     public $role_mask = self::ROLE_DBMASK;
     /** @var int
      * @deprecated */
-    private $disabled = 0;
+    private $disabled; // XXX delete this
     /** @var ?int */
     public $primaryContactId;
     /** @var ?string */
@@ -280,7 +280,6 @@ class Contact implements JsonSerializable {
         "primaryContactId" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE | self::PROP_NOUPDATECDB,
         "roles" => self::PROP_LOCAL | self::PROP_INT | self::PROP_SLICE | self::PROP_SPECIAL,
         "cdbRoles" => self::PROP_LOCAL | self::PROP_INT,
-        "disabled" => self::PROP_LOCAL | self::PROP_INT | self::PROP_NOUPDATECDB,
         "contactTags" => self::PROP_LOCAL | self::PROP_NULL | self::PROP_STRING | self::PROP_SLICE,
         "cflags" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_INT | self::PROP_SLICE | self::PROP_NOUPDATECDB | self::PROP_SPECIAL,
         "address" => self::PROP_LOCAL | self::PROP_CDB | self::PROP_DATA | self::PROP_NULL | self::PROP_STRINGLIST | self::PROP_SIMPLIFY | self::PROP_UPDATE,
@@ -321,8 +320,6 @@ class Contact implements JsonSerializable {
         $u = new Contact($conf);
         $u->contactXid = self::$next_xid--;
         $u->cflags = self::CF_PLACEHOLDER | self::CF_UNCONFIRMED;
-        /** @phan-suppress-next-line PhanDeprecatedProperty */
-        $u->disabled = self::CF_PLACEHOLDER;
         $u->set_roles_properties();
         return $u;
     }
@@ -383,8 +380,6 @@ class Contact implements JsonSerializable {
             $u->preferredEmail = $preferred_email;
         }
         $u->cflags = ($args["disablement"] ?? 0) | self::CF_UNCONFIRMED;
-        /** @phan-suppress-next-line PhanDeprecatedProperty */
-        $u->disabled = $u->cflags & self::CFM_DISABLEMENT & self::CFM_DB;
         $u->set_roles_properties();
         return $u;
     }
@@ -2126,9 +2121,6 @@ class Contact implements JsonSerializable {
         }
         if ($prop === "roles" || $prop === "cflags") {
             $this->set_roles_properties();
-            if ($prop === "cflags") {
-                $this->set_prop("disabled", $this->cflags & Contact::CFM_DISABLEMENT & Contact::CFM_DB);
-            }
         }
     }
 
@@ -2454,7 +2446,7 @@ class Contact implements JsonSerializable {
      * @param ?Contact $actor
      * @return ?Contact */
     private function _store_create($cdbu, $actor) {
-        $this->_mod_undo = ["disabled" => -1, "cflags" => -1];
+        $this->_mod_undo = ["cflags" => -1];
         foreach ($this->importable_props() as $prop => $shape) {
             $this->_mod_undo[$prop] = ($shape & self::PROP_NULL) !== 0 ? null : "";
         }

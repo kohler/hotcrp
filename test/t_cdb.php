@@ -824,7 +824,7 @@ class Cdb_Tester {
         $uu = $u->cdb_user();
         xassert_eqq($uu->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED);
 
-        Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@cat.com', affiliation='University of Connecticut', password='', disabled=1, cflags=1");
+        Dbl::qe($this->conf->dblink, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@cat.com', affiliation='University of Connecticut', password='', cflags=1");
         Dbl::qe($this->cdb, "insert into ContactInfo set firstName='Martha', lastName='Tanner', email='marthatanner@cat.com', affiliation='University of Connecticut', password=' unset', cflags=2");
         $u = $this->conf->fresh_user_by_email("marthatanner@cat.com");
         xassert_eqq($u->disabled_flags() & ~Contact::CF_PLACEHOLDER, Contact::CF_ROLEDISABLED | Contact::CF_UDISABLED);
@@ -841,8 +841,6 @@ class Cdb_Tester {
         xassert_eqq($u->disabled_flags(), $want);
         $u = $this->conf->fresh_user_by_email($email);
         xassert_eqq($u->disabled_flags(), $want);
-        $x = $this->conf->fetch_ivalue("select disabled from ContactInfo where email=?", $email);
-        xassert_eqq($x, $want);
     }
 
     function test_cdb_placeholder_reset() {

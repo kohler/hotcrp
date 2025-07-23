@@ -502,13 +502,12 @@ class ConfInvariants {
         Dbl::free($result);
 
         // load users
-        $result = $this->conf->qe("select " . $this->conf->user_query_fields() . ", unaccentedName, disabled from ContactInfo");
+        $result = $this->conf->qe("select " . $this->conf->user_query_fields() . ", unaccentedName from ContactInfo");
         while (($u = $result->fetch_object())) {
             $u->contactId = intval($u->contactId);
             $u->primaryContactId = intval($u->primaryContactId);
             $u->roles = intval($u->roles);
             $u->cflags = intval($u->cflags);
-            $u->disabled = intval($u->disabled);
             unset($authors[strtolower($u->email)]);
 
             // anonymous users are disabled
@@ -542,19 +541,9 @@ class ConfInvariants {
                 $this->invariant_error("roles", "user {$u->email} has funky roles {$u->roles}");
             }
 
-            // disabled has only expected bits
-            if (($u->disabled & Contact::CFM_DISABLEMENT & ~Contact::CFM_DB) !== 0) {
-                $this->invariant_error("user_disabled", sprintf("user {$u->email}/{$u->contactId} bad disabled %x", $u->disabled));
-            }
-
             // cflags has only expected bits
             if (($u->cflags & ~Contact::CFM_DB) !== 0) {
                 $this->invariant_error("user_cflags", sprintf("user {$u->email}/{$u->contactId} bad cflags %x", $u->cflags));
-            }
-
-            // cflags reflects disabled
-            if ($u->disabled !== ($u->cflags & Contact::CFM_DISABLEMENT)) {
-                $this->invariant_error("user_cflags_disabled", sprintf("user {$u->email}/{$u->contactId} disabled %x unreflected in cflags %x", $u->disabled, $u->cflags));
             }
 
             // contactTags is a valid tag string

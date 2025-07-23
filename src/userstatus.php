@@ -1191,7 +1191,7 @@ class UserStatus extends MessageSet {
         }
 
         // Disabled
-        $cflags = $user->cflags;
+        $old_cflags = $cflags = $user->cflags;
         if (isset($cj->disabled) && !$user->security_locked_here()) {
             if ($cj->disabled) {
                 $cflags |= Contact::CF_UDISABLED;
@@ -1203,8 +1203,12 @@ class UserStatus extends MessageSet {
             $cflags &= ~Contact::CF_PLACEHOLDER;
         }
         $user->set_prop("cflags", $cflags);
-        if ($user->prop_changed("disabled") && isset($cj->disabled)) {
-            $this->diffs[$cj->disabled ? "disabled" : "enabled"] = true;
+        if (isset($cj->disabled) && $old_cflags !== $cflags) {
+            $old_disabled = ($old_cflags & Contact::CFM_DISABLEMENT & Contact::CFM_DB) !== 0;
+            $new_disabled = ($cflags & Contact::CFM_DISABLEMENT & Contact::CFM_DB) !== 0;
+            if ($old_disabled !== $new_disabled) {
+                $this->diffs[$new_disabled ? "disabled" : "enabled"] = true;
+            }
         }
 
         // Follow

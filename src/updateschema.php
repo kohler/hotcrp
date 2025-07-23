@@ -3189,6 +3189,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table PaperReview drop key `contactId`")) {
             $conf->update_schema_version(310);
         }
+        if ($conf->sversion === 310
+            && $conf->ql_ok("alter table ContactInfo drop `disabled`")) {
+            $conf->update_schema_version(311);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
