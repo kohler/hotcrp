@@ -296,6 +296,9 @@ class Autoassign_Page {
     }
 
     private function print_pc_selection_link($html, $uids) {
+        if (empty($uids)) {
+            return;
+        }
         echo $this->_pcsel_sep, Ht::button($html, ["class" => "link ui js-pcsel", "data-uids" => join(" ", $uids)]);
         $this->_pcsel_sep = ", ";
     }
