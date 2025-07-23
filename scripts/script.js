@@ -13902,6 +13902,44 @@ handle_ui.on("foldtoggle.js-unfold-pcselector", function (evt) {
 });
 
 
+handle_ui.on("js-assign-potential-conflict", function (evt) {
+    const self = this, pid = +this.getAttribute("data-pid"), ass = {
+        type: "conflict", pid: pid, uid: +this.getAttribute("data-uid"),
+        conflict: this.getAttribute("data-conflict-type") || "pinned conflicted"
+    };
+    function success(rv) {
+        const div = self.closest(".msg-inform"), f = self.form,
+            is_none = /unconflicted|none/.test(ass.conflict);
+        if (!div) {
+            return;
+        }
+        if (!is_none) {
+            for (const e of f.querySelectorAll(".assignment-summary")) {
+                e.hidden = true;
+            }
+            for (const e of f.querySelectorAll(".if-assign-potential-conflict")) {
+                e.hidden = false;
+            }
+            const submit = f.elements.submit, reassign = f.elements.reassign;
+            if (submit) {
+                submit.disabled = true;
+                submit.hidden = true;
+            }
+            if (reassign) {
+                reassign.hidden = false;
+            }
+        }
+        div.replaceChildren($e("div", "is-diagnostic is-success",
+            is_none ? "Conflict ignored" : "Conflict confirmed"));
+    }
+    $ajax.condition(function () {
+        $.ajax(hoturl("=api/assign", {p: pid}), {
+            method: "POST", data: {assignments: JSON.stringify([ass])},
+            success: success, trackOutstanding: true
+        });
+    });
+});
+
 handle_ui.on("js-assign-review", function (evt) {
     var form = this.form, m;
     if (evt.type !== "change"

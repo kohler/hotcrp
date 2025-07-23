@@ -17,6 +17,8 @@ class Autoassign_Page {
     public $jobid;
     /** @var string */
     private $_pcsel_sep;
+    /** @var bool */
+    private $_aset_ok;
 
     function __construct(Contact $user, Qrequest $qreq) {
         assert($user->is_manager());
@@ -632,9 +634,14 @@ class Autoassign_Page {
         $asetcolumn = $this->unparse_tentative_assignment($tok);
         gc_collect_cycles();
         Assignment_PaperColumn::print_unparse_display($asetcolumn);
-        echo '<div class="aab aabig btnp">',
-            Ht::submit("submit", "Apply changes", ["class" => "btn-primary"]),
-            Ht::submit("download", "Download assignment file"),
+        echo '<div class="aab aabig btnp">';
+        if ($this->_aset_ok) {
+            echo Ht::submit("submit", "Apply changes", ["class" => "btn-primary"]),
+                Ht::submit("reassign", "Recompute assignment", ["class" => "btn-danger", "hidden" => true]);
+        } else {
+            echo Ht::submit("reassign", "Recompute assignment", ["class" => "btn-primary"]);
+        }
+        echo Ht::submit("download", "Download assignment file"),
             Ht::submit("cancel", "Cancel"),
             '</div></form>';
         $qreq->print_footer();
@@ -709,6 +716,7 @@ class Autoassign_Page {
         $aset = new AssignmentSet($this->user);
         $aset->set_override_conflicts(true);
         $aset->set_search_type($this->qreq->t);
+        $aset->set_confirm_potential_conflicts(true);
         $aset->parse($tok->outputData);
         $tok->unload_output();
 
@@ -722,15 +730,16 @@ class Autoassign_Page {
         $atype = $aset->type_description();
         echo '<h3 class="form-h">Proposed ', $atype ? "{$atype} " : "", 'assignment</h3>';
         echo Ht::fmt_feedback_msg($this->conf, $this->ms);
-        $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
-        $this->conf->feedback_msg(
-            MessageItem::marked_note("<0>Select “Apply changes” to make the checked assignments."),
-            MessageItem::inform("<0>Reviewer preferences, if any, are shown as “P#”.")
-        );
+        $aset->feedback_msg(AssignmentSet::FEEDBACK_PROPOSE);
+        if ($aset->has_error()) {
+            echo '<p>Select “Recompute assignment” to try to create a new assignment without errors.</p>';
+        } else {
+            echo '<p class="assignment-summary">Select “Apply changes” below to make the checked assignments.</p>',
+                '<p class="if-assign-potential-conflict" hidden><span class="urgent-note-mark"></span> You’ve confirmed conflicts and must recompute the assignment. Select “Recompute assignment” below.</p>';
+        }
+        $this->_aset_ok = !$aset->has_error();
         return $aset->unparse_paper_column();
     }
-
-
 
 
 /*
@@ -800,11 +809,14 @@ class Autoassign_Page {
 
     function run() {
         // load job
+        if (isset($this->qreq->reassign) || isset($this->qreq->cancel)) {
+            unset($this->qreq->job);
+        }
         if ($this->qreq->job) {
             $this->run_try_job();
         } else if (isset($this->qreq->a)
                    && isset($this->qreq->pctyp)
-                   && isset($this->qreq->assign)
+                   && (isset($this->qreq->assign) || isset($this->qreq->reassign))
                    && $this->qreq->valid_post()) {
             $this->start_job();
         }

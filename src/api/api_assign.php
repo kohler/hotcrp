@@ -18,8 +18,8 @@ class Assign_API {
         }
         $aset->parse(CsvParser::make_json($a));
         $aset->execute();
-        $jr = $aset->json_result();
 
+        $jr = $aset->json_result();
         if ($jr["ok"] && $qreq->search) {
             Search_API::apply_search($jr, $user, $qreq, $qreq->search);
             // include tag information

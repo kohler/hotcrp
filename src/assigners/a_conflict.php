@@ -186,25 +186,44 @@ class Conflict_Assigner extends Assigner {
         $uname = $u->name(NAME_E);
         $type = $item->type();
 
-        if ($has_conflict
-            && isset($item["_override"])
-            && $state->user->can_administer($prow)) {
-            $state->msg_near($item->landmark, "<0>Overriding conflict for #{$pid} {$type} assignment {$uname}", 1);
-        } else if ($has_conflict) {
+        if ($has_conflict) {
+            if (isset($item["_override"])
+                && $state->user->can_administer($prow)) {
+                $state->msg_near($item->landmark, "<0>Overriding conflict for #{$pid} {$type} assignment {$uname}", 1);
+                return;
+            }
+
             $state->msg_near($item->landmark, "<0>{$uname} cannot {$type} #{$pid} because they are conflicted", 2);
             if ($state->csv_context && $state->user->allow_administer($prow)) {
                 $state->msg_near($item->landmark, "<0>Set an “override” column to “yes” to force this assignment.", MessageSet::INFORM);
             }
             throw new AssignmentError("");
+        }
+
+        // otherwise, no conflict yet
+        $xtype = $type === "review" ? "reviewer" : $type;
+        $state->msg_near($item->landmark, "<0>Warning: Proposed {$xtype} {$uname} may conflict with #{$pid}", 1);
+        foreach ($potconf->messages as $msglist) {
+            $state->msg_near($item->landmark, "<5>" . $potconf->render_ul_item(null, null, $msglist), MessageSet::INFORM);
+        }
+        ++$state->potential_conflict_warnings;
+        $can_admin = $state->user->allow_administer($prow);
+        if ($state->potential_conflict_warnings > 1
+            && !$state->confirm_potential_conflicts) {
+            return;
+        }
+        if ($state->confirm_potential_conflicts && $can_admin) {
+            $state->msg_near($item->landmark, "<5>"
+                . Ht::button("Confirm this conflict", ["class" => "ui js-assign-potential-conflict mr-2", "data-pid" => $pid, "data-uid" => $u->contactId, "data-conflict-type" => "pinned conflicted"])
+                . Ht::button("Ignore this conflict", ["class" => "ui js-assign-potential-conflict", "data-pid" => $pid, "data-uid" => $u->contactId, "data-conflict-type" => "pinned unconflicted"]),
+                MessageSet::INFORM);
+        }
+        if ($state->potential_conflict_warnings > 1) {
+            // do nothing
+        } else if ($can_admin) {
+            $state->msg_near($item->landmark, "<5>You may want to <a href=\"" . $state->conf->hoturl("conflictassign") . "\" target=\"_blank\" rel=\"noopener\">confirm all potential conflicts</a>.", MessageSet::INFORM);
         } else {
-            $state->msg_near($item->landmark, "<0>Warning: #{$pid} {$type} assignment {$uname} has a potential conflict", 1);
-            foreach ($potconf->messages as $msglist) {
-                $state->msg_near($item->landmark, "<5>" . $potconf->render_ul_item(null, null, $msglist), MessageSet::INFORM);
-            }
-            if ($state->potential_conflict_warnings < 1) {
-                $state->msg_near($item->landmark, "<5>You may want to <a href=\"" . $state->conf->hoturl("conflictassign") . "\" target=\"_blank\" rel=\"noopener\" class=\"btn\">Confirm potential conflicts</a> before performing other assignments.", MessageSet::INFORM);
-                ++$state->potential_conflict_warnings;
-            }
+            $state->msg_near($item->landmark, "<5>You may want to ask an administrator to confirm potential conflicts.", MessageSet::INFORM);
         }
     }
 

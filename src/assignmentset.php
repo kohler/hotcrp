@@ -204,6 +204,8 @@ class AssignmentState extends MessageSet {
     public $csv_context = false;
     /** @var int */
     public $potential_conflict_warnings = 0;
+    /** @var bool */
+    public $confirm_potential_conflicts = false;
     /** @var AssignerContacts */
     private $cmap;
     /** @var ?array<int,Contact> */
@@ -1195,6 +1197,12 @@ class AssignmentSet {
         $this->astate->csv_context = $csv_context;
         return $this;
     }
+    /** @param bool $confirm
+     * @return $this */
+    function set_confirm_potential_conflicts($confirm) {
+        $this->astate->confirm_potential_conflicts = $confirm;
+        return $this;
+    }
 
     /** @param string|list<string> $action
      * @return $this */
@@ -1315,6 +1323,7 @@ class AssignmentSet {
     }
     const FEEDBACK_ASSIGN = 0;
     const FEEDBACK_CHANGE = 1;
+    const FEEDBACK_PROPOSE = 2;
     /** @param int $type */
     function feedback_msg($type) {
         $fml = [];
@@ -1330,6 +1339,8 @@ class AssignmentSet {
         } else if ($this->astate->has_error()) {
             if ($type === self::FEEDBACK_CHANGE) {
                 $fml[] = MessageItem::error("<0>Changes not saved; please correct these errors and try again");
+            } else if ($type === self::FEEDBACK_PROPOSE) {
+                $fml[] = MessageItem::error("<0>Assignment cannot be saved due to errors");
             } else {
                 $fml[] = MessageItem::error("<0>Assignments not saved due to errors");
             }
@@ -2296,9 +2307,8 @@ class Assignment_PaperColumn extends PaperColumn {
                 }
             }
             if (!empty($summary)) {
-                echo "<div class=\"g\"></div>\n",
-                    "<h3>Summary</h3>\n",
-                    '<div class="pc-ctable">', join("", $summary), "</div>\n";
+                echo '<div class="assignment-summary mt-4"><h3>Summary</h3>',
+                    '<div class="pc-ctable">', join("", $summary), "</div></div>\n";
             }
         }
     }
