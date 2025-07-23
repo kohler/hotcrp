@@ -404,7 +404,7 @@ class Autoassign_Page {
         }
         foreach ($conf->viewable_user_tags($this->user) as $pctag) {
             if ($pctag !== "pc")
-                $this->print_pc_selection_link("#{$pctag}", $pclist[strtolower($pctag)]);
+                $this->print_pc_selection_link("#{$pctag}", $pclist[strtolower($pctag)] ?? []);
         }
         $this->print_pc_selection_link("flip", ["flip"]);
         echo ")";
