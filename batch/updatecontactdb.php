@@ -114,7 +114,7 @@ class UpdateContactdb_Batch {
             $conf_flags |= self::CONFF_SECRET_PC;
         }
         if ($conf_flags !== $this->confrow->conf_flags) {
-            $qf[] = "conf_flags";
+            $qf[] = "conf_flags=?";
             $qv[] = $conf_flags;
         }
         if (!empty($qf)) {
