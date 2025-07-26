@@ -25,13 +25,16 @@ class UpdateContactdb_Batch {
     /** @var bool */
     public $authors;
     /** @var bool */
-    public $import;
-    /** @var bool */
     public $metadata;
+    /** @var bool */
+    public $import;
     /** @var bool */
     public $verbose;
     /** @var ?\mysqli */
     private $_cdb;
+
+    const CONFF_PRIVATE_PC = 0x10;
+    const CONFF_SECRET_PC = 0x20;
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
@@ -46,7 +49,11 @@ class UpdateContactdb_Batch {
         if (($arg["V"] ?? 0) > 1) {
             Dbl::$verbose = true;
         }
-        if (!$this->papers && !$this->users && !$this->collaborators && !$this->authors && !$this->metadata) {
+        if (!$this->papers
+            && !$this->users
+            && !$this->collaborators
+            && !$this->authors
+            && !$this->metadata) {
             $this->papers = $this->users = true;
         }
     }
@@ -63,7 +70,7 @@ class UpdateContactdb_Batch {
             throw new ErrorException("Conference is not recorded in contactdb");
         }
         $this->cdb_confid = $this->confrow->confid = (int) $this->confrow->confid;
-        $this->confrow->conf_flags = (int) $this->confrow->conf_flags;
+        $conf_flags = $this->confrow->conf_flags = (int) $this->confrow->conf_flags;
         $qf = $qv = [];
         if ($this->conf->short_name !== $this->confrow->shortName) {
             $qf[] = "shortName=?";
@@ -98,6 +105,17 @@ class UpdateContactdb_Batch {
         if ($timezone !== $this->confrow->timezone) {
             $qf[] = "timezone=?";
             $qv[] = $timezone;
+        }
+        $conf_flags = $conf_flags & ~(self::CONFF_PRIVATE_PC | self::CONFF_SECRET_PC);
+        if ($this->conf->opt("privatePC")) {
+            $conf_flags |= self::CONFF_PRIVATE_PC;
+        }
+        if ($this->conf->opt("secretPC")) {
+            $conf_flags |= self::CONFF_SECRET_PC;
+        }
+        if ($conf_flags !== $this->confrow->conf_flags) {
+            $qf[] = "conf_flags";
+            $qv[] = $conf_flags;
         }
         if (!empty($qf)) {
             $qv[] = $this->cdb_confid;
@@ -338,11 +356,11 @@ class UpdateContactdb_Batch {
             "name:,n: !",
             "config: !",
             "help,h !",
-            "papers,p",
-            "users,u",
-            "collaborators",
-            "authors",
-            "metadata",
+            "papers,p Update paper information",
+            "users,u Update user information",
+            "collaborators Update collaborators",
+            "authors Update author information",
+            "metadata Update conference metadata",
             "import",
             "V#,verbose#"
         )->description("Update HotCRP contactdb for a conference.
