@@ -41,7 +41,7 @@ class ScoreInfo {
         "counts", "average", "median", "variance", "maxmin", "my"
     ];
     /** @readonly */
-    static public $score_sort_enum = "counts,C,M,count average,A,avg,av,ave,mean median,E,med variance,V,var maxmin,D,max-min my,Y,myscore";
+    static public $score_sort_enum = "counts,C,M,count;average,A,avg,av,ave,mean;median,E,med;variance,V,var;maxmin,D,max-min;my,Y,myscore";
 
     /** @param ?string $x
      * @return null|'counts'|'average'|'median'|'variance'|'maxmin'|'my' */

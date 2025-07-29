@@ -47,7 +47,7 @@ class Review_Autoassigner extends Autoassigner {
             "rtype$",
             "round$",
             "count#+",
-            "load=all rtype round",
+            "load=all;rtype;round",
             ...self::balance_method_schema(),
             ...self::max_load_schema(),
             ...self::gadget_schema(),

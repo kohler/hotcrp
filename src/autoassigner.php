@@ -316,9 +316,9 @@ abstract class Autoassigner extends MessageSet {
     /** @return list<string> */
     static function balance_method_schema() {
         return [
-            "balance=new all",
+            "balance=new;all",
             "balance_offset_tag:tag",
-            "method=default,mincost random stupid"
+            "method=default,mincost;random;stupid"
         ];
     }
 
@@ -383,7 +383,7 @@ abstract class Autoassigner extends MessageSet {
     /** @return list<string> */
     static function gadget_schema() {
         return [
-            "review_gadget=plain expertise",
+            "review_gadget=plain;expertise",
             "expertise"
         ];
     }

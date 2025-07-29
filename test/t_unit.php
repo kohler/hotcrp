@@ -1453,19 +1453,19 @@ class Unit_Tester {
     }
 
     function test_view_option_schema() {
-        $schema = "asc,ascending,up desc,descending,down forward reverse";
-        xassert_eqq(ViewOptionSchema::validate_enum("ascending", $schema), "asc");
-        xassert_eqq(ViewOptionSchema::validate_enum("asc", $schema), "asc");
-        xassert_eqq(ViewOptionSchema::validate_enum("descending", $schema), "desc");
-        xassert_eqq(ViewOptionSchema::validate_enum("forward", $schema), "forward");
-        xassert_eqq(ViewOptionSchema::validate_enum("reverse", $schema), "reverse");
-        xassert_eqq(ViewOptionSchema::validate_enum("fart", $schema), null);
-        xassert_eqq(ViewOptionSchema::validate_enum("asc,ascending", $schema), null);
+        $sort_schema = "asc,ascending,up;desc,descending,down;forward;reverse";
+        xassert_eqq(ViewOptionSchema::validate_enum("ascending", $sort_schema), "asc");
+        xassert_eqq(ViewOptionSchema::validate_enum("asc", $sort_schema), "asc");
+        xassert_eqq(ViewOptionSchema::validate_enum("descending", $sort_schema), "desc");
+        xassert_eqq(ViewOptionSchema::validate_enum("forward", $sort_schema), "forward");
+        xassert_eqq(ViewOptionSchema::validate_enum("reverse", $sort_schema), "reverse");
+        xassert_eqq(ViewOptionSchema::validate_enum("fart", $sort_schema), null);
+        xassert_eqq(ViewOptionSchema::validate_enum("asc,ascending", $sort_schema), null);
 
         $vos = new ViewOptionSchema;
-        xassert_eqq($vos->define_check("display=row col,column"), true);
-        xassert_eqq($vos->define_check((object) ["name" => "sort", "enum" => $schema, "lifted" => true]), true);
-        xassert_eqq($vos->define_check((object) ["name" => "test", "enum" => "all,yes none,no some"]), true);
+        xassert_eqq($vos->define_check("display=row;col,column"), true);
+        xassert_eqq($vos->define_check((object) ["name" => "sort", "enum" => $sort_schema, "lifted" => true]), true);
+        xassert_eqq($vos->define_check((object) ["name" => "test", "enum" => "all,yes;none,no;some"]), true);
         xassert_eqq($vos->define_check("fart!"), true);
         xassert_eqq($vos->define_check(null), false);
 
@@ -1481,8 +1481,8 @@ class Unit_Tester {
         xassert_eqq($vos->validate("test", "yes"), ["test", "all"]);
 
         $vos = new ViewOptionSchema;
-        $vos->define("display=row col,column");
-        $vos->define("sort=asc,ascending,up desc,down,descending forward reverse");
+        $vos->define("display=row;col,column");
+        $vos->define("sort={$sort_schema}");
         xassert_eqq($vos->validate("reverse", true), ["sort", "reverse"]);
     }
 

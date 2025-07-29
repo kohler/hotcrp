@@ -22,9 +22,8 @@ class Administrator_PaperColumn extends PaperColumn {
     static private function cid(PaperList $pl, PaperInfo $row) {
         if ($row->managerContactId && $pl->user->can_view_manager($row)) {
             return $row->managerContactId;
-        } else {
-            return 0;
         }
+        return 0;
     }
     function sort_name() {
         return $this->sort_name_with_options("format");

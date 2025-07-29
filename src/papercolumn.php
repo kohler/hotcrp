@@ -135,7 +135,7 @@ class PaperColumn extends Column {
 
     /** @return list<string> */
     static function user_view_option_schema() {
-        return ["format=given_name,first family_name,last"];
+        return ["format=given_name,first;family_name,last"];
     }
     /** @return int */
     function user_view_option_name_flags(Conf $conf) {
