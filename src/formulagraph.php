@@ -235,9 +235,8 @@ class FormulaGraph extends MessageSet {
             return [self::BOXPLOT, $m[0]];
         } else if ($m[6]) {
             return [self::SCATTER, $m[0]];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $s
@@ -245,9 +244,8 @@ class FormulaGraph extends MessageSet {
     static function data_type_prefix($s) {
         if (preg_match('/\A\s*+(paper|review)(\s++|(?=\())(?=[-+.\w(\[])/', $s, $m)) {
             return [$m[1] === "paper" ? self::DATA_PAPER : self::DATA_REVIEW, $m[0]];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param int $data
@@ -1110,13 +1108,17 @@ class FormulaGraph extends MessageSet {
             }, array_keys($this->tags));
         } else if ($format === Fexpr::FREVIEWFIELD) {
             $field = $isx ? $this->fxs[0]->result_format_detail() : $this->fy->result_format_detail();
-            assert($field instanceof Score_ReviewField);
-            $ticks = ["score", $field->export_json(ReviewField::UJ_EXPORT)];
-            if ($field->flip && $isx) {
-                $j["flip"] = true;
-            }
-            if ($field->is_numeric() || $field->is_single_character()) {
-                $rotate_y = false;
+            if ($field instanceof Checkbox_ReviewField) {
+                $named_ticks = ["no", "yes"];
+            } else {
+                assert($field instanceof Score_ReviewField);
+                $ticks = ["score", $field->export_json(ReviewField::UJ_EXPORT)];
+                if ($field->flip && $isx) {
+                    $j["flip"] = true;
+                }
+                if ($field->is_numeric() || $field->is_single_character()) {
+                    $rotate_y = false;
+                }
             }
         } else if ($format === Fexpr::FSUBFIELD) {
             $field = $isx ? $this->fxs[0]->result_format_detail() : $this->fy->result_format_detail();
