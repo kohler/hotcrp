@@ -1,6 +1,6 @@
 <?php
 // updateschema.php -- HotCRP function for updating old schemata
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class UpdateSchema {
     /** @var Conf */
@@ -281,38 +281,22 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         return true;
     }
 
-    private function v112_review_word_counts() {
-        $rf = new ReviewForm($this->conf, $this->conf->review_form_json());
-        do {
-            $n = 0;
-            $result = $this->conf->ql("select * from PaperReview where reviewWordCount is null limit 32");
-            $cleanf = Dbl::make_multi_ql_stager($this->conf->dblink);
-            while (($rrow = $result->fetch_object())) {
-                $cleanf("update PaperReview set reviewWordCount=? where paperId=? and reviewId=?", $rf->word_count($rrow), $rrow->paperId, $rrow->reviewId);
-                ++$n;
-            }
-            Dbl::free($result);
-            $cleanf(null);
-        } while ($n === 32);
-    }
-
     private function v129_bad_comment_timeDisplayed() {
         $badids = Dbl::fetch_first_columns($this->conf->dblink, "select a.commentId from PaperComment a join PaperComment b where a.paperId=b.paperId and a.commentId<b.commentId and a.timeDisplayed>b.timeDisplayed");
-        return !count($badids) || $this->conf->ql_ok("update PaperComment set timeDisplayed=0 where commentId ?a", $badids);
+        return empty($badids) || $this->conf->ql_ok("update PaperComment set timeDisplayed=0 where commentId ?a", $badids);
     }
 
     private function drop_keys_if_exist($table, $key) {
-        $indexes = Dbl::fetch_first_columns($this->conf->dblink, "select distinct index_name from information_schema.statistics where table_schema=database() and `table_name`='$table'");
+        $indexes = Dbl::fetch_first_columns($this->conf->dblink, "select distinct index_name from information_schema.statistics where table_schema=database() and `table_name`='{$table}'");
         $drops = [];
         foreach (is_array($key) ? $key : [$key] as $k) {
             if (in_array($k, $indexes, true))
-                $drops[] = ($k === "PRIMARY" ? "drop primary key" : "drop key `$k`");
+                $drops[] = ($k === "PRIMARY" ? "drop primary key" : "drop key `{$k}`");
         }
-        if (count($drops)) {
-            return $this->conf->ql_ok("alter table `$table` " . join(", ", $drops));
-        } else {
+        if (empty($drops)) {
             return true;
         }
+        return $this->conf->ql_ok("alter table `{$table}` " . join(", ", $drops));
     }
 
     /** @param string $table
@@ -377,7 +361,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
     }
 
     private function v176_paper_review_drop_main_fields() {
-        $kf = array_map(function ($k) { return "$k is not null"; }, array_keys(self::$v175_text_field_map));
+        $kf = array_map(function ($k) { return "{$k} is not null"; }, array_keys(self::$v175_text_field_map));
         if (!$this->conf->ql_ok("lock tables PaperReview write")) {
             return false;
         }
@@ -390,7 +374,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         } else {
             $ok = true;
             foreach (self::$v175_text_field_map as $kmain => $kjson) {
-                $ok = $ok && $this->conf->ql_ok("alter table PaperReview drop column `$kmain`");
+                $ok = $ok && $this->conf->ql_ok("alter table PaperReview drop column `{$kmain}`");
             }
         }
         $this->conf->ql("unlock tables");
@@ -1989,7 +1973,6 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(98);
         }
         if ($conf->sversion === 98) {
-            $this->v112_review_word_counts();
             $conf->update_schema_version(99);
         }
         if ($conf->sversion === 99
@@ -2090,7 +2073,6 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(111);
         }
         if ($conf->sversion === 111) {
-            $this->v112_review_word_counts();
             $conf->update_schema_version(112);
         }
         if ($conf->sversion === 112

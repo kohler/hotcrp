@@ -1752,9 +1752,8 @@ class Conf {
             return "Invalid round name (must start with a letter and contain only letters, numbers, and dashes)";
         } else if (preg_match('/\A(?:none|any|all|span|default|undefined|unnamed|.*(?:draft|response|review)|(?:draft|response).*|pri(?:mary)|sec(?:ondary)|opt(?:ional)|pc|ext(?:ernal)|meta)\z/i', $rname)) {
             return "Round name ‘{$rname}’ is reserved";
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param ?string $rname
@@ -1769,9 +1768,8 @@ class Conf {
             return "";
         } else if (self::round_name_error($rname)) {
             return false;
-        } else {
-            return $rname;
         }
+        return $rname;
     }
 
     /** @param int|bool $external
@@ -1966,9 +1964,8 @@ class Conf {
             return -1;
         } else if ($bd === "highlight" && $ad !== "highlight") {
             return 1;
-        } else {
-            return $this->collator()->compare($a->name, $b->name);
         }
+        return $this->collator()->compare($a->name, $b->name);
     }
 
 
