@@ -8960,11 +8960,13 @@ suggest.add_builder = function (name, f) {
     builders[name] = f;
 };
 
+suggest.CompletionSpan = CompletionSpan;
+
 return suggest;
 })();
 
 hotcrp.suggest.add_builder("tags", function (elt) {
-    const cs = CompletionSpan.at(elt);
+    const cs = hotcrp.suggest.CompletionSpan.at(elt);
     if (cs.matchLeft(/(?:^|\s)#?([^#\s]*)$/)) {
         cs.matchRight(/([^#\s]*)/y);
         cs.skipRe = /#[-+]?(?:\d+\.?|\.\d)\d*/y;
@@ -8973,7 +8975,7 @@ hotcrp.suggest.add_builder("tags", function (elt) {
 });
 
 hotcrp.suggest.add_builder("editable-tags", function (elt) {
-    const cs = CompletionSpan.at(elt);
+    const cs = hotcrp.suggest.CompletionSpan.at(elt);
     if (cs.matchLeft(/(?:^|\s)#?([^#\s]*)$/)) {
         cs.matchRight(/([^#\s]*)/y);
         cs.skipRe = /#[-+]?(?:\d+\.?|\.\d)\d*/y;
@@ -8982,7 +8984,7 @@ hotcrp.suggest.add_builder("editable-tags", function (elt) {
 });
 
 hotcrp.suggest.add_builder("sitewide-editable-tags", function (elt) {
-    const cs = CompletionSpan.at(elt);
+    const cs = hotcrp.suggest.CompletionSpan.at(elt);
     if (cs.matchLeft(/(?:^|\s)#?([^#\s]*)$/)) {
         cs.matchRight(/([^#\s]*)/y);
         cs.skipRe = /#[-+]?(?:\d+\.?|\.\d)\d*/y;
@@ -8991,7 +8993,7 @@ hotcrp.suggest.add_builder("sitewide-editable-tags", function (elt) {
 });
 
 hotcrp.suggest.add_builder("papersearch", function (elt) {
-    const cs = CompletionSpan.at(elt);
+    const cs = hotcrp.suggest.CompletionSpan.at(elt);
     if (cs.matchPrefixLeft(/(?:^|[^\w:])((?:tag|r?order):\s*#?|#|(?:show|hide):\s*(?:#|tag:|tagval:|tagvalue:))([^#\s()]*)$/)) {
         cs.matchRight(/([^#\s()]*)/y);
         cs.skipRe = /#[-+]?(?:\d+\.?|\.\d)\d*/y;
@@ -9004,7 +9006,7 @@ hotcrp.suggest.add_builder("papersearch", function (elt) {
 });
 
 hotcrp.suggest.add_builder("pc-tags", function (elt) {
-    const cs = CompletionSpan.at(elt);
+    const cs = hotcrp.suggest.CompletionSpan.at(elt);
     if (cs.matchLeft(/(?:^|\s)#?([^#\s]*)$/)) {
         cs.matchRight(/([^#\s]*)/y);
         cs.skipRe = /#[-+]?(?:\d+\.?|\.\d)\d*/y;
@@ -9024,7 +9026,7 @@ function suggest_emoji_postreplace(elt, repl, startPos) {
 
 hotcrp.suggest.add_builder("suggest-emoji", function (elt) {
     /* eslint-disable no-misleading-character-class */
-    const cs = CompletionSpan.at(elt);
+    const cs = hotcrp.suggest.CompletionSpan.at(elt);
     if (cs.matchLeft(/(?:^|[\s(\u20e3-\u23ff\u2600-\u27ff\ufe0f\udc00-\udfff])(:(?:|\+|\+?[-_0-9a-zA-Z]+):?)$/)
         && cs.matchRight(/(?:$|[\s)\u20e3-\u23ff\u2600-\u27ff\ufe0f\ud83c-\ud83f])/y)) {
         cs.caseSensitive = "lower";
@@ -9036,7 +9038,7 @@ hotcrp.suggest.add_builder("suggest-emoji", function (elt) {
 });
 
 hotcrp.suggest.add_builder("mentions", function (elt, hintinfo) {
-    const cs = CompletionSpan.at(elt);
+    const cs = hotcrp.suggest.CompletionSpan.at(elt);
     if (cs.span() === null) {
         return null;
     }

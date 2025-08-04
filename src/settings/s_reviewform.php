@@ -585,8 +585,9 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             ]);
         echo ' &nbsp;';
         $sv->print_entry("rf/\$/condition", [
-            "class" => "papersearch fx need-tooltip", "spellcheck" => false,
-            "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus"
+            "class" => "papersearch fx need-tooltip need-suggest",
+            "data-tooltip-info" => "settings-rf", "data-tooltip-type" => "focus",
+            "spellcheck" => false, "autocomplete" => "off"
         ]);
         echo "</div></div>\n";
     }

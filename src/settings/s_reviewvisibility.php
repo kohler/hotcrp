@@ -77,7 +77,10 @@ class ReviewVisibility_SettingParser extends SettingParser {
             . '<label for="review_visibility_author_condition" class="mr-2 uic js-settings-radioitem-click">Yes, for submissions matching this search:</label>'
             . '<div>' . $sv->feedback_at("review_visibility_author_condition")
             . $sv->feedback_at("review_visibility_author_tags")
-            . $sv->entry("review_visibility_author_condition", ["class" => "uii js-settings-radioitem-click papersearch need-suggest"])
+            . $sv->entry("review_visibility_author_condition", [
+                "class" => "uii js-settings-radioitem-click papersearch need-suggest",
+                "spellcheck" => false, "autocomplete" => "off"
+            ])
             . "</div></div>";
 
         $hint = '<p class="f-d mt-0 if-response-active';

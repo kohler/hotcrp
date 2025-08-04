@@ -40,7 +40,10 @@ class DecisionVisibility_SettingParser extends SettingParser {
         $dva = '<div class="d-inline-flex flex-wrap">'
             . Ht::label("Yes, for submissions matching this search:", "decision_visibility_author_condition", ["class" => "mr-2 uic js-settings-radioitem-click"])
             . '<div>' . $sv->feedback_at("decision_visibility_author_condition")
-            . $sv->entry("decision_visibility_author_condition", ["class" => "uii js-settings-radioitem-click papersearch need-suggest"])
+            . $sv->entry("decision_visibility_author_condition", [
+                "class" => "uii js-settings-radioitem-click papersearch need-suggest",
+                "spellcheck" => false, "autocomplete" => "off"
+            ])
             . '</div></div>';
         $sv->print_radio_table("decision_visibility_author", [
                 0 => "No",
