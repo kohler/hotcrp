@@ -618,7 +618,7 @@ class BackupDB_Batch {
                 if ($p === $l) {
                     break;
                 } else if ($ch === "(") {
-                    if (!preg_match('/\G\((?:[^\\\\\')]|\'(?:[^\\\\\']|\\\\.)*+\')*+\)/s', $s, $m, 0, $p)) {
+                    if (!preg_match('/\G\((?:[^\')]*+(?:\'(?:[^\\\\\']*+(?:\\\\.)?+)*+\')?+)*+\)/s', $s, $m, 0, $p)) {
                         break;
                     }
                     if ($this->_maybe_ephemeral === 0
@@ -650,9 +650,8 @@ class BackupDB_Batch {
         if (str_ends_with($s, "\n")) {
             $this->fwrite($p === 0 ? $s : substr($s, $p));
             return "";
-        } else {
-            return substr($s, $p);
         }
+        return substr($s, $p);
     }
 
     private function transfer() {
