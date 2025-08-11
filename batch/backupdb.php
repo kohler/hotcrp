@@ -22,6 +22,9 @@ class BackupDB_Batch {
     public $compress;
     /** @var bool
      * @readonly */
+    public $raw;
+    /** @var bool
+     * @readonly */
     public $schema;
     /** @var bool
      * @readonly */
@@ -147,11 +150,15 @@ class BackupDB_Batch {
 
         $this->verbose = isset($arg["V"]);
         $this->compress = isset($arg["z"]);
+        $this->raw = isset($arg["raw"]);
         $this->schema = isset($arg["schema"]);
         $this->skip_ephemeral = isset($arg["no-ephemeral"]);
         $this->single_transaction = true;
         $this->tablespaces = isset($arg["tablespaces"]);
         $this->count = $arg["count"] ?? 1;
+        if ($this->raw && ($this->schema || $this->skip_ephemeral)) {
+            $this->throw_error("`--raw` and `--schema`/`--no-ephemeral` conflict");
+        }
 
         $this->pc_only = isset($arg["pc"]);
         $this->only_tables = $arg["only"] ?? [];
@@ -479,7 +486,7 @@ class BackupDB_Batch {
 
     private function update_maybe_ephemeral() {
         $this->_maybe_ephemeral = 0;
-        if ($this->_inserting === $this->_created) {
+        if ($this->_inserting === $this->_created && $this->skip_ephemeral) {
             if ($this->_inserting === "settings"
                 && $this->_fields[0] === "name") {
                 $this->_maybe_ephemeral = 1;
@@ -603,6 +610,7 @@ class BackupDB_Batch {
         $p = 0;
         $l = strlen($s);
         if ($this->_inserting === null
+            && !$this->raw
             && str_starts_with($s, "INSERT")
             && preg_match('/\G(INSERT INTO `?([^`\s]*)`? VALUES)\s*(?=[(,]|$)/', $s, $m, 0, $p)) {
             $this->_inserting = strtolower($m[2]);
@@ -644,11 +652,14 @@ class BackupDB_Batch {
                     ++$p;
                 }
                 $this->_inserting = null;
+                $this->_separator = "";
                 break;
             }
         }
-        if (str_ends_with($s, "\n")) {
+        if ($p !== $l && str_ends_with($s, "\n")) {
+            $this->fwrite($this->_separator);
             $this->fwrite($p === 0 ? $s : substr($s, $p));
+            $this->_separator = "";
             return "";
         }
         return substr($s, $p);
@@ -891,6 +902,7 @@ class BackupDB_Batch {
             "input:,in:,i: =DUMP Read input from file",
             "output:,out:,o: =DUMP Send output to file",
             "z,compress Compress output",
+            "raw Do not post-process SQL",
             "schema Output schema only",
             "no-ephemeral Omit ephemeral settings and values",
             "skip-comments Omit comments",
