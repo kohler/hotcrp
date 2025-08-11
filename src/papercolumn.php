@@ -898,11 +898,16 @@ abstract class ScoreGraph_PaperColumn extends PaperColumn {
 }
 
 class Score_PaperColumn extends ScoreGraph_PaperColumn {
+    /** @var bool */
+    private $any_review;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         $this->format_field = $conf->checked_review_field($cj->review_field_id);
         assert($this->format_field instanceof Discrete_ReviewField);
+    }
+    function view_option_schema() {
+        return make_array("anyre", "anyreview/anyre", "any/anyre", ...parent::view_option_schema());
     }
     function prepare(PaperList $pl, $visible) {
         $bound = $pl->user->permissive_view_score_bound($pl->search->limit_term()->is_author());
@@ -912,6 +917,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         if ($visible && !in_array($this->format_field, $pl->qopts["scores"] ?? [], true)) {
             $pl->qopts["scores"][] = $this->format_field;
         }
+        $this->any_review = !!$this->view_option("anyre");
         parent::prepare($pl, $visible);
         return true;
     }
@@ -921,7 +927,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         $row->ensure_review_field_order($f->order);
         $sci = new ScoreInfo;
         foreach ($row->viewable_reviews_as_display($pl->user) as $rrow) {
-            if ($rrow->reviewSubmitted
+            if (($this->any_review || $rrow->reviewSubmitted)
                 && ($fv = $rrow->fval($f)) !== null
                 && $f->view_score > $pl->user->view_score_bound($row, $rrow)) {
                 $sci->add($fv);
