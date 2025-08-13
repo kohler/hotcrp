@@ -772,9 +772,8 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     function csession($key) {
         if ($this->_conf && $this->_conf->session_key !== null) {
             return $this->_qsession->get2($this->_conf->session_key, $key);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $key
@@ -803,11 +802,10 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
     /** @return string */
     function maybe_post_value() {
         $sid = $this->_qsession->sid ?? "";
-        if ($sid !== "") {
-            return urlencode(substr($sid, strlen($sid) > 16 ? 8 : 0, 12));
-        } else {
+        if ($sid === "") {
             return ".empty";
         }
+        return urlencode(substr($sid, strlen($sid) > 16 ? 8 : 0, 12));
     }
 
 

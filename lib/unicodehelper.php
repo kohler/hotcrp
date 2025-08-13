@@ -155,9 +155,8 @@ class UnicodeHelper {
         } else if ($pos + 3 >= $len
                    || (ord($str[$pos + 3]) & 0xC0) !== 0x80) {
             return "";
-        } else {
-            return substr($str, $pos, 4);
         }
+        return substr($str, $pos, 4);
     }
 
     /** @param string $str
@@ -181,18 +180,22 @@ class UnicodeHelper {
             return -1;
         } else if ($ch < 0xE0) {
             return (($ch & 0x1F) << 6) | ($ch1 & 0x3F);
-        } else if ($pos + 2 >= $len
-                   || (($ch2 = ord($str[$pos + 2])) & 0xC0) !== 0x80) {
+        } else if ($pos + 2 >= $len) {
+            return -1;
+        }
+        $ch2 = ord($str[$pos + 2]);
+        if (($ch2 & 0xC0) !== 0x80) {
             return -1;
         } else if ($ch < 0xF0) {
             return (($ch & 0x0F) << 12) | (($ch1 & 0x3F) << 6) | ($ch2 & 0x3F);
-        } else if ($pos + 3 >= $len
-                   || (($ch3 = ord($str[$pos + 3])) & 0xC0) !== 0x80) {
+        } else if ($pos + 3 >= $len) {
             return -1;
-        } else {
-            return (($ch & 0x07) << 18) | (($ch1 & 0x3F) << 12)
-                | (($ch2 & 0x3F) << 6) | ($ch3 & 0x3F);
         }
+        $ch3 = ord($str[$pos + 3]);
+        if (($ch3 & 0xC0) !== 0x80) {
+            return -1;
+        }
+        return (($ch & 0x07) << 18) | (($ch1 & 0x3F) << 12) | (($ch2 & 0x3F) << 6) | ($ch3 & 0x3F);
     }
 
     /** @param int $ch
@@ -203,9 +206,8 @@ class UnicodeHelper {
         } else if ($ch >= 0x10000 && $ch <= 0x10FFFF) {
             $ch -= 0x10000;
             return [0xD800 | ($ch >> 10), 0xDC00 | ($ch & 0x3FF)];
-        } else {
-            return [];
         }
+        return [];
     }
 
     /** @param int $ch

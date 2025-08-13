@@ -111,7 +111,7 @@ class Authorize_Page {
 
     private function handle_request(OAuthClient $client) {
         $scope = trim($this->qreq->scope ?? "");
-        if (!preg_match('/\A[ !#-\x5b\x5d-\x7e]+\z/', $scope)) {
+        if (!preg_match('/\A[ !\#-\x5b\x5d-\x7e]+\z/', $scope)) {
             $this->redirect_error("invalid_scope");
         }
         $scope_list = explode(" ", $scope);

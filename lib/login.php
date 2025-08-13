@@ -189,9 +189,8 @@ class LoginHelper {
             $user->ensure_account_here()->save_roles(Contact::ROLE_ADMIN, null);
             $user->conf->save_setting("setupPhase", null);
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     static function check_postlogin(Contact $user, Qrequest $qreq) {

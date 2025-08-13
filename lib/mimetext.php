@@ -247,18 +247,17 @@ class MimeText {
     /** @param string $text
      * @return string */
     static function decode_header($text) {
-        if (strlen($text) > 2 && $text[0] === '=' && $text[1] === '?') {
-            $out = '';
-            while (preg_match('/\A=\?utf-8\?q\?(.*?)\?=(\r?\n )?/i', $text, $m)) {
-                $f = str_replace('_', ' ', $m[1]);
-                $out .= preg_replace_callback('/=([0-9A-F][0-9A-F])/',
-                                              "MimeText::chr_hexdec_callback",
-                                              $f);
-                $text = substr($text, strlen($m[0]));
-            }
-            return $out . $text;
-        } else {
+        if (strlen($text) <= 2 || $text[0] !== "=" || $text[1] !== "?") {
             return $text;
         }
+        $out = '';
+        while (preg_match('/\A=\?utf-8\?q\?(.*?)\?=(\r?\n )?/i', $text, $m)) {
+            $f = str_replace('_', ' ', $m[1]);
+            $out .= preg_replace_callback('/=([0-9A-F][0-9A-F])/',
+                                          "MimeText::chr_hexdec_callback",
+                                          $f);
+            $text = substr($text, strlen($m[0]));
+        }
+        return $out . $text;
     }
 }
