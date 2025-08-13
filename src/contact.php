@@ -1344,7 +1344,7 @@ class Contact implements JsonSerializable {
             $c_rn = $c_rn !== "" ? "{$c_rn} my-mention" : "my-mention";
             $c_ra = $c_ra !== "" ? "{$c_ra} my-mention" : "my-mention";
         }
-        if ($cc_rn !== "" && $dt->has(TagInfo::TFM_DECORATION)) {
+        if ($aut !== "" && $dt->has(TagInfo::TFM_DECORATION)) {
             $decor = (new Tagger($this))->unparse_decoration_html($aut, Tagger::DECOR_USER);
         } else {
             $decor = "";
