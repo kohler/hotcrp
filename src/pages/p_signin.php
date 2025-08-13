@@ -90,12 +90,6 @@ class Signin_Page {
     }
 
     static function signin_request_success(Contact $user, Qrequest $qreq, $cs, $info)  {
-        if (!$info["ok"]) {
-            foreach ($info["usec"] ?? [] as $use) {
-                $use->store($qreq->qsession());
-            }
-            return $info;
-        }
         return LoginHelper::login_complete($info, $qreq);
     }
 
@@ -268,7 +262,7 @@ class Signin_Page {
         } else {
             $nav = $qreq->navigation();
             $param["success_redirect"] = $qreq->redirect;
-            $param["failure_redirect"] = $conf->selfurl($qreq, ["signedout" => null], Conf::HOTURL_SITEREL);
+            $param["failure_redirect"] = $conf->selfurl($qreq, ["signedout" => null], Conf::HOTURL_SITEREL | Conf::HOTURL_RAW);
         }
         $top = "";
         foreach ($conf->oauth_providers() as $authdata) {

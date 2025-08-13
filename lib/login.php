@@ -143,9 +143,16 @@ class LoginHelper {
         }
     }
 
-    /** @param array{ok:true,user:Contact} $info
-     * @return array{ok:true,user:Contact,redirect:string,firstuser?:true} */
+    /** @param array{ok:true,user:Contact}|array{ok:false} $info
+     * @return array{ok:true,user:Contact,redirect:string,firstuser?:true}|array{ok:false} */
     static function login_complete($info, Qrequest $qreq) {
+        if (!$info["ok"]) {
+            foreach ($info["usec"] ?? [] as $use) {
+                $use->store($qreq->qsession());
+            }
+            return $info;
+        }
+
         assert($info["ok"] && $info["user"]);
         $luser = $info["user"];
 

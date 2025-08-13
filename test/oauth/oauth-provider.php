@@ -193,7 +193,11 @@ class My implements ClientRepositoryInterface, AuthCodeRepositoryInterface, Acce
 
     static function load_main() {
         self::$main = new My;
-        $db = json_decode(file_get_contents(__DIR__ . "/db.json"));
+        if (file_exists(__DIR__ . "/localdb.json")) {
+            $db = json_decode(file_get_contents(__DIR__ . "/localdb.json"));
+        } else {
+            $db = json_decode(file_get_contents(__DIR__ . "/db.json"));
+        }
         foreach ($db->users ?? [] as $u) {
             self::$main->users[] = new UserEntity($u);
         }

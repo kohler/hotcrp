@@ -10,9 +10,14 @@ Usage
 
 1. Install required libraries with `composer install`
 
-2. Run the server with `php -S localhost:19382 oauth-provider.php`
+2. Configure the server for your HotCRP installation. This involves choosing
+   a `redirect_uri`, which is the full URI for the `oauth` page on the HotCRP
+   installation you want to test. Enter this URI in `db.json`’s `clients`.
+   The default is `http://localhost:8080/testconf/oauth`
 
-3. Configure HotCRP to access the server by setting `$Opt["oAuthProviders"]`
+3. Run the server with `php -S localhost:19382 oauth-provider.php`
+
+4. Configure HotCRP to access the server by setting `$Opt["oAuthProviders"]`
    in `conf/options.php`:
 
 	```php
@@ -26,3 +31,6 @@ Usage
 		"button_html" => "Sign in with local OAuth"
 	];
 	```
+
+	The `redirect_uri` here must equal the `redirect_uri` you configured in
+	step 2.
