@@ -77,6 +77,8 @@ class UserEntity implements UserEntityInterface {
     public $name;
     public $orcid;
     public $affiliation;
+    public $groups;
+    public $roles;
 
     function __construct($x = null) {
         $x = $x ?? (object) ["email" => null];
@@ -87,6 +89,8 @@ class UserEntity implements UserEntityInterface {
         $this->name = $x->name ?? null;
         $this->orcid = $x->orcid ?? null;
         $this->affiliation = $x->affiliation ?? null;
+        $this->groups = $x->groups ?? null;
+        $this->roles = $x->roles ?? null;
     }
     public function getIdentifier() {
         return $this->email;
@@ -294,7 +298,7 @@ class IdentityBearerTokenResponse extends BearerTokenResponse {
             "exp" => $at->getExpiryDateTime()->getTimestamp()
         ];
         if (($u = $this->my->user_by_email($at->getUserIdentifier()))) {
-            foreach (["email", "email_verified", "name", "given_name", "family_name", "orcid", "affiliation"] as $k) {
+            foreach (["email", "email_verified", "name", "given_name", "family_name", "orcid", "affiliation", "groups", "roles"] as $k) {
                 if (isset($u->$k))
                     $idt[$k] = $u->$k;
             }

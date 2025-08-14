@@ -790,6 +790,8 @@ class UserStatus extends MessageSet {
      * @param ?MessageSet $ms
      * @return int */
     static function parse_roles($j, $old_roles, $ms = null) {
+        $reset_roles = null;
+        $ignore_empty = false;
         if (is_object($j) || (is_array($j) && !array_is_list($j))) {
             $reset_roles = true;
             $ij = [];
@@ -802,10 +804,9 @@ class UserStatus extends MessageSet {
                 }
             }
         } else if (is_string($j)) {
-            $reset_roles = null;
+            $ignore_empty = true;
             $ij = preg_split('/[\s,;]+/', $j);
         } else if (is_array($j)) {
-            $reset_roles = null;
             $ij = $j;
         } else {
             if ($j !== null) {
@@ -819,11 +820,13 @@ class UserStatus extends MessageSet {
             if (!is_string($v)) {
                 $ms && $ms->error_at("roles", "<0>Format error in roles");
                 return $old_roles;
+            } else if ($v === "" && $ignore_empty) {
+                continue;
             }
             $action = null;
-            if (preg_match('/\A(\+|-|–|—|−)\s*(.*)\z/s', $v, $m)) {
-                $action = $m[1] === "+";
-                $v = $m[2];
+            if (preg_match('/\A(?:\+|-|–|—|−)/s', $v, $m)) {
+                $action = $m[0] === "+";
+                $v = substr($v, strlen($m[0]));
             }
             if ($v === "") {
                 $ms && $ms->error_at("roles", "<0>Format error in roles");

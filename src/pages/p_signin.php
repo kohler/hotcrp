@@ -252,7 +252,7 @@ class Signin_Page {
 
     function print_signin_form_oauth(Contact $user, Qrequest $qreq) {
         $conf = $user->conf;
-        if (!$conf->opt("oAuthProviders") && !$conf->opt("oAuthTypes")) {
+        if (!$conf->opt("oAuthProviders")) {
             return;
         }
         $buttons = [];

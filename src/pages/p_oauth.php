@@ -27,10 +27,12 @@ class OAuthProvider {
     public $token_uri;
     /** @var ?string */
     public $token_function;
+    /** @var ?bool */
+    public $roles;
     /** @var ?object */
-    public $group_mappings;
-    /** @var bool */
-    public $remove_groups;
+    public $group_roles;
+    /** @var ?bool */
+    public $reset_roles;
 
     /** @var ?string */
     public $nonce;
@@ -72,8 +74,9 @@ class OAuthProvider {
             ?? $conf->hoturl("oauth", null, Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
         $instance->token_function = $authdata->token_function ?? null;
         $instance->require = $authdata->require ?? null;
-        $instance->group_mappings = $authdata->group_mappings ?? null;
-        $instance->remove_groups = $authdata->remove_groups ?? false;
+        $instance->roles = $authdata->roles ?? false;
+        $instance->group_roles = $authdata->group_roles ?? $authdata->group_mappings /* XXX */ ?? null;
+        $instance->reset_roles = $authdata->reset_roles ?? $authdata->remove_groups /* XXX */ ?? false;
         foreach (["title", "issuer", "scope"] as $k) {
             if ($instance->$k !== null && !is_string($instance->$k))
                 return null;
@@ -318,6 +321,67 @@ class OAuth_Page {
         return $tok->data("quiet") ? [] : [MessageItem::success("<0>Authentication confirmed")];
     }
 
+    /** @param list<int|array{string,float|false}> &$roles
+     * @param string|list<string> $rc
+     * @param bool $remove */
+    private function parse_role_changes(&$roles, $rc, $remove) {
+        $rcx = is_string($rc) ? preg_split('/[\s,;]+/', $rc) : $rc;
+        foreach ($rcx as $rcn) {
+            if ($rcn === "") {
+                continue;
+            }
+            if (preg_match('/\A(?:\+|-|–|—|−)/s', $rcn, $m)) {
+                if ($remove) {
+                    continue;
+                }
+                $action = $m[0] === "+";
+                $rcn = substr($rcn, strlen($m[0]));
+            } else {
+                $action = !$remove;
+            }
+            if (!preg_match('/\A((?:|~|~~)' . TAG_REGEX_NOTWIDDLE . ')(|[#](?:-?\d+(?:\.\d*)?|-?\.\d+|clear|))\z/', $rcn, $m)) {
+                continue;
+            }
+            if (strcasecmp($m[1], "pc") === 0) {
+                $change = Contact::ROLE_PC;
+            } else if (strcasecmp($m[1], "chair") === 0) {
+                $change = Contact::ROLE_CHAIR;
+            } else if (strcasecmp($m[1], "sysadmin") === 0
+                       || strcasecmp($m[1], "admin") === 0) {
+                $change = Contact::ROLE_ADMIN;
+            } else if (UserStatus::check_pc_tag($m[1])) {
+                $change = $m[1];
+            } else {
+                continue;
+            }
+            if (is_int($change)) {
+                if ($m[2] !== "") {
+                    continue;
+                }
+                $roles[] = $action ? $change : -$change;
+            } else if (!$action || strcasecmp($m[2], "#clear") === 0) {
+                $roles[] = [$m[1], false];
+            } else {
+                $roles[] = [$m[1], $m[2] === "" ? 0 : (float) substr($m[2], 1)];
+            }
+        }
+    }
+
+    /** @param Contact $u
+     * @param list<int|array{string,float|false}> $roles */
+    private function apply_role_changes(Contact $u, $roles) {
+        foreach ($roles as $r) {
+            if (is_int($r)) {
+                $u->set_prop("roles", $r < 0 ? $u->roles & ~(-$r) : $u->roles | $r);
+            } else {
+                $u->change_tag_prop($r[0], $r[1]);
+            }
+        }
+        if (($u->roles & Contact::ROLE_CHAIR) !== 0) {
+            $u->set_prop("roles", $u->roles | Contact::ROLE_PC);
+        }
+    }
+
     /** @param OAuthProvider $authi
      * @param TokenInfo $tok
      * @param object $jid
@@ -340,7 +404,27 @@ class OAuth_Page {
             $reg["affiliation"] = $jid->affiliation;
         }
 
-        $info = LoginHelper::check_external_login(Contact::make_keyed($this->conf, $reg));
+        $role_changes = [];
+        if ($authi->roles || $authi->group_roles) {
+            if ($authi->reset_roles) {
+                $rc = $authi->reset_roles === true ? "pc admin chair" : $authi->reset_roles;
+                $this->parse_role_changes($role_changes, $rc, true);
+            }
+            if ($authi->roles && isset($jid->roles) && is_array($jid->roles)) {
+                $this->parse_role_changes($role_changes, $jid->roles, false);
+            }
+            if ($authi->group_roles && isset($jid->groups) && is_array($jid->groups)) {
+                foreach ($authi->group_roles as $group => $rc) {
+                    if (in_array($group, $jid->groups, true))
+                        $this->parse_role_changes($role_changes, $rc, false);
+                }
+            }
+        }
+
+        $regu = Contact::make_keyed($this->conf, $reg);
+        $this->apply_role_changes($regu, $role_changes);
+
+        $info = LoginHelper::check_external_login($regu);
         if (!$info["ok"]) {
             LoginHelper::login_error($this->conf, $jid->email, $info, null);
             UserSecurityEvent::make($jid->email, UserSecurityEvent::TYPE_OAUTH)
@@ -351,18 +435,10 @@ class OAuth_Page {
         }
 
         $user = $info["user"];
-        if (isset($jid->groups) && isset($authi->group_mappings)) {
-            if ($authi->remove_groups) {
-                $user_roles = 0;
-            } else {
-                $user_roles = $user->roles;
-            }
-            foreach ($authi->group_mappings as $group => $role) {
-                if (in_array($group, $jid->groups, true)) {
-                    $user_roles = $user_roles | UserStatus::parse_roles($role, $user_roles);
-                }
-            }
-            $user->save_roles($user_roles, $user);
+        if (!empty($role_changes)) {
+            $this->apply_role_changes($user, $role_changes);
+            $user->save_roles($user->roles, $this->conf->root_user());
+            $user->save_prop();
         }
 
         $qs = $this->qreq->qsession();

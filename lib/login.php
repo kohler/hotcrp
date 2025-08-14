@@ -126,18 +126,18 @@ class LoginHelper {
     /** @param Contact $user
      * @return array{ok:true,user:Contact}|array{ok:false,disabled?:true,email?:true} */
     static function check_external_login($user) {
-        $cdbuser = $user->cdb_user();
-        if ($cdbuser && $cdbuser->is_disabled()) {
+        if ($user->contactdb_disabled()) {
             return ["ok" => false, "disabled" => true, "email" => true];
         }
         if (!$user->contactId) {
+            // Contact::SAVE_SELF_REGISTER checks allow_self_register
             $user->store(Contact::SAVE_ANY_EMAIL | Contact::SAVE_SELF_REGISTER);
         }
-        if ($user->is_disabled()) {
-            return ["ok" => false, "disabled" => true, "email" => true];
-        } else if (!$user->contactId
-                   || ($user->is_dormant() && !$user->conf->allow_user_self_register())) {
+        if ((!$user->contactId || $user->is_placeholder())
+            && !$user->allow_self_register()) {
             return ["ok" => false, "email" => true, "noaccount" => true];
+        } else if ($user->is_disabled()) {
+            return ["ok" => false, "disabled" => true, "email" => true];
         } else {
             return ["ok" => true, "user" => $user];
         }
@@ -294,8 +294,8 @@ class LoginHelper {
         // disabled users get mail saying they're disabled
         if ($user->is_disabled()
             || ($cdbu && $cdbu->is_disabled())
-            || ((!$user->contactId || $user->is_dormant())
-                && !$conf->allow_user_self_register())) {
+            || ((!$user->contactId || $user->is_placeholder())
+                && !$user->allow_self_register())) {
             $template = "@resetdisabled";
         } else {
             $template = "@resetpassword";

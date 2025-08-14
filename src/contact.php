@@ -1159,7 +1159,7 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function contactdb_disabled() {
         $cdbu = $this->cdb_user();
-        return $cdbu && ($cdbu->cflags & self::CFM_DISABLEMENT & ~self::CF_PLACEHOLDER) !== 0;
+        return $cdbu && ($cdbu->cflags & (self::CF_UDISABLED | self::CF_GDISABLED | self::CF_DELETED)) !== 0;
     }
 
     /** @return int */
@@ -1170,6 +1170,14 @@ class Contact implements JsonSerializable {
     /** @return bool */
     function is_unconfirmed() {
         return ($this->cflags & self::CF_UNCONFIRMED) !== 0;
+    }
+
+    /** @return bool */
+    function allow_self_register() {
+        // see also Conf::allow_user_self_register
+        return $this->contactId > 0 /* already registered */
+            || ((!$this->conf->disable_non_pc() || $this->isPC)
+                && !$this->conf->opt("disableNewUsers"));
     }
 
     /** @param bool $self_requested
@@ -1591,9 +1599,8 @@ class Contact implements JsonSerializable {
         } else if ($this->contactTags
                    && ($p = stripos($this->contactTags, " {$t}#")) !== false) {
             return (float) substr($this->contactTags, $p + strlen($t) + 2);
-        } else {
-            return null;
         }
+        return null;
     }
 
     const CTFLAG_ROLES = 1;
@@ -1690,9 +1697,8 @@ class Contact implements JsonSerializable {
         $d = $this->make_data();
         if ($key) {
             return $d->$key ?? null;
-        } else {
-            return $d;
         }
+        return $d;
     }
 
     /** @param string $key */
@@ -1753,9 +1759,8 @@ class Contact implements JsonSerializable {
         if ($this->_jdata === null
             && ($this->data === null || is_string($this->data))) {
             return $this->data === "{}" ? null : $this->data;
-        } else {
-            return $this->encode_data();
         }
+        return $this->encode_data();
     }
 
 
@@ -2003,10 +2008,9 @@ class Contact implements JsonSerializable {
             return $value & ($this->cdb_confid === 0 ? self::ROLE_DBMASK : self::ROLE_CDBMASK);
         } else if ($prop === "cflags") {
             return $value > 0 ? $value & self::CFM_DB : $value;
-        } else {
-            assert(false);
-            return $value;
         }
+        assert(false);
+        return $value;
     }
 
     /** @param string $prop */
@@ -2129,7 +2133,7 @@ class Contact implements JsonSerializable {
      * @param bool $ifunset
      * @return void */
     function change_tag_prop($tag, $value, $ifunset = false) {
-        assert(strcasecmp($tag, "pc") !== 0 && strcasecmp($tag, "chair") !== 0);
+        assert(!preg_match('/\A(?:any|all|none|enabled|disabled|pc|chair|admin|sysadmin)\z/i', $tag));
         $shape = self::$props["contactTags"];
         $svalue = $this->prop1("contactTags", $shape) ?? "";
         if (($pos = stripos($svalue, " {$tag}#")) !== false) {
@@ -2298,14 +2302,13 @@ class Contact implements JsonSerializable {
 
     /** @param int $new_roles
      * @param ?Contact $actor
-     * @param bool $skip_log
      * @return int */
-    function save_roles($new_roles, $actor, $skip_log = false) {
+    function save_roles($new_roles, $actor) {
         if (($new_roles & self::ROLE_DBMASK) !== $new_roles) {
             $new_roles &= self::ROLE_DBMASK;
             error_log("bad \$new_roles {$new_roles}: " . debug_string_backtrace());
         }
-        $old_roles = $this->roles & self::ROLE_DBMASK;
+        $old_roles = ($this->_mod_undo["roles"] ?? $this->roles) & self::ROLE_DBMASK;
         if (($old_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) !== 0
             && ($new_roles & (self::ROLE_ADMIN | self::ROLE_CHAIR)) === 0) {
             // ensure there's at least one chair or system administrator
@@ -2318,13 +2321,12 @@ class Contact implements JsonSerializable {
             $result = $this->conf->qe("update ContactInfo set roles=? where contactId=?",
                 $new_roles, $this->contactId);
         }
+        unset($this->_mod_undo["roles"]);
         // save the roles bits
         if ($result->affected_rows === 0) {
             return $old_roles;
         }
-        if (!$skip_log) {
-            $this->conf->log_for($actor ?? $this, $this, "Account edited: roles [" . UserStatus::unparse_roles_diff($old_roles, $new_roles) . "]");
-        }
+        $this->conf->log_for($actor ?? $this, $this, "Account edited: roles [" . UserStatus::unparse_roles_diff($old_roles, $new_roles) . "]");
         $this->roles = ($this->roles & ~self::ROLE_DBMASK) | $new_roles;
         $this->set_roles_properties();
         $this->conf->invalidate_caches(["pc" => true]);
@@ -2386,16 +2388,15 @@ class Contact implements JsonSerializable {
         // clean registration
         assert(is_string($this->email));
         assert($this->email === trim($this->email));
-        assert(empty($this->_mod_undo));
         assert($this->contactId <= 0);
 
         // maybe refuse to create
         $localu = null;
         $valid_email = validate_email($this->email);
-        if ((!$valid_email
-             && ($flags & self::SAVE_ANY_EMAIL) === 0)
+        if ((($flags & self::SAVE_ANY_EMAIL) === 0
+             && !validate_email($this->email))
             || (($flags & self::SAVE_SELF_REGISTER) !== 0
-                && !$this->conf->allow_user_self_register())) {
+                && !$this->allow_self_register())) {
             $localu = $this->conf->fresh_user_by_email($this->email);
             if (!$localu) {
                 return null;

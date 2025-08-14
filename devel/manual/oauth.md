@@ -92,11 +92,23 @@ users. If `$Opt["loginType"]` is `"oauth"` or `"none"`, then HotCRP will not
 use its own password storage or allow attempts to sign in other than through
 OAuth.
 
-## Importing group permissions
+## Importing roles and tags
 
-Group permissions can be imported from an openID provider if the token contains
-a "group" claim. This can be configured via a "group mappings" setting in an
-oAuthProvider setting:
+HotCRP roles (`pc`, `sysadmin`, `chair`) and user tags can be imported from
+OAuth `groups` and/or `roles` claims. A `roles` claim is a list of application
+role names, while a `groups` claim is a list of opaque group names that must
+be mapped to roles.
+
+Role parsing is enabled on a per-provider basis. To parse a provider’s `roles`
+claims, set `roles` to `true` in its `oAuthProviders` setting. To parse its
+`groups` claims, add a `group_roles` object that maps group names to roles and
+tags.
+
+Provider-claimed roles and tags are added to a user account when that user
+signs in. By default, HotCRP does not remove existing roles or tags on
+signin—the provider claims augment any preexisting roles tags. You can change
+this by setting `reset_roles` to a list of roles and tags that should be reset
+to provider-claimed values on signin.
 
 ```
 $Opt["oAuthProviders"][] = '{
@@ -107,17 +119,15 @@ $Opt["oAuthProviders"][] = '{
     "client_id": "123456789-nnnnnnnnnnnnnnnnnnnnnnnnn.apps.googleusercontent.com",
     "client_secret": "GOCSPX-nnnnnnnnnnnnnnnnnnnnnnnn",
     "button_html": "Sign in with Google",
-    "remove_groups": true,
-    "group_mappings": {
-        "operators": "sysadmin",
+    "reset_roles": "pc heavy",
+    "group_roles": {
+        "operators": "+sysadmin",
+        "heavy-reviewers": "pc heavy",
         "reviewers": "pc",
-        "chairs": "chair"
+        "chairs": "+chair"
     }
 }';
 ```
-
-Setting `remove_groups` to `true` enables removing group permissions if these
-are absent in the OpenID claim.
 
 [OAuth]: https://en.wikipedia.org/wiki/OAuth
 [OpenID Connect]: https://en.wikipedia.org/wiki/OpenID

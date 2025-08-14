@@ -6,6 +6,9 @@ HotCRP NEWS
 * Upgrade notes
 
     * PHP 8.4 is supported, PHP 7.2 is not.
+    * The `oAuthTypes` setting is no longer understood.
+    * The `oAuthTypes` `group_mappings` subsetting is replaced by
+      `group_roles`.
 
 * Accounts
 

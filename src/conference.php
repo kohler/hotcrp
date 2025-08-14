@@ -1993,14 +1993,14 @@ class Conf {
 
     /** @return bool */
     function allow_user_self_register() {
+        // see also Contact::allow_self_register
         return !$this->disable_non_pc() && !$this->opt("disableNewUsers");
     }
 
     /** @return array<string,object> */
     function oauth_providers() {
         if ($this->_oauth_providers === null) {
-            $k = isset($this->opt["oAuthProviders"]) ? "oAuthProviders" : "oAuthTypes" /* XXX */;
-            $this->_oauth_providers = $this->_xtbuild_resolve([], $k);
+            $this->_oauth_providers = $this->_xtbuild_resolve([], "oAuthProviders");
         }
         return $this->_oauth_providers;
     }
