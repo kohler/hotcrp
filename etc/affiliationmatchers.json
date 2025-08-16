@@ -182,6 +182,9 @@
     "campus": {
         "weak": true
     },
+    "canada": {
+        "weak": true
+    },
     "capital": {
         "weak": true
     },
@@ -234,6 +237,9 @@
         "weak": true
     },
     "corporation": {
+        "weak": true
+    },
+    "denmark": {
         "weak": true
     },
     "department": {
@@ -376,6 +382,9 @@
         "weak": true
     },
     "research": {
+        "weak": true
+    },
+    "royal": {
         "weak": true
     },
     "school": {
@@ -771,7 +780,7 @@
         ]
     },
     "michigan": {
-        "sync": ["state", "technological"]
+        "sync": ["state", "technological", "western"]
     },
     "microsoft": {
         "nameish": false,
@@ -803,7 +812,7 @@
     },
     "nyu": {
         "alternate": ["new york university"],
-        "sync": "buffalo"
+        "sync": ["buffalo", "city"]
     },
     "oregon": {
         "sync": "state"
@@ -1009,7 +1018,7 @@
         "alternate": [
             {"word": "nyu", "if": "new university"}
         ],
-        "sync": ["new", "buffalo"]
+        "sync": ["new", "buffalo", "city"]
     },
     "zurich": {
         "weak": true
