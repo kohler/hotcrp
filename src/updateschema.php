@@ -3175,6 +3175,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table ContactInfo drop `disabled`")) {
             $conf->update_schema_version(311);
         }
+        if ($conf->sversion === 311
+            && $conf->ql_ok("alter table MailLog change `q` `q` varbinary(16384) DEFAULT NULL")) {
+            $conf->update_schema_version(312);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

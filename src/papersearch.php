@@ -1714,4 +1714,13 @@ class PaperSearch extends MessageSet {
             return $t . Ht::hidden("t", $selected);
         }
     }
+
+    /** @param list<int> $ids
+     * @return string */
+    static function encode_id_search($ids) {
+        if (count($ids) <= 50) {
+            return join(" ", $ids);
+        }
+        return "pidcode:" . SessionList::encode_ids($ids);
+    }
 }

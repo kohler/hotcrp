@@ -134,7 +134,7 @@ class API_Page {
                 $ok = false;
             }
         } else {
-            header("Allow: OPTIONS, GET, HEAD, POST"); // XXX other methods?
+            header("Allow: OPTIONS, GET, HEAD, POST, DELETE"); // XXX other methods?
         }
         http_response_code($ok ? 200 : 403);
         exit(0);

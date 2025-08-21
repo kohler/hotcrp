@@ -239,7 +239,7 @@ CREATE TABLE `MailLog` (
   `mailId` int(11) NOT NULL AUTO_INCREMENT,
   `contactId` int NOT NULL DEFAULT 0,
   `recipients` varbinary(200) NOT NULL,
-  `q` varbinary(4096) DEFAULT NULL,
+  `q` varbinary(16384) DEFAULT NULL,
   `t` varbinary(200) DEFAULT NULL,
   `paperIds` blob,
   `cc` blob,
@@ -653,7 +653,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 311, null),   -- schema version
+  ('allowPaperOption', 312, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

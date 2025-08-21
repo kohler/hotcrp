@@ -119,7 +119,7 @@ class Mail_Page {
                 sort($chksel);
                 if ($chksel !== $papersel) {
                     $papersel = $chksel;
-                    $qreq->q = join(" ", $chksel);
+                    $qreq->q = PaperSearch::encode_id_search($chksel);
                 }
             }
         } else {

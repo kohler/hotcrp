@@ -612,7 +612,7 @@ class Autoassign_Page {
         $status = $tok->data("status");
         if ($status === "done" && ($ipid = $tok->data("incomplete_pids"))) {
             sort($ipid);
-            $q = count($ipid) > 50 ? "pidcode:" . SessionList::encode_ids($ipid) : join(" ", $ipid);
+            $q = PaperSearch::encode_id_search($ipid);
             $this->ms->warning_at(null, "<0>This assignment is incomplete!");
             $this->ms->inform_at(null, $this->conf->_("<5><a href=\"{url}\">{Submissions} {pids:numlist#}</a> got fewer assignments than you requested.", new FmtArg("url", $this->conf->hoturl_raw("search", ["q" => $q]), 0), new FmtArg("pids", $ipid)));
             if (strpos($this->qreq->a, "review") !== false) {
