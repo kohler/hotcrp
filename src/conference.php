@@ -2198,7 +2198,7 @@ class Conf {
 
     /** @param int $id */
     function prefetch_user_by_id($id) {
-        if (!array_key_exists($id, $this->_user_cache ?? [])) {
+        if ($id > 0 && !array_key_exists($id, $this->_user_cache ?? [])) {
             $this->_user_cache_missing[] = $id;
         }
     }
@@ -2207,7 +2207,7 @@ class Conf {
     function prefetch_users_by_id($ids) {
         $uc = $this->_user_cache ?? [];
         foreach ($ids as $id) {
-            if (!array_key_exists($id, $uc)) {
+            if ($id > 0 && !array_key_exists($id, $uc)) {
                 $this->_user_cache_missing[] = $id;
             }
         }
@@ -2237,9 +2237,8 @@ class Conf {
             return $req;
         } else if (is_string($req) && $req !== "" && is_valid_utf8($req)) {
             return strtolower($req);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param bool $require_pc */
@@ -2249,15 +2248,13 @@ class Conf {
         foreach ($this->_user_cache_missing ?? [] as $req) {
             $req = self::clean_user_cache_request($req);
             if (is_int($req)) {
-                if ($req !== 0
-                    && !array_key_exists($req, $this->_user_cache)) {
+                if (!array_key_exists($req, $this->_user_cache)) {
                     $this->_user_cache[$req] = null;
                     $reqids[] = $req;
                 }
             } else if (is_string($req)) {
                 $this->_ensure_user_email_cache();
-                if ($req !== ""
-                    && !array_key_exists($req, $this->_user_email_cache)) {
+                if (!array_key_exists($req, $this->_user_email_cache)) {
                     $this->_user_email_cache[$req] = null;
                     $reqemails[] = $req;
                 }
@@ -2297,7 +2294,7 @@ class Conf {
      * @return ?Contact */
     function user_by_id($id, $sliced = 0) {
         $id = (int) $id;
-        if ($id === 0) {
+        if ($id <= 0) {
             return null;
         } else if (Contact::$main_user !== null
                    && Contact::$main_user->conf === $this
