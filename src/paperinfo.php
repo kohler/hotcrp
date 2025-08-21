@@ -2398,7 +2398,7 @@ class PaperInfo {
                    && $this->optionIds !== null
                    && !$need_data) {
             $this->_option_values = [];
-            preg_match_all('/(\d+)#(-?\d+)/', $this->optionIds, $m);
+            preg_match_all('/(\d+)\#(-?\d+)/', $this->optionIds, $m);
             for ($i = 0; $i < count($m[1]); ++$i) {
                 $this->_option_values[(int) $m[1][$i]][] = (int) $m[2][$i];
             }
@@ -2468,9 +2468,8 @@ class PaperInfo {
             return $ov;
         } else if (($opt = is_int($o) ? $this->conf->option_by_id($o) : $o)) {
             return PaperValue::make_force($this, $opt);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param int|PaperOption $o

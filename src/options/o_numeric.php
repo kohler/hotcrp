@@ -28,14 +28,13 @@ class Numeric_PaperOption extends PaperOption {
         $ov->set_anno("request", $v);
         return $ov;
     }
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         if (is_int($j)) {
             return PaperValue::make($prow, $this, $j);
         } else if ($j === null || $j === false) {
             return PaperValue::make($prow, $this);
-        } else {
-            return PaperValue::make_estop($prow, $this, "<0>Whole number required");
         }
+        return PaperValue::make_estop($prow, $this, "<0>Whole number required");
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $reqx = $reqov->anno("request") ?? $reqov->value ?? "";

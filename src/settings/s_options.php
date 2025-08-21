@@ -524,7 +524,7 @@ class Options_SettingParser extends SettingParser {
 
         ob_start();
         $vopt = $this->make_sample_option($sampj, true);
-        $ov = $vopt->parse_json($this->pt->prow, $sampj->value ?? null)
+        $ov = $vopt->parse_json_user($this->pt->prow, $sampj->value ?? null, $this->pt->user)
             ?? PaperValue::make($this->pt->prow, $vopt);
         $vopt->print_web_edit($this->pt, $ov, $ov);
         $ret->sf_view_html = ob_get_clean();

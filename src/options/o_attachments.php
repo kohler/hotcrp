@@ -121,24 +121,23 @@ class Attachments_PaperOption extends PaperOption {
         $ov->set_anno("documents", $docs);
         return $ov;
     }
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         if ($j === false) {
             return PaperValue::make($prow, $this);
         } else if ($j === null) {
             return null;
-        } else {
-            $ja = is_array($j) ? $j : [$j];
-            $ov = PaperValue::make($prow, $this, -1);
-            $ov->set_anno("documents", $ja);
-            foreach ($ja as $docj) {
-                if (is_object($docj) && isset($docj->error_html)) {
-                    $ov->error("<5>" . $docj->error_html);
-                } else if (!DocumentInfo::check_json_upload($docj)) {
-                    $ov->estop("<0>Format error");
-                }
-            }
-            return $ov;
         }
+        $ja = is_array($j) ? $j : [$j];
+        $ov = PaperValue::make($prow, $this, -1);
+        $ov->set_anno("documents", $ja);
+        foreach ($ja as $docj) {
+            if (is_object($docj) && isset($docj->error_html)) {
+                $ov->error("<5>" . $docj->error_html);
+            } else if (!DocumentInfo::check_json_upload($docj)) {
+                $ov->estop("<0>Format error");
+            }
+        }
+        return $ov;
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         // XXX does not consider $reqov

@@ -102,9 +102,8 @@ final class PaperValue implements JsonSerializable {
         }
         if ($this->value !== null) {
             return $this->_data[0] ?? null;
-        } else {
-            return null;
         }
+        return null;
     }
     /** @return list<?string> */
     function data_list() {

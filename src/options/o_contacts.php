@@ -145,7 +145,7 @@ class Contacts_PaperOption extends PaperOption {
         $ov->set_anno("req_users", $reqau);
         return $ov;
     }
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         $ov = PaperValue::make_force($prow, $this);
         // collect values
         $reqau = [];

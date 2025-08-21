@@ -148,7 +148,7 @@ class PCConflicts_PaperOption extends PaperOption {
         /** @phan-suppress-next-line PhanTypeMismatchArgument */
         return PaperValue::make_multi($prow, $this, array_keys($vm), array_values($vm));
     }
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         $ja = [];
         if (is_object($j) || (is_array($j) && !array_is_list($j))) {
             foreach ((array) $j as $k => $v) {

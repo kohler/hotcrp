@@ -32,16 +32,14 @@ class Nonblind_PaperOption extends PaperOption {
             return PaperValue::make($prow, $this, 1);
         } else if ($prow->is_new()) {
             return PaperValue::make_estop($prow, $this, "<0>Entry required");
-        } else {
-            return PaperValue::make($prow, $this, $prow->blind ? null : 1);
         }
+        return PaperValue::make($prow, $this, $prow->blind ? null : 1);
     }
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         if (is_bool($j) || $j === null) {
             return PaperValue::make($prow, $this, $j ? 1 : null);
-        } else {
-            return PaperValue::make_estop($prow, $this, "<0>Option should be ‘true’ or ‘false’");
         }
+        return PaperValue::make_estop($prow, $this, "<0>Option should be ‘true’ or ‘false’");
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         if ($ov->prow->phase() === PaperInfo::PHASE_FINAL) {

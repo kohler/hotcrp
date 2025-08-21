@@ -37,7 +37,7 @@ class Title_PaperOption extends PaperOption {
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return $this->check_value($this->parse_json_string($prow, $qreq->title, PaperOption::PARSE_STRING_CONVERT | PaperOption::PARSE_STRING_SIMPLIFY));
     }
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         return $this->check_value($this->parse_json_string($prow, $j, PaperOption::PARSE_STRING_SIMPLIFY));
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {

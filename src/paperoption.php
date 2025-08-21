@@ -833,7 +833,14 @@ class PaperOption implements JsonSerializable {
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return null;
     }
-    /** @return ?PaperValue */
+    /** @param mixed $j
+     * @return ?PaperValue
+     * @suppress PhanDeprecatedFunction */
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
+        return $this->parse_json($prow, $j);
+    }
+    /** @return ?PaperValue
+     * @deprecated */
     function parse_json(PaperInfo $prow, $j) {
         return null;
     }
@@ -1109,12 +1116,11 @@ class Checkbox_PaperOption extends PaperOption {
         $x = (string) $qreq[$this->formid];
         return PaperValue::make($prow, $this, $x !== "" && $x !== "0" ? 1 : null);
     }
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         if (is_bool($j) || $j === null) {
             return PaperValue::make($prow, $this, $j ? 1 : null);
-        } else {
-            return PaperValue::make_estop($prow, $this, "<0>Option should be ‘true’ or ‘false’");
         }
+        return PaperValue::make_estop($prow, $this, "<0>Option should be ‘true’ or ‘false’");
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         $cb = Ht::checkbox($this->formid, 1, !!$reqov->value, [
@@ -1270,12 +1276,11 @@ class Selector_PaperOption extends PaperOption {
             return PaperValue::make($prow, $this, $iv);
         } else if (($idx = array_search($v, $this->values)) !== false) {
             return PaperValue::make($prow, $this, $idx + 1);
-        } else {
-            return PaperValue::make_estop($prow, $this, "<0>Value doesn’t match any of the options");
         }
+        return PaperValue::make_estop($prow, $this, "<0>Value doesn’t match any of the options");
     }
 
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         $v = false;
         if ($j === null || $j === 0) {
             return PaperValue::make($prow, $this);
@@ -1286,9 +1291,8 @@ class Selector_PaperOption extends PaperOption {
         }
         if ($v !== false) {
             return PaperValue::make($prow, $this, $v + 1);
-        } else {
-            return PaperValue::make_estop($prow, $this, "<0>Value doesn’t match any of the options");
         }
+        return PaperValue::make_estop($prow, $this, "<0>Value doesn’t match any of the options");
     }
 
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
@@ -1486,7 +1490,7 @@ class Document_PaperOption extends PaperOption {
             return null;
         }
     }
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         if ($j === false) {
             return PaperValue::make($prow, $this);
         } else if ($j === null) {
@@ -1498,9 +1502,8 @@ class Document_PaperOption extends PaperOption {
                 $ov->error("<5>" . $j->error_html);
             }
             return $ov;
-        } else {
-            return PaperValue::make_estop($prow, $this, "<0>Format error");
         }
+        return PaperValue::make_estop($prow, $this, "<0>Format error");
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         if (($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL)
@@ -1728,7 +1731,7 @@ class Text_PaperOption extends PaperOption {
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return $this->parse_json_string($prow, $qreq[$this->formid] ?? "", PaperOption::PARSE_STRING_CONVERT);
     }
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         return $this->parse_json_string($prow, $j);
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {

@@ -47,7 +47,7 @@ class Collaborators_PaperOption extends PaperOption {
         $this->normalize_value($ov);
         return $ov;
     }
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         $ov = $this->parse_json_string($prow, $j, PaperOption::PARSE_STRING_TRIM);
         $this->normalize_value($ov);
         return $ov;

@@ -813,7 +813,7 @@ class PaperStatus extends MessageSet {
             assert($oj->prow === $this->prow);
             $ov = $oj;
         } else {
-            $ov = $opt->parse_json($this->prow, $oj);
+            $ov = $opt->parse_json_user($this->prow, $oj, $this->user);
         }
         if ($ov !== null) {
             $opt->value_check($ov, $this->user);

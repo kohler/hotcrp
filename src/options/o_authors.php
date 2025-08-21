@@ -197,7 +197,7 @@ class Authors_PaperOption extends PaperOption {
         }
         return PaperValue::make($prow, $this, 1, join("\n", $v));
     }
-    function parse_json(PaperInfo $prow, $j) {
+    function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         if (!is_array($j) || !array_is_list($j)) {
             return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }

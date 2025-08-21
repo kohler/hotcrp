@@ -447,7 +447,7 @@ class Constant_Fexpr extends Fexpr {
             }
             break;
         case Fexpr::FSUBFIELD:
-            $pv = $format_detail->parse_json($formula->placeholder_prow(), $this->x);
+            $pv = $format_detail->parse_json_user($formula->placeholder_prow(), $this->x, $formula->user);
             if (!$pv || $pv->has_error()) {
                 return;
             }
