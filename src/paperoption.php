@@ -726,6 +726,10 @@ class PaperOption implements JsonSerializable {
     /** @return void */
     function value_store(PaperValue $ov, PaperStatus $ps) {
     }
+    /** @return ?PaperValue */
+    function value_reconcile(PaperValue $ov, PaperStatus $ps) {
+        return null;
+    }
     /** @return bool */
     function value_save(PaperValue $ov, PaperStatus $ps) {
         return false;

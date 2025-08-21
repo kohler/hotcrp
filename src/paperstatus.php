@@ -2,7 +2,7 @@
 // paperstatus.php -- HotCRP helper for reading/storing papers as JSON
 // Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
-class PaperStatus extends MessageSet {
+final class PaperStatus extends MessageSet {
     /** @var Conf
      * @readonly */
     public $conf;
@@ -1355,6 +1355,21 @@ class PaperStatus extends MessageSet {
         if ($this->problem_status() >= MessageSet::ESTOP) {
             $this->prow->clear_updating();
             return false;
+        }
+
+        // reconcile fields
+        for ($round = 0; $round !== 10; ) {
+            $again = false;
+            foreach ($this->prow->form_fields() as $opt) {
+                $ov = $this->prow->force_option($opt);
+                if (($nov = $opt->value_reconcile($ov, $this))
+                    && !$nov->has_error()) {
+                    $opt->value_store($nov, $this);
+                    $this->prow->override_option($nov);
+                    $again = true;
+                }
+            }
+            $round = $again ? $round + 1 : 10;
         }
 
         // prepare fields for saving, mark changed fields
