@@ -95,6 +95,16 @@ final class PaperValue implements JsonSerializable {
     function value_list() {
         return $this->_values;
     }
+    /** @param int $x
+     * @return false|int */
+    function value_list_search($x) {
+        return array_search($x, $this->_values, true);
+    }
+    /** @param int $x
+     * @return bool */
+    function value_list_contains($x) {
+        return in_array($x, $this->_values, true);
+    }
     /** @return ?string */
     function data() {
         if ($this->_data === null) {
@@ -117,12 +127,53 @@ final class PaperValue implements JsonSerializable {
     function data_by_index($index) {
         return ($this->data_list())[$index] ?? null;
     }
+    /** @return list<array{int,?string}> */
+    function value_data_list() {
+        if ($this->value === null) {
+            return [];
+        }
+        if ($this->_data === null) {
+            $this->load_value_data();
+        }
+        $e = [];
+        foreach ($this->_values as $i => $v) {
+            $e[] = [$v, $this->_data[$i]];
+        }
+        return $e;
+    }
+    /** @param array{int,?string} $a
+     * @param array{int,?string} $b
+     * @return -1|0|1 */
+    static function compare_value_data($a, $b) {
+        if ($a[0] !== $b[0]) {
+            return $a[0] <=> $b[0];
+        } else if ($a[1] === $b[1]) {
+            return 0;
+        } else if ($a[1] === null) {
+            return -1;
+        } else if ($b[1] === null) {
+            return 1;
+        }
+        return $a[1] <=> $b[1];
+    }
 
     /** @param PaperValue $x
      * @return bool */
     function equals($x) {
-        return $this->value_list() === $x->value_list()
-            && $this->data_list() === $x->data_list();
+        if ($this->value_count() !== $x->value_count()) {
+            return false;
+        } else if ($this->value_list() === $x->value_list()
+                   && $this->data_list() === $x->data_list()) {
+            return true;
+        } else if ($this->value_count() <= 1) {
+            return false;
+        }
+        // value ordering is not important
+        $vd1 = $this->value_data_list();
+        usort($vd1, "PaperValue::compare_value_data");
+        $vd2 = $x->value_data_list();
+        usort($vd2, "PaperValue::compare_value_data");
+        return $vd1 === $vd2;
     }
 
     /** @param bool $full
