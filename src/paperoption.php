@@ -111,7 +111,10 @@ class PaperOption implements JsonSerializable {
     const VIS_ADMIN = 4;       // visible only to admins
     static private $visibility_map = ["all", "nonblind", "conflict", "review", "admin"];
 
-    /** @var array<string,class-string> */
+    /** @var array<string,class-string>
+     *
+     * This map is related to, and must be kept in sync with,
+     * etc/optiontypes.json. */
     static private $callback_map = [
         "separator" => "+Separator_PaperOption",
         "checkbox" => "+Checkbox_PaperOption",
@@ -266,18 +269,24 @@ class PaperOption implements JsonSerializable {
         Conf::xt_resolve_require($args);
         $fn = $args->function ?? null;
         if (!$fn) {
-            $fn = self::$callback_map[$args->type ?? ""] ?? null;
-        }
-        if (!$fn) {
-            $fn = "+Unknown_PaperOption";
+            if (isset($args->type)) {
+                $fn = self::$callback_map[$args->type] ?? null;
+                if (!$fn
+                    && ($ot = ($conf->option_type_map())[$args->type] ?? null)
+                    && isset($ot->function)) {
+                    $fn = $ot->function;
+                }
+            }
+            if (!$fn) {
+                $fn = "+Unknown_PaperOption";
+            }
         }
         if ($fn[0] === "+") {
             $class = substr($fn, 1);
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
             return new $class($conf, $args);
-        } else {
-            return call_user_func($fn, $conf, $args);
         }
+        return call_user_func($fn, $conf, $args);
     }
 
     /** @param PaperOption $a
