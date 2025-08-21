@@ -1902,7 +1902,7 @@ class PaperStatus extends MessageSet {
         if ($sr->freeze) {
             $n[] = $this->conf->_("<0>This {submission} has not yet been completed.");
         } else if (($missing = PaperTable::missing_required_fields($prow))) {
-            $n[] = $this->conf->_("<5>This {submission} is not ready for review. Required fields {:list} are missing.", PaperTable::field_title_links($missing, "missing_title"));
+            $n[] = $this->conf->_("<5>This {submission} is not ready for review. Required fields {:list} are incomplete.", PaperTable::field_title_links($missing, "missing_title"));
         } else {
             $first = $this->conf->_("<5>This {submission} is marked as not ready for review.");
             $n[] = "<5><strong>" . Ftext::as(5, $first) . "</strong>";

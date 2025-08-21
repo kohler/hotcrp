@@ -112,7 +112,7 @@
     ["paper_edit", "<0>Incomplete {submissions} will not be evaluated.", "<0>{Submissions} incomplete as of {deadline:time} will not be evaluated.", ["{deadline}>0"]],
     ["paper_edit", "<5>{Submissions} marked ready for review as of {:expandedtime} will be evaluated.", "<5>Only {submissions} marked ready for review will be evaluated.", ["{0}={1}"]],
     ["paper_edit", "<5>Please check {:list} for potential issues.", "<5>Please check the potential issues highlighted below.", ["!#{0}"]],
-    ["<5>This {submission} is not ready for review. Required fields {:list} are missing.", "<5>This {submission} is not ready for review. Required field {:list} is missing.", ["#{0}=1"]],
+    ["<5>This {submission} is not ready for review. Required fields {:list} are incomplete.", "<5>This {submission} is not ready for review. Required field {:list} is incomplete.", ["#{0}=1"]],
 
     {
         "in": "<0>You’re accessing this {submission} using a special link for reviewer {reviewer}", "m": [

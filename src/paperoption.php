@@ -667,12 +667,13 @@ class PaperOption implements JsonSerializable {
     function has_attachments() {
         return false;
     }
+
+    function value_force(PaperValue $ov) {
+    }
+
     /** @return bool */
     function is_value_present_trivial() {
         return !$this->include_empty;
-    }
-
-    function value_force(PaperValue $ov) {
     }
     /** @return bool */
     function value_present(PaperValue $ov) {
@@ -693,6 +694,16 @@ class PaperOption implements JsonSerializable {
         }
         return $av <=> $bv;
     }
+
+    /** @return list<int> */
+    function value_dids(PaperValue $ov) {
+        return [];
+    }
+    /** @return mixed */
+    function value_export_json(PaperValue $ov, PaperExport $pex) {
+        return null;
+    }
+
     /** @return bool */
     function value_check_required(PaperValue $ov) {
         if (!$this->test_required($ov->prow)
@@ -711,14 +722,6 @@ class PaperOption implements JsonSerializable {
     }
     function value_check(PaperValue $ov, Contact $user) {
         $this->value_check_required($ov);
-    }
-    /** @return list<int> */
-    function value_dids(PaperValue $ov) {
-        return [];
-    }
-    /** @return mixed */
-    function value_export_json(PaperValue $ov, PaperExport $pex) {
-        return null;
     }
     /** @return void */
     function value_store(PaperValue $ov, PaperStatus $ps) {
