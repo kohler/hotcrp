@@ -9,7 +9,8 @@ class Authors_PaperOption extends PaperOption {
         parent::__construct($conf, $args);
         $this->max_count = $args->max ?? 0;
     }
-    function author_list(PaperValue $ov) {
+    /** @return list<Author> */
+    static function author_list(PaperValue $ov) {
         return PaperInfo::parse_author_list($ov->data() ?? "");
     }
     function value_force(PaperValue $ov) {
@@ -22,7 +23,7 @@ class Authors_PaperOption extends PaperOption {
             $lemails[] = strtolower($email);
         }
         $au = [];
-        foreach (PaperInfo::parse_author_list($ov->data() ?? "") as $auth) {
+        foreach (self::author_list($ov) as $auth) {
             $au[] = $j = (object) $auth->unparse_nea_json();
             if ($auth->email !== ""
                 && in_array(strtolower($auth->email), $lemails, true)) {
@@ -33,7 +34,7 @@ class Authors_PaperOption extends PaperOption {
     }
 
     function value_check(PaperValue $ov, Contact $user) {
-        $aulist = $this->author_list($ov);
+        $aulist = self::author_list($ov);
         $nreal = 0;
         $lemails = [];
         foreach ($aulist as $auth) {
@@ -124,7 +125,7 @@ class Authors_PaperOption extends PaperOption {
 
     function value_save(PaperValue $ov, PaperStatus $ps) {
         // construct property
-        $authlist = $this->author_list($ov);
+        $authlist = self::author_list($ov);
         $d = "";
         foreach ($authlist as $auth) {
             if (!$auth->is_empty()) {
@@ -141,7 +142,7 @@ class Authors_PaperOption extends PaperOption {
     }
     function value_save_conflict_values(PaperValue $ov, PaperStatus $ps) {
         $ps->clear_conflict_values(CONFLICT_AUTHOR);
-        foreach ($this->author_list($ov) as $i => $auth) {
+        foreach (self::author_list($ov) as $i => $auth) {
             if ($auth->email !== "") {
                 $cflags = CONFLICT_AUTHOR
                     | ($ov->anno("contact:{$auth->email}") ? CONFLICT_CONTACTAUTHOR : 0);
@@ -164,7 +165,6 @@ class Authors_PaperOption extends PaperOption {
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $v = [];
-        $auth = new Author;
         for ($n = 1; true; ++$n) {
             $email = $qreq["authors:{$n}:email"];
             $name = $qreq["authors:{$n}:name"];
@@ -172,7 +172,7 @@ class Authors_PaperOption extends PaperOption {
             if ($email === null && $name === null && $aff === null) {
                 break;
             }
-            $auth->email = $auth->firstName = $auth->lastName = $auth->affiliation = "";
+            $auth = new Author;
             $name = simplify_whitespace($name ?? "");
             if ($name !== "" && $name !== "Name") {
                 list($auth->firstName, $auth->lastName, $auth->email) = Text::split_name($name, true);
@@ -298,8 +298,8 @@ class Authors_PaperOption extends PaperOption {
 
         $min_authors = $this->max_count > 0 ? min(5, $this->max_count) : 5;
 
-        $aulist = $this->author_list($ov);
-        $reqaulist = $this->author_list($reqov);
+        $aulist = self::author_list($ov);
+        $reqaulist = self::author_list($reqov);
         $nreqau = count($reqaulist);
         while ($nreqau > 0 && $reqaulist[$nreqau-1]->is_empty()) {
             --$nreqau;
@@ -334,7 +334,7 @@ class Authors_PaperOption extends PaperOption {
             $fr->table->render_authors($fr, $this);
         } else {
             $names = ["<ul class=\"x namelist\">"];
-            foreach ($this->author_list($ov) as $au) {
+            foreach (self::author_list($ov) as $au) {
                 $n = htmlspecialchars(trim("{$au->firstName} {$au->lastName}"));
                 if ($au->email !== "") {
                     $ehtml = htmlspecialchars($au->email);
