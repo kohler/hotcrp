@@ -47,7 +47,9 @@ class MailSender {
     /** @var array<int,true> */
     private $mrecipients = [];
     /** @var bool */
-    private $had_nonreceivable = false;
+    private $had_invalid_recipient = false;
+    /** @var bool */
+    private $had_invalid_mail = false;
 
     /** @param 0|1|2 $phase */
     function __construct(MailRecipients $recip, Qrequest $qreq, $phase) {
@@ -352,8 +354,8 @@ class MailSender {
             $s .= min(round(100 * $nrows_done / max(1, $nrows_total)), 99);
         }
         $s .= "% done\";";
-        $m = plural($this->mcount, "mail") . ", "
-            . plural($this->mrecipients, $this->had_nonreceivable ? "valid recipient" : "recipient");
+        $m = plural($this->mcount, $this->had_invalid_mail ? "sendable mail" : "mail") . ", "
+            . plural($this->mrecipients, $this->had_invalid_recipient ? "valid recipient" : "recipient");
         $s .= "document.getElementById('mailinfo').innerHTML=\"<span class='barsep'>·</span>" . $m . "\";";
         if (!$this->sending && $this->groupable) {
             $s .= "\$('#mail-group-disabled').addClass('hidden');\$('#mail-group-enabled').removeClass('hidden')";
@@ -492,17 +494,25 @@ class MailSender {
             $prep->send();
         }
 
-        ++$this->mcount;
+        $any_receivers = false;
         foreach ($prep->recipients() as $recip) {
             if (!$recip->can_receive_mail($prep->self_requested())) {
-                $this->had_nonreceivable = true;
-            } else if ($recip->conf === $prep->conf) {
+                $this->had_invalid_recipient = true;
+                continue;
+            }
+            $any_receivers = true;
+            if ($recip->conf === $prep->conf) {
                 $this->mrecipients[$recip->contactId] = true;
                 if ($this->sending) {
                     // Log format matters
                     $this->conf->log_for($this->user, $recip, "Sent mail #{$this->mailid}", $prep->paperId);
                 }
             }
+        }
+        if ($any_receivers) {
+            ++$this->mcount;
+        } else {
+            $this->had_invalid_mail = true;
         }
 
         $this->print_prep($prep);
