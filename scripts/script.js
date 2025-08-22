@@ -13844,8 +13844,8 @@ handle_ui.on("js-submit-list", function (evt) {
     // choose action
     var form = this, fn = "", fnbutton, e, ne, i, es;
     if (this instanceof HTMLButtonElement) {
-        fn = this.value;
         fnbutton = this;
+        fn = this.value;
         form = this.form;
     } else if ((e = form.elements.defaultfn) && e.value) {
         fn = e.value;
@@ -13996,6 +13996,38 @@ handle_ui.on("js-submit-list", function (evt) {
         bgform.action = action;
         bgform.submit();
     }
+});
+
+handle_ui.on("js-submit-pap-summary", function (evt) {
+    if (this.elements["pap[]"]) {
+        return;
+    }
+    if (this.elements.p) {
+        this.elements.p.remove();
+    }
+    let any = false;
+    const chkval = [], chknumval = [];
+    for (const e of this.querySelectorAll("input.js-selector")) {
+        any = true;
+        if (e.checked) {
+            const v = e.value;
+            chkval.push(v);
+            if (chknumval && ((v | 0) != v || v.startsWith("0"))) {
+                chknumval = null;
+            }
+            if (chknumval) {
+                chknumval.push(v | 0);
+            }
+        }
+    }
+    if (any && !chkval.length) {
+        alert("Nothing selected.");
+        return;
+    }
+    const chktxt = chknumval && chknumval.length > 30
+        ? encode_session_list_ids(chknumval)
+        : chkval.join(" ");
+    this.appendChild(hidden_input("p", chktxt));
 });
 
 

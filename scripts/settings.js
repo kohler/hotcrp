@@ -156,6 +156,9 @@ function settings_field_order(parentid) {
         movedown = null;
     for (n = c.firstChild; n; n = n.nextSibling) {
         orde = form.elements[n.id + "/order"];
+        if (!orde) {
+            console.log(n);
+        }
         if (hasClass(n, "deleted")) {
             orde.value = 0;
             continue;

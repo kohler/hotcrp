@@ -48,8 +48,6 @@ class MailSender {
     private $mrecipients = [];
     /** @var bool */
     private $had_nonreceivable = false;
-    /** @var int */
-    private $cbcount = 0;
 
     /** @param 0|1|2 $phase */
     function __construct(MailRecipients $recip, Qrequest $qreq, $phase) {
@@ -441,7 +439,7 @@ class MailSender {
             echo ' mail-preview-send uimd ui js-click-child d-flex"><div class="pr-2">',
                 Ht::checkbox("", self::prepid($prep), true, [
                     "class" => "uic js-range-click js-mail-preview-choose",
-                    "data-range-type" => "mhcb", "id" => "psel{$this->cbcount}"
+                    "data-range-type" => "mhcb",
                 ]), '</div><div class="flex-grow-0">';
         } else {
             echo ' mail-preview-send">';

@@ -297,6 +297,9 @@ class PaperList {
     /** @var int
      * @readonly */
     public $render_context;
+    /** @var bool
+     * @readonly */
+    public $long_mode;
     /** @var array<string,string|list<string>> */
     public $table_attr;
     /** @var array */
@@ -902,10 +905,12 @@ class PaperList {
     }
 
 
-    /** @return PaperInfoSet|Iterable<PaperInfo> */
+    /** @return PaperInfoSet|Iterable<PaperInfo>
+     * @suppress PhanAccessReadOnlyProperty */
     function unordered_rowset() {
         if ($this->_rowset === null) {
             $this->_rowset = $this->conf->paper_set($this->qopts, $this->user);
+            $this->long_mode = count($this->_rowset) > 200;
         }
         return $this->_rowset;
     }

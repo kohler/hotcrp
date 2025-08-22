@@ -27,13 +27,16 @@ class Mail_Page {
             if ($this->conf->has_any_accepted()) {
                 $this->search_topt["accepted"] = PaperSearch::limit_description($this->conf, "accepted");
             }
-            $this->search_topt["unsub"] = PaperSearch::limit_description($this->conf, "unsub");
-            $this->search_topt["all"] = PaperSearch::limit_description($this->conf, "all");
         }
+        $this->search_topt["req"] = PaperSearch::limit_description($this->conf, "req");
         if ($viewer->privChair ? $this->conf->has_any_manager() : $viewer->is_manager()) {
             $this->search_topt["admin"] = PaperSearch::limit_description($this->conf, "admin");
         }
-        $this->search_topt["req"] = PaperSearch::limit_description($this->conf, "req");
+        if ($viewer->privChair) {
+            $this->search_topt["active"] = PaperSearch::limit_description($this->conf, "active");
+            $this->search_topt["unsub"] = PaperSearch::limit_description($this->conf, "unsub");
+            $this->search_topt["all"] = PaperSearch::limit_description($this->conf, "all");
+        }
 
         $this->recip = new MailRecipients($viewer);
     }
@@ -84,10 +87,9 @@ class Mail_Page {
         if (!isset($qreq->q) || strcasecmp(trim($qreq->q), "(All)") === 0) {
             $qreq->q = "";
         }
-        if (isset($qreq->p) && !$qreq->has_a("p")) {
-            $qreq->set_a("p", preg_split('/\s+/', $qreq->p));
-        } else if (!isset($qreq->p) && isset($qreq->pap)) {
-            $qreq->set_a("p", $qreq->has_a("pap") ? $qreq->get_a("pap") : preg_split('/\s+/', $qreq->pap));
+        $ssel = SearchSelection::make($qreq, $this->viewer);
+        if (!$ssel->is_empty()) {
+            $qreq->set_a("p", $ssel->selection());
         }
         if (!$qreq->has_plimit && $qreq->has_a("p") && !isset($qreq->recheck)) {
             $qreq->plimit = "1";
@@ -372,7 +374,8 @@ class Mail_Page {
         // form
         echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq]), [
                 "id" => "mailform",
-                "data-default-messages" => json_encode_browser((object) $templates)
+                "data-default-messages" => json_encode_browser((object) $templates),
+                "class" => "ui-submit js-submit-pap-summary"
             ]),
             Ht::hidden("defaultfn", ""),
             Ht::hidden_default_submit("default", 1);

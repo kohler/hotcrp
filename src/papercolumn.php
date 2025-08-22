@@ -220,7 +220,8 @@ class Selector_PaperColumn extends PaperColumn {
     function content(PaperList $pl, PaperInfo $row) {
         $pl->mark_has("sel");
         $c = $this->checked($pl, $row) ? " checked" : "";
-        return "<span class=\"pl_rownum fx6\">{$pl->count}. </span><input type=\"checkbox\" class=\"uic uikd js-range-click js-selector ignore-diff\" name=\"pap[]\" value=\"{$row->paperId}\"{$c} aria-label=\"#{$row->paperId}\">";
+        $n = $pl->long_mode ? "data-range-type" : "name";
+        return "<span class=\"pl_rownum fx6\">{$pl->count}. </span><input type=\"checkbox\" class=\"uic uikd js-range-click js-selector ignore-diff\" {$n}=\"pap[]\" value=\"{$row->paperId}\"{$c} aria-label=\"#{$row->paperId}\">";
     }
     static function group_content($groupno) {
         // See also `tagannorow_add` in script.js
