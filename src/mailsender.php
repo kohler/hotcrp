@@ -313,12 +313,19 @@ class MailSender {
               '<div class="fx msg msg-info">',
                 '<p class="feedback is-note">',
                   'Verify that the mails look correct, then select “Send” to send the checked mails.<br>',
-                  "Mailing to:&nbsp;", $this->recip->unparse(),
+                  "Mailing to: ", $this->recip->unparse(),
                   '<span id="mailinfo"></span>';
             if (!preg_match('/\A(?:pc\z|pc:|all\z)/', $this->recipients)
                 && $this->qreq->plimit
                 && (string) $this->qreq->q !== "") {
-                echo "<br>Paper selection:&nbsp;", htmlspecialchars($this->qreq->q);
+                assert($this->recip->has_paper_ids());
+                echo "<br>Paper selection: ";
+                if (preg_match('/\A(?:pidcode:\S+|[\d ]+)\z/', $this->qreq->q)) {
+                    echo join(" ", $this->recip->paper_ids());
+                } else {
+                    echo "‘", htmlspecialchars($this->qreq->q), "’ (",
+                        join(" ", $this->recip->paper_ids()), ")";
+                }
             }
             echo '</p>',
               '</div>';

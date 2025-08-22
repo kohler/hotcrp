@@ -89,9 +89,12 @@ class Mail_Page {
         }
         $ssel = SearchSelection::make($qreq, $this->viewer);
         if (!$ssel->is_empty()) {
+            $ssel->sort_selection();
             $qreq->set_a("p", $ssel->selection());
         }
-        if (!$qreq->has_plimit && $qreq->has_a("p") && !isset($qreq->recheck)) {
+        if (!$qreq->has_plimit
+            && !$qreq->recheck
+            && $qreq->has_a("p")) {
             $qreq->plimit = "1";
         }
 
@@ -111,18 +114,11 @@ class Mail_Page {
             $search = new PaperSearch($this->viewer, ["t" => $qreq->t, "q" => $qreq->q]);
             $papersel = $search->paper_ids();
             sort($papersel);
-
-            if ($qreq->has_a("p") && !isset($qreq->recheck)) {
-                $chksel = [];
-                foreach ($qreq->get_a("p") as $p) {
-                    if (($p = stoi($p) ?? -1) > 0)
-                        $chksel[] = $p;
-                }
-                sort($chksel);
-                if ($chksel !== $papersel) {
-                    $papersel = $chksel;
-                    $qreq->q = PaperSearch::encode_id_search($chksel);
-                }
+            if (!$qreq->recheck
+                && $qreq->has_a("p")
+                && $qreq->get_a("p") !== $papersel) {
+                $papersel = $qreq->get_a("p");
+                $qreq->q = PaperSearch::encode_id_search($papersel);
             }
         } else {
             $qreq->q = "";

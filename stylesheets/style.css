@@ -1879,6 +1879,7 @@ td.padls, th.padls, div.padls {
 .msg {
 	max-width: 720px;
 	width: fit-content;
+	overflow-wrap: anywhere;
 }
 .w-text,
 .feedback, .feedback-list, .field-d,
