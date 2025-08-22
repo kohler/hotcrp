@@ -195,9 +195,9 @@ class Options_SettingParser extends SettingParser {
     function prepare_oblist(Si $si, SettingValues $sv) {
         if ($si->name === "sf") {
             $sfss = [];
-            foreach (self::configurable_options($sv->conf) as $i => $opt) {
+            foreach (self::configurable_options($sv->conf) as $opt) {
                 $sfs = $opt->export_setting();
-                $sfs->order = $i + 1;
+                $sfs->order = count($sfss) + 1;
                 $sfss[] = $sfs;
             }
             $sv->append_oblist("sf", $sfss, "name");
