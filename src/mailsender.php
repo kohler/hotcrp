@@ -287,18 +287,15 @@ class MailSender {
             $ms = [];
             if (isset($this->qreq->body)
                 && $this->user->privChair
-                && (strpos($this->qreq->body, "%REVIEWS%")
-                    || strpos($this->qreq->body, "%COMMENTS%"))) {
-                if (!$this->conf->time_some_author_view_review()) {
-                    $ms[] = MessageItem::warning("<5>Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (<a href=\"" . $this->conf->hoturl("settings", "group=dec") . "\" class=\"nw\">Change this setting</a>)");
-                }
+                && preg_match('/(?:\{\{|%)(?:REVIEWS|COMMENTS)/', $this->qreq->body)
+                && !$this->conf->time_some_author_view_review()) {
+                $ms[] = MessageItem::warning("<5>Although these mails contain reviews and/or comments, authors can’t see reviews or comments on the site. (<a href=\"" . $this->conf->hoturl("settings", "group=dec") . "\" class=\"nw\">Change this setting</a>)");
             }
             if (isset($this->qreq->body)
                 && $this->user->privChair
-                && substr($this->recipients, 0, 4) == "dec:") {
-                if (!$this->conf->time_some_author_view_decision()) {
-                    $ms[] = MessageItem::warning("<5>You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href=\"" . $this->conf->hoturl("settings", "group=dec") . "\" class=\"nw\">Change this setting</a>)");
-                }
+                && substr($this->recipients, 0, 4) == "dec:"
+                && !$this->conf->time_some_author_view_decision()) {
+                $ms[] = MessageItem::warning("<5>You appear to be sending an acceptance or rejection notification, but authors can’t see paper decisions on the site. (<a href=\"" . $this->conf->hoturl("settings", "group=dec") . "\" class=\"nw\">Change this setting</a>)");
             }
             if (!empty($ms)) {
                 $this->conf->feedback_msg($ms);
@@ -533,7 +530,7 @@ class MailSender {
         // test whether this mail is paper-sensitive
         $mailer = new HotCRPMailer($this->conf, $this->user, $rest);
         $prep = $mailer->prepare($template, $rest);
-        $paper_sensitive = preg_match('/%[A-Z0-9]+[(%]/', $prep->subject . $prep->body);
+        $paper_sensitive = preg_match('/(?:\{\{|%)[A-Z0-9]+[(}]/', $prep->subject . $prep->body);
 
         $q = $this->recip->query($paper_sensitive);
         if (!$q) {
