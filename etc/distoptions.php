@@ -60,6 +60,8 @@ $Opt["dbName"] = "FIXME";
 //                   the mail tool. Does not apply to email sent automatically.
 //   emailReplyTo    If set, default "Reply-To:" address for email sent by
 //                   HotCRP.
+//   emailMaxRecipients  The maximum number of recipients per email. Defaults
+//                   to 200.
 //   sendmailParam   Extra parameters to be passed to your mailer. The default
 //                   is derived from $Opt["emailSender"]. If your system's
 //                   mailer is not sendmail, you may need to change the

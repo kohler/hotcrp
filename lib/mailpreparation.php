@@ -149,15 +149,20 @@ class MailPreparation implements JsonSerializable {
     /** @param MailPreparation $p
      * @return bool */
     function can_merge($p) {
-        return !$this->unique_preparation
-            && !$p->unique_preparation
-            && $this->subject === $p->subject
-            && $this->body === $p->body
-            && ($this->headers["cc"] ?? null) === ($p->headers["cc"] ?? null)
-            && ($this->headers["reply-to"] ?? null) === ($p->headers["reply-to"] ?? null)
-            && $this->preparation_owner === $p->preparation_owner
-            && empty($this->errors)
-            && empty($p->errors);
+        if ($this->unique_preparation
+            || $p->unique_preparation
+            || $this->subject !== $p->subject
+            || $this->body !== $p->body
+            || ($this->headers["cc"] ?? null) !== ($p->headers["cc"] ?? null)
+            || ($this->headers["reply-to"] ?? null) !== ($p->headers["reply-to"] ?? null)
+            || $this->preparation_owner !== $p->preparation_owner
+            || !empty($this->errors)
+            || !empty($p->errors)) {
+            return false;
+        }
+        $max_recipients = $this->conf->opt("emailMaxRecipients") ?? 200;
+        return $max_recipients <= 0
+            || count($this->recip) + count($p->recip) <= $max_recipients;
     }
 
     /** @param MailPreparation $p
