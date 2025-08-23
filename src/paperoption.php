@@ -1813,7 +1813,7 @@ class Text_PaperOption extends PaperOption {
 class Unknown_PaperOption extends PaperOption {
     function __construct(Conf $conf, $args) {
         $args->type = "none";
-        $args->configurable = false;
         parent::__construct($conf, $args, "hidden");
+        $this->configurable = false;
     }
 }
