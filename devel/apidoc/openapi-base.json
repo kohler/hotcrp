@@ -513,6 +513,28 @@
                     }
                 }
             },
+            "search_action": {
+                "type": "object",
+                "description": "Search action properties",
+                "required": ["name"],
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "get": {
+                        "type": "boolean"
+                    },
+                    "post": {
+                        "type": "boolean"
+                    }
+                }
+            },
             "update_status": {
                 "type": "object",
                 "description": "Status of update operation",

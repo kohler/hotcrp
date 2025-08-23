@@ -1244,7 +1244,7 @@ class APISpec_Batch {
             if (preg_match('/\A(get|post|delete)\s+(\S+)\z/', $name, $m)
                 && !isset($this->paths->{$m[2]}->{$m[1]})
                 && ($dj = $this->find_description($name))) {
-                fwrite(STDERR, "{$dj->landmark}: description path {$m[1]}.{$m[2]} not specified\n");
+                fwrite(STDERR, "{$dj->landmark}: description path {$m[2]}.{$m[1]} not specified\n");
             }
         }
 

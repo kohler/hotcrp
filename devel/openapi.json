@@ -2,9 +2,9 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-05-16:c9ed0e065",
+        "version": "2025-06-12:4298ad4f6",
         "summary": "HotCRP conference management software API",
-        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST-like API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nParameters are provided in query strings or the request body, typically using\n[form encoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST).\nSome parameters are formatted as JSON. Some complex requests define logical\nobjects using structured keys, such as `named_search/1/q`. Use\n`multipart/form-data` encoding for requests that include uploaded files.\nSince servers limit upload size, you may need to use the upload API to upload\na large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property; `ok` is\n`true` if the request succeeded and `false` otherwise. Messages about the\nrequest, if any, are expressed in a `message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n"
+        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n"
     },
     "servers": [
         {
@@ -58,7 +58,10 @@
                                         },
                                         "paper": {
                                             "$ref": "#/components/schemas/paper"
-                                        }
+                                        },
+                                        "dry_run": {},
+                                        "change_list": {},
+                                        "valid": {}
                                     }
                                 }
                             }
@@ -78,7 +81,7 @@
             },
             "post": {
                 "summary": "Create or modify submission",
-                "description": "Create or modify a submission specified by `p`, a submission ID.\n\nSetting `p=new` will create a new submission; the response will contain the\nchosen submission ID.\n\nThe modification may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a ZIP archive (when the request body has content-type\n   `application/zip`). The archive must contain a file named `data.json`; it\n   may contain other files too.\n3. As a JSON-formatted request parameter named `json` (when the request body\n   has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or ZIP file, represented by a upload token in\n   the `upload` parameter.\n\nIn all of these, the modification is defined by a JSON submission object. The\nproperties of this object define the modifications applied to the submission.\nThe object need not specify all submission properties; absent properties\nremain unchanged.\n\nThe `p` request parameter is optional. If it is unset, HotCRP uses the `pid`\nfrom the supplied JSON. If both the `p` parameter and the JSON `pid` property\nare present, they must match.\n\nTo test a modification, supply a `dry_run=1` parameter. This will test the\nuploaded JSON but make no changes to the database.\n\n\n### ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n### Responses\n\nIf the modification succeeds, the response’s `paper` property contains the\nmodified submission object.\n\nThe `change_list` property is a list of names of the modified fields. New\nsubmissions have `\"pid\"` as the first item in the list. `change_list` contains\nfields that the request *attempted* to modify; successful requests, erroneous\nrequests, and dry-run requests can all return nonempty `change_list`s.\n\nThe `valid` property is `true` if and only if the modification was valid. In\nnon-dry-run requests, `valid: true` indicates that database changes were\ncommitted.\n\nDry-run requests return `change_list` and `valid` properties, but not `paper`\nproperties, since no modifications are performed.\n\n\n### Administrator use\n\nAdministrators can use this endpoint to set some submission properties, such\nas `decision`, that have other endpoints as well.\n\nAdministrators can choose specific IDs for new submissions by setting `p` (or\nJSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the submission JSON’s `status`.`if_unmodified_since`\nto `0`.\n",
+                "description": "Create or modify a submission specified by `p`, a submission ID.\n\nSetting `p=new` will create a new submission; the response will contain the\nchosen submission ID.\n\nThe modification may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a ZIP archive (when the request body has content-type\n   `application/zip`). The archive must contain a file named `data.json`; it\n   may contain other files too.\n3. As a JSON-formatted request parameter named `json` (when the request body\n   has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or ZIP file, represented by a upload token in\n   the `upload` parameter.\n\nIn all of these, the modification is defined by a JSON submission object. The\nproperties of this object define the modifications applied to the submission.\nThe object need not specify all submission properties; absent properties\nremain unchanged.\n\nThe `p` request parameter is optional. If it is unset, HotCRP uses the `pid`\nfrom the supplied JSON. If both the `p` parameter and the JSON `pid` property\nare present, then they must match.\n\nTo test a modification, supply a `dry_run=1` parameter. This will test the\nuploaded JSON but make no changes to the database.\n\n\n### ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n### Responses\n\nThe `valid` response property is `true` if and only if the modification was\nvalid. In non-dry-run requests, `\"valid\": true` indicates that database changes\nwere committed.\n\nThe `change_list` response property lists any modified field names. New\nsubmissions have `\"pid\"` as the first item in the list. `change_list` contains\nfields that the request *attempted* to modify; successful requests, erroneous\nrequests, and dry-run requests can all return nonempty `change_list`s.\n\nThe response returns the modified submission object `paper` property contains\nthe modified submission object.\n\nDry-run requests return `change_list` and `valid` properties, but not `paper`\nproperties, since no modifications are performed.\n\n\n### Administrator use\n\nAdministrators can use this endpoint to set some submission properties, such\nas `decision`, that have other endpoints as well.\n\nAdministrators can choose specific IDs for new submissions by setting `p` (or\nJSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the submission JSON’s `status`.`if_unmodified_since`\nto `0`.\n",
                 "tags": [
                     "Submissions"
                 ],
@@ -288,7 +291,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "change_list",
+                                        "valid"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -624,7 +629,12 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "npages",
+                                        "nwords",
+                                        "problem_fields",
+                                        "has_error",
+                                        "docid"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -776,7 +786,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "token"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -921,7 +932,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "decision",
+                                        "decision_html"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -984,7 +997,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "decision",
+                                        "decision_html"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1033,7 +1048,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "lead",
+                                        "lead_html"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1096,7 +1113,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "lead",
+                                        "lead_html"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1145,7 +1164,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "manager",
+                                        "manager_html"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1208,7 +1229,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "manager",
+                                        "manager_html"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1303,7 +1326,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "shepherd",
+                                        "shepherd_html"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1366,7 +1391,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "shepherd",
+                                        "shepherd_html"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1399,7 +1426,7 @@
         "/search": {
             "get": {
                 "summary": "Retrieve search results",
-                "description": "Return IDs of submissions that match a search.\n\nPass the search query in the `q` parameter. The list of matching IDs is\nreturned in the `ids` response property.\n\nThe `t`, `qt`, `reviewer`, `sort`, and `scoresort` parameters can also affect\nthe search. `t` defines the collection of submissions to search. `t=viewable`\nchecks all submissions the user can view; the default collection is often\nnarrower (a typical default is `t=s`, which searches complete submissions).\n\nThe `groups` response property is an array of annotations that apply to the\nsearch, and is returned for `THEN` searches, `LEGEND` searches, and searches\non tags with annotations. Each annotation contains a position `pos`, and may\nalso have a `legend`, a `search`, an `annoid`, and other properties. `pos` is\nan integer index into the `ids` array; it ranges from 0 to the number of items\nin that array. Annotations with a given `pos` should appear *before* the paper\nat that index in the `ids` array. For instance, this response might be\nreturned for the search `10-12 THEN 15-18`:\n\n```json\n{\n    \"ok\": true,\n    \"message_list\": [],\n    \"ids\": [10, 12, 18],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"15-18\",\n            \"search\": \"15-18\"\n        }\n    ]\n}\n```\n",
+                "description": "Return IDs of submissions that match a search.\n\nPass the search query in the `q` parameter. The list of matching IDs is\nreturned in the `ids` response property.\n\nThe `t`, `qt`, `reviewer`, `sort`, and `scoresort` parameters can also affect\nthe search. `t` defines the collection of submissions to search. `t=viewable`\nchecks all submissions the user can view; the default collection is often\nnarrower (a typical default is `t=s`, which searches complete submissions).\n\nThe `groups` response property is an array of annotations that apply to the\nsearch. It is returned for `THEN` searches, `LEGEND` searches, and searches on\nannotated tags. Each `groups` entry contains a position `pos`, and may also have\na `legend`, a `search`, an `annoid`, and other properties. `pos` is an integer\nindex into the `ids` array; it ranges from 0 to the number of items in that\narray. Annotations with a given `pos` should appear *before* the paper at that\nindex in the `ids` array. For instance, this response might be returned for the\nsearch `10-12 THEN 15-18`:\n\n```json\n{\n    \"ok\": true,\n    \"message_list\": [],\n    \"ids\": [10, 12, 18],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"15-18\",\n            \"search\": \"15-18\"\n        }\n    ]\n}\n```\n",
                 "tags": [
                     "Search"
                 ],
@@ -1529,7 +1556,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "fields",
+                                        "data"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1605,6 +1634,7 @@
         "/searchactions": {
             "get": {
                 "summary": "Retrieve available search actions",
+                "description": "Return a list of search actions accessible via HotCRP’s API.\n\nSearch actions perform actions on a set of papers specified via search. In the\nHotCRP web application, available search actions are shown underneath the search\nlist; examples include “Get > Review forms (zip)” or “Tag > Add to order”. This\nAPI function retrieves the search actions that the current user can access\nprogrammatically via the `/searchaction` API endpoint.\n",
                 "tags": [
                     "Search"
                 ],
@@ -1616,7 +1646,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "actions"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1625,7 +1656,13 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "actions": {}
+                                        "actions": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/search_action"
+                                            },
+                                            "description": "List of available actions"
+                                        }
                                     }
                                 }
                             }
@@ -1647,6 +1684,7 @@
         "/searchaction": {
             "get": {
                 "summary": "Perform search action",
+                "description": "Perform the search action defined by the `action` parameter on the papers\ndefined by the `q` and `t` search parameters.\n\nThe `action` parameter must correspond to the `name` of a valid search action,\nas returned from the `/searchactions` API endpoint.\n\nSearch action responses do not follow HotCRP’s typical JSON conventions. They\nuse many content types, not just JSON. For instance, the `get/paper` action\ntypically returns a ZIP file containing submission PDFs, and the `get/csv`\naction returns a CSV-formatted text file. Furthermore, successful JSON responses\nmay not be objects, or may not contain an `ok` property; for example, the\nresponse to a `get/json` request is an array of objects. Applications wanting\npredictable JSON responses should use other API endpoints. Nevertheless,\n`/searchaction` sometimes provides more convenient access.\n",
                 "tags": [
                     "Search"
                 ],
@@ -1658,7 +1696,10 @@
                         "name": "action",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Name of action"
                     },
                     {
                         "$ref": "#/components/parameters/q"
@@ -1773,7 +1814,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "searches"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1812,7 +1854,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "searches"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1853,7 +1896,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "searchcompletion"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1905,7 +1949,12 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "report",
+                                        "display_current",
+                                        "display_default",
+                                        "display_difference",
+                                        "display_default_message_list"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -1975,7 +2024,12 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "report",
+                                        "display_current",
+                                        "display_default",
+                                        "display_difference",
+                                        "display_default_message_list"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -2144,7 +2198,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "tags"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -2217,7 +2272,8 @@
                                         {
                                             "type": "object",
                                             "required": [
-                                                "ok"
+                                                "ok",
+                                                "p"
                                             ],
                                             "properties": {
                                                 "ok": {
@@ -2284,7 +2340,10 @@
                                         {
                                             "type": "object",
                                             "required": [
-                                                "ok"
+                                                "ok",
+                                                "tag",
+                                                "editable",
+                                                "anno"
                                             ],
                                             "properties": {
                                                 "ok": {
@@ -2377,7 +2436,10 @@
                                         {
                                             "type": "object",
                                             "required": [
-                                                "ok"
+                                                "ok",
+                                                "tag",
+                                                "editable",
+                                                "anno"
                                             ],
                                             "properties": {
                                                 "ok": {
@@ -2437,7 +2499,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "pid"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -2492,7 +2555,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "vote_report"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -2501,8 +2565,7 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "tag": {},
-                                        "report": {}
+                                        "vote_report": {}
                                     }
                                 }
                             }
@@ -2545,7 +2608,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "value",
+                                        "pref"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -2614,7 +2679,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "value",
+                                        "pref"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -2796,7 +2863,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "action",
+                                        "review_site_relative"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -2852,7 +2921,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "action",
+                                        "review_site_relative"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -2915,7 +2986,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "action",
+                                        "review_site_relative"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -3407,7 +3480,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "mentioncompletion"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -3573,7 +3647,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "tracker_status_at",
+                                        "tracker_eventid"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -3638,7 +3714,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "match"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -3647,7 +3724,7 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "found": {},
+                                        "match": {},
                                         "email": {},
                                         "given_name": {},
                                         "family_name": {},
@@ -3694,7 +3771,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "pc"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -3812,7 +3890,11 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "from",
+                                        "to",
+                                        "rows",
+                                        "more"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -3883,7 +3965,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "following"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4043,7 +4126,10 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "email",
+                                        "disabled",
+                                        "placeholder"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4110,7 +4196,10 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "email",
+                                        "disabled",
+                                        "placeholder"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4153,7 +4242,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "formulas"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4208,7 +4298,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "formulas"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4249,7 +4340,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "settings"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4258,6 +4350,8 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
+                                        "dry_run": {},
+                                        "change_list": {},
                                         "settings": {}
                                     }
                                 }
@@ -4333,7 +4427,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "settings"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4376,7 +4471,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "samples",
+                                        "types"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4418,7 +4515,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "setting_descriptions"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4459,7 +4557,9 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "samples",
+                                        "types"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4509,7 +4609,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "update_at"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4643,6 +4744,30 @@
                 "tags": [
                     "Session"
                 ],
+                "parameters": [
+                    {
+                        "name": "confirm",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "reason": {},
+                                    "email": {},
+                                    "password": {},
+                                    "totpcode": {}
+                                }
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "",
@@ -4691,7 +4816,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "sessioninfo"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4738,7 +4864,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "sessioninfo"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -4795,7 +4922,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "smsg"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -5444,6 +5572,30 @@
                     },
                     "search_params": {
                         "$ref": "#/components/schemas/encoded_search_parameters"
+                    }
+                }
+            },
+            "search_action": {
+                "type": "object",
+                "description": "Search action properties",
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "get": {
+                        "type": "boolean"
+                    },
+                    "post": {
+                        "type": "boolean"
                     }
                 }
             },
