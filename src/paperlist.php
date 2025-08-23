@@ -412,9 +412,8 @@ class PaperList {
             return $this->has(substr($e, 8));
         } else if (str_starts_with($e, "listreport:")) {
             return $this->_report_id === substr($e, 11);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return string */

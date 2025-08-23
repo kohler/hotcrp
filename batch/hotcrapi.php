@@ -97,6 +97,10 @@ class Hotcrapi_Batch extends MessageSet {
     public $headerf;
     /** @var int */
     public $status_code;
+    /** @var ?string */
+    public $decorated_content_type;
+    /** @var ?string */
+    public $content_type;
     /** @var string */
     public $content_string;
     /** @var ?object */
@@ -421,6 +425,8 @@ class Hotcrapi_Batch extends MessageSet {
         $this->content_string = curl_exec($this->curlh);
         curl_setopt($this->curlh, CURLOPT_NOPROGRESS, 1);
         $this->status_code = curl_getinfo($this->curlh, CURLINFO_RESPONSE_CODE);
+        $this->decorated_content_type = curl_getinfo($this->curlh, CURLINFO_CONTENT_TYPE);
+        $this->content_type = preg_replace('/\s*;.*\z/s', "", $this->decorated_content_type);
         if ($this->verbose) {
             if ($this->_progress_active) {
                 $this->progress_snapshot();
@@ -501,7 +507,7 @@ class Hotcrapi_Batch extends MessageSet {
             "T:,token: =APITOKEN API token",
             "F:,config: =FILE Set configuration file [~/.hotcrapi.conf]",
             "verbose,V Be verbose",
-            "quiet,q Do not print error messages",
+            "quiet Do not print error messages",
             "no-progress Do not print progress bars",
             "progress !",
             "chunk: =CHUNKSIZE Maximum upload chunk size [8M]"
@@ -512,6 +518,7 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
          ->subcommand(true);
         Test_CLIBatch::register($hcli, $getopt);
         Paper_CLIBatch::register($hcli, $getopt);
+        Search_CLIBatch::register($hcli, $getopt);
         Settings_CLIBatch::register($hcli, $getopt);
         Upload_CLIBatch::register($hcli, $getopt);
         $arg = $getopt->parse($argv);

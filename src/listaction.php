@@ -13,9 +13,17 @@ class ListAction {
         return JsonResult::make_not_found_error(null, "<0>Action not found");
     }
 
+    const F_API = 1;
+
     /** @return ComponentSet */
-    static function components(Contact $user) {
+    static function components(Contact $user, $flags = 0) {
         $cs = new ComponentSet($user, ["etc/listactions.json"], $user->conf->opt("listActions"));
+        $cs->add_xt_checker(function ($e, $xt, $xtp) use ($flags) {
+            if ($e === "api") {
+                return ($flags & self::F_API) !== 0;
+            }
+            return null;
+        });
         foreach ($cs->members("__expand") as $gj) {
             if (isset($gj->allow_if) && !$cs->allowed($gj->allow_if, $gj)) {
                 continue;
@@ -63,8 +71,6 @@ class ListAction {
         return $sel_opt;
     }
 
-    const LOOKUP_API = 1;
-
     /** @param string $name
      * @param int $flags
      * @return JsonResult|ListAction */
@@ -75,7 +81,7 @@ class ListAction {
             && !$qreq->valid_token()) {
             return JsonResult::make_error(403, "<0>Missing credentials");
         }
-        $cs = self::components($user);
+        $cs = self::components($user, $flags);
         $slash = strpos($name, "/");
         $namepfx = $slash > 0 ? substr($name, 0, $slash) : null;
         $cs->xtp->set_require_key_for_method($qreq->method());
@@ -96,8 +102,7 @@ class ListAction {
         if (!$uf
             || !Conf::xt_resolve_require($uf)
             || (isset($uf->allow_if) && !$cs->allowed($uf->allow_if, $uf))
-            || !is_string($uf->function)
-            || (($flags & self::LOOKUP_API) !== 0 && !($uf->allow_api ?? false))) {
+            || !is_string($uf->function)) {
             return JsonResult::make_error(404, "<0>Action not found");
         } else if (($uf->paper ?? false) && $selection->is_empty()) {
             return JsonResult::make_error(400, "<0>Empty selection");
@@ -141,18 +146,18 @@ class ListAction {
     /** @param null|JsonResult|Downloader|Redirection|CsvGenerator|DocumentInfo|DocumentInfoSet $res
      * @return null|JsonResult|Downloader|Redirection */
     static function resolve_document($res, Qrequest $qreq) {
-        if ($res instanceof DocumentInfo
-            || $res instanceof DocumentInfoSet
-            || $res instanceof CsvGenerator) {
-            $dopt = new Downloader;
-            $dopt->parse_qreq($qreq);
-            $dopt->set_attachment(true);
-            if ($res->prepare_download($dopt)) {
-                return $dopt;
-            }
-            return JsonResult::make_message_list(400, $res->message_list());
+        if (!($res instanceof DocumentInfo)
+            && !($res instanceof DocumentInfoSet)
+            && !($res instanceof CsvGenerator)) {
+            return $res;
         }
-        return $res;
+        $dopt = new Downloader;
+        $dopt->parse_qreq($qreq);
+        $dopt->set_attachment(true);
+        if ($res->prepare_download($dopt)) {
+            return $dopt;
+        }
+        return JsonResult::make_message_list(400, $res->message_list());
     }
 
 

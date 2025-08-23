@@ -11,7 +11,6 @@ class GetDocument_ListAction extends ListAction {
         return (object) [
             "name" => "get/" . $opt->dtype_name(),
             "get" => true,
-            "allow_api" => true,
             "dtype" => $opt->id,
             "title" => "Documents/" . $opt->title(),
             "order" => $opt->page_order(),

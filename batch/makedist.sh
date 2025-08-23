@@ -87,6 +87,7 @@ batch/autoassign.php
 batch/backupdb.php
 batch/checkinvariants.php
 batch/cli/cli_paper.php
+batch/cli/cli_search.php
 batch/cli/cli_settings.php
 batch/cli/cli_test.php
 batch/cli/cli_upload.php

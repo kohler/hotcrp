@@ -133,7 +133,7 @@ class Search_API {
         }
         $qreq->p = $qreq->p ?? "all";
         $ssel = SearchSelection::make($qreq, $user, "p");
-        $action = ListAction::lookup($qreq->action, $user, $qreq, $ssel, ListAction::LOOKUP_API);
+        $action = ListAction::lookup($qreq->action, $user, $qreq, $ssel, ListAction::F_API);
         if ($action instanceof ListAction) {
             $action = $action->run($user, $qreq, $ssel);
         }
@@ -142,19 +142,21 @@ class Search_API {
 
     static function searchactions(Contact $user) {
         $fjs = [];
-        $cs = ListAction::components($user);
+        $cs = ListAction::components($user, ListAction::F_API);
         foreach ($cs->members("") as $rf) {
             if (str_starts_with($rf->name, "__")) {
                 continue;
             }
             foreach ($cs->members($rf->name) as $uf) {
                 if (str_starts_with($uf->name, "__")
-                    || !($uf->allow_api ?? false)
                     || (isset($uf->allow_if) && !$cs->allowed($uf->allow_if, $uf))
                     || !isset($uf->function)) {
                     continue;
                 }
-                $fj = ["action" => $uf->name];
+                $fj = ["name" => $uf->name];
+                if (isset($uf->title)) {
+                    $fj["title"] = $uf->title;
+                }
                 if (isset($uf->description)) {
                     $fj["description"] = $uf->description;
                 }

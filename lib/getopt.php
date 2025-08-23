@@ -329,7 +329,7 @@ class Getopt {
      * @param int $len
      * @return string */
     static function format_help_line($opt, $help, $len = 24) {
-        if ($help === "") {
+        if (($help ?? "") === "") {
             $sep = "";
         } else if (strlen($opt) <= $len) {
             $sep = str_repeat(" ", $len + 2 - strlen($opt));
