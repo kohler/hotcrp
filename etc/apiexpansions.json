@@ -88,7 +88,7 @@
     "tags": ["Search"], "order": 3
   },
   {
-    "name": "searchaction", "get": true, "merge": true,
+    "name": "searchaction", "get": true, "post": true, "merge": true,
     "tags": ["Search"], "order": 4
   },
   {
