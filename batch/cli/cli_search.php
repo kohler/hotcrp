@@ -3,20 +3,22 @@
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Search_CLIBatch implements CLIBatchCommand {
-    /** @var string */
-    public $url;
-    /** @var bool */
-    public $json;
     /** @var ?string */
     public $q;
     /** @var ?string */
     public $t;
     /** @var bool */
+    public $json;
+    /** @var bool */
+    public $post;
+    /** @var array<string,string> */
+    public $param = [];
+    /** @var string */
+    public $urlparam;
+    /** @var bool */
     public $actions;
     /** @var ?string */
     public $action;
-    /** @var string */
-    public $param;
     /** @var bool */
     public $output_content_string = false;
 
@@ -25,13 +27,9 @@ class Search_CLIBatch implements CLIBatchCommand {
         if ($this->actions) {
             return $this->run_actions($clib);
         }
-        $args = ["q=" . urlencode($this->q)];
-        if (!empty($this->t)) {
-            $args[] = "t=" . urlencode($this->t);
-        }
-        $this->param = join("&", $args);
+        $this->urlparam = http_build_query($this->param);
         if ($this->action) {
-            return $this->run_get_action($clib);
+            return $this->run_action($clib);
         }
         return $this->run_get($clib);
     }
@@ -39,7 +37,7 @@ class Search_CLIBatch implements CLIBatchCommand {
     /** @return int */
     function run_get(Hotcrapi_Batch $clib) {
         curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_setopt($clib->curlh, CURLOPT_URL, "{$clib->site}/search?{$this->param}");
+        curl_setopt($clib->curlh, CURLOPT_URL, "{$clib->site}/search?{$this->urlparam}");
         if (!$clib->exec_api(null)) {
             return 1;
         }
@@ -60,26 +58,34 @@ class Search_CLIBatch implements CLIBatchCommand {
         }
         if ($this->json) {
             $clib->set_json_output($clib->content_json->actions ?? []);
-        } else {
-            $x = [];
-            foreach ($clib->content_json->actions ?? [] as $aj) {
-                if (isset($aj->title) && ($p = strpos($aj->title, "/")) > 0) {
-                    $t = substr($aj->title, $p + 1);
+            return 0;
+        }
+        $x = [];
+        foreach ($clib->content_json->actions ?? [] as $aj) {
+            foreach (["get", "post"] as $method) {
+                if (!($aj->$method ?? false)) {
+                    continue;
+                }
+                if (isset($aj->title)) {
+                    $t = str_replace("/", " → ", $aj->title);
                 } else {
-                    $t = $aj->title ?? $aj->description ?? "";
+                    $t = $aj->description ?? "";
+                }
+                if (!empty($aj->parameters)) {
+                    $t = ltrim("{$t}  [{$aj->parameters}]");
                 }
                 if ($t !== "") {
-                    $x[] = sprintf("%-23s %s\n", $aj->name, $t);
+                    $x[] = sprintf("%-23s %-5s %s\n", $aj->name, $method, $t);
                 } else {
-                    $x[] = $aj->name . "\n";
+                    $x[] = sprintf("%-23s %s\n", $aj->name, $method);
                 }
             }
-            $clib->set_output(join("", $x));
         }
+        $clib->set_output(join("", $x));
         return 0;
     }
 
-    function skip_get_action(Hotcrapi_Batch $clib) {
+    function skip_action(Hotcrapi_Batch $clib) {
         if ($clib->status_code >= 200 && $clib->status_code <= 299) {
             $this->output_content_string = true;
             return true;
@@ -88,54 +94,32 @@ class Search_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return int */
-    function run_get_action(Hotcrapi_Batch $clib) {
-        curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_setopt($clib->curlh, CURLOPT_URL, "{$clib->site}/searchaction?action=" . urlencode($this->action) . "&{$this->param}");
-        if (!$clib->exec_api([$this, "skip_get_action"])) {
+    function run_action(Hotcrapi_Batch $clib) {
+        curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, $this->post ? "POST" : "GET");
+        curl_setopt($clib->curlh, CURLOPT_URL, "{$clib->site}/searchaction?action=" . urlencode($this->action) . "&{$this->urlparam}");
+        if (!$clib->exec_api([$this, "skip_action"])) {
             return 1;
         }
         $clib->set_output($clib->content_string);
         return 0;
     }
 
-    /** @return int */
-    function run_save(Hotcrapi_Batch $clib) {
-        $s = stream_get_contents($this->cf->stream);
-        if ($s === false) {
-            throw CommandLineException::make_file_error($this->cf->input_filename);
-        }
-        curl_setopt($clib->curlh, CURLOPT_URL, $this->url);
-        curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($clib->curlh, CURLOPT_POSTFIELDS, $s);
-        curl_setopt($clib->curlh, CURLOPT_HTTPHEADER, [
-            "Content-Type: " . Mimetype::JSON_UTF8_TYPE, "Content-Length: " . strlen($s)
-        ]);
-        $ok = $clib->exec_api(null);
-        if (empty($clib->content_json->change_list)) {
-            if (!$clib->has_error()) {
-                $clib->success("<0>No changes");
-            }
-        } else if ($clib->content_json->dry_run ?? false) {
-            $clib->success("<0>Would change " . commajoin($clib->content_json->change_list));
-        } else {
-            $clib->success("<0>Saved changes to " . commajoin($clib->content_json->change_list));
-        }
-        if ($clib->output_file() !== null
-            && isset($clib->content_json->settings)) {
-            $clib->set_json_output($clib->content_json->settings);
-        }
-        if ($clib->verbose) {
-            fwrite(STDERR, $clib->content_string);
-        }
-        return $ok ? 0 : 1;
-    }
-
     /** @return Search_CLIBatch */
     static function make_arg(Hotcrapi_Batch $clib, Getopt $getopt, $arg) {
         $pcb = new Search_CLIBatch;
-        $pcb->q = $arg["q"] ?? "";
+        $pcb->q = $pcb->param["q"] = $arg["q"] ?? "";
         $pcb->t = $arg["t"] ?? null;
+        if ($pcb->t) {
+            $pcb->param["t"] = $pcb->t;
+        }
         $pcb->json = isset($arg["json"]);
+        $pcb->post = isset($arg["post"]);
+        foreach ($arg["param"] ?? [] as $pstr) {
+            if (($eq = strpos($pstr, "=")) === false) {
+                throw new CommandLineException("Expected `--param NAME=VALUE`");
+            }
+            $pcb->param[substr($pstr, 0, $eq)] = substr($pstr, $eq + 1);
+        }
 
         $argv = $arg["_"];
         $argc = count($argv);
@@ -151,19 +135,6 @@ class Search_CLIBatch implements CLIBatchCommand {
             ++$argi;
         }
 
-        /*if ($pcb->save) {
-            if ($argi < $argc
-                && preg_match('/\A[\[\{]/', $argv[$argi])) {
-                $pcb->cf = Hotcrapi_File::make_data($argv[$argi]);
-                ++$argi;
-            } else if ($argi < $argc) {
-                $pcb->cf = Hotcrapi_File::make($argv[$argi]);
-                ++$argi;
-            } else {
-                $pcb->cf = Hotcrapi_File::make("-");
-            }
-        }*/
-
         if ($argi < $argc) {
             throw new CommandLineException("Too many arguments");
         }
@@ -174,14 +145,16 @@ class Search_CLIBatch implements CLIBatchCommand {
     static function register(Hotcrapi_Batch $clib, Getopt $getopt) {
         $getopt->subcommand_description(
             "search",
-            "Search HotCRP papers
+            "Search HotCRP papers or perform search actions
 Usage: php batch/hotcrapi.php search -q QUERY
        php batch/hotcrapi.php search actions
-       php batch/hotcrapi.php search ACTION -q QUERY"
+       php batch/hotcrapi.php search ACTION [-P] -q QUERY"
         )->long(
             "q:,query: =SEARCH !search Submission search",
             "t:,type: =TYPE !search Collection to search [viewable]",
-            "json,j !search Output JSON results"
+            "json,j !search Output JSON results",
+            "post,P !search Use POST method",
+            "param[]+ !search Set action parameter"
         );
         $clib->register_command("search", "Search_CLIBatch");
     }

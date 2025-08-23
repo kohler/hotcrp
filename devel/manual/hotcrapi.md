@@ -4,6 +4,7 @@ The Hotcrapi tool, accessible as `php batch/hotcrapi.php`, offers a command-line
 interface to HotCRP APIs, including APIs on [hotcrp.com](https://hotcrp.com)
 sites.
 
+
 ## Configuration
 
 Hotcrapi requires a **site URL** and an **API token** for every access. The site
@@ -61,7 +62,6 @@ any roles that user has on the given site.
 ## `paper`
 
 Use the `paper` subcommand to fetch, modify, or delete submissions from a site.
-The subcommand writes textual error messages and warnings to standard error.
 
 To fetch a single submission, run `php batch/hotcrapi.php paper PID`, where
 `PID` is the relevant submission ID. The JSON representation of the submission
@@ -86,6 +86,26 @@ To modify multiple submissions, run `php batch/hotcrapi.php paper save < FILE`.
 Here, the JSON in `FILE` should be an *array* of JSON objects.
 
 To delete a submission, run `php batch/hotcrapi.php paper delete PID`.
+
+Textual error messages and warnings are written to standard error.
+
+
+## `search`
+
+Use the `search` subcommand to perform searches and search actions.
+
+To list the PIDs that match a search, run `php batch/hotcrapi.php search -q
+SEARCH`, where `SEARCH` is a search query.
+
+To list the search actions that can be performed, run `php batch/hotcrapi.php
+search actions`. The output lists actions one per line. For JSON output instead,
+run `php batch/hotcrapi.php search actions -j`.
+
+To perform a search action, such as downloading a zip file of the submission
+PDFs matching a search (`get/paper`), run `php batch/hotcrapi.php search
+ACTIONNAME`. The list of `ACTIONNAME`s can be found using `search actions`.
+Actions that modify the site require the `--post` argument. Some actions accept
+additional parameters, which are passed with `--param NAME=VALUE`.
 
 
 ## `settings`

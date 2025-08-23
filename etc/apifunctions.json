@@ -291,7 +291,7 @@
         "response": "actions"
     },
     {
-        "name": "searchaction", "get": true,
+        "name": "searchaction", "get": true, "post": true,
         "function": "Search_API::searchaction",
         "parameters": "?action q ?t ?qt ?sort ?report ?scoresort ?reviewer ?p"
     },

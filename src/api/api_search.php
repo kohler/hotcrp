@@ -147,24 +147,32 @@ class Search_API {
             if (str_starts_with($rf->name, "__")) {
                 continue;
             }
-            foreach ($cs->members($rf->name) as $uf) {
+            $ufs = make_array($rf, ...$cs->members($rf->name));
+            foreach ($ufs as $uf) {
                 if (str_starts_with($uf->name, "__")
                     || (isset($uf->allow_if) && !$cs->allowed($uf->allow_if, $uf))
                     || !isset($uf->function)) {
                     continue;
                 }
                 $fj = ["name" => $uf->name];
-                if (isset($uf->title)) {
-                    $fj["title"] = $uf->title;
-                }
-                if (isset($uf->description)) {
-                    $fj["description"] = $uf->description;
-                }
                 if ($uf->get ?? false) {
                     $fj["get"] = true;
                 }
                 if ($uf->post ?? false) {
                     $fj["post"] = true;
+                }
+                if (isset($uf->title)) {
+                    if ($uf !== $rf && isset($rf->title)) {
+                        $fj["title"] = $rf->title . "/" . $uf->title;
+                    } else {
+                        $fj["title"] = $uf->title;
+                    }
+                }
+                if (isset($uf->description)) {
+                    $fj["description"] = $uf->description;
+                }
+                if (isset($uf->parameters)) {
+                    $fj["parameters"] = $uf->parameters;
                 }
                 $fjs[] = $fj;
             }

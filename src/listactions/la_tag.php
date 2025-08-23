@@ -3,6 +3,15 @@
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Tag_ListAction extends ListAction {
+    /** @var ?string */
+    private $tagfn;
+
+    function __construct(Conf $conf, $uf) {
+        if (($slash = strpos($uf->name, "/")) > 0) {
+            $this->tagfn = substr($uf->name, $slash + 1);
+        }
+    }
+
     static function render(PaperList $pl, Qrequest $qreq) {
         // tagtype cell
         $tagopt = ["a" => "Add", "d" => "Remove", "s" => "Define", "xxxa" => null, "ao" => "Add to order", "aos" => "Add to gapless order", "so" => "Define order", "sos" => "Define gapless order", "sor" => "Define random order"];
@@ -42,23 +51,50 @@ class Tag_ListAction extends ListAction {
     }
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
         $papers = $ssel->selection();
+        $gapless = friendly_boolean($qreq->gapless);
 
-        $act = $qreq->tagfn;
+        $act = $this->tagfn ?? $qreq->tagfn;
+        if ($act === "s" || $act === "define") {
+            $act = "s";
+        } else if ($act === "d" || $act === "remove" || $act === "clear") {
+            $act = "d";
+        } else if ($act === "a" || $act === "add") {
+            $act = "a";
+        } else if ($act === "so" || $act === "define_order") {
+            if (friendly_boolean($qreq->random)) {
+                $act = $gapless ? "sosr" : "sor";
+            } else {
+                $act = $gapless ? "sos" : "so";
+            }
+        } else if ($act === "sos" || $act === "define_gapless_order") {
+            $act = "sos";
+        } else if ($act === "sor" || $act === "define_random_order") {
+            $act = "sor";
+        } else if ($act === "ao" || $act === "add_order") {
+            $act = $gapless ? "aos" : "ao";
+        } else if ($act === "aos" || $act === "add_gapless_order") {
+            $act = "aos";
+        } else if ($act === "cr" || $act === "calculate_rank") {
+            $act = "cr";
+        } else {
+            $act = "";
+        }
+
         $tagreq = trim(str_replace(",", " ", (string) $qreq->tag));
         $tags = preg_split('/\s+/', $tagreq);
 
-        if ($act == "da") {
+        if ($act === "da") {
             $otags = $tags;
             foreach ($otags as $t) {
                 $tags[] = "all~" . preg_replace('/\A.*~([^~]+)\z/', '$1', $t);
             }
             $act = "d";
-        } else if ($act == "sor") {
+        } else if ($act === "sor" || $act === "sosr") {
             shuffle($papers);
         }
 
         $x = ["action,paper,tag\n"];
-        if ($act === "s" || $act === "so" || $act === "sos" || $act === "sor") {
+        if (str_starts_with($act, "s")) {
             foreach ($tags as $t) {
                 $x[] = "cleartag,all," . Tagger::tv_tag($t) . "\n";
             }
@@ -69,7 +105,7 @@ class Tag_ListAction extends ListAction {
             $action = "cleartag";
         } else if ($act === "so" || $act === "sor" || $act === "ao") {
             $action = "nexttag";
-        } else if ($act === "sos" || $act === "aos") {
+        } else if ($act === "sos" || $act === "sosr" || $act === "aos") {
             $action = "seqnexttag";
         } else {
             $action = null;
@@ -77,14 +113,21 @@ class Tag_ListAction extends ListAction {
 
         $assignset = new AssignmentSet($user);
         $assignset->set_overrides(Contact::OVERRIDE_CONFLICT); // i.e., not other overrides
-        if (!empty($papers) && $action) {
+        if ($tagreq === "" || $act === "") {
+            if ($act === "") {
+                $assignset->message_set()->append_item(MessageItem::error_at("tagfn", isset($qreq->tagfn) ? "<0>Parameter eror" : "<0>Parameter missing"));
+            }
+            if ($tagreq === "") {
+                $assignset->message_set()->append_item(MessageItem::error_at("tag", "<0>Parameter missing"));
+            }
+        } else if (!empty($papers) && $action) {
             foreach ($papers as $p) {
                 foreach ($tags as $t) {
                     $x[] = "{$action},{$p},{$t}\n";
                 }
             }
             $assignset->parse(join("", $x));
-        } else if (!empty($papers) && $act == "cr" && $user->privChair) {
+        } else if (!empty($papers) && $act === "cr" && $user->privChair) {
             $source_tag = trim((string) $qreq->tagcr_source);
             if ($source_tag === "") {
                 $source_tag = (substr($tagreq, 0, 2) === "~~" ? substr($tagreq, 2) : $tagreq);
@@ -106,8 +149,9 @@ class Tag_ListAction extends ListAction {
                 $assignset->error($tagger->error_ftext());
             }
         }
+
         $assignset->execute();
-        if ($qreq->ajax) {
+        if ($qreq->page() === "api" || $qreq->ajax) {
             return $assignset->json_result();
         }
         $assignset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);

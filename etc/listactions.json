@@ -248,8 +248,39 @@
         "name": "tag", "post": true,
         "render_function": "Tag_ListAction::render", "title": "Tag",
         "order": 500,
-        "allow_if": "pc && !api", "display_if": "!listreport:pf",
-        "function": "+Tag_ListAction"
+        "allow_if": "pc", "display_if": "!listreport:pf",
+        "function": "+Tag_ListAction",
+        "parameters": "tagfn tag ?tagcr_source ?tagcr_method ?tagcr_gapless"
+    },
+    {
+        "name": "tag/add", "post": true, "title": "Add tags",
+        "allow_if": "pc", "display_if": false,
+        "function": "+Tag_ListAction", "parameters": "tag"
+    },
+    {
+        "name": "tag/remove", "post": true, "title": "Remove tags",
+        "allow_if": "pc", "display_if": false,
+        "function": "+Tag_ListAction", "parameters": "tag"
+    },
+    {
+        "name": "tag/define", "post": true, "title": "Define tags",
+        "allow_if": "pc", "display_if": false,
+        "function": "+Tag_ListAction", "parameters": "tag"
+    },
+    {
+        "name": "tag/add_order", "post": true, "title": "Add to tag order",
+        "allow_if": "pc", "display_if": false,
+        "function": "+Tag_ListAction", "parameters": "tag ?gapless"
+    },
+    {
+        "name": "tag/define_order", "post": true, "title": "Define tag order",
+        "allow_if": "pc", "display_if": false,
+        "function": "+Tag_ListAction", "parameters": "tag ?gapless ?random"
+    },
+    {
+        "name": "tag/calculate_rank", "post": true, "title": "Calculate rank",
+        "allow_if": "admin", "display_if": false,
+        "function": "+Tag_ListAction", "parameters": "tag ?tagcr_source ?tagcr_method ?tagcr_gapless"
     },
     {
         "name": "assign", "post": true,
