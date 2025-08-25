@@ -43,16 +43,42 @@ class Search_API {
         if ($pl instanceof JsonResult) {
             return $pl;
         }
+        $format = 0;
+        if ($qreq->format || $qreq->f) {
+            if (!isset($qreq->format)) {
+                return JsonResult::make_missing_error("format");
+            } else if (!isset($qreq->f)) {
+                return JsonResult::make_missing_error("f");
+            } else if ($qreq->format === "html") {
+                $format = PaperList::FORMAT_HTML;
+            } else if ($qreq->format === "text" || $qreq->format === "csv") {
+                $format = PaperList::FORMAT_CSV;
+            } else {
+                return JsonResult::make_parameter_error("format");
+            }
+            $pl->parse_view($qreq->f, PaperList::VIEWORIGIN_MAX);
+        }
         $ih = $pl->ids_and_groups();
-        $jr = new JsonResult([
-            "ok" => true,
-            "message_list" => $pl->search->message_list(),
-            "ids" => $ih[0],
-            "groups" => $ih[1],
-            "search_params" => $pl->encoded_search_params()
-        ]);
-        if (friendly_boolean($qreq->hotlist) !== false) { // XXX should be `=== true`
+        $jr = JsonResult::make_ok();
+        if ($pl->search->has_message()) {
+            $jr->set("message_list", $pl->search->message_list());
+        }
+        $jr->set("ids", $ih[0]);
+        $jr->set("groups", $ih[1]);
+        $jr->set("search_params", $pl->encoded_search_params());
+        if (friendly_boolean($qreq->hotlist)) {
             $jr->set("hotlist", $pl->session_list_object()->info_string());
+        }
+        if ($format > 0) {
+            foreach ($pl->format_json($format, PaperList::VIEWORIGIN_MAX) as $k => $v) {
+                $jr->set($k, $v);
+            }
+        }
+        if (isset($qreq->session)
+            && $qreq->valid_token()
+            && !$qreq->is_head()
+            && friendly_boolean($qreq->session) === null) {
+            Session_API::change_session($qreq, $qreq->session);
         }
         return $jr;
     }

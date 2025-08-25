@@ -949,7 +949,7 @@ class CsvGenerator {
         return $this;
     }
 
-    /** @param list<int|string> $header
+    /** @param list<int|float|string>|array<int|string,string> $header
      * @return $this */
     function set_header($header) {
         assert(empty($this->lines) && ($this->flags & self::FLAG_FLUSHED) === 0);

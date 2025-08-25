@@ -341,7 +341,8 @@ class APISpec_Batch {
     /** @param string $fn */
     private function expand_paths($fn) {
         foreach (["get", "post", "delete"] as $lmethod) {
-            if (!($uf = $this->conf->api($fn, null, strtoupper($lmethod)))) {
+            if (!($uf = $this->conf->api($fn, null, strtoupper($lmethod)))
+                || ($uf->order ?? null) === false) {
                 continue;
             }
 
@@ -668,6 +669,9 @@ class APISpec_Batch {
             if ($m[1] === "response_schema") {
                 if ($this->reference_common_schema($m[2])) {
                     if (!in_array($m[2], $this->cur_fieldsch, true)) {
+                        if (empty($this->cur_fieldsch)) {
+                            $this->cur_fieldsch[] = "minimal_response";
+                        }
                         $this->cur_fieldsch[] = $m[2];
                     }
                 } else {
@@ -988,9 +992,12 @@ class APISpec_Batch {
         $respc = $resp200->content = $resp200->content ?? (object) [];
         $respj = $respc->{"application/json"} = $respc->{"application/json"} ?? (object) [];
         if ($this->override_response || !isset($respj->{"schema"})) {
-            $resps = $this->reference_common_schema("minimal_response");
-            if ($this->merge_allOf) {
+            if (!$this->merge_allOf) {
+                $resps = $this->reference_common_schema("minimal_response");
+            } else if (!in_array("minimal_response", $this->cur_fieldsch, true)) {
                 $resps = self::deep_clone($this->schemas->minimal_response);
+            } else {
+                $resps = (object) ["type" => "object", "properties" => (object) []];
             }
             $respj->{"schema"} = $resps;
         } else {

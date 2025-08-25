@@ -77,19 +77,19 @@
   },
   {
     "name": "fieldhtml", "get": true, "merge": true,
-    "tags": ["Search"], "order": 1
+    "tags": ["Search"], "order": false
   },
   {
     "name": "fieldtext", "get": true, "merge": true,
-    "tags": ["Search"], "order": 2
+    "tags": ["Search"], "order": false
   },
   {
     "name": "searchactions", "get": true, "merge": true,
-    "tags": ["Search"], "order": 3
+    "tags": ["Search"], "order": 1
   },
   {
     "name": "searchaction", "get": true, "post": true, "merge": true,
-    "tags": ["Search"], "order": 4
+    "tags": ["Search"], "order": 2
   },
   {
     "name": "graphdata", "get": true, "merge": true,

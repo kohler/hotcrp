@@ -44,12 +44,11 @@ class PreferenceList_PaperColumn extends PaperColumn {
             }
         }
         $pl->row_attr["data-allpref"] = join(" ", $ts);
-        if (!empty($ts)) {
-            $t = '<span class="need-allpref">Loading</span>';
-            $pl->need_render = true;
-            return $t;
-        } else {
-            return '';
+        if (empty($ts)) {
+            return "";
         }
+        $t = '<span class="need-allpref">Loading</span>';
+        $pl->need_render = true;
+        return $t;
     }
 }

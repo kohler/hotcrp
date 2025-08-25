@@ -1364,7 +1364,7 @@ class PaperList {
     }
 
     /** @param int $context */
-    private function _reset_vcolumns($context) {
+    private function _reset_vcolumns($context, $min_origin = 0) {
         // reset
         $this->_has = [];
         $this->count = 0;
@@ -1391,8 +1391,10 @@ class PaperList {
         foreach ($this->_viewf as $k => $v) {
             foreach ($this->_expand_view_column($k) as $f) {
                 assert($v >= self::VIEW_SHOW);
-                $fs1[$f->name] = $fs1[$f->name] ?? $f;
-                $viewf[$f->name] = $this->_viewf[$f->name] ?? $v;
+                if (($v & self::VIEW_ORIGINMASK) >= $min_origin) {
+                    $fs1[$f->name] = $fs1[$f->name] ?? $f;
+                    $viewf[$f->name] = $this->_viewf[$f->name] ?? $v;
+                }
             }
         }
 
@@ -1921,6 +1923,17 @@ class PaperList {
             $s = self::wrap_conflict($s, $sc);
         }
         return $s;
+    }
+
+    /** @param int $stat
+     * @param ScoreInfo $scores
+     * @return string */
+    private function _statistic_text($stat, $scores) {
+        $vf = ScoreInfo::statistic_value_format($stat, $scores->value_format);
+        if ($scores->overrides && $this->_view_force !== 0) {
+            return $vf->text($scores->overrides->statistic($stat));
+        }
+        return $vf->text($scores->statistic($stat));
     }
 
     /** @param PaperListTableRender $rstate
@@ -2475,41 +2488,129 @@ class PaperList {
     function text_json() {
         // get column list, check sort
         $this->_reset_vcolumns(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
-        $data = [];
-        if (!empty($this->_vcolumns)) {
-            $overrides = $this->user->add_overrides($this->_view_force);
-            foreach ($this->rowset() as $row) {
-                $this->_row_setup($row);
-                $p = ["id" => $row->paperId];
-                foreach ($this->_vcolumns as $fdef) {
-                    if (!$fdef->content_empty($this, $row)
-                        && ($text = $fdef->text($this, $row)) !== "") {
-                        $p[$fdef->name] = $text;
-                    }
-                }
-                $data[$row->paperId] = $p;
-            }
-            $this->user->set_overrides($overrides);
+        if (empty($this->_vcolumns)) {
+            return [];
         }
+        $data = [];
+        $overrides = $this->user->add_overrides($this->_view_force);
+        foreach ($this->rowset() as $row) {
+            $this->_row_setup($row);
+            $p = ["id" => $row->paperId];
+            foreach ($this->_vcolumns as $fdef) {
+                if (!$fdef->content_empty($this, $row)
+                    && ($text = $fdef->text($this, $row)) !== "") {
+                    $p[$fdef->name] = $text;
+                }
+            }
+            $data[$row->paperId] = $p;
+        }
+        $this->user->set_overrides($overrides);
         return $data;
     }
 
-    /** @return array<string,string> */
+    const FORMAT_HTML = 1;
+    const FORMAT_TEXT = 2;
+    const FORMAT_JSON = 3;
+    const FORMAT_CSV = 4;
+
+    /** @param 1|2|3|4 $format
+     * @param int $min_origin
+     * @return array{fields:list<array>,papers:list<array{id:int}>,statistics?:array} */
+    function format_json($format, $min_origin = 0) {
+        // get column list, check sort
+        if ($format === self::FORMAT_HTML) {
+            $frflags = FieldRender::CFLIST | FieldRender::CFHTML;
+        } else {
+            $frflags = FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE;
+        }
+        $this->_reset_vcolumns($frflags, $min_origin);
+        if (empty($this->_vcolumns)) {
+            return ["fields" => [], "papers" => []];
+        }
+
+        // turn off forceShow
+        $overrides = $this->user->remove_overrides(Contact::OVERRIDE_CONFLICT);
+
+        // output field data
+        $data = [];
+        foreach ($this->rowset() as $row) {
+            $this->_row_setup($row);
+            $p = ["pid" => $row->paperId];
+            foreach ($this->_vcolumns as $fdef) {
+                if ($format === self::FORMAT_HTML) {
+                    $content = $this->_column_html($fdef, $row);
+                } else {
+                    $content = $fdef->content_empty($this, $row) ? "" : $fdef->text($this, $row);
+                }
+                if ((string) $content === "") {
+                    continue;
+                }
+                if ($format === self::FORMAT_HTML && $this->column_class !== null) {
+                    $p[$fdef->name] = ["html" => $content, "classes" => $this->column_class];
+                } else {
+                    $p[$fdef->name] = $content;
+                }
+            }
+            if ($format === self::FORMAT_HTML && !empty($this->row_attr)) {
+                $p["\$attributes"] = $this->row_attr;
+            }
+            $data[] = $p;
+        }
+
+        // analyze `has`, including authors
+        foreach ($this->_vcolumns as $fdef) {
+            $this->mark_has($fdef->name, $fdef->has_content);
+        }
+
+        // output fields and statistics
+        $fields = $stats = [];
+        foreach ($this->_vcolumns as $fdef) {
+            $fields[] = $fdef->field_json($this);
+            if (!$fdef->has_statistics()
+                || !($scores = $fdef->statistics())) {
+                continue;
+            }
+            $sset = [];
+            foreach (self::$stats as $stat) {
+                if ($format === self::FORMAT_HTML) {
+                    $content = self::_statistic_html($stat, $scores);
+                } else {
+                    $content = $this->_statistic_text($stat, $scores);
+                }
+                if ($content !== "") {
+                    $sset[ScoreInfo::$stat_keys[$stat]] = $content;
+                }
+            }
+            $stats[$fdef->name] = $sset;
+        }
+
+        // restore forceShow
+        $this->user->set_overrides($overrides);
+
+        // output
+        $result = ["fields" => $fields, "papers" => $data];
+        if (!empty($stats)) {
+            $result["statistics"] = $stats;
+        }
+        return $result;
+    }
+
+    /** @return list<string> */
     private function _row_text_csv_data(PaperInfo $row) {
-        $csv = [];
+        $csvrow = [];
         foreach ($this->_vcolumns as $fdef) {
             $t = "";
             if (!$fdef->content_empty($this, $row)) {
                 $t = $fdef->text($this, $row);
             }
-            $csv[$fdef->name] = $t;
+            $csvrow[] = $t;
             $fdef->has_content = $fdef->has_content || $t !== "";
         }
-        return $csv;
+        return $csvrow;
     }
 
     /** @param int $grouppos
-     * @param list<array<string,string>> &$body */
+     * @param list<list<string>> &$body */
     private function _mark_groups_csv($grouppos, &$body) {
         $ginfo = null;
         while ($grouppos !== count($this->_groups)
@@ -2520,12 +2621,22 @@ class PaperList {
         if ($ginfo
             && (!$ginfo->is_blank() || $this->count > 1)
             && $this->viewing("title")) {
-            $body[] = ["id" => "N/A", "title" => $ginfo->is_blank() ? "none" : $ginfo->heading];
+            $row = [];
+            foreach ($this->_vcolumns as $fdef) {
+                if ($fdef instanceof Id_PaperColumn) {
+                    $row[] = "N/A";
+                } else if ($fdef instanceof Title_PaperColumn) {
+                    $row[] = $ginfo->is_blank() ? "none" : $ginfo->heading;
+                } else {
+                    $row[] = "";
+                }
+            }
+            $body[] = $row;
         }
         return $grouppos;
     }
 
-    /** @return array{array<string,string>,list<array<string,string>>} */
+    /** @return array{array<int,string>,list<list<string>>} */
     function text_csv() {
         // get column list, check sort
         $this->_reset_vcolumns(FieldRender::CFTEXT | FieldRender::CFCSV | FieldRender::CFVERBOSE);
@@ -2544,9 +2655,9 @@ class PaperList {
 
         // header cells
         $header = [];
-        foreach ($this->_vcolumns as $fdef) {
+        foreach ($this->_vcolumns as $i => $fdef) {
             if ($fdef->has_content) {
-                $header[$fdef->name] = $fdef->header($this, true);
+                $header[$i] = $fdef->header($this, true);
             }
         }
 

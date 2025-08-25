@@ -11455,26 +11455,44 @@ function fold_field(plistui, f, folded) {
 }
 
 function make_callback(plistui, type) {
-    let f, values, tr;
+    let f, result, tr, vindex = 0, vimap;
+    function find_data(pid) {
+        const p = result.papers[vindex];
+        if (p && p.pid === pid) {
+            ++vindex;
+            return p;
+        }
+        if (vimap == null) {
+            vimap = {};
+            for (const vp of result.papers) {
+                vimap[vp.pid] = vp;
+            }
+        }
+        return vimap[pid] || null;
+    }
     function render_some() {
-        let index = plistui.field_index(f), htmlk = f.name, n = 0,
-            table = tr.closest("table");
+        const index = plistui.field_index(f), htmlk = f.name;
+        let n = 0, table = tr.closest("table");
         while (n < 64 && tr) {
             if (tr.nodeName === "TR"
                 && tr.hasAttribute("data-pid")
                 && hasClass(tr, "pl")) {
                 const p = +tr.getAttribute("data-pid"),
-                    data = values.data[p],
-                    attr = values.attr && values.attr[p],
-                    classes = values.classes && values.classes[p];
-                if (attr) {
-                    for (const k in attr) {
-                        tr.setAttribute(k, attr[k]);
-                    }
-                }
+                    data = find_data(p);
                 if (data) {
-                    const e = plistui.pidfield(p, f, index);
-                    set_pidfield(f, e, data[htmlk], classes && classes[htmlk]);
+                    const attr = data["$attributes"];
+                    if (attr) {
+                        for (const k in attr) {
+                            tr.setAttribute(k, attr[k]);
+                        }
+                    }
+                    const e = plistui.pidfield(p, f, index),
+                        content = data[htmlk] || "";
+                    if (typeof content === "string") {
+                        set_pidfield(f, e, content);
+                    } else {
+                        set_pidfield(f, e, content.html, content.classes);
+                    }
                 }
                 ++n;
             }
@@ -11500,8 +11518,8 @@ function make_callback(plistui, type) {
         ensure_field(plistui, f);
         tr = plistui.pltable.querySelector("tr.pl");
         tr && render_some();
-        if (values.stat && f.name in values.stat) {
-            render_statistics(values.stat[f.name]);
+        if (result.statistics && f.name in result.statistics) {
+            render_statistics(result.statistics[f.name]);
         }
         check_statistics(plistui);
     }
@@ -11509,10 +11527,10 @@ function make_callback(plistui, type) {
         if (!rv.ok) {
             return;
         }
-        if (rv.fields && rv.fields[type]) {
-            plistui.load_field(rv.fields[type]);
+        for (let fv of rv.fields || []) {
+            plistui.load_field(fv);
         }
-        values = rv;
+        result = rv;
         $(render_start);
     };
 }
@@ -11569,12 +11587,12 @@ function plinfo(plistui, type, hidden, form) {
     const pctr = plistui.pltable;
     let ses = pctr.getAttribute("data-fold-session-prefix");
     if (need_load) {
-        const loadargs = {fn: "fieldhtml", f: load_type};
+        const loadargs = {f: load_type, format: "html"};
         if (ses) {
             loadargs.session = plinfo_session(ses, type, hidden, form);
             ses = null;
         }
-        $.get(hoturl("=api", $.extend(loadargs, hotlist_search_params(pctr, true))),
+        $.get(hoturl("=api/search", $.extend(loadargs, hotlist_search_params(pctr, true))),
               make_callback(plistui, type));
     } else if (hidden !== (!f || f.missing || f.hidden)) {
         fold_field(plistui, f, hidden);

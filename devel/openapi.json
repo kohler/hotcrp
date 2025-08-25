@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-08-23:592eae645",
+        "version": "2025-08-25:23118d654",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n"
     },
@@ -1426,7 +1426,7 @@
         "/search": {
             "get": {
                 "summary": "Retrieve search results",
-                "description": "Return IDs of submissions that match a search.\n\nPass the search query in the `q` parameter. The list of matching IDs is\nreturned in the `ids` response property.\n\nThe `t`, `qt`, `reviewer`, `sort`, and `scoresort` parameters can also affect\nthe search. `t` defines the collection of submissions to search, where\n`t=viewable` checks all submissions the user can view. If `t` is not provided,\nHotCRP picks a default based on the user’s roles and the site’s current\nconfiguration. For PC members and chairs, the typical default is `t=s`, which\nsearches complete submissions.\n\nThe `groups` response property is an array of annotations that apply to the\nsearch. It is returned for `THEN` searches, `LEGEND` searches, and searches on\nannotated tags. Each `groups` entry contains a position `pos`, and may also have\na `legend`, a `search`, an `annoid`, and other properties. `pos` is an integer\nindex into the `ids` array; it ranges from 0 to the number of items in that\narray. Annotations with a given `pos` should appear *before* the paper at that\nindex in the `ids` array. For instance, this response might be returned for the\nsearch `10-12 THEN 15-18`:\n\n```json\n{\n    \"ok\": true,\n    \"message_list\": [],\n    \"ids\": [10, 12, 18],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"15-18\",\n            \"search\": \"15-18\"\n        }\n    ]\n}\n```\n",
+                "description": "Return IDs, and optionally other fields, of submissions that match a search.\n\nPass the search query in the `q` parameter. The list of matching submission\nIDs is returned in the `ids` response property, ordered according to the\nsearch.\n\nThe `t`, `qt`, `reviewer`, `sort`, and `scoresort` parameters can also affect\nthe search. `t` defines the collection of submissions to search, where\n`t=viewable` checks all submissions the user can view. If `t` is not provided,\nHotCRP picks a default based on the user’s roles and the site’s current\nconfiguration; for PC members and chairs, the typical default is `t=s`, which\nsearches complete submissions.\n\n### Search annotations\n\nThe `groups` response property is an array of search annotations, and is\nreturned for `THEN` searches, `LEGEND` searches, and searches on annotated\ntags. Each `groups` entry contains a position `pos`, which is an integer index\ninto the search results. Annotations with `pos` `P` should appear immediately\nbefore the submission at index `P` in the result. A `groups` entry may also\nhave other properties, including `legend` (the textual legend corresponding to\nthe annotation), `search` (for `THEN` searches, the search string representing\nthe following results), and `annoid`.\n\nAs an example, this response might be returned for the search `10-12 THEN\n5-8`.\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12, 8],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"5-8\",\n            \"search\": \"5-8\"\n        }\n    ]\n}\n```\n\n### Submission fields\n\nPass `f` and `format` parameters to retrieve more fields for each submission\nin the search result.\n\n`format` is either `csv` or `html`, and requests CSV or HTML format for the\nresponse data. `f` is a string indicating the fields to return, such as `title\nauthors[full]`.\n\nThe response will contain `fields` and `papers` properties. `fields` is an\narray of objects defining the emitted fields; typically, each entry in\n`fields` corresponds to an field definition in `f`. `papers` is an array of\nobjects defining the exported fields for each matching submission. Each\n`papers` entry has a `pid` property with the submission ID, and properties\ncorresponding to the `fields`; the `papers` entries are in the same order as\n`ids`. In some cases, the response will additionally have a `statistics`\nproperty defining overall statistics for some of the requested fields.\n\nAs an example, this response might be returned for the search `10-12` with\n`format=csv` and `f=title`.\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12],\n    \"fields\": [\n        {\n            \"name\": \"title\",\n            \"title\": \"Title\",\n            \"order\": 120,\n            \"sort\": \"ascending\"\n        }\n    ],\n    \"groups\": [],\n    \"papers\": [\n        {\n            \"pid\": 10,\n            \"title\": \"Active Bridging\"\n        },\n        {\n            \"pid\": 12,\n            \"title\": \"Dynamics of Random Early Detection\"\n        }\n    ]\n}\n```\n\nPlease note that `html` format is unlikely to be useful outside the HotCRP web\napplication. The returned HTML uses elements, tag structures, and class names\nsuitable for HotCRP’s internal use, and may change at any time. Furthermore,\nin some cases (such as `f=allpref`), the returned data is compressed into a\nfield-specific format that the HotCRP web application expands.\n\n### More\n\nThe `search_params` response property is a URL-encoded string defining all\nrelevant parameters for the search.\n\nSet the `hotlist` parameter to get a `hotlist` response property, which is\nused by the HotCRP browser Javascript to remember information about a list of\npapers.\n\n",
                 "tags": [
                     "Search"
                 ],
@@ -1436,6 +1436,24 @@
                     },
                     {
                         "$ref": "#/components/parameters/t"
+                    },
+                    {
+                        "name": "f",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Space-separated field definitions"
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_field_format"
+                        },
+                        "description": "Format for returned submission fields (`f`)"
                     },
                     {
                         "$ref": "#/components/parameters/qt"
@@ -1453,19 +1471,28 @@
                         "name": "report",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Report defining default view options"
                     },
                     {
                         "name": "warn_missing",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Get warnings for missing submissions"
                     },
                     {
                         "name": "hotlist",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Get a `hotlist` response property"
                     }
                 ],
                 "responses": {
@@ -1476,20 +1503,23 @@
                                 "schema": {
                                     "allOf": [
                                         {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
                                             "$ref": "#/components/schemas/search_response"
                                         },
                                         {
                                             "type": "object",
-                                            "required": [
-                                                "ok"
-                                            ],
                                             "properties": {
-                                                "ok": {
-                                                    "type": "boolean"
+                                                "fields": {
+                                                    "type": "array",
+                                                    "items": {}
                                                 },
-                                                "message_list": {
-                                                    "$ref": "#/components/schemas/message_list"
-                                                }
+                                                "papers": {
+                                                    "type": "array",
+                                                    "items": {}
+                                                },
+                                                "statistics": {}
                                             }
                                         }
                                     ]
@@ -1510,130 +1540,9 @@
                 }
             }
         },
-        "/fieldhtml": {
-            "get": {
-                "summary": "Retrieve search results as field HTML",
-                "tags": [
-                    "Search"
-                ],
-                "parameters": [
-                    {
-                        "name": "f",
-                        "in": "query",
-                        "required": true,
-                        "schema": {}
-                    },
-                    {
-                        "name": "session",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/q"
-                    },
-                    {
-                        "$ref": "#/components/parameters/t"
-                    },
-                    {
-                        "$ref": "#/components/parameters/qt"
-                    },
-                    {
-                        "$ref": "#/components/parameters/reviewer"
-                    },
-                    {
-                        "$ref": "#/components/parameters/sort"
-                    },
-                    {
-                        "$ref": "#/components/parameters/scoresort"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok",
-                                        "fields",
-                                        "data"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        },
-                                        "fields": {},
-                                        "data": {},
-                                        "stat": {},
-                                        "classes": {},
-                                        "attr": {}
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/fieldtext": {
-            "get": {
-                "summary": "Retrieve list field text",
-                "tags": [
-                    "Search"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/searchactions": {
             "get": {
-                "summary": "Retrieve available search actions",
+                "summary": "List search actions",
                 "description": "Return a list of search actions accessible via HotCRP’s API.\n\nSearch actions perform actions on a set of papers specified via search. In the\nHotCRP web application, many search actions are shown underneath the search\nlist; examples include “Get > Review forms (zip)” or “Tag > Add to order”. This\nAPI endpoint retrieves the search actions that the current user can access\nprogrammatically via the `/searchaction` API.\n",
                 "tags": [
                     "Search"
@@ -2158,21 +2067,10 @@
                                 "schema": {
                                     "allOf": [
                                         {
-                                            "$ref": "#/components/schemas/tag_response"
+                                            "$ref": "#/components/schemas/minimal_response"
                                         },
                                         {
-                                            "type": "object",
-                                            "required": [
-                                                "ok"
-                                            ],
-                                            "properties": {
-                                                "ok": {
-                                                    "type": "boolean"
-                                                },
-                                                "message_list": {
-                                                    "$ref": "#/components/schemas/message_list"
-                                                }
-                                            }
+                                            "$ref": "#/components/schemas/tag_response"
                                         }
                                     ]
                                 }
@@ -2225,24 +2123,13 @@
                                 "schema": {
                                     "allOf": [
                                         {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
                                             "$ref": "#/components/schemas/tag_response"
                                         },
                                         {
                                             "$ref": "#/components/schemas/search_response"
-                                        },
-                                        {
-                                            "type": "object",
-                                            "required": [
-                                                "ok"
-                                            ],
-                                            "properties": {
-                                                "ok": {
-                                                    "type": "boolean"
-                                                },
-                                                "message_list": {
-                                                    "$ref": "#/components/schemas/message_list"
-                                                }
-                                            }
                                         }
                                     ]
                                 }
@@ -2345,23 +2232,19 @@
                                 "schema": {
                                     "allOf": [
                                         {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
                                             "$ref": "#/components/schemas/search_response"
                                         },
                                         {
                                             "type": "object",
-                                            "required": [
-                                                "ok",
-                                                "p"
-                                            ],
                                             "properties": {
-                                                "ok": {
-                                                    "type": "boolean"
-                                                },
-                                                "message_list": {
-                                                    "$ref": "#/components/schemas/message_list"
-                                                },
                                                 "p": {}
-                                            }
+                                            },
+                                            "required": [
+                                                "p"
+                                            ]
                                         }
                                     ]
                                 }
@@ -2413,23 +2296,14 @@
                                 "schema": {
                                     "allOf": [
                                         {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
                                             "$ref": "#/components/schemas/search_response"
                                         },
                                         {
                                             "type": "object",
-                                            "required": [
-                                                "ok",
-                                                "tag",
-                                                "editable",
-                                                "anno"
-                                            ],
                                             "properties": {
-                                                "ok": {
-                                                    "type": "boolean"
-                                                },
-                                                "message_list": {
-                                                    "$ref": "#/components/schemas/message_list"
-                                                },
                                                 "tag": {
                                                     "$ref": "#/components/schemas/tag"
                                                 },
@@ -2442,7 +2316,12 @@
                                                         "$ref": "#/components/schemas/tag_annotation"
                                                     }
                                                 }
-                                            }
+                                            },
+                                            "required": [
+                                                "tag",
+                                                "editable",
+                                                "anno"
+                                            ]
                                         }
                                     ]
                                 }
@@ -2509,23 +2388,14 @@
                                 "schema": {
                                     "allOf": [
                                         {
+                                            "$ref": "#/components/schemas/minimal_response"
+                                        },
+                                        {
                                             "$ref": "#/components/schemas/search_response"
                                         },
                                         {
                                             "type": "object",
-                                            "required": [
-                                                "ok",
-                                                "tag",
-                                                "editable",
-                                                "anno"
-                                            ],
                                             "properties": {
-                                                "ok": {
-                                                    "type": "boolean"
-                                                },
-                                                "message_list": {
-                                                    "$ref": "#/components/schemas/message_list"
-                                                },
                                                 "tag": {
                                                     "$ref": "#/components/schemas/tag"
                                                 },
@@ -2538,7 +2408,12 @@
                                                         "$ref": "#/components/schemas/tag_annotation"
                                                     }
                                                 }
-                                            }
+                                            },
+                                            "required": [
+                                                "tag",
+                                                "editable",
+                                                "anno"
+                                            ]
                                         }
                                     ]
                                 }
@@ -5629,7 +5504,6 @@
                 "required": [
                     "ids",
                     "groups",
-                    "hotlist",
                     "search_params"
                 ],
                 "properties": {
@@ -5645,11 +5519,11 @@
                             "$ref": "#/components/schemas/tag_annotation"
                         }
                     },
-                    "hotlist": {
-                        "$ref": "#/components/schemas/hotlist"
-                    },
                     "search_params": {
                         "$ref": "#/components/schemas/encoded_search_parameters"
+                    },
+                    "hotlist": {
+                        "$ref": "#/components/schemas/hotlist"
                     }
                 }
             },
@@ -5679,6 +5553,13 @@
                         "type": "boolean"
                     }
                 }
+            },
+            "search_field_format": {
+                "type": "string",
+                "enum": [
+                    "csv",
+                    "html"
+                ]
             },
             "update_status": {
                 "type": "object",

@@ -491,7 +491,7 @@
             "search_response": {
                 "type": "object",
                 "description": "Search result",
-                "required": ["ids", "groups", "hotlist", "search_params"],
+                "required": ["ids", "groups", "search_params"],
                 "properties": {
                     "ids": {
                         "type": "array",
@@ -505,11 +505,11 @@
                             "$ref": "#/components/schemas/tag_annotation"
                         }
                     },
-                    "hotlist": {
-                        "$ref": "#/components/schemas/hotlist"
-                    },
                     "search_params": {
                         "$ref": "#/components/schemas/encoded_search_parameters"
+                    },
+                    "hotlist": {
+                        "$ref": "#/components/schemas/hotlist"
                     }
                 }
             },
@@ -537,6 +537,13 @@
                         "type": "boolean"
                     }
                 }
+            },
+            "search_field_format": {
+                "type": "string",
+                "enum": [
+                    "csv",
+                    "html"
+                ]
             },
             "update_status": {
                 "type": "object",

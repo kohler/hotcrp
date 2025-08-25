@@ -61,9 +61,14 @@ class Search_Batch {
         $siteid = $this->search->conf->opt("confid");
         $siteclass = $this->search->conf->opt("siteclass");
         if ($this->header ?? (count($header) > 1)) {
-            $header = array_keys($header);
-            $this->sitename && array_unshift($header, "sitename", "siteclass");
-            $csv->add_row($header);
+            if ($this->sitename) {
+                $xheader = ["sitename", "siteclass"];
+                foreach ($header as $i => $n) {
+                    $xheader[$i + 2] = $n;
+                }
+                $header = $xheader;
+            }
+            $csv->set_keys(array_keys($header))->set_header($header);
         }
         foreach ($body as $row) {
             $this->sitename && array_unshift($row, $siteid, $siteclass);

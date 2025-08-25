@@ -95,7 +95,8 @@ Textual error messages and warnings are written to standard error.
 Use the `search` subcommand to perform searches and search actions.
 
 To list the PIDs that match a search, run `php batch/hotcrapi.php search -q
-SEARCH`, where `SEARCH` is a search query.
+SEARCH`, where `SEARCH` is a search query. To list other fields in CSV format,
+provide `-f FIELD` arguments, such as `php batch/hotcrapi.php search -q '#tag' -f tags -f title`.
 
 To list the search actions that can be performed, run `php batch/hotcrapi.php
 search actions`. The output lists actions one per line. For JSON output instead,
