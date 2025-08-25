@@ -140,10 +140,10 @@ papers.
 Return a list of search actions accessible via HotCRP’s API.
 
 Search actions perform actions on a set of papers specified via search. In the
-HotCRP web application, many search actions are shown underneath the search
-list; examples include “Get > Review forms (zip)” or “Tag > Add to order”. This
-API endpoint retrieves the search actions that the current user can access
-programmatically via the `/searchaction` API.
+HotCRP web application, search actions are shown underneath the search list;
+examples include “Download > Review forms (zip)” and “Tag > Add to order”. The
+`/searchactions` API endpoint retrieves the search actions that the current user
+can access programmatically via the `/searchaction` API.
 
 * response actions [search_action]: List of available actions
 

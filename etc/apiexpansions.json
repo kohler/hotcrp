@@ -300,5 +300,9 @@
   {
     "name": "stashmessages", "post": true, "merge": true,
     "tags": ["Session"]
+  },
+  {
+    "name": "cspreport", "post": true, "merge": true,
+    "tags": ["Session"]
   }
 ]

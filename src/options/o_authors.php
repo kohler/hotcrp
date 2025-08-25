@@ -87,13 +87,14 @@ class Authors_PaperOption extends PaperOption {
                 continue;
             }
             if ($req_orcid > 0) {
+                $status = $req_orcid === 2 ? 1 : 2;
                 if ($auth->email === "") {
                     $msg_missing = true;
-                    $ov->append_item(MessageItem::warning_at("authors:{$n}:email"));
+                    $ov->append_item(new MessageItem($status, "authors:{$n}:email"));
                 } else if (!($u = $this->conf->user_by_email($auth->email))
                            || !$u->confirmed_orcid()) {
                     $msg_orcid[] = $auth->email;
-                    $ov->append_item(MessageItem::warning_at("authors:{$n}"));
+                    $ov->append_item(new MessageItem($status, "authors:{$n}"));
                 }
             }
             if ($auth->email !== ""
@@ -118,8 +119,8 @@ class Authors_PaperOption extends PaperOption {
             $ov->warning("<0>The same email address has been used for different authors. This is usually an error");
         }
         if ($msg_orcid) {
-            $ov->warning($this->conf->_("<5>Some authors have not configured their <a href=\"https://orcid.org\">ORCID iDs</a>"));
-            $ov->inform($this->conf->_("<0>This site requests that authors provide ORCID iDs. Please ask {0:list} to sign in and update their profiles.", new FmtArg(0, $msg_orcid, 0)));
+            $ov->error($this->conf->_("<5>Some authors have not configured their <a href=\"https://orcid.org\">ORCID iDs</a>"));
+            $ov->inform($this->conf->_("<0>This site requires that authors provide ORCID iDs. Please ask {0:list} to sign in and update their profiles.", new FmtArg(0, $msg_orcid, 0)));
         }
     }
 
