@@ -4,14 +4,14 @@
         "title": "Conference abbreviation",
         "type": "simplestring", "size": 20, "autogrow": true,
         "parser_class": "Basics_SettingParser",
-        "tags": "identity"
+        "tags": "id identity"
     },
     {
         "name": "conference_name", "storage": "opt.longName",
         "title": "Conference name", "placeholder": "(same as abbreviation)",
         "type": "simplestring", "size": 70,
         "parser_class": "Basics_SettingParser",
-        "tags": "identity"
+        "tags": "id identity"
     },
 
     {
@@ -223,33 +223,33 @@
         "name": "conference_url", "storage": "opt.conferenceSite",
         "title": "Conference URL",
         "type": "url", "required": false, "size": 70, "placeholder": "N/A",
-        "tags": "identity"
+        "tags": "id identity"
     },
     {
         "name": "site_contact_email", "storage": "opt.contactEmail",
         "title": "Email of site contact",
         "type": "email", "required": false, "size": 40,
         "parser_class": "SiteContact_SettingParser", "parse_order": 1,
-        "tags": "mail identity"
+        "tags": "mail id identity"
     },
     {
         "name": "site_contact_name", "storage": "opt.contactName",
         "title": "Name of site contact",
         "type": "simplestring", "size": 50,
         "parser_class": "SiteContact_SettingParser", "placeholder": "(none)",
-        "tags": "mail identity"
+        "tags": "mail id identity"
     },
     {
         "name": "email_default_cc", "storage": "opt.emailCc",
         "title": "Default Cc for mail tool",
         "type": "emailheader", "size": 80, "placeholder": "(none)",
-        "tags": "mail identity"
+        "tags": "mail id identity"
     },
     {
         "name": "email_default_reply_to", "storage": "opt.emailReplyTo",
         "title": "Default Reply-To for mail tool",
         "type": "emailheader", "size": 80, "placeholder": "(none)",
-        "tags": "mail identity"
+        "tags": "mail id identity"
     },
     {
         "name": "options", "storage": "dat.options", "internal": true,
