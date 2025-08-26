@@ -18,12 +18,9 @@ class Nonblind_PaperOption extends PaperOption {
         return !!$ov->value;
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        if ($ov->equals($ov->prow->base_option($this->id))) {
-            return true;
+        if (!$ov->equals($ov->prow->base_option($this->id))) {
+            $ov->prow->set_prop("blind", $ov->value ? 0 : 1);
         }
-        $ps->change_at($this);
-        $ov->prow->set_prop("blind", $ov->value ? 0 : 1);
-        return true;
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         if ($qreq->nonblind === "blind") {

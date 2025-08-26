@@ -1375,10 +1375,13 @@ final class PaperStatus extends MessageSet {
         // prepare fields for saving, mark changed fields
         foreach ($this->prow->overridden_option_ids() as $oid) {
             $ov = $this->prow->option($oid);
-            if (!$ov->has_error()
-                && !$ov->option->value_save($ov, $this)
-                && !$ov->equals($this->prow->base_option($oid))) {
-                $this->change_at($ov->option);
+            if (!$ov->has_error()) {
+                $ov->option->value_save($ov, $this);
+                if ($oid !== PaperOption::CONTACTSID
+                    && $oid !== PaperOption::PCCONFID
+                    && !$ov->equals($this->prow->base_option($oid))) {
+                    $this->change_at($ov->option);
+                }
             }
         }
 

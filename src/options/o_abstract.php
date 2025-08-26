@@ -20,19 +20,16 @@ class Abstract_PaperOption extends PaperOption {
         return (string) $ov->data();
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        if ($ov->equals($ov->prow->base_option($this->id))) {
-            return true;
+        if (!$ov->equals($ov->prow->base_option($this->id))) {
+            $ab = $ov->data();
+            if ($ab === null || strlen($ab) < 16383) {
+                $ov->prow->set_prop("abstract", $ab === "" ? null : $ab);
+                $ov->prow->set_overflow_prop("abstract", null);
+            } else {
+                $ov->prow->set_prop("abstract", null);
+                $ov->prow->set_overflow_prop("abstract", $ab);
+            }
         }
-        $ps->change_at($this);
-        $ab = $ov->data();
-        if ($ab === null || strlen($ab) < 16383) {
-            $ov->prow->set_prop("abstract", $ab === "" ? null : $ab);
-            $ov->prow->set_overflow_prop("abstract", null);
-        } else {
-            $ov->prow->set_prop("abstract", null);
-            $ov->prow->set_overflow_prop("abstract", $ab);
-        }
-        return true;
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         return $this->parse_json_string($prow, $qreq->abstract, PaperOption::PARSE_STRING_CONVERT | PaperOption::PARSE_STRING_TRIM);

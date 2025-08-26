@@ -82,7 +82,6 @@ class Contacts_PaperOption extends PaperOption {
             }
         }
         $ps->checkpoint_conflict_values();
-        return true;
     }
     /** @param list<Author> $specau */
     private function apply_parsed_users(PaperValue $ov, $specau) {

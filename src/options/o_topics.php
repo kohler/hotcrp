@@ -45,22 +45,18 @@ class Topics_PaperOption extends CheckboxesBase_PaperOption {
     }
 
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        if (!$ov->anno("new_values")
-            && $ov->equals($ov->prow->base_option($this->id))) {
-            return true;
-        }
         if ($ov->anno("new_values")) {
             if (!$ps->save_status_prepared()) {
                 $ps->request_resave($this);
                 $ps->change_at($this);
+                return;
             } else {
                 $this->_store_new_values($ov, $ps);
             }
         }
-        $ps->change_at($this);
-        if ($this->id === PaperOption::TOPICSID) {
+        if ($this->id === PaperOption::TOPICSID
+            && !$ov->equals($ov->prow->base_option($this->id))) {
             $ov->prow->set_prop("topicIds", join(",", $ov->value_list()));
         }
-        return true;
     }
 }

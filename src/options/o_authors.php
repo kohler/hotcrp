@@ -135,11 +135,9 @@ class Authors_PaperOption extends PaperOption {
         }
         // apply change
         if ($d !== $ov->prow->base_option($this->id)->data()) {
-            $ps->change_at($this);
             $ov->prow->set_prop("authorInformation", $d);
             $this->value_save_conflict_values($ov, $ps);
         }
-        return true;
     }
     function value_save_conflict_values(PaperValue $ov, PaperStatus $ps) {
         $ps->clear_conflict_values(CONFLICT_AUTHOR);

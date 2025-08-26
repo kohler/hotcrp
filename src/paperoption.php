@@ -739,9 +739,8 @@ class PaperOption implements JsonSerializable {
     function value_reconcile(PaperValue $ov, PaperStatus $ps) {
         return null;
     }
-    /** @return bool */
+    /** @return void */
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        return false;
     }
 
     /** @param string $name
@@ -1475,15 +1474,12 @@ class Document_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        if ($this->id !== DTYPE_SUBMISSION && $this->id !== DTYPE_FINAL) {
-            return false;
+        if ($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL) {
+            $key = $this->id ? "finalPaperStorageId" : "paperStorageId";
+            if ($ov->prow->$key !== ($ov->value ?? 0)) {
+                $ov->prow->set_prop($key, $ov->value ?? 0);
+            }
         }
-        $key = $this->id ? "finalPaperStorageId" : "paperStorageId";
-        if ($ov->prow->$key !== ($ov->value ?? 0)) {
-            $ps->change_at($this);
-            $ov->prow->set_prop($key, $ov->value ?? 0);
-        }
-        return true;
     }
 
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {

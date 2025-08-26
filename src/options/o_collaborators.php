@@ -28,19 +28,16 @@ class Collaborators_PaperOption extends PaperOption {
         }
     }
     function value_save(PaperValue $ov, PaperStatus $ps) {
-        if ($ov->equals($ov->prow->base_option($this->id))) {
-            return true;
+        if (!$ov->equals($ov->prow->base_option($this->id))) {
+            $collab = $ov->data();
+            if ($collab === null || strlen($collab) < 8190) {
+                $ov->prow->set_prop("collaborators", $collab === "" ? null : $collab);
+                $ov->prow->set_overflow_prop("collaborators", null);
+            } else {
+                $ov->prow->set_prop("collaborators", null);
+                $ov->prow->set_overflow_prop("collaborators", $collab);
+            }
         }
-        $ps->change_at($this);
-        $collab = $ov->data();
-        if ($collab === null || strlen($collab) < 8190) {
-            $ov->prow->set_prop("collaborators", $collab === "" ? null : $collab);
-            $ov->prow->set_overflow_prop("collaborators", null);
-        } else {
-            $ov->prow->set_prop("collaborators", null);
-            $ov->prow->set_overflow_prop("collaborators", $collab);
-        }
-        return true;
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $ov = $this->parse_json_string($prow, $qreq->collaborators, PaperOption::PARSE_STRING_CONVERT | PaperOption::PARSE_STRING_TRIM);

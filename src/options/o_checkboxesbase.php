@@ -86,10 +86,6 @@ abstract class CheckboxesBase_PaperOption extends PaperOption {
     }
 
     function value_store(PaperValue $ov, PaperStatus $ps) {
-        $vs = $ov->value_list();
-        $this->topic_set()->sort($vs); // to reduce unnecessary diffs
-        $ov->set_value_data($vs, array_fill(0, count($vs), null));
-
         $badvs = $ov->anno("bad_values") ?? [];
         if (!empty($badvs)) {
             $ov->warning($ps->_("<0>Options {:list} not found", $badvs, new FmtArg("type", $this->type)));
