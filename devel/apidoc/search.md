@@ -5,9 +5,10 @@ These endpoints perform searches on submissions.
 
 # get /search
 
-> Retrieve search results
+> Fetch search results
 
-Return IDs, and optionally other fields, of submissions that match a search.
+Return IDs, and optionally other display fields, of submissions that match a
+search.
 
 Pass the search query in the `q` parameter. The list of matching submission
 IDs is returned in the `ids` response property, ordered according to the
@@ -20,56 +21,24 @@ HotCRP picks a default based on the user’s roles and the site’s current
 configuration; for PC members and chairs, the typical default is `t=s`, which
 searches complete submissions.
 
-### Search annotations
-
-The `groups` response property is an array of search annotations, and is
-returned for `THEN` searches, `LEGEND` searches, and searches on annotated
-tags. Each `groups` entry contains a position `pos`, which is an integer index
-into the search results. Annotations with `pos` `P` should appear immediately
-before the submission at index `P` in the result. A `groups` entry may also
-have other properties, including `legend` (the textual legend corresponding to
-the annotation), `search` (for `THEN` searches, the search string representing
-the following results), and `annoid`.
-
-As an example, this response might be returned for the search `10-12 THEN
-5-8`.
-
-```json
-{
-    "ok": true,
-    "ids": [10, 12, 8],
-    "groups": [
-        {
-            "pos": 0,
-            "legend": "10-12",
-            "search": "10-12"
-        },
-        {
-            "pos": 2,
-            "legend": "5-8",
-            "search": "5-8"
-        }
-    ]
-}
-```
-
 ### Submission fields
 
-Pass `f` and `format` parameters to retrieve more fields for each submission
+Pass `f` and `format` parameters to retrieve display fields for each submission
 in the search result.
 
 `format` is either `csv` or `html`, and requests CSV or HTML format for the
-response data. `f` is a string indicating the fields to return, such as `title
-authors[full]`.
+response data. `f` is a string indicating the display fields to return, such as
+`title authors[full]`.
 
-The response will contain `fields` and `papers` properties. `fields` is an
-array of objects defining the emitted fields; typically, each entry in
-`fields` corresponds to an field definition in `f`. `papers` is an array of
-objects defining the exported fields for each matching submission. Each
-`papers` entry has a `pid` property with the submission ID, and properties
-corresponding to the `fields`; the `papers` entries are in the same order as
-`ids`. In some cases, the response will additionally have a `statistics`
-property defining overall statistics for some of the requested fields.
+The response will contain `fields` and `papers` properties. `fields` is an array
+of objects defining the emitted display fields. Typically, each entry in
+`fields` corresponds to a member of `f`, but some field requests can expand into
+multiple display fields. `papers` is an array of objects defining the exported
+fields for each matching submission. Each `papers` entry has a `pid` property
+with the submission ID, and properties corresponding to the `fields`. The
+`papers` entries are in the same order as `ids`. In some cases, the response
+will additionally have a `statistics` property defining overall statistics for
+some of the requested fields.
 
 As an example, this response might be returned for the search `10-12` with
 `format=csv` and `f=title`.
@@ -105,6 +74,39 @@ application. The returned HTML uses elements, tag structures, and class names
 suitable for HotCRP’s internal use, and may change at any time. Furthermore,
 in some cases (such as `f=allpref`), the returned data is compressed into a
 field-specific format that the HotCRP web application expands.
+
+### Search annotations
+
+The `groups` response property is an array of search annotations, and is
+returned for `THEN` searches, `LEGEND` searches, and searches on annotated
+tags. Each `groups` entry contains a position `pos`, which is an integer index
+into the search results. Annotations with `pos` `P` should appear immediately
+before the submission at index `P` in the result. A `groups` entry may also
+have other properties, including `legend` (the textual legend corresponding to
+the annotation), `search` (for `THEN` searches, the search string representing
+the following results), and `annoid`.
+
+As an example, this response might be returned for the search `10-12 THEN
+5-8`.
+
+```json
+{
+    "ok": true,
+    "ids": [10, 12, 8],
+    "groups": [
+        {
+            "pos": 0,
+            "legend": "10-12",
+            "search": "10-12"
+        },
+        {
+            "pos": 2,
+            "legend": "5-8",
+            "search": "5-8"
+        }
+    ]
+}
+```
 
 ### More
 

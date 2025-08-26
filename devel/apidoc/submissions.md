@@ -1,23 +1,28 @@
 # Submissions
 
-These endpoints query and modify HotCRP submissions.
+These endpoints query and modify HotCRP submissions. They deal with **submission
+objects**, which are JSON representations of submissions.
+
+Each submission object has an `object` property (set to the constant string
+`"paper"`), a `pid` property, and a `status` property. Complete submission
+objects also have one property per submission field, such as `title`,
+`abstract`, `authors`, `topics`, and `pc_conflicts`. However, methods that fetch
+submissions only fill in fields that exist and that the accessing user is
+allowed to see.
+
+Submission endpoints always return complete submission objects. To select
+specific properties of submissions, or to fetch computed properties, use the
+`/search` or `/searchaction` endpoints.
 
 
 # get /paper
 
 > Fetch submission
 
-Fetch a submission object specified by `p`, a submission ID.
-
-All visible submission fields, tags, and status information is returned in a
-submission object. The `paper` response property holds this object. Error
-messages—for instance, about permission errors or nonexistent submissions—are
-returned in `message_list`.
-
-Submission objects always have an `object` property (set to the constant
-string `"paper"`), a `pid` property, and a `status` property. Other properties
-are provided based on which submission fields exist and whether the accessing
-user can see them.
+Fetch a submission object specified by `p`, a submission ID. The submission
+object is returned in the `paper` response property. Error messages—for
+instance, about permission errors or nonexistent submissions—are returned in
+`message_list`.
 
 * param forceShow boolean: False to not override administrator conflict
 * response ?paper paper
@@ -163,8 +168,8 @@ array of submission objects, in the response property `papers`.
 
 Since searches silently filter out non-viewable submissions, `/papers?q=1010`
 and `/paper?p=1010` can return different error messages. The `/paper` request
-might return an error like `Submission #1010 does not exist` or `You aren’t
-allowed to view submission #1010`, whereas the `/papers` request will return
+might return an error like “Submission #1010 does not exist” or “You aren’t
+allowed to view submission #1010”, whereas the `/papers` request will return
 no errors. To obtain warnings for missing submissions that were explicitly
 listed in a query, supply a `warn_missing=1` parameter.
 
@@ -183,6 +188,8 @@ request formats are similar to that of `POST /{p}/paper`: it can accept a
 JSON, ZIP, or form-encoded request body with a `json` parameter, and ZIP and
 form-encoded requests can also include attached files.
 
+### Modify submissions independently
+
 The JSON provided for `/papers` should be an *array* of JSON objects. The
 `status_list` response property is an array with the same number of elements
 as the input JSON. Component *i* of `status_list` reports the status of update
@@ -190,14 +197,16 @@ as the input JSON. Component *i* of `status_list` reports the status of update
 report the validity of the update, the list of changed fields, and the
 submission ID of the modified submission.
 
-Alternately, you can provide a `q` search query parameter and a *single* JSON
-object. The JSON object must not have a `pid` property. The JSON modification
-will be applied to all papers returned by the `q` search query.
-
 The response `message_list` contains messages relating to all modified
 submissions. To filter out the messages for a single submission, use the
 messages’ `landmark` properties. `landmark` is set to the integer index of the
 relevant submission in the input JSON.
+
+### Modify all matching submissions
+
+Alternately, you can provide a `q` search query parameter and a *single* JSON
+modification object lacking the `pid` property. The JSON modification will be
+applied to all papers returned by the `q` search query.
 
 
 * param dry_run boolean: True checks input for errors, but does not save changes

@@ -53,6 +53,8 @@ class Search_API {
                 $format = PaperList::FORMAT_HTML;
             } else if ($qreq->format === "text" || $qreq->format === "csv") {
                 $format = PaperList::FORMAT_CSV;
+            } else if ($qreq->format === "json") {
+                $format = PaperList::FORMAT_JSON;
             } else {
                 return JsonResult::make_parameter_error("format");
             }

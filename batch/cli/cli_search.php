@@ -13,6 +13,8 @@ class Search_CLIBatch implements CLIBatchCommand {
     public $post;
     /** @var list<string> */
     public $fields;
+    /** @var string */
+    public $format;
     /** @var bool */
     public $warn_missing;
     /** @var array<string,string> */
@@ -41,7 +43,7 @@ class Search_CLIBatch implements CLIBatchCommand {
             $this->param["warn_missing"] = 1;
         }
         if (!empty($this->fields)) {
-            $this->param["format"] = "csv";
+            $this->param["format"] = $this->format;
             $this->param["f"] = join(" ", $this->fields);
         }
         curl_setopt($clib->curlh, CURLOPT_URL, "{$clib->site}/search?" . http_build_query($this->param));
@@ -51,6 +53,8 @@ class Search_CLIBatch implements CLIBatchCommand {
         $j = $clib->content_json;
         if ($this->json) {
             $clib->set_json_output($j);
+        } else if (!empty($j->fields) && $this->format === "json") {
+            $clib->set_json_output($j->papers);
         } else if (!empty($j->fields)) {
             $csv = new CsvGenerator;
             $header = ["pid"];
@@ -134,6 +138,7 @@ class Search_CLIBatch implements CLIBatchCommand {
         $pcb->json = isset($arg["json"]);
         $pcb->post = isset($arg["post"]);
         $pcb->fields = $arg["f"] ?? [];
+        $pcb->format = $arg["F"] ?? "csv";
         $pcb->warn_missing = isset($arg["warn-missing"]);
         foreach ($arg["param"] ?? [] as $pstr) {
             if (($eq = strpos($pstr, "=")) === false) {
@@ -176,8 +181,9 @@ Usage: php batch/hotcrapi.php search -q QUERY [-f FIELD...]
         )->long(
             "q:,query: =SEARCH !search Submission search",
             "t:,type: =TYPE !search Collection to search [viewable]",
-            "json,j !search Output JSON results",
-            "f[]+,field[]+ =FIELD !search Request additional submission fields",
+            "json,j !search Output JSON response",
+            "f[]+,field[]+ =FIELD !search Request additional display fields",
+            "F:,format: !search Change display field format",
             "warn-missing !search Warn on missing IDs",
             "post,P !search Use POST method",
             "param[]+ =NAME=VALUE !search Set action parameters"

@@ -2539,10 +2539,15 @@ class PaperList {
             foreach ($this->_vcolumns as $fdef) {
                 if ($format === self::FORMAT_HTML) {
                     $content = $this->_column_html($fdef, $row);
+                } else if ($fdef->content_empty($this, $row)) {
+                    $content = null;
+                } else if ($format === self::FORMAT_JSON) {
+                    $content = $fdef->json($this, $row);
                 } else {
-                    $content = $fdef->content_empty($this, $row) ? "" : $fdef->text($this, $row);
+                    $content = $fdef->text($this, $row);
                 }
-                if ((string) $content === "") {
+                if ($content === null
+                    || ($content === "" && $format !== self::FORMAT_JSON)) {
                     continue;
                 }
                 if ($format === self::FORMAT_HTML && $this->column_class !== null) {

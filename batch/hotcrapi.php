@@ -236,7 +236,7 @@ class Hotcrapi_Batch extends MessageSet {
             $s = stream_get_contents(STDIN);
             $fname = "<stdin>";
         } else {
-            $s = file_get_contents($f);
+            $s = @file_get_contents($f);
             if ($s === false) {
                 throw CommandLineException::make_file_error($f);
             }
@@ -505,7 +505,7 @@ class Hotcrapi_Batch extends MessageSet {
             "help::,h:: !",
             "S:,siteurl:,url: =SITE Site URL",
             "T:,token: =APITOKEN API token",
-            "F:,config: =FILE Set configuration file [~/.hotcrapi.conf]",
+            "config: =FILE Set configuration file [~/.hotcrapi.conf]",
             "verbose,V Be verbose",
             "quiet Do not print error messages",
             "no-progress Do not print progress bars",
@@ -523,7 +523,7 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
         Upload_CLIBatch::register($hcli, $getopt);
         $arg = $getopt->parse($argv);
 
-        $hcli->load_config_file($arg["F"] ?? null);
+        $hcli->load_config_file($arg["config"] ?? null);
 
         if (($sc = $hcli->default_site())) {
             $hcli->set_site($sc);

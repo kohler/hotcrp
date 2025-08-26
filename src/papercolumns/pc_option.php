@@ -73,9 +73,8 @@ class Option_PaperColumn extends PaperColumn {
         } else if ($fr->value_format === 0) {
             return '<div class="' . $klass . ' format0">'
                 . Ht::format0($fr->value) . '</div>';
-        } else {
-            return '<div class="' . $klass . '">' . $fr->value . '</div>';
         }
+        return '<div class="' . $klass . '">' . $fr->value . '</div>';
     }
     function text(PaperList $pl, PaperInfo $row) {
         $ov = $row->option($this->opt);

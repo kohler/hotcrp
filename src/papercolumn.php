@@ -95,13 +95,9 @@ class PaperColumn extends Column {
     function header(PaperList $pl, $is_text) {
         if (isset($this->title_html) && !$is_text) {
             return $this->title_html;
-        } else if (isset($this->title)) {
-            return $is_text ? $this->title : htmlspecialchars($this->title);
-        } else if ($is_text) {
-            return "<" . $this->name . ">";
-        } else {
-            return "&lt;" . htmlspecialchars($this->name) . "&gt;";
         }
+        $t = $this->title ?? "<{$this->name}>";
+        return $is_text ? $t : htmlspecialchars($t);
     }
     /** @return ?string */
     function completion_name() {
@@ -109,9 +105,8 @@ class PaperColumn extends Column {
             return null;
         } else if (is_string($this->completion)) {
             return $this->completion;
-        } else {
-            return $this->name;
         }
+        return $this->name;
     }
     /** @return string */
     function sort_name() {
@@ -141,9 +136,8 @@ class PaperColumn extends Column {
     function user_view_option_name_flags(Conf $conf) {
         if (($format = $this->view_option("format")) !== null) {
             return $format === "given_name" ? 0 : NAME_L;
-        } else {
-            return $conf->sort_by_last ? NAME_L : 0;
         }
+        return $conf->sort_by_last ? NAME_L : 0;
     }
 
     /** @return bool */
@@ -160,7 +154,7 @@ class PaperColumn extends Column {
     }
     /** @return mixed */
     function json(PaperList $pl, PaperInfo $row) {
-        return null;
+        return $this->text($pl, $row);
     }
 
     /** @return bool */
@@ -208,11 +202,10 @@ class Selector_PaperColumn extends PaperColumn {
     function header(PaperList $pl, $is_text) {
         if ($is_text) {
             return "Selected";
-        } else if (!$pl->viewing("facets")) {
-            return '<input type="checkbox" class="uic js-range-click is-range-group ignore-diff" data-range-type="pap[]" aria-label="Select all">';
-        } else {
+        } else if ($pl->viewing("facets")) {
             return "";
         }
+        return '<input type="checkbox" class="uic js-range-click is-range-group ignore-diff" data-range-type="pap[]" aria-label="Select all">';
     }
     protected function checked(PaperList $pl, PaperInfo $row) {
         return $pl->is_selected($row->paperId, $this->selectall);
@@ -229,6 +222,9 @@ class Selector_PaperColumn extends PaperColumn {
     }
     function text(PaperList $pl, PaperInfo $row) {
         return $this->checked($pl, $row) ? "Y" : "N";
+    }
+    function json(PaperList $pl, PaperInfo $row) {
+        return $this->checked($pl, $row);
     }
 }
 
@@ -302,9 +298,6 @@ class Title_PaperColumn extends PaperColumn {
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $row->title();
-    }
-    function json(PaperList $pl, PaperInfo $row) {
         return $row->title();
     }
 }
@@ -641,9 +634,6 @@ class Abstract_PaperColumn extends PaperColumn {
         return $t;
     }
     function text(PaperList $pl, PaperInfo $row) {
-        return $row->abstract();
-    }
-    function json(PaperList $pl, PaperInfo $row) {
         return $row->abstract();
     }
 }
