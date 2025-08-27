@@ -34,7 +34,7 @@ class Conflict_PaperColumn extends PaperColumn {
         $this->editable = $cj->edit ?? false;
     }
     function view_option_schema() {
-        return ["simple", "edit", "pin=all,yes;none,no;unconflicted;conflicted"];
+        return ["simple", "edit", "pin=all,yes|none,no|unconflicted|conflicted"];
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $this->contact ? : $pl->reviewer_user();

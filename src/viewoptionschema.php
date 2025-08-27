@@ -26,18 +26,18 @@ class ViewOptionSchema {
         $first = $enum[0] === "=" ? 1 : 0;
         $p = $first;
         while (($pf = strpos($enum, $value, $p)) !== false) {
-            $ch0 = $pf === $first ? 59 /* ';' */ : ord($enum[$pf - 1]);
-            $ch1 = $pf + $vlen === $enumlen ? 59 : ord($enum[$pf + $vlen]);
-            if (($ch0 === 44 /* ',' */ || $ch0 === 59)
-                && ($ch1 === 44 || $ch1 === 59)) {
+            $ch0 = $pf === $first ? 124 /* '|' */ : ord($enum[$pf - 1]);
+            $ch1 = $pf + $vlen === $enumlen ? 124 : ord($enum[$pf + $vlen]);
+            if (($ch0 === 44 /* ',' */ || $ch0 === 124)
+                && ($ch1 === 44 || $ch1 === 124)) {
                 if (strpos($value, ",") !== false
-                    || strpos($value, ";") !== false) {
+                    || strpos($value, "|") !== false) {
                     return null;
                 }
-                if ($ch0 === 59) {
+                if ($ch0 === 124) {
                     return $value;
                 }
-                if (($xch0 = strrpos($enum, ";", -($enumlen - $pf))) === false) {
+                if (($xch0 = strrpos($enum, "|", -($enumlen - $pf))) === false) {
                     $xch0 = -1;
                 }
                 $xch1 = strpos($enum, ",", $xch0 + 1);

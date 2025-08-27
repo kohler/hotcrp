@@ -29,9 +29,8 @@ class PaperColumn extends Column {
             $class = substr($cj->function, 1);
             /** @phan-suppress-next-line PhanTypeExpectedObjectOrClassName */
             return new $class($conf, $cj);
-        } else {
-            return call_user_func($cj->function, $conf, $cj);
         }
+        return call_user_func($cj->function, $conf, $cj);
     }
 
     /** @param Contact|XtParams $ctx
@@ -130,7 +129,7 @@ class PaperColumn extends Column {
 
     /** @return list<string> */
     static function user_view_option_schema() {
-        return ["format=given_name,first;family_name,last"];
+        return ["format=given_name,first|family_name,last"];
     }
     /** @return int */
     function user_view_option_name_flags(Conf $conf) {
