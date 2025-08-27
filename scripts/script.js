@@ -12779,60 +12779,71 @@ function evaluate_edit_condition(ec, form) {
         return ec;
     } else if (edit_conditions[ec.type]) {
         return edit_conditions[ec.type](ec, form);
-    } else {
-        throw new Error("unknown edit condition " + ec.type);
     }
+    throw new Error("unknown edit condition " + ec.type);
 }
 
 edit_conditions.and = function (ec, form) {
-    for (var i = 0; i !== ec.child.length; ++i)
-        if (!evaluate_edit_condition(ec.child[i], form))
+    for (const ch of ec.child) {
+        if (!evaluate_edit_condition(ch, form))
             return false;
+    }
     return true;
 };
 edit_conditions.or = function (ec, form) {
-    for (var i = 0; i !== ec.child.length; ++i)
-        if (evaluate_edit_condition(ec.child[i], form))
+    for (const ch of ec.child) {
+        if (evaluate_edit_condition(ch, form))
             return true;
+    }
     return false;
 };
 edit_conditions.not = function (ec, form) {
     return !evaluate_edit_condition(ec.child[0], form);
 };
 edit_conditions.xor = function (ec, form) {
-    var x = false;
-    for (var i = 0; i !== ec.child.length; ++i)
-        if (evaluate_edit_condition(ec.child[i], form))
+    let x = false;
+    for (const ch of ec.child) {
+        if (evaluate_edit_condition(ch, form))
             x = !x;
+    }
     return x;
 };
 edit_conditions.checkbox = function (ec, form) {
-    var e = form.elements[ec.formid];
+    const e = form.elements[ec.formid];
     return e && e.checked;
 };
 edit_conditions.checkboxes = function (ec, form) {
-    var vs = ec.values;
+    const vs = ec.values;
     if (vs === false || vs === true || vs == null) {
-        var es = form.elements[ec.formid].querySelectorAll("input:checked");
+        const es = form.elements[ec.formid].querySelectorAll("input:checked");
         return (vs === false) === (es.length === 0);
     }
-    for (var i = 0; i !== vs.length; ++i) {
-        if (form.elements[ec.formid + ":" + vs[i]].checked)
+    for (const v of vs) {
+        if (form.elements[ec.formid + ":" + v].checked)
             return true;
     }
     return false;
 };
+edit_conditions.all_checkboxes = function (ec, form) {
+    const es = form.elements[ec.formid].querySelectorAll("input[type=checkbox]");
+    for (const e of es) {
+        if (!e.checked)
+            return false;
+    }
+    return true;
+};
 edit_conditions.dropdown = function (ec, form) {
-    var e = form.elements[ec.formid];
+    const e = form.elements[ec.formid];
     return e && e.value ? +e.value : false;
 };
 edit_conditions.text_present = function (ec, form) {
-    var e = form.elements[ec.formid];
+    const e = form.elements[ec.formid];
     return $.trim(e ? e.value : "") !== "";
 };
 edit_conditions.numeric = function (ec, form) {
-    var e = form.elements[ec.formid],
-        v = (e ? e.value : "").trim(), n;
+    const e = form.elements[ec.formid],
+        v = (e ? e.value : "").trim();
+    let n;
     return v !== "" && !isNaN((n = parseFloat(v))) ? n : null;
 };
 edit_conditions.document_count = function (ec, form) {
