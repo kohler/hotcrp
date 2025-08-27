@@ -817,7 +817,7 @@ final class PaperStatus extends MessageSet {
         }
         if ($ov !== null) {
             $opt->value_check($ov, $this->user);
-            if (!$ov->has_error()) {
+            if ($ov->allow_store()) {
                 $opt->value_store($ov, $this);
                 $this->prow->override_option($ov);
             }
@@ -1362,8 +1362,9 @@ final class PaperStatus extends MessageSet {
             $again = false;
             foreach ($this->prow->form_fields() as $opt) {
                 $ov = $this->prow->force_option($opt);
-                if (($nov = $opt->value_reconcile($ov, $this))
-                    && !$nov->has_error()) {
+                if (($nov = $opt->value_reconcile($ov, $this))) {
+                    $opt->value_check($nov, $this->user);
+                    assert($nov->allow_store());
                     $opt->value_store($nov, $this);
                     $this->prow->override_option($nov);
                     $again = true;
@@ -1375,7 +1376,7 @@ final class PaperStatus extends MessageSet {
         // prepare fields for saving, mark changed fields
         foreach ($this->prow->overridden_option_ids() as $oid) {
             $ov = $this->prow->option($oid);
-            if (!$ov->has_error()) {
+            if ($ov->allow_store()) {
                 $ov->option->value_save($ov, $this);
                 if ($oid !== PaperOption::CONTACTSID
                     && $oid !== PaperOption::PCCONFID

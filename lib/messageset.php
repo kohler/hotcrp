@@ -428,6 +428,7 @@ class MessageSet {
             }
         }
         if (($mi->message !== ""
+             || $mi->status === self::SUCCESS
              || ($mi->context !== null && $mi->pos1 !== null))
             && (($this->_ms_flags & self::IGNORE_DUPS) === 0
                 || $this->message_index($mi) === false)) {

@@ -95,6 +95,13 @@
         }
     },
     {
+        "legend": "Author certification",
+        "type": "author_certification",
+        "name": "Author certification",
+        "description": "Every listed author must certify this field before submission.",
+        "required": "submit"
+    },
+    {
         "legend": "Section break",
         "type": "separator",
         "sample_view": {

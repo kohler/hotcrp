@@ -390,6 +390,11 @@
         "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
     },
     {
+        "name_pattern": "sf/$/max_submissions",
+        "title": "/Maximum submissions per author",
+        "type": "nonnegint", "size": 5, "placeholder": "none", "default_value": 0
+    },
+    {
         "name": "sf_abstract", "storage": "ova.noAbstract",
         "title": "Submission abstract required",
         "type": "radio",

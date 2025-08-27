@@ -53,7 +53,10 @@ class Options_SettingParser extends SettingParser {
     /** @param SettingValues $sv */
     function __construct($sv) {
         $this->conf = $sv->conf;
-        $this->pt = new PaperTable($sv->user, new Qrequest("GET"), PaperInfo::make_new($sv->user, null));
+        $prow = PaperInfo::make_new($sv->user, null);
+        $prow->set_prop("title", "Example paper");
+        $prow->set_prop("authorInformation", "Author\tOne\tauthor1@example.com\t\nAuthor\tTwo\tauthor2@example.com\t\n" . Author::make_user($sv->user)->unparse_tabbed());
+        $this->pt = new PaperTable($sv->user, new Qrequest("GET"), $prow);
         $this->pt->settings_mode = true;
         $this->_fcvts = new FieldConversions_Setting($sv->conf->option_type_map(), $sv->conf);
     }

@@ -131,6 +131,8 @@ class Conf {
     private $_user_cache_missing;
     /** @var ?array<string,Contact> */
     private $_user_email_cache;
+    /** @var ?array<int,int|list<int>> */
+    private $_linked_user_cache;
     /** @var int */
     private $_slice = Contact::SLICE_MINIMAL;
     /** @var ?ContactSet */
@@ -2442,6 +2444,27 @@ class Conf {
         }
     }
 
+    /** @param int $uid
+     * @return list<int> */
+    function linked_user_ids($uid) {
+        if ($this->_linked_user_cache === null) {
+            $this->_linked_user_cache = [];
+            $result = $this->qe("select contactId, primaryContactId from ContactPrimary");
+            while (($row = $result->fetch_row())) {
+                $cid = (int) $row[0];
+                $pcid = (int) $row[1];
+                if (!is_array($this->_linked_user_cache[$pcid] ?? null)) {
+                    $this->_linked_user_cache[$pcid] = [$pcid];
+                }
+                $this->_linked_user_cache[$pcid][] = $cid;
+                $this->_linked_user_cache[$cid] = $pcid;
+            }
+            $result->close();
+        }
+        $x = $this->_linked_user_cache[$uid] ?? [$uid];
+        return is_int($x) ? $this->_linked_user_cache[$x] : $x;
+    }
+
 
     // preferred emails
 
@@ -3160,7 +3183,7 @@ class Conf {
         return false;
     }
 
-    /** @param array{all?:true,autosearch?:true,rf?:true,tags?:true,cdb?:true,pc?:true,users?:true,options?:true} $caches */
+    /** @param array{all?:true,autosearch?:true,rf?:true,tags?:true,cdb?:true,pc?:true,users?:true,options?:true,linked_users?:true} $caches */
     function invalidate_caches($caches) {
         if (self::$no_invalidate_caches) {
             return;
@@ -3177,6 +3200,9 @@ class Conf {
         if (isset($caches["cdb"])) {
             unset($this->opt["contactdbConfid"]);
             self::$_cdb = false;
+        }
+        if ($all || isset($caches["users"]) || isset($caches["linked_users"])) {
+            $this->_linked_user_cache = null;
         }
         // NB All setting-related caches cleared here should also be cleared
         // in refresh_settings().

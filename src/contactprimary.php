@@ -83,6 +83,7 @@ class ContactPrimary {
         }
         $this->sec->save_prop();
         $this->conf->release_logs();
+        $this->conf->invalidate_caches(["linked_users" => true]);
         // authorship changes
         if (!$this->cdb) {
             $this->_update_author_records();
