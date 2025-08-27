@@ -352,4 +352,18 @@ class Author {
         }
         return $j;
     }
+
+    /** @param string $email
+     * @param list<Author> $list
+     * @return ?Author */
+    static function find_by_email($email, $list) {
+        if ($email === "") {
+            return null;
+        }
+        foreach ($list as $auth) {
+            if (strcasecmp($auth->email, $email) === 0)
+                return $auth;
+        }
+        return null;
+    }
 }

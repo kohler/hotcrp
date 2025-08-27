@@ -160,7 +160,9 @@ final class PaperValue implements JsonSerializable {
     /** @param PaperValue $x
      * @return bool */
     function equals($x) {
-        if ($this->value_count() !== $x->value_count()) {
+        if ($x === $this) {
+            return true;
+        } else if ($this->value_count() !== $x->value_count()) {
             return false;
         } else if ($this->value_list() === $x->value_list()
                    && $this->data_list() === $x->data_list()) {

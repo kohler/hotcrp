@@ -2215,7 +2215,7 @@ class Conf {
 
     /** @param string $email */
     function prefetch_user_by_email($email) {
-        if (!array_key_exists($email, $this->_user_email_cache ?? [])) {
+        if ($email !== "" && !array_key_exists($email, $this->_user_email_cache ?? [])) {
             $this->_user_cache_missing[] = $email;
         }
     }
@@ -2224,7 +2224,7 @@ class Conf {
     function prefetch_users_by_email($emails) {
         $uec = $this->_user_email_cache ?? [];
         foreach ($emails as $email) {
-            if (!array_key_exists($email, $uec)) {
+            if ($email !== "" && !array_key_exists($email, $uec)) {
                 $this->_user_cache_missing[] = $email;
             }
         }
@@ -3156,9 +3156,8 @@ class Conf {
         if ($n && $this->ql_ok("update Settings set value=? where name='allowPaperOption'", $n)) {
             $this->sversion = $this->settings["allowPaperOption"] = $n;
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param array{all?:true,autosearch?:true,rf?:true,tags?:true,cdb?:true,pc?:true,users?:true,options?:true} $caches */

@@ -162,8 +162,20 @@ class Authors_PaperOption extends PaperOption {
             }
         }
     }
+    /** @param list<Author> $authors
+     * @return PaperValue */
+    private function resolve_parse(PaperInfo $prow, $authors) {
+        while (!empty($authors) && $authors[count($authors) - 1]->is_empty()) {
+            array_pop($authors);
+        }
+        $t = [];
+        foreach ($authors as $au) {
+            $t[] = $au->unparse_tabbed();
+        }
+        return PaperValue::make($prow, $this, 1, join("\n", $t));
+    }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
-        $v = [];
+        $authors = [];
         for ($n = 1; true; ++$n) {
             $email = $qreq["authors:{$n}:email"];
             $name = $qreq["authors:{$n}:name"];
@@ -192,15 +204,15 @@ class Authors_PaperOption extends PaperOption {
                 $auth->email = $aff;
             }
             self::expand_author($auth, $prow);
-            $v[] = $auth->unparse_tabbed();
+            $authors[] = $auth;
         }
-        return PaperValue::make($prow, $this, 1, join("\n", $v));
+        return $this->resolve_parse($prow, $authors);
     }
     function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         if (!is_array($j) || !array_is_list($j)) {
             return PaperValue::make_estop($prow, $this, "<0>Validation error");
         }
-        $v = $cemail = [];
+        $authors = $cemail = [];
         foreach ($j as $i => $auj) {
             if (is_object($auj) || (is_array($auj) && !array_is_list($auj))) {
                 $auth = Author::make_keyed($auj);
@@ -212,12 +224,12 @@ class Authors_PaperOption extends PaperOption {
                 return PaperValue::make_estop($prow, $this, "<0>Validation error on author #" . ($i + 1));
             }
             self::expand_author($auth, $prow);
-            $v[] = $auth->unparse_tabbed();
+            $authors[] = $auth;
             if ($contact && $auth->email !== "") {
                 $cemail[] = $auth->email;
             }
         }
-        $ov = PaperValue::make($prow, $this, 1, join("\n", $v));
+        $ov = $this->resolve_parse($prow, $authors);
         foreach ($cemail as $email) {
             $ov->set_anno("contact:{$email}", true);
         }

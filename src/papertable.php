@@ -2114,9 +2114,8 @@ class PaperTable {
             return "Save draft";
         } else if ($this->prow->timeSubmitted > 0) {
             return "Save and resubmit";
-        } else {
-            return "Save and submit";
         }
+        return "Save and submit";
     }
 
     private function _collect_actions() {

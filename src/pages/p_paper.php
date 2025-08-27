@@ -166,7 +166,7 @@ class Paper_Page {
             if ($this->ps->has_error_at("status:if_unmodified_since")) {
                 $this->handle_if_unmodified_since();
             } else {
-                $this->ps->prepend_item(MessageItem::error("<0>Changes not saved; please correct these errors and try again."));
+                $this->ps->prepend_item(MessageItem::error("<5><strong>Changes not saved.</strong> Please correct these issues and try again."));
             }
             $conf->feedback_msg($this->ps->decorated_message_list());
             return;

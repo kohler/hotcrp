@@ -40,7 +40,7 @@ class Search_CLIBatch implements CLIBatchCommand {
     function run_get(Hotcrapi_Batch $clib) {
         curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "GET");
         if ($this->warn_missing) {
-            $this->param["warn_missing"] = 1;
+            $this->param["warn_missing"] = "1";
         }
         if (!empty($this->fields)) {
             $this->param["format"] = $this->format;

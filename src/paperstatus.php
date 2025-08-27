@@ -1716,7 +1716,7 @@ final class PaperStatus extends MessageSet {
         // maybe update `papersub` settings
         $was_submitted = $this->prow->base_prop("timeWithdrawn") <= 0
             && $this->prow->base_prop("timeSubmitted") > 0;
-        if ($this->_paper_submitted != $was_submitted) {
+        if ($this->_paper_submitted !== $was_submitted) {
             $this->conf->update_papersub_setting($this->_paper_submitted ? 1 : -1);
         }
 
