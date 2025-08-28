@@ -10678,7 +10678,9 @@ Assign_DraggableTable.prototype.commit = function () {
         $.post(hoturl("=api/assign", {}),
             {assignments: JSON.stringify(as), search: tablelist_search(this.tablelist)},
             function (rv) {
-                rv.ok && $(window).trigger("hotcrptags", [rv]);
+                if (rv.ok && rv.valid !== false) {
+                    $(window).trigger("hotcrptags", [rv]);
+                }
             });
     }
 };
@@ -11665,18 +11667,21 @@ function plist_hotcrptags(plistui, rv) {
 }
 
 $(window).on("hotcrptags", function (evt, rv) {
-    var i;
     $(".need-plist").each(make_plist);
     if (rv.ids) {
-        for (i = 0; i !== all_plists.length; ++i) {
-            paperlist_tag_ui.try_reorder(all_plists[i].pltable, rv);
+        for (const plist of all_plists) {
+            paperlist_tag_ui.try_reorder(plist.pltable, rv);
         }
     }
     if (rv.pid) {
-        for (i = 0; i !== all_plists.length; ++i) {
-            plist_hotcrptags(all_plists[i], rv);
+        for (const plist of all_plists) {
+            plist_hotcrptags(plist, rv);
         }
-    } else if (rv.p) {
+    } else if (rv.papers) {
+        for (const paper of rv.papers) {
+            $(window).trigger("hotcrptags", [paper]);
+        }
+    } else if (rv.p) /* backward compat */ {
         for (i in rv.p) {
             rv.p[i].pid = +i;
             $(window).trigger("hotcrptags", [rv.p[i]]);
@@ -14074,7 +14079,7 @@ handle_ui.on("js-assign-potential-conflict", function () {
         conflict: this.getAttribute("data-conflict-type") || "pinned conflicted"
     };
     function success(rv) {
-        if (!rv || !rv.ok) {
+        if (!rv || !rv.ok || rv.valid === false) {
             return;
         }
         const div = self.closest(".msg-inform"), f = self.form,

@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-08-25:d45a3f80a",
+        "version": "2025-08-26:1d75c73ed",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n"
     },
@@ -56,12 +56,13 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "paper": {
-                                            "$ref": "#/components/schemas/paper"
-                                        },
                                         "dry_run": {},
                                         "change_list": {},
-                                        "valid": {}
+                                        "valid": {},
+                                        "pid": {},
+                                        "paper": {
+                                            "$ref": "#/components/schemas/paper"
+                                        }
                                     }
                                 }
                             }
@@ -181,10 +182,6 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "paper": {
-                                            "$ref": "#/components/schemas/paper",
-                                            "description": "JSON version of modified paper"
-                                        },
                                         "dry_run": {
                                             "type": "boolean",
                                             "description": "True for `dry_run` requests"
@@ -199,6 +196,11 @@
                                         "valid": {
                                             "type": "boolean",
                                             "description": "True if the modification was valid"
+                                        },
+                                        "pid": {},
+                                        "paper": {
+                                            "$ref": "#/components/schemas/paper",
+                                            "description": "JSON version of modified paper"
                                         }
                                     }
                                 }
@@ -851,33 +853,63 @@
         "/assign": {
             "post": {
                 "summary": "Assignments",
+                "description": "Perform assignments, specified either as a JSON array or as an uploaded CSV\nfile.\n\nThe assignments should be compatible with HotCRP’s bulk assignments format.\nThey may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a CSV file (when the request body has content-type\n   `text/csv`).\n3. As a JSON-formatted request parameter named `assignments` (when the request\n   body has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or CSV file, represented by a upload token in\n   the `upload` parameter.\n\nJSON requests should parse to arrays of objects. Each object should contain at\nleast a `pid` property and an `action` property, where `action` determines\nwhat kind of assignment to run. Similarly, CSV uploads should contain at least\n`pid` and `action` columns.\n\nIf the optional `p` request parameter is set, HotCRP will only implement\nassignments that affect that submission.\n\nTo test an assignment, supply a `dry_run=1` parameter. This will parse the\nuploaded assignment and report any errors, but make no changes to the\ndatabase.\n\nThe `valid` response property is `true` if and only if the assignments were\nvalid (had no errors). In non-dry-run requests, `\"valid\": true` indicates that\nany database changes were committed.\n\nThe response includes an `assignments` property, which is an array of the\nspecific assignments performed (or, for dry-run requests, the specific\nassignments that would be performed). Each entry in `assignments` represents a\nsingle action applied to a single submission. (This differs from input\n`assignments` entries, each of which might apply to many submissions specified\nby a search.) If you’re not interested in the `assignments` property, supply a\nparameter of either `summary=1` (to get summary `assignment_actions` and\n`assignment_pids` properties) or `quiet=1` (to get nothing).\n\n",
                 "tags": [
                     "Submission administration"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/redirect"
+                        "$ref": "#/components/parameters/p.opt"
                     },
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "name": "dry_run",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True checks input for errors, but does not save changes"
+                    },
+                    {
+                        "name": "assignments",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "JSON"
+                    },
+                    {
+                        "name": "upload",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/upload_token"
+                        },
+                        "description": "Upload token for large input file"
+                    },
+                    {
+                        "name": "quiet",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "summary",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow"
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
                     }
                 ],
-                "requestBody": {
-                    "description": "",
-                    "content": {
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "type": "object",
-                                "required": [
-                                    "assignments"
-                                ],
-                                "properties": {
-                                    "assignments": {}
-                                }
-                            }
-                        }
-                    }
-                },
                 "responses": {
                     "200": {
                         "description": "",
@@ -886,7 +918,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "valid"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -894,7 +927,17 @@
                                         },
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
-                                        }
+                                        },
+                                        "dry_run": {},
+                                        "valid": {},
+                                        "assignments_header": {},
+                                        "assignments": {},
+                                        "assignment_actions": {},
+                                        "assignment_pids": {},
+                                        "papers": {},
+                                        "ids": {},
+                                        "groups": {},
+                                        "search_params": {}
                                     }
                                 }
                             }
@@ -915,7 +958,7 @@
         },
         "/{p}/decision": {
             "get": {
-                "summary": "Retrieve submission decision",
+                "summary": "Fetch submission decision",
                 "tags": [
                     "Submission administration"
                 ],
@@ -1031,7 +1074,7 @@
         },
         "/{p}/lead": {
             "get": {
-                "summary": "Retrieve submission discussion lead",
+                "summary": "Fetch submission discussion lead",
                 "tags": [
                     "Submission administration"
                 ],
@@ -1147,7 +1190,7 @@
         },
         "/{p}/manager": {
             "get": {
-                "summary": "Retrieve submission administrator",
+                "summary": "Fetch submission administrator",
                 "tags": [
                     "Submission administration"
                 ],
@@ -1196,7 +1239,7 @@
                 }
             },
             "post": {
-                "summary": "Change submission administrator",
+                "summary": "Fetch submission administrator",
                 "tags": [
                     "Submission administration"
                 ],
@@ -1309,7 +1352,7 @@
         },
         "/{p}/shepherd": {
             "get": {
-                "summary": "Retrieve submission shepherd",
+                "summary": "Fetch submission shepherd",
                 "tags": [
                     "Submission administration"
                 ],
@@ -1493,6 +1536,12 @@
                             "type": "boolean"
                         },
                         "description": "Get a `hotlist` response property"
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
                     }
                 ],
                 "responses": {
@@ -1513,11 +1562,15 @@
                                             "properties": {
                                                 "fields": {
                                                     "type": "array",
-                                                    "items": {}
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
                                                 },
                                                 "papers": {
                                                     "type": "array",
-                                                    "items": {}
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
                                                 },
                                                 "statistics": {}
                                             }
@@ -5890,7 +5943,8 @@
             "name": "Documents"
         },
         {
-            "name": "Submission administration"
+            "name": "Submission administration",
+            "description": "These endpoints perform HotCRP assignments, including review assignments,\nreview preference settings, tags, and anything else that can be modified by\nHotCRP’s bulk assignments interface. The general-purpose `/assign` endpoint is\nmost useful; using `/assign`, a user can perform any assignment for which they\nhave permission. Endpoints for specific kinds of assignment, such as decision,\ndiscussion lead, and shepherd, are provided for the HotCRP web application’s\nconvenience.\n\n\n"
         },
         {
             "name": "Search",

@@ -252,9 +252,9 @@ class AssignmentState extends MessageSet {
      * @return string */
     function landmark_near($landmark) {
         if (is_string($landmark)) {
-            return $landmark;
+            return $landmark === "" ? null : $landmark;
         } else if ($this->filename === null) {
-            return "";
+            return null;
         } else if ($landmark === null || $landmark === 0) {
             return $this->filename;
         } else if ($this->filename === "") {
@@ -752,6 +752,10 @@ class AssignmentCsv {
     /** @return int */
     function count() {
         return count($this->rows);
+    }
+    /** @return list<string> */
+    function header() {
+        return array_keys($this->fields);
     }
     /** @return list<array<string,int|string>> */
     function rows() {

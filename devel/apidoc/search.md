@@ -130,8 +130,8 @@ papers.
 * param warn_missing boolean: Get warnings for missing submissions
 * param hotlist boolean: Get a `hotlist` response property
 * response_schema search_response
-* response ?fields []
-* response ?papers []
+* response ?fields [object]
+* response ?papers [object]
 * response ?statistics
 
 

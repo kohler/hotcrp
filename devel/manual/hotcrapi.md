@@ -109,6 +109,18 @@ Actions that modify the site require the `--post` argument. Some actions accept
 additional parameters, which are passed with `--param NAME=VALUE`.
 
 
+## `assign`
+
+Use the `assign` subcommand to perform assignments. Given a bulk-assignment
+CSV file, run `php batch/hotcrapi.php assign < FILE` to perform the
+assignments. You can also test the assignments for errors by running `php
+batch/hotcrapi.php assign --dry-run < FILE`.
+
+If the assignment is successful, Hotcrapi outputs a CSV file detailing the
+specific assignments performed. Supply `--quiet` or `--summary` for more
+concise output.
+
+
 ## `settings`
 
 Use the `settings` subcommand to fetch or modify site settings in JSON format.

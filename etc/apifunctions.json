@@ -23,9 +23,10 @@
         "response": "tags ?readonly_tagmap ?sitewide_tagmap"
     },
     {
-        "name": "assign", "post": true, "redirect": true,
+        "name": "assign", "post": true,
         "function": "Assign_API::assign",
-        "parameters": "?p =assignments"
+        "parameters": "?p ?dry_run ?quiet ?summary ?forceShow ?search ?upload ?assignments",
+        "response": "?dry_run valid ?assignments_header ?assignments ?assignment_actions ?assignment_pids ?papers ?ids ?groups ?search_params"
     },
     {
         "name": "assigntags", "post": true,
@@ -189,7 +190,7 @@
         "name": "paper", "get": true, "post": true,
         "function": "Paper_API::run_one",
         "parameters": "?p ?+dry_run ?+disable_users ?+add_topics ?+notify ?+notify_authors ?+reason ?+json ?forceShow",
-        "response": "?paper ?dry_run ?change_list ?valid"
+        "response": "?dry_run ?change_list ?valid ?pid ?paper"
     },
     {
         "name": "paper", "delete": true, "paper": true,
@@ -282,8 +283,8 @@
     {
         "name": "search", "get": true,
         "function": "Search_API::search",
-        "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing ?hotlist ?f ?format",
-        "response": "ids groups search_params ?hotlist"
+        "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing ?hotlist ?f ?format ?search",
+        "response": "ids groups search_params ?hotlist ?fields ?papers ?statistics"
     },
     {
         "name": "searchactions", "get": true,
@@ -310,17 +311,6 @@
         "function": "Session_API::setsession",
         "parameters": "v",
         "response": "sessioninfo"
-    },
-    {
-        "name": "tags", "get": true, "paper": true,
-        "function": "Tags_API::run",
-        "response": "pid tags tags_edit_text tags_view_html tag_decoration_html color_classes ?tags_conflicted ?color_classes_conflicted"
-    },
-    {
-        "name": "tags", "post": true, "paper": true,
-        "function": "Tags_API::run",
-        "parameters": "?=tags ?=addtags ?=deltags ?=search",
-        "response": "pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?tags_conflicted ?color_classes_conflicted ?ids ?groups ?hotlist ?search_params"
     },
     {
         "name": "settingdescriptions", "get": true,
@@ -371,6 +361,17 @@
         "name": "tagmessages", "get": true, "paper": true,
         "function": "Tags_API::tagmessages_api",
         "response": "pid"
+    },
+    {
+        "name": "tags", "get": true, "paper": true,
+        "function": "Tags_API::run",
+        "response": "pid tags tags_edit_text tags_view_html tag_decoration_html color_classes ?tags_conflicted ?color_classes_conflicted"
+    },
+    {
+        "name": "tags", "post": true, "paper": true,
+        "function": "Tags_API::run",
+        "parameters": "?=tags ?=addtags ?=deltags ?=search",
+        "response": "pid ?tags ?tags_edit_text ?tags_view_html ?tag_decoration_html ?color_classes ?tags_conflicted ?color_classes_conflicted ?ids ?groups ?hotlist ?search_params"
     },
     {
         "name": "track", "post": true,

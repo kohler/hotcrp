@@ -519,6 +519,7 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
         Test_CLIBatch::register($hcli, $getopt);
         Paper_CLIBatch::register($hcli, $getopt);
         Search_CLIBatch::register($hcli, $getopt);
+        Assign_CLIBatch::register($hcli, $getopt);
         Settings_CLIBatch::register($hcli, $getopt);
         Upload_CLIBatch::register($hcli, $getopt);
         $arg = $getopt->parse($argv);

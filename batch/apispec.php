@@ -216,9 +216,8 @@ class APISpec_Batch {
             return "parameter";
         } else if ($this->cur_ptype === self::PT_BODY) {
             return "body parameter";
-        } else {
-            return "response field";
         }
+        return "response field";
     }
 
 
@@ -453,7 +452,7 @@ class APISpec_Batch {
     /** @param string $name
      * @return object */
     private function reference_common_schema($name) {
-        if (in_array($name, ["string", "number", "integer", "boolean", "null"], true)) {
+        if (in_array($name, ["string", "number", "integer", "boolean", "null", "object"], true)) {
             return (object) ["type" => $name];
         } else if ($name === "nonnegative_integer") {
             return (object) ["type" => "integer", "minimum" => 0];
