@@ -3739,16 +3739,13 @@ class Conf {
         if ($prow->timeSubmitted > 0) {
             return !$pdf
                 || ($this->_permbits & self::PB_ALL_PDF_VIEWABLE) !== 0
-                || (($sr = $prow->submission_round())
-                    && ($sr->pdf_viewable
-                        || $prow->timeSubmitted < $sr->open));
+                || $prow->submission_round()->pdf_viewable;
         } else if ($prow->timeWithdrawn <= 0) {
             return !$pdf
                 && ($this->_permbits & self::PB_SOME_INCOMPLETE_VIEWABLE) !== 0
                 && $prow->submission_round()->incomplete_viewable;
-        } else {
-            return false;
         }
+        return false;
     }
     /** @param bool $pc
      * @return bool */
