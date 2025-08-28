@@ -95,12 +95,16 @@ class Settings_Page {
         ]);
         Icons::stash_defs("movearrow0", "movearrow2", "trash");
         echo Ht::unstash(), // clear out other script references
-            $this->conf->make_script_file("scripts/settings.js"), "\n",
+            $this->conf->make_script_file("scripts/settings.js"), "\n";
 
-            Ht::form($this->conf->hoturl("=settings", "group={$group}"), [
+        $groupj = $this->sv->cs()->get($group);
+        $form_class = Ht::add_tokens("need-diff-check need-unload-protection",
+            $groupj->form_classes ?? "");
+
+        echo Ht::form($this->conf->hoturl("=settings", "group={$group}"), [
                 "id" => "f-settings",
                 "name" => base64_encode(random_bytes(8)), // prevent FF from autofilling on reload
-                "class" => "need-diff-check need-unload-protection"
+                "class" => $form_class
             ]),
             '<div class="leftmenu-left"><nav class="leftmenu-menu">',
             '<h1 class="leftmenu"><button type="button" class="q uic js-leftmenu">Settings</button></h1>',
@@ -120,7 +124,7 @@ class Settings_Page {
             '<main class="leftmenu-content main-column">';
 
         if ($group !== "list") {
-            $this->print_extant_group($group, $qreq);
+            $this->print_extant_group($group, $groupj, $qreq);
         } else {
             $this->print_list();
         }
@@ -131,11 +135,11 @@ class Settings_Page {
     }
 
     /** @param string $group
+     * @param ?object $gj
      * @param Qrequest $qreq */
-    private function print_extant_group($group, $qreq) {
+    private function print_extant_group($group, $gj, $qreq) {
         $sv = $this->sv;
         echo '<h2 class="leftmenu">', $sv->group_title($group);
-        $gj = $sv->cs()->get($group);
         if ($gj && isset($gj->title_help_group)) {
             echo " ", Ht::link(Icons::ui_solid_question(), $sv->conf->hoturl("help", "t={$gj->title_help_group}"), ["class" => "ml-1"]);
         }
