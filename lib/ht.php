@@ -713,9 +713,8 @@ class Ht {
             return "msg msg-warning";
         } else if ($status === -3 /* MessageSet::SUCCESS */) {
             return "msg msg-confirm";
-        } else {
-            return "msg msg-info";
         }
+        return "msg msg-info";
     }
 
     /** @param string $msg
@@ -732,11 +731,10 @@ class Ht {
                 }
             }
         }
-        if ($mx !== "") {
-            return "<div class=\"" . self::msg_class($status) . "\">{$mx}</div>";
-        } else {
+        if ($mx === "") {
             return "";
         }
+        return "<div class=\"" . self::msg_class($status) . "\">{$mx}</div>";
     }
 
     /** @param MessageItem|iterable<MessageItem>|MessageSet ...$mls

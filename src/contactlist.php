@@ -1156,7 +1156,7 @@ class ContactList {
         return $sortUrl . ($this->reverseSort ? "" : "-") . $column->name;
     }
 
-    function table_html($listname, $url, $listtitle = "", $foldsession = null) {
+    function print_table_html($listname, $url, $listtitle = "", $foldsession = null) {
         // PC tags
         $listquery = $listname;
         $this->qopt = [];
@@ -1169,8 +1169,8 @@ class ContactList {
         // get paper list
         $columns = $this->list_columns($listquery);
         if (empty($columns)) {
-            $this->conf->error_msg("<0>User set ‘{$listquery}’ not found");
-            return null;
+            echo Ht::feedback_msg(MessageItem::error("<0>User set ‘{$listquery}’ not found"));
+            return;
         }
 
         // get field array
@@ -1228,7 +1228,7 @@ class ContactList {
         $show_colors = $this->user->isPC;
 
         $anyData = [];
-        $body = '';
+        $bodyrows = [];
         $extrainfo = $hascolors = false;
         $ids = [];
         foreach ($srows as $row) {
@@ -1288,14 +1288,14 @@ class ContactList {
                     }
                     $t .= ">" . $c . "</td>";
                     if ($c != "") {
-                        $anyData[$fieldId] = 1;
+                        $anyData[$fieldId] = true;
                     }
                     ++$n;
                 }
             }
             $t .= "</tr>\n";
 
-            $body .= $t . $tt;
+            $bodyrows[] = $t . $tt;
         }
 
         $uldisplay = self::uldisplay($this->qreq);
@@ -1307,20 +1307,20 @@ class ContactList {
             }
         }
 
-        $x = "<table id=\"foldul\" class=\"pltable fullw";
+        echo "<table id=\"foldul\" class=\"pltable fullw";
         if ($foldclasses) {
-            $x .= " " . join(" ", $foldclasses);
+            echo " ", join(" ", $foldclasses);
         }
         if ($foldclasses && $foldsession) {
             $fs = [];
             foreach (self::$folds as $k => $fold) {
                 $fs[$k + 1] = $fold;
             }
-            $x .= "\" data-fold-session=\"" . htmlspecialchars(json_encode_browser($fs)) . "\" data-fold-session-prefix=\"" . htmlspecialchars($foldsession);
+            echo "\" data-fold-session=\"", htmlspecialchars(json_encode_browser($fs)), "\" data-fold-session-prefix=\"", htmlspecialchars($foldsession);
         }
-        $x .= "\">\n";
+        echo "\">\n";
 
-        $x .= "  <thead class=\"pltable-thead\">\n  <tr class=\"pl_headrow\">";
+        echo "  <thead class=\"pltable-thead\">\n  <tr class=\"pl_headrow\">";
 
         if ($this->sortable && $url) {
             $sortUrl = $url . (strpos($url, "?") ? "&amp;" : "?") . "sort=";
@@ -1334,42 +1334,37 @@ class ContactList {
                     continue;
                 }
                 if (!isset($anyData[$fieldId])) {
-                    $x .= "<th class=\"pl plh {$fdef->className}\"></th>";
+                    echo "<th class=\"pl plh {$fdef->className}\"></th>";
                     continue;
                 }
-                $x .= "<th class=\"pl plh {$fdef->className}\">";
+                echo "<th class=\"pl plh {$fdef->className}\">";
                 $ftext = $this->header($fieldId);
                 if ($fieldId === $sortField) {
                     $klass = $this->reverseSort ? "sort-descending" : "sort-ascending";
                     $qx = $this->_next_sort_link($sortUrl);
-                    $x .= "<a class=\"pl_sort {$klass}\" rel=\"nofollow\" href=\"{$qx}\">{$ftext}</a>";
+                    echo "<a class=\"pl_sort {$klass}\" rel=\"nofollow\" href=\"{$qx}\">{$ftext}</a>";
                 } else if ($fdef->sort) {
-                    $x .= "{$q}{$fdef->name}\">{$ftext}</a>";
+                    echo "{$q}{$fdef->name}\">{$ftext}</a>";
                 } else {
-                    $x .= $ftext;
+                    echo $ftext;
                 }
-                $x .= "</th>";
+                echo "</th>";
             }
 
         } else {
             foreach ($fieldDef as $fieldId => $fdef) {
                 if (!$fdef->as_row && isset($anyData[$fieldId])) {
-                    $x .= "<th class=\"pl plh {$fdef->className}\">"
-                        . $this->header($fieldId) . "</th>";
+                    echo "<th class=\"pl plh {$fdef->className}\">",
+                        $this->header($fieldId), "</th>";
                 } else if (!$fdef->as_row) {
-                    $x .= "<th class=\"pl plh {$fdef->className}\"></th>";
+                    echo "<th class=\"pl plh {$fdef->className}\"></th>";
                 }
             }
         }
 
-        $x .= "</tr></thead>\n";
+        echo "</tr></thead>\n";
 
-        reset($fieldDef);
-        if (key($fieldDef) == self::FIELD_SELECTOR) {
-            $x .= $this->footer($ncol, $hascolors);
-        }
-
-        $x .= "<tbody class=\"pltable-tbody" . ($hascolors ? " pltable-colored" : "");
+        echo "<tbody class=\"pltable-tbody" . ($hascolors ? " pltable-colored" : "");
         if ($this->user->privChair) {
             $listlink = $listname;
             if ($listlink === "pcadminx") {
@@ -1383,9 +1378,27 @@ class ContactList {
             }
             $l = (new SessionList("u/{$listlink}", $ids, $listtitle))
                 ->set_urlbase($this->conf->hoturl_raw("users", ["t" => $listlink], Conf::HOTURL_SITEREL));
-            $x .= " has-hotlist\" data-hotlist=\"" . htmlspecialchars($l->info_string());
+            echo " has-hotlist\" data-hotlist=\"", htmlspecialchars($l->info_string());
         }
-        return $x . "\">" . $body . "</tbody></table>";
+        echo "\">";
+        foreach ($bodyrows as $t) {
+            echo $t;
+        }
+        echo "</tbody>";
+
+        reset($fieldDef);
+        if (key($fieldDef) == self::FIELD_SELECTOR) {
+            echo $this->footer($ncol, $hascolors);
+        }
+
+        echo "</table>";
+    }
+
+    /** @return string */
+    function table_html($listname, $url, $listtitle = "", $foldsession = null) {
+        ob_start();
+        $this->print_table_html($listname, $url, $listtitle, $foldsession);
+        return ob_get_clean();
     }
 
     function rows($listname) {
