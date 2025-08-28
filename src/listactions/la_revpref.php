@@ -28,9 +28,8 @@ class Revpref_ListAction extends ListAction {
             return $user;
         } else if (ctype_digit($reviewer)) {
             return $user->conf->pc_member_by_id((int) $reviewer);
-        } else {
-            return $user->conf->pc_member_by_email($reviewer);
         }
+        return $user->conf->pc_member_by_email($reviewer);
     }
 
     function run(Contact $user, Qrequest $qreq, SearchSelection $ssel) {
@@ -50,9 +49,8 @@ class Revpref_ListAction extends ListAction {
                    || $this->name === "tryuploadpref"
                    || $this->name === "applyuploadpref") {
             return $this->run_uploadpref($user, $qreq, $ssel, $reviewer);
-        } else {
-            return parent::run($user, $qreq, $ssel);
         }
+        return parent::run($user, $qreq, $ssel);
     }
 
     function run_get(Contact $user, Qrequest $qreq, SearchSelection $ssel,
@@ -179,7 +177,8 @@ class Revpref_ListAction extends ListAction {
         $qreq->print_header("Review preferences", "revpref");
         $aset->feedback_msg(AssignmentSet::FEEDBACK_CHANGE);
 
-        echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]), ["class" => "differs need-unload-protection"]),
+        echo Ht::form($conf->hoturl("=reviewprefs", ["reviewer" => $reviewer_arg]),
+            ["class" => "ui-submit js-selector-summary differs need-unload-protection"]),
             Ht::hidden("fn", "applyuploadpref");
         if ($aset->assignment_count() < 5000) {
             echo Ht::hidden("data", $aset->make_acsv()->unparse(), ["data-default-value" => ""]);

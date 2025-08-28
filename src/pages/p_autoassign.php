@@ -312,7 +312,7 @@ class Autoassign_Page {
         $this->print_header();
         echo Ht::form($conf->hoturl("=autoassign", ["profile" => $qreq->profile, "seed" => $qreq->seed, "XDEBUG_PROFILE" => $qreq->XDEBUG_PROFILE]), [
                 "id" => "autoassignform",
-                "class" => "need-diff-check ui-submit js-autoassign-prepare"
+                "class" => "need-diff-check ui-submit js-autoassign-prepare js-selector-summary"
             ]),
             '<div class="helpside"><div class="helpinside">
         Assignment methods:
@@ -727,7 +727,8 @@ class Autoassign_Page {
         if (strlen($apids) > 512) {
             $apids = substr($apids, 0, 509) . "...";
         }
-        echo Ht::form($this->conf->hoturl("=autoassign", $this->qreq_parameters(["assignpids" => $apids]))),
+        echo Ht::form($this->conf->hoturl("=autoassign", $this->qreq_parameters(["assignpids" => $apids]))
+            ["class" => "ui-submit js-selector-summary"]),
             Ht::hidden("saveassignment", 1);
 
         $atype = $aset->type_description();

@@ -201,7 +201,7 @@ class BulkAssign_Page {
                 "assigntypes" => join(" ", $atypes),
                 "assignpids" => $apids,
                 "XDEBUG_TRIGGER" => $this->qreq->XDEBUG_TRIGGER
-            ])),
+            ]), ["class" => "ui-submit js-selector-summary"]),
             Ht::hidden("default_action", $defaults["action"] ?? "guess"),
             Ht::hidden("rev_round", $defaults["round"]);
         if (is_string($qf->content)) {

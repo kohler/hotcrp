@@ -14027,12 +14027,12 @@ handle_ui.on("js-submit-list", function (evt) {
     }
 });
 
-handle_ui.on("js-submit-pap-summary", function (evt) {
+handle_ui.on("js-selector-summary", function (evt) {
     if (this.elements["pap[]"]) {
         return;
     }
-    if (this.elements.p) {
-        this.elements.p.remove();
+    if (this.elements.pap) {
+        this.elements.pap.remove();
     }
     let any = false;
     const chkval = [], chknumval = [];
@@ -14056,7 +14056,7 @@ handle_ui.on("js-submit-pap-summary", function (evt) {
     const chktxt = chknumval && chknumval.length > 30
         ? encode_session_list_ids(chknumval)
         : chkval.join(" ");
-    this.appendChild(hidden_input("p", chktxt));
+    this.appendChild(hidden_input("pap", chktxt));
 });
 
 
@@ -14720,10 +14720,15 @@ $(function () {
         return p.join(">");
     }
     var err = [], elt = [];
-    $(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea,a.btn[href=''],.p,.mg,.editor").each(function () {
+    let e = document.querySelector(".js-selector");
+    if (e && e.form && (!hasClass(e.form, "ui-submit") || (!hasClass(e.form, "js-selector-summary") && !hasClass(e.form, "js-submit-list")))) {
+        err.push(locator(e.form) + ": no .js-selector-summary");
+        elt.push(e.form);
+    }
+    /*$(".xinfo,.xconfirm,.xwarning,.xmerror,.aa,.strong,td.textarea,a.btn[href=''],.p,.mg,.editor").each(function () {
         err.push(locator(this));
         elt.push(this);
-    });
+    });*/
     if (document.documentMode || window.attachEvent) {
         var msg = $('<div class="msg msg-error"></div>').appendTo("#h-messages");
         feedback.append_item_near(msg[0], {message: "<0>This site no longer supports Internet Explorer", status: 2});

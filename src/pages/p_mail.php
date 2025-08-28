@@ -371,7 +371,7 @@ class Mail_Page {
         echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq]), [
                 "id" => "mailform",
                 "data-default-messages" => json_encode_browser((object) $templates),
-                "class" => "ui-submit js-submit-pap-summary"
+                "class" => "ui-submit js-selector-summary"
             ]),
             Ht::hidden("defaultfn", ""),
             Ht::hidden_default_submit("default", 1);
