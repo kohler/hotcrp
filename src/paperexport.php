@@ -232,10 +232,7 @@ class PaperExport {
         }
 
         if (($tlist = $prow->sorted_viewable_tags($this->viewer))) {
-            $pj->tags = [];
-            foreach (Tagger::split_unpack($tlist) as $tv) {
-                $pj->tags[] = (object) ["tag" => $tv[0], "value" => $tv[1]];
-            }
+            $pj->tags = Tagger::split($tlist);
         }
 
         return $pj;
