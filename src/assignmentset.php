@@ -259,9 +259,8 @@ class AssignmentState extends MessageSet {
             return $this->filename;
         } else if ($this->filename === "") {
             return "line {$landmark}";
-        } else {
-            return "{$this->filename}:{$landmark}";
         }
+        return "{$this->filename}:{$landmark}";
     }
 
     /** @return string */
@@ -274,13 +273,12 @@ class AssignmentState extends MessageSet {
      * @param callable(AssignmentItem,AssignmentState):Assigner $realizer
      * @return bool */
     function mark_type($type, $keys, $realizer) {
-        if (!isset($this->types[$type])) {
-            $this->types[$type] = $keys;
-            $this->realizers[$type] = $realizer;
-            return true;
-        } else {
+        if (isset($this->types[$type])) {
             return false;
         }
+        $this->types[$type] = $keys;
+        $this->realizers[$type] = $realizer;
+        return true;
     }
     /** @param string $type
      * @return callable(AssignmentItem,AssignmentState):Assigner */
@@ -754,6 +752,10 @@ class AssignmentCsv {
     /** @return int */
     function count() {
         return count($this->rows);
+    }
+    /** @return list<array<string,int|string>> */
+    function rows() {
+        return $this->rows;
     }
     /** @param int $i
      * @return ?array<string,int|string> */
@@ -1359,9 +1361,8 @@ class AssignmentSet {
             return new JsonResult($status, ["ok" => false, "message_list" => $this->message_list(3000)]);
         } else if ($this->astate->has_message()) {
             return new JsonResult(["ok" => true, "message_list" => $this->message_list(3000)]);
-        } else {
-            return new JsonResult(["ok" => true]);
         }
+        return new JsonResult(["ok" => true]);
     }
 
     private static function req_user_text($req) {
@@ -2091,9 +2092,8 @@ class AssignmentSet {
         }
         if (!empty($t)) {
             return '<span class="nw">' . join(',</span> <span class="nw">', $t) . '</span>';
-        } else {
-            return "";
         }
+        return "";
     }
 
     /** @return Assignment_PaperColumn */

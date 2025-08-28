@@ -1,5 +1,5 @@
 <?php
-// search_cli.php -- Hotcrapi script for interacting with site APIs
+// cli_search.php -- Hotcrapi script for interacting with site APIs
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Search_CLIBatch implements CLIBatchCommand {

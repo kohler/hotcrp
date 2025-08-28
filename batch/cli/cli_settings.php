@@ -1,5 +1,5 @@
 <?php
-// settings_cli.php -- Hotcrapi script for interacting with site APIs
+// cli_settings.php -- Hotcrapi script for interacting with site APIs
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Settings_CLIBatch implements CLIBatchCommand {

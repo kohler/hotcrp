@@ -1,5 +1,5 @@
 <?php
-// paper_cli.php -- Hotcrapi script for interacting with site APIs
+// cli_paper.php -- Hotcrapi script for interacting with site APIs
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Paper_CLIBatch implements CLIBatchCommand {
@@ -127,7 +127,7 @@ class Paper_CLIBatch implements CLIBatchCommand {
                 if (!preg_match('/\A\s*+[\[\{]/s', $s)) {
                     throw new CommandLineException("{$this->cf->input_filename}: Expected ZIP or JSON");
                 }
-                $mt = Mimetype::JSON_TYPE . "; charset=utf-8";
+                $mt = Mimetype::JSON_UTF8_TYPE;
             }
             curl_setopt($clib->curlh, CURLOPT_URL, $this->urlbase);
             curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "POST");

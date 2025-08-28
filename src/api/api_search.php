@@ -1,6 +1,6 @@
 <?php
 // api_search.php -- HotCRP search-related API calls
-// Copyright (c) 2008-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
 
 class Search_API {
     /** @return JsonResult|PaperSearch */

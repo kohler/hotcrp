@@ -131,8 +131,7 @@ class Paper_API extends MessageSet {
 
         // check Content-Type
         $ct = $qreq->body_content_type();
-        $ct_form = $ct === "application/x-www-form-urlencoded"
-            || $ct === "multipart/form-data";
+        $ct_form = Mimetype::is_form($ct);
         if ($ct_form && !$this->post_form_is_json($qreq)) {
             // handle form-encoded data
             if (($mode & self::M_ONE) !== 0) {
@@ -215,9 +214,8 @@ class Paper_API extends MessageSet {
             return JsonResult::make_permission_error();
         } else if ($mode === self::M_MATCH) {
             return $this->run_post_match_json($qreq, $jp);
-        } else {
-            return $this->run_post_multi_json($jp);
         }
+        return $this->run_post_multi_json($jp);
     }
 
     private function set_post_param(Qrequest $qreq) {

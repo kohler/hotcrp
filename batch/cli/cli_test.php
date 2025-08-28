@@ -1,5 +1,5 @@
 <?php
-// test_cli.php -- Hotcrapi script for interacting with site APIs
+// cli_test.php -- Hotcrapi script for interacting with site APIs
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Test_CLIBatch implements CLIBatchCommand {

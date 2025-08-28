@@ -1,5 +1,5 @@
 <?php
-// upload_cli.php -- HotCRP script for interacting with site APIs
+// cli_upload.php -- HotCRP script for interacting with site APIs
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Upload_CLIBatch implements CLIBatchCommand {
