@@ -106,9 +106,8 @@ class Preference_PaperColumn extends PaperColumn {
             return "Preference";
         } else if ($is_text) {
             return $this->viewer->reviewer_text_for($this->user) . " preference";
-        } else {
-            return $this->viewer->reviewer_html_for($this->user) . "<br>preference";
         }
+        return $this->viewer->reviewer_html_for($this->user) . "<br>preference";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return $this->not_me && !$this->viewer->allow_view_preference($row);
@@ -118,7 +117,6 @@ class Preference_PaperColumn extends PaperColumn {
         $pf_exists = $pf->exists();
         $conflicted = $row->has_conflict($this->user);
         $editable = $this->editable
-            && (!$this->not_me || $this->user->can_view_paper($row))
             && ($this->all || $this->user->pc_track_assignable($row));
 
         // compute HTML
