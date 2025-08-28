@@ -727,7 +727,7 @@ class Autoassign_Page {
         if (strlen($apids) > 512) {
             $apids = substr($apids, 0, 509) . "...";
         }
-        echo Ht::form($this->conf->hoturl("=autoassign", $this->qreq_parameters(["assignpids" => $apids]))
+        echo Ht::form($this->conf->hoturl("=autoassign", $this->qreq_parameters(["assignpids" => $apids])),
             ["class" => "ui-submit js-selector-summary"]),
             Ht::hidden("saveassignment", 1);
 
