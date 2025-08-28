@@ -968,6 +968,9 @@
             {"word": "university texas", "if": "dallas"}
         ]
     },
+    "utah": {
+        "sync": "state"
+    },
     "uva": {
         "alternate": ["university virginia"]
     },
