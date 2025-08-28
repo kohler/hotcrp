@@ -23,6 +23,8 @@ class Upload_CLIBatch implements CLIBatchCommand {
     private $clib;
     /** @var int */
     private $_progress_bloblen;
+    /** @var ?list<string> */
+    private $_try_mimetype;
 
     /** @param Hotcrapi_File $cf */
     function __construct($cf) {
@@ -36,6 +38,13 @@ class Upload_CLIBatch implements CLIBatchCommand {
      * @return $this */
     function set_temporary($x) {
         $this->temporary = $x;
+        return $this;
+    }
+
+    /** @param string ...$mt
+     * @return $this */
+    function set_try_mimetypes(...$mt) {
+        $this->_try_mimetype = $mt;
         return $this;
     }
 
@@ -64,6 +73,23 @@ class Upload_CLIBatch implements CLIBatchCommand {
             $this->clib->progress_show($this->offset + $up, $this->size);
         } else {
             $this->clib->progress_show(null, null);
+        }
+    }
+
+    /** @param string $chunk */
+    private function try_mimetypes($chunk) {
+        foreach ($this->_try_mimetype as $mimetype) {
+            $b = Mimetype::base($mimetype);
+            if ($b === Mimetype::JSON_TYPE
+                && preg_match('/\A\s*+[\[\{]/s', $chunk)) {
+                $this->mimetype = $mimetype;
+                return;
+            }
+            if ($b === Mimetype::CSV_TYPE
+                && preg_match('/\A[^\r\n]*+,/s', $chunk)) {
+                $this->mimetype = $mimetype;
+                return;
+            }
         }
     }
 
@@ -108,10 +134,17 @@ class Upload_CLIBatch implements CLIBatchCommand {
             }
             $breakpos = min($clib->chunk, strlen($buf));
             $s = substr($buf, 0, $breakpos);
-            if ($s === "" && $this->offset === 0) {
-                $mi = $clib->error_at(null, "<0>Empty file");
-                $mi->landmark = $this->input_filename;
-                return null;
+            if ($this->offset === 0) {
+                if ($s === "") {
+                    $mi = $clib->error_at(null, "<0>Empty file");
+                    $mi->landmark = $this->input_filename;
+                    return null;
+                } else if (!$this->mimetype && !empty($this->_try_mimetype)) {
+                    $this->try_mimetypes($s);
+                    if ($this->mimetype) {
+                        $startargs .= "&mimetype=" . urlencode($this->mimetype);
+                    }
+                }
             }
             $eof = strlen($buf) < $clib->chunk && feof($this->stream);
             curl_setopt($clib->curlh, CURLOPT_URL, $clib->site
