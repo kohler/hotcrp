@@ -177,7 +177,7 @@ class ManageEmail_Page {
     private function choose_link() {
         echo '<div class="form-section">',
             '<h3>Link accounts</h3>',
-            '<p>If you have multiple accounts, this option can define a primary account for site use. Emails, new review requests, and new PC assignments will be redirected from linked accounts to the primary account, and papers authored by any of the linked accounts will be accessible to the primary account.</p>',
+            '<p>If you have multiple accounts, this option can define a primary account for site use. New review requests and new PC assignments will be redirected from linked accounts to the primary account. Papers authored by any of the linked accounts will be accessible to the primary account, and emails intended for authors will be delivered only to the primary account.</p>',
             Ht::link("Link accounts", $this->conf->selfurl($this->qreq, ["t" => "link"]), ["class" => "btn btn-primary"]),
             '</div>';
     }

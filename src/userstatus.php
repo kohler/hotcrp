@@ -786,10 +786,9 @@ class UserStatus extends MessageSet {
         }
     }
 
-    /** @param int $old_roles
-     * @param ?MessageSet $ms
-     * @return int */
-    static function parse_roles($j, $old_roles, $ms = null) {
+    /** @param ?MessageSet $ms
+     * @return array{int,int} */
+    static private function parse_roles($j, $ms = null) {
         $reset_roles = null;
         $ignore_empty = false;
         if (is_object($j) || (is_array($j) && !array_is_list($j))) {
@@ -800,7 +799,7 @@ class UserStatus extends MessageSet {
                     $ij[] = $k;
                 } else if ($v !== false && $v !== null) {
                     $ms && $ms->error_at("roles", "<0>Format error in roles");
-                    return $old_roles;
+                    return [0, 0];
                 }
             }
         } else if (is_string($j)) {
@@ -812,14 +811,14 @@ class UserStatus extends MessageSet {
             if ($j !== null) {
                 $ms && $ms->error_at("roles", "<0>Format error in roles");
             }
-            return $old_roles;
+            return [0, 0];
         }
 
         $add_roles = $remove_roles = 0;
         foreach ($ij as $v) {
             if (!is_string($v)) {
                 $ms && $ms->error_at("roles", "<0>Format error in roles");
-                return $old_roles;
+                return [0, 0];
             } else if ($v === "" && $ignore_empty) {
                 continue;
             }
@@ -830,10 +829,10 @@ class UserStatus extends MessageSet {
             }
             if ($v === "") {
                 $ms && $ms->error_at("roles", "<0>Format error in roles");
-                return $old_roles;
+                return [0, 0];
             } else if (is_bool($action) && strcasecmp($v, "none") === 0) {
                 $ms && $ms->error_at("roles", "<0>Format error near “none”");
-                return $old_roles;
+                return [0, 0];
             } else if (is_bool($reset_roles) && is_bool($action) === $reset_roles) {
                 $ms && $ms->warning_at("roles", "<0>Expected ‘" . ($reset_roles ? "" : "+") . "{$v}’ in roles");
             } else if ($reset_roles === null) {
@@ -858,11 +857,13 @@ class UserStatus extends MessageSet {
             }
         }
 
-        $roles = ($reset_roles ? 0 : ($old_roles & ~$remove_roles)) | $add_roles;
-        if (($roles & Contact::ROLE_CHAIR) !== 0) {
-            $roles |= Contact::ROLE_PC;
+        if ($reset_roles) {
+            $remove_roles = ~0;
         }
-        return $roles;
+        if (($add_roles & Contact::ROLE_CHAIR) !== 0) {
+            $add_roles |= Contact::ROLE_PC;
+        }
+        return [$add_roles, $remove_roles];
     }
 
     /** @param int $roles
@@ -982,6 +983,7 @@ class UserStatus extends MessageSet {
         }
 
         // - look up local user
+        list($add_roles, $remove_roles) = self::parse_roles($cj->roles ?? null, $this);
         if ($xuser && !$xuser->is_cdb_user()) {
             $old_user = $xuser;
         } else {
@@ -989,6 +991,8 @@ class UserStatus extends MessageSet {
             if ($old_user
                 && $old_user->primaryContactId > 0
                 && $this->follow_primary
+                && ($old_user->roles & Contact::ROLE_PCLIKE) === 0
+                && ($add_roles & Contact::ROLE_PCLIKE) !== 0
                 && !$xuser) {
                 $this->linked_secondary = $old_user->email;
                 $old_user = $this->conf->fresh_user_by_id($old_user->primaryContactId)
@@ -1002,10 +1006,10 @@ class UserStatus extends MessageSet {
             $old_cdb_user = $xuser;
         } else {
             $old_cdb_user = $this->conf->fresh_cdb_user_by_email($email);
-            if ($old_cdb_user
+            if (!$old_user
+                && $old_cdb_user
                 && $old_cdb_user->primaryContactId > 0
-                && $this->follow_primary
-                && !$old_user) {
+                && $this->follow_primary) {
                 $this->linked_secondary = $old_cdb_user->email;
                 $old_cdb_user = $this->conf->fresh_cdb_user_by_id($old_cdb_user->primaryContactId)
                     ?? /* should never happen */ $old_cdb_user;
@@ -1036,9 +1040,12 @@ class UserStatus extends MessageSet {
         // parse roles
         $roles = $old_roles = $old_user ? $old_user->roles : 0;
         if (isset($cj->roles)) {
-            $roles = self::parse_roles($cj->roles, $roles, $this);
+            $roles = ($old_roles & ~$remove_roles) | $add_roles;
             if ($this->if_empty >= UserStatus::IF_EMPTY_MOST) {
                 $roles |= $old_roles & Contact::ROLE_PCLIKE;
+            }
+            if (($roles & Contact::ROLE_CHAIR) !== 0) {
+                $roles |= Contact::ROLE_PC;
             }
             if ($old_user) {
                 $roles = $this->check_role_change($roles, $old_user);
