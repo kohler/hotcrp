@@ -2426,9 +2426,16 @@ class Conf {
 
     /** @param Contact $u */
     function unslice_user($u) {
-        if ($this->_user_cache !== null
-            && $u === $this->_user_cache[$u->contactId]
-            && $this->_slice !== 0) {
+        if ($u->cdb_confid !== 0) {
+            if (($m = Dbl::fetch_first_object($this->contactdb(), "select * from ContactInfo where contactDbId=?", $u->contactDbId))) {
+                $u->unslice_using($m);
+            } else {
+                // XXX should never happen
+                $u->_slice = 0;
+            }
+        } else if ($this->_user_cache !== null
+                   && $u === $this->_user_cache[$u->contactId]
+                   && $this->_slice !== 0) {
             // assume we'll need to unslice all cached users (likely the PC)
             $result = $this->qe("select * from ContactInfo where contactId?a", array_keys($this->_user_cache));
             while (($m = $result->fetch_object())) {

@@ -474,12 +474,20 @@ class Contact implements JsonSerializable {
 
 
     /** @param object $x
-     * @param bool $all */
-    function unslice_using($x, $all = false) {
-        assert($all || $this->cdb_confid === 0);
-        $shapemask = self::PROP_LOCAL | self::PROP_DATA | ($all ? 0 : self::PROP_SLICE);
+     * @param bool $import_all */
+    function unslice_using($x, $import_all = false) {
+        if ($import_all) {
+            $shapemask = self::PROP_LOCAL | self::PROP_DATA;
+            $wantshape = self::PROP_LOCAL;
+        } else if ($this->cdb_confid === 0) {
+            $shapemask = self::PROP_LOCAL | self::PROP_DATA | self::PROP_SLICE;
+            $wantshape = self::PROP_LOCAL;
+        } else {
+            $shapemask = self::PROP_CDB | self::PROP_DATA | self::PROP_SLICE;
+            $wantshape = self::PROP_CDB;
+        }
         foreach (self::$props as $prop => $shape) {
-            if (($shape & $shapemask) === self::PROP_LOCAL) {
+            if (($shape & $shapemask) === $wantshape) {
                 $value = $x->$prop;
                 if ($value === null || ($shape & self::PROP_STRING) !== 0) {
                     $this->$prop = $value;
@@ -491,13 +499,15 @@ class Contact implements JsonSerializable {
                 }
             }
         }
-        // unaccentedName is special--it's not listed in $props
-        $this->unaccentedName = $x->unaccentedName;
-        if ($all) {
+        // unaccentedName and activity_at are special
+        if ($wantshape === self::PROP_LOCAL) {
+            $this->unaccentedName = $x->unaccentedName;
+            $this->activity_at = $this->lastLogin;
+        }
+        if ($import_all) {
             $this->contactId = $this->contactXid = $x->contactId;
             $this->cdb_confid = $this->contactDbId = 0;
         }
-        $this->activity_at = $this->lastLogin;
         $this->data = $x->data;
         $this->_jdata = null;
         $this->_slice = 0;
@@ -505,7 +515,7 @@ class Contact implements JsonSerializable {
 
     function unslice() {
         if ($this->_slice !== 0) {
-            assert($this->contactId > 0);
+            assert(($this->cdb_confid !== 0 ? $this->contactDbId : $this->contactId) > 0);
             $this->conf->unslice_user($this);
         }
     }
@@ -2405,6 +2415,7 @@ class Contact implements JsonSerializable {
 
         // `$this` will become a non-cdb user, so invalidate it
         if ($this->cdb_confid !== 0) {
+            $this->unslice();
             $this->conf->invalidate_user($this);
             $this->cdb_confid = $this->contactDbId = 0;
             $this->_cdb_user = false;
@@ -6092,6 +6103,13 @@ class Contact implements JsonSerializable {
         if ($type === REVIEW_EXTERNAL
             && ($reviewer->roles & Contact::ROLE_PC) !== 0) {
             $type = REVIEW_PC;
+        }
+
+        // new external reviews are redirected to the primary
+        if ($type === REVIEW_EXTERNAL
+            && $oldtype === 0
+            && $reviewer->primaryContactId > 0) {
+            return $this->assign_review($pid, $this->conf->user_by_id($reviewer->primaryContactId), $type, $extra);
         }
 
         // change database

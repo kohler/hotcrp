@@ -2148,7 +2148,7 @@ class AssignmentSet {
         // Compute query last; unparse/account may show columns
         $q = $this->numjoin_assigned_pids(" ") ? : "NONE";
         if ($this->unparse_search) {
-            $q = "({$this->unparse_search}) THEN LEGEND:none $q";
+            $q = "({$this->unparse_search}) THEN LEGEND:none {$q}";
         }
         foreach ($this->unparse_columns as $k => $v) {
             if ($v)

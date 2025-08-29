@@ -213,11 +213,13 @@ class Review_AssignmentParser extends AssignmentParser {
                 $state->add($rev);
             }
             return true;
-        } else if ($rev === null && !$rdata->might_create_review()) {
-            return true;
         }
 
-        if ($rev === null) {
+        $created = $rev === null;
+        if ($created) {
+            if (!$rdata->might_create_review()) {
+                return true;
+            }
             $rev = $revmatch;
             $rev->_rtype = 0;
             $rev->_round = $rdata->newround;
@@ -233,6 +235,19 @@ class Review_AssignmentParser extends AssignmentParser {
         if ($rev->_rtype === REVIEW_EXTERNAL
             && ($user->roles & Contact::ROLE_PC) !== 0) {
             $rev->_rtype = REVIEW_PC;
+        }
+        if ($rev->_rtype === REVIEW_EXTERNAL
+            && $created
+            && $user->primaryContactId > 0) {
+            if ($user->cdb_confid !== 0) {
+                // need to look up by email
+                $pemail = Dbl::fetch_value($state->conf->contactdb(), "select email from ContactInfo where contactDbId=?", $user->primaryContactId);
+                $puser = $state->user_by_email($pemail);
+            } else {
+                $puser = $state->user_by_id($user->primaryContactId);
+            }
+            $state->append_item_here(MessageItem::warning_note("<0>Redirecting external review to {$user->email}’s primary account, {$puser->email}"));
+            return $this->apply($prow, $puser, $req, $state);
         }
         if ($rdata->newround !== null && $rdata->explicitround) {
             $rev->_round = $rdata->newround;

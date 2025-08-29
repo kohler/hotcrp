@@ -32,15 +32,36 @@ class RequestReview_API {
             return JsonResult::make_parameter_error("email", "<0>Invalid email address");
         }
 
+        // - redirect to primary
+        $pemail = $email;
+        $cdb_reviewer = null;
+        if ($reviewer && $reviewer->primaryContactId > 0) {
+            $reviewer = $user->conf->user_by_id($reviewer->primaryContactId);
+            $pemail = $reviewer->email;
+        } else if (!$reviewer) {
+            $cdb_reviewer = $user->conf->cdb_user_by_email($email);
+            if ($cdb_reviewer && $cdb_reviewer->primaryContactId > 0) {
+                $cdb_reviewer = $user->conf->cdb_user_by_id($cdb_reviewer->primaryContactId);
+                $pemail = $cdb_reviewer->email;
+                $reviewer = $user->conf->user_by_email($pemail);
+            }
+        }
+        $ml = [];
+        if ($email !== $pemail) {
+            $ml[] = MessageItem::warning_note_at("email", "<0>Redirecting review request to {$email}’s primary account, {$pemail}");
+        }
+
         // - check for existing review
         if ($reviewer && $prow->review_by_user($reviewer)) {
-            return JsonResult::make_parameter_error("email", "<0>{$email} is already a reviewer");
+            $ml[] = MessageItem::error_at("email", "<0>{$pemail} is already a reviewer");
+            return JsonResult::make_message_list($ml);
         }
 
         // - check for existing request
-        $request = self::request_by_paper_email($prow, $email);
+        $request = self::request_by_paper_email($prow, $pemail);
         if ($request && !$user->allow_administer($prow)) {
-            return JsonResult::make_parameter_error("email", "<0>{$email} is already a requested reviewer");
+            $ml[] = MessageItem::error_at("email", "<0>{$pemail} is already a requested reviewer");
+            return JsonResult::make_message_list($ml);
         } else if ($request) {
             self::update_qreq_from_request($qreq, $request);
         }
@@ -49,17 +70,16 @@ class RequestReview_API {
         if ($reviewer) {
             $refusal = ($prow->review_refusals_by_user($reviewer))[0] ?? null;
         } else {
-            $refusal = ($prow->review_refusals_by_email($email))[0] ?? null;
+            $refusal = ($prow->review_refusals_by_email($pemail))[0] ?? null;
         }
         if ($refusal
             && (!$user->can_administer($prow) || !$qreq->override)) {
-            $ml = [];
             if ($reviewer
                 && ($refusal->refusedBy == $reviewer->contactId
                     || ($refusal->refusedBy === null && $refusal->reason !== "request denied by chair"))) {
                 $ml[] = MessageItem::error_at("email", "<5>" . $reviewer->name_h(NAME_P) . " has declined to review this submission");
             } else {
-                $ml[] = MessageItem::error_at("email", "<0>An administrator denied a previous request for {$email} to review this submission");
+                $ml[] = MessageItem::error_at("email", "<0>An administrator denied a previous request for {$pemail} to review this submission");
             }
             if ($refusal->reason !== "" && $refusal->reason !== "request denied by chair") {
                 $ml[] = MessageItem::inform_at("email", "<5>They offered this reason: “" . htmlspecialchars($refusal->reason) . "”");
@@ -67,23 +87,24 @@ class RequestReview_API {
             if ($user->allow_administer($prow)) {
                 $ml[] = MessageItem::error_at("override", "");
             }
-            return new JsonResult(["ok" => false, "message_list" => $ml]);
+            return JsonResult::make_message_list($ml);
         }
 
         // - check for conflict
         if ($reviewer && $prow->has_conflict($reviewer)) {
-            return JsonResult::make_parameter_error("email", "<0>{$email} cannot be asked to review this submission");
+            $ml[] = MessageItem::error_at("email", "<0>{$pemail} cannot be asked to review this submission");
+            return JsonResult::make_message_list($ml);
         }
 
         // construct reviewer contact (maybe not saved)
-        $xreviewer = $reviewer ?? $user->conf->cdb_user_by_email($email);
+        $xreviewer = $reviewer ?? $user->conf->cdb_user_by_email($pemail);
         if (!$xreviewer) {
             $name_args = Author::make_keyed([
                 "firstName" => $qreq->given_name ?? $qreq->firstName,
                 "lastName" => $qreq->family_name ?? $qreq->lastName,
                 "name" => $qreq->name,
                 "affiliation" => $qreq->affiliation,
-                "email" => $email
+                "email" => $pemail
             ])->simplify_whitespace();
             $xreviewer = Contact::make_keyed($user->conf, $name_args->unparse_nea_json());
         }
@@ -109,9 +130,8 @@ class RequestReview_API {
             : $extrev_chairreq === 1
               || ($extrev_chairreq === 2 && ($potconf || $notrack))) {
             $prow->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
-                $prow->paperId, $email, $xreviewer->firstName, $xreviewer->lastName,
+                $prow->paperId, $pemail, $xreviewer->firstName, $xreviewer->lastName,
                 $xreviewer->affiliation, $user->contactId, Conf::$now, $reason, $round);
-            $ml = [];
             if ($user->can_administer($prow)) {
                 if ($potconf) {
                     $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)));
@@ -132,7 +152,7 @@ class RequestReview_API {
                 $ml[] = MessageItem::warning_note_at("email", "<5>Proposed an external review from " . $xreviewer->name_h(NAME_E));
                 $ml[] = MessageItem::inform_at("email", "<0>An administrator must approve this proposal for it to take effect.");
             }
-            $user->log_activity("Review proposal added for {$email}", $prow);
+            $user->log_activity("Review proposal added for {$pemail}", $prow);
             $prow->conf->update_automatic_tags($prow, "review");
             HotCRPMailer::send_administrators("@proposereview", $prow,
                                               ["requester_contact" => $requester,
@@ -146,9 +166,11 @@ class RequestReview_API {
         // create account
         $reviewer = $reviewer ?? $xreviewer->store(0, $user);
         if (!$reviewer) {
-            return JsonResult::make_error(400, "<0>Review assignment error: Could not create account");
+            $ml[] = MessageItem::error("<0>Review assignment error: Could not create account");
+            return JsonResult::make_message_list(400, $ml);
         } else if ($reviewer->is_disabled()) {
-            return JsonResult::make_error(403, "<0>Review assignment error: The account for " . $reviewer->name(NAME_E) . " is disabled");
+            $ml[] = MessageItem::error_at("email", "<0>Review assignment error: The account for " . $reviewer->name(NAME_E) . " is disabled");
+            return JsonResult::make_message_list(403, $ml);
         }
 
         // assign review
@@ -164,8 +186,8 @@ class RequestReview_API {
             "requester_contact" => $requester, "reason" => $reason
         ]);
 
-        $mi = MessageItem::success_at("email", "<0>Requested a review from " . $reviewer->name(NAME_E));
-        return new JsonResult(["ok" => true, "action" => "request", "message_list" => [$mi]]);
+        $ml[] = MessageItem::success_at("email", "<0>Requested a review from " . $reviewer->name(NAME_E));
+        return new JsonResult(["ok" => true, "action" => "request", "message_list" => $ml]);
     }
 
     /** @return ReviewRequestInfo */
