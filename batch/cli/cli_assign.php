@@ -117,26 +117,6 @@ class Assign_CLIBatch implements CLIBatchCommand {
         return 0;
     }
 
-    /** @return int */
-    function run_delete(Hotcrapi_Batch $clib) {
-        curl_setopt($clib->curlh, CURLOPT_URL, $this->urlbase);
-        curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "DELETE");
-        $ok = $clib->exec_api(null);
-        if (isset($clib->content_json->valid)) {
-            if (!$clib->content_json->valid) {
-                $clib->error_at(null, "<0>Delete invalid");
-            } else if ($clib->content_json->dry_run ?? false) {
-                $clib->error_at(null, "<0>Would delete #{$this->p}");
-            } else {
-                $clib->success("<0>Deleted #{$this->p}");
-            }
-        }
-        if ($clib->verbose) {
-            fwrite(STDERR, $clib->content_string);
-        }
-        return $ok ? 0 : 1;
-    }
-
     /** @return Assign_CLIBatch */
     static function make_arg(Hotcrapi_Batch $clib, Getopt $getopt, $arg) {
         $pcb = new Assign_CLIBatch;
