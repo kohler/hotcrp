@@ -989,11 +989,10 @@ class UserStatus extends MessageSet {
         } else {
             $old_user = $this->conf->fresh_user_by_email($email);
             if ($old_user
-                && $old_user->primaryContactId > 0
+                && !$xuser
                 && $this->follow_primary
-                && ($old_user->roles & Contact::ROLE_PCLIKE) === 0
                 && ($add_roles & Contact::ROLE_PCLIKE) !== 0
-                && !$xuser) {
+                && $old_user->should_use_primary("pc")) {
                 $this->linked_secondary = $old_user->email;
                 $old_user = $this->conf->fresh_user_by_id($old_user->primaryContactId)
                     ?? /* should never happen */ $old_user;
@@ -1006,10 +1005,10 @@ class UserStatus extends MessageSet {
             $old_cdb_user = $xuser;
         } else {
             $old_cdb_user = $this->conf->fresh_cdb_user_by_email($email);
-            if (!$old_user
-                && $old_cdb_user
-                && $old_cdb_user->primaryContactId > 0
-                && $this->follow_primary) {
+            if ($old_cdb_user
+                && !$old_user
+                && $this->follow_primary
+                && $old_cdb_user->should_use_primary("import")) {
                 $this->linked_secondary = $old_cdb_user->email;
                 $old_cdb_user = $this->conf->fresh_cdb_user_by_id($old_cdb_user->primaryContactId)
                     ?? /* should never happen */ $old_cdb_user;

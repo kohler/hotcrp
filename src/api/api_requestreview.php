@@ -35,12 +35,12 @@ class RequestReview_API {
         // - redirect to primary
         $pemail = $email;
         $cdb_reviewer = null;
-        if ($reviewer && $reviewer->primaryContactId > 0) {
+        if ($reviewer && $reviewer->should_use_primary("extrev")) {
             $reviewer = $user->conf->user_by_id($reviewer->primaryContactId);
             $pemail = $reviewer->email;
         } else if (!$reviewer) {
             $cdb_reviewer = $user->conf->cdb_user_by_email($email);
-            if ($cdb_reviewer && $cdb_reviewer->primaryContactId > 0) {
+            if ($cdb_reviewer && $cdb_reviewer->should_use_primary("extrev")) {
                 $cdb_reviewer = $user->conf->cdb_user_by_id($cdb_reviewer->primaryContactId);
                 $pemail = $cdb_reviewer->email;
                 $reviewer = $user->conf->user_by_email($pemail);

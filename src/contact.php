@@ -1190,6 +1190,14 @@ class Contact implements JsonSerializable {
                 && !$this->conf->opt("disableNewUsers"));
     }
 
+    /** @param 'extrev'|'pc'|'import' $for
+     * @return bool */
+    function should_use_primary($for) {
+        return $this->primaryContactId > 0
+            && ($this->cflags & (self::CF_UDISABLED | self::CF_GDISABLED)) === 0
+            && ($for !== "pc" || ($this->roles & self::ROLE_PCLIKE) === 0);
+    }
+
     /** @param bool $self_requested
      * @return bool */
     function can_receive_mail($self_requested = false) {

@@ -238,7 +238,7 @@ class Review_AssignmentParser extends AssignmentParser {
         }
         if ($rev->_rtype === REVIEW_EXTERNAL
             && $created
-            && $user->primaryContactId > 0) {
+            && $user->should_use_primary("extrev")) {
             if ($user->cdb_confid !== 0) {
                 // need to look up by email
                 $pemail = Dbl::fetch_value($state->conf->contactdb(), "select email from ContactInfo where contactDbId=?", $user->primaryContactId);
