@@ -1844,6 +1844,41 @@ concerns.
 - Testconf I Submissions
 http://hotcrp.lcdf.org/test
 ******** t_paperstatus-primary-request-01
+To: Robert Mobert <mobert1p@_.com>
+Subject: [Testconf I] Review request for submission #17
+
+Dear Robert Mobert,
+
+On behalf of the Test Conference I (Testconf I) program committee, Lixia
+Zhang <lixia@cs.ucla.edu> has asked you to review Testconf I submission
+#17.
+
+* Title: Network Text Editor (NTE): A Scalable Shared Text Editor for
+  the MBone
+* Site: http://hotcrp.lcdf.org/test/review/17?cap={{}}
+
+Once you have viewed the submission and decided whether you are willing
+to review it, please accept or decline this review request at the
+submission site.
+
+You haven't used the site as mobert1p@_.com before, so you may need to
+create a password to sign in. Use this link to set one up:
+
+http://hotcrp.lcdf.org/test/resetpassword/{{}}
+
+Should the link expire, obtain a new one using "Forgot my password".
+
+**NEW IN 2025**: You can redirect future review requests to a chosen
+email address using Account settings > Manage email.
+
+Thank you for your help -- we appreciate that reviewing is hard work.
+
+Contact Eddie Kohler <ekohler@hotcrp.lcdf.org> with any questions or
+concerns.
+
+- Testconf I Submissions
+http://hotcrp.lcdf.org/test
+******** t_paperstatus-cdb-primary-request-01
 To: Robert Bobert <bobert1p@_.com>
 Subject: [Testconf I] Review request for submission #17
 

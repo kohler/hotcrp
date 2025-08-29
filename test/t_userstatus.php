@@ -233,6 +233,34 @@ class UserStatus_Tester {
         xassert_eqq($us->user->privChair, true);
     }
 
+    function test_secondary_pc_not_followed() {
+        $this->conf->qe("delete from ContactPrimary where contactId in (select contactId from ContactInfo where email like 'globert%')");
+        $this->conf->qe("delete from ContactInfo where email like 'globert%'");
+
+        $result = $this->conf->qe("insert into ContactInfo (firstName, lastName, email, affiliation, collaborators, password, cflags, roles) values
+            ('Jimena', 'Globert', 'globert1@_.com', 'Brandeis', 'German Strawberries', '', 0, 1),
+            ('Jimena', 'Globert', 'globert1p@_.com', 'Brandeis', 'German Strawberries', '', 0, 0)");
+        xassert(!Dbl::is_error($result));
+        $globert1 = $this->conf->fresh_user_by_email("globert1@_.com");
+        $globert1p = $this->conf->fresh_user_by_email("globert1p@_.com");
+        (new ContactPrimary)->link($globert1, $globert1p);
+        xassert(!$globert1->has_tag("red"));
+
+        list($u, $qreq) = $this->make_qreq_for(
+            "chair@_.com",
+            ["uemail" => "globert1@_.com", "tags" => "red"]
+        );
+
+        $us = (new UserStatus($u))->set_qreq($qreq);
+        $us->set_follow_primary(true);
+        $us->start_update();
+        $us->request_group("");
+        xassert($us->execute_update());
+
+        $globert1 = $this->conf->fresh_user_by_email("globert1@_.com");
+        xassert($globert1->has_tag("red"));
+    }
+
     function test_confactions_link() {
         ConfActions::link($this->conf, (object) ["u" => "raju@watson.ibm.com", "email" => "chris@w3.org"]);
         xassert_eqq($this->conf->fetch_ivalue("select primaryContactId from ContactInfo where contactId=?", $this->raju_uid), $this->chris_uid);

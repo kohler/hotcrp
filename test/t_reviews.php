@@ -1817,8 +1817,42 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert(!$u_ext2p->is_placeholder());
     }
 
-    #[RequireCdb(true)]
     function test_request_reviewer_primary() {
+        $this->conf->qe("delete from ContactPrimary where contactId in (select contactId from ContactInfo where email like 'mobert%')");
+        $this->conf->qe("delete from ContactInfo where email like 'mobert%'");
+
+        $result = $this->conf->qe("insert into ContactInfo (firstName, lastName, email, affiliation, collaborators, password, cflags) values
+            ('Robert', 'Mobert', 'mobert1@_.com', 'Brandeis', 'German Strawberries', '', 0),
+            ('Robert', 'Mobert', 'mobert2@_.com', 'Brandeis', 'German Strawberries', '', 0),
+            ('Robert', 'Mobert', 'mobert1p@_.com', 'Brandeis', 'German Strawberries', '', 0)");
+        xassert(!Dbl::is_error($result));
+        $mobert1 = $this->conf->fresh_user_by_email("mobert1@_.com");
+        $mobert2 = $this->conf->fresh_user_by_email("mobert2@_.com");
+        $mobert1p = $this->conf->fresh_user_by_email("mobert1p@_.com");
+        (new ContactPrimary)->link($mobert1, $mobert1p);
+        (new ContactPrimary)->link($mobert2, $mobert1p);
+
+        MailChecker::clear();
+        $xqreq = new Qrequest("POST", ["email" => "mobert1@_.com", "name" => "Bobby Bobert", "affiliation" => "Brandeis"]);
+        $paper17 = $this->conf->checked_paper_by_id(17);
+        $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
+        xassert($result instanceof JsonResult);
+        xassert($result->content["ok"]);
+        MailChecker::check_db("t_paperstatus-primary-request-01");
+
+        $assignset = new AssignmentSet($this->u_chair);
+        $assignset->parse("paper,action,user\n18,external,mobert2@_.com");
+        $ok = $assignset->execute();
+        xassert($ok);
+        MailChecker::check0(); // XXXXXX
+
+        $p18 = $this->conf->checked_paper_by_id(18);
+        xassert(!$p18->review_by_user($mobert2));
+        xassert(!!$p18->review_by_user($mobert1p));
+    }
+
+    #[RequireCdb(true)]
+    function test_cdb_request_reviewer_primary() {
         if (!($cdb = $this->conf->contactdb())) {
             return;
         }
@@ -1845,7 +1879,7 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         $result = RequestReview_API::requestreview($this->u_lixia, $xqreq, $paper17);
         xassert($result instanceof JsonResult);
         xassert($result->content["ok"]);
-        MailChecker::check_db("t_paperstatus-primary-request-01");
+        MailChecker::check_db("t_paperstatus-cdb-primary-request-01");
 
         $assignset = new AssignmentSet($this->u_chair);
         $assignset->parse("paper,action,user\n18,external,bobert2@_.com");
