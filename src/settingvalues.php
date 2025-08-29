@@ -1130,6 +1130,7 @@ class SettingValues extends MessageSet {
         $collator = $this->conf->collator();
         $nlist2 = count($list2);
         $map1 = array_fill(0, count($list1), []);
+        '@phan-var list<list<int>> $map1';
         $map2c = array_fill(0, $nlist2, 0);
         $n2unique = 0;
         for ($i = 0; $i !== count($list1); ++$i) {

@@ -435,6 +435,7 @@ class APISpec_Batch {
                 continue;
             }
             $tags = $this->j->tags = $this->j->tags ?? [];
+            '@phan-var list<object> $tags';
             $i = 0;
             while ($i !== count($tags) && $tags[$i]->name !== $tag) {
                 ++$i;

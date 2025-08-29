@@ -1950,11 +1950,12 @@ class Settings_Tester {
         ]);
         xassert($sv->execute());
 
-        $result = $this->conf->qe("select * from PaperOption where optionId=? order by paperId asc", $brownies->id);
+        $result = $this->conf->qe("select paperId, value, data from PaperOption where optionId=? order by paperId asc", $brownies->id);
         $n = 0;
-        while (($row = $result->fetch_object())) {
-            xassert_eq($row->paperId * $row->paperId, $row->value);
-            xassert_eq($row->paperId * $row->paperId, $row->data);
+        while (($row = $result->fetch_row())) {
+            $pid = (int) $row[0];
+            xassert_eq($pid * $pid, $row[1]);
+            xassert_eq($pid * $pid, $row[2]);
             ++$n;
         }
         xassert_eqq($n, 4);
