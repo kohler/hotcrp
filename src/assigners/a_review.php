@@ -106,15 +106,12 @@ class Review_AssignmentParser extends AssignmentParser {
         return ReviewAssigner_Data::make($req, $state, $this->rtype);
     }
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
-        if ($state->user->can_administer($prow)) {
-            if ($prow->timeWithdrawn <= 0 || $this->rtype === 0) {
-                return true;
-            } else {
-                return new AssignmentError($prow->failure_reason(["withdrawn" => 1]));
-            }
-        } else {
+        if (!$state->user->can_administer($prow)) {
             return false;
+        } else if ($prow->timeWithdrawn > 0 && $this->rtype !== 0) {
+            return new AssignmentError($prow->failure_reason(["withdrawn" => 1]));
         }
+        return true;
     }
     /** @param CsvRow $req */
     function user_universe($req, AssignmentState $state) {
@@ -124,28 +121,25 @@ class Review_AssignmentParser extends AssignmentParser {
                    || (($rdata = $this->make_rdata($req, $state))
                        && !$rdata->might_create_review())) {
             return "reviewers";
-        } else {
-            return "any";
         }
+        return "any";
     }
     function paper_filter($contact, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->might_create_review()) {
             return null;
-        } else {
-            return $state->make_filter("pid",
-                new Review_Assignable(null, $contact->contactId, $rdata->oldtype ? : null, $rdata->oldround));
         }
+        return $state->make_filter("pid",
+            new Review_Assignable(null, $contact->contactId, $rdata->oldtype ? : null, $rdata->oldround));
     }
     function expand_any_user(PaperInfo $prow, $req, AssignmentState $state) {
         $rdata = $this->make_rdata($req, $state);
         if ($rdata->might_create_review()) {
             return null;
-        } else {
-            $cf = $state->make_filter("cid",
-                new Review_Assignable($prow->paperId, null, $rdata->oldtype ? : null, $rdata->oldround));
-            return $state->users_by_id(array_keys($cf));
         }
+        $cf = $state->make_filter("cid",
+            new Review_Assignable($prow->paperId, null, $rdata->oldtype ? : null, $rdata->oldround));
+        return $state->users_by_id(array_keys($cf));
     }
     function expand_missing_user(PaperInfo $prow, $req, AssignmentState $state) {
         return $this->expand_any_user($prow, $req, $state);
@@ -162,9 +156,8 @@ class Review_AssignmentParser extends AssignmentParser {
         if (Contact::is_anonymous_email($user)
             && ($u = $state->user_by_email($user, true, []))) {
             return [$u];
-        } else {
-            return null;
         }
+        return null;
     }
     function allow_user(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         // User “none” is never allowed

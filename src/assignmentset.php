@@ -248,9 +248,12 @@ class AssignmentState extends MessageSet {
         $this->landmark = $landmark;
     }
 
-    /** @param null|int|string $landmark
+    /** @param null|int|string|AssignmentItem $landmark
      * @return string */
     function landmark_near($landmark) {
+        if (is_object($landmark)) {
+            $landmark = $landmark->landmark;
+        }
         if (is_string($landmark)) {
             return $landmark === "" ? null : $landmark;
         } else if ($this->filename === null) {
@@ -528,7 +531,8 @@ class AssignmentState extends MessageSet {
     /** @param null|int|string $landmark
      * @param string $msg
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem */
+     * @return MessageItem
+     * @deprecated */
     function msg_near($landmark, $msg, $status) {
         $l = $this->landmark_near($landmark);
         if (($mi = $this->back_message())
@@ -541,15 +545,33 @@ class AssignmentState extends MessageSet {
         }
         return $mi;
     }
+    /** @param MessageItem $mi
+     * @param null|int|string|AssignmentItem $landmark
+     * @return MessageItem */
+    function append_item_near($mi, $landmark = null) {
+        $mi = $mi->with_landmark($this->landmark_near($landmark));
+        if (($bmi = $this->back_message())
+            && $bmi->landmark === $mi->landmark
+            && $bmi->message === $mi->message) {
+            $this->change_item_status($bmi, $mi->status);
+            return $bmi;
+        }
+        return $this->append_item($mi);
+    }
+    /** @param MessageItem $mi
+     * @return MessageItem */
+    function append_item_here($mi) {
+        return $this->append_item_near($mi, $this->landmark);
+    }
     /** @param string $msg
      * @return void */
     function error($msg) {
-        $this->msg_near($this->landmark, $msg, 2);
+        $this->append_item_here(MessageItem::error($msg));
     }
     /** @param string $msg
      * @return void */
     function warning($msg) {
-        $this->msg_near($this->landmark, $msg, 1);
+        $this->append_item_here(MessageItem::warning($msg));
     }
     /** @param ?string $msg
      * @return void */
@@ -561,9 +583,9 @@ class AssignmentState extends MessageSet {
      * @return void */
     function paper_error($msg) {
         if ($this->paper_exact_match) {
-            $this->msg_near($this->landmark, $msg, 2);
+            $this->append_item_here(MessageItem::error($msg));
         } else {
-            $this->nonexact_msgs[] = $this->msg_near($this->landmark, $msg, 1);
+            $this->nonexact_msgs[] = $this->append_item_here(MessageItem::warning($msg));
         }
     }
     function mark_matching_errors() {
@@ -1291,19 +1313,27 @@ class AssignmentSet {
     /** @param null|int|string $landmark
      * @param string $msg
      * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem */
+     * @return MessageItem
+     * @deprecated
+     * @suppress PhanDeprecatedFunction */
     function msg_near($landmark, $msg, $status) {
         return $this->astate->msg_near($landmark, $msg, $status);
+    }
+    /** @param MessageItem $mi
+     * @param null|int|string|AssignmentItem $landmark
+     * @return MessageItem */
+    function append_item_near($mi, $landmark = null) {
+        return $this->astate->append_item_near($mi, $landmark);
     }
     /** @param string $msg
      * @return void */
     function error($msg) {
-        $this->astate->msg_near($this->astate->landmark(), $msg, 2);
+        $this->astate->error($msg);
     }
     /** @param string $msg
      * @return void */
     function warning($msg) {
-        $this->astate->msg_near($this->astate->landmark(), $msg, 1);
+        $this->astate->warning($msg);
     }
     /** @param MessageItem $mi
      * @return void
@@ -1488,7 +1518,7 @@ class AssignmentSet {
                 return $ret->users();
             } else if (count($ret->user_ids()) > 1) {
                 $this->error("<0>‘" . self::req_user_text($req) . "’ matches more than one {$cset_text}");
-                $this->astate->msg_near($this->astate->landmark(), "<0>Use a full email address to disambiguate.", MessageSet::INFORM);
+                $this->astate->append_item_here(MessageItem::inform("<0>Use a full email address to disambiguate."));
                 return null;
             } else {
                 $this->error("<0>" . ucfirst($cset_text) . " ‘" . self::req_user_text($req) . "’ not found");
@@ -1524,7 +1554,7 @@ class AssignmentSet {
 
         if (!$csv->header()) {
             if (!($req = $csv->peek_list())) {
-                $this->msg_near(null, "<0>Empty file", 2);
+                $this->append_item_near(MessageItem::error("<0>Empty file"));
                 return false;
             }
             if (self::is_csv_header($req)) {
@@ -1532,8 +1562,8 @@ class AssignmentSet {
                 $csv->set_header($req);
                 $csv->next_list();
             } else if (!$def_action) {
-                $this->msg_near(null, "<0>CSV header required", 2);
-                $this->msg_near(null, "<5>CSV assignment files must define ‘<code>action</code>’ and ‘<code>paper</code>’ columns. Add a CSV header line to tell me what the columns mean.", MessageSet::INFORM);
+                $this->append_item_near(MessageItem::error("<0>CSV header required"));
+                $this->append_item_near(MessageItem::inform("<5>CSV assignment files must define ‘<code>action</code>’ and ‘<code>paper</code>’ columns. Add a CSV header line to tell me what the columns mean."));
                 return false;
             } else if ($def_action === "settag") {
                 $csv->set_header(["paper", "tag"]);
@@ -1588,7 +1618,7 @@ class AssignmentSet {
 
         if ((!$has_action && !$def_action)
             || !$csv->has_column("paper")) {
-            $this->msg_near(null, "<0>CSV must define “action” and “paper” columns", 2);
+            $this->append_item_near(MessageItem::error("<0>CSV must define “action” and “paper” columns"));
             return false;
         }
 
