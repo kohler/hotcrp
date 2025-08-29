@@ -1783,16 +1783,18 @@ But, in a larger sense, we can not dedicate -- we can not consecrate -- we can n
         xassert_eqq($r16f->reviewSubmitted, null);
     }
 
+    function test_set_allow_review_requests() {
+        $this->conf->save_refresh_setting("extrev_chairreq", 2);
+        $this->conf->save_refresh_setting("pcrev_editdelegate", 2);
+        Contact::update_rights();
+        MailChecker::clear();
+    }
+
     #[RequireCdb(true)]
     function test_requested_reviewer_placeholder() {
         if (!($cdb = $this->conf->contactdb())) {
             return;
         }
-
-        $this->conf->save_refresh_setting("extrev_chairreq", 2);
-        $this->conf->save_refresh_setting("pcrev_editdelegate", 2);
-        Contact::update_rights();
-        MailChecker::clear();
 
         $u_ext2p = $this->conf->user_by_email("external2p@_.com");
         xassert(!$u_ext2p);
