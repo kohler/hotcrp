@@ -2090,7 +2090,7 @@ function input_is_checkboxlike(elt) {
 }
 
 function input_is_buttonlike(elt) {
-    return elt.type === "button" || elt.type === "submit" || elt.type === "reset";
+    return elt.type === "button" || elt.type === "submit" || elt.type === "reset" || elt.type === "image";
 }
 
 function input_successful(elt) {
@@ -2099,7 +2099,7 @@ function input_successful(elt) {
     } else if (elt.type === "checkbox" || elt.type === "radio") {
         return elt.checked;
     }
-    return elt.type !== "button" && elt.type !== "submit" && elt.type !== "reset";
+    return elt.type !== "button" && elt.type !== "submit" && elt.type !== "reset" && elt.type !== "image";
 }
 
 function input_default_value(elt) {
@@ -8033,12 +8033,13 @@ hotcrp.shortcut = function (top_elt) {
         var e = evt.target;
         if (e && e !== top_elt) {
             // reject targets that want the keypress
-            var tag = e.tagName, type = e.type;
+            const tag = e.tagName, type = e.type;
             if (tag === "TEXTAREA"
                 || tag === "SELECT"
                 || (tag === "INPUT"
                     && type !== "button"
                     && type !== "checkbox"
+                    && type !== "image"
                     && type !== "radio"
                     && type !== "reset"
                     && type !== "submit"))
