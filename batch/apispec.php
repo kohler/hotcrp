@@ -299,6 +299,7 @@ class APISpec_Batch {
     const F_SUFFIX = 0x10;
     const F_PATH = 0x20;
     const F_DEFAULT = 0x40;
+    const F_DEPRECATED = 0x80;
     const FM_NONGET = 0x0E;
 
     /** @param string $p
@@ -318,6 +319,8 @@ class APISpec_Batch {
                 $f |= self::F_FILE;
             } else if ($p[$i] === ":") {
                 $f |= self::F_SUFFIX;
+            } else if ($p[$i] === "<") {
+                $f |= self::F_DEPRECATED;
             } else {
                 break;
             }
@@ -410,7 +413,8 @@ class APISpec_Batch {
         foreach ($parameters as $p) {
             list($name, $f) = self::parse_field_name($p);
             if ($name !== ""
-                && (empty($only) || in_array($name, $only, true))) {
+                && ((empty($only) && ($f & self::F_DEPRECATED) === 0)
+                    || in_array($name, $only, true))) {
                 $this->add_field($name, $f);
             }
         }

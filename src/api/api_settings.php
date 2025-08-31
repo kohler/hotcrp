@@ -21,6 +21,11 @@ class Settings_API {
         if ($qreq->valid_post()) {
             if ($qreq->body_content_type() === Mimetype::JSON_TYPE) {
                 $jtext = $qreq->body();
+            } else if (($qf = $qreq->file("settings"))) {
+                $jtext = $qf->content();
+                if (!isset($qreq->filename)) {
+                    $qreq->filename = $qf->name;
+                }
             } else if (isset($qreq->settings)) {
                 $jtext = $qreq->settings;
             } else {
@@ -42,6 +47,7 @@ class Settings_API {
             }
             $content["ok"] = !$sv->has_error();
             $content["message_list"] = $sv->message_list();
+            $content["valid"] = !$sv->has_error();
             $cl = [];
             foreach ($sv->changed_top_si() as $si) {
                 $cl[] = $si->name;
@@ -50,7 +56,6 @@ class Settings_API {
             if ($sv->has_error()) {
                 return new JsonResult($content);
             } else if ($dry_run) {
-                $sv->set_si_filter(null)->set_si_exclude(null);
                 $content["settings"] = $sv->all_jsonv(["new" => true]);
                 return new JsonResult($content);
             }

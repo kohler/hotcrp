@@ -100,6 +100,7 @@ class SpecValidator_API {
     }
 
     static function response($uf, Qrequest $qreq, $jr) {
+        $post = $qreq->is_post();
         if (!($jr instanceof JsonResult)
             || !isset($uf->response)) {
             return;
@@ -129,9 +130,14 @@ class SpecValidator_API {
                 } else if ($p[$i] === "*") {
                     $f &= ~self::F_REQUIRED;
                     break;
+                } else if ($p[$i] === "+") {
+                    $f |= self::F_POST;
                 } else {
                     break;
                 }
+            }
+            if (!$post && ($f & self::F_POST) !== 0) {
+                continue;
             }
             $n = substr($p, $i);
             $known[$n] = $f;

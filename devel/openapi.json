@@ -2,9 +2,9 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-08-26:1d75c73ed",
+        "version": "2025-08-29:98ebb9c98",
         "summary": "HotCRP conference management software API",
-        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n"
+        "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n\n\n### Large queries\n\nA `POST` request whose `:method:` query parameter is set to `GET` is treated as\nif it were a `GET` request. This can help work around web server URL length\nlimits.\n"
     },
     "servers": [
         {
@@ -56,10 +56,6 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "dry_run": {},
-                                        "change_list": {},
-                                        "valid": {},
-                                        "pid": {},
                                         "paper": {
                                             "$ref": "#/components/schemas/paper"
                                         }
@@ -294,8 +290,8 @@
                                     "type": "object",
                                     "required": [
                                         "ok",
-                                        "change_list",
-                                        "valid"
+                                        "valid",
+                                        "change_list"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -308,16 +304,16 @@
                                             "type": "boolean",
                                             "description": "True for `dry_run` requests"
                                         },
+                                        "valid": {
+                                            "type": "boolean",
+                                            "description": "True if the delete request was valid"
+                                        },
                                         "change_list": {
                                             "type": "array",
                                             "items": {
                                                 "type": "string"
                                             },
                                             "description": "`[\"delete\"]`"
-                                        },
-                                        "valid": {
-                                            "type": "boolean",
-                                            "description": "True if the delete request was valid"
                                         }
                                     }
                                 }
@@ -4335,8 +4331,43 @@
         },
         "/settings": {
             "get": {
+                "summary": "Fetch site settings",
+                "description": "This endpoint returns a JSON object defining all site settings. The result can\nbe used to examine settings offline, change settings otherwise unavailable\nthrough the settings UI, or transfer settings to another site.\n\nThe `filter` and `exclude` parameters can filter the returned settings to a\nsubset. For example, when exporting one site’s settings for use by another, you\nmight set `exclude` to `#id OR #deadline`; this excludes settings relevant to a\nconference’s identity (`conference_name`, `site_contact_email`, etc.) or\ndeadlines.\n",
                 "tags": [
                     "Settings"
+                ],
+                "x-badges": [
+                    {
+                        "name": "Admin only"
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "reset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "filter",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Search expression defining settings to include"
+                    },
+                    {
+                        "name": "exclude",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Search expression defining settings to exclude"
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -4356,9 +4387,9 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "dry_run": {},
-                                        "change_list": {},
-                                        "settings": {}
+                                        "settings": {
+                                            "type": "object"
+                                        }
                                     }
                                 }
                             }
@@ -4377,39 +4408,60 @@
                 }
             },
             "post": {
+                "summary": "Modify site settings",
+                "description": "This endpoint modifies site settings according to a JSON object. This object may\ndefine a full complement of settings or a subset. It may be provided as a\nrequest body with type `application/json`, or as a body parameter with name\n`settings`.\n\nThe `filter` and `exclude` parameters can filter the modifications that are\napplied; for example, uploading a settings object with `filter` set to `#rf`\nwill only change settings relevant to the review form.\n\nFor more information on JSON settings, see [Help > Advanced settings](https://help.hotcrp.com/help/jsonsettings).\n",
                 "tags": [
                     "Settings"
+                ],
+                "x-badges": [
+                    {
+                        "name": "Admin only"
+                    }
                 ],
                 "parameters": [
                     {
                         "name": "dry_run",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True checks input for errors, but does not save changes"
                     },
                     {
                         "name": "reset",
                         "in": "query",
                         "required": false,
-                        "schema": {}
-                    },
-                    {
-                        "name": "filename",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "boolean"
+                        }
                     },
                     {
                         "name": "filter",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Search expression defining settings to include"
                     },
                     {
                         "name": "exclude",
                         "in": "query",
                         "required": false,
-                        "schema": {}
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Search expression defining settings to exclude"
+                    },
+                    {
+                        "name": "filename",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "File name for `settings` object (for error messages)"
                     }
                 ],
                 "requestBody": {
@@ -4419,7 +4471,10 @@
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "settings": {}
+                                    "settings": {
+                                        "type": "object",
+                                        "description": "Settings to change"
+                                    }
                                 }
                             }
                         }
@@ -4434,6 +4489,8 @@
                                     "type": "object",
                                     "required": [
                                         "ok",
+                                        "valid",
+                                        "change_list",
                                         "settings"
                                     ],
                                     "properties": {
@@ -4443,9 +4500,25 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "dry_run": {},
-                                        "change_list": {},
-                                        "settings": {}
+                                        "dry_run": {
+                                            "type": "boolean",
+                                            "description": "True for dry-run requests"
+                                        },
+                                        "valid": {
+                                            "type": "boolean",
+                                            "description": "True if the modification was valid"
+                                        },
+                                        "change_list": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "List of modified top-level settings"
+                                        },
+                                        "settings": {
+                                            "type": "object",
+                                            "description": "New settings"
+                                        }
                                     }
                                 }
                             }
@@ -5982,7 +6055,8 @@
             "name": "Site administration"
         },
         {
-            "name": "Settings"
+            "name": "Settings",
+            "description": "These endpoints fetch and modify site settings.\n\n\n"
         },
         {
             "name": "Session"

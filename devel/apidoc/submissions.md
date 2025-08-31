@@ -133,8 +133,8 @@ to `0`.
 * param ?upload upload_token: Upload token for large input file
 * response ?dry_run boolean: True for `dry_run` requests
 * response ?paper paper: JSON version of modified paper
-* response ?+change_list [string]: List of changed fields
 * response ?+valid boolean: True if the modification was valid
+* response ?+change_list [string]: List of changed fields
 
 
 # delete /{p}/paper
@@ -151,8 +151,8 @@ Delete the submission specified by `p`, a submission ID.
 * param ?reason string: Optional text included in notification emails
 * param ?if_unmodified_since string: Don’t delete if modified since this time
 * response ?dry_run boolean: True for `dry_run` requests
-* response change_list [string]: `["delete"]`
 * response valid boolean: True if the delete request was valid
+* response change_list [string]: `["delete"]`
 * badge admin
 
 
