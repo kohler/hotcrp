@@ -2094,12 +2094,12 @@ function input_is_buttonlike(elt) {
 }
 
 function input_successful(elt) {
-    if (elt.disabled || !elt.name)
+    if (elt.disabled || !elt.name) {
         return false;
-    else if (elt.type === "checkbox" || elt.type === "radio")
+    } else if (elt.type === "checkbox" || elt.type === "radio") {
         return elt.checked;
-    else
-        return elt.type !== "button" && elt.type !== "submit" && elt.type !== "reset";
+    }
+    return elt.type !== "button" && elt.type !== "submit" && elt.type !== "reset";
 }
 
 function input_default_value(elt) {
@@ -11676,7 +11676,7 @@ $(window).on("hotcrptags", function (evt, rv) {
             $(window).trigger("hotcrptags", [paper]);
         }
     } else if (rv.p) /* backward compat */ {
-        for (i in rv.p) {
+        for (const i in rv.p) {
             rv.p[i].pid = +i;
             $(window).trigger("hotcrptags", [rv.p[i]]);
         }
@@ -14041,8 +14041,8 @@ handle_ui.on("js-selector-summary", function (evt) {
     if (this.elements.pap) {
         this.elements.pap.remove();
     }
-    let any = false;
-    const chkval = [], chknumval = [];
+    const chkval = [];
+    let any = false, chknumval = [];
     for (const e of this.querySelectorAll("input.js-selector")) {
         any = true;
         if (e.checked) {
