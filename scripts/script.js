@@ -13819,35 +13819,40 @@ handle_ui.on("js-assign-list-action", function (evt) {
     });
 });
 
+(function () {
+
 function handle_list_submit_bulkwarn(table, chkval, bgform, evt) {
-    var chki = table.querySelectorAll("tr.pl[data-bulkwarn]"), i, n = 0;
-    for (i = 0; i !== chki.length && n < 4; ++i) {
+    const chki = table.querySelectorAll("tr.pl[data-bulkwarn]");
+    let n = 0;
+    for (let i = 0; i !== chki.length && n < 4; ++i) {
         if (chkval.indexOf(chki[i].getAttribute("data-pid")) >= 0)
             ++n;
     }
-    if (n >= 4) {
-        const ctr = $e("div", "container"),
-            $pu = $popup({near: evt.target}).append(ctr)
-                .append_actions($e("button", {type: "button", name: "bsubmit", class: "btn-primary"}, "Download"), "Cancel");
-        let m = table.getAttribute("data-bulkwarn-ftext");
-        if (m === null || m === "") {
-            m = "<5><p>Some program committees discourage reviewers from downloading " + siteinfo.snouns[1] + " in bulk. Are you sure you want to continue?</p>";
-        }
-        render_text.onto(ctr, "f", m);
-        $pu.on("closedialog", function () {
-            bgform && document.body.removeChild(bgform);
-        });
-        $pu.show().on("click", "button[name=bsubmit]", function () {
-            bgform.submit();
-            bgform = null;
-            $pu.close();
-        });
-        return false;
-    } else
+    if (n < 4) {
         return true;
+    }
+    const ctr = $e("div", "container"),
+        $pu = $popup({near: evt.target}).append(ctr)
+            .append_actions($e("button", {type: "button", name: "bsubmit", class: "btn-primary"}, "Download"), "Cancel");
+    let m = table.getAttribute("data-bulkwarn-ftext");
+    if (m === null || m === "") {
+        m = "<5><p>Some program committees discourage reviewers from downloading " + siteinfo.snouns[1] + " in bulk. Are you sure you want to continue?</p>";
+    }
+    render_text.onto(ctr, "f", m);
+    $pu.on("closedialog", function () {
+        if (bgform) {
+            document.body.removeChild(bgform);
+        }
+    });
+    $pu.show().on("click", "button[name=bsubmit]", function () {
+        bgform.submit();
+        bgform = null;
+        $pu.close();
+    });
+    return false;
 }
 
-function handle_list_submit_get(bgform) {
+function allow_list_submit_get(bgform) {
     if (bgform.action.indexOf("?") >= 0) {
         return false;
     }
@@ -13859,36 +13864,28 @@ function handle_list_submit_get(bgform) {
         p.set(e.name, e.value);
     }
     const url = bgform.action + "?" + p.toString();
-    if (url.length >= 7000) {
-        return false;
-    }
-    if (bgform.target === "_blank") {
-        window.open(url, "_blank", "noopener");
-    } else {
-        window.location = url;
-    }
-    return true;
+    return url.length < 7000;
 }
 
 handle_ui.on("js-submit-list", function (evt) {
     evt.preventDefault();
 
     // choose action
-    var form = this, fn = "", fnbutton, e, ne, i, es;
+    let form = this, fn = "", fnbutton, e;
     if (this instanceof HTMLButtonElement) {
         fnbutton = this;
         fn = this.value;
         form = this.form;
     } else if ((e = form.elements.defaultfn) && e.value) {
         fn = e.value;
-        es = form.elements.fn;
-        for (i = 0; es && i !== es.length; ++i) {
+        const es = form.elements.fn;
+        for (let i = 0; es && i !== es.length; ++i) {
             if (es[i].value === fn)
                 fnbutton = es[i];
         }
     } else if (document.activeElement
                && (e = document.activeElement.closest(".pl-footer-part"))) {
-        es = e.querySelectorAll(".js-submit-list");
+        const es = e.querySelectorAll(".js-submit-list");
         if (es && es.length === 1) {
             fn = es[0].value;
             fnbutton = es[0];
@@ -13903,13 +13900,12 @@ handle_ui.on("js-submit-list", function (evt) {
 
     // find selected
     const table = (fnbutton && fnbutton.closest(".pltable")) || form;
-    es = table.querySelectorAll("input.js-selector");
     // Keep track of both string versions and numeric versions
     // (numeric versions for possible session list encoding).
     const allval = [];
     let allnumval = [], chkval = [], chknumval = [], isdefault = false;
-    for (i = 0; i !== es.length; ++i) {
-        const v = es[i].value, checked = es[i].checked;
+    for (e of table.querySelectorAll("input.js-selector")) {
+        const v = e.value, checked = e.checked;
         allval.push(v);
         checked && chkval.push(v);
         if (allnumval && ((v | 0) != v || v.startsWith("0"))) {
@@ -13939,6 +13935,7 @@ handle_ui.on("js-submit-list", function (evt) {
         : chkval.join(" ");
 
     // remove old background forms
+    let ne;
     for (e = document.body.firstChild; e; e = ne) {
         ne = e.nextSibling;
         if (e.className === "is-background-form")
@@ -13964,77 +13961,88 @@ handle_ui.on("js-submit-list", function (evt) {
     document.body.appendChild(bgform);
 
     // set list function (`fn`)
-    if (!bgform.elements.fn)
+    if (!bgform.elements.fn) {
         bgform.appendChild(hidden_input("fn", ""));
+    }
     bgform.elements.fn.value = fn;
 
     // set papers
-    if (chktxt)
+    if (chktxt) {
         bgform.appendChild(hidden_input("p", chktxt));
-    if (isdefault)
+    }
+    if (isdefault) {
         bgform.appendChild(hidden_input("pdefault", "yes"));
-    if (form.elements.forceShow && form.elements.forceShow.value !== "")
+    }
+    if (form.elements.forceShow && form.elements.forceShow.value !== "") {
         bgform.appendChild(hidden_input("forceShow", form.elements.forceShow.value));
+    }
 
     // transfer other form elements
     if (fnbutton && (e = fnbutton.closest(".pl-footer-part"))) {
-        es = e.querySelectorAll("input, select, textarea");
-        for (i = 0; i !== es.length; ++i) {
-            if (input_successful(es[i])) {
-                if (es[i].type === "file") {
-                    e = document.createElement("input");
-                    e.setAttribute("type", "file");
-                    e.setAttribute("name", es[i].name);
-                    bgform.appendChild(e);
-                    e.files = es[i].files;
-                } else {
-                    bgform.appendChild(hidden_input(es[i].name, es[i].value));
-                }
-                if (es[i].hasAttribute("data-bulkwarn")
-                    || (es[i].tagName === "SELECT"
-                        && es[i].selectedIndex >= 0
-                        && es[i].options[es[i].selectedIndex].hasAttribute("data-bulkwarn")))
-                    need_bulkwarn = true;
+        for (const ex of e.querySelectorAll("input, select, textarea")) {
+            if (!input_successful(ex)) {
+                continue;
+            }
+            if (ex.type === "file") {
+                const ef = document.createElement("input");
+                ef.setAttribute("type", "file");
+                ef.setAttribute("name", ex.name);
+                bgform.appendChild(ef);
+                ef.files = ex.files;
+            } else {
+                bgform.appendChild(hidden_input(ex.name, ex.value));
+            }
+            if (ex.hasAttribute("data-bulkwarn")
+                || (ex.tagName === "SELECT"
+                    && ex.selectedIndex >= 0
+                    && ex.options[ex.selectedIndex].hasAttribute("data-bulkwarn"))) {
+                need_bulkwarn = true;
             }
         }
     }
 
     // maybe remove subfunction (e.g. `getfn`)
-    if ((i = fn.indexOf("/")) > 0) {
-        const supfn = fn.substring(0, i),
+    const slash = fn.indexOf("/");
+    if (slash > 0) {
+        const supfn = fn.substring(0, slash),
             subfne = bgform.elements[supfn + "fn"];
-        if (subfne && subfne.value === fn.substring(i + 1))
+        if (subfne && subfne.value === fn.substring(slash + 1)) {
             subfne.remove();
+        }
+    }
+
+    // maybe adjust form method
+    if (bgform.method === "get" && !allow_list_submit_get(bgform)) {
+        bgform.action = hoturl_search(bgform.action, ":method:", "GET");
+        bgform.method = "post";
+    }
+    if (bgform.method !== "get") {
+        let action = bgform.action;
+        bgform.enctype = "multipart/form-data";
+        bgform.acceptCharset = "UTF-8";
+        if (bgform.elements.fn) {
+            action = hoturl_search(action, "fn", bgform.elements.fn.value);
+            bgform.elements.fn.remove();
+        }
+        if (bgform.elements.p && bgform.elements.p.value.length < 100) {
+            action = hoturl_search(action, "p", bgform.elements.p.value);
+            bgform.elements.p.remove();
+        }
+        bgform.action = action;
     }
 
     // check bulk-download warning (need string versions of ids)
-    if (need_bulkwarn && !handle_list_submit_bulkwarn(table, chkval, bgform, evt))
+    if (need_bulkwarn
+        && !handle_list_submit_bulkwarn(table, chkval, bgform, evt)) {
         return;
+    }
 
-    // either set location or submit form
-    action = bgform.action;
-    if (bgform.method === "get") {
-        if (handle_list_submit_get(bgform)) {
-            return;
-        }
-        action = hoturl_search(action, ":method:", "GET");
-    }
-    bgform.method = "post";
-    bgform.enctype = "multipart/form-data";
-    bgform.acceptCharset = "UTF-8";
-    if (bgform.elements.fn) {
-        action = hoturl_search(action, "fn", bgform.elements.fn.value);
-        bgform.elements.fn.remove();
-    }
-    if (bgform.elements.p && bgform.elements.p.value.length < 100) {
-        action = hoturl_search(action, "p", bgform.elements.p.value);
-        bgform.elements.p.remove();
-    }
-    bgform.action = action;
     bgform.submit();
 });
 
-handle_ui.on("js-selector-summary", function (evt) {
+})();
+
+handle_ui.on("js-selector-summary", function () {
     if (this.elements["pap[]"]) {
         return;
     }
