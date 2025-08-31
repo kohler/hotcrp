@@ -1433,36 +1433,30 @@ function hoturl_add(url, component) {
 }
 
 function hoturl_search(url, key, value) {
-    var hash = url.indexOf("#"), question = url.indexOf("?"), pos;
-    hash = hash < 0 ? url.length : hash;
-    if (question < 0 && url.indexOf("/") < 0)
-        question = 0;
-    if (arguments.length === 1)
-        return question >= 0 && question < hash ? url.substring(question, hash) : "";
-    pos = question >= 0 && question < hash ? question : url.length;
-    while (pos >= 0 && (pos = url.indexOf(key, pos)) > 0 && pos < hash) {
-        var pch = url.charCodeAt(pos - 1), nch = url.charCodeAt(pos + key.length);
-        if ((pch === 63 || pch === 59 || pch === 38)
-            && (nch !== nch || nch === 61 || nch === 35 || nch === 59 || nch === 38)) {
-            var vpos = pos + key.length + (nch === 61),
-                amp = url.indexOf("&", vpos),
-                semi = url.indexOf(";", vpos),
-                stop = Math.min(hash, amp < 0 ? hash : amp, semi < 0 ? hash : semi);
-            if (arguments.length === 2)
-                return urldecode(url.substring(vpos, stop));
-            else if (value == null)
-                return url.substring(0, pos - (stop === hash)) + url.substring(stop + (stop < hash));
-            else
-                return url.substring(0, vpos).concat(nch === 61 ? "" : "=", urlencode(value), url.substring(stop));
-        }
-        pos += key.length;
+    let hash = url.indexOf("#"), question = url.indexOf("?");
+    if (hash < 0) {
+        hash = url.length;
     }
-    if (arguments.length === 2)
-        return null;
-    else if (value == null)
-        return url;
-    else
-        return url.substring(0, hash).concat(question < 0 || question > hash ? "?" : "&", key, "=", urlencode(value), url.substring(hash));
+    if (question < 0) {
+        question = url.length;
+    }
+    const s = question < hash ? url.substring(question, hash) : "";
+    if (arguments.length === 1) {
+        return s;
+    }
+    const param = new URLSearchParams(s);
+    if (arguments.length === 2) {
+        return param.get(key);
+    }
+    if (value == null) {
+        param.delete(key);
+    } else {
+        param.set(key, value);
+    }
+    const pfx = url.substring(0, Math.min(question, hash)),
+        ns = param.toString(),
+        sfx = url.substring(hash);
+    return ns === "" ? pfx + sfx : `${pfx}?${ns}${sfx}`;
 }
 
 function hoturl_clean_param(x, k, value_match, allow_fail) {
@@ -13854,21 +13848,25 @@ function handle_list_submit_bulkwarn(table, chkval, bgform, evt) {
 }
 
 function handle_list_submit_get(bgform) {
-    if (bgform.action.indexOf("?") >= 0)
+    if (bgform.action.indexOf("?") >= 0) {
         return false;
-    const vs = [];
-    for (let e = bgform.firstChild; e; e = e.nextSibling) {
-        if (e.type === "file")
-            return false;
-        vs.push(urlencode(e.name) + "=" + urlencode(e.value));
     }
-    const url = bgform.action + "?" + vs.join("&");
-    if (url.length >= 2800)
+    const p = new URLSearchParams;
+    for (let e = bgform.firstChild; e; e = e.nextSibling) {
+        if (e.type === "file") {
+            return false;
+        }
+        p.set(e.name, e.value);
+    }
+    const url = bgform.action + "?" + p.toString();
+    if (url.length >= 7000) {
         return false;
-    if (bgform.target === "_blank")
+    }
+    if (bgform.target === "_blank") {
         window.open(url, "_blank", "noopener");
-    else
+    } else {
         window.location = url;
+    }
     return true;
 }
 
@@ -14014,22 +14012,26 @@ handle_ui.on("js-submit-list", function (evt) {
         return;
 
     // either set location or submit form
-    if (bgform.method !== "get" || !handle_list_submit_get(bgform)) {
-        bgform.method = "post";
-        bgform.enctype = "multipart/form-data";
-        bgform.acceptCharset = "UTF-8";
-        action = bgform.action;
-        if (bgform.elements.fn) {
-            action = hoturl_search(action, "fn", bgform.elements.fn.value);
-            bgform.elements.fn.remove();
+    action = bgform.action;
+    if (bgform.method === "get") {
+        if (handle_list_submit_get(bgform)) {
+            return;
         }
-        if (bgform.elements.p && bgform.elements.p.value.length < 100) {
-            action = hoturl_search(action, "p", bgform.elements.p.value);
-            bgform.elements.p.remove();
-        }
-        bgform.action = action;
-        bgform.submit();
+        action = hoturl_search(action, ":method:", "GET");
     }
+    bgform.method = "post";
+    bgform.enctype = "multipart/form-data";
+    bgform.acceptCharset = "UTF-8";
+    if (bgform.elements.fn) {
+        action = hoturl_search(action, "fn", bgform.elements.fn.value);
+        bgform.elements.fn.remove();
+    }
+    if (bgform.elements.p && bgform.elements.p.value.length < 100) {
+        action = hoturl_search(action, "p", bgform.elements.p.value);
+        bgform.elements.p.remove();
+    }
+    bgform.action = action;
+    bgform.submit();
 });
 
 handle_ui.on("js-selector-summary", function (evt) {

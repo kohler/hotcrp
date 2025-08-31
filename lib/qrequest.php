@@ -585,6 +585,13 @@ class Qrequest implements ArrayAccess, IteratorAggregate, Countable, JsonSeriali
         }
         $qreq->_body_type = empty($_POST) ? self::BODY_FILE : self::BODY_NONE;
 
+        // Work around GET URL length limitations with `:method:` parameter.
+        // A POST request can set `:method:` to GET for GET semantics.
+        if (($v = $qreq->_v[":method:"] ?? null) === "GET"
+            && $qreq->method() === "POST") {
+            $qreq->_method = "GET";
+        }
+
         // $_FILES requires special processing since we want error messages.
         $errors = [];
         $too_big = false;
