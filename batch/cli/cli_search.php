@@ -38,7 +38,8 @@ class Search_CLIBatch implements CLIBatchCommand {
 
     /** @return int */
     function run_get(Hotcrapi_Batch $clib) {
-        curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "GET");
+        $curlh = $clib->make_curl();
+        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, "GET");
         if ($this->warn_missing) {
             $this->param["warn_missing"] = "1";
         }
@@ -46,8 +47,8 @@ class Search_CLIBatch implements CLIBatchCommand {
             $this->param["format"] = $this->format;
             $this->param["f"] = join(" ", $this->fields);
         }
-        curl_setopt($clib->curlh, CURLOPT_URL, "{$clib->site}/search?" . http_build_query($this->param));
-        if (!$clib->exec_api(null)) {
+        curl_setopt($curlh, CURLOPT_URL, "{$clib->site}/search?" . http_build_query($this->param));
+        if (!$clib->exec_api($curlh, null)) {
             return 1;
         }
         $j = $clib->content_json;
@@ -74,9 +75,10 @@ class Search_CLIBatch implements CLIBatchCommand {
 
     /** @return int */
     function run_actions(Hotcrapi_Batch $clib) {
-        curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_setopt($clib->curlh, CURLOPT_URL, "{$clib->site}/searchactions");
-        if (!$clib->exec_api(null)) {
+        $curlh = $clib->make_curl();
+        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($curlh, CURLOPT_URL, "{$clib->site}/searchactions");
+        if (!$clib->exec_api($curlh, null)) {
             return 1;
         }
         if ($this->json) {
@@ -118,9 +120,10 @@ class Search_CLIBatch implements CLIBatchCommand {
 
     /** @return int */
     function run_action(Hotcrapi_Batch $clib) {
-        curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, $this->post ? "POST" : "GET");
-        curl_setopt($clib->curlh, CURLOPT_URL, "{$clib->site}/searchaction?" . http_build_query(["action" => $this->action] + $this->param));
-        if (!$clib->exec_api([$this, "skip_action"])) {
+        $curlh = $clib->make_curl();
+        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, $this->post ? "POST" : "GET");
+        curl_setopt($curlh, CURLOPT_URL, "{$clib->site}/searchaction?" . http_build_query(["action" => $this->action] + $this->param));
+        if (!$clib->exec_api($curlh, [$this, "skip_action"])) {
             return 1;
         }
         $clib->set_output($clib->content_string);

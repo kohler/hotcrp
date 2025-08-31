@@ -39,39 +39,18 @@ class Assign_CLIBatch implements CLIBatchCommand {
             $args["summary"] = 1;
         }
 
-        if ($this->cf->size === null
-            || $this->cf->size > $clib->chunk) {
-            $upb = (new Upload_CLIBatch($this->cf))
-                ->set_temporary(true)
-                ->set_try_mimetypes(Mimetype::JSON_UTF8_TYPE, Mimetype::CSV_UTF8_TYPE);
-            $upload = $upb->execute($clib);
-            if (!$upload) {
-                return 1;
-            }
-            $args["upload"] = $upload;
-            curl_setopt($clib->curlh, CURLOPT_URL, $this->url_with($clib, $args));
-            curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($clib->curlh, CURLOPT_POSTFIELDS, "");
-        } else {
-            $s = stream_get_contents($this->cf->stream);
-            if ($s === false) {
-                throw CommandLineException::make_file_error($this->cf->input_filename);
-            }
-            if (preg_match('/\A\s*+[\[\{]/s', $s)) {
-                $mt = Mimetype::JSON_UTF8_TYPE;
-            } else if (preg_match('/\A[^\r\n]*+,/s', $s)) {
-                $mt = Mimetype::CSV_UTF8_TYPE;
-            } else {
-                throw new CommandLineException("{$this->cf->input_filename}: Expected JSON or CSV");
-            }
-            curl_setopt($clib->curlh, CURLOPT_URL, $this->url_with($clib, $args));
-            curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($clib->curlh, CURLOPT_POSTFIELDS, $s);
-            curl_setopt($clib->curlh, CURLOPT_HTTPHEADER, [
-                "Content-Type: {$mt}", "Content-Length: " . strlen($s)
-            ]);
+        $curlh = $clib->make_curl("POST");
+        $upb = (new Upload_CLIBatch($this->cf))
+            ->set_temporary(true)
+            ->set_try_mimetypes(Mimetype::JSON_UTF8_TYPE, Mimetype::CSV_UTF8_TYPE)
+            ->set_require_mimetype(true);
+        if (($token = $upb->attach_or_execute($curlh, $clib))) {
+            $args["upload"] = $token;
+        } else if ($clib->has_error()) {
+            return 1;
         }
-        $ok = $clib->exec_api(null);
+        curl_setopt($curlh, CURLOPT_URL, $this->url_with($clib, $args));
+        $ok = $clib->exec_api($curlh, null);
 
         $ml = $clib->message_list();
         $clib->clear_messages();

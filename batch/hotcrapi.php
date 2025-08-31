@@ -91,8 +91,6 @@ class Hotcrapi_Batch extends MessageSet {
      * @readonly */
     public $progress = false;
 
-    /** @var CurlHandle */
-    public $curlh;
     /** @var resource */
     public $headerf;
     /** @var int */
@@ -132,13 +130,7 @@ class Hotcrapi_Batch extends MessageSet {
     private $_progress_printed = false;
 
     function __construct() {
-        $this->curlh = curl_init();
-        curl_setopt($this->curlh, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($this->curlh, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($this->curlh, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
         $this->headerf = fopen("php://memory", "w+b");
-        curl_setopt($this->curlh, CURLOPT_WRITEHEADER, $this->headerf);
-        curl_setopt($this->curlh, CURLOPT_SAFE_UPLOAD, true);
     }
 
     /** @param bool $x
@@ -327,13 +319,30 @@ class Hotcrapi_Batch extends MessageSet {
             throw new CommandLineException("Invalid APITOKEN");
         }
         $this->apitoken = $t;
-        curl_setopt($this->curlh, CURLOPT_XOAUTH2_BEARER, $this->apitoken);
         return $this;
     }
 
     /** @return bool */
     function has_apitoken() {
         return $this->apitoken !== null;
+    }
+
+    /** @param 'GET'|'POST'|'DELETE' $method
+     * @return CurlHandle */
+    function make_curl($method = null) {
+        $curlh = curl_init();
+        curl_setopt($curlh, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($curlh, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
+        curl_setopt($curlh, CURLOPT_WRITEHEADER, $this->headerf);
+        curl_setopt($curlh, CURLOPT_SAFE_UPLOAD, true);
+        if ($this->apitoken) {
+            curl_setopt($curlh, CURLOPT_XOAUTH2_BEARER, $this->apitoken);
+        }
+        if ($method) {
+            curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, $method);
+        }
+        return $curlh;
     }
 
     /** @return $this */
@@ -396,23 +405,25 @@ class Hotcrapi_Batch extends MessageSet {
         $this->_progress_start_time = $this->_progress_time = null;
     }
 
-    /** @param callable(resource,int,int,int,int) $progressf
+    /** @param CurlHandle $curlh
+     * @param callable(resource,int,int,int,int) $progressf
      * @return $this */
-    function set_curl_progress($progressf) {
+    function set_curl_progress($curlh, $progressf) {
         if ($this->progress) {
             $curlopt = defined("CURLOPT_XFERINFOFUNCTION") ? CURLOPT_XFERINFOFUNCTION : CURLOPT_PROGRESSFUNCTION;
-            curl_setopt($this->curlh, $curlopt, $progressf);
-            curl_setopt($this->curlh, CURLOPT_NOPROGRESS, 0);
+            curl_setopt($curlh, $curlopt, $progressf);
+            curl_setopt($curlh, CURLOPT_NOPROGRESS, 0);
             $this->_progress_active = true;
         }
         return $this;
     }
 
-    /** @param ?callable(Hotcrapi_Batch):bool $skip_function
+    /** @param CurlHandle $curlh
+     * @param ?callable(Hotcrapi_Batch):bool $skip_function
      * @return bool */
-    function exec_api($skip_function = null) {
+    function exec_api($curlh, $skip_function = null) {
         if ($this->verbose) {
-            $url = curl_getinfo($this->curlh, CURLINFO_EFFECTIVE_URL);
+            $url = curl_getinfo($curlh, CURLINFO_EFFECTIVE_URL);
             if ($this->_progress_active) {
                 $this->progress_snapshot();
                 fwrite(STDERR, "{$url}\n");
@@ -422,15 +433,15 @@ class Hotcrapi_Batch extends MessageSet {
         }
         rewind($this->headerf);
         ftruncate($this->headerf, 0);
-        $this->content_string = curl_exec($this->curlh);
-        curl_setopt($this->curlh, CURLOPT_NOPROGRESS, 1);
-        $this->status_code = curl_getinfo($this->curlh, CURLINFO_RESPONSE_CODE);
-        $this->decorated_content_type = curl_getinfo($this->curlh, CURLINFO_CONTENT_TYPE);
+        $this->content_string = curl_exec($curlh);
+        curl_setopt($curlh, CURLOPT_NOPROGRESS, 1);
+        $this->status_code = curl_getinfo($curlh, CURLINFO_RESPONSE_CODE);
+        $this->decorated_content_type = curl_getinfo($curlh, CURLINFO_CONTENT_TYPE);
         $this->content_type = preg_replace('/\s*;.*\z/s', "", $this->decorated_content_type);
         if ($this->verbose) {
             if ($this->_progress_active) {
                 $this->progress_snapshot();
-                fwrite(STDERR, curl_getinfo($this->curlh, CURLINFO_EFFECTIVE_URL) . " → {$this->status_code}\n");
+                fwrite(STDERR, curl_getinfo($curlh, CURLINFO_EFFECTIVE_URL) . " → {$this->status_code}\n");
             } else {
                 fwrite(STDERR, " → {$this->status_code}\n");
             }

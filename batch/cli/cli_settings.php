@@ -35,16 +35,15 @@ class Settings_CLIBatch implements CLIBatchCommand {
         $clib->set_output_file($this->output);
         if ($this->save) {
             return $this->run_save($clib);
-        } else {
-            return $this->run_get($clib);
         }
+        return $this->run_get($clib);
     }
 
     /** @return int */
     function run_get(Hotcrapi_Batch $clib) {
-        curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_setopt($clib->curlh, CURLOPT_URL, $this->url);
-        if (!$clib->exec_api(null)) {
+        $curlh = $clib->make_curl("GET");
+        curl_setopt($curlh, CURLOPT_URL, $this->url);
+        if (!$clib->exec_api($curlh, null)) {
             return 1;
         }
         $clib->set_json_output($clib->content_json->settings);
@@ -53,17 +52,18 @@ class Settings_CLIBatch implements CLIBatchCommand {
 
     /** @return int */
     function run_save(Hotcrapi_Batch $clib) {
+        $curlh = $clib->make_curl();
         $s = stream_get_contents($this->cf->stream);
         if ($s === false) {
             throw CommandLineException::make_file_error($this->cf->input_filename);
         }
-        curl_setopt($clib->curlh, CURLOPT_URL, $this->url);
-        curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($clib->curlh, CURLOPT_POSTFIELDS, $s);
-        curl_setopt($clib->curlh, CURLOPT_HTTPHEADER, [
+        curl_setopt($curlh, CURLOPT_URL, $this->url);
+        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($curlh, CURLOPT_POSTFIELDS, $s);
+        curl_setopt($curlh, CURLOPT_HTTPHEADER, [
             "Content-Type: " . Mimetype::JSON_UTF8_TYPE, "Content-Length: " . strlen($s)
         ]);
-        $ok = $clib->exec_api(null);
+        $ok = $clib->exec_api($curlh, null);
         if (empty($clib->content_json->change_list)) {
             if (!$clib->has_error()) {
                 $clib->success("<0>No changes");

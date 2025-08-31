@@ -7,29 +7,36 @@ class Test_CLIBatch implements CLIBatchCommand {
     private $email = false;
     /** @var bool */
     private $roles = false;
+    /** @var bool */
+    private $json = false;
 
     /** @return int */
     function run(Hotcrapi_Batch $clib) {
-        curl_setopt($clib->curlh, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_setopt($clib->curlh, CURLOPT_URL, "{$clib->site}/whoami");
-        if (!$clib->exec_api(null)
+        $curlh = $clib->make_curl();
+        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($curlh, CURLOPT_URL, "{$clib->site}/whoami");
+        if (!$clib->exec_api($curlh, null)
             || !($clib->content_json->ok ?? false)) {
             return 1;
         }
-        if (!$clib->quiet) {
-            if ($this->email || $this->roles) {
-                $t = $clib->content_json->email ?? null;
-                if (!is_string($t)) {
-                    $t = "__unknown__";
-                }
-                if ($this->roles && isset($clib->content_json->roles)) {
-                    $t .= " [" . join(" ", $clib->content_json->roles) . "]";
-                }
-            } else {
-                $t = "Success";
-            }
-            $clib->set_output("{$t}\n");
+        if ($clib->quiet) {
+            return 0;
+        } else if ($this->json) {
+            $clib->set_json_output($clib->content_json);
+            return 0;
         }
+        if ($this->email || $this->roles) {
+            $t = $clib->content_json->email ?? null;
+            if (!is_string($t)) {
+                $t = "__unknown__";
+            }
+            if ($this->roles && isset($clib->content_json->roles)) {
+                $t .= " [" . join(" ", $clib->content_json->roles) . "]";
+            }
+        } else {
+            $t = "Success";
+        }
+        $clib->set_output("{$t}\n");
         return 0;
     }
 
@@ -38,6 +45,7 @@ class Test_CLIBatch implements CLIBatchCommand {
         $tb = new Test_CLIBatch;
         $tb->email = isset($arg["email"]);
         $tb->roles = isset($arg["roles"]);
+        $tb->json = isset($arg["json"]);
         return $tb;
     }
 
@@ -47,7 +55,7 @@ class Test_CLIBatch implements CLIBatchCommand {
             "Test API connection
 Usage: php batch/hotcrapi.php test"
         )->long(
-            "j,json !test Output JSON",
+            "json,j !test Output JSON",
             "email !test Output associated email",
             "roles !test Output associated email and roles"
         );
