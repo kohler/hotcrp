@@ -5467,7 +5467,7 @@ handle_ui.on("js-mail-set-template", function () {
             for (let i = 0; tl[i]; ++i) {
                 tmpl.append($e("option", {value: tl[i].name, selected: !i}, tl[i].title));
             }
-            const mf = document.getElementById("mailform");
+            const mf = document.getElementById("f-mail");
             if (mf && mf.elements.template && mf.elements.template.value
                 && selected_tm(mf.elements.template.value)) {
                 tmpl.value = mf.elements.template.value;

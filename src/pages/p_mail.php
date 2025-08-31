@@ -369,7 +369,7 @@ class Mail_Page {
 
         // form
         echo Ht::form($this->conf->hoturl("=mail", ["check" => 1, "monreq" => $this->qreq->monreq]), [
-                "id" => "mailform",
+                "id" => "f-mail",
                 "data-default-messages" => json_encode_browser((object) $templates),
                 "class" => "ui-submit js-selector-summary"
             ]),

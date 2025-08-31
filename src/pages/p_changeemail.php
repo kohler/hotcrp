@@ -75,7 +75,7 @@ class ChangeEmail_Page {
             } else {
                 echo '<p class="mb-5">Enter an email change code.</p>';
             }
-            echo Ht::form($conf->hoturl("profile", "changeemail=1"), ["class" => "compact-form", "id" => "changeemailform"]),
+            echo Ht::form($conf->hoturl("profile", "changeemail=1"), ["class" => "compact-form", "id" => "f-changeemail"]),
                 Ht::hidden("post", $qreq->post_value());
             if ($chuser) {
                 echo '<div class="f-i"><label>Old email</label>', htmlspecialchars($chuser->email), '</div>',
@@ -97,7 +97,7 @@ class ChangeEmail_Page {
                 Ht::submit("go", "Change email", ["class" => "btn-primary", "value" => 1]),
                 Ht::submit("cancel", "Cancel", ["formnovalidate" => true]),
                 '</div></form>';
-            Ht::stash_script("hotcrp.focus_within(\$(\"#changeemailform\"));window.scroll(0,0)");
+            Ht::stash_script("hotcrp.focus_within(\$(\"#f-changeemail\"));window.scroll(0,0)");
             $qreq->print_footer();
             exit(0);
         }

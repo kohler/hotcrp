@@ -49,6 +49,13 @@ Generic values
     * `#p-footer`
 * `id^=i-` is for icons
 * `id^=f-` is for forms
+    * `#f-mail`
+    * `#f-paper`
+    * `#f-profile`
+    * `#f-reauth`
+    * `#f-review`
+    * `#f-settings`
+    * `#f-signout`
 * `id^=h-` is for header elements
     * `#h-actas`
     * `#h-site`

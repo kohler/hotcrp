@@ -208,7 +208,7 @@ class MailSender {
             Ht::hidden("send", 1),
             Ht::submit("Send mail", ["class" => "btn-highlight"]),
             "</form>",
-            Ht::unstash_script('$("#mailform").submit()');
+            Ht::unstash_script('$("#f-mail").submit()');
         $qreq->print_footer();
         throw new PageCompletion;
     }
@@ -240,7 +240,7 @@ class MailSender {
 
     private function print_request_form() {
         echo Ht::form($this->conf->hoturl("=mail"), [
-            "id" => "mailform",
+            "id" => "f-mail",
             "class" => $this->phase < 2 ? "ui-submit js-mail-send-phase-{$this->phase}" : null
         ]);
         foreach ($this->qreq->subset_as_array("to", "subject", "body", "cc", "reply-to", "q", "t", "plimit", "has_plimit", "newrev_since", "template") as $k => $v) {
@@ -628,7 +628,7 @@ class MailSender {
             }
             $this->recip->append_list($mailer->message_list());
             $this->conf->feedback_msg($this->recip->decorated_message_list());
-            echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('mailform').action=" . json_encode_browser($this->conf->hoturl_raw("mail", "check=1", Conf::HOTURL_POST)));
+            echo Ht::unstash_script("\$(\"#foldmail\").addClass('hidden');document.getElementById('f-mail').action=" . json_encode_browser($this->conf->hoturl_raw("mail", "check=1", Conf::HOTURL_POST)));
             return;
         }
 
