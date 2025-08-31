@@ -772,7 +772,7 @@ class PaperInfo {
     private $_comment_array;
     /** @var ?list<CommentInfo> */
     private $_comment_skeleton_array;
-    /** @var ?list<array{int,string,int,string}> */
+    /** @var ?list<PaperInfoPotentialConflict> */
     private $_potential_conflicts;
     /** @var ?list<ReviewRequestInfo> */
     private $_request_array;
@@ -1603,52 +1603,7 @@ class PaperInfo {
      * @param Author $cflt
      * @param string $why */
     function _potential_conflict_html_callback($user, $userm, $cflt, $why) {
-        $cfltm = AuthorMatcher::make($cflt);
-        if ($userm->is_nonauthor()) {
-            $userdesc = "<em>collaborator</em> " . $cfltm->highlight($userm);
-            $order0 = 4;
-        } else if ($cflt->is_nonauthor()) {
-            $userdesc = $cfltm->highlight($userm);
-            $order0 = 2;
-        } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
-            $userdesc = "<em>affiliation</em> " . $cfltm->highlight($userm->affiliation);
-            $order0 = 3;
-        } else {
-            $userdesc = $cfltm->highlight($userm->name());
-            $order0 = 1;
-        }
-        if ($cflt->author_index === Author::COLLABORATORS_INDEX) {
-            $order = PHP_INT_MAX;
-            $cfltdesc = "<em>submission collaborator</em> " . $userm->highlight($cflt);
-        } else if (($cflt->author_index ?? 0) <= 0) {
-            $order = PHP_INT_MAX - 1;
-            $cfltdesc = "<em>contact"
-                . ($cflt->email ? " " . htmlspecialchars($cflt->email) : "")
-                . ($cflt->is_nonauthor() ? " collaborator" : "")
-                . "</em> " . $userm->highlight($cflt);
-        } else if ($cflt->is_nonauthor()) {
-            $order = $cflt->author_index | (2 << 24);
-            if (($aucflt = $this->author_by_index($cflt->author_index))) {
-                $cfltdesc = "<em>author " . $aucflt->name_h() . "’s collaborator</em> " . $userm->highlight($cflt);
-            } else {
-                error_log("#{$this->paperId}: cannot find {$cflt->author_index} " . json_encode($cflt->unparse_debug_json()) . " " . json_encode(array_map(function ($a) { return $a->unparse_debug_json(); }, $this->author_list())));
-                error_log(debug_string_backtrace());
-                $cfltdesc = "<em>author #{$cflt->author_index}’s collaborator</em> " . $userm->highlight($cflt);
-            }
-        } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
-            $order = $cflt->author_index | (1 << 24);
-            if (($aucflt = $this->author_by_index($cflt->author_index))) {
-                $cfltdesc = "<em>author</em> " . $aucflt->name_h() . " (" . $userm->highlight($cflt->affiliation) . ")";
-            } else {
-                error_log("#{$this->paperId}: cannot find {$cflt->author_index}");
-                error_log(debug_string_backtrace());
-                $cfltdesc = "<em>author #{$cflt->author_index}’s affiliation</em> " . $userm->highlight($cflt->affiliation);
-            }
-        } else {
-            $order = $cflt->author_index;
-            $cfltdesc = "<em>author</em> " . $userm->highlight($cflt);
-        }
-        $this->_potential_conflicts[] = [$order0, $userdesc, $order, $cfltdesc];
+        $this->_potential_conflicts[] = new PaperInfoPotentialConflict($userm, $cflt, $why);
     }
 
     /** @return ?PaperInfoPotentialConflictHTML */
@@ -1656,15 +1611,11 @@ class PaperInfo {
         if (!$this->potential_conflict_callback($user, [$this, "_potential_conflict_html_callback"])) {
             return null;
         }
-        usort($this->_potential_conflicts, function ($a, $b) {
-            return $a[0] <=> $b[0] ? :
-                ($a[2] <=> $b[2] ? : strnatcasecmp($a[3], $b[3]));
-        });
+        usort($this->_potential_conflicts, "PaperInfoPotentialConflict::compare");
         $authors = [];
         foreach ($this->_potential_conflicts as $x) {
-            if ($x[2] < PHP_INT_MAX - 2) {
-                $au = $x[2] & 0xFFFFFF;
-                $authors[$au] = "#{$au}";
+            if (($auidx = $x->author_index()) > 0) {
+                $authors[$auidx] = "#{$auidx}";
             }
         }
         if (!empty($authors)) {
@@ -1678,11 +1629,12 @@ class PaperInfo {
         $potconf->announce = "<div class=\"pcconfmatch{$announcehighlight}\">{$announce}</div>";
         $last = null;
         foreach ($this->_potential_conflicts as $x) {
-            if ($last === $x[1]) {
-                $potconf->messages[count($potconf->messages) - 1][] = $x[3];
+            list($userdesc, $cfltdesc) = $x->unparse_html($this);
+            if ($last === $userdesc) {
+                $potconf->messages[count($potconf->messages) - 1][] = $cfltdesc;
             } else {
-                $potconf->messages[] = [$x[1], $x[3]];
-                $last = $x[1];
+                $potconf->messages[] = [$userdesc, $cfltdesc];
+                $last = $userdesc;
             }
         }
         $this->_potential_conflicts = null;
@@ -1696,9 +1648,8 @@ class PaperInfo {
             return '<ul class="x"><li>'
                 . join('</li><li>', $potconf->render_ul_list())
                 . '</li></ul>';
-        } else {
-            return "";
         }
+        return "";
     }
 
 
@@ -3803,6 +3754,108 @@ class PaperInfoLikelyContacts implements JsonSerializable {
             $x["nonauthor_contacts"][] = $j;
         }
         return $x;
+    }
+}
+
+class PaperInfoPotentialConflict {
+    /** @var int */
+    public $order;
+    /** @var AuthorMatcher */
+    public $user;
+    /** @var Author */
+    public $cflt;
+
+    const OA_NAME = 1 << 28;
+    const OA_AUCOLLABORATOR = 2 << 28;
+    const OA_AFFILIATION = 3 << 28;
+    const OA_COLLABORATOR = 4 << 28;
+    const OA_MASK = 7 << 28;
+
+    const OB_NAME = 0;
+    const OB_AFFILIATION = 1 << 24;
+    const OB_NONAUTHOR = 2 << 24;
+    const OB_COLLABORATOR = 15 << 24;
+    const OB_CONTACT = 14 << 24;
+    const OB_MASK = 15 << 24;
+
+    const AUIDX_MASK = 0xFFFFFF;
+
+    function __construct(AuthorMatcher $au, Author $cflt, $why) {
+        $this->user = $au;
+        $this->cflt = $cflt;
+        if ($au->is_nonauthor()) {
+            $this->order = self::OA_COLLABORATOR;
+        } else if ($cflt->is_nonauthor()) {
+            $this->order = self::OA_AUCOLLABORATOR;
+        } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
+            $this->order = self::OA_AFFILIATION;
+        } else {
+            $this->order = self::OA_NAME;
+        }
+        if ($cflt->author_index === Author::COLLABORATORS_INDEX) {
+            $this->order |= self::OB_COLLABORATOR;
+        } else if (($cflt->author_index ?? 0) <= 0) {
+            $this->order |= self::OB_CONTACT;
+        } else if ($cflt->is_nonauthor()) {
+            $this->order |= self::OB_NONAUTHOR | $cflt->author_index;
+        } else if ($why === AuthorMatcher::MATCH_AFFILIATION) {
+            $this->order |= self::OB_AFFILIATION | $cflt->author_index;
+        } else {
+            $this->order |= self::OB_NAME | $cflt->author_index;
+        }
+    }
+
+    /** @param PaperInfoPotentialConflict $a
+     * @param PaperInfoPotentialConflict $b
+     * @return int */
+    static function compare($a, $b) {
+        return ($a->order <=> $b->order)
+            ? : strnatcasecmp($a->cflt->name(), $b->cflt->name());
+    }
+
+    /** @return ?int */
+    function author_index() {
+        if (($this->order & self::OB_MASK) < self::OB_CONTACT) {
+            return $this->order & self::AUIDX_MASK;
+        }
+        return null;
+    }
+
+    /** @param PaperInfo $prow
+     * @return array{string,string} */
+    function unparse_html($prow) {
+        $cfltm = AuthorMatcher::make($this->cflt);
+
+        $oa = $this->order & self::OA_MASK;
+        if ($oa === self::OA_NAME) {
+            $userdesc = $cfltm->highlight($this->user->name());
+        } else if ($oa === self::OA_AUCOLLABORATOR) {
+            $userdesc = $cfltm->highlight($this->user);
+        } else if ($oa === self::OA_AFFILIATION) {
+            $userdesc = "<em>affiliation</em> " . $cfltm->highlight($this->user->affiliation);
+        } else {
+            $userdesc = "<em>collaborator</em> " . $cfltm->highlight($this->user);
+        }
+
+        $ob = $this->order & self::OB_MASK;
+        if ($ob === self::OB_NAME) {
+            $cfltdesc = "<em>author</em> " . $this->user->highlight($this->cflt);
+        } else if ($ob === self::OB_COLLABORATOR) {
+            $cfltdesc = "<em>submission collaborator</em> " . $this->user->highlight($this->cflt);
+        } else if ($ob === self::OB_CONTACT) {
+            $cfltdesc = "<em>contact"
+                . ($this->cflt->email ? " " . htmlspecialchars($this->cflt->email) : "")
+                . ($this->cflt->is_nonauthor() ? " collaborator" : "")
+                . "</em> " . $this->user->highlight($this->cflt);
+        } else if ($ob === self::OB_AFFILIATION) {
+            $aucflt = $prow->author_by_index($this->order & self::AUIDX_MASK) ?? $this->user;
+            $cfltdesc = "<em>author</em> " . $aucflt->name_h() . " (" . $this->user->highlight($this->cflt->affiliation) . ")";
+        } else {
+            $aucflt = $prow->author_by_index($this->order & self::AUIDX_MASK) ?? $this->user;
+            $cfltdesc = "<em>author " . $aucflt->name_h() . "’s collaborator</em> " . $this->user->highlight($this->cflt);
+        }
+
+        return [$userdesc, $cfltdesc];
     }
 }
 

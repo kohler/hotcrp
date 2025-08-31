@@ -44,14 +44,13 @@ class AuthorMatcher extends Author {
 
     /** @return ?AuthorMatcher */
     static function make_collaborator_line($x) {
-        if ($x !== "" && strcasecmp($x, "none") !== 0) {
-            $m = new AuthorMatcher;
-            $m->assign_string($x);
-            $m->status = Author::STATUS_NONAUTHOR;
-            return $m;
-        } else {
+        if ($x === "" || strcasecmp($x, "none") === 0) {
             return null;
         }
+        $m = new AuthorMatcher;
+        $m->assign_string($x);
+        $m->status = Author::STATUS_NONAUTHOR;
+        return $m;
     }
 
     /** @return Generator<AuthorMatcher> */
