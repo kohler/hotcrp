@@ -9390,8 +9390,8 @@ function handle_list(e, href) {
         if (hl.tagName === "TABLE"
             && hasClass(hl, "pltable")
             && hl.hasAttribute("data-reordered")
-            && document.getElementById("footer"))
-            // Existence of `#footer` checks that the table is fully loaded
+            && document.getElementById("p-footer"))
+            // Existence of `#p-footer` checks that the table is fully loaded
             info.reorder(hl.tBodies[0]);
         let m = /^[^/]*\/(\d+)(?:$|[a-zA-Z]*\/|\?)/.exec(sitehref);
         set_cookie(info, m ? +m[1] : null);
