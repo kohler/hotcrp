@@ -583,7 +583,8 @@
         "weak": true
     },
     "columbia": {
-        "sync": "british"
+        "sync": "british",
+        "alternate": [{"word": "ubc", "if": "british"}]
     },
     "csu": {
         "alternate": ["california state university", "cal state"]
@@ -898,6 +899,9 @@
     "tu": {
         "nameish": 2, "weak": true,
         "alternate": [{"word": "technische universitat"}]
+    },
+    "ubc": {
+        "alternate": ["university british columbia"]
     },
     "uc": {
         "weak": true,
