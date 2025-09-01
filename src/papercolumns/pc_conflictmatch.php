@@ -35,7 +35,7 @@ class ConflictMatch_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $pf = $row->preference($this->contact);
-        $potconf = $row->potential_conflict_html($this->contact, true);
+        $potconf = $row->potential_conflict_html($this->contact);
         if ($pf->preference <= -100) {
             $potconf = $potconf ?? new PaperInfoPotentialConflictHTML;
             $potconf->messages[] = ["<em>reviewer preference</em> " . $pf->unparse()];

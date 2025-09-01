@@ -33,14 +33,14 @@ class ReviewForm {
     /** @var array<int,string>
      * @readonly */
     static public $revtype_names_full = [
-        -3 => "Refused", -2 => "Author", -1 => "Conflict",
+        -4 => "Potential conflict", -3 => "Refused", -2 => "Author", -1 => "Conflict",
         0 => "No review", 1 => "External review", 2 => "Optional PC review",
         3 => "Secondary review", 4 => "Primary review", 5 => "Metareview"
     ];
     /** @var array<int,string>
      * @readonly */
     static public $revtype_icon_text = [
-        -3 => "−" /* &minus; */, -2 => "A", -1 => "C",
+        -4 => "?", -3 => "−" /* &minus; */, -2 => "A", -1 => "C",
         1 => "E", 2 => "P", 3 => "2", 4 => "1", 5 => "M"
     ];
 

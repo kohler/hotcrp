@@ -262,7 +262,7 @@ class Assign_Page {
         }
         $reason = $rrow->reason;
         if ($this->allow_view_authors
-            && ($potconf = $this->prow->potential_conflict_html($rrowid, true))) {
+            && ($potconf = $this->prow->potential_conflict_html($rrowid))) {
             foreach ($potconf->messages as $ml) {
                 echo '<li class="fx">', $potconf->render_ul_item(null, "possible conflict: ", $ml), '</li>';
             }
@@ -427,7 +427,7 @@ class Assign_Page {
         }
         $potconf = null;
         if ($this->allow_view_authors && $revtype != -2) {
-            $potconf = $this->prow->potential_conflict_html($pc, !Conflict::is_conflicted($ct));
+            $potconf = $this->prow->potential_conflict_html($pc);
         }
 
         echo '<div class="ctelt">',
@@ -465,7 +465,11 @@ class Assign_Page {
         }
         echo '</div>'; // .pctbname
         if ($potconf) {
-            echo '<div class="need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($potconf)), '">', $potconf->announce, '</div>';
+            $k = Conflict::is_conflicted($ct) ? " pcconf-conflicted" : "";
+            echo '<div class="need-tooltip', $k,
+                '" data-tooltip-class="gray" data-tooltip="',
+                str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($potconf)),
+                '">', $potconf->announce, '</div>';
         }
 
         // then, number of reviews

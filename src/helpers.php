@@ -609,15 +609,14 @@ function unparse_latin_ordinal($n) {
     assert($n >= 1);
     if ($n <= 26) {
         return chr($n + 64);
-    } else {
-        $t = "";
-        while (true) {
-            $t = chr((($n - 1) % 26) + 65) . $t;
-            if ($n <= 26) {
-                return $t;
-            }
-            $n = intval(($n - 1) / 26);
+    }
+    $t = "";
+    while (true) {
+        $t = chr((($n - 1) % 26) + 65) . $t;
+        if ($n <= 26) {
+            return $t;
         }
+        $n = intval(($n - 1) / 26);
     }
 }
 
@@ -626,9 +625,8 @@ function unparse_latin_ordinal($n) {
 function unparse_expertise($expertise) {
     if ($expertise === null) {
         return "";
-    } else {
-        return $expertise > 0 ? "X" : ($expertise == 0 ? "Y" : "Z");
     }
+    return $expertise > 0 ? "X" : ($expertise == 0 ? "Y" : "Z");
 }
 
 /** @param array{int,?int} $preference
@@ -664,6 +662,11 @@ function review_lead_icon() {
 /** @return string */
 function review_shepherd_icon() {
     return '<span class="rto rtshep" title="Shepherd"><span class="rti">S</span></span>';
+}
+
+/** @return string */
+function review_potential_conflict_icon() {
+    return '<span class="rto rtpotential" title="Potential conflict"><span class="rti">?</span></span>';
 }
 
 

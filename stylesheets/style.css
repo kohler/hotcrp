@@ -2822,25 +2822,25 @@ pre.email {
 	display: block;
 }
 .pcconfmatch {
-	color: #aa4400;
-}
-.pcconfmatch-highlight {
 	font-weight: bold;
 	color: #ff6600;
 }
-
-.asspref, .asspref0, .asspref1, .asspref-1 {
-	font-size: 69%;
+.pcconf-conflicted .pcconfmatch {
 	font-weight: normal;
-	white-space: nowrap;
+	color: #aa4400;
 }
-
 .pcconf-editselector {
 	float: right;
 	padding: 0 2px 4px 8px;
 	font-size: smaller;
 	white-space: nowrap;
 	display: block;
+}
+
+.asspref, .asspref0, .asspref1, .asspref-1 {
+	font-size: 69%;
+	font-weight: normal;
+	white-space: nowrap;
 }
 
 .pctbname, .pctbname-1, .pctbname-2, .pctbname-3,
@@ -2966,7 +2966,8 @@ del .rto {
 	background-color: #ffffbb;
 }
 .rt5, .rt4, .rt3, .rt-1, .rt-2,
-.rtmeta, .rtprimary, .rtsecondary, .rtconflict, .rtauthor, .rtlead, .rtshep {
+.rtmeta, .rtprimary, .rtsecondary, .rtconflict, .rtpotential, .rtauthor,
+.rtlead, .rtshep {
 	font-weight: bold;
 }
 .rtlead, .rtshep {
@@ -2990,6 +2991,10 @@ del .rto {
 .rtconflict, .rtauthor, .rtdeclined {
 	color: gray;
 	border: 1px solid gray;
+}
+.rtpotential {
+	color: #ff6600;
+	border: 1px solid #ff6600;
 }
 .rti {
 	display: table-cell;

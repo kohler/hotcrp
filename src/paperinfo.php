@@ -1607,7 +1607,7 @@ class PaperInfo {
     }
 
     /** @return ?PaperInfoPotentialConflictHTML */
-    function potential_conflict_html(Contact $user, $highlight = false) {
+    function potential_conflict_html(Contact $user) {
         if (!$this->potential_conflict_callback($user, [$this, "_potential_conflict_html_callback"])) {
             return null;
         }
@@ -1625,8 +1625,7 @@ class PaperInfo {
             $announce = "Possible conflict…";
         }
         $potconf = new PaperInfoPotentialConflictHTML;
-        $announcehighlight = $highlight ? " pcconfmatch-highlight" : "";
-        $potconf->announce = "<div class=\"pcconfmatch{$announcehighlight}\">{$announce}</div>";
+        $potconf->announce = "<div class=\"pcconfmatch\">{$announce}</div>";
         $last = null;
         foreach ($this->_potential_conflicts as $x) {
             list($userdesc, $cfltdesc) = $x->unparse_html($this);
@@ -3841,7 +3840,7 @@ class PaperInfoPotentialConflict {
         if ($ob === self::OB_NAME) {
             $cfltdesc = "<em>author</em> " . $this->user->highlight($this->cflt);
         } else if ($ob === self::OB_COLLABORATOR) {
-            $cfltdesc = "<em>submission collaborator</em> " . $this->user->highlight($this->cflt);
+            $cfltdesc = "<em>submission-listed collaborator</em> " . $this->user->highlight($this->cflt);
         } else if ($ob === self::OB_CONTACT) {
             $cfltdesc = "<em>contact"
                 . ($this->cflt->email ? " " . htmlspecialchars($this->cflt->email) : "")

@@ -241,7 +241,9 @@ class PCConflicts_PaperOption extends PaperOption {
             $vs = $value->value_list();
             $ds = $value->data_list();
             for ($i = 0; $i !== count($vs); ++$i) {
-                $ctmaps[$num][$vs[$i]] = (int) $ds[$i];
+                if (($ct = (int) $ds[$i]) > 0) {
+                    $ctmaps[$num][$vs[$i]] = $ct;
+                }
             }
         }
 
@@ -250,19 +252,43 @@ class PCConflicts_PaperOption extends PaperOption {
         ]);
         echo '<div class="papev"><ul class="pc-ctable">';
 
+        $potconfs = [];
+        if ($ov->prow->paperId) {
+            foreach ($pcm as $id => $p) {
+                if (($ctmaps[0][$id] ?? 0) < CONFLICT_AUTHOR
+                    && ($potconf = $ov->prow->potential_conflict_html($p)))
+                    $potconfs[$id] = $potconf;
+            }
+        }
+        if (!empty($ctmaps[0]) || !empty($potconfs)) {
+            uasort($pcm, function ($a, $b) use ($ctmaps, $potconfs) {
+                $ax = isset($ctmaps[0][$a->contactId]) || isset($potconfs[$a->contactId]);
+                $bx = isset($ctmaps[0][$b->contactId]) || isset($potconfs[$b->contactId]);
+                if ($ax !== $bx) {
+                    return $ax ? -1 : 1;
+                }
+                return $a->pc_index <=> $b->pc_index;
+            });
+        }
+        $last_hadconf = null;
+
         foreach ($pcm as $id => $p) {
-            $pct = $ctmaps[0][$p->contactId] ?? 0;
-            $ct = $ctmaps[1][$p->contactId] ?? 0;
+            $pct = $ctmaps[0][$id] ?? 0;
+            $ct = $ctmaps[1][$id] ?? 0;
+            $potconf = $potconfs[$id] ?? null;
+            if ($last_hadconf && $ct === 0 && !$potconf) {
+                echo '</ul><ul class="pc-ctable mt-4">';
+            }
+            $last_hadconf = $ct > 0 || $potconf;
 
             $name = $pt->user->reviewer_html_for($p);
-            $potconf = null;
-            if ($ov->prow->paperId && $pct < CONFLICT_AUTHOR) {
-                $potconf = $ov->prow->potential_conflict_html($p, $pct <= 0);
+            if (Conflict::is_conflicted($pct)) {
+                $name .= " " . review_type_icon(-1);
             }
 
             echo '<li class="ctelt"><div class="ctelti clearfix',
                 $this->selectors ? "" : " checki",
-                Conflict::is_conflicted($pct) ? " tag-bold" : "";
+                Conflict::is_conflicted($pct) ? " pcconf-conflicted" : "";
             if ($potconf) {
                 echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($potconf));
             }

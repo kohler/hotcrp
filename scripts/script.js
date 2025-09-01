@@ -4949,7 +4949,8 @@ handle_ui.on("js-keydown-enter-submit", function (evt) {
 var review_types = (function () {
 var canon = [
         null, "none", "external", "pc", "secondary",
-        "primary", "meta", "conflict", "author", "declined"
+        "primary", "meta", "conflict", "author", "declined",
+        "potential"
     ],
     tmap = {
         "0": 1, "none": 1,
@@ -4960,19 +4961,23 @@ var canon = [
         "5": 6, "meta": 6,
         "-1": 7, "conflict": 7,
         "-2": 8, "author": 8,
-        "-3": 9, "declined": 9
+        "-3": 9, "declined": 9,
+        "-4": 10, "potential": 10
     },
     selectors = [
         null, "None", "External", "Optional", "Secondary",
-        "Primary", "Metareview", "Conflict", "Author", "Declined"
+        "Primary", "Metareview", "Conflict", "Author", "Declined",
+        "Potential conflict"
     ],
     tooltips = [
         null, "No review", "External review", "Optional PC review", "Secondary review",
-        "Primary review", "Metareview", "Conflict", "Author", "Declined"
+        "Primary review", "Metareview", "Conflict", "Author", "Declined",
+        "Potential conflict"
     ],
     icon_texts = [
         null, "", "E", "P", "2",
-        "1", "M", "C", "A", "−" /* MINUS SIGN */
+        "1", "M", "C", "A", "−" /* MINUS SIGN */,
+        "?"
     ];
 function parse(s) {
     var t = tmap[s] || 0;
@@ -4996,9 +5001,8 @@ return {
             return t + "review";
         } else if (t === 7) {
             return "conflict";
-        } else {
-            return null;
         }
+        return null;
     },
     make_icon: function (s, xc) {
         var t = parse(s);
