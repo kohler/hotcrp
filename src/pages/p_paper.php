@@ -258,7 +258,6 @@ class Paper_Page {
         if (!$this->ps->has_error() || $new_prow->is_new()) {
             $conf->redirect_self($this->qreq, ["p" => $new_prow->paperId, "m" => "edit"]);
         }
-        $this->useRequest = false;
     }
 
     function handle_updatecontacts() {
@@ -293,7 +292,6 @@ class Paper_Page {
         if (!$this->ps->has_error()) {
             $conf->redirect_self($this->qreq);
         }
-        $this->useRequest = false;
     }
 
     private function prepare_edit_mode() {
