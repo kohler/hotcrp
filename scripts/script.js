@@ -1434,12 +1434,8 @@ function hoturl_add(url, component) {
 
 function hoturl_search(url, key, value) {
     let hash = url.indexOf("#"), question = url.indexOf("?");
-    if (hash < 0) {
-        hash = url.length;
-    }
-    if (question < 0) {
-        question = url.length;
-    }
+    hash = hash >= 0 ? hash : url.length;
+    question = question >= 0 ? question : url.length;
     const s = question < hash ? url.substring(question, hash) : "";
     if (arguments.length === 1) {
         return s;
@@ -1961,9 +1957,10 @@ return {
 
 // ui
 var handle_ui = (function () {
-var callbacks = {}, handling = {}, stopped = 0, nest = 0;
+const callbacks = {};
+let handling = {}, stopped = 0, nest = 0;
 function collect_callbacks(cbs, c, evt_type) {
-    var j, k;
+    let j, k;
     for (j = 0; j !== c.length; j += 3) {
         if (!c[j] || c[j] === evt_type) {
             for (k = cbs.length - 2; k >= 0 && c[j+2] > cbs[k+1]; k -= 2) {
@@ -1973,24 +1970,24 @@ function collect_callbacks(cbs, c, evt_type) {
     }
 }
 function call_callbacks(cbs, element, evt) {
-    var nhandling, nstopped, oevt = evt.originalEvent || evt;
+    let nested_handling, nested_stopped, oevt = evt.originalEvent || evt;
     try {
         if (++nest !== 1) {
-            nhandling = handling;
-            nstopped = stopped;
+            nested_handling = handling;
+            nested_stopped = stopped;
         }
         if (evt !== handling) {
             handling = evt;
             stopped = 0;
         }
-        for (var i = 0; i !== cbs.length && stopped !== 2; i += 2) {
+        for (let i = 0; i !== cbs.length && stopped !== 2; i += 2) {
             if (cbs[i].call(element, oevt) === false)
                 break;
         }
     } finally {
         if (--nest !== 0) {
-            handling = nhandling;
-            stopped = nstopped;
+            handling = nested_handling;
+            stopped = nested_stopped;
         }
     }
 }
@@ -1998,23 +1995,23 @@ function handle_ui(evt) {
     if (evt === handling && stopped !== 0) {
         return;
     }
-    var e = evt.target;
+    const e = evt.target;
     if ((e && hasClass(e, "uin"))
         || (evt.type === "click"
             && ((e && hasClass(e, "ui"))
                 || (this.nodeName === "A" && hasClass(this, "ui"))))) {
         evt.preventDefault();
     }
-    var k = classList(this), cbs = [];
-    for (var i = 0; i !== k.length; ++i) {
-        var c = callbacks[k[i]];
+    const k = classList(this), cbs = [];
+    for (let i = 0; i !== k.length; ++i) {
+        const c = callbacks[k[i]];
         c && collect_callbacks(cbs, c, evt.type);
     }
     cbs.length !== 0 && call_callbacks(cbs, this, evt);
 }
 handle_ui.on = function (s, callback, priority) {
-    var pos = 0, sp, dot = 0, len = s.length,
-        type, className;
+    let pos = 0, dot = 0;
+    const len = s.length;
     while (true) {
         while (pos !== len && s.charCodeAt(pos) === 32) {
             ++pos;
@@ -2022,12 +2019,13 @@ handle_ui.on = function (s, callback, priority) {
         if (pos === len) {
             return;
         }
-        sp = s.indexOf(" ", pos);
+        let sp = s.indexOf(" ", pos);
         sp = sp >= 0 ? sp : len;
         if (dot <= pos) {
             dot = s.indexOf(".", pos);
             dot = dot >= 0 ? dot : len;
         }
+        let type, className;
         if (dot < sp) {
             type = pos === dot ? null : s.substring(pos, dot);
             className = s.substring(dot + 1, sp);
