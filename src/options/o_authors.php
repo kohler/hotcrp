@@ -58,6 +58,12 @@ class Authors_PaperOption extends PaperOption {
                 || !$ov->prow->can_author_view_decision())) {
             $req_orcid = 0;
         }
+        $base_authors = null;
+        if ($req_orcid > 0
+            && !$ov->has_error()) {
+            $base_authors = self::author_list($ov->prow->base_option($this->id));
+        }
+
         $msg_bademail = $msg_missing = $msg_dupemail = false;
         $msg_orcid = [];
         $n = 0;
@@ -87,7 +93,10 @@ class Authors_PaperOption extends PaperOption {
                 continue;
             }
             if ($req_orcid > 0) {
-                $status = $req_orcid === 2 ? 1 : 2;
+                $status = 1;
+                if ($req_orcid === 1 && $ov->prow->want_submitted()) {
+                    $status = 2;
+                }
                 if ($auth->email === "") {
                     $msg_missing = true;
                     $ov->append_item(new MessageItem($status, "authors:{$n}:email"));
@@ -95,6 +104,15 @@ class Authors_PaperOption extends PaperOption {
                            || !$u->confirmed_orcid()) {
                     $msg_orcid[] = $auth->email;
                     $ov->append_item(new MessageItem($status, "authors:{$n}"));
+                } else {
+                    $status = 0;
+                }
+                if ($status !== 0
+                    && $base_authors !== null
+                    && ($auth->email === ""
+                        ? !Author::find_match($auth, $base_authors)
+                        : !Author::find_by_email($auth->email, $base_authors))) {
+                    $base_authors = null;
                 }
             }
             if ($auth->email !== ""
@@ -119,8 +137,15 @@ class Authors_PaperOption extends PaperOption {
             $ov->warning("<0>The same email address has been used for different authors. This is usually an error");
         }
         if ($msg_orcid) {
-            $ov->error($this->conf->_("<5>Some authors have not configured their <a href=\"https://orcid.org\">ORCID iDs</a>"));
-            $ov->inform($this->conf->_("<0>This site requires that authors provide ORCID iDs. Please ask {0:list} to sign in and update their profiles.", new FmtArg(0, $msg_orcid, 0)));
+            $status = 2;
+            if ($req_orcid === 1 && !$ov->prow->want_submitted()) {
+                $status = 1;
+            }
+            $ov->append_item(new MessageItem($status, "authors", $this->conf->_("<5>Some authors haven’t added an <a href=\"https://orcid.org\">ORCID iD</a> to their profiles")));
+            $ov->inform($this->conf->_("<0>This site requires that all authors provide ORCID iDs. Please ask {0:list} to sign in and update their profiles.", new FmtArg(0, $msg_orcid, 0)));
+        }
+        if ($base_authors !== null) {
+            $ov->append_item(MessageItem::success(null));
         }
     }
 
@@ -343,28 +368,28 @@ class Authors_PaperOption extends PaperOption {
     function render(FieldRender $fr, PaperValue $ov) {
         if ($fr->want(FieldRender::CFPAGE)) {
             $fr->table->render_authors($fr, $this);
-        } else {
-            $names = ["<ul class=\"x namelist\">"];
-            foreach (self::author_list($ov) as $au) {
-                $n = htmlspecialchars(trim("{$au->firstName} {$au->lastName}"));
-                if ($au->email !== "") {
-                    $ehtml = htmlspecialchars($au->email);
-                    $e = "&lt;<a href=\"mailto:{$ehtml}\" class=\"q\">{$ehtml}</a>&gt;";
-                } else {
-                    $e = "";
-                }
-                $t = ($n === "" ? $e : $n);
-                if ($au->affiliation !== "") {
-                    $t .= " <span class=\"auaff\">(" . htmlspecialchars($au->affiliation) . ")</span>";
-                }
-                if ($n !== "" && $e !== "") {
-                    $t .= " " . $e;
-                }
-                $names[] = "<li class=\"odname\">{$t}</li>";
-            }
-            $names[] = "</ul>";
-            $fr->set_html(join("", $names));
+            return;
         }
+        $names = ["<ul class=\"x namelist\">"];
+        foreach (self::author_list($ov) as $au) {
+            $n = htmlspecialchars(trim("{$au->firstName} {$au->lastName}"));
+            if ($au->email !== "") {
+                $ehtml = htmlspecialchars($au->email);
+                $e = "&lt;<a href=\"mailto:{$ehtml}\" class=\"q\">{$ehtml}</a>&gt;";
+            } else {
+                $e = "";
+            }
+            $t = ($n === "" ? $e : $n);
+            if ($au->affiliation !== "") {
+                $t .= " <span class=\"auaff\">(" . htmlspecialchars($au->affiliation) . ")</span>";
+            }
+            if ($n !== "" && $e !== "") {
+                $t .= " " . $e;
+            }
+            $names[] = "<li class=\"odname\">{$t}</li>";
+        }
+        $names[] = "</ul>";
+        $fr->set_html(join("", $names));
     }
 
     function jsonSerialize() {

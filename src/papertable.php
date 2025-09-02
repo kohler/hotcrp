@@ -448,18 +448,8 @@ class PaperTable {
     private function problem_status_at($field) {
         if ($this->edit_status) {
             return $this->edit_status->problem_status_at($field);
-        } else {
-            return 0;
         }
-    }
-    /** @param string $field
-     * @param string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem
-     * @deprecated */
-    function msg_at($field, $msg, $status) {
-        $this->edit_status = $this->edit_status ?? new MessageSet;
-        return $this->edit_status->append_item(new MessageItem($status, $field, $msg));
+        return 0;
     }
     /** @param MessageItem $mi
      * @return MessageItem */
@@ -2400,8 +2390,8 @@ class PaperTable {
             $reqov = $ov;
             if ($this->useRequest
                 && $this->qreq["has_{$o->formid}"]
-                && ($x = $o->parse_qreq($this->prow, $this->qreq))) {
-                $reqov = $x;
+                && ($xov = $o->parse_qreq($this->prow, $this->qreq))) {
+                $reqov = $xov;
             }
             $o->print_web_edit($this, $ov, $reqov);
         }

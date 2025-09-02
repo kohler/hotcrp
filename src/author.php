@@ -308,7 +308,7 @@ class Author {
     /** @param Author|Contact $x
      * @return bool */
     function nea_equals($x) {
-        return $this->email === $x->email
+        return strcasecmp($this->email, $x->email) === 0
             && $this->firstName === $x->firstName
             && $this->lastName === $x->lastName
             && $this->affiliation === $x->affiliation;
@@ -351,6 +351,17 @@ class Author {
                 $j[$k] = $v;
         }
         return $j;
+    }
+
+    /** @param Author $au
+     * @param list<Author> $list
+     * @return ?Author */
+    static function find_match($au, $list) {
+        foreach ($list as $auth) {
+            if ($au->nea_equals($auth))
+                return $auth;
+        }
+        return null;
     }
 
     /** @param string $email
