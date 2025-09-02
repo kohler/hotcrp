@@ -1872,11 +1872,25 @@ class SettingValues extends MessageSet {
             assert(is_array($fold_values));
         }
 
+        $values = $json_values = null;
+        if ($rest["skip_unlisted_values"] ?? false) {
+            $si = $this->si($name);
+            $values = $si->values($this);
+            $json_values = $si->json_values($this);
+        }
+
         $this->print_group_open($name, "settings-radio f-i", $rest + ["group_id" => $name]);
         if ($heading) {
             echo '<div class="label n">', $heading, '</div>';
         }
         foreach ($varr as $k => $item) {
+            if ($values !== null
+                && !in_array($k, $values, false)
+                && !in_array($k, $json_values, false)
+                && $k != $x) {
+                continue;
+            }
+
             if (is_string($item)) {
                 $item = ["label" => $item];
             }

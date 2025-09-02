@@ -427,6 +427,14 @@
         "tags": "final visibility"
     },
     {
+        "name": "sf_author_orcid", "storage": "ova.requireOrcid",
+        "title": "ORCiD requirement",
+        "type": "radio",
+        "values": [0, 1, 2], "default_value": 0,
+        "json_values": ["no", "yes", "final"],
+        "tags": "submission sf"
+    },
+    {
         "name": "sf_author_max", "storage": "ova.maxAuthors", "type": "nonnegint",
         "title": "Maximum authors per submission",
         "default_value": 0,

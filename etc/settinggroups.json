@@ -152,7 +152,13 @@
         "settings": ["sf_abstract", "sf_pdf_submission", "format"]
     },
     {
-        "name": "subform/conflicts", "order": 20,
+        "name": "subform/authors", "order": 20,
+        "title": "Authors",
+        "print_function": "SubForm_SettingRenderer::print_authors",
+        "settings": ["sf_author_orcid"]
+    },
+    {
+        "name": "subform/conflicts", "order": 30,
         "title": "Conflicts and collaborators",
         "print_function": "SubForm_SettingRenderer::print_conflicts",
         "settings": ["sf_pc_conflicts", "sf_pc_conflict_types", "sf_collaborators", "conflict_description", "conflict_visibility"]

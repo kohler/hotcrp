@@ -43,6 +43,14 @@ class SubForm_SettingRenderer {
         echo '</div>';
     }
 
+    static function print_authors(SettingValues $sv) {
+        $sv->print_radio_table("sf_author_orcid", [
+            1 => "Require <a href=\"https://orcid.org/\" target=\"_blank\">ORCID iDs</a> for all authors at submission time",
+            2 => "Require ORCID iDs for all accepted authors during final version preparation",
+            0 => "Do not require ORCID iDs"
+        ], "", ["skip_unlisted_values" => true]);
+    }
+
     static function print_conflicts(SettingValues $sv) {
         echo '<div id="foldpcconf" class="fold', $sv->vstr("sf_pc_conflicts") ? "o" : "c", "\">\n";
         $sv->print_checkbox("sf_pc_conflicts", "Collect authors’ PC conflicts", ["class" => "uich js-foldup"]);
