@@ -86,8 +86,7 @@ class Upload_CLIBatch implements CLIBatchCommand {
         }
     }
 
-    /** @param string $chunk
-     * @return ?string */
+    /** @return ?string */
     private function try_mimetypes() {
         $sniff_type = $sniff_base = null;
         foreach ($this->_try_mimetype as $mimetype) {
@@ -245,7 +244,7 @@ class Upload_CLIBatch implements CLIBatchCommand {
             $this->buf = "";
             return null;
         }
-        curl_setopt($curlh, CURL_POSTFIELDS, "");
+        curl_setopt($curlh, CURLOPT_POSTFIELDS, "");
         return $this->_execute($clib);
     }
 
