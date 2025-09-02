@@ -237,6 +237,7 @@ class Profile_Page {
             }
             if ($us
                 && $mi->field
+                && $mi->message !== ""
                 && ($l = $us->field_label($mi->field))
                 && $ms->message_index($mi) === false
                 && $mi->status !== MessageSet::INFORM) {
@@ -343,7 +344,9 @@ class Profile_Page {
             }
             foreach ($ustatus->problem_list() as $mi) {
                 $mi->landmark = $csv->landmark();
-                if ($link !== null && $mi->status !== MessageSet::INFORM) {
+                if ($link !== null
+                    && $mi->message !== ""
+                    && $mi->status !== MessageSet::INFORM) {
                     $mi->message = "<5>" . $mi->message_as(5) . " (account {$link})";
                 }
                 $ms->append_item($mi);

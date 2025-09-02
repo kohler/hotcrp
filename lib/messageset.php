@@ -427,11 +427,8 @@ class MessageSet {
                 $mi->message = "<5>{$mi->message}";
             }
         }
-        if (($mi->message !== ""
-             || $mi->status === self::SUCCESS
-             || ($mi->context !== null && $mi->pos1 !== null))
-            && (($this->_ms_flags & self::IGNORE_DUPS) === 0
-                || $this->message_index($mi) === false)) {
+        if (($this->_ms_flags & self::IGNORE_DUPS) === 0
+            || $this->message_index($mi) === false) {
             if ($pos < 0 || $pos >= count($this->msgs)) {
                 $this->msgs[] = $mi;
             } else if ($pos === 0) {
@@ -481,9 +478,6 @@ class MessageSet {
         }
         foreach ($ms->msgs as $mi) {
             $this->append_item($mi);
-        }
-        foreach ($ms->errf as $field => $status) {
-            $this->errf[$field] = max($this->errf[$field] ?? 0, $status);
         }
         return $this;
     }

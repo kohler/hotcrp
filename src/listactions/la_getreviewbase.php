@@ -40,7 +40,9 @@ class GetReviewBase_ListAction extends ListAction {
             $text = $header;
             if ($ms->has_message() && $this->isform) {
                 foreach ($ms->message_list() as $mi) {
-                    $text .= prefix_word_wrap("==-== ", $mi->message_as(0), "==-== ");
+                    if ($mi->message !== "") {
+                        $text .= prefix_word_wrap("==-== ", $mi->message_as(0), "==-== ");
+                    }
                 }
                 $text .= "\n";
             } else if ($ms->has_message()) {

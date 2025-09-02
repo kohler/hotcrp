@@ -471,14 +471,13 @@ class SettingValues extends MessageSet {
 
     /** @param MessageItem $mi
      * @param list<string> $loc
-     * @param ?MessageItem $prevmi
-     * @return MessageItem */
-    static private function decorate_message_item($mi, $loc, $prevmi) {
+     * @param ?MessageItem $prevmi */
+    static private function decorate_message($mi, $loc, $prevmi) {
         if ($loc
+            && $mi->message !== ""
             && ($mi->status !== MessageSet::INFORM || !$prevmi)) {
             $mi->message = "<5>" . join(", ", $loc) . ": " . $mi->message_as(5);
         }
-        return $mi;
     }
 
     /** @return \Generator<MessageItem> */
@@ -487,7 +486,8 @@ class SettingValues extends MessageSet {
         $lastloc = [];
         foreach ($this->message_list() as $mi) {
             $mi = clone $mi;
-            if ($mi->status === MessageSet::WARNING) {
+            if ($mi->status === MessageSet::WARNING
+                && $mi->message !== "") {
                 $mi->message = "<5>Warning: " . $mi->message_as(5);
             }
             $loc = null;
@@ -503,7 +503,8 @@ class SettingValues extends MessageSet {
             }
             if ($lastmi
                 && ($lastmi->message !== $mi->message || $lastmi->pos1 !== null)) {
-                yield self::decorate_message_item($lastmi, $lastloc, $prevmi);
+                self::decorate_message($lastmi, $lastloc, $prevmi);
+                yield $lastmi;
                 $prevmi = $lastmi;
                 $lastmi = null;
                 $lastloc = [];
@@ -514,7 +515,8 @@ class SettingValues extends MessageSet {
             }
         }
         if ($lastmi) {
-            yield self::decorate_message_item($lastmi, $lastloc, $prevmi);
+            self::decorate_message($lastmi, $lastloc, $prevmi);
+            yield $lastmi;
         }
     }
 

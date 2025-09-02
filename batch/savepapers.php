@@ -259,7 +259,9 @@ class SavePapers_Batch {
         // XXX does not change decision
         if (!$this->silent || !$pid) {
             foreach ($this->ps->decorated_message_list() as $mi) {
-                fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+                if ($mi->message !== "") {
+                    fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+                }
             }
         }
         if (!$pid) {
@@ -291,7 +293,9 @@ class SavePapers_Batch {
             }
             if (!$this->silent) {
                 foreach ($this->tf->message_list() as $mi) {
-                    fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+                    if ($mi->message !== "") {
+                        fwrite(STDERR, $prefix . $mi->message_as(0) . "\n");
+                    }
                 }
             }
             $this->tf->clear_messages();

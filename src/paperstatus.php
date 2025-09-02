@@ -238,7 +238,8 @@ final class PaperStatus extends MessageSet {
                 && !str_starts_with($mi->field, "status:")) {
                 continue;
             }
-            if (($o = $this->conf->options()->option_by_key($mi->field))) {
+            if ($mi->message !== ""
+                && ($o = $this->conf->options()->option_by_key($mi->field))) {
                 if ($oids !== null && !in_array($o->id, $oids, true)) {
                     continue;
                 }
