@@ -1590,7 +1590,7 @@ class PaperInfo {
         if (empty($pcs)) {
             return false;
         }
-        return new PaperInfoPotentialConflictList($pcs);
+        return new PaperInfoPotentialConflictList($user, $pcs);
     }
 
     /** @return bool */
@@ -3773,9 +3773,10 @@ class PaperInfoPotentialConflict {
         return null;
     }
 
-    /** @param PaperInfo $prow
+    /** @param Contact $user
+     * @param PaperInfo $prow
      * @return array{string,string} */
-    function unparse_html($prow) {
+    function unparse_html($user, $prow) {
         $cfltm = AuthorMatcher::make($this->cflt);
 
         $oa = $this->order & self::OA_MASK;
@@ -3800,7 +3801,7 @@ class PaperInfoPotentialConflict {
                 . ($this->cflt->is_nonauthor() ? " collaborator" : "")
                 . "</em> " . $this->user->highlight($this->cflt);
         } else if ($ob === self::OB_AFFILIATION) {
-            $aucflt = $prow->author_by_index($this->order & self::AUIDX_MASK) ?? $this->user;
+            $aucflt = $prow->author_by_index($this->order & self::AUIDX_MASK) ?? $this->cflt;
             $cfltdesc = "<em>author</em> " . $aucflt->name_h() . " (" . $this->user->highlight($this->cflt->affiliation) . ")";
         } else {
             $aucflt = $prow->author_by_index($this->order & self::AUIDX_MASK) ?? $this->user;
@@ -3809,16 +3810,50 @@ class PaperInfoPotentialConflict {
 
         return [$userdesc, $cfltdesc];
     }
+
+    /** @param Contact $user
+     * @param PaperInfo $prow
+     * @return array{string,string} */
+    function unparse_text($user, $prow) {
+        $cfltm = AuthorMatcher::make($this->cflt);
+
+        $oa = $this->order & self::OA_MASK;
+        $userdesc = $user->name(NAME_EB | NAME_A);
+        if ($oa === self::OA_COLLABORATOR) {
+            $userdesc .= " collaborator " . $this->user->name(NAME_A);
+        }
+
+        $ob = $this->order & self::OB_MASK;
+        if ($ob === self::OB_NAME) {
+            $cfltdesc = "author " . $this->cflt->name(NAME_A);
+        } else if ($ob === self::OB_COLLABORATOR) {
+            $cfltdesc = "submission-listed collaborator " . $this->cflt->name(NAME_A);
+        } else if ($ob === self::OB_CONTACT) {
+            $cfltdesc = ($this->cflt->is_nonauthor() ? "contact collaborator " : "contact ")
+                . $this->cflt->name(NAME_EB | NAME_A);
+        } else if ($ob === self::OB_AFFILIATION) {
+            $aucflt = $prow->author_by_index($this->order & self::AUIDX_MASK) ?? $this->cflt;
+            $cfltdesc = "author " . $aucflt->name(NAME_A);
+        } else {
+            $aucflt = $prow->author_by_index($this->order & self::AUIDX_MASK) ?? $this->user;
+            $cfltdesc = "author " . $aucflt->name(NAME_A) . " collaborator " . $this->cflt->name(NAME_A);
+        }
+
+        return [$userdesc, $cfltdesc];
+    }
 }
 
 class PaperInfoPotentialConflictList {
+    /** @var Contact */
+    private $_user;
     /** @var list<PaperInfoPotentialConflict> */
     private $_pcs;
     /** @var list<int> */
     private $_auindexes;
 
     /** @param list<PaperInfoPotentialConflict> $pcs */
-    function __construct($pcs) {
+    function __construct(Contact $user, $pcs) {
+        $this->_user = $user;
         $this->_pcs = $pcs;
         usort($this->_pcs, "PaperInfoPotentialConflict::compare");
         $aus = [];
@@ -3828,6 +3863,16 @@ class PaperInfoPotentialConflictList {
         }
         ksort($aus);
         $this->_auindexes = array_keys($aus);
+    }
+
+    /** @return Contact */
+    function user() {
+        return $this->_user;
+    }
+
+    /** @return list<PaperInfoPotentialConflict> */
+    function list() {
+        return $this->_pcs;
     }
 
     /** @return string */
@@ -3858,7 +3903,7 @@ class PaperInfoPotentialConflictList {
         $last_ut = null;
         $m = [];
         foreach ($this->_pcs as $pc) {
-            list($ut, $ct) = $pc->unparse_html($prow);
+            list($ut, $ct) = $pc->unparse_html($this->_user, $prow);
             if ($ut === $last_ut) {
                 $m[count($m) - 1][] = $ct;
             } else {

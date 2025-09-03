@@ -7,7 +7,6 @@ class ConflictMatch_PaperColumn extends PaperColumn {
     private $contact;
     /** @var bool */
     private $show_user;
-    public $nonempty;
     function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         if (($this->show_user = isset($cj->user))) {
@@ -30,7 +29,6 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         return $is_text ? $t : "<strong>{$t}</strong>";
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
-        $this->nonempty = false;
         return !$pl->user->allow_administer($row);
     }
     function content(PaperList $pl, PaperInfo $row) {
@@ -40,7 +38,6 @@ class ConflictMatch_PaperColumn extends PaperColumn {
         if ($pf->preference <= -100) {
             $gs[] = ["<em>reviewer preference</em> " . $pf->unparse()];
         }
-        $this->nonempty = !$row->has_author($this->contact) || !empty($gs);
         if (empty($gs)) {
             return "";
         }
@@ -52,6 +49,20 @@ class ConflictMatch_PaperColumn extends PaperColumn {
             return "<div class=\"potentialconflict-one\">{$m[0]}</div>";
         }
         return "<div class=\"potentialconflict-many\">" . join("", $m) . "</div>";
+    }
+    function text(PaperList $pl, PaperInfo $row) {
+        $pf = $row->preference($this->contact);
+        $ts = [];
+        if ($pf->preference <= -100) {
+            $ts[] = "reviewer preference " . $pf->unparse();
+        }
+        if (($potconf = $row->potential_conflict_list($this->contact))) {
+            foreach ($potconf->list() as $pc) {
+                list($ut, $ct) = $pc->unparse_text($potconf->user(), $row);
+                $ts[] = "{$ut} ≈ {$ct}";
+            }
+        }
+        return join("\n", $ts);
     }
 
     /** @param string $name @unused-param
