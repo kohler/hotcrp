@@ -81,8 +81,8 @@ class User_API {
         if ($prow
             && $user->allow_view_authors($prow)
             && friendly_boolean($qreq->potential_conflict)
-            && ($potconf = $prow->potential_conflict_html($found))) {
-            $rj["potential_conflict"] = PaperInfo::potential_conflict_tooltip_html($potconf);
+            && ($potconflist = $prow->potential_conflict_list($found))) {
+            $rj["potential_conflict"] = $potconflist->tooltip_html($prow);
         }
         return new JsonResult($rj);
     }

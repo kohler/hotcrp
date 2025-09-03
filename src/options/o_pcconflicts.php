@@ -256,7 +256,7 @@ class PCConflicts_PaperOption extends PaperOption {
         if ($ov->prow->paperId) {
             foreach ($pcm as $id => $p) {
                 if (($ctmaps[0][$id] ?? 0) < CONFLICT_AUTHOR
-                    && ($potconf = $ov->prow->potential_conflict_html($p)))
+                    && ($potconf = $ov->prow->potential_conflict_list($p)))
                     $potconfs[$id] = $potconf;
             }
         }
@@ -290,7 +290,7 @@ class PCConflicts_PaperOption extends PaperOption {
                 $this->selectors ? "" : " checki",
                 Conflict::is_conflicted($pct) ? " pcconf-conflicted" : "";
             if ($potconf) {
-                echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($potconf));
+                echo ' need-tooltip" data-tooltip-class="gray" data-tooltip="', str_replace('"', '&quot;', $potconf->tooltip_html($ov->prow));
             }
             echo '">';
 
@@ -337,7 +337,7 @@ class PCConflicts_PaperOption extends PaperOption {
                 echo '<span class="pcconfaff">' . htmlspecialchars(UnicodeHelper::utf8_abbreviate($p->affiliation, 60)) . '</span>';
             }
             if ($potconf) {
-                echo $potconf->announce;
+                echo $potconf->description_html();
             }
             echo $hidden, "</div></li>";
         }

@@ -772,8 +772,6 @@ class PaperInfo {
     private $_comment_array;
     /** @var ?list<CommentInfo> */
     private $_comment_skeleton_array;
-    /** @var ?list<PaperInfoPotentialConflict> */
-    private $_potential_conflicts;
     /** @var ?list<ReviewRequestInfo> */
     private $_request_array;
     /** @var ?list<ReviewRefusalInfo> */
@@ -1557,20 +1555,20 @@ class PaperInfo {
         }
     }
 
-    /** @param ?callable(Contact,AuthorMatcher,Author,string) $callback
-     * @return bool */
-    function potential_conflict_callback(Contact $user, $callback) {
-        $nproblems = $auproblems = 0;
+    /** @param bool $save
+     * @return bool|PaperInfoPotentialConflictList */
+    private function _potential_conflict(Contact $user, $save) {
+        $auproblems = 0;
+        $pcs = [];
         if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
             foreach ($this->author_list() as $au) {
                 foreach ($user->aucollab_matchers() as $userm) {
                     if (($why = $userm->test($au, $userm->is_nonauthor()))) {
-                        if (!$callback) {
+                        if (!$save) {
                             return true;
                         }
                         $auproblems |= $why;
-                        ++$nproblems;
-                        call_user_func($callback, $user, $userm, $au, $why);
+                        $pcs[] = new PaperInfoPotentialConflict($userm, $au, $why);
                     }
                 }
             }
@@ -1582,73 +1580,28 @@ class PaperInfo {
                 if (($co->lastName !== ""
                      || ($auproblems & AuthorMatcher::MATCH_AFFILIATION) === 0)
                     && ($why = $userm->test($co, true))) {
-                    if (!$callback) {
+                    if (!$save) {
                         return true;
                     }
-                    ++$nproblems;
-                    call_user_func($callback, $user, $userm, $co, $why);
+                    $pcs[] = new PaperInfoPotentialConflict($userm, $co, $why);
                 }
             }
         }
-        return $nproblems > 0;
+        if (empty($pcs)) {
+            return false;
+        }
+        return new PaperInfoPotentialConflictList($pcs);
     }
 
     /** @return bool */
     function potential_conflict(Contact $user) {
-        return $this->potential_conflict_callback($user, null);
+        return $this->_potential_conflict($user, false);
     }
 
-    /** @param Contact $user
-     * @param AuthorMatcher $userm
-     * @param Author $cflt
-     * @param string $why */
-    function _potential_conflict_html_callback($user, $userm, $cflt, $why) {
-        $this->_potential_conflicts[] = new PaperInfoPotentialConflict($userm, $cflt, $why);
-    }
-
-    /** @return ?PaperInfoPotentialConflictHTML */
-    function potential_conflict_html(Contact $user) {
-        if (!$this->potential_conflict_callback($user, [$this, "_potential_conflict_html_callback"])) {
-            return null;
-        }
-        usort($this->_potential_conflicts, "PaperInfoPotentialConflict::compare");
-        $authors = [];
-        foreach ($this->_potential_conflicts as $x) {
-            if (($auidx = $x->author_index()) > 0) {
-                $authors[$auidx] = "#{$auidx}";
-            }
-        }
-        if (!empty($authors)) {
-            ksort($authors);
-            $announce = "Possible conflict with " . plural_word($authors, "author") . " " . numrangejoin(array_values($authors)) . "…";
-        } else {
-            $announce = "Possible conflict…";
-        }
-        $potconf = new PaperInfoPotentialConflictHTML;
-        $potconf->announce = "<div class=\"pcconfmatch\">{$announce}</div>";
-        $last = null;
-        foreach ($this->_potential_conflicts as $x) {
-            list($userdesc, $cfltdesc) = $x->unparse_html($this);
-            if ($last === $userdesc) {
-                $potconf->messages[count($potconf->messages) - 1][] = $cfltdesc;
-            } else {
-                $potconf->messages[] = [$userdesc, $cfltdesc];
-                $last = $userdesc;
-            }
-        }
-        $this->_potential_conflicts = null;
-        return $potconf;
-    }
-
-    /** @param ?PaperInfoPotentialConflictHTML $potconf
-     * @return string */
-    static function potential_conflict_tooltip_html($potconf) {
-        if ($potconf && !empty($potconf->messages)) {
-            return '<ul class="x"><li>'
-                . join('</li><li>', $potconf->render_ul_list())
-                . '</li></ul>';
-        }
-        return "";
+    /** @return ?PaperInfoPotentialConflictList */
+    function potential_conflict_list(Contact $user) {
+        $pcl = $this->_potential_conflict($user, true);
+        return is_bool($pcl) ? null : $pcl;
     }
 
 
@@ -3858,30 +3811,83 @@ class PaperInfoPotentialConflict {
     }
 }
 
-class PaperInfoPotentialConflictHTML {
-    /** @var string */
-    public $announce;
-    /** @var list<list<string>> */
-    public $messages;
+class PaperInfoPotentialConflictList {
+    /** @var list<PaperInfoPotentialConflict> */
+    private $_pcs;
+    /** @var list<int> */
+    private $_auindexes;
 
-    /** @param ?string $extraclass
-     * @param ?string $prefix
-     * @param list<string> $ml
-     * @return string */
-    static function render_ul_item($extraclass, $prefix, $ml) {
-        $class = Ht::add_tokens("potentialconflict", $extraclass);
-        return "<ul class=\"{$class}\"><li>" . ($prefix ?? "")
-            . join("</li><li>", $ml) . "</li></ul>";
+    /** @param list<PaperInfoPotentialConflict> $pcs */
+    function __construct($pcs) {
+        $this->_pcs = $pcs;
+        usort($this->_pcs, "PaperInfoPotentialConflict::compare");
+        $aus = [];
+        foreach ($this->_pcs as $pc) {
+            if (($i = $pc->author_index()) > 0)
+                $aus[$i] = true;
+        }
+        ksort($aus);
+        $this->_auindexes = array_keys($aus);
     }
 
-    /** @param ?string $extraclass
-     * @param ?string $prefix
-     * @return list<string> */
-    function render_ul_list($extraclass = null, $prefix = null) {
-        $t = [];
-        foreach ($this->messages as $ml) {
-            $t[] = self::render_ul_item($extraclass, $prefix, $ml);
+    /** @return string */
+    function description_text() {
+        if (empty($this->_pcs)) {
+            return "";
         }
-        return $t;
+        $x = "Possible conflict";
+        if (!empty($this->_auindexes)) {
+            $x .= " with " . plural_word($this->_auindexes, "author") . " "
+                . numrangejoin(array_map(function ($i) { return "#{$i}"; },
+                               $this->_auindexes));
+        }
+        return $x;
+    }
+
+    /** @return string */
+    function description_html() {
+        $x = $this->description_text();
+        if ($x !== "") {
+            $x = "<div class=\"pcconfmatch\">{$x}</div>";
+        }
+        return $x;
+    }
+
+    /** @return list<non-empty-list<string>> */
+    function group_list_html(PaperInfo $prow) {
+        $last_ut = null;
+        $m = [];
+        foreach ($this->_pcs as $pc) {
+            list($ut, $ct) = $pc->unparse_html($prow);
+            if ($ut === $last_ut) {
+                $m[count($m) - 1][] = $ct;
+            } else {
+                $m[] = [$ut, $ct];
+                $last_ut = $ut;
+            }
+        }
+        return $m;
+    }
+
+    /** @param non-empty-list<string> $g
+     * @param ?string $prefix
+     * @param ?string $extraclass
+     * @return string */
+    static function group_html_ul($g, $prefix = null, $extraclass = null) {
+        $class = Ht::add_tokens("potentialconflict", $extraclass);
+        return "<ul class=\"{$class}\"><li>" . ($prefix ?? "")
+            . join("</li><li>", $g) . "</li></ul>";
+    }
+
+    /** @return string */
+    function tooltip_html(PaperInfo $prow) {
+        if (empty($this->_pcs)) {
+            return "";
+        }
+        $x = "<ul class=\"x\">";
+        foreach ($this->group_list_html($prow) as $g) {
+            $x .= "<li>" . self::group_html_ul($g) . "</li>";
+        }
+        return $x . "</ul>";
     }
 }

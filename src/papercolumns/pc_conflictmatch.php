@@ -35,21 +35,23 @@ class ConflictMatch_PaperColumn extends PaperColumn {
     }
     function content(PaperList $pl, PaperInfo $row) {
         $pf = $row->preference($this->contact);
-        $potconf = $row->potential_conflict_html($this->contact);
+        $potconf = $row->potential_conflict_list($this->contact);
+        $gs = $potconf ? $potconf->group_list_html($row) : [];
         if ($pf->preference <= -100) {
-            $potconf = $potconf ?? new PaperInfoPotentialConflictHTML;
-            $potconf->messages[] = ["<em>reviewer preference</em> " . $pf->unparse()];
+            $gs[] = ["<em>reviewer preference</em> " . $pf->unparse()];
         }
-        $this->nonempty = !$row->has_author($this->contact) || $potconf;
-        if (!$potconf || empty($potconf->messages)) {
+        $this->nonempty = !$row->has_author($this->contact) || !empty($gs);
+        if (empty($gs)) {
             return "";
         }
-        $m = $potconf->render_ul_list("break-avoid");
-        if (count($potconf->messages) === 1) {
-            return "<div class=\"potentialconflict-one\">{$m[0]}</div>";
-        } else {
-            return "<div class=\"potentialconflict-many\">" . join("", $m) . "</div>";
+        $m = [];
+        foreach ($gs as $g) {
+            $m[] = PaperInfoPotentialConflictList::group_html_ul($g, null, "break-avoid");
         }
+        if (count($m) === 1) {
+            return "<div class=\"potentialconflict-one\">{$m[0]}</div>";
+        }
+        return "<div class=\"potentialconflict-many\">" . join("", $m) . "</div>";
     }
 
     /** @param string $name @unused-param

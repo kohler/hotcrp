@@ -262,9 +262,9 @@ class Assign_Page {
         }
         $reason = $rrow->reason;
         if ($this->allow_view_authors
-            && ($potconf = $this->prow->potential_conflict_html($rrowid))) {
-            foreach ($potconf->messages as $ml) {
-                echo '<li class="fx">', $potconf->render_ul_item(null, "possible conflict: ", $ml), '</li>';
+            && ($potconf = $this->prow->potential_conflict_list($rrowid))) {
+            foreach ($potconf->group_list_html($this->prow) as $g) {
+                echo '<li class="fx">', $potconf->group_html_ul($g, "possible conflict: ", null), '</li>';
             }
             $reason = $reason ? : "This reviewer appears to have a conflict with the submission authors.";
         }
@@ -427,7 +427,7 @@ class Assign_Page {
         }
         $potconf = null;
         if ($this->allow_view_authors && $revtype != -2) {
-            $potconf = $this->prow->potential_conflict_html($pc);
+            $potconf = $this->prow->potential_conflict_list($pc);
         }
 
         echo '<div class="ctelt">',
@@ -468,8 +468,8 @@ class Assign_Page {
             $k = Conflict::is_conflicted($ct) ? " pcconf-conflicted" : "";
             echo '<div class="need-tooltip', $k,
                 '" data-tooltip-class="gray" data-tooltip="',
-                str_replace('"', '&quot;', PaperInfo::potential_conflict_tooltip_html($potconf)),
-                '">', $potconf->announce, '</div>';
+                str_replace('"', '&quot;', $potconf->tooltip_html($this->prow)),
+                '">', $potconf->description_html(), '</div>';
         }
 
         // then, number of reviews

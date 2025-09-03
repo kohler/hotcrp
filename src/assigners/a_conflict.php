@@ -178,7 +178,7 @@ class Conflict_Assigner extends Assigner {
 
         $cflt = $state->query(new Conflict_Assignable($pid, $cid));
         $has_conflict = $cflt && Conflict::is_conflicted($cflt[0]->_ctype);
-        $potconf = $has_conflict ? null : $prow->potential_conflict_html($u);
+        $potconf = $has_conflict ? null : $prow->potential_conflict_list($u);
         if (!$has_conflict && !$potconf) {
             return;
         }
@@ -203,8 +203,8 @@ class Conflict_Assigner extends Assigner {
         // otherwise, no conflict yet
         $xtype = $type === "review" ? "reviewer" : $type;
         $state->append_item_near(MessageItem::warning("<0>Warning: Proposed {$xtype} {$uname} may conflict with #{$pid}"), $item);
-        foreach ($potconf->messages as $msglist) {
-            $state->append_item_near(MessageItem::inform("<5>" . $potconf->render_ul_item(null, null, $msglist)), $item);
+        foreach ($potconf->group_list_html($prow) as $g) {
+            $state->append_item_near(MessageItem::inform("<5>" . $potconf->group_html_ul($g)), $item);
         }
         ++$state->potential_conflict_warnings;
         $can_admin = $state->user->allow_administer($prow);

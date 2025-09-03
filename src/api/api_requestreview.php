@@ -118,7 +118,7 @@ class RequestReview_API {
         $reason = trim($qreq->reason ?? "");
 
         // load potential conflict
-        $potconf = $prow->potential_conflict_html($xreviewer);
+        $potconflist = $prow->potential_conflict_list($xreviewer);
         $notrack = $reviewer
             && $reviewer->is_pc_member()
             && !$reviewer->pc_track_assignable($prow);
@@ -126,24 +126,24 @@ class RequestReview_API {
         // check whether to make a proposal
         $extrev_chairreq = $user->conf->setting("extrev_chairreq");
         if ($user->can_administer($prow)
-            ? ($potconf || $notrack) && !$qreq->override
+            ? ($potconflist || $notrack) && !$qreq->override
             : $extrev_chairreq === 1
-              || ($extrev_chairreq === 2 && ($potconf || $notrack))) {
+              || ($extrev_chairreq === 2 && ($potconflist || $notrack))) {
             $prow->conf->qe("insert into ReviewRequest set paperId=?, email=?, firstName=?, lastName=?, affiliation=?, requestedBy=?, timeRequested=?, reason=?, reviewRound=? on duplicate key update paperId=paperId",
                 $prow->paperId, $pemail, $xreviewer->firstName, $xreviewer->lastName,
                 $xreviewer->affiliation, $user->contactId, Conf::$now, $reason, $round);
             if ($user->can_administer($prow)) {
-                if ($potconf) {
+                if ($potconflist) {
                     $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)));
-                    $ml[] = MessageItem::inform_at("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf));
+                    $ml[] = MessageItem::inform_at("email", "<5>" . $potconflist->tooltip_html($prow));
                 } else {
                     $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} could not normally be assigned to review this {submission}, so you must approve this request for it to take effect", $xreviewer->name(NAME_E)));
                 }
             } else if ($extrev_chairreq === 2) {
-                if ($potconf || !$user->can_view_pc()) {
+                if ($potconflist || !$user->can_view_pc()) {
                     $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} has a potential conflict with this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)));
-                    if ($potconf && $user->can_view_authors($prow)) {
-                        $ml[] = MessageItem::inform_at("email", "<5>" . PaperInfo::potential_conflict_tooltip_html($potconf));
+                    if ($potconflist && $user->can_view_authors($prow)) {
+                        $ml[] = MessageItem::inform_at("email", "<5>" . $potconflist->tooltip_html($prow));
                     }
                 } else {
                     $ml[] = MessageItem::warning_note_at("email", $prow->conf->_("<0>{} could not normally be assigned to review this {submission}, so an administrator must approve your review request for it to take effect", $xreviewer->name(NAME_E)));
