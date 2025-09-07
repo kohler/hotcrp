@@ -95,7 +95,7 @@ class Completion_API {
             if ($user->can_view_some_option($opt)
                 && $opt->search_keyword() !== false) {
                 foreach ($opt->search_examples($user, SearchExample::COMPLETION) as $sex) {
-                    $comp[] = $sex->q;
+                    $comp[] = $sex->text();
                 }
             }
         }

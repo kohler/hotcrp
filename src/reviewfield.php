@@ -534,6 +534,15 @@ abstract class ReviewField implements JsonSerializable {
      * @param array{format:?TextFormat,include_presence:bool} $args */
     abstract function unparse_offline(&$t, $fval, $args);
 
+    /** @param string $q
+     * @param string $description
+     * @param string|FmtArg ...$args
+     * @return SearchExample */
+    final function make_search_example($q, $description, ...$args) {
+        $args[] = new FmtArg("title", $this->name, 0);
+        $args[] = new FmtArg("keyword", $this->search_keyword(), 0);
+        return new SearchExample($q, $description, ...$args);
+    }
     /** @param int $context
      * @return list<SearchExample> */
     function search_examples(Contact $viewer, $context) {
@@ -1216,91 +1225,91 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
     function search_examples(Contact $viewer, $context) {
         $kw = $this->search_keyword();
         $score = $this->typical_score();
-        $varg = new FmtArg("value", $score);
-        $ex = [new SearchExample(
-            $this, "{$kw}:any",
+        $varg = new FmtArg("value", $score, 0);
+        $ex = [$this->make_search_example(
+            "{$kw}:any",
             "<0>at least one completed review has a nonempty {title} field"
         )];
-        $ex[] = new SearchExample(
-            $this, "{$kw}:{value}",
+        $ex[] = $this->make_search_example(
+            "{$kw}:{value}",
             "<0>at least one completed review has {title} {value}",
             $varg
         );
         if (!$this->required) {
-            $ex[] = new SearchExample(
-                $this, "{$kw}:empty",
+            $ex[] = $this->make_search_example(
+                "{$kw}:empty",
                 "<0>at least one completed review has an empty {title} field"
             );
         }
         if (count($this->values) > 2
             && ($this->flags & self::FLAG_NUMERIC) !== 0) {
-            $ex[] = new SearchExample(
-                $this, "{$kw}:{comparison}",
+            $ex[] = $this->make_search_example(
+                "{$kw}:{comparison}",
                 "<0>at least one completed review has {title} greater than {value}",
                 $varg, new FmtArg("comparison", ">{$score}", 0)
             );
         }
         if (count($this->values) > 2
             && ($sr = $this->typical_score_range())) {
-            $fmtargs = [new FmtArg("v1", $sr[0]), new FmtArg("v2", $sr[1])];
-            $ex[] = new SearchExample(
-                $this, "{$kw}:any:{v1}-{v2}",
+            $fmtargs = [new FmtArg("v1", $sr[0], 0), new FmtArg("v2", $sr[1], 0)];
+            $ex[] = $this->make_search_example(
+                "{$kw}:any:{v1}-{v2}",
                 "<0>at least one completed review has {title} in the {v1}–{v2} range",
                 ...$fmtargs
             );
-            $ex[] = (new SearchExample(
-                $this, "{$kw}:all:{v1}-{v2}",
+            $ex[] = $this->make_search_example(
+                "{$kw}:all:{v1}-{v2}",
                 "<5><em>all</em> completed reviews have {title} in the {v1}–{v2} range",
                 ...$fmtargs
-            ))->primary_only(true);
-            $ex[] = (new SearchExample(
-                $this, "{$kw}:span:{v1}-{v2}",
-                "<5>{title} in completed reviews <em>spans</em> the {v1}–{v2} range",
+            )->set_importance(SearchExample::SECONDARY);
+            $ex[] = $this->make_search_example(
+                "{$kw}:span:{v1}-{v2}",
+                "<5>completed reviews have {title} that <em>span</em> the {v1}–{v2} range",
                 ...$fmtargs
-            ))->hint("<0>This means all scores between {v1} and {v2}, with at least one {v1} and at least one {v2}.")
-              ->primary_only(true);
+            )->append_item(MessageItem::fplain("<0>This means all scores between {v1} and {v2}, with at least one {v1} and at least one {v2}."))
+             ->set_importance(SearchExample::SECONDARY);
         }
 
         // counts
-        $ex[] = (new SearchExample(
-            $this, "{$kw}:{count}:{value}",
+        $ex[] = $this->make_search_example(
+            "{$kw}:{count}:{value}",
             "<0>at least {count} completed reviews have {title} {value}",
             $varg, new FmtArg("count", 4)
-        ))->primary_only(true);
-        $ex[] = (new SearchExample(
-            $this, "{$kw}:={count}:{value}",
+        )->set_importance(SearchExample::SECONDARY);
+        $ex[] = $this->make_search_example(
+            "{$kw}:={count}:{value}",
             "<5><em>exactly</em> {count} completed reviews have {title} {value}",
             $varg, new FmtArg("count", 2)
-        ))->primary_only(true);
+        )->set_importance(SearchExample::SECONDARY);
 
         // review rounds
         if ($viewer->isPC && $this->conf->has_rounds()) {
             $dr = $this->conf->defined_rounds();
             if (count($dr) > 1) {
-                $ex[] = (new SearchExample(
-                    $this, "{$kw}:{round}:{value}",
+                $ex[] = $this->make_search_example(
+                    "{$kw}:{round}:{value}",
                     "<0>at least one completed review in round {round} has {title} {value}",
                     $varg, new FmtArg("round", (array_values($dr))[1])
-                ))->primary_only(true);
+                )->set_importance(SearchExample::SECONDARY);
             }
         }
 
         // review types
         if ($viewer->isPC) {
-            $ex[] = (new SearchExample(
-                $this, "{$kw}:ext:{value}",
+            $ex[] = $this->make_search_example(
+                "{$kw}:ext:{value}",
                 "<0>at least one completed external review has {title} {value}",
                 $varg
-            ))->primary_only(true);
+            )->set_importance(SearchExample::SECONDARY);
         }
 
         // reviewer
         if ($viewer->can_view_some_review_identity()) {
-            $ex[] = (new SearchExample(
-                $this, "{$kw}:{reviewer}:{value}",
+            $ex[] = $this->make_search_example(
+                "{$kw}:{reviewer}:{value}",
                 "<0>a reviewer whose name or email matches “{reviewer}” completed a review with {title} {value}",
                 $varg, new FmtArg("reviewer", "sylvia")
-            ))->primary_only(true);
+            )->set_importance(SearchExample::SECONDARY);
         }
 
         return $ex;
@@ -1402,17 +1411,17 @@ class Text_ReviewField extends ReviewField {
     function search_examples(Contact $viewer, $context) {
         $kw = $this->search_keyword();
         return [
-            new SearchExample(
-                $this, "{$kw}:any",
+            $this->make_search_example(
+                "{$kw}:any",
                 "<0>at least one completed review has a nonempty {title} field"
             ),
-            (new SearchExample(
-                $this, "{$kw}:{text}",
+            $this->make_search_example(
+                "{$kw}:{text}",
                 "<0>at least one completed review has “{text}” in the {title} field",
                 new FmtArg("text", "finger")
-            ))->primary_only(true),
-            new SearchExample(
-                $this, "{$kw}:empty",
+            )->set_importance(SearchExample::SECONDARY),
+            $this->make_search_example(
+                "{$kw}:empty",
                 "<0>at least one completed review has an empty {title} field"
             )
         ];

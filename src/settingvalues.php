@@ -1063,14 +1063,13 @@ class SettingValues extends MessageSet {
             }
         }
         $this->swap_ignore_messages($oim);
-        if ($badctr !== null) {
-            $v0 = $v0 === "" ? "(empty)" : $v0;
-            $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} ‘{$v0}’ is not unique");
-            $this->error_at("{$pfx}{$badctr}{$sfx}");
-            return true;
-        } else {
+        if ($badctr === null) {
             return false;
         }
+        $v0 = $v0 === "" ? "(empty)" : $v0;
+        $this->error_at("{$pfx}{$ctr}{$sfx}", "<0>{$description} ‘{$v0}’ is not unique");
+        $this->error_at("{$pfx}{$badctr}{$sfx}");
+        return true;
     }
 
     /** @param string|Si ...$fields */

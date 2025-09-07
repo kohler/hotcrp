@@ -229,13 +229,13 @@ class Attachments_PaperOption extends PaperOption {
     function search_examples(Contact $viewer, $context) {
         return [
             $this->has_search_example(),
-            new SearchExample(
-                $this, $this->search_keyword() . ":{comparator}",
+            $this->make_search_example(
+                $this->search_keyword() . ":{comparator}",
                 "<0>submission has three or more {title} attachments",
                 new FmtArg("comparator", ">2", 0)
             ),
-            new SearchExample(
-                $this, $this->search_keyword() . ":{filename}",
+            $this->make_search_example(
+                $this->search_keyword() . ":{filename}",
                 "<0>submission has {title} attachment matching ‘{filename}’",
                 new FmtArg("filename", "*.gif", 0)
             )

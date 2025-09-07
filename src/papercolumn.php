@@ -726,9 +726,8 @@ class ReviewerType_PaperColumn extends PaperColumn {
             return "Review";
         } else if ($is_text) {
             return $pl->user->reviewer_text_for($this->contact) . " review";
-        } else {
-            return $pl->user->reviewer_html_for($this->contact) . "<br>review";
         }
+        return $pl->user->reviewer_html_for($this->contact) . "<br>review";
     }
     function content(PaperList $pl, PaperInfo $row) {
         list($ranal, $flags) = $this->analysis($pl, $row);
@@ -779,10 +778,9 @@ class ReviewerType_PaperColumn extends PaperColumn {
 
 class TagList_PaperColumn extends PaperColumn {
     private $editable;
-    function __construct(Conf $conf, $cj, $editable = false) {
+    function __construct(Conf $conf, $cj) {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_FORCE;
-        $this->editable = $editable;
     }
     function view_option_schema() {
         return ["edit"];

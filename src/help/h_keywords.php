@@ -6,19 +6,19 @@ class Keywords_HelpTopic {
     /** @param list<SearchExample> $exs */
     static function print_search_examples(HelpRenderer $hth, $exs) {
         while (($ex = array_shift($exs))) {
-            $desc = Ftext::as(5, $hth->conf->_($ex->description, ...$ex->all_arguments()));
+            $desc = Ftext::as(5, $ex->fmt_description($hth->conf));
+            $ml = $ex->fmt_message_list($hth->conf);
             $qs = [];
             foreach (SearchExample::remove_category($exs, $ex) as $oex) {
-                if (!$oex->primary_only)
-                    $qs[] = preg_replace('/\{(\w+)\}/', '<i>$1</i>', htmlspecialchars($oex->q));
+                if ($oex->importance() >= SearchExample::PRIMARY)
+                    $qs[] = $oex->text_h_s9t();
             }
-            foreach ($ex->hints ?? [] as $h) {
-                $desc .= '<div class="hint">' . Ftext::as(5, $hth->conf->_($h, ...$ex->all_arguments())) . '</div>';
+            if (!empty($qs)) {
+                $ml[] = MessageItem::marked_note("<5>Also " . join(", ", $qs));
             }
-            if ($qs) {
-                $desc .= '<div class="hint">Also ' . join(", ", $qs) . '</div>';
-            }
-            echo $hth->search_trow($ex->expanded_query(), $desc);
+            echo $hth->search_trow($ex->fmt_text(),
+                Ftext::as(5, $ex->fmt_description($hth->conf))
+                . MessageSet::feedback_html($ml, ["class" => "hint"]));
         }
     }
 

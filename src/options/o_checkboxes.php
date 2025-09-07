@@ -38,10 +38,10 @@ class Checkboxes_PaperOption extends CheckboxesBase_PaperOption {
     function search_examples(Contact $viewer, $context) {
         $a = [$this->has_search_example()];
         if (($q = $this->value_search_keyword(2))) {
-            $a[] = new SearchExample(
-                $this, $this->search_keyword() . ":{value}",
+            $a[] = $this->make_search_example(
+                $this->search_keyword() . ":{value}",
                 "<0>submission’s {title} field has value ‘{value}’",
-                new FmtArg("value", $this->values[1])
+                new FmtArg("value", $this->values[1], 0)
             );
         }
         return $a;

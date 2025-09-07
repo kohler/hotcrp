@@ -1346,7 +1346,7 @@ class AssignmentSet {
      * @return $this
      * @deprecated */
     function prepend_msg($msg, $status) {
-        $this->astate->prepend_item(new MessageItem(null, $msg, $status));
+        $this->astate->prepend_item(new MessageItem($status, null, $msg));
         return $this;
     }
     /** @return string */

@@ -996,6 +996,15 @@ class PaperOption implements JsonSerializable {
         return null;
     }
 
+    /** @param string $q
+     * @param string $description
+     * @param string|FmtArg ...$args
+     * @return SearchExample */
+    final function make_search_example($q, $description = "", ...$args) {
+        $args[] = new FmtArg("title", $this->title(), 0);
+        $args[] = new FmtArg("keyword", $this->search_keyword(), 0);
+        return new SearchExample($q, $description, ...$args);
+    }
     /** @param int $context
      * @return list<SearchExample> */
     function search_examples(Contact $viewer, $context) {
@@ -1004,16 +1013,16 @@ class PaperOption implements JsonSerializable {
     /** @return SearchExample */
     function has_search_example() {
         assert($this->search_keyword() !== false);
-        return new SearchExample(
-            $this, "has:" . $this->search_keyword(),
+        return $this->make_search_example(
+            "has:" . $this->search_keyword(),
             "<0>{submission}’s {title} field is set"
         );
     }
     /** @return SearchExample */
     function text_search_example() {
         assert($this->search_keyword() !== false);
-        return new SearchExample(
-            $this, $this->search_keyword() . ":{text}",
+        return $this->make_search_example(
+            $this->search_keyword() . ":{text}",
             "<0>{submission}’s {title} field contains ‘{text}’",
             new FmtArg("text", "words")
         );
@@ -1353,16 +1362,16 @@ class Selector_PaperOption extends PaperOption {
         $a = [$this->has_search_example()];
         if ($context === SearchExample::HELP) {
             if (($q = $this->value_search_keyword(2))) {
-                $a[] = new SearchExample(
-                    $this, $this->search_keyword() . ":{value}",
+                $a[] = $this->make_search_example(
+                    $this->search_keyword() . ":{value:sq}",
                     "<0>{submission}’s {title} field has value ‘{value}’",
-                    new FmtArg("value", $this->values[1])
+                    new FmtArg("value", $this->values[1], 0)
                 );
             }
         } else {
             foreach ($this->values as $s) {
-                $a[] = new SearchExample(
-                    $this, $this->search_keyword() . ":" . SearchWord::quote($s)
+                $a[] = $this->make_search_example(
+                    $this->search_keyword() . ":" . SearchWord::quote($s)
                 );
             }
         }

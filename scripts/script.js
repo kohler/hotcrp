@@ -8611,29 +8611,34 @@ function suggest() {
             node.innerHTML = titem.sh;
             return node;
         }
-        let s = titem.s;
-        const lb = s.indexOf("{");
-        if (lb >= 0) {
-            const rb = s.indexOf("}", lb + 1), frag = document.createDocumentFragment();
-            if (lb > 0) {
-                frag.append(s.substring(0, lb));
+        const s = titem.s;
+        let s9t, pos = 0, lb, rb;
+        while ((lb = s.indexOf("{", pos)) >= 0
+               && (rb = s.indexOf("}", lb + 1)) >= 0) {
+            let co = s.indexOf(":", lb + 1);
+            if (co < 0 || co >= rb) {
+                co = rb;
             }
-            if (rb > lb + 1) {
-                frag.append($e("span", "s9ta", s.substring(lb + 1, rb)));
+            s9t = s9t || document.createDocumentFragment();
+            if (lb > pos) {
+                s9t.append(s.substring(pos, lb));
             }
-            if (rb > 0 && rb + 1 < s.length) {
-                frag.append(s.substring(rb + 1));
+            if (co > lb + 1) {
+                s9t.append($e("span", "s9ta", s.substring(lb + 1, co)));
             }
-            s = frag;
+            pos = rb + 1;
+        }
+        if (s9t && pos < s.length) {
+            s9t.append(s.substring(pos));
         }
         if (!titem.d && !titem.dh && !prepend) {
-            node.append(s);
+            node.append(s9t || s);
             return node;
         }
         if (prepend) {
             node.appendChild($e("span", "s9p", prepend));
         }
-        node.appendChild($e("span", "s9t", s));
+        node.appendChild($e("span", "s9t", s9t || s));
         if (titem.d || titem.dh) {
             const s9d = document.createElement("span");
             s9d.className = "s9d";

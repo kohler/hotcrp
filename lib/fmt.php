@@ -23,6 +23,11 @@ class FmtArg {
     function convert_to($format) {
         return Ftext::convert_to($format, $this->format, $this->value);
     }
+
+    /** @return FmtArg */
+    static function blank() {
+        return new FmtArg("", null);
+    }
 }
 
 class FmtItem {
@@ -294,6 +299,11 @@ class FmtContext {
                 $vformat = null;
             }
             return [$vformat, $value];
+        } else if ($fspec === ":sq") {
+            if (!preg_match('/\A[-a-zA-Z_0-9.:]+\z/', $value)) {
+                $value = "\"{$value}\"";
+            }
+            return [$vformat, $value];
         } else if (str_starts_with($fspec, ":plural ")) {
             $word = $this->expand(ltrim(substr($fspec, 8)), $expansion);
             return [$vformat, plural_word($value, $word)];
@@ -302,9 +312,8 @@ class FmtContext {
                 return $this->complain("{$fspec} expected number");
             }
             return [$vformat, sprintf("%" . substr($fspec, 1), $value)];
-        } else {
-            return $this->complain("unknown format specification {$fspec}");
         }
+        return $this->complain("unknown format specification {$fspec}");
     }
 
     /** @param string $s

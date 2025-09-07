@@ -23,26 +23,20 @@ class MessageItem implements JsonSerializable {
     public $args;
 
     /** @param int $status
+     * @param ?string $field
+     * @param string $m
+     * @param mixed ...$args
      * @suppress PhanTypeMismatchProperty */
-    function __construct($status, ...$args) {
-        if (count($args) === 2 && is_int($args[1])) {
-            error_log("Obsolete argument order to `new MessageItem`: " . debug_string_backtrace());
-            $this->status = $args[1];
-            if ($status !== "") {
-                $this->field = $status;
-            }
-            $this->message = $args[0];
+    function __construct($status, $field = null, $m = "", ...$args) {
+        $this->status = $status;
+        if (($field ?? "") !== "") {
+            $this->field = $field;
+        }
+        if (!empty($args)) {
+            $this->fmessage = $m ?? "";
+            $this->args = $args;
         } else {
-            $this->status = $status;
-            if (($args[0] ?? "") !== "") {
-                $this->field = $args[0];
-            }
-            if (count($args) > 2) {
-                $this->fmessage = $args[1];
-                $this->args = array_slice($args, 2);
-            } else {
-                $this->message = $args[1] ?? "";
-            }
+            $this->message = $m ?? "";
         }
     }
 
@@ -68,10 +62,11 @@ class MessageItem implements JsonSerializable {
     }
 
     /** @param Fmt $fmt
+     * @param string|FmtArg ...$args
      * @return $this */
-    function fmt($fmt) {
+    function fmt($fmt, ...$args) {
         if ($this->fmessage !== null && $this->message === null) {
-            $this->message = $fmt->_($this->fmessage, ...$this->args);
+            $this->message = $fmt->_($this->fmessage, ...$this->args, ...$args);
         }
         return $this;
     }
@@ -218,6 +213,15 @@ class MessageItem implements JsonSerializable {
     /** @param ?string $msg
      * @return MessageItem */
     static function plain($msg, ...$args) {
+        return new MessageItem(MessageSet::PLAIN, null, $msg, ...$args);
+    }
+
+    /** @param ?string $msg
+     * @return MessageItem */
+    static function fplain($msg, ...$args) {
+        if (empty($args)) {
+            $args[] = FmtArg::blank();
+        }
         return new MessageItem(MessageSet::PLAIN, null, $msg, ...$args);
     }
 
@@ -420,7 +424,7 @@ class MessageSet {
         if ($mi->message !== ""
             && ($this->_ms_flags & self::WANT_FTEXT) !== 0
             && !Ftext::is_ftext($mi->message)) {
-            error_log("not ftext: " . debug_string_backtrace());
+            error_log("not ftext: {$mi->message} " . debug_string_backtrace());
             if (($this->_ms_flags & self::DEFAULT_FTEXT_TEXT) !== 0) {
                 $mi->message = "<0>{$mi->message}";
             } else if (($this->_ms_flags & self::DEFAULT_FTEXT_HTML) !== 0) {

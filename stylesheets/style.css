@@ -2408,6 +2408,9 @@ label.f-c, .f-i > label, .f-i > .label {
 	font-size: 92%;
 	overflow-wrap: break-word;
 }
+.feedback-list.hint {
+	font-size: smaller;
+}
 .feedback, .feedback-list, .field-d {
 	margin-bottom: 0.3rem;
 }
@@ -3994,6 +3997,9 @@ a.badge-white:hover {
 .s9d {
 	padding-left: 0.5em;
 	opacity: 0.5;
+}
+.s9t {
+	font-weight: 500;
 }
 .s9ta {
 	font-style: italic;

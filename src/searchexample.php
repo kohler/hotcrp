@@ -1,89 +1,117 @@
 <?php
 // searchexample.php -- HotCRP helper class for search examples
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class SearchExample {
-    /** @var ?PaperOption */
-    public $opt;
-    /** @var ?ReviewField */
-    public $rf;
-    /** @var string */
-    public $q;
-    /** @var ?string */
-    public $t;
-    /** @var ?string */
-    public $description;
-    /** @var ?string */
-    public $category;
-    /** @var ?bool */
-    public $primary_only;
+    /** @var string
+     * @readonly */
+    private $text;
+    /** @var ?string
+     * @readonly */
+    private $description;
+    /** @var 0|1
+     * @readonly */
+    private $importance = 1;
     /** @var list<string|FmtArg> */
-    public $arguments;
-    /** @var ?list<string> */
-    public $hints;
+    private $args;
+    /** @var ?list<MessageItem> */
+    private $ml;
+
+    const PRIMARY = 1;
+    const SECONDARY = 0;
 
     const HELP = 0;
     const COMPLETION = 1;
 
-    /** @param PaperOption|ReviewField $field
-     * @param string $q
+    /** @param string $text
      * @param string $description
-     * @param string|FmtArg ...$arguments */
-    function __construct($field, $q, $description = "", ...$arguments) {
-        if ($field instanceof PaperOption) {
-            $this->opt = $field;
-        } else if ($field instanceof ReviewField) {
-            $this->rf = $field;
-        }
-        $this->q = $q;
+     * @param string|FmtArg ...$args */
+    function __construct($text, $description = "", ...$args) {
+        $this->text = $text;
         $this->description = $description;
-        $this->arguments = $arguments;
+        $this->args = $args;
         if ($description !== "" && !Ftext::is_ftext($description)) {
             error_log(debug_string_backtrace());
         }
     }
 
-    /** @param string $category
-     * @return $this */
-    function category($category) {
-        $this->category = $category;
+    /** @param 0|1 $importance
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_importance($importance) {
+        $this->importance = $importance;
         return $this;
     }
 
-    /** @param bool $primary_only
+    /** @param MessageItem $mi
      * @return $this */
-    function primary_only($primary_only) {
-        $this->primary_only = $primary_only;
-        return $this;
-    }
-
-    /** @param string $t
-     * @return $this */
-    function hint($t) {
-        $this->hints[] = $t;
+    function append_item($mi) {
+        $this->ml[] = $mi;
         return $this;
     }
 
     /** @return string */
-    function expanded_query() {
-        if (strpos($this->q, "{") === false) {
-            return $this->q;
+    function text() {
+        return $this->text;
+    }
+
+    /** @return string */
+    function fmt_text() {
+        if (strpos($this->text, "{") === false) {
+            return $this->text;
         }
-        return Fmt::simple($this->q, ...$this->all_arguments());
+        return Fmt::simple($this->text, ...$this->args());
+    }
+
+    /** @return string */
+    function text_h_s9t() {
+        $t = "<span class=\"s9t\">" . htmlspecialchars($this->text) . "</span>";
+        $pos = 0;
+        while (($lb = strpos($t, "{", $pos)) !== false
+               && ($rb = strpos($t, "}", $lb + 1)) !== false) {
+            $co = strpos($t, ":", $lb + 1);
+            if ($co === false || $co > $rb) {
+                $co = $rb;
+            }
+            $sfxlen = strlen($t) - $rb - 1;
+            $t = substr($t, 0, $lb) . "<span class=\"s9ta\">"
+                . substr($t, $lb + 1, $co - $lb - 1) . "</span>"
+                . substr($t, $rb + 1);
+            $pos = strlen($t) - $sfxlen;
+        }
+        return $t;
+    }
+
+    /** @return string */
+    function description() {
+        return $this->description;
+    }
+
+    /** @param ?Fmt|Conf $fmt
+     * @return string */
+    function fmt_description($fmt = null) {
+        $fmt = $fmt ?? new Fmt;
+        return $fmt->_($this->description, ...$this->args());
     }
 
     /** @return list<string|FmtArg> */
-    function all_arguments() {
-        $args = $this->arguments;
-        if ($this->opt) {
-            $args[] = new FmtArg("title", $this->opt->title(), 0);
-            $args[] = new FmtArg("keyword", $this->opt->search_keyword(), 0);
+    function args() {
+        return $this->args ?? [];
+    }
+
+    /** @param ?Fmt|Conf $fmt
+     * @return list<MessageItem> */
+    function fmt_message_list($fmt = null) {
+        $fmt = $fmt ?? new Fmt;
+        foreach ($this->ml ?? [] as $mi) {
+            $mi->fmt($fmt, ...$this->args());
         }
-        if ($this->rf) {
-            $args[] = new FmtArg("title", $this->rf->name, 0);
-            $args[] = new FmtArg("keyword", $this->rf->search_keyword(), 0);
-        }
-        return $args;
+        return $this->ml ?? [];
+    }
+
+    /** @return 0|1 */
+    function importance() {
+        return $this->importance;
     }
 
     /** @param list<SearchExample> &$exs
@@ -92,8 +120,7 @@ class SearchExample {
     static function remove_category(&$exs, $match) {
         $ret = [];
         for ($i = 0; $i !== count($exs); ) {
-            if (($match->description && $exs[$i]->description === $match->description)
-                || ($match->category && $exs[$i]->category === $match->category)) {
+            if ($match->description && $exs[$i]->description === $match->description) {
                 $ret[] = $exs[$i];
                 array_splice($exs, $i, 1);
             } else {
