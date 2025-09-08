@@ -432,12 +432,12 @@ class PaperList {
         case "reviewAssignment":
             return "id title desirability topicscore mypref assignment potentialconflict topics reviewers linkto[assign]";
         case "conflictassign":
-            return "id title authors[anon,full] potentialconflict revtype[simple] editconf[simple,pin=conflicted] linkto[assign]";
+            return "id title authors[anon,full] potentialconflict revtype[simple] conflict[edit,simple,pin=conflicted] linkto[assign]";
         case "conflictassign:neg":
-            return "id title authors[anon,full] potentialconflict revtype[simple] editconf[simple,pin=unconflicted] linkto[assign]";
+            return "id title authors[anon,full] potentialconflict revtype[simple] conflict[edit,simple,pin=unconflicted] linkto[assign]";
         case "pf":
             $t = $this->conf->setting("pref_shuffle") ? " sort:shuffle[reviewer]" : "";
-            return "sel id title status revtype topicscore editmypref[topicscore]" . $t;
+            return "sel id title status revtype topicscore mypref[edit,topicscore]" . $t;
         case "reviewers":
             return "sel[selected] id title status linkto[assign]";
         case "reviewersSel":
@@ -731,7 +731,7 @@ class PaperList {
         $fs = $this->conf->paper_columns($svc->keyword, $this->xtp);
         if (count($fs) === 1) {
             $col = PaperColumn::make($this->conf, $fs[0])->add_view_options($svc->view_options);
-            if ($col->prepare($this, PaperColumn::PREP_SORT)
+            if ($col->prepare($this, FieldRender::CFSORT)
                 && $col->sort) {
                 $col->sort_subset = $sort_subset;
                 $this->_append_sortcol($col, $origin);
@@ -961,7 +961,7 @@ class PaperList {
         }
         if (count($this->_sortcol) === $nsortcol
             && ($dspc = $qe->default_sort_column(true, $this))
-            && $dspc->prepare($this, PaperColumn::PREP_SORT)) {
+            && $dspc->prepare($this, FieldRender::CFSORT)) {
             assert($dspc->sort > 0);
             $dspc->sort_subset = $sort_subset;
             $this->_append_sortcol($dspc, PaperList::VIEWORIGIN_SEARCH);
@@ -1405,7 +1405,7 @@ class PaperList {
             $f->is_visible = true;
             $f->has_content = false;
             $this->_finding_column = $k;
-            if ($f->prepare($this, PaperColumn::PREP_VISIBLE)) {
+            if ($f->prepare($this, FieldRender::CFLIST)) {
                 if ($f->view_order !== null) {
                     $vcols1[] = $f;
                 } else {

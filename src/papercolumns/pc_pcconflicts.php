@@ -10,9 +10,7 @@ class PCConflicts_PaperColumn extends PaperColumn {
         if (!$pl->user->can_view_some_conflicts()) {
             return false;
         }
-        if ($visible) {
-            $pl->qopts["allConflictType"] = 1;
-        }
+        $pl->qopts["allConflictType"] = 1;
         return true;
     }
     function content_empty(PaperList $pl, PaperInfo $row) {

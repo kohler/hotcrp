@@ -1,6 +1,6 @@
 <?php
 // pc_conflict.php -- HotCRP conflict list column
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Conflict_PaperColumn extends PaperColumn {
     /** @var ?Contact */
@@ -10,7 +10,7 @@ class Conflict_PaperColumn extends PaperColumn {
     /** @var bool */
     private $not_me;
     /** @var bool */
-    private $show_description;
+    private $description;
     /** @var bool */
     private $editable = false;
     /** @var bool */
@@ -29,12 +29,11 @@ class Conflict_PaperColumn extends PaperColumn {
         if (($this->show_user = isset($cj->user))) {
             $this->contact = $conf->pc_member_by_email($cj->user);
         }
-        $this->show_description = ($cj->show_description ?? false)
-            && $conf->setting("sub_pcconfsel");
+        $this->description = $cj->show_description ?? false;
         $this->editable = $cj->edit ?? false;
     }
     function view_option_schema() {
-        return ["simple", "edit", "pin=all,yes|none,no|unconflicted|conflicted"];
+        return ["simple", "edit", "pin=all,yes|none,no|unconflicted|conflicted", "description", "desc/description"];
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $this->contact ? : $pl->reviewer_user();
@@ -47,6 +46,8 @@ class Conflict_PaperColumn extends PaperColumn {
             $this->pin_yes = $pin === "all" || $pin === "conflicted";
             $this->override = PaperColumn::OVERRIDE_BOTH;
         }
+        $this->description = $pl->conf->setting("sub_pcconfsel")
+            && ($this->view_option("description") ?? $this->description);
         $this->usuffix = $this->simple ? "" : "u{$this->contact->contactId}";
         $this->cset = $pl->conf->conflict_set();
         return true;
@@ -56,7 +57,7 @@ class Conflict_PaperColumn extends PaperColumn {
             return 0;
         }
         $ct = $row->conflict_type($this->contact);
-        if ($this->show_description
+        if ($this->description
             && Conflict::is_conflicted($ct)
             && !$pl->user->can_view_authors($row)) {
             $ct = Conflict::GENERAL;
@@ -66,11 +67,10 @@ class Conflict_PaperColumn extends PaperColumn {
     function compare(PaperInfo $a, PaperInfo $b, PaperList $pl) {
         $act = $this->conflict_type($pl, $a);
         $bct = $this->conflict_type($pl, $b);
-        if ($this->show_description) {
+        if ($this->description) {
             return $act <=> $bct;
-        } else {
-            return ($act ? 1 : 0) <=> ($bct ? 1 : 0);
         }
+        return ($act ? 1 : 0) <=> ($bct ? 1 : 0);
     }
     function header(PaperList $pl, $is_text) {
         if ((!$this->show_user && !$this->not_me && !$this->editable)
@@ -78,9 +78,8 @@ class Conflict_PaperColumn extends PaperColumn {
             return "Conflict";
         } else if ($is_text) {
             return $pl->user->reviewer_text_for($this->contact) . " conflict";
-        } else {
-            return $pl->user->reviewer_html_for($this->contact) . "<br>conflict";
         }
+        return $pl->user->reviewer_html_for($this->contact) . "<br>conflict";
     }
     protected function checked(PaperList $pl, PaperInfo $row) {
         return $pl->is_selected($row->paperId, $row->has_conflict($this->contact));
@@ -96,11 +95,10 @@ class Conflict_PaperColumn extends PaperColumn {
         $ct = $this->conflict_type($pl, $row);
         if (!Conflict::is_conflicted($ct)) {
             return "";
-        } else if (!$this->show_description) {
+        } else if (!$this->description) {
             return review_type_icon(-1);
-        } else {
-            return $this->cset->unparse_html(min($ct, CONFLICT_AUTHOR));
         }
+        return $this->cset->unparse_html(min($ct, CONFLICT_AUTHOR));
     }
     function edit_content(PaperList $pl, PaperInfo $row) {
         if (!$pl->user->allow_administer($row)) {
@@ -129,11 +127,10 @@ class Conflict_PaperColumn extends PaperColumn {
         $ct = $this->conflict_type($pl, $row);
         if (!Conflict::is_conflicted($ct)) {
             return "N";
-        } else if (!$this->show_description) {
+        } else if (!$this->description) {
             return "Y";
-        } else {
-            return $this->cset->unparse_csv(min($ct, CONFLICT_AUTHOR));
         }
+        return $this->cset->unparse_csv(min($ct, CONFLICT_AUTHOR));
     }
 
     static function expand($name, XtParams $xtp, $xfj, $m) {
@@ -155,11 +152,17 @@ class Conflict_PaperColumn extends PaperColumn {
         return $rs;
     }
 
-    static function completions(Contact $user, $fxt) {
-        if ($user->can_view_some_conflicts()) {
-            return [($fxt->show_description ?? false) ? "pcconfdesc:{user}" : "pcconf:{user}"];
-        } else {
+    static function completions(Contact $user, $xfj) {
+        if (!$user->can_view_some_conflicts()) {
             return [];
         }
+        return ["conflict:{user}"];
+    }
+
+    static function examples(Contact $user, $xfj) {
+        if (!$user->can_view_some_conflicts()) {
+            return [];
+        }
+        return [new SearchExample("conflict:{user}", "<0>Conflict with user")];
     }
 }

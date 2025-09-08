@@ -25,9 +25,7 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         if ($this->formula->indexed()) {
             $this->indexes_function = Formula::compile_indexes_function($pl->user, $this->formula->index_type());
         }
-        if ($visible) {
-            $this->formula->add_query_options($pl->qopts);
-        }
+        $this->formula->add_query_options($pl->qopts);
         parent::prepare($pl, $visible);
         return true;
     }
@@ -63,15 +61,14 @@ class FormulaGraph_PaperColumn extends ScoreGraph_PaperColumn {
         } else if ($formula->result_format() !== Fexpr::FREVIEWFIELD) {
             PaperColumn::column_error($xtp, "<0>Formula of type " . $formula->result_format_description() . " can’t be used in graphs, review field value expected");
             return null;
-        } else {
-            $cj = (array) $xfj;
-            $cj["name"] = "graph(" . $m[2] . ")";
-            $cj["formula"] = $formula;
-            return [(object) $cj];
         }
+        $cj = (array) $xfj;
+        $cj["name"] = "graph(" . $m[2] . ")";
+        $cj["formula"] = $formula;
+        return [(object) $cj];
     }
 
-    static function completions(Contact $user, $xfj) {
-        return ["graph({formula})"];
+    static function examples(Contact $user, $xfj) {
+        return [new SearchExample("graph({formula})", "<0>Graph results of formula for each reviewer")];
     }
 }

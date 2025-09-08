@@ -82,8 +82,8 @@ class ViewOptionSchema {
     }
 
     /** @param string|object $x
-     * @return bool */
-    function define_check($x) {
+     * @return ?array{string,object} */
+    static function expand($x) {
         if (is_string($x)) {
             if (($sl = strpos($x, "/")) !== false) {
                 $name = substr($x, 0, $sl);
@@ -114,15 +114,25 @@ class ViewOptionSchema {
                 $name = $x;
                 $schema = (object) [];
             } else {
-                return false;
+                return null;
             }
         } else if (is_object($x) && is_string($x->name ?? null)) {
             $name = $x->name;
             $schema = $x;
         } else {
+            return null;
+        }
+        return [$name, $schema];
+    }
+
+    /** @param string|object $x
+     * @return bool */
+    function define_check($x) {
+        $exp = self::expand($x);
+        if (!$exp) {
             return false;
         }
-        $this->a[$name] = $schema;
+        $this->a[$exp[0]] = $exp[1];
         return true;
     }
 

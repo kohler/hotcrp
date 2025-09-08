@@ -22,8 +22,6 @@ class Column {
     public $sort = 0;
     /** @var ?int */
     public $fold;
-    /** @var bool|string */
-    public $completion = false;
     /** @var bool */
     public $sort_descending;
     /** @var ?list<int> */
@@ -66,9 +64,6 @@ class Column {
         }
         $this->sort_descending = $this->default_sort_descending();
         $this->fold = $arg["fold"] ?? null;
-        if (isset($arg["completion"])) {
-            $this->completion = $arg["completion"];
-        }
         $this->order = $arg["order"] ?? null;
         $this->__source_order = $arg["__source_order"] ?? null;
     }

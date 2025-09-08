@@ -20,7 +20,7 @@ class Option_PaperColumn extends PaperColumn {
             return false;
         }
         $pl->qopts["options"] = true;
-        if ($visible === self::PREP_VISIBLE) {
+        if (($visible & FieldRender::CFLIST) !== 0) {
             $this->fr = new FieldRender($pl->render_context | ($this->as_row ? FieldRender::CFROW : FieldRender::CFCOLUMN), $pl->user);
             $this->fr->set_column($this);
         }
@@ -126,15 +126,19 @@ class Option_PaperColumnFactory {
         }
         return null;
     }
-    static function completions(Contact $user, $fxt) {
-        $cs = [];
+    static function examples(Contact $user, $xfj, $visible) {
+        $exs = [];
+        $rc = $visible === FieldRender::CFSUGGEST ? $visible : FieldRender::CFLIST;
         foreach ($user->conf->options() as $opt) {
             if ($user->can_view_some_option($opt)
                 && $opt->search_keyword() !== false
-                && $opt->on_render_context(FieldRender::CFSUGGEST)) {
-                $cs[] = $opt->search_keyword();
+                && $opt->on_render_context($rc)) {
+                $exs[] = new SearchExample($opt->search_keyword(), "<0>" . $opt->edit_title() . " submission field");
             }
         }
-        return empty($cs) ? $cs : array_merge(["options"], $cs);
+        if (!empty($exs)) {
+            $exs[] = new SearchExample("options", "<0>All submission fields");
+        }
+        return $exs;
     }
 }

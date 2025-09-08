@@ -47,7 +47,7 @@ class Preference_PaperColumn extends PaperColumn {
         }
         $this->secondary_sort_topic_score = $this->view_option("topics") ?? false;
         $this->all = $this->view_option("all") ?? false;
-        if ($visible || $this->secondary_sort_topic_score) {
+        if ($this->secondary_sort_topic_score) {
             $pl->qopts["topics"] = 1;
         }
         $this->prefix =  "";
@@ -189,11 +189,10 @@ class Preference_PaperColumn extends PaperColumn {
         return $rs;
     }
 
-    static function completions(Contact $user, $xfj) {
-        if ($user->isPC && $user->can_view_preference(null)) {
-            return ["pref:{user}"];
-        } else {
+    static function examples(Contact $user, $xfj) {
+        if (!$user->can_view_preference(null)) {
             return [];
         }
+        return [new SearchExample("pref:{user}", "<0>Review preference for PC member")];
     }
 }

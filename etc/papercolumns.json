@@ -2,11 +2,11 @@
     {
         "name": "sel",
         "function": "+Selector_PaperColumn",
-        "order": 10
+        "order": 10, "exposure": false
     },
     {
         "name": "id", "title": "ID",
-        "sort": true, "completion": true,
+        "sort": true, "description": "<0>Submission ID",
         "function": "+Id_PaperColumn",
         "order": 50
     },
@@ -17,20 +17,20 @@
     },
     {
         "name": "title", "title": "Title",
-        "sort": true, "completion": true, "function": "+Title_PaperColumn",
+        "sort": true, "function": "+Title_PaperColumn",
         "order": 120
     },
     {
         "match": "((?:opt:)?)(.+)", "priority": -2000,
-        "sort": true, "completion": true, "className": "pl_option",
+        "sort": true, "className": "pl_option",
         "function": "+Option_PaperColumn",
         "expand_function": "Option_PaperColumnFactory::expand",
-        "completion_function": "Option_PaperColumnFactory::completions",
+        "example_function": "Option_PaperColumnFactory::examples",
         "order": 200
     },
     {
         "name": "topicscore", "title": "Topic score",
-        "sort": "descending", "completion": true, "className": "pl_topicscore", "function": "+TopicScore_PaperColumn",
+        "sort": "descending", "className": "pl_topicscore", "function": "+TopicScore_PaperColumn",
         "order": 500
     },
     {   "name": "topic_score", "alias": "topicscore"   },
@@ -40,12 +40,12 @@
     },
     {
         "name": "desirability", "title": "Desirability",
-        "sort": "descending", "completion": true, "function": "+Desirability_PaperColumn",
+        "sort": "descending", "function": "+Desirability_PaperColumn",
         "order": 510
     },
     {
         "name": "mypref",
-        "sort": "descending", "completion": true, "className": "pl_revpref", "function": "+Preference_PaperColumn",
+        "sort": "descending", "className": "pl_revpref", "function": "+Preference_PaperColumn",
         "order": 550
     },
     {   "name": "mypreference", "alias": "mypref"   },
@@ -56,93 +56,88 @@
     {
         "name": "editmypref",
         "edit": true, "sort": "descending", "className": "pl_editrevpref", "function": "+Preference_PaperColumn",
-        "order": 550
+        "order": 550, "exposure": "none"
     },
     {   "name": "editpreference", "alias": "editmypref"   },
     {   "name": "editrevpref", "alias": "editmypref"   },
     {
         "match": "(?:pref:|revpref:|preference:)(.+?)", "priority": -1, "allow_if": "manager",
         "expand_function": "Preference_PaperColumn::expand",
-        "completion_function": "Preference_PaperColumn::completions"
+        "example_function": "Preference_PaperColumn::examples"
     },
     {
         "name": "revdelegation", "title": "Requested reviews",
         "prefer_row": true, "className": "pl_text", "function": "+ReviewDelegation_PaperColumn",
-        "order": 400
+        "order": 400, "exposure": false
     },
     {
         "name": "revtype",
-        "sort": "descending", "completion": true, "className": "pl_revtype", "function": "+ReviewerType_PaperColumn",
+        "sort": "descending", "className": "pl_revtype", "function": "+ReviewerType_PaperColumn",
         "order": 420
     },
     {
         "name": "revstat",
-        "sort": "descending", "completion": true, "className": "pl_revstat",
+        "sort": "descending", "className": "pl_revstat",
         "function": "+ReviewStatus_PaperColumn", "allow_if": "reviewer",
         "order": 430
     },
     {
         "name": "assignment",
-        "sort": "descending", "completion": true, "function": "+AssignReview_PaperColumn",
+        "sort": "descending", "function": "+AssignReview_PaperColumn",
         "order": 840
     },
     {   "name": "assrev", "alias": "assignment", "deprecated": true   },
     {   "name": "assign", "alias": "assignment", "deprecated": true   },
     {
-        "name": "conf",
+        "name": "conflict",
         "sort": "descending", "completion": false, "className": "plc", "function": "+Conflict_PaperColumn",
         "order": 855, "is_pc": false
     },
-    {   "name": "conflict", "alias": "conf"   },
+    {   "name": "conf", "alias": "conf"   },
     {
         "name": "editconf",
         "sort": "descending", "className": "plc", "function": "+Conflict_PaperColumn",
-        "order": 855, "is_pc": true, "edit": true
+        "order": 855, "is_pc": true, "edit": true, "exposure": "none"
     },
     {   "name": "editconflict", "alias": "editconf"   },
     {
         "name": "confdesc",
         "sort": "descending", "completion": false, "className": "plc", "function": "+Conflict_PaperColumn",
-        "order": 856, "is_pc": false, "show_description": true
+        "order": 856, "is_pc": false, "show_description": true, "exposure": "none"
     },
     {   "name": "conflictdesc", "alias": "confdesc"   },
     {   "name": "confdescription", "alias": "confdesc"   },
     {   "name": "conflictdescription", "alias": "confdesc"   },
     {
         "name": "status", "title": "Status",
-        "sort": true, "completion": true, "function": "+Status_PaperColumn",
+        "sort": true, "function": "+Status_PaperColumn",
         "order": 380
     },
     {
-        "name": "statusfull", "title": "Status",
-        "sort": true, "completion": false, "className": "pl_status", "function": "+Status_PaperColumn",
-        "order": 390
-    },
-    {
         "name": "timestamp", "title": "Timestamp",
-        "sort": "descending", "completion": true, "function": "+Timestamp_PaperColumn",
+        "sort": "descending", "function": "+Timestamp_PaperColumn",
         "order": 920
     },
     {
         "name": "pagecount", "title": "Page count",
-        "sort": true, "completion": true, "className": "plr", "function": "+PageCount_PaperColumn",
+        "sort": true, "className": "plr", "function": "+PageCount_PaperColumn",
         "order": 1000
     },
     {   "name": "pages", "alias": "pagecount"   },
     {
         "name": "wordcount", "title": "Word count",
-        "sort": true, "completion": true, "className": "plr", "function": "+WordCount_PaperColumn",
+        "sort": true, "className": "plr", "function": "+WordCount_PaperColumn",
         "order": 1000
     },
     {   "name": "words", "alias": "wordcount"   },
     {
         "match": ".*", "priority": -2100,
-        "sort": "descending", "completion": true,
+        "sort": "descending",
         "className": "pl_score",
         "function": "+Score_PaperColumn",
         "order": 1100,
         "expand_function": "Score_PaperColumn::expand",
-        "completion_function": "Score_PaperColumn::completions"
+        "example_function": "Score_PaperColumn::examples"
     },
     {
         "match": "((?:g|graph):?\\()(.*)\\)", "priority": -2200,
@@ -150,15 +145,15 @@
         "function": "+FormulaGraph_PaperColumn",
         "order": 1200,
         "expand_function": "FormulaGraph_PaperColumn::expand",
-        "completion_function": "FormulaGraph_PaperColumn::completions"
+        "example_function": "FormulaGraph_PaperColumn::examples"
     },
     {
         "match": ".*", "priority": -3000,
-        "sort": true, "completion": true, "className": "pl_formula",
+        "sort": true, "className": "pl_formula",
         "function": "+Formula_PaperColumn",
         "order": 1300,
         "expand_function": "Formula_PaperColumnFactory::expand",
-        "completion_function": "Formula_PaperColumnFactory::completions"
+        "example_function": "Formula_PaperColumnFactory::examples"
     },
     {
         "match": "(tag:)(.*)", "priority": -1, "allow_if": "pc",
@@ -181,19 +176,19 @@
         "tagvalue": null, "sort": true,
         "function": "+Tag_PaperColumn",
         "expand_function": "Tag_PaperColumn::expand",
-        "completion_function": "Tag_PaperColumn::completions",
+        "example_function": "Tag_PaperColumn::examples",
         "order": 1400
     },
     {
         "name": "abstract", "title": "Abstract",
-        "prefer_row": true, "completion": true, "function": "+Abstract_PaperColumn",
+        "prefer_row": true, "function": "+Abstract_PaperColumn",
         "order": 140
     },
     {   "name": "ab", "alias": "abstract"   },
     {   "name": "abstracts", "alias": "abstract", "deprecated": true   },
     {
         "name": "authors", "title": "Authors",
-        "prefer_row": true, "completion": true, "sort": true,
+        "prefer_row": true, "sort": true,
         "function": "+Authors_PaperColumn",
         "order": 150
     },
@@ -210,19 +205,19 @@
     },
     {
         "name": "collab", "title": "Collaborators",
-        "prefer_row": true, "completion": true, "function": "+Collab_PaperColumn",
+        "prefer_row": true, "function": "+Collab_PaperColumn",
         "order": 160
     },
     {   "name": "co", "alias": "collab"   },
     {   "name": "collaborators", "alias": "collab"   },
     {
         "name": "topics", "title": "Topics",
-        "prefer_row": true, "completion": true, "function": "+Topics_PaperColumn",
+        "prefer_row": true, "function": "+Topics_PaperColumn",
         "order": 420
     },
     {
         "name": "pcconf", "title": "PC conflicts",
-        "prefer_row": true, "completion": true, "function": "+PCConflicts_PaperColumn",
+        "prefer_row": true, "function": "+PCConflicts_PaperColumn",
         "order": 450
     },
     {   "name": "conflicts", "alias": "pcconf"   },
@@ -230,7 +225,7 @@
     {   "name": "pcconflicts", "alias": "pcconf"   },
     {
         "name": "allpref", "title": "Preferences",
-        "prefer_row": true, "completion": true, "function": "+PreferenceList_PaperColumn",
+        "prefer_row": true, "function": "+PreferenceList_PaperColumn",
         "order": 560
     },
     {   "name": "allprefs", "alias": "allpref"   },
@@ -240,7 +235,7 @@
     {   "name": "preferences", "alias": "allpref", "deprecated": true   },
     {
         "name": "alltopicpref", "title": "Preferences with topic scores",
-        "prefer_row": true, "completion": true, "function": "+PreferenceList_PaperColumn",
+        "prefer_row": true, "function": "+PreferenceList_PaperColumn",
         "topics": true, "order": 560
     },
     {   "name": "alltopicrevpref", "alias": "alltopicpref"   },
@@ -248,28 +243,30 @@
     {   "name": "allrevtopicpref", "alias": "alltopicpref"   },
     {
         "name": "reviewers", "title": "Reviewers",
-        "prefer_row": true, "completion": true, "function": "+ReviewerList_PaperColumn",
+        "description": "<0>List of reviewers",
+        "prefer_row": true, "function": "+ReviewerList_PaperColumn",
         "order": 850
     },
     {
-        "name": "re", "title": "Reviewers",
-        "prefer_row": true, "completion": true, "function": "+ReviewerList_PaperColumn",
-        "order": 850
+        "name": "re", "alias": "reviewers"
     },
     {
         "name": "ire", "title": "Incomplete reviewers",
-        "prefer_row": true, "completion": true, "function": "+ReviewerList_PaperColumn",
-        "order": 850, "rematch": ["incomplete"]
+        "prefer_row": true, "function": "+ReviewerList_PaperColumn",
+        "order": 850, "rematch": ["incomplete"],
+        "description": "<0>List of reviewers with incomplete reviews"
     },
     {
         "name": "cre", "title": "Complete reviewers",
-        "prefer_row": true, "completion": true, "function": "+ReviewerList_PaperColumn",
-        "order": 850, "rematch": ["complete"]
+        "prefer_row": true, "function": "+ReviewerList_PaperColumn",
+        "order": 850, "rematch": ["complete"],
+        "description": "<0>List of reviewers with complete reviews"
     },
     {
         "name": "tags", "title": "Tags",
-        "prefer_row": true, "completion": true, "function": "+TagList_PaperColumn",
-        "order": 1410
+        "prefer_row": true, "function": "+TagList_PaperColumn",
+        "order": 1410,
+        "description": "<0>List of tags"
     },
     {
         "match": "(?:tagreport:|tagrep:|tagreports\\z)(.*)", "priority": -1,
@@ -292,19 +289,19 @@
     {   "name": "admin", "alias": "administrator"   },
     {
         "name": "lead", "title": "Discussion lead",
-        "prefer_row": true, "sort": true, "completion": true,
+        "prefer_row": true, "sort": true,
         "function": "+Lead_PaperColumn",
         "order": 1600
     },
     {
         "name": "shepherd", "title": "Shepherd",
-        "prefer_row": true, "sort": true, "completion": true,
+        "prefer_row": true, "sort": true,
         "function": "+Shepherd_PaperColumn",
         "order": 1700
     },
     {
         "name": "commenters", "title": "Commenters",
-        "prefer_row": true, "completion": true, "function": "+Commenters_PaperColumn",
+        "prefer_row": true, "function": "+Commenters_PaperColumn",
         "order": 2000
     }
 ]

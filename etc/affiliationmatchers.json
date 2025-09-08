@@ -290,6 +290,9 @@
     "hochschule": {
         "weak": true
     },
+    "hospital": {
+        "weak": true
+    },
     "informatics": {
         "weak": true
     },
@@ -331,6 +334,9 @@
         "weak": true
     },
     "llc": {
+        "weak": true
+    },
+    "london": {
         "weak": true
     },
     "ltd": {

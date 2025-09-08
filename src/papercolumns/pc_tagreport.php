@@ -16,9 +16,7 @@ class TagReport_PaperColumn extends PaperColumn {
         if (!$pl->user->can_view_peruser_tag(null, $this->tag)) {
             return false;
         }
-        if ($visible) {
-            $pl->qopts["tags"] = 1;
-        }
+        $pl->qopts["tags"] = 1;
         $dt = $pl->conf->tags()->find($this->tag);
         if (!$dt || $dt->is(TagInfo::TF_RANK) || !$dt->is(TagInfo::TFM_VOTES)) {
             $this->viewtype = 0;

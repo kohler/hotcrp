@@ -302,6 +302,11 @@
         "response": "searchcompletion"
     },
     {
+        "name": "searchfields", "get": true,
+        "function": "Completion_API::searchfields_api",
+        "response": "fields"
+    },
+    {
         "name": "session", "get": true, "allow_disabled": true,
         "function": "Session_API::getsession",
         "response": "sessioninfo"

@@ -234,19 +234,19 @@ class Permission_Tester {
         xassert_search($user_randy, ["q" => "", "t" => "a"], "6");
 
         // correct conflict information returned
-        $j = search_json($this->u_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_mgbaker], "id conf");
+        $j = search_json($this->u_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_mgbaker], "id conflict");
         xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
-        xassert_eqq($j[3]["conf"], "Y");
-        xassert_eqq($j[18]["conf"], "Y");
+        xassert_eqq($j[3]["conflict"], "Y");
+        xassert_eqq($j[18]["conflict"], "Y");
         foreach ([1, 2, 4, 5, 15, 16, 17] as $i) {
-            xassert_eqq($j[$i]["conf"], "N");
+            xassert_eqq($j[$i]["conflict"], "N");
         }
 
-        $j = search_json($this->u_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_jon], "id conf");
+        $j = search_json($this->u_shenker, ["q" => "1 2 3 4 5 15-18", "reviewer" => $user_jon], "id conflict");
         xassert_eqq(join(";", array_keys($j)), "1;2;3;4;5;15;16;17;18");
-        xassert_eqq($j[17]["conf"], "Y");
+        xassert_eqq($j[17]["conflict"], "Y");
         foreach ([1, 2, 3, 4, 5, 15, 16, 18] as $i) {
-            xassert_eqq($j[$i]["conf"], "N");
+            xassert_eqq($j[$i]["conflict"], "N");
         }
 
         // review search

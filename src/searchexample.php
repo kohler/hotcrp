@@ -20,9 +20,6 @@ class SearchExample {
     const PRIMARY = 1;
     const SECONDARY = 0;
 
-    const HELP = 0;
-    const COMPLETION = 1;
-
     /** @param string $text
      * @param string $description
      * @param string|FmtArg ...$args */
@@ -33,6 +30,14 @@ class SearchExample {
         if ($description !== "" && !Ftext::is_ftext($description)) {
             error_log(debug_string_backtrace());
         }
+    }
+
+    /** @param string $description
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
+    function set_description($description) {
+        $this->description = $description;
+        return $this;
     }
 
     /** @param 0|1 $importance
@@ -48,6 +53,12 @@ class SearchExample {
     function append_item($mi) {
         $this->ml[] = $mi;
         return $this;
+    }
+
+    /** @param FmtArg $fa
+     * @return $this */
+    function add_arg($fa) {
+        $this->args[] = $fa;
     }
 
     /** @return string */

@@ -53,9 +53,7 @@ class Tag_PaperColumn extends PaperColumn {
             $this->real_format = "%{$m[1]}";
         }
         $this->ctag = " {$this->etag}#";
-        if ($visible) {
-            $pl->qopts["tags"] = 1;
-        }
+        $pl->qopts["tags"] = 1;
         $this->ti = $pl->conf->tags()->ensure($this->dtag);
         if ($this->as_row
             && $this->ti->has_order_anno()) {
@@ -93,7 +91,7 @@ class Tag_PaperColumn extends PaperColumn {
             }
             $this->is_value = !$dt || !$dt->is(TagInfo::TF_APPROVAL);
         }
-        if (($visible & PaperColumn::PREP_VISIBLE) !== 0
+        if (($visible & FieldRender::CFLIST) !== 0
             && $pl->table_id()
             && !$pl->viewing("facets")) {
             $pl->has_editable_tags = true;
@@ -103,9 +101,6 @@ class Tag_PaperColumn extends PaperColumn {
                 $this->editsort = true;
             }
         }
-    }
-    function completion_name() {
-        return "#{$this->dtag}";
     }
     function sort_name() {
         return "#{$this->dtag}";
@@ -236,11 +231,10 @@ class Tag_PaperColumn extends PaperColumn {
         return $rs;
     }
 
-    static function completions(Contact $user, $xfj) {
-        if ($user->can_view_tags(null)) {
-            return ["#{tag}"];
-        } else {
+    static function examples(Contact $user, $xfj) {
+        if (!$user->can_view_tags(null)) {
             return [];
         }
+        return [new SearchExample("#{tag}", "<0>Tag value")];
     }
 }

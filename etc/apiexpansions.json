@@ -108,6 +108,10 @@
     "tags": ["Search"]
   },
   {
+    "name": "searchfields", "get": true, "merge": true,
+    "tags": ["Search"]
+  },
+  {
     "name": "viewoptions", "get": true, "merge": true,
     "tags": ["Search"]
   },

@@ -28,7 +28,7 @@ class Color_PaperColumn extends PaperColumn {
                 $this->hrev = str_starts_with($v, "-");
             }
         }
-        return $visible === self::PREP_SORT;
+        return $visible === FieldRender::CFSORT;
     }
     /** @return ?OklchColor */
     private function color(PaperInfo $a, PaperList $pl) {
@@ -103,8 +103,7 @@ class Color_PaperColumn extends PaperColumn {
         // if all buckets match, do a fine-grained comparison
         if ($ah !== $bh) {
             return $this->hrev ? $bh <=> $ah : $ah <=> $bh;
-        } else {
-            return ($blch->okl <=> $alch->okl) ? : ($blch->okc <=> $alch->okc);
         }
+        return ($blch->okl <=> $alch->okl) ? : ($blch->okc <=> $alch->okc);
     }
 }

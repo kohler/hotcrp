@@ -1360,7 +1360,7 @@ class Selector_PaperOption extends PaperOption {
 
     function search_examples(Contact $viewer, $context) {
         $a = [$this->has_search_example()];
-        if ($context === SearchExample::HELP) {
+        if ($context === FieldRender::CFHELP) {
             if (($q = $this->value_search_keyword(2))) {
                 $a[] = $this->make_search_example(
                     $this->search_keyword() . ":{value:sq}",

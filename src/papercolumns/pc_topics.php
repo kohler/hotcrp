@@ -12,9 +12,7 @@ class Topics_PaperColumn extends PaperColumn {
         if (!$pl->conf->has_topics()) {
             return false;
         }
-        if ($visible) {
-            $pl->qopts["topics"] = 1;
-        }
+        $pl->qopts["topics"] = 1;
         // only managers can see other users’ topic interests
         $this->interest_contact = $pl->reviewer_user();
         if ($this->interest_contact->contactId !== $pl->user->contactId

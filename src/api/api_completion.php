@@ -84,6 +84,74 @@ class Completion_API {
         }
     }
 
+    static function paper_column_examples(Contact $user, $visible) {
+        $conf = $user->conf;
+        $exs = [];
+        $xtp = new XtParams($conf, $user);
+        $pl = new PaperList("empty", new PaperSearch($user, ""));
+
+        foreach ($conf->paper_column_map() as $name => $list) {
+            if (str_starts_with($name, "?")
+                || !($j = $xtp->search_list($list))
+                || ($j->deprecated ?? false)
+                || !Conf::xt_enabled($j)) {
+                continue;
+            }
+            $exposure = $j->exposure ?? null;
+            if ($exposure === null && ($j->alias ?? false)) {
+                $exposure = "none";
+            }
+            if ($exposure === "none"
+                || ($visible === FieldRender::CFSUGGEST
+                    && ($exposure === false || $exposure === "api"))) {
+                continue;
+            }
+            $c = PaperColumn::make($conf, $j);
+            if (!$c || !$c->prepare($pl, $visible)) {
+                continue;
+            }
+            $exs[] = $ex = new SearchExample($name);
+            if (isset($j->description)) {
+                $ex->set_description($j->description);
+            } else if (isset($c->title)) {
+                $ex->set_description("<0>" . $c->title);
+            }
+            $vos = [];
+            foreach ($c->view_option_schema() as $vo) {
+                if (($exp = ViewOptionSchema::expand($vo))
+                    && !isset($exp[1]->alias))
+                    $vos[] = $exp[0];
+            }
+            if (!empty($vos)) {
+                $ex->add_arg(new FmtArg("view_options", $vos));
+            }
+        }
+
+        foreach ($conf->paper_column_factories() as $fcj) {
+            if (!$xtp->allowed($fcj)
+                || !Conf::xt_enabled($fcj)) {
+                continue;
+            }
+            $fn = $fcj->example_function ?? $fcj->completion_function ?? null;
+            if (!$fn) {
+                continue;
+            }
+            Conf::xt_resolve_require($fcj);
+            foreach (call_user_func($fn, $user, $fcj, $visible) as $x) {
+                if (is_string($x)) {
+                    $x = new SearchExample($x);
+                }
+                $exs[] = $x;
+            }
+        }
+
+        usort($exs, function ($a, $b) {
+            return strcasecmp($a->text(), $b->text());
+        });
+
+        return $exs;
+    }
+
     /** @return list<string> */
     static function search_completions(Contact $user, $category = "") {
         $conf = $user->conf;
@@ -91,16 +159,20 @@ class Completion_API {
         $old_overrides = $user->add_overrides(Contact::OVERRIDE_CONFLICT);
 
         // paper fields
-        foreach ($conf->options()->form_fields() as $opt) {
-            if ($user->can_view_some_option($opt)
-                && $opt->search_keyword() !== false) {
-                foreach ($opt->search_examples($user, SearchExample::COMPLETION) as $sex) {
-                    $comp[] = $sex->text();
+        if (!$category || $category === "sf") {
+            foreach ($conf->options()->form_fields() as $opt) {
+                if ($user->can_view_some_option($opt)
+                    && $opt->search_keyword() !== false) {
+                    foreach ($opt->search_examples($user, FieldRender::CFSUGGEST) as $sex) {
+                        $comp[] = $sex->text();
+                    }
                 }
             }
         }
 
-        self::has_search_completion($user, $comp);
+        if (!$category || $category === "has") {
+            self::has_search_completion($user, $comp);
+        }
 
         if (!$category || $category === "ss") {
             foreach ($user->viewable_named_searches(false) as $sj) {
@@ -156,39 +228,22 @@ class Completion_API {
             }
         }
 
-        if (!$category || $category === "show" || $category === "hide") {
-            $cats = [];
-            $pl = new PaperList("empty", new PaperSearch($user, ""));
-            foreach ($conf->paper_column_map() as $cname => $cjj) {
-                if (!($cjj[0]->deprecated ?? false)
-                    && ($cj = $conf->basic_paper_column($cname, $user))
-                    && isset($cj->completion)
-                    && $cj->completion
-                    && !str_starts_with($cj->name, "?")
-                    && ($c = PaperColumn::make($conf, $cj))
-                    && ($cat = $c->completion_name())
-                    && $c->prepare($pl, PaperColumn::PREP_CHECK)) {
-                    $cats[$cat] = true;
+        $cat_show = !$category || $category === "show";
+        $cat_hide = !$category || $category === "hide";
+        if ($cat_show || $cat_hide) {
+            foreach (self::paper_column_examples($user, FieldRender::CFSUGGEST) as $ex) {
+                if ($cat_show) {
+                    $comp[] = "show:{$ex->text()}";
+                }
+                if ($cat_hide) {
+                    $codmp[] = "hide:{$ex->text()}";
                 }
             }
-            $xtp = new XtParams($conf, $user);
-            foreach ($conf->paper_column_factories() as $fxj) {
-                if ($xtp->allowed($fxj)
-                    && Conf::xt_enabled($fxj)
-                    && isset($fxj->completion_function)) {
-                    Conf::xt_resolve_require($fxj);
-                    foreach (call_user_func($fxj->completion_function, $user, $fxj) as $c) {
-                        $cats[$c] = true;
-                    }
-                }
+            if ($cat_show) {
+                $comp[] = "show:facets";
+                $comp[] = "show:statistics";
+                $comp[] = "show:rownumbers";
             }
-            foreach (array_keys($cats) as $cat) {
-                $comp[] = "show:{$cat}";
-                $comp[] = "hide:{$cat}";
-            }
-            $comp[] = "show:facets";
-            $comp[] = "show:statistics";
-            $comp[] = "show:rownumbers";
         }
 
         $user->set_overrides($old_overrides);
@@ -197,7 +252,29 @@ class Completion_API {
 
     /** @param Qrequest $qreq */
     static function searchcompletion_api(Contact $user, $qreq) {
-        return ["ok" => true, "searchcompletion" => self::search_completions($user, "")];
+        return [
+            "ok" => true,
+            "searchcompletion" => self::search_completions($user, $qreq->category ?? "")
+        ];
+    }
+
+    /** @param Qrequest $qreq */
+    static function searchfields_api(Contact $user, $qreq) {
+        $pcx = self::paper_column_examples($user, FieldRender::CFLIST);
+        $fs = [];
+        foreach ($pcx as $ex) {
+            $fs[] = $f = (object) ["name" => $ex->text()];
+            if (($t = $ex->description()) !== "") {
+                $f->description = $t;
+            }
+            if (($fa = Fmt::find_arg($ex->args(), "view_options"))) {
+                $f->view_options = $fa->value;
+            }
+        }
+        return [
+            "ok" => true,
+            "fields" => $fs
+        ];
     }
 
     const MENTION_PARSE = 0;

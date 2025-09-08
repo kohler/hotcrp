@@ -32,6 +32,8 @@ class FieldRender {
     const CFLIST = 0x40;
     const CFMAIL = 0x80;
     const CFSUGGEST = 0x100;
+    const CFHELP = 0x200;
+    const CFSORT = 0x400;
 
     const CFCSV = 0x1000;
     const CFROW = 0x2000;

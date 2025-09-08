@@ -25,19 +25,11 @@ class Formula_PaperColumn extends PaperColumn {
     function view_option_schema() {
         return ["format!"];
     }
-    function completion_name() {
-        if (strpos($this->formula->name, " ") !== false) {
-            return "\"{$this->formula->name}\"";
-        } else {
-            return $this->formula->name;
-        }
-    }
     function sort_name() {
         if ($this->formula->name) {
             return $this->formula->name;
-        } else {
-            return "formula:{$this->formula->expression}";
         }
+        return "formula:{$this->formula->expression}";
     }
     function prepare(PaperList $pl, $visible) {
         if (!$this->formula->check($pl->user)
@@ -45,9 +37,7 @@ class Formula_PaperColumn extends PaperColumn {
             return false;
         }
         $this->formula_function = $this->formula->compile_function();
-        if ($visible) {
-            $this->formula->add_query_options($pl->qopts);
-        }
+        $this->formula->add_query_options($pl->qopts);
         if (($v = $this->view_option("format")) !== null
             && preg_match('/\A%?(\d*(?:\.\d*)[bdeEfFgGoxX])\z/', $v, $m)) {
             $this->real_format = "%{$m[1]}";
@@ -173,13 +163,14 @@ class Formula_PaperColumnFactory {
         }
         return null;
     }
-    static function completions(Contact $user, $fxt) {
-        $cs = ["({formula})"];
+    static function examples(Contact $user, $xfj) {
+        $exs = [new SearchExample("({formula})", "<0>Value of formula")];
         foreach ($user->conf->named_formulas() as $f) {
-            if ($user->can_view_formula($f)) {
-                $cs[] = preg_match('/\A[-A-Za-z_0-9:]+\z/', $f->name) ? $f->name : "\"{$f->name}\"";
+            if (!$user->can_view_formula($f)) {
+                continue;
             }
+            $exs[] = new SearchExample(SearchWord::quote($f->name), "<0>Value of predefined {$f->name} formula");
         }
-        return $cs;
+        return $exs;
     }
 }

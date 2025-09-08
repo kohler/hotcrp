@@ -79,7 +79,7 @@ class Keywords_HelpTopic {
         });
         $exs = [];
         foreach ($opts as $o) {
-            foreach ($o->search_examples($hth->user, SearchExample::HELP) as $ex) {
+            foreach ($o->search_examples($hth->user, FieldRender::CFHELP) as $ex) {
                 $exs[] = $ex;
             }
         }
@@ -152,7 +152,7 @@ class Keywords_HelpTopic {
         // review fields
         $exs = [];
         foreach ($hth->conf->review_form()->viewable_fields($hth->user) as $rf) {
-            foreach ($rf->search_examples($hth->user, SearchExample::HELP) as $ex) {
+            foreach ($rf->search_examples($hth->user, FieldRender::CFHELP) as $ex) {
                 $exs[] = $ex;
             }
         }
