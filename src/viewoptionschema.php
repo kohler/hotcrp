@@ -6,6 +6,13 @@ class ViewOptionSchema {
     /** @var array<string,ViewOptionType> */
     private $a = [];
 
+    /** @param string|object ...$arg */
+    function __construct(...$arg) {
+        foreach ($arg as $x) {
+            $this->define($x);
+        }
+    }
+
     /** @param mixed $value
      * @param string $enum
      * @return ?string */

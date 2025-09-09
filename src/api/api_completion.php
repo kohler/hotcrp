@@ -116,12 +116,7 @@ class Completion_API {
             } else if (isset($c->title)) {
                 $ex->set_description("<0>" . $c->title);
             }
-            $vos = [];
-            foreach ($c->view_option_schema() as $vo) {
-                if (($vot = ViewOptionType::parse($vo))
-                    && !isset($vot->alias))
-                    $vos[] = $vot->unparse_export();
-            }
+            $vos = $c->view_option_schema();
             if (!empty($vos)) {
                 $ex->add_arg(new FmtArg("view_options", $vos));
             }
@@ -268,7 +263,15 @@ class Completion_API {
                 $f->description = $t;
             }
             if (($fa = Fmt::find_arg($ex->args(), "view_options"))) {
-                $f->view_options = $fa->value;
+                $vox = [];
+                foreach ($fa->value as $vo) {
+                    if (($vot = ViewOptionType::parse($vo))
+                        && !isset($vot->alias))
+                        $vox[] = $vot->unparse_export();
+                }
+                if (!empty($vox)) {
+                    $f->view_options = $vox;
+                }
             }
         }
         return [

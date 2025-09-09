@@ -32,8 +32,11 @@ class Conflict_PaperColumn extends PaperColumn {
         $this->description = $cj->show_description ?? false;
         $this->editable = $cj->edit ?? false;
     }
-    function view_option_schema() {
+    static function basic_view_option_schema() {
         return ["simple", "edit", "pin=all,yes|none,no|unconflicted|conflicted", "description", "desc/description"];
+    }
+    function view_option_schema() {
+        return self::basic_view_option_schema();
     }
     function prepare(PaperList $pl, $visible) {
         $this->contact = $this->contact ? : $pl->reviewer_user();
@@ -163,6 +166,7 @@ class Conflict_PaperColumn extends PaperColumn {
         if (!$user->can_view_some_conflicts()) {
             return [];
         }
-        return [new SearchExample("conflict:{user}", "<0>Conflict with user")];
+        return [new SearchExample("conflict:{user}", "<0>Conflict with user",
+                    new FmtArg("view_options", Conflict_PaperColumn::basic_view_option_schema()))];
     }
 }

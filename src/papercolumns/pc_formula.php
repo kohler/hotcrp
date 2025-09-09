@@ -22,8 +22,11 @@ class Formula_PaperColumn extends PaperColumn {
         $this->override = PaperColumn::OVERRIDE_BOTH;
         $this->formula = $cj->formula;
     }
-    function view_option_schema() {
+    static function basic_view_option_schema() {
         return ["format!"];
+    }
+    function view_option_schema() {
+        return self::basic_view_option_schema();
     }
     function sort_name() {
         if ($this->formula->name) {
@@ -164,12 +167,13 @@ class Formula_PaperColumnFactory {
         return null;
     }
     static function examples(Contact $user, $xfj) {
-        $exs = [new SearchExample("({formula})", "<0>Value of formula")];
+        $fa = new FmtArg("view_options", Formula_PaperColumn::basic_view_option_schema());
+        $exs = [new SearchExample("({formula})", "<0>Value of formula", $fa)];
         foreach ($user->conf->named_formulas() as $f) {
             if (!$user->can_view_formula($f)) {
                 continue;
             }
-            $exs[] = new SearchExample(SearchWord::quote($f->name), "<0>Value of predefined {$f->name} formula");
+            $exs[] = new SearchExample(SearchWord::quote($f->name), "<0>Value of predefined {$f->name} formula", $fa);
         }
         return $exs;
     }

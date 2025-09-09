@@ -33,8 +33,11 @@ class Tag_PaperColumn extends PaperColumn {
         $this->dtag = $cj->tag;
         $this->is_value = $cj->tagvalue ?? null;
     }
-    function view_option_schema() {
+    static function basic_view_option_schema() {
         return ["edit", "format!"];
+    }
+    function view_option_schema() {
+        return self::basic_view_option_schema();
     }
     function etag() {
         return $this->etag;
@@ -235,6 +238,9 @@ class Tag_PaperColumn extends PaperColumn {
         if (!$user->can_view_tags(null)) {
             return [];
         }
-        return [new SearchExample("#{tag}", "<0>Tag value")];
+        return [
+            new SearchExample("#{tag}", "<0>Tag value",
+                new FmtArg("view_options", Tag_PaperColumn::basic_view_option_schema()))
+        ];
     }
 }
