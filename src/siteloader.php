@@ -40,6 +40,7 @@ class SiteLoader {
         "Text_PaperOption" => "src/paperoption.php",
         "True_SearchTerm" => "src/searchterm.php",
         "UConverter" => "lib/uconvertershim.php",
+        "ViewOptionType" => "src/viewoptionschema.php",
         "XlsxGenerator" => "lib/xlsx.php",
         "dmp\\diff_match_patch" => "lib/diff_match_patch.php"
     ];

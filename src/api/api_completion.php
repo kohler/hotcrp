@@ -118,9 +118,9 @@ class Completion_API {
             }
             $vos = [];
             foreach ($c->view_option_schema() as $vo) {
-                if (($exp = ViewOptionSchema::expand($vo))
-                    && !isset($exp[1]->alias))
-                    $vos[] = $exp[0];
+                if (($vot = ViewOptionType::parse($vo))
+                    && !isset($vot->alias))
+                    $vos[] = $vot->unparse_export();
             }
             if (!empty($vos)) {
                 $ex->add_arg(new FmtArg("view_options", $vos));
@@ -236,7 +236,7 @@ class Completion_API {
                     $comp[] = "show:{$ex->text()}";
                 }
                 if ($cat_hide) {
-                    $codmp[] = "hide:{$ex->text()}";
+                    $comp[] = "hide:{$ex->text()}";
                 }
             }
             if ($cat_show) {

@@ -3,7 +3,7 @@
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ViewOptionSchema {
-    /** @var array<string,mixed> */
+    /** @var array<string,ViewOptionType> */
     private $a = [];
 
     /** @param mixed $value
@@ -50,13 +50,14 @@ class ViewOptionSchema {
 
     /** @param string $name
      * @param mixed $value
+     * @param ViewOptionType $schema
      * @return ?array{string,mixed} */
     static function validate_schema($name, $value, $schema) {
         if (isset($schema->enum)) {
             $xvalue = self::validate_enum($value, $schema->enum);
             return $xvalue ? [$name, $xvalue] : null;
         }
-        $type = $schema->type ?? null;
+        $type = $schema->type;
         if ($type === "string") {
             if (is_bool($value)) {
                 $value = $value ? "yes" : "no";
@@ -82,57 +83,13 @@ class ViewOptionSchema {
     }
 
     /** @param string|object $x
-     * @return ?array{string,object} */
-    static function expand($x) {
-        if (is_string($x)) {
-            if (($sl = strpos($x, "/")) !== false) {
-                $name = substr($x, 0, $sl);
-                if ($x[$sl + 1] === "!") {
-                    $schema = (object) ["alias" => substr($x, $sl + 2), "negated" => true];
-                } else {
-                    $schema = (object) ["alias" => substr($x, $sl + 1)];
-                }
-            } else if (($eq = strpos($x, "=")) !== false) {
-                $name = substr($x, 0, $eq);
-                $schema = (object) ["enum" => substr($x, $eq + 1), "lifted" => true];
-            } else if (str_ends_with($x, "!")) {
-                $name = substr($x, 0, -1);
-                $schema = (object) ["type" => "string", "lifted" => true];
-            } else if (str_ends_with($x, "\$")) {
-                $name = substr($x, 0, -1);
-                $schema = (object) ["type" => "string"];
-            } else if (str_ends_with($x, "#")) {
-                $name = substr($x, 0, -1);
-                $schema = (object) ["type" => "int"];
-            } else if (str_ends_with($x, "#+")) {
-                $name = substr($x, 0, -2);
-                $schema = (object) ["type" => "int", "min" => 1];
-            } else if (($colon = strpos($x, ":")) !== false) {
-                $name = substr($x, 0, $colon);
-                $schema = (object) ["type" => substr($name, $colon + 1)];
-            } else if ($x !== "") {
-                $name = $x;
-                $schema = (object) [];
-            } else {
-                return null;
-            }
-        } else if (is_object($x) && is_string($x->name ?? null)) {
-            $name = $x->name;
-            $schema = $x;
-        } else {
-            return null;
-        }
-        return [$name, $schema];
-    }
-
-    /** @param string|object $x
      * @return bool */
     function define_check($x) {
-        $exp = self::expand($x);
+        $exp = ViewOptionType::parse($x);
         if (!$exp) {
             return false;
         }
-        $this->a[$exp[0]] = $exp[1];
+        $this->a[$exp->name] = $exp;
         return true;
     }
 
@@ -156,7 +113,7 @@ class ViewOptionSchema {
         $schema = $this->a[$name] ?? null;
         while ($schema !== null && isset($schema->alias)) {
             $name = $schema->alias;
-            if ($schema->negated ?? null) {
+            if ($schema->negated) {
                 if (($value = friendly_boolean($value)) === null) {
                     return null;
                 }
@@ -174,13 +131,13 @@ class ViewOptionSchema {
         $lifted = $default = null;
         $nlifted = $ndefault = 0;
         foreach ($this->a as $aname => $schema) {
-            if (isset($schema->enum)
-                && ($schema->lifted ?? null)
+            if ($schema->enum
+                && $schema->lifted
                 && ($xvalue = self::validate_enum($name, $schema->enum))) {
                 $lifted = $lifted ?? [$aname, $xvalue];
                 ++$nlifted;
-            } else if (($schema->type ?? null) === "string"
-                       && ($schema->lifted ?? null)) {
+            } else if ($schema->type === "string"
+                       && $schema->lifted) {
                 $default = $default ?? [$aname, $name];
                 ++$ndefault;
             }
@@ -199,5 +156,117 @@ class ViewOptionSchema {
                 $a[] = $name;
         }
         return $a;
+    }
+}
+
+class ViewOptionType {
+    /** @var string */
+    public $name;
+    /** @var string */
+    public $type = "bool";
+    /** @var ?string */
+    public $enum;
+    /** @var ?string */
+    public $alias;
+    /** @var ?int */
+    public $min;
+    /** @var bool */
+    public $lifted = false;
+    /** @var bool */
+    public $negated = false;
+
+    /** @param string|object $x
+     * @return ?ViewOptionType */
+    static function parse($x) {
+        $vot = new ViewOptionType;
+        if (is_string($x)) {
+            if (($sl = strpos($x, "/")) !== false) {
+                $vot->name = substr($x, 0, $sl);
+                $vot->type = "alias";
+                if ($x[$sl + 1] === "!") {
+                    $vot->alias = substr($x, $sl + 2);
+                    $vot->negated = true;
+                } else {
+                    $vot->alias = substr($x, $sl + 1);
+                }
+            } else if (($eq = strpos($x, "=")) !== false) {
+                $vot->name = substr($x, 0, $eq);
+                $vot->type = "enum";
+                $vot->enum = substr($x, $eq + 1);
+                $vot->lifted = true;
+            } else if (str_ends_with($x, "!")) {
+                $vot->name = substr($x, 0, -1);
+                $vot->type = "string";
+                $vot->lifted = true;
+            } else if (str_ends_with($x, "\$")) {
+                $vot->name = substr($x, 0, -1);
+                $vot->type = "string";
+            } else if (str_ends_with($x, "#")) {
+                $vot->name = substr($x, 0, -1);
+                $vot->type = "int";
+            } else if (str_ends_with($x, "#+")) {
+                $vot->name = substr($x, 0, -2);
+                $vot->type = "int";
+                $vot->min = 1;
+            } else if (($colon = strpos($x, ":")) !== false) {
+                $vot->name = substr($x, 0, $colon);
+                $vot->type = substr($x, $colon + 1);
+            } else if ($x !== "") {
+                $vot->name = $x;
+            } else {
+                return null;
+            }
+        } else if (is_object($x) && is_string($x->name ?? null)) {
+            $vot->load($x);
+        } else {
+            return null;
+        }
+        return $vot;
+    }
+
+    /** @param object $x */
+    private function load($x) {
+        foreach ((array) $x as $k => $v) {
+            if (property_exists($this, $k))
+                $this->$k = $v;
+        }
+        if (isset($this->alias)) {
+            $this->type = "alias";
+        } else if (isset($this->enum)) {
+            $this->type = "enum";
+            if (is_array($this->enum)) {
+                $this->enum = join("|", $this->enum);
+            }
+        }
+    }
+
+    /** @return array<string,mixed> */
+    function unparse_export() {
+        $v = ["name" => $this->name, "type" => $this->type];
+        if ($this->type === "alias") {
+            $v["alias"] = $this->alias;
+            if ($this->negated) {
+                $v["negated"] = true;
+            }
+        } else if ($this->type === "enum") {
+            $v["enum"] = [];
+            $comma = -1;
+            $pos = 0;
+            $len = strlen($this->enum);
+            while ($pos < $len) {
+                $bar = strlpos($this->enum, "|", $pos);
+                if ($comma < $pos) {
+                    $comma = strlpos($this->enum, ",", $pos);
+                }
+                $v["enum"][] = substr($this->enum, $pos, min($comma, $bar) - $pos);
+                $pos = $bar + 1;
+            }
+        } else if ($this->type === "int" && isset($this->min)) {
+            $v["min"] = $this->min;
+        }
+        if ($this->lifted) {
+            $v["lifted"] = true;
+        }
+        return $v;
     }
 }

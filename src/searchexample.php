@@ -59,6 +59,7 @@ class SearchExample {
      * @return $this */
     function add_arg($fa) {
         $this->args[] = $fa;
+        return $this;
     }
 
     /** @return string */
