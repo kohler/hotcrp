@@ -108,7 +108,7 @@
     "tags": ["Search"]
   },
   {
-    "name": "searchfields", "get": true, "merge": true,
+    "name": "displayfields", "get": true, "merge": true,
     "tags": ["Search"]
   },
   {

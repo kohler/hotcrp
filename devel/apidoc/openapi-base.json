@@ -513,6 +513,78 @@
                     }
                 }
             },
+            "display_field": {
+                "type": "object",
+                "description": "Display field definition",
+                "required": ["name"],
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "view_options": {
+                        "type": "array",
+                        "items": {
+                            "type": "view_option"
+                        }
+                    }
+                },
+                "examples": [
+                    {
+                        "name": "abstract",
+                        "description": "<0>Abstract"
+                    },
+                    {
+                        "name": "lead",
+                        "description": "<0>Discussion lead",
+                        "view_options": [
+                            {"name": "format", "type": "enum", "enum": ["given_name", "family_name"], "lifted": true}
+                        ]
+                    }
+                ]
+            },
+            "view_option": {
+                "type": "object",
+                "description": "View option definition",
+                "required": ["name", "type"],
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "enum": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "lifted": {
+                        "type": "boolean"
+                    },
+                    "min": {
+                        "type": "integer"
+                    }
+                },
+                "examples": [
+                    {
+                        "name": "edit",
+                        "type": "bool"
+                    },
+                    {
+                        "name": "format",
+                        "type": "enum",
+                        "enum": [
+                            "given_name",
+                            "family_name"
+                        ],
+                        "lifted": true
+                    }
+                ]
+            },
             "search_action": {
                 "type": "object",
                 "description": "Search action properties",

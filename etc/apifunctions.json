@@ -287,6 +287,11 @@
         "response": "ids groups search_params ?hotlist ?fields ?papers ?statistics"
     },
     {
+        "name": "displayfields", "get": true,
+        "function": "Completion_API::displayfields_api",
+        "response": "fields"
+    },
+    {
         "name": "searchactions", "get": true,
         "function": "Search_API::searchactions",
         "response": "actions"
@@ -300,11 +305,6 @@
         "name": "searchcompletion", "get": true,
         "function": "Completion_API::searchcompletion_api",
         "response": "searchcompletion"
-    },
-    {
-        "name": "searchfields", "get": true,
-        "function": "Completion_API::searchfields_api",
-        "response": "fields"
     },
     {
         "name": "session", "get": true, "allow_disabled": true,

@@ -259,7 +259,7 @@ class Completion_API {
     }
 
     /** @param Qrequest $qreq */
-    static function searchfields_api(Contact $user, $qreq) {
+    static function displayfields_api(Contact $user, $qreq) {
         $pcx = self::paper_column_examples($user, FieldRender::CFLIST);
         $fs = [];
         foreach ($pcx as $ex) {

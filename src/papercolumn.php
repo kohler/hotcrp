@@ -105,7 +105,7 @@ class PaperColumn extends Column {
         return $this->name;
     }
     /** @param string ...$keys
-     * @return string*/
+     * @return string */
     final function sort_name_with_options(...$keys) {
         $a = [$this->name];
         foreach ($keys as $k) {

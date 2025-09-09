@@ -21,14 +21,14 @@ HotCRP picks a default based on the user’s roles and the site’s current
 configuration; for PC members and chairs, the typical default is `t=s`, which
 searches complete submissions.
 
-### Submission fields
+### Display fields
 
 Pass `f` and `format` parameters to retrieve display fields for each submission
 in the search result.
 
-`format` is either `csv` or `html`, and requests CSV or HTML format for the
-response data. `f` is a string indicating the display fields to return, such as
-`title authors[full]`.
+`f` defines the display fields to return. An example is `title authors[full]`.
+Obtain the available display fields with the `/displayfields` API. `format` is
+either `csv` or `html`, and requests CSV or HTML format for the response data.
 
 The response will contain `fields` and `papers` properties. `fields` is an array
 of objects defining the emitted display fields. Typically, each entry in
@@ -37,8 +37,8 @@ multiple display fields. `papers` is an array of objects defining the exported
 fields for each matching submission. Each `papers` entry has a `pid` property
 with the submission ID, and properties corresponding to the `fields`. The
 `papers` entries are in the same order as `ids`. In some cases, the response
-will additionally have a `statistics` property defining overall statistics for
-some of the requested fields.
+will have a `statistics` property defining overall statistics for some of the
+requested fields.
 
 As an example, this response might be returned for the search `10-12` with
 `format=csv` and `f=title`.
@@ -133,6 +133,17 @@ papers.
 * response ?fields [object]
 * response ?papers [object]
 * response ?statistics
+
+
+# get /displayfields
+
+> List display fields
+
+Return a list of all supported display fields. Display fields can be requested
+in the web UI (search for `show:FIELDNAME`) or in the API (supply `f=FIELDNAME`
+to the `/search` endpoint).
+
+* response fields [display_field]
 
 
 # get /searchactions
