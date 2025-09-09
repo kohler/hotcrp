@@ -3,16 +3,20 @@
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class XtParams {
-    /** @var Conf */
+    /** @var Conf
+     * @readonly */
     public $conf;
-    /** @var ?Contact */
+    /** @var ?Contact
+     * @readonly */
     public $user;
     /** @var bool */
-    public $alias = true;
+    private $follow_alias = true;
+    /** @var bool */
+    private $warn_deprecated = true;
     /** @var string */
-    public $reflags = "";
+    private $reflags = "";
     /** @var ?string */
-    public $require_key;
+    private $require_key;
     /** @var ?list<callable(string,object,XtParams):(?bool)> */
     public $primitive_checkers;
     /** @var ?object */
@@ -31,6 +35,27 @@ class XtParams {
         $this->user = $user;
     }
 
+    /** @param bool $match_ignores_case
+     * @return $this */
+    function set_match_ignores_case($match_ignores_case) {
+        $this->reflags = $match_ignores_case ? "i" : "";
+        return $this;
+    }
+
+    /** @param bool $follow_alias
+     * @return $this */
+    function set_follow_alias($follow_alias) {
+        $this->follow_alias = $follow_alias;
+        return $this;
+    }
+
+    /** @param bool $warn_deprecated
+     * @return $this */
+    function set_warn_deprecated($warn_deprecated) {
+        $this->warn_deprecated = $warn_deprecated;
+        return $this;
+    }
+
     /** @param ?string $method
      * @return $this */
     function set_require_key_for_method($method) {
@@ -42,6 +67,11 @@ class XtParams {
             $this->require_key = strtolower($method);
         }
         return $this;
+    }
+
+    /** @return bool */
+    function match_ignores_case() {
+        return $this->reflags === "i";
     }
 
     /** @param object $xt
@@ -292,7 +322,7 @@ class XtParams {
              $aliases < 5 && $name !== null && isset($map[$name]);
              ++$aliases) {
             $xt = $this->search_list($map[$name]);
-            if ($xt && isset($xt->alias) && is_string($xt->alias) && $this->alias) {
+            if ($xt && isset($xt->alias) && is_string($xt->alias) && $this->follow_alias) {
                 $name = $xt->alias;
             } else {
                 return $xt;
@@ -335,7 +365,7 @@ class XtParams {
                 // replace base
                 $xt = $nxt;
             }
-            if (isset($xt->deprecated) && $xt->deprecated) {
+            if (isset($xt->deprecated) && $xt->deprecated && $this->warn_deprecated) {
                 $name = $xt->name ?? "<unknown>";
                 error_log("{$this->conf->dbname}: deprecated use of `{$name}`\n" . debug_string_backtrace());
             }
@@ -378,6 +408,7 @@ class XtParams {
                 continue;
             }
             Conf::xt_resolve_require($fxt);
+            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->user = $this->user ?? $this->conf->root_user();
             if (isset($fxt->expand_function)) {
                 $r = call_user_func($fxt->expand_function, $name, $this, $fxt, $m);

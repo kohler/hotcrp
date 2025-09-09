@@ -5883,12 +5883,11 @@ class Conf {
             return [];
         }
         if ($ctx instanceof Contact) {
-            $xtp = new XtParams($this, $ctx);
-            $xtp->reflags = "i";
+            $xtp = (new XtParams($this, $ctx))->set_match_ignores_case(true);
         } else {
             $xtp = $ctx;
             $xtp->last_match = null;
-            assert($xtp->reflags === "i");
+            assert($xtp->match_ignores_case());
         }
         $uf = $xtp->search_name($this->paper_column_map(), $name);
         $ufs = $xtp->search_factories($this->paper_column_factories(), $name, $uf);

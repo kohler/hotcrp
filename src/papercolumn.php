@@ -957,7 +957,7 @@ class Score_PaperColumn extends ScoreGraph_PaperColumn {
         }
         $exs = [];
         foreach (self::user_viewable_fields("scores", $user) as $f) {
-            $exs[] = new SearchExample($f->search_keyword(), "<0>" . $f->name . " score graph");
+            $exs[] = new SearchExample($f->search_keyword(), "<0>Graph of " . $f->name . " scores");
         }
         if (!empty($exs)) {
             $exs[] = new SearchExample("scores", "<0>All score graphs");

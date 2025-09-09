@@ -87,7 +87,7 @@ class Completion_API {
     static function paper_column_examples(Contact $user, $visible) {
         $conf = $user->conf;
         $exs = [];
-        $xtp = new XtParams($conf, $user);
+        $xtp = (new XtParams($conf, $user))->set_warn_deprecated(false);
         $pl = new PaperList("empty", new PaperSearch($user, ""));
 
         foreach ($conf->paper_column_map() as $name => $list) {
