@@ -262,6 +262,7 @@ class Conf {
     const AUSEEREV_YES = 2;
     const AUSEEREV_SEARCH = 3;
 
+    const VIEWREV_DEFAULT = -2;
     const VIEWREV_NEVER = -1;
     const VIEWREV_AFTERREVIEW = 0;
     const VIEWREV_ALWAYS = 1;
@@ -542,9 +543,8 @@ class Conf {
             return 0;
         } else if ($sr1 == self::VIEWREV_ALWAYS || $sr2 == self::VIEWREV_ALWAYS) {
             return $sr1 == self::VIEWREV_ALWAYS ? 1 : -1;
-        } else {
-            return $sr1 > $sr2 ? 1 : -1;
         }
+        return $sr1 > $sr2 ? 1 : -1;
     }
 
     private function refresh_round_settings() {
@@ -563,7 +563,7 @@ class Conf {
                 if (!$rs) {
                     continue;
                 }
-                foreach (["viewrev", "viewrev_ext", "viewrevid", "viewrevid_ext"] as $k) {
+                foreach (["viewrev", "viewrev_ext", "viewrevid", "viewrevid_ext", "viewmetarevid"] as $k) {
                     if (isset($rs->$k)
                         && self::viewrev_compare($rs->$k, $max_rs[$k] ?? -1) > 0) {
                         $max_rs[$k] = $rs->$k;

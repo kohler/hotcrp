@@ -673,7 +673,7 @@
     },
     {
         "name": "review_identity_visibility_external", "storage": "viewrevid_ext",
-        "title": "External reviewers can view reviewer identities",
+        "title": "External reviewers can see reviewer identities",
         "type": "radio",
         "values": [-1, 0, 1], "default_value": 0,
         "json_values": ["never", "after_review", "always"],
@@ -681,10 +681,25 @@
     },
     {
         "name": "review_identity_visibility_pc", "storage": "viewrevid",
-        "title": "PC can see anonymous reviewers’ identities",
+        "title": "PC can see reviewer identities",
         "type": "radio",
         "values": [-1, 0, 5, 1], "default_value": 0, "initial_value": 1,
         "json_values": ["never", "after_review", "if_assigned", "always"],
+        "tags": "review visibility"
+    },
+    {
+        "name": "review_identity_visibility_meta_special", "internal": true,
+        "title": "Metareviewer identities are treated specially",
+        "type": "checkbox",
+        "parser_class": "Review_SettingParser"
+    },
+    {
+        "name": "review_identity_visibility_meta", "storage": "viewmetarevid",
+        "title": "PC can see metareviewer identities",
+        "type": "radio",
+        "values": [-2, -1, 0, 5, 1], "default_value": -2,
+        "json_values": ["default", "never", "after_review", "if_assigned", "always"],
+        "parser_class": "Review_SettingParser",
         "tags": "review visibility"
     },
     {

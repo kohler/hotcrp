@@ -256,6 +256,15 @@
         ]
     },
     {
+        "name": "reviews/metareviews", "order": 35,
+        "title": "Metareviews",
+        "print_function": "Review_SettingParser::print_meta",
+        "settings": [
+            "review_visibility_lead",
+            "review_identity_visibility_meta"
+        ]
+    },
+    {
         "name": "reviews/external", "order": 40,
         "title": "External reviews",
         "print_members": true
@@ -368,7 +377,7 @@
     {
         "name": "tracks", "group": "tags", "order": 750,
         "print_function": "*Track_SettingParser::print",
-        "title": "Tracks", "hashid": "tracks",
+        "title": "Tracks", "hashid": "tracks", "title_class": "label",
         "settings": ["track"]
     },
     {

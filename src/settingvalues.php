@@ -1920,7 +1920,9 @@ class SettingValues extends MessageSet {
         if (isset($rest["after"])) {
             echo $rest["after"];
         }
-        echo "</div>\n";
+        if (!($rest["group_open"] ?? null)) {
+            $this->print_group_close();
+        }
     }
 
     /** @param string $name
@@ -1993,13 +1995,21 @@ class SettingValues extends MessageSet {
             echo '</div>';
         }
         if (!($js["group_open"] ?? null)) {
-            $this->print_close_control_group($js);
+            $this->print_group_close($js);
         }
     }
 
     /** @param ?array<string,mixed> $js
      * @return void */
-    function print_close_control_group($js) {
+    function print_group_close($js = []) {
+        $horizontal = !!($js["horizontal"] ?? false);
+        echo $horizontal ? "</div></div>\n" : "</div>\n";
+    }
+
+    /** @param ?array<string,mixed> $js
+     * @return void
+     * @deprecated */
+    function print_close_control_group($js = []) {
         $horizontal = !!($js["horizontal"] ?? false);
         echo $horizontal ? "</div></div>\n" : "</div>\n";
     }

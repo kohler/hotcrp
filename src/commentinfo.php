@@ -466,15 +466,14 @@ class CommentInfo {
 
     /** @return ?string */
     function unparse_response_text() {
-        if (($rrd = $this->response_round())) {
-            $t = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
-            if ($this->commentType & self::CT_DRAFT) {
-                $t = "Draft {$t}";
-            }
-            return $t;
-        } else {
+        if (!($rrd = $this->response_round())) {
             return null;
         }
+        $t = $rrd->unnamed ? "Response" : "{$rrd->name} Response";
+        if ($this->commentType & self::CT_DRAFT) {
+            $t = "Draft {$t}";
+        }
+        return $t;
     }
 
     /** @param list<CommentInfo> $crows
@@ -532,18 +531,22 @@ class CommentInfo {
         } else if (($this->commentType & (self::CTM_VIS | self::CT_BYSHEPHERD)) === (self::CTVIS_AUTHOR | self::CT_BYSHEPHERD)
                    && $this->contactId === $this->prow->shepherdContactId) {
             return "Shepherd";
-        } else if (($rrow = $this->prow->review_by_user($this->contactId))
-                   && $rrow->reviewOrdinal
-                   && $viewer->can_view_review_assignment($this->prow, $rrow)) {
-            return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
-        } else if (($this->commentType & self::CT_BYSHEPHERD) !== 0
+        }
+        if (($rrow = $this->prow->review_by_user($this->contactId))) {
+            if ($rrow->reviewOrdinal
+                && $viewer->can_view_review_assignment($this->prow, $rrow)) {
+                return "Reviewer " . unparse_latin_ordinal($rrow->reviewOrdinal);
+            } else if ($rrow->reviewType === REVIEW_META) {
+                return "Metareviewer";
+            }
+        }
+        if (($this->commentType & self::CT_BYSHEPHERD) !== 0
                    && $this->contactId === $this->prow->shepherdContactId) {
             return "Shepherd";
         } else if (($this->commentType & self::CT_BYADMINISTRATOR) !== 0) {
             return "Administrator";
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return bool */

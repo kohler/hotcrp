@@ -547,7 +547,7 @@ Note that complex HTML will not appear on offline review forms.</p></div>', 'set
             join("", MessageSet::feedback_html_items([
                 MessageItem::marked_note("Reviewers will be required to check this field to complete their reviews.")
             ])), '</li></ul>';
-        $sv->print_close_control_group(["horizontal" => true]);
+        $sv->print_group_close(["horizontal" => true]);
     }
 
     static function print_display(SettingValues $sv) {

@@ -92,6 +92,9 @@ class Review_SettingParser extends SettingParser {
         } else if ($si->name === "review_default_external_round") {
             $t = $sv->conf->setting_data("extrev_roundtag") ?? null;
             $sv->set_oldv($si, $t === "" ? "unnamed" : ($t ?? ""));
+        } else if ($si->name === "review_identity_visibility_meta_special") {
+            $s = $sv->conf->setting("viewmetarevid") ?? Conf::VIEWREV_DEFAULT;
+            $sv->set_oldv($si, $s > Conf::VIEWREV_DEFAULT ? 1 : 0);
         }
     }
 
@@ -200,20 +203,29 @@ class Review_SettingParser extends SettingParser {
     }
 
 
+    static function visibility_hints(SettingValues $sv) {
+        $revid_hint = $rev_hint = "";
+        if ($sv->conf->check_track_sensitivity(Track::VIEWREVID)) {
+            $revid_hint = '<p class="settings-radiohint f-d">' . $sv->setting_group_link("Current track settings", "tracks") . ' also affect reviewer name visibility.</p>';
+        }
+        if ($sv->conf->check_track_sensitivity(Track::VIEWREV)
+            || $sv->conf->check_track_sensitivity(Track::VIEWALLREV)) {
+            $rev_hint = '<p class="settings-radiohint f-d">' . $sv->setting_group_link("Current track settings", "tracks") . ' also affect review visibility.</p>';
+        }
+        return [$rev_hint, $revid_hint];
+    }
+
     static function print_pc(SettingValues $sv) {
+        list($rev_hint, $revid_hint) = self::visibility_hints($sv);
+
         echo '<div class="form-g has-fold foldo">';
         $sv->print_checkbox("review_self_assign", "PC members can self-assign reviews", ["class" => "uich js-foldup"]);
         if ($sv->conf->allow_self_assignment()
             && $sv->conf->check_track_sensitivity(Track::SELFASSREV)) {
-            echo '<p class="f-d fx">', $sv->setting_group_link("Current track settings", "tracks"), ' may restrict self-assigned reviews.</p>';
+            echo '<p class="f-d fx">', $sv->setting_group_link("Current track settings", "tracks"), ' also affect self-assigned reviews.</p>';
         }
         echo "</div>\n";
 
-
-        $hint = "";
-        if ($sv->conf->check_track_sensitivity(Track::VIEWREVID)) {
-            $hint = '<p class="settings-radiohint f-d">' . $sv->setting_group_link("Current track settings", "tracks") . ' restrict reviewer name visibility.</p>';
-        }
         $sv->print_radio_table("review_identity_visibility_pc", [
                 Conf::VIEWREV_ALWAYS => "Yes",
                 Conf::VIEWREV_IFASSIGNED => "Only if assigned a review for the same submission",
@@ -221,14 +233,8 @@ class Review_SettingParser extends SettingParser {
                 Conf::VIEWREV_NEVER => "No",
             ],
             'Can non-conflicted PC members see <strong>reviewer names</strong>?',
-            ["after" => $hint]);
+            ["after" => $revid_hint]);
 
-
-        $hint = "";
-        if ($sv->conf->check_track_sensitivity(Track::VIEWREV)
-            || $sv->conf->check_track_sensitivity(Track::VIEWALLREV)) {
-            $hint = '<p class="settings-radiohint f-d">' . $sv->setting_group_link("Current track settings", "tracks") . ' may restrict review visibility.</p>';
-        }
         echo '<hr class="form-sep">';
         $sv->print_radio_table("review_visibility_pc", [
                 Conf::VIEWREV_ALWAYS => "Yes",
@@ -236,7 +242,7 @@ class Review_SettingParser extends SettingParser {
                 Conf::VIEWREV_UNLESSANYINCOMPLETE => "Yes, after completing all their assigned reviews",
                 Conf::VIEWREV_AFTERREVIEW => "Only after completing a review for the same submission"
             ], 'Can non-conflicted PC members see <strong>review contents</strong>?',
-            ["after" => $hint]);
+            ["after" => $rev_hint]);
 
         echo '<hr class="form-sep">';
         $sv->print_radio_table("comment_visibility_reviewer", [
@@ -245,6 +251,10 @@ class Review_SettingParser extends SettingParser {
             ], 'Can reviewers see <strong>comments</strong>?',
             ["item_class" => "uich js-foldup",
              "fold_values" => [0]]);
+    }
+
+    static function print_meta(SettingValues $sv) {
+        list($rev_hint, $revid_hint) = self::visibility_hints($sv);
 
         echo '<hr class="form-sep"><div class="settings-radio">',
             '<div class="label">Who can <strong>always</strong> see reviewer names and review contents for their assigned papers?</div>',
@@ -252,7 +262,22 @@ class Review_SettingParser extends SettingParser {
             '<div class="settings-radioitem checki"><label><span class="checkc">',
             $sv->print_checkbox_only("review_visibility_lead"),
             '</span>Discussion leads</label></div>',
-            '</div>';
+            '</div>', $revid_hint, $rev_hint;
+
+        echo '<hr class="form-sep">';
+        $sv->print_checkbox("review_identity_visibility_meta_special", "Handle <strong>metareviewer names</strong> specially",
+            ["fold_values" => [1], "group_open" => true]);
+
+        $sv->print_radio_table("review_identity_visibility_meta", [
+                Conf::VIEWREV_ALWAYS => "Yes",
+                Conf::VIEWREV_IFASSIGNED => "Only if assigned a review for the same submission",
+                Conf::VIEWREV_AFTERREVIEW => "Only after completing a review for the same submission",
+                Conf::VIEWREV_NEVER => "No (only administrators and metareviewers can see metareviewer names)",
+            ],
+            'Can reviewers see metareviewer names?',
+            ["group_class" => "fx mt-2", "after" => $revid_hint]);
+
+        $sv->print_group_close();
     }
 
 
@@ -331,9 +356,8 @@ class Review_SettingParser extends SettingParser {
             return "";
         } else if ($ln === "unnamed" || $ln === "none") {
             return $external ? "unnamed" : "";
-        } else {
-            return $name;
         }
+        return $name;
     }
 
     function apply_req(Si $si, SettingValues $sv) {
@@ -357,6 +381,12 @@ class Review_SettingParser extends SettingParser {
                 $sv->save("review_identity_visibility_external", Conf::VIEWREV_NEVER);
             }
             return false;
+        } else if ($si->name === "review_identity_visibility_meta") {
+            if ($sv->has_req("review_identity_visibility_meta_special")
+                && !$sv->reqstr("review_identity_visibility_meta_special")) {
+                $sv->set_req($si->name, (string) Conf::VIEWREV_DEFAULT);
+            }
+            return false;
         } else if ($si->name2 === "/name") {
             if (($n = $sv->base_parse_req($si)) !== null
                 && $n !== $sv->oldv($si)) {
@@ -367,9 +397,8 @@ class Review_SettingParser extends SettingParser {
                 }
             }
             return false;
-        } else {
-            return false;
         }
+        return false;
     }
 
     private function apply_review_req(Si $si, SettingValues $sv) {

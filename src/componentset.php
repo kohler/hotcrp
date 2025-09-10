@@ -32,6 +32,8 @@ class ComponentSet {
     /** @var string */
     private $_title_class = "";
     /** @var string */
+    private $_next_title_class = "";
+    /** @var string */
     private $_separator = "";
     /** @var bool */
     private $_need_separator = false;
@@ -112,6 +114,7 @@ class ComponentSet {
         $this->_raw = [];
         $this->_callables = ["Conf" => $this->conf];
         $this->_next_section_class = $this->_section_class;
+        $this->_next_title_class = $this->_title_class;
         $this->_section_closer = null;
         return $this;
     }
@@ -304,7 +307,7 @@ class ComponentSet {
     /** @param string $s
      * @return $this */
     function set_title_class($s) {
-        $this->_title_class = $s;
+        $this->_title_class = $this->_next_title_class = $s;
         return $this;
     }
 
@@ -389,6 +392,13 @@ class ComponentSet {
         return $this;
     }
 
+    /** @param string $classes
+     * @return $this */
+    function add_title_class($classes) {
+        $this->_next_title_class = Ht::add_tokens($this->_next_title_class, $classes);
+        return $this;
+    }
+
     /** @param ?string $title
      * @param ?string $hashid */
     function print_start_section($title = null, $hashid = null) {
@@ -429,9 +439,10 @@ class ComponentSet {
      * @param ?string $hashid */
     function print_title($ftext, $hashid = null) {
         echo '<h3';
-        if ($this->_title_class) {
-            echo ' class="', $this->_title_class, '"';
+        if ($this->_next_title_class) {
+            echo ' class="', $this->_next_title_class, '"';
         }
+        $this->_next_title_class = $this->_title_class;
         $hashid = $hashid ?? self::title_hashid($ftext);
         if ((string) $hashid !== "") {
             echo ' id="', htmlspecialchars($hashid), '"';
@@ -461,9 +472,8 @@ class ComponentSet {
             return $gj->hashid !== "" ? $gj->hashid : null;
         } else if (($gj->title ?? "") !== "") {
             return self::title_hashid($gj->title);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string|object $gj */
@@ -492,6 +502,9 @@ class ComponentSet {
              || ($this->_section_closer === null && $this->_next_section_class !== ""))
             && ($gj->autosection ?? true) !== false) {
             // create default hashid from title
+            if (isset($gj->title_class)) {
+                $this->add_title_class($gj->title_class);
+            }
             $this->print_start_section($title, $hashid);
         } else {
             $this->trigger_separator();

@@ -4471,6 +4471,11 @@ class Contact implements JsonSerializable {
             return -1;
         }
         $round = $rbase ? $rbase->reviewRound : "max";
+        if ($rbase
+            && $rbase->reviewType === REVIEW_META
+            && ($metars = $this->conf->round_setting("viewmetarevid", $round)) !== null) {
+            return $metars;
+        }
         return $this->conf->round_setting($rights->allow_pc() ? "viewrevid" : "viewrevid_ext", $round) ?? 0;
     }
 

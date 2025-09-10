@@ -330,7 +330,7 @@ class Options_SettingParser extends SettingParser {
                 MessageItem::marked_note("<5>Submitters must check this field before <span class=\"verb\">completing</span> their submissions.")
             ], ["class" => "hidden mt-1"]);
         }
-        $sv->print_close_control_group(["horizontal" => true]);
+        $sv->print_group_close(["horizontal" => true]);
     }
 
     function print_visibility(SettingValues $sv) {
@@ -350,7 +350,7 @@ class Options_SettingParser extends SettingParser {
             "fold_values" => ["review"]
         ]);
         echo '<div class="hint fx">The field will be visible to reviewers who have submitted a review, and to PC members who can see all reviews.</div>';
-        $sv->print_close_control_group(["horizontal" => true]);
+        $sv->print_group_close(["horizontal" => true]);
     }
 
     function print_display(SettingValues $sv) {

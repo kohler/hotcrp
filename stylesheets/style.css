@@ -2141,6 +2141,9 @@ th.settings-simplehead {
 .settings-radioitem + .settings-radiohint {
 	margin-top: 0.35rem;
 }
+.settings-radiohint + .settings-radiohint {
+	margin-top: 0;
+}
 .settings-xf {
 	position: relative;
 	border: 1px solid silver;
