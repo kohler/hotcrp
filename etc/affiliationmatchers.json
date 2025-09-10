@@ -541,6 +541,9 @@
     "birmingham": {
         "sync": "alabama"
     },
+    "brigham": {
+        "sync": "young"
+    },
     "cal": {
         "weak": true,
         "alternate": [
