@@ -50,9 +50,8 @@ function unparse_number_pm_html($n) {
         return "−" . (-$n); // U+2212 MINUS
     } else if ($n > 0) {
         return "+" . $n;
-    } else {
-        return "0";
     }
+    return "0";
 }
 
 /** @param int|float $n
@@ -62,9 +61,8 @@ function unparse_number_pm_text($n) {
         return "-" . (-$n);
     } else if ($n > 0) {
         return "+" . $n;
-    } else {
-        return "0";
     }
+    return "0";
 }
 
 /** @param string $url

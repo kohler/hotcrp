@@ -418,10 +418,10 @@ abstract class Autoassigner extends MessageSet {
         $fuzz = $this->option("preference_fuzz")
             ?? $this->conf->setting("pref_fuzz");
         if ($fuzz !== null) {
-            if (is_bool($fuzz)) {
-                $this->preference_fuzz = $fuzz ? 10 : 0;
-            } else if (($ifuzz = stoi($fuzz)) !== null) {
+            if (($ifuzz = stoi($fuzz)) !== null) {
                 $this->preference_fuzz = $ifuzz;
+            } else if (($bfuzz = friendly_boolean($fuzz)) !== null) {
+                $this->preference_fuzz = $bfuzz ? 10 : 0;
             } else {
                 $this->error_at("preference_fuzz", "<0>Expected integer");
             }
