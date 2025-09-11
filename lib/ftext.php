@@ -61,9 +61,8 @@ class Ftext {
     static function ensure($s, $default_format) {
         if (self::is_ftext($s) !== false) {
             return $s;
-        } else {
-            return "<{$default_format}>{$s}";
         }
+        return "<{$default_format}>{$s}";
     }
 
     /** @param ?int $to_format

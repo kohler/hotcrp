@@ -225,9 +225,8 @@ class Autoassign_Batch {
         }
         $this->gj = $gj;
         if (isset($this->param["type"])) {
-            $parameters = Autoassigner::expand_parameters($this->conf, $gj->parameters ?? []);
-            if (!Autoassigner::find_parameter("type", $parameters)
-                && Autoassigner::find_parameter("rtype", $parameters)) {
+            $vos = Autoassigner::expand_parameters($this->conf, $gj->parameters ?? []);
+            if (!$vos->has("type") && $vos->has("rtype")) {
                 $this->param["rtype"] = $this->param["type"];
             }
         }
@@ -351,9 +350,21 @@ class Autoassign_Batch {
     function run() {
         if ($this->help_param) {
             $s = ["{$this->gj->name} parameters:\n"];
-            foreach (Autoassigner::expand_parameters($this->conf, $this->gj->parameters ?? []) as $px) {
-                $arg = "  {$px->name}={$px->argname}" . ($px->required ? " *" : "");
-                $s[] = Getopt::format_help_line($arg, $px->description);
+            $vos = Autoassigner::expand_parameters($this->conf, $this->gj->parameters ?? []);
+            foreach ($vos as $vot) {
+                if ($vot->type === "bool") {
+                    $arg = "  {$vot->name}=yes|no";
+                } else if ($vot->type === "enum") {
+                    $arg = "  {$vot->name}=" . join("|", ViewOptionType::split_enum($vot->enum));
+                } else if ($vot->type === "int" && ($vot->min ?? -1) >= 0) {
+                    $arg = "  {$vot->name}=" . ($vot->argname ?? "N");
+                } else {
+                    $arg = "  {$vot->name}=" . ($vot->argname ?? "ARG");
+                }
+                if ($vot->required) {
+                    $arg .= " *";
+                }
+                $s[] = Getopt::format_help_line($arg, $vot->description);
             }
             $s[] = "\n";
             fwrite(STDOUT, join("", $s));

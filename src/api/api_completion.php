@@ -265,7 +265,7 @@ class Completion_API {
             if (($fa = Fmt::find_arg($ex->args(), "view_options"))) {
                 $vox = [];
                 foreach ($fa->value as $vo) {
-                    if (($vot = ViewOptionType::parse($vo))
+                    if (($vot = ViewOptionType::make($vo))
                         && !isset($vot->alias))
                         $vox[] = $vot->unparse_export();
                 }

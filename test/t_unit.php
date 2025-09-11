@@ -1454,13 +1454,13 @@ class Unit_Tester {
 
     function test_view_option_schema() {
         $sort_schema = "asc,ascending,up|desc,descending,down|forward|reverse";
-        xassert_eqq(ViewOptionSchema::validate_enum("ascending", $sort_schema), "asc");
-        xassert_eqq(ViewOptionSchema::validate_enum("asc", $sort_schema), "asc");
-        xassert_eqq(ViewOptionSchema::validate_enum("descending", $sort_schema), "desc");
-        xassert_eqq(ViewOptionSchema::validate_enum("forward", $sort_schema), "forward");
-        xassert_eqq(ViewOptionSchema::validate_enum("reverse", $sort_schema), "reverse");
-        xassert_eqq(ViewOptionSchema::validate_enum("fart", $sort_schema), null);
-        xassert_eqq(ViewOptionSchema::validate_enum("asc,ascending", $sort_schema), null);
+        xassert_eqq(ViewOptionType::parse_enum("ascending", $sort_schema), "asc");
+        xassert_eqq(ViewOptionType::parse_enum("asc", $sort_schema), "asc");
+        xassert_eqq(ViewOptionType::parse_enum("descending", $sort_schema), "desc");
+        xassert_eqq(ViewOptionType::parse_enum("forward", $sort_schema), "forward");
+        xassert_eqq(ViewOptionType::parse_enum("reverse", $sort_schema), "reverse");
+        xassert_eqq(ViewOptionType::parse_enum("fart", $sort_schema), null);
+        xassert_eqq(ViewOptionType::parse_enum("asc,ascending", $sort_schema), null);
 
         $vos = new ViewOptionSchema;
         xassert_eqq($vos->define_check("display=row|col,column"), true);

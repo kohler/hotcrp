@@ -576,6 +576,7 @@ src/valueformat.php
 src/viewcommand.php
 src/viewoptionlist.php
 src/viewoptionschema.php
+src/viewoptiontype.php
 src/xtparams.php
 
 devel/hotcrp.vim

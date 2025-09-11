@@ -49,7 +49,7 @@ class ScoreInfo {
         if ($x === null || in_array($x, self::$score_sorts, true)) {
             return $x;
         }
-        return ViewOptionSchema::validate_enum($x, self::$score_sort_enum);
+        return ViewOptionType::parse_enum($x, self::$score_sort_enum);
     }
 
     /** @return list<string> */

@@ -100,24 +100,6 @@ class AutoassignerPaper {
 class AutoassignerComputed {
 }
 
-class AutoassignerParameter {
-    /** @var string */
-    public $name;
-    /** @var bool */
-    public $required;
-    /** @var string */
-    public $argname;
-    /** @var string */
-    public $description;
-
-    function __construct($name, $required, $argname, $description) {
-        $this->name = $name;
-        $this->required = $required;
-        $this->argname = $argname;
-        $this->description = $description;
-    }
-}
-
 abstract class Autoassigner extends MessageSet {
     /** @var Conf
      * @readonly */
@@ -1326,65 +1308,40 @@ abstract class Autoassigner extends MessageSet {
 
 
     /** @param ?list<string> $parameters
-     * @return list<AutoassignerParameter> */
-    static function expand_parameters(Conf $conf, $parameters) {
+     * @param ?ViewOptionSchema $vos
+     * @return ViewOptionSchema */
+    static function expand_parameters(Conf $conf, $parameters, $vos = null) {
+        $vos = $vos ?? new ViewOptionSchema;
         $result = [];
         foreach ($parameters ?? [] as $s) {
             if (!is_string($s)) {
                 continue;
             } else if (str_starts_with($s, "\$")) {
-                if (($gj = $conf->autoassigner(substr($s, 1)))) {
-                    array_push($result, ...self::expand_parameters($conf, $gj->parameters ?? []));
-                }
-            } else if (($o = self::expand_parameter_help($s))) {
-                $result[] = $o;
+                $gj = $conf->autoassigner(substr($s, 1));
+                self::expand_parameters($conf, $gj->parameters ?? [], $vos);
+            } else if (($sx = self::expand_parameter($s))) {
+                $vos->define($sx);
             }
         }
-        return $result;
+        return $vos;
     }
 
-    /** @param string $help
-     * @return ?AutoassignerParameter */
-    static function expand_parameter_help($help) {
-        if (!preg_match('/\A(\??)(\S+)\s*(|\{\S*\})\s*(|[^{].*)\z/', $help, $m)) {
-            return null;
+    /** @param string $param
+     * @return string */
+    static function expand_parameter($param) {
+        if ($param === "rtype") {
+            return "rtype:rtype Review type";
+        } else if ($param === "round") {
+            return "round:round Review round";
+        } else if ($param === "method") {
+            return "method=default,mincost|random|stupid Assignment method";
+        } else if ($param === "balance") {
+            return "balance=all|new Load-balancing method";
+        } else if ($param === "max_load") {
+            return "max_load:n Maximum load per PC";
+        } else if ($param === "max_load_tag") {
+            return "max_load_tag:tag PC tag defining maximum load per PC";
         }
-        if ($m[4] === "") {
-            if ($m[2] === "count") {
-                $m[3] = $m[3] ? : "{n}";
-                $m[4] = "Number of assignments";
-            } else if ($m[2] === "rtype") {
-                $m[4] = "Review type";
-            } else if ($m[2] === "method") {
-                $m[4] = "Assignment method (default, random, stupid) [default]";
-            } else if ($m[2] === "balance") {
-                $m[4] = "Load-balancing method (all, new) [all]";
-            } else if ($m[2] === "max_load") {
-                $m[3] = $m[3] ? : "{n}";
-                $m[4] = "Maximum load per PC";
-            } else if ($m[2] === "max_load_tag") {
-                $m[3] = $m[3] ? : "{tag}";
-                $m[4] = "PC tag defining maximum load per PC";
-            } else if ($m[2] === "round") {
-                $m[4] = "Review round";
-            }
-        }
-        if ($m[3] === "") {
-            $argname = strtoupper($m[2]);
-        } else {
-            $argname = strtoupper(substr($m[3], 1, -1));
-        }
-        return new AutoassignerParameter($m[2], $m[1] === "", $argname, $m[4]);
-    }
-
-    /** @param string $name
-     * @param list<AutoassignerParameter> $params
-     * @return ?AutoassignerParameter */
-    static function find_parameter($name, $params) {
-        foreach ($params as $p) {
-            if ($p->name === $name)
-                return $p;
-        }
-        return null;
+        return $param;
     }
 }

@@ -6,40 +6,41 @@
     {
         "name": "clear",
         "function": "+Clear_Autoassigner",
-        "parameters": ["type"]
+        "parameters": ["!type"]
     },
     {
         "name": "lead",
         "function": "+PaperPC_Autoassigner",
-        "parameters": ["?score", "?allow_incomplete {bool}", "?method", "?balance", "?max_load", "?max_load_tag"]
+        "parameters": ["score$", "allow_incomplete", "method", "balance", "max_load", "max_load_tag"]
     },
     {
         "name": "shepherd",
         "function": "+PaperPC_Autoassigner",
-        "parameters": ["?score", "?allow_incomplete {bool}", "?method", "?balance", "?max_load", "?max_load_tag"]
+        "parameters": ["score", "allow_incomplete", "method", "balance", "max_load", "max_load_tag"]
     },
     {
         "name": "__review_parameters",
         "parameters": [
-            "?rtype Review type",
-            "?round Review round",
-            "?method",
-            "?balance",
-            "?load",
-            "?max_load",
-            "?max_load_tag",
-            "?gadget",
-            "?assignment_cost",
-            "?preference_cost",
-            "?expertise_x_cost",
-            "?expertise_y_cost"
+            "rtype",
+            "round",
+            "method",
+            "balance",
+            "load=all|rtype|round",
+            "max_load",
+            "max_load_tag",
+            "review_gadget=plain|expertise",
+            "expertise",
+            "assignment_cost#",
+            "preference_cost#",
+            "expertise_x_cost#",
+            "expertise_y_cost#"
         ]
     },
     {
         "name": "review",
         "function": "+Review_Autoassigner",
         "parameters": [
-            "count {n} Number of reviews to assign per paper",
+            "!count#+ Number of reviews to assign per paper",
             "$__review_parameters"
         ]
     },
@@ -47,7 +48,7 @@
         "name": "review_ensure",
         "function": "+Review_Autoassigner",
         "parameters": [
-            "count {n} Number of reviews to ensure per paper",
+            "!count#+ Number of reviews to ensure per paper",
             "$__review_parameters"
         ]
     },
@@ -55,7 +56,7 @@
         "name": "review_adjust",
         "function": "+Review_Autoassigner",
         "parameters": [
-            "count {n} Number of reviews to ensure per paper",
+            "!count#+ Number of reviews to ensure per paper",
             "$__review_parameters"
         ]
     },
@@ -63,13 +64,13 @@
         "name": "review_per_pc",
         "function": "+Review_Autoassigner",
         "parameters": [
-            "count {n} Number of reviews to assign per PC member",
+            "!count#+ Number of reviews to assign per PC member",
             "$__review_parameters"
         ]
     },
     {
         "name": "discussion_order",
         "function": "+DiscussionOrder_Autoassigner",
-        "parameters": ["tag {tag} Destination tag"]
+        "parameters": ["!tag:tag Destination tag"]
     }
 ]
