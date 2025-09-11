@@ -384,7 +384,7 @@ class ManageEmail_Page {
         if ($what === "fail") {
             echo '<div class="aabut">', Ht::submit("Restart", ["name" => "back", "value" => "restart"]), '</div>';
         } else {
-            echo '<div class="aabut">', Ht::submit($this->curstep->next_label ?? "Next", ["class" => $this->curstep->next_class ?? "btn-primary", "name" => "next", "value" => 1]), '</div>';
+            echo '<div class="aabut">', Ht::submit($this->curstep->next_label ?? "Next →", ["class" => $this->curstep->next_class ?? "btn-primary", "name" => "next", "value" => 1]), '</div>';
             if ($this->curstep->index > 0) {
                 echo '<div class="aabut">', Ht::submit("Back", ["name" => "back", "value" => 1]), '</div>';
             }
@@ -411,7 +411,7 @@ class ManageEmail_Page {
             }
 
             echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST)),
-                '<p>Select the account whose current reviews should be transferred.';
+                '<p>Select the account whose current reviews and/or PC status should be transferred.';
             if (!$this->viewer->privChair) {
                 echo ' You must be signed in to all accounts involved in the transfer.';
             }
@@ -420,8 +420,16 @@ class ManageEmail_Page {
             $this->print_step_actions();
             echo '</form>';
         } else if ($this->curstep->name === "dest") {
+            $what = [];
+            if ($this->user && $this->user->isPC) {
+                $what[] = "PC status";
+            }
+            if (empty($what) || $this->user->has_review()) {
+                $what[] = "reviews";
+            }
             echo Ht::form($this->step_hoturl([], Conf::HOTURL_POST)),
-                '<p>Select the account that should receive the transferred reviews.';
+                "<p>Select the account that should receive <strong class=\"sb\">{$srchemail}</strong>’s ",
+                join(" and ", $what), ".";
             if (!$this->viewer->privChair) {
                 echo ' You must be signed in to all accounts involved in the transfer.';
             }
