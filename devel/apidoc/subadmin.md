@@ -23,8 +23,8 @@ They may be specified:
    `application/json`).
 2. As a CSV file (when the request body has content-type
    `text/csv`).
-3. As a JSON-formatted request parameter named `assignments` (when the request
-   body has content-type `application/x-www-form-urlencoded` or
+3. As a JSON- or CSV-formatted request parameter named `assignments` (when the
+   request body has content-type `application/x-www-form-urlencoded` or
    `multipart/form-data`).
 4. As a previously-uploaded JSON or CSV file, represented by a upload token in
    the `upload` parameter.

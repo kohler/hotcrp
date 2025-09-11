@@ -30,7 +30,7 @@ class Assign_API {
 
         // parse CSV upload or get JSON string
         $csvp = $jsonstr = $jsonfn = null;
-        $jsonparam = null;
+        $errparam = null;
         if ($ct === "application/json") {
             if ($updoc) {
                 $jsonstr = $updoc->content();
@@ -44,8 +44,14 @@ class Assign_API {
             $csvp->set_content(fopen($fn, "rb"));
             $aset->set_csv_context(true);
         } else if (isset($qreq->assignments)) {
-            $jsonstr = $qreq->assignments;
-            $jsonparam = "assignments";
+            if (preg_match('/\A\s*[\[\{]/s', $qreq->assignments)) {
+                $jsonstr = $qreq->assignments;
+            } else {
+                $csvp = new CsvParser;
+                $csvp->set_content($qreq->assignments);
+                $aset->set_csv_context(true);
+            }
+            $errparam = "assignments";
         }
 
         // parse JSON string
@@ -61,13 +67,13 @@ class Assign_API {
                 }
                 $j = $jparser->decode();
                 if ($jparser->last_error()) {
-                    return JsonResult::make_message_list(MessageItem::error_at($jsonparam, "<0>Invalid JSON: " . $jparser->last_error_msg()));
+                    return JsonResult::make_message_list(MessageItem::error_at($errparam, "<0>Invalid JSON: " . $jparser->last_error_msg()));
                 }
             }
             if (is_object($j)) {
                 $j = [$j];
             } else if (!is_array($j)) {
-                return JsonResult::make_message_list(MessageItem::error_at($jsonparam, "<0>Expected JSON array"));
+                return JsonResult::make_message_list(MessageItem::error_at($errparam, "<0>Expected JSON array"));
             }
             $csvp = CsvParser::make_json($j);
         }
