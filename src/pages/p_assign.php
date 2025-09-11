@@ -564,18 +564,40 @@ class Assign_Page {
                 echo "<p>Review preferences display as “P#”.</p>";
             }
 
-            echo '<div class="pc-ctable has-assignment-set need-assignment-change"';
             $rev_rounds = array_keys($this->conf->round_selector_options(false));
-            echo ' data-review-rounds="', htmlspecialchars(json_encode($rev_rounds)), '"',
+            echo '<div class="has-assignment-set need-assignment-change"',
+                ' data-review-rounds="', htmlspecialchars(json_encode($rev_rounds)), '"',
                 ' data-default-review-round="', htmlspecialchars($this->conf->assignment_round_option(false)), '">';
 
             $this->conf->ensure_cached_user_collaborators();
+            $relevant_pc = $pc_class = [];
             foreach ($this->conf->pc_members() as $pc) {
-                if ($pc->pc_track_assignable($prow)
-                    || $prow->has_reviewer($pc)) {
-                    $this->print_pc_assignment($pc, $acs);
+                if ($prow->has_reviewer($pc)) {
+                    $pc_class[$pc->contactId] = 2;
+                } else if ($prow->has_conflict($pc)) {
+                    $pc_class[$pc->contactId] = 1;
+                } else if ($pc->pc_track_assignable($prow)) {
+                    $pc_class[$pc->contactId] = 0;
+                } else {
+                    continue;
                 }
+                $relevant_pc[] = $pc;
             }
+
+            usort($relevant_pc, function ($a, $b) use ($pc_class) {
+                return ($pc_class[$b->contactId] <=> $pc_class[$a->contactId])
+                    ? : ($a->pc_index <=> $b->pc_index);
+            });
+
+            $last_pc_class = null;
+            foreach ($relevant_pc as $pc) {
+                if ($pc_class[$pc->contactId] !== $last_pc_class) {
+                    echo ($last_pc_class === null ? '' : '</div>'), '<div class="pc-ctable">';
+                    $last_pc_class = $pc_class[$pc->contactId];
+                }
+                $this->print_pc_assignment($pc, $acs);
+            }
+            echo $last_pc_class === null ? '' : '</div>';
 
             echo "</div>\n",
                 '<div class="aab">',

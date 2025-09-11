@@ -5116,7 +5116,7 @@ handle_ui.on("js-assignment-fold", function (evt) {
                 make_radio(name, 3, "Secondary", revtype),
                 make_radio(name, 2, "Optional", revtype),
                 make_radio(name, 5, "Metareview", revtype));
-            append_round_selector(name, revtype, $a, div_options);
+            append_round_selector(name, revtype, $a, div_container);
             if (!revinprogress) {
                 div_options.append(make_radio(name, -1, "Conflict", conftype > 0 ? -1 : 0),
                     make_radio(name, 0, "None", revtype || conftype ? -1 : 0));
