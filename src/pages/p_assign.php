@@ -411,8 +411,9 @@ class Assign_Page {
     }
 
     /** @param Contact $pc
-     * @param AssignmentCountSet $acs */
-    private function print_pc_assignment($pc, $acs) {
+     * @param AssignmentCountSet $acs
+     * @param ?PaperInfoPotentialConflictList $potconf */
+    private function print_pc_assignment($pc, $acs, $potconf) {
         // first, name and assignment
         $ct = $this->prow->conflict_type($pc);
         $rrow = $this->prow->review_by_user($pc);
@@ -425,26 +426,22 @@ class Assign_Page {
         if ($crevtype == 0 && Conflict::is_conflicted($ct)) {
             $crevtype = -1;
         }
-        $potconf = null;
-        if ($this->allow_view_authors && $revtype != -2) {
-            $potconf = $this->prow->potential_conflict_list($pc);
-        }
 
         echo '<div class="ctelt">',
             '<div class="ctelti has-assignment has-fold foldc" data-pid="', $this->prow->paperId,
             '" data-uid="', $pc->contactId,
-            '" data-review-type="', $revtype;
+            '" data-review-type="', $revtype, '"';
         if (Conflict::is_conflicted($ct)) {
-            echo '" data-conflict-type="1';
+            echo ' data-conflict-type';
         }
         if (!$revtype && $this->prow->review_refusals_by_user($pc)) {
-            echo '" data-assignment-declined="1';
+            echo ' data-assignment-declined="1"';
         }
         if ($rrow && $rrow->reviewRound && ($rn = $rrow->round_name())) {
-            echo '" data-review-round="', htmlspecialchars($rn);
+            echo ' data-review-round="', htmlspecialchars($rn), '"';
         }
         if ($rrow && $rrow->reviewStatus >= ReviewInfo::RS_DRAFTED) {
-            echo '" data-review-in-progress="';
+            echo ' data-review-in-progress';
         }
         echo '"><div class="pctbname pctbname', $crevtype, ' ui js-assignment-fold">',
             '<button type="button" class="q ui js-assignment-fold">', expander(null, 0),
@@ -570,7 +567,7 @@ class Assign_Page {
                 ' data-default-review-round="', htmlspecialchars($this->conf->assignment_round_option(false)), '">';
 
             $this->conf->ensure_cached_user_collaborators();
-            $relevant_pc = $pc_class = [];
+            $relevant_pc = $pc_class = $potconfs = [];
             foreach ($this->conf->pc_members() as $pc) {
                 if ($prow->has_reviewer($pc)) {
                     $pc_class[$pc->contactId] = 2;
@@ -582,6 +579,12 @@ class Assign_Page {
                     continue;
                 }
                 $relevant_pc[] = $pc;
+                if ($this->allow_view_authors && !$prow->has_author($pc)) {
+                    $potconfs[$pc->contactId] = $this->prow->potential_conflict_list($pc);
+                    if ($potconfs[$pc->contactId] && $pc_class[$pc->contactId] === 0) {
+                        $pc_class[$pc->contactId] = 1;
+                    }
+                }
             }
 
             usort($relevant_pc, function ($a, $b) use ($pc_class) {
@@ -595,7 +598,7 @@ class Assign_Page {
                     echo ($last_pc_class === null ? '' : '</div>'), '<div class="pc-ctable">';
                     $last_pc_class = $pc_class[$pc->contactId];
                 }
-                $this->print_pc_assignment($pc, $acs);
+                $this->print_pc_assignment($pc, $acs, $potconfs[$pc->contactId] ?? null);
             }
             echo $last_pc_class === null ? '' : '</div>';
 

@@ -5105,7 +5105,7 @@ handle_ui.on("js-assignment-fold", function (evt) {
         if (!$x.length) {
             var name = $a.attr("data-pid") + "u" + $a.attr("data-uid"),
                 revtype = +$a.attr("data-review-type"),
-                conftype = +$a.attr("data-conflict-type"),
+                conflicted = $a[0].hasAttribute("data-conflict-type"),
                 revinprogress = $a[0].hasAttribute("data-review-in-progress"),
                 div_container = document.createElement("div"),
                 div_options = document.createElement("div");
@@ -5118,8 +5118,8 @@ handle_ui.on("js-assignment-fold", function (evt) {
                 make_radio(name, 5, "Metareview", revtype));
             append_round_selector(name, revtype, $a, div_container);
             if (!revinprogress) {
-                div_options.append(make_radio(name, -1, "Conflict", conftype > 0 ? -1 : 0),
-                    make_radio(name, 0, "None", revtype || conftype ? -1 : 0));
+                div_options.append(make_radio(name, -1, "Conflict", conflicted ? -1 : 0),
+                    make_radio(name, 0, "None", revtype || conflicted ? -1 : 0));
             }
             $a.append(div_container);
         }
