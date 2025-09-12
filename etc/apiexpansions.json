@@ -32,6 +32,10 @@
     "tags": ["Submission administration"]
   },
   {
+    "name": "assigners", "get": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
     "name": "assigntags", "post": true, "merge": true,
     "tags": ["Tags"]
   },

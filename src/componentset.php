@@ -232,19 +232,18 @@ class ComponentSet {
             }
         }
         usort($r, "Conf::xt_order_compare");
-        if ($alias && !empty($r)) {
-            $rr = [];
-            foreach ($r as $gj) {
-                if (!isset($gj->alias)
-                    || (($gj = $this->get($gj->alias))
-                        && (!$require_key || isset($gj->$require_key)))) {
-                    $rr[] = $gj;
-                }
-            }
-            return $rr;
-        } else {
+        if (!$alias || empty($r)) {
             return $r;
         }
+        $rr = [];
+        foreach ($r as $gj) {
+            if (!isset($gj->alias)
+                || (($gj = $this->get($gj->alias))
+                    && (!$require_key || isset($gj->$require_key)))) {
+                $rr[] = $gj;
+            }
+        }
+        return $rr;
     }
 
     /** @return list<object> */

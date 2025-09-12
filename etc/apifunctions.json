@@ -29,6 +29,11 @@
         "response": "?dry_run valid ?assignments_header ?assignments ?assignment_actions ?assignment_pids ?papers ?ids ?groups ?search_params"
     },
     {
+        "name": "assigners", "get": true,
+        "function": "Assign_API::assigners",
+        "response": "assigners"
+    },
+    {
         "name": "assigntags", "post": true,
         "function": "Tags_API::assigntags",
         "parameters": "=tagassignment ?=search",

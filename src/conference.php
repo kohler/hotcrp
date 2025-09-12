@@ -5707,16 +5707,21 @@ class Conf {
 
     // assignment parsers
 
-    /** @param string $keyword
-     * @return ?AssignmentParser */
-    function assignment_parser($keyword, ?Contact $user = null) {
+    /** @return array<string,list<object>> */
+    function assignment_parser_map() {
         require_once("assignmentset.php");
         if ($this->_assignment_parsers === null) {
             list($this->_assignment_parsers, $unused) =
                 $this->_xtbuild(["etc/assignmentparsers.json"], "assignmentParsers");
         }
+        return $this->_assignment_parsers;
+    }
+
+    /** @param string $keyword
+     * @return ?AssignmentParser */
+    function assignment_parser($keyword, ?Contact $user = null) {
         $xtp = new XtParams($this, $user);
-        $uf = $xtp->search_name($this->_assignment_parsers, $keyword);
+        $uf = $xtp->search_name($this->assignment_parser_map(), $keyword);
         if (($uf = self::xt_resolve_require($uf))) {
             $p = $uf->parser_class;
             return new $p($this, $uf);

@@ -13,21 +13,21 @@
     {
         "name": "review", "parser_class": "Review_AssignmentParser",
         "review_type": null,
-        "parameters": ["user", "review_type", "?review_round"],
+        "parameters": ["!user:user", "!review_type:rtype", "review_round:round"],
         "description": "Assign review",
         "order": -1
     },
     {
         "name": "metareview", "parser_class": "Review_AssignmentParser",
         "review_type": "meta",
-        "parameters": ["user", "?review_round"],
+        "parameters": ["!user:user", "review_round:round"],
         "group": "review", "description": "Assign metareview"
     },
     {   "name": "meta", "alias": "metareview"   },
     {
         "name": "primaryreview", "parser_class": "Review_AssignmentParser",
         "review_type": "primary",
-        "parameters": ["user", "?review_round"],
+        "parameters": ["!user:user", "review_round:round"],
         "group": "review", "description": "Assign primary review"
     },
     {   "name": "pri", "alias": "primaryreview"   },
@@ -35,7 +35,7 @@
     {
         "name": "secondaryreview", "parser_class": "Review_AssignmentParser",
         "review_type": "secondary",
-        "parameters": ["user", "?review_round"],
+        "parameters": ["!user:user", "review_round:round"],
         "group": "review", "description": "Assign secondary review"
     },
     {   "name": "sec", "alias": "secondaryreview"   },
@@ -43,7 +43,7 @@
     {
         "name": "pcreview", "parser_class": "Review_AssignmentParser",
         "review_type": "optional",
-        "parameters": ["user", "?review_round"],
+        "parameters": ["!user:user", "review_round:round"],
         "group": "review", "description": "Assign optional PC review"
     },
     {   "name": "optionalreview", "alias": "pcreview"   },
@@ -51,7 +51,7 @@
     {
         "name": "externalreview", "parser_class": "Review_AssignmentParser",
         "review_type": "external",
-        "parameters": ["user", "?review_round"],
+        "parameters": ["!user:user", "review_round:round"],
         "group": "review", "description": "Assign external review"
     },
     {   "name": "ext", "alias": "externalreview"   },
@@ -60,7 +60,7 @@
     {
         "name": "clearreview", "parser_class": "Review_AssignmentParser",
         "review_type": "none",
-        "parameters": ["user", "?review_type", "?review_round"],
+        "parameters": ["!user:user", "review_type:rtype", "review_round:round"],
         "group": "review", "description": "Remove review assignment"
     },
     {   "name": "noreview", "alias": "clearreview"   },
@@ -68,21 +68,21 @@
     {
         "name": "clearprimaryreview", "parser_class": "Review_AssignmentParser",
         "review_type": "none", "old_review_type": "primary",
-        "parameters": ["user", "?review_round"]
+        "parameters": ["!user:user", "review_round:round"]
     },
     {   "name": "clearpri", "alias": "clearprimaryreview"   },
     {   "name": "clearprimary", "alias": "clearprimaryreview"   },
     {
         "name": "clearsecondaryreview", "parser_class": "Review_AssignmentParser",
         "review_type": "none", "old_review_type": "secondary",
-        "parameters": ["user", "?review_round"]
+        "parameters": ["!user:user", "review_round:round"]
     },
     {   "name": "clearsec", "alias": "clearsecondaryreview"   },
     {   "name": "clearsecondary", "alias": "clearsecondaryreview"   },
     {
         "name": "clearpcreview", "parser_class": "Review_AssignmentParser",
         "review_type": "none", "old_review_type": "optional",
-        "parameters": ["user", "?review_round"]
+        "parameters": ["!user:user", "review_round:round"]
     },
     {   "name": "clearoptional", "alias": "clearpcreview"   },
     {   "name": "clearoptionalreview", "alias": "clearpcreview"   },
@@ -90,26 +90,26 @@
     {
         "name": "clearmetareview", "parser_class": "Review_AssignmentParser",
         "review_type": "none", "old_review_type": "meta",
-        "parameters": ["user", "?review_round"]
+        "parameters": ["!user:user", "review_round:round"]
     },
     {   "name": "clearmeta", "alias": "clearmetareview"   },
     {
         "name": "clearexternalreview", "parser_class": "Review_AssignmentParser",
         "review_type": "none", "old_review_type": "external",
-        "parameters": ["user", "?review_round"]
+        "parameters": ["!user:user", "review_round:round"]
     },
     {   "name": "clearext", "alias": "clearexternalreview"   },
     {   "name": "clearexternal", "alias": "clearexternalreview"   },
     {   "name": "clearextreview", "alias": "clearexternalreview"   },
     {
         "name": "unsubmitreview", "parser_class": "UnsubmitReview_AssignmentParser",
-        "parameters": ["user", "?review_type", "?review_round"],
+        "parameters": ["!user:user", "review_type:rtype", "review_round:round"],
         "description": "Unsubmit review"
     },
     {
         "name": "lead", "parser_class": "Lead_AssignmentParser",
         "type": "lead", "remove": false,
-        "parameters": ["user"],
+        "parameters": ["!user:user"],
         "description": "Set discussion lead"
     },
     {
@@ -121,7 +121,7 @@
     {
         "name": "shepherd", "parser_class": "Lead_AssignmentParser",
         "type": "shepherd", "remove": false,
-        "parameters": ["user"],
+        "parameters": ["!user:user"],
         "description": "Set shepherd"
     },
     {
@@ -133,7 +133,7 @@
     {
         "name": "administrator", "parser_class": "Lead_AssignmentParser",
         "type": "manager", "remove": false,
-        "parameters": ["user"],
+        "parameters": ["!user:user"],
         "description": "Set submission administrator"
     },
     {   "name": "admin", "alias": "administrator"   },
@@ -151,7 +151,7 @@
     {
         "name": "conflict", "parser_class": "Conflict_AssignmentParser",
         "remove": false, "iscontact": false,
-        "parameters": ["user", "?conflict_type"],
+        "parameters": ["!user:user", "conflict_type$"],
         "description": "Set PC conflict status"
     },
     {
@@ -163,20 +163,20 @@
     {
         "name": "contact", "parser_class": "Conflict_AssignmentParser",
         "remove": false, "iscontact": true,
-        "parameters": ["user"],
+        "parameters": ["!user:user"],
         "description": "Add to contact authors"
     },
     {
         "name": "clearcontact", "parser_class": "Conflict_AssignmentParser",
         "remove": true, "iscontact": true,
-        "parameters": ["user"], "group": "contact",
+        "parameters": ["!user:user"], "group": "contact",
         "description": "Remove from contact authors"
     },
     {   "name": "nocontact", "alias": "clearcontact"   },
     {
         "name": "tag", "parser_class": "Tag_AssignmentParser",
         "remove": null, "next": false,
-        "parameters": ["tag", "?tag_value"],
+        "parameters": ["!tag:tag", "tag_value:float"],
         "description": "Modify tag"
     },
     {   "name": "settag", "alias": "tag"   },
@@ -184,20 +184,20 @@
     {
         "name": "cleartag", "parser_class": "Tag_AssignmentParser",
         "remove": true,
-        "parameters": ["tag"], "group": "tag",
+        "parameters": ["!tag:tag"], "group": "tag",
         "description": "Remove tag"
     },
     {   "name": "notag", "alias": "cleartag"   },
     {
         "name": "nexttag", "parser_class": "Tag_AssignmentParser",
         "remove": false, "next": true,
-        "parameters": ["tag"], "group": "tag",
+        "parameters": ["!tag:tag"], "group": "tag",
         "description": "Add to tag order"
     },
     {
         "name": "seqnexttag", "parser_class": "Tag_AssignmentParser",
         "remove": false, "next": "seq",
-        "parameters": ["tag"], "group": "tag",
+        "parameters": ["!tag:tag"], "group": "tag",
         "description": "Add to gapless tag order"
     },
     {   "name": "seqtag", "alias": "seqnexttag"   },
@@ -205,19 +205,19 @@
     {
         "name": "copytag", "parser_class": "CopyTag_AssignmentParser",
         "move": false,
-        "parameters": ["tag", "new_tag", "?tag_value", "?tag_anno"], "group": "tag",
+        "parameters": ["!tag:tag", "!new_tag:tag", "tag_value:float", "tag_anno"], "group": "tag",
         "description": "Copy tag"
     },
     {
         "name": "movetag", "parser_class": "CopyTag_AssignmentParser",
         "move": true,
-        "parameters": ["tag", "new_tag", "?tag_value", "?tag_anno"], "group": "tag",
+        "parameters": ["!tag", "!new_tag", "tag_value:float", "tag_anno"], "group": "tag",
         "description": "Rename tag"
     },
     {   "name": "renametag", "alias": "movetag"   },
     {
         "name": "pref", "parser_class": "Preference_AssignmentParser",
-        "parameters": ["user", "preference", "?expertise"],
+        "parameters": ["!user:user", "!preference#", "expertise=X|Y|Z"],
         "description": "Set reviewer preference"
     },
     {   "name": "preference", "alias": "pref"   },
@@ -225,7 +225,7 @@
     {
         "name": "decision", "parser_class": "Decision_AssignmentParser",
         "remove": false,
-        "parameters": ["decision"],
+        "parameters": ["!decision$"],
         "description": "Set decision"
     },
     {
@@ -256,18 +256,18 @@
     {   "name": "unwithdraw", "alias": "revive"   },
     {
         "name": "follow", "parser_class": "Follow_AssignmentParser",
-        "parameters": ["user", "following"], "default_follow": "yes",
+        "parameters": ["!user:user", "!following$"], "default_follow": "yes",
         "description": "Follow or block review and comment notifications"
     },
     {
         "name": "unfollow", "parser_class": "Follow_AssignmentParser",
-        "parameters": ["user"], "default_follow": "no", "order": false,
+        "parameters": ["!user:user"], "default_follow": "no", "order": false,
         "description": "Block review and comment notifications"
     },
     {   "name": "nofollow", "alias": "unfollow"   },
     {
         "name": "clearfollow", "parser_class": "Follow_AssignmentParser",
-        "parameters": ["user"], "default_follow": "clear", "order": false,
+        "parameters": ["!user:user"], "default_follow": "clear", "order": false,
         "description": "Default notifications for reviews and comments"
     }
 ]

@@ -41,9 +41,14 @@ class ViewOptionType {
             } else {
                 $vot->description = substr($x, $end + 1);
             }
-            if (str_starts_with($x, "!")) {
-                $vot->required = true;
-                ++$pos;
+            if ($pos < $end) {
+                if ($x[$pos] === "!") {
+                    $vot->required = true;
+                    ++$pos;
+                } else if ($x[$pos] === "?") {
+                    $vot->required = false;
+                    ++$pos;
+                }
             }
             if (($sl = strpos($x, "/", $pos)) !== false
                 && $sl < $end) {

@@ -140,4 +140,48 @@ class Assign_API {
         }
         return $p;
     }
+
+    static function assigners(Contact $user, Qrequest $qreq) {
+        $conf = $user->conf;
+        $exs = [];
+        $xtp = (new XtParams($conf, $user))->set_warn_deprecated(false);
+        $amap = $conf->assignment_parser_map();
+
+        foreach ($amap as $name => $list) {
+            if (str_starts_with($name, "?")
+                || !($j = $xtp->search_list($list))
+                || ($j->deprecated ?? false)
+                || !Conf::xt_enabled($j)) {
+                continue;
+            }
+            $exposure = $j->exposure ?? null;
+            if ($exposure === null && ($j->alias ?? false)) {
+                $exposure = "none";
+            }
+            if ($exposure === "none"
+                || $exposure === false) {
+                continue;
+            }
+            $rj = isset($j->alias) ? $xtp->search_name($amap, $name) : $j;
+            $aj = ["name" => $name];
+            if (isset($rj->group) && $rj->group !== $name) {
+                $aj["group"] = $rj->group;
+            }
+            if (isset($rj->description_html)) {
+                $aj["description"] = "<5>" . $rj->description_html;
+            } else if (isset($rj->description)) {
+                $aj["description"] = Ftext::ensure($rj->description, 0);
+            }
+            $vos = new ViewOptionSchema(...($rj->parameters ?? []));
+            foreach ($vos as $vot) {
+                if (!isset($vot->alias))
+                    $aj["parameters"][] = $vot->unparse_export();
+            }
+            $exs[] = $aj;
+        }
+        return [
+            "ok" => true,
+            "assigners" => $exs
+        ];
+    }
 }
