@@ -1,7 +1,7 @@
 HotCRP NEWS
 ===========
 
-## Version 3.1
+## Version 3.1 – 12.Sep.2025
 
 * Upgrade notes
 
@@ -9,15 +9,16 @@ HotCRP NEWS
     * The `oAuthTypes` setting is no longer understood.
     * The `oAuthTypes` `group_mappings` subsetting is replaced by
       `group_roles`.
+    * Previous versions of the `batch/backupdb.php` script could produce
+      invalid backups in the case that the database contained large documents.
 
 * Accounts
 
-    * Remove old “merge accounts” functionality in favor of a new “Manage
-      email” page. Manage email allows transferring reviews and linking
-      accounts, where the primary linked account redirects review requests and
-      receives shared authorship.
+    * Replace “merge accounts” functionality with “Manage email”. Manage email
+      allows transferring reviews and linking accounts, where the primary
+      linked account redirects review requests and receives shared authorship.
     * OAuth can import group affiliations and roles (Tobias Fiebig).
-    * Expose ORCID and country in user lists and downloads.
+    * Expose ORCID iD and country in user lists and downloads.
     * Profile supports reauthentication more cleanly.
     * Improve LDAP support.
     * Add support for extension tracks. For instance, the `settings!`
@@ -41,15 +42,26 @@ HotCRP NEWS
     * Bulk assignments supports upload of very large assignment files.
     * Improve handling of assignment files that generate large numbers of
       errors.
+    * Assigner messages about potential conflicts include buttons for
+      immediately confirming or ignoring each conflict.
     * The `copytag` and `newtag` assigners can move all matching tags (for
       instance, set `tag` to `my*` and `newtag` to `renamed-*`).
+    * Improve UI display of large PC sets in conflict editing and review
+      assignment pages.
 
 * Submissions
 
     * Improve handling of complex field conditions: avoid crashes.
+    * Support fields with edit conditions that depend on other fields with
+      edit conditions.
+    * Introduce author certification submission field type.
 
 * Reviews
 
+    * Review preferences page supports shuffled preferences via
+      `sort:shuffle`.
+    * Preference fuzzing can group preferences into bands to reduce the impact
+      of collusion.
     * Assign review IDs randomly.
     * Improve handling of field names with no ASCII characters.
     * Administrators can clear all review ratings.
@@ -85,6 +97,7 @@ HotCRP NEWS
 
     * Prefer `{{TEMPLATE}}` style to `%TEMPLATE%`.
     * Add site URL to mail signatures.
+    * Better handle thousands of emails.
 
 * Batch scripts
 

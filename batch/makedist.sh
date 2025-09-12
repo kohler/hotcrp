@@ -82,10 +82,12 @@ users.php
 
 batch/.htaccess
 batch/actionlog.php
+batch/apispec.php
 batch/assign.php
 batch/autoassign.php
 batch/backupdb.php
 batch/checkinvariants.php
+batch/cli/cli_assign.php
 batch/cli/cli_paper.php
 batch/cli/cli_search.php
 batch/cli/cli_settings.php
@@ -123,6 +125,7 @@ devel/openapi.json
 
 etc/.htaccess
 etc/affiliationmatchers.json
+etc/apiexpansions.json
 etc/apifunctions.json
 etc/assignmentparsers.json
 etc/autoassigners.json
@@ -375,6 +378,7 @@ src/multiconference.php
 src/notificationinfo.php
 src/options/o_abstract.php
 src/options/o_attachments.php
+src/options/o_authorcertification.php
 src/options/o_authors.php
 src/options/o_checkboxes.php
 src/options/o_checkboxesbase.php
