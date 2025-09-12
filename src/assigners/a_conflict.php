@@ -178,7 +178,10 @@ class Conflict_Assigner extends Assigner {
 
         $cflt = $state->query(new Conflict_Assignable($pid, $cid));
         $has_conflict = $cflt && Conflict::is_conflicted($cflt[0]->_ctype);
-        $potconf = $has_conflict ? null : $prow->potential_conflict_list($u);
+        $potconf = null;
+        if (!$cflt || $cflt[0]->_ctype === 0) {
+            $potconf = $prow->potential_conflict_list($u);
+        }
         if (!$has_conflict && !$potconf) {
             return;
         }
