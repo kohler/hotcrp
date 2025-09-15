@@ -1,6 +1,6 @@
 <?php
 // pages/p_autoassign.php -- HotCRP automatic paper assignment page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Autoassign_Page {
     /** @var Conf */
@@ -478,6 +478,11 @@ class Autoassign_Page {
         return $nav->resolve($this->conf->hoturl_raw("autoassign", $this->qreq_parameters()));
     }
 
+    function detach_request() {
+        header("Location: " . $this->redirect_uri());
+        $this->qreq->qsession()->commit();
+    }
+
     function start_job() {
         // prepare arguments for batch autoassigner
         $qreq = $this->qreq;
@@ -532,7 +537,7 @@ class Autoassign_Page {
         $this->jobid = $tok->salt;
         assert($this->jobid !== null);
 
-        $s = $tok->run_live($this->qreq, [$this, "redirect_uri"]);
+        $s = $tok->run_live([$this, "detach_request"]);
 
         // Autoassign_Batch has completed its work.
         if ($s === "forked") {

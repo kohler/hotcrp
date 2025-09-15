@@ -25,13 +25,13 @@ class Job_Capability extends TokenInfo {
         if ($token === "e") {
             $token = getenv("HOTCRP_JOB");
         }
-        if ($token && strpos($token, "_") === false) {
+        if ($token === null || strlen($token) < 24) {
+            return null;
+        }
+        if (strpos($token, "_") === false) {
             $token = "hcj_{$token}";
         }
-        if ($token !== null && strlen($token) >= 20) {
-            return $token;
-        }
-        return null;
+        return $token;
     }
 
     /** @param string $token
@@ -99,25 +99,40 @@ class Job_Capability extends TokenInfo {
         }
     }
 
-    /** @param string|callable():string $redirect_uri
+    /** @param bool $output
+     * @return JsonResult */
+    function json_result($output = false) {
+        $ok = $this->is_active();
+        $answer = ["ok" => $ok] + (array) $this->data();
+        $answer["ok"] = $ok;
+        $answer["update_at"] = $answer["update_at"] ?? $this->timeUsed;
+        if ($output && $this->outputData !== null) {
+            if (str_starts_with($this->outputData, "{")
+                && ($j = json_decode($this->outputData))) {
+                $answer["output"] = $j;
+            } else {
+                $answer["output"] = $this->outputData;
+            }
+        }
+        return new JsonResult($ok ? 200 : 409, $answer);
+    }
+
+    /** @param callable():void $detach_function
      * @return 'forked'|'detached'|'done' */
-    function run_live(?Qrequest $qreq = null, $redirect_uri = null) {
+    function run_live($detach_function = null) {
         $batch_class = $this->input("batch_class");
 
         $status = "done";
-        $detacher = function () use (&$status, $qreq, $redirect_uri) {
-            if (PHP_SAPI === "fpm-fcgi" && $status === "done") {
-                $status = "detached";
-                if ($redirect_uri) {
-                    $u = is_string($redirect_uri) ? $redirect_uri : call_user_func($redirect_uri);
-                    header("Location: {$u}");
+        $detacher = null;
+        if (PHP_SAPI === "fpm-fcgi" && $detach_function) {
+            $detacher = function () use (&$status, $detach_function) {
+                if ($status === "done") {
+                    $status = "detached";
+                    call_user_func($detach_function);
+                    fastcgi_finish_request();
                 }
-                if ($qreq) {
-                    $qreq->qsession()->commit();
-                }
-                fastcgi_finish_request();
-            }
-        };
+            };
+        }
         putenv("HOTCRP_JOB={$this->salt}");
 
         try {
@@ -191,8 +206,7 @@ class Job_Capability extends TokenInfo {
     static function shell_quote_light($word) {
         if (preg_match('/\A[-_.,:+\/a-zA-Z0-9][-_.,:=+\/a-zA-Z0-9~]*\z/', $word)) {
             return $word;
-        } else {
-            return escapeshellarg($word);
         }
+        return escapeshellarg($word);
     }
 }
