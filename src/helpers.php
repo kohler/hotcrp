@@ -285,7 +285,7 @@ class JsonResult implements JsonSerializable, ArrayAccess {
         } else {
             $pprint = $this->pretty_print ?? true;
         }
-        echo json_encode_browser($this->content, $pprint ? JSON_PRETTY_PRINT : 0), "\n";
+        echo json_encode_browser($this->content, ($pprint ? JSON_PRETTY_PRINT : 0) | JSON_UNESCAPED_SLASHES), "\n";
     }
 
     /** @return never
