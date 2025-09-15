@@ -979,7 +979,7 @@ class Unit_Tester {
         xassert_eqq(UnicodeHelper::deaccent_translate_offset($do[1], 4), 6);
         $regex = new TextPregexes(Text::word_regex("foo"), Text::utf8_word_regex("foo"));
         xassert_eqq(Text::highlight("Is foo bar føo bar fóó bar highlit right? foö", $regex),
-                    "Is <span class=\"match\">foo</span> bar <span class=\"match\">føo</span> bar <span class=\"match\">fóó</span> bar highlit right? <span class=\"match\">foö</span>");
+                    "Is <em class=\"match\">foo</em> bar <em class=\"match\">føo</em> bar <em class=\"match\">fóó</em> bar highlit right? <em class=\"match\">foö</em>");
         xassert_eqq(UnicodeHelper::remove_f_ligatures("Héllo ﬀ,ﬁ:fi;ﬂ,ﬃ:ﬄ-ﬅ"), "Héllo ff,fi:fi;fl,ffi:ffl-ﬅ");
     }
 

@@ -1,6 +1,6 @@
 <?php
 // text.php -- HotCRP text helper functions
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class TextPregexes {
     /** @var ?string */
@@ -441,7 +441,7 @@ class Text {
         }
         for ($i = 0; $i < count($s); ++$i) {
             if (($i % 2) && $s[$i] !== "") {
-                $s[$i] = '<span class="match">' . htmlspecialchars($s[$i]) . "</span>";
+                $s[$i] = '<em class="match">' . htmlspecialchars($s[$i]) . "</em>";
             } else {
                 $s[$i] = htmlspecialchars($s[$i]);
             }

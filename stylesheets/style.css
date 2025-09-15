@@ -3486,6 +3486,11 @@ span.match {
 	color: #ff6600;
 	font-weight: bold;
 }
+em.match {
+	color: #ff6600;
+	font-weight: bold;
+	font-style: inherit;
+}
 
 div.bigod, p.bigod, div.parseerr > p {
 	margin: 0;
