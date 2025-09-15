@@ -40,6 +40,10 @@
     "tags": ["Tags"]
   },
   {
+    "name": "autoassign", "post": true, "merge": true,
+    "tags": ["Submission administration"]
+  },
+  {
     "name": "decision", "get": true, "merge": true,
     "tags": ["Submission administration"]
   },

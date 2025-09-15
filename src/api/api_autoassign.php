@@ -1,0 +1,168 @@
+<?php
+// api_autoassign.php -- HotCRP autoassignment API calls
+// Copyright (c) 2008-2025 Eddie Kohler; see LICENSE.
+
+class Autoassign_API {
+    /** @param Qrequest $qreq
+     * @param string $name
+     * @param bool $is_param
+     * @return ?list<string> */
+    static private function parse_param($qreq, $name, $is_param) {
+        if (!isset($qreq->$name)) {
+            return [];
+        } else if ($qreq->has_a($name)) {
+            return $qreq->get_a($name);
+        }
+        $ls = [];
+        if (preg_match('/\A\s*\[/', $qreq->$name)) {
+            $list = json_decode($qreq->$name);
+            if (!is_array($list)) {
+                return null;
+            }
+            foreach ($list as $elt) {
+                if ($is_param
+                    ? !is_string($elt) || strpos($elt, "=") === false
+                    : !is_int($elt) && !is_string($elt)) {
+                    return null;
+                }
+                $ls[] = (string) $elt;
+            }
+        } else if ($is_param && preg_match('/\A\s*\{/', $qreq->$name)) {
+            $map = json_decode($qreq->$name, true);
+            if (!is_array($map)) {
+                return null;
+            }
+            foreach ($map as $k => $v) {
+                if (!is_int($v) && !is_string($v)) {
+                    return null;
+                }
+                $ls[] = "{$k}={$v}";
+            }
+        } else {
+            if ($is_param && strpos((string) $qreq->$name, "=") === false) {
+                return null;
+            }
+            $ls[] = (string) $qreq->$name;
+        }
+        return $ls;
+    }
+
+    static function autoassign(Contact $user, Qrequest $qreq) {
+        if (!isset($qreq->autoassigner)) {
+            return JsonResult::make_missing_error("autoassigner");
+        } else if (!($aa = $user->conf->autoassigner($qreq->autoassigner))) {
+            return JsonResult::make_not_found_error("autoassigner");
+        }
+        if (!isset($qreq->q)) {
+            return JsonResult::make_missing_error("q");
+        }
+
+        $argv = ["-q{$qreq->q}", "-t" . ($qreq->t ?? "s"), "-a{$aa->name}"];
+
+        $us = self::parse_param($qreq, "u", false);
+        if ($us === null) {
+            return JsonResult::make_parameter_error("u");
+        }
+        foreach ($us as $u) {
+            $argv[] = "-u{$u}";
+        }
+
+        $disjoints = self::parse_param($qreq, "disjoint", false);
+        if ($disjoints === null) {
+            return JsonResult::make_parameter_error("disjoint");
+        }
+        foreach ($disjoints as $dj) {
+            $argv[] = "-X{$dj}";
+        }
+
+        $params = self::parse_param($qreq, "param", true);
+        if ($params === null) {
+            return JsonResult::make_parameter_error("param");
+        }
+        array_push($argv, ...$params);
+
+        if (isset($qreq->count)) {
+            if (($n = stoi($qreq->count)) === null) {
+                return JsonResult::make_parameter_error("count");
+            }
+            $argv[] = "count={$n}";
+        }
+
+        $jargv = ["-je"];
+        if (friendly_boolean($qreq->dry_run)) {
+            $jargv[] = "-d";
+        }
+
+        $tok = Job_Capability::make($user, "Autoassign", $jargv)
+            ->set_input("assign_argv", $argv)
+            ->insert();
+        $jobid = $tok->salt;
+
+        $emit_function = function () use ($qreq, $jobid) {
+            $jr = new JsonResult(["ok" => true, "job" => $jobid]);
+            $jr->emit($qreq);
+            $qreq->qsession()->commit();
+        };
+
+        $s = $tok->run_live($emit_function);
+
+        if ($s === "forked") {
+            $emit_function();
+        }
+        if ($s !== "done") {
+            exit(0);
+        }
+
+        $tok->load_data();
+        if ($tok->data("exit_status") === 0) {
+            return $tok->json_result(true);
+        }
+        $jr = JsonResult::make_message_list($tok->data("message_list") ?? []);
+        $tok->delete();
+        return $jr;
+    }
+
+    static function autoassigners(Contact $user, Qrequest $qreq) {
+        $conf = $user->conf;
+        $exs = [];
+        $xtp = (new XtParams($conf, $user))->set_warn_deprecated(false);
+        $amap = $conf->assignment_parser_map();
+
+        foreach ($amap as $name => $list) {
+            if (str_starts_with($name, "?")
+                || !($j = $xtp->search_list($list))
+                || ($j->deprecated ?? false)
+                || !Conf::xt_enabled($j)) {
+                continue;
+            }
+            $exposure = $j->exposure ?? null;
+            if ($exposure === null && ($j->alias ?? false)) {
+                $exposure = "none";
+            }
+            if ($exposure === "none"
+                || $exposure === false) {
+                continue;
+            }
+            $rj = isset($j->alias) ? $xtp->search_name($amap, $name) : $j;
+            $aj = ["name" => $name];
+            if (isset($rj->group) && $rj->group !== $name) {
+                $aj["group"] = $rj->group;
+            }
+            if (isset($rj->description_html)) {
+                $aj["description"] = "<5>" . $rj->description_html;
+            } else if (isset($rj->description)) {
+                $aj["description"] = Ftext::ensure($rj->description, 0);
+            }
+            $vos = new ViewOptionSchema(...($rj->parameters ?? []));
+            foreach ($vos as $vot) {
+                if (!isset($vot->alias))
+                    $aj["parameters"][] = $vot->unparse_export();
+            }
+            $exs[] = $aj;
+        }
+        return [
+            "ok" => true,
+            "assigners" => $exs
+        ];
+    }
+}

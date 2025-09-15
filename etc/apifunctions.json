@@ -40,6 +40,11 @@
         "response": "p ?ids ?groups ?hotlist ?search_params"
     },
     {
+        "name": "autoassign", "post": true,
+        "function": "Autoassign_API::autoassign",
+        "parameters": "autoassigner ?dry_run q ?t ?u ?disjoint ?param"
+    },
+    {
         "name": "claimreview", "post": true, "paper": true,
         "function": "RequestReview_API::claimreview",
         "parameters": "r email",
