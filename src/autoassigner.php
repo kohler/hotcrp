@@ -606,14 +606,6 @@ abstract class Autoassigner extends MessageSet {
         return count($this->ass) > 1;
     }
 
-    function sort_assignments() {
-        if (count($this->ass) > 1) {
-            $this->ass[0] = "\1" . $this->ass[0];
-            natsort($this->ass);
-            $this->ass[0] = substr($this->ass[0], 1);
-        }
-    }
-
     /** @return list<string> */
     function assignments() {
         return count($this->ass) > 1 ? $this->ass : [];

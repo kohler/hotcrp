@@ -37,11 +37,13 @@ class Autoassign_Batch {
     /** @var bool */
     public $dry_run = false;
     /** @var bool */
-    public $unsorted_dry_run = false;
+    public $minimal_dry_run = false;
     /** @var bool */
     public $help_param = false;
     /** @var bool */
     public $profile = false;
+    /** @var bool */
+    public $no_force = false;
     /** @var ?callable */
     public $detacher;
     /** @var ?TokenInfo */
@@ -49,7 +51,11 @@ class Autoassign_Batch {
 
     /** @return list<string> */
     static function autoassigner_names(Conf $conf) {
-        $aas = array_keys($conf->autoassigner_map());
+        $aas = [];
+        foreach ($conf->autoassigner_map() as $k => $v) {
+            if (!str_starts_with($k, "__") && !str_starts_with($k, "\$"))
+                $aas[] = $k;
+        }
         sort($aas, SORT_NATURAL | SORT_FLAG_CASE);
         return $aas;
     }
@@ -79,7 +85,11 @@ class Autoassign_Batch {
                 $this->parse_arg($getopt->parse($this->_jtok->input("assign_argv") ?? [], 0));
                 $this->complete_arg();
             } catch (CommandLineException $ex) {
-                $this->report([MessageItem::error("<0>{$ex->getMessage()}")], $ex->exitStatus);
+                $ml = [];
+                if (($s = rtrim($ex->getMessage())) !== "") {
+                    $ml[] = MessageItem::error("<0>{$s}");
+                }
+                $this->report($ml, $ex->exitStatus);
             }
         } else {
             $this->parse_arg($arg);
@@ -130,10 +140,11 @@ class Autoassign_Batch {
     /** @param associative-array $arg */
     private function parse_arg($arg) {
         $this->quiet = $this->quiet || isset($arg["quiet"]);
-        $this->unsorted_dry_run = $this->unsorted_dry_run || isset($arg["unsorted-dry-run"]);
-        $this->dry_run = $this->dry_run || $this->unsorted_dry_run || isset($arg["dry-run"]);
+        $this->minimal_dry_run = $this->minimal_dry_run || isset($arg["minimal-dry-run"]);
+        $this->dry_run = $this->dry_run || $this->minimal_dry_run || isset($arg["dry-run"]);
         $this->help_param = $this->help_param || isset($arg["help-param"]);
         $this->profile = $this->profile || isset($arg["profile"]);
+        $this->no_force = $this->no_force || isset($arg["no-force"]);
         if (isset($arg["autoassigner"])) {
             $this->aaname = $arg["autoassigner"];
         } else if (!empty($arg["_"])) {
@@ -230,6 +241,9 @@ class Autoassign_Batch {
                 $this->param["rtype"] = $this->param["type"];
             }
         }
+        if ($this->_jtok && $this->dry_run) {
+            $this->_jtok->change_data("dry_run", true);
+        }
     }
 
     function report_progress($progress) {
@@ -237,7 +251,8 @@ class Autoassign_Batch {
         set_time_limit(240);
     }
 
-    function execute() {
+    /** @return string */
+    private function run_autoassigner() {
         // perform search; exit if no papers match
         $srch = new PaperSearch($this->user, ["q" => $this->q, "t" => $this->t]);
         $ml = $srch->message_list();
@@ -296,8 +311,22 @@ class Autoassign_Batch {
             $this->_jtok->change_data("incomplete_pids", $pids); // will save soon
         }
 
+        return join("", $aa->assignments());
+    }
+
+    private function set_output($text) {
+        if ($this->_jtok) {
+            $this->_jtok->change_output($text);
+        } else {
+            fwrite(STDOUT, $text);
+        }
+    }
+
+    function execute() {
+        $aatext = $this->run_autoassigner();
+
         // exit if nothing to do
-        if (!$aa->has_assignment()) {
+        if ($aatext === "") {
             if ($this->_jtok || (!$this->quiet && !$this->dry_run)) {
                 $this->report([MessageItem::warning("<0>No changes")], 0);
             } else if (!$this->quiet) {
@@ -306,34 +335,45 @@ class Autoassign_Batch {
             return;
         }
 
-        // exit if dry run
-        if ($this->dry_run) {
-            if (!$this->unsorted_dry_run) {
-                $aa->sort_assignments();
-            }
-            if ($this->_jtok) {
-                $this->_jtok->change_output(join("",  $aa->assignments()));
-                $this->report([], 0);
-            } else {
-                fwrite(STDOUT, join("", $aa->assignments()));
-                return;
-            }
+        // exit if minimal dry run
+        if ($this->minimal_dry_run) {
+            $this->set_output($aatext);
+            $this->report([], 0);
         }
 
-        // run assignment
-        $assignset = (new AssignmentSet($this->user))->set_override_conflicts(true);
-        $assignset->parse(join("", $aa->assignments()));
+        // parse assignment
+        $assignset = (new AssignmentSet($this->user))
+            ->set_override_conflicts(!$this->no_force);
+        $assignset->parse($aatext);
+        $this->report($assignset->message_list());
+        $aatext = "";  // reclaim memory
+
+        // exit if error
         if ($assignset->has_error()) {
-            $this->report($assignset->message_list(), 1);
-        } else if ($assignset->is_empty()) {
+            $this->report([], 1);
+        }
+
+        // exit if empty
+        if ($assignset->is_empty()) {
             $ml = $this->quiet ? [] : [MessageItem::warning("<0>No changes")];
             $this->report($ml, 0);
         }
-        $assignset->execute();
 
+        // mark assigned pids
         if ($this->_jtok) {
-            $this->_jtok->change_output("assigned_pids", $assignset->assigned_pids())
-                ->change_data("assigned", true);
+            $this->_jtok->change_data("assigned_pids", $assignset->assigned_pids());
+        }
+
+        // exit if dry run
+        if ($this->dry_run) {
+            $this->set_output($assignset->make_acsv()->unparse());
+            $this->report([], 0);
+        }
+
+        // execute assignment
+        $assignset->execute();
+        if ($this->_jtok) {
+            $this->_jtok->change_data("assigned", true);
         }
         $ml = [];
         if (!$this->quiet) {
@@ -386,14 +426,15 @@ class Autoassign_Batch {
             "config: !",
             "job:,j: JOBID Run stored job",
             "dry-run,d Do not perform assignment; output CSV instead",
-            "unsorted-dry-run,D !",
+            "minimal-dry-run,unsorted-dry-run,D !",
             "autoassigner:,a: =AA !",
             "q:,search: =QUERY Use papers matching QUERY [all]",
-            "type:,t: =TYPE Set search type [all]",
+            "type:,t: =TYPE Set search type [s]",
             "all Include all papers (default is submitted papers)",
             "u[],user[] =USER Include users matching USER (`-u -USER` excludes)",
             "disjoint[],X[] =USER1,USER2 Don’t coassign users",
             "count:,c: {n} =N Set `count` parameter to N",
+            "no-force Do not override conflicts",
             "help-param Print parameters for AUTOASSIGNER",
             "profile Print profile to standard error",
             "quiet Don’t warn on empty assignment",
