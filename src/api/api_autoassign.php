@@ -99,7 +99,11 @@ class Autoassign_API {
         $jobid = $tok->salt;
 
         $emit_function = function () use ($qreq, $jobid) {
-            $jr = new JsonResult(["ok" => true, "job" => $jobid]);
+            $jr = new JsonResult([
+                "ok" => true,
+                "job" => $jobid,
+                "job_url" => $qreq->conf()->hoturl("api/job", ["job" => $jobid], Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE)
+            ]);
             $jr->emit($qreq);
             $qreq->qsession()->commit();
         };
