@@ -1,6 +1,6 @@
 <?php
 // ftext.php -- formatted text
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Ftext {
     /** @param ?string $s
@@ -74,8 +74,9 @@ class Ftext {
             return $s;
         } else if ($from_format === 5 && $to_format !== 5) {
             // XXX <p>, <ul>, <ol>
-            return html_entity_decode(preg_replace_callback('/<\s*(\/?)\s*(a|b|i|u|strong|em|code|samp|pre|tt|span|br)(?=[>\s])(?:[^>"\']|"[^"]*+"|\'[^\']*+\')*+>/i',
-                function ($m) {
+            $liststack = [];
+            return html_entity_decode(preg_replace_callback('/<\s*+(\/?)\s*+(a|b|i|u|strong|em|code|samp|pre|tt|span|br|ul|ol|li)(?=[>\s])(?:[^>"\']|"[^"]*+"|\'[^\']*+\')*+>/i',
+                function ($m) use (&$liststack) {
                     $tag = strtolower($m[2]);
                     if ($tag === "code" || $tag === "samp" || $tag === "tt") {
                         return "`";
@@ -89,6 +90,32 @@ class Ftext {
                         return "_";
                     } else if ($tag === "br") {
                         return "\n";
+                    } else if ($tag === "ul") {
+                        if ($m[1] === "") {
+                            $liststack[] = false;
+                        } else {
+                            array_pop($liststack);
+                        }
+                        return "";
+                    } else if ($tag === "ol") {
+                        if ($m[1] === "") {
+                            $liststack[] = 1;
+                        } else {
+                            array_pop($liststack);
+                        }
+                        return "";
+                    } else if ($tag === "li") {
+                        if ($m[1] === "") {
+                            $n = $liststack[count($liststack) - 1] ?? false;
+                            if ($n === false) {
+                                return "* ";
+                            } else {
+                                $liststack[count($liststack) - 1] += 1;
+                                return "{$n}. ";
+                            }
+                        } else {
+                            return "\n";
+                        }
                     } else {
                         return "";
                     }
