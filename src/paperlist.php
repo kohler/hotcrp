@@ -681,7 +681,7 @@ class PaperList {
         } else if ($k === "facets") {
             $this->_view_facets = $v;
         } else if ($k === "linkto") {
-            $schema = (new ViewOptionSchema)->define("page=paper|paperedit|assign|finishreview");
+            $schema = (new ViewOptionSchema)->define("page=paper|paperedit|assign|finishreview^");
             $vol = (new ViewOptionList)->append_validate($view_options ?? [], $schema);
             $this->_view_linkto = $vol->get("page") ?? $this->_view_linkto;
         } else if (($k === "aufull" || $k === "anonau")
