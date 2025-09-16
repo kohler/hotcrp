@@ -23,7 +23,7 @@ class Formula_PaperColumn extends PaperColumn {
         $this->formula = $cj->formula;
     }
     static function basic_view_option_schema() {
-        return ["format!"];
+        return ["format$^"];
     }
     function view_option_schema() {
         return self::basic_view_option_schema();

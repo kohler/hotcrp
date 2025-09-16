@@ -34,7 +34,7 @@ class Tag_PaperColumn extends PaperColumn {
         $this->is_value = $cj->tagvalue ?? null;
     }
     static function basic_view_option_schema() {
-        return ["edit", "format!"];
+        return ["edit", "format$^"];
     }
     function view_option_schema() {
         return self::basic_view_option_schema();

@@ -130,34 +130,17 @@ class Autoassign_API {
         $conf = $user->conf;
         $exs = [];
         $xtp = (new XtParams($conf, $user))->set_warn_deprecated(false);
-        $amap = $conf->assignment_parser_map();
+        $amap = $conf->autoassigner_map();
 
-        foreach ($amap as $name => $list) {
-            if (str_starts_with($name, "?")
-                || !($j = $xtp->search_list($list))
-                || ($j->deprecated ?? false)
-                || !Conf::xt_enabled($j)) {
+        foreach ($amap as $name => $j) {
+            if (!($j = Completion_API::resolve_published($xtp, $name, $j, FieldRender::CFAPI))) {
                 continue;
             }
-            $exposure = $j->exposure ?? null;
-            if ($exposure === null && ($j->alias ?? false)) {
-                $exposure = "none";
-            }
-            if ($exposure === "none"
-                || $exposure === false) {
-                continue;
-            }
-            $rj = isset($j->alias) ? $xtp->search_name($amap, $name) : $j;
             $aj = ["name" => $name];
-            if (isset($rj->group) && $rj->group !== $name) {
-                $aj["group"] = $rj->group;
+            if (isset($j->description)) {
+                $aj["description"] = Ftext::ensure($j->description, 0);
             }
-            if (isset($rj->description_html)) {
-                $aj["description"] = "<5>" . $rj->description_html;
-            } else if (isset($rj->description)) {
-                $aj["description"] = Ftext::ensure($rj->description, 0);
-            }
-            $vos = new ViewOptionSchema(...($rj->parameters ?? []));
+            $vos = Autoassigner::expand_parameters($conf, $j->parameters ?? []);
             foreach ($vos as $vot) {
                 if (!isset($vot->alias))
                     $aj["parameters"][] = $vot->unparse_export();
@@ -166,7 +149,7 @@ class Autoassign_API {
         }
         return [
             "ok" => true,
-            "assigners" => $exs
+            "autoassigners" => $exs
         ];
     }
 }

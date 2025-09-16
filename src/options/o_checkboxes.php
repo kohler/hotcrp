@@ -35,7 +35,7 @@ class Checkboxes_PaperOption extends CheckboxesBase_PaperOption {
     }
 
 
-    function search_examples(Contact $viewer, $context) {
+    function search_examples(Contact $viewer, $venue) {
         $a = [$this->has_search_example()];
         if (($q = $this->value_search_keyword(2))) {
             $a[] = $this->make_search_example(

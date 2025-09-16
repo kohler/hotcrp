@@ -14,7 +14,7 @@ class Color_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
     }
     function view_option_schema() {
-        return ["order!"];
+        return ["order$^"];
     }
     function prepare(PaperList $pl, $visible) {
         if (($v = $this->view_option("order"))) {

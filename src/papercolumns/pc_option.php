@@ -108,7 +108,7 @@ class Option_PaperColumnFactory {
             $x = [];
             foreach ($xtp->conf->options() as $opt) {
                 if ($xtp->user->can_view_some_option($opt)
-                    && $opt->on_render_context(FieldRender::CFLIST))
+                    && $opt->published(FieldRender::CFLIST))
                     $x[] = self::option_json($xfj, $opt);
             }
             return $x;
@@ -117,7 +117,7 @@ class Option_PaperColumnFactory {
         if (count($opts) == 1) {
             reset($opts);
             $opt = current($opts);
-            if ($opt->on_render_context(FieldRender::CFLIST)) {
+            if ($opt->published(FieldRender::CFLIST)) {
                 return self::option_json($xfj, $opt);
             }
             PaperColumn::column_error($xtp, "<0>Submission field ‘{$oname}’ can’t be displayed");
@@ -132,7 +132,7 @@ class Option_PaperColumnFactory {
         foreach ($user->conf->options() as $opt) {
             if ($user->can_view_some_option($opt)
                 && $opt->search_keyword() !== false
-                && $opt->on_render_context($rc)) {
+                && $opt->published($rc)) {
                 $exs[] = new SearchExample($opt->search_keyword(), "<0>" . $opt->edit_title() . " submission field");
             }
         }

@@ -11,12 +11,19 @@
     {
         "name": "lead",
         "function": "+PaperPC_Autoassigner",
-        "parameters": ["score$", "allow_incomplete", "method", "balance", "max_load", "max_load_tag"]
+        "parameters": [
+            "!score$",
+            "allow_incomplete",
+            "method",
+            "balance",
+            "max_load",
+            "max_load_tag"
+        ]
     },
     {
         "name": "shepherd",
         "function": "+PaperPC_Autoassigner",
-        "parameters": ["score", "allow_incomplete", "method", "balance", "max_load", "max_load_tag"]
+        "parameters": ["$lead"]
     },
     {
         "name": "__review_parameters",

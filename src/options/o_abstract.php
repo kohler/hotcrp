@@ -54,7 +54,7 @@ class Abstract_PaperOption extends PaperOption {
             }
         }
     }
-    function search_examples(Contact $viewer, $context) {
+    function search_examples(Contact $viewer, $venue) {
         return [$this->has_search_example(), $this->text_search_example()];
     }
     function present_script_expression() {

@@ -84,30 +84,46 @@ class Completion_API {
         }
     }
 
-    static function paper_column_examples(Contact $user, $visible) {
+    /** @param XtParams $xtp
+     * @param string $name
+     * @param object|list<object> $list
+     * @param int $venue
+     * @return ?object */
+    static function resolve_published($xtp, $name, $list, $venue) {
+        if (str_starts_with($name, "?")
+            || str_starts_with($name, "__")) {
+            return null;
+        }
+        $j = is_object($list) ? $list : $xtp->search_list($list);
+        if (!$j
+            || ($j->deprecated ?? false)
+            || !Conf::xt_enabled($j)) {
+            return null;
+        }
+        $published = $j->published ?? null;
+        if ($published === null && ($j->alias ?? false)) {
+            $published = "none";
+        }
+        if ($published === "none"
+            || ($venue === FieldRender::CFSUGGEST
+                && ($published === false || $published === "api"))) {
+            return null;
+        }
+        return $j;
+    }
+
+    static function paper_column_examples(Contact $user, $venue) {
         $conf = $user->conf;
         $exs = [];
         $xtp = (new XtParams($conf, $user))->set_warn_deprecated(false);
         $pl = new PaperList("empty", new PaperSearch($user, ""));
 
         foreach ($conf->paper_column_map() as $name => $list) {
-            if (str_starts_with($name, "?")
-                || !($j = $xtp->search_list($list))
-                || ($j->deprecated ?? false)
-                || !Conf::xt_enabled($j)) {
-                continue;
-            }
-            $exposure = $j->exposure ?? null;
-            if ($exposure === null && ($j->alias ?? false)) {
-                $exposure = "none";
-            }
-            if ($exposure === "none"
-                || ($visible === FieldRender::CFSUGGEST
-                    && ($exposure === false || $exposure === "api"))) {
+            if (!($j = self::resolve_published($xtp, $name, $list, $venue))) {
                 continue;
             }
             $c = PaperColumn::make($conf, $j);
-            if (!$c || !$c->prepare($pl, $visible)) {
+            if (!$c || !$c->prepare($pl, $venue)) {
                 continue;
             }
             $exs[] = $ex = new SearchExample($name);
@@ -132,7 +148,7 @@ class Completion_API {
                 continue;
             }
             Conf::xt_resolve_require($fcj);
-            foreach (call_user_func($fn, $user, $fcj, $visible) as $x) {
+            foreach (call_user_func($fn, $user, $fcj, $venue) as $x) {
                 if (is_string($x)) {
                     $x = new SearchExample($x);
                 }

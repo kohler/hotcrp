@@ -233,7 +233,7 @@ class PaperOption implements JsonSerializable {
     }
 
     private function set_render_contexts() {
-        $this->render_contexts = FieldRender::CFPAGE | FieldRender::CFLIST | FieldRender::CFSUGGEST | FieldRender::CFMAIL | FieldRender::CFFORM;
+        $this->render_contexts = FieldRender::CFPAGE | FieldRender::CFLIST | FieldRender::CFSUGGEST | FieldRender::CFMAIL | FieldRender::CFFORM | FieldRender::CFAPI;
         foreach ($this->classes as $k) {
             if ($k === "hidden") {
                 $this->render_contexts = 0;
@@ -246,7 +246,7 @@ class PaperOption implements JsonSerializable {
             } else if ($k === "only-form") {
                 $this->render_contexts &= FieldRender::CFFORM;
             } else if ($k === "no-list") {
-                $this->render_contexts &= ~(FieldRender::CFLIST | FieldRender::CFSUGGEST);
+                $this->render_contexts &= ~(FieldRender::CFLIST | FieldRender::CFAPI | FieldRender::CFSUGGEST);
             } else if ($k === "no-suggest") {
                 $this->render_contexts &= ~FieldRender::CFSUGGEST;
             }
@@ -974,10 +974,16 @@ class PaperOption implements JsonSerializable {
     function on_page() {
         return ($this->render_contexts & FieldRender::CFPAGE) !== 0;
     }
-    /** @param int $context
+    /** @param int $venue
+     * @return bool
+     * @deprecated */
+    function on_render_context($venue) {
+        return ($this->render_contexts & $venue) !== 0;
+    }
+    /** @param int $venue
      * @return bool */
-    function on_render_context($context) {
-        return ($this->render_contexts & $context) !== 0;
+    function published($venue) {
+        return ($this->render_contexts & $venue) !== 0;
     }
 
     function render(FieldRender $fr, PaperValue $ov) {
@@ -1005,9 +1011,9 @@ class PaperOption implements JsonSerializable {
         $args[] = new FmtArg("keyword", $this->search_keyword(), 0);
         return new SearchExample($q, $description, ...$args);
     }
-    /** @param int $context
+    /** @param int $venue
      * @return list<SearchExample> */
-    function search_examples(Contact $viewer, $context) {
+    function search_examples(Contact $viewer, $venue) {
         return [];
     }
     /** @return SearchExample */
@@ -1166,7 +1172,7 @@ class Checkbox_PaperOption extends PaperOption {
         }
     }
 
-    function search_examples(Contact $viewer, $context) {
+    function search_examples(Contact $viewer, $venue) {
         return [$this->has_search_example()];
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
@@ -1358,9 +1364,9 @@ class Selector_PaperOption extends PaperOption {
         return $this->value_search_keyword($idx);
     }
 
-    function search_examples(Contact $viewer, $context) {
+    function search_examples(Contact $viewer, $venue) {
         $a = [$this->has_search_example()];
-        if ($context === FieldRender::CFHELP) {
+        if ($venue === FieldRender::CFHELP) {
             if (($q = $this->value_search_keyword(2))) {
                 $a[] = $this->make_search_example(
                     $this->search_keyword() . ":{value:sq}",
@@ -1703,7 +1709,7 @@ class Document_PaperOption extends PaperOption {
         return $fspec;
     }
 
-    function search_examples(Contact $viewer, $context) {
+    function search_examples(Contact $viewer, $venue) {
         return [$this->has_search_example()];
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {
@@ -1774,7 +1780,7 @@ class Text_PaperOption extends PaperOption {
         }
     }
 
-    function search_examples(Contact $viewer, $context) {
+    function search_examples(Contact $viewer, $venue) {
         return [$this->has_search_example(), $this->text_search_example()];
     }
     function parse_search(SearchWord $sword, PaperSearch $srch) {

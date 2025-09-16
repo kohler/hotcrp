@@ -148,18 +148,7 @@ class Assign_API {
         $amap = $conf->assignment_parser_map();
 
         foreach ($amap as $name => $list) {
-            if (str_starts_with($name, "?")
-                || !($j = $xtp->search_list($list))
-                || ($j->deprecated ?? false)
-                || !Conf::xt_enabled($j)) {
-                continue;
-            }
-            $exposure = $j->exposure ?? null;
-            if ($exposure === null && ($j->alias ?? false)) {
-                $exposure = "none";
-            }
-            if ($exposure === "none"
-                || $exposure === false) {
+            if (!($j = Completion_API::resolve_published($xtp, $name, $list, FieldRender::CFAPI))) {
                 continue;
             }
             $rj = isset($j->alias) ? $xtp->search_name($amap, $name) : $j;

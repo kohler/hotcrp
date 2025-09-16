@@ -50,6 +50,10 @@ class ViewOptionType {
                     ++$pos;
                 }
             }
+            if ($pos < $end && $x[$end - 1] === "^") {
+                $vot->lifted = true;
+                --$end;
+            }
             if (($sl = strpos($x, "/", $pos)) !== false
                 && $sl < $end) {
                 $vot->type = "alias";
@@ -64,15 +68,10 @@ class ViewOptionType {
                        && $eq < $end) {
                 $vot->type = "enum";
                 $vot->enum = substr($x, $eq + 1, $end - $eq - 1);
-                $vot->lifted = true;
                 $end = $eq;
             } else {
                 $ch = $pos < $end - 1 ? $x[$end - 1] : "";
-                if ($ch === "!") {
-                    $vot->type = "string";
-                    $vot->lifted = true;
-                    --$end;
-                } else if ($ch === "\$") {
+                if ($ch === "\$") {
                     $vot->type = "string";
                     --$end;
                 } else if ($ch === "#") {

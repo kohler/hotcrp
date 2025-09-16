@@ -543,9 +543,9 @@ abstract class ReviewField implements JsonSerializable {
         $args[] = new FmtArg("keyword", $this->search_keyword(), 0);
         return new SearchExample($q, $description, ...$args);
     }
-    /** @param int $context
+    /** @param int $venue
      * @return list<SearchExample> */
-    function search_examples(Contact $viewer, $context) {
+    function search_examples(Contact $viewer, $venue) {
         return [];
     }
 
@@ -1222,7 +1222,7 @@ class Score_ReviewField extends DiscreteValues_ReviewField {
         }
     }
 
-    function search_examples(Contact $viewer, $context) {
+    function search_examples(Contact $viewer, $venue) {
         $kw = $this->search_keyword();
         $score = $this->typical_score();
         $varg = new FmtArg("value", $score, 0);
@@ -1408,7 +1408,7 @@ class Text_ReviewField extends ReviewField {
         $t[] = "\n";
     }
 
-    function search_examples(Contact $viewer, $context) {
+    function search_examples(Contact $viewer, $venue) {
         $kw = $this->search_keyword();
         return [
             $this->make_search_example(

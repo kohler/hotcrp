@@ -45,6 +45,11 @@
         "parameters": "autoassigner ?dry_run q ?t ?u ?disjoint ?param"
     },
     {
+        "name": "autoassigners", "get": true,
+        "function": "Autoassign_API::autoassigners",
+        "response": "autoassigners"
+    },
+    {
         "name": "claimreview", "post": true, "paper": true,
         "function": "RequestReview_API::claimreview",
         "parameters": "r email",

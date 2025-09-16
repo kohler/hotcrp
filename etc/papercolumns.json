@@ -2,7 +2,7 @@
     {
         "name": "sel",
         "function": "+Selector_PaperColumn",
-        "order": 10, "exposure": false
+        "order": 10, "published": false
     },
     {
         "name": "id", "title": "ID",
@@ -56,7 +56,7 @@
     {
         "name": "editmypref",
         "edit": true, "sort": "descending", "className": "pl_editrevpref", "function": "+Preference_PaperColumn",
-        "order": 550, "exposure": "none"
+        "order": 550, "published": "none"
     },
     {   "name": "editpreference", "alias": "editmypref"   },
     {   "name": "editrevpref", "alias": "editmypref"   },
@@ -68,7 +68,7 @@
     {
         "name": "revdelegation", "title": "Requested reviews",
         "prefer_row": true, "className": "pl_text", "function": "+ReviewDelegation_PaperColumn",
-        "order": 400, "exposure": false
+        "order": 400, "published": false
     },
     {
         "name": "revtype",
@@ -97,13 +97,13 @@
     {
         "name": "editconf",
         "sort": "descending", "className": "plc", "function": "+Conflict_PaperColumn",
-        "order": 855, "is_pc": true, "edit": true, "exposure": "none"
+        "order": 855, "is_pc": true, "edit": true, "published": "none"
     },
     {   "name": "editconflict", "alias": "editconf"   },
     {
         "name": "confdesc",
         "sort": "descending", "completion": false, "className": "plc", "function": "+Conflict_PaperColumn",
-        "order": 856, "is_pc": false, "show_description": true, "exposure": "none"
+        "order": 856, "is_pc": false, "show_description": true, "published": "none"
     },
     {   "name": "conflictdesc", "alias": "confdesc"   },
     {   "name": "confdescription", "alias": "confdesc"   },
