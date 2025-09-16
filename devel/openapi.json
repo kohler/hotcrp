@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-09-07:a1031a457",
+        "version": "2025-09-15:6d20488ea",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n\n\n### Large queries\n\nA `POST` request whose `:method:` query parameter is set to `GET` is treated as\nif it were a `GET` request. This can help work around web server URL length\nlimits.\n"
     },
@@ -193,10 +193,13 @@
                                             "type": "boolean",
                                             "description": "True if the modification was valid"
                                         },
-                                        "pid": {},
+                                        "pid": {
+                                            "type": "integer",
+                                            "description": "ID of modified submission"
+                                        },
                                         "paper": {
                                             "$ref": "#/components/schemas/paper",
-                                            "description": "JSON version of modified paper"
+                                            "description": "JSON of modified submission"
                                         }
                                     }
                                 }
@@ -846,622 +849,6 @@
                 }
             }
         },
-        "/assign": {
-            "post": {
-                "summary": "Assignments",
-                "description": "Perform assignments, specified either as a JSON array or as an uploaded CSV\nfile.\n\nThe assignments should be compatible with HotCRP’s bulk assignments format.\nThey may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a CSV file (when the request body has content-type\n   `text/csv`).\n3. As a JSON- or CSV-formatted request parameter named `assignments` (when the\n   request body has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or CSV file, represented by a upload token in\n   the `upload` parameter.\n\nJSON requests should parse to arrays of objects. Each object should contain at\nleast a `pid` property and an `action` property, where `action` determines\nwhat kind of assignment to run. Similarly, CSV uploads should contain at least\n`pid` and `action` columns.\n\nIf the optional `p` request parameter is set, HotCRP will only implement\nassignments that affect that submission.\n\nTo test an assignment, supply a `dry_run=1` parameter. This will parse the\nuploaded assignment and report any errors, but make no changes to the\ndatabase.\n\nThe `valid` response property is `true` if and only if the assignments were\nvalid (had no errors). In non-dry-run requests, `\"valid\": true` indicates that\nany database changes were committed.\n\nThe response includes an `assignments` property, which is an array of the\nspecific assignments performed (or, for dry-run requests, the specific\nassignments that would be performed). Each entry in `assignments` represents a\nsingle action applied to a single submission. (This differs from input\n`assignments` entries, each of which might apply to many submissions specified\nby a search.) If you’re not interested in the `assignments` property, supply a\nparameter of either `summary=1` (to get summary `assignment_actions` and\n`assignment_pids` properties) or `quiet=1` (to get nothing).\n\n",
-                "tags": [
-                    "Submission administration"
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.opt"
-                    },
-                    {
-                        "name": "dry_run",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean"
-                        },
-                        "description": "True checks input for errors, but does not save changes"
-                    },
-                    {
-                        "name": "assignments",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "JSON"
-                    },
-                    {
-                        "name": "upload",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/upload_token"
-                        },
-                        "description": "Upload token for large input file"
-                    },
-                    {
-                        "name": "quiet",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
-                    },
-                    {
-                        "name": "summary",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
-                    },
-                    {
-                        "$ref": "#/components/parameters/forceShow"
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "required": false,
-                        "schema": {}
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok",
-                                        "valid"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        },
-                                        "dry_run": {},
-                                        "valid": {},
-                                        "assignments_header": {},
-                                        "assignments": {},
-                                        "assignment_actions": {},
-                                        "assignment_pids": {},
-                                        "papers": {},
-                                        "ids": {},
-                                        "groups": {},
-                                        "search_params": {}
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/{p}/decision": {
-            "get": {
-                "summary": "Fetch submission decision",
-                "tags": [
-                    "Submission administration"
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok",
-                                        "decision",
-                                        "decision_html"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        },
-                                        "decision": {},
-                                        "decision_html": {},
-                                        "editable": {}
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "summary": "Change submission decision",
-                "tags": [
-                    "Submission administration"
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    }
-                ],
-                "requestBody": {
-                    "description": "",
-                    "content": {
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "type": "object",
-                                "required": [
-                                    "decision"
-                                ],
-                                "properties": {
-                                    "decision": {}
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok",
-                                        "decision",
-                                        "decision_html"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        },
-                                        "decision": {},
-                                        "decision_html": {},
-                                        "editable": {}
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/{p}/lead": {
-            "get": {
-                "summary": "Fetch submission discussion lead",
-                "tags": [
-                    "Submission administration"
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok",
-                                        "lead",
-                                        "lead_html"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        },
-                                        "lead": {},
-                                        "lead_html": {},
-                                        "color_classes": {}
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "summary": "Change submission discussion lead",
-                "tags": [
-                    "Submission administration"
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    }
-                ],
-                "requestBody": {
-                    "description": "",
-                    "content": {
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "type": "object",
-                                "required": [
-                                    "lead"
-                                ],
-                                "properties": {
-                                    "lead": {}
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok",
-                                        "lead",
-                                        "lead_html"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        },
-                                        "lead": {},
-                                        "lead_html": {},
-                                        "color_classes": {}
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/{p}/manager": {
-            "get": {
-                "summary": "Fetch submission administrator",
-                "tags": [
-                    "Submission administration"
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok",
-                                        "manager",
-                                        "manager_html"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        },
-                                        "manager": {},
-                                        "manager_html": {},
-                                        "color_classes": {}
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "summary": "Fetch submission administrator",
-                "tags": [
-                    "Submission administration"
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    }
-                ],
-                "requestBody": {
-                    "description": "",
-                    "content": {
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "type": "object",
-                                "required": [
-                                    "manager"
-                                ],
-                                "properties": {
-                                    "manager": {}
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok",
-                                        "manager",
-                                        "manager_html"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        },
-                                        "manager": {},
-                                        "manager_html": {},
-                                        "color_classes": {}
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/{p}/reviewround": {
-            "post": {
-                "summary": "Change review round",
-                "tags": [
-                    "Submission administration"
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/{p}/shepherd": {
-            "get": {
-                "summary": "Fetch submission shepherd",
-                "tags": [
-                    "Submission administration"
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok",
-                                        "shepherd",
-                                        "shepherd_html"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        },
-                                        "shepherd": {},
-                                        "shepherd_html": {},
-                                        "color_classes": {}
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "summary": "Change submission shepherd",
-                "tags": [
-                    "Submission administration"
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    }
-                ],
-                "requestBody": {
-                    "description": "",
-                    "content": {
-                        "application/x-www-form-urlencoded": {
-                            "schema": {
-                                "type": "object",
-                                "required": [
-                                    "shepherd"
-                                ],
-                                "properties": {
-                                    "shepherd": {}
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok",
-                                        "shepherd",
-                                        "shepherd_html"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        },
-                                        "shepherd": {},
-                                        "shepherd_html": {},
-                                        "color_classes": {}
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/search": {
             "get": {
                 "summary": "Fetch search results",
@@ -1535,6 +922,12 @@
                     },
                     {
                         "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    },
+                    {
+                        "name": "session",
                         "in": "query",
                         "required": false,
                         "schema": {}
@@ -2745,6 +2138,904 @@
                                         "pref": {},
                                         "prefexp": {},
                                         "topic_score": {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/assign": {
+            "post": {
+                "summary": "Perform assignments",
+                "description": "Perform assignments, specified either as a JSON array or as an uploaded CSV\nfile.\n\nThe assignments should be compatible with HotCRP’s bulk assignments format.\nThey may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a CSV file (when the request body has content-type\n   `text/csv`).\n3. As a JSON- or CSV-formatted request parameter named `assignments` (when the\n   request body has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or CSV file, represented by a upload token in\n   the `upload` parameter.\n\nJSON assignments should parse to arrays of objects. Each object should contain\nat least a `pid` property and an `action` property, where `action` determines\nwhat kind of assignment to run. CSV assignments must contain a header, which\nshould specify at least `pid` and `action` columns. (The `/assigners` endpoint\nlists the available `action`s.)\n\nTo test an assignment, supply a `dry_run=1` parameter. This will parse the\nuploaded assignment and report any errors, but make no changes to the\ndatabase.\n\nThe `valid` response property is `true` if and only if the assignments were\nvalid (had no errors). In non-dry-run requests, `\"valid\": true` indicates that\nany database changes were committed.\n\nThe response includes an `assignments` property, which is an array of the\nspecific assignments performed (or, for dry-run requests, the specific\nassignments that *would have been* performed). Each entry represents a single\naction applied to a single submission. (This differs from input `assignments`\nentries, each of which might apply to many submissions.) If you’re not\ninterested in the `assignments` property, supply a parameter of either\n`summary=1` (to get summary `assigned_actions` and `assigned_pids`\nproperties) or `quiet=1` (to get nothing).\n\nIf the optional `p` request parameter is set, HotCRP will only implement\nassignments that affect that submission.\n\n",
+                "tags": [
+                    "Assignments"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.opt"
+                    },
+                    {
+                        "name": "dry_run",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True checks input for errors, but does not save changes"
+                    },
+                    {
+                        "name": "upload",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/upload_token"
+                        },
+                        "description": "Upload token for JSON or CSV assignments"
+                    },
+                    {
+                        "name": "quiet",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True omits assignment information from response"
+                    },
+                    {
+                        "name": "summary",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True omits complete assignment from response"
+                    },
+                    {
+                        "name": "forceShow",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "Explicit false means chair conflicts are not overridden"
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/search_parameter_specification"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "assignments": {
+                                        "type": "string",
+                                        "description": "JSON or CSV assignments"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "valid"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "dry_run": {
+                                            "type": "boolean",
+                                            "description": "True if request was a dry run"
+                                        },
+                                        "valid": {
+                                            "type": "boolean",
+                                            "description": "True if the assignments were valid"
+                                        },
+                                        "assignments_header": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "List of properties for union of all assignments"
+                                        },
+                                        "assignments": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            },
+                                            "description": "List of resulting assignments"
+                                        },
+                                        "assigned_actions": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "List of action names included in eventual assignment"
+                                        },
+                                        "assigned_pids": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/pid"
+                                            },
+                                            "description": "List of submission IDs changed by assignment"
+                                        },
+                                        "papers": {},
+                                        "ids": {},
+                                        "groups": {},
+                                        "search_params": {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/assigners": {
+            "get": {
+                "summary": "List assignment actions",
+                "description": "List all assignment actions understood by this HotCRP, including their\nparameters.\n",
+                "tags": [
+                    "Assignments"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "assigners"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "assigners": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/assignment_action"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/autoassign": {
+            "post": {
+                "summary": "Compute automatic assignment",
+                "description": "Compute and optionally perform an automatic assignment.\n\nSpecify the autoassignment action with the `autoassigner` parameter, and the\nsubmissions to assign with the `q` parameter. (The `/autoassigners` endpoint\nlists the available autoassignment actions.)\n\nMost autoassignment actions take additional parameters and a set of PC members\nto assign. Supply these in the `u`, `disjoint`, and `param` parameters. `u`\ndefines the assignable PC members; `disjoint` defines the classes of PC\nmembers that should not be co-assigned; and `param` defines additional\nautoassigner parameters, such as the number of assignments to make or the type\nof review to create.\n\nThe `u`, `disjoint`, and `param` parameters may be supplied multiple times,\neither as a single JSON-formatted array string named `PNAME` or as multiple\nstrings named `PNAME[]`. For instance, `/autoassign?u=%5B1,2%5D` and\n`/autoassign?u%5B%5D=1&u%5B%5D=2` each supply two `u` arguments, `1` and `2`.\n\nEach `u` argument is a search string defining a set of users. Valid strings\nare user IDs (`1`), emails (`kohler@g.harvard.edu`), or tags (`#heavy`).\nPrefix a string with a hyphen `-` to remove matching users from the assignable\nset.\n\nEach `disjoint` argument is a comma-separated list of users that should not be\ncoassigned. Again, users can be defined using IDs, emails, or tags.\n\nEach `param` argument defines a parameter for the autoassignment action, and\nshould be a string with the format `NAME=VALUE`. The parameters required or\nunderstood by each action are listed by the `/autoassigners` endpoint.\n\nTo test an assignment, supply the `dry_run=1` parameter. This will create an\nassignment and test it, reporting any errors, but will make no changes to the\ndatabase. Supply `minimal_dry_run=1` to obtain the autoassignment output\nwithout additional testing. For instance, `dry_run=1` will report warnings for\npotential conflicts, but `minimal_dry_run=1` will not.\n\nAutoassignment is often time consuming, so a successful `/autoassign` may\nreturn early, before the autoassignment completes. The response will list a\njob ID for the autoassigner. Query the `/job` endpoint to monitor the job and\nobtain its eventual output.\n",
+                "tags": [
+                    "Assignments"
+                ],
+                "parameters": [
+                    {
+                        "name": "autoassigner",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Name of autoassignment action to run"
+                    },
+                    {
+                        "$ref": "#/components/parameters/q"
+                    },
+                    {
+                        "$ref": "#/components/parameters/t"
+                    },
+                    {
+                        "name": "dry_run",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True computes the assignment, but does not perform it"
+                    },
+                    {
+                        "name": "minimal_dry_run",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True computes an initial assignment, but does not validate it"
+                    },
+                    {
+                        "name": "u",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "description": "Array of users to consider for assignment"
+                    },
+                    {
+                        "name": "disjoint",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "description": "Array of user sets that should not be coassigned"
+                    },
+                    {
+                        "name": "param",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "description": "Array of `NAME=VALUE` autoassignment parameter settings"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "dry_run": {
+                                            "type": "boolean",
+                                            "description": "True if request was a dry run"
+                                        },
+                                        "job": {
+                                            "type": "string",
+                                            "description": "Job ID of autoassignment job"
+                                        },
+                                        "job_url": {
+                                            "type": "string",
+                                            "description": "URL of autoassignment job"
+                                        },
+                                        "status": {},
+                                        "exit_status": {},
+                                        "progress": {},
+                                        "assigned_pids": {},
+                                        "output": {
+                                            "type": "string",
+                                            "description": "CSV of computed assignment"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/autoassigners": {
+            "get": {
+                "summary": "List autoassignment actions",
+                "description": "List all autoassignment actions understood by this HotCRP, including their\nparameters.\n",
+                "tags": [
+                    "Assignments"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "autoassigners"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "autoassigners": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/autoassignment_action"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/decision": {
+            "get": {
+                "summary": "Fetch submission decision",
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "decision",
+                                        "decision_html"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "decision": {},
+                                        "decision_html": {},
+                                        "editable": {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Change submission decision",
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "decision"
+                                ],
+                                "properties": {
+                                    "decision": {}
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "decision",
+                                        "decision_html"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "decision": {},
+                                        "decision_html": {},
+                                        "editable": {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/lead": {
+            "get": {
+                "summary": "Fetch submission discussion lead",
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "lead",
+                                        "lead_html"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "lead": {},
+                                        "lead_html": {},
+                                        "color_classes": {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Change submission discussion lead",
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "lead"
+                                ],
+                                "properties": {
+                                    "lead": {}
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "lead",
+                                        "lead_html"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "lead": {},
+                                        "lead_html": {},
+                                        "color_classes": {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/manager": {
+            "get": {
+                "summary": "Fetch submission administrator",
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "manager",
+                                        "manager_html"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "manager": {},
+                                        "manager_html": {},
+                                        "color_classes": {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Change submission administrator",
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "manager"
+                                ],
+                                "properties": {
+                                    "manager": {}
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "manager",
+                                        "manager_html"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "manager": {},
+                                        "manager_html": {},
+                                        "color_classes": {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/reviewround": {
+            "post": {
+                "summary": "Change review round",
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{p}/shepherd": {
+            "get": {
+                "summary": "Fetch submission shepherd",
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "shepherd",
+                                        "shepherd_html"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "shepherd": {},
+                                        "shepherd_html": {},
+                                        "color_classes": {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Change submission shepherd",
+                "tags": [
+                    "Submission administration"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "shepherd"
+                                ],
+                                "properties": {
+                                    "shepherd": {}
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "shepherd",
+                                        "shepherd_html"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "shepherd": {},
+                                        "shepherd_html": {},
+                                        "color_classes": {}
                                     }
                                 }
                             }
@@ -5705,9 +5996,8 @@
                     }
                 }
             },
-            "display_field": {
+            "action_definition": {
                 "type": "object",
-                "description": "Display field definition",
                 "required": [
                     "name"
                 ],
@@ -5718,13 +6008,24 @@
                     "description": {
                         "type": "string"
                     },
-                    "view_options": {
+                    "group": {
+                        "type": "string"
+                    },
+                    "parameters": {
                         "type": "array",
                         "items": {
-                            "type": "view_option"
+                            "$ref": "#/components/schemas/view_option"
                         }
                     }
-                },
+                }
+            },
+            "display_field": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/action_definition"
+                    }
+                ],
+                "description": "Display field definition",
                 "examples": [
                     {
                         "name": "abstract",
@@ -5733,7 +6034,7 @@
                     {
                         "name": "lead",
                         "description": "<0>Discussion lead",
-                        "view_options": [
+                        "parameters": [
                             {
                                 "name": "format",
                                 "type": "enum",
@@ -6000,6 +6301,48 @@
                     "au"
                 ]
             },
+            "assignment_action": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/action_definition"
+                    }
+                ],
+                "description": "Assignment action",
+                "examples": [
+                    {
+                        "name": "review",
+                        "description": "<0>Assign review",
+                        "parameters": [
+                            {
+                                "name": "user",
+                                "type": "user",
+                                "required": true
+                            },
+                            {
+                                "name": "review_type",
+                                "type": "rtype",
+                                "required": true
+                            },
+                            {
+                                "name": "review_round",
+                                "type": "round"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "submit",
+                        "description": "<0>Mark submission as ready for review"
+                    }
+                ]
+            },
+            "autoassignment_action": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/action_definition"
+                    }
+                ],
+                "description": "Autoassignment action"
+            },
             "paper": {
                 "type": "object",
                 "required": [
@@ -6150,10 +6493,6 @@
             "name": "Documents"
         },
         {
-            "name": "Submission administration",
-            "description": "These endpoints perform HotCRP assignments, including review assignments,\nreview preference settings, tags, and anything else that can be modified by\nHotCRP’s bulk assignments interface. The general-purpose `/assign` endpoint is\nmost useful; using `/assign`, a user can perform any assignment for which they\nhave permission. Endpoints for specific kinds of assignment, such as decision,\ndiscussion lead, and shepherd, are provided for the HotCRP web application’s\nconvenience.\n\n\n"
-        },
-        {
             "name": "Search",
             "description": "These endpoints perform searches on submissions.\n\n\n"
         },
@@ -6162,6 +6501,14 @@
         },
         {
             "name": "Review preferences"
+        },
+        {
+            "name": "Assignments",
+            "description": "These endpoints perform HotCRP assignments, including review assignments,\nreview preference settings, tags, and anything else that can be modified by\nHotCRP’s bulk assignments interface. The general-purpose `/assign` endpoint is\nmost useful; using `/assign`, a user can perform any assignment for which they\nhave permission. Endpoints for specific kinds of assignment, such as decision,\ndiscussion lead, and shepherd, are provided for the HotCRP web application’s\nconvenience.\n\n\n"
+        },
+        {
+            "name": "Submission administration",
+            "description": "These endpoints perform specific kinds of assignment, such as decision,\ndiscussion lead, and shepherd, for one submission at a time. They are provided\nfor the HotCRP web application’s convenience; external users should prefer the\ngeneral-purpose `/assign` endpoint.\n\n\n"
         },
         {
             "name": "Reviews"

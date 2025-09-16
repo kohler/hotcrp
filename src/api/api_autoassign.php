@@ -10,9 +10,19 @@ class Autoassign_API {
     static private function parse_param($qreq, $name, $is_param) {
         if (!isset($qreq->$name)) {
             return [];
-        } else if ($qreq->has_a($name)) {
+        }
+
+        if ($qreq->has_a($name)) {
+            if ($is_param) {
+                foreach ($qreq->get_a($name) as $v) {
+                    if (strpos($v, "=") === false) {
+                        return null;
+                    }
+                }
+            }
             return $qreq->get_a($name);
         }
+
         $ls = [];
         if (preg_match('/\A\s*\[/', $qreq->$name)) {
             $list = json_decode($qreq->$name);
@@ -33,7 +43,7 @@ class Autoassign_API {
                 return null;
             }
             foreach ($map as $k => $v) {
-                if (!is_int($v) && !is_string($v)) {
+                if (!is_int($v) && !is_float($v) && !is_string($v)) {
                     return null;
                 }
                 $ls[] = "{$k}={$v}";
@@ -89,7 +99,9 @@ class Autoassign_API {
         }
 
         $jargv = ["-je"];
-        if (friendly_boolean($qreq->dry_run)) {
+        if (friendly_boolean($qreq->minimal_dry_run)) {
+            $jargv[] = "-D";
+        } else if (friendly_boolean($qreq->dry_run)) {
             $jargv[] = "-d";
         }
 

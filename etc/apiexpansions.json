@@ -29,11 +29,11 @@
   },
   {
     "name": "assign", "post": true, "merge": true,
-    "tags": ["Submission administration"]
+    "tags": ["Assignments"]
   },
   {
     "name": "assigners", "get": true, "merge": true,
-    "tags": ["Submission administration"]
+    "tags": ["Assignments"]
   },
   {
     "name": "assigntags", "post": true, "merge": true,
@@ -41,7 +41,11 @@
   },
   {
     "name": "autoassign", "post": true, "merge": true,
-    "tags": ["Submission administration"]
+    "tags": ["Assignments"]
+  },
+  {
+    "name": "autoassigners", "get": true, "merge": true,
+    "tags": ["Assignments"]
   },
   {
     "name": "decision", "get": true, "merge": true,

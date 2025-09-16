@@ -286,7 +286,7 @@ class Completion_API {
                         $vox[] = $vot->unparse_export();
                 }
                 if (!empty($vox)) {
-                    $f->view_options = $vox;
+                    $f->parameters = $vox;
                 }
             }
         }

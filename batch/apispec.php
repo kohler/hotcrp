@@ -85,8 +85,9 @@ class APISpec_Batch {
     const PT_RESPONSE = 3;
 
     static private $default_tag_order = [
-        "Submissions", "Documents", "Submission administration",
-        "Search", "Tags", "Review preferences", "Reviews", "Comments",
+        "Submissions", "Documents", "Search", "Tags", "Review preferences",
+        "Assignments", "Submission administration",
+        "Reviews", "Comments",
         "Meeting tracker", "Users", "Profile", "Notifications",
         "Site information", "Site administration", "Settings",
         "Session"
@@ -455,8 +456,9 @@ class APISpec_Batch {
     }
 
     /** @param string $name
+     * @param ?string $fieldname
      * @return object */
-    private function reference_common_schema($name) {
+    private function reference_common_schema($name, $fieldname = null) {
         if (in_array($name, ["string", "number", "integer", "boolean", "null", "object"], true)) {
             return (object) ["type" => $name];
         } else if ($name === "nonnegative_integer") {
@@ -499,7 +501,7 @@ class APISpec_Batch {
                 $nj = (object) [
                     "type" => "list",
                     "description" => "Diagnostic list",
-                    "items" => $this->reference_common_schema("message")
+                    "items" => $this->reference_common_schema("message", $fieldname)
                 ];
             } else if ($name === "message") {
                 $nj = (object) [
@@ -521,7 +523,7 @@ class APISpec_Batch {
                     "required" => ["ok"],
                     "properties" => (object) [
                         "ok" => (object) ["type" => "boolean"],
-                        "message_list" => $this->reference_common_schema("message_list")
+                        "message_list" => $this->reference_common_schema("message_list", $fieldname)
                     ]
                 ];
             } else if ($name === "error_response") {
@@ -530,11 +532,13 @@ class APISpec_Batch {
                     "required" => ["ok"],
                     "properties" => (object) [
                         "ok" => (object) ["type" => "boolean", "description" => "always false"],
-                        "message_list" => $this->reference_common_schema("message_list"),
+                        "message_list" => $this->reference_common_schema("message_list", $fieldname),
                         "status_code" => (object) ["type" => "integer"]
                     ]
                 ];
             } else {
+                $sfx = $fieldname !== null ? " `{$fieldname}`\n" : "\n";
+                fwrite(STDERR, $this->cur_prefix() . "common schema `{$name}` unknown for " . $this->cur_field_description() . $sfx);
                 throw new CommandLineException("Common schema `{$name}` unknown");
                 assert(false);
             }
@@ -584,7 +588,7 @@ class APISpec_Batch {
                     "name" => $xname,
                     "in" => $in,
                     "required" => $required,
-                    "schema" => $this->reference_common_schema(self::$param_schemas[$xname])
+                    "schema" => $this->reference_common_schema(self::$param_schemas[$xname], $name)
                 ];
             } else {
                 assert(false);
@@ -633,7 +637,7 @@ class APISpec_Batch {
             return (object) [];
         } else if (str_starts_with($info, "[") && str_ends_with($info, "]")) {
             return (object) ["type" => "array", "items" => $this->resolve_info(substr($info, 1, -1), $name)];
-        } else if (($s = $this->reference_common_schema($info))) {
+        } else if (($s = $this->reference_common_schema($info, $name))) {
             return $s;
         } else {
             fwrite(STDERR, $this->cur_prefix() . "unknown type `{$info}` for " . $this->cur_field_description() . " `{$name}`\n");
@@ -671,7 +675,7 @@ class APISpec_Batch {
                 continue;
             }
             if ($m[1] === "response_schema") {
-                if ($this->reference_common_schema($m[2])) {
+                if ($this->reference_common_schema($m[2], $landmark)) {
                     if (!in_array($m[2], $this->cur_fieldsch, true)) {
                         if (empty($this->cur_fieldsch)) {
                             $this->cur_fieldsch[] = "minimal_response";

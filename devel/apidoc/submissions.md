@@ -132,7 +132,8 @@ to `0`.
 * param ?json string
 * param ?upload upload_token: Upload token for large input file
 * response ?dry_run boolean: True for `dry_run` requests
-* response ?paper paper: JSON version of modified paper
+* response ?pid integer: ID of modified submission
+* response ?paper paper: JSON of modified submission
 * response ?+valid boolean: True if the modification was valid
 * response ?+change_list [string]: List of changed fields
 

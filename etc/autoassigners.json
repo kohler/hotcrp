@@ -6,7 +6,7 @@
     {
         "name": "clear",
         "function": "+Clear_Autoassigner",
-        "parameters": ["!type"]
+        "parameters": ["!type$"]
     },
     {
         "name": "lead",
@@ -64,7 +64,8 @@
         "function": "+Review_Autoassigner",
         "parameters": [
             "!count#+ Number of reviews to ensure per paper",
-            "$__review_parameters"
+            "$__review_parameters",
+            "remove_assignment_cost#"
         ]
     },
     {

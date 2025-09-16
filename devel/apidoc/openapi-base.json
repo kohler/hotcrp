@@ -513,10 +513,11 @@
                     }
                 }
             },
-            "display_field": {
+            "action_definition": {
                 "type": "object",
-                "description": "Display field definition",
-                "required": ["name"],
+                "required": [
+                    "name"
+                ],
                 "properties": {
                     "name": {
                         "type": "string"
@@ -524,13 +525,20 @@
                     "description": {
                         "type": "string"
                     },
-                    "view_options": {
+                    "group": {
+                        "type": "string"
+                    },
+                    "parameters": {
                         "type": "array",
                         "items": {
-                            "type": "view_option"
+                            "$ref": "#/components/schemas/view_option"
                         }
                     }
-                },
+                }
+            },
+            "display_field": {
+                "allOf": [{"$ref": "#/components/schemas/action_definition"}],
+                "description": "Display field definition",
                 "examples": [
                     {
                         "name": "abstract",
@@ -539,7 +547,7 @@
                     {
                         "name": "lead",
                         "description": "<0>Discussion lead",
-                        "view_options": [
+                        "parameters": [
                             {"name": "format", "type": "enum", "enum": ["given_name", "family_name"], "lifted": true}
                         ]
                     }
@@ -789,6 +797,29 @@
                     "rev",
                     "au"
                 ]
+            },
+            "assignment_action": {
+                "allOf": [{"$ref": "#/components/schemas/action_definition"}],
+                "description": "Assignment action",
+                "examples": [
+                    {
+                        "name": "review",
+                        "description": "<0>Assign review",
+                        "parameters": [
+                            {"name": "user", "type": "user", "required": true},
+                            {"name": "review_type", "type": "rtype", "required": true},
+                            {"name": "review_round", "type": "round"}
+                        ]
+                    },
+                    {
+                        "name": "submit",
+                        "description": "<0>Mark submission as ready for review"
+                    }
+                ]
+            },
+            "autoassignment_action": {
+                "allOf": [{"$ref": "#/components/schemas/action_definition"}],
+                "description": "Autoassignment action"
             },
             "paper": {
                 "type": "object",

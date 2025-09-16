@@ -97,8 +97,8 @@ class Assign_API {
         if ($quiet || (!$dry_run && $aset->has_error())) {
             // no additional information
         } else if ($summary) {
-            $jr->set("assignment_actions", $aset->assigned_types());
-            $jr->set("assignment_pids", $aset->assigned_pids());
+            $jr->set("assigned_actions", $aset->assigned_types());
+            $jr->set("assigned_pids", $aset->assigned_pids());
         } else {
             $acsv = $aset->make_acsv();
             $jr->set("assignments_header", $acsv->header());

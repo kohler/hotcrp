@@ -25,8 +25,8 @@
     {
         "name": "assign", "post": true,
         "function": "Assign_API::assign",
-        "parameters": "?p ?dry_run ?quiet ?summary ?forceShow ?search ?upload ?assignments",
-        "response": "?dry_run valid ?assignments_header ?assignments ?assignment_actions ?assignment_pids ?papers ?ids ?groups ?search_params"
+        "parameters": "?p ?dry_run ?quiet ?summary ?forceShow ?search ?upload ?=assignments",
+        "response": "?dry_run valid ?assignments_header ?assignments ?assigned_actions ?assigned_pids ?papers ?ids ?groups ?search_params"
     },
     {
         "name": "assigners", "get": true,
@@ -42,7 +42,7 @@
     {
         "name": "autoassign", "post": true,
         "function": "Autoassign_API::autoassign",
-        "parameters": "autoassigner ?dry_run q ?t ?u ?disjoint ?param"
+        "parameters": "autoassigner ?dry_run ?minimal_dry_run q ?t ?u ?disjoint ?param"
     },
     {
         "name": "autoassigners", "get": true,
@@ -298,7 +298,7 @@
     {
         "name": "search", "get": true,
         "function": "Search_API::search",
-        "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing ?hotlist ?f ?format ?search",
+        "parameters": "q ?t ?qt ?sort ?scoresort ?reviewer ?report ?warn_missing ?hotlist ?f ?format ?search ?session",
         "response": "ids groups search_params ?hotlist ?fields ?papers ?statistics"
     },
     {
