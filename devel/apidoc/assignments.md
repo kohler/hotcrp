@@ -2,11 +2,9 @@
 
 These endpoints perform HotCRP assignments, including review assignments,
 review preference settings, tags, and anything else that can be modified by
-HotCRP’s bulk assignments interface. The general-purpose `/assign` endpoint is
-most useful; using `/assign`, a user can perform any assignment for which they
-have permission. Endpoints for specific kinds of assignment, such as decision,
-discussion lead, and shepherd, are provided for the HotCRP web application’s
-convenience.
+HotCRP’s bulk assignments interface. `/assign` lets users perform any
+assignment for which they have permission. `/autoassign` lets administrators
+compute assignments automatically.
 
 
 # post /assign
@@ -139,12 +137,12 @@ obtain its eventual output.
 * param disjoint [string]: Array of user sets that should not be coassigned
 * param param [string]: Array of `NAME=VALUE` autoassignment parameter settings
 * response ?dry_run boolean: True if request was a dry run
-* response ?job string: Job ID of autoassignment job
-* response ?job_url string: URL of autoassignment job
-* response ?status
-* response ?exit_status
-* response ?progress
-* response ?assigned_pids
+* response ?job job_id: Job ID of autoassignment job
+* response ?job_url string: URL to monitor autoassignment job
+* response ?status string
+* response ?exit_status integer
+* response ?progress string
+* response ?assigned_pids [integer]
 * response ?output string: CSV of computed assignment
 
 

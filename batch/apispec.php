@@ -88,7 +88,8 @@ class APISpec_Batch {
         "Submissions", "Documents", "Search", "Tags", "Review preferences",
         "Assignments", "Submission administration",
         "Reviews", "Comments",
-        "Meeting tracker", "Users", "Profile", "Notifications",
+        "Meeting tracker", "Users", "Profile",
+        "Notifications", "Task management",
         "Site information", "Site administration", "Settings",
         "Session"
     ];

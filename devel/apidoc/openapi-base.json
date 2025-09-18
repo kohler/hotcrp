@@ -264,6 +264,13 @@
                     "image/png"
                 ]
             },
+            "job_id": {
+                "type": "string",
+                "description": "Job ID",
+                "examples": [
+                    "hcj_PHkMnDMRkMuBydyCSBQCymPTqaqmsGWaftV"
+                ]
+            },
             "paper_status": {
                 "type": "string",
                 "description": "Submission status",

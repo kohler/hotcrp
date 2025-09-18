@@ -131,8 +131,8 @@
     {
         "name": "job", "get": true,
         "function": "Job_API::job",
-        "parameters": "job",
-        "response": "update_at ?status *"
+        "parameters": "job ?output",
+        "response": "status update_at ?output ?output_base64 *"
     },
     {
         "name": "jserror", "post": true, "check_token": false,

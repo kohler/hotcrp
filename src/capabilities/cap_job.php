@@ -105,13 +105,18 @@ class Job_Capability extends TokenInfo {
         $ok = $this->is_active();
         $answer = ["ok" => $ok] + (array) $this->data();
         $answer["ok"] = $ok;
+        if (!isset($answer["status"])) {
+            $answer["status"] = "wait";
+        }
         $answer["update_at"] = $answer["update_at"] ?? $this->timeUsed;
         if ($output && $this->outputData !== null) {
             if (str_starts_with($this->outputData, "{")
                 && ($j = json_decode($this->outputData))) {
                 $answer["output"] = $j;
-            } else {
+            } else if (is_valid_utf8($this->outputData)) {
                 $answer["output"] = $this->outputData;
+            } else {
+                $answer["output_base64"] = base64_encode($this->outputData);
             }
         }
         return new JsonResult($ok ? 200 : 409, $answer);

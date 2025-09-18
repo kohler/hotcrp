@@ -287,7 +287,7 @@
   },
   {
     "name": "job", "get": true, "merge": true,
-    "tags": ["Session"]
+    "tags": ["Task management"]
   },
   {
     "name": "jserror", "post": true, "merge": true,
@@ -307,7 +307,7 @@
   },
   {
     "name": "whoami", "get": true, "merge": true,
-    "tags": ["Session"]
+    "tags": ["Profile"]
   },
   {
     "name": "reauth", "post": true, "merge": true,
