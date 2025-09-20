@@ -1,8 +1,8 @@
 <?php
 // paperinfo.php -- HotCRP paper objects
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
-class PaperReviewPreference {
+final class PaperReviewPreference {
     /** @var int
      * @readonly */
     public $preference;
@@ -730,6 +730,8 @@ class PaperInfo {
     private $_ctype_list;
     /** @var ?list<AuthorMatcher> */
     private $_collaborator_array;
+    /** @var ?PaperInfoPotentialConflictList */
+    private $_potconf;
     /** @var ?array<int,PaperReviewPreference> */
     private $_prefs_array;
     /** @var ?int */
@@ -999,6 +1001,7 @@ class PaperInfo {
             $this->_contact_info = [];
             $this->reviewSignatures = $this->_review_array = $this->_reviews_have = null;
             $this->allConflictType = $this->_ctype_list = null;
+            $this->_potconf = null;
             $this->myContactXid = null;
             ++$this->_review_array_version;
         }
@@ -1555,18 +1558,18 @@ class PaperInfo {
         }
     }
 
-    /** @param bool $save
-     * @return bool|PaperInfoPotentialConflictList */
-    private function _potential_conflict(Contact $user, $save) {
+    /** @return PaperInfoPotentialConflictList */
+    private function _potential_conflict(Contact $user) {
+        $this->check_rights_version();
+        if ($this->_potconf && $this->_potconf->user() === $user) {
+            return $this->_potconf;
+        }
         $auproblems = 0;
         $pcs = [];
         if ($this->field_match_pregexes($user->aucollab_general_pregexes(), "authorInformation")) {
             foreach ($this->author_list() as $au) {
                 foreach ($user->aucollab_matchers() as $userm) {
                     if (($why = $userm->test($au, $userm->is_nonauthor()))) {
-                        if (!$save) {
-                            return true;
-                        }
                         $auproblems |= $why;
                         $pcs[] = new PaperInfoPotentialConflict($userm, $au, $why);
                     }
@@ -1580,28 +1583,23 @@ class PaperInfo {
                 if (($co->lastName !== ""
                      || ($auproblems & AuthorMatcher::MATCH_AFFILIATION) === 0)
                     && ($why = $userm->test($co, true))) {
-                    if (!$save) {
-                        return true;
-                    }
                     $pcs[] = new PaperInfoPotentialConflict($userm, $co, $why);
                 }
             }
         }
-        if (empty($pcs)) {
-            return false;
-        }
-        return new PaperInfoPotentialConflictList($user, $pcs);
+        $this->_potconf = new PaperInfoPotentialConflictList($user, $pcs);
+        return $this->_potconf;
     }
 
     /** @return bool */
     function potential_conflict(Contact $user) {
-        return $this->_potential_conflict($user, false);
+        return !$this->_potential_conflict($user)->is_empty();
     }
 
     /** @return ?PaperInfoPotentialConflictList */
     function potential_conflict_list(Contact $user) {
-        $pcl = $this->_potential_conflict($user, true);
-        return is_bool($pcl) ? null : $pcl;
+        $pcl = $this->_potential_conflict($user);
+        return $pcl->is_empty() ? null : $pcl;
     }
 
 
@@ -3855,6 +3853,10 @@ class PaperInfoPotentialConflictList {
     function __construct(Contact $user, $pcs) {
         $this->_user = $user;
         $this->_pcs = $pcs;
+        if (empty($pcs)) {
+            $this->_auindexes = [];
+            return;
+        }
         usort($this->_pcs, "PaperInfoPotentialConflict::compare");
         $aus = [];
         foreach ($this->_pcs as $pc) {
@@ -3868,6 +3870,11 @@ class PaperInfoPotentialConflictList {
     /** @return Contact */
     function user() {
         return $this->_user;
+    }
+
+    /** @return bool */
+    function is_empty() {
+        return empty($this->_pcs);
     }
 
     /** @return list<PaperInfoPotentialConflict> */
