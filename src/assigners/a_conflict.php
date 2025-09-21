@@ -144,6 +144,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
 }
 
 class Conflict_Assigner extends Assigner {
+    /** @var int */
     private $ctype;
     function __construct(AssignmentItem $item, AssignmentState $state) {
         parent::__construct($item, $state);
@@ -268,7 +269,7 @@ class Conflict_Assigner extends Assigner {
         if (($old_ct ^ $this->ctype) & CONFLICT_CONTACTAUTHOR) {
             $acsv->add([
                 "pid" => $this->pid,
-                "action" => $this->ctype & CONFLICT_CONTACTAUTHOR ? "clearcontact" : "contact",
+                "action" => $this->ctype & CONFLICT_CONTACTAUTHOR ? "contact" : "clearcontact",
                 "email" => $this->contact->email,
                 "name" => $this->contact->name()
             ]);
