@@ -5827,21 +5827,28 @@ function minifeedback(e, rv) {
         make_bubble(ul, status > 1 ? "errorbubble" : "warningbubble").near(e).removeOn(e, "input change click hide" + (status > 1 ? "" : " focus blur"));
 
     var ce, checkish = e.tagName === "BUTTON" || e.tagName === "SELECT" || e.type === "checkbox" || e.type === "radio";
-    if (checkish || hasClass(e, "mf-label")
+    if (checkish
+        || hasClass(e, "mf-label")
         || (status === 0 && hasClass(e, "mf-label-success"))) {
         ce = e.closest("label");
         if (!ce && e.id)
             ce = document.querySelector("label[for='" + e.id + "']");
     }
-    if (!ce && hasClass(e, "mf"))
+    if (!ce && hasClass(e, "mf")) {
         ce = e;
-    else if (!ce) {
-        ce = e.parentElement;
-        if (!hasClass(ce, "mf")) {
+    } else if (!ce) {
+        let ex = e, exp = e.parentElement;
+        if (hasClass(exp, "btnbox")) {
+            ex = exp;
+            exp = exp.parentElement;
+        }
+        if (hasClass(exp, "mf")) {
+            ce = exp;
+        } else {
             ce = document.createElement("div");
             ce.className = checkish ? "mf mf-absolute" : "mf mf-text";
-            e.parentElement.replaceChild(ce, e);
-            ce.appendChild(e);
+            exp.replaceChild(ce, ex);
+            ce.appendChild(ex);
         }
     }
 
