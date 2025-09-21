@@ -12,6 +12,8 @@ class ConflictAssign_Page {
             $user->escape();
         }
         $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        $isneg = friendly_boolean($qreq->neg);
+        $isall = friendly_boolean($qreq->all);
 
         $qreq->print_header("Assignments", "conflictassign", ["subtitle" => "Conflicts"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
@@ -23,13 +25,13 @@ class ConflictAssign_Page {
 
         echo '<div class="w-text mt-5 mb-5">';
 
-        if ($qreq->neg) {
+        if ($isneg) {
             echo '<p>This page lists conflicts declared by authors, but not justified by fuzzy matching between authors and PC members’ affiliations and collaborator lists.</p>';
             echo '<p><a href="', $conf->hoturl("conflictassign"), '">Check for missing conflicts</a></p>';
         } else {
             echo '<p>This page shows potential missing conflicts detected by fuzzy matching between authors and PC members’ affiliations and collaborator lists. Confirm any true conflicts using the checkboxes.</p>',
                 '<p><a href="', $conf->hoturl("conflictassign", "neg=1"), '">Check for inappropriate conflicts</a> <span class="barsep">·</span> ';
-            if ($qreq->all) {
+            if ($isall) {
                 echo '<a href="', $conf->hoturl("conflictassign"), '">Hide previously-confirmed conflicts</a>';
             } else {
                 echo '<a href="', $conf->hoturl("conflictassign", "all=1"), '">Include previously-confirmed conflicts</a>';
@@ -39,15 +41,15 @@ class ConflictAssign_Page {
 
         echo "</div>\n";
 
-
         $search = (new PaperSearch($user, ["t" => $qreq->t ?? "alladmin", "q" => ""]))
             ->set_urlbase("conflictassign", [
-                "neg" => $qreq->neg ? 1 : null,
-                "all" => $qreq->all && !$qreq->neg ? 1 : null
+                "neg" => $isneg ? 1 : null,
+                "all" => $isall && !$isneg ? 1 : null
             ]);
         $rowset = $conf->paper_set(["allConflictType" => 1, "allReviewerPreference" => 1, "tags" => 1, "paperId" => $search->paper_ids()], $user);
+        $qreq->qsession()->commit(); // page takes forever to render
 
-        if ($qreq->neg) {
+        if ($isneg) {
             $filter = function ($pl, $row) {
                 $user = $pl->reviewer_user();
                 $ct = $row->conflict_type($user);
@@ -56,17 +58,15 @@ class ConflictAssign_Page {
                     && !$row->potential_conflict($user);
             };
         } else {
-            $all = $qreq->all;
-            $filter = function ($pl, $row) use ($all) {
+            $filter = function ($pl, $row) use ($isall) {
                 $user = $pl->reviewer_user();
                 $ct = $row->conflict_type($user);
                 if (Conflict::is_pinned($ct)) {
-                    return $all && Conflict::is_conflicted($ct);
-                } else {
-                    return !Conflict::is_conflicted($ct)
-                        && ($row->preference($user)->preference <= -100
-                            || $row->potential_conflict($user));
+                    return $isall;
                 }
+                return !Conflict::is_conflicted($ct)
+                    && ($row->preference($user)->preference <= -100
+                        || $row->potential_conflict($user));
             };
         }
         $args = ["rowset" => $rowset];
@@ -74,7 +74,7 @@ class ConflictAssign_Page {
         $any = false;
         $conf->ensure_cached_user_collaborators();
         $t0 = microtime(true);
-        $reportid = $qreq->neg ? "conflictassign:neg" : "conflictassign";
+        $reportid = $isneg ? "conflictassign:neg" : "conflictassign";
         foreach ($conf->pc_members() as $pc) {
             set_time_limit(30);
             $paperlist = new PaperList($reportid, $search, $args, $qreq);
