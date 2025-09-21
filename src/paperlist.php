@@ -2276,7 +2276,11 @@ class PaperList {
             if ($grouppos >= 0) {
                 $grouppos = $this->_mark_groups_html($grouppos, $rstate, $body, false);
             }
-            $body[] = $this->_row_html($rstate, $row);
+            $rowhtml = $this->_row_html($rstate, $row);
+            if ($rowhtml === "") {
+                continue;
+            }
+            $body[] = $rowhtml;
             if ($this->need_render && !$need_render) {
                 $this->_stash_render();
                 $need_render = true;
