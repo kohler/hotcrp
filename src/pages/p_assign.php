@@ -89,7 +89,7 @@ class Assign_Page {
             } else if (($type = ReviewInfo::parse_type($assignment, true))) {
                 $revtype = ReviewInfo::unparse_assigner_action($type);
                 $conftype = "off";
-            } else if (($ct = $confset->parse_assignment($assignment, 0)) !== false) {
+            } else if (($ct = $confset->parse_assignment($assignment)) !== false) {
                 $revtype = "clearreview";
                 $conftype = $assignment;
             } else {

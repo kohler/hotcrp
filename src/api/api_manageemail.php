@@ -417,7 +417,7 @@ class ManageEmail_API extends MessageSet {
             if ($sd[0] === 0) {
                 continue;
             }
-            $wsc = $sd[0] & ~CONFLICT_PCMASK;
+            $wsc = $sd[0] & ~Conflict::FM_PC;
             if ($wsc === 0) {
                 $deletep[] = $pid;
             } else if ($wsc !== $sd[0]) {

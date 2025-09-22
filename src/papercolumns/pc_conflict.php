@@ -63,7 +63,7 @@ class Conflict_PaperColumn extends PaperColumn {
         if ($this->description
             && Conflict::is_conflicted($ct)
             && !$pl->user->can_view_authors($row)) {
-            $ct = Conflict::GENERAL;
+            $ct = Conflict::CT_DEFAULT;
         }
         return $ct;
     }

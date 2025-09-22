@@ -936,7 +936,7 @@ Phil Porras.");
         $nprow1->invalidate_conflicts();
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId]);
         xassert_eqq($nprow1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
-        xassert_eqq($nprow1->conflict_type($this->u_varghese), Conflict::GENERAL);
+        xassert_eqq($nprow1->conflict_type($this->u_varghese), Conflict::CT_DEFAULT);
 
         $ps->save_paper_json((object) [
             "id" => $this->pid2, "pc_conflicts" => [$this->u_varghese->email => "advisor"]

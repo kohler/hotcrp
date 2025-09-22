@@ -47,7 +47,7 @@ class ManualAssign_Page {
             }
 
             if ($assrev < 0) {
-                $newct = Conflict::is_conflicted($ct) ? $ct : Conflict::set_pinned(Conflict::GENERAL, true);
+                $newct = Conflict::is_conflicted($ct) ? $ct : Conflict::set_pinned(Conflict::CT_DEFAULT, true);
             } else {
                 $newct = Conflict::is_conflicted($ct) ? 0 : $ct;
             }

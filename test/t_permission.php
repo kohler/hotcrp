@@ -1094,20 +1094,23 @@ class Permission_Tester {
 
         // test conflict types
         $user_rguerin = $this->conf->checked_user_by_email("rguerin@ibm.com");
-        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::GENERAL);
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::CT_DEFAULT);
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,pinned\n");
         $paper3 = $this->u_chair->checked_paper_by_id(3);
-        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::GENERAL);
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::CT_DEFAULT);
         xassert_assign($this->u_chair, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,pinned\n");
         $paper3->invalidate_conflicts();
-        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::set_pinned(Conflict::GENERAL, true));
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::set_pinned(Conflict::CT_DEFAULT, true));
         xassert_assign($user_sclin, "paper,action,user,conflict type\n3,conflict,rguerin@ibm.com,pinned\n");
         $paper3->invalidate_conflicts();
-        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::set_pinned(Conflict::GENERAL, true));
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::set_pinned(Conflict::CT_DEFAULT, true));
         xassert_assign($this->u_chair, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,none\n");
         xassert_assign($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,conflict\n");
         $paper3->invalidate_conflicts();
-        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::GENERAL);
+        xassert_eqq($paper3->conflict_type($user_rguerin), Conflict::CT_DEFAULT);
+
+        // <empty-string> is not a valid conflict type
+        xassert_assign_fail($user_sclin, "paper,action,user,conflicttype\n3,conflict,rguerin@ibm.com,\n");
 
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,collaborator\n");
         $paper3->invalidate_conflicts();
@@ -1131,7 +1134,7 @@ class Permission_Tester {
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,advisee\n");
         $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 1);
-        xassert_assign($this->u_chair, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,unpin\n");
+        xassert_assign($this->u_chair, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,none\n");
         $paper3->invalidate_conflicts();
         xassert_eqq($paper3->conflict_type($user_rguerin), 0);
         xassert_assign($user_sclin, "paper,action,user,conflict\n3,conflict,rguerin@ibm.com,advisee\n");

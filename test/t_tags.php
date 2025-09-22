@@ -197,7 +197,7 @@ class Tags_Tester {
         xassert($p1->has_tag("testtag"));
         xassert_eqq($p1->tag_value("testtag"), 0.0);
 
-        $this->conf->qe("insert into PaperConflict set paperId=1, contactId=?, conflictType=?", $this->u_chair->contactId, Conflict::GENERAL);
+        $this->conf->qe("insert into PaperConflict set paperId=1, contactId=?, conflictType=?", $this->u_chair->contactId, Conflict::CT_DEFAULT);
         xassert_search($this->u_chair, "conf:me", "1");
 
         $aset = new AssignmentSet($this->u_chair);

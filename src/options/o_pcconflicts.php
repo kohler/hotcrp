@@ -67,7 +67,7 @@ class PCConflicts_PaperOption extends PaperOption {
                     // Sometimes users can see conflicts but not authors.
                     // Don't expose author-ness during that period.
                     $ct = Conflict::set_pinned(Conflict::pc_part($ct), false);
-                    $ct = $ct ? : Conflict::GENERAL;
+                    $ct = $ct ? : Conflict::CT_DEFAULT;
                 } else if (($ct & CONFLICT_CONTACTAUTHOR) !== 0) {
                     $ct = ($ct | CONFLICT_AUTHOR) & ~CONFLICT_CONTACTAUTHOR;
                 }
@@ -119,20 +119,13 @@ class PCConflicts_PaperOption extends PaperOption {
     function value_save(PaperValue $ov, PaperStatus $ps) {
         // do not mark diff (will be marked later)
         $pcm = $this->conf->pc_members();
-        if ($ov->prow->paperId > 0
-            ? $ps->user->can_administer($ov->prow)
-            : $ps->user->privChair) {
-            $mask = CONFLICT_PCMASK;
-        } else {
-            $mask = CONFLICT_PCMASK & ~1;
-        }
         foreach (self::value_map($ov) as $k => $v) {
-            $ps->update_conflict_value($pcm[$k]->email, $mask, ((int) $v) & $mask);
+            $ps->update_conflict_value($pcm[$k]->email, Conflict::FM_PC, ((int) $v) & Conflict::FM_PC);
         }
         $ps->checkpoint_conflict_values();
     }
     private function update_value_map(&$vm, $k, $v) {
-        $vm[$k] = (($vm[$k] ?? 0) & ~CONFLICT_PCMASK) | $v;
+        $vm[$k] = (($vm[$k] ?? 0) & ~Conflict::FM_PC) | $v;
     }
     function parse_qreq(PaperInfo $prow, Qrequest $qreq) {
         $vm = self::paper_value_map($prow);
@@ -178,7 +171,7 @@ class PCConflicts_PaperOption extends PaperOption {
             $ct = $confset->parse_json($v);
             if ($ct === false) {
                 $pv->warning("<0>Invalid conflict type ‘{$v}’");
-                $ct = Conflict::GENERAL;
+                $ct = Conflict::CT_DEFAULT;
             }
             $emails[] = $email;
             $values[] = $ct;
@@ -188,7 +181,7 @@ class PCConflicts_PaperOption extends PaperOption {
         // apply conflicts
         $vm = self::paper_value_map($prow);
         foreach ($vm as &$v) {
-            $v &= ~CONFLICT_PCMASK;
+            $v &= ~Conflict::FM_PC;
         }
         unset($v);
 
@@ -231,7 +224,7 @@ class PCConflicts_PaperOption extends PaperOption {
             }
             if ($admin) {
                 $ctypes["xsep"] = null;
-                $ct = Conflict::set_pinned(Conflict::GENERAL, true);
+                $ct = Conflict::set_pinned(Conflict::CT_DEFAULT, true);
                 $ctypes[$ct] = $confset->unparse_selector_text($ct);
             }
         }
@@ -323,7 +316,7 @@ class PCConflicts_PaperOption extends PaperOption {
                 $js["data-range-type"] = "pcconf";
                 $js["class"] = "uic js-range-click conflict-entry";
                 $checked = Conflict::is_conflicted($ct);
-                $confx = Ht::checkbox("pcconf:{$id}", $checked ? $ct : Conflict::GENERAL, $checked, $js);
+                $confx = Ht::checkbox("pcconf:{$id}", $checked ? $ct : Conflict::CT_GENERIC, $checked, $js);
                 $hidden = Ht::hidden("has_pcconf:{$id}", 1);
             }
 

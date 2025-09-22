@@ -1043,8 +1043,11 @@ final class PaperStatus extends MessageSet {
             $this->_conflict_values[$uid] = [0, 0, 0];
         }
         $cv = &$this->_conflict_values[$uid];
-        if ($mask !== (CONFLICT_PCMASK & ~1)
-            || ((($cv[0] & ~$cv[1]) | $cv[2]) & 1) === 0) {
+        $old = self::new_conflict_value($cv);
+        if ($mask === Conflict::FM_PC) {
+            $new = Conflict::apply_pc($old, $new, ($this->_save_status & self::SSF_ADMIN_UPDATE) !== 0);
+        }
+        if (($old & $mask) !== $new) {
             $cv[1] |= $mask;
             $cv[2] = ($cv[2] & ~$mask) | $new;
             $this->_conflict_changemask |= ($cv[0] ^ $cv[2]) & $mask;
@@ -1112,10 +1115,10 @@ final class PaperStatus extends MessageSet {
         if (($changes & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) !== 0) {
             $this->change_at($this->conf->option_by_id(PaperOption::CONTACTSID));
         }
-        if (($changes & CONFLICT_PCMASK) !== 0) {
+        if (($changes & Conflict::FM_PC) !== 0) {
             $this->change_at($this->conf->option_by_id(PaperOption::PCCONFID));
         }
-        return ($changes & (CONFLICT_PCMASK | CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) !== 0;
+        return ($changes & (Conflict::FM_PC | CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) !== 0;
     }
 
     private function _check_contacts_last() {
@@ -1580,7 +1583,7 @@ final class PaperStatus extends MessageSet {
                 $ci1x = "PaperConflict.conflictType";
             }
             $clears |= $ci1;
-            if (($ci[1] & CONFLICT_PCMASK) === (CONFLICT_PCMASK & ~1)) {
+            if (($ci[1] & Conflict::FM_PC) === Conflict::FM_PCTYPE) {
                 $ci1a = $ci[1] & ~$ci[2] & $auflags;
                 $ci2a = $ci[2] & $auflags;
                 if ($ci1a !== 0) {
@@ -1664,8 +1667,7 @@ final class PaperStatus extends MessageSet {
         }
         if ($need_mail) {
             $rest = ["prow" => $prow];
-            if ($this->user->can_administer($prow)
-                && !$prow->has_author($this->user)) {
+            if (($this->_save_status & self::SSF_ADMIN_UPDATE) !== 0) {
                 $rest["adminupdate"] = true;
             }
             foreach ($need_mail as $u) {

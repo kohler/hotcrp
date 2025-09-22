@@ -74,7 +74,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
             $x = strtolower(substr($req["conflict"], 0, $pos));
             if (in_array($x, ["", "any", "all", "y", "yes", "conflict", "conflicted"], true)) {
                 return new CountMatcher(">" . CONFLICT_MAXUNCONFLICTED);
-            } else if (($ct = $conf->conflict_set()->parse_assignment($x, 0)) !== false) {
+            } else if (($ct = $conf->conflict_set()->parse_assignment($x)) !== false) {
                 return new CountMatcher("=" . $ct);
             }
         }
@@ -101,34 +101,18 @@ class Conflict_AssignmentParser extends AssignmentParser {
         } else if ($this->iscontact) {
             $ct = CONFLICT_CONTACTAUTHOR;
         } else {
-            $text = (string) $req["conflict"];
+            $text = (string) ($req["conflict"] ?? "on");
             if (($colon = strpos($text, ":")) !== false) {
                 $text = substr($text, $colon + 1);
             }
-            $old_ct_na = Conflict::pc_part($old_ct);
-            if ($text === "" || $text === "on") {
-                if ($old_ct_na <= CONFLICT_MAXUNCONFLICTED) {
-                    $ct = Conflict::set_pinned(Conflict::GENERAL, $admin);
-                } else {
-                    $ct = $old_ct_na;
-                }
-            } else if ($text === "off") {
-                if ($old_ct_na > CONFLICT_MAXUNCONFLICTED) {
-                    $ct = Conflict::set_pinned(0, $admin);
-                } else {
-                    $ct = $old_ct_na;
-                }
-            } else {
-                $ct = $state->conf->conflict_set()->parse_assignment($text, $old_ct_na);
-            }
+            $ct = $state->conf->conflict_set()->parse_assignment($text);
             if ($ct === false || Conflict::is_author($ct)) {
+                $text = $text === "" ? "<empty>" : "text";
                 return new AssignmentError("<0>Conflict type ‘{$text}’ not found");
             }
-            if (!$admin) {
-                $ct = Conflict::set_pinned($ct, false);
-            }
+            $ct = Conflict::apply_pc($old_ct, $ct, $admin);
         }
-        $mask = $this->iscontact ? CONFLICT_CONTACTAUTHOR : CONFLICT_PCMASK;
+        $mask = $this->iscontact ? CONFLICT_CONTACTAUTHOR : Conflict::FM_PC;
         $matcher = $this->_matcher($req, $state->conf);
         if (($matcher && !$matcher->test($old_ct & $mask))
             || (!$this->iscontact && Conflict::is_pinned($old_ct) && !$admin)) {
