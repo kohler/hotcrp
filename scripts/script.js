@@ -2157,17 +2157,17 @@ function input_differs(elt) {
 }
 
 function form_differs(form) {
-    var coll, i, len, e;
-    if (form instanceof HTMLFormElement)
+    let coll;
+    if (form instanceof HTMLFormElement) {
         coll = form.elements;
-    else {
+    } else {
         coll = $(form).find("input, select, textarea");
         if (!coll.length)
             coll = $(form).filter("input, select, textarea");
     }
-    len = coll.length;
-    for (i = 0; i !== len; ++i) {
-        e = coll[i];
+    const len = coll.length;
+    for (let i = 0; i !== len; ++i) {
+        const e = coll[i];
         if (e.name
             && !hasClass(e, "ignore-diff")
             && !e.disabled
@@ -2480,17 +2480,15 @@ handle_ui.on("js-range-combo", function () {
 
 // bubbles and tooltips
 var make_bubble = (function () {
-var capdir = ["Top", "Right", "Bottom", "Left"],
+const ucdir = ["Top", "Right", "Bottom", "Left"],
     lcdir = ["top", "right", "bottom", "left"],
     szdir = ["height", "width"],
-    SPACE = 8;
+    cssbc = ["borderTopColor", "borderRightColor", "borderBottomColor", "borderLeftColor"],
+    SPACE = 8,
+    sizemap = {};
 
 function cssborder(dir, suffix) {
-    return "border" + capdir[dir] + suffix;
-}
-
-function cssbc(dir) {
-    return cssborder(dir, "Color");
+    return "border" + ucdir[dir] + suffix;
 }
 
 var roundpixel = Math.round;
@@ -2504,20 +2502,23 @@ function to_rgba(c) {
     return m ? "rgba(" + m[1] + ", 1)" : c;
 }
 
-function make_model(color) {
-    return $('<div class="bubble hidden'.concat(color, '"><div class="bubtail bubtail0', color, '"></div></div>')).appendTo(document.body);
-}
-
 function calculate_sizes(color) {
-    var $model = make_model(color), tail = $model.children(), ds, x;
-    var sizes = [tail.width(), tail.height()];
-    for (ds = 0; ds < 4; ++ds) {
-        sizes[lcdir[ds]] = 0;
-        if ((x = $model.css("margin" + capdir[ds])) && (x = parseFloat(x)))
-            sizes[lcdir[ds]] = x;
+    if (!sizemap[color]) {
+        const et = $e("div", "bubtail bubtail0" + color),
+            eb = $e("div", "bubble" + color, et);
+        eb.hidden = true;
+        document.body.appendChild(eb);
+        const ets = window.getComputedStyle(et), ebs = window.getComputedStyle(eb);
+        const sizes = {"0": parseFloat(ets.width), "1": parseFloat(ets.height)};
+        for (let ds = 0, x; ds < 4; ++ds) {
+            sizes[lcdir[ds]] = 0;
+            if ((x = ebs["margin" + ucdir[ds]]) && (x = parseFloat(x)))
+                sizes[lcdir[ds]] = x;
+        }
+        eb.remove();
+        sizemap[color] = sizes;
     }
-    $model.remove();
-    return sizes;
+    return sizemap[color];
 }
 
 return function (content, bubopt) {
@@ -2533,7 +2534,7 @@ return function (content, bubopt) {
     var nearpos = null, dirspec = bubopt.anchor, dir = null,
         color = bubopt.color ? " " + bubopt.color : "";
 
-    var bubdiv = $e("div", "bubble" + color,
+    let bubdiv = $e("div", "bubble" + color,
         $e("div", "bubtail bubtail0"),
         $e("div", "bubcontent"),
         $e("div", "bubtail bubtail1"));
@@ -2563,7 +2564,7 @@ return function (content, bubopt) {
         bw[dir^2] = trw + "px";
         bubch[2].style.borderWidth = bw.join(" ");
 
-        for (var i = 1; i <= 3; ++i) {
+        for (let i = 1; i <= 3; ++i) {
             bubch[0].style[lcdir[dir^i]] = bubch[2].style[lcdir[dir^i]] = "";
         }
         bubch[0].style[lcdir[dir]] = (-trw - divbw) + "px";
@@ -2572,16 +2573,15 @@ return function (content, bubopt) {
         var trdelta = (divbw / trh) * Math.sqrt(trw * trw + trh * trh);
         bubch[2].style[lcdir[dir]] = (-trw - divbw + trdelta) + "px";
 
-        for (i = 0; i < 3; i += 2) {
+        for (let i = 0; i < 3; i += 2) {
             bubch[i].style.borderLeftColor = bubch[i].style.borderRightColor =
             bubch[i].style.borderTopColor = bubch[i].style.borderBottomColor = "transparent";
         }
 
-        var yc = to_rgba(divsty.backgroundColor).replace(/([\d.]+)\)/, function (s, p1) {
+        bubch[0].style[cssbc[dir^2]] = divsty[cssbc[dir]];
+        bubch[2].style[cssbc[dir^2]] = to_rgba(divsty.backgroundColor).replace(/([\d.]+)\)/, function (s, p1) {
             return (0.75 * p1 + 0.25) + ")";
         });
-        bubch[0].style[cssbc(dir^2)] = divsty[cssbc(dir)];
-        bubch[2].style[cssbc(dir^2)] = yc;
     }
 
     function constrainmid(nearpos, wpos, ds, ds2) {
@@ -2662,11 +2662,11 @@ return function (content, bubopt) {
     function constrainradius(x, bpos, ds) {
         var x0, x1;
         if (ds & 1) {
-            x0 = csscornerradius(capdir[0] + capdir[ds], 1);
-            x1 = csscornerradius(capdir[2] + capdir[ds], 1);
+            x0 = csscornerradius(ucdir[0] + ucdir[ds], 1);
+            x1 = csscornerradius(ucdir[2] + ucdir[ds], 1);
         } else {
-            x0 = csscornerradius(capdir[ds] + capdir[3], 1);
-            x1 = csscornerradius(capdir[ds] + capdir[1], 1);
+            x0 = csscornerradius(ucdir[ds] + ucdir[3], 1);
+            x1 = csscornerradius(ucdir[ds] + ucdir[1], 1);
         }
         return Math.min(Math.max(x, x0), bpos[szdir[(ds&1)^1]] - x1 - sizes[0]);
     }
@@ -2877,31 +2877,39 @@ return function (content, bubopt) {
 
 
 hotcrp.tooltip = (function ($) {
-var builders = {}, global_tooltip = null;
+const builders = {};
+let global_tooltip = null;
+const tooltip_map = new WeakMap;
 
 function prepare_info(elt, info) {
     var xinfo = elt.getAttribute("data-tooltip-info");
     if (xinfo) {
-        if (typeof xinfo === "string" && xinfo.charAt(0) === "{")
+        if (typeof xinfo === "string" && xinfo.charAt(0) === "{") {
             xinfo = JSON.parse(xinfo);
-        else if (typeof xinfo === "string")
+        } else if (typeof xinfo === "string") {
             xinfo = {builder: xinfo};
+        }
         info = $.extend(xinfo, info);
     }
-    if (info.builder && builders[info.builder])
+    if (info.builder && builders[info.builder]) {
         info = builders[info.builder].call(elt, info) || info;
-    if (info.anchor == null || elt.hasAttribute("data-tooltip-anchor"))
+    }
+    if (info.anchor == null || elt.hasAttribute("data-tooltip-anchor")) {
         info.anchor = elt.getAttribute("data-tooltip-anchor") || "v";
-    if (info.type == null || elt.hasAttribute("data-tooltip-type"))
+    }
+    if (info.type == null || elt.hasAttribute("data-tooltip-type")) {
         info.type = elt.getAttribute("data-tooltip-type");
-    if (info.className == null || elt.hasAttribute("data-tooltip-class"))
+    }
+    if (info.className == null || elt.hasAttribute("data-tooltip-class")) {
         info.className = elt.getAttribute("data-tooltip-class") || "dark";
-    if (elt.hasAttribute("data-tooltip"))
+    }
+    if (elt.hasAttribute("data-tooltip")) {
         info.content = elt.getAttribute("data-tooltip");
-    else if (info.content == null && elt.hasAttribute("aria-label"))
+    } else if (info.content == null && elt.hasAttribute("aria-label")) {
         info.content = elt.getAttribute("aria-label");
-    else if (info.content == null && elt.hasAttribute("title"))
+    } else if (info.content == null && elt.hasAttribute("title")) {
         info.content = elt.getAttribute("title");
+    }
     return info;
 }
 
@@ -2910,17 +2918,17 @@ function show_tooltip(info) {
         return null;
     }
 
-    var $self = $(this);
-    info = prepare_info($self[0], $.extend({}, info || {}));
+    const self = this;
+    info = prepare_info(self, $.extend({}, info || {}));
     info.element = this;
 
-    var tt, bub = null, to = null, near = null,
+    let tt, bub = null, to = null, near = null,
         refcount = 0, content = info.content;
 
     function close() {
         to = clearTimeout(to);
         bub && bub.remove();
-        $self.removeData("tooltipState");
+        tooltip_map.delete(self);
         if (global_tooltip === tt) {
             global_tooltip = null;
         }
@@ -2942,20 +2950,20 @@ function show_tooltip(info) {
     function complete(new_content) {
         if (new_content instanceof HPromise) {
             new_content.then(complete);
+            return;
+        }
+        let tx = global_tooltip;
+        content = new_content;
+        if (tx
+            && tx._element === info.element
+            && tx.html() === content
+            && !info.done) {
+            tt = tx;
         } else {
-            var tx = global_tooltip;
-            content = new_content;
-            if (tx
-                && tx._element === info.element
-                && tx.html() === content
-                && !info.done) {
-                tt = tx;
-            } else {
-                tx && tx.close();
-                $self.data("tooltipState", tt);
-                show_bub();
-                global_tooltip = tt;
-            }
+            tx && tx.close();
+            tooltip_map.set(self, tt);
+            show_bub();
+            global_tooltip = tt;
         }
     }
 
@@ -2968,20 +2976,20 @@ function show_tooltip(info) {
         exit: function () {
             var delay = info.type === "focus" ? 0 : 200;
             to = clearTimeout(to);
-            if (--refcount == 0 && info.type !== "sticky")
+            if (--refcount == 0 && info.type !== "sticky") {
                 to = setTimeout(close, delay);
+            }
             return tt;
         },
         close: close,
-        _element: $self[0],
+        _element: self,
         html: function (new_content) {
             if (new_content === undefined) {
                 return content;
-            } else {
-                content = new_content;
-                show_bub();
-                return tt;
             }
+            content = new_content;
+            show_bub();
+            return tt;
         },
         text: function (new_text) {
             return tt.html(escape_html(new_text));
@@ -2997,25 +3005,24 @@ function show_tooltip(info) {
 }
 
 function ttenter() {
-    var tt = $(this).data("tooltipState") || show_tooltip.call(this);
+    const tt = tooltip_map.get(this) || show_tooltip.call(this);
     tt && tt.enter();
 }
 
 function ttleave() {
-    var tt = $(this).data("tooltipState");
+    const tt = tooltip_map.get(this);
     tt && tt.exit();
 }
 
 function tooltip() {
     removeClass(this, "need-tooltip");
-    var tt = this.getAttribute("data-tooltip-type");
-    if (tt === "focus")
+    if (this.getAttribute("data-tooltip-type") === "focus")
         $(this).on("focus", ttenter).on("blur", ttleave);
     else
         $(this).hover(ttenter, ttleave);
 }
 tooltip.close = function (e) {
-    var tt = e ? $(e).data("tooltipState") : global_tooltip;
+    const tt = e ? tooltip_map.get(e) : global_tooltip;
     tt && tt.close();
 };
 tooltip.close_under = function (e) {

@@ -8,6 +8,8 @@ class Icons {
     /** @readonly */
     static public $move_handle_horizontal_open = '<svg class="move-handle-icon" width="1em" height="0.666em" viewBox="0 0 18 12" preserveAspectRatio="none">';
 
+    /** @param string $name
+     * @return string */
     static function svg_contents($name) {
         switch ($name) {
         case "triangle0":
@@ -58,7 +60,7 @@ class Icons {
             }
         }
         if (!empty($svgs)) {
-            Ht::stash_html("<svg class=\"hidden\"><defs>" . join("", $svgs) . "</defs></svg>");
+            Ht::stash_html("<svg hidden><defs>" . join("", $svgs) . "</defs></svg>");
         }
     }
     /** @param string $name
@@ -181,10 +183,10 @@ class Icons {
         if (str_starts_with($xname, "ui-")) {
             $xname = substr($xname, 3);
             self::stash_defs($xname);
-            Ht::stash_html("<div id=\"i-{$xname}\" class=\"hidden\">" . self::ui_use($xname) . "</div>");
+            Ht::stash_html("<div id=\"i-{$xname}\" hidden>" . self::ui_use($xname) . "</div>");
         } else {
             $body = Icons::$name();
-            Ht::stash_html("<div id=\"i-{$xname}\" class=\"hidden\">{$body}</div>");
+            Ht::stash_html("<div id=\"i-{$xname}\" hidden>{$body}</div>");
         }
     }
 }
