@@ -23,6 +23,9 @@
     "none": {
         "stop": true
     },
+    "independent": {
+        "stop": true
+    },
     "unaffiliated": {
         "stop": true
     },
@@ -431,7 +434,7 @@
     },
     "tech": {
         "weak": true,
-        "alternate": ["technology"]
+        "alternate": ["technology", {"word": "polytechnic", "if": "virginia"}]
     },
     "technology": {
         "weak": true,
@@ -749,6 +752,9 @@
     "kaist": {
         "alternate": ["korea advanced institute science technology"]
     },
+    "kansas": {
+        "sync": ["state"]
+    },
     "kong": {
         "weak": true, "nameish": true,
         "alternate": [
@@ -848,6 +854,9 @@
     },
     "rio": {
         "weak": true
+    },
+    "rochester": {
+        "sync": ["institute"]
     },
     "rome": {
         "sync": ["sapienza", "tor"]
@@ -998,9 +1007,13 @@
     "virginia": {
         "weak": true,
         "alternate": [
-            {"word": "uva", "if": "university"}
+            {"word": "uva", "if": "university"},
+            {"word": "vt", "if": "tech"}
         ],
         "sync": ["commonwealth", "rensselaer"]
+    },
+    "vt": {
+        "alternate": ["virginia tech"]
     },
     "wales": {
         "alternate": [
