@@ -216,18 +216,6 @@ class PCConflicts_PaperOption extends PaperOption {
         }
 
         $confset = $this->conf->conflict_set();
-        $ctypes = [];
-        if ($this->selectors) {
-            $ctypes[0] = $confset->unparse_selector_text(0);
-            foreach ($confset->basic_conflict_types() as $ct) {
-                $ctypes[$ct] = $confset->unparse_selector_text($ct);
-            }
-            if ($admin) {
-                $ctypes["xsep"] = null;
-                $ct = Conflict::set_pinned(Conflict::CT_DEFAULT, true);
-                $ctypes[$ct] = $confset->unparse_selector_text($ct);
-            }
-        }
 
         $ctmaps = [[], []];
         foreach ([$ov, $reqov] as $num => $value) {
@@ -292,25 +280,15 @@ class PCConflicts_PaperOption extends PaperOption {
             if (Conflict::is_author($pct)
                 || (!$admin && Conflict::is_pinned($pct))) {
                 if ($this->selectors) {
-                    if (Conflict::is_author($pct)) {
-                        $confx = "<strong>Author</strong>";
-                    } else if (Conflict::is_conflicted($pct)) {
-                        $confx = "<strong>Conflict</strong>"; // XXX conflict type?
-                    } else {
-                        $confx = "<strong>No conflict</strong>";
-                    }
+                    $confx = "<strong>" . $confset->unparse_text($pct) . "</strong>";
                 } else {
                     $confx = Ht::checkbox("", "", Conflict::is_conflicted($pct), ["disabled" => true]);
                 }
                 $hidden = Ht::hidden("pcconf:{$id}", $pct, ["class" => "conflict-entry", "disabled" => true]);
             } else if ($this->selectors) {
-                $xctypes = $ctypes;
-                if (!isset($xctypes[$ct])) {
-                    $xctypes[$ct] = $confset->unparse_selector_text($ct);
-                }
                 $js["class"] = "conflict-entry";
                 $js["data-default-value"] = $pct;
-                $confx = Ht::select("pcconf:{$id}", $xctypes, $ct, $js);
+                $confx = Ht::select("pcconf:{$id}", $confset->selector_options([$ct, $pct], $admin), $ct, $js);
             } else {
                 $js["data-default-checked"] = Conflict::is_conflicted($pct);
                 $js["data-range-type"] = "pcconf";

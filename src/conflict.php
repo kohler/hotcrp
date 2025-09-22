@@ -13,21 +13,28 @@ class Conflict {
     /** @deprecated */
     const GENERAL = 2;
     const CT_DEFAULT = 2;
+    const CT_ADMINISTRATIVE = 28;
     const CT_GENERIC = 30;
     const F_PIN = 1;
     const FM_PC = 31;
     const FM_PCTYPE = 30;
 
-    static private $desc_map = [2 => "Recent collaborator",
-                                4 => "Advisor/advisee",
-                                6 => "Institutional",
-                                8 => "Personal",
-                                10 => "Other"];
-    static private $json_map = [2 => "collaborator",
-                                4 => "advisor",
-                                6 => "institutional",
-                                8 => "personal",
-                                10 => "other"];
+    static private $desc_map = [
+        2 => "Recent collaborator",
+        4 => "Advisor/advisee",
+        6 => "Institutional",
+        8 => "Personal",
+        10 => "Other",
+        28 => "Administrative"
+    ];
+    static private $json_map = [
+        2 => "collaborator",
+        4 => "advisor",
+        6 => "institutional",
+        8 => "personal",
+        10 => "other",
+        28 => "administrative"
+    ];
 
     /** @param int $ct
      * @return bool */
@@ -65,9 +72,13 @@ class Conflict {
         if (!$admin && ($old & 1) !== 0) {
             return $old;
         }
+        if (!$admin && ($new & self::FM_PCTYPE) === self::CT_ADMINISTRATIVE) {
+            $new = ($new & ~self::FM_PCTYPE)
+                | ($old & self::FM_PCTYPE ? : self::CT_GENERIC);
+        }
         if (($new & self::FM_PCTYPE) === self::CT_GENERIC) {
             $new = ($new & ~self::FM_PCTYPE)
-                | ($old & self::FM_PCTYPE ? : self::CT_DEFAULT);
+                | ($old & self::FM_PCTYPE ? : ($admin ? self::CT_ADMINISTRATIVE : self::CT_DEFAULT));
         }
         return $admin ? $new : $new & ~1;
     }
@@ -143,6 +154,8 @@ class Conflict {
                 $xct = 8;
             } else if ($w === "other") {
                 $xct = 10;
+            } else if ($w === "admin" || $w === "administrative" || $w === "administrator") {
+                $xct = self::CT_ADMINISTRATIVE;
             } else if (ctype_digit($w)) {
                 $xct = intval($w);
                 if (($xct & 1) !== 0 || $w > 30) {
@@ -193,7 +206,8 @@ class Conflict {
                 $t = "Contact";
             } else if ($ct >= CONFLICT_AUTHOR) {
                 $t = "Author";
-            } else if ($ct === (self::CT_DEFAULT | 1)) {
+            } else if ($ct === (self::CT_DEFAULT | 1)
+                       || $ct === (self::CT_ADMINISTRATIVE | 1)) {
                 $t = "Pinned conflict";
             } else if ($this->_desc && isset(self::$desc_map[$ct & ~1])) {
                 $t = self::$desc_map[$ct & ~1];
@@ -205,12 +219,28 @@ class Conflict {
         return $this->_tmap[$ct];
     }
 
-    /** @param int $ct */
-    function unparse_selector_text($ct) {
-        if (($ct & 1) !== 0 && $ct !== (self::CT_DEFAULT | 1)) {
-            return "Pinned " . lcfirst($this->unparse_text($ct & ~1));
+    /** @param list<int> $cts
+     * @param bool $admin
+     * @return array */
+    function selector_options($cts, $admin) {
+        $sopt = ["No conflict"];
+        foreach ($this->basic_conflict_types() as $ct) {
+            if ($admin || $ct !== self::CT_ADMINISTRATIVE)
+                $sopt[$ct] = $this->unparse_text($ct);
         }
-        return $this->unparse_text($ct);
+        foreach ($cts as $ct) {
+            if (!isset($sopt[$ct & ~1]))
+                $sopt[$ct & ~1] = $this->unparse_text($ct & ~1);
+        }
+        if ($admin) {
+            $sopt["xsep"] = null;
+            $sopt[self::CT_ADMINISTRATIVE | self::F_PIN] = "Pinned conflict";
+            foreach ($cts as $ct) {
+                if (!isset($sopt[$ct]))
+                    $sopt[$ct] = "Pinned " . lcfirst($this->unparse_text($ct & ~1));
+            }
+        }
+        return $sopt;
     }
 
     /** @param int $ct
@@ -279,8 +309,7 @@ class Conflict {
         $j = $this->unparse_json($ct);
         if (is_bool($j)) {
             return $j ? "conflict" : "no";
-        } else {
-            return $j;
         }
+        return $j;
     }
 }

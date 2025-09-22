@@ -61,7 +61,8 @@ class ConflictAssign_Page {
             $filter = function ($pl, $row) use ($isall) {
                 $user = $pl->reviewer_user();
                 $ct = $row->conflict_type($user);
-                if (Conflict::is_pinned($ct)) {
+                if (Conflict::is_pinned($ct)
+                    || ($ct & Conflict::FM_PCTYPE) === Conflict::CT_ADMINISTRATIVE) {
                     return $isall;
                 }
                 return !Conflict::is_conflicted($ct)
