@@ -13,7 +13,7 @@ class ConflictAssign_Page {
         }
         $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $isneg = friendly_boolean($qreq->neg);
-        $isall = friendly_boolean($qreq->all);
+        $isall = !$isneg && friendly_boolean($qreq->all);
 
         $qreq->print_header("Assignments", "conflictassign", ["subtitle" => "Conflicts"]);
         echo '<nav class="papmodes mb-5 clearfix"><ul>',
@@ -44,7 +44,7 @@ class ConflictAssign_Page {
         $search = (new PaperSearch($user, ["t" => $qreq->t ?? "alladmin", "q" => ""]))
             ->set_urlbase("conflictassign", [
                 "neg" => $isneg ? 1 : null,
-                "all" => $isall && !$isneg ? 1 : null
+                "all" => $isall ? 1 : null
             ]);
         $rowset = $conf->paper_set(["allConflictType" => 1, "allReviewerPreference" => 1, "tags" => 1, "paperId" => $search->paper_ids()], $user);
         $qreq->qsession()->commit(); // page takes forever to render

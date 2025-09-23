@@ -2853,7 +2853,8 @@ return function (content, bubopt) {
             return bubble;
         },
         hover: function (enter, leave) {
-            $(bubdiv).hover(enter, leave);
+            bubdiv.addEventListener("pointerenter", enter);
+            bubdiv.addEventListener("pointerleave", leave);
             return bubble;
         },
         removeOn: function (jq, evt) {
@@ -11423,6 +11424,7 @@ hotcrp.render_list = function () {
     $(".need-tags").each(function () {
         render_row_tags(this.closest(".pl_tags"));
     });
+    $(".need-tooltip").each(hotcrp.tooltip);
     $(".pltable-draggable").each(paperlist_tag_ui.prepare_draggable);
     render_text.on_page();
 }
@@ -14155,6 +14157,22 @@ handle_ui.on("js-assign-potential-conflict", function () {
             success: success, trackOutstanding: true
         });
     });
+});
+
+hotcrp.tooltip.add_builder("cflt", function (info) {
+    const ex = {anchor: "s"};
+    if (hasClass(this, "cflt-no")) {
+        ex.content = "No conflict";
+    } else if (hasClass(this, "cflt-no-pinned")) {
+        ex.content = "Pinned no conflict";
+    } else if (hasClass(this, "cflt-no-potential")) {
+        ex.content = "Unconfirmed potential conflict";
+    } else if (hasClass(this, "cflt-yes")) {
+        ex.content = "Conflict";
+    } else if (hasClass(this, "cflt-yes-pinned")) {
+        ex.content = "Pinned conflict";
+    }
+    return Object.assign(ex, info);
 });
 
 handle_ui.on("js-assign-review", function (evt) {

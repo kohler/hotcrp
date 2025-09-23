@@ -72,7 +72,7 @@ class Conflict_AssignmentParser extends AssignmentParser {
         if (!$this->iscontact
             && ($pos = strpos((string) $req["conflict"], ":")) !== false) {
             $x = strtolower(substr($req["conflict"], 0, $pos));
-            if (in_array($x, ["", "any", "all", "y", "yes", "conflict", "conflicted"], true)) {
+            if (in_array($x, ["", "any", "all", "y", "yes", "conflict", "conflicted", "on"], true)) {
                 return new CountMatcher(">" . CONFLICT_MAXUNCONFLICTED);
             } else if (($ct = $conf->conflict_set()->parse_assignment($x)) !== false) {
                 return new CountMatcher("=" . $ct);

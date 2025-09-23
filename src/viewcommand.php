@@ -130,7 +130,7 @@ class ViewCommand {
             return [];
         }
 
-        if ($edit) {
+        if ($edit && !$view_options->has("edit")) {
             $view_options->add("edit", true);
         }
 

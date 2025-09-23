@@ -185,7 +185,8 @@ class Conflict {
         return $au | ($ct ?? 0) | ($pin ? 1 : 0);
     }
 
-    /** @return int|false */
+    /** @param mixed $j
+     * @return int|false */
     function parse_json($j) {
         if (is_bool($j)) {
             return $j ? self::CT_GENERIC : 0;

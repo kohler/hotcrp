@@ -4,7 +4,7 @@
 
 class Conflict_PaperColumn extends PaperColumn {
     /** @var ?Contact */
-    private $contact;
+    private $user;
     /** @var bool */
     private $show_user;
     /** @var bool */
@@ -19,6 +19,8 @@ class Conflict_PaperColumn extends PaperColumn {
     private $pin_no = false;
     /** @var bool */
     private $pin_yes = false;
+    /** @var bool */
+    private $palette = false;
     /** @var string */
     private $usuffix;
     /** @var Conflict */
@@ -27,31 +29,33 @@ class Conflict_PaperColumn extends PaperColumn {
         parent::__construct($conf, $cj);
         $this->override = PaperColumn::OVERRIDE_IFEMPTY;
         if (($this->show_user = isset($cj->user))) {
-            $this->contact = $conf->pc_member_by_email($cj->user);
+            $this->user = $conf->pc_member_by_email($cj->user);
         }
         $this->description = $cj->show_description ?? false;
         $this->editable = $cj->edit ?? false;
     }
     static function basic_view_option_schema() {
-        return ["simple", "edit", "pin=all,yes|none,no|unconflicted|conflicted", "description", "desc/description"];
+        return ["simple", "edit=yes|no|palette", "pin=all,yes|none,no|unconflicted|conflicted", "description", "desc/description"];
     }
     function view_option_schema() {
         return self::basic_view_option_schema();
     }
     function prepare(PaperList $pl, $visible) {
-        $this->contact = $this->contact ? : $pl->reviewer_user();
-        $this->not_me = $this->contact->contactId !== $pl->user->contactId;
-        $this->editable = $this->view_option("edit") ?? $this->editable;
+        $this->user = $this->user ? : $pl->reviewer_user();
+        $this->not_me = $this->user->contactId !== $pl->user->contactId;
+        $editing = $this->view_option("edit") ?? $this->editable;
+        $this->editable = $editing && $editing !== "no";
         if ($this->editable) {
             $this->simple = $this->view_option("simple") ?? false;
             $pin = $this->view_option("pin") ?? "none";
             $this->pin_no = $pin === "all" || $pin === "unconflicted";
             $this->pin_yes = $pin === "all" || $pin === "conflicted";
             $this->override = PaperColumn::OVERRIDE_BOTH;
+            $this->palette = $editing === "palette";
         }
         $this->description = $pl->conf->setting("sub_pcconfsel")
             && ($this->view_option("description") ?? $this->description);
-        $this->usuffix = $this->simple ? "" : "u{$this->contact->contactId}";
+        $this->usuffix = $this->simple ? "" : "u{$this->user->contactId}";
         $this->cset = $pl->conf->conflict_set();
         return true;
     }
@@ -59,7 +63,7 @@ class Conflict_PaperColumn extends PaperColumn {
         if ($this->not_me && !$pl->user->can_view_conflicts($row)) {
             return 0;
         }
-        $ct = $row->conflict_type($this->contact);
+        $ct = $row->conflict_type($this->user);
         if ($this->description
             && Conflict::is_conflicted($ct)
             && !$pl->user->can_view_authors($row)) {
@@ -80,12 +84,12 @@ class Conflict_PaperColumn extends PaperColumn {
             || $this->simple) {
             return "Conflict";
         } else if ($is_text) {
-            return $pl->user->reviewer_text_for($this->contact) . " conflict";
+            return $pl->user->reviewer_text_for($this->user) . " conflict";
         }
-        return $pl->user->reviewer_html_for($this->contact) . "<br>conflict";
+        return $pl->user->reviewer_html_for($this->user) . "<br>conflict";
     }
     protected function checked(PaperList $pl, PaperInfo $row) {
-        return $pl->is_selected($row->paperId, $row->has_conflict($this->contact));
+        return $pl->is_selected($row->paperId, $row->has_conflict($this->user));
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return $this->not_me && !$pl->user->can_view_conflicts($row);
@@ -107,9 +111,11 @@ class Conflict_PaperColumn extends PaperColumn {
         if (!$pl->user->allow_administer($row)) {
             return false;
         }
-        $ct = $row->conflict_type($this->contact);
+        $ct = $row->conflict_type($this->user);
         if (Conflict::is_author($ct)) {
             return "Author";
+        } else if ($this->palette) {
+            return $this->edit_content_palette($pl, $row, $ct);
         }
         if (Conflict::is_conflicted($ct)) {
             $suffix = " checked";
@@ -121,10 +127,38 @@ class Conflict_PaperColumn extends PaperColumn {
             $nonvalue = $this->cset->unparse_assignment($ct);
         }
         if ($this->show_user) {
-            $n = htmlspecialchars($pl->user->name_text_for($this->contact));
+            $n = htmlspecialchars($pl->user->name_text_for($this->user));
             $suffix .= " title=\"{$n} conflict\"";
         }
-        return "<input type=\"checkbox\" class=\"uic uikd uich js-assign-review js-range-click\" data-range-type=\"assrev{$this->usuffix}\" name=\"assrev{$row->paperId}u{$this->contact->contactId}\" value=\"{$value}\" data-unconflicted-value=\"{$nonvalue}\" autocomplete=\"off\" tabindex=\"0\"{$suffix}>";
+        return "<input type=\"checkbox\" class=\"uic uikd uich js-assign-review js-range-click\" data-range-type=\"assrev{$this->usuffix}\" name=\"assrev{$row->paperId}u{$this->user->contactId}\" value=\"{$value}\" data-unconflicted-value=\"{$nonvalue}\" autocomplete=\"off\" tabindex=\"0\"{$suffix}>";
+    }
+    private function edit_content_palette(PaperList $pl, PaperInfo $row, $ct) {
+        $t = ['<span class="btnbox">'];
+        $t[] = $this->radio_for($row, true, true, $ct);
+        $t[] = $this->radio_for($row, false, true, $ct);
+        $t[] = $this->radio_for($row, false, false, $ct);
+        $t[] = $this->radio_for($row, true, false, $ct);
+        $t[] = '</span>';
+        $pl->need_render = true;
+        return join("", $t);
+    }
+    private function radio_for(PaperInfo $row, $pinned, $conflicted, $ct) {
+        $checked = Conflict::is_conflicted($ct) === $conflicted
+            && Conflict::is_pinned($ct) === $pinned ? " checked" : "";
+        $klass = $conflicted ? "yes" : "no";
+        if (Conflict::is_conflicted($ct) && $conflicted) {
+            $value = $this->cset->unparse_assignment(Conflict::set_pinned($ct, false));
+        } else {
+            $value = $conflicted ? "conflicted" : "unconflicted";
+        }
+        if ($pinned) {
+            $klass .= "-pinned";
+            $value = "pinned {$value}";
+        } else if (!$conflicted && $row->potential_conflict($this->user)) {
+            $klass .= "-potential";
+        }
+        $cn = ($pinned ? 2 : 0) | ($conflicted ? 1 : 0);
+        return "<input type=\"radio\" class=\"uic uikd uich js-assign-review js-range-click btn cflt cflt-{$klass} need-tooltip\" data-tooltip-info=\"cflt\" data-range-type=\"assrev{$this->usuffix}cv{$cn}\" name=\"assrev{$row->paperId}u{$this->user->contactId}\" value=\"{$value}\" autocomplete=\"off\" tabindex=\"0\"{$checked}>";
     }
     function text(PaperList $pl, PaperInfo $row) {
         $ct = $this->conflict_type($pl, $row);

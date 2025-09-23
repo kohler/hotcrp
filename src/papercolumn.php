@@ -410,9 +410,8 @@ class ReviewStatus_PaperColumn extends PaperColumn {
         }
         if ($is_text) {
             return "# {$round_name}Reviews";
-        } else {
-            return '<span class="need-tooltip" aria-label="# completed reviews / # assigned reviews" data-tooltip-anchor="s">#&nbsp;' . $round_name . 'Reviews</span>';
         }
+        return '<span class="need-tooltip" aria-label="# completed reviews / # assigned reviews" data-tooltip-anchor="s">#&nbsp;' . $round_name . 'Reviews</span>';
     }
     function content_empty(PaperList $pl, PaperInfo $row) {
         return !$pl->user->can_view_review_assignment($row, null);
