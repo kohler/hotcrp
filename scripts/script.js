@@ -14162,9 +14162,9 @@ handle_ui.on("js-assign-potential-conflict", function () {
 hotcrp.tooltip.add_builder("cflt", function (info) {
     const ex = {anchor: "s"};
     if (hasClass(this, "cflt-no")) {
-        ex.content = "No conflict";
+        ex.content = "Non-conflict";
     } else if (hasClass(this, "cflt-no-pinned")) {
-        ex.content = "Pinned no conflict";
+        ex.content = "Pinned non-conflict";
     } else if (hasClass(this, "cflt-no-potential")) {
         ex.content = "Unconfirmed potential conflict";
     } else if (hasClass(this, "cflt-yes")) {

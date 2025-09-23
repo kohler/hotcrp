@@ -149,7 +149,7 @@ class Conflict_PaperColumn extends PaperColumn {
         if (Conflict::is_conflicted($ct) && $conflicted) {
             $value = $this->cset->unparse_assignment(Conflict::set_pinned($ct, false));
         } else {
-            $value = $conflicted ? "conflicted" : "unconflicted";
+            $value = $conflicted ? "conflict" : "nonconflict";
         }
         if ($pinned) {
             $klass .= "-pinned";

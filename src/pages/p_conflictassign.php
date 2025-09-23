@@ -29,7 +29,7 @@ class ConflictAssign_Page {
             echo '<p>This page lists conflicts declared by authors, but not justified by fuzzy matching between authors and PC members’ affiliations and collaborator lists.</p>';
             echo '<p><a href="', $conf->hoturl("conflictassign"), '">Check for missing conflicts</a></p>';
         } else {
-            echo '<p>This page shows potential missing conflicts detected by fuzzy matching between authors and PC members’ affiliations and collaborator lists. Confirm any true conflicts using the checkboxes.</p>',
+            echo '<p>This page shows potential missing conflicts detected by fuzzy matching between authors and PC members’ affiliations and collaborator lists. Confirm true conflicts and mark false positives using the buttons.</p>',
                 '<p><a href="', $conf->hoturl("conflictassign", "neg=1"), '">Check for inappropriate conflicts</a> <span class="barsep">·</span> ';
             if ($isall) {
                 echo '<a href="', $conf->hoturl("conflictassign"), '">Hide previously-confirmed conflicts</a>';

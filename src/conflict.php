@@ -138,11 +138,12 @@ class Conflict {
             }
 
             $xct = null;
-            if ($w === "none" || $w === "n" || $w === "no" || $w === "0"
-                || $w === "off" || $w === "unconflicted" || $w === "noconflict") {
+            if ($w === "none" || $w === "n" || $w === "no" || $w === "0" || $w === "off"
+                || $w === "unconflicted" || $w === "noconflict"
+                || $w === "nonconflict" || $w === "non-conflict") {
                 $xct = 0;
-            } else if ($w === "y" || $w === "yes" || $w === "1"
-                       || $w === "on" || $w === "conflicted" || $w === "conflict") {
+            } else if ($w === "y" || $w === "yes" || $w === "1" || $w === "on"
+                       || $w === "conflicted" || $w === "conflict") {
                 $xct = self::CT_GENERIC;
             } else if ($w === "collab" || $w === "collaborator") {
                 $xct = 2;
