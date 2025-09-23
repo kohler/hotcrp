@@ -1755,40 +1755,19 @@ fieldset.wizard-accordion-step.future > legend {
 
 
 /* Ajax checks */
-.mf-text, .mf-absolute {
+.is-mf {
+	/*outline: 2px solid blue;*/
 	display: inline-block;
-	text-indent: 0;
-	position: relative;
+	height: 0px;
 }
 .is-mf::after {
 	display: inline-block;
+	position: absolute;
 	text-indent: 0;
 	font-size: smaller;
 	pointer-events: none;
-	padding-left: 0.25em;
-}
-.mf-text .is-mf {
-	position: absolute;
-	right: 0.35em;
-	bottom: 0.5em;
-}
-.mf-absolute .is-mf {
-	position: absolute;
-	left: 100%;
-	bottom: 0;
-}
-.select .is-mf {
-	position: absolute;
-	left: 100%;
-	bottom: 0.5em;
-}
-.btn .is-mf {
-	position: absolute;
-	left: 100%;
-}
-.checkmark-before::before {
-	content: "\2713";
-	padding-right: 0.25em;
+	margin-left: 0.25em;
+	margin-top: -1em;
 }
 .is-mf.mf-success::after {
 	content: "\2713";
@@ -1798,6 +1777,14 @@ fieldset.wizard-accordion-step.future > legend {
 .is-mf.mf-error::after {
 	content: "\2717";
 	color: #ff0000;
+}
+.is-mf.mf-near-text::after {
+	margin-left: -1.25em;
+	margin-top: -1em;
+}
+.checkmark-before::before {
+	content: "\2713";
+	padding-right: 0.25em;
 }
 @keyframes minifeedback-fadeout {
 	65% { opacity: 1; }

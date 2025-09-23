@@ -2312,7 +2312,7 @@ handle_ui.on("js-range-click", function (evt) {
         kind = this.getAttribute("data-range-type") || this.name;
     f.jsRangeClick = rangeclick_state;
 
-    var key = false;
+    let key = false;
     if (evt.type === "keydown" && !event_key.modcode(evt)) {
         key = event_key(evt);
     }
@@ -2322,19 +2322,21 @@ handle_ui.on("js-range-click", function (evt) {
         return;
 
     // find checkboxes and groups of this type
-    var cbs = [], cbisg = [], cbgs = [], x;
+    const cbs = [], cbisg = [], cbgs = [];
     $(f).find("input.js-range-click").each(function () {
         var tkind = this.getAttribute("data-range-type") || this.name;
         if (kind === tkind) {
             cbs.push(this);
-            cbisg.push((x = hasClass(this, "is-range-group")));
+            const x = hasClass(this, "is-range-group");
+            cbisg.push(x);
             x && cbgs.push(this);
         }
     });
 
     // find positions
-    var lastelt = rangeclick_state[kind], thispos, lastpos, i;
-    for (i = 0; i !== cbs.length; ++i) {
+    const lastelt = rangeclick_state[kind];
+    let thispos, lastpos;
+    for (let i = 0; i !== cbs.length; ++i) {
         if (cbs[i] === this)
             thispos = i;
         if (cbs[i] === lastelt)
@@ -2353,26 +2355,25 @@ handle_ui.on("js-range-click", function (evt) {
 
     var lastgidx = 0;
     function range_group_match(e, g, gelt) {
-        var i, eg;
         if (g === "auto") {
             if (cbs[lastgidx] !== gelt) {
                 for (lastgidx = 0; cbs[lastgidx] && cbs[lastgidx] !== gelt; ++lastgidx) {
                 }
             }
-            for (i = lastgidx + 1; cbs[i] && !cbisg[i]; ++i) {
+            for (let i = lastgidx + 1; cbs[i] && !cbisg[i]; ++i) {
                 if (cbs[i] === e)
                     return true;
             }
             return false;
-        } else {
-            return !g
-                || (eg = e.getAttribute("data-range-group")) === g
-                || (eg && eg.length > g.length && eg.split(" ").includes(g));
         }
+        let eg;
+        return !g
+            || (eg = e.getAttribute("data-range-group")) === g
+            || (eg && eg.length > g.length && eg.split(" ").includes(g));
     }
 
     // handle click
-    var group = null, gelt = null, single_clicked = false, j;
+    let group = null, gelt = null, single_clicked = false, i, j;
     if (evt.type === "click") {
         rangeclick_state.__clicking__ = true;
 
@@ -2417,7 +2418,7 @@ handle_ui.on("js-range-click", function (evt) {
         if (single_clicked && !range_group_match(single_clicked, group, cbgs[j]))
             continue;
 
-        var state = null;
+        let state = null;
         for (i = 0; i !== cbs.length; ++i) {
             if (!cbisg[i] && range_group_match(cbs[i], group, cbgs[j])) {
                 if (state === null)
@@ -5807,7 +5808,8 @@ $(function () {
 
 
 function minifeedback(e, rv) {
-    var ul = document.createElement("ul"), status = 0;
+    const ul = document.createElement("ul");
+    let status = 0;
     ul.className = "feedback-list";
     if (rv && rv.message_list) {
         for (let mx of rv.message_list) {
@@ -5828,50 +5830,59 @@ function minifeedback(e, rv) {
     }
     removeClass(e, "has-error");
     removeClass(e, "has-warning");
-    if (status > 0)
+    if (status > 0) {
         addClass(e, status > 1 ? "has-error" : "has-warning");
-    if (ul.firstChild)
+    }
+    if (ul.firstChild) {
         make_bubble(ul, status > 1 ? "errorbubble" : "warningbubble").near(e).removeOn(e, "input change click hide" + (status > 1 ? "" : " focus blur"));
-
-    var ce, checkish = e.tagName === "BUTTON" || e.tagName === "SELECT" || e.type === "checkbox" || e.type === "radio";
-    if (checkish
-        || hasClass(e, "mf-label")
-        || (status === 0 && hasClass(e, "mf-label-success"))) {
-        ce = e.closest("label");
-        if (!ce && e.id)
-            ce = document.querySelector("label[for='" + e.id + "']");
     }
-    if (!ce && hasClass(e, "mf")) {
-        ce = e;
-    } else if (!ce) {
-        let ex = e, exp = e.parentElement;
-        if (hasClass(exp, "btnbox")) {
-            ex = exp;
-            exp = exp.parentElement;
+
+    let ctr, prev = null;
+    if (hasClass(e, "mf-label")
+        || (status === 0 && hasClass(e, "mf-label-success"))
+        || ["checkbox", "radio", "select-one", "select-multiple", "button"].includes(e.type)) {
+        ctr = e.closest("label");
+        if (!ctr && e.id) {
+            ctr = document.querySelector(`label[for='${e.id}']`);
         }
-        if (hasClass(exp, "mf")) {
-            ce = exp;
-        } else {
-            ce = document.createElement("div");
-            ce.className = checkish ? "mf mf-absolute" : "mf mf-text";
-            exp.replaceChild(ce, ex);
-            ce.appendChild(ex);
+    }
+    if (!ctr
+        && !(ctr = e.closest(".mf"))) {
+        prev = e;
+        ctr = e.parentElement;
+        if (hasClass(ctr, "select") || hasClass(ctr, "btnbox")) {
+            prev = ctr;
+            ctr = ctr.parentElement;
         }
     }
 
-    $(ce).find(".is-mf").remove();
-    var mfe = document.createElement("span");
-    mfe.className = "is-mf mf-" + ["success", "warning", "error"][status];
-    ce.appendChild(mfe);
+    while (prev
+           && prev.nextElementSibling
+           && hasClass(prev.nextElementSibling, "is-mf")) {
+        prev.nextElementSibling.remove();
+    }
+    while (!prev
+           && ctr.lastElementChild
+           && hasClass(ctr.lastElementChild, "is-mf")) {
+        ctr.lastElementChild.remove();
+    }
+
+    let mfclass = "is-mf mf-" + ["success", "warning", "error"][status];
+    if (prev && prev instanceof HTMLInputElement && prev.type === "text") {
+        mfclass += " mf-near-text";
+    }
+    const xe = $e("span", mfclass);
+    ctr.insertBefore(xe, prev ? prev.nextElementSibling : null);
     if (status === 0) {
-        var to, fn = function () {
+        let to, fn = function () {
             e.removeEventListener("input", fn);
             clearTimeout(to);
-            if (mfe.parentElement === ce)
-                ce.removeChild(mfe);
+            if (xe.parentElement === ctr) {
+                ctr.removeChild(xe);
+            }
         };
         e.addEventListener("input", fn);
-        to = setTimeout(fn, parseFloat(getComputedStyle(mfe, ":after").animationDuration + 1) * 1000);
+        to = setTimeout(fn, parseFloat(getComputedStyle(xe, ":after").animationDuration + 1) * 1000);
     }
 }
 
