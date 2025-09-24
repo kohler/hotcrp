@@ -220,35 +220,38 @@ class Users_Page {
     private function handle_modify() {
         $modifyfn = $this->qreq->modifyfn;
         unset($this->qreq->fn, $this->qreq->modifyfn);
-        $ms = new MessageSet;
+        $ua = new UserActions($this->viewer);
 
         if ($modifyfn === "disableaccount") {
-            $j = UserActions::disable($this->viewer, $this->papersel);
-            if ($j->disabled_users ?? false) {
-                $ms->success($this->conf->_("<0>Accounts {:list} disabled", $j->disabled_users));
+            $ua->disable($this->papersel);
+            if (!empty($ua->name_list("disabled"))) {
+                $ua->success($this->conf->_("<0>Accounts {:list} disabled", $ua->name_list("disabled")));
+            } else if (!$ua->has_message()) {
+                $ua->append_item(MessageItem::warning_note("<0>No changes"));
             }
         } else if ($modifyfn === "enableaccount") {
-            $j = UserActions::enable($this->viewer, $this->papersel);
-            if ($j->enabled_users ?? false) {
-                $ms->success($this->conf->_("<0>Accounts {:list} enabled", $j->enabled_users));
+            $ua->enable($this->papersel);
+            if (!empty($ua->name_list("enabled"))) {
+                $ua->success($this->conf->_("<0>Accounts {:list} enabled", $ua->name_list("enabled")));
+            } else if (!$ua->has_message()) {
+                $ua->append_item(MessageItem::warning_note("<0>No changes"));
             }
-            if ($j->activated_users ?? false) {
-                $ms->success($this->conf->_("<0>Accounts {:list} activated and notified", $j->activated_users));
+            if (!empty($ua->name_list("activated"))) {
+                $ua->success($this->conf->_("<0>Accounts {:list} activated and notified", $ua->name_list("activated")));
             }
         } else if ($modifyfn === "sendaccount") {
-            $j = UserActions::send_account_info($this->viewer, $this->papersel);
-            if ($j->mailed_users ?? false) {
-                $ms->success($this->conf->_("<0>Sent account information mail to {:list}", $j->mailed_users));
+            $ua->send_account_info($this->papersel);
+            if (!empty($ua->name_list("mailed"))) {
+                $ua->success($this->conf->_("<0>Sent account information mail to {:list}", $ua->name_list("mailed")));
             }
-            if ($j->skipped_users ?? false) {
-                $ms->append_item(MessageItem::warning_note($this->conf->_("<0>Skipped disabled accounts {:list}", $j->skipped_users)));
+            if (!empty($ua->name_list("skipped"))) {
+                $ua->append_item(MessageItem::warning_note($this->conf->_("<0>Skipped disabled accounts {:list}", $ua->name_list("skipped"))));
             }
         } else {
             return false;
         }
 
-        $ms->append_list($j->message_list ?? []);
-        $this->conf->feedback_msg($ms);
+        $this->conf->feedback_msg($ua);
         $this->conf->redirect_self($this->qreq);
         return true;
     }
