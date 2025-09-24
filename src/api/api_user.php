@@ -106,9 +106,8 @@ class User_API {
             return ["ok" => true];
         } else if ($qreq->clickthrough_accept) {
             return JsonResult::make_error(400, "<0>Parameter error");
-        } else {
-            return ["ok" => false];
         }
+        return ["ok" => false];
     }
 
     /** @param bool $disabled
