@@ -244,7 +244,7 @@ class Contact implements JsonSerializable {
     const CF_PRIMARY = 0x80;
 
     const CFM_DISABLEMENT = 0x1F;
-    const CFM_DB = ~0xC;
+    const CFM_DB = ~0x4;
 
     const PROP_LOCAL = 0x01;
     const PROP_CDB = 0x02;
