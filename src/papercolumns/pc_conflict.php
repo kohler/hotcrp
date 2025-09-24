@@ -35,7 +35,7 @@ class Conflict_PaperColumn extends PaperColumn {
         $this->editable = $cj->edit ?? false;
     }
     static function basic_view_option_schema() {
-        return ["simple", "edit=yes|no|palette", "pin=all,yes|none,no|unconflicted|conflicted", "description", "desc/description"];
+        return ["simple", "edit=yes|no|palette", "pin=all,yes|none,no|nonconflict,unconflicted|conflict,conflicted", "description", "desc/description"];
     }
     function view_option_schema() {
         return self::basic_view_option_schema();
@@ -48,8 +48,8 @@ class Conflict_PaperColumn extends PaperColumn {
         if ($this->editable) {
             $this->simple = $this->view_option("simple") ?? false;
             $pin = $this->view_option("pin") ?? "none";
-            $this->pin_no = $pin === "all" || $pin === "unconflicted";
-            $this->pin_yes = $pin === "all" || $pin === "conflicted";
+            $this->pin_no = $pin === "all" || $pin === "nonconflict";
+            $this->pin_yes = $pin === "all" || $pin === "conflict";
             $this->override = PaperColumn::OVERRIDE_BOTH;
             $this->palette = $editing === "palette";
         }
@@ -107,9 +107,9 @@ class Conflict_PaperColumn extends PaperColumn {
         }
         return $this->cset->unparse_html(min($ct, CONFLICT_AUTHOR));
     }
-    function edit_content(PaperList $pl, PaperInfo $row) {
+    private function edit_content(PaperList $pl, PaperInfo $row) {
         if (!$pl->user->allow_administer($row)) {
-            return false;
+            return "";
         }
         $ct = $row->conflict_type($this->user);
         if (Conflict::is_author($ct)) {
