@@ -486,101 +486,17 @@ class Profile_Page {
         }
     }
 
-    private function check_delete() {
-        if (!$this->viewer->privChair) {
-            $this->conf->error_msg("<0>Only administrators can delete accounts");
-            return false;
-        }
-        if ($this->user === $this->viewer) {
-            $this->conf->error_msg("<0>You can’t delete your own account");
-            return false;
-        }
-        if ($this->user->is_anonymous_user()) {
-            $this->conf->error_msg("<0>Account {} cannot be deleted", $this->user->email);
-            return false;
-        }
-        if (!$this->user->has_account_here()) {
-            $this->conf->feedback_msg(MessageItem::marked_note("<0>Account {} is not active on this site", $this->user->email));
-            return false;
-        }
-        if ($this->user->security_locked_here()) {
-            $this->conf->error_msg("<0>Account {} is locked and can’t be deleted", $this->user->email);
-            return false;
-        }
-        if (($this->user->cflags & Contact::CF_PRIMARY) !== 0) {
-            $links = Dbl::fetch_first_columns($this->conf->dblink,
-                "select email from ContactInfo join ContactPrimary using (contactId)
-                where ContactPrimary.primaryContactId=?", $this->user->contactId);
-            if (!empty($links)) {
-                $this->conf->feedback_msg(
-                    MessageItem::error("<0>Account {} can’t be deleted because it has linked accounts", $this->user->email),
-                    MessageItem::inform("<0>You will be able to delete the account after deleting {:list}.", $links)
-                );
-                return false;
-            }
-        }
-        if (($tracks = UserStatus::user_paper_info($this->conf, $this->user->contactId))
-            && !empty($tracks->soleAuthor)) {
-            $this->conf->feedback_msg(
-                MessageItem::error("<5>Account {} can’t be deleted because it is sole contact for " . UserStatus::render_paper_link($this->conf, $tracks->soleAuthor), new FmtArg(0, $this->user->email, 0)),
-                MessageItem::inform("<0>You will be able to delete the account after deleting those papers or adding additional paper contacts.")
-            );
-            return false;
-        }
-        return true;
-    }
-
     private function handle_delete() {
-        if (!$this->check_delete()) {
-            return;
+        $ua = new UserActions($this->viewer);
+        $ua->delete($this->user);
+        $ok = !empty($ua->name_list("deleted"));
+        if ($ok) {
+            $ua->append_item(MessageItem::success("<0>Account {:list} deleted", $ua->name_list("deleted")));
         }
-        // insert deletion marker
-        $this->conf->qe("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?, affiliation=?", $this->user->contactId, $this->user->firstName, $this->user->lastName, $this->user->unaccentedName, $this->user->email, $this->user->affiliation);
-        // remove roles (and update contactdb)
-        if (($this->user->roles & Contact::ROLE_DBMASK) !== 0) {
-            $this->user->save_roles(0, $this->viewer);
+        $this->conf->feedback_msg($ua);
+        if ($ok) {
+            $this->conf->redirect_hoturl("users", "t=all");
         }
-        // unlink from primary
-        if ($this->user->primaryContactId > 0) {
-            (new ContactPrimary($this->viewer))->link($this->user, null);
-        }
-        // load paper set for reviews and comments
-        $prows = $this->conf->paper_set([
-            "where" => "paperId in (select paperId from PaperReview where contactId={$this->user->contactId} union select paperId from PaperComment where contactId={$this->user->contactId})"
-        ]);
-        // delete reviews (needs to be logged, might update other information)
-        $result = $this->conf->qe("select * from PaperReview where contactId=?", $this->user->contactId);
-        while (($rrow = ReviewInfo::fetch($result, $prows, $this->conf))) {
-            $rrow->delete($this->viewer, ["no_autosearch" => true]);
-        }
-        Dbl::free($result);
-        // delete comments (needs to be logged)
-        $result = $this->conf->qe("select * from PaperComment where contactId=?", $this->user->contactId);
-        while (($crow = CommentInfo::fetch($result, $prows, $this->conf))) {
-            $crow->delete($this->viewer, ["no_autosearch" => true]);
-        }
-        Dbl::free($result);
-        // delete from other tables database
-        foreach (["PaperConflict", "PaperWatch",
-                  "PaperReviewPreference", "PaperReviewRefused", "ReviewRating",
-                  "TopicInterest", "ContactInfo"] as $table) {
-            $this->conf->qe_raw("delete from {$table} where contactId={$this->user->contactId}");
-        }
-        // delete twiddle tags
-        $assigner = new AssignmentSet($this->viewer);
-        $assigner->set_override_conflicts(true);
-        $assigner->parse("paper,tag\nall,{$this->user->contactId}~all#clear\n");
-        $assigner->execute();
-        // automatic tags may have changed
-        $this->conf->update_automatic_tags();
-        // clear caches
-        if ($this->user->isPC || $this->user->privChair) {
-            $this->conf->invalidate_caches(["pc" => true]);
-        }
-        // done
-        $this->conf->success_msg("<0>Account {} deleted", $this->user->email);
-        $this->viewer->log_activity_for($this->user, "Account deleted {$this->user->email}");
-        $this->conf->redirect_hoturl("users", "t=all");
     }
 
     function handle_request() {
