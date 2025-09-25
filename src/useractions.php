@@ -169,7 +169,7 @@ class UserActions extends MessageSet {
         // change cflags to mark user as deleted
         // also change roles (do not log roles change, as we will shortly log deletion)
         // and delete password
-        $user->set_prop("cflags", $user->cflags | Contact::CF_PLACEHOLDER | Contact::CF_DELETED);
+        $user->set_prop("cflags", ($user->cflags & ~Contact::CF_PLACEHOLDER) | Contact::CF_DELETED);
         $user->set_prop("roles", 0);
         $user->set_prop("contactTags", null);
         $user->set_prop("password", "");
