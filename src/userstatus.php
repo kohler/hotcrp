@@ -442,14 +442,6 @@ class UserStatus extends MessageSet {
         if ($user->contactId && ($tm = $user->topic_interest_map())) {
             $cj->topics = (object) $tm;
         }
-
-        $user_data = clone $user->data();
-        foreach (Contact::$props as $prop => $shape) {
-            unset($user_data->$prop);
-        }
-        if (!empty(get_object_vars($user_data))) {
-            $cj->data = $user_data;
-        }
     }
 
     function user_json() {
@@ -1270,15 +1262,6 @@ class UserStatus extends MessageSet {
             }
             if ($user->prop_changed("contactTags")) {
                 $this->diffs["tags"] = true;
-            }
-        }
-
-        // Data
-        if (isset($cj->data) && is_object($cj->data)) {
-            foreach (get_object_vars($cj->data) as $key => $value) {
-                if ($user->set_data($key, $value)) {
-                    $this->diffs["data"] = true;
-                }
             }
         }
     }

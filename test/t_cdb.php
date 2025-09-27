@@ -258,7 +258,7 @@ class Cdb_Tester {
     function test_add_annes() {
         // user merging
         $this->us1->save_user((object) ["email" => "anne1@dudfield.org", "tags" => ["a#1"], "roles" => (object) ["pc" => true], "first" => "Anne Elizabeth", "last" => "Dudfield"]);
-        $this->us1->save_user((object) ["email" => "anne2@dudfield.org", "first" => "Anne", "last" => "Dudfield", "data" => (object) ["data_test" => 139], "tags" => ["a#2", "b#3"], "roles" => (object) ["sysadmin" => true], "collaborators" => "derpo\n"]);
+        $this->us1->save_user((object) ["email" => "anne2@dudfield.org", "first" => "Anne", "last" => "Dudfield", "tags" => ["a#2", "b#3"], "roles" => (object) ["sysadmin" => true], "collaborators" => "derpo\n"]);
         $user_anne1 = user("anne1@dudfield.org");
         $a1id = $user_anne1->contactId;
         xassert_eqq($user_anne1->firstName, "Anne Elizabeth");
@@ -267,7 +267,6 @@ class Cdb_Tester {
         xassert_eqq($user_anne1->tag_value("a"), 1.0);
         xassert_eqq($user_anne1->tag_value("b"), null);
         xassert_eqq($user_anne1->roles, Contact::ROLE_PC);
-        xassert_eqq($user_anne1->data("data_test"), null);
         xassert_eqq($user_anne1->email, "anne1@dudfield.org");
         xassert_assign($user_anne1, "paper,tag\n1,~butt#1\n2,~butt#2");
 
@@ -279,7 +278,6 @@ class Cdb_Tester {
         xassert_eqq($user_anne2->tag_value("a"), 2.0);
         xassert_eqq($user_anne2->tag_value("b"), 3.0);
         xassert_eqq($user_anne2->roles, Contact::ROLE_ADMIN);
-        xassert_eqq($user_anne2->data("data_test"), 139);
         xassert_eqq($user_anne2->email, "anne2@dudfield.org");
         xassert_assign($user_anne2, "paper,tag\n2,~butt#3\n3,~butt#4");
         xassert_assign($this->user_chair, "paper,action,user\n1,conflict,anne2@dudfield.org");
