@@ -1167,6 +1167,11 @@ class Contact implements JsonSerializable {
     }
 
     /** @return bool */
+    function is_deleted() {
+        return ($this->cflags & self::CF_DELETED) !== 0;
+    }
+
+    /** @return bool */
     function contactdb_disabled() {
         $cdbu = $this->cdb_user();
         return $cdbu && ($cdbu->cflags & (self::CF_UDISABLED | self::CF_GDISABLED | self::CF_DELETED)) !== 0;
@@ -2589,7 +2594,9 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_reset_password() {
-        if ($this->conf->external_login() || $this->security_locked()) {
+        if ($this->conf->external_login()
+            || $this->security_locked()
+            || $this->is_deleted()) {
             return false;
         }
         list($cdbpw, $localpw) = $this->effective_passwords();
@@ -2664,6 +2671,12 @@ class Contact implements JsonSerializable {
         if (str_starts_with($cdbpw, " nologin")
             || (!$cdb_ok && str_starts_with($localpw, " nologin"))) {
             return ["ok" => false, "email" => true, "disabled" => true];
+        }
+
+        // deleted users cannot log in
+        if (($cdbu && $cdbu->is_deleted())
+            || $this->is_deleted()) {
+            return ["ok" => false, "email" => true, "noaccount" => true, "deleted" => true];
         }
 
         // users with unset passwords cannot log in

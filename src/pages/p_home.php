@@ -32,12 +32,20 @@ class Home_Page {
     }
 
     static function disabled_request(Contact $user, Qrequest $qreq) {
-        if (!$user->is_empty() && $user->is_disabled()) {
-            $user->conf->warning_msg($user->conf->_i("account_disabled"));
-            $qreq->print_header("Account disabled", "home", ["action_bar" => ""]);
-            $qreq->print_footer();
-            exit(0);
+        if ($user->is_empty() || !$user->is_disabled()) {
+            return;
         }
+        if ($user->is_deleted()) {
+            $m = "account_deleted";
+            $h = "Account deleted";
+        } else {
+            $m = "account_disabled";
+            $h = "Account disabled";
+        }
+        $user->conf->error_msg($user->conf->_i($m, new FmtArg("email", $user->email, 0)));
+        $qreq->print_header($h, "", ["action_bar" => "", "body_class" => "body-error"]);
+        $qreq->print_footer();
+        exit(0);
     }
 
     static function reviewtokenreport_request(Contact $user, Qrequest $qreq) {

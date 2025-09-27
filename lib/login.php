@@ -237,7 +237,10 @@ class LoginHelper {
         $user = $info["user"];
 
         $cdbu = $user->cdb_user();
-        if ($cdbu && !$cdbu->password_unset()) {
+        if (($cdbu && $cdbu->is_deleted())
+            || $user->is_deleted()) {
+            return ["ok" => false, "email" => true, "deleted" => true];
+        } else if ($cdbu && !$cdbu->password_unset()) {
             return [
                 "ok" => false, "email" => true, "userexists" => true,
                 "can_reset" => $cdbu->can_reset_password(),
@@ -351,7 +354,8 @@ class LoginHelper {
             $problem = "no_account";
             if (!$conf->login_type()
                 && $conf->allow_user_self_register()
-                && $email !== "") {
+                && $email !== ""
+                && !($info["deleted"] ?? false)) {
                 $args[] = new FmtArg("newaccount", $conf->hoturl_raw("newaccount", ["email" => $email]));
             }
         } else if ($info["unset"] ?? false) {
@@ -360,15 +364,17 @@ class LoginHelper {
         } else if ($info["userexists"] ?? false) {
             $e = "<0>Account {email} already exists";
             $problem = "account_exists";
+        } else if ($info["deleted"] ?? false) {
+            $e = "account_deleted";
         } else if ($info["disabled"] ?? false) {
-            $e = $conf->_i("account_disabled");
+            $e = "account_disabled";
         } else if ($info["reset"] ?? false) {
             $e = "<0>Password expired";
             $problem = "password_expired";
         } else if ($info["nopw"] ?? false) {
             $e = "<0>Enter your password";
         } else if ($info["nopost"] ?? false) {
-            $e = "<0>Automatic login links have been disabled for security. Use this form to sign in.";
+            $e = "<0>Automatic login links have been disabled for security. Use this form to sign in";
         } else if ($info["internal"] ?? false) {
             $e = "<0>Internal error";
         } else if ($info["nologin"] ?? false) {
@@ -391,6 +397,7 @@ class LoginHelper {
         if ($info["allow_redirect"] ?? false) {
             $args[] = new FmtArg("allow_redirect", true);
         }
+        $args[] = new FmtArg("expanded", true);
 
         $msg = $conf->_($e, ...$args);
 
