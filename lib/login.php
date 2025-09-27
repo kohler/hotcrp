@@ -336,17 +336,17 @@ class LoginHelper {
         $e = "";
         $args = [];
 
-        if (isset($info["ldap"]) && isset($info["ldap_detail"])) {
+        if (($info["ldap"] ?? false) && isset($info["ldap_detail"])) {
             $e = $info["ldap_detail"];
-        } else if (isset($info["noemail"])) {
+        } else if ($info["noemail"] ?? false) {
             $e = $conf->login_type() ? "<0>Enter your username" : "<0>Enter your email address";
-        } else if (isset($info["invalidemail"])) {
+        } else if ($info["invalidemail"] ?? false) {
             $e = "<0>Enter a valid email address";
-        } else if (isset($info["noreset"])) {
+        } else if ($info["noreset"] ?? false) {
             $e = "<0>Password reset links aren’t used for this site. Contact your system administrator if you’ve forgotten your password.";
-        } else if (isset($info["nologin"])) {
+        } else if ($info["nologin"] ?? false) {
             $e = "<0>User {email} is not allowed to sign in to this site";
-        } else if (isset($info["noaccount"])) {
+        } else if ($info["noaccount"] ?? false) {
             $e = "<0>Account {email} not found";
             $problem = "no_account";
             if (!$conf->login_type()
@@ -354,24 +354,24 @@ class LoginHelper {
                 && $email !== "") {
                 $args[] = new FmtArg("newaccount", $conf->hoturl_raw("newaccount", ["email" => $email]));
             }
-        } else if (isset($info["unset"])) {
+        } else if ($info["unset"] ?? false) {
             $e = "<0>User {email} has not set a password";
             $problem = "no_password";
-        } else if (isset($info["userexists"])) {
+        } else if ($info["userexists"] ?? false) {
             $e = "<0>Account {email} already exists";
             $problem = "account_exists";
-        } else if (isset($info["disabled"])) {
+        } else if ($info["disabled"] ?? false) {
             $e = $conf->_i("account_disabled");
-        } else if (isset($info["reset"])) {
+        } else if ($info["reset"] ?? false) {
             $e = "<0>Password expired";
             $problem = "password_expired";
-        } else if (isset($info["nopw"])) {
+        } else if ($info["nopw"] ?? false) {
             $e = "<0>Enter your password";
-        } else if (isset($info["nopost"])) {
+        } else if ($info["nopost"] ?? false) {
             $e = "<0>Automatic login links have been disabled for security. Use this form to sign in.";
-        } else if (isset($info["internal"])) {
+        } else if ($info["internal"] ?? false) {
             $e = "<0>Internal error";
-        } else if (isset($info["nologin"])) {
+        } else if ($info["nologin"] ?? false) {
             $e = "<0>Direct signin is not allowed on this site";
             $problem = "no_signin";
         } else {
@@ -381,7 +381,7 @@ class LoginHelper {
         if ($email !== "") {
             $args[] = new FmtArg("email", $email, 0);
             $args[] = new FmtArg("signin", $conf->hoturl_raw("signin", ["email" => $email]), 0);
-            if (isset($info["can_reset"])) {
+            if ($info["can_reset"] ?? false) {
                 $args[] = new FmtArg("forgotpassword", $conf->hoturl_raw("forgotpassword", ["email" => $email]), 0);
             }
         }

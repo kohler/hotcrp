@@ -255,7 +255,7 @@
     ["account_disabled", "<0>Your account on this site has been disabled by a site administrator"],
 
     ["<0>Account {email} not found", "<5>User {email} does not have an account. Check the email address, or <a href=\"{newaccount}\">create that account</a> if you’d like.", ["{newaccount}"]],
-    ["<0>User {email} has not set a password", "<5>User {email} has not set a password. Use this form to create one.", ["{forgotpassword}", "{allow_redirect}"]],
+    ["<0>User {email} has not set a password", "<5>User {email} has not set a password. Use this form to get a password reset link.", ["{forgotpassword}", "{allow_redirect}"]],
     ["<0>User {email} has not set a password", "<5>User {email} has not set a password. Use <a href=\"{forgotpassword}\">“Forgot your password?”</a> to create one.", ["{forgotpassword}"]],
     ["<0>Password expired", "<5>That password has expired. Use <a href=\"{forgotpassword}\">“Forgot your password?”</a> to reset it.", ["{forgotpassword}"]],
     ["<0>Account {email} already exists", "<5>Account {email} already exists. If that’s your account, <a href=\"{signin}\">sign in</a> using your password.", ["{signin}"]],

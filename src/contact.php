@@ -3625,9 +3625,8 @@ class Contact implements JsonSerializable {
             return new FailureReason($this->conf, ["deadline" => "sub_reg", "override" => $this->privChair, "sclass" => $sr->tag]);
         } else if (!$this->email && !$allow_no_email) {
             return new FailureReason($this->conf, ["signin" => "paper:start"]);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return bool */
