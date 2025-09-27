@@ -1720,7 +1720,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @param string $key */
-    function set_data($key, $value) {
+    function set_data_prop($key, $value) {
         $d = $this->make_data();
         if (($d->$key ?? null) !== $value) {
             if (!array_key_exists("data", $this->_mod_undo ?? [])) {
@@ -1734,6 +1734,22 @@ class Contact implements JsonSerializable {
         }
     }
 
+    /** @param string $key
+     * @deprecated */
+    function set_data($key, $value) {
+        $this->set_data_prop($key, $value);
+    }
+
+    function clear_data_prop() {
+        $this->_slice !== 0 && $this->unslice();
+        if ($this->_jdata !== null || $this->data !== null) {
+            if (!array_key_exists("data", $this->_mod_undo ?? [])) {
+                $this->_mod_undo["data"] = $this->data;
+            }
+            $this->data = $this->_jdata = null;
+        }
+    }
+
     /** @return ?string */
     private function encode_data() {
         $t = json_encode_db($this->make_data());
@@ -1744,11 +1760,6 @@ class Contact implements JsonSerializable {
      * @param mixed $value */
     function save_data($key, $value) {
         $this->merge_and_save_data((object) [$key => array_to_object_recursive($value)]);
-    }
-
-    /** @param object|array $data */
-    function merge_data($data) {
-        object_replace_recursive($this->make_data(), array_to_object_recursive($data));
     }
 
     /** @param object|array $data */
@@ -2107,7 +2118,7 @@ class Contact implements JsonSerializable {
         }
         // save
         if (($shape & self::PROP_DATA) !== 0) {
-            $this->set_data($prop, $value);
+            $this->set_data_prop($prop, $value);
         } else {
             $this->_mod_undo = $this->_mod_undo ?? [];
             $has_old = array_key_exists($prop, $this->_mod_undo);

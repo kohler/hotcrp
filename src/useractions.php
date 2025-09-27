@@ -177,7 +177,7 @@ class UserActions extends MessageSet {
         $user->set_prop("passwordUseTime", 0);
         $user->set_prop("lastLogin", 0);
         $user->set_prop("defaultWatch", 2);
-        // XXX data?
+        $user->clear_data();
         $user->save_prop();
 
         // unlink from primary
