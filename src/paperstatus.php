@@ -1154,6 +1154,9 @@ final class PaperStatus extends MessageSet {
         // save diffs if change
         $this->_conflict_ins = $this->_author_change_cids = [];
         foreach ($this->_conflict_values as $uid => $cv) {
+            if ($cv[1] === 0) { // no changes requested
+                continue;
+            }
             $ncv = self::new_conflict_value($cv);
             if (($cv[0] ^ $ncv) & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) {
                 $this->_author_change_cids[] = $uid;
