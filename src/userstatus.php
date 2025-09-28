@@ -1582,7 +1582,7 @@ class UserStatus extends MessageSet {
                 $class .= " uii js-email-populate";
             }
             $this->print_field("uemail", "Email" . $this->actas_link(),
-                Ht::entry("uemail", $this->qreq->uemail ?? $this->user->email, ["class" => $class, "size" => 52, "id" => "uemail", "autocomplete" => $this->autocomplete("username"), "data-default-value" => $this->user->email, "type" => "email"]));
+                Ht::entry("uemail", $this->qreq->uemail ?? $this->qreq->email ?? "", ["class" => $class, "size" => 52, "id" => "uemail", "autocomplete" => $this->autocomplete("username"), "data-default-value" => "", "type" => "email"]));
         } else {
             if (Contact::session_index_by_email($this->qreq->qsession(), $this->user->email) >= 0) {
                 $link = "<p class=\"nearby\">" . Ht::link("Manage email →", $this->conf->hoturl("manageemail", ["u" => $this->user->email]), ["class" => "btn btn-success btn-sm"]) . "</p>";
