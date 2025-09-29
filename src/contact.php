@@ -2793,7 +2793,7 @@ class Contact implements JsonSerializable {
                 $this->set_prop("passwordTime", Conf::$now);
                 $this->set_prop("passwordUseTime", $use_time);
             }
-            $this->set_prop("cflags", $saveu->cflags & ~self::CF_PLACEHOLDER);
+            $this->set_prop("cflags", $this->cflags & ~self::CF_PLACEHOLDER);
             $this->save_prop();
         }
         $this->conf->call_hooks("change_password", $this, null);
