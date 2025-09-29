@@ -45,7 +45,7 @@ class UserActions extends MessageSet {
             $this->error_at(null, "<0>Permission error");
             return;
         }
-        $users = $this->load_users("select * from ContactInfo where contactId?a and (cflags&?)=0 and contactId!=?",
+        $users = $this->load_users("select *, 0 _slice from ContactInfo where contactId?a and (cflags&?)=0 and contactId!=?",
             [$ids, Contact::CF_UDISABLED | Contact::CF_DELETED, $this->viewer->contactId]);
         if (empty($users)) {
             return;
@@ -54,6 +54,9 @@ class UserActions extends MessageSet {
             Contact::CF_UDISABLED, array_keys($users), Contact::CF_UDISABLED);
         $this->conf->delay_logs();
         foreach ($users as $u) {
+            $u->set_prop("cflags", $u->cflags | Contact::CF_UDISABLED);
+            $u->commit_prop();
+            $this->conf->invalidate_user($u, true);
             $this->conf->log_for($this->viewer, $u, "Account disabled");
             $this->unames["disabled"][] = $u->name(NAME_E);
             $u->update_cdb_roles();
@@ -68,7 +71,7 @@ class UserActions extends MessageSet {
             $this->error_at(null, "<0>Permission error");
             return;
         }
-        $users = $this->load_users("select * from ContactInfo where contactId?a and (cflags&?)=?",
+        $users = $this->load_users("select *, 0 _slice from ContactInfo where contactId?a and (cflags&?)=?",
             [$ids, Contact::CF_UDISABLED | Contact::CF_DELETED, Contact::CF_UDISABLED]);
         if (empty($users)) {
             return;
@@ -78,6 +81,9 @@ class UserActions extends MessageSet {
             Contact::CF_UDISABLED | Contact::CF_DELETED, Contact::CF_UDISABLED);
         $this->conf->delay_logs();
         foreach ($users as $u) {
+            $u->set_prop("cflags", $u->cflags & ~Contact::CF_UDISABLED);
+            $u->commit_prop();
+            $this->conf->invalidate_user($u, true);
             $this->conf->log_for($this->viewer, $u, "Account enabled");
             $this->unames["enabled"][] = $u->name(NAME_E);
         }
@@ -102,7 +108,7 @@ class UserActions extends MessageSet {
             $this->error_at(null, "<0>Permission error");
             return;
         }
-        $users = $this->load_users("select * from ContactInfo where contactId?a", [$ids]);
+        $users = $this->load_users("select *, 0 _slice from ContactInfo where contactId?a", [$ids]);
         foreach ($users as $u) {
             if ($u->is_disabled()) {
                 $this->unames["skipped"][] = $u->name(NAME_E);
@@ -115,6 +121,59 @@ class UserActions extends MessageSet {
                 }
             }
         }
+    }
+
+    /** @param list<Contact> $users
+     * @param int $radd
+     * @param int $rremove
+     * @param string $key */
+    private function change_roles($users, $radd, $rremove, $key) {
+        $this->conf->delay_logs();
+        foreach ($users as $u) {
+            $old_roles = $u->roles;
+            $u->set_prop("roles", ($u->roles & ~$rremove) | $radd);
+            $u->commit_prop();
+            $this->conf->invalidate_user($u, true);
+            $d = UserStatus::unparse_roles_diff($old_roles, $u->roles);
+            $this->conf->log_for($this->viewer, $u, "Account edited: roles [{$d}]");
+            $this->unames[$key][] = $u->name(NAME_E);
+            $u->update_cdb_roles();
+        }
+        $this->conf->release_logs();
+    }
+
+    /** @param list<int> $ids */
+    function add_pc($ids) {
+        $this->unames["add_pc"] = [];
+        if (!$this->viewer->privChair) {
+            $this->error_at(null, "<0>Permission error");
+            return;
+        }
+        $users = $this->load_users("select *, 0 _slice from ContactInfo where contactId?a and (roles&?)=0",
+            [$ids, Contact::ROLE_PCLIKE]);
+        if (empty($users)) {
+            return;
+        }
+        $this->conf->qe("update ContactInfo set roles=roles|? where contactId?a and (roles&?)=0",
+            Contact::ROLE_PC, array_keys($users), Contact::ROLE_PCLIKE);
+        $this->change_roles($users, Contact::ROLE_PC, 0, "add_pc");
+    }
+
+    /** @param list<int> $ids */
+    function remove_pc($ids) {
+        $this->unames["remove_pc"] = [];
+        if (!$this->viewer->privChair) {
+            $this->error_at(null, "<0>Permission error");
+            return;
+        }
+        $users = $this->load_users("select *, 0 _slice from ContactInfo where contactId?a and (roles&?)!=0 and contactId!=?",
+            [$ids, Contact::ROLE_PC, $this->viewer->contactId]);
+        if (empty($users)) {
+            return;
+        }
+        $this->conf->qe("update ContactInfo set roles=roles&~? where contactId?a and (roles&?)!=0",
+            Contact::ROLE_PC | Contact::ROLE_CHAIR, array_keys($users), Contact::ROLE_PC);
+        $this->change_roles($users, 0, Contact::ROLE_PC | Contact::ROLE_CHAIR, "remove_pc");
     }
 
     private function check_delete(Contact $user) {
@@ -209,5 +268,4 @@ class UserActions extends MessageSet {
         $this->viewer->log_activity_for($user, "Account deleted {$user->email}");
         $this->unames["deleted"][] = $user->name(NAME_E);
     }
-
 }

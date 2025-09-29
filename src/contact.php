@@ -2294,6 +2294,10 @@ class Contact implements JsonSerializable {
         foreach ($this->_mod_undo as $prop => $value) {
             $this->$prop = $value;
         }
+        $this->commit_prop();
+    }
+
+    function commit_prop() {
         $this->_mod_undo = $this->_jdata = null;
         $this->_aucollab_matchers = $this->_aucollab_general_pregexes = null;
         $this->set_roles_properties();

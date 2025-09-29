@@ -171,6 +171,7 @@
 
     ["<0>{Submissions} {:numlist} are totally hidden when viewing the site as another user.", "<0>{Submission} {:numlist} is totally hidden when viewing the site as another user.", ["#{0}=1"]],
 
+    ["<0>Accounts {:list} {action}", "<0>Account {:list} {action}", ["#{0}=1"]],
     ["<0>Accounts {:list} disabled", "<0>Account {:list} disabled", ["#{0}=1"]],
     ["<0>Accounts {:list} enabled", "<0>Account {:list} enabled", ["#{0}=1"]],
     ["<0>Skipped disabled accounts {:list}", "<0>Skipped disabled account {:list}", ["#{0}=1"]],

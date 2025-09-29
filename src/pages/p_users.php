@@ -221,24 +221,16 @@ class Users_Page {
         $modifyfn = $this->qreq->modifyfn;
         unset($this->qreq->fn, $this->qreq->modifyfn);
         $ua = new UserActions($this->viewer);
+        $list = $action = null;
 
-        if ($modifyfn === "disableaccount") {
+        if ($modifyfn === "disable" || $modifyfn === "disableaccount") {
             $ua->disable($this->papersel);
-            if (!empty($ua->name_list("disabled"))) {
-                $ua->success($this->conf->_("<0>Accounts {:list} disabled", $ua->name_list("disabled")));
-            } else if (!$ua->has_message()) {
-                $ua->append_item(MessageItem::warning_note("<0>No changes"));
-            }
-        } else if ($modifyfn === "enableaccount") {
+            $list = "disabled";
+            $action = new FmtArg("action", "disabled", 0);
+        } else if ($modifyfn === "enable" || $modifyfn === "enableaccount") {
             $ua->enable($this->papersel);
-            if (!empty($ua->name_list("enabled"))) {
-                $ua->success($this->conf->_("<0>Accounts {:list} enabled", $ua->name_list("enabled")));
-            } else if (!$ua->has_message()) {
-                $ua->append_item(MessageItem::warning_note("<0>No changes"));
-            }
-            if (!empty($ua->name_list("activated"))) {
-                $ua->success($this->conf->_("<0>Accounts {:list} activated and notified", $ua->name_list("activated")));
-            }
+            $list = "enabled";
+            $action = new FmtArg("action", "enabled", 0);
         } else if ($modifyfn === "sendaccount") {
             $ua->send_account_info($this->papersel);
             if (!empty($ua->name_list("mailed"))) {
@@ -247,8 +239,23 @@ class Users_Page {
             if (!empty($ua->name_list("skipped"))) {
                 $ua->append_item(MessageItem::warning_note($this->conf->_("<0>Skipped disabled accounts {:list}", $ua->name_list("skipped"))));
             }
+        } else if ($modifyfn === "add_pc" || $modifyfn === "remove_pc") {
+            $ua->$modifyfn($this->papersel);
+            $list = $modifyfn;
+            $action = new FmtArg("action", $modifyfn === "add_pc" ? "added to PC" : "removed from PC", 0);
         } else {
             return false;
+        }
+
+        if ($list !== null) {
+            if (!empty($ua->name_list($list))) {
+                $ua->success($this->conf->_("<0>Accounts {:list} {action}", $ua->name_list($list), $action));
+            } else if (!$ua->has_message()) {
+                $ua->append_item(MessageItem::warning_note("<0>No changes"));
+            }
+            if ($list === "enabled" && !empty($ua->name_list("activated"))) {
+                $ua->success($this->conf->_("<0>Accounts {:list} {action}", $ua->name_list("activated"), new FmtArg("action", "activated and notified", 0)));
+            }
         }
 
         $this->conf->feedback_msg($ua);
@@ -526,7 +533,7 @@ class Users_Page {
             }
         }
 
-        if ($pl->any->sel) {
+        if ($pl->has("sel")) {
             echo Ht::form($this->conf->hoturl("=users", ["t" => $this->qreq->t]),
                     ["class" => "ui-submit js-submit-list"]),
                 Ht::hidden("defaultfn", ""),

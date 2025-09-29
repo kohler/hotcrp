@@ -44,8 +44,8 @@ class ContactList {
     private $sortable;
     /** @var int */
     private $count;
-    /** @var object */
-    public $any;
+    /** @var int */
+    private $has_flags = 0;
     /** @var Tagger */
     private $tagger;
     private $limit;
@@ -92,6 +92,10 @@ class ContactList {
 
     /** @var ?array<string,int> */
     static private $field_name_map;
+
+    const HAS_SELECTOR = 1;
+    const HAS_PC = 2;
+    const HAS_NONPC = 4;
 
     function __construct(Contact $user, $sortable = true, $qreq = null) {
         $this->conf = $user->conf;
@@ -862,7 +866,7 @@ class ContactList {
                 return $this->conf->unparse_time_obscure($row->activity_at);
             }
         case self::FIELD_SELECTOR:
-            $this->any->sel = true;
+            $this->has_flags |= self::HAS_SELECTOR;
             $c = "";
             if ($this->_select_all
                 || ($this->_selection && $this->_selection->is_selected($row->contactId))) {
@@ -1066,8 +1070,9 @@ class ContactList {
     }
 
     function footer($ncol, $hascolors) {
-        if ($this->count == 0)
+        if ($this->count === 0) {
             return "";
+        }
         $lllgroups = [];
 
         // Begin linelinks
@@ -1094,6 +1099,13 @@ class ContactList {
                 $mods["resetpassword"] = "Reset password";
             }
             $mods["sendaccount"] = "Send account information";
+            $mods[] = null;
+            if ($this->has("nonpc")) {
+                $mods["add_pc"] = "Add to PC";
+            }
+            if ($this->has("pc")) {
+                $mods["remove_pc"] = "Remove from PC";
+            }
             $lllgroups[] = ["", "Modify",
                 Ht::select("modifyfn", $mods, null, ["class" => "want-focus"])
                 . Ht::submit("fn", "Go", ["value" => "modify", "class" => "uic js-submit-list ml-2"])];
@@ -1177,7 +1189,7 @@ class ContactList {
         $fieldDef = [];
         $acceptable_fields = [];
         $uldisplay = self::uldisplay($this->qreq);
-        $this->any = (object) ["sel" => false];
+        $this->has_flags = 0;
         $ncol = 0;
         foreach ($columns as $col) {
             if ($this->column_visible($col)
@@ -1252,6 +1264,11 @@ class ContactList {
             }
             $this->count++;
             $ids[] = (int) $row->contactId;
+            if ($row->roles & Contact::ROLE_PC) {
+                $this->has_flags |= self::HAS_PC;
+            } else {
+                $this->has_flags |= self::HAS_NONPC;
+            }
 
             // First create the expanded callout row
             $tt = "";
@@ -1418,5 +1435,18 @@ class ContactList {
 
         // run query
         return $this->_rows();
+    }
+
+    /** @param string $field
+     * @return bool */
+    function has($field) {
+        if ($field === "sel") {
+            return ($this->has_flags & self::HAS_SELECTOR) !== 0;
+        } else if ($field === "pc") {
+            return ($this->has_flags & self::HAS_PC) !== 0;
+        } else if ($field === "nonpc") {
+            return ($this->has_flags & self::HAS_NONPC) !== 0;
+        }
+        return 0;
     }
 }
