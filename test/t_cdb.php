@@ -1014,4 +1014,22 @@ class Cdb_Tester {
 
         (new ConfInvariants($this->conf))->check_users();
     }
+
+    function test_ensure_account_primary() {
+        $lu_leopard = $this->conf->fresh_user_by_email("leopard@fart.edu");
+        xassert_eqq($lu_leopard->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
+
+        Dbl::qe($this->conf->contactdb(), "update ContactInfo set cflags=cflags&~? where email='leopard@fart.edu'", Contact::CF_PRIMARY);
+        Dbl::qe($this->conf->contactdb(), "update ContactInfo set primaryContactId=0 where email='puma@fart.edu'");
+        Dbl::qe($this->conf->contactdb(), "delete from ContactPrimary where contactId=(select contactDbId from ContactInfo where email='puma@fart.edu')");
+        $cu_leopard = $this->conf->fresh_cdb_user_by_email("leopard@fart.edu");
+        xassert_eqq($cu_leopard->cflags & Contact::CF_PRIMARY, 0);
+
+        $xu_leopard = $cu_leopard->ensure_account_here();
+        xassert_eqq($xu_leopard->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
+        $xu_leopard->change_password("fuck!!!!!!9");
+        xassert_eqq($xu_leopard->cflags & Contact::CF_PRIMARY, Contact::CF_PRIMARY);
+
+        (new ConfInvariants($this->conf))->check_users();
+    }
 }
