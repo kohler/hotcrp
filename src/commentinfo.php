@@ -1185,7 +1185,6 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         // notify mentions and followers
         if ($displayed
             && $this->commentId
-            && ($this->commentType & self::CTM_VIS) > self::CTVIS_ADMINONLY
             && !empty($desired_mentions)) {
             $this->inform_mentions($user, $desired_mentions);
         }

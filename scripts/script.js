@@ -8518,16 +8518,27 @@ CompletionSpan.prototype.filter = function (tlist) {
     // Returns `null` or an object `{items, best, cspan}`, where `items` is
     // the sublist of `tlist` that should be displayed, `best` is the index
     // of the best item in `items`, and `cspan` is `this`. Also, set externally
-    // is `editlength`, the inimum postcaret length over this completion session
+    // is `editlength`, the minimum postcaret length over this completion session
 
     if (this.indexPos < 0 || this.endPos - this.startPos < this.minLength) {
         return null;
     }
+
     const caseSensitive = this.caseSensitive;
     let lregion = this.span();
     if (!caseSensitive || caseSensitive === "lower") {
         lregion = lregion.toLowerCase();
     }
+
+    // if there are relatively few items, and they all have .ml > 1,
+    // then show them even when completing on the empty string
+    let rlbound = 0;
+    if (lregion === ""
+        && tlist.length <= 10
+        && !tlist.find(x => (x.ml || 0) <= 0)) {
+        rlbound = tlist.reduce((m, x) => Math.min(m, x.ml), 100);
+    }
+
     const filter = this.minLength ? lregion.substring(0, this.minLength) : null,
         can_highlight = lregion.length >= (filter || "x").length,
         res = [];
@@ -8539,7 +8550,7 @@ CompletionSpan.prototype.filter = function (tlist) {
             rl = titem.ml || 0;
 
         if ((filter === null || ltext.startsWith(filter))
-            && (rl === 0
+            && (rl <= rlbound
                 || (lregion.length >= rl
                     && lregion.startsWith(ltext.substr(0, rl))))
             && (last_text === null || last_text !== text)) {
@@ -9087,8 +9098,12 @@ hotcrp.suggest.add_builder("mentions", function (elt, hintinfo) {
     cs.minLength = Math.min(2, cs.indexPos - cs.startPos);
     cs.smartPunctuation = cs.limitReplacement = true;
     let prom = demand_load.mentions();
-    if (elt.form.elements.visibility
-        && elt.form.elements.visibility.value !== "au") {
+    const vise = elt.form.elements.visibility;
+    if (vise && vise.value === "admin") {
+        prom = prom.then(function (l) {
+            return l.filter(function (x) { return x.admin; });
+        });
+    } else if (vise && vise.value !== "au") {
         prom = prom.then(function (l) {
             return l.filter(function (x) { return !x.au; });
         });
