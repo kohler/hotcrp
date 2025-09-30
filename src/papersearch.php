@@ -953,12 +953,13 @@ class PaperSearch extends MessageSet {
         } else {
             $npr_constraint = "true";
         }
+        $reviewMeta = REVIEW_META;
         $result = $user->conf->qe("select r.reviewId,
             coalesce((select count(*) from ReviewRating force index (primary) where paperId=r.paperId),0) numRatings,
-            coalesce((select count(*) from PaperReview r force index (primary) where paperId=r.paperId and (reviewType=" . REVIEW_META . " or (reviewNeedsSubmit=0 and {$npr_constraint}))),0) numReviews
+            coalesce((select sum(if(reviewType={$reviewMeta},3,1)) from PaperReview force index (primary) where paperId=r.paperId and (reviewType={$reviewMeta} or (reviewNeedsSubmit=0 and {$npr_constraint}))),0) numReviews
             from PaperReview r
             join ReviewRating rr on (rr.paperId=r.paperId and rr.reviewId=r.reviewId)
-            where r.contactId={$user->contactId}
+            where r.contactId={$user->contactId} and r.reviewType!={$reviewMeta}
             having numReviews<=2 and numRatings<=2");
         return Dbl::fetch_first_columns($result);
     }

@@ -56,8 +56,8 @@ $hth->search_link("search for “rate:short”", "rate:short"), ".</p>";
         echo $hth->subhead("Visibility");
         echo "<p>A review’s ratings are visible to any unconflicted PC members who can see
 the review, but HotCRP tries to hide ratings from review authors if they
-could figure out who assigned the rating: if only one PC member could
-rate a review, then that PC member’s rating is hidden from the review
-author.</p>";
+could figure out who assigned the rating. When a paper has no metareviewers
+and only one PC member could rate a review, then that PC member’s rating
+is hidden from the review author.</p>";
     }
 }
