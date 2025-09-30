@@ -170,7 +170,7 @@ class MentionLister {
                 }
                 if (!$ispc) {
                     $x["pri"] = 1;
-                } else if ($prow ? $au->privChair : $au->can_administer($prow)) {
+                } else if ($prow ? $au->can_administer($prow) : $au->privChair) {
                     $x["admin"] = true;
                 }
                 $comp[] = $x;
