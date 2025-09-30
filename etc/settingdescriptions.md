@@ -86,3 +86,28 @@ formula “avg(OveMer)” would set the tag’s value to the relevant paper’s
 average overall merit score. If the formula evaluates to null for a paper,
 then the tag for that paper is removed. If `value` is an empty string, 0 is
 used.
+
+
+# comment_reactions
+
+> Controls whether users can add emoji reactions to comments
+
+When enabled (the default), users can add emoji reactions to comments they can view. 
+Reactions are shown as small emoji buttons below each comment. Users can click to 
+add or remove their reaction.
+
+
+# comment_reaction_emojis
+
+> Specifies which emojis are available for comment reactions
+
+A comma-separated list of emoji codes that will appear as quick-reaction buttons
+when users click to add a reaction to a comment. Users can always search for
+and add any emoji from the full emoji list, but these are the ones shown by
+default.
+
+The default list includes: `thumbs_up`, `thumbs_down`, `heart`, `laugh`, 
+`confused`, `hooray`, `rocket`, `eyes`.
+
+Emoji codes must match those defined in the system's emoji database 
+(`scripts/emojicodes.json`).

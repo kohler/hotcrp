@@ -43,6 +43,9 @@ class CommentInfo {
     public $commentData;
     /** @var ?object */
     private $_jdata;
+    /** @var ?list<CommentReaction> */
+    private $_reactions;
+
 
     /** @var ?list<NotificationInfo> */
     public $notifications;
@@ -676,6 +679,152 @@ class CommentInfo {
         return $docs;
     }
 
+    /** @return list<CommentReaction> */
+    function reactions() {
+        if ($this->_reactions === null && $this->commentId > 0) {
+            $this->_reactions = CommentReaction::fetch_by_comment($this->commentId, $this->conf);
+        }
+        return $this->_reactions ?? [];
+    }
+
+    /** @return bool */
+    function has_reactions() {
+        return !empty($this->reactions());
+    }
+
+    /** @param Contact $viewer
+     * @return array<string,array{emoji_unicode:string,users:list<string>,count:int,viewer_reacted:bool}> */
+    function unparse_reactions(Contact $viewer) {
+        $reactions = $this->reactions();
+        if (empty($reactions)) {
+            return [];
+        }
+
+        $grouped = [];
+        foreach ($reactions as $reaction) {
+            if (!$viewer->can_view_comment($this->prow, $this)) {
+                continue;
+            }
+
+            $emoji = $reaction->emoji;
+            if (!isset($grouped[$emoji])) {
+                $grouped[$emoji] = [
+                    'emoji_unicode' => $reaction->emoji_unicode(),
+                    'users' => [],
+                    'count' => 0,
+                    'viewer_reacted' => false
+                ];
+            }
+
+            $grouped[$emoji]['count']++;
+            if ($reaction->contactId === $viewer->contactId) {
+                $grouped[$emoji]['viewer_reacted'] = true;
+            }
+
+            // Add user name (respecting visibility rules)
+            $user_html = $reaction->unparse_user_html($viewer, $this->prow, $this);
+            if (!in_array($user_html, $grouped[$emoji]['users'])) {
+                $grouped[$emoji]['users'][] = $user_html;
+            }
+        }
+
+        return $grouped;
+    }
+
+    /** @param Contact $viewer
+     * @return string */
+    function unparse_reactions_html(Contact $viewer) {
+        // Check if reactions are enabled
+        if (!$this->conf->setting("cmt_reactions", 1)) {
+            return "";
+        }
+
+        $reactions = $this->unparse_reactions($viewer);
+        $has_reactions = !empty($reactions);
+        $can_react = $viewer->can_view_comment($this->prow, $this);
+
+        if (!$has_reactions && !$can_react) {
+            return "";
+        }
+
+        $html = '<div class="comment-reactions">';
+        foreach ($reactions as $emoji => $data) {
+            $classes = ['reaction-item'];
+            if ($data['viewer_reacted']) {
+                $classes[] = 'viewer-reacted';
+            }
+            
+            $title = '';
+            if (!empty($data['users'])) {
+                if (count($data['users']) === 1) {
+                    $title = $data['users'][0] . ' reacted with ' . $emoji;
+                } else {
+                    $title = implode(', ', $data['users']) . ' reacted with ' . $emoji;
+                }
+            }
+
+            $html .= '<span class="' . implode(' ', $classes) . '" ' 
+                . 'data-emoji="' . htmlspecialchars($emoji) . '" '
+                . 'data-comment-id="' . $this->commentId . '" '
+                . 'title="' . htmlspecialchars($title) . '">'
+                . htmlspecialchars($data['emoji_unicode']) . ' '
+                . '<span class="reaction-count">' . $data['count'] . '</span>'
+                . '</span>';
+        }
+        
+        // Add reaction picker button if user can react
+        if ($can_react) {
+            $html .= '<button class="reaction-picker-btn" data-comment-id="' . $this->commentId . '" title="Add reaction">😊</button>';
+        }
+        
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    /** @param Contact $user
+     * @param string $emoji
+     * @return CommentReaction */
+    function add_reaction(Contact $user, $emoji) {
+        $reaction = new CommentReaction($this->conf);
+        $reaction->commentId = $this->commentId;
+        $reaction->contactId = $user->contactId;
+        $reaction->emoji = $emoji;
+        
+        // Clear cached reactions
+        $this->_reactions = null;
+        
+        return $reaction;
+    }
+
+    /** @param Contact $user
+     * @param string $emoji
+     * @return ?CommentReaction */
+    function find_reaction(Contact $user, $emoji) {
+        foreach ($this->reactions() as $reaction) {
+            if ($reaction->contactId === $user->contactId && $reaction->emoji === $emoji) {
+                return $reaction;
+            }
+        }
+        return null;
+    }
+
+    /** @param Contact $user
+     * @param string $emoji
+     * @return bool */
+    function remove_reaction(Contact $user, $emoji) {
+        $reaction = $this->find_reaction($user, $emoji);
+        if ($reaction) {
+            $success = $reaction->delete($user, $this);
+            if ($success) {
+                // Clear cached reactions
+                $this->_reactions = null;
+            }
+            return $success;
+        }
+        return false;
+    }
+
     /** @param bool $no_content
      * @return ?object */
     function unparse_json(Contact $viewer, $no_content = false) {
@@ -816,6 +965,12 @@ class CommentInfo {
             }
         } else {
             $cj["word_count"] = count_words($this->raw_content());
+        }
+
+        // reactions
+        if ($this->commentId > 0 && $viewer->can_view_comment($this->prow, $this, true)) {
+            $reactions = $this->unparse_reactions($viewer);
+            $cj["reactions"] = $reactions;
         }
 
         return (object) $cj;

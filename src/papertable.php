@@ -2995,6 +2995,10 @@ class PaperTable {
             }
         }
 
+        $s .= "hotcrp.set_reaction_emojis(" . $this->conf->setting("comment_reactions", false) . ");\n";
+        if ($this->conf->setting("cmt_reactions", false)) {
+            $s .= "hotcrp.set_reaction_emojis(" . json_encode_browser($this->conf->setting("opt.commentReactionEmojis", [])) . ");\n";
+        }
         if ($ncmt) {
             CommentInfo::print_script($this->prow);
         }

@@ -47,6 +47,19 @@
         "type": "checkbox", "initial_value": 1, "json": "in",
         "tags": "comment visibility"
     },
+    {
+        "name": "comment_reactions", "storage": "cmt_reactions",
+        "title": "Allow comment reactions",
+        "type": "checkbox", "default_value": 1,
+        "tags": "comment"
+    },
+    {
+        "name": "comment_reaction_emojis", "storage": "opt.commentReactionEmojis",
+        "title": "Comment reaction emoji list",
+        "type": "string", "subtype": "list",
+        "default_value": "thumbs_up,thumbs_down,heart,laugh,confused,hooray,rocket,eyes",
+        "tags": "comment"
+    },
 
     {
         "name": "decisions", "hashid": "decision-types", "internal": true
