@@ -955,7 +955,7 @@ class PaperSearch extends MessageSet {
         }
         $result = $user->conf->qe("select r.reviewId,
             coalesce((select count(*) from ReviewRating force index (primary) where paperId=r.paperId),0) numRatings,
-            coalesce((select count(*) from PaperReview r force index (primary) where paperId=r.paperId and reviewNeedsSubmit=0 and {$npr_constraint}),0) numReviews
+            coalesce((select count(*) from PaperReview r force index (primary) where paperId=r.paperId and (reviewType=" . REVIEW_META . " or (reviewNeedsSubmit=0 and {$npr_constraint}))),0) numReviews
             from PaperReview r
             join ReviewRating rr on (rr.paperId=r.paperId and rr.reviewId=r.reviewId)
             where r.contactId={$user->contactId}

@@ -4844,9 +4844,10 @@ class Contact implements JsonSerializable {
         // See also PaperSearch::unusable_ratings.
         $nsubraters = 0;
         foreach ($prow->all_reviews() as $rrow) {
-            if ($rrow->reviewNeedsSubmit === 0
-                && $rrow->contactId !== $this->contactId
-                && ($rs > 0 || $rrow->reviewType > REVIEW_EXTERNAL))
+            if ($rrow->reviewType === REVIEW_META
+                || (($rrow->reviewNeedsSubmit === 0
+                    && $rrow->contactId !== $this->contactId
+                    && ($rs > 0 || $rrow->reviewType > REVIEW_EXTERNAL))))
                 ++$nsubraters;
         }
         return $nsubraters >= 2;
