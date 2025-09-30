@@ -811,6 +811,14 @@
         "json_values": ["pc", "all", "no"],
         "tags": "review"
     },
+    {
+        "name": "review_rating_visibility", "storage": "rev_seeratings",
+        "title": "Review rating visibility",
+        "type": "radio",
+        "values": [0, 1, -1], "default_value": 0,
+        "json_values": ["limited", "yes", "no"],
+        "tags": "review"
+    },
 
 
     {

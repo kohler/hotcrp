@@ -410,7 +410,7 @@ function initialize_user($qreq, $kwarg = null) {
     Contact::set_main_user($muser);
     $qreq->set_user($muser);
 
-    // author view capability documents should not be indexed
+    // author view capability pages should not be indexed
     if ($muser->email === ""
         && $muser->has_author_view_capability()
         && !$conf->opt("allowIndexPapers")) {

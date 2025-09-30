@@ -434,10 +434,10 @@ class Home_Page {
             $sep = $xsep;
         }
 
-        if ($has_rinfo && $conf->review_ratings() >= 0) {
-            $badratings = PaperSearch::unusable_ratings($user);
+        if ($has_rinfo && $conf->review_ratings_visible() >= 0) {
+            $badratings = self::unusable_ratings($user);
             $qx = (count($badratings) ? " and not (PaperReview.reviewId in (" . join(",", $badratings) . "))" : "");
-            $result = $conf->qe_raw("select sum((rating&" . ReviewInfo::RATING_GOODMASK . ")!=0), sum((rating&" . ReviewInfo::RATING_BADMASK . ")!=0) from PaperReview join ReviewRating using (reviewId) where PaperReview.contactId={$user->contactId} $qx");
+            $result = $conf->qe_raw("select sum((rating&" . ReviewInfo::RATING_GOODMASK . ")!=0), sum((rating&" . ReviewInfo::RATING_BADMASK . ")!=0) from PaperReview join ReviewRating using (reviewId) where PaperReview.contactId={$user->contactId}{$qx}");
             $row = $result->fetch_row();
             '@phan-var list $row';
             Dbl::free($result);
@@ -478,6 +478,33 @@ class Home_Page {
         }
 
         echo "</div>\n";
+    }
+
+    static function unusable_ratings(Contact $user) {
+        $rseer = $user->conf->review_ratings_visible();
+        assert($rseer >= 0);
+        if ($user->privChair
+            || $user->conf->setting("viewrev") === Conf::VIEWREV_ALWAYS
+            || $rseer > 0) {
+            return [];
+        }
+        // This query should return those reviewIds whose ratings
+        // are not visible to the current querier:
+        // reviews by `$user` on papers with <=2 reviews and <=2 ratings
+        if ($user->conf->review_ratings() === 0) {
+            $npr_constraint = "reviewType>" . REVIEW_EXTERNAL;
+        } else {
+            $npr_constraint = "true";
+        }
+        $reviewMeta = REVIEW_META;
+        $result = $user->conf->qe("select r.reviewId,
+            coalesce((select count(*) from ReviewRating force index (primary) where paperId=r.paperId),0) numRatings,
+            coalesce((select sum(if(reviewType={$reviewMeta},3,1)) from PaperReview force index (primary) where paperId=r.paperId and (reviewType={$reviewMeta} or (reviewNeedsSubmit=0 and {$npr_constraint}))),0) numReviews
+            from PaperReview r
+            join ReviewRating rr on (rr.paperId=r.paperId and rr.reviewId=r.reviewId)
+            where r.contactId={$user->contactId} and r.reviewType!={$reviewMeta}
+            having numReviews<=2 and numRatings<=2");
+        return Dbl::fetch_first_columns($result);
     }
 
     // Review token printing

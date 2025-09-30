@@ -291,7 +291,7 @@
         "name": "reviews/ratings", "order": 50,
         "title": "Review ratings",
         "print_function": "Review_SettingParser::print_ratings",
-        "settings": ["review_rating"]
+        "settings": ["review_rating", "review_rating_visibility"]
     },
 
 

@@ -3802,6 +3802,14 @@ class Conf {
         return $rs > 1 ? -1 : $rs;
     }
 
+    /** @return 0|-1|1 */
+    function review_ratings_visible() {
+        if ($this->review_ratings() < 0) {
+            return -1;
+        }
+        return $this->settings["rev_seeratings"] ?? 0;
+    }
+
     /** @return bool */
     function has_any_submitted() {
         return !($this->settings["no_papersub"] ?? false);

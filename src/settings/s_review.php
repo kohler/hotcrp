@@ -306,8 +306,7 @@ class Review_SettingParser extends SettingParser {
             ["item_class" => "uich js-foldup"]);
         // echo '<p>Secondary PC reviews can be delegated to external reviewers. When the external review is complete, the secondary PC reviewer need not complete a review of their own.</p>', "\n";
 
-        echo '<div class="fx1">';
-        echo '<hr class="form-sep">';
+        echo '<div class="fx1"><hr class="form-sep">';
         $label3 = "Yes, and external reviews are visible only to their requesters";
         if ($sv->conf->fetch_ivalue("select exists (select * from PaperReview where reviewType=" . REVIEW_EXTERNAL . " and reviewSubmitted>0)")) {
             $label3 = '<label for="review_proposal_editable_3">' . $label3 . '</label><div class="f-d fx">Existing ' . Ht::link("submitted external reviews", $sv->conf->hoturl("search", ["q" => "re:ext:submitted"]), ["target" => "_new"]) . ' will remain visible to others.</div>';
@@ -339,11 +338,23 @@ class Review_SettingParser extends SettingParser {
     }
 
     static function print_ratings(SettingValues $sv) {
+        echo '<div class="form-g has-fold',
+            $sv->vstr("review_rating") >= 0 ? ' fold1o' : ' fold1c',
+            '" data-fold1-values="0 1">';
         $sv->print_radio_table("review_rating", [
                 -1 => "No",
                 0 => "Yes, PC members can rate reviews",
                 1 => "Yes, PC members and external reviewers can rate reviews"
-            ], 'Should HotCRP collect ratings of reviews?   <a class="hint" href="' . $sv->conf->hoturl("help", "t=revrate") . '">Learn more</a>');
+            ], 'Can reviewers rate each other’s reviews? <a class="hint pl-3" href="' . $sv->conf->hoturl("help", "t=revrate") . '">Learn more</a>',
+            ["item_class" => "uich js-foldup"]);
+
+        echo '<div class="fx1"><hr class="form-sep">';
+        $sv->print_radio_table("review_rating_visibility", [
+                -1 => "No",
+                1 => "Yes",
+                0 => "Yes, unless only one other PC reviewer could have left a rating"
+            ], 'Can reviewers see the ratings on their own reviews?');
+        echo "</div></div>\n";
     }
 
 

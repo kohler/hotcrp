@@ -146,7 +146,9 @@ class Keywords_HelpTopic {
         }
         if ($hth->conf->review_ratings() >= 0) {
             echo $hth->search_trow("rate:good", "has a positively-rated review (“rate:bad”, “rate:biased”, etc. also work)");
-            echo $hth->search_trow("rate:good:me", "has a positively-rated review by you");
+            if ($hth->conf->review_ratings_visible() >= 0) {
+                echo $hth->search_trow("rate:good:me", "has a positively-rated review by you");
+            }
         }
 
         // review fields

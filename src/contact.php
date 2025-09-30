@@ -4836,12 +4836,13 @@ class Contact implements JsonSerializable {
             || $override_self
             || $rrow->contactId != $this->contactId
             || $this->can_administer($prow)
+            || $this->conf->review_ratings_visible() > 0
             || $this->conf->setting("viewrev") === Conf::VIEWREV_ALWAYS
             || $rrow->has_multiple_ratings()) {
             return true;
         }
         // Do not show rating counts if rater identity is unambiguous.
-        // See also PaperSearch::unusable_ratings.
+        // See also Home_Page::unusable_ratings.
         $nsubraters = 0;
         foreach ($prow->all_reviews() as $rrow) {
             if ($rrow->reviewType === REVIEW_META) {

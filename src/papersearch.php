@@ -940,31 +940,6 @@ class PaperSearch extends MessageSet {
     // The query may be liberal (returning more papers than actually match);
     // QUERY EVALUATION makes it precise.
 
-    static function unusable_ratings(Contact $user) {
-        if ($user->privChair
-            || $user->conf->setting("viewrev") === Conf::VIEWREV_ALWAYS) {
-            return [];
-        }
-        // This query should return those reviewIds whose ratings
-        // are not visible to the current querier:
-        // reviews by `$user` on papers with <=2 reviews and <=2 ratings
-        if ($user->conf->review_ratings() === 0) {
-            $npr_constraint = "reviewType>" . REVIEW_EXTERNAL;
-        } else {
-            $npr_constraint = "true";
-        }
-        $reviewMeta = REVIEW_META;
-        $result = $user->conf->qe("select r.reviewId,
-            coalesce((select count(*) from ReviewRating force index (primary) where paperId=r.paperId),0) numRatings,
-            coalesce((select sum(if(reviewType={$reviewMeta},3,1)) from PaperReview force index (primary) where paperId=r.paperId and (reviewType={$reviewMeta} or (reviewNeedsSubmit=0 and {$npr_constraint}))),0) numReviews
-            from PaperReview r
-            join ReviewRating rr on (rr.paperId=r.paperId and rr.reviewId=r.reviewId)
-            where r.contactId={$user->contactId} and r.reviewType!={$reviewMeta}
-            having numReviews<=2 and numRatings<=2");
-        return Dbl::fetch_first_columns($result);
-    }
-
-
     /** @param SearchTerm $qe */
     private function _add_deleted_papers($qe) {
         if ($qe->type === "or" || $qe->type === "then") {
