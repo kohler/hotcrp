@@ -1120,17 +1120,16 @@ class ReviewInfo implements JsonSerializable {
         } else if (ctype_digit($s)) {
             $n = intval($s);
             return $n >= 0 && $n <= 127 ? $n : null;
-        } else {
-            $n = 0;
-            foreach (preg_split('/\s+/', $s) as $word) {
-                if (($k = array_search($word, ReviewInfo::$rating_bits)) !== false) {
-                    $n |= $k;
-                } else if ($word !== "" && $word !== "none") {
-                    return null;
-                }
-            }
-            return $n;
         }
+        $n = 0;
+        foreach (preg_split('/\s+/', $s) as $word) {
+            if (($k = array_search($word, ReviewInfo::$rating_bits)) !== false) {
+                $n |= $k;
+            } else if ($word !== "" && $word !== "none") {
+                return null;
+            }
+        }
+        return $n;
     }
 
     /** @param string $s
