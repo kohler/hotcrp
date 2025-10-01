@@ -1,6 +1,6 @@
 <?php
 // contactcountmatcher.php -- HotCRP helper class for matching with users
-// Copyright (c) 2006-2022 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ContactCountMatcher extends CountMatcher {
     /** @var ?list<int> */
@@ -27,9 +27,8 @@ class ContactCountMatcher extends CountMatcher {
     function single_cid() {
         if ($this->_contacts !== null && count($this->_contacts) === 1) {
             return $this->_contacts[0];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $fieldname
@@ -37,18 +36,16 @@ class ContactCountMatcher extends CountMatcher {
     function contact_match_sql($fieldname) {
         if ($this->_contacts === null) {
             return "true";
-        } else {
-            return $fieldname . sql_in_int_list($this->_contacts);
         }
+        return $fieldname . sql_in_int_list($this->_contacts);
     }
 
     function tautology() {
         if ($this->_contacts !== null
             && ($x = $this->test(0)) === $this->test(count($this->_contacts))) {
             return $x;
-        } else {
-            return parent::tautology();
         }
+        return parent::tautology();
     }
 
     /** @param int $cid

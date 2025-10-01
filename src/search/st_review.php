@@ -245,9 +245,8 @@ class Review_SearchTerm extends SearchTerm {
         $wheres = $this->rsm->useful_sqlexpr($this->user, "r") ?? "true";
         if ($cexpr === ">0") {
             return "exists (select * from PaperReview r where paperId=Paper.paperId and {$wheres})";
-        } else {
-            return "(select count(*) from PaperReview r where paperId=Paper.paperId and {$wheres}){$cexpr}";
         }
+        return "(select count(*) from PaperReview r where paperId=Paper.paperId and {$wheres}){$cexpr}";
     }
     function test(PaperInfo $prow, $xinfo) {
         $this->rsm->prepare_reviews($prow);
