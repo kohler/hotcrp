@@ -136,7 +136,6 @@ class Upload_CLIBatch implements CLIBatchCommand {
             if ($this->filename || $this->mimetype) {
                 $x .= " " . ($this->filename ?? $this->mimetype);
             }
-            $x .= " |";
             $clib->progress_start()->set_progress_prefix($x);
         }
         while (true) {

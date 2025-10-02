@@ -119,6 +119,8 @@ class Hotcrapi_Batch extends MessageSet {
     private $_subcommand_class = [];
 
     /** @var ?int */
+    private $_columns;
+    /** @var ?int */
     private $_progress_start_time;
     /** @var string */
     private $_progress_prefix = "";
@@ -375,6 +377,15 @@ class Hotcrapi_Batch extends MessageSet {
         $this->progress_show($amount, $max);
     }
 
+    /** @return ?int */
+    private function read_columns() {
+        $x = (string) shell_exec("stty -a 2>&1");
+        if (preg_match('/(\d+) columns/', $x, $m)) {
+            return intval($m[1]);
+        }
+        return null;
+    }
+
     function progress_show($amount, $max) {
         if (!$this->progress) {
             return;
@@ -388,32 +399,45 @@ class Hotcrapi_Batch extends MessageSet {
         }
         $this->_progress_time = $now;
 
-        $pp = $this->_progress_prefix;
-        if ($this->_progress_text !== "") {
-            if ($pp !== "" && !str_ends_with($pp, " ")) {
-                $pp .= " ";
-            }
-            $pp .= $this->_progress_text;
+        if ($this->_columns === null) {
+            $this->_columns = stoi("COLUMNS", true) ?? $this->read_columns() ?? 80;
         }
-        $m = $this->_progress_printed ? "\r" : "";
+
+        $cr = $this->_progress_printed ? "\r" : "";
         $this->_progress_printed = true;
+
+        $suffix = $amount !== null ? " | " . unparse_byte_size_binary_f($amount) : "";
+        $prefix = $this->_progress_prefix;
+        if ($this->_progress_text !== "") {
+            if ($prefix !== "" && !str_ends_with($prefix, " ")) {
+                $prefix .= " | ";
+            }
+            $prefix .= $this->_progress_text;
+        }
+        $prefixlim = max($this->_columns - max(strlen($suffix) + 12, 24), 12);
+        if (strlen($prefix) > $prefixlim) {
+            $first = (int) (($prefixlim - 3) / 2);
+            $prefix = substr($prefix, 0, $first) . "..." . substr($prefix, -($prefixlim - 3 - $first));
+        }
+        if ($prefix !== "" && !str_ends_with($prefix, " ")) {
+            $prefix .= " | ";
+        }
+
+        $width = max((int) ($this->_columns - strlen($prefix) - max(strlen($suffix) + 2, 14)), 10);
 
         if ($max === null || $amount === null) {
             // bounce a 3-character spaceship every 4 seconds
             // 0 seconds: 0 spaces; 2 seconds: 40 spaces; 4 seconds: 80 spaces (= 0 spaces)
             $mod4sec = (int) (($now - $this->_progress_start_time) / 1000) % 4000000;
-            $xsp = (int) floor($mod4sec * 80 / 4000000);
-            $sp = $xsp > 40 ? 80 - $xsp : $xsp;
-            $s = sprintf("%s%s%*s===%*s | %s\x1b[K", $m,
-                         $pp, $sp, "", 40 - $sp, "",
-                         $amount === null ? "" : unparse_byte_size_binary_f($amount));
+            $xsp = (int) floor($mod4sec * $width * 2 / 4000000);
+            $sp = $xsp > $width ? $width * 2 - $xsp : $xsp;
+            $s = sprintf("%s%s%*s===%*s%s\x1b[K", $cr,
+                         $prefix, $sp, "", $width - $sp, "", $suffix);
         } else {
-            $barw = $max === 0 ? 40 : (int) round($amount / $max * 40);
-            $s = sprintf("%s%s%s%3d%% | %-40s | %s\x1b[K", $m,
-                         $pp, $pp === "" ? "" : " ",
-                         $max === 0 ? 100 : (int) round($amount / $max * 100),
-                         str_repeat("#", $barw),
-                         unparse_byte_size_binary_f($amount));
+            $barw = $max === 0 ? $width : (int) round($amount / $max * $width);
+            $s = sprintf("%s%s%3d%% | %-{$width}s%s\x1b[K", $cr,
+                         $prefix, $max === 0 ? 100 : (int) round($amount / $max * 100),
+                         str_repeat("#", $barw), $suffix);
         }
         fwrite(STDERR, $s);
     }
