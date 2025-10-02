@@ -411,8 +411,7 @@
         "name": "upload", "post": true,
         "function": "Upload_API::run",
         "parameters": "?p ?dtype ?start ?temp ?offset ?size ?finish ?token ?cancel ?=mimetype ?=filename ?@blob",
-        "response": "token ?dtype ?filename ?mimetype ?size ?ranges ?hash ?crc32 ?server_progress_loaded ?server_progress_max"
-
+        "response": "token ?dtype ?filename ?mimetype ?size ?ranges ?hash ?crc32 ?progress_value ?progress_max ?<server_progress_loaded ?<server_progress_max"
     },
     {
         "name": "user", "get": true,

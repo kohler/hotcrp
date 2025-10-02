@@ -63,5 +63,5 @@ store.
 * response ranges [offset_range]
 * response hash string
 * response crc32 string
-* response server_progress_loaded integer
-* response server_progress_max integer
+* response progress_value integer
+* response progress_max integer

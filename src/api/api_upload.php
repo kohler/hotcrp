@@ -649,8 +649,10 @@ class Upload_API {
         if (isset($this->_capd->size)) {
             list($unused, $seg1) = $this->segment_boundaries(count($this->_capd->s3_parts));
             $spl = min($seg1, $this->_capd->size) + (isset($this->_capd->hash) ? 1 << 20 : 0);
-            $j["server_progress_loaded"] = (int) ($spl * self::SERVER_PROGRESS_FACTOR);
-            $j["server_progress_max"] = (int) (($this->_capd->size + (1 << 20)) * self::SERVER_PROGRESS_FACTOR);
+            $j["progress_value"] = (int) ($spl * self::SERVER_PROGRESS_FACTOR);
+            $j["progress_max"] = (int) (($this->_capd->size + (1 << 20)) * self::SERVER_PROGRESS_FACTOR);
+            $j["server_progress_loaded"] = $j["progress_value"]; /* XXX backward compat */
+            $j["server_progress_max"] = $j["progress_max"]; /* XXX backward compat */
         }
         if (!empty($this->_ml)) {
             $j["message_list"] = $this->_ml;

@@ -12457,7 +12457,11 @@ handle_ui.on("document-uploader", function (event) {
         if (r.token) {
             token = r.token;
         }
-        if (r.server_progress_max) {
+        if (r.progress_max) {
+            sprogress0 = r.progress_value;
+            sprogress1 = r.progress_max;
+            progress();
+        } else if (r.server_progress_max /* XXX backward compat */) {
             sprogress0 = r.server_progress_loaded;
             sprogress1 = r.server_progress_max;
             progress();
