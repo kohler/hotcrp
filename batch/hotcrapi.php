@@ -122,6 +122,8 @@ class Hotcrapi_Batch extends MessageSet {
     private $_progress_start_time;
     /** @var string */
     private $_progress_prefix = "";
+    /** @var string */
+    private $_progress_text = "";
     /** @var ?int */
     private $_progress_time;
     /** @var bool */
@@ -162,6 +164,13 @@ class Hotcrapi_Batch extends MessageSet {
      * @return $this */
     function set_progress($x) {
         $this->progress = $x;
+        return $this;
+    }
+
+    /** @param string $prefix
+     * @return $this */
+    function set_progress_prefix($prefix) {
+        $this->_progress_prefix = $prefix;
         return $this;
     }
 
@@ -351,25 +360,44 @@ class Hotcrapi_Batch extends MessageSet {
         return $this;
     }
 
-    /** @param string $prefix
+    /** @param string $text
      * @return $this */
-    function progress_prefix($prefix) {
-        $this->_progress_prefix = $prefix;
+    function set_progress_text($text) {
+        $this->_progress_text = $text;
         return $this;
+    }
+
+    /** @param string $text
+     * @param null|int|float $amount
+     * @param null|int|float $max */
+    function progress_show_text($text, $amount = null, $max = null) {
+        $this->_progress_text = $text;
+        $this->progress_show($amount, $max);
     }
 
     function progress_show($amount, $max) {
         if (!$this->progress) {
             return;
         }
+
         $now = hrtime(true);
         if ($this->_progress_time === null
             ? $now - $this->_progress_start_time < 500000000
             : $now - $this->_progress_time < 100000000) {
             return;
         }
-        $m = $this->_progress_printed ? "\r" : "";
         $this->_progress_time = $now;
+
+        $pp = $this->_progress_prefix;
+        if ($this->_progress_text !== "") {
+            if ($pp !== "" && !str_ends_with($pp, " ")) {
+                $pp .= " ";
+            }
+            $pp .= $this->_progress_text;
+        }
+        $m = $this->_progress_printed ? "\r" : "";
+        $this->_progress_printed = true;
+
         if ($max === null || $amount === null) {
             // bounce a 3-character spaceship every 4 seconds
             // 0 seconds: 0 spaces; 2 seconds: 40 spaces; 4 seconds: 80 spaces (= 0 spaces)
@@ -377,20 +405,17 @@ class Hotcrapi_Batch extends MessageSet {
             $xsp = (int) floor($mod4sec * 80 / 4000000);
             $sp = $xsp > 40 ? 80 - $xsp : $xsp;
             $s = sprintf("%s%s%*s===%*s | %s\x1b[K", $m,
-                         $this->_progress_prefix,
-                         $sp, "", 40 - $sp, "",
+                         $pp, $sp, "", 40 - $sp, "",
                          $amount === null ? "" : unparse_byte_size_binary_f($amount));
         } else {
             $barw = $max === 0 ? 40 : (int) round($amount / $max * 40);
             $s = sprintf("%s%s%s%3d%% | %-40s | %s\x1b[K", $m,
-                         $this->_progress_prefix,
-                         $this->_progress_prefix === "" ? "" : " ",
+                         $pp, $pp === "" ? "" : " ",
                          $max === 0 ? 100 : (int) round($amount / $max * 100),
                          str_repeat("#", $barw),
                          unparse_byte_size_binary_f($amount));
         }
         fwrite(STDERR, $s);
-        $this->_progress_printed = true;
     }
 
     function progress_snapshot() {
@@ -531,6 +556,7 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
         Paper_CLIBatch::register($hcli, $getopt);
         Search_CLIBatch::register($hcli, $getopt);
         Assign_CLIBatch::register($hcli, $getopt);
+        Autoassign_CLIBatch::register($hcli, $getopt);
         Settings_CLIBatch::register($hcli, $getopt);
         Upload_CLIBatch::register($hcli, $getopt);
         $arg = $getopt->parse($argv);
