@@ -250,37 +250,37 @@
         "order": 500,
         "allow_if": "pc", "display_if": "!listreport:pf",
         "function": "+Tag_ListAction",
-        "parameters": "tagfn tag ?tagcr_source ?tagcr_method ?tagcr_gapless"
+        "parameters": "tagfn tag ?dry_run ?gapless ?source_tag ?rank_method"
     },
     {
         "name": "tag/add", "post": true, "title": "Add tags",
         "allow_if": "pc", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag"
+        "function": "+Tag_ListAction", "parameters": "tag ?dry_run"
     },
     {
         "name": "tag/remove", "post": true, "title": "Remove tags",
         "allow_if": "pc", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag"
+        "function": "+Tag_ListAction", "parameters": "tag ?dry_run"
     },
     {
         "name": "tag/define", "post": true, "title": "Define tags",
         "allow_if": "pc", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag"
+        "function": "+Tag_ListAction", "parameters": "tag ?dry_run"
     },
     {
         "name": "tag/add_order", "post": true, "title": "Add to tag order",
         "allow_if": "pc", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag ?gapless"
+        "function": "+Tag_ListAction", "parameters": "tag ?dry_run ?gapless"
     },
     {
         "name": "tag/define_order", "post": true, "title": "Define tag order",
         "allow_if": "pc", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag ?gapless ?random"
+        "function": "+Tag_ListAction", "parameters": "tag ?dry_run ?gapless ?random"
     },
     {
         "name": "tag/calculate_rank", "post": true, "title": "Calculate rank",
         "allow_if": "admin", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag ?tagcr_source ?tagcr_method ?tagcr_gapless"
+        "function": "+Tag_ListAction", "parameters": "tag ?dry_run ?gapless ?source_tag ?rank_method"
     },
     {
         "name": "assign", "post": true,

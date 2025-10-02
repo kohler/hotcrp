@@ -78,9 +78,25 @@ class Assign_API {
             $csvp = CsvParser::make_json($j);
         }
 
-        // parse assignments; perform them unless dry run
+        // parse assignments
         $aset->parse($csvp);
 
+        // perform them unless dry run
+        $jr = self::complete_assign_api($aset, $qreq);
+        if (!$jr->get("dry_run")
+            && !$aset->has_error()
+            && $qreq->search) {
+            Search_API::apply_search($jr, $user, $qreq, $qreq->search);
+            // include tag information
+            if (($ps = self::assigned_paper_info($user, $aset))) {
+                $jr->set("papers", $ps);
+            }
+        }
+        return $jr;
+    }
+
+    /** @return JsonResult */
+    static function complete_assign_api(AssignmentSet $aset, Qrequest $qreq) {
         $dry_run = friendly_boolean($qreq->dry_run);
         $quiet = friendly_boolean($qreq->quiet);
         $summary = friendly_boolean($qreq->summary);
@@ -103,13 +119,6 @@ class Assign_API {
             $acsv = $aset->make_acsv();
             $jr->set("assignments_header", $acsv->header());
             $jr->set("assignments", $acsv->rows());
-        }
-        if (!$dry_run && !$aset->has_error() && $qreq->search) {
-            Search_API::apply_search($jr, $user, $qreq, $qreq->search);
-            // include tag information
-            if (($ps = self::assigned_paper_info($user, $aset))) {
-                $jr->set("papers", $ps);
-            }
         }
         return $jr;
     }
