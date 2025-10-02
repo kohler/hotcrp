@@ -228,10 +228,10 @@ class Search_CLIBatch implements CLIBatchCommand {
         $getopt->subcommand_description(
             "search",
             "Search HotCRP papers or perform search actions
-Usage: php batch/hotcrapi.php search -q QUERY [-f FIELD...]
+Usage: php batch/hotcrapi.php search -q SEARCH [-f FIELD...]
        php batch/hotcrapi.php search fields
        php batch/hotcrapi.php search actions
-       php batch/hotcrapi.php search ACTION [-P] -q QUERY"
+       php batch/hotcrapi.php search ACTION [-P] -q SEARCH"
         )->long(
             "q:,query: =SEARCH !search Submission search",
             "t:,type: =TYPE !search Collection to search [viewable]",

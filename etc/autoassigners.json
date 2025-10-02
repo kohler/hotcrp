@@ -1,16 +1,19 @@
 [
     {
         "name": "prefconflict",
+        "description": "<0>Assign conflicts where review preference is -100 or less",
         "function": "+PrefConflict_Autoassigner"
     },
     {
         "name": "clear",
         "function": "+Clear_Autoassigner",
+        "description": "<0>Clear assignments",
         "parameters": ["!type$"]
     },
     {
         "name": "lead",
         "function": "+PaperPC_Autoassigner",
+        "description": "<0>Assign discussion lead",
         "parameters": [
             "!score$",
             "allow_incomplete",
@@ -23,6 +26,7 @@
     {
         "name": "shepherd",
         "function": "+PaperPC_Autoassigner",
+        "description": "<0>Assign shepherd",
         "parameters": ["$lead"]
     },
     {
@@ -46,24 +50,27 @@
     {
         "name": "review",
         "function": "+Review_Autoassigner",
+        "description": "<0>Assign new reviews",
         "parameters": [
-            "!count#+ Number of reviews to assign per paper",
+            "!count#+ Number of reviews to assign per submission",
             "$__review_parameters"
         ]
     },
     {
         "name": "review_ensure",
         "function": "+Review_Autoassigner",
+        "description": "<0>Ensure a minimum number of reviews",
         "parameters": [
-            "!count#+ Number of reviews to ensure per paper",
+            "!count#+ Number of reviews to ensure per submission",
             "$__review_parameters"
         ]
     },
     {
         "name": "review_adjust",
         "function": "+Review_Autoassigner",
+        "description": "<0>Adjust existing review assignment to account for preference changes",
         "parameters": [
-            "!count#+ Number of reviews to ensure per paper",
+            "!count#+ Number of reviews to ensure per submission",
             "$__review_parameters",
             "remove_assignment_cost#"
         ]
@@ -71,6 +78,7 @@
     {
         "name": "review_per_pc",
         "function": "+Review_Autoassigner",
+        "description": "<0>Assign each PC member a number of reviews",
         "parameters": [
             "!count#+ Number of reviews to assign per PC member",
             "$__review_parameters"
@@ -79,6 +87,7 @@
     {
         "name": "discussion_order",
         "function": "+DiscussionOrder_Autoassigner",
+        "description": "<0>Create discussion order",
         "parameters": ["!tag:tag Destination tag"]
     }
 ]

@@ -150,7 +150,7 @@ class Autoassign_API {
             }
             $aj = ["name" => $name];
             if (isset($j->description)) {
-                $aj["description"] = Ftext::ensure($j->description, 0);
+                $aj["description"] = $j->description;
             }
             $vos = Autoassigner::expand_parameters($conf, $j->parameters ?? []);
             foreach ($vos as $vot) {
@@ -159,6 +159,9 @@ class Autoassign_API {
             }
             $exs[] = $aj;
         }
+        usort($exs, function ($a, $b) {
+            return strnatcasecmp($a["name"], $b["name"]);
+        });
         return [
             "ok" => true,
             "autoassigners" => $exs
