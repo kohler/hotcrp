@@ -498,32 +498,39 @@ class Paper_API extends MessageSet {
     }
 
 
+    /** @param string $fname
+     * @return bool */
+    static function should_skip_zip_filename($fname) {
+        return preg_match('/(?:\A|\/)(?:__MACOSX|\.[^\/]*+|\$RECYCLE_BIN|\#[^\/]*\#|[^\/]*~)(?:\z|\/)/', $fname);
+    }
+
     /** @return array{string,?string} */
     static function analyze_zip_contents($zip) {
         // find common directory prefix
         $dirpfx = null;
+        $xjsons = [];
         for ($i = 0; $i < $zip->numFiles; ++$i) {
             $name = $zip->getNameIndex($i);
+            if (self::should_skip_zip_filename($name)) {
+                continue;
+            }
             if ($dirpfx === null) {
                 $xslash = (int) strrpos($name, "/");
-                $dirpfx = $xslash ? substr($name, 0, $xslash + 1) : "";
+                $dirpfx = $xslash > 0 ? substr($name, 0, $xslash + 1) : "";
             }
             while ($dirpfx !== "" && !str_starts_with($name, $dirpfx)) {
-                $xslash = (int) strrpos($dirpfx, "/", -1);
-                $dirpfx = $xslash ? substr($dirpfx, 0, $xslash + 1) : "";
+                $xslash = (int) strrpos($dirpfx, "/", -2);
+                $dirpfx = $xslash > 0 ? substr($dirpfx, 0, $xslash + 1) : "";
             }
-            if ($dirpfx === "") {
-                break;
+            if (str_ends_with($name, ".json")) {
+                $xjsons[] = $name;
             }
         }
 
         // find JSONs
         $datas = $jsons = [];
-        for ($i = 0; $i < $zip->numFiles; ++$i) {
-            $name = $zip->getNameIndex($i);
-            if (!str_ends_with($name, ".json")
-                || strpos($name, "/", strlen($dirpfx)) !== false
-                || $name[strlen($dirpfx)] === ".") {
+        foreach ($xjsons as $name) {
+            if (strpos($name, "/", strlen($dirpfx)) !== false) {
                 continue;
             }
             $jsons[] = $name;

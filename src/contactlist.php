@@ -1447,6 +1447,6 @@ class ContactList {
         } else if ($field === "nonpc") {
             return ($this->has_flags & self::HAS_NONPC) !== 0;
         }
-        return 0;
+        return false;
     }
 }

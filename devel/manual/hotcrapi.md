@@ -88,7 +88,7 @@ case should be an *array* of submission objects.
 
 To delete a submission, run `php batch/hotcrapi.php paper delete PID`.
 
-Textual error messages and warnings are written to standard error.
+Error messages and warnings are written to standard error.
 
 
 ## `search`
@@ -107,9 +107,9 @@ run `php batch/hotcrapi.php search actions -j`.
 
 To perform a search action, such as downloading a zip file of the submission
 PDFs matching a search (`get/paper`), run `php batch/hotcrapi.php search
-ACTIONNAME`. The list of `ACTIONNAME`s can be found using `search actions`.
-Actions that modify the site require the `--post` argument. Some actions accept
-additional parameters, which are passed with `--param NAME=VALUE`.
+ACTIONNAME`. Actions that modify the site require the `--post` argument. Some
+actions accept additional parameters, which are passed with `--param
+NAME=VALUE`.
 
 
 ## `assign`
