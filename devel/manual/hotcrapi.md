@@ -7,12 +7,12 @@ sites.
 
 ## Configuration
 
-Hotcrapi requires a **site URL** and an **API token** for every access. The site
+Running Hotcrapi requires a **site URL** and an **API token**. The site
 URL defines the HotCRP site you want to access, and the API token authenticates
-to that site. Specify these parameters as command-line options, using
-environment variables, or in a per-user configuration file `~/.hotcrapi.conf`.
+to that site. Specify these parameters using command-line options,
+environment variables, or a per-user configuration file `~/.hotcrapi.conf`.
 
-Supply a site URL using the `-S SITEURL` command line option. If not present,
+The site URL is set using the `-S SITEURL` command line option. If not present,
 Hotcrapi checks the `HOTCRAPI_SITE` environment variable; and if that is not
 present, Hotcrapi searches the per-user configuration file for a default site.
 
@@ -83,7 +83,8 @@ file.) If the modification succeeds, the JSON representation of the modified
 submission is written to standard output.
 
 To modify multiple submissions, run `php batch/hotcrapi.php paper save < FILE`.
-Here, the JSON in `FILE` should be an *array* of JSON objects.
+Again, `FILE` can be a JSON or a ZIP containing a JSON, but the JSON in either
+case should be an *array* of JSON objects.
 
 To delete a submission, run `php batch/hotcrapi.php paper delete PID`.
 
@@ -96,7 +97,9 @@ Use the `search` subcommand to perform searches and search actions.
 
 To list the PIDs that match a search, run `php batch/hotcrapi.php search -q
 SEARCH`, where `SEARCH` is a search query. To list other fields in CSV format,
-provide `-f FIELD` arguments, such as `php batch/hotcrapi.php search -q '#tag' -f tags -f title`.
+provide `-f FIELD` arguments, such as `php batch/hotcrapi.php search -q '#tag'
+-f tags -f title`. Obtain a list of available fields using `php
+batch/hotcrapi.php search fields`.
 
 To list the search actions that can be performed, run `php batch/hotcrapi.php
 search actions`. The output lists actions one per line. For JSON output instead,

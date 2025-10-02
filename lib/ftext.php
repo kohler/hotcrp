@@ -122,9 +122,8 @@ class Ftext {
                 }, $s), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, "UTF-8");
         } else if ($from_format !== 5 && $to_format === 5) {
             return htmlspecialchars($s, ENT_QUOTES);
-        } else {
-            return $s;
         }
+        return $s;
     }
 
     /** @param ?int $to_format

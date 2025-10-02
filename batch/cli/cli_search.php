@@ -19,8 +19,6 @@ class Search_CLIBatch implements CLIBatchCommand {
     public $warn_missing;
     /** @var array<string,string> */
     public $param = [];
-    /** @var bool */
-    public $actions;
     /** @var ?string */
     public $action;
     /** @var bool */
@@ -28,12 +26,19 @@ class Search_CLIBatch implements CLIBatchCommand {
 
     /** @return int */
     function run(Hotcrapi_Batch $clib) {
-        if ($this->actions) {
+        if ($this->action === "actions") {
             return $this->run_actions($clib);
+        } else if ($this->action === "fields") {
+            return $this->run_fields($clib);
         } else if ($this->action) {
             return $this->run_action($clib);
         }
         return $this->run_get($clib);
+    }
+
+    /** @return bool */
+    function live_action() {
+        return $this->action && $this->action !== "actions" && $this->action !== "fields";
     }
 
     /** @return int */
@@ -110,6 +115,44 @@ class Search_CLIBatch implements CLIBatchCommand {
         return 0;
     }
 
+    /** @return int */
+    function run_fields(Hotcrapi_Batch $clib) {
+        $curlh = $clib->make_curl();
+        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, "GET");
+        curl_setopt($curlh, CURLOPT_URL, "{$clib->site}/displayfields");
+        if (!$clib->exec_api($curlh, null)) {
+            return 1;
+        }
+        if ($this->json) {
+            $clib->set_json_output($clib->content_json->fields ?? []);
+            return 0;
+        }
+        $x = [];
+        foreach ($clib->content_json->fields ?? [] as $aj) {
+            if (isset($aj->title)) {
+                $t = $aj->title;
+            } else if (isset($aj->description)) {
+                $t = Ftext::as(0, $aj->description, 0);
+            } else {
+                $t = "";
+            }
+            $p = [];
+            foreach ($aj->parameters ?? [] as $pj) {
+                $p[] = $pj->name;
+            }
+            if (!empty($p)) {
+                $t = ltrim("{$t}  [" . join(" ", $p) . "]");
+            }
+            if ($t !== "") {
+                $x[] = sprintf("%-23s %s\n", $aj->name, $t);
+            } else {
+                $x[] = "{$aj->name}\n";
+            }
+        }
+        $clib->set_output(join("", $x));
+        return 0;
+    }
+
     function skip_action(Hotcrapi_Batch $clib) {
         if ($clib->status_code >= 200 && $clib->status_code <= 299) {
             $this->output_content_string = true;
@@ -143,21 +186,20 @@ class Search_CLIBatch implements CLIBatchCommand {
         $pcb->fields = $arg["f"] ?? [];
         $pcb->format = $arg["F"] ?? "csv";
         $pcb->warn_missing = isset($arg["warn-missing"]);
+        $other_param = false;
         foreach ($arg["param"] ?? [] as $pstr) {
             if (($eq = strpos($pstr, "=")) === false) {
                 throw new CommandLineException("Expected `--param NAME=VALUE`");
             }
             $pcb->param[substr($pstr, 0, $eq)] = substr($pstr, $eq + 1);
+            $other_param = true;
         }
 
         $argv = $arg["_"];
         $argc = count($argv);
 
         $argi = 0;
-        if ($argi < $argc && $argv[$argi] === "actions") {
-            $pcb->actions = true;
-            ++$argi;
-        } else if ($argi < $argc && $argv[$argi] === "search") {
+        if ($argi < $argc && $argv[$argi] === "search") {
             ++$argi;
         } else if ($argi < $argc && $argv[$argi] === "help") {
             fwrite(STDOUT, $getopt->help("search"));
@@ -167,8 +209,16 @@ class Search_CLIBatch implements CLIBatchCommand {
             ++$argi;
         }
 
+        while ($argi < $argc && ($eq = strpos($argv[$argi], "=")) !== false) {
+            $pcb->param[substr($argv[$argi], 0, $eq)] = substr($argv[$argi], $eq + 1);
+            $other_param = true;
+            ++$argi;
+        }
+
         if ($argi < $argc) {
             throw new CommandLineException("Too many arguments");
+        } else if ($other_param && !$pcb->live_action()) {
+            throw new CommandLineException("`--param` ignored");
         }
 
         return $pcb;
@@ -179,6 +229,7 @@ class Search_CLIBatch implements CLIBatchCommand {
             "search",
             "Search HotCRP papers or perform search actions
 Usage: php batch/hotcrapi.php search -q QUERY [-f FIELD...]
+       php batch/hotcrapi.php search fields
        php batch/hotcrapi.php search actions
        php batch/hotcrapi.php search ACTION [-P] -q QUERY"
         )->long(
