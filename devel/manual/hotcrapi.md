@@ -74,9 +74,9 @@ where `SEARCH` is a search query. For instance, `php batch/hotcrapi.php paper -q
 
 To modify a single submission, run `php batch/hotcrapi.php paper save PID <
 FILE`. `PID` can be `new` to create a submission. The modification is specified
-as a JSON object. `FILE` can contain that JSON object. However, if you want to
-upload a document or attachment, `FILE` should instead be a ZIP file; the
-contents of the ZIP file should contain the JSON object (in a member named
+as a JSON submission object. `FILE` can contain that JSON. However, if you want
+to upload a document or attachment, `FILE` should instead be a ZIP file; the
+contents of the ZIP file should contain the JSON object (in a file member named
 `data.json` or `WHATEVER-data.json`) as well as any attachments. (To see an
 example of this format, use HotCRP search to download a “JSON with attachments”
 file.) If the modification succeeds, the JSON representation of the modified
@@ -84,7 +84,7 @@ submission is written to standard output.
 
 To modify multiple submissions, run `php batch/hotcrapi.php paper save < FILE`.
 Again, `FILE` can be a JSON or a ZIP containing a JSON, but the JSON in either
-case should be an *array* of JSON objects.
+case should be an *array* of submission objects.
 
 To delete a submission, run `php batch/hotcrapi.php paper delete PID`.
 
