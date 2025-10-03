@@ -431,16 +431,19 @@ class Hotcrapi_Batch extends MessageSet {
         $prefixlim = max($columns - max(strlen($suffix) + 12, 24), 12);
         $prefixpad = min($prefixlim, $this->_progress_text_width ?? strlen($prefix));
         if (strlen($prefix) > $prefixlim) {
-            $first = (int) (($prefixlim - 3) / 2);
+            $first = (int) (($prefixlim - 3) * 0.7);
             $prefix = substr($prefix, 0, $first) . "..." . substr($prefix, -($prefixlim - 3 - $first));
-        } else if (strlen($prefix) < $prefixpad) {
+        } else if ($prefix !== "" && strlen($prefix) < $prefixpad) {
             $prefix = str_pad($prefix, $prefixpad);
         }
         if ($prefix !== "") {
             $prefix .= " | ";
         }
+        if ($max !== null && $amount !== null) {
+            $prefix .= sprintf("%3d%% | ", $max === 0 ? 100 : (int) round($amount / $max * 100));
+        }
 
-        $width = max((int) ($columns - strlen($prefix) - max(strlen($suffix) + 2, 14)), 10);
+        $width = max((int) ($columns - strlen($prefix) - max(strlen($suffix) + 2, 10)), 15);
 
         if ($max === null || $amount === null) {
             // bounce a 3-character spaceship every 4 seconds
@@ -452,9 +455,8 @@ class Hotcrapi_Batch extends MessageSet {
                          $prefix, $sp, "", $width - $sp, "", $suffix);
         } else {
             $barw = $max === 0 ? $width : (int) round($amount / $max * $width);
-            $s = sprintf("%s%s%3d%% | %-{$width}s%s\x1b[K", $cr,
-                         $prefix, $max === 0 ? 100 : (int) round($amount / $max * 100),
-                         str_repeat("#", $barw), $suffix);
+            $s = sprintf("%s%s%-{$width}s%s\x1b[K", $cr,
+                         $prefix, str_repeat("#", $barw), $suffix);
         }
         fwrite(STDERR, $s);
     }
