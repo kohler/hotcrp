@@ -1037,17 +1037,17 @@ class MessageSet {
             if ($mi->message === "") {
                 continue;
             }
-            if (!empty($t) && $mi->status === self::INFORM) {
-                $t[] = "    ";
+            $mt = $mi->message_as(0);
+            if ($include_fields && $mi->field !== null) {
+                $mt = "{$mi->field}: {$mt}";
             }
             if ($mi->landmark !== null && $mi->landmark !== "") {
-                $t[] = "{$mi->landmark}: ";
+                $mt = "{$mi->landmark}: {$mt}";
             }
-            if ($include_fields && $mi->field !== null) {
-                $t[] = "{$mi->field}: ";
+            if (!empty($t) && $mi->status === self::INFORM) {
+                $mt = "    " . str_replace("\n", "\n    ", $mt);
             }
-            $t[] = $mi->message_as(0);
-            $t[] = "\n";
+            $t[] = rtrim($mt) . "\n";
             if ($mi->pos1 !== null && $mi->context !== null) {
                 $t[] = Ht::mark_substring_text($mi->context, $mi->pos1, $mi->pos2, "    ");
             }
