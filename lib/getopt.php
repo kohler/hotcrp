@@ -326,15 +326,16 @@ class Getopt {
 
     /** @param string $opt
      * @param string $help
-     * @param int $len
+     * @param ?int $indent
      * @return string */
-    static function format_help_line($opt, $help, $len = 24) {
+    static function format_help_line($opt, $help, $indent = null) {
+        $indent = $indent ?? (24 + strspn($opt, " "));
         if (($help ?? "") === "") {
             $sep = "";
-        } else if (strlen($opt) <= $len) {
-            $sep = str_repeat(" ", $len + 2 - strlen($opt));
+        } else if (strlen($opt) <= $indent) {
+            $sep = str_repeat(" ", $indent - strlen($opt));
         } else {
-            $sep = "\n  " . str_repeat(" ", $len);
+            $sep = "\n" . str_repeat(" ", $indent);
         }
         return "{$opt}{$sep}{$help}\n";
     }

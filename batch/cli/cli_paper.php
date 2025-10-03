@@ -91,7 +91,7 @@ class Paper_CLIBatch implements CLIBatchCommand {
             return 1;
         }
         $k = isset($this->p) ? "paper" : "papers";
-        $clib->set_json_output($clib->content_json->$k);
+        $clib->set_output_json($clib->content_json->$k);
         return 0;
     }
 
@@ -163,9 +163,9 @@ class Paper_CLIBatch implements CLIBatchCommand {
             fwrite(STDERR, $clib->content_string);
         }
         if (isset($clib->content_json->paper)) {
-            $clib->set_json_output($clib->content_json->paper);
+            $clib->set_output_json($clib->content_json->paper);
         } else if (isset($clib->content_json->papers)) {
-            $clib->set_json_output($clib->content_json->papers);
+            $clib->set_output_json($clib->content_json->papers);
         }
         return $ok ? 0 : 1;
     }

@@ -221,7 +221,7 @@ class Hotcrapi_Batch extends MessageSet {
 
     /** @param mixed $x
      * @return $this */
-    function set_json_output($x) {
+    function set_output_json($x) {
         return $this->set_output(json_encode_db($x, JSON_PRETTY_PRINT) . "\n");
     }
 

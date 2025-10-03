@@ -15,6 +15,8 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
     public $summary;
     /** @var bool */
     public $json;
+    /** @var bool */
+    public $help = false;
     /** @var array<string,string> */
     public $param = [];
     /** @var list<string> */
@@ -23,29 +25,45 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
     public $disjoint = [];
     /** @var string */
     public $action;
+    /** @var Getopt */
+    public $getopt;
 
     /** @return int */
     function run(Hotcrapi_Batch $clib) {
         if ($this->action === "list" || $this->action === "autoassigners") {
-            return $this->run_list($clib);
+            $this->help = false;
+            return $this->run_list($clib, null);
+        } else if ($this->help) {
+            return $this->run_list($clib, $this->action);
         }
         return $this->run_post($clib);
     }
 
     /** @return int */
-    function run_list(Hotcrapi_Batch $clib) {
+    function run_list(Hotcrapi_Batch $clib, $action) {
         $curlh = $clib->make_curl();
         curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, "GET");
         curl_setopt($curlh, CURLOPT_URL, "{$clib->site}/autoassigners");
         if (!$clib->exec_api($curlh, null)) {
+            if ($this->help) {
+                fwrite(STDOUT, $this->getopt->help("autoassign"));
+                exit(0);
+            }
             return 1;
         }
         if ($this->json) {
-            $clib->set_json_output($clib->content_json->autoassigners ?? []);
+            $clib->set_output_json($clib->content_json->autoassigners ?? []);
             return 0;
         }
         $x = [];
+        $found = false;
+        $indent = $this->help ? "  " : "";
+        $space = 25 - strlen($indent);
         foreach ($clib->content_json->autoassigners ?? [] as $aj) {
+            if ($action && $aj->name !== $action) {
+                continue;
+            }
+            $found = true;
             if (isset($aj->title)) {
                 $t = $aj->title;
             } else if (isset($aj->description)) {
@@ -53,18 +71,25 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
             } else {
                 $t = "";
             }
-            $p = [];
-            foreach ($aj->parameters ?? [] as $pj) {
-                $p[] = $pj->name;
-            }
-            if (!empty($p)) {
-                $t = ltrim("{$t}  [" . join(" ", $p) . "]");
-            }
-            if ($t !== "") {
-                $x[] = sprintf("%-23s %s\n", $aj->name, $t);
+            if ($t === "") {
+                $x[] = "{$indent}{$aj->name}\n";
+            } else if ($action) {
+                $x[] = "{$aj->name}\n  {$t}\n";
             } else {
-                $x[] = "{$aj->name}\n";
+                $x[] = sprintf("{$indent}%-{$space}s %s\n", $aj->name, $t);
             }
+            if ($action) {
+                $x[] = "\nParameters:\n";
+                foreach ($aj->parameters ?? [] as $pj) {
+                    $x[] = ViewOptionType::make($pj)->unparse_help_line();
+                }
+                $x[] = "\n";
+            }
+        }
+        if ($action && !$found) {
+            $clib->error_at(null, "Autoassigner not found");
+        } else if ($this->help && !$action) {
+            array_unshift($x, $this->getopt->help("autoassign"), "Autoassigners:\n");
         }
         $clib->set_output(join("", $x));
         return 0;
@@ -114,7 +139,7 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
         }
 
         if ($this->json) {
-            $clib->set_json_output($clib->content_json);
+            $clib->set_output_json($clib->content_json);
         } else if ($ok && $clib->content_json->output) {
             $clib->set_output($clib->content_json->output);
         }
@@ -124,6 +149,7 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
     /** @return Autoassign_CLIBatch */
     static function make_arg(Hotcrapi_Batch $clib, Getopt $getopt, $arg) {
         $pcb = new Autoassign_CLIBatch;
+        $pcb->getopt = $getopt;
         $pcb->q = $arg["q"] ?? "";
         $pcb->t = $arg["t"] ?? "s";
         $pcb->dry_run = isset($arg["dry-run"]);
@@ -147,7 +173,11 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
             if (($eq = strpos($arg, "=")) !== false) {
                 $pcb->param[substr($arg, 0, $eq)] = substr($arg, $eq + 1);
             } else if ($pcb->action === null) {
-                $pcb->action = $arg;
+                if ($arg === "help") {
+                    $pcb->help = true;
+                } else {
+                    $pcb->action = $arg;
+                }
             } else {
                 break;
             }
@@ -155,7 +185,7 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
 
         if ($argi < $argc) {
             throw new CommandLineException("Too many arguments");
-        } else if ($pcb->action === null) {
+        } else if (!$pcb->help && $pcb->action === null) {
             throw new CommandLineException("Missing `AUTOASSIGNER`");
         }
 
@@ -167,7 +197,8 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
             "autoassign",
             "Perform HotCRP autoassignments
 Usage: php batch/hotcrapi.php autoassign AUTOASSIGNER -q SEARCH [PARAM=VALUE...]
-       php batch/hotcrapi.php autoassign list"
+       php batch/hotcrapi.php autoassign help
+       php batch/hotcrapi.php autoassign help AUTOASSIGNER"
         )->long(
             "q:,query: =SEARCH !autoassign Autoassignment papers",
             "t:,type: =TYPE !autoassign Collection to autoassign [s]",

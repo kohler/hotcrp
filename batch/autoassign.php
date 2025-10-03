@@ -126,7 +126,7 @@ class Autoassign_Batch {
     /** @param iterable<MessageItem> $message_list
      * @param int $exit_status
      * @return never */
-    private function reportx($message_list, $exit_status = null) {
+    private function reportx($message_list, $exit_status) {
         $this->report($message_list, $exit_status);
         assert(false);
     }
@@ -156,6 +156,9 @@ class Autoassign_Batch {
         foreach ($arg["_"] ?? [] as $x) {
             if (($eq = strpos($x, "=")) > 0) {
                 $this->param[substr($x, 0, $eq)] = substr($x, $eq + 1);
+            } else if ($this->aaname === "help") {
+                $this->help_param = true;
+                $this->aaname = $x;
             } else {
                 $this->report([MessageItem::error("<0>`NAME=VALUE` format expected for parameter arguments")], 3);
             }
@@ -247,7 +250,11 @@ class Autoassign_Batch {
     }
 
     function report_progress($progress) {
-        $this->_jtok->change_data("progress", $progress)->update_use()->update();
+        if ($this->_jtok) {
+            $this->_jtok->change_data("progress", $progress)
+                ->update_use()
+                ->update();
+        }
         set_time_limit(240);
     }
 
@@ -290,16 +297,20 @@ class Autoassign_Batch {
         $aa->set_user_ids($this->pcc);
         $aa->set_paper_ids($pids);
         $aa->configure();
-        $this->report($aa->message_list(), $aa->has_error() ? 1 : null);
+
+        // report error or messages
+        if ($aa->has_error()) {
+            $this->change_data("valid", false);
+            $this->report($aa->message_list(), 1);
+        }
+        $this->report($aa->message_list());
 
         // run autoassigner
         if ($this->detacher) {
             call_user_func($this->detacher, $this);
             $this->detacher = null;
         }
-        if ($this->_jtok) {
-            $aa->add_progress_function([$this, "report_progress"]);
-        }
+        $aa->add_progress_function([$this, "report_progress"]);
         $aa->run();
 
         if ($this->profile) {
@@ -329,6 +340,10 @@ class Autoassign_Batch {
     }
 
     function execute() {
+        // set initial properties
+        $this->change_data("valid", true);
+
+        // run autoassigner
         $aatext = $this->run_autoassigner();
 
         // exit if nothing to do
@@ -343,7 +358,6 @@ class Autoassign_Batch {
 
         // exit if minimal dry run
         if ($this->minimal_dry_run) {
-            $this->change_data("dry_run", true);
             $this->set_output($aatext);
             $this->report([], 0);
         }
@@ -357,6 +371,7 @@ class Autoassign_Batch {
 
         // exit if error
         if ($aset->has_error()) {
+            $this->change_data("valid", false);
             $this->report([], 1);
         }
 
@@ -389,30 +404,22 @@ class Autoassign_Batch {
                 new FmtArg("types", $aset->assigned_types()),
                 new FmtArg("pids", $aset->assigned_pids())
             ));
-            $this->set_output($aset->make_acsv()->unparse());
         }
+        $this->set_output($aset->make_acsv()->unparse());
         $this->report($ml, 0);
     }
 
     /** @return int */
     function run() {
         if ($this->help_param) {
-            $s = ["{$this->gj->name} parameters:\n"];
+            $s = ["{$this->gj->name}:\n"];
+            if ($this->gj->description) {
+                $s[] = "  " . Ftext::as(0, $this->gj->description, 0) . "\n";
+            }
+            $s[] = "\nParameters:\n";
             $vos = Autoassigner::expand_parameters($this->conf, $this->gj->parameters ?? []);
-            foreach ($vos as $vot) {
-                if ($vot->type === "bool") {
-                    $arg = "  {$vot->name}=yes|no";
-                } else if ($vot->type === "enum") {
-                    $arg = "  {$vot->name}=" . join("|", ViewOptionType::split_enum($vot->enum));
-                } else if ($vot->type === "int" && ($vot->min ?? -1) >= 0) {
-                    $arg = "  {$vot->name}=" . ($vot->argname ?? "N");
-                } else {
-                    $arg = "  {$vot->name}=" . ($vot->argname ?? "ARG");
-                }
-                if ($vot->required) {
-                    $arg .= " *";
-                }
-                $s[] = Getopt::format_help_line($arg, $vot->description);
+            foreach ($vos->help_order() as $vot) {
+                $s[] = $vot->unparse_help_line();
             }
             $s[] = "\n";
             fwrite(STDOUT, join("", $s));

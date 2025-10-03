@@ -33,6 +33,9 @@ class Assign_CLIBatch implements CLIBatchCommand {
         if ($this->dry_run) {
             $args["dry_run"] = 1;
         }
+        if (!$this->json) {
+            $args["csv"] = 1;
+        }
         if ($clib->quiet) {
             $args["quiet"] = 1;
         } else if ($this->summary) {
@@ -59,7 +62,7 @@ class Assign_CLIBatch implements CLIBatchCommand {
         $dry_run = $cj->dry_run ?? false;
 
         if ($this->json) {
-            $clib->set_json_output($cj);
+            $clib->set_output_json($cj);
         } else if (!is_bool($cj->valid ?? false)) {
             $clib->error_at(null, "<0>Invalid server response");
             $ok = false;
@@ -76,11 +79,19 @@ class Assign_CLIBatch implements CLIBatchCommand {
             return 1;
         }
 
-        $no_assignments = ($cj->assignments ?? null) === []
+        $no_assignments = ($cj->output ?? null) === ""
+            || ($cj->output ?? null) === []
+            || ($cj->assignments ?? null) === [] /* backward compat */
             || ($cj->assignment_pids ?? null) === [];
         if ($no_assignments) {
             $clib->success("<0>No changes");
-        } else if (isset($cj->assignments)) {
+        } else if (isset($cj->output)) {
+            if (is_string($cj->output)) {
+                $clib->set_output($cj->output);
+            } else {
+                $clib->set_output_json($cj->output);
+            }
+        } else if (isset($cj->assignments)) { /* XXX backward compat */
             $csv = (new CsvGenerator)->select($cj->assignments_header);
             foreach ($cj->assignments as $aj) {
                 $csv->add_row((array) $aj);

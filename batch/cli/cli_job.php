@@ -2,7 +2,7 @@
 // cli_job.php -- HotCRP script for interacting with site APIs
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
-class Job_CLIBatch implements CLIBatchCommand {
+class Job_CLIBatch {
     /** @var string
      * @readonly */
     public $job;
@@ -90,6 +90,7 @@ class Job_CLIBatch implements CLIBatchCommand {
             }
             $clib->progress_show($progress_value, $progress_max);
             time_nanosleep((int) ($this->delay / 1000000), ($this->delay % 1000000) * 1000);
+            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->delay = min($this->delay * $this->backoff, $this->max_delay);
         }
         curl_close($curlh);

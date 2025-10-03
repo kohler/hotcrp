@@ -22,7 +22,7 @@ class Test_CLIBatch implements CLIBatchCommand {
         if ($clib->quiet) {
             return 0;
         } else if ($this->json) {
-            $clib->set_json_output($clib->content_json);
+            $clib->set_output_json($clib->content_json);
             return 0;
         }
         if ($this->email || $this->roles) {

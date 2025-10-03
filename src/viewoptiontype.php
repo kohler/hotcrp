@@ -231,4 +231,26 @@ class ViewOptionType {
         }
         return $v;
     }
+
+    /** @param int $indent
+     * @return string */
+    function unparse_help_line($indent = 2) {
+        if ($this->alias) {
+            return "";
+        }
+        $s = str_repeat(" ", $indent) . $this->name . "=";
+        if ($this->type === "bool") {
+            $s .= "yes|no";
+        } else if ($this->type === "enum") {
+            $s .= join("|", ViewOptionType::split_enum($this->enum));
+        } else if ($this->type === "int") {
+            $s .= $this->argname ?? ($this->min >= 0 ? "N" : "NUM");
+        } else if ($this->type === "string") {
+            $s .= $this->argname ?? "ARG";
+        } else {
+            $s .= $this->argname ?? strtoupper($this->type);
+        }
+        $r = $this->required ? ($this->description ? "* " : "*") : "";
+        return Getopt::format_help_line($s, $r . $this->description);
+    }
 }

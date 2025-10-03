@@ -46,7 +46,7 @@ class Settings_CLIBatch implements CLIBatchCommand {
         if (!$clib->exec_api($curlh, null)) {
             return 1;
         }
-        $clib->set_json_output($clib->content_json->settings);
+        $clib->set_output_json($clib->content_json->settings);
         return 0;
     }
 
@@ -75,7 +75,7 @@ class Settings_CLIBatch implements CLIBatchCommand {
         }
         if ($clib->output_file() !== null
             && isset($clib->content_json->settings)) {
-            $clib->set_json_output($clib->content_json->settings);
+            $clib->set_output_json($clib->content_json->settings);
         }
         if ($clib->verbose) {
             fwrite(STDERR, $clib->content_string);

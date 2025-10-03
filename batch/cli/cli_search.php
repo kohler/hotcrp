@@ -58,9 +58,9 @@ class Search_CLIBatch implements CLIBatchCommand {
         }
         $j = $clib->content_json;
         if ($this->json) {
-            $clib->set_json_output($j);
+            $clib->set_output_json($j);
         } else if (!empty($j->fields) && $this->format === "json") {
-            $clib->set_json_output($j->papers);
+            $clib->set_output_json($j->papers);
         } else if (!empty($j->fields)) {
             $csv = new CsvGenerator;
             $header = ["pid"];
@@ -87,7 +87,7 @@ class Search_CLIBatch implements CLIBatchCommand {
             return 1;
         }
         if ($this->json) {
-            $clib->set_json_output($clib->content_json->actions ?? []);
+            $clib->set_output_json($clib->content_json->actions ?? []);
             return 0;
         }
         $x = [];
@@ -124,7 +124,7 @@ class Search_CLIBatch implements CLIBatchCommand {
             return 1;
         }
         if ($this->json) {
-            $clib->set_json_output($clib->content_json->fields ?? []);
+            $clib->set_output_json($clib->content_json->fields ?? []);
             return 0;
         }
         $x = [];

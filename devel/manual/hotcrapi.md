@@ -116,12 +116,25 @@ NAME=VALUE`.
 
 Use the `assign` subcommand to perform assignments. Given a bulk-assignment
 CSV file, run `php batch/hotcrapi.php assign < FILE` to perform the
-assignments. You can also test the assignments for errors by running `php
-batch/hotcrapi.php assign --dry-run < FILE`.
+assignments.
 
-If the assignment is successful, Hotcrapi outputs a CSV file detailing the
-specific assignments performed. Supply `--quiet` or `--summary` for more
-concise output.
+If the assignment is successful, Hotcrapi outputs a CSV file detailing the final
+assignments performed. You can also test the assignments for errors by running
+`php batch/hotcrapi.php assign --dry-run < FILE`; this outputs the assignments
+that would have been made without actually performing them. Supply `--quiet` or
+`--summary` for more concise output.
+
+
+## `autoassign`
+
+Use the `autoassign` subcommand to perform automatic assignments. Use `php
+batch/hotcrapi.php autoassign help` to list the available autoassigners, `php
+batch/hotcrapi.php autoassign help AUTOASSIGNER` to list the parameters for a
+specific autoassigner, and `php batch/hotcrapi.php autoassign AUTOASSIGNER
+PARAM=VALUE...` to run an autoassigner.
+
+`autoassign`, like `assign`, outputs a CSV file detailing the final assignments
+performed, and accepts `--dry-run` and `--quiet`.
 
 
 ## `settings`

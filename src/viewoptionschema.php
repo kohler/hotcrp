@@ -103,10 +103,20 @@ class ViewOptionSchema implements IteratorAggregate {
     /** @return list<string> */
     function keys() {
         $a = [];
-        foreach ($this->a as $name => $schema) {
-            if (!isset($schema->alias))
+        foreach ($this->a as $name => $vot) {
+            if (!isset($vot->alias))
                 $a[] = $name;
         }
         return $a;
+    }
+
+    /** @return list<ViewOptionType> */
+    function help_order() {
+        $ts = [];
+        foreach ($this->a as $vot) {
+            if (!isset($vot->alias))
+                $ts[] = $vot;
+        }
+        return $ts;
     }
 }

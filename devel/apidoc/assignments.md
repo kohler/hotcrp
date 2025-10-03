@@ -41,14 +41,13 @@ The `valid` response property is `true` if and only if the assignments were
 valid (had no errors). In non-dry-run requests, `"valid": true` indicates that
 any database changes were committed.
 
-The response includes an `assignments` property, which is an array of the
-specific assignments performed (or, for dry-run requests, the specific
-assignments that *would have been* performed). Each entry represents a single
-action applied to a single submission. (This differs from input `assignments`
-entries, each of which might apply to many submissions.) If you’re not
-interested in the `assignments` property, supply a parameter of either
-`summary=1` (to get summary `assigned_actions` and `assigned_pids`
-properties) or `quiet=1` (to get nothing).
+The response includes an `output` property, which is an array of the specific
+assignments performed (or, for dry-run requests, the specific assignments that
+*would have been* performed). Each entry represents a single action applied to a
+single submission. (This differs from input `assignments` entries, each of which
+might apply to many submissions.) If you’re not interested in the `output`
+property, supply either `summary=1` (to get summary `assigned_actions` and
+`assigned_pids` properties) or `quiet=1` (to get nothing).
 
 If the optional `p` request parameter is set, HotCRP will only implement
 assignments that affect that submission.
@@ -59,14 +58,15 @@ assignments that affect that submission.
 * param ?upload upload_token: Upload token for JSON or CSV assignments
 * param ?quiet boolean: True omits assignment information from response
 * param ?summary boolean: True omits complete assignment from response
+* param ?csv boolean: True uses CSV format in response
 * param ?forceShow boolean: Explicit false means chair conflicts are not overridden
 * param ?search search_parameter_specification
 * response ?dry_run boolean: True if request was a dry run
 * response valid boolean: True if the assignments were valid
-* response ?assignments [object]: List of resulting assignments
-* response ?assignments_header [string]: List of properties for union of all assignments
 * response ?assigned_actions [string]: List of action names included in eventual assignment
 * response ?assigned_pids [pid]: List of submission IDs changed by assignment
+* response ?output: Resulting assignments, as JSON list or CSV
+* response ?output_header [string]: CSV header if `output` is JSON
 * response ?papers
 * response ?ids
 * response ?groups

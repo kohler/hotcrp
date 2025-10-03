@@ -98,9 +98,6 @@ class Assign_API {
     /** @return JsonResult */
     static function complete_assign_api(AssignmentSet $aset, Qrequest $qreq) {
         $dry_run = friendly_boolean($qreq->dry_run);
-        $quiet = friendly_boolean($qreq->quiet);
-        $summary = friendly_boolean($qreq->summary);
-
         if (!$dry_run) {
             $aset->execute();
         }
@@ -110,15 +107,18 @@ class Assign_API {
             $jr->set("dry_run", true);
         }
         $jr->set("valid", !$aset->has_error());
-        if ($quiet || (!$dry_run && $aset->has_error())) {
+        if (friendly_boolean($qreq->quiet)
+            || (!$dry_run && $aset->has_error())) {
             // no additional information
-        } else if ($summary) {
+        } else if (friendly_boolean($qreq->summary)) {
             $jr->set("assigned_actions", $aset->assigned_types());
             $jr->set("assigned_pids", $aset->assigned_pids());
+        } else if (friendly_boolean($qreq->csv)) {
+            $jr->set("output", $aset->make_acsv()->unparse());
         } else {
             $acsv = $aset->make_acsv();
-            $jr->set("assignments_header", $acsv->header());
-            $jr->set("assignments", $acsv->rows());
+            $jr->set("output_header", $acsv->header());
+            $jr->set("output", $acsv->rows());
         }
         return $jr;
     }
