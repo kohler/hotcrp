@@ -501,7 +501,7 @@ class Paper_API extends MessageSet {
     /** @param string $fname
      * @return bool */
     static function should_skip_zip_filename($fname) {
-        return preg_match('/(?:\A|\/)(?:__MACOSX|\.[^\/]*+|\$RECYCLE_BIN|\#[^\/]*\#|[^\/]*~)(?:\z|\/)/', $fname);
+        return preg_match('/(?:\A|\/)(?:__MACOSX|\.[^\/]*+|\$RECYCLE\.BIN|\#[^\/]*\#|[^\/]*~)(?:\z|\/)/', $fname);
     }
 
     /** @return array{string,?string} */

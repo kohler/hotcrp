@@ -107,12 +107,17 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
         $ok = $clib->exec_api($curlh, null);
 
         if ($ok && isset($clib->content_json->job)) {
+            $clib->set_progress_text_width($clib->columns() > 80 ? 60 : 40);
             $jobcli = (new Job_CLIBatch($clib->content_json->job))
                 ->set_delay_first(true);
             $ok = $jobcli->run($clib);
         }
 
-        $clib->set_json_output($clib->content_json);
+        if ($this->json) {
+            $clib->set_json_output($clib->content_json);
+        } else if ($ok && $clib->content_json->output) {
+            $clib->set_output($clib->content_json->output);
+        }
         return 0;
     }
 
@@ -125,6 +130,8 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
         $pcb->minimal_dry_run = isset($arg["minimal-dry-run"]);
         $pcb->summary = isset($arg["summary"]);
         $pcb->json = isset($arg["json"]);
+        $pcb->u = $arg["u"] ?? [];
+        $pcb->disjoint = $arg["disjoint"] ?? [];
         foreach ($arg["param"] ?? [] as $pstr) {
             if (($eq = strpos($pstr, "=")) === false) {
                 throw new CommandLineException("Expected `--param NAME=VALUE`");
@@ -169,7 +176,7 @@ Usage: php batch/hotcrapi.php autoassign AUTOASSIGNER -q SEARCH [PARAM=VALUE...]
             "summary !autoassign Request an assignment summary",
             "json,j !autoassign Output JSON response",
             "u[]+ =USER !autoassign Users to consider for autoassignment",
-            "disjoint[]+ !autoassign",
+            "disjoint[]+ =USER,USER !autoassign Users that should not be coassigned",
             "param[]+ =NAME=VALUE !autoassign Set autoassignment parameters"
         );
         $clib->register_command("autoassign", "Autoassign_CLIBatch");

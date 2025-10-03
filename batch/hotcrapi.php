@@ -124,6 +124,8 @@ class Hotcrapi_Batch extends MessageSet {
     private $_progress_start_time;
     /** @var string */
     private $_progress_prefix = "";
+    /** @var ?int */
+    private $_progress_text_width;
     /** @var string */
     private $_progress_text = "";
     /** @var ?int */
@@ -173,6 +175,13 @@ class Hotcrapi_Batch extends MessageSet {
      * @return $this */
     function set_progress_prefix($prefix) {
         $this->_progress_prefix = $prefix;
+        return $this;
+    }
+
+    /** @param ?int $width
+     * @return $this */
+    function set_progress_text_width($width) {
+        $this->_progress_text_width = $width;
         return $this;
     }
 
@@ -377,13 +386,21 @@ class Hotcrapi_Batch extends MessageSet {
         $this->progress_show($amount, $max);
     }
 
-    /** @return ?int */
-    private function read_columns() {
-        $x = (string) shell_exec("stty -a 2>&1");
-        if (preg_match('/(\d+) columns/', $x, $m)) {
-            return intval($m[1]);
+    /** @return int */
+    function columns() {
+        if ($this->_columns !== null) {
+            return $this->_columns;
         }
-        return null;
+        $this->_columns = stoi(getenv("COLUMNS", true));
+        if ($this->_columns === null) {
+            $x = (string) shell_exec("stty -a 2>&1");
+            if (preg_match('/(\d+) columns/', $x, $m)) {
+                $this->_columns = intval($m[1]);
+            } else {
+                $this->_columns = 80;
+            }
+        }
+        return $this->_columns;
     }
 
     function progress_show($amount, $max) {
@@ -399,10 +416,6 @@ class Hotcrapi_Batch extends MessageSet {
         }
         $this->_progress_time = $now;
 
-        if ($this->_columns === null) {
-            $this->_columns = stoi("COLUMNS", true) ?? $this->read_columns() ?? 80;
-        }
-
         $cr = $this->_progress_printed ? "\r" : "";
         $this->_progress_printed = true;
 
@@ -414,16 +427,20 @@ class Hotcrapi_Batch extends MessageSet {
             }
             $prefix .= $this->_progress_text;
         }
-        $prefixlim = max($this->_columns - max(strlen($suffix) + 12, 24), 12);
+        $columns = $this->columns();
+        $prefixlim = max($columns - max(strlen($suffix) + 12, 24), 12);
+        $prefixpad = min($prefixlim, $this->_progress_text_width ?? strlen($prefix));
         if (strlen($prefix) > $prefixlim) {
             $first = (int) (($prefixlim - 3) / 2);
             $prefix = substr($prefix, 0, $first) . "..." . substr($prefix, -($prefixlim - 3 - $first));
+        } else if (strlen($prefix) < $prefixpad) {
+            $prefix = str_pad($prefix, $prefixpad);
         }
-        if ($prefix !== "" && !str_ends_with($prefix, " ")) {
+        if ($prefix !== "") {
             $prefix .= " | ";
         }
 
-        $width = max((int) ($this->_columns - strlen($prefix) - max(strlen($suffix) + 2, 14)), 10);
+        $width = max((int) ($columns - strlen($prefix) - max(strlen($suffix) + 2, 14)), 10);
 
         if ($max === null || $amount === null) {
             // bounce a 3-character spaceship every 4 seconds

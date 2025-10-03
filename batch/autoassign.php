@@ -322,6 +322,12 @@ class Autoassign_Batch {
         }
     }
 
+    private function change_data($key, $value) {
+        if ($this->_jtok) {
+            $this->_jtok->change_data($key, $value);
+        }
+    }
+
     function execute() {
         $aatext = $this->run_autoassigner();
 
@@ -337,51 +343,53 @@ class Autoassign_Batch {
 
         // exit if minimal dry run
         if ($this->minimal_dry_run) {
+            $this->change_data("dry_run", true);
             $this->set_output($aatext);
             $this->report([], 0);
         }
 
         // parse assignment
-        $assignset = (new AssignmentSet($this->user))
+        $aset = (new AssignmentSet($this->user))
             ->set_override_conflicts(!$this->no_force);
-        $assignset->parse($aatext);
-        $this->report($assignset->message_list());
+        $aset->parse($aatext);
+        $this->report($aset->message_list());
         $aatext = "";  // reclaim memory
 
         // exit if error
-        if ($assignset->has_error()) {
+        if ($aset->has_error()) {
             $this->report([], 1);
         }
 
         // exit if empty
-        if ($assignset->is_empty()) {
+        if ($aset->is_empty()) {
             $ml = $this->quiet ? [] : [MessageItem::warning("<0>No changes")];
             $this->report($ml, 0);
         }
 
         // mark assigned pids
         if ($this->_jtok) {
-            $this->_jtok->change_data("assigned_pids", $assignset->assigned_pids());
+            $this->change_data("assigned_actions", $aset->assigned_types());
+            $this->change_data("assigned_pids", $aset->assigned_pids());
         }
 
         // exit if dry run
         if ($this->dry_run) {
-            $this->set_output($assignset->make_acsv()->unparse());
+            $this->change_data("dry_run", true);
+            $this->set_output($aset->make_acsv()->unparse());
             $this->report([], 0);
         }
 
         // execute assignment
-        $assignset->execute();
-        if ($this->_jtok) {
-            $this->_jtok->change_data("assigned", true);
-        }
+        $aset->execute();
+        $this->change_data("assigned", true);
         $ml = [];
         if (!$this->quiet) {
             $ml[] = MessageItem::success($this->conf->_(
                 "<0>Assigned {types:list} to {submission} {pids:numlist#}",
-                new FmtArg("types", $assignset->assigned_types()),
-                new FmtArg("pids", $assignset->assigned_pids())
+                new FmtArg("types", $aset->assigned_types()),
+                new FmtArg("pids", $aset->assigned_pids())
             ));
+            $this->set_output($aset->make_acsv()->unparse());
         }
         $this->report($ml, 0);
     }
@@ -427,7 +435,7 @@ class Autoassign_Batch {
             "job:,j: JOBID Run stored job",
             "dry-run,d Do not perform assignment; output CSV instead",
             "minimal-dry-run,unsorted-dry-run,D !",
-            "autoassigner:,a: =AA !",
+            "autoassigner:,a: =AUTOASSIGNER !",
             "q:,search: =QUERY Use papers matching QUERY [all]",
             "type:,t: =TYPE Set search type [s]",
             "all Include all papers (default is submitted papers)",

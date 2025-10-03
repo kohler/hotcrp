@@ -99,7 +99,7 @@ class Job_Capability extends TokenInfo {
         }
     }
 
-    /** @param bool $output
+    /** @param bool|string $output
      * @return JsonResult */
     function json_result($output = false) {
         $ok = $this->is_active();
@@ -110,7 +110,9 @@ class Job_Capability extends TokenInfo {
         }
         $answer["update_at"] = $answer["update_at"] ?? $this->timeUsed;
         if ($output && $this->outputData !== null) {
-            if (str_starts_with($this->outputData, "{")
+            if ((str_starts_with($this->outputData, "{")
+                 || str_starts_with($this->outputData, "["))
+                && $output !== "text"
                 && ($j = json_decode($this->outputData))) {
                 $answer["output"] = $j;
             } else if (is_valid_utf8($this->outputData)) {
