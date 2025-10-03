@@ -3179,6 +3179,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table MailLog change `q` `q` varbinary(16384) DEFAULT NULL")) {
             $conf->update_schema_version(312);
         }
+        if ($conf->sversion === 312
+            && $conf->ql_ok("alter table Capability add `inputDataOverflow` longblob DEFAULT NULL")
+            && $conf->ql_ok("alter table Capability add `dataOverflow` longblob DEFAULT NULL")) {
+            $conf->update_schema_version(313);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

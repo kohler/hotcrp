@@ -323,7 +323,7 @@ class Upload_API {
                 }
                 call_user_func($callable, $this->_capd);
                 $this->_cap->assign_data($this->_capd);
-                return $this->_cap->data;
+                return $this->_cap->encoded_data();
             },
             "update Capability set `data`=?{desired} where salt=? and `data`=?{expected}", [$this->_cap->salt]
         );
@@ -332,7 +332,7 @@ class Upload_API {
     /** @return int */
     private function reload_capd_status() {
         $this->_cap->load_data();
-        $this->_capd = json_decode($this->_cap->data);
+        $this->_capd = $this->_cap->data();
         return $this->_capd->status ?? -1;
     }
 
@@ -554,7 +554,7 @@ class Upload_API {
             } else if (!$this->_capd->s3_lock) {
                 $this->_capd->s3_lock = time();
                 $new_data = json_encode_db($this->_capd);
-                $result = $this->conf->qe("update Capability set `data`=? where salt=? and `data`=?", $new_data, $this->_cap->salt, $this->_cap->data);
+                $result = $this->conf->qe("update Capability set `data`=? where salt=? and `data`=?", $new_data, $this->_cap->salt, $this->_cap->encoded_data());
                 if ($result->affected_rows > 0) {
                     $this->_cap->assign_data($new_data);
                     $have_lock = $this->_capd->s3_lock;
@@ -566,7 +566,7 @@ class Upload_API {
             usleep($delay);
             $delay = min($delay * 2, 250000);
             $this->_cap->load_data();
-            $this->_capd = json_decode($this->_cap->data);
+            $this->_capd = $this->_cap->data();
             if (!$this->_capd) {
                 $this->_ml[] = MessageItem::error("<0>Capability changed underneath us");
                 return;
@@ -689,7 +689,7 @@ class Upload_API {
         } else if ($this->_cap->contactId !== $user->contactId) {
             return JsonResult::make_parameter_error("token", "<0>That upload belongs to another user");
         }
-        $this->_capd = json_decode($this->_cap->data);
+        $this->_capd = $this->_cap->data();
 
         if (friendly_boolean($qreq->cancel)) {
             $this->delete_all();
@@ -788,7 +788,7 @@ class Upload_API {
     static function cleanup(TokenInfo $cap) {
         $up = new Upload_API($cap->conf);
         $up->_cap = $cap;
-        $up->_capd = json_decode($cap->data);
+        $up->_capd = $cap->data();
         $up->delete_all();
     }
 }

@@ -13,6 +13,7 @@ CREATE TABLE `Capability` (
   `timeExpires` bigint(11) NOT NULL,
   `salt` varbinary(255) NOT NULL,
   `data` varbinary(8192) DEFAULT NULL,
+  `dataOverflow` longblob DEFAULT NULL,
   PRIMARY KEY (`salt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

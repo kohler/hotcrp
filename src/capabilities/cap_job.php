@@ -84,12 +84,12 @@ class Job_Capability extends TokenInfo {
             throw new CommandLineException("No such job `{$salt}`");
         }
         while (true) {
-            if ($tok->data !== null) {
+            if ($tok->encoded_data() !== null) {
                 throw new CommandLineException("Job `{$salt}` has already started");
             }
             $new_data = '{"status":"run"}';
             $result = Dbl::qe($conf->dblink,
-                "update Capability set `data`=? where salt=? and `data` is null",
+                "update Capability set `data`=? where salt=? and `data` is null and dataOverflow is null",
                 $new_data, $tok->salt);
             if ($result->affected_rows > 0) {
                 $tok->assign_data($new_data);
