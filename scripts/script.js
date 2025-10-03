@@ -7721,6 +7721,14 @@ function cmt_render(cj, editing) {
         $(article).find(".cmteditor").click(edit_this);
     }
 
+    // reactions
+    if (!editing && cj.cid) {
+        const celt = document.getElementById(cj_cid(cj));
+        if (celt) {
+            cmt_render_reactions(cj, celt);
+        }
+    }
+
     return $(article);
 }
 
@@ -7935,6 +7943,8 @@ hotcrp.set_response_round = function (rname, rinfo) {
     resp_rounds[rname] = rinfo;
 };
 
+hotcrp.cj_find = cj_find;
+
 })(jQuery);
 
 handle_ui.on("js-overlong-expand", function () {
@@ -7943,6 +7953,247 @@ handle_ui.on("js-overlong-expand", function () {
     removeClass(e, "overlong-collapsed");
 });
 
+
+
+// Reaction-related functions
+function cmt_render_reactions(cj, celt) {
+    const reactions_container = celt.querySelector(".comment-reactions");
+    if (reactions_container) {
+        reactions_container.remove();
+    }
+    
+    const reactions_div = $e("div", "comment-reactions");
+    
+    // Render existing reactions
+    for (const [emoji, data] of Object.entries(cj.reactions)) {
+        const reaction_span = create_reaction_element(emoji, data, cj.cid);
+        reactions_div.appendChild(reaction_span);
+    }
+    
+    // Add reaction picker button
+    const picker_btn = $e("button", {
+        type: "button",
+        class: "reaction-picker-btn btn-licon need-tooltip ui",
+        "data-comment-id": cj.cid,
+        title: "Add reaction"
+    }, "+");
+    reactions_div.appendChild(picker_btn);
+
+    // Insert reactions after comment text
+    const cmttext = celt.querySelector(".cmttext");
+    if (cmttext) {
+        cmttext.parentNode.insertBefore(reactions_div, cmttext.nextSibling);
+    }
+}
+
+function create_reaction_element(emoji, data, commentId) {
+    const classes = ["ui", "need-tooltip", "reaction-item"];
+    if (data.viewer_reacted) {
+        classes.push("viewer-reacted");
+    }
+    
+    let ariaLabel = "";
+    if (data.users && data.users.length > 0) {
+        const unique_users = [...new Set(data.users)];
+        if (unique_users.length === 1) {
+            ariaLabel = `${unique_users[0]} reacted with :${emoji}:`;
+        } else {
+            ariaLabel = `${unique_users.join(", ")} reacted with :${emoji}:`;
+        }
+    }
+    
+    const reaction_span = $e("span", {
+        class: classes.join(" "),
+        "data-emoji": emoji,
+        "data-comment-id": commentId,
+        "aria-label": ariaLabel
+    });
+    
+    reaction_span.appendChild($e("span", "emoji-unicode", data.emoji_unicode));
+    reaction_span.appendChild($e("span", "reaction-count", data.count.toString()));
+
+    hotcrp.tooltip.call(reaction_span);
+    
+    return reaction_span;
+}
+
+function show_emoji_picker(button) {
+    // Remove any existing picker
+    const existing_picker = document.querySelector(".emoji-picker");
+    if (existing_picker) {
+        existing_picker.remove();
+    }
+
+    demand_load.emoji_codes().then(function(emoji_data) {
+        const picker = create_emoji_picker(emoji_data, button);
+        document.body.appendChild(picker);
+        position_emoji_picker(picker, button);
+        button.style.visibility = "visible";
+        
+        // Close picker when clicking outside
+        function close_picker(evt) {
+            if (!picker.contains(evt.target) && evt.target !== button) {
+                picker.remove();
+                document.removeEventListener("click", close_picker);
+            }
+            button.style.visibility = "";
+        }
+        setTimeout(() => document.addEventListener("click", close_picker), 0);
+    });
+}
+
+function create_emoji_picker(emoji_data, button) {
+    const picker = $e("div", "emoji-picker");
+    const common_emojis = ["+1", "thumbsdown", "heart", "100", "laugh", "tada", "rocket", "pray"];
+    
+    const common_section = $e("div", "emoji-section");
+    
+    // Add common emojis
+    const common_grid = $e("div", "emoji-grid");
+    for (const emoji_name of common_emojis) {
+        if (emoji_data.emoji[emoji_name]) {
+            const emoji_btn = $e("button", {
+                type: "button",
+                class: "emoji-option",
+                "data-emoji": emoji_name,
+                title: emoji_name.replace(/_/g, " "),
+            }, emoji_data.emoji[emoji_name]);
+            common_grid.appendChild(emoji_btn);
+        }
+    }
+    const custom_emoji = $e("button", {
+        type: "button",
+        class: "open-emoji-search",
+        title: "Search emoji"
+    }, "...");
+    common_grid.appendChild(custom_emoji);
+        
+    common_section.appendChild(common_grid);
+    
+    picker.appendChild(common_section);
+    
+    // Add search box
+    const search_input = $e("input", {
+        type: "text",
+        class: "emoji-search hidden",
+        placeholder: "Search emojis..."
+    });
+    picker.appendChild(search_input);
+    
+    // All emojis section (initially hidden, shown on search)
+    const all_section = $e("div", "emoji-section emoji-all hidden");
+    const all_grid = $e("div", "emoji-grid");
+    all_section.appendChild(all_grid);
+    picker.appendChild(all_section);
+
+    // Handle emoji selection
+    picker.addEventListener("click", function(evt) {
+        if (evt.target.classList.contains("emoji-option")) {
+            const emoji = evt.target.getAttribute("data-emoji");
+            const commentId = button.getAttribute("data-comment-id");
+            const celt = button.closest(".cmtid");
+            toggle_reaction(commentId, emoji, celt);
+            picker.remove();
+        }
+        if (evt.target.classList.contains("open-emoji-search")) {
+            search_input.classList.toggle("hidden");
+            search_input.focus();
+        }   
+    });
+    
+    // Handle search
+    search_input.addEventListener("input", function() {
+        const query = this.value.toLowerCase();
+        if (query.length > 0) {
+            search_emojis(query, emoji_data, all_grid);
+            common_section.classList.add("hidden");
+            all_section.classList.remove("hidden");
+        } else {
+            common_section.classList.remove("hidden");
+            all_section.classList.add("hidden");
+        }
+    });
+    
+    return picker;
+}
+
+function search_emojis(query, emoji_data, container) {
+    container.innerHTML = "";
+    const matches = [];
+    
+    for (const [name, unicode] of Object.entries(emoji_data.emoji)) {
+        if (name.toLowerCase().includes(query)) {
+            matches.push({name, unicode});
+        }
+    }
+    
+    // Limit results
+    matches.slice(0, 48).forEach(match => {
+        const emoji_btn = $e("button", {
+            type: "button",
+            class: "emoji-option",
+            "data-emoji": match.name,
+            title: match.name.replace(/_/g, " ")
+        }, match.unicode);
+        container.appendChild(emoji_btn);
+    });
+}
+
+function position_emoji_picker(picker, button) {
+    const button_rect = button.getBoundingClientRect();
+    const picker_height = 300; // estimated height
+    const viewport_height = window.innerHeight;
+    
+    // Position below by default, above if not enough space
+    if (button_rect.bottom + picker_height <= viewport_height || button_rect.top < picker_height) {
+        // Position below
+        picker.style.top = button_rect.bottom + "px";
+        picker.style.bottom = "";
+    } else {
+        // Position above
+        picker.style.top = "";
+        picker.style.bottom = (viewport_height - button_rect.top + 5) + "px";
+    }
+    
+    picker.style.left = Math.max(0, button_rect.left) + 20 + "px";
+}
+
+function toggle_reaction(commentId, emoji, celt) {
+    const url = hoturl("=api/reaction", {p: siteinfo.paperid, c: commentId});
+    const data = {emoji: emoji};
+    
+    $.post(url, data, function(response) {
+        if (response.ok) {
+            // Update the comment object
+            const cj = hotcrp.cj_find(celt);
+            if (cj) {
+                cj.reactions = response.reactions;
+                if (celt) {
+                    cmt_render_reactions(cj, celt);
+                }
+            }
+        } else {
+            // Handle error
+            alert("Failed to toggle reaction: " + (response.message_list?.[0]?.message || "Unknown error"));
+        }
+    }).fail(function() {
+        alert("Failed to toggle reaction. Please try again.");
+    });
+}
+
+// Event handlers
+handle_ui.on("reaction-picker-btn", function(evt) {
+    evt.preventDefault();
+    show_emoji_picker(this);
+});
+
+handle_ui.on("reaction-item", function(evt) {
+    const emoji = this.getAttribute("data-emoji");
+    const commentId = this.getAttribute("data-comment-id");
+    const celt = this.closest(".cmtid");
+    hotcrp.tooltip.close();
+    toggle_reaction(commentId, emoji, celt);
+});
 
 // previewing
 (function ($) {

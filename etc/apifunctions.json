@@ -75,6 +75,18 @@
         "response_deprecated": "cmt"
     },
     {
+        "name": "reaction", "get": true, "paper": true,
+        "function": "Reaction_API::run",
+        "parameters": "c ?emoji",
+        "response": "reactions"
+    },
+    {
+        "name": "reaction", "post": true, "paper": true,
+        "function": "Reaction_API::run", 
+        "parameters": "c emoji",
+        "response": "action reactions"
+    },
+    {
         "name": "cspreport", "post": true, "check_token": false,
         "function": "Error_API::cspreport"
     },
