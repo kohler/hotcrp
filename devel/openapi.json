@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-09-18:52a05596d",
+        "version": "2025-10-03:9cd0ee956",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n\n\n### Large queries\n\nA `POST` request whose `:method:` query parameter is set to `GET` is treated as\nif it were a `GET` request. This can help work around web server URL length\nlimits.\n"
     },
@@ -825,10 +825,10 @@
                                         "crc32": {
                                             "type": "string"
                                         },
-                                        "server_progress_loaded": {
+                                        "progress_value": {
                                             "type": "integer"
                                         },
-                                        "server_progress_max": {
+                                        "progress_max": {
                                             "type": "integer"
                                         }
                                     }
@@ -2159,7 +2159,7 @@
         "/assign": {
             "post": {
                 "summary": "Perform assignments",
-                "description": "Perform assignments, specified either as a JSON array or as an uploaded CSV\nfile.\n\nThe assignments should be compatible with HotCRP’s bulk assignments format.\nThey may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a CSV file (when the request body has content-type\n   `text/csv`).\n3. As a JSON- or CSV-formatted request parameter named `assignments` (when the\n   request body has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or CSV file, represented by a upload token in\n   the `upload` parameter.\n\nJSON assignments should parse to arrays of objects. Each object should contain\nat least a `pid` property and an `action` property, where `action` determines\nwhat kind of assignment to run. CSV assignments must contain a header, which\nshould specify at least `pid` and `action` columns. (The `/assigners` endpoint\nlists the available `action`s.)\n\nTo test an assignment, supply a `dry_run=1` parameter. This will parse the\nuploaded assignment and report any errors, but make no changes to the\ndatabase.\n\nThe `valid` response property is `true` if and only if the assignments were\nvalid (had no errors). In non-dry-run requests, `\"valid\": true` indicates that\nany database changes were committed.\n\nThe response includes an `assignments` property, which is an array of the\nspecific assignments performed (or, for dry-run requests, the specific\nassignments that *would have been* performed). Each entry represents a single\naction applied to a single submission. (This differs from input `assignments`\nentries, each of which might apply to many submissions.) If you’re not\ninterested in the `assignments` property, supply a parameter of either\n`summary=1` (to get summary `assigned_actions` and `assigned_pids`\nproperties) or `quiet=1` (to get nothing).\n\nIf the optional `p` request parameter is set, HotCRP will only implement\nassignments that affect that submission.\n\n",
+                "description": "Perform assignments, specified either as a JSON array or as an uploaded CSV\nfile.\n\nThe assignments should be compatible with HotCRP’s bulk assignments format.\nThey may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a CSV file (when the request body has content-type\n   `text/csv`).\n3. As a JSON- or CSV-formatted request parameter named `assignments` (when the\n   request body has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or CSV file, represented by a upload token in\n   the `upload` parameter.\n\nJSON assignments should parse to arrays of objects. Each object should contain\nat least a `pid` property and an `action` property, where `action` determines\nwhat kind of assignment to run. CSV assignments must contain a header, which\nshould specify at least `pid` and `action` columns. (The `/assigners` endpoint\nlists the available `action`s.)\n\nTo test an assignment, supply a `dry_run=1` parameter. This will parse the\nuploaded assignment and report any errors, but make no changes to the\ndatabase.\n\nThe `valid` response property is `true` if and only if the assignments were\nvalid (had no errors). In non-dry-run requests, `\"valid\": true` indicates that\nany database changes were committed.\n\nThe response includes an `output` property, which is an array of the specific\nassignments performed (or, for dry-run requests, the specific assignments that\n*would have been* performed). Each entry represents a single action applied to a\nsingle submission. (This differs from input `assignments` entries, each of which\nmight apply to many submissions.) If you’re not interested in the `output`\nproperty, supply either `summary=1` (to get summary `assigned_actions` and\n`assigned_pids` properties) or `quiet=1` (to get nothing).\n\nIf the optional `p` request parameter is set, HotCRP will only implement\nassignments that affect that submission.\n\n",
                 "tags": [
                     "Assignments"
                 ],
@@ -2202,6 +2202,15 @@
                             "type": "boolean"
                         },
                         "description": "True omits complete assignment from response"
+                    },
+                    {
+                        "name": "csv",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True uses CSV format in response"
                     },
                     {
                         "name": "forceShow",
@@ -2263,20 +2272,6 @@
                                             "type": "boolean",
                                             "description": "True if the assignments were valid"
                                         },
-                                        "assignments_header": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "string"
-                                            },
-                                            "description": "List of properties for union of all assignments"
-                                        },
-                                        "assignments": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object"
-                                            },
-                                            "description": "List of resulting assignments"
-                                        },
                                         "assigned_actions": {
                                             "type": "array",
                                             "items": {
@@ -2290,6 +2285,16 @@
                                                 "$ref": "#/components/schemas/pid"
                                             },
                                             "description": "List of submission IDs changed by assignment"
+                                        },
+                                        "output": {
+                                            "description": "Resulting assignments, as JSON list or CSV"
+                                        },
+                                        "output_header": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "CSV header if `output` is JSON"
                                         },
                                         "papers": {},
                                         "ids": {},

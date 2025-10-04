@@ -774,7 +774,8 @@ class APISpec_Batch {
         $has_file = false;
         foreach ($this->cur_fieldf as $name => $f) {
             if ($name === "*"
-                || (($f & self::FM_NONGET) !== 0 && $this->cur_lmethod === "get")) {
+                || (($f & self::FM_NONGET) !== 0 && $this->cur_lmethod === "get")
+                || ($f & self::F_DEPRECATED) !== 0) {
                 continue;
             }
             if (($f & (self::F_BODY | self::F_FILE)) !== 0) {
@@ -958,7 +959,8 @@ class APISpec_Batch {
         $bprop = $breq = [];
         foreach ($this->cur_fieldf as $name => $f) {
             if ($name === "*"
-                || (($f & self::FM_NONGET) !== 0 && $this->cur_lmethod === "get")) {
+                || (($f & self::FM_NONGET) !== 0 && $this->cur_lmethod === "get")
+                || ($f & self::F_DEPRECATED) !== 0) {
                 continue;
             }
             $bprop[$name] = $this->resolve_info($this->cur_fields[$name] ?? null, $name);
