@@ -582,7 +582,11 @@
                     },
                     "min": {
                         "type": "integer"
-                    }
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "default": {}
                 },
                 "examples": [
                     {
@@ -615,7 +619,10 @@
                         "type": "string"
                     },
                     "parameters": {
-                        "type": "string"
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/view_option"
+                        }
                     },
                     "get": {
                         "type": "boolean"

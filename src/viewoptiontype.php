@@ -23,6 +23,8 @@ class ViewOptionType {
     public $negated = false;
     /** @var bool */
     public $required = false;
+    /** @var mixed */
+    public $default;
 
     /** @param string|object $x
      * @return ?ViewOptionType */
@@ -33,13 +35,21 @@ class ViewOptionType {
             $end = strpos($x, " ");
             if ($end === false) {
                 $end = strlen($x);
-            } else if ($end < strlen($x) - 1
-                       && $x[$end + 1] === "=") {
-                $sp = strlpos($x, " ", $end + 1);
-                $vot->argname = substr($x, $end + 2, $sp - $end - 2);
-                $vot->description = $sp + 1 < strlen($x) ? substr($x, $sp + 1) : null;
             } else {
-                $vot->description = substr($x, $end + 1);
+                $dpos = $end + 1;
+                if ($dpos < strlen($x) && $x[$dpos] === "=") {
+                    $sp = strlpos($x, " ", $dpos);
+                    $vot->argname = substr($x, $dpos + 1, $sp - $dpos - 1);
+                    $dpos = min(strlen($x), $sp + 1);
+                }
+                if ($dpos < strlen($x) && $x[$dpos] === "["
+                    && ($rb = strpos($x, "]", $dpos + 1)) !== false) {
+                    $vot->default = substr($x, $dpos + 1, $rb - $dpos - 1);
+                    $dpos = $rb + ($rb + 1 < strlen($x) && $x[$rb + 1] === " " ? 2 : 1);
+                }
+                if ($dpos < strlen($x)) {
+                    $vot->description = substr($x, $dpos);
+                }
             }
             if ($pos < $end) {
                 if ($x[$pos] === "!") {
@@ -228,6 +238,17 @@ class ViewOptionType {
         }
         if ($this->description !== null) {
             $v["description"] = $this->description;
+        }
+        if ($this->default !== null) {
+            if ($this->type === "boolean"
+                && ($x = friendly_boolean($this->default)) !== null) {
+                $v["default"] = $x;
+            } else if ($this->type === "int"
+                       && ($x = stoi($this->default)) !== null) {
+                $v["default"] = $x;
+            } else {
+                $v["default"] = $this->default;
+            }
         }
         return $v;
     }

@@ -81,6 +81,7 @@ class ListAction {
             && !$qreq->valid_token()) {
             return JsonResult::make_error(403, "<0>Missing credentials");
         }
+        $wantapi = ($flags & self::F_API) !== 0;
         $cs = self::components($user, $flags);
         $slash = strpos($name, "/");
         $namepfx = $slash > 0 ? substr($name, 0, $slash) : null;
@@ -102,6 +103,7 @@ class ListAction {
         if (!$uf
             || !Conf::xt_resolve_require($uf)
             || (isset($uf->allow_if) && !$cs->allowed($uf->allow_if, $uf))
+            || ($wantapi && ($uf->api ?? null) === false)
             || !is_string($uf->function)) {
             return JsonResult::make_error(404, "<0>Action not found");
         } else if (($uf->paper ?? false) && $selection->is_empty()) {

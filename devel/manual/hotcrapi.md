@@ -99,17 +99,17 @@ To list the PIDs that match a search, run `php batch/hotcrapi.php search -q
 SEARCH`, where `SEARCH` is a search query. To list other fields in CSV format,
 provide `-f FIELD` arguments, such as `php batch/hotcrapi.php search -q '#tag'
 -f tags -f title`. Obtain a list of available fields using `php
-batch/hotcrapi.php search fields`.
-
-To list the search actions that can be performed, run `php batch/hotcrapi.php
-search actions`. The output lists actions one per line. For JSON output instead,
-run `php batch/hotcrapi.php search actions -j`.
+batch/hotcrapi.php search help fields`, and get more information about a
+specific field, including any optional parameters, with `php batch/hotcrapi.php
+search help field FIELD`.
 
 To perform a search action, such as downloading a zip file of the submission
-PDFs matching a search (`get/paper`), run `php batch/hotcrapi.php search
-ACTIONNAME`. Actions that modify the site require the `--post` argument. Some
-actions accept additional parameters, which are passed with `--param
-NAME=VALUE`.
+PDFs matching a search, run `php batch/hotcrapi.php search ACTION`. Actions that
+modify the site require the `--post` argument, and some actions accept
+additional parameters that you can pass with `NAME=VALUE` arguments. Obtain a
+list of available actions with `php batch/hotcrapi.php search help actions`, and
+get more information about action parameters with `php batch/hotcrapi.php search
+help action ACTION`.
 
 
 ## `assign`

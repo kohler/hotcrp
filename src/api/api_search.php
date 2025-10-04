@@ -179,6 +179,7 @@ class Search_API {
             foreach ($ufs as $uf) {
                 if (str_starts_with($uf->name, "__")
                     || (isset($uf->allow_if) && !$cs->allowed($uf->allow_if, $uf))
+                    || ($uf->api ?? null) === false
                     || !isset($uf->function)) {
                     continue;
                 }
@@ -200,7 +201,14 @@ class Search_API {
                     $fj["description"] = $uf->description;
                 }
                 if (isset($uf->parameters)) {
-                    $fj["parameters"] = $uf->parameters;
+                    if (is_string($uf->parameters)) {
+                        $vos = new ViewOptionSchema(...explode(" ", $uf->parameters));
+                    } else {
+                        $vos = new ViewOptionSchema(...$uf->parameters);
+                    }
+                    foreach ($vos->help_order() as $vot) {
+                        $fj["parameters"][] = $vot->unparse_export();
+                    }
                 }
                 $fjs[] = $fj;
             }

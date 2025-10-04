@@ -245,55 +245,61 @@
         "function": "+GetCSV_ListAction"
     },
     {
-        "name": "tag", "post": true,
+        "name": "tag", "post": true, "api": false,
         "render_function": "Tag_ListAction::render", "title": "Tag",
         "order": 500,
         "allow_if": "pc", "display_if": "!listreport:pf",
         "function": "+Tag_ListAction",
-        "parameters": "tagfn tag ?dry_run ?gapless ?source_tag ?rank_method"
+        "parameters": "tagfn$ tag:tag ?dry_run ?gapless ?source_tag:tag ?rank_method=schulze|irv|range|civsrp|randomwalk"
     },
     {
         "name": "tag/add", "post": true, "title": "Add tags",
         "allow_if": "pc", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag ?dry_run"
+        "function": "+Tag_ListAction", "parameters": "!tag:tag ?dry_run"
     },
     {
         "name": "tag/remove", "post": true, "title": "Remove tags",
         "allow_if": "pc", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag ?dry_run"
+        "function": "+Tag_ListAction", "parameters": "!tag:tag ?dry_run"
     },
     {
         "name": "tag/define", "post": true, "title": "Define tags",
         "allow_if": "pc", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag ?dry_run"
+        "function": "+Tag_ListAction", "parameters": "!tag:tag ?dry_run"
     },
     {
         "name": "tag/add_order", "post": true, "title": "Add to tag order",
         "allow_if": "pc", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag ?dry_run ?gapless"
+        "function": "+Tag_ListAction", "parameters": "!tag:tag ?dry_run ?gapless"
     },
     {
         "name": "tag/define_order", "post": true, "title": "Define tag order",
         "allow_if": "pc", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag ?dry_run ?gapless ?random"
+        "function": "+Tag_ListAction", "parameters": "!tag:tag ?dry_run ?gapless ?random"
     },
     {
         "name": "tag/calculate_rank", "post": true, "title": "Calculate rank",
         "allow_if": "admin", "display_if": false,
-        "function": "+Tag_ListAction", "parameters": "tag ?dry_run ?gapless ?source_tag ?rank_method"
+        "function": "+Tag_ListAction", "parameters": [
+            "!tag:tag",
+            "?dry_run",
+            "?gapless",
+            "?source_tag:tag",
+            "?rank_method=schulze|irv|range|civsrp|randomwalk [schulze]"
+        ]
     },
     {
-        "name": "assign", "post": true,
+        "name": "assign", "post": true, "api": false,
         "render_function": "Assign_ListAction::render", "title": "Assign",
         "order": 700,
-        "allow_if": "manager && !api", "display_if": "!listreport:pf",
+        "allow_if": "manager", "display_if": "!listreport:pf",
         "function": "+Assign_ListAction"
     },
     {
-        "name": "decide", "post": true,
+        "name": "decide", "post": true, "api": false,
         "render_function": "Decide_ListAction::render", "title": "Decide",
         "order": 900,
-        "allow_if": "manager && !api", "display_if": "!listreport:pf",
+        "allow_if": "manager", "display_if": "!listreport:pf",
         "function": "+Decide_ListAction"
     },
     {
@@ -303,38 +309,38 @@
         "display_if": "!listreport:pf"
     },
     {
-        "name": "mail/authors", "get": true,
+        "name": "mail/authors", "get": true, "api": false,
         "title": "Contact authors",
-        "order": 10, "allow_if": "manager && !api",
+        "order": 10, "allow_if": "manager",
         "function": "+Mail_ListAction",
         "mail_template": "authors"
     },
     {
-        "name": "mail/reviewers", "get": true,
+        "name": "mail/reviewers", "get": true, "api": false,
         "title": "Reviewers",
-        "order": 100, "allow_if": "manager && !api",
+        "order": 100, "allow_if": "manager",
         "function": "+Mail_ListAction",
         "mail_template": "reviewers"
     },
     {
-        "name": "tryuploadpref", "post": true,
+        "name": "tryuploadpref", "post": true, "api": false,
         "render_function": "Revpref_ListAction::render_upload", "title": "Upload",
-        "allow_if": "pc && !api", "display_if": "listreport:pf",
+        "allow_if": "pc", "display_if": "listreport:pf",
         "function": "+Revpref_ListAction",
         "order": 100
     },
     {
-        "name": "uploadpref", "post": true,
-        "allow_if": "pc && !api", "function": "+Revpref_ListAction"
+        "name": "uploadpref", "post": true, "api": false,
+        "allow_if": "pc", "function": "+Revpref_ListAction"
     },
     {
-        "name": "applyuploadpref", "post": true,
-        "allow_if": "pc && !api", "function": "+Revpref_ListAction"
+        "name": "applyuploadpref", "post": true, "api": false,
+        "allow_if": "pc", "function": "+Revpref_ListAction"
     },
     {
-        "name": "setpref", "post": true,
+        "name": "setpref", "post": true, "api": false,
         "render_function": "Revpref_ListAction::render_set", "title": "Set selected",
-        "allow_if": "pc && !api", "display_if": "listreport:pf",
+        "allow_if": "pc", "display_if": "listreport:pf",
         "function": "+Revpref_ListAction",
         "order": 200
     }
