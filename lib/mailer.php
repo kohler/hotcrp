@@ -55,6 +55,8 @@ class Mailer {
     protected $_errors_reported = [];
     /** @var ?MessageSet */
     private $_ms;
+    /** @var bool */
+    private $_was_urlparam;
 
     /** @param ?Contact $recipient
      * @param array{width?:int,censor?:0|1|2,reason?:string,change?:string,adminupdate?:bool,notes?:string,capability_token?:string,sensitive?:bool} $settings */
@@ -209,9 +211,8 @@ class Mailer {
     static function kw_adminupdate($args, $isbool, $m) {
         if ($m->adminupdate) {
             return "An administrator performed this update. ";
-        } else {
-            return $m->recipient ? "" : null;
         }
+        return $m->recipient ? "" : null;
     }
 
     static function kw_notes($args, $isbool, $m, $uf) {
@@ -224,9 +225,8 @@ class Mailer {
         }
         if ($value !== null || $m->recipient) {
             return (string) $value;
-        } else {
-            return null;
         }
+        return null;
     }
 
     static function kw_recipient($args, $isbool, $m, $uf) {
@@ -256,9 +256,8 @@ class Mailer {
             return $this->conf->opt("paperSite") . "/signin/" . ($loginparts ? "?{$loginparts}" : "");
         } else if ($uf->name === "LOGINURLPARTS") {
             return $loginparts;
-        } else {
-            return false;
         }
+        return false;
     }
 
     function kw_needpassword($args, $isbool, $uf) {
@@ -266,9 +265,8 @@ class Mailer {
             return false;
         } else if ($this->recipient) {
             return $this->recipient->password_unset();
-        } else {
-            return null;
         }
+        return null;
     }
 
     function kw_passwordlink($args, $isbool, $uf) {
@@ -331,6 +329,9 @@ class Mailer {
             }
 
             if ($x !== null) {
+                if ($uf->urlparam ?? false) {
+                    $this->_was_urlparam = true;
+                }
                 return $isbool ? $x : (string) $x;
             }
         }
@@ -596,7 +597,9 @@ class Mailer {
         $out = "";
         $p = $op = 0;
         $len = strlen($line);
+        $urlpos = [];
         while ($p < $len) {
+            // find keyword position
             if ($ptp < $p) {
                 $ptp = strlpos($line, "%", $p);
             }
@@ -607,17 +610,30 @@ class Mailer {
             if ($p === $len) {
                 break;
             }
+
+            // check for keyword
             $chk = $this->_check_keyword_at($line, $p, $len, $out, $op);
             if (!$chk) {
                 ++$p;
                 continue;
             }
+
+            // expand keyword
+            $this->_was_urlparam = false;
             $expansion = $this->expandvar($chk[0], false);
             if ($expansion === null) {
                 $p = $chk[1];
                 continue;
             }
             $out .= substr($line, $op, $p - $op);
+
+            // remember position of empty urlparam for cleanup later
+            if ($this->_was_urlparam
+                && $expansion === ""
+                && ($out === "" || str_ends_with($out, "?") || str_ends_with($out, "&"))) {
+                $urlpos[] = strlen($out);
+            }
+
             $p = $chk[1];
             if ($expansion !== "") {
                 $out .= $expansion;
@@ -636,6 +652,23 @@ class Mailer {
             $op = $p;
         }
         $out .= substr($line, $op);
+
+        // clean up empty urlparams
+        for ($i = count($urlpos); $i > 0; --$i) {
+            $p = $ep = $urlpos[$i - 1];
+            while ($ep < strlen($out) && $out[$ep] === "&") {
+                ++$ep;
+            }
+            if ($ep === strlen($out) || ctype_space($out[$ep])) {
+                while ($p > 0 && ($out[$p - 1] === "?" || $out[$p - 1] === "&")) {
+                    --$p;
+                }
+            }
+            if ($p !== $ep) {
+                $out = substr($out, 0, $p) . substr($out, $ep);
+            }
+        }
+
         return prefix_word_wrap($this->line_prefix ?? "", $out, $indent,
                                 $this->width, $this->flowed);
     }

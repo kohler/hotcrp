@@ -328,9 +328,8 @@ class AssignmentState extends MessageSet {
         '@phan-var-force Assignable $q';
         if (isset($q->pid)) {
             return [$q->pid];
-        } else {
-            return array_keys($this->st);
         }
+        return array_keys($this->st);
     }
     const INCLUDE_DELETED = 1;
     /** @param 0|1 $include_deleted
