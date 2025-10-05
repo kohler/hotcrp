@@ -1,6 +1,6 @@
 <?php
 // cap_reviewaccept.php -- HotCRP review-acceptor capability management
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ReviewAccept_Capability {
     /** @param ReviewInfo $rrow
@@ -50,36 +50,31 @@ class ReviewAccept_Capability {
                 ->extend_validity(10368000) /* 120 days */
                 ->extend_expiry(15552000) /* 180 days */
                 ->update();
-        } else {
-            // Token not found, but users often follow links after they expire.
-            // Do not report an error if the logged-in user corresponds to the review.
-            $rrow = $refused = null;
-            if ($user->contactId) {
-                $result = $user->conf->qe("select * from PaperReview where reviewId=?", $rrowid);
-                $rrow = ReviewInfo::fetch($result, null, $user->conf);
-                Dbl::free($result);
-            }
-            if (!$rrow && $user->contactId) {
-                $result = $user->conf->qe("select * from PaperReviewRefused where refusedReviewId=? order by timeRefused desc limit 1", $rrowid);
-                $refused = ReviewRefusalInfo::fetch($result, $user->conf);
-                Dbl::free($result);
-            }
-            if ((!$rrow || $rrow->contactId !== $user->contactId)
-                && (!$refused || $refused->contactId !== $user->contactId)) {
-                $t = "<5>The review link you followed to get here is invalid or expired.";
-                if (!$user->contactId) {
-                    $t .= " <a href=\"" . $user->conf->hoturl("signin") . "\">Sign in to the site</a> to view or edit your reviews.";
-                }
-                $user->conf->feedback_msg([
-                    MessageItem::error("<0>Bad review link"),
-                    MessageItem::inform($t)
-                ]);
-            }
+            return;
         }
-    }
-
-    static function apply_old_review_acceptor(Contact $user, $uf) {
-        $uf->name = "hc" . $uf->name;
-        return self::apply_review_acceptor($user, $uf);
+        // Token not found, but users often follow links after they expire.
+        // Do not report an error if the logged-in user corresponds to the review.
+        $rrow = $refused = null;
+        if ($user->contactId) {
+            $result = $user->conf->qe("select * from PaperReview where reviewId=?", $rrowid);
+            $rrow = ReviewInfo::fetch($result, null, $user->conf);
+            Dbl::free($result);
+        }
+        if (!$rrow && $user->contactId) {
+            $result = $user->conf->qe("select * from PaperReviewRefused where refusedReviewId=? order by timeRefused desc limit 1", $rrowid);
+            $refused = ReviewRefusalInfo::fetch($result, $user->conf);
+            Dbl::free($result);
+        }
+        if ((!$rrow || $rrow->contactId !== $user->contactId)
+            && (!$refused || $refused->contactId !== $user->contactId)) {
+            $t = "<5>The review link you followed to get here is invalid or expired.";
+            if (!$user->contactId) {
+                $t .= " <a href=\"" . $user->conf->hoturl("signin") . "\">Sign in to the site</a> to view or edit your reviews.";
+            }
+            $user->conf->feedback_msg([
+                MessageItem::error("<0>Bad review link"),
+                MessageItem::inform($t)
+            ]);
+        }
     }
 }

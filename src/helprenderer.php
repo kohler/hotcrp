@@ -1,8 +1,8 @@
 <?php
 // helprenderer.php -- HotCRP help renderer class
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
-class HelpRenderer extends Ht {
+class HelpRenderer {
     /** @var Conf */
     public $conf;
     /** @var Contact */
@@ -204,7 +204,7 @@ class HelpRenderer extends Ht {
         if (is_string($q)) {
             $q = ["q" => $q];
         }
-        $t = Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "nw"])
+        $t = Ht::form($this->conf->hoturl("search"), ["method" => "get", "class" => "nw", "rel" => "nofollow"])
             . Ht::entry("q", $q["q"], ["size" => $size])
             . " &nbsp;"
             . Ht::submit("Search");
