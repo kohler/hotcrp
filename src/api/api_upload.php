@@ -149,7 +149,7 @@ class Upload_API {
             return JsonResult::make_parameter_error("size", "<0>File too large")->set("maxsize", $this->max_size);
         }
         $this->_cap = (new TokenInfo($this->conf, TokenInfo::UPLOAD))
-            ->set_user($user)->set_paper($prow)->set_expires_after(7200);
+            ->set_user($user)->set_paper($prow)->set_expires_in(7200);
         if (isset($qreq->filename)
             && strlen($qreq->filename) <= 255
             && is_valid_utf8($qreq->filename)) {

@@ -8,8 +8,8 @@ class ManageEmail_Capability {
     static function prepare($viewer) {
         return (new TokenInfo($viewer->conf, TokenInfo::MANAGEEMAIL))
             ->set_user_id($viewer->contactId)
-            ->set_invalid_after(3600 /* 1 hour */)
-            ->set_expires_after(7200 /* 2 hours */)
+            ->set_invalid_in(3600 /* 1 hour */)
+            ->set_expires_in(7200 /* 2 hours */)
             ->set_token_pattern("hcme_[16]");
     }
 }

@@ -285,7 +285,7 @@ class Mailer {
             } else {
                 $capinfo->set_user($this->recipient)->set_token_pattern("hcpw0[20]");
             }
-            $capinfo->set_expires_after(259200)->insert();
+            $capinfo->set_expires_in(259200)->insert();
             assert($capinfo->stored());
             $this->preparation->reset_capability = $capinfo->salt;
         }

@@ -14,8 +14,8 @@ class Job_Capability extends TokenInfo {
         return (new Job_Capability($user->conf))
             ->set_user($user)
             ->set_token_pattern("hcj_[24]")
-            ->set_invalid_after(86400)
-            ->set_expires_after(86400)
+            ->set_invalid_in(86400)
+            ->set_expires_in(86400)
             ->set_input(["batch_class" => $batch_class, "argv" => $argv]);
     }
 

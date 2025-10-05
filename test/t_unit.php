@@ -762,11 +762,12 @@ class Unit_Tester {
         xassert_eqq(plural_word(2, "ass", "fun"), "fun");
     }
 
-    function test_parse_interval() {
-        xassert_eqq(SettingParser::parse_interval("2y"), 86400 * 365 * 2.0);
-        xassert_eqq(SettingParser::parse_interval("15m"), 60 * 15.0);
-        xassert_eqq(SettingParser::parse_interval("1h15m"), 60 * 75.0);
-        xassert_eqq(SettingParser::parse_interval("1h15mo"), false);
+    function test_parse_duration() {
+        xassert_eqq(SettingParser::parse_duration("2y"), 86400 * 365 * 2.0);
+        xassert_eqq(SettingParser::parse_duration("15m"), 60 * 15.0);
+        xassert_eqq(SettingParser::parse_duration("1h15m"), 60 * 75.0);
+        xassert_eqq(SettingParser::parse_duration("1h15mo"), null);
+        xassert_eqq(SettingParser::parse_duration("15"), 15.0);
     }
 
     function test_parse_preference() {

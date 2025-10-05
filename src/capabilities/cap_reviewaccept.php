@@ -26,8 +26,8 @@ class ReviewAccept_Capability {
             $tok = (new TokenInfo($rrow->conf, TokenInfo::REVIEWACCEPT))
                 ->set_review($rrow)
                 ->set_user_id($rrow->contactId)
-                ->set_invalid_after(3888000 /* 45 days */)
-                ->set_expires_after(5184000 /* 60 days */)
+                ->set_invalid_in(3888000 /* 45 days */)
+                ->set_expires_in(5184000 /* 60 days */)
                 ->set_token_pattern("hcra{$rrow->reviewId}[16]")
                 ->insert();
         }

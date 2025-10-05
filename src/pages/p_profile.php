@@ -199,7 +199,7 @@ class Profile_Page {
                 $capability = new TokenInfo($this->conf, TokenInfo::CHANGEEMAIL);
                 $capability->set_user($acct)
                     ->set_token_pattern("hcce[20]")
-                    ->set_expires_after(259200)
+                    ->set_expires_in(259200)
                     ->assign_data(["oldemail" => $acct->email, "uemail" => $uemail])
                     ->insert();
                 if ($capability->stored()) {

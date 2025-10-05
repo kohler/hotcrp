@@ -45,7 +45,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
         if ($state->user->can_set_decision($prow)) {
             return true;
         }
-        return new AssignmentError("<0>You can’t change the decision for #{$prow->paperId}.");
+        return new AssignmentError("<0>You can’t change the decision for #{$prow->paperId}");
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $removepred = null;

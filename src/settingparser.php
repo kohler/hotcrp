@@ -47,20 +47,20 @@ class SettingParser {
 
 
     /** @param string $v
-     * @return -1|float|false */
-    static function parse_interval($v) {
-        $t = 0;
+     * @return null|float */
+    static function parse_duration($v) {
         $v = trim($v);
         if ($v === ""
             || strtoupper($v) === "N/A"
             || strtoupper($v) === "NONE"
             || $v === "0") {
-            return -1;
-        } else if (ctype_digit($v)) {
-            return ((float) $v) * 60;
+            return -1.0;
+        } else if (is_numeric($v)) {
+            return floatval($v);
         } else if (preg_match('/\A\s*([\d]+):(\d+\.?\d*|\.\d+)\s*\z/', $v, $m)) {
             return ((float) $m[1]) * 60 + (float) $m[2];
         }
+        $t = 0.0;
         if (preg_match('/\A\s*(\d+\.?\d*|\.\d+)\s*y(?:ears?|rs?|)(?![a-z])/i', $v, $m)) {
             $t += ((float) $m[1]) * 3600 * 24 * 365;
             $v = substr($v, strlen($m[0]));
@@ -89,10 +89,15 @@ class SettingParser {
             $t += (float) $m[1];
             $v = substr($v, strlen($m[0]));
         }
-        if (trim($v) == "") {
+        if (trim($v) === "") {
             return $t;
-        } else {
-            return false;
         }
+        return null;
+    }
+
+    /** @param string $v
+     * @return -1|float|false */
+    static function parse_interval($v) {
+        return self::parse_duration($v);
     }
 }

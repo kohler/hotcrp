@@ -230,7 +230,7 @@ class Developer_UserInfo {
             $token->set_invalid_at(0)->set_expires_at(0);
         } else {
             $expiry = (ctype_digit($exp) ? intval($exp) : 30) * 86400;
-            $token->set_invalid_after($expiry)->set_expires_after($expiry + 604800);
+            $token->set_invalid_in($expiry)->set_expires_in($expiry + 604800);
         }
 
         $sites = $us->qreq["bearer_token/new/sites"] ?? "here";

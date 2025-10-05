@@ -147,7 +147,7 @@ class OAuth_Page {
 
         $tok = new TokenInfo($this->conf, TokenInfo::OAUTHSIGNIN);
         $tok->set_contactdb(!!$this->conf->contactdb())
-            ->set_expires_after(600)
+            ->set_expires_in(600)
             ->set_token_pattern("hcoa[20]")
             ->assign_data($tokdata)
             ->insert();

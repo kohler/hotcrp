@@ -203,8 +203,15 @@ class TokenInfo {
 
     /** @param int $seconds
      * @return $this */
-    final function set_invalid_after($seconds) {
+    final function set_invalid_in($seconds) {
         return $this->set_invalid_at(Conf::$now + $seconds);
+    }
+
+    /** @param int $seconds
+     * @return $this
+     * @deprecated */
+    final function set_invalid_after($seconds) {
+        return $this->set_invalid_in($seconds);
     }
 
     /** @return $this */
@@ -237,8 +244,15 @@ class TokenInfo {
 
     /** @param int $seconds
      * @return $this */
-    final function set_expires_after($seconds) {
+    final function set_expires_in($seconds) {
         return $this->set_expires_at(Conf::$now + $seconds);
+    }
+
+    /** @param int $seconds
+     * @return $this
+     * @deprecated */
+    final function set_expires_after($seconds) {
+        return $this->set_expires_in($seconds);
     }
 
     /** @param int $seconds
