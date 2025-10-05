@@ -84,7 +84,7 @@ class Settings_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return Settings_CLIBatch */
-    static function make_arg(Hotcrapi_Batch $clib, Getopt $getopt, $arg) {
+    static function make_arg(Hotcrapi_Batch $clib, $arg) {
         $pcb = new Settings_CLIBatch;
         $argv = $arg["_"];
         $argc = count($argv);
@@ -122,8 +122,8 @@ class Settings_CLIBatch implements CLIBatchCommand {
         return $pcb;
     }
 
-    static function register(Hotcrapi_Batch $clib, Getopt $getopt) {
-        $getopt->subcommand_description(
+    static function register(Hotcrapi_Batch $clib) {
+        $clib->getopt->subcommand_description(
             "settings",
             "Retrieve or change HotCRP settings
 Usage: php batch/hotcrapi.php settings [--filter F | --exclude F]

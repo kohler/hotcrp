@@ -41,7 +41,7 @@ class Test_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return Test_CLIBatch */
-    static function make_arg(Hotcrapi_Batch $clib, Getopt $getopt, $arg) {
+    static function make_arg(Hotcrapi_Batch $clib, $arg) {
         $tb = new Test_CLIBatch;
         $tb->email = isset($arg["email"]);
         $tb->roles = isset($arg["roles"]);
@@ -49,8 +49,8 @@ class Test_CLIBatch implements CLIBatchCommand {
         return $tb;
     }
 
-    static function register(Hotcrapi_Batch $clib, Getopt $getopt) {
-        $getopt->subcommand_description(
+    static function register(Hotcrapi_Batch $clib) {
+        $clib->getopt->subcommand_description(
             "test",
             "Test API connection
 Usage: php batch/hotcrapi.php test"

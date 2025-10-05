@@ -90,6 +90,9 @@ class Hotcrapi_Batch extends MessageSet {
     /** @var bool
      * @readonly */
     public $progress = false;
+    /** @var Getopt
+     * @readonly */
+    public $getopt;
 
     /** @var resource */
     public $headerf;
@@ -580,7 +583,7 @@ class Hotcrapi_Batch extends MessageSet {
     static function make_args($argv) {
         $hcli = new Hotcrapi_Batch;
 
-        $getopt = (new Getopt)->long(
+        $hcli->getopt = (new Getopt)->long(
             "help::,h:: !",
             "S:,siteurl:,url: =SITE Site URL",
             "T:,token: =APITOKEN API token",
@@ -595,14 +598,14 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
          ->helpopt("help")
          ->interleave(true)
          ->subcommand(true);
-        Test_CLIBatch::register($hcli, $getopt);
-        Paper_CLIBatch::register($hcli, $getopt);
-        Search_CLIBatch::register($hcli, $getopt);
-        Assign_CLIBatch::register($hcli, $getopt);
-        Autoassign_CLIBatch::register($hcli, $getopt);
-        Settings_CLIBatch::register($hcli, $getopt);
-        Upload_CLIBatch::register($hcli, $getopt);
-        $arg = $getopt->parse($argv);
+        Test_CLIBatch::register($hcli);
+        Paper_CLIBatch::register($hcli);
+        Search_CLIBatch::register($hcli);
+        Assign_CLIBatch::register($hcli);
+        Autoassign_CLIBatch::register($hcli);
+        Settings_CLIBatch::register($hcli);
+        Upload_CLIBatch::register($hcli);
+        $arg = $hcli->getopt->parse($argv);
 
         $hcli->load_config_file($arg["config"] ?? null);
 
@@ -662,7 +665,7 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
             if (is_string($callback) && class_exists($callback)) {
                 $callback = "{$callback}::make_arg";
             }
-            $hcli->set_command(call_user_func($callback, $hcli, $getopt, $arg));
+            $hcli->set_command(call_user_func($callback, $hcli, $arg));
         } else {
             throw new CommandLineException("Subcommand required");
         }

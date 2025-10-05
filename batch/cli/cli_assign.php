@@ -13,6 +13,10 @@ class Assign_CLIBatch implements CLIBatchCommand {
     public $json;
     /** @var Hotcrapi_File */
     public $cf;
+    /** @var bool */
+    public $help = false;
+    /** @var ?string */
+    public $action;
 
     /** @param array<string,mixed> $args
      * @return string */
@@ -26,6 +30,10 @@ class Assign_CLIBatch implements CLIBatchCommand {
 
     /** @return int */
     function run(Hotcrapi_Batch $clib) {
+        if ($this->help) {
+            return $this->run_help($clib);
+        }
+
         $args = [];
         if (isset($this->p)) {
             $args["p"] = $this->p;
@@ -107,8 +115,24 @@ class Assign_CLIBatch implements CLIBatchCommand {
         return 0;
     }
 
+    /** @return int */
+    function run_help(Hotcrapi_Batch $clib) {
+        $phb = new ParameterHelp_CLIBatch;
+        $phb->subcommand = "assign";
+        $phb->api_endpoint = "assigners";
+        $phb->key = "assigners";
+        $phb->title = "Assignment action";
+        $phb->action = $this->action;
+        $phb->json = $this->json;
+        $phb->help_prefix = !$this->action;
+        if (!$this->action) {
+            $phb->trailer = "Use `php batch/hotcrapi.php assign help ACTION` for action parameters.\n";
+        }
+        return $phb->run_help($clib);
+    }
+
     /** @return Assign_CLIBatch */
-    static function make_arg(Hotcrapi_Batch $clib, Getopt $getopt, $arg) {
+    static function make_arg(Hotcrapi_Batch $clib, $arg) {
         $pcb = new Assign_CLIBatch;
         if (isset($arg["p"])) {
             $pcb->p = $arg["p"];
@@ -122,8 +146,16 @@ class Assign_CLIBatch implements CLIBatchCommand {
         $argi = 0;
 
         if ($argi < $argc
-            && preg_match('/\A[\[\{]/', $argv[$argi])
-            && json_validate($argv[$argi])) {
+            && $argv[$argi] === "help") {
+            $pcb->help = true;
+            ++$argi;
+            if ($argi < $argc) {
+                $pcb->action = $argv[$argi];
+                ++$argi;
+            }
+        } else if ($argi < $argc
+                   && preg_match('/\A[\[\{]/', $argv[$argi])
+                   && json_validate($argv[$argi])) {
             $pcb->cf = Hotcrapi_File::make_data($argv[$argi]);
             ++$argi;
         } else if ($argi < $argc) {
@@ -140,11 +172,12 @@ class Assign_CLIBatch implements CLIBatchCommand {
         return $pcb;
     }
 
-    static function register(Hotcrapi_Batch $clib, Getopt $getopt) {
-        $getopt->subcommand_description(
+    static function register(Hotcrapi_Batch $clib) {
+        $clib->getopt->subcommand_description(
             "assign",
             "Perform HotCRP assignments
-Usage: php batch/hotcrapi.php assign [-p PID] [-d] [JSONFILE | CSVFILE]"
+Usage: php batch/hotcrapi.php assign [-p PID] [-d] [JSONFILE | CSVFILE]
+       php batch/hotcrapi.php assign help [ASSIGNER]"
         )->long(
             "p:,paper: {n} =PID !assign Restrict assignments to PID",
             "dry-run,d !assign Don’t actually save changes",

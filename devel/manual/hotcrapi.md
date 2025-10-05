@@ -124,6 +124,10 @@ assignments performed. You can also test the assignments for errors by running
 that would have been made without actually performing them. Supply `--quiet` or
 `--summary` for more concise output.
 
+`php batch/hotcrapi.php assign help` list the available assignment actions. To
+list the CSV parameters accepted by an action, run `php batch/hotcrapi.php
+assign help ACTION`.
+
 
 ## `autoassign`
 

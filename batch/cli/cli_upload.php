@@ -258,9 +258,9 @@ class Upload_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return Upload_CLIBatch */
-    static function make_arg(Hotcrapi_Batch $clib, Getopt $getopt, $arg) {
+    static function make_arg(Hotcrapi_Batch $clib, $arg) {
         if (count($arg["_"]) > 1) {
-            throw new CommandLineException("Too many arguments", $getopt);
+            throw new CommandLineException("Too many arguments", $clib->getopt);
         }
         $ucb = new Upload_CLIBatch(Hotcrapi_File::make($arg["_"][0] ?? "-"));
         $ucb->mimetype = $arg["mimetype"] ?? null;
@@ -273,8 +273,8 @@ class Upload_CLIBatch implements CLIBatchCommand {
         return $ucb;
     }
 
-    static function register(Hotcrapi_Batch $clib, Getopt $getopt) {
-        $getopt->subcommand_description(
+    static function register(Hotcrapi_Batch $clib) {
+        $clib->getopt->subcommand_description(
             "upload",
             "Upload file to HotCRP and return token
 Usage: php batch/hotcrapi.php upload [-f NAME] [-m TYPE] FILE"

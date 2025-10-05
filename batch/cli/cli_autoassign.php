@@ -25,74 +25,31 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
     public $disjoint = [];
     /** @var string */
     public $action;
-    /** @var Getopt */
-    public $getopt;
 
     /** @return int */
     function run(Hotcrapi_Batch $clib) {
         if ($this->action === "list" || $this->action === "autoassigners") {
-            $this->help = false;
-            return $this->run_list($clib, null);
+            return $this->run_list($clib, null, false);
         } else if ($this->help) {
-            return $this->run_list($clib, $this->action);
+            return $this->run_list($clib, $this->action, !$this->action);
         }
         return $this->run_post($clib);
     }
 
     /** @return int */
-    function run_list(Hotcrapi_Batch $clib, $action) {
-        $curlh = $clib->make_curl();
-        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_setopt($curlh, CURLOPT_URL, "{$clib->site}/autoassigners");
-        if (!$clib->exec_api($curlh, null)) {
-            if ($this->help) {
-                fwrite(STDOUT, $this->getopt->help("autoassign"));
-                exit(0);
-            }
-            return 1;
+    function run_list(Hotcrapi_Batch $clib, $action, $help_prefix) {
+        $phb = new ParameterHelp_CLIBatch;
+        $phb->subcommand = "autoassign";
+        $phb->api_endpoint = "autoassigners";
+        $phb->key = "autoassigners";
+        $phb->title = "Autoassigner";
+        $phb->action = $action;
+        $phb->json = $this->json;
+        $phb->help_prefix = $phb->show_title = $help_prefix;
+        if (!$action && $help_prefix) {
+            $phb->trailer = "Use `php batch/hotcrapi.php autoassign help AUTOASSIGNER` for parameters.\n";
         }
-        if ($this->json) {
-            $clib->set_output_json($clib->content_json->autoassigners ?? []);
-            return 0;
-        }
-        $x = [];
-        $found = false;
-        $indent = $this->help ? "  " : "";
-        $space = 25 - strlen($indent);
-        foreach ($clib->content_json->autoassigners ?? [] as $aj) {
-            if ($action && $aj->name !== $action) {
-                continue;
-            }
-            $found = true;
-            if (isset($aj->title)) {
-                $t = $aj->title;
-            } else if (isset($aj->description)) {
-                $t = Ftext::as(0, $aj->description, 0);
-            } else {
-                $t = "";
-            }
-            if ($t === "") {
-                $x[] = "{$indent}{$aj->name}\n";
-            } else if ($action) {
-                $x[] = "{$aj->name}\n  {$t}\n";
-            } else {
-                $x[] = sprintf("{$indent}%-{$space}s %s\n", $aj->name, $t);
-            }
-            if ($action) {
-                $x[] = "\nParameters:\n";
-                foreach ($aj->parameters ?? [] as $pj) {
-                    $x[] = ViewOptionType::make($pj)->unparse_help_line();
-                }
-                $x[] = "\n";
-            }
-        }
-        if ($action && !$found) {
-            $clib->error_at(null, "Autoassigner not found");
-        } else if ($this->help && !$action) {
-            array_unshift($x, $this->getopt->help("autoassign"), "Autoassigners:\n");
-        }
-        $clib->set_output(join("", $x));
-        return 0;
+        return $phb->run_help($clib);
     }
 
     /** @param array<string,mixed> $args
@@ -147,9 +104,8 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return Autoassign_CLIBatch */
-    static function make_arg(Hotcrapi_Batch $clib, Getopt $getopt, $arg) {
+    static function make_arg(Hotcrapi_Batch $clib, $arg) {
         $pcb = new Autoassign_CLIBatch;
-        $pcb->getopt = $getopt;
         $pcb->q = $arg["q"] ?? "";
         $pcb->t = $arg["t"] ?? "s";
         $pcb->dry_run = isset($arg["dry-run"]);
@@ -192,8 +148,8 @@ class Autoassign_CLIBatch implements CLIBatchCommand {
         return $pcb;
     }
 
-    static function register(Hotcrapi_Batch $clib, Getopt $getopt) {
-        $getopt->subcommand_description(
+    static function register(Hotcrapi_Batch $clib) {
+        $clib->getopt->subcommand_description(
             "autoassign",
             "Perform HotCRP autoassignments
 Usage: php batch/hotcrapi.php autoassign AUTOASSIGNER -q SEARCH [PARAM=VALUE...]

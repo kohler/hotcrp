@@ -192,7 +192,7 @@ class Paper_CLIBatch implements CLIBatchCommand {
     }
 
     /** @return Paper_CLIBatch */
-    static function make_arg(Hotcrapi_Batch $clib, Getopt $getopt, $arg) {
+    static function make_arg(Hotcrapi_Batch $clib, $arg) {
         $pcb = new Paper_CLIBatch;
         $argv = $arg["_"];
         $argc = count($argv);
@@ -209,25 +209,25 @@ class Paper_CLIBatch implements CLIBatchCommand {
 
         if ($argi < $argc && $pcb->valid_pid($argv[$argi])) {
             if (isset($arg["p"])) {
-                throw new CommandLineException("`-p` specified twice", $getopt);
+                throw new CommandLineException("`-p` specified twice", $clib->getopt);
             }
             $arg["p"] = $argv[$argi];
             ++$argi;
         }
         if (isset($arg["q"]) && isset($arg["p"])) {
-            throw new CommandLineException("`-q` conflicts with `-p`", $getopt);
+            throw new CommandLineException("`-q` conflicts with `-p`", $clib->getopt);
         } else if (isset($arg["p"])) {
             if (!$pcb->valid_pid($arg["p"])) {
-                throw new CommandLineException("Invalid `-p PID`", $getopt);
+                throw new CommandLineException("Invalid `-p PID`", $clib->getopt);
             }
             $pcb->p = stoi($arg["p"]);
         } else if ($pcb->delete) {
-            throw new CommandLineException("Missing `-p PID`", $getopt);
+            throw new CommandLineException("Missing `-p PID`", $clib->getopt);
         } else if (isset($arg["q"])) {
             $pcb->q = $arg["q"];
             $pcb->t = $arg["t"] ?? null;
         } else if (!$pcb->save) {
-            throw new CommandLineException("Missing `-p PID` or `-q SEARCH`", $getopt);
+            throw new CommandLineException("Missing `-p PID` or `-q SEARCH`", $clib->getopt);
         }
 
         if ($pcb->save) {
@@ -261,8 +261,8 @@ class Paper_CLIBatch implements CLIBatchCommand {
         return $pcb;
     }
 
-    static function register(Hotcrapi_Batch $clib, Getopt $getopt) {
-        $getopt->subcommand_description(
+    static function register(Hotcrapi_Batch $clib) {
+        $clib->getopt->subcommand_description(
             "paper",
             "Retrieve or change HotCRP submissions
 Usage: php batch/hotcrapi.php paper [PID | -q SEARCH]

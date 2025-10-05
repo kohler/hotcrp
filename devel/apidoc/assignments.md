@@ -90,8 +90,8 @@ parameters.
 Compute and optionally perform an automatic assignment.
 
 Specify the autoassignment action with the `autoassigner` parameter, and the
-submissions to assign with the `q` parameter. (The `/autoassigners` endpoint
-lists the available autoassignment actions.)
+submissions to assign with the `q` parameter. The `/autoassigners` endpoint
+lists the available autoassignment actions.
 
 Most autoassignment actions take additional parameters and a set of PC members
 to assign. Supply these in the `u`, `disjoint`, and `param` parameters. `u`
@@ -123,10 +123,10 @@ database. Supply `minimal_dry_run=1` to obtain the autoassignment output
 without additional testing. For instance, `dry_run=1` will report warnings for
 potential conflicts, but `minimal_dry_run=1` will not.
 
-Autoassignment is often time consuming, so a successful `/autoassign` may
-return early, before the autoassignment completes. The response will list a
-job ID for the autoassigner. Query the `/job` endpoint to monitor the job and
-obtain its eventual output.
+Autoassignment is often time consuming, so a successful `/autoassign` may return
+early, before the autoassignment completes. The response will list a job ID for
+the autoassigner. Query the `/job` endpoint with `output=1` to monitor the job
+and obtain its eventual output.
 
 * param autoassigner string: Name of autoassignment action to run
 * param q
