@@ -308,7 +308,7 @@ class Mail_Page {
                 $this->recip->warning_at("q", "<0>No papers match that search");
             }
         }
-        echo '<div class="', $this->recip->control_class("q", "fx8 mt-1 d-flex"), '">';
+        echo '<div class="', $this->recip->control_class("q", "fx8 mt-1"), '"><div class="d-flex">';
         if (!$this->viewer->privChair) {
             echo '<label for="q" class="mr-2">Papers:</label>';
         }
@@ -323,7 +323,7 @@ class Mail_Page {
         } else {
             echo Ht::select("t", $this->search_topt, $this->qreq->t, ["id" => "t"]);
         }
-        echo Ht::submit("psearch", "Search"), '</div></div>',
+        echo Ht::submit("psearch", "Search"), '</div></div></div>',
             $this->recip->feedback_html_at("q");
         if ($plist && !$plist->is_empty()) {
             echo '<div class="fx8 mt-2">';
