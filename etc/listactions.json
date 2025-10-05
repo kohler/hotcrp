@@ -175,7 +175,8 @@
         "order": 1,
         "allow_if": "pc",
         "display_if": "listreport:pf",
-        "function": "+Revpref_ListAction"
+        "function": "+Revpref_ListAction",
+        "parameters": "reviewer:user"
     },
     {
         "name": "get/revprefx", "get": true,
@@ -183,7 +184,8 @@
         "order": 2,
         "allow_if": "pc",
         "display_if": "listreport:pf",
-        "function": "+Revpref_ListAction"
+        "function": "+Revpref_ListAction",
+        "parameters": "reviewer:user"
     },
     {
         "name": "get/allrevpref", "get": true,
@@ -296,11 +298,13 @@
         "function": "+Assign_ListAction"
     },
     {
-        "name": "decide", "post": true, "api": false,
+        "name": "decide", "post": true,
         "render_function": "Decide_ListAction::render", "title": "Decide",
         "order": 900,
         "allow_if": "manager", "display_if": "!listreport:pf",
-        "function": "+Decide_ListAction"
+        "function": "+Decide_ListAction",
+        "description": "Set decision",
+        "parameters": "decision$"
     },
     {
         "name": "mail",
@@ -330,18 +334,24 @@
         "order": 100
     },
     {
-        "name": "uploadpref", "post": true, "api": false,
-        "allow_if": "pc", "function": "+Revpref_ListAction"
+        "name": "uploadpref", "post": true,
+        "allow_if": "pc", "function": "+Revpref_ListAction",
+        "parameters": "reviewer:user preffile$ upload$ forceShow dry_run summary quiet csv",
+        "description": "Upload reviewer preference file",
+        "order": 199
     },
     {
         "name": "applyuploadpref", "post": true, "api": false,
         "allow_if": "pc", "function": "+Revpref_ListAction"
     },
     {
-        "name": "setpref", "post": true, "api": false,
-        "render_function": "Revpref_ListAction::render_set", "title": "Set selected",
+        "name": "setpref", "post": true,
+        "render_function": "Revpref_ListAction::render_set",
         "allow_if": "pc", "display_if": "listreport:pf",
         "function": "+Revpref_ListAction",
+        "title": "Set selected",
+        "description": "Set reviewer preference",
+        "parameters": "reviewer:user !preference# expertise$ forceShow dry_run summary quiet csv",
         "order": 200
     }
 ]

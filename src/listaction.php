@@ -130,11 +130,11 @@ class ListAction {
         }
         $res = self::resolve_document($res, $qreq);
         if ($res instanceof JsonResult) {
-            if (isset($res->content["message_list"]) && !$qreq->ajax) {
-                $user->conf->feedback_msg($res->content["message_list"]);
-            }
-            if ($qreq->ajax) {
+            if ($qreq->page() === "api") {
                 json_exit($res);
+            }
+            if (isset($res->content["message_list"])) {
+                $user->conf->feedback_msg($res->content["message_list"]);
             }
         } else if ($res instanceof Downloader) {
             $res->emit();

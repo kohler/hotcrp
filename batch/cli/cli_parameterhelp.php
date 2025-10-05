@@ -21,7 +21,7 @@ class ParameterHelp_CLIBatch {
     public $show_title;
     /** @var bool */
     public $json = false;
-    /** @var ?callable(object):list<object> */
+    /** @var ?callable(object):(list<object>) */
     public $expand_callback;
 
     /** @return int */

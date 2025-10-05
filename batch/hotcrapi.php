@@ -579,7 +579,8 @@ class Hotcrapi_Batch extends MessageSet {
     }
 
     /** @param list<string> $argv
-     * @return Hotcrapi_Batch */
+     * @return Hotcrapi_Batch
+     * @suppress PhanAccessReadOnlyProperty */
     static function make_args($argv) {
         $hcli = new Hotcrapi_Batch;
 

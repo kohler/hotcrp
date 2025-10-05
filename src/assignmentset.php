@@ -1360,6 +1360,7 @@ class AssignmentSet {
     const FEEDBACK_ASSIGN = 0;
     const FEEDBACK_CHANGE = 1;
     const FEEDBACK_PROPOSE = 2;
+    const FEEDBACK_CHANGE_IGNORE = 3;
     /** @param int $type */
     function feedback_msg($type) {
         $fml = [];
@@ -1377,7 +1378,7 @@ class AssignmentSet {
                 $fml[] = MessageItem::error("<0>Changes not saved; please correct these errors and try again");
             } else if ($type === self::FEEDBACK_PROPOSE) {
                 $fml[] = MessageItem::error("<0>Assignment cannot be saved due to errors");
-            } else {
+            } else if ($type === self::FEEDBACK_ASSIGN) {
                 $fml[] = MessageItem::error("<0>Assignments not saved due to errors");
             }
         } else if (empty($this->assigners)) {

@@ -905,6 +905,21 @@ class QrequestFile {
         return $qf;
     }
 
+    /** @param DocumentInfo $doc
+     * @return ?QrequestFile */
+    static function make_document($doc) {
+        $qf = new QrequestFile;
+        $qf->name = $doc->filename;
+        $qf->type = $doc->mimetype;
+        if (($size = $doc->size()) >= 0) {
+            $qf->size = $size;
+        }
+        if (($qf->tmp_name = $doc->content_file()) === null) {
+            return null;
+        }
+        return $qf;
+    }
+
     /** @param int $offset
      * @param ?int $maxlen
      * @return string|false */

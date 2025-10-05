@@ -152,8 +152,8 @@ class Tag_ListAction extends ListAction {
             }
         }
 
-        if ($qreq->page() === "api" || $qreq->ajax) {
-            return Assign_API::complete_assign_api($assignset, $qreq);
+        if ($qreq->page() === "api") {
+            return Assign_API::complete($assignset, $qreq);
         }
 
         $assignset->execute();

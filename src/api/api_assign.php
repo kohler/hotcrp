@@ -82,7 +82,7 @@ class Assign_API {
         $aset->parse($csvp);
 
         // perform them unless dry run
-        $jr = self::complete_assign_api($aset, $qreq);
+        $jr = self::complete($aset, $qreq);
         if (!$jr->get("dry_run")
             && !$aset->has_error()
             && $qreq->search) {
@@ -96,7 +96,7 @@ class Assign_API {
     }
 
     /** @return JsonResult */
-    static function complete_assign_api(AssignmentSet $aset, Qrequest $qreq) {
+    static function complete(AssignmentSet $aset, Qrequest $qreq) {
         $dry_run = friendly_boolean($qreq->dry_run);
         if (!$dry_run) {
             $aset->execute();

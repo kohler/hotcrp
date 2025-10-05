@@ -159,8 +159,11 @@ class Search_API {
         if (($qreq->action ?? "") === "") {
             return JsonResult::make_missing_error("action");
         }
-        $qreq->p = $qreq->p ?? "all";
-        $ssel = SearchSelection::make($qreq, $user, "p");
+        if (!isset($qreq->p)) {
+            $ssel = SearchSelection::make_default($qreq, $user);
+        } else {
+            $ssel = SearchSelection::make($qreq, $user, "p");
+        }
         $action = ListAction::lookup($qreq->action, $user, $qreq, $ssel, ListAction::F_API);
         if ($action instanceof ListAction) {
             $action = $action->run($user, $qreq, $ssel);

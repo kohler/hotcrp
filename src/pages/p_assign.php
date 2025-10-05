@@ -114,9 +114,6 @@ class Assign_Page {
         $aset->enable_papers($this->prow);
         $aset->parse(join("", $t));
         $ok = $aset->execute();
-        if ($this->qreq->ajax) {
-            json_exit($aset->json_result());
-        }
         $aset->feedback_msg(AssignmentSet::FEEDBACK_ASSIGN);
         $ok && $this->conf->redirect_self($this->qreq);
     }
@@ -190,12 +187,10 @@ class Assign_Page {
 
     function handle_request() {
         $qreq = $this->qreq;
-        if (isset($qreq->update) && $qreq->valid_post()) {
-            if ($this->user->allow_administer($this->prow)) {
-                $this->handle_pc_update();
-            } else if ($this->qreq->ajax) {
-                json_exit(JsonResult::make_error(403, "<0>Only administrators can assign reviews"));
-            }
+        if (isset($qreq->update)
+            && $qreq->valid_post()
+            && $this->user->allow_administer($this->prow)) {
+            $this->handle_pc_update();
         }
         if ((isset($qreq->requestreview) || isset($qreq->approvereview))
             && $qreq->valid_post()) {

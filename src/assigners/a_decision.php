@@ -44,9 +44,8 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
     function allow_paper(PaperInfo $prow, AssignmentState $state) {
         if ($state->user->can_set_decision($prow)) {
             return true;
-        } else {
-            return new AssignmentError("<0>You can’t change the decision for #{$prow->paperId}.");
         }
+        return new AssignmentError("<0>You can’t change the decision for #{$prow->paperId}.");
     }
     function apply(PaperInfo $prow, Contact $contact, $req, AssignmentState $state) {
         $removepred = null;
@@ -59,7 +58,7 @@ class Decision_AssignmentParser extends UserlessAssignmentParser {
                 } else if (empty($dlist)) {
                     return new AssignmentError("<0>No decisions match ‘" . $req["decision"] . "’");
                 } else {
-                    return new AssignmentError("<0>More than one decision matches ‘" . $req["decision"]);
+                    return new AssignmentError("<0>More than one decision matches ‘" . $req["decision"] . "’");
                 }
             } else {
                 $removepred = function ($item) use ($dlist) {

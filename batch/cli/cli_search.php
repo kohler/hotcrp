@@ -21,6 +21,8 @@ class Search_CLIBatch implements CLIBatchCommand {
     public $help = 0;
     /** @var array<string,string> */
     public $param = [];
+    /** @var array<string,string|CURLFile> */
+    public $file_param = [];
     /** @var ?string */
     public $action;
     /** @var bool */
@@ -30,7 +32,6 @@ class Search_CLIBatch implements CLIBatchCommand {
     function run(Hotcrapi_Batch $clib) {
         if ($this->help) {
             return $this->run_help($clib);
-            return $this->run_actions($clib, $this->action);
         } else if ($this->action === "fields") {
             return $this->run_fields($clib);
         } else if ($this->action) {
@@ -157,8 +158,19 @@ class Search_CLIBatch implements CLIBatchCommand {
     /** @return int */
     function run_action(Hotcrapi_Batch $clib) {
         $curlh = $clib->make_curl();
+        if (!$this->post && strlen(http_build_query($this->param)) > 6000) {
+            $this->file_param = $this->param + $this->file_param;
+            $this->param = [":method:" => "GET"];
+            $this->post = true;
+        } else if (!$this->post && $this->file_param) {
+            $this->param[":method:"] = "GET";
+            $this->post = true;
+        }
         curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, $this->post ? "POST" : "GET");
         curl_setopt($curlh, CURLOPT_URL, "{$clib->site}/searchaction?" . http_build_query(["action" => $this->action] + $this->param));
+        if ($this->file_param) {
+            curl_setopt($curlh, CURLOPT_POSTFIELDS, $this->file_param);
+        }
         if (!$clib->exec_api($curlh, [$this, "skip_action"])) {
             return 1;
         }
@@ -182,9 +194,18 @@ class Search_CLIBatch implements CLIBatchCommand {
         $other_param = false;
         foreach ($arg["param"] ?? [] as $pstr) {
             if (($eq = strpos($pstr, "=")) === false) {
-                throw new CommandLineException("Expected `--param NAME=VALUE`");
+                throw new CommandLineException("Expected `--param NAME=VALUE`", $clib->getopt);
             }
             $pcb->param[substr($pstr, 0, $eq)] = substr($pstr, $eq + 1);
+            $other_param = true;
+        }
+        foreach ($arg["file-param"] ?? [] as $pstr) {
+            if (($eq = strpos($pstr, "=")) === false) {
+                throw new CommandLineException("Expected `--file-param NAME=VALUE`", $clib->getopt);
+            } else if (!is_readable(substr($pstr, $eq + 1))) {
+                throw new CommandLineException(substr($pstr, $eq + 1) . ": Count not read file", $clib->getopt);
+            }
+            $pcb->file_param[substr($pstr, 0, $eq)] = new CURLFile(substr($pstr, $eq + 1));
             $other_param = true;
         }
 
@@ -217,6 +238,7 @@ class Search_CLIBatch implements CLIBatchCommand {
             throw new CommandLineException("`--param` ignored");
         }
 
+        unset($pcb->param["action"], $pcb->file_param["action"]);
         return $pcb;
     }
 
@@ -236,7 +258,8 @@ Usage: php batch/hotcrapi.php search -q SEARCH [-f FIELD...]
             "F:,format: !search Change display field format",
             "warn-missing !search Warn on missing IDs",
             "post,P !search Use POST method",
-            "param[]+ =NAME=VALUE !search Set action parameters"
+            "param[]+ =NAME=VALUE !search Set action parameters",
+            "file-param[]+ =NAME=FILE !search Set action parameter files"
         );
         $clib->register_command("search", "Search_CLIBatch");
     }

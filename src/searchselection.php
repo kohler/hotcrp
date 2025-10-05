@@ -7,6 +7,8 @@ class SearchSelection {
     private $sel = [];
     /** @var array<int,int> */
     private $selmap = [];
+    /** @var bool */
+    private $default;
 
     function __construct($papers = null) {
         $n = 1;
@@ -37,6 +39,13 @@ class SearchSelection {
         return new SearchSelection($ps);
     }
 
+    /** @return SearchSelection */
+    static function make_default(Qrequest $qreq, Contact $user) {
+        $ss = new SearchSelection((new PaperSearch($user, $qreq))->sorted_paper_ids());
+        $ss->default = true;
+        return $ss;
+    }
+
     static function clear_request(Qrequest $qreq) {
         unset($qreq->p, $qreq->pap, $_GET["p"], $_GET["pap"], $_POST["p"], $_POST["pap"]);
     }
@@ -44,6 +53,11 @@ class SearchSelection {
     /** @return bool */
     function is_empty() {
         return empty($this->sel);
+    }
+
+    /** @return bool */
+    function is_default() {
+        return $this->default;
     }
 
     /** @return int */
