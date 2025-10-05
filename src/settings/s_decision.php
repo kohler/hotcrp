@@ -190,7 +190,7 @@ class Decision_SettingParser extends SettingParser {
         if (!empty($dels)
             && ($pids = Dbl::fetch_first_columns($sv->conf->dblink, "select paperId from Paper where outcome?a", $dels))) {
             $sv->conf->qe("update Paper set outcome=0 where outcome?a", $dels);
-            $sv->user->log_activity("Set decision: Unspecified", $pids);
+            $sv->user->log_activity("Decision set: Unspecified", $pids);
             $need_paperacc = true;
         }
         if (!empty($changes)) {

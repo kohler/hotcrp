@@ -417,17 +417,21 @@ class HotCRPMailer extends Mailer {
     }
     function kw_authorviewcapability($args, $isbool) {
         $this->sensitive = true;
-        if ($this->conf->opt("disableCapabilities")
-            || $this->censor === self::CENSOR_ALL) {
+        if ($this->censor === self::CENSOR_ALL
+            || ($this->conf->opt("authorSharing") ?? 0) < 0) {
             return "";
         }
-        if ($this->row
-            && $this->row->has_author($this->recipient)) {
-            if (!$this->censor) {
-                return "cap=" . AuthorView_Capability::make($this->row);
-            } else if ($this->censor === self::CENSOR_DISPLAY) {
-                return "cap=HIDDEN";
-            }
+        if (!$this->row
+            || !$this->row->has_author($this->recipient)) {
+            return null;
+        }
+        $cap = AuthorView_Capability::make($this->row);
+        if ($cap === null) {
+            return "";
+        } else if (!$this->censor) {
+            return "cap={$cap}";
+        } else if ($this->censor === self::CENSOR_DISPLAY) {
+            return "cap=HIDDEN";
         }
         return null;
     }

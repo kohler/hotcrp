@@ -780,7 +780,7 @@ class PaperInfo {
     private $_refusal_array;
     /** @var ?array<int,int> */
     private $_watch_array;
-    /** @var ?TokenInfo */
+    /** @var null|false|TokenInfo */
     public $_author_view_token;
     /** @var ?int */
     public $_search_group;

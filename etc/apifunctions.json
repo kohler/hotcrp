@@ -344,6 +344,11 @@
         "response": "?+dry_run +valid +change_list settings"
     },
     {
+        "name": "share", "get": true, "post": true,
+        "functions": "Sharing_API::run",
+        "parameters": "+share ?+expires_in"
+    },
+    {
         "name": "shepherd", "get": true, "paper": true,
         "function": "PaperPC_API::shepherd_api",
         "response": "shepherd shepherd_html ?color_classes"

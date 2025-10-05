@@ -130,7 +130,7 @@ class Decision_Assigner extends Assigner {
     function execute(AssignmentSet $aset) {
         $dec = $this->item->deleted() ? 0 : $this->item["_decision"];
         $aset->stage_qe("update Paper set outcome=? where paperId=?", $dec, $this->pid);
-        $aset->user->log_activity("Set decision: " . $aset->conf->decision_name($dec), $this->pid);
+        $aset->user->log_activity("Decision set: " . $aset->conf->decision_name($dec), $this->pid);
         if ($dec > 0 || $this->item->pre("_decision") > 0) {
             $aset->register_cleanup_function("paperacc", function ($vals) use ($aset) {
                 $aset->conf->update_paperacc_setting(min($vals));

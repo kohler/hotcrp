@@ -244,6 +244,7 @@ src/api/api_search.php
 src/api/api_searchconfig.php
 src/api/api_session.php
 src/api/api_settings.php
+src/api/api_sharing.php
 src/api/api_specvalidator.php
 src/api/api_taganno.php
 src/api/api_tags.php
@@ -259,6 +260,7 @@ src/assigners/a_follow.php
 src/assigners/a_lead.php
 src/assigners/a_preference.php
 src/assigners/a_review.php
+src/assigners/a_sharing.php
 src/assigners/a_status.php
 src/assigners/a_tag.php
 src/assigners/a_taganno.php

@@ -728,6 +728,12 @@ class Conf {
         $this->default_format = (int) ($this->opt["defaultFormat"] ?? 0);
         $this->_format_info = null;
 
+        // author sharing
+        if (!isset($this->opt["authorSharing"])) {
+            $x = $this->opt["disableCapabilities"] ?? null;
+            $this->opt["authorSharing"] = $x ? -1 : 1;
+        }
+
         // defaultScoreSort should be long
         if (isset($this->opt["defaultScoreSort"])
             && strlen($this->opt["defaultScoreSort"]) === 1) {

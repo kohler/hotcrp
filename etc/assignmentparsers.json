@@ -269,5 +269,15 @@
         "name": "clearfollow", "parser_class": "Follow_AssignmentParser",
         "parameters": ["!user:user"], "default_follow": "clear", "order": false,
         "description": "Default notifications for reviews and comments"
+    },
+    {
+        "name": "share", "parser_class": "Sharing_AssignmentParser",
+        "parameters": ["share$", "expires_in$"], "default_share": "yes",
+        "description": "Enable or disable author’s sharing link"
+    },
+    {
+        "name": "unshare", "parser_class": "Sharing_AssignmentParser",
+        "default_share": "no",
+        "description": "Disable author’s sharing link"
     }
 ]
