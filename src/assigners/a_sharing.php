@@ -82,7 +82,7 @@ class Sharing_AssignmentParser extends UserlessAssignmentParser {
         } else {
             $share = $req["share"] ?? "yes";
             if ($share !== "new"
-                && $share !== "refresh"
+                && $share !== "reset"
                 && ($share = friendly_boolean($share)) === null) {
                 return new AssignmentError("<0>Parameter error on ‘share’");
             }
@@ -142,7 +142,7 @@ class Sharing_Assigner extends Assigner {
             $x["share"] = "no";
         } else {
             $aval = $this->item->post("_aval");
-            $x["share"] = ["yes", "new", "refresh"][$aval];
+            $x["share"] = ["yes", "new", "reset"][$aval];
             $x["expires_in"] = $ia > 0 ? $ia - Conf::$now : "none";
         }
         $acsv->add($x);
@@ -157,7 +157,7 @@ class Sharing_Assigner extends Assigner {
             AVToken::remove($prow);
         }
         if (!$this->item->deleted()) {
-            $av = $is_new ? AVToken::AV_CREATE : AVToken::AV_REFRESH;
+            $av = $is_new ? AVToken::AV_CREATE : AVToken::AV_RESET;
             AVToken::make($prow, $av, $this->item["_invalid_at"]);
         }
     }

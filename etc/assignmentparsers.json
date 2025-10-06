@@ -272,7 +272,7 @@
     },
     {
         "name": "share", "parser_class": "Sharing_AssignmentParser",
-        "parameters": ["share$", "expires_in$"], "default_share": "yes",
+        "parameters": ["share=yes|no|new|reset", "expires_in$"], "default_share": "yes",
         "description": "Enable or disable author’s sharing link"
     },
     {

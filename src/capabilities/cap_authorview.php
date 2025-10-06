@@ -6,7 +6,7 @@ class AuthorView_Capability {
     const AV_DEFAULT = 0;
     const AV_EXISTING = 1;
     const AV_CREATE = 2;
-    const AV_REFRESH = 3;
+    const AV_RESET = 3;
 
     const REFRESHABLE_TIME = 86400 * 14;
 
@@ -20,7 +20,7 @@ class AuthorView_Capability {
             return null;
         }
         if ($prow->_author_view_token) {
-            self::update_expiration($prow->_author_view_token, $invalid_at, true);
+            self::update_expiration($prow->_author_view_token, $invalid_at, $reqtype);
             return $prow->_author_view_token->salt;
         } else if ($prow->_author_view_token === false
                    && ($reqtype === self::AV_EXISTING
@@ -28,8 +28,7 @@ class AuthorView_Capability {
             return null;
         }
         // load already-assigned tokens
-        if (count($prow->_row_set) > 5
-            && $reqtype !== self::AV_REFRESH) {
+        if (count($prow->_row_set) > 5 && $reqtype !== self::AV_RESET) {
             $lo = "hcav";
             $hi = "hcaw";
             foreach ($prow->_row_set as $xrow) {
@@ -40,7 +39,7 @@ class AuthorView_Capability {
             $hi = "hcav{$prow->paperId}~";
             $prow->_author_view_token = false;
         }
-        $invalid_allowance = $reqtype === self::AV_REFRESH ? self::REFRESHABLE_TIME : 0;
+        $invalid_allowance = $reqtype === self::AV_RESET ? self::REFRESHABLE_TIME : 0;
         $result = $prow->conf->qe("select * from Capability
             where salt>=? and salt<? and capabilityType=?
             and (timeInvalid=0 or timeInvalid>?) and (timeExpires=0 or timeExpires>?)",
@@ -59,14 +58,18 @@ class AuthorView_Capability {
             $tok = (new TokenInfo($prow->conf, TokenInfo::AUTHORVIEW))
                 ->set_paper($prow)
                 ->set_token_pattern("hcav{$prow->paperId}[16]");
-            self::update_expiration($tok, $invalid_at ?? 0, false);
+            if ($invalid_at === null) {
+                $expires_in = $prow->conf->opt("authorSharingExpiry") ?? -1;
+                $invalid_at = $expires_in < 0 ? 0 : Conf::$now + $expires_in;
+            }
+            self::update_expiration($tok, $invalid_at, self::AV_RESET);
             $tok->insert();
             if ($tok->stored()) {
                 $prow->_author_view_token = $tok;
             }
         }
         if ($prow->_author_view_token) {
-            self::update_expiration($prow->_author_view_token, $invalid_at, true);
+            self::update_expiration($prow->_author_view_token, $invalid_at, $reqtype);
             return $prow->_author_view_token->salt;
         }
         return null;
@@ -74,14 +77,23 @@ class AuthorView_Capability {
 
     /** @param TokenInfo $token
      * @param ?int $invalid_at
-     * @param bool $save */
-    static private function update_expiration($token, $invalid_at, $save) {
-        if ($invalid_at !== null) {
-            $token->set_invalid_at($invalid_at)
-                ->set_expires_at($invalid_at ? $invalid_at + self::REFRESHABLE_TIME : 0);
-            if ($save) {
-                $token->update();
-            }
+     * @param int $reqtype */
+    static private function update_expiration($token, $invalid_at, $reqtype) {
+        if ($invalid_at === null) {
+            return;
+        }
+        if ($invalid_at < 0) {
+            $invalid_at = 0;
+        }
+        if ($reqtype !== self::AV_RESET
+            && ($token->timeInvalid === 0
+                || $token->timeInvalid >= ($invalid_at ? : PHP_INT_MAX))) {
+            return;
+        }
+        $token->set_invalid_at($invalid_at)
+            ->set_expires_at($invalid_at ? $invalid_at + self::REFRESHABLE_TIME : 0);
+        if ($token->salt) {
+            $token->update();
         }
     }
 

@@ -11,7 +11,7 @@ class Sharing_API extends MessageSet {
         if ($qreq->method() !== "GET") {
             if (!isset($qreq->share)) {
                 return JsonResult::make_missing_error("share");
-            } else if ($qreq->share === "new" || $qreq->share === "refresh") {
+            } else if ($qreq->share === "new" || $qreq->share === "reset") {
                 $share = $qreq->share;
             } else if (($share = friendly_boolean($qreq->share)) === null) {
                 return JsonResult::make_parameter_error("share");
@@ -27,7 +27,7 @@ class Sharing_API extends MessageSet {
                 AuthorView_Capability::remove($prow);
             }
             if ($share) {
-                $av = $share === "refresh" ? AuthorView_Capability::AV_REFRESH : AuthorView_Capability::AV_CREATE;
+                $av = $share === "reset" ? AuthorView_Capability::AV_RESET : AuthorView_Capability::AV_CREATE;
                 AuthorView_Capability::make($prow, $av, $invalid_at);
             }
         }
