@@ -28,6 +28,9 @@ class TokenInfo {
     public $timeUsed;
     /** @var int
      * @readonly */
+    public $useCount;
+    /** @var int
+     * @readonly */
     public $timeInvalid;
     /** @var int
      * @readonly */
@@ -283,6 +286,7 @@ class TokenInfo {
         $this->reviewId = (int) $this->reviewId;
         $this->timeCreated = (int) $this->timeCreated;
         $this->timeUsed = (int) $this->timeUsed;
+        $this->useCount = (int) $this->useCount;
         $this->timeInvalid = (int) $this->timeInvalid;
         $this->timeExpires = (int) $this->timeExpires;
         $this->inputData = $this->inputDataOverflow ?? $this->inputData;
@@ -343,7 +347,7 @@ class TokenInfo {
      * @return Dbl_Result */
     static function expired_result(Conf $conf, $types) {
         // do not load `inputData` or `outputData`
-        return $conf->ql("select capabilityType, contactId, paperId, reviewId, timeCreated, timeUsed, timeInvalid, timeExpires, salt, `data`, dataOverflow from Capability where timeExpires>0 and timeExpires<? and capabilityType?a",
+        return $conf->ql("select capabilityType, contactId, paperId, reviewId, timeCreated, timeUsed, useCount, timeInvalid, timeExpires, salt, `data`, dataOverflow from Capability where timeExpires>0 and timeExpires<? and capabilityType?a",
             Conf::$now, $types);
     }
 
@@ -404,6 +408,7 @@ class TokenInfo {
         $this->paperId = $this->paperId ?? 0;
         $this->reviewId = $this->reviewId ?? 0;
         $this->timeUsed = $this->timeUsed ?? 0;
+        $this->useCount = $this->useCount ?? 0;
         $this->timeInvalid = $this->timeInvalid ?? 0;
         $this->timeExpires = $this->timeExpires ?? 0;
         $need_salt = !$this->salt;
@@ -415,7 +420,8 @@ class TokenInfo {
         $qv = [
             null /* salt */, null /* timeCreated */,
             $this->capabilityType, $this->contactId, $this->paperId,
-            $this->timeUsed, $this->timeInvalid, $this->timeExpires
+            $this->timeUsed, $this->useCount,
+            $this->timeInvalid, $this->timeExpires
         ];
         if ($this->data === null || strlen($this->data) <= 16383) {
             $qv[] = $this->data;
@@ -446,7 +452,7 @@ class TokenInfo {
             }
             $qv[0] = $this->salt;
             $qv[1] = Conf::$now;
-            $result = Dbl::qe($this->dblink(), "insert into Capability (salt, timeCreated, capabilityType, contactId, paperId, timeUsed, timeInvalid, timeExpires, data, dataOverflow{$qf}) values ?v", [$qv]);
+            $result = Dbl::qe($this->dblink(), "insert into Capability (salt, timeCreated, capabilityType, contactId, paperId, timeUsed, useCount, timeInvalid, timeExpires, data, dataOverflow{$qf}) values ?v", [$qv]);
             if ($result->affected_rows <= 0) {
                 continue;
             }
@@ -507,6 +513,7 @@ class TokenInfo {
         if ($within_sec === null || $this->timeUsed + $within_sec <= Conf::$now) {
             /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->timeUsed = Conf::$now;
+            ++$this->useCount;
             $this->_changes |= self::CHF_TIMES;
         }
         return $this;
@@ -560,8 +567,8 @@ class TokenInfo {
         }
         $qf = $qv = [];
         if (($this->_changes & self::CHF_TIMES) !== 0) {
-            array_push($qf, "timeUsed=?", "timeInvalid=?", "timeExpires=?");
-            array_push($qv, $this->timeUsed, $this->timeInvalid, $this->timeExpires);
+            array_push($qf, "timeUsed=?", "useCount=?", "timeInvalid=?", "timeExpires=?");
+            array_push($qv, $this->timeUsed, $this->useCount, $this->timeInvalid, $this->timeExpires);
         }
         if (($this->_changes & self::CHF_DATA) !== 0) {
             $qf[] = "`data`=?";

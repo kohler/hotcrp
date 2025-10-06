@@ -3184,6 +3184,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table Capability add `dataOverflow` longblob DEFAULT NULL")) {
             $conf->update_schema_version(313);
         }
+        if ($conf->sversion === 313
+            && $conf->ql_ok("alter table Capability add `useCount` bigint(11) NOT NULL DEFAULT 0")) {
+            $conf->update_schema_version(314);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

@@ -9,6 +9,7 @@ CREATE TABLE `Capability` (
   `paperId` int(11) NOT NULL,
   `timeCreated` bigint(11) NOT NULL,
   `timeUsed` bigint(11) NOT NULL DEFAULT 0,
+  `useCount` bigint(11) NOT NULL DEFAULT 0,
   `timeInvalid` bigint(11) NOT NULL DEFAULT 0,
   `timeExpires` bigint(11) NOT NULL,
   `salt` varbinary(255) NOT NULL,
