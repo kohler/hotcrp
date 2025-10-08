@@ -11577,7 +11577,9 @@ function make_callback(plistui, type) {
             plistui.load_field(fv);
         }
         result = rv;
-        $(render_start);
+        if (plistui.fields[type]) {
+            $(render_start);
+        }
     };
 }
 
