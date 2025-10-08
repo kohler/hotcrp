@@ -10909,18 +10909,36 @@ return {
 
 
 // archive expansion
+function parse_docurl(href, base) {
+    const url = make_URL(href, base);
+    let p = url.pathname;
+    if (p.startsWith(siteinfo.base)) {
+        p = p.substring(siteinfo.base.length);
+    }
+    if (p.startsWith("u/")) {
+        p = p.replace(/^u\/\d+\//, "");
+    }
+    p = p.replace(/^(?:u\/\d+\/|)doc(?:\.php?|)\/?/, "");
+    if (p !== "" && !p.startsWith("/")) {
+        url.searchParams.set("file", p);
+    }
+    return url.searchParams;
+}
+
 handle_ui.on("js-expand-archive", function (evt) {
-    var ar = (evt ? evt.target : this).closest(".archive"), ax;
+    let ar = (evt ? evt.target : this).closest(".archive"), ax;
     fold(ar);
     if (!ar.querySelector(".archiveexpansion")
         && (ax = ar.querySelector("a:not(.ui)"))) {
-        var sp = document.createElement("span");
+        const sp = document.createElement("span");
         sp.className = "archiveexpansion fx";
         ar.appendChild(sp);
-        $.ajax(hoturl_add(ax.href, "fn=consolidatedlisting"), {
+        const params = parse_docurl(ax.href);
+        params.set("consolidated", 1);
+        $.ajax(hoturl("api/archivelisting", params.toString()), {
             method: "GET", success: function (data) {
-                if (data.ok && data.result)
-                    sp.textContent = " (" + data.result + ")";
+                if (data.ok && data.consolidated_listing)
+                    sp.textContent = " (" + data.consolidated_listing + ")";
             }
         });
     }

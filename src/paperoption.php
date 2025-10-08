@@ -1643,6 +1643,18 @@ class Document_PaperOption extends PaperOption {
         return ["type"];
     }
 
+    /** @param DocumentInfo $doc
+     * @param string $html
+     * @param int $dif
+     * @return string */
+    static function link_html($doc, $html, $dif) {
+        $t = $doc->link_html($html, $dif);
+        if ($doc->is_archive()) {
+            $t = '<span class="archive foldc"><button type="button" class="q ui js-expand-archive pr-1">' . expander(null, 0) . '</button>' . $t . '</span>';
+        }
+        return $t;
+    }
+
     /** @param ?DocumentInfo $d */
     static function render_document(FieldRender $fr, PaperOption $opt, $d) {
         if (!$d) {
@@ -1654,10 +1666,11 @@ class Document_PaperOption extends PaperOption {
         if ($fr->want(FieldRender::CFFORM)) {
             $fr->set_html($d->link_html(htmlspecialchars($d->filename ?? ""), 0));
         } else if ($fr->want(FieldRender::CFPAGE)) {
-            $th = $opt->title_html();
-            $dif = $opt->display() === PaperOption::DISP_TOP ? 0 : DocumentInfo::L_SMALL;
             $fr->title = "";
-            $fr->set_html($d->link_html("<span class=\"pavfn\">{$th}</span>", $dif));
+            $fr->set_html(self::link_html(
+                $d, '<span class="pavfn">' . $opt->title_html() . '</span>',
+                $opt->display() === PaperOption::DISP_TOP ? 0 : DocumentInfo::L_SMALL
+            ));
         } else {
             $want_mimetype = $fr->column && $fr->column->view_option("type");
             if ($want_mimetype) {
@@ -1671,7 +1684,10 @@ class Document_PaperOption extends PaperOption {
             if ($fr->want(FieldRender::CFTEXT) || $want_mimetype) {
                 $fr->set_text($t);
             } else {
-                $fr->set_html($d->link_html(htmlspecialchars($t), DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE));
+                $fr->set_html(self::link_html(
+                    $d, htmlspecialchars($t),
+                    DocumentInfo::L_SMALL | DocumentInfo::L_NOSIZE
+                ));
             }
         }
     }

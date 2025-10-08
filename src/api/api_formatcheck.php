@@ -4,10 +4,9 @@
 
 class FormatCheck_API {
     static function run(Contact $user, Qrequest $qreq) {
-        try {
-            $docreq = new DocumentRequest($qreq, $qreq->doc, $user);
-        } catch (Exception $unused) {
-            return JsonResult::make_error(404, "<0>Document not found");
+        $docreq = new DocumentRequest($qreq, $qreq->doc, $user);
+        if (!$docreq->ok()) {
+            return JsonResult::make_message_list(404, $docreq->message_list());
         }
         if (($whynot = $docreq->perm_view_document($user))) {
             return JsonResult::make_message_list(isset($whynot["permission"]) ? 403 : 404, $whynot->message_list());

@@ -196,11 +196,7 @@ class Attachments_PaperOption extends PaperOption {
                 } else {
                     $dif = DocumentInfo::L_SMALL;
                 }
-                $t = $d->link_html($linkname, $dif);
-                if ($d->is_archive()) {
-                    $t = '<span class="archive foldc"><button type="button" class="q ui js-expand-archive">' . expander(null, 0) . '</button> ' . $t . '</span>';
-                }
-                $ts[] = $t;
+                $ts[] = Document_PaperOption::link_html($d, $linkname, $dif);
             }
         }
         if (empty($ts)) {

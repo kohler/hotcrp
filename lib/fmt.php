@@ -304,6 +304,11 @@ class FmtContext {
                 $value = "\"{$value}\"";
             }
             return [$vformat, $value];
+        } else if ($fspec === ":nonempty") {
+            if ($value === "") {
+                return [0, "<empty>"];
+            }
+            return [$vformat, $value];
         } else if (str_starts_with($fspec, ":plural ")) {
             $word = $this->expand(ltrim(substr($fspec, 8)), $expansion);
             return [$vformat, plural_word($value, $word)];

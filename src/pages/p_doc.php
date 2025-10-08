@@ -15,7 +15,7 @@ class Doc_Page {
         $ml = MessageSet::make_list($msg);
         if (str_starts_with($status, "5")) {
             $navpath = $qreq->path();
-            error_log($qreq->conf()->dbname . ": bad doc $status "
+            error_log($qreq->conf()->dbname . ": bad doc {$status} "
                 . MessageSet::feedback_text($ml)
                 . json_encode($qreq) . ($navpath ? " @{$navpath}" : "")
                 . ($qreq->user() ? " " . $qreq->user()->email : "")
@@ -25,12 +25,11 @@ class Doc_Page {
         header("HTTP/1.1 {$status}");
         if (isset($qreq->fn)) {
             json_exit(["ok" => false, "message_list" => $ml]);
-        } else {
-            $qreq->print_header("Download", null);
-            $qreq->conf()->feedback_msg($ml);
-            $qreq->print_footer();
-            exit(0);
         }
+        $qreq->print_header("Download", null);
+        $qreq->conf()->feedback_msg($ml);
+        $qreq->print_footer();
+        exit(0);
     }
 
     /** @param bool $active
@@ -78,10 +77,9 @@ class Doc_Page {
      * @param Qrequest $qreq */
     static function go($user, $qreq) {
         $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        try {
-            $dr = new DocumentRequest($qreq, $qreq->path(), $user);
-        } catch (Exception $e) {
-            self::error("404 Not Found", MessageItem::error("<0>" . $e->getMessage()), $qreq);
+        $dr = new DocumentRequest($qreq, $qreq->path(), $user);
+        if (!$dr->ok()) {
+            self::error("404 Not Found", ($dr->message_list())[0], $qreq);
         }
 
         if (($whyNot = $dr->perm_view_document($user))) {
@@ -149,6 +147,7 @@ class Doc_Page {
 
         // check for contents request
         if ($qreq->fn === "listing" || $qreq->fn === "consolidatedlisting") {
+            /* XXX obsolete */
             if (!$doc->is_archive()) {
                 json_exit(JsonResult::make_error(400, "<0>That file is not an archive"));
             } else if (($listing = $doc->archive_listing(65536)) === null) {

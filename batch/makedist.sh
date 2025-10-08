@@ -225,6 +225,7 @@ src/api/api_assign.php
 src/api/api_comment.php
 src/api/api_completion.php
 src/api/api_decision.php
+src/api/api_document.php
 src/api/api_error.php
 src/api/api_events.php
 src/api/api_follow.php

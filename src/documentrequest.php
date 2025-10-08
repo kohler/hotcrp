@@ -3,41 +3,49 @@
 // Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class DocumentRequest implements JsonSerializable {
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $paperId;
-    /** @var ?PaperInfo */
+    /** @var ?PaperInfo
+     * @readonly */
     public $prow;
-    /** @var int */
+    /** @var int
+     * @readonly */
     public $dtype;
-    /** @var ?PaperOption */
+    /** @var ?PaperOption
+     * @readonly */
     public $opt;
     /** @var ?string */
     private $linkid;
     /** @var ?string */
     public $attachment;
-    /** @var ?int */
+    /** @var ?int
+     * @readonly */
     public $docid;
-    /** @var list<FileFilter> */
+    /** @var list<FileFilter>
+     * @readonly */
     public $filters = [];
+    /** @var string
+     * @readonly */
     public $req_filename;
+    /** @var ?list<MessageItem> */
+    private $_error_ml;
 
-    private function set_paperid($s) {
-        $pid = stoi($s);
-        if ($pid === null || $s !== trim($s)) {
-            throw new Exception("Document not found [submission {$s}]");
-        }
-        $this->paperId = $pid;
-    }
-
+    /** @param array|Qrequest $req
+     * @param ?string $path */
     function __construct($req, $path, Contact $user) {
         $conf = $user->conf;
-        $want_path = false;
-        if (isset($req["p"])) {
-            $this->set_paperid($req["p"]);
-        } else if (isset($req["paperId"])) {
-            $this->set_paperid($req["paperId"]);
-        } else {
-            $want_path = true;
+        $want_path = !isset($req["p"]) && !isset($req["paperId"]);
+        if (!$want_path) {
+            $id = $req["p"] ?? $req["paperId"];
+            $this->paperId  = stoi($id);
+            if ($this->paperId === null || $id !== trim($id)) {
+                $this->_error_ml[] = MessageItem::error_at(
+                    isset($req["p"]) ? "p" : "paperId",
+                    $conf->_("<0>Invalid {submission} ID ‘{:nonempty}’", $id)
+                );
+                return;
+            }
         }
 
         $dtname = "";
@@ -96,7 +104,8 @@ class DocumentRequest implements JsonSerializable {
                     $this->attachment = urldecode($m[2]);
                 }
             } else {
-                throw new Exception("Document ‘{$this->req_filename}’ not found");
+                $this->_error_ml[] = MessageItem::error_at("file", "<0>Document ‘" . ($this->req_filename === "" ? "<empty>" : $this->req_filename) . "’ not found");
+                return;
             }
         }
 
@@ -145,7 +154,8 @@ class DocumentRequest implements JsonSerializable {
             $this->opt = $conf->options()->find($base_dtname);
             $this->dtype = $this->opt->id;
         } else if ($this->dtype === null) {
-            throw new Exception("Document ‘{$dtname}’ not found");
+            $this->_error_ml[] = MessageItem::error_at("dt", "<0>Document class ‘{$dtname}’ not found");
+            return;
         }
 
         // canonicalize response naming
@@ -161,12 +171,13 @@ class DocumentRequest implements JsonSerializable {
 
         if (isset($req["filter"])) {
             foreach (explode(" ", $req["filter"]) as $filtername) {
-                if ($filtername !== "") {
-                    if (($filter = FileFilter::find_by_name($conf, $filtername))) {
-                        $this->filters[] = $filter;
-                    } else {
-                        throw new Exception("Document filter ‘{$filtername}’ not found");
-                    }
+                if ($filtername === "") {
+                    continue;
+                } else if (($filter = FileFilter::find_by_name($conf, $filtername))) {
+                    $this->filters[] = $filter;
+                } else {
+                    $this->_error_ml[] = MessageItem::error_at("filter", "<0>Document filter ‘{$filtername}’ not found");
+                    return;
                 }
             }
         }
@@ -191,7 +202,8 @@ class DocumentRequest implements JsonSerializable {
 
         if ($this->dtype === null
             || ($this->opt && $this->opt->nonpaper) !== ($this->paperId < 0)) {
-            throw new Exception("Document ‘{$this->req_filename}’ not found");
+            $this->_error_ml[] = MessageItem::error_at("file", "<0>Document ‘{$this->req_filename}’ not found");
+            return;
         }
 
         // look up paper
@@ -240,15 +252,25 @@ class DocumentRequest implements JsonSerializable {
         return false;
     }
 
+    /** @return bool */
+    function ok() {
+        return empty($this->_error_ml);
+    }
+
+    /** @return list<MessageItem> */
+    function message_list() {
+        return $this->_error_ml ?? [];
+    }
+
+    /** @return ?FailureReason */
     function perm_view_document(Contact $user) {
         if ($this->paperId < 0) {
             $vis = $this->opt->visibility();
             if (($vis === PaperOption::VIS_ADMIN && !$user->privChair)
                 || ($vis !== PaperOption::VIS_SUB && !$user->isPC)) {
                 return $this->prow->failure_reason(["permission" => "field:view", "option" => $this->opt]);
-            } else {
-                return null;
             }
+            return null;
         } else if (($whynot = $user->perm_view_paper($this->prow, false, $this->paperId))) {
             return $whynot;
         } else if ($this->dtype === DTYPE_COMMENT) {
@@ -259,6 +281,8 @@ class DocumentRequest implements JsonSerializable {
         return null;
     }
 
+    /** @return ?FailureReason
+     * @suppress PhanAccessReadOnlyProperty */
     private function perm_view_comment_document(Contact $user) {
         $doc_crow = $cmtid = null;
         if (str_starts_with($this->linkid, "cx")

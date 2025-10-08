@@ -1094,9 +1094,8 @@ class Limit_SearchTerm extends SearchTerm {
         } else if (str_starts_with($limit, "dec:")
                    && count($conf->decision_set()->matchexpr(substr($limit, 4), true)) > 0) {
             return [$limit, $limit];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $limit

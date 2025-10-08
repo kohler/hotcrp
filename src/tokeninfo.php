@@ -505,13 +505,13 @@ class TokenInfo {
 
 
     /** @param ?int $within_sec
-     * @return $this */
+     * @return $this
+     * @suppress PhanAccessReadOnlyProperty */
     final function update_use($within_sec = null) {
         if ($within_sec === null) {
             Conf::set_current_time();
         }
         if ($within_sec === null || $this->timeUsed + $within_sec <= Conf::$now) {
-            /** @phan-suppress-next-line PhanAccessReadOnlyProperty */
             $this->timeUsed = Conf::$now;
             ++$this->useCount;
             $this->_changes |= self::CHF_TIMES;

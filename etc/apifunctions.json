@@ -23,6 +23,12 @@
         "response": "tags ?readonly_tagmap ?sitewide_tagmap"
     },
     {
+        "name": "archivelisting", "get": true,
+        "function": "Document_API::archivelisting",
+        "parameters": "?p ?dt ?file ?version ?at ?docid ?consolidated",
+        "response": "listing ?consolidated_listing"
+    },
+    {
         "name": "assign", "post": true,
         "function": "Assign_API::assign",
         "parameters": "?p ?dry_run ?quiet ?summary ?csv ?forceShow ?search ?upload ?=assignments",

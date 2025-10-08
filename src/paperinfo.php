@@ -2515,9 +2515,8 @@ class PaperInfo {
         } else if (($ov = $this->option($dtype))
                    && $ov->option->has_document()) {
             return $ov->documents();
-        } else {
-            return [];
         }
+        return [];
     }
 
     /** @param int $dtype
