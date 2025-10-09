@@ -88,8 +88,6 @@ class SettingValues extends MessageSet {
     private $_inputs_printed = false;
 
     function __construct(Contact $user) {
-        parent::__construct();
-        $this->set_want_ftext(true, 5);
         $this->conf = $user->conf;
         $this->user = $user;
         $this->allowed = $user->privChair || $user->check_xtrack("settings!");

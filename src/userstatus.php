@@ -100,8 +100,6 @@ class UserStatus extends MessageSet {
     function __construct(Contact $viewer) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
-        parent::__construct();
-        $this->set_want_ftext(true, 5);
     }
 
     const IF_EMPTY_NONE = 0;

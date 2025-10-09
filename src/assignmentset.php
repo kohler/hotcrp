@@ -234,7 +234,6 @@ class AssignmentState extends MessageSet {
         $this->conf = $user->conf;
         $this->user = $this->reviewer = $user;
         $this->cmap = new AssignerContacts($this->conf, $this->user);
-        $this->set_want_ftext(true);
         $this->overrides = $user->overrides();
     }
 

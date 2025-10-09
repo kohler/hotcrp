@@ -20,7 +20,7 @@ class GetReviewForms_ListAction extends GetReviewBase_ListAction {
         }
 
         $texts = [];
-        $ms = (new MessageSet)->set_ignore_duplicates(true)->set_want_ftext(true, 0);
+        $ms = (new MessageSet)->set_ignore_duplicates(true);
         foreach ($ssel->paper_set($user) as $prow) {
             $whyNot = $user->perm_edit_some_review($prow);
             if ($whyNot

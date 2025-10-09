@@ -58,7 +58,6 @@ class CheckFormat extends MessageSet {
             self::$banal_args = $z ? "-zoom={$z}" : "";
         }
         $this->fcheckers["default"] = new Default_FormatChecker;
-        $this->set_want_ftext(true, 5);
     }
 
     /** @param string $cmd

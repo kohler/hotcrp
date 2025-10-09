@@ -89,7 +89,6 @@ final class PaperStatus extends MessageSet {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->allow_hash_without_content = $user->privChair;
-        $this->set_want_ftext(true, 5);
         $this->set_ignore_duplicates(true);
     }
 

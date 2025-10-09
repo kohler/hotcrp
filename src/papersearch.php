@@ -296,7 +296,6 @@ class PaperSearch extends MessageSet {
         $this->q = trim($options["q"] ?? "");
         $this->_req_sort = $options["sort"] ?? null;
         $this->_req_scoresort = $options["scoresort"] ?? null;
-        $this->set_want_ftext(true);
 
         // reviewer
         if (($reviewer = $options["reviewer"] ?? null)) {

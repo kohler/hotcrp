@@ -261,10 +261,7 @@ final class PaperValue implements JsonSerializable {
 
     /** @return MessageSet */
     function message_set() {
-        if ($this->_ms === null) {
-            $this->_ms = new MessageSet;
-            $this->_ms->set_want_ftext(true, 5);
-        }
+        $this->_ms = $this->_ms ?? new MessageSet;
         return $this->_ms;
     }
     /** @param MessageItem $mi

@@ -76,7 +76,6 @@ class ReviewValues extends MessageSet {
             $this->conf = $rf;
             $this->rf = $this->conf->review_form();
         }
-        $this->set_want_ftext(true);
         $this->clear_req();
     }
 

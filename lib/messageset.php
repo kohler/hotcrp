@@ -288,15 +288,13 @@ class MessageSet {
     /** @var ?array<string,int> */
     private $pstatus_at;
     /** @var int */
-    private $_ms_flags = 0;
+    private $_ms_flags = 8 /* WANT_FTEXT */;
 
     const IGNORE_MSGS = 1;
     const IGNORE_DUPS = 2;
     const IGNORE_DUPS_FIELD = 6;
     const IGNORE_DUPS_FIELD_FLAG = 4;
     const WANT_FTEXT = 8;
-    const DEFAULT_FTEXT_TEXT = 16;
-    const DEFAULT_FTEXT_HTML = 32;
 
     // These numbers are stored in databases (e.g., PaperStorage.infoJson.cfmsg)
     // and should be changed only with great care.
@@ -311,11 +309,6 @@ class MessageSet {
     const ESTOP = 3;
     const MIN_STATUS = -5;
     const MAX_STATUS = 3;
-
-    /** @param 0|1|2|3|6|7 $flags */
-    function __construct($flags = 0) {
-        $this->_ms_flags = $flags;
-    }
 
     function clear_messages() {
         $this->errf = $this->msgs = [];
@@ -362,15 +355,9 @@ class MessageSet {
     }
 
     /** @param bool $x
-     * @param ?int $default_format
      * @return $this */
-    function set_want_ftext($x, $default_format = null) {
+    function set_want_ftext($x) {
         $this->change_ms_flags(self::WANT_FTEXT, $x ? self::WANT_FTEXT : 0);
-        if ($x && $default_format !== null) {
-            assert($default_format === 0 || $default_format === 5);
-            $this->change_ms_flags(self::DEFAULT_FTEXT_TEXT | self::DEFAULT_FTEXT_HTML,
-                                   $default_format === 0 ? self::DEFAULT_FTEXT_TEXT : self::DEFAULT_FTEXT_HTML);
-        }
         return $this;
     }
 
@@ -425,11 +412,7 @@ class MessageSet {
             && ($this->_ms_flags & self::WANT_FTEXT) !== 0
             && !Ftext::is_ftext($mi->message)) {
             error_log("not ftext: {$mi->message} " . debug_string_backtrace());
-            if (($this->_ms_flags & self::DEFAULT_FTEXT_TEXT) !== 0) {
-                $mi->message = "<0>{$mi->message}";
-            } else if (($this->_ms_flags & self::DEFAULT_FTEXT_HTML) !== 0) {
-                $mi->message = "<5>{$mi->message}";
-            }
+            $mi->message = "<0>{$mi->message}";
         }
         if (($this->_ms_flags & self::IGNORE_DUPS) === 0
             || $this->message_index($mi) === false) {

@@ -218,7 +218,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
     /** @return MessageSet */
     function message_set() {
-        $this->_ms = $this->_ms ?? (new MessageSet)->set_want_ftext(true, 5);
+        $this->_ms = $this->_ms ?? new MessageSet;
         return $this->_ms;
     }
     /** @return list<MessageItem> */
