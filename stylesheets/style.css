@@ -1561,7 +1561,8 @@ button:disabled, button:disabled:hover,
 .differs .btn-default:disabled, .differs .btn-default:disabled:hover,
 .differs .btn-primary:disabled, .differs .btn-primary:disabled:hover,
 .btn-highlight:disabled, .differs .btn-highlight:disabled:hover,
-button.disabled, button.disabled:hover {
+button.disabled, button.disabled:hover,
+a.btn.disabled, a.btn.disabled:hover {
 	color: rgba(102, 102, 102, 0.5);
 	border-color: #c5c5c5;
 	background: rgba(222, 222, 222, 0.5);
