@@ -167,11 +167,10 @@ class ContactSearch {
                 return $this->select_ids("select contactId from ContactInfo where contactId?A", [$a]);
             }
         } else if ($need) {
-            $this->warn_html = "No users are tagged “" . htmlspecialchars($this->text) . "”.";
+            $this->warn_html = "No users are tagged ‘" . htmlspecialchars($this->text) . "’.";
             return [];
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return list<int> */
@@ -186,7 +185,7 @@ class ContactSearch {
         // split name components
         list($f, $l, $e) = Text::split_name($this->text, true);
         if ($f !== "" && $l !== "") {
-            $n = "$f $l";
+            $n = "{$f} {$l}";
         } else {
             $n = $f . $l;
         }
