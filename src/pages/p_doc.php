@@ -78,12 +78,9 @@ class Doc_Page {
     static function go($user, $qreq) {
         $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         $dr = new DocumentRequest($qreq, $qreq->path(), $user);
-        if (!$dr->ok()) {
-            self::error("404 Not Found", ($dr->message_list())[0], $qreq);
-        }
-
-        if (($whyNot = $dr->perm_view_document($user))) {
-            self::error(isset($whyNot["permission"]) ? "403 Forbidden" : "404 Not Found", $whyNot->message_list(), $qreq);
+        if ($dr->has_error()) {
+            self::error($dr->error_status() === 404 ? "404 Not Found" : "403 Forbidden",
+                        $dr->message_list(), $qreq);
         }
         $prow = $dr->prow;
         $want_docid = $request_docid = (int) $dr->docid;

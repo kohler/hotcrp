@@ -38,13 +38,8 @@ class Document_API {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
         $this->dr = new DocumentRequest($qreq, $qreq->file, $user);
-        if (!$this->dr->ok()) {
-            return JsonResult::make_message_list(404, $this->dr->message_list());
-        } else if (($whyNot = $this->dr->perm_view_document($user))) {
-            return JsonResult::make_message_list(
-                isset($whyNot["permission"]) ? 403 : 404,
-                $whyNot->message_list()
-            );
+        if ($this->dr->has_error()) {
+            return $this->dr->error_result();
         }
         $this->prow = $this->dr->prow;
         return null;
