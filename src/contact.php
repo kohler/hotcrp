@@ -564,12 +564,6 @@ class Contact implements JsonSerializable {
         return Countries::code_to_name($this->country_code());
     }
 
-    /** @return string
-     * @deprecated */
-    function country() {
-        return $this->country_name();
-    }
-
     /** @return ?string */
     function phone() {
         if ($this->_slice !== 0) {
@@ -949,16 +943,6 @@ class Contact implements JsonSerializable {
      * @return int */
     function remove_overrides($overrides) {
         return $this->set_overrides($this->_overrides & ~$overrides);
-    }
-
-    /** @param int $overrides
-     * @param string $method
-     * @deprecated */
-    function call_with_overrides($overrides, $method, ...$args) {
-        $old_overrides = $this->set_overrides($overrides);
-        $result = call_user_func_array([$this, $method], $args);
-        $this->_overrides = $old_overrides;
-        return $result;
     }
 
     /** @return bool */
@@ -1645,20 +1629,6 @@ class Contact implements JsonSerializable {
     /** @return string */
     function all_user_tags() {
         return self::all_user_tags_for($this, self::CTFLAG_ROLES);
-    }
-
-    /** @param Contact|Author $x
-     * @param 0|1|2|3 $ctags
-     * @return string
-     * @deprecated */
-    static function all_contact_tags_for($x, $ctags) {
-        return self::all_user_tags_for($x, $ctags);
-    }
-
-    /** @return string
-     * @deprecated */
-    function all_contact_tags() {
-        return $this->all_user_tags();
     }
 
     /** @return string */
@@ -3391,13 +3361,6 @@ class Contact implements JsonSerializable {
     function __rights(PaperInfo $prow) {
         // public access point; to be avoided
         return $this->rights($prow);
-    }
-
-    /** @param ?PaperContactInfo $rights
-     * @return bool
-     * @deprecated */
-    function override_deadlines($rights) {
-        return $rights ? $rights->can_administer() : $this->privChair;
     }
 
     /** @return bool */
@@ -5783,13 +5746,6 @@ class Contact implements JsonSerializable {
     // deadlines
 
     /** @param ?list<PaperInfo> $prows
-     * @return object
-     * @deprecated */
-    function my_deadlines($prows = null) {
-        return $this->status_json($prows);
-    }
-
-    /** @param ?list<PaperInfo> $prows
      * @return object */
     function status_json($prows = null) {
         // Return cleaned deadline-relevant settings that this user can see.
@@ -6241,14 +6197,6 @@ class Contact implements JsonSerializable {
             $reviewer->update_cdb_roles();
         }
         return $reviewId;
-    }
-
-    /** @param int $pid
-     * @param int $cid
-     * @param 1|0|-1 $direction
-     * @deprecated */
-    function update_review_delegation($pid, $cid, $direction) {
-        $this->conf->update_review_delegation($pid, $cid, $direction);
     }
 
 

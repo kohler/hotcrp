@@ -44,50 +44,6 @@ class Downloader {
     /** @var list<string> */
     private $_headers = [];
 
-    /** @return Downloader
-     * @deprecated */
-    static function make_server_request() {
-        $dopt = new Downloader;
-        $dopt->if_match = $_SERVER["HTTP_IF_MATCH"] ?? null;
-        $dopt->if_none_match = $_SERVER["HTTP_IF_NONE_MATCH"] ?? null;
-        $method = $_SERVER["REQUEST_METHOD"];
-        if ($method === "HEAD") {
-            $dopt->head = true;
-        } else if ($method === "GET") {
-            $dopt->if_range = $_SERVER["HTTP_IF_RANGE"] ?? null;
-        }
-        if ($method === "GET"
-            && ($range = $_SERVER["HTTP_RANGE"] ?? null) !== null
-            && preg_match('/\Abytes\s*=\s*(?:(?:\d+-\d+|-\d+|\d+-)\s*,?\s*)+\z/', $range)) {
-            $dopt->range = [];
-            $lastr = null;
-            preg_match_all('/\d+-\d+|-\d+|\d+-/', $range, $m);
-            foreach ($m[0] as $t) {
-                $dash = strpos($t, "-");
-                $r1 = $dash === 0 ? null : stoi(substr($t, 0, $dash));
-                $r2 = $dash === strlen($t) - 1 ? null : stoi(substr($t, $dash + 1));
-                if ($r1 === null && $r2 !== 0) {
-                    $dopt->range[] = $lastr = [$r1, $r2];
-                } else if ($r2 === null || ($r1 !== null && $r1 <= $r2)) {
-                    if ($lastr !== null
-                        && $lastr[0] !== null
-                        && $lastr[1] !== null
-                        && $r1 >= $lastr[0]
-                        && $r1 - $lastr[1] <= 100) {
-                        $nr = count($dopt->range);
-                        $dopt->range[$nr - 1][1] = $lastr[1] = $r2;
-                    } else {
-                        $dopt->range[] = $lastr = [$r1, $r2];
-                    }
-                } else {
-                    $dopt->range = null;
-                    break;
-                }
-            }
-        }
-        return $dopt;
-    }
-
     /** @return $this */
     function parse_qreq(Qrequest $qreq) {
         $this->if_match = $qreq->header("If-Match");
@@ -458,18 +414,6 @@ class Downloader {
                 return;
             }
         }
-    }
-
-    /** @param string $filename
-     * @deprecated */
-    function output_file($filename) {
-        $this->set_content_file($filename)->emit();
-    }
-
-    /** @param string $content
-     * @deprecated */
-    function output_string($content) {
-        $this->set_content($content)->emit();
     }
 
 
