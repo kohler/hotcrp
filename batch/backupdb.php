@@ -925,10 +925,11 @@ class BackupDB_Batch {
             "V,verbose Be verbose",
             "help::,h:: Print help"
         )->description("Back up HotCRP database or restore from backup.
-Usage: php batch/backupdb.php [-c FILE | -n CONFID] [OPTS...] [-z] -o DUMP
-       php batch/backupdb.php [-c FILE | -n CONFID] -r [OPTS...] DUMP")
+Usage: php batch/backupdb.php [-c FILE | -n CONFID] [OPTS...] [-z] > DUMP
+       php batch/backupdb.php [-c FILE | -n CONFID] [OPTS...] -r DUMP")
          ->helpopt("help")
          ->otheropt(true)
+         ->interleave(true)
          ->maxarg(1)
          ->parse($argv);
 
