@@ -550,6 +550,11 @@ class Fmt {
         $this->_default_item = new FmtItem(null);
     }
 
+    /** @return $this */
+    function fmt() {
+        return $this;
+    }
+
     /** @param int|float $p */
     function set_default_priority($p) {
         $this->_default_item->priority = (float) $p;

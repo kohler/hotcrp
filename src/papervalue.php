@@ -269,19 +269,6 @@ final class PaperValue implements JsonSerializable {
     function append_item($mi) {
         return $this->message_set()->append_item($mi);
     }
-    /** @param string $field
-     * @param ?string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @deprecated */
-    function msg_at($field, $msg, $status) {
-        return $this->append_item(new MessageItem($status, $field, $msg));
-    }
-    /** @param ?string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @deprecated */
-    function msg($msg, $status) {
-        return $this->append_item(new MessageItem($status, $this->option->field_key(), $msg));
-    }
     /** @param ?string $msg
      * @return MessageItem */
     function estop($msg) {

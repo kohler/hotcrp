@@ -160,15 +160,15 @@ class MessageItem implements JsonSerializable {
 
     /** @param ?string $msg
      * @return MessageItem */
-    static function estop($msg) {
-        return new MessageItem(MessageSet::ESTOP, null, $msg);
+    static function estop($msg, ...$args) {
+        return new MessageItem(MessageSet::ESTOP, null, $msg, ...$args);
     }
 
     /** @param ?string $field
      * @param ?string $msg
      * @return MessageItem */
-    static function estop_at($field, $msg = "") {
-        return new MessageItem(MessageSet::ESTOP, $field, $msg);
+    static function estop_at($field, $msg = "", ...$args) {
+        return new MessageItem(MessageSet::ESTOP, $field, $msg, ...$args);
     }
 
     /** @param ?string $msg
@@ -481,22 +481,22 @@ class MessageSet {
     /** @param ?string $field
      * @param ?string $msg
      * @return MessageItem */
-    function estop_at($field, $msg = null) {
-        return $this->append_item(new MessageItem(self::ESTOP, $field, $msg));
+    function estop_at($field, $msg = null, ...$args) {
+        return $this->append_item(new MessageItem(self::ESTOP, $field, $msg, ...$args));
     }
 
     /** @param ?string $field
      * @param ?string $msg
      * @return MessageItem */
-    function error_at($field, $msg = null) {
-        return $this->append_item(new MessageItem(self::ERROR, $field, $msg));
+    function error_at($field, $msg = null, ...$args) {
+        return $this->append_item(new MessageItem(self::ERROR, $field, $msg, ...$args));
     }
 
     /** @param ?string $field
      * @param ?string $msg
      * @return MessageItem */
-    function warning_at($field, $msg = null) {
-        return $this->append_item(new MessageItem(self::WARNING, $field, $msg));
+    function warning_at($field, $msg = null, ...$args) {
+        return $this->append_item(new MessageItem(self::WARNING, $field, $msg, ...$args));
     }
 
     /** @param ?string $field
@@ -511,14 +511,14 @@ class MessageSet {
     /** @param ?string $field
      * @param ?string $msg
      * @return MessageItem */
-    function inform_at($field, $msg) {
-        return $this->append_item(new MessageItem(self::INFORM, $field, $msg));
+    function inform_at($field, $msg, ...$args) {
+        return $this->append_item(new MessageItem(self::INFORM, $field, $msg, ...$args));
     }
 
     /** @param ?string $msg
      * @return MessageItem */
-    function success($msg) {
-        return $this->append_item(new MessageItem(self::SUCCESS, null, $msg));
+    function success($msg, ...$args) {
+        return $this->append_item(new MessageItem(self::SUCCESS, null, $msg, ...$args));
     }
 
     /** @param int $pos
@@ -843,16 +843,29 @@ class MessageSet {
     /** @param Fmt|Conf $fmt
      * @param MessageItem|iterable<MessageItem>|MessageSet ...$mls
      * @return list<MessageItem> */
-    static function fmt_list($fmt, ...$mls) {
+    static function make_fmt_list($fmt, ...$mls) {
         $mlx = self::make_list(...$mls);
         $xfmt = null;
         foreach ($mlx as $mi) {
             if ($mi->need_fmt()) {
-                $xfmt = $xfmt ?? ($fmt instanceof Fmt ? $fmt : $fmt->fmt());
+                $xfmt = $xfmt ?? $fmt->fmt();
                 $mi->fmt($xfmt);
             }
         }
         return $mlx;
+    }
+
+    /** @param Fmt|Conf $fmt
+     * @return $this */
+    function apply_fmt($fmt) {
+        $xfmt = null;
+        foreach ($this->msgs as $mi) {
+            if ($mi->need_fmt()) {
+                $xfmt = $xfmt ?? $fmt->fmt();
+                $mi->fmt($xfmt);
+            }
+        }
+        return $this;
     }
 
     /** @param iterable<MessageItem> $message_list

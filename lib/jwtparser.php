@@ -34,7 +34,6 @@ class JWTParser extends \MessageSet {
     ];
 
     function __construct() {
-        parent::__construct();
         self::$has_openssl = self::$has_openssl ?? function_exists("openssl_verify");
     }
 

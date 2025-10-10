@@ -433,38 +433,23 @@ class SettingValues extends MessageSet {
 
     /** @param null|string|Si $field
      * @param ?string $msg
-     * @param -5|-4|-3|-2|-1|0|1|2|3 $status
-     * @return MessageItem
-     * @deprecated */
-    function msg_at($field, $msg, $status) {
-        $fname = $field instanceof Si ? $field->name : $field;
-        if ($this->_jp !== null) {
-            $mi = $this->with_jfield(new MessageItem($status, null, $msg), $fname);
-        } else {
-            $mi = new MessageItem($status, $fname, $msg ?? "");
-        }
-        return $this->append_item($mi);
+     * @return MessageItem */
+    function error_at($field, $msg = null, ...$args) {
+        return $this->append_item_at($field, MessageItem::error($msg, ...$args));
     }
 
     /** @param null|string|Si $field
      * @param ?string $msg
      * @return MessageItem */
-    function error_at($field, $msg = null) {
-        return $this->append_item_at($field, MessageItem::error($msg));
+    function warning_at($field, $msg = null, ...$args) {
+        return $this->append_item_at($field, MessageItem::warning($msg, ...$args));
     }
 
     /** @param null|string|Si $field
      * @param ?string $msg
      * @return MessageItem */
-    function warning_at($field, $msg = null) {
-        return $this->append_item_at($field, MessageItem::warning($msg));
-    }
-
-    /** @param null|string|Si $field
-     * @param ?string $msg
-     * @return MessageItem */
-    function inform_at($field, $msg = null) {
-        return $this->append_item_at($field, MessageItem::inform($msg));
+    function inform_at($field, $msg = null, ...$args) {
+        return $this->append_item_at($field, MessageItem::inform($msg, ...$args));
     }
 
     /** @param MessageItem $mi
