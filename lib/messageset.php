@@ -387,7 +387,9 @@ class MessageSet {
         foreach ($this->msgs as $i => $m) {
             if ($m->status === $mi->status
                 && ($ignore_field || $m->field === $mi->field)
-                && $m->message === $mi->message)
+                && $m->message === $mi->message
+                && $m->fmessage === $mi->fmessage
+                && $m->args === $mi->args)
                 return $i;
         }
         return false;
@@ -408,11 +410,16 @@ class MessageSet {
         if (($this->_ms_flags & self::IGNORE_MSGS) !== 0) {
             return $mi;
         }
-        if ($mi->message !== ""
+        $mtext = $mi->message ?? $mi->fmessage;
+        if ($mtext !== ""
             && ($this->_ms_flags & self::WANT_FTEXT) !== 0
-            && !Ftext::is_ftext($mi->message)) {
-            error_log("not ftext: {$mi->message} " . debug_string_backtrace());
-            $mi->message = "<0>{$mi->message}";
+            && !Ftext::is_ftext($mtext)) {
+            error_log("not ftext: {$mtext} " . debug_string_backtrace());
+            if (isset($mi->message)) {
+                $mi->message = "<0>{$mtext}";
+            } else {
+                $mi->fmessage = "<0>{$mtext}";
+            }
         }
         if (($this->_ms_flags & self::IGNORE_DUPS) === 0
             || $this->message_index($mi) === false) {
