@@ -572,7 +572,7 @@ class Log_Page {
         // parse filter parts
         $lp = new Log_Page($viewer, $qreq, $count);
         if ($bad_count) {
-            $lp->ms->error_at("n", "Expected a number greater than 0");
+            $lp->ms->error_at("n", "<0>Expected a number greater than 0");
         }
 
         // create entry generator

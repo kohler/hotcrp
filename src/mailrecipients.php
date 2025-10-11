@@ -279,11 +279,11 @@ class MailRecipients extends MessageSet {
             && !preg_match('/\A(?:|n\/a|\(?all\)?|0)\z/i', $newrev_since)) {
             $t = $this->conf->parse_time($newrev_since);
             if ($t === false) {
-                $this->error_at("newrev_since", "Invalid date");
+                $this->error_at("newrev_since", "<0>Invalid date");
             } else {
                 $this->newrev_since = $t;
                 if ($t > Conf::$now) {
-                    $this->warning_at("newrev_since", "That time is in the future");
+                    $this->warning_at("newrev_since", "<0>That time is in the future");
                 }
             }
         } else {
@@ -305,7 +305,7 @@ class MailRecipients extends MessageSet {
         }
         $this->rect = $this->recipts[0];
         if (($type ?? "") !== "") {
-            $this->error_at("to", "Invalid recipients");
+            $this->error_at("to", "<0>Invalid recipients");
         }
         return $this;
     }

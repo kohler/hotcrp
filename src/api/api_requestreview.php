@@ -417,7 +417,7 @@ class RequestReview_API {
             return JsonResult::make_permission_error("r", "<0>Review has already been submitted");
         } else if ($rrow && $rrow->reviewType >= REVIEW_SECONDARY) {
             $jr = JsonResult::make_permission_error("r", "<0>Primary and secondary reviews can’t be declined");
-            $jr->content["message_list"][] = MessageItem::inform_at("r", "Contact the PC chairs directly if you really cannot finish this review.");
+            $jr->content["message_list"][] = MessageItem::inform_at("r", "<0>Contact the PC chairs directly if you really cannot finish this review.");
             return $jr;
         }
         $rrid = $rrow ? $rrow->reviewId : $refrow->refusedReviewId;
