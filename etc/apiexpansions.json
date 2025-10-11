@@ -20,7 +20,15 @@
     "tags": ["Submissions"], "order": 1
   },
   {
+    "name": "documenthistory", "get": true, "merge": true,
+    "tags": ["Documents"]
+  },
+  {
     "name": "formatcheck", "get": true, "merge": true,
+    "tags": ["Documents"]
+  },
+  {
+    "name": "archivelisting", "get": true, "merge": true,
     "tags": ["Documents"]
   },
   {

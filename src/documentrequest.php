@@ -6,6 +6,9 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
     /** @var Conf
      * @readonly */
     public $conf;
+    /** @var Contact
+     * @readonly */
+    public $viewer;
     /** @var int
      * @readonly */
     public $paperId;
@@ -22,15 +25,18 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
     private $linkid;
     /** @var ?string */
     public $attachment;
-    /** @var ?int
-     * @readonly */
-    public $docid;
+    /** @var ?DocumentInfo */
+    private $doc;
+    /** @var ?int */
+    private $history_nactive;
     /** @var list<FileFilter>
      * @readonly */
     public $filters = [];
     /** @var string
      * @readonly */
     public $req_filename;
+    /** @var bool */
+    public $cacheable = false;
     /** @var int */
     private $_error_status = 404;
 
@@ -53,8 +59,10 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
 
     /** @param array|Qrequest $req
      * @param ?string $path */
-    function __construct($req, $path, Contact $user) {
-        $this->conf = $user->conf;
+    function __construct($req, $path, Contact $viewer) {
+        $this->conf = $viewer->conf;
+        $this->viewer = $viewer;
+
         $want_path = !isset($req["p"]) && !isset($req["paperId"]);
         if (!$want_path) {
             $key = isset($req["p"]) ? "p" : "paperId";
@@ -222,13 +230,13 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
 
         // look up paper
         if ($this->paperId < 0) {
-            $this->prow = PaperInfo::make_placeholder($user->conf, -2);
+            $this->prow = PaperInfo::make_placeholder($this->conf, -2);
         } else {
-            $this->prow = $user->conf->paper_by_id($this->paperId, $user);
+            $this->prow = $this->conf->paper_by_id($this->paperId, $viewer);
         }
 
         // check document permission
-        if (($fr = $this->perm_view_document($user))) {
+        if (($fr = $this->perm_view_document())) {
             $fr->append_to($this, $want_path ? "file" : null, 2);
             if (isset($fr["permission"])) {
                 $this->_error_status = 403;
@@ -274,6 +282,50 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         return false;
     }
 
+    /** @return ?FailureReason */
+    private function perm_view_document() {
+        $viewer = $this->viewer;
+        if ($this->paperId < 0) {
+            $vis = $this->opt->visibility();
+            if (($vis === PaperOption::VIS_ADMIN && !$viewer->privChair)
+                || ($vis !== PaperOption::VIS_SUB && !$viewer->isPC)) {
+                return $this->prow->failure_reason(["permission" => "field:view", "option" => $this->opt]);
+            }
+            return null;
+        } else if (($whynot = $viewer->perm_view_paper($this->prow, false, $this->paperId))) {
+            return $whynot;
+        } else if ($this->dtype === DTYPE_COMMENT) {
+            return $this->perm_view_comment_document();
+        } else if ($this->opt) {
+            return $viewer->perm_view_option($this->prow, $this->opt);
+        }
+        return null;
+    }
+
+    /** @return ?FailureReason
+     * @suppress PhanAccessReadOnlyProperty */
+    private function perm_view_comment_document() {
+        $doc_crow = $cmtid = null;
+        if (str_starts_with($this->linkid, "cx")
+            && !str_ends_with($this->linkid, "response")) {
+            $cmtid = stoi(substr($this->linkid, 2));
+        }
+        foreach ($this->prow->viewable_comment_skeletons($this->viewer) as $crow) {
+            if ($crow->unparse_html_id() === $this->linkid
+                || $crow->commentId === $cmtid) {
+                $doc_crow = $crow;
+                break;
+            }
+        }
+        if ($doc_crow
+            && ($xdoc = $doc_crow->attachments()->document_by_filename($this->attachment))) {
+            $this->doc = $xdoc;
+            return null;
+        }
+        return $this->prow->failure_reason(["documentNotFound" => $this->req_filename]);
+    }
+
+
     /** @return list<MessageItem> */
     function message_list() {
         $this->apply_fmt($this->conf);
@@ -290,46 +342,129 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         return JsonResult::make_message_list($this->_error_status, $this->message_list());
     }
 
-    /** @return ?FailureReason */
-    private function perm_view_document(Contact $user) {
-        if ($this->paperId < 0) {
-            $vis = $this->opt->visibility();
-            if (($vis === PaperOption::VIS_ADMIN && !$user->privChair)
-                || ($vis !== PaperOption::VIS_SUB && !$user->isPC)) {
-                return $this->prow->failure_reason(["permission" => "field:view", "option" => $this->opt]);
+
+    /** @return list<DocumentInfo> */
+    function history() {
+        $docs = $this->prow->documents($this->dtype);
+        $this->history_nactive = count($docs);
+        if ($this->viewer->can_view_document_history($this->prow)
+            && $this->dtype >= DTYPE_FINAL) {
+            $active_docids = [];
+            foreach ($docs as $doc) {
+                $active_docids[] = $doc->paperStorageId;
             }
+            $result = $this->conf->qe("select paperId, paperStorageId, timestamp, mimetype, sha1, filename, infoJson, size from PaperStorage where paperId=? and documentType=? and filterType is null and paperStorageId?A order by paperStorageId desc",
+                $this->prow->paperId, $this->dtype, $active_docids);
+            while (($doc = DocumentInfo::fetch($result, $this->conf, $this->prow))) {
+                $docs[] = $doc;
+            }
+            Dbl::free($result);
+        } else {
+            error_log("fuck $this->dtype");
+        }
+        return $docs;
+    }
+
+    /** @return int */
+    function history_nactive() {
+        if ($this->history_nactive === null) {
+            $this->history();
+        }
+        return $this->history_nactive;
+    }
+
+    /** @param Qrequest $qreq
+     * @return $this */
+    function apply_version($qreq) {
+        if ($this->has_error() || $this->doc) {
+            return $this;
+        }
+
+        // version checking
+        $dochash = $doctime = null;
+        if (isset($qreq->hash) || isset($qreq->version)) {
+            $dochash = HashAnalysis::hash_as_binary(trim($qreq->hash ?? $qreq->version));
+            $this->cacheable = true;
+            if (!$dochash) {
+                $this->error_at("hash", "<0>Invalid document hash");
+                return $this;
+            }
+        } else if (isset($qreq->at)) {
+            $doctime = stoi($qreq->at) ?? $this->conf->parse_time($qreq->at);
+            if (!$doctime) {
+                $this->error_at("at", "<0>Invalid date");
+                return $this;
+            }
+        }
+        if (($dochash || $doctime) && $this->dtype >= DTYPE_FINAL) {
+            foreach ($this->history() as $doc) {
+                if ($dochash
+                    && $doc->binary_hash() === $dochash) {
+                    $this->doc = $doc;
+                    return;
+                } else if ($doctime
+                           && $doc->timestamp <= $doctime
+                           && (!$this->doc || $this->doc->timestamp < $doc->timestamp)) {
+                    $this->doc = $doc;
+                }
+            }
+            if (!$this->doc) {
+                $this->error_at($dochash ? "hash" : "at", "<0>Version not found");
+            }
+        }
+        return $this;
+    }
+
+    /** @param ?Qrequest $qreq
+     * @param bool $full
+     * @return ?DocumentInfo */
+    function document($qreq = null, $full = false) {
+        if ($this->has_error()) {
             return null;
-        } else if (($whynot = $user->perm_view_paper($this->prow, false, $this->paperId))) {
-            return $whynot;
-        } else if ($this->dtype === DTYPE_COMMENT) {
-            return $this->perm_view_comment_document($user);
-        } else if ($this->opt) {
-            return $user->perm_view_option($this->prow, $this->opt);
+        } else if ($this->doc) {
+            return $this->doc;
+        }
+
+        // look up document
+        $docid = null;
+        if ($qreq && isset($qreq->docid)) {
+            $docid = stoi($qreq->docid);
+            if ($docid === null || $docid <= 1) {
+                $this->error_at("docid", "<0>Invalid document ID");
+                return null;
+            }
+        }
+        if ($this->attachment && !$docid) {
+            $doc = $this->prow->attachment($this->dtype, $this->attachment);
+        } else {
+            $doc = $this->prow->document($this->dtype, $docid, $full);
+        }
+        if ($doc
+            && $doc->paperStorageId > 1
+            && $doc->documentType === $this->dtype
+            && ($docid === null || $doc->paperStorageId === $docid)) {
+            $this->doc = $doc;
+            return $doc;
+        }
+        if ($docid) {
+            $this->error_at("docid", "<0>Version not found");
+        } else {
+            $this->error_at("file", "<0>Document not found");
         }
         return null;
     }
 
-    /** @return ?FailureReason
-     * @suppress PhanAccessReadOnlyProperty */
-    private function perm_view_comment_document(Contact $user) {
-        $doc_crow = $cmtid = null;
-        if (str_starts_with($this->linkid, "cx")
-            && !str_ends_with($this->linkid, "response")) {
-            $cmtid = stoi(substr($this->linkid, 2));
-        }
-        foreach ($this->prow->viewable_comment_skeletons($user) as $crow) {
-            if ($crow->unparse_html_id() === $this->linkid
-                || $crow->commentId === $cmtid) {
-                $doc_crow = $crow;
-                break;
-            }
-        }
-        if ($doc_crow
-            && ($xdoc = $doc_crow->attachments()->document_by_filename($this->attachment))) {
-            $this->docid = $xdoc->paperStorageId;
+    /** @param ?Qrequest $qreq
+     * @param bool $full
+     * @return ?DocumentInfo */
+    function filtered_document($qreq = null, $full = false) {
+        if (!($doc = $this->document($qreq, $full))) {
             return null;
         }
-        return $this->prow->failure_reason(["documentNotFound" => $this->req_filename]);
+        foreach ($this->filters as $filter) {
+            $doc = $filter->exec($doc) ?? $doc;
+        }
+        return $doc;
     }
 
     #[\ReturnTypeWillChange]

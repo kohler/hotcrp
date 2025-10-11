@@ -156,6 +156,13 @@ class Downloader {
         return $this;
     }
 
+    /** @param bool $cacheable
+     * @return $this */
+    function set_cacheable($cacheable) {
+        $this->cacheable = $cacheable;
+        return $this;
+    }
+
     /** @param string $header
      * @param bool $replace
      * @return $this */

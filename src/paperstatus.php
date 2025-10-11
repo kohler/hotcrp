@@ -85,7 +85,7 @@ final class PaperStatus extends MessageSet {
     const SSF_ADMIN_UPDATE = 128;
     const SSF_PIDFAIL = 256;
 
-    function __construct(Contact $user, $options = []) {
+    function __construct(Contact $user) {
         $this->conf = $user->conf;
         $this->user = $user;
         $this->allow_hash_without_content = $user->privChair;

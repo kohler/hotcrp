@@ -102,6 +102,12 @@
         "response": "decision decision_html ?editable"
     },
     {
+        "name": "documenthistory", "get": true,
+        "function": "Document_API::documenthistory",
+        "parameters": "?p ?dt ?file",
+        "response": "dtype document_history"
+    },
+    {
         "name": "events", "get": true,
         "function": "Events_API::run",
         "parameters": "?from",
