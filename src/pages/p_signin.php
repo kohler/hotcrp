@@ -525,11 +525,11 @@ class Signin_Page {
         // look up token
         $token = self::_find_reset_token($conf, $this->_reset_tokstr);
         if (!$token) {
-            $this->ms()->error_at("resetcap", "Unknown or expired password reset code. Please check that you entered the code correctly.");
+            $this->ms()->error_at("resetcap", "<0>Unknown or expired password reset code. Please check that you entered the code correctly.");
             return;
         }
         if (!$token->user()) {
-            $this->ms()->error_at("resetcap", "This password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
+            $this->ms()->error_at("resetcap", "<0>This password reset code refers to a user who no longer exists. Either create a new account or contact the conference administrator.");
             return;
         }
         $this->_reset_token = $token;
@@ -562,23 +562,23 @@ class Signin_Page {
         $p2 = (string) $qreq->password2;
         if ($p1 === "") {
             if ($p2 !== "" || $qreq->autopassword) {
-                $this->ms()->error_at("password", "Password required.");
+                $this->ms()->error_at("password", "<0>Password required");
             }
             $info["ok"] = false;
         } else if (trim($p1) !== $p1) {
-            $this->ms()->error_at("password", "Passwords cannot begin or end with spaces.");
+            $this->ms()->error_at("password", "<0>Passwords cannot begin or end with spaces");
             $this->ms()->error_at("password2");
             $info["ok"] = false;
         } else if (strlen($p1) <= 5) {
-            $this->ms()->error_at("password", "Passwords must be at least six characters long.");
+            $this->ms()->error_at("password", "<0>Passwords must be at least six characters long");
             $this->ms()->error_at("password2");
             $info["ok"] = false;
         } else if (!Contact::valid_password($p1)) {
-            $this->ms()->error_at("password", "Invalid password.");
+            $this->ms()->error_at("password", "<0>Invalid password");
             $this->ms()->error_at("password2");
             $info["ok"] = false;
         } else if ($p1 !== $p2) {
-            $this->ms()->error_at("password", "The passwords you entered did not match.");
+            $this->ms()->error_at("password", "<0>The passwords you entered did not match");
             $this->ms()->error_at("password2");
             $info["ok"] = false;
         } else {
