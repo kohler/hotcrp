@@ -20,6 +20,10 @@
     "tags": ["Submissions"], "order": 1
   },
   {
+    "name": "document", "get": true, "merge": true,
+    "tags": ["Documents"]
+  },
+  {
     "name": "documenthistory", "get": true, "merge": true,
     "tags": ["Documents"]
   },

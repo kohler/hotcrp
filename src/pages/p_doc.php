@@ -22,10 +22,10 @@ class Doc_Page {
                 . (empty($_SERVER["HTTP_REFERER"]) ? "" : " R[" . $_SERVER["HTTP_REFERER"] . "]"));
         }
 
-        http_response_code($status);
         if (isset($qreq->fn)) {
-            JsonResult::make_message_list($ml)->complete();
+            JsonResult::make_message_list($status, $ml)->complete();
         }
+        http_response_code($status);
         $qreq->print_header("Download", null);
         $qreq->conf()->feedback_msg($ml);
         $qreq->print_footer();

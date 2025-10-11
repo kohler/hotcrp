@@ -102,6 +102,11 @@
         "response": "decision decision_html ?editable"
     },
     {
+        "name": "document", "get": true,
+        "function": "Document_API::document",
+        "parameters": "?p ?dt ?file ?hash ?at ?attachment"
+    },
+    {
         "name": "documenthistory", "get": true,
         "function": "Document_API::documenthistory",
         "parameters": "?p ?dt ?file",

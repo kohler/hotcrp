@@ -1,6 +1,6 @@
 <?php
 // downloader.php -- download helper class
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Downloader {
     /** @var ?string */
@@ -163,6 +163,13 @@ class Downloader {
         return $this;
     }
 
+    /** @param ?Contact $log_user
+     * @return $this */
+    function set_log_user($log_user) {
+        $this->log_user = $log_user;
+        return $this;
+    }
+
     /** @param string $header
      * @param bool $replace
      * @return $this */
@@ -297,9 +304,8 @@ class Downloader {
             self::emit_header("HTTP/1.1 304 Not Modified");
             self::emit_header("ETag: {$this->etag}");
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return Generator<array{int,int}> */
@@ -438,11 +444,10 @@ class Downloader {
             return $sz;
         } else if ($r0 <= $p0 && $p1 <= $r1) {
             return fwrite($out, $s);
-        } else {
-            $off = max(0, $r0 - $p0);
-            $len = min($sz, $r1 - $p0) - $off;
-            return $off + fwrite($out, substr($s, $off, $len));
         }
+        $off = max(0, $r0 - $p0);
+        $len = min($sz, $r1 - $p0) - $off;
+        return $off + fwrite($out, substr($s, $off, $len));
     }
 
     /** @param resource $out
@@ -464,9 +469,8 @@ class Downloader {
             $off += stream_copy_to_stream($f, $out, $len, $off);
             fclose($f);
             return $off;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     /** @return bool */

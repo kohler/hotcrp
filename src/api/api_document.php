@@ -66,4 +66,25 @@ class Document_API {
             "document_history" => $hjs
         ]);
     }
+
+    static function document(Contact $user, Qrequest $qreq) {
+        $qreq->qsession()->commit();
+        if (friendly_boolean($qreq->forceShow) !== false) {
+            $user->add_overrides(Contact::OVERRIDE_CONFLICT);
+        }
+        $dr = (new DocumentRequest($qreq, $qreq->file, $user))
+            ->apply_version($qreq);
+        if (!($doc = $dr->filtered_document($qreq, true))) {
+            return $dr->error_result();
+        }
+        // serve document
+        $dopt = (new Downloader)
+            ->parse_qreq($qreq)
+            ->set_cacheable($dr->cacheable)
+            ->set_log_user($user);
+        if ($doc->emit($dopt)) {
+            exit(0);
+        }
+        return JsonResult::make_message_list(500, $doc->message_list());
+    }
 }
