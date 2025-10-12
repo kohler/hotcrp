@@ -359,8 +359,6 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
                 $docs[] = $doc;
             }
             Dbl::free($result);
-        } else {
-            error_log("fuck $this->dtype");
         }
         return $docs;
     }
@@ -469,7 +467,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        $j = ["req_filename" => $this->req_filename, "pid" => $this->paperId, "dtype" => $this->dtype];
+        $j = ["req_filename" => $this->req_filename, "pid" => $this->paperId, "dt" => $this->dtype];
         foreach (["linkid", "attachment", "docid"] as $k) {
             if ($this->$k !== null) {
                 $j[$k] = $this->$k;

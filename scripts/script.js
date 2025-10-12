@@ -7084,7 +7084,7 @@ function cmt_render_form_prop(cj, cid, btnbox) {
     const einfo = $e("div", "cmteditinfo fold3c fold4c");
 
     // attachments
-    einfo.append($e("div", {id: cid + "-attachments", class: "entryi has-editable-attachments hidden", "data-dtype": -2, "data-document-prefix": "attachment"}, $e("span", "label", "Attachments")));
+    einfo.append($e("div", {id: cid + "-attachments", class: "entryi has-editable-attachments hidden", "data-dt": -2, "data-document-prefix": "attachment"}, $e("span", "label", "Attachments")));
     btnbox.append($e("button", {type: "button", name: "attach", class: "btn-licon need-tooltip ui js-add-attachment", "aria-label": "Attach file", "data-editable-attachments": cid + "-attachments"}, svge_use_licon("attachment")));
 
     // tags
@@ -7362,7 +7362,7 @@ function cmt_start_edit(celt, cj) {
 }
 
 function cmt_render_attachment_input(ctr, doc) {
-    return $e("div", {class: "has-document", "data-dtype": "-2", "data-document-name": "attachment:" + ctr},
+    return $e("div", {class: "has-document", "data-dt": "-2", "data-document-name": "attachment:" + ctr},
         $e("div", "document-file", cmt_render_attachment(doc)),
         $e("div", "document-actions",
             $e("button", {type: "button", class: "link ui js-remove-document"}, "Delete"),
@@ -12215,8 +12215,8 @@ handle_ui.on("js-reauth", function (evt) {
 
 // paper UI
 handle_ui.on("js-check-format", function () {
-    var $self = $(this), $d = $self.closest(".has-document"),
-        $cf = $d.find(".document-format");
+    var $self = $(this), doce = this.closest(".has-document"),
+        $cf = $(doce).find(".document-format");
     if (this && "tagName" in this && this.tagName === "A")
         $self.addClass("hidden");
     var running = setTimeout(function () {
@@ -12224,7 +12224,8 @@ handle_ui.on("js-check-format", function () {
     }, 1000);
     $.ajax(hoturl("=api/formatcheck", {p: siteinfo.paperid}), {
         timeout: 20000, data: {
-            dt: $d[0].getAttribute("data-dtype"), docid: $d[0].getAttribute("data-docid")
+            dt: doce.getAttribute("data-dt") || doce.getAttribute("data-dtype") /* XXX */,
+            docid: doce.getAttribute("data-docid")
         },
         success: function (data) {
             clearTimeout(running);
@@ -12280,7 +12281,8 @@ function background_format_check() {
         });
     } else if (hasClass(needed, "is-npages")
                && (pid = needed.closest("[data-pid]"))) {
-        $.ajax(hoturl("api/formatcheck", {p: pid.getAttribute("data-pid"), dtype: needed.getAttribute("data-dtype") || "0", soft: 1}), {
+        const dt = needed.getAttribute("data-dt") || needed.getAttribute("data-dtype") /* XXX */ || "0";
+        $.ajax(hoturl("api/formatcheck", {p: pid.getAttribute("data-pid"), dt: dt, soft: 1}), {
             success: function (data) {
                 if (data && data.ok)
                     needed.parentNode.replaceChild(document.createTextNode(data.npages), needed);
@@ -12289,7 +12291,8 @@ function background_format_check() {
         });
     } else if (hasClass(needed, "is-nwords")
                && (pid = needed.closest("[data-pid]"))) {
-        $.ajax(hoturl("api/formatcheck", {p: pid.getAttribute("data-pid"), dtype: needed.getAttribute("data-dtype") || "0", soft: 1}), {
+        const dt = needed.getAttribute("data-dt") || needed.getAttribute("data-dtype") /* XXX */ || "0";
+        $.ajax(hoturl("api/formatcheck", {p: pid.getAttribute("data-pid"), dt: dt, soft: 1}), {
             success: function (data) {
                 if (data && data.ok)
                     needed.parentNode.replaceChild(document.createTextNode(data.nwords), needed);
@@ -12330,7 +12333,10 @@ handle_ui.on("js-add-attachment", function () {
     var max_size = attache.getAttribute("data-document-max-size"),
         doce = $e("div", "has-document document-new-instance hidden",
             $e("div", "document-upload", filee), actionse);
-    doce.setAttribute("data-dtype", attache.getAttribute("data-dtype"));
+    if (attache.hasAttribute("data-dt") /* XXX backward compat */)
+        doce.setAttribute("data-dt", attache.getAttribute("data-dt"));
+    else
+        doce.setAttribute("data-dt", attache.getAttribute("data-dtype"));
     doce.setAttribute("data-document-name", name);
     if (max_size != null)
         doce.setAttribute("data-document-max-size", max_size);
@@ -12352,7 +12358,8 @@ handle_ui.on("js-replace-document", function () {
         doce.querySelector(".document-replacer").before(actions);
     }
     if (!u) {
-        var dname = doce.getAttribute("data-document-name") || ("opt" + doce.getAttribute("data-dtype"));
+        const dt = doce.getAttribute("data-dt") || doce.getAttribute("data-dtype");
+        var dname = doce.getAttribute("data-document-name") || ("opt" + dt);
         u = $e("input", "uich document-uploader");
         u.id = u.name = dname + ":file";
         u.type = "file";
@@ -12490,7 +12497,7 @@ handle_ui.on("document-uploader", function (event) {
         if (token)
             args.token = token;
         else {
-            args.dtype = doce.getAttribute("data-dtype");
+            args.dt = doce.getAttribute("data-dt") || doce.getAttribute("data-dtype");
             args.start = 1;
         }
         if (cancelled) {
@@ -12922,7 +12929,7 @@ edit_conditions.numeric = function (ec, form) {
 edit_conditions.document_count = function (ec, form) {
     let n = 0;
     $(form).find(".has-document").each(function () {
-        if (this.getAttribute("data-dtype") != ec.dtype) {
+        if ((this.getAttribute("data-dt") || this.getAttribute("data-dtype")) != ec.dt) {
             return;
         }
         const name = this.getAttribute("data-document-name"),

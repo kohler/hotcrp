@@ -62,7 +62,7 @@ class Document_API {
         }
         return new JsonResult([
             "ok" => true,
-            "dtype" => $dr->dtype,
+            "dt" => $dr->dtype,
             "document_history" => $hjs
         ]);
     }

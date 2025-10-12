@@ -110,7 +110,7 @@
         "name": "documenthistory", "get": true,
         "function": "Document_API::documenthistory",
         "parameters": "?p ?dt ?file",
-        "response": "dtype document_history"
+        "response": "dt document_history"
     },
     {
         "name": "events", "get": true,
@@ -137,7 +137,7 @@
     {
         "name": "formatcheck", "get": true,
         "function": "FormatCheck_API::run",
-        "parameters": "?p ?doc ?soft ?dt ?docid",
+        "parameters": "?p ?doc ?file ?soft ?dt ?docid ?hash ?at",
         "response": "npages nwords problem_fields has_error docid",
         "response_deprecated": "result"
     },

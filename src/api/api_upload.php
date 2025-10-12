@@ -157,10 +157,11 @@ class Upload_API {
         } else {
             $filename = "_upload_";
         }
-        if (is_int($qreq->dtype)) {
-            $dtype = $qreq->dtype;
-        } else if ($qreq->dtype && preg_match('/\A-?\d+\z/', $qreq->dtype)) {
-            $dtype = intval($qreq->dtype);
+        $dtarg = $qreq->dt ?? $qreq->dtype /* XXX backward compat */;
+        if (is_int($dtarg)) {
+            $dtype = $dtarg;
+        } else if ($dtarg && preg_match('/\A-?\d+\z/', $dtarg)) {
+            $dtype = intval($dtarg);
         } else {
             $dtype = null;
         }
@@ -632,7 +633,8 @@ class Upload_API {
         $j = [
             "ok" => $status < MessageSet::ERROR,
             "token" => $this->_cap->salt,
-            "dtype" => $this->_capd->dtype,
+            "dt" => $this->_capd->dtype,
+            "dtype" => $this->_capd->dtype /* XXX backward compat */,
             "filename" => $this->_capd->filename,
             "mimetype" => $this->_capd->mimetype,
             "ranges" => $this->_capd->ranges

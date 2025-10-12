@@ -17,18 +17,16 @@ class WordCount_PaperColumn extends PaperColumn {
             && $row->outcome > 0
             && $user->can_view_decision($row)) {
             return DTYPE_FINAL;
-        } else {
-            return DTYPE_SUBMISSION;
         }
+        return DTYPE_SUBMISSION;
     }
     function word_count(Contact $user, PaperInfo $row) {
         if ($user->can_view_pdf($row)
             && ($doc = $row->document($this->dtype($user, $row)))) {
             return $doc->nwords($this->cf);
-        } else {
-            $this->cf->clear();
-            return null;
         }
+        $this->cf->clear();
+        return null;
     }
     function prepare_sort(PaperList $pl, $sortindex) {
         $this->sortmap = [];
@@ -53,10 +51,11 @@ class WordCount_PaperColumn extends PaperColumn {
         } else if ($this->cf->need_recheck()) {
             $dt = $this->dtype($pl->user, $row);
             return '<span class="need-format-check is-nwords"'
-                . ($dt ? ' data-dtype="' . $dt . '"' : '') . '></span>';
-        } else {
-            return "";
+                . ($dt ? ' data-dt="' . $dt . '"' : '')
+                . ($dt ? ' data-dtype="' . $dt . '"' : '') /* XXX backward compat */
+                . '></span>';
         }
+        return "";
     }
     function text(PaperList $pl, PaperInfo $row) {
         return (string) $this->word_count($pl->user, $row);

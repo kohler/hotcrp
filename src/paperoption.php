@@ -1568,7 +1568,8 @@ class Document_PaperOption extends PaperOption {
         }
         $pt->print_editable_option_papt($this, $heading, ["for" => $doc ? false : "{$fk}:uploader", "id" => $this->readable_formid()]);
 
-        echo '<div class="papev has-document" data-dtype="', $this->id,
+        echo '<div class="papev has-document" data-dt="', $this->id,
+            '" data-dtype="', $this->id, /* XXX backward compat */
             '" data-document-name="', $fk, '"';
         if ($doc) {
             echo ' data-docid="', $doc->paperStorageId, '"';
@@ -1732,7 +1733,7 @@ class Document_PaperOption extends PaperOption {
         return $this->parse_boolean_search($sword, $srch);
     }
     function present_script_expression() {
-        return ["type" => "document_count", "formid" => $this->formid, "dtype" => $this->id];
+        return ["type" => "document_count", "formid" => $this->formid, "dt" => $this->id, "dtype" => $this->id /* XXX backward compat */];
     }
 }
 

@@ -147,7 +147,7 @@ class Attachments_PaperOption extends PaperOption {
             $title .= ' <span class="n">(max ' . unparse_byte_size($max_size) . ' per file)</span>';
         }
         $pt->print_editable_option_papt($this, $title, ["id" => $this->readable_formid(), "for" => false]);
-        echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" data-dtype="', $this->id, '" id="', $this->formid, ':attachments"';
+        echo '<div class="papev has-editable-attachments" data-document-prefix="', $this->formid, '" data-dt="', $this->id, '" data-dtype="', /* XXX backward compat */ $this->id, '" id="', $this->formid, ':attachments"';
         if ($this->max_size > 0) {
             echo ' data-document-max-size="', (int) $this->max_size, '"';
         }
@@ -155,7 +155,8 @@ class Attachments_PaperOption extends PaperOption {
         foreach ($ov->document_set() as $i => $doc) {
             $ctr = $i + 1;
             $oname = "{$this->formid}:{$ctr}";
-            echo '<div class="has-document" data-dtype="', $this->id,
+            echo '<div class="has-document" data-dt="', $this->id,
+                '" data-dtype="', $this->id, /* XXX backward compat */
                 '" data-document-name="', $oname, '"><div class="document-file">',
                 Ht::hidden($oname, $doc->paperStorageId),
                 $doc->link_html(htmlspecialchars($doc->member_filename())),
@@ -247,6 +248,6 @@ class Attachments_PaperOption extends PaperOption {
         }
     }
     function present_script_expression() {
-        return ["type" => "document_count", "formid" => $this->formid, "dtype" => $this->id];
+        return ["type" => "document_count", "formid" => $this->formid, "dt" => $this->id, "dtype" => $this->id /* XXX backward compat */];
     }
 }

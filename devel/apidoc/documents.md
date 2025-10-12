@@ -49,14 +49,14 @@ store.
   actual length of `blob`)
 * param blob
 * param ?size nonnegative_integer: Size of uploaded file in bytes
-* param ?dtype document_type: (start only) Purpose of uploaded document;
+* param ?dt document_type: (start only) Purpose of uploaded document;
   typically corresponds to a submission field ID
 * param ?temp boolean: (start only) If true, the uploaded file is
   expected to be temporary
 * param ?mimetype mimetype: (start only) Type of uploaded file
 * param ?filename string: (start only) Name of uploaded file
 * response token upload_token
-* response dtype document_type
+* response dt document_type
 * response filename string
 * response mimetype mimetype
 * response size nonnegative_integer

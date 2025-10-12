@@ -42,6 +42,8 @@ class SpecValidator_API {
                     $f |= self::F_BODY;
                 } else if ($p[$i] === "@") {
                     $f |= self::F_FILE;
+                } else if ($p[$i] === "<") {
+                    $f |= self::F_DEPRECATED;
                 } else if ($p[$i] === ":") {
                     $f |= self::F_SUFFIX;
                     $has_suffix = true;

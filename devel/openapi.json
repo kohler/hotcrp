@@ -741,7 +741,7 @@
                         "description": "Size of uploaded file in bytes"
                     },
                     {
-                        "name": "dtype",
+                        "name": "dt",
                         "in": "query",
                         "required": false,
                         "schema": {
@@ -800,7 +800,7 @@
                                         "token": {
                                             "$ref": "#/components/schemas/upload_token"
                                         },
-                                        "dtype": {
+                                        "dt": {
                                             "$ref": "#/components/schemas/document_type"
                                         },
                                         "filename": {

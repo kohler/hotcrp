@@ -5,13 +5,13 @@
 class GetDocument_ListAction extends ListAction {
     private $dt;
     function __construct($conf, $fj) {
-        $this->dt = $fj->dtype;
+        $this->dt = $fj->dt;
     }
     static private function list_action_json(Contact $user, PaperOption $opt) {
         return (object) [
             "name" => "get/" . $opt->dtype_name(),
             "get" => true,
-            "dtype" => $opt->id,
+            "dt" => $opt->id,
             "title" => "Documents/" . $opt->title(),
             "order" => $opt->page_order(),
             "display_if" => "listhas:" . $opt->field_key(),
