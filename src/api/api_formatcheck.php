@@ -4,7 +4,7 @@
 
 class FormatCheck_API {
     static function run(Contact $user, Qrequest $qreq) {
-        $docreq = new DocumentRequest($qreq, $qreq->doc, $user);
+        $docreq = new DocumentRequest($qreq, $user);
         $docreq->apply_version($qreq);
         if (!($doc = $docreq->document($qreq, true))) {
             return $docreq->error_result();

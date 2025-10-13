@@ -25,7 +25,7 @@
     {
         "name": "archivelisting", "get": true,
         "function": "Document_API::archivelisting",
-        "parameters": "?p ?dt ?file ?version ?at ?docid ?consolidated",
+        "parameters": "?doc ?<file ?p ?dt ?docid ?attachment ?version ?at ?consolidated",
         "response": "listing ?consolidated_listing"
     },
     {
@@ -104,12 +104,12 @@
     {
         "name": "document", "get": true,
         "function": "Document_API::document",
-        "parameters": "?p ?dt ?file ?hash ?at ?attachment"
+        "parameters": "?doc ?p ?dt ?hash ?at ?attachment"
     },
     {
         "name": "documenthistory", "get": true,
         "function": "Document_API::documenthistory",
-        "parameters": "?p ?dt ?file",
+        "parameters": "?doc ?p ?dt",
         "response": "dt document_history"
     },
     {
@@ -137,7 +137,7 @@
     {
         "name": "formatcheck", "get": true,
         "function": "FormatCheck_API::run",
-        "parameters": "?p ?doc ?file ?soft ?dt ?docid ?hash ?at",
+        "parameters": "?doc ?<file ?p ?dt ?docid ?attachment ?hash ?at ?soft",
         "response": "npages nwords problem_fields has_error docid",
         "response_deprecated": "result"
     },
@@ -432,8 +432,8 @@
     {
         "name": "upload", "post": true,
         "function": "Upload_API::run",
-        "parameters": "?p ?dtype ?start ?temp ?offset ?size ?finish ?token ?cancel ?=mimetype ?=filename ?@blob",
-        "response": "token ?dtype ?filename ?mimetype ?size ?ranges ?hash ?crc32 ?progress_value ?progress_max ?<server_progress_loaded ?<server_progress_max"
+        "parameters": "?p ?dt ?<dtype ?start ?temp ?offset ?size ?finish ?token ?cancel ?=mimetype ?=filename ?@blob",
+        "response": "token ?dt ?<dtype ?filename ?mimetype ?size ?ranges ?hash ?crc32 ?progress_value ?progress_max ?<server_progress_loaded ?<server_progress_max"
     },
     {
         "name": "user", "get": true,

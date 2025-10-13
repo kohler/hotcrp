@@ -37,7 +37,11 @@ class Doc_Page {
     static function go($user, $qreq) {
         $qreq->qsession()->commit();      // to allow concurrent clicks
         $user->add_overrides(Contact::OVERRIDE_CONFLICT);
-        $dr = new DocumentRequest($qreq, $qreq->path(), $user);
+        $path = $qreq->path() ?? "";
+        while (str_starts_with($path, "/")) {
+            $path = substr($path, 1);
+        }
+        $dr = new DocumentRequest($qreq, $user, $path !== "" ? $path : null);
         $dr->apply_version($qreq);
         if (!($doc = $dr->filtered_document($qreq, true))) {
             self::error($dr->error_status(), $dr->message_list(), $qreq);

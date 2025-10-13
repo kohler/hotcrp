@@ -10920,7 +10920,7 @@ function parse_docurl(href, base) {
     }
     p = p.replace(/^(?:u\/\d+\/|)doc(?:\.php?|)\/?/, "");
     if (p !== "" && !p.startsWith("/")) {
-        url.searchParams.set("file", p);
+        url.searchParams.set("doc", p);
     }
     return url.searchParams;
 }

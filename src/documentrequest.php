@@ -59,7 +59,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
 
     /** @param array|Qrequest $req
      * @param ?string $path */
-    function __construct($req, $path, Contact $viewer) {
+    function __construct($req, Contact $viewer, $path = null) {
         $this->conf = $viewer->conf;
         $this->viewer = $viewer;
 
@@ -84,13 +84,14 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         }
 
         if ($want_path) {
-            $s = $this->req_filename = preg_replace('/\A\/*/', "", $path);
-            if (str_starts_with($s, $this->conf->download_prefix)) {
-                $s = substr($s, strlen($this->conf->download_prefix));
+            $path = $path ?? $req["doc"] ?? $req["file"] /* XXX backward compat */ ?? "";
+            $this->req_filename = $path;
+            if (str_starts_with($path, $this->conf->download_prefix)) {
+                $path = substr($path, strlen($this->conf->download_prefix));
             }
             $pidstr = $dtname = "";
             $encattachment = null;
-            if (preg_match('/\A(?:p|paper|sub|submission)(\d+)\/+(.*)\z/', $s, $m)) {
+            if (preg_match('/\A(?:p|paper|sub|submission)(\d+)\/+(.*)\z/', $path, $m)) {
                 $pidstr = $m[1];
                 if (preg_match('/\A([^\/]+)\.[^\/]+\z/', $m[2], $mm)) {
                     $dtname = urldecode($mm[1]);
@@ -100,7 +101,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
                 } else if (isset($req["dt"])) {
                     $dtname = $req["dt"];
                 }
-            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^\/]+|\/+(.*))\z/', $s, $m)) {
+            } else if (preg_match('/\A(p|paper|sub|submission|final|)(\d+)-?([-A-Za-z0-9_]*)(?:|\.[^\/]+|\/+(.*))\z/', $path, $m)) {
                 $pidstr = $m[2];
                 $dtname = $m[3];
                 if ($dtname === "" && $m[1] === "" && isset($req["dt"])) {
@@ -110,20 +111,20 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
                 if ($m[1] !== "") {
                     $base_dtname = $m[1] === "final" ? "final" : "paper";
                 }
-            } else if (preg_match('/\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:|\.[^\/]+|\/+(.*))\z/', $s, $m)) {
+            } else if (preg_match('/\A([A-Za-z_][-A-Za-z0-9_]*?)?-?(\d+)(?:|\.[^\/]+|\/+(.*))\z/', $path, $m)) {
                 $pidstr = $m[2];
                 $dtname = $m[1];
                 $encattachment = $m[3] ?? null;
             } else if ($this->paperId === null
-                       && preg_match('/\A([^\/]+?)(?:|\.[^\/]+|\/+(.*)|)\z/', $s, $m)) {
+                       && preg_match('/\A([^\/]+?)(?:|\.[^\/]+|\/+(.*)|)\z/', $path, $m)) {
                 $pidstr = "-2";
                 $dtname = $m[1];
                 $encattachment = $m[2] ?? null;
             } else {
-                $this->error_at("file", "<0>Document ‘{:nonempty}’ not found", $this->req_filename);
+                $this->error_at("doc", "<0>Document ‘{:nonempty}’ not found", $this->req_filename);
                 return;
             }
-            if (!$this->set_paper_id($pidstr, "file")) {
+            if (!$this->set_paper_id($pidstr, "doc")) {
                 return;
             }
             if (isset($encattachment)) {
@@ -224,7 +225,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
 
         if ($this->dtype === null
             || ($this->opt && $this->opt->nonpaper) !== ($this->paperId < 0)) {
-            $this->error_at("file", "<0>Document ‘{$this->req_filename}’ not found");
+            $this->error_at("doc", "<0>Document ‘{$this->req_filename}’ not found");
             return;
         }
 
@@ -237,7 +238,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
 
         // check document permission
         if (($fr = $this->perm_view_document())) {
-            $fr->append_to($this, $want_path ? "file" : null, 2);
+            $fr->append_to($this, $want_path ? "doc" : null, 2);
             if (isset($fr["permission"])) {
                 $this->_error_status = 403;
             }
@@ -447,7 +448,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         if ($docid) {
             $this->error_at("docid", "<0>Version not found");
         } else {
-            $this->error_at("file", "<0>Document not found");
+            $this->error_at("doc", "<0>Document not found");
         }
         return null;
     }

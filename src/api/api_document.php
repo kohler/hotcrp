@@ -8,7 +8,7 @@ class Document_API {
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
-        $dr = (new DocumentRequest($qreq, $qreq->file, $user))
+        $dr = (new DocumentRequest($qreq, $user))
             ->apply_version($qreq);
         if (!($doc = $dr->filtered_document($qreq, true))) {
             return $dr->error_result();
@@ -52,7 +52,7 @@ class Document_API {
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
-        $dr = new DocumentRequest($qreq, $qreq->file, $user);
+        $dr = new DocumentRequest($qreq, $user);
         if ($dr->has_error()) {
             return $dr->error_result();
         }
@@ -72,7 +72,7 @@ class Document_API {
         if (friendly_boolean($qreq->forceShow) !== false) {
             $user->add_overrides(Contact::OVERRIDE_CONFLICT);
         }
-        $dr = (new DocumentRequest($qreq, $qreq->file, $user))
+        $dr = (new DocumentRequest($qreq, $user))
             ->apply_version($qreq);
         if (!($doc = $dr->filtered_document($qreq, true))) {
             return $dr->error_result();
