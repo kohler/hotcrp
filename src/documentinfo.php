@@ -1673,31 +1673,32 @@ class DocumentInfo implements JsonSerializable {
      * @param string $suffix
      * @return array{string,string,bool} */
     private function link_html_format_info($flags, $suffix) {
+        $spects = $this->conf->format_spec($this->documentType)->timestamp;
+        if (!$spects) {
+            return ["", $suffix, false];
+        } else if ($this->prow->is_primary_document($this)
+                   && ($flags & self::L_SMALL) !== 0) {
+            if ($this->prow->pdfFormatStatus == $spects) {
+                return ["", $suffix, false];
+            } else if ($this->prow->pdfFormatStatus == -$spects) {
+                return ["", $suffix . "x", false];
+            }
+        }
         $message = "";
-        $need_run = false;
-        if (($spects = $this->conf->format_spec($this->documentType)->timestamp)) {
-            if ($this->prow->is_primary_document($this)
-                && ($flags & self::L_SMALL) !== 0) {
-                if ($this->prow->pdfFormatStatus == -$spects) {
-                    $suffix .= "x";
-                }
-            } else {
-                $runflag = CheckFormat::RUN_NEVER;
-                if (($flags & self::L_REQUIREFORMAT) !== 0) {
-                    $runflag = CheckFormat::RUN_IF_NECESSARY;
-                }
-                $cf = new CheckFormat($this->conf, $runflag);
-                $cf->check_document($this);
-                $need_run = $cf->need_recheck();
-                if ($cf->has_problem() && $cf->check_ok()) {
-                    if ($cf->has_error()) {
-                        $suffix .= "x";
-                    }
-                    if (($flags & self::L_SMALL) === 0) {
-                        $ffh = htmlspecialchars($cf->full_feedback_html());
-                        $message = "<strong class=\"need-tooltip\" aria-label=\"{$ffh}\">ⓘ</strong>";
-                    }
-                }
+        $runflag = CheckFormat::RUN_NEVER;
+        if (($flags & self::L_REQUIREFORMAT) !== 0) {
+            $runflag = CheckFormat::RUN_IF_NECESSARY;
+        }
+        $cf = new CheckFormat($this->conf, $runflag);
+        $cf->check_document($this);
+        $need_run = $cf->need_recheck();
+        if ($cf->has_problem() && $cf->check_ok()) {
+            if ($cf->has_error()) {
+                $suffix .= "x";
+            }
+            if (($flags & self::L_SMALL) === 0) {
+                $ffh = htmlspecialchars($cf->full_feedback_html());
+                $message = "<strong class=\"need-tooltip\" aria-label=\"{$ffh}\">ⓘ</strong>";
             }
         }
         return [$message, $suffix, $need_run];
