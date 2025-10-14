@@ -1125,12 +1125,14 @@ class Limit_SearchTerm extends SearchTerm {
         } else if (in_array($limit, ["a", "ar", "r", "req", "viewable", "reviewable",
                                      "all", "none"], true)) {
             $this->lflag = 0;
+        } else if ($limit === "accepted") {
+            $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED;
+        } else if ($limit === "undecided") {
+            $this->lflag = self::LFLAG_SUBMITTED;
         } else if (in_array($limit, ["active", "unsub", "actadmin"], true)
                    || ($conf->can_pc_view_some_incomplete()
                        && !in_array($limit, ["s", "accepted"], true))) {
             $this->lflag = self::LFLAG_ACTIVE;
-        } else if ($limit === "accepted") {
-            $this->lflag = self::LFLAG_SUBMITTED | self::LFLAG_ACCEPTED;
         } else {
             $this->lflag = self::LFLAG_SUBMITTED;
         }
