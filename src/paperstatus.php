@@ -1693,11 +1693,13 @@ final class PaperStatus extends MessageSet {
             $opt->value_save($this->prow->option($opt), $this);
         }
 
+        // update timeModified if submission fields or status fields have changed
+        if ($this->prow->user_prop_changed() || !empty($this->_fdiffs)) {
+            $modified_at = max(Conf::$now, $this->prow->timeModified + 1);
+            $this->prow->set_prop("timeModified", $modified_at);
+        }
+
         if ($this->prow->prop_changed()) {
-            if ($this->prow->user_prop_changed()) {
-                $modified_at = max(Conf::$now, $this->prow->timeModified + 1);
-                $this->prow->set_prop("timeModified", $modified_at);
-            }
             if ($this->prow->prop_changed("paperStorageId")
                 || $this->prow->prop_changed("finalPaperStorageId")) {
                 $this->_update_joindoc();
