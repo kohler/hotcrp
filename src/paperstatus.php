@@ -1694,8 +1694,10 @@ final class PaperStatus extends MessageSet {
         }
 
         if ($this->prow->prop_changed()) {
-            $modified_at = max(Conf::$now, $this->prow->timeModified + 1);
-            $this->prow->set_prop("timeModified", $modified_at);
+            if ($this->prow->user_prop_changed()) {
+                $modified_at = max(Conf::$now, $this->prow->timeModified + 1);
+                $this->prow->set_prop("timeModified", $modified_at);
+            }
             if ($this->prow->prop_changed("paperStorageId")
                 || $this->prow->prop_changed("finalPaperStorageId")) {
                 $this->_update_joindoc();

@@ -542,6 +542,7 @@ class PaperStatus_Tester {
     function test_save_decision() {
         $paper1 = $this->conf->checked_paper_by_id(1);
         xassert_eqq($paper1->outcome, 0);
+        $modtime = $paper1->timeModified;
 
         // chair can change decision
         $ps = new PaperStatus($this->u_chair);
@@ -549,12 +550,14 @@ class PaperStatus_Tester {
 
         $paper1 = $this->conf->checked_paper_by_id(1);
         xassert_eqq($paper1->outcome, 1);
+        xassert_eqq($paper1->timeModified, $modtime);
 
         $ps = new PaperStatus($this->u_chair);
         xassert($ps->save_paper_json((object) ["pid" => 1, "decision" => "unknown"]));
 
         $paper1 = $this->conf->checked_paper_by_id(1);
         xassert_eqq($paper1->outcome, 0);
+        xassert_eqq($paper1->timeModified, $modtime);
 
         // author can’t change decision
         $ps = new PaperStatus($this->u_estrin);
@@ -562,6 +565,7 @@ class PaperStatus_Tester {
 
         $paper1 = $this->conf->checked_paper_by_id(1);
         xassert_eqq($paper1->outcome, 0);
+        xassert_eqq($paper1->timeModified, $modtime);
     }
 
     function test_save_options() {

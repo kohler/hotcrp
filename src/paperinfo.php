@@ -44,9 +44,8 @@ final class PaperReviewPreference {
                 return $anull ? 1 : -1;
             }
             return $a->expertise <=> $b->expertise;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     /** @param ?int $tv
@@ -1262,6 +1261,16 @@ class PaperInfo {
     function prop_changed($prop = null) {
         return !empty($this->_old_prop)
             && (!$prop || array_key_exists($prop, $this->_old_prop));
+    }
+
+    /** @return bool */
+    function user_prop_changed() {
+        foreach ($this->_old_prop ?? [] as $prop => $x) {
+            if (!in_array($prop, ["outcome", "leadContactId", "shepherdContactId", "managerContactId", "pdfFormatStatus"])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     function commit_prop() {

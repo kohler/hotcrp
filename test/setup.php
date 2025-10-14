@@ -1201,7 +1201,7 @@ class TestRunner {
         $s0 = file_get_contents($filename);
         assert($s0 !== false);
 
-        $s = preg_replace('/\s*(?:--|#).*/m', "", $s0);
+        $s = preg_replace('/\s*(?:--|\#).*/m', "", $s0);
         $truncates = [];
         while (!$rebuild && preg_match('/\A\s*((?:DROP|CREATE)\C*?;)$/mi', $s, $m)) {
             $stmt = $m[1];
@@ -1292,7 +1292,7 @@ class TestRunner {
             if ($user) {
                 MailChecker::check_db("create-{$c->email}");
             } else {
-                fwrite(STDERR, "* failed to create user {$c->email}\n");
+                fwrite(STDERR, "* failed to create user {$c->email}\n" . debug_string_backtrace());
                 $ok = false;
             }
         }
@@ -1304,7 +1304,7 @@ class TestRunner {
                     return "    {$mx->field}: {$mx->message}\n";
                 }, $ps->message_list()));
                 $id = isset($p->_id_) ? "#{$p->_id_} " : "";
-                fwrite(STDERR, "* failed to create paper {$id}{$p->title}:\n" . htmlspecialchars_decode($t) . "\n");
+                fwrite(STDERR, "* failed to create paper {$id}{$p->title}:\n" . htmlspecialchars_decode($t) . "\n"  . debug_string_backtrace());
                 $ok = false;
             }
         }
