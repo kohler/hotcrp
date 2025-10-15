@@ -2629,7 +2629,8 @@ class PaperInfo {
     /** @param int $linkId
      * @param int $linkType
      * @param ?CommentInfo $owner
-     * @return DocumentInfoSet */
+     * @return DocumentInfoSet
+     * @suppress PhanTypeArraySuspiciousNullable */
     function linked_documents($linkId, $linkType, $owner = null) {
         if ($this->_doclinks === null) {
             $this->doclinks();

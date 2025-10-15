@@ -649,7 +649,7 @@ class ConfInvariants {
                 $this->invariant_error("noninactive", "paper {0} option {2} document {1} should be inactive");
             }
         }
-        $result->free();
+        $result->close();
         $this->irow = null;
 
         $this->conf->ql("drop temporary table {$tntable}");
