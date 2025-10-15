@@ -35,6 +35,8 @@ class Options_SettingParser extends SettingParser {
     private $_intermediate_ijmap;
     /** @var list<int> */
     private $_delete_optionids = [];
+    /** @var list<int> */
+    private $_delete_document_optionids = [];
     /** @var array<int,PaperOption> */
     private $_new_options = [];
     /** @var array<int,array<int,int>> */
@@ -981,9 +983,18 @@ class Options_SettingParser extends SettingParser {
             $sv->update("options_version", (int) $sv->conf->setting("options") + 1);
             $sv->request_store_value($si);
             $sv->mark_invalidate_caches(["options" => true]);
+            foreach ($this->_delete_optionids as $oid) {
+                if (($opt = $sv->conf->option_by_id($oid))
+                    && $opt->has_document()) {
+                    $this->_delete_document_optionids[] = $oid;
+                }
+            }
             if (!empty($this->_delete_optionids)
                 || !empty($this->_value_renumberings)) {
                 $sv->request_write_lock("PaperOption");
+            }
+            if (!empty($this->_delete_document_optionids)) {
+                $sv->request_write_lock("PaperStorage");
             }
         }
         $sv->save("ioptions", empty($insfss) ? "" : json_encode_db($insfss));
@@ -1030,6 +1041,9 @@ class Options_SettingParser extends SettingParser {
     function store_value(Si $si, SettingValues $sv) {
         if (!empty($this->_delete_optionids)) {
             $sv->conf->qe("delete from PaperOption where optionId?a", $this->_delete_optionids);
+        }
+        if (!empty($this->_delete_document_optionids)) {
+            $sv->conf->qe("update PaperStorage set inactive=1 where documentType?a", $this->_delete_document_optionids);
         }
         foreach ($this->_value_renumberings as $oid => $renumberings) {
             $ndelete = 0;

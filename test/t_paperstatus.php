@@ -270,7 +270,6 @@ class PaperStatus_Tester {
         xassert_eqq($doc->width(), 32);
         xassert_eqq($doc->height(), 30);
 
-        $this->conf->qe("delete from PaperOption where optionId=?", $opt->id);
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,
             "sf/1/name" => "Image",
@@ -279,6 +278,7 @@ class PaperStatus_Tester {
         xassert($sv->execute());
         $opt = $this->conf->options()->find("Image");
         xassert(!$opt);
+        xassert(ConfInvariants::test_document_inactive($this->conf));
     }
 
     function test_save_new_paper() {
@@ -617,6 +617,7 @@ class PaperStatus_Tester {
         xassert($ps->execute_save());
         xassert_paper_status($ps);
         $this->pid2 = $ps->paperId;
+        xassert(ConfInvariants::test_document_inactive($this->conf));
 
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
         xassert($nprow1);
@@ -643,9 +644,12 @@ class PaperStatus_Tester {
         xassert($nprow1->has_author($this->u_estrin));
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "estrin@usc.edu");
         xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS | TESTSC_DISABLED), "atten@_.com estrin@usc.edu");
+        xassert(ConfInvariants::test_document_inactive($this->conf));
     }
 
     function test_save_missing_required_fields() {
+        $np = $this->conf->fetch_ivalue("select count(*) from Paper");
+
         $qreq = new Qrequest("POST", ["status:submit" => 1, "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
         $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
         $ps = new PaperStatus($this->u_estrin);
@@ -653,6 +657,11 @@ class PaperStatus_Tester {
         xassert($ps->has_error_at("title"));
         xassert_eqq(count($ps->error_fields()), 1);
         xassert_eqq($ps->feedback_text($ps->error_list()), "Entry required\n");
+        $ps->abort_save();
+        xassert(ConfInvariants::test_document_inactive($this->conf));
+
+        $np1 = $this->conf->fetch_ivalue("select count(*) from Paper");
+        xassert_eqq($np, $np1);
 
         $qreq = new Qrequest("POST", ["status:submit" => 1, "title" => "", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "abstract" => "They see lots of colors.", "has_submission" => "1"]);
         $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
@@ -661,6 +670,8 @@ class PaperStatus_Tester {
         xassert($ps->has_error_at("title"));
         xassert_eqq(count($ps->error_fields()), 1);
         xassert_eqq($ps->feedback_text($ps->error_list()), "Entry required\n");
+        $ps->abort_save();
+        xassert(ConfInvariants::test_document_inactive($this->conf));
 
         $qreq = new Qrequest("POST", ["status:submit" => 1, "title" => "Another Mantis Shrimp Paper", "has_authors" => "1", "authors:1:name" => "David Attenborough", "authors:1:email" => "atten@_.com", "authors:1:affiliation" => "BBC", "has_submission" => "1"]);
         $qreq->set_file("submission", ["name" => "amazing-sample.pdf", "tmp_name" => SiteLoader::find("etc/sample.pdf"), "type" => "application/pdf", "error" => UPLOAD_ERR_OK]);
@@ -669,6 +680,8 @@ class PaperStatus_Tester {
         xassert($ps->has_error_at("abstract"));
         xassert_eqq(count($ps->error_fields()), 1);
         xassert_eqq($ps->feedback_text($ps->error_list()), "Entry required\n");
+        $ps->abort_save();
+        xassert(ConfInvariants::test_document_inactive($this->conf));
     }
 
     function test_save_no_abstract_submit_ok() {
@@ -682,6 +695,7 @@ class PaperStatus_Tester {
         xassert(!$ps->has_error_at("abstract"));
         xassert_eqq(count($ps->error_fields()), 0);
         xassert_eqq($ps->feedback_text($ps->error_list()), "");
+        $ps->abort_save();
 
         $this->conf->set_opt("noAbstract", null);
         $this->conf->invalidate_caches(["options" => true]);

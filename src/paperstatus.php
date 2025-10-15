@@ -77,13 +77,14 @@ final class PaperStatus extends MessageSet {
 
     const SSF_PREPARED = 1;
     const SSF_SAVED = 2;
-    const SSF_NEW = 4;
-    const SSF_FINAL_PHASE = 8;
-    const SSF_SUBMIT = 16;
-    const SSF_NEWSUBMIT = 32;
-    const SSF_FINALSUBMIT = 64;
-    const SSF_ADMIN_UPDATE = 128;
-    const SSF_PIDFAIL = 256;
+    const SSF_ABORTED = 4;
+    const SSF_NEW = 8;
+    const SSF_FINAL_PHASE = 16;
+    const SSF_SUBMIT = 32;
+    const SSF_NEWSUBMIT = 64;
+    const SSF_FINALSUBMIT = 128;
+    const SSF_ADMIN_UPDATE = 256;
+    const SSF_PIDFAIL = 512;
 
     function __construct(Contact $user) {
         $this->conf = $user->conf;
@@ -1105,7 +1106,7 @@ final class PaperStatus extends MessageSet {
     }
 
     /** @return bool */
-    private function check_conflict_diff() {
+    private function _check_conflict_diff() {
         $changes = 0;
         foreach ($this->_conflict_values ?? [] as $cv) {
             $ncv = self::new_conflict_value($cv);
@@ -1118,6 +1119,16 @@ final class PaperStatus extends MessageSet {
             $this->change_at($this->conf->option_by_id(PaperOption::PCCONFID));
         }
         return ($changes & (Conflict::FM_PC | CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) !== 0;
+    }
+
+    private function _invalidate_uploaded_documents() {
+        if (empty($this->_dids)) {
+            return;
+        } else if ($this->prow->is_new()) {
+            $this->conf->qe("update PaperStorage set paperId=-1, inactive=1 where paperStorageId?a", $this->_dids);
+        } else {
+            $this->prow->mark_inactive_documents();
+        }
     }
 
     private function _check_contacts_last() {
@@ -1146,7 +1157,7 @@ final class PaperStatus extends MessageSet {
         }
 
         // exit if no change
-        if (!$this->check_conflict_diff()) {
+        if (!$this->_check_conflict_diff()) {
             return;
         }
 
@@ -1312,8 +1323,7 @@ final class PaperStatus extends MessageSet {
         if ($this->_normalize_and_check($pj)) {
             return true;
         }
-        $this->prow->abort_prop();
-        $this->prow->remove_option_overrides();
+        $this->abort_save();
         return false;
     }
 
@@ -1415,7 +1425,7 @@ final class PaperStatus extends MessageSet {
 
         // don't save if not allowed
         if ($this->problem_status() >= MessageSet::ESTOP) {
-            $this->check_conflict_diff(); // to ensure diffs are ok
+            $this->_check_conflict_diff(); // to ensure diffs are ok
             return false;
         }
 
@@ -1423,9 +1433,6 @@ final class PaperStatus extends MessageSet {
         if ($this->prow->is_new()
             && $this->_new_paper_is_empty()) {
             $this->error_at(null, $this->_("<0>Empty {submission}. Please fill out the fields and try again"));
-            if (!empty($this->_dids)) {
-                $this->conf->qe("update PaperStorage set paperId=-1 where paperId=?", $this->prow->paperId);
-            }
             return false;
         }
 
@@ -1433,6 +1440,16 @@ final class PaperStatus extends MessageSet {
         $this->_check_contacts_last();
         $this->_save_status |= self::SSF_PREPARED;
         return true;
+    }
+
+
+    function abort_save() {
+        if (($this->_save_status & (self::SSF_SAVED | self::SSF_ABORTED)) === 0) {
+            $this->_save_status |= self::SSF_ABORTED;
+            $this->prow->abort_prop();
+            $this->prow->remove_option_overrides();
+            $this->_invalidate_uploaded_documents();
+        }
     }
 
 
@@ -1681,8 +1698,8 @@ final class PaperStatus extends MessageSet {
     /** @return bool */
     function execute_save() {
         // refuse to save if not prepared
-        if (($this->_save_status & (self::SSF_PREPARED | self::SSF_SAVED)) !== self::SSF_PREPARED) {
-            throw new ErrorException("Refusing to save paper with errors");
+        if (($this->_save_status & (self::SSF_PREPARED | self::SSF_SAVED | self::SSF_ABORTED)) !== self::SSF_PREPARED) {
+            throw new ErrorException("execute_save called inappropriately");
         }
         assert($this->paperId === null);
         $this->_save_status |= self::SSF_SAVED;

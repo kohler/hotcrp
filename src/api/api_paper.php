@@ -353,6 +353,8 @@ class Paper_API extends MessageSet {
     private function execute_save($ok, $ps) {
         if ($ok && !$this->dry_run) {
             $ok = $ps->execute_save();
+        } else {
+            $ps->abort_save();
         }
         foreach ($ps->message_list() as $mi) {
             if ($mi->field

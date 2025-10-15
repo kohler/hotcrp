@@ -188,6 +188,7 @@ class Paper_Page {
         if ($whynot) {
             $conf->feedback_msg($whynot->set("expand", true)->message_list());
             $this->useRequest = !$is_new; // XXX used to have more complex logic
+            $this->ps->abort_save();
             return;
         }
 

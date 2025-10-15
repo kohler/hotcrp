@@ -235,6 +235,7 @@ class SavePapers_Batch {
 
         if ($this->ps->prepare_save_paper_json($j)) {
             if ($this->dry_run) {
+                $this->ps->abort_save();
                 $action = $this->ps->has_change() ? "changed" : "unchanged";
                 $pid = true;
             } else {
