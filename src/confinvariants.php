@@ -598,22 +598,24 @@ class ConfInvariants {
 
     /** @return $this */
     function check_document_inactive() {
-        $result = $this->conf->ql("select paperStorageId, finalPaperStorageId from Paper");
-        $pids = [];
-        while ($result && ($row = $result->fetch_row())) {
-            if ($row[0] > 1) {
-                $pids[] = (int) $row[0];
-            }
-            if ($row[1] > 1) {
-                $pids[] = (int) $row[1];
-            }
-        }
-        Dbl::free($result);
-        sort($pids);
-        $any = $this->invariantq("select s.paperId, s.paperStorageId from PaperStorage s where s.paperStorageId?a and s.inactive limit 1", $pids);
-        if ($any) {
-            $this->invariant_error("inactive", "paper {0} document {1} is inappropriately inactive");
-        }
+        $tntable = "DocActivity_" . base48_encode(random_bytes(4));
+        $this->conf->ql("create temporary table {$tntable} (
+    pid int(11) NOT NULL,
+    did int(11) NOT NULL,
+    dt int(11) NOT NULL,
+    inactive tinyint(1) NOT NULL,
+    want_inactive tinyint(1) NOT NULL,
+    PRIMARY KEY (`pid`,`did`)
+) as select paperId pid, paperStorageId did, documentType dt, inactive, 1 want_inactive
+    from PaperStorage where paperStorageId>1");
+
+        $this->conf->ql("insert into {$tntable} (pid,did,dt,inactive,want_inactive)
+    select paperId, paperStorageId, 0, -1, 0 from Paper where paperStorageId>1
+    on duplicate key update want_inactive=0");
+
+        $this->conf->ql("insert into {$tntable} (pid,did,dt,inactive,want_inactive)
+    select paperId, finalPaperStorageId, -1, -1, 0 from Paper where finalPaperStorageId>1
+    on duplicate key update want_inactive=0");
 
         $oids = $nonempty_oids = [];
         foreach ($this->conf->options()->universal() as $o) {
@@ -624,29 +626,33 @@ class ConfInvariants {
             }
         }
 
-        if (!empty($oids)) {
-            $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.inactive and s.paperStorageId>1) where o.optionId?a limit 1", $oids);
-            if ($any) {
-                $this->invariant_error("inactive", "paper {0} option {1} document {2} is inappropriately inactive");
-            }
+        $this->conf->ql("insert into {$tntable} (pid,did,dt,inactive,want_inactive)
+    select paperId, value, optionId, -1, 0 from PaperOption
+    where optionId?a and (value>1 or optionId?a)
+    on duplicate key update want_inactive=0",
+                        $oids, $nonempty_oids);
 
-            $any = $this->invariantq("select o.paperId, o.optionId, s.paperStorageId, s.paperId from PaperOption o join PaperStorage s on (s.paperStorageId=o.value and s.paperStorageId>1 and s.paperId!=o.paperId) where o.optionId?a limit 1", $oids);
-            if ($any) {
-                $this->invariant_error("paper {0} option {1} document {2} belongs to different paper {3}");
+        $this->conf->ql("insert into {$tntable} (pid,did,dt,inactive,want_inactive)
+    select paperId, documentId, linkType, -1, 0 from DocumentLink
+    on duplicate key update want_inactive=0");
+
+        $result = $this->conf->ql("select pid, did, dt, inactive from {$tntable} where inactive<0 or inactive!=want_inactive");
+        $bits = 0;
+        while (($this->irow = $result->fetch_row())) {
+            if ($this->irow[1] <= 1) {
+                $this->invariant_error("empty_document", "paper {0} option {2} links to empty document");
+            } else if ($this->irow[3] < 0) {
+                $this->invariant_error("nonexistent_document", "paper {0} option {2} document {1} does not exist");
+            } else if ($this->irow[3] > 0) {
+                $this->invariant_error("inactive", "paper {0} option {2} document {1} is inappropriately inactive");
+            } else {
+                $this->invariant_error("noninactive", "paper {0} option {2} document {1} should be inactive");
             }
         }
+        $result->free();
+        $this->irow = null;
 
-        if (!empty($nonempty_oids)) {
-            $any = $this->invariantq("select o.paperId, o.optionId from PaperOption o where o.optionId?a and o.value<=1 limit 1", $nonempty_oids);
-            if ($any) {
-                $this->invariant_error("paper {0} option {1} links to empty document");
-            }
-        }
-
-        $any = $this->invariantq("select l.paperId, l.linkId, s.paperStorageId from DocumentLink l join PaperStorage s on (l.documentId=s.paperStorageId and s.inactive) limit 1");
-        if ($any) {
-            $this->invariant_error("inactive", "paper {0} link {1} document {2} is inappropriately inactive");
-        }
+        $this->conf->ql("drop temporary table {$tntable}");
 
         return $this;
     }

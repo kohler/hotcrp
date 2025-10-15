@@ -168,7 +168,8 @@ class CheckInvariants_Batch {
             $this->report_fix("automatic tags");
             $this->conf->update_automatic_tags();
         }
-        if (isset($ic->problems["inactive"]) && $this->want_fix("inactive")) {
+        if ((isset($ic->problems["inactive"]) || isset($ic->problems["noninactive"]))
+            && $this->want_fix("inactive")) {
             $this->report_fix("inactive documents");
             $this->fix_inactive_documents();
         }
@@ -200,9 +201,13 @@ class CheckInvariants_Batch {
     }
 
     private function fix_inactive_documents() {
-        $this->conf->qe("update PaperStorage s join Paper p on (p.paperId=s.paperId and (p.paperStorageId=s.paperStorageId or p.finalPaperStorageId=s.paperStorageId)) set s.inactive=0");
+        $this->conf->qe("lock tables PaperStorage write, Paper read, DocumentLink read, PaperOption read");
 
-        $this->conf->qe("update PaperStorage s join DocumentLink l on (l.documentId=s.paperStorageId) set s.inactive=0");
+        $this->conf->qe("update PaperStorage set inactive=1");
+
+        $this->conf->qe("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and (Paper.paperStorageId=PaperStorage.paperStorageId or Paper.finalPaperStorageId=PaperStorage.paperStorageId)) set PaperStorage.inactive=0");
+
+        $this->conf->qe("update PaperStorage join DocumentLink on (DocumentLink.documentId=PaperStorage.paperStorageId) set PaperStorage.inactive=0");
 
         $oids = [];
         foreach ($this->conf->options()->universal() as $o) {
@@ -211,8 +216,10 @@ class CheckInvariants_Batch {
             }
         }
         if (!empty($oids)) {
-            $this->conf->qe("update PaperStorage s join PaperOption o on (o.paperId=s.paperId and o.optionId?a and o.value=s.paperStorageId) set s.inactive=0", $oids);
+            $this->conf->qe("update PaperStorage join PaperOption on (PaperOption.paperId=PaperStorage.paperId and PaperOption.optionId?a and PaperOption.value=PaperStorage.paperStorageId) set PaperStorage.inactive=0", $oids);
         }
+
+        $this->conf->qe("unlock tables");
     }
 
     private function fix_document_match() {
