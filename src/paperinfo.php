@@ -3686,7 +3686,7 @@ class PaperInfo {
         }
 
         $qs = [];
-        foreach (["PaperWatch", "PaperReviewPreference", "PaperReviewRefused", "ReviewRequest", "PaperTag", "PaperComment", "PaperReview", "PaperTopic", "PaperOption", "PaperConflict", "Paper", "PaperStorage", "Capability"] as $table) {
+        foreach (["PaperWatch", "PaperReviewPreference", "PaperReviewRefused", "ReviewRequest", "PaperTag", "PaperComment", "PaperReview", "PaperTopic", "PaperOption", "PaperConflict", "Paper", "PaperStorage", "DocumentLink", "Capability"] as $table) {
             $qs[] = "delete from {$table} where paperId={$this->paperId}";
         }
         $mresult = Dbl::multi_qe($this->conf->dblink, join(";", $qs));
