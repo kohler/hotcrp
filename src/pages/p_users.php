@@ -233,8 +233,8 @@ class Users_Page {
             $action = new FmtArg("action", "enabled", 0);
         } else if ($modifyfn === "sendaccount") {
             $ua->send_account_info($this->papersel);
-            if (!empty($ua->name_list("mailed"))) {
-                $ua->success($this->conf->_("<0>Sent account information mail to {:list}", $ua->name_list("mailed")));
+            if (!empty($ua->name_list("sent"))) {
+                $ua->success($this->conf->_("<0>Sent account information mail to {:list}", $ua->name_list("sent")));
             }
             if (!empty($ua->name_list("skipped"))) {
                 $ua->append_item(MessageItem::warning_note($this->conf->_("<0>Skipped disabled accounts {:list}", $ua->name_list("skipped"))));
