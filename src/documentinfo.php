@@ -71,9 +71,6 @@ class DocumentInfo implements JsonSerializable {
     /** @var ?array */
     private $_old_prop;
 
-    const LINKTYPE_COMMENT_BEGIN = 0;
-    const LINKTYPE_COMMENT_END = 1024;
-
     const FLAG_NO_DOCSTORE = 1;
 
     function __construct(Conf $conf) {
@@ -487,11 +484,10 @@ class DocumentInfo implements JsonSerializable {
             return $this;
         } else if ($this->_owner === $owner) {
             return $this;
-        } else {
-            $d = clone $this;
-            $d->_owner = $owner;
-            return $d;
         }
+        $d = clone $this;
+        $d->_owner = $owner;
+        return $d;
     }
 
     /** @param string $fn
@@ -502,11 +498,10 @@ class DocumentInfo implements JsonSerializable {
             return $this;
         } else if ($this->_member_filename === $fn) {
             return $this;
-        } else {
-            $d = clone $this;
-            $d->_member_filename = $fn;
-            return $d;
         }
+        $d = clone $this;
+        $d->_member_filename = $fn;
+        return $d;
     }
 
     /** @return bool */
@@ -514,7 +509,7 @@ class DocumentInfo implements JsonSerializable {
         if ($this->documentType == DTYPE_COMMENT) {
             $this->prow = $this->prow ?? $this->conf->paper_by_id($this->paperId);
             if ($this->prow
-                && ($cid = $this->prow->link_id_by_document_id($this->paperStorageId, self::LINKTYPE_COMMENT_BEGIN, self::LINKTYPE_COMMENT_END))) {
+                && ($cid = $this->prow->link_id_by_document_id($this->paperStorageId, $this->documentType))) {
                 $this->_owner = $this->prow->comment_by_id($cid);
             }
         }
@@ -1582,9 +1577,8 @@ class DocumentInfo implements JsonSerializable {
         $fn = $this->export_filename($filters);
         if (preg_match('/(\.[A-Za-z0-9]{1,5}(?:\.[A-Za-z0-9]{1,3})?)\z/', $fn, $m)) {
             return substr($fn, 0, -strlen($m[0])) . $suffix . $m[0];
-        } else {
-            return $fn . $suffix;
         }
+        return $fn . $suffix;
     }
 
     const DOCURL_INCLUDE_TIME = 1024;

@@ -367,14 +367,14 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 314) {
+        if ($this->sversion < 315) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
             }
             Dbl::$nerrors = $old_nerrors;
         }
-        if ($this->sversion < 280) {
+        if ($this->sversion < 315) {
             $this->error_msg("<0>Warning: The database could not be upgraded to the current version; expect errors. A system administrator must solve this problem.");
         }
 

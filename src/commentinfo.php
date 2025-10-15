@@ -557,9 +557,8 @@ class CommentInfo {
             return $this->prow->blindness_state(true) > 0;
         } else if (($this->commentType & self::CTM_VIS) === self::CTVIS_AUTHOR) {
             return !$this->prow->author_user()->can_view_comment_identity($this->prow, $this);
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return string */
@@ -611,9 +610,8 @@ class CommentInfo {
         if (($tags = $this->all_tags_text()) !== ""
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_SEARCH, $tags, $viewer, $this->prow);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return ?string */
@@ -621,9 +619,8 @@ class CommentInfo {
         if (($tags = $this->all_tags_text()) !== ""
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $tags, $viewer, $this->prow);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @return ?string */
@@ -631,9 +628,8 @@ class CommentInfo {
         if ($this->commentTags
             && $viewer->can_view_comment_tags($this->prow, $this)) {
             return $this->conf->tags()->censor(TagMap::CENSOR_VIEW, $this->commentTags, $viewer, $this->prow);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param string $tag
@@ -651,10 +647,9 @@ class CommentInfo {
     /** @return DocumentInfoSet */
     function attachments() {
         if (($this->commentType & self::CT_HASDOC) !== 0) {
-            return $this->prow->linked_documents($this->commentId, DocumentInfo::LINKTYPE_COMMENT_BEGIN, DocumentInfo::LINKTYPE_COMMENT_END, $this);
-        } else {
-            return new DocumentInfoSet;
+            return $this->prow->linked_documents($this->commentId, DTYPE_COMMENT, $this);
         }
+        return new DocumentInfoSet;
     }
 
     /** @return list<int> */
@@ -1154,19 +1149,19 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
         // document links
         if ($docs_differ) {
             if ($old_docids) {
-                $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType>=? and linkType<?", $this->paperId, $this->commentId, DocumentInfo::LINKTYPE_COMMENT_BEGIN, DocumentInfo::LINKTYPE_COMMENT_END);
+                $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType=?", $this->paperId, $this->commentId, DTYPE_COMMENT);
             }
             $need_mark = !!$old_docids;
             if ($docs) {
                 $qv = [];
                 foreach ($docs as $i => $doc) {
-                    $qv[] = [$this->paperId, $this->commentId, $i, $doc->paperStorageId];
+                    $qv[] = [$this->paperId, $this->commentId, DTYPE_COMMENT, $i, $doc->paperStorageId];
                     // just in case we're linking an inactive document
                     // (this should never happen, though, because upload
                     // marks as active explicitly)
                     $need_mark = $need_mark || $doc->inactive;
                 }
-                $this->conf->qe("insert into DocumentLink (paperId,linkId,linkType,documentId) values ?v", $qv);
+                $this->conf->qe("insert into DocumentLink (paperId,linkId,linkType,linkIndex,documentId) values ?v", $qv);
             }
             if ($need_mark) {
                 $this->prow->mark_inactive_linked_documents();

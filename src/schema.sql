@@ -140,8 +140,9 @@ CREATE TABLE `DocumentLink` (
   `paperId` int(11) NOT NULL,
   `linkId` int(11) NOT NULL,
   `linkType` int(11) NOT NULL,
+  `linkIndex` int(11) NOT NULL DEFAULT 0,
   `documentId` int(11) NOT NULL,
-  PRIMARY KEY (`paperId`,`linkId`,`linkType`)
+  PRIMARY KEY (`paperId`,`linkId`,`linkType`,`linkIndex`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -656,7 +657,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 314, null),   -- schema version
+  ('allowPaperOption', 315, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

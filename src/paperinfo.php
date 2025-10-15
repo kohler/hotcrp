@@ -384,7 +384,7 @@ final class PaperContactInfo {
     }
 }
 
-class PaperConflictInfo {
+final class PaperConflictInfo {
     /** @var int
      * @readonly */
     public $contactId;
@@ -406,6 +406,32 @@ class PaperConflictInfo {
         $this->contactId = $uid;
         $this->conflictType = $ctype;
         $this->author_index = self::UNINITIALIZED_INDEX;
+    }
+}
+
+final class PaperDocumentLink {
+    /** @var int
+     * @readonly */
+    public $linkId;
+    /** @var int
+     * @readonly */
+    public $linkType;
+    /** @var int
+     * @readonly */
+    public $linkIndex;
+    /** @var int
+     * @readonly */
+    public $documentId;
+
+    /** @param int $linkId
+     * @param int $linkType
+     * @param int $linkIndex
+     * @param int $documentId */
+    function __construct($linkId, $linkType, $linkIndex, $documentId) {
+        $this->linkId = $linkId;
+        $this->linkType = $linkType;
+        $this->linkIndex = $linkIndex;
+        $this->documentId = $documentId;
     }
 }
 
@@ -755,8 +781,8 @@ class PaperInfo {
     private $_primary_document;
     /** @var array<int,DocumentInfo> */
     private $_document_array;
-    /** @var ?array<int,array<int,int>> */
-    private $_doclink_array;
+    /** @var ?list<PaperDocumentLink> */
+    private $_doclinks;
     /** @var ?DecisionInfo */
     private $_decision;
     /** @var ?array<int,ReviewInfo> */
@@ -2582,68 +2608,81 @@ class PaperInfo {
     }
 
 
-    /** @return array<int,array<int,int>> */
-    private function doclink_array() {
-        if ($this->_doclink_array === null) {
+    /** @return list<PaperDocumentLink> */
+    private function doclinks() {
+        if ($this->_doclinks === null) {
             foreach ($this->_row_set as $prow) {
-                $prow->_doclink_array = [];
+                $prow->_doclinks = [];
             }
-            $result = $this->conf->qe("select paperId, linkId, linkType, documentId from DocumentLink where paperId?a order by paperId, linkId, linkType", $this->_row_set->paper_ids());
+            $result = $this->conf->qe("select paperId, linkId, linkType, linkIndex, documentId from DocumentLink where paperId?a order by paperId, linkId, linkType, linkIndex", $this->_row_set->paper_ids());
             while ($result && ($row = $result->fetch_row())) {
                 $prow = $this->_row_set->get((int) $row[0]);
-                $linkid = (int) $row[1];
-                if (!isset($prow->_doclink_array[$linkid])) {
-                    $prow->_doclink_array[$linkid] = [];
-                }
-                $prow->_doclink_array[$linkid][(int) $row[2]] = (int) $row[3];
+                $prow->_doclinks[] = new PaperDocumentLink(
+                    (int) $row[1], (int) $row[2], (int) $row[3], (int) $row[4]
+                );
             }
             Dbl::free($result);
         }
-        return $this->_doclink_array;
+        return $this->_doclinks;
     }
 
-    /** @param int $linkid
-     * @param int $min
-     * @param int $max
+    /** @param int $linkId
+     * @param int $linkType
      * @param ?CommentInfo $owner
      * @return DocumentInfoSet */
-    function linked_documents($linkid, $min, $max, $owner = null) {
-        $docs = new DocumentInfoSet;
-        foreach (($this->doclink_array())[$linkid] ?? [] as $lt => $docid) {
-            if ($lt >= $min
-                && $lt < $max
-                && ($d = $this->document(-2, $docid))) {
-                $docs->add($owner ? $d->with_owner($owner) : $d);
+    function linked_documents($linkId, $linkType, $owner = null) {
+        if ($this->_doclinks === null) {
+            $this->doclinks();
+        }
+        $l = 0;
+        $n = $r = count($this->_doclinks);
+        if ($n > 20) {
+            while ($r > $l) {
+                $m = $l + (($r - $l) >> 1);
+                $dl = $this->_doclinks[$m];
+                if ($dl->linkId < $linkId) {
+                    $l = $m + 1;
+                } else {
+                    $r = $m;
+                }
             }
+        }
+        $docs = new DocumentInfoSet;
+        while ($l < $n) {
+            $dl = $this->_doclinks[$l];
+            if ($dl->linkId === $linkId
+                && $dl->linkType === $linkType
+                && ($d = $this->document($linkType, $dl->documentId))) {
+                $docs->add($owner ? $d->with_owner($owner) : $d);
+            } else if ($dl->linkId > $linkId) {
+                break;
+            }
+            ++$l;
         }
         return $docs;
     }
 
     /** @param int $docid
-     * @param int $min
-     * @param int $max
+     * @param int $linkType
      * @return ?int */
-    function link_id_by_document_id($docid, $min, $max) {
-        foreach ($this->doclink_array() as $linkid => $links) {
-            foreach ($links as $lt => $did) {
-                if ($lt >= $min
-                    && $lt < $max
-                    && $did === $docid) {
-                    return $linkid;
-                }
+    function link_id_by_document_id($docid, $linkType) {
+        foreach ($this->doclinks() as $dl) {
+            if ($dl->linkType === $linkType
+                && $dl->documentId === $docid) {
+                return $dl->linkId;
             }
         }
         return null;
     }
 
     function invalidate_linked_documents() {
-        $this->_doclink_array = null;
+        $this->_doclinks = null;
     }
 
     function mark_inactive_linked_documents() {
         // see also DocumentInfo::active_document_map
         $this->conf->qe("update PaperStorage ps
-            left join DocumentLink dl on (dl.paperId=? and dl.documentId=ps.paperStorageId)
+            left join DocumentLink dl on (dl.paperId=? and dl.linkType=ps.documentType and dl.documentId=ps.paperStorageId)
             set inactive=(dl.documentId is null)
             where ps.paperId=? and ps.documentType<=?",
             $this->paperId, $this->paperId, DTYPE_COMMENT);

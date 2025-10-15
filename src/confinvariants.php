@@ -319,7 +319,7 @@ class ConfInvariants {
     /** @return $this */
     function check_comments() {
         // comments are nonempty
-        $any = $this->invariantq("select paperId, commentId from PaperComment where comment is null and commentOverflow is null and not exists (select * from DocumentLink where paperId=PaperComment.paperId and linkId=PaperComment.commentId and linkType>=" . DocumentInfo::LINKTYPE_COMMENT_BEGIN . " and linkType<" . DocumentInfo::LINKTYPE_COMMENT_END . ") limit 1");
+        $any = $this->invariantq("select paperId, commentId from PaperComment where comment is null and commentOverflow is null and not exists (select * from DocumentLink where paperId=PaperComment.paperId and linkId=PaperComment.commentId and linkType=" . DTYPE_COMMENT . ") limit 1");
         if ($any) {
             $this->invariant_error("empty comment #{0}/{1}");
         }

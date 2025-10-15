@@ -3188,6 +3188,14 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table Capability add `useCount` bigint(11) NOT NULL DEFAULT 0")) {
             $conf->update_schema_version(314);
         }
+        if ($conf->sversion === 314
+            && $conf->ql_ok("alter table DocumentLink add `linkIndex` int(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("update DocumentLink set linkIndex=linkType")
+            && $conf->ql_ok("alter table DocumentLink drop primary key")
+            && $conf->ql_ok("update DocumentLink set linkType=" . DTYPE_COMMENT)
+            && $conf->ql_ok("alter table DocumentLink add primary key (`paperId`,`linkId`,`linkType`,`linkIndex`)")) {
+            $conf->update_schema_version(315);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
