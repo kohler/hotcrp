@@ -247,6 +247,75 @@ class PaperStatus_Tester {
         xassert_eqq($paper3b->submission->hash, "sha2-38b74d4ab9d3897b0166aa975e5e00dd2861a218fad7ec8fa08921fff7f0f0f4");
     }
 
+    function test_document_time_referenced() {
+        $u_root = $this->conf->root_user();
+        $ps = new PaperStatus($u_root);
+        $p3 = $u_root->checked_paper_by_id(3);
+        $p3tm = $p3->timeModified;
+        $p3abstract = $p3->abstract();
+        $d3 = $p3->document(DTYPE_SUBMISSION, 0, true);
+        $d3content = $d3->content();
+        $d3ts = $d3->timestamp;
+        $d3tr = $d3->timeReferenced;
+        $d3id = $d3->paperStorageId;
+        xassert($d3tr === null || ($d3tr >= $d3->timestamp && $d3tr <= $p3tm));
+
+        $ps->save_paper_json(json_decode('{"id":3,"abstract":"Second try at an abstract"}'));
+        xassert_paper_status($ps);
+        $p3 = $u_root->checked_paper_by_id(3);
+        $d3 = $p3->document(DTYPE_SUBMISSION, 0, true);
+        xassert_gt($p3->timeModified, $p3tm);
+        xassert_eqq($d3->paperStorageId, $d3id);
+        xassert_eqq($d3->timestamp, $d3ts);
+        xassert_eqq($d3->timeReferenced, $d3tr);
+        $p3tm = $p3->timeModified;
+
+        Conf::advance_current_time();
+        $ps->save_paper_json((object) [
+            "id" => 3,
+            "submission" => (object) [ "content" => $d3content, "type" => "application/pdf" ]
+        ]);
+        xassert_paper_status($ps);
+        $p3 = $u_root->checked_paper_by_id(3);
+        $d3 = $p3->document(DTYPE_SUBMISSION, 0, true);
+        xassert_eqq($p3->timeModified, $p3tm);
+        xassert_eqq($d3->paperStorageId, $d3id);
+        xassert_eqq($d3->timestamp, $d3ts);
+        xassert_eqq($d3->timeReferenced, $d3tr);
+        $p3tm = $p3->timeModified;
+
+        Conf::advance_current_time();
+        $d3newcontent = $d3content . "\nHello, friends\n";
+        $ps->save_paper_json((object) [
+            "id" => 3,
+            "submission" => (object) [ "content" => $d3newcontent, "type" => "application/pdf" ]
+        ]);
+        xassert_paper_status($ps);
+        $p3 = $u_root->checked_paper_by_id(3);
+        $d3 = $p3->document(DTYPE_SUBMISSION, 0, true);
+        xassert_gt($p3->timeModified, $p3tm);
+        xassert_neqq($d3->paperStorageId, $d3id);
+        xassert_gt($d3->timestamp, $d3ts);
+        xassert_eqq($d3->content(), $d3newcontent);
+        xassert($d3->timeReferenced === null || $d3->timeReferenced === $p3->timeModified);
+        $p3tm = $p3->timeModified;
+
+        Conf::advance_current_time();
+        $ps->save_paper_json((object) [
+            "id" => 3,
+            "abstract" => $p3abstract,
+            "submission" => (object) [ "content" => $d3content, "type" => "application/pdf" ]
+        ]);
+        xassert_paper_status($ps);
+        $p3 = $u_root->checked_paper_by_id(3);
+        $d3 = $p3->document(DTYPE_SUBMISSION, 0, true);
+        xassert_gt($p3->timeModified, $p3tm);
+        xassert_eqq($d3->paperStorageId, $d3id);
+        xassert_eqq($d3->timestamp, $d3ts);
+        xassert_eqq($d3->timeReferenced, $p3->timeModified);
+        $p3tm = $p3->timeModified;
+    }
+
     function test_document_image_dimensions() {
         $sv = SettingValues::make_request($this->u_chair, [
             "has_sf" => 1,

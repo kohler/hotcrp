@@ -443,7 +443,6 @@ CREATE TABLE `PaperReviewHistory` (
   `reviewEditVersion` int(1) NOT NULL,
   `rflags` int(11) NOT NULL,
   `revdelta` longblob DEFAULT NULL,
-
   PRIMARY KEY (`paperId`,`reviewId`,`reviewTime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -498,6 +497,7 @@ CREATE TABLE `PaperStorage` (
   `paperId` int(11) NOT NULL,
   `paperStorageId` int(11) NOT NULL AUTO_INCREMENT,
   `timestamp` bigint(11) NOT NULL,
+  `timeReferenced` bigint(11) DEFAULT NULL,
   `mimetype` varbinary(80) NOT NULL DEFAULT '',
   `paper` longblob DEFAULT NULL,
   `compression` tinyint(1) NOT NULL DEFAULT 0,
@@ -657,7 +657,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 315, null),   -- schema version
+  ('allowPaperOption', 316, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators

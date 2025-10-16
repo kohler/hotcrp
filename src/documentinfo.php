@@ -15,6 +15,8 @@ class DocumentInfo implements JsonSerializable {
     public $paperStorageId = 0;
     /** @var int */
     public $timestamp;
+    /** @var ?int */
+    public $timeReferenced;
     /** @var string */
     public $mimetype;
     /** @var ?string */
@@ -81,6 +83,9 @@ class DocumentInfo implements JsonSerializable {
         $this->paperId = (int) $this->paperId;
         $this->paperStorageId = (int) $this->paperStorageId;
         $this->timestamp = (int) $this->timestamp;
+        if (isset($this->timeReferenced)) {
+            $this->timeReferenced = (int) $this->timeReferenced;
+        }
         $this->documentType = (int) $this->documentType;
         $this->size = (int) $this->size;
         $this->filterType = (int) $this->filterType ? : null;
@@ -172,7 +177,7 @@ class DocumentInfo implements JsonSerializable {
         $doc = new DocumentInfo($conf);
         $doc->paperId = $paperId;
         $doc->documentType = $documentType;
-        $doc->timestamp = time();
+        $doc->timestamp = Conf::$now;
         $doc->mimetype = $upload->type;
         $doc->filename = self::sanitize_filename($upload->name);
 
@@ -229,7 +234,7 @@ class DocumentInfo implements JsonSerializable {
         $doc = new DocumentInfo($conf);
         $doc->paperId = $paperId ?? $toki->paperId;
         $doc->documentType = $documentType ?? $tokd->dtype;
-        $doc->timestamp = time();
+        $doc->timestamp = Conf::$now;
         $doc->mimetype = $tokd->mimetype ?? null;
         $doc->filename = self::sanitize_filename($tokd->filename);
         $doc->size = $tokd->size;
@@ -697,7 +702,7 @@ class DocumentInfo implements JsonSerializable {
     /** @return bool */
     function store_skeleton() {
         if (!$this->timestamp) {
-            $this->timestamp = time();
+            $this->timestamp = Conf::$now;
         }
         $upd = [
             "paperId" => $this->paperId,
@@ -708,6 +713,9 @@ class DocumentInfo implements JsonSerializable {
             "documentType" => $this->documentType,
             "inactive" => 0
         ];
+        if ($this->timeReferenced !== null) {
+            $upd["timeReferenced"] = $this->timeReferenced;
+        }
         if (($this->crc32 || ($this->size >= 0 && $this->size <= 10000000))
             && ($crc32 = $this->crc32()) !== false) {
             $upd["crc32"] = $crc32;
@@ -1043,19 +1051,20 @@ class DocumentInfo implements JsonSerializable {
     function save($savef = 0) {
         // look for an existing document with same sha1
         if ($this->binary_hash() !== false && $this->paperId != 0) {
-            $row = $this->conf->fetch_first_row("select paperStorageId, timestamp, inactive, filename, mimetype, infoJson from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $this->binary_hash());
+            $row = $this->conf->fetch_first_row("select paperStorageId, timestamp, timeReferenced, inactive, filename, mimetype, infoJson from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $this->binary_hash());
             if ($row
-                && (!isset($this->filename) || $row[3] === $this->filename)
-                && (!isset($this->mimetype) || $row[4] === $this->mimetype)) {
+                && (!isset($this->filename) || $row[4] === $this->filename)
+                && (!isset($this->mimetype) || $row[5] === $this->mimetype)) {
                 $this->paperStorageId = (int) $row[0];
                 $this->timestamp = (int) $row[1];
+                $this->timeReferenced = (int) $row[2];
                 $qf = $qv = [];
-                if ($row[2]) {
+                if ($row[3]) {
                     $qf[] = "inactive=?";
                     $qv[] = 0;
                 }
                 $m = $this->metadata();
-                $this->infoJson = $row[5];
+                $this->infoJson = $row[6];
                 $this->_metadata = null;
                 if (!empty((array) $m)) {
                     $this->infoJson = json_object_replace_recursive($this->infoJson, $m);
@@ -1090,22 +1099,22 @@ class DocumentInfo implements JsonSerializable {
         $s1 = $s0 && $this->store_database();
         $s2 = !$s3 && $this->store_docstore($savef);
         $s3 = $s3 || $this->store_s3();
-        if ($s0 && ($s1 || $s2 || $s3)) {
-            if ($this->_ms && $this->_ms->has_problem_at(".content")) {
-                error_log("Recoverable error saving document " . $this->export_filename() . ", hash " . $this->text_hash() . ": " . MessageSet::feedback_text($this->_ms->message_list_at(".content")));
-                $ms = $this->_ms;
-                $this->_ms = null;
-                foreach ($ms->message_list() as $mi) {
-                    if ($mi->field !== ".content")
-                        $this->message_set()->append_item($mi);
-                }
-            }
-            return true;
-        } else {
+        if (!$s0 || (!$s1 && !$s2 && !$s3)) {
             $this->message_set()->prepend_item(MessageItem::error("<0>Document not saved"));
             error_log("Error saving document " . $this->export_filename() . ", hash " . $this->text_hash() . ": " . $this->_ms->full_feedback_text());
             return false;
         }
+
+        if ($this->_ms && $this->_ms->has_problem_at(".content")) {
+            error_log("Recoverable error saving document " . $this->export_filename() . ", hash " . $this->text_hash() . ": " . MessageSet::feedback_text($this->_ms->message_list_at(".content")));
+            $ms = $this->_ms;
+            $this->_ms = null;
+            foreach ($ms->message_list() as $mi) {
+                if ($mi->field !== ".content")
+                    $this->message_set()->append_item($mi);
+            }
+        }
+        return true;
     }
 
 
@@ -1344,9 +1353,8 @@ class DocumentInfo implements JsonSerializable {
         $hash = $this->binary_hash();
         if ($hash === false || strlen($hash) === 20) {
             return $hash;
-        } else {
-            return substr($hash, strpos($hash, "-") + 1);
         }
+        return substr($hash, strpos($hash, "-") + 1);
     }
 
     /** @return bool */
@@ -1362,9 +1370,8 @@ class DocumentInfo implements JsonSerializable {
             return "sha1";
         } else if (str_starts_with($this->sha1, "sha2-")) {
             return "sha256";
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return string|false */
@@ -1374,9 +1381,8 @@ class DocumentInfo implements JsonSerializable {
             return "";
         } else if (($dash = strpos($this->sha1, "-")) !== false) {
             return substr($this->sha1, 0, $dash + 1);
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param ?string $like_hash
@@ -1441,9 +1447,8 @@ class DocumentInfo implements JsonSerializable {
     function integer_crc32() {
         if (($s = $this->crc32()) !== false) {
             return (ord($s[0]) << 24) | (ord($s[1]) << 16) | (ord($s[2]) << 8) | ord($s[3]);
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @param iterable<DocumentInfo> $docs */
@@ -1493,13 +1498,9 @@ class DocumentInfo implements JsonSerializable {
     function member_filename($flags = 0) {
         if (($this->_member_filename ?? "") !== "") {
             return $this->_member_filename;
-        } else {
-            if (($flags & self::ANY_MEMBER_FILENAME) === 0) {
-                error_log(debug_string_backtrace());
-            }
-            assert(($flags & self::ANY_MEMBER_FILENAME) !== 0);
-            return $this->filename;
         }
+        assert(($flags & self::ANY_MEMBER_FILENAME) !== 0);
+        return $this->filename;
     }
 
     /** @param ?list<FileFilter> $filters

@@ -309,10 +309,11 @@ class Conf {
         }
     }
 
-    /** @param int $advance_past */
-    static function advance_current_time($advance_past) {
-        if ($advance_past + 1 > Conf::$now) {
-            self::set_current_time($advance_past + 1);
+    /** @param null|int|float $advance_past */
+    static function advance_current_time($advance_past = null) {
+        $t = floor($advance_past ?? Conf::$unow) + 1;
+        if ($t > Conf::$unow) {
+            self::set_current_time($t);
         }
     }
 
@@ -367,7 +368,7 @@ class Conf {
 
     function load_settings() {
         $this->__load_settings();
-        if ($this->sversion < 315) {
+        if ($this->sversion < 316) {
             $old_nerrors = Dbl::$nerrors;
             while ((new UpdateSchema($this))->run()) {
                 usleep(50000);
@@ -4282,9 +4283,8 @@ class Conf {
     function rating_signature_query() {
         if ($this->review_ratings() >= 0) {
             return "coalesce((select group_concat(contactId, ' ', rating) from ReviewRating force index (primary) where paperId=PaperReview.paperId and reviewId=PaperReview.reviewId),'')";
-        } else {
-            return "''";
         }
+        return "''";
     }
 
     /** @return string */
@@ -4294,13 +4294,14 @@ class Conf {
 
     /** @return string */
     function document_query_fields() {
-        return "paperId, paperStorageId, timestamp, mimetype, sha1, crc32, documentType, filename, infoJson, size, filterType, originalStorageId, inactive"
-            . ($this->sversion >= 276 ? ", npages, width, height" : "");
+        return "paperId, paperStorageId, timestamp"
+            . ($this->sversion >= 316 ? ", timeReferenced" : "")
+            . ", mimetype, sha1, crc32, documentType, filename, infoJson, size, filterType, originalStorageId, inactive, npages, width, height";
     }
 
     /** @return string */
     function document_metadata_query_fields() {
-        return "infoJson" . ($this->sversion >= 276 ? ", npages, width, height" : "");
+        return "infoJson, npages, width, height";
     }
 
 

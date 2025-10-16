@@ -3196,6 +3196,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table DocumentLink add primary key (`paperId`,`linkId`,`linkType`,`linkIndex`)")) {
             $conf->update_schema_version(315);
         }
+        if ($conf->sversion === 315
+            && $conf->ql_ok("alter table PaperStorage add `timeReferenced` bigint(11) DEFAULT NULL")) {
+            $conf->update_schema_version(316);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
