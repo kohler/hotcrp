@@ -1910,13 +1910,27 @@ class DocumentInfo implements JsonSerializable {
             return false;
         }
 
+        // Set headers required for conditional requests, check match
         if ($this->has_hash()) {
-            $dopt->etag = "\"{$this->text_hash()}\"";
-            if (!$dopt->check_match()) {
-                return true;
-            }
+            $dopt->set_etag("\"{$this->text_hash()}\"");
+        }
+        if (!$this->filterType
+            && ($lm = $this->timeReferenced ?? $this->timestamp) > 1) {
+            $dopt->set_last_modified($lm);
+        }
+        if (!$dopt->check_match()) {
+            return true;
         }
 
+        // Set other headers
+        $dopt->set_mimetype(Mimetype::type_with_charset($this->mimetype));
+        $downloadname = $this->export_filename();
+        if (($slash = strrpos($downloadname, "/")) !== false) {
+            $downloadname = substr($downloadname, $slash + 1);
+        }
+        $dopt->set_filename($downloadname);
+
+        // Load content or accelerated redirect destination
         $s3_accel = false;
         if (!$dopt->no_accel && $dopt->range === null) {
             // do not forward range requests to S3 -- there are a lot of them
@@ -1930,20 +1944,10 @@ class DocumentInfo implements JsonSerializable {
             return false;
         }
 
-        // Print headers
-        $dopt->set_mimetype(Mimetype::type_with_charset($this->mimetype));
-        $downloadname = $this->export_filename();
-        if (($slash = strrpos($downloadname, "/")) !== false) {
-            $downloadname = substr($downloadname, $slash + 1);
-        }
-        $dopt->set_filename($downloadname);
-        if ($dopt->cacheable) {
-            $dopt->header("Cache-Control: max-age=315576000, private");
-            $dopt->header("Expires: " . Navigation::http_date(Conf::$now + 315576000));
-        }
-
         // Maybe log
-        if ($dopt->log_user && $dopt->range_overlaps(0, 4096)) {
+        if ($dopt->log_user
+            && $dopt->range_overlaps(0, 4096)
+            && !$dopt->head) {
             DocumentInfo::log_download_activity([$this], $dopt->log_user);
         }
 
@@ -1960,21 +1964,13 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @param ?Downloader $dopt
-     * @return bool */
+     * @return int */
     function emit($dopt = null) {
         $dopt = $dopt ?? new Downloader;
         if (!$this->prepare_download($dopt)) {
-            return false;
+            return 500;
         }
-        $dopt->emit();
-        return true;
-    }
-
-    /** @param ?Downloader $dopt
-     * @return bool
-     * @deprecated */
-    function download($dopt = null) {
-        return $this->emit($dopt);
+        return $dopt->emit();
     }
 
     function unparse_json() {

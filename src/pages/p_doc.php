@@ -73,7 +73,7 @@ class Doc_Page {
         $dopt->set_attachment(friendly_boolean($qreq->save) ?? false);
         $dopt->set_cacheable($dr->cacheable);
         $dopt->log_user = $user;
-        if (!$doc->emit($dopt)) {
+        if ($doc->emit($dopt) === 500) {
             self::error(500, $doc->message_set(), $qreq);
         }
     }

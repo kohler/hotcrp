@@ -434,6 +434,15 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         return $this->_signature;
     }
 
+    /** @return int */
+    private function last_modified() {
+        $t = $this->_message_timestamp;
+        foreach ($this->docs as $doc) {
+            $t = max($t, $doc->timeReferenced ?? $doc->timestamp);
+        }
+        return $t;
+    }
+
     /** @return ?DocumentInfo */
     function make_zip_document() {
         if (($dstore_tmp = $this->conf->docstore_tempdir())) {
@@ -568,14 +577,15 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
             return false;
         }
 
-        $dopt->etag = "\"" . $this->content_signature() . "\"";
+        $dopt->set_mimetype(Mimetype::type_with_charset($this->_mimetype));
+        $dopt->set_etag("\"" . $this->content_signature() . "\"");
+        $dopt->set_last_modified($this->last_modified());
         if (!$dopt->check_match()) {
             return true;
         }
 
         $this->_hotzip_make();
         $dopt->set_content_length($this->_hotzip_filesize());
-        $dopt->set_mimetype(Mimetype::type_with_charset($this->_mimetype));
         if (!$dopt->check_ranges()) {
             return true;
         }
@@ -587,11 +597,9 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         if ($dopt->range === null) {
             $dopt->set_filename($this->_filename);
         }
-        if ($dopt->cacheable) {
-            $dopt->header("Cache-Control: max-age=315576000, private");
-            $dopt->header("Expires: " . Navigation::http_date(Conf::$now + 315576000));
-        }
-        if ($dopt->log_user && $dopt->range_overlaps(0, 4096)) {
+        if ($dopt->log_user
+            && $dopt->range_overlaps(0, 4096)
+            && !$dopt->head) {
             DocumentInfo::log_download_activity($this->as_list(), $dopt->log_user);
         }
         $dopt->set_content_function([$this, "write_range"]);
@@ -599,20 +607,12 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     }
 
     /** @param ?Downloader $dopt
-     * @return bool */
+     * @return int */
     function emit($dopt = null) {
         $dopt = $dopt ?? new Downloader;
         if (!$this->prepare_download($dopt)) {
-            return false;
+            return 500;
         }
-        $dopt->emit();
-        return true;
-    }
-
-    /** @param ?Downloader $dopt
-     * @return bool
-     * @deprecated */
-    function download($dopt = null) {
-        return $this->emit($dopt);
+        return $dopt->emit();
     }
 }

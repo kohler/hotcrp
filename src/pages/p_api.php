@@ -56,6 +56,8 @@ class API_Page {
         if ($jr instanceof Downloader) {
             $jr->emit();
             exit(0);
+        } else if ($jr instanceof PageCompletion) {
+            exit(0);
         }
         if ($uf
             && ($uf->redirect ?? false)

@@ -164,18 +164,11 @@ class XlsxGenerator {
     }
 
     /** @param ?Downloader $dopt
-     * @return bool */
+     * @return int */
     function emit($dopt = null) {
         if (!$this->done) {
             $this->finish();
         }
         return $this->zip->emit($dopt);
-    }
-
-    /** @param ?Downloader $dopt
-     * @return bool
-     * @deprecated */
-    function download($dopt = null) {
-        return $this->emit($dopt);
     }
 }

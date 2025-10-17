@@ -6,6 +6,8 @@ class Downloader {
     /** @var ?string */
     public $etag;
     /** @var ?int */
+    public $last_modified;
+    /** @var ?int */
     public $content_length;
     /** @var ?string */
     public $mimetype;
@@ -14,6 +16,10 @@ class Downloader {
     public $if_match;
     /** @var ?string */
     public $if_none_match;
+    /** @var ?int */
+    public $if_modified_since;
+    /** @var ?int */
+    public $if_unmodified_since;
     /** @var ?string */
     public $if_range;
     /** @var ?list<array{int,int}> */
@@ -47,40 +53,54 @@ class Downloader {
     /** @return $this */
     function parse_qreq(Qrequest $qreq) {
         $this->if_match = $qreq->header("If-Match");
-        $this->if_none_match = $qreq->header("If-None-Match");
-        $method = $qreq->method();
-        if ($method === "HEAD") {
-            $this->head = true;
-        } else if ($method === "GET") {
-            $this->if_range = $qreq->header("If-Range");
+        if ($this->if_match === null
+            && ($s = $qreq->header("If-Unmodified-Since"))) {
+            $this->if_unmodified_since = Navigation::parse_http_date($s);
         }
-        if ($method === "GET"
-            && ($range = $qreq->header("Range")) !== null
-            && preg_match('/\Abytes\s*=\s*(?:(?:\d+-\d+|-\d+|\d+-)\s*,?\s*)+\z/', $range)) {
-            $this->range = [];
-            $lastr = null;
-            preg_match_all('/\d+-\d+|-\d+|\d+-/', $range, $m);
-            foreach ($m[0] as $t) {
-                $dash = strpos($t, "-");
-                $r1 = $dash === 0 ? null : stoi(substr($t, 0, $dash));
-                $r2 = $dash === strlen($t) - 1 ? null : stoi(substr($t, $dash + 1));
-                if ($r1 === null && $r2 !== 0) {
-                    $this->range[] = $lastr = [$r1, $r2];
-                } else if ($r2 === null || ($r1 !== null && $r1 <= $r2)) {
-                    if ($lastr !== null
-                        && $lastr[0] !== null
-                        && $lastr[1] !== null
-                        && $r1 >= $lastr[0]
-                        && $r1 - $lastr[1] <= 100) {
-                        $nr = count($this->range);
-                        $this->range[$nr - 1][1] = $lastr[1] = $r2;
-                    } else {
-                        $this->range[] = $lastr = [$r1, $r2];
-                    }
+
+        $this->if_none_match = $qreq->header("If-None-Match");
+        if ($this->if_none_match === null
+            && ($s = $qreq->header("If-Modified-Since"))) {
+            $this->if_modified_since = Navigation::parse_http_date($s);
+        }
+
+        $method = $qreq->method();
+        if ($method !== "GET") {
+            if ($method === "HEAD") {
+                $this->head = true;
+            }
+            return $this;
+        }
+
+        $this->if_range = $qreq->header("If-Range");
+        $range = $qreq->header("Range");
+        if ($range === null
+            || !preg_match('/\Abytes\s*=\s*(?:(?:\d+-\d+|-\d+|\d+-)\s*,?\s*)+\z/', $range)) {
+            return $this;
+        }
+        $this->range = [];
+        $lastr = null;
+        preg_match_all('/\d+-\d+|-\d+|\d+-/', $range, $m);
+        foreach ($m[0] as $t) {
+            $dash = strpos($t, "-");
+            $r1 = $dash === 0 ? null : stoi(substr($t, 0, $dash));
+            $r2 = $dash === strlen($t) - 1 ? null : stoi(substr($t, $dash + 1));
+            if ($r1 === null && $r2 !== 0) {
+                $this->range[] = $lastr = [$r1, $r2];
+            } else if ($r2 === null || ($r1 !== null && $r1 <= $r2)) {
+                if ($lastr !== null
+                    && $lastr[0] !== null
+                    && $lastr[1] !== null
+                    && $r1 >= $lastr[0]
+                    && $r1 - $lastr[1] <= 100) {
+                    $nr = count($this->range);
+                    $this->range[$nr - 1][1] = $lastr[1] = $r2;
                 } else {
-                    $this->range = null;
-                    break;
+                    $this->range[] = $lastr = [$r1, $r2];
                 }
+            } else {
+                $this->range = null;
+                break;
             }
         }
         return $this;
@@ -163,6 +183,20 @@ class Downloader {
         return $this;
     }
 
+    /** @param ?string $etag
+     * @return $this */
+    function set_etag($etag) {
+        $this->etag = $etag;
+        return $this;
+    }
+
+    /** @param ?int $last_modified
+     * @return $this */
+    function set_last_modified($last_modified) {
+        $this->last_modified = $last_modified;
+        return $this;
+    }
+
     /** @param ?Contact $log_user
      * @return $this */
     function set_log_user($log_user) {
@@ -170,18 +204,28 @@ class Downloader {
         return $this;
     }
 
+    /** @param string $h */
+    private function _remove_matching_headers($h) {
+        $n = strpos($h, ":") ? : strlen($h) - 1;
+        $delta = 0;
+        foreach ($this->_headers as $i => &$s) {
+            if (substr_compare($s, $h, 0, $n + 1, true) === 0) {
+                ++$delta;
+            } else if ($delta > 0) {
+                $this->_headers[$i - $delta] = $s;
+            }
+        }
+        if ($delta > 0) {
+            array_splice($this->_headers, count($this->_headers) - $delta);
+        }
+    }
+
     /** @param string $header
      * @param bool $replace
      * @return $this */
     function header($header, $replace = true) {
-        $colon = strpos($header, ":");
         if ($replace) {
-            for ($i = 0; $i !== count($this->_headers); ++$i) {
-                if (substr_compare($this->_headers[$i], $header, 0, $colon + 1, true) === 0) {
-                    array_splice($this->_headers, $i, 1);
-                    --$i;
-                }
-            }
+            $this->_remove_matching_headers($header);
         }
         $this->_headers[] = $header;
         return $this;
@@ -217,13 +261,29 @@ class Downloader {
 
     /** @return bool */
     function check_match() {
-        if ($this->etag === null) {
-            return true;
+        if ($this->if_match !== null) {
+            if ($this->etag !== null
+                && !$this->any_etag_match($this->if_match, true)) {
+                return false;
+            }
+        } else if ($this->if_unmodified_since !== null) {
+            if ($this->last_modified !== null
+                && $this->last_modified > $this->if_unmodified_since) {
+                return false;
+            }
         }
-        return ($this->if_match === null
-                || $this->any_etag_match($this->if_match, true))
-            && ($this->if_none_match === null
-                || !$this->any_etag_match($this->if_none_match, false));
+        if ($this->if_none_match !== null) {
+            if ($this->etag !== null
+                && $this->any_etag_match($this->if_none_match, false)) {
+                return false;
+            }
+        } else if ($this->if_modified_since !== null) {
+            if ($this->last_modified !== null
+                && $this->last_modified <= $this->if_modified_since) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** @param int $first
@@ -281,31 +341,62 @@ class Downloader {
         if ($this->etag !== null) {
             self::emit_header("ETag: {$this->etag}");
         }
+        if ($this->last_modified !== null) {
+            self::emit_header("Last-Modified: " . Navigation::http_date($this->last_modified));
+        }
         if ($this->_filename !== null) {
             $attachment = $this->attachment ?? !Mimetype::disposition_inline($this->mimetype);
             self::emit_header("Content-Disposition: " . ($attachment ? "attachment" : "inline") . "; filename=" . mime_quote_string($this->_filename));
+        }
+        if ($this->cacheable) {
+            self::emit_cacheable_headers();
         }
         foreach ($this->_headers as $h) {
             self::emit_header($h);
         }
     }
 
-    /** @return bool */
-    private function run_match() {
-        if ($this->etag === null) {
-            return false;
-        } else if ($this->if_match !== null
-                   && !$this->any_etag_match($this->if_match, true)) {
-            self::emit_header("HTTP/1.1 412 Precondition Failed");
-            self::emit_header("ETag: {$this->etag}");
-            return true;
+    static private function emit_cacheable_headers() {
+        self::emit_header("Cache-Control: max-age=315576000, private");
+        self::emit_header("Expires: " . Navigation::http_date(Conf::$now + 315576000));
+    }
+
+    /** @return int */
+    function execute_conditions() {
+        if ($this->if_match !== null
+            && $this->etag !== null
+            && !$this->any_etag_match($this->if_match, true)) {
+            $status = 412;
         } else if ($this->if_none_match !== null
+                   && $this->etag !== null
                    && $this->any_etag_match($this->if_none_match, false)) {
-            self::emit_header("HTTP/1.1 304 Not Modified");
-            self::emit_header("ETag: {$this->etag}");
-            return true;
+            $status = 304;
+        } else if ($this->if_match === null
+                   && $this->if_unmodified_since !== null
+                   && $this->last_modified !== null
+                   && $this->last_modified > $this->if_unmodified_since) {
+            $status = 412;
+        } else if ($this->if_none_match === null
+                   && $this->if_modified_since !== null
+                   && $this->last_modified !== null
+                   && $this->last_modified <= $this->if_modified_since) {
+            $status = 304;
+        } else if (!$this->check_ranges()) {
+            $status = 416;
+        } else {
+            return 200;
         }
-        return false;
+        http_response_code($status);
+        if ($status !== 412 && $this->etag !== null) {
+            self::emit_header("ETag: {$this->etag}");
+        }
+        if ($status !== 412 && $this->cacheable) {
+            self::emit_cacheable_headers();
+        }
+        if ($status === 416) {
+            self::emit_header("Content-Range: bytes */{$this->content_length}");
+        }
+        return $status;
     }
 
     /** @return Generator<array{int,int}> */
@@ -321,7 +412,9 @@ class Downloader {
             self::emit_header("Accept-Ranges: bytes");
             $this->emit_main_headers();
             return;
-        } else if (!isset($range)) {
+        }
+
+        if (!isset($range)) {
             $outsize = $clen;
             self::emit_header("Content-Type: {$this->mimetype}");
             self::emit_header("Accept-Ranges: bytes");
@@ -366,17 +459,11 @@ class Downloader {
         }
     }
 
+    /** @return int */
     function emit() {
-        if ($this->run_match()) {
-            return;
-        }
-        if (!$this->check_ranges()) {
-            self::emit_header("HTTP/1.1 416 Range Not Satisfiable");
-            if ($this->etag !== null) {
-                self::emit_header("ETag: {$this->etag}");
-            }
-            self::emit_header("Content-Range: bytes */{$this->content_length}");
-            return;
+        $status = $this->execute_conditions();
+        if ($status !== 200) {
+            return $status;
         }
         // if docstoreAccelRedirect, output X-Accel-Redirect header
         // XXX Chromium issue 961617: beware of X-Accel-Redirect if you are
@@ -392,7 +479,7 @@ class Downloader {
             self::emit_header("Content-Type: {$this->mimetype}");
             $this->emit_main_headers();
             self::emit_header("X-Accel-Redirect: {$this->_content_redirect}");
-            return;
+            return 200;
         }
         // write length header, flush output buffers
         $out = fopen("php://output", "wb");
@@ -405,6 +492,7 @@ class Downloader {
                 self::print_subrange($out, $r[0], $r[1], 0, $this->_content);
             }
         }
+        return 200;
     }
 
     /** @param string|list<string> $dars */
