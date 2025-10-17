@@ -25,7 +25,7 @@
     {
         "name": "archivelisting", "get": true,
         "function": "Document_API::archivelisting",
-        "parameters": "?doc ?<file ?p ?dt ?docid ?attachment ?version ?at ?consolidated",
+        "parameters": "?doc ?<file ?p ?dt ?docid ?attachment ?version ?<at ?consolidated",
         "response": "listing ?consolidated_listing"
     },
     {
@@ -70,15 +70,13 @@
         "name": "comment", "get": true, "paper": true,
         "function": "Comment_API::run",
         "parameters": "?c ?content",
-        "response": "?comment ?comments",
-        "response_deprecated": "cmt"
+        "response": "?comment ?comments"
     },
     {
         "name": "comment", "post": true, "paper": true,
         "function": "Comment_API::run",
         "parameters": "c ?override ?=text ?=:attachment ?=tags ?=topic ?=visibility ?=ready ?=draft ?=blind ?=response ?=by_author ?=review_token ?delete",
-        "response": "?comment ?conflict",
-        "response_deprecated": "cmt"
+        "response": "?comment ?conflict"
     },
     {
         "name": "cspreport", "post": true, "check_token": false,
@@ -104,7 +102,7 @@
     {
         "name": "document", "get": true,
         "function": "Document_API::document",
-        "parameters": "?doc ?p ?dt ?hash ?at ?attachment"
+        "parameters": "?doc ?p ?dt ?attachment ?hash ?docid ?<at ?attachment"
     },
     {
         "name": "documenthistory", "get": true,
@@ -137,9 +135,8 @@
     {
         "name": "formatcheck", "get": true,
         "function": "FormatCheck_API::run",
-        "parameters": "?doc ?<file ?p ?dt ?docid ?attachment ?hash ?at ?soft",
-        "response": "npages nwords problem_fields has_error docid",
-        "response_deprecated": "result"
+        "parameters": "?doc ?<file ?p ?dt ?attachment ?hash ?docid ?<at ?soft",
+        "response": "npages nwords problem_fields has_error docid"
     },
     {
         "name": "graphdata", "get": true,
@@ -219,7 +216,13 @@
         "function": "HotCRP\\Authorize_Page::oauthtoken_api"
     },
     {
-        "name": "paper", "get": true, "post": true,
+        "name": "paper", "get": true,
+        "function": "Paper_API::run_one",
+        "parameters": "p ?forceShow",
+        "response": "?paper"
+    },
+    {
+        "name": "paper", "post": true,
         "function": "Paper_API::run_one",
         "parameters": "?p ?+dry_run ?+disable_users ?+add_topics ?+notify ?+notify_authors ?+reason ?+json ?forceShow",
         "response": "?+dry_run +change_list +valid ?+pid ?paper"

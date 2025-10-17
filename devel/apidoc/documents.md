@@ -1,11 +1,85 @@
+# Documents
+
+These endpoints query documents associated with HotCRP submissions, reviews,
+and comments. The `/upload` endpoint can be used to upload a large file using
+multiple requests; this file can be a document or a temporary file intended
+for input to another API.
+
+
+# get /document
+
+> Fetch document
+
+Fetch a document and return it in the response body. Specify the document to
+return either with the `doc` parameter, which names the document using a pattern
+like `testconf-paper1.pdf`, or the `p`, `dt`, and optionally `attachment`
+parameters, which define the submission ID, submission field, and attachment
+name.
+
+The `hash` and `docid` parameters let administrators and authors select a
+specific version of a document. `hash` selects a document by hash, and `docid`
+by internal document ID. Responses to requests with `hash` or `docid` are
+usually cacheable.
+
+Successful requests (HTTP status code 200) return the requested document as the
+response, without any JSON wrapper. Find the document’s MIME type using the
+response’s `Content-Type` header. Unsuccessful requests (HTTP status code 300 or
+higher) usually return a JSON object with `ok` set to `false` and a
+`message_list` describing the error.
+
+This API understands conditional requests with HTTP headers `If-Match`,
+`If-None-Match`, `If-Modified-Since`, and `If-Unmodified-Since`, and many
+responses include `ETag` and `Last-Modified` HTTP headers. It also understands
+range requests.
+
+
+# get /documenthistory
+
+> Fetch document history
+
+Fetch information about all versions of a document accessible to the requesting
+user. Use the `doc` parameter to specify a document by name, or `p` and `dt` to
+specify it by type.
+
+* response dt document_type
+* response document_history [document_history_entry]
+
+
 # get /formatcheck
 
 > Check PDF format
 
+Run HotCRP’s PDF format checker on a specified document. A human-readable
+response is returned in `message_list`. The `problem_fields` response property
+lists the names of any PDF checks that failed; examples include `"papersize"`,
+`"pagelimit"`, `"columns"`, `"textblock"`, `"bodyfontsize"`, `"bodylineheight"`,
+and `"wordlimit"`.
+
 * param ?doc document_name
+* param ?p
 * param ?dt document_type
 * param ?docid document_id
 * param ?soft boolean
+* response docid document_id
+* response npages nullable_int: Number of pages in PDF
+* response nwords nullable_int: Number of words in PDF
+* response problem_fields [string]
+* response has_error boolean
+
+
+# get /archivelisting
+
+> Fetch contents of archive document
+
+Fetch the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. The
+contents are returned as a list of string filenames. The `consolidated=1`
+parameter requests an additional `consolidated_listing`, which returns a
+preformatted string that uses `{}` notation to represent subdirectories; for
+instance, `subdir/{file1.txt, file2.txt}`.
+
+* param ?consolidated boolean: True requests a `consolidated_listing`
+* response listing [string]: List of archive elements
+* response consolidated_listing string: Parsed contents of archive
 
 
 # post /upload

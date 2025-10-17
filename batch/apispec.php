@@ -29,11 +29,9 @@ class APISpec_Batch {
     /** @var ?object */
     private $parameters;
     /** @var object */
-    private $setj;
+    private $basej;
     /** @var object */
-    private $setj_schemas;
-    /** @var object */
-    private $setj_parameters;
+    private $setj_paths;
     /** @var object */
     private $setj_tags;
     /** @var array<string,list<object>> */
@@ -50,8 +48,6 @@ class APISpec_Batch {
     private $override_response;
     /** @var bool */
     private $override_tags;
-    /** @var bool */
-    private $override_schema;
     /** @var bool */
     private $override_description;
     /** @var bool */
@@ -103,31 +99,28 @@ class APISpec_Batch {
 
         $this->api_map = $conf->expanded_api_map();
         $this->j = (object) [];
-        $this->setj_schemas = (object) [];
-        $this->setj_parameters = (object) [];
+        $this->setj_paths = (object) [];
         $this->setj_tags = (object) [];
-        $this->setj = (object) [
-            "paths" => (object) [],
-            "components" => (object) [
-                "schemas" => $this->setj_schemas,
-                "parameters" => $this->setj_parameters
-            ],
-            "tags" => $this->setj_tags
-        ];
 
         $this->description_map = [];
         foreach ([["?devel/apidoc/*.md"], $conf->opt("apiDescriptions")] as $desc) {
             expand_json_includes_callback($desc, [$this, "_add_description_item"], "APISpec_Batch::parse_description_markdown");
         }
 
-        if (isset($arg["i"])
-            || ($this->base && !isset($arg["o"]))) {
-            $filearg = $arg["i"] ?? "devel/apidoc/openapi-base.json";
-            if ($filearg === "-") {
+        $base_str = file_get_contents_throw("devel/apidoc/openapi-base.json");
+        $jparser = (new JsonParser($base_str))
+            ->set_filename("devel/apidoc/openapi-base.json");
+        $this->basej = $jparser->decode();
+
+        if (isset($arg["i"]) || $this->base) {
+            if (!isset($arg["i"])) {
+                $filename = "devel/apidoc/openapi-base.json";
+                $s = $base_str;
+            } else if ($arg["i"] === "-") {
                 $filename = "<stdin>";
                 $s = stream_get_contents(STDIN);
             } else {
-                $filename = safe_filename($filearg);
+                $filename = safe_filename($arg["i"]);
                 $s = file_get_contents_throw($filename);
             }
             if ($s !== false) {
@@ -135,24 +128,24 @@ class APISpec_Batch {
                 $this->j = $this->jparser->decode();
             }
             if ($s === false || !is_object($this->j)) {
-                $msg = $filearg . ": Invalid input";
+                $msg = $filename . ": Invalid input";
                 if ($this->j === null && $this->jparser->last_error()) {
                     $msg .= ": " . $this->jparser->last_error_msg();
                 }
                 throw new CommandLineException($msg);
             }
-            $this->output_file = $arg["i"] ?? "devel/openapi.json";
             $this->batch = true;
         }
         if (isset($arg["o"])) {
             $this->output_file = $arg["o"];
+        } else if (isset($arg["i"]) || $this->base) {
+            $this->output_file = $arg["i"] ?? "devel/openapi.json";
         }
 
         $this->override_ref = isset($arg["override-ref"]);
         $this->override_param = isset($arg["override-param"]);
         $this->override_response = isset($arg["override-response"]);
         $this->override_tags = isset($arg["override-tags"]);
-        $this->override_schema = isset($arg["override-schema"]);
         $this->override_description = !isset($arg["no-override-description"]);
         $this->merge_allOf = !isset($arg["no-merge"]);
         $this->sort = !isset($arg["no-sort"]);
@@ -250,7 +243,7 @@ class APISpec_Batch {
                 $x["summary"] = simplify_whitespace(str_replace("\n> ", "", substr($mx[0], 2)));
                 $d = ltrim(substr($d, strlen($mx[0])));
             }
-            if (preg_match('/(?:\n|\A)(?=\*)(?:\* (?:param|parameter|response|response_schema|badge) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
+            if (preg_match('/(?:\n|\A)(?=\*)(?:\* (?:param(?:eter)?(?:_schema)?|response(?:_schema)?|badge) [^\n]*+\n|  [^\n]*+\n|[ \t]*+\n)+\z/s', $d, $mx)) {
                 $d = cleannl(substr($d, 0, -strlen($mx[0])));
                 $x["fields"] = ltrim($mx[0]);
             }
@@ -344,22 +337,23 @@ class APISpec_Batch {
 
     /** @param string $fn */
     private function expand_paths($fn) {
+        $methods = [];
         foreach (["get", "post", "delete"] as $lmethod) {
-            if (!($uf = $this->conf->api($fn, null, strtoupper($lmethod)))
-                || ($uf->order ?? null) === false) {
-                continue;
+            if (($uf = $this->conf->api($fn, null, strtoupper($lmethod)))
+                && ($uf->order ?? null) !== false) {
+                $methods[$lmethod] = $uf;
             }
+        }
 
+        foreach ($methods as $lmethod => $uf) {
             // parse subset of parameters
             $this->cur_fieldf = [];
             $this->cur_fields = [];
             $this->cur_fieldd = [];
+            $this->cur_fieldsch = [];
             $this->cur_badge = [];
             if ($uf->paper ?? false) {
                 $this->add_field("p", self::F_REQUIRED);
-            }
-            if ($uf->redirect ?? false) {
-                $this->add_field("redirect", 0);
             }
             if (isset($uf->parameters)) {
                 $this->parse_json_parameters($uf->parameters, ["p"]);
@@ -379,27 +373,37 @@ class APISpec_Batch {
             // create `paths` object
             $pathj = $this->paths->$path = $this->paths->$path ?? (object) [];
             $pathj->__path = $path;
-            if (!isset($this->setj->paths->$path)) {
+            if (!isset($this->setj_paths->$path)) {
                 $this->merge_description($path, $pathj);
-                $this->setj->paths->$path = (object) [];
+                $this->setj_paths->$path = (object) [];
             }
 
             // create operation object
             $opj = $pathj->$lmethod = $pathj->$lmethod ?? (object) [];
-            if (!isset($this->setj->paths->$path->$lmethod)) {
+            if (!isset($this->setj_paths->$path->$lmethod)) {
                 if ($this->override_description
                     || ($opj->summary ?? "") === "") {
                     $opj->summary = $path;
                 }
-                $this->setj->paths->$path->$lmethod = true;
+                $this->setj_paths->$path->$lmethod = true;
             }
 
-            // apply description, tags, request, response
+            // apply description
             $dj = $this->find_description("{$this->cur_lmethod} {$this->cur_path}");
             if ($dj) {
                 $this->merge_description_from($opj, $dj);
             }
 
+            // set operationId
+            if (!isset($opj->operationId)) {
+                if ($lmethod === "get" || count($methods) === 1) {
+                    $opj->operationId = $fn;
+                } else {
+                    $opj->operationId = "{$fn}-{$lmethod}";
+                }
+            }
+
+            // apply tags, request, response
             $this->expand_tags($opj, $uf, $dj);
             $this->expand_request($opj, $uf, $dj);
             $this->expand_response($opj, $uf, $dj);
@@ -470,137 +474,54 @@ class APISpec_Batch {
             $this->schemas = $compj->schemas = $compj->schemas ?? (object) [];
         }
         $nj = $this->schemas->$name ?? null;
-        if (!$nj || ($this->override_schema && !isset($this->setj_schemas->$name))) {
-            if ($name === "pid") {
-                $nj = (object) [
-                    "type" => "integer",
-                    "description" => "Submission ID",
-                    "minimum" => 1
-                ];
-            } else if ($name === "rid") {
-                $nj = (object) [
-                    "oneOf" => [
-                        (object) ["type" => "integer", "minimum" => 1],
-                        (object) ["type" => "string"]
-                    ],
-                    "description" => "Review ID"
-                ];
-            } else if ($name === "cid") {
-                $nj = (object) [
-                    "oneOf" => [
-                        (object) ["type" => "integer", "minimum" => 1],
-                        (object) ["type" => "string", "examples" => ["new", "response", "R2response"]]
-                    ],
-                    "description" => "Comment ID"
-                ];
-            } else if ($name === "ok") {
-                $nj = (object) [
-                    "type" => "boolean",
-                    "description" => "Success marker"
-                ];
-            } else if ($name === "message_list") {
-                $nj = (object) [
-                    "type" => "list",
-                    "description" => "Diagnostic list",
-                    "items" => $this->reference_common_schema("message", $fieldname)
-                ];
-            } else if ($name === "message") {
-                $nj = (object) [
-                    "type" => "object",
-                    "description" => "Diagnostic",
-                    "required" => ["status"],
-                    "properties" => (object) [
-                        "field" => (object) ["type" => "string"],
-                        "message" => (object) ["type" => "string"],
-                        "status" => (object) ["type" => "integer", "minimum" => -5, "maximum" => 3],
-                        "context" => (object) ["type" => "string"],
-                        "pos1" => (object) ["type" => "integer"],
-                        "pos2" => (object) ["type" => "integer"]
-                    ]
-                ];
-            } else if ($name === "minimal_response") {
-                $nj = (object) [
-                    "type" => "object",
-                    "required" => ["ok"],
-                    "properties" => (object) [
-                        "ok" => (object) ["type" => "boolean"],
-                        "message_list" => $this->reference_common_schema("message_list", $fieldname)
-                    ]
-                ];
-            } else if ($name === "error_response") {
-                $nj = (object) [
-                    "type" => "object",
-                    "required" => ["ok"],
-                    "properties" => (object) [
-                        "ok" => (object) ["type" => "boolean", "description" => "always false"],
-                        "message_list" => $this->reference_common_schema("message_list", $fieldname),
-                        "status_code" => (object) ["type" => "integer"]
-                    ]
-                ];
-            } else {
-                $sfx = $fieldname !== null ? " `{$fieldname}`\n" : "\n";
-                fwrite(STDERR, $this->cur_prefix() . "common schema `{$name}` unknown for " . $this->cur_field_description() . $sfx);
-                throw new CommandLineException("Common schema `{$name}` unknown");
-                assert(false);
+        if (!$nj) {
+            $nj = $this->basej->components->schemas->$name ?? null;
+            if (!$nj) {
+                throw new CommandLineException($this->cur_prefix() . "Common schema `{$name}` unknown");
             }
             $this->schemas->$name = $nj;
-        }
-        if (!isset($this->setj_schemas->$name)) {
             $this->merge_description("schema {$name}", $nj);
-            $this->setj_schemas->$name = true;
         }
         return (object) ["\$ref" => "#/components/schemas/{$name}"];
     }
 
-    static private $param_schemas = [
-        "p" => "pid", "r" => "rid", "c" => "cid",
-        "q" => "search_string", "t" => "search_collection", "qt" => "search_qt",
-        "reviewer" => "search_reviewer", "sort" => "search_sort", "scoresort" => "search_scoresort",
-        "redirect" => "string", "forceShow" => "boolean"
-    ];
-    static private $param_required = [
-        "p" => true, "r" => true, "c" => true
-    ];
+    /** @param object $parameters
+     * @param string $name
+     * @param int $f
+     * @return ?string */
+    static private function find_parameter($parameters, $name, $f) {
+        $path = ($f & self::F_PATH) !== 0;
+        $required = ($f & self::F_REQUIRED) !== 0;
+        foreach ((array) $parameters as $pname => $pobj) {
+            if ($pobj->name === $name
+                && (($pobj->in === "path") === $path)
+                && (($pobj->required ?? false) === $required)) {
+                return $pname;
+            }
+        }
+        return null;
+    }
 
     /** @param string $name
-     * @return object */
-    private function reference_common_param($name) {
+     * @param int $f
+     * @return ?object */
+    private function reference_common_param($name, $f) {
         if ($this->parameters === null) {
             $compj = $this->j->components = $this->j->components ?? (object) [];
             $this->parameters = $compj->parameters = $compj->parameters ?? (object) [];
         }
-        $nj = $this->parameters->$name ?? null;
-        if ($nj === null || ($this->override_schema && !isset($this->setj_parameters->$name))) {
-            if (str_ends_with($name, ".path")) {
-                $xname = substr($name, 0, -5);
-                $in = "path";
-                $required = true;
-            } else if (str_ends_with($name, ".opt")) {
-                $xname = substr($name, 0, -4);
-                $in = "query";
-                $required = false;
-            } else {
-                $xname = $name;
-                $in = "query";
-                $required = self::$param_required[$xname] ?? false;
+        $pname = self::find_parameter($this->parameters, $name, $f);
+        if (!$pname) {
+            $base_param = $this->basej->components->parameters;
+            $pname = self::find_parameter($base_param, $name, $f);
+            if (!$pname) {
+                return null;
             }
-            if (isset(self::$param_schemas[$xname])) {
-                $nj = (object) [
-                    "name" => $xname,
-                    "in" => $in,
-                    "required" => $required,
-                    "schema" => $this->reference_common_schema(self::$param_schemas[$xname], $name)
-                ];
-            } else {
-                assert(false);
-            }
-            $this->parameters->$name = $nj;
+            $nj = json_decode(json_encode($base_param->$pname));
+            $this->parameters->$pname = $nj;
+            $this->merge_description("parameter {$pname}", $nj);
         }
-        if (!isset($this->setj_parameters->$name)) {
-            $this->merge_description("parameter {$name}", $nj);
-            $this->setj_parameters->$name = true;
-        }
-        return (object) ["\$ref" => "#/components/parameters/{$name}"];
+        return (object) ["\$ref" => "#/components/parameters/{$pname}"];
     }
 
     /** @param object $x
@@ -660,7 +581,7 @@ class APISpec_Batch {
      * @param string $landmark */
     private function parse_description_fields($params, $response, $landmark) {
         $pos = 0;
-        while (preg_match('/\G\* (param|parameter|response|response_schema|badge)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)(?:  [^\n]++\n|[ \t]++\n)*+|\n)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
+        while (preg_match('/\G\* (param(?:eter)?(?:_schema)?|response(?:_schema)?|badge)[ \t]++([?!+=@:]*+[^\s:]++)[ \t]*+(|[^\s:]++)[ \t]*+(:[^\n]*+(?:\n|\z)(?:  [^\n]++\n|[ \t]++\n)*+|\n)(?:[ \t]*+\n)*+/', $params, $m, 0, $pos)) {
             $pos += strlen($m[0]);
             if ($m[1] === "badge") {
                 if (!$response) {
@@ -675,16 +596,16 @@ class APISpec_Batch {
             if (str_starts_with($m[1], "response") !== $response) {
                 continue;
             }
-            if ($m[1] === "response_schema") {
+            if (str_ends_with($m[1], "_schema")) {
                 if ($this->reference_common_schema($m[2], $landmark)) {
                     if (!in_array($m[2], $this->cur_fieldsch, true)) {
-                        if (empty($this->cur_fieldsch)) {
+                        if (empty($this->cur_fieldsch) && $response) {
                             $this->cur_fieldsch[] = "minimal_response";
                         }
                         $this->cur_fieldsch[] = $m[2];
                     }
                 } else {
-                    fwrite(STDERR, "{$landmark}: {$this->cur_prefix()}: unknown response_schema `{$m[2]}`\n");
+                    fwrite(STDERR, "{$landmark}: {$this->cur_prefix()}: unknown {$m[1]} `{$m[2]}`\n");
                 }
                 continue;
             }
@@ -722,38 +643,6 @@ class APISpec_Batch {
         }
     }
 
-    /** @param string $name
-     * @param int $f
-     * @return ?string */
-    private function common_param_name($name, $f, $query_plausible) {
-        if (!isset(self::$param_schemas[$name])) {
-            return null;
-        }
-        if ($name === "p") {
-            if (($f & self::F_REQUIRED) === 0) {
-                return "p.opt";
-            } else if (($f & self::F_PATH) !== 0) {
-                return "p.path";
-            } else {
-                return "p";
-            }
-        } else if ($name === "r") {
-            return $f & self::F_REQUIRED ? "r" : "r.opt";
-        } else if ($name === "c") {
-            return $f & self::F_REQUIRED ? "c" : "c.opt";
-        } else if ($name === "q") {
-            return $f & self::F_REQUIRED ? "q" : "q.opt";
-        } else if ((($name === "redirect" || $name === "forceShow")
-                    && $f === 0)
-                   || (in_array($name, ["t", "qt", "reviewer", "sort", "scoresort"], true)
-                       && $query_plausible
-                       && ($f & self::F_REQUIRED) === 0)) {
-            return $name;
-        } else {
-            return null;
-        }
-    }
-
     /** @param object $x
      * @param object $uf
      * @param ?object $dj */
@@ -779,7 +668,7 @@ class APISpec_Batch {
                 continue;
             }
             if (($f & (self::F_BODY | self::F_FILE)) !== 0) {
-                $schema = $this->cur_fields[$name] ?? self::$param_schemas[$name] ?? null;
+                $schema = $this->cur_fields[$name] ?? null;
                 $bprop[$name] = $this->resolve_info($schema, $name);
                 if (isset($this->cur_fieldd[$name]) && !isset($bprop[$name]->{"\$ref"})) {
                     $bprop[$name]->description = $this->cur_fieldd[$name];
@@ -792,20 +681,22 @@ class APISpec_Batch {
                 }
                 continue;
             }
-            if (($pn = $this->common_param_name($name, $f, $query_plausible))
-                && !isset($this->cur_fieldd[$name])) {
-                $params[$name] = $this->reference_common_param($pn);
-            } else {
-                $params[$name] = (object) [
+            $pobj = null;
+            if (!isset($this->cur_fieldd[$name])) {
+                $pobj = $this->reference_common_param($name, $f);
+            }
+            if (!$pobj) {
+                $pobj = (object) [
                     "name" => $name,
                     "in" => "query",
                     "required" => ($f & self::F_REQUIRED) !== 0,
                     "schema" => $this->resolve_info($this->cur_fields[$name] ?? null, $name)
                 ];
                 if (isset($this->cur_fieldd[$name])) {
-                    $params[$name]->description = $this->cur_fieldd[$name];
+                    $pobj->description = $this->cur_fieldd[$name];
                 }
             }
+            $params[$name] = $pobj;
         }
         if (!empty($params) || isset($x->parameters)) {
             $this->apply_parameters($x, $params);
@@ -1246,12 +1137,12 @@ class APISpec_Batch {
         // warn about unreferenced paths
         if ($this->batch) {
             foreach ($this->paths as $name => $pj) {
-                if (!isset($this->setj->paths->$name)) {
+                if (!isset($this->setj_paths->$name)) {
                     fwrite(STDERR, $this->jpath_landmark("\$.paths[\"{$name}\"]") . "input path {$name} not specified\n");
                 } else {
                     foreach ($pj as $lmethod => $x) {
                         if ($lmethod !== "__path"
-                            && !isset($this->setj->paths->$name->$lmethod)) {
+                            && !isset($this->setj_paths->$name->$lmethod)) {
                             fwrite(STDERR, $this->jpath_landmark("\$.paths[\"{$name}\"].{$lmethod}") . "input operation {$lmethod} {$name} not specified\n");
                         }
                     }
@@ -1290,17 +1181,21 @@ class APISpec_Batch {
         }
 
         // print
-        if (($this->output_file ?? "-") === "-") {
+        $ofile = $this->output_file ?? "-";
+        if ($ofile === "-") {
             $out = STDOUT;
         } else {
-            $out = @fopen(safe_filename($this->output_file), "wb");
+            $out = @fopen(safe_filename("{$ofile}~"), "wb");
             if (!$out) {
-                throw error_get_last_as_exception("{$this->output_file}: ");
+                throw error_get_last_as_exception("{$ofile}~: ");
             }
         }
         fwrite($out, json_encode($this->j, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . "\n");
         if ($out !== STDOUT) {
             fclose($out);
+            if (!rename("{$ofile}~", $ofile)) {
+                throw error_get_last_as_exception("{$ofile}: ");
+            }
         }
         return 0;
     }
@@ -1426,11 +1321,12 @@ Usage: php batch/apispec.php")
             $t = microtime(true);
             fwrite(STDERR, "Created {$file}" . ($term === 0 ? "" : " (termination status {$term})") . "\n\n");
             while (true) {
-                $x = @fread($fswatch, 1024);
+                $x = @fgets($fswatch, 1024);
                 if ($x === false) {
                     exit(1);
                 }
-                if ($x !== "{$path}\n" || microtime(true) - $t > 1) {
+                if (($x !== "{$path}\n" && $x !== "{$path}~\n")
+                    || microtime(true) - $t > 1) {
                     break;
                 }
             }

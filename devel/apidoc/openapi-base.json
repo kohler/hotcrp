@@ -15,52 +15,72 @@
     "paths": {},
     "components": {
         "parameters": {
-            "redirect": {
-                "name": "redirect",
-                "in": "query",
-                "required": false,
-                "schema": {
-                    "type": "string"
-                }
-            },
             "p.path": {
                 "name": "p",
                 "in": "path",
                 "required": true,
-                "schema": {
-                    "$ref": "#/components/schemas/pid"
+                "schema": {"$ref": "#/components/schemas/pid"},
+                "description": "Submission ID",
+                "examples": {
+                    "normal": {
+                        "summary": "Submission ID",
+                        "value": 1
+                    }
                 }
             },
             "p": {
                 "name": "p",
                 "in": "query",
                 "required": false,
-                "schema": {
-                    "$ref": "#/components/schemas/pid"
+                "schema": {"$ref": "#/components/schemas/pid"},
+                "description": "Submission ID",
+                "examples": {
+                    "normal": {
+                        "summary": "Normal submission ID",
+                        "value": 1
+                    }
                 }
             },
             "r": {
                 "name": "r",
                 "in": "query",
                 "required": true,
-                "schema": {
-                    "$ref": "#/components/schemas/rid"
-                }
-            },
-            "p.opt": {
-                "name": "p",
-                "in": "query",
-                "required": false,
-                "schema": {
-                    "$ref": "#/components/schemas/pid"
+                "schema": {"$ref": "#/components/schemas/rid"},
+                "description": "Review ID",
+                "examples": {
+                    "raw": {
+                        "summary": "Bare review ID",
+                        "value": 1238
+                    },
+                    "submitted": {
+                        "summary": "Submission ID and ordinal",
+                        "value": "230B"
+                    },
+                    "unsubmitted": {
+                        "summary": "Submission and review ID",
+                        "value": "230r1238"
+                    }
                 }
             },
             "r.opt": {
                 "name": "r",
                 "in": "query",
                 "required": false,
-                "schema": {
-                    "$ref": "#/components/schemas/rid"
+                "schema": {"$ref": "#/components/schemas/rid"},
+                "description": "Review ID",
+                "examples": {
+                    "raw": {
+                        "summary": "Bare review ID",
+                        "value": 1238
+                    },
+                    "submitted": {
+                        "summary": "Submission ID and ordinal",
+                        "value": "230B"
+                    },
+                    "unsubmitted": {
+                        "summary": "Submission and review ID",
+                        "value": "230r1238"
+                    }
                 }
             },
             "c.opt": {
@@ -142,6 +162,110 @@
                 "schema": {
                     "type": "boolean"
                 }
+            },
+            "doc": {
+                "name": "doc",
+                "in": "query",
+                "required": false,
+                "schema": {"$ref": "#/components/schemas/document_name"},
+                "description": "Document name",
+                "examples": {
+                    "submission": {
+                        "summary": "Document name for submission PDF",
+                        "value": "testconf-paper1.pdf"
+                    },
+                    "final": {
+                        "summary": "Document name for final version PDF",
+                        "value": "testconf-final1.pdf"
+                    },
+                    "other": {
+                        "summary": "Document name for other field",
+                        "value": "testconf-paper2-supplementary_material.zip"
+                    },
+                    "attachment": {
+                        "summary": "Document name for attachment field",
+                        "value": "testconf-paper2-attachments/filename.svg"
+                    }
+                }
+            },
+            "dt": {
+                "name": "dt",
+                "in": "query",
+                "required": false,
+                "schema": {"$ref": "#/components/schemas/document_type"},
+                "description": "Document type",
+                "examples": {
+                    "submission": {
+                        "summary": "Document type for submission PDF",
+                        "value": 0
+                    },
+                    "final": {
+                        "summary": "Document type for final version PDF",
+                        "value": -1
+                    },
+                    "other": {
+                        "summary": "Document type for other field",
+                        "value": 2
+                    }
+                }
+            },
+            "attachment": {
+                "name": "attachment",
+                "in": "query",
+                "required": false,
+                "schema": {"type": "string"},
+                "description": "Filename of document within multi-document field",
+                "examples": {
+                    "file": {
+                        "value": "example.txt"
+                    }
+                }
+            },
+            "hash": {
+                "name": "hash",
+                "in": "query",
+                "required": false,
+                "schema": {"$ref": "#/components/schemas/document_hash"},
+                "description": "Hash of document",
+                "examples": {
+                    "sha256": {
+                        "summary": "SHA-256 hash",
+                        "value": "sha2-09137e80575f1b71a002fdbec94c706a2934458a6134feff7b5819ce81b2f6e3"
+                    },
+                    "sha1": {
+                        "summary": "SHA-1 hash (obsolete)",
+                        "value": "d1e37b0c5bda6f41334fbe78f9e3e1540102719f"
+                    }
+                }
+            },
+            "docid": {
+                "name": "docid",
+                "in": "query",
+                "required": false,
+                "schema": {"$ref": "#/components/schemas/document_id"},
+                "description": "Document ID",
+                "examples": {
+                    "docid": {
+                        "value": 102
+                    }
+                }
+            },
+            "at": {
+                "name": "at",
+                "in": "query",
+                "required": false,
+                "schema": {"oneOf": [{"type": "integer"}, {"type": "string"}]},
+                "description": "Timestamp of document version",
+                "examples": {
+                    "int": {
+                        "summary": "UNIX timestamp",
+                        "value": 1760400878
+                    },
+                    "string": {
+                        "summary": "ISO timestamp",
+                        "value": "2025-10-13T20:14Z"
+                    }
+                }
             }
         },
         "schemas": {
@@ -217,7 +341,10 @@
                         "title": "end position",
                         "type": "integer"
                     }
-                ]
+                ],
+                "unevaluatedItems": false,
+                "minItems": 3,
+                "maxItems": 3
             },
             "minimal_response": {
                 "type": "object",
@@ -250,6 +377,17 @@
                         "type": "integer"
                     }
                 }
+            },
+            "nullable_int": {
+                "oneOf": [
+                    {"type": "null"},
+                    {"type": "integer"}
+                ],
+                "description": "Integer or `null`",
+                "examples": [
+                    2,
+                    null
+                ]
             },
             "pid": {
                 "type": "integer",
@@ -311,17 +449,46 @@
             },
             "document_name": {
                 "type": "string",
-                "examples": [
-                    "testconf-paper1.pdf"
-                ]
+                "description": "Name of document"
             },
             "document_type": {
-                "type": "integer"
+                "type": "integer",
+                "description": "Type of document"
             },
             "document_id": {
                 "type": "integer",
                 "minimum": 1,
                 "description": "Document ID"
+            },
+            "document_hash": {
+                "type": "string",
+                "minLength": 40,
+                "pattern": "^(\\w+-)?[0-9a-f]{40,}$"
+            },
+            "document_history_entry": {
+                "type": "object",
+                "description": "Document description",
+                "required": ["hash", "at", "mimetype", "link"],
+                "properties": {
+                    "hash": {"$ref": "#/components/schemas/document_hash"},
+                    "at": {"type": "integer"},
+                    "mimetype": {"$ref": "#/components/schemas/mimetype"},
+                    "size": {"type": "integer"},
+                    "filename": {"type": "string", "description": "Filename used for upload"},
+                    "active": {"type": "boolean", "description": "True if this document is currently active"},
+                    "link": {"type": "string", "description": "Link to this specific version of the document"}
+                },
+                "examples": [
+                    {
+                        "hash": "sha2-f4640a0c20c9797f625a4071c9b53c633d2eb9347695c83228adfeddc516c656",
+                        "at": 1760706447,
+                        "mimetype": "application/pdf",
+                        "size": 187698,
+                        "filename": "relationship-between-interrupts.pdf",
+                        "active": true,
+                        "link": "https://test.hotcrp.com/t/te3d7vgcbjhhel/doc/te3d7vgcbjhhel-paper1.pdf?docid=1902"
+                    }
+                ]
             },
             "offset_range": {
                 "type": "array",
@@ -334,7 +501,10 @@
                         "type": "integer",
                         "description": "Last offset"
                     }
-                ]
+                ],
+                "unevaluatedItems": false,
+                "minItems": 2,
+                "maxItems": 2
             },
             "upload_token": {
                 "type": "string",
@@ -457,9 +627,7 @@
             "search_parameters": {
                 "type": "object",
                 "description": "Search parameters",
-                "required": [
-                    "q"
-                ],
+                "required": ["q"],
                 "properties": {
                     "q": {
                         "$ref": "#/components/schemas/search_string"
@@ -555,7 +723,7 @@
                         "name": "lead",
                         "description": "<0>Discussion lead",
                         "parameters": [
-                            {"name": "format", "type": "enum", "enum": ["given_name", "family_name"], "lifted": true}
+                            {"name": "format", "enum": ["given_name", "family_name"], "lifted": true}
                         ]
                     }
                 ]
@@ -595,7 +763,6 @@
                     },
                     {
                         "name": "format",
-                        "type": "enum",
                         "enum": [
                             "given_name",
                             "family_name"

@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-10-04:c6312c294",
+        "version": "2025-10-17:dbe7bc9dc",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n\n\n### Large queries\n\nA `POST` request whose `:method:` query parameter is set to `GET` is treated as\nif it were a `GET` request. This can help work around web server URL length\nlimits.\n"
     },
@@ -18,16 +18,17 @@
         }
     ],
     "paths": {
-        "/paper": {
+        "/{p}/paper": {
             "get": {
                 "summary": "Fetch submission",
                 "description": "Fetch a submission object specified by `p`, a submission ID. The submission\nobject is returned in the `paper` response property. Error messages—for\ninstance, about permission errors or nonexistent submissions—are returned in\n`message_list`.\n",
+                "operationId": "paper",
                 "tags": [
                     "Submissions"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p.path"
                     },
                     {
                         "name": "forceShow",
@@ -76,15 +77,134 @@
                     }
                 }
             },
+            "delete": {
+                "summary": "Delete submission",
+                "description": "Delete the submission specified by `p`, a submission ID.\n",
+                "operationId": "paper-delete",
+                "tags": [
+                    "Submissions"
+                ],
+                "x-badges": [
+                    {
+                        "name": "Admin only"
+                    }
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "dry_run",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True checks input for errors, but does not save changes"
+                    },
+                    {
+                        "name": "notify",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "False disables all email notifications (site\n  administrators only)"
+                    },
+                    {
+                        "name": "notify_authors",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "False disables email notifications to authors\n  (paper administrators only)"
+                    },
+                    {
+                        "name": "reason",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Optional text included in notification emails"
+                    },
+                    {
+                        "name": "if_unmodified_since",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Don’t delete if modified since this time"
+                    },
+                    {
+                        "$ref": "#/components/parameters/forceShow"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "valid",
+                                        "change_list"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "dry_run": {
+                                            "type": "boolean",
+                                            "description": "True for `dry_run` requests"
+                                        },
+                                        "valid": {
+                                            "type": "boolean",
+                                            "description": "True if the delete request was valid"
+                                        },
+                                        "change_list": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "`[\"delete\"]`"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/paper": {
             "post": {
                 "summary": "Create or modify submission",
-                "description": "Create or modify a submission specified by `p`, a submission ID.\n\nSetting `p=new` will create a new submission; the response will contain the\nchosen submission ID.\n\nThe modification may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a ZIP archive (when the request body has content-type\n   `application/zip`). The archive must contain a file named `data.json`; it\n   may contain other files too.\n3. As a JSON-formatted request parameter named `json` (when the request body\n   has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or ZIP file, represented by a upload token in\n   the `upload` parameter.\n\nIn all of these, the modification is defined by a JSON submission object. The\nproperties of this object define the modifications applied to the submission.\nThe object need not specify all submission properties; absent properties\nremain unchanged.\n\nThe `p` request parameter is optional. If it is unset, HotCRP uses the `pid`\nfrom the supplied JSON. If both the `p` parameter and the JSON `pid` property\nare present, then they must match.\n\nTo test a modification, supply a `dry_run=1` parameter. This will test the\nuploaded JSON but make no changes to the database.\n\n\n### ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n### Responses\n\nThe `valid` response property is `true` if and only if the modification was\nvalid. In non-dry-run requests, `\"valid\": true` indicates that database changes\nwere committed.\n\nThe `change_list` response property lists any modified field names. New\nsubmissions have `\"pid\"` as the first item in the list. `change_list` contains\nfields that the request *attempted* to modify; successful requests, erroneous\nrequests, and dry-run requests can all return nonempty `change_list`s.\n\nThe response returns the modified submission object `paper` property contains\nthe modified submission object.\n\nDry-run requests return `change_list` and `valid` properties, but not `paper`\nproperties, since no modifications are performed.\n\n\n### Administrator use\n\nAdministrators can use this endpoint to set some submission properties, such\nas `decision`, that have other endpoints as well.\n\nAdministrators can choose specific IDs for new submissions by setting `p` (or\nJSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the submission JSON’s `status`.`if_unmodified_since`\nto `0`.\n",
+                "description": "Create or modify a submission specified by `p`, a submission ID.\n\nSetting `p=new` will create a new submission; the response will contain the\nchosen submission ID.\n\nThe modification may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a ZIP archive (when the request body has content-type\n   `application/zip`). The archive must contain a file named `data.json`; it\n   may contain other files too.\n3. As a JSON-formatted request parameter named `json` (when the request body\n   has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or ZIP file, represented by a upload token in\n   the `upload` parameter.\n\nIn all of these, the modification is defined by a JSON submission object. The\nproperties of this object define the modifications applied to the submission.\nThe object need not specify all submission properties; absent properties\nremain unchanged.\n\nThe `p` request parameter is optional. If it is unset, HotCRP uses the `pid`\nfrom the supplied JSON. If both the `p` parameter and the JSON `pid` property\nare present, then they must match.\n\nTo test a modification, supply a `dry_run=1` parameter. This will test the\nuploaded JSON but make no changes to the database.\n\n\n### ZIP and form uploads\n\nA ZIP upload should contain a file named `data.json` (`PREFIX-data.json` is\nalso acceptable). This file’s content is parsed as JSON. Submission fields in\nthe JSON can refer to other files in the ZIP. For instance, this shell session\nuploads a new submission with content `paper.pdf`:\n\n```\n$ cat data.json\n{\n\t\"object\": \"paper\",\n\t\"pid\": \"new\",\n\t\"title\": \"Aught: A Methodology for the Visualization of Scheme\",\n\t\"authors\": [{\"name\": \"Nevaeh Gomez\", \"email\": \"ngomez@example.edu\"}],\n\t\"submission\": {\"content_file\": \"paper.pdf\"},\n\t\"status\": \"submitted\"\n}\n$ zip upload.zip data.json paper.pdf\n$ curl -H \"Authorization: bearer hct_XXX\" --data-binary @upload.zip -H \"Content-Type: application/zip\" SITEURL/api/paper\n```\n\nThis shell session does the same, but using `multipart/form-data`.\n\n```\n$ curl -H \"Authorization: bearer hct_XXX\" -F \"json=<data.json\" -F paper.pdf=@paper.pdf SITEURL/api/paper\n```\n\n### Responses\n\nThe `valid` response property is `true` if and only if the modification was\nvalid. In non-dry-run requests, `\"valid\": true` indicates that database changes\nwere committed.\n\nThe `change_list` response property lists any modified field names. New\nsubmissions have `\"pid\"` as the first item in the list. `change_list` contains\nfields that the request *attempted* to modify; successful requests, erroneous\nrequests, and dry-run requests can all return nonempty `change_list`s.\n\nThe `paper` response property is the modified submission object.\n\nDry-run requests return `change_list` and `valid` properties, but not `paper`\nproperties, since no modifications are performed.\n\n\n### Administrator use\n\nAdministrators can use this endpoint to set some submission properties, such\nas `decision`, that have other endpoints as well.\n\nAdministrators can choose specific IDs for new submissions by setting `p` (or\nJSON `pid`) to the chosen ID. Such a request will either modify an existing\nsubmission or create a new submission with that ID. To avoid overwriting an\nexisting submission, set the submission JSON’s `status`.`if_unmodified_since`\nto `0`.\n",
+                "operationId": "paper-post",
                 "tags": [
                     "Submissions"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p"
                     },
                     {
                         "name": "dry_run",
@@ -219,127 +339,11 @@
                 }
             }
         },
-        "/{p}/paper": {
-            "delete": {
-                "summary": "Delete submission",
-                "description": "Delete the submission specified by `p`, a submission ID.\n",
-                "tags": [
-                    "Submissions"
-                ],
-                "x-badges": [
-                    {
-                        "name": "Admin only"
-                    }
-                ],
-                "parameters": [
-                    {
-                        "$ref": "#/components/parameters/p.path"
-                    },
-                    {
-                        "name": "dry_run",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean"
-                        },
-                        "description": "True checks input for errors, but does not save changes"
-                    },
-                    {
-                        "name": "notify",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean"
-                        },
-                        "description": "False disables all email notifications (site\n  administrators only)"
-                    },
-                    {
-                        "name": "notify_authors",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean"
-                        },
-                        "description": "False disables email notifications to authors\n  (paper administrators only)"
-                    },
-                    {
-                        "name": "reason",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "Optional text included in notification emails"
-                    },
-                    {
-                        "name": "if_unmodified_since",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        },
-                        "description": "Don’t delete if modified since this time"
-                    },
-                    {
-                        "$ref": "#/components/parameters/forceShow"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ok",
-                                        "valid",
-                                        "change_list"
-                                    ],
-                                    "properties": {
-                                        "ok": {
-                                            "type": "boolean"
-                                        },
-                                        "message_list": {
-                                            "$ref": "#/components/schemas/message_list"
-                                        },
-                                        "dry_run": {
-                                            "type": "boolean",
-                                            "description": "True for `dry_run` requests"
-                                        },
-                                        "valid": {
-                                            "type": "boolean",
-                                            "description": "True if the delete request was valid"
-                                        },
-                                        "change_list": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "string"
-                                            },
-                                            "description": "`[\"delete\"]`"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/error_response"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/papers": {
             "get": {
                 "summary": "Fetch multiple submissions",
                 "description": "Fetch submission objects matching a search.\n\nThe search is specified in the `q` parameter (and other search parameters,\nsuch as `t` and `qt`). All matching visible submissions are returned, as an\narray of submission objects, in the response property `papers`.\n\nSince searches silently filter out non-viewable submissions, `/papers?q=1010`\nand `/paper?p=1010` can return different error messages. The `/paper` request\nmight return an error like “Submission #1010 does not exist” or “You aren’t\nallowed to view submission #1010”, whereas the `/papers` request will return\nno errors. To obtain warnings for missing submissions that were explicitly\nlisted in a query, supply a `warn_missing=1` parameter.\n",
+                "operationId": "papers",
                 "tags": [
                     "Submissions"
                 ],
@@ -418,6 +422,7 @@
             "post": {
                 "summary": "Create or modify multiple submissions",
                 "description": "Create or modify multiple submissions.\n\nThis administrator-only endpoint modifies multiple submissions at once. Its\nrequest formats are similar to that of `POST /{p}/paper`: it can accept a\nJSON, ZIP, or form-encoded request body with a `json` parameter, and ZIP and\nform-encoded requests can also include attached files.\n\n### Modify submissions independently\n\nThe JSON provided for `/papers` should be an *array* of JSON objects. The\n`status_list` response property is an array with the same number of elements\nas the input JSON. Component *i* of `status_list` reports the status of update\n*i* as an object with `valid`, `change_list`, and `pid` properties; these\nreport the validity of the update, the list of changed fields, and the\nsubmission ID of the modified submission.\n\nThe response `message_list` contains messages relating to all modified\nsubmissions. To filter out the messages for a single submission, use the\nmessages’ `landmark` properties. `landmark` is set to the integer index of the\nrelevant submission in the input JSON.\n\n### Modify all matching submissions\n\nAlternately, you can provide a `q` search query parameter and a *single* JSON\nmodification object lacking the `pid` property. The JSON modification will be\napplied to all papers returned by the `q` search query.\n\n",
+                "operationId": "papers-post",
                 "tags": [
                     "Submissions"
                 ],
@@ -579,39 +584,250 @@
                 }
             }
         },
-        "/formatcheck": {
+        "/share": {
             "get": {
-                "summary": "Check PDF format",
+                "summary": "/share",
+                "operationId": "share",
+                "tags": [
+                    "Submissions"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "/share",
+                "operationId": "share-post",
+                "tags": [
+                    "Submissions"
+                ],
+                "parameters": [
+                    {
+                        "name": "share",
+                        "in": "query",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "name": "expires_in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/document": {
+            "get": {
+                "summary": "Fetch document",
+                "description": "Fetch a document and return it in the response body. Specify the document to\nreturn either with the `doc` parameter, which names the document using a pattern\nlike `testconf-paper1.pdf`, or the `p`, `dt`, and optionally `attachment`\nparameters, which define the submission ID, submission field, and attachment\nname.\n\nThe `hash` and `docid` parameters let administrators and authors select a\nspecific version of a document. `hash` selects a document by hash, and `docid`\nby internal document ID. Responses to requests with `hash` or `docid` are\nusually cacheable.\n\nSuccessful requests (HTTP status code 200) return the requested document as the\nresponse, without any JSON wrapper. Find the document’s MIME type using the\nresponse’s `Content-Type` header. Unsuccessful requests (HTTP status code 300 or\nhigher) usually return a JSON object with `ok` set to `false` and a\n`message_list` describing the error.\n\nThis API understands conditional requests with HTTP headers `If-Match`,\n`If-None-Match`, `If-Modified-Since`, and `If-Unmodified-Since`, and many\nresponses include `ETag` and `Last-Modified` HTTP headers. It also understands\nrange requests.\n\n\n",
+                "operationId": "document",
                 "tags": [
                     "Documents"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p"
                     },
                     {
-                        "name": "doc",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/document_name"
-                        }
+                        "$ref": "#/components/parameters/doc"
                     },
                     {
-                        "name": "dt",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/document_type"
-                        }
+                        "$ref": "#/components/parameters/dt"
                     },
                     {
-                        "name": "docid",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "$ref": "#/components/schemas/document_id"
+                        "$ref": "#/components/parameters/attachment"
+                    },
+                    {
+                        "$ref": "#/components/parameters/hash"
+                    },
+                    {
+                        "$ref": "#/components/parameters/docid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        }
+                                    }
+                                }
+                            }
                         }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/documenthistory": {
+            "get": {
+                "summary": "Fetch document history",
+                "description": "Fetch information about all versions of a document accessible to the requesting\nuser. Use the `doc` parameter to specify a document by name, or `p` and `dt` to\nspecify it by type.\n",
+                "operationId": "documenthistory",
+                "tags": [
+                    "Documents"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p"
+                    },
+                    {
+                        "$ref": "#/components/parameters/doc"
+                    },
+                    {
+                        "$ref": "#/components/parameters/dt"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "dt",
+                                        "document_history"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "dt": {
+                                            "$ref": "#/components/schemas/document_type"
+                                        },
+                                        "document_history": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/document_history_entry"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/formatcheck": {
+            "get": {
+                "summary": "Check PDF format",
+                "description": "Run HotCRP’s PDF format checker on a specified document. A human-readable\nresponse is returned in `message_list`. The `problem_fields` response property\nlists the names of any PDF checks that failed; examples include `\"papersize\"`,\n`\"pagelimit\"`, `\"columns\"`, `\"textblock\"`, `\"bodyfontsize\"`, `\"bodylineheight\"`,\nand `\"wordlimit\"`.\n",
+                "operationId": "formatcheck",
+                "tags": [
+                    "Documents"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p"
+                    },
+                    {
+                        "$ref": "#/components/parameters/doc"
+                    },
+                    {
+                        "$ref": "#/components/parameters/dt"
+                    },
+                    {
+                        "$ref": "#/components/parameters/docid"
                     },
                     {
                         "name": "soft",
@@ -620,6 +836,12 @@
                         "schema": {
                             "type": "boolean"
                         }
+                    },
+                    {
+                        "$ref": "#/components/parameters/attachment"
+                    },
+                    {
+                        "$ref": "#/components/parameters/hash"
                     }
                 ],
                 "responses": {
@@ -644,11 +866,113 @@
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
                                         },
-                                        "npages": {},
-                                        "nwords": {},
-                                        "problem_fields": {},
-                                        "has_error": {},
-                                        "docid": {}
+                                        "npages": {
+                                            "$ref": "#/components/schemas/nullable_int",
+                                            "description": "Number of pages in PDF"
+                                        },
+                                        "nwords": {
+                                            "$ref": "#/components/schemas/nullable_int",
+                                            "description": "Number of words in PDF"
+                                        },
+                                        "problem_fields": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "has_error": {
+                                            "type": "boolean"
+                                        },
+                                        "docid": {
+                                            "$ref": "#/components/schemas/document_id"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/archivelisting": {
+            "get": {
+                "summary": "Fetch contents of archive document",
+                "description": "Fetch the contents of a ZIP, .tar, .tar.gz, .tar.bz2, or .tar.xz archive. The\ncontents are returned as a list of string filenames. The `consolidated=1`\nparameter requests an additional `consolidated_listing`, which returns a\npreformatted string that uses `{}` notation to represent subdirectories; for\ninstance, `subdir/{file1.txt, file2.txt}`.\n",
+                "operationId": "archivelisting",
+                "tags": [
+                    "Documents"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p"
+                    },
+                    {
+                        "name": "consolidated",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "True requests a `consolidated_listing`"
+                    },
+                    {
+                        "$ref": "#/components/parameters/doc"
+                    },
+                    {
+                        "$ref": "#/components/parameters/dt"
+                    },
+                    {
+                        "$ref": "#/components/parameters/docid"
+                    },
+                    {
+                        "$ref": "#/components/parameters/attachment"
+                    },
+                    {
+                        "name": "version",
+                        "in": "query",
+                        "required": false,
+                        "schema": {}
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "listing"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "listing": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "List of archive elements"
+                                        },
+                                        "consolidated_listing": {
+                                            "type": "string",
+                                            "description": "Parsed contents of archive"
+                                        }
                                     }
                                 }
                             }
@@ -671,12 +995,13 @@
             "post": {
                 "summary": "Upload file",
                 "description": "Upload large files to HotCRP for later use.\n\nServers limit how much data they will accept in a single request. The upload\nAPI uploads larger files over multiple requests. When an upload is complete,\nlater requests can refer to that file using an *upload token*.\n\nThe lifecycle of an upload is as follows.\n\n1. A request with `start=1` begins a new upload. This request should also\n   include a `size` parameter to define the size of the uploaded file, if that\n   is known.\n2. The response to this request will include the upload token for the uploaded\n   file in its `token` field. This is a string like `hcupwhvGDVmHNYyDKdqeqA`.\n   All subsequent requests relating to the upload must include this token as a\n   `token` parameter.\n3. Subsequent requests upload the contents of the file in chunks. The `blob`\n   parameter (which can be an attached file) contains the chunk itself; the\n   `offset` parameter defines the offset of chunk relative to the file.\n4. A request with `finish=1` completes the upload. The server seals the upload\n   and responds with the file’s content hash. A `finish=1` request will fail\n   unless all expected chunks have been received.\n\n`start=1` and `finish=1` requests can also include a chunk. The `ranges`\nresponse field represents the ranges of bytes received so far.\n\nThe upload API is only available on sites that have enabled the document\nstore.\n",
+                "operationId": "upload",
                 "tags": [
                     "Documents"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p"
                     },
                     {
                         "name": "start",
@@ -853,6 +1178,7 @@
             "get": {
                 "summary": "Fetch search results",
                 "description": "Return IDs, and optionally other display fields, of submissions that match a\nsearch.\n\nPass the search query in the `q` parameter. The list of matching submission\nIDs is returned in the `ids` response property, ordered according to the\nsearch.\n\nThe `t`, `qt`, `reviewer`, `sort`, and `scoresort` parameters can also affect\nthe search. `t` defines the collection of submissions to search, where\n`t=viewable` checks all submissions the user can view. If `t` is not provided,\nHotCRP picks a default based on the user’s roles and the site’s current\nconfiguration; for PC members and chairs, the typical default is `t=s`, which\nsearches complete submissions.\n\n### Display fields\n\nPass `f` and `format` parameters to retrieve display fields for each submission\nin the search result.\n\n`f` defines the display fields to return. An example is `title authors[full]`.\nObtain the available display fields with the `/displayfields` API. `format` is\neither `csv` or `html`, and requests CSV or HTML format for the response data.\n\nThe response will contain `fields` and `papers` properties. `fields` is an array\nof objects defining the emitted display fields. Typically, each entry in\n`fields` corresponds to a member of `f`, but some field requests can expand into\nmultiple display fields. `papers` is an array of objects defining the exported\nfields for each matching submission. Each `papers` entry has a `pid` property\nwith the submission ID, and properties corresponding to the `fields`. The\n`papers` entries are in the same order as `ids`. In some cases, the response\nwill have a `statistics` property defining overall statistics for some of the\nrequested fields.\n\nAs an example, this response might be returned for the search `10-12` with\n`format=csv` and `f=title`.\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12],\n    \"fields\": [\n        {\n            \"name\": \"title\",\n            \"title\": \"Title\",\n            \"order\": 120,\n            \"sort\": \"ascending\"\n        }\n    ],\n    \"groups\": [],\n    \"papers\": [\n        {\n            \"pid\": 10,\n            \"title\": \"Active Bridging\"\n        },\n        {\n            \"pid\": 12,\n            \"title\": \"Dynamics of Random Early Detection\"\n        }\n    ]\n}\n```\n\nPlease note that `html` format is unlikely to be useful outside the HotCRP web\napplication. The returned HTML uses elements, tag structures, and class names\nsuitable for HotCRP’s internal use, and may change at any time. Furthermore,\nin some cases (such as `f=allpref`), the returned data is compressed into a\nfield-specific format that the HotCRP web application expands.\n\n### Search annotations\n\nThe `groups` response property is an array of search annotations, and is\nreturned for `THEN` searches, `LEGEND` searches, and searches on annotated\ntags. Each `groups` entry contains a position `pos`, which is an integer index\ninto the search results. Annotations with `pos` `P` should appear immediately\nbefore the submission at index `P` in the result. A `groups` entry may also\nhave other properties, including `legend` (the textual legend corresponding to\nthe annotation), `search` (for `THEN` searches, the search string representing\nthe following results), and `annoid`.\n\nAs an example, this response might be returned for the search `10-12 THEN\n5-8`.\n\n```json\n{\n    \"ok\": true,\n    \"ids\": [10, 12, 8],\n    \"groups\": [\n        {\n            \"pos\": 0,\n            \"legend\": \"10-12\",\n            \"search\": \"10-12\"\n        },\n        {\n            \"pos\": 2,\n            \"legend\": \"5-8\",\n            \"search\": \"5-8\"\n        }\n    ]\n}\n```\n\n### More\n\nThe `search_params` response property is a URL-encoded string defining all\nrelevant parameters for the search.\n\nSet the `hotlist` parameter to get a `hotlist` response property, which is\nused by the HotCRP browser Javascript to remember information about a list of\npapers.\n\n",
+                "operationId": "search",
                 "tags": [
                     "Search"
                 ],
@@ -986,6 +1312,7 @@
             "get": {
                 "summary": "List search actions",
                 "description": "Return a list of search actions accessible via HotCRP’s API.\n\nSearch actions perform actions on a set of papers specified via search. In the\nHotCRP web application, search actions are shown underneath the search list;\nexamples include “Download > Review forms (zip)” and “Tag > Add to order”. The\n`/searchactions` API endpoint retrieves the search actions that the current user\ncan access programmatically via the `/searchaction` API.\n",
+                "operationId": "searchactions",
                 "tags": [
                     "Search"
                 ],
@@ -1036,12 +1363,13 @@
             "get": {
                 "summary": "Perform search action",
                 "description": "Perform the search action specified by the `action` parameter on the papers\ndefined by the `q` and `t` search parameters.\n\nThe `action` parameter must correspond to the `name` of a valid search action,\nas returned from the `/searchactions` API endpoint. Other parameters may be\nprovided; the `/searchactions` response mentions relevant parameters for each\naction.\n\nSearch action responses do not follow HotCRP’s typical conventions. Successful\nresponses may not use the JSON content type. For instance, the `get/paper`\naction typically returns a ZIP file containing submission PDFs, and the\n`get/csv` action returns a CSV-formatted text file. Furthermore, successful JSON\nresponses may not be objects, or may not contain an `ok` property; for example,\na successful response to a `get/json` request is an array of objects.\nApplications wanting predictable JSON responses should use other API endpoints.\nNevertheless, `/searchaction` can be more convenient than using more\nstandardized APIs.\n",
+                "operationId": "searchaction",
                 "tags": [
                     "Search"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p"
                     },
                     {
                         "name": "action",
@@ -1114,12 +1442,13 @@
             "post": {
                 "summary": "Perform search action",
                 "description": "Perform the search action specified by the `action` parameter on the papers\ndefined by the `q` and `t` search parameters.\n\nThe request format for POST requests is the same as for GET requests.\n",
+                "operationId": "searchaction-post",
                 "tags": [
                     "Search"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p"
                     },
                     {
                         "name": "action",
@@ -1194,6 +1523,7 @@
             "get": {
                 "summary": "List display fields",
                 "description": "Return a list of all supported display fields. Display fields can be requested\nin the web UI (search for `show:FIELDNAME`) or in the API (supply `f=FIELDNAME`\nto the `/search` endpoint).\n",
+                "operationId": "displayfields",
                 "tags": [
                     "Search"
                 ],
@@ -1241,6 +1571,8 @@
         },
         "/graphdata": {
             "get": {
+                "summary": "/graphdata",
+                "operationId": "graphdata",
                 "tags": [
                     "Search"
                 ],
@@ -1281,6 +1613,8 @@
         },
         "/namedsearch": {
             "get": {
+                "summary": "/namedsearch",
+                "operationId": "namedsearch",
                 "tags": [
                     "Search"
                 ],
@@ -1321,6 +1655,8 @@
                 }
             },
             "post": {
+                "summary": "/namedsearch",
+                "operationId": "namedsearch-post",
                 "tags": [
                     "Search"
                 ],
@@ -1363,6 +1699,8 @@
         },
         "/searchcompletion": {
             "get": {
+                "summary": "/searchcompletion",
+                "operationId": "searchcompletion",
                 "tags": [
                     "Search"
                 ],
@@ -1405,6 +1743,8 @@
         },
         "/viewoptions": {
             "get": {
+                "summary": "/viewoptions",
+                "operationId": "viewoptions",
                 "tags": [
                     "Search"
                 ],
@@ -1464,6 +1804,8 @@
                 }
             },
             "post": {
+                "summary": "/viewoptions",
+                "operationId": "viewoptions-post",
                 "tags": [
                     "Search"
                 ],
@@ -1542,6 +1884,7 @@
         "/{p}/tags": {
             "get": {
                 "summary": "Retrieve submission tags",
+                "operationId": "tags",
                 "tags": [
                     "Tags"
                 ],
@@ -1582,6 +1925,7 @@
             },
             "post": {
                 "summary": "Change submission tags",
+                "operationId": "tags-post",
                 "tags": [
                     "Tags"
                 ],
@@ -1643,6 +1987,7 @@
         "/alltags": {
             "get": {
                 "summary": "Retrieve all visible tags",
+                "operationId": "alltags",
                 "tags": [
                     "Tags"
                 ],
@@ -1690,6 +2035,7 @@
         "/assigntags": {
             "post": {
                 "summary": "Change several tags",
+                "operationId": "assigntags",
                 "tags": [
                     "Tags"
                 ],
@@ -1758,6 +2104,7 @@
         "/taganno": {
             "get": {
                 "summary": "Retrieve tag annotations",
+                "operationId": "taganno",
                 "tags": [
                     "Tags"
                 ],
@@ -1833,6 +2180,7 @@
             },
             "post": {
                 "summary": "Change tag annotations",
+                "operationId": "taganno-post",
                 "tags": [
                     "Tags"
                 ],
@@ -1927,6 +2275,7 @@
         "/{p}/tagmessages": {
             "get": {
                 "summary": "Retrieve tag edit messages",
+                "operationId": "tagmessages",
                 "tags": [
                     "Tags"
                 ],
@@ -1975,6 +2324,7 @@
         "/{p}/votereport": {
             "get": {
                 "summary": "Retrieve vote analysis",
+                "operationId": "votereport",
                 "tags": [
                     "Tags"
                 ],
@@ -2030,6 +2380,8 @@
         },
         "/{p}/revpref": {
             "get": {
+                "summary": "/{p}/revpref",
+                "operationId": "revpref",
                 "tags": [
                     "Review preferences"
                 ],
@@ -2085,6 +2437,8 @@
                 }
             },
             "post": {
+                "summary": "/{p}/revpref",
+                "operationId": "revpref-post",
                 "tags": [
                     "Review preferences"
                 ],
@@ -2160,12 +2514,13 @@
             "post": {
                 "summary": "Perform assignments",
                 "description": "Perform assignments, specified either as a JSON array or as an uploaded CSV\nfile.\n\nThe assignments should be compatible with HotCRP’s bulk assignments format.\nThey may be specified:\n\n1. As a JSON request body (when the request body has content-type\n   `application/json`).\n2. As a CSV file (when the request body has content-type\n   `text/csv`).\n3. As a JSON- or CSV-formatted request parameter named `assignments` (when the\n   request body has content-type `application/x-www-form-urlencoded` or\n   `multipart/form-data`).\n4. As a previously-uploaded JSON or CSV file, represented by a upload token in\n   the `upload` parameter.\n\nJSON assignments should parse to arrays of objects. Each object should contain\nat least a `pid` property and an `action` property, where `action` determines\nwhat kind of assignment to run. CSV assignments must contain a header, which\nshould specify at least `pid` and `action` columns. (The `/assigners` endpoint\nlists the available `action`s.)\n\nTo test an assignment, supply a `dry_run=1` parameter. This will parse the\nuploaded assignment and report any errors, but make no changes to the\ndatabase.\n\nThe `valid` response property is `true` if and only if the assignments were\nvalid (had no errors). In non-dry-run requests, `\"valid\": true` indicates that\nany database changes were committed.\n\nThe response includes an `output` property, which is an array of the specific\nassignments performed (or, for dry-run requests, the specific assignments that\n*would have been* performed). Each entry represents a single action applied to a\nsingle submission. (This differs from input `assignments` entries, each of which\nmight apply to many submissions.) If you’re not interested in the `output`\nproperty, supply either `summary=1` (to get summary `assigned_actions` and\n`assigned_pids` properties) or `quiet=1` (to get nothing).\n\nIf the optional `p` request parameter is set, HotCRP will only implement\nassignments that affect that submission.\n\n",
+                "operationId": "assign",
                 "tags": [
                     "Assignments"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p"
                     },
                     {
                         "name": "dry_run",
@@ -2322,6 +2677,7 @@
             "get": {
                 "summary": "List assignment actions",
                 "description": "List all assignment actions understood by this HotCRP, including their\nparameters.\n",
+                "operationId": "assigners",
                 "tags": [
                     "Assignments"
                 ],
@@ -2370,7 +2726,8 @@
         "/autoassign": {
             "post": {
                 "summary": "Compute automatic assignment",
-                "description": "Compute and optionally perform an automatic assignment.\n\nSpecify the autoassignment action with the `autoassigner` parameter, and the\nsubmissions to assign with the `q` parameter. (The `/autoassigners` endpoint\nlists the available autoassignment actions.)\n\nMost autoassignment actions take additional parameters and a set of PC members\nto assign. Supply these in the `u`, `disjoint`, and `param` parameters. `u`\ndefines the assignable PC members; `disjoint` defines the classes of PC\nmembers that should not be co-assigned; and `param` defines additional\nautoassigner parameters, such as the number of assignments to make or the type\nof review to create.\n\nThe `u`, `disjoint`, and `param` parameters may be supplied multiple times,\neither as a single JSON-formatted array string named `PNAME` or as multiple\nstrings named `PNAME[]`. For instance, `/autoassign?u=%5B1,2%5D` and\n`/autoassign?u%5B%5D=1&u%5B%5D=2` each supply two `u` arguments, `1` and `2`.\n\nEach `u` argument is a search string defining a set of users. Valid strings\nare user IDs (`1`), emails (`kohler@g.harvard.edu`), or tags (`#heavy`).\nPrefix a string with a hyphen `-` to remove matching users from the assignable\nset.\n\nEach `disjoint` argument is a comma-separated list of users that should not be\ncoassigned. Again, users can be defined using IDs, emails, or tags.\n\nEach `param` argument defines a parameter for the autoassignment action, and\nshould be a string with the format `NAME=VALUE`. The parameters required or\nunderstood by each action are listed by the `/autoassigners` endpoint.\n\nTo test an assignment, supply the `dry_run=1` parameter. This will create an\nassignment and test it, reporting any errors, but will make no changes to the\ndatabase. Supply `minimal_dry_run=1` to obtain the autoassignment output\nwithout additional testing. For instance, `dry_run=1` will report warnings for\npotential conflicts, but `minimal_dry_run=1` will not.\n\nAutoassignment is often time consuming, so a successful `/autoassign` may\nreturn early, before the autoassignment completes. The response will list a\njob ID for the autoassigner. Query the `/job` endpoint to monitor the job and\nobtain its eventual output.\n",
+                "description": "Compute and optionally perform an automatic assignment.\n\nSpecify the autoassignment action with the `autoassigner` parameter, and the\nsubmissions to assign with the `q` parameter. The `/autoassigners` endpoint\nlists the available autoassignment actions.\n\nMost autoassignment actions take additional parameters and a set of PC members\nto assign. Supply these in the `u`, `disjoint`, and `param` parameters. `u`\ndefines the assignable PC members; `disjoint` defines the classes of PC\nmembers that should not be co-assigned; and `param` defines additional\nautoassigner parameters, such as the number of assignments to make or the type\nof review to create.\n\nThe `u`, `disjoint`, and `param` parameters may be supplied multiple times,\neither as a single JSON-formatted array string named `PNAME` or as multiple\nstrings named `PNAME[]`. For instance, `/autoassign?u=%5B1,2%5D` and\n`/autoassign?u%5B%5D=1&u%5B%5D=2` each supply two `u` arguments, `1` and `2`.\n\nEach `u` argument is a search string defining a set of users. Valid strings\nare user IDs (`1`), emails (`kohler@g.harvard.edu`), or tags (`#heavy`).\nPrefix a string with a hyphen `-` to remove matching users from the assignable\nset.\n\nEach `disjoint` argument is a comma-separated list of users that should not be\ncoassigned. Again, users can be defined using IDs, emails, or tags.\n\nEach `param` argument defines a parameter for the autoassignment action, and\nshould be a string with the format `NAME=VALUE`. The parameters required or\nunderstood by each action are listed by the `/autoassigners` endpoint.\n\nTo test an assignment, supply the `dry_run=1` parameter. This will create an\nassignment and test it, reporting any errors, but will make no changes to the\ndatabase. Supply `minimal_dry_run=1` to obtain the autoassignment output\nwithout additional testing. For instance, `dry_run=1` will report warnings for\npotential conflicts, but `minimal_dry_run=1` will not.\n\nAutoassignment is often time consuming, so a successful `/autoassign` may return\nearly, before the autoassignment completes. The response will list a job ID for\nthe autoassigner. Query the `/job` endpoint with `output=1` to monitor the job\nand obtain its eventual output.\n",
+                "operationId": "autoassign",
                 "tags": [
                     "Assignments"
                 ],
@@ -2515,6 +2872,7 @@
             "get": {
                 "summary": "List autoassignment actions",
                 "description": "List all autoassignment actions understood by this HotCRP, including their\nparameters.\n",
+                "operationId": "autoassigners",
                 "tags": [
                     "Assignments"
                 ],
@@ -2563,6 +2921,7 @@
         "/{p}/decision": {
             "get": {
                 "summary": "Fetch submission decision",
+                "operationId": "decision",
                 "tags": [
                     "Submission administration"
                 ],
@@ -2612,6 +2971,7 @@
             },
             "post": {
                 "summary": "Change submission decision",
+                "operationId": "decision-post",
                 "tags": [
                     "Submission administration"
                 ],
@@ -2679,6 +3039,7 @@
         "/{p}/lead": {
             "get": {
                 "summary": "Fetch submission discussion lead",
+                "operationId": "lead",
                 "tags": [
                     "Submission administration"
                 ],
@@ -2728,6 +3089,7 @@
             },
             "post": {
                 "summary": "Change submission discussion lead",
+                "operationId": "lead-post",
                 "tags": [
                     "Submission administration"
                 ],
@@ -2795,6 +3157,7 @@
         "/{p}/manager": {
             "get": {
                 "summary": "Fetch submission administrator",
+                "operationId": "manager",
                 "tags": [
                     "Submission administration"
                 ],
@@ -2844,6 +3207,7 @@
             },
             "post": {
                 "summary": "Change submission administrator",
+                "operationId": "manager-post",
                 "tags": [
                     "Submission administration"
                 ],
@@ -2911,6 +3275,7 @@
         "/{p}/reviewround": {
             "post": {
                 "summary": "Change review round",
+                "operationId": "reviewround",
                 "tags": [
                     "Submission administration"
                 ],
@@ -2957,6 +3322,7 @@
         "/{p}/shepherd": {
             "get": {
                 "summary": "Fetch submission shepherd",
+                "operationId": "shepherd",
                 "tags": [
                     "Submission administration"
                 ],
@@ -3006,6 +3372,7 @@
             },
             "post": {
                 "summary": "Change submission shepherd",
+                "operationId": "shepherd-post",
                 "tags": [
                     "Submission administration"
                 ],
@@ -3072,6 +3439,8 @@
         },
         "/{p}/review": {
             "get": {
+                "summary": "/{p}/review",
+                "operationId": "review",
                 "tags": [
                     "Reviews"
                 ],
@@ -3117,6 +3486,8 @@
         },
         "/review": {
             "post": {
+                "summary": "/review",
+                "operationId": "review-post",
                 "tags": [
                     "Reviews"
                 ],
@@ -3157,6 +3528,8 @@
         },
         "/{p}/reviewhistory": {
             "get": {
+                "summary": "/{p}/reviewhistory",
+                "operationId": "reviewhistory",
                 "tags": [
                     "Reviews"
                 ],
@@ -3202,6 +3575,8 @@
         },
         "/{p}/acceptreview": {
             "post": {
+                "summary": "/{p}/acceptreview",
+                "operationId": "acceptreview",
                 "tags": [
                     "Reviews"
                 ],
@@ -3254,6 +3629,8 @@
         },
         "/{p}/claimreview": {
             "post": {
+                "summary": "/{p}/claimreview",
+                "operationId": "claimreview",
                 "tags": [
                     "Reviews"
                 ],
@@ -3312,6 +3689,8 @@
         },
         "/{p}/declinereview": {
             "post": {
+                "summary": "/{p}/declinereview",
+                "operationId": "declinereview",
                 "tags": [
                     "Reviews"
                 ],
@@ -3378,6 +3757,8 @@
         },
         "/{p}/requestreview": {
             "post": {
+                "summary": "/{p}/requestreview",
+                "operationId": "requestreview",
                 "tags": [
                     "Reviews"
                 ],
@@ -3451,6 +3832,8 @@
         },
         "/{p}/reviewrating": {
             "get": {
+                "summary": "/{p}/reviewrating",
+                "operationId": "reviewrating",
                 "tags": [
                     "Reviews"
                 ],
@@ -3499,6 +3882,8 @@
                 }
             },
             "post": {
+                "summary": "/{p}/reviewrating",
+                "operationId": "reviewrating-post",
                 "tags": [
                     "Reviews"
                 ],
@@ -3565,6 +3950,8 @@
         },
         "/reviewtoken": {
             "get": {
+                "summary": "/reviewtoken",
+                "operationId": "reviewtoken",
                 "tags": [
                     "Reviews"
                 ],
@@ -3603,6 +3990,8 @@
                 }
             },
             "post": {
+                "summary": "/reviewtoken",
+                "operationId": "reviewtoken-post",
                 "tags": [
                     "Reviews"
                 ],
@@ -3645,6 +4034,7 @@
             "get": {
                 "summary": "Retrieve comment",
                 "description": "Return a comment object specified by ID.\n\nThe `c` parameter specifies the comment to return. If the comment exists and\nthe user can view it, it will be returned in the `comment` component of the\nresponse. Otherwise, an error response is returned.\n\nIf `c` is omitted, all viewable comments are returned in a `comments` list.\n",
+                "operationId": "comment",
                 "tags": [
                     "Comments"
                 ],
@@ -3711,6 +4101,7 @@
             "post": {
                 "summary": "Create, modify, or delete comment",
                 "description": "Create, modify, or delete a comment specified by ID.\n\nThe `c` parameter specifies the comment to modify. It can be a numeric comment\nID; `new`, to create a new comment; or `response` (or a compound like\n`R2response`), to create or modify a named response.\n\nSetting `delete=1` deletes the specified comment, and the response does not\ncontain a `comment` component. Otherwise the comment is created or modified,\nand the response `comment` component contains the new comment.\n\nComment attachments may be uploaded as files (requiring a request body in\n`multipart/form-data` encoding), or using the [upload API](#operation/upload).\nTo upload a single new attachment:\n\n* Set the `attachment:1` body parameter to `new`\n* Either:\n\t* Set `attachment:1:file` as a uploaded file containing the relevant data\n\t* Or use the [upload API](#operation/upload) to upload the file,\n\t  and supply the upload token in the `attachment:1:upload` body parameter\n\nTo upload multiple attachments, number them sequentially (`attachment:2`,\n`attachment:3`, and so forth). To delete an existing attachment, supply its\n`docid` as an `attachment:N` parameter, and set `attachment:N:delete` to 1.\n",
+                "operationId": "comment-post",
                 "tags": [
                     "Comments"
                 ],
@@ -3822,12 +4213,14 @@
         },
         "/mentioncompletion": {
             "get": {
+                "summary": "/mentioncompletion",
+                "operationId": "mentioncompletion",
                 "tags": [
                     "Comments"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p"
                     }
                 ],
                 "responses": {
@@ -3869,12 +4262,14 @@
         },
         "/track": {
             "post": {
+                "summary": "/track",
+                "operationId": "track",
                 "tags": [
                     "Meeting tracker"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p"
                     },
                     {
                         "name": "track",
@@ -3939,6 +4334,8 @@
         },
         "/trackerstatus": {
             "get": {
+                "summary": "/trackerstatus",
+                "operationId": "trackerstatus",
                 "tags": [
                     "Meeting tracker"
                 ],
@@ -3979,6 +4376,8 @@
         },
         "/trackerconfig": {
             "post": {
+                "summary": "/trackerconfig",
+                "operationId": "trackerconfig",
                 "tags": [
                     "Meeting tracker"
                 ],
@@ -4044,12 +4443,14 @@
         },
         "/user": {
             "get": {
+                "summary": "/user",
+                "operationId": "user",
                 "tags": [
                     "Users"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p"
                     },
                     {
                         "name": "email",
@@ -4110,6 +4511,8 @@
         },
         "/pc": {
             "get": {
+                "summary": "/pc",
+                "operationId": "pc",
                 "tags": [
                     "Users"
                 ],
@@ -4163,12 +4566,14 @@
         },
         "/clickthrough": {
             "post": {
+                "summary": "/clickthrough",
+                "operationId": "clickthrough",
                 "tags": [
                     "Profile"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p"
                     }
                 ],
                 "requestBody": {
@@ -4229,6 +4634,8 @@
         },
         "/whoami": {
             "get": {
+                "summary": "/whoami",
+                "operationId": "whoami",
                 "tags": [
                     "Profile"
                 ],
@@ -4273,6 +4680,8 @@
         },
         "/events": {
             "get": {
+                "summary": "/events",
+                "operationId": "events",
                 "tags": [
                     "Notifications"
                 ],
@@ -4329,6 +4738,8 @@
         },
         "/{p}/follow": {
             "post": {
+                "summary": "/{p}/follow",
+                "operationId": "follow",
                 "tags": [
                     "Notifications"
                 ],
@@ -4400,6 +4811,7 @@
             "get": {
                 "summary": "Monitor job",
                 "description": "Some HotCRP tasks, such as autoassignment, can take too long for a single API\nrequest. Such tasks start a *job* and return its unique identifier. The `/job`\nendpoint monitors the job’s progress and can return its output upon\ncompletion.\n\nThe listed response properties are common to all job types, but specific jobs\nmay return other response properties. For example, a running autoassignment\njob will return a string `progress` property that describes the current phase\nof autoassignment, and a completed autoassignment job will report\n`assigned_pids` and `incomplete_pids` properties.\n",
+                "operationId": "job",
                 "tags": [
                     "Task management"
                 ],
@@ -4476,12 +4888,14 @@
         },
         "/mailtext": {
             "get": {
+                "summary": "/mailtext",
+                "operationId": "mailtext",
                 "tags": [
                     "Site information"
                 ],
                 "parameters": [
                     {
-                        "$ref": "#/components/parameters/p.opt"
+                        "$ref": "#/components/parameters/p"
                     },
                     {
                         "name": "template",
@@ -4587,6 +5001,8 @@
         },
         "/account": {
             "get": {
+                "summary": "/account",
+                "operationId": "account",
                 "tags": [
                     "Site administration"
                 ],
@@ -4639,6 +5055,8 @@
                 }
             },
             "post": {
+                "summary": "/account",
+                "operationId": "account-post",
                 "tags": [
                     "Site administration"
                 ],
@@ -4711,6 +5129,8 @@
         },
         "/namedformula": {
             "get": {
+                "summary": "/namedformula",
+                "operationId": "namedformula",
                 "tags": [
                     "Site administration"
                 ],
@@ -4751,6 +5171,8 @@
                 }
             },
             "post": {
+                "summary": "/namedformula",
+                "operationId": "namedformula-post",
                 "tags": [
                     "Site administration"
                 ],
@@ -4811,6 +5233,7 @@
             "get": {
                 "summary": "Fetch site settings",
                 "description": "This endpoint returns a JSON object defining all site settings. The result can\nbe used to examine settings offline, change settings otherwise unavailable\nthrough the settings UI, or transfer settings to another site.\n\nThe `filter` and `exclude` parameters can filter the returned settings to a\nsubset. For example, when exporting one site’s settings for use by another, you\nmight set `exclude` to `#id OR #deadline`; this excludes settings relevant to a\nconference’s identity (`conference_name`, `site_contact_email`, etc.) or\ndeadlines.\n",
+                "operationId": "settings",
                 "tags": [
                     "Settings"
                 ],
@@ -4888,6 +5311,7 @@
             "post": {
                 "summary": "Modify site settings",
                 "description": "This endpoint modifies site settings according to a JSON object. This object may\ndefine a full complement of settings or a subset. It may be provided as a\nrequest body with type `application/json`, or as a body parameter with name\n`settings`.\n\nThe `filter` and `exclude` parameters can filter the modifications that are\napplied; for example, uploading a settings object with `filter` set to `#rf`\nwill only change settings relevant to the review form.\n\nFor more information on JSON settings, see [Help > Advanced settings](https://help.hotcrp.com/help/jsonsettings).\n",
+                "operationId": "settings-post",
                 "tags": [
                     "Settings"
                 ],
@@ -5017,6 +5441,8 @@
         },
         "/reviewfieldlibrary": {
             "get": {
+                "summary": "/reviewfieldlibrary",
+                "operationId": "reviewfieldlibrary",
                 "tags": [
                     "Settings"
                 ],
@@ -5061,6 +5487,8 @@
         },
         "/settingdescriptions": {
             "get": {
+                "summary": "/settingdescriptions",
+                "operationId": "settingdescriptions",
                 "tags": [
                     "Settings"
                 ],
@@ -5103,6 +5531,8 @@
         },
         "/submissionfieldlibrary": {
             "get": {
+                "summary": "/submissionfieldlibrary",
+                "operationId": "submissionfieldlibrary",
                 "tags": [
                     "Settings"
                 ],
@@ -5147,6 +5577,8 @@
         },
         "/cspreport": {
             "post": {
+                "summary": "/cspreport",
+                "operationId": "cspreport",
                 "tags": [
                     "Session"
                 ],
@@ -5187,6 +5619,8 @@
         },
         "/jserror": {
             "post": {
+                "summary": "/jserror",
+                "operationId": "jserror",
                 "tags": [
                     "Session"
                 ],
@@ -5247,6 +5681,8 @@
         },
         "/oauthtoken": {
             "post": {
+                "summary": "/oauthtoken",
+                "operationId": "oauthtoken",
                 "tags": [
                     "Session"
                 ],
@@ -5287,6 +5723,8 @@
         },
         "/reauth": {
             "post": {
+                "summary": "/reauth",
+                "operationId": "reauth",
                 "tags": [
                     "Session"
                 ],
@@ -5351,6 +5789,8 @@
         },
         "/session": {
             "get": {
+                "summary": "/session",
+                "operationId": "session",
                 "tags": [
                     "Session"
                 ],
@@ -5391,6 +5831,8 @@
                 }
             },
             "post": {
+                "summary": "/session",
+                "operationId": "session-post",
                 "tags": [
                     "Session"
                 ],
@@ -5441,6 +5883,8 @@
         },
         "/stashmessages": {
             "post": {
+                "summary": "/stashmessages",
+                "operationId": "stashmessages",
                 "tags": [
                     "Session"
                 ],
@@ -5499,6 +5943,8 @@
         },
         "/reviews": {
             "get": {
+                "summary": "/reviews",
+                "operationId": "reviews",
                 "responses": {
                     "200": {
                         "description": "",
@@ -5537,20 +5983,19 @@
     },
     "components": {
         "parameters": {
-            "redirect": {
-                "name": "redirect",
-                "in": "query",
-                "required": false,
-                "schema": {
-                    "type": "string"
-                }
-            },
             "p.path": {
                 "name": "p",
                 "in": "path",
                 "required": true,
                 "schema": {
                     "$ref": "#/components/schemas/pid"
+                },
+                "description": "Submission ID",
+                "examples": {
+                    "normal": {
+                        "summary": "Submission ID",
+                        "value": 1
+                    }
                 }
             },
             "p": {
@@ -5559,6 +6004,13 @@
                 "required": false,
                 "schema": {
                     "$ref": "#/components/schemas/pid"
+                },
+                "description": "Submission ID",
+                "examples": {
+                    "normal": {
+                        "summary": "Normal submission ID",
+                        "value": 1
+                    }
                 }
             },
             "r": {
@@ -5567,14 +6019,21 @@
                 "required": true,
                 "schema": {
                     "$ref": "#/components/schemas/rid"
-                }
-            },
-            "p.opt": {
-                "name": "p",
-                "in": "query",
-                "required": false,
-                "schema": {
-                    "$ref": "#/components/schemas/pid"
+                },
+                "description": "Review ID",
+                "examples": {
+                    "raw": {
+                        "summary": "Bare review ID",
+                        "value": 1238
+                    },
+                    "submitted": {
+                        "summary": "Submission ID and ordinal",
+                        "value": "230B"
+                    },
+                    "unsubmitted": {
+                        "summary": "Submission and review ID",
+                        "value": "230r1238"
+                    }
                 }
             },
             "r.opt": {
@@ -5583,6 +6042,21 @@
                 "required": false,
                 "schema": {
                     "$ref": "#/components/schemas/rid"
+                },
+                "description": "Review ID",
+                "examples": {
+                    "raw": {
+                        "summary": "Bare review ID",
+                        "value": 1238
+                    },
+                    "submitted": {
+                        "summary": "Submission ID and ordinal",
+                        "value": "230B"
+                    },
+                    "unsubmitted": {
+                        "summary": "Submission and review ID",
+                        "value": "230r1238"
+                    }
                 }
             },
             "c.opt": {
@@ -5664,6 +6138,129 @@
                 "schema": {
                     "type": "boolean"
                 }
+            },
+            "doc": {
+                "name": "doc",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/document_name"
+                },
+                "description": "Document name",
+                "examples": {
+                    "submission": {
+                        "summary": "Document name for submission PDF",
+                        "value": "testconf-paper1.pdf"
+                    },
+                    "final": {
+                        "summary": "Document name for final version PDF",
+                        "value": "testconf-final1.pdf"
+                    },
+                    "other": {
+                        "summary": "Document name for other field",
+                        "value": "testconf-paper2-supplementary_material.zip"
+                    },
+                    "attachment": {
+                        "summary": "Document name for attachment field",
+                        "value": "testconf-paper2-attachments/filename.svg"
+                    }
+                }
+            },
+            "dt": {
+                "name": "dt",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/document_type"
+                },
+                "description": "Document type",
+                "examples": {
+                    "submission": {
+                        "summary": "Document type for submission PDF",
+                        "value": 0
+                    },
+                    "final": {
+                        "summary": "Document type for final version PDF",
+                        "value": -1
+                    },
+                    "other": {
+                        "summary": "Document type for other field",
+                        "value": 2
+                    }
+                }
+            },
+            "attachment": {
+                "name": "attachment",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "type": "string"
+                },
+                "description": "Filename of document within multi-document field",
+                "examples": {
+                    "file": {
+                        "value": "example.txt"
+                    }
+                }
+            },
+            "hash": {
+                "name": "hash",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/document_hash"
+                },
+                "description": "Hash of document",
+                "examples": {
+                    "sha256": {
+                        "summary": "SHA-256 hash",
+                        "value": "sha2-09137e80575f1b71a002fdbec94c706a2934458a6134feff7b5819ce81b2f6e3"
+                    },
+                    "sha1": {
+                        "summary": "SHA-1 hash (obsolete)",
+                        "value": "d1e37b0c5bda6f41334fbe78f9e3e1540102719f"
+                    }
+                }
+            },
+            "docid": {
+                "name": "docid",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "$ref": "#/components/schemas/document_id"
+                },
+                "description": "Document ID",
+                "examples": {
+                    "docid": {
+                        "value": 102
+                    }
+                }
+            },
+            "at": {
+                "name": "at",
+                "in": "query",
+                "required": false,
+                "schema": {
+                    "oneOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ]
+                },
+                "description": "Timestamp of document version",
+                "examples": {
+                    "int": {
+                        "summary": "UNIX timestamp",
+                        "value": 1760400878
+                    },
+                    "string": {
+                        "summary": "ISO timestamp",
+                        "value": "2025-10-13T20:14Z"
+                    }
+                }
             }
         },
         "schemas": {
@@ -5739,7 +6336,10 @@
                         "title": "end position",
                         "type": "integer"
                     }
-                ]
+                ],
+                "unevaluatedItems": false,
+                "minItems": 3,
+                "maxItems": 3
             },
             "minimal_response": {
                 "type": "object",
@@ -5772,6 +6372,21 @@
                         "type": "integer"
                     }
                 }
+            },
+            "nullable_int": {
+                "oneOf": [
+                    {
+                        "type": "null"
+                    },
+                    {
+                        "type": "integer"
+                    }
+                ],
+                "description": "Integer or `null`",
+                "examples": [
+                    2,
+                    null
+                ]
             },
             "pid": {
                 "type": "integer",
@@ -5833,17 +6448,68 @@
             },
             "document_name": {
                 "type": "string",
-                "examples": [
-                    "testconf-paper1.pdf"
-                ]
+                "description": "Name of document"
             },
             "document_type": {
-                "type": "integer"
+                "type": "integer",
+                "description": "Type of document"
             },
             "document_id": {
                 "type": "integer",
                 "minimum": 1,
                 "description": "Document ID"
+            },
+            "document_hash": {
+                "type": "string",
+                "minLength": 40,
+                "pattern": "^(\\w+-)?[0-9a-f]{40,}$"
+            },
+            "document_history_entry": {
+                "type": "object",
+                "description": "Document description",
+                "required": [
+                    "hash",
+                    "at",
+                    "mimetype",
+                    "link"
+                ],
+                "properties": {
+                    "hash": {
+                        "$ref": "#/components/schemas/document_hash"
+                    },
+                    "at": {
+                        "type": "integer"
+                    },
+                    "mimetype": {
+                        "$ref": "#/components/schemas/mimetype"
+                    },
+                    "size": {
+                        "type": "integer"
+                    },
+                    "filename": {
+                        "type": "string",
+                        "description": "Filename used for upload"
+                    },
+                    "active": {
+                        "type": "boolean",
+                        "description": "True if this document is currently active"
+                    },
+                    "link": {
+                        "type": "string",
+                        "description": "Link to this specific version of the document"
+                    }
+                },
+                "examples": [
+                    {
+                        "hash": "sha2-f4640a0c20c9797f625a4071c9b53c633d2eb9347695c83228adfeddc516c656",
+                        "at": 1760706447,
+                        "mimetype": "application/pdf",
+                        "size": 187698,
+                        "filename": "relationship-between-interrupts.pdf",
+                        "active": true,
+                        "link": "https://test.hotcrp.com/t/te3d7vgcbjhhel/doc/te3d7vgcbjhhel-paper1.pdf?docid=1902"
+                    }
+                ]
             },
             "offset_range": {
                 "type": "array",
@@ -5856,7 +6522,10 @@
                         "type": "integer",
                         "description": "Last offset"
                     }
-                ]
+                ],
+                "unevaluatedItems": false,
+                "minItems": 2,
+                "maxItems": 2
             },
             "upload_token": {
                 "type": "string",
@@ -6087,7 +6756,6 @@
                         "parameters": [
                             {
                                 "name": "format",
-                                "type": "enum",
                                 "enum": [
                                     "given_name",
                                     "family_name"
@@ -6136,7 +6804,6 @@
                     },
                     {
                         "name": "format",
-                        "type": "enum",
                         "enum": [
                             "given_name",
                             "family_name"
@@ -6547,7 +7214,8 @@
             "description": "These endpoints query and modify HotCRP submissions. They deal with **submission\nobjects**, which are JSON representations of submissions.\n\nEach submission object has an `object` property (set to the constant string\n`\"paper\"`), a `pid` property, and a `status` property. Complete submission\nobjects also have one property per submission field, such as `title`,\n`abstract`, `authors`, `topics`, and `pc_conflicts`. However, methods that fetch\nsubmissions only fill in fields that exist and that the accessing user is\nallowed to see.\n\nSubmission endpoints always return complete submission objects. To select\nspecific properties of submissions, or to fetch computed properties, use the\n`/search` or `/searchaction` endpoints.\n\n\n"
         },
         {
-            "name": "Documents"
+            "name": "Documents",
+            "description": "These endpoints query documents associated with HotCRP submissions, reviews,\nand comments. The `/upload` endpoint can be used to upload a large file using\nmultiple requests; this file can be a document or a temporary file intended\nfor input to another API.\n\n\n"
         },
         {
             "name": "Search",

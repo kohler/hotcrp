@@ -20,24 +20,32 @@
     "tags": ["Submissions"], "order": 1
   },
   {
+    "name": "share", "get": true, "merge": true,
+    "tags": ["Submissions"], "order": 2
+  },
+  {
+    "name": "share", "post": true, "merge": true,
+    "tags": ["Submissions"], "order": 2
+  },
+  {
     "name": "document", "get": true, "merge": true,
-    "tags": ["Documents"]
+    "tags": ["Documents"], "order": 0
   },
   {
     "name": "documenthistory", "get": true, "merge": true,
-    "tags": ["Documents"]
+    "tags": ["Documents"], "order": 1
   },
   {
     "name": "formatcheck", "get": true, "merge": true,
-    "tags": ["Documents"]
+    "tags": ["Documents"], "order": 2
   },
   {
     "name": "archivelisting", "get": true, "merge": true,
-    "tags": ["Documents"]
+    "tags": ["Documents"], "order": 3
   },
   {
     "name": "upload", "post": true, "merge": true,
-    "tags": ["Documents"]
+    "tags": ["Documents"], "order": 4
   },
   {
     "name": "assign", "post": true, "merge": true,
