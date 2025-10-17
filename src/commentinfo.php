@@ -1151,15 +1151,17 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
             if ($old_docids) {
                 $this->conf->qe("delete from DocumentLink where paperId=? and linkId=? and linkType=?", $this->paperId, $this->commentId, DTYPE_COMMENT);
             }
+            $update_dids = [];
             $need_mark = !!$old_docids;
             if ($docs) {
                 $qv = [];
                 foreach ($docs as $i => $doc) {
                     $qv[] = [$this->paperId, $this->commentId, DTYPE_COMMENT, $i, $doc->paperStorageId];
-                    // just in case we're linking an inactive document
-                    // (this should never happen, though, because upload
-                    // marks as active explicitly)
+                    // in case we're linking an inactive document
                     $need_mark = $need_mark || $doc->inactive;
+                    if (!in_array($doc->paperStorageId, $old_docids)) {
+                        $update_dids[] = $doc->paperStorageId;
+                    }
                 }
                 $this->conf->qe("insert into DocumentLink (paperId,linkId,linkType,linkIndex,documentId) values ?v", $qv);
             }
@@ -1167,6 +1169,9 @@ set {$okey}=(t.maxOrdinal+1) where commentId={$cmtid}";
                 $this->prow->mark_inactive_linked_documents();
             }
             $this->prow->invalidate_linked_documents();
+            if (!empty($update_dids)) {
+                $this->conf->qe("update PaperStorage set timeReferenced=? where paperId=? and paperStorageId?a", Conf::$now, $this->prow->paperId, $update_dids);
+            }
         }
 
         // delete if appropriate
