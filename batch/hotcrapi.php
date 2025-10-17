@@ -358,15 +358,12 @@ class Hotcrapi_Batch extends MessageSet {
     function make_curl($method = null) {
         $curlh = curl_init();
         curl_setopt($curlh, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, $method ?? "POST");
         curl_setopt($curlh, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
         curl_setopt($curlh, CURLOPT_WRITEHEADER, $this->headerf);
         curl_setopt($curlh, CURLOPT_SAFE_UPLOAD, true);
         if ($this->apitoken) {
             curl_setopt($curlh, CURLOPT_XOAUTH2_BEARER, $this->apitoken);
-        }
-        if ($method) {
-            curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, $method);
         }
         return $curlh;
     }
@@ -604,6 +601,7 @@ Usage: php batch/hotcrapi.php -S SITEURL -T APITOKEN SUBCOMMAND ARGS...")
          ->subcommand(true);
         Test_CLIBatch::register($hcli);
         Paper_CLIBatch::register($hcli);
+        Document_CLIBatch::register($hcli);
         Search_CLIBatch::register($hcli);
         Assign_CLIBatch::register($hcli);
         Autoassign_CLIBatch::register($hcli);

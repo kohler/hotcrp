@@ -25,8 +25,6 @@ class Search_CLIBatch implements CLIBatchCommand {
     public $file_param = [];
     /** @var ?string */
     public $action;
-    /** @var bool */
-    public $output_content_string = false;
 
     /** @return int */
     function run(Hotcrapi_Batch $clib) {
@@ -47,8 +45,7 @@ class Search_CLIBatch implements CLIBatchCommand {
 
     /** @return int */
     function run_get(Hotcrapi_Batch $clib) {
-        $curlh = $clib->make_curl();
-        curl_setopt($curlh, CURLOPT_CUSTOMREQUEST, "GET");
+        $curlh = $clib->make_curl("GET");
         if ($this->warn_missing) {
             $this->param["warn_missing"] = "1";
         }
@@ -148,11 +145,7 @@ class Search_CLIBatch implements CLIBatchCommand {
     }
 
     function skip_action(Hotcrapi_Batch $clib) {
-        if ($clib->status_code >= 200 && $clib->status_code <= 299) {
-            $this->output_content_string = true;
-            return true;
-        }
-        return false;
+        return $clib->status_code >= 200 && $clib->status_code <= 299;
     }
 
     /** @return int */
