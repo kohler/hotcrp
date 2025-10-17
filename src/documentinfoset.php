@@ -589,7 +589,7 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
         }
         if ($dopt->cacheable) {
             $dopt->header("Cache-Control: max-age=315576000, private");
-            $dopt->header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
+            $dopt->header("Expires: " . Navigation::http_date(Conf::$now + 315576000));
         }
         if ($dopt->log_user && $dopt->range_overlaps(0, 4096)) {
             DocumentInfo::log_download_activity($this->as_list(), $dopt->log_user);

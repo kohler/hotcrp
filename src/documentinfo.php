@@ -1939,7 +1939,7 @@ class DocumentInfo implements JsonSerializable {
         $dopt->set_filename($downloadname);
         if ($dopt->cacheable) {
             $dopt->header("Cache-Control: max-age=315576000, private");
-            $dopt->header("Expires: " . gmdate("D, d M Y H:i:s", Conf::$now + 315576000) . " GMT");
+            $dopt->header("Expires: " . Navigation::http_date(Conf::$now + 315576000));
         }
 
         // Maybe log

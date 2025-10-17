@@ -5,7 +5,7 @@
 class Cacheable_Page {
     static function cacheable_headers() {
         header("Cache-Control: max-age=315576000, public");
-        header("Expires: " . gmdate("D, d M Y H:i:s", time() + 315576000) . " GMT");
+        header("Expires: " . Navigation::http_date(time() + 315576000));
     }
 
     static function skip_content_length_header() {
@@ -92,7 +92,7 @@ class Cacheable_Page {
             return;
         }
 
-        $last_modified = gmdate("D, d M Y H:i:s", $mtime) . " GMT";
+        $last_modified = Navigation::http_date($mtime);
         $etag = '"' . md5("{$file} {$last_modified}") . '"';
         header("Last-Modified: {$last_modified}");
         header("ETag: {$etag}");

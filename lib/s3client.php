@@ -230,7 +230,7 @@ class S3Client {
     function signed_headers($skey, $method, $args) {
         $sep = str_starts_with($skey, "/") ? "" : "/";
         $url = "https://{$this->s3_bucket}.s3.{$this->s3_region}.amazonaws.com{$sep}{$skey}";
-        $hdr = ["Date" => gmdate("D, d M Y H:i:s", $this->fixed_time ?? time()) . " GMT"];
+        $hdr = ["Date" => Navigation::http_date($this->fixed_time ?? time())];
         foreach ($args as $key => $value) {
             if ($key === "user_data") {
                 foreach ($value as $xkey => $xvalue) {

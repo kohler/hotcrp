@@ -350,10 +350,14 @@ function get_cookie(ServerRequestInterface $req) {
     return null;
 }
 
+function http_date($t) {
+    return gmdate("D, d M Y H:i:s", $t) . " GMT";
+}
+
 function ensure_cookie(ServerRequestInterface $req, Response $res) {
     $value = bin2hex(random_bytes(16));
-    $exp = gmdate("D, d M Y H:i:s", time() + 86400 * 366);
-    return $res->withHeader("Set-Cookie", COOKIE_NAME . "={$value}; Expires={$exp} GMT; HttpOnly; SameSite=Lax");
+    $exp = http_date(time() + 86400 * 366);
+    return $res->withHeader("Set-Cookie", COOKIE_NAME . "={$value}; Expires={$exp}; HttpOnly; SameSite=Lax");
 }
 
 function redirection(Response $res, $redirectUri, $param) {

@@ -86,7 +86,7 @@ class Scorechart_Page {
 
     static function cacheable_headers() {
         header("Cache-Control: max-age=315576000, public");
-        header("Expires: " . gmdate("D, d M Y H:i:s", time() + 315576000) . " GMT");
+        header("Expires: " . Navigation::http_date(time() + 315576000));
     }
 
     /** @param string $status

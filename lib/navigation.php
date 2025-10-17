@@ -705,4 +705,21 @@ class Navigation {
 <body><p>You should be redirected <a href=\"", htmlspecialchars($url), "\">to here</a>.</p></body></html>\n";
         exit(0);
     }
+
+    /** @param int $t
+     * @return string */
+    static function http_date($t) {
+        return gmdate("D, d M Y H:i:s", $t) . " GMT";
+    }
+
+    /** @param string $s
+     * @return ?int */
+    static function parse_http_date($s) {
+        try {
+            $dt = DateTimeImmutable::createFromFormat("!D, d M Y H:i:s T", $s);
+            return $dt !== false ? $dt->getTimestamp() : null;
+        } catch (Exception $ex) {
+            return null;
+        }
+    }
 }
