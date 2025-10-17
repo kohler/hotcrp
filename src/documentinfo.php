@@ -556,6 +556,18 @@ class DocumentInfo implements JsonSerializable {
     }
 
     /** @return bool */
+    function is_active() {
+        // Should use `!inactive`, but that (in 2025-10) is not known to be
+        // reliable yet
+        if ($this->documentType >= DTYPE_FINAL) {
+            $ov = $this->prow->force_option($this->documentType);
+            return in_array($this->paperStorageId, $ov->option->value_dids($ov));
+        }
+        return $this->prow->link_id_by_document_id($this->paperStorageId, $this->documentType) !== null;
+    }
+
+
+    /** @return bool */
     function content_available() {
         return $this->content !== null
             || $this->content_file !== null
@@ -1582,7 +1594,7 @@ class DocumentInfo implements JsonSerializable {
         return $fn . $suffix;
     }
 
-    const DOCURL_INCLUDE_TIME = 1024;
+    const DOCURL_INCLUDE_DOCID = 1024;
 
     /** @param ?list<FileFilter> $filters
      * @param int $hoturl_flags
@@ -1592,14 +1604,14 @@ class DocumentInfo implements JsonSerializable {
             $f = ["file" => $this->export_filename($filters ?? $this->filters_applied)];
         } else {
             $f = ["p" => $this->paperId];
-            if ($this->documentType == DTYPE_FINAL) {
+            if ($this->documentType === DTYPE_FINAL) {
                 $f["final"] = 1;
             } else if ($this->documentType > 0) {
                 $f["dt"] = $this->documentType;
             }
         }
-        if (($hoturl_flags & self::DOCURL_INCLUDE_TIME) !== 0) {
-            $f["at"] = $this->timestamp;
+        if (($hoturl_flags & self::DOCURL_INCLUDE_DOCID) !== 0) {
+            $f["docid"] = $this->paperStorageId;
         }
         return $this->conf->hoturl("doc", $f, $hoturl_flags);
     }

@@ -10,7 +10,7 @@ class Document_API {
         }
         $dr = (new DocumentRequest($qreq, $user))
             ->apply_version($qreq);
-        if (!($doc = $dr->filtered_document($qreq, true))) {
+        if (!($doc = $dr->filtered_document())) {
             return $dr->error_result();
         } else if (!$doc->is_archive()) {
             return JsonResult::make_error(400, "<0>Document is not an archive");
@@ -43,7 +43,7 @@ class Document_API {
         if ($active) {
             $dj["active"] = true;
         }
-        $dj["link"] = $doc->url(null, DocumentInfo::DOCURL_INCLUDE_TIME | Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
+        $dj["link"] = $doc->url(null, DocumentInfo::DOCURL_INCLUDE_DOCID | Conf::HOTURL_RAW | Conf::HOTURL_ABSOLUTE);
         return (object) $dj;
     }
 
@@ -74,7 +74,7 @@ class Document_API {
         }
         $dr = (new DocumentRequest($qreq, $user))
             ->apply_version($qreq);
-        if (!($doc = $dr->filtered_document($qreq, true))) {
+        if (!($doc = $dr->filtered_document())) {
             return $dr->error_result();
         }
         // serve document

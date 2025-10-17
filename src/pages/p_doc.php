@@ -43,7 +43,7 @@ class Doc_Page {
         }
         $dr = new DocumentRequest($qreq, $user, $path !== "" ? $path : null);
         $dr->apply_version($qreq);
-        if (!($doc = $dr->filtered_document($qreq, true))) {
+        if (!($doc = $dr->filtered_document())) {
             self::error($dr->error_status(), $dr->message_list(), $qreq);
         }
 

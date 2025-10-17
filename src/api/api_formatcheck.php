@@ -6,7 +6,7 @@ class FormatCheck_API {
     static function run(Contact $user, Qrequest $qreq) {
         $docreq = new DocumentRequest($qreq, $user);
         $docreq->apply_version($qreq);
-        if (!($doc = $docreq->document($qreq, true))) {
+        if (!($doc = $docreq->document())) {
             return $docreq->error_result();
         }
         $runflag = friendly_boolean($qreq->soft) ? CheckFormat::RUN_IF_NECESSARY : CheckFormat::RUN_ALWAYS;

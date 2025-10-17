@@ -1455,9 +1455,8 @@ class Document_PaperOption extends PaperOption {
         if (($ov->value ?? 0) > 1) {
             /** @phan-suppress-next-line ParamTypeMismatchReturn */
             return [$ov->value];
-        } else {
-            return [];
         }
+        return [];
     }
     function value_export_json(PaperValue $ov, PaperExport $pex) {
         if (!$this->value_present($ov)) {
@@ -1511,24 +1510,23 @@ class Document_PaperOption extends PaperOption {
             return $ov;
         } else if ($qreq["{$fk}:delete"]) {
             return PaperValue::make($prow, $this);
-        } else {
-            return null;
         }
+        return null;
     }
     function parse_json_user(PaperInfo $prow, $j, Contact $user) {
         if ($j === false) {
             return PaperValue::make($prow, $this);
         } else if ($j === null) {
             return null;
-        } else if (DocumentInfo::check_json_upload($j)) {
-            $ov = PaperValue::make($prow, $this, PaperValue::NEWDOC_VALUE);
-            $ov->set_anno("document", $j);
-            if (isset($j->error_html)) {
-                $ov->error("<5>" . $j->error_html);
-            }
-            return $ov;
+        } else if (!DocumentInfo::check_json_upload($j)) {
+            return PaperValue::make_estop($prow, $this, "<0>Format error");
         }
-        return PaperValue::make_estop($prow, $this, "<0>Format error");
+        $ov = PaperValue::make($prow, $this, PaperValue::NEWDOC_VALUE);
+        $ov->set_anno("document", $j);
+        if (isset($j->error_html)) {
+            $ov->error("<5>" . $j->error_html);
+        }
+        return $ov;
     }
     function print_web_edit(PaperTable $pt, $ov, $reqov) {
         if (($this->id === DTYPE_SUBMISSION || $this->id === DTYPE_FINAL)

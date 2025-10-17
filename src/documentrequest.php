@@ -21,10 +21,18 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
     /** @var ?PaperOption
      * @readonly */
     public $opt;
+
     /** @var ?string */
     private $linkid;
     /** @var ?string */
-    public $attachment;
+    private $attachment;
+    /** @var ?int */
+    private $hash;
+    /** @var ?int */
+    private $at;
+    /** @var ?int */
+    private $docid;
+
     /** @var ?DocumentInfo */
     private $doc;
     /** @var ?int */
@@ -346,10 +354,12 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
 
     /** @return list<DocumentInfo> */
     function history() {
+        if ($this->dtype < DTYPE_FINAL) {
+            return $this->doc ? [$this->doc] : [];
+        }
         $docs = $this->prow->documents($this->dtype);
         $this->history_nactive = count($docs);
-        if ($this->viewer->can_view_document_history($this->prow)
-            && $this->dtype >= DTYPE_FINAL) {
+        if ($this->viewer->can_view_document_history($this->prow)) {
             $active_docids = [];
             foreach ($docs as $doc) {
                 $active_docids[] = $doc->paperStorageId;
@@ -372,92 +382,108 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         return $this->history_nactive;
     }
 
+    /** @param Qrequest $qreq */
+    private function _apply_specific_version($qreq) {
+        $this->cacheable = true;
+        if (isset($qreq->docid)) {
+            $key = "docid";
+            $docid = stoi($qreq->docid) ?? 0;
+            if ($docid <= 1) {
+                $this->error_at($key, "<0>Invalid document ID");
+                $this->_error_status = 400;
+                return;
+            }
+            $doc = $this->prow->document($this->dtype, $docid, true);
+        } else {
+            $key = isset($qreq->hash) ? "hash" : "version";
+            $dochash = HashAnalysis::hash_as_binary(trim($qreq->$key));
+            if (!$dochash) {
+                $this->error_at($key, "<0>Invalid document hash");
+                $this->_error_status = 400;
+                return;
+            }
+            $result = $this->conf->qe("select * from PaperStorage where paperId=? and documentType=? and sha1=?",
+                $this->prow->paperId, $this->dtype, $dochash);
+            $doc = DocumentInfo::fetch($result, $this->conf, $this->prow);
+            $result->close();
+        }
+
+        if ($this->doc) {
+            if ($key === "docid"
+                ? $this->doc->paperStorageId !== $doc->paperStorageId
+                : $this->doc->sha1 !== $doc->sha1) {
+                $this->error_at($key, "<0>Version mismatch");
+            }
+            return;
+        }
+
+        assert($this->dtype >= DTYPE_FINAL);
+        $can_view_history = $this->viewer->can_view_document_history($this->prow);
+        if (!$doc
+            || (!$can_view_history && !$doc->is_active())) {
+            $this->error_at($key, "<0>Document version not found");
+            $this->cacheable = false; // version might appear later
+            return;
+        }
+        $this->doc = $doc;
+    }
+
     /** @param Qrequest $qreq
      * @return $this */
     function apply_version($qreq) {
-        if ($this->has_error() || $this->doc) {
+        if ($this->has_error()) {
             return $this;
         }
 
-        // version checking
-        $dochash = $doctime = null;
-        if (isset($qreq->hash) || isset($qreq->version)) {
-            $dochash = HashAnalysis::hash_as_binary(trim($qreq->hash ?? $qreq->version));
-            $this->cacheable = true;
-            if (!$dochash) {
-                $this->error_at("hash", "<0>Invalid document hash");
-                return $this;
-            }
-        } else if (isset($qreq->at)) {
-            $doctime = stoi($qreq->at) ?? $this->conf->parse_time($qreq->at);
-            if (!$doctime) {
-                $this->error_at("at", "<0>Invalid date");
-                return $this;
+        if (isset($qreq->docid)
+            || isset($qreq->hash)
+            || isset($qreq->version)) {
+            $this->_apply_specific_version($qreq);
+            return $this;
+        }
+
+        if ($this->doc || $this->dtype < DTYPE_FINAL || !isset($qreq->at)) {
+            return $this;
+        }
+
+        $doctime = stoi($qreq->at) ?? $this->conf->parse_time($qreq->at);
+        if (!$doctime) {
+            $this->error_at("at", "<0>Invalid date");
+            return $this;
+        }
+        foreach ($this->history() as $doc) {
+            if ($doc->timestamp <= $doctime
+                && (!$this->doc || $this->doc->timestamp < $doc->timestamp)) {
+                $this->doc = $doc;
             }
         }
-        if (($dochash || $doctime) && $this->dtype >= DTYPE_FINAL) {
-            foreach ($this->history() as $doc) {
-                if ($dochash
-                    && $doc->binary_hash() === $dochash) {
-                    $this->doc = $doc;
-                    return;
-                } else if ($doctime
-                           && $doc->timestamp <= $doctime
-                           && (!$this->doc || $this->doc->timestamp < $doc->timestamp)) {
-                    $this->doc = $doc;
-                }
-            }
-            if (!$this->doc) {
-                $this->error_at($dochash ? "hash" : "at", "<0>Version not found");
-            }
+        if (!$this->doc) {
+            $this->error_at("at", "<0>Version not found");
         }
         return $this;
     }
 
-    /** @param ?Qrequest $qreq
-     * @param bool $full
-     * @return ?DocumentInfo */
-    function document($qreq = null, $full = false) {
+    /** @return ?DocumentInfo */
+    function document() {
         if ($this->has_error()) {
             return null;
-        } else if ($this->doc) {
-            return $this->doc;
         }
-
-        // look up document
-        $docid = null;
-        if ($qreq && isset($qreq->docid)) {
-            $docid = stoi($qreq->docid);
-            if ($docid === null || $docid <= 1) {
-                $this->error_at("docid", "<0>Invalid document ID");
-                return null;
+        if (!$this->doc) {
+            if ($this->attachment) {
+                $this->doc = $this->prow->attachment($this->dtype, $this->attachment);
+            } else {
+                $this->doc = $this->prow->document($this->dtype, 0, true);
+            }
+            if (!$this->doc) {
+                $this->error_at("doc", "<0>Document not found");
             }
         }
-        if ($this->attachment && !$docid) {
-            $doc = $this->prow->attachment($this->dtype, $this->attachment);
-        } else {
-            $doc = $this->prow->document($this->dtype, $docid, $full);
-        }
-        if ($doc
-            && $doc->paperStorageId > 1
-            && $doc->documentType === $this->dtype
-            && ($docid === null || $doc->paperStorageId === $docid)) {
-            $this->doc = $doc;
-            return $doc;
-        }
-        if ($docid) {
-            $this->error_at("docid", "<0>Version not found");
-        } else {
-            $this->error_at("doc", "<0>Document not found");
-        }
-        return null;
+        return $this->doc;
     }
 
-    /** @param ?Qrequest $qreq
-     * @param bool $full
-     * @return ?DocumentInfo */
-    function filtered_document($qreq = null, $full = false) {
-        if (!($doc = $this->document($qreq, $full))) {
+    /** @return ?DocumentInfo */
+    function filtered_document() {
+        if (!($doc = $this->document())) {
             return null;
         }
         foreach ($this->filters as $filter) {
@@ -468,7 +494,11 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
 
     #[\ReturnTypeWillChange]
     function jsonSerialize() {
-        $j = ["req_filename" => $this->req_filename, "pid" => $this->paperId, "dt" => $this->dtype];
+        $j = [
+            "req_filename" => $this->req_filename,
+            "pid" => $this->paperId,
+            "dt" => $this->dtype
+        ];
         foreach (["linkid", "attachment", "docid"] as $k) {
             if ($this->$k !== null) {
                 $j[$k] = $this->$k;
