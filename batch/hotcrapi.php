@@ -305,6 +305,9 @@ class Hotcrapi_Batch extends MessageSet {
      * @return $this
      * @suppress PhanAccessReadOnlyProperty */
     function set_site($s) {
+        if (is_string($s) && isset($this->_siteconfig[$s])) {
+            $s = $this->_siteconfig[$s];
+        }
         if ($s instanceof Hotcrapi_Batch_Site) {
             if ($s->site !== null) {
                 $this->site = $s->site;
