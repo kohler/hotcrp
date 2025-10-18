@@ -1021,6 +1021,18 @@
                     }
                 }
             },
+            "share_action": {
+                "type": "string",
+                "enum": ["yes", "no", "new", "reset"],
+                "description": "Type of sharing desired"
+            },
+            "author_view_token": {
+                "type": "string",
+                "description": "Author view token",
+                "examples": [
+                    "hcav23CqmFBgYpzARKteCkvVAeYQsB"
+                ]
+            },
             "comment": {
                 "type": "object",
                 "required": [

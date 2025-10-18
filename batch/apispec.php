@@ -556,8 +556,25 @@ class APISpec_Batch {
         } else if (!is_string($info) || $info === "") {
             fwrite(STDERR, $this->cur_prefix() . "bad info for " . $this->cur_field_description() . " `{$name}`\n");
             return (object) [];
-        } else if (str_starts_with($info, "[") && str_ends_with($info, "]")) {
-            return (object) ["type" => "array", "items" => $this->resolve_info(substr($info, 1, -1), $name)];
+        } else if (str_starts_with($info, "[")
+                   && strpos($info, "]") === strlen($info) - 1) {
+            return (object) [
+                "type" => "array",
+                "items" => $this->resolve_info(substr($info, 1, -1), $name)
+            ];
+        } else if (str_starts_with($info, "?")) {
+            return $this->resolve_info(substr($info, 1) . "|null", $name);
+        } else if (strpos($info, "|") !== false) {
+            $res = (object) ["oneOf" => []];
+            foreach (explode("|", $info) as $s) {
+                $j = $this->resolve_info($s, $name);
+                if (isset($j->oneOf) && count((array) $j) === 1) {
+                    array_push($res->oneOf, ...$j->oneOf);
+                } else {
+                    $res->oneOf[] = $j;
+                }
+            }
+            return $res;
         } else if (($s = $this->reference_common_schema($info, $name))) {
             return $s;
         } else {

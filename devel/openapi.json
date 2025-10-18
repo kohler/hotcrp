@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "HotCRP REST API",
-        "version": "2025-10-17:dbe7bc9dc",
+        "version": "2025-10-18:8a0b6c22f",
         "summary": "HotCRP conference management software API",
         "description": "[HotCRP](https://github.com/kohler/hotcrp) is conference review software. It\nis open source; a supported version runs on [hotcrp.com](https://hotcrp.com/).\nThis documentation is for the HotCRP REST API.\n\nTo request documentation for an API method, please open a [GitHub\nissue](https://github.com/kohler/hotcrp/issues). We also welcome [pull\nrequests](https://github.com/kohler/hotcrp/pulls).\n\n\n## Overview\n\nAPI calls use paths under `api`. For instance, to call the `paper` endpoint on\na server at `https://example.hotcrp.org/funconf25`, you might use a URL like\n`https://example.hotcrp.org/funconf25/api/paper?p=1`.\n\nProvide parameters in query strings or the request body, typically using [form\nencoding](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST). Some\nrequests use groups of parameters to define logical objects using structured\nkeys, such as `named_search/1/q`; other parameters define objects using JSON\nformat. Use `multipart/form-data` encoding for requests that include uploaded\nfiles. Since servers limit upload size, you may need to use the upload API to\nupload a large file before processing it with another call.\n\nResponses are formatted as JSON. Every response has an `ok` property, which is\n`true` if the request format succeeded and `false` otherwise. Typically `\"ok\":\nfalse` indicates a serious error with the request that prevented proper\nprocessing. Messages about the request, if any, are expressed in a\n`message_list` property.\n\n`GET` operations retrieve system state and `POST` operations modify system\nstate. Other operations are occasionally used when semantically meaningful—for\nexample, the `/paper` endpoint supports `DELETE`.\n\n\n### Common parameters\n\nThe `p` parameter defines a submission ID. It can appear either in the query\nstring or immediately following `api/` in the query path: `api/comment?p=1`\nand `api/1/comment` are the same API call. `p` is a positive decimal integer,\nbut some API calls accept `p=new` when defining a new submission.\n\nThe `forceShow` boolean parameter allows administrators to override their\nconflicts when that is possible.\n\n\n### Authentication\n\nExternal applications should authenticate to HotCRP’s API using bearer tokens\n(an `Authorization: bearer` HTTP header). Obtain API tokens using Account\nsettings > Developer. HotCRP Javascript makes API calls using session cookies\nfor authentication.\n\n\n### Large queries\n\nA `POST` request whose `:method:` query parameter is set to `GET` is treated as\nif it were a `GET` request. This can help work around web server URL length\nlimits.\n"
     },
@@ -584,12 +584,18 @@
                 }
             }
         },
-        "/share": {
+        "/{p}/share": {
             "get": {
-                "summary": "/share",
+                "summary": "Fetch share link",
+                "description": "Fetch the share link for a submission, if any has been created. This link can\nbe accessed by users not signed in to HotCRP; it grants view-only access to the\nsubmission and its documents. Only authors and administrators can fetch the\nshare link.\n",
                 "operationId": "share",
                 "tags": [
                     "Submissions"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    }
                 ],
                 "responses": {
                     "200": {
@@ -607,6 +613,20 @@
                                         },
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "token": {
+                                            "$ref": "#/components/schemas/author_view_token",
+                                            "description": "Token for this share link"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "description": "`\"author_view\"`"
+                                        },
+                                        "expires_at": {
+                                            "type": "integer"
+                                        },
+                                        "url": {
+                                            "description": "The share link"
                                         }
                                     }
                                 }
@@ -626,12 +646,96 @@
                 }
             },
             "post": {
-                "summary": "/share",
+                "summary": "Create, modify, or remove share link",
+                "description": "Change the share link for a submission. The `share` parameter determines\nwhether a link should be created; it must be one of:\n\n`no`\n: Delete the current share link, if any.\n\n`yes`\n: Update a share link or create one if necessary. The expiration time of a\n  current share link may be extended if `expires_in` requests it.\n\n`reset`\n: Reset the expiration time of an existing share link, if one exists.\n\n`new`\n: Delete any existing share link and create a new one.\n\nOnly authors and administrators can modify a share link.\n",
                 "operationId": "share-post",
                 "tags": [
                     "Submissions"
                 ],
                 "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
+                    {
+                        "name": "share",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/share_action"
+                        }
+                    },
+                    {
+                        "name": "expires_in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "required": [
+                                        "ok",
+                                        "token"
+                                    ],
+                                    "properties": {
+                                        "ok": {
+                                            "type": "boolean"
+                                        },
+                                        "message_list": {
+                                            "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "token": {
+                                            "oneOf": [
+                                                {
+                                                    "$ref": "#/components/schemas/author_view_token"
+                                                },
+                                                {
+                                                    "type": "null"
+                                                }
+                                            ]
+                                        },
+                                        "token_type": {
+                                            "type": "string"
+                                        },
+                                        "expires_at": {
+                                            "type": "integer"
+                                        },
+                                        "url": {}
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/error_response"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Remove share link",
+                "description": "Delete the share link for a submission, if any has been created.\n",
+                "operationId": "share-delete",
+                "tags": [
+                    "Submissions"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/p.path"
+                    },
                     {
                         "name": "share",
                         "in": "query",
@@ -653,7 +757,8 @@
                                 "schema": {
                                     "type": "object",
                                     "required": [
-                                        "ok"
+                                        "ok",
+                                        "token"
                                     ],
                                     "properties": {
                                         "ok": {
@@ -661,6 +766,9 @@
                                         },
                                         "message_list": {
                                             "$ref": "#/components/schemas/message_list"
+                                        },
+                                        "token": {
+                                            "type": "null"
                                         }
                                     }
                                 }
@@ -7087,6 +7195,23 @@
                         "$ref": "#/components/schemas/paper_status"
                     }
                 }
+            },
+            "share_action": {
+                "type": "string",
+                "enum": [
+                    "yes",
+                    "no",
+                    "new",
+                    "reset"
+                ],
+                "description": "Type of sharing desired"
+            },
+            "author_view_token": {
+                "type": "string",
+                "description": "Author view token",
+                "examples": [
+                    "hcav23CqmFBgYpzARKteCkvVAeYQsB"
+                ]
             },
             "comment": {
                 "type": "object",

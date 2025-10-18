@@ -221,3 +221,57 @@ applied to all papers returned by the `q` search query.
 * response ?papers [paper]: List of JSON versions of modified papers
 * response ?+status_list [update_status]: List of lists of changed fields
 * badge admin
+
+
+# get /{p}/share
+
+> Fetch share link
+
+Fetch the share link for a submission, if any has been created. This link can
+be accessed by users not signed in to HotCRP; it grants view-only access to the
+submission and its documents. Only authors and administrators can fetch the
+share link.
+
+* response ?token author_view_token: Token for this share link
+* response ?token_type string: `"author_view"`
+* response ?expires_at integer
+* response ?url: The share link
+
+
+# post /{p}/share
+
+> Create, modify, or remove share link
+
+Change the share link for a submission. The `share` parameter determines
+whether a link should be created; it must be one of:
+
+`no`
+: Delete the current share link, if any.
+
+`yes`
+: Update a share link or create one if necessary. The expiration time of a
+  current share link may be extended if `expires_in` requests it.
+
+`reset`
+: Reset the expiration time of an existing share link, if one exists.
+
+`new`
+: Delete any existing share link and create a new one.
+
+Only authors and administrators can modify a share link.
+
+* param !share share_action
+* param ?expires_in integer
+* response !token ?author_view_token
+* response ?token_type string
+* response ?expires_at integer
+* response ?url
+
+
+# delete /{p}/share
+
+> Remove share link
+
+Delete the share link for a submission, if any has been created.
+
+* response !token null
