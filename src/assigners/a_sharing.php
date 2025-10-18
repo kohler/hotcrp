@@ -95,7 +95,8 @@ class Sharing_AssignmentParser extends UserlessAssignmentParser {
             }
         }
         $res = $state->remove(new Sharing_Assignable($prow->paperId));
-        if ($share === false) {
+        if ($share === false
+            || ($share === "reset" && empty($res))) {
             return true;
         }
         $sh = $res[0] ?? null;
@@ -128,12 +129,12 @@ class Sharing_Assigner extends Assigner {
     }
     function unparse_display(AssignmentSet $aset) {
         if ($this->item->deleted()) {
-            return '<del>sharing link</del>';
+            return '<del>share link</del>';
         } else if (!$this->item->existed()
                    || $this->item->post("_aval") === 1) {
-            return '<ins>new sharing link</ins>';
+            return '<ins>new share link</ins>';
         }
-        return '<ins>update sharing link</ins>';
+        return '<ins>update share link</ins>';
     }
     function unparse_csv(AssignmentSet $aset, AssignmentCsv $acsv) {
         $x = ["pid" => $this->pid, "action" => "share"];

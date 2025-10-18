@@ -13,7 +13,7 @@ class AuthorView_Capability {
     /** @param PaperInfo $prow
      * @param int $reqtype
      * @param ?int $invalid_at
-     * @return ?string */
+     * @return ?TokenInfo */
     static function make($prow, $reqtype = 0, $invalid_at = null) {
         $sharing = $prow->conf->opt("authorSharing") ?? 0;
         if ($sharing < 0) {
@@ -21,7 +21,7 @@ class AuthorView_Capability {
         }
         if ($prow->_author_view_token) {
             self::update_expiration($prow->_author_view_token, $invalid_at, $reqtype);
-            return $prow->_author_view_token->salt;
+            return $prow->_author_view_token;
         } else if ($prow->_author_view_token === false
                    && ($reqtype === self::AV_EXISTING
                        || ($sharing === 0 && $reqtype === self::AV_DEFAULT))) {
@@ -70,10 +70,16 @@ class AuthorView_Capability {
         }
         if ($prow->_author_view_token) {
             self::update_expiration($prow->_author_view_token, $invalid_at, $reqtype);
-            return $prow->_author_view_token->salt;
         }
-        return null;
+        return $prow->_author_view_token ? : null;
     }
+
+    /** @param PaperInfo $prow
+     * @return ?TokenInfo */
+    static function find($prow) {
+        return self::make($prow, self::AV_EXISTING);
+    }
+
 
     /** @param TokenInfo $token
      * @param ?int $invalid_at

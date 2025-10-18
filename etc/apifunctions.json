@@ -364,7 +364,7 @@
         "response": "?+dry_run +valid +change_list settings"
     },
     {
-        "name": "share", "get": true, "post": true,
+        "name": "share", "get": true, "post": true, "delete": true, "paper": true,
         "functions": "Sharing_API::run",
         "parameters": "+share ?+expires_in"
     },

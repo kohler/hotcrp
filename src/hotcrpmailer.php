@@ -425,11 +425,11 @@ class HotCRPMailer extends Mailer {
             || !$this->row->has_author($this->recipient)) {
             return null;
         }
-        $cap = AuthorView_Capability::make($this->row);
-        if ($cap === null) {
+        $tok = AuthorView_Capability::make($this->row);
+        if ($tok === null) {
             return "";
         } else if (!$this->censor) {
-            return "cap={$cap}";
+            return "cap={$tok->salt}";
         } else if ($this->censor === self::CENSOR_DISPLAY) {
             return "cap=HIDDEN";
         }

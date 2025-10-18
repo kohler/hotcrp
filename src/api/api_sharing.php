@@ -9,7 +9,9 @@ class Sharing_API extends MessageSet {
             return JsonResult::make_permission_error();
         }
         if ($qreq->method() !== "GET") {
-            if (!isset($qreq->share)) {
+            if ($qreq->method() === "DELETE") {
+                $share = false;
+            } else if (!isset($qreq->share)) {
                 return JsonResult::make_missing_error("share");
             } else if ($qreq->share === "new" || $qreq->share === "reset") {
                 $share = $qreq->share;
@@ -31,13 +33,17 @@ class Sharing_API extends MessageSet {
                 AuthorView_Capability::make($prow, $av, $invalid_at);
             }
         }
-        $cap = AuthorView_Capability::make($prow, AuthorView_Capability::AV_EXISTING);
-        $jr = new JsonResult([
-            "ok" => true,
-            "author_view_capability" => $cap
-        ]);
-        if ($cap !== null) {
-            $jr["author_view_link"] = $prow->hoturl(["cap" => $cap], Conf::HOTURL_ABSOLUTE | Conf::HOTURL_RAW);
+        $tok = AuthorView_Capability::find($prow);
+        $jr = new JsonResult(["ok" => true]);
+        if ($tok) {
+            $jr["token"] = $tok->salt;
+            $jr["token_type"] = "author_view";
+            if ($tok->timeInvalid > 0) {
+                $jr["expires_at"] = $tok->timeInvalid;
+            }
+            $jr["url"] = $prow->hoturl(["cap" => $tok->salt], Conf::HOTURL_ABSOLUTE | Conf::HOTURL_RAW);
+        } else {
+            $jr["token"] = null;
         }
         return $jr;
     }
