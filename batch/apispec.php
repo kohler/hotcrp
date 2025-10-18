@@ -92,7 +92,6 @@ class APISpec_Batch {
 
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
-        $this->conf->set_opt("allowApiPostGet", false);
         $this->user = $conf->root_user();
         $this->xtp = new XtParams($this->conf, null);
         $this->base = isset($arg["x"]);

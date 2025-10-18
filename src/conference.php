@@ -5798,17 +5798,6 @@ class Conf {
     function api($fn, ?Contact $user = null, $method = null) {
         $xtp = (new XtParams($this, $user))->set_require_key_for_method($method);
         $uf = $xtp->search_name($this->api_map(), $fn);
-        if (!$uf && $method === "POST") {
-            $postget = $this->opt("allowApiPostGet");
-            if ($postget !== false) {
-                // XXX should not do this
-                $xtp->set_require_key_for_method("GET");
-                $uf = $xtp->search_name($this->api_map(), $fn);
-                if ($uf && !$postget) {
-                    error_log("GET-only API function {$fn} called with POST method");
-                }
-            }
-        }
         return self::xt_enabled($uf) ? $uf : null;
     }
     /** @return JsonResult */
