@@ -156,70 +156,23 @@ class Profile_Page {
     private function save_user($ustatus) {
         // check for missing fields
         UserStatus::normalize_name($ustatus->jval);
-        $acct = $ustatus->user;
-        $uemail = $ustatus->jval->email ?? null;
-        if (!$acct && !$uemail) {
-            $ustatus->error_at("email", "<0>Email address required");
-            return null;
-        }
 
         // check email
-        if (!$acct || ($uemail && strcasecmp($uemail, $acct->email) !== 0)) {
-            /* XXX this code is all dead */
-            if ($acct && $acct->security_locked()) {
-                $ustatus->error_at("email", "<0>This account’s security settings are locked, so you can’t change its email address");
+        $uemail = $ustatus->jval->email ?? null;
+        if (!$ustatus->user) {
+            if (!$uemail) {
+                $what = $this->conf->external_login() ? "Username" : "Email address";
+                $ustatus->error_at("email", "<0>{$what} required");
                 return null;
-            } else if (($new_acct = $this->conf->fresh_user_by_email($uemail))) {
-                if (!$acct) {
-                    $ustatus->jval->id = $new_acct->contactId;
-                } else {
-                    $ustatus->error_at("email", "<0>Email address ‘{$uemail}’ is already in use");
-                    $ustatus->inform_at("email", "<5>You may want to <a href=\"" . $this->conf->hoturl("manageemail") . "\">link these accounts</a>.");
-                    return null;
-                }
-            } else if ($this->conf->external_login()) {
-                if ($uemail === "") {
-                    $ustatus->error_at("email", "<0>Username required");
-                    return null;
-                }
-            } else if ($uemail === "") {
-                $ustatus->error_at("email", "<0>Email address required");
-                return null;
-            } else if (!validate_email($uemail)) {
-                $ustatus->error_at("email", "<0>Invalid email address ‘{$uemail}’");
-                return null;
-            } else if ($acct && !$acct->has_account_here()) {
-                $ustatus->error_at("email", "<0>Your current account is only active on other HotCRP.com sites. Due to a server limitation, you can’t change your email until activating your account on this site.");
+            } else if (($acct2 = $this->conf->fresh_user_by_email($uemail))) {
+                $ustatus->jval->id = $acct2->contactId;
+            } else if (!$this->conf->external_login() && !validate_email($uemail)) {
+                $ustatus->error_at("email", "<0>Invalid email address");
                 return null;
             }
-            if ($acct && (!$ustatus->viewer->privChair || $acct === $ustatus->viewer)) {
-                assert($acct->contactId > 0);
-                $old_preferredEmail = $acct->preferredEmail;
-                $acct->preferredEmail = $uemail;
-                $capability = new TokenInfo($this->conf, TokenInfo::CHANGEEMAIL);
-                $capability->set_user($acct)
-                    ->set_token_pattern("hcce[20]")
-                    ->set_expires_in(259200)
-                    ->assign_data(["oldemail" => $acct->email, "uemail" => $uemail])
-                    ->insert();
-                if ($capability->stored()) {
-                    $rest = ["capability_token" => $capability->salt, "sensitive" => true];
-                    $mailer = new HotCRPMailer($this->conf, $acct, $rest);
-                    $prep = $mailer->prepare("@changeemail", $rest);
-                } else {
-                    $prep = null;
-                }
-                if ($prep->can_send()) {
-                    $prep->send();
-                    $ustatus->append_item(MessageItem::marked_note_at("email_confirm", "<0>Confirmation email sent to {$uemail}"));
-                    $ustatus->inform_at("email_confirm", "<0>Follow the instructions in the confirmation email to complete the process of changing your email address.");
-                } else {
-                    $ustatus->error_at("email", "<0>Email change not saved: confirmation email cannot be sent to {$uemail} at the moment");
-                }
-                // Save changes *except* for new email, by restoring old email.
-                $ustatus->jval->email = $acct->email;
-                $acct->preferredEmail = $old_preferredEmail;
-            }
+        } else if ($uemail && strcasecmp($usemail, $ustatus->user->email) !== 0) {
+            $ustatus->error_at("email", "<0>Email change ignored");
+            $ustatus->inform_at("email", "<0>Use ‘Manage email’ to manage your accounts’ email addresses.");
         }
 
         // save account
@@ -775,11 +728,7 @@ class Profile_Page {
 
 
     static function go(Contact $user, Qrequest $qreq) {
-        if ($qreq->changeemail
-            && !$user->is_actas_user()
-            && !isset($qreq->cancel)) {
-            ChangeEmail_Page::go($user, $qreq);
-        } else if (!$user->is_signed_in()) {
+        if (!$user->is_signed_in()) {
             $user->escape();
         }
 

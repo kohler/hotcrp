@@ -1151,4 +1151,12 @@ class ManageEmail_Page {
     static function go_merge(Contact $user, Qrequest $qreq) {
         $user->conf->redirect_hoturl("manageemail", ["t" => "link"]);
     }
+
+    static function go_changeemail(Contact $user, Qrequest $qreq) {
+        $user->conf->feedback_msg(
+            MessageItem::error("<0>Email address changes are not supported"),
+            MessageItem::inform("<0>Use ‘Manage email’ to link accounts or transfer reviews.")
+        );
+        $user->conf->redirect_hoturl("manageemail", ["t" => null]);
+    }
 }

@@ -404,7 +404,6 @@ src/pages/p_autoassign.php
 src/pages/p_bulkassign.php
 src/pages/p_buzzer.php
 src/pages/p_cacheable.php
-src/pages/p_changeemail.php
 src/pages/p_checkupdates.php
 src/pages/p_conflictassign.php
 src/pages/p_deadlines.php
