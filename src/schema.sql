@@ -657,7 +657,7 @@ CREATE TABLE `TopicInterest` (
 -- Initial settings
 -- (each setting must be on its own line for createdb.php/createdb.sh)
 insert into Settings (name, value, data) values
-  ('allowPaperOption', 316, null),   -- schema version
+  ('allowPaperOption', 317, null),   -- schema version
   ('setupPhase', 1, null),           -- initial user is chair
   ('no_papersub', 1, null),          -- no submissions yet
   ('sub_pcconf', 1, null),           -- collect PC conflicts, not collaborators
@@ -672,4 +672,4 @@ insert into Settings (name, value, data) values
 insert ignore into PaperStorage set
     paperStorageId=1, paperId=0, timestamp=0, mimetype='text/plain',
     paper='', sha1=x'da39a3ee5e6b4b0d3255bfef95601890afd80709',
-    documentType=0, size=0;
+    documentType=0, size=0, inactive=1;

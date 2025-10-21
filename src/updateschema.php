@@ -3200,6 +3200,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table PaperStorage add `timeReferenced` bigint(11) DEFAULT NULL")) {
             $conf->update_schema_version(316);
         }
+        if ($conf->sversion === 316
+            && $conf->ql_ok("update PaperStorage set inactive=1 where paperStorageId=1 or filterType is not null")) {
+            $conf->update_schema_version(317);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;
