@@ -420,6 +420,7 @@ class DocumentRequest extends MessageSet implements JsonSerializable {
         assert($this->dtype >= DTYPE_FINAL);
         $can_view_history = $this->viewer->can_view_document_history($this->prow);
         if (!$doc
+            || $doc->filterType
             || (!$can_view_history && !$doc->is_active())) {
             $this->error_at($key, "<0>Document version not found");
             $this->cacheable = false; // version might appear later

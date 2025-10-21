@@ -283,9 +283,8 @@ class DocumentInfo implements JsonSerializable {
             return self::make_capability($conf, $fu, $paperId, $documentType);
         } if (($fi = $qreq->file("{$name}:file") ?? $qreq->file($name) /* XXX obsolete */)) {
             return self::make_uploaded_file($fi, $paperId, $documentType, $conf);
-        } else {
-            return null;
         }
+        return null;
     }
 
     /** @param FileFilter $ff
@@ -303,6 +302,7 @@ class DocumentInfo implements JsonSerializable {
         $doc->sourceHash = $this->binary_hash();
         $doc->filters_applied = $this->filters_applied ?? [];
         $doc->filters_applied[] = $ff;
+        $doc->inactive = 1; // filtered documents are always inactive
         return $doc;
     }
 
