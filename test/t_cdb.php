@@ -128,58 +128,6 @@ class Cdb_Tester {
         xassert_eqq($te->collaborators(), "Computational Linguistics Magazine");
     }
 
-    function test_change_email() {
-        $result = Dbl::qe($this->cdb, "insert into ContactInfo set firstName='', lastName='Thamrongrattanarit 2', email='te2@tl.edu', affiliation='Brandeis University or something', collaborators='Newsweek Magazine', password=' $$2y$10$/URgqlFgQHpfE6mg4NzJhOZbg9Cc2cng58pA4cikzRD9F0qIuygnm'");
-        xassert(!Dbl::is_error($result));
-        Dbl::free($result);
-
-        $u = $this->conf->cdb_user_by_email("te@tl.edu");
-        xassert(!!$u);
-        xassert_eqq($u->firstName, "Te");
-        xassert_eqq($u->disabled_flags(), 0);
-
-        $u = $this->conf->cdb_user_by_email("te2@tl.edu");
-        xassert(!!$u);
-        xassert_eqq($u->firstName, "");
-        xassert_eqq($u->disabled_flags(), 0);
-
-        // changing email works locally
-        user("te@tl.edu")->change_email("te2@tl.edu");
-        $te = maybe_user("te@tl.edu");
-        xassert(!$te);
-
-        $te2 = user("te2@tl.edu");
-        xassert(!!$te2);
-        xassert_eqq($te2->firstName, "Te");
-        xassert_eqq($te2->lastName, "Thamrongrattanarit");
-        xassert_eqq($te2->affiliation, "Brandeis University");
-
-        $te2_cdb = $this->conf->fresh_cdb_user_by_email("te2@tl.edu");
-        xassert(!!$te2_cdb);
-        xassert_eqq($te2_cdb->firstName, "Te");
-        xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 2");
-        xassert_eqq($te2_cdb->email, "te2@tl.edu");
-        xassert_eqq($te2_cdb->affiliation, "Brandeis University or something");
-        xassert_eqq($te2_cdb->disabled_flags(), 0);
-
-        // changing local email does not change cdb
-        $acct = $this->us1->save_user((object) ["email" => "te2@tl.edu", "lastName" => "Thamrongrattanarit 1", "firstName" => "Te 1"]);
-        xassert(!!$acct);
-
-        $te2 = user("te2@tl.edu");
-        xassert_eqq($te2->firstName, "Te 1");
-        xassert_eqq($te2->lastName, "Thamrongrattanarit 1");
-        xassert_eqq($te2->affiliation, "Brandeis University");
-
-        $te2_cdb = $this->conf->fresh_cdb_user_by_email("te2@tl.edu");
-        xassert(!!$te2_cdb);
-        xassert_eqq($te2_cdb->firstName, "Te");
-        xassert_eqq($te2_cdb->lastName, "Thamrongrattanarit 2");
-        xassert_eqq($te2_cdb->email, "te2@tl.edu");
-        xassert_eqq($te2_cdb->affiliation, "Brandeis University or something");
-        xassert_eqq($te2_cdb->disabled_flags(), 0);
-    }
-
     function test_simplify_whitespace_on_save() {
         $acct = $this->us1->save_user((object) ["email" => "te2@tl.edu", "lastName" => " Thamrongrattanarit  1  \t", "firstName" => "Te  1", "affiliation" => "  Brandeis   Friendiversity"]);
         xassert(!!$acct);

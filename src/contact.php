@@ -1912,30 +1912,6 @@ class Contact implements JsonSerializable {
     const SAVE_ANY_EMAIL = 1;
     const SAVE_SELF_REGISTER = 2;
 
-    function change_email($email) {
-        assert($this->has_account_here());
-        assert($this->_slice === 0);
-        $old_email = $this->email;
-        $aupapers = self::email_authored_papers($this->conf, $email, $this);
-        $this->conf->ql("update ContactInfo set email=? where contactId=?", $email, $this->contactId);
-        $this->save_authored_papers($aupapers);
-
-        if (!$this->password
-            && ($cdbu = $this->cdb_user())
-            && $cdbu->password) {
-            $this->password = $cdbu->password;
-            $this->passwordTime = $cdbu->passwordTime;
-            $this->passwordUseTime = $cdbu->passwordUseTime;
-        }
-        $this->email = $email;
-        $this->update_cdb();
-
-        if ($this->roles & Contact::ROLE_PCLIKE) {
-            $this->conf->invalidate_caches(["pc" => true]);
-        }
-        $this->conf->log_for($this, $this, "Account edited: email ({$old_email} to {$email})");
-    }
-
     /** @param string $email
      * @param object $reg
      * @return list<int> */
@@ -1964,18 +1940,6 @@ class Contact implements JsonSerializable {
         }
         Dbl::free($result);
         return $aupapers;
-    }
-
-    /** @param list<int> $aupapers */
-    private function save_authored_papers($aupapers) {
-        if (empty($aupapers) || $this->contactId <= 0) {
-            return;
-        }
-        $ps = [];
-        foreach ($aupapers as $pid) {
-            $ps[] = [$pid, $this->contactId, CONFLICT_AUTHOR];
-        }
-        $this->conf->ql("insert into PaperConflict (paperId, contactId, conflictType) values ?v on duplicate key update conflictType=(conflictType|" . CONFLICT_AUTHOR . ")", $ps);
     }
 
 
