@@ -726,7 +726,7 @@ class DocumentInfo implements JsonSerializable {
             "size" => $this->size(),
             "mimetype" => $this->mimetype,
             "documentType" => $this->documentType,
-            "inactive" => 0
+            "inactive" => $this->inactive
         ];
         if ($this->timeReferenced !== null) {
             $upd["timeReferenced"] = $this->timeReferenced;
@@ -769,13 +769,12 @@ class DocumentInfo implements JsonSerializable {
             Dbl::free($result);
             $this->_old_prop = null;
             return true;
-        } else {
-            if ($this->conf->dblink->errno) {
-                error_log("Error while saving document: " . $this->conf->dblink->error);
-            }
-            $this->error("<0>Internal error while saving document");
-            return false;
         }
+        if ($this->conf->dblink->errno) {
+            error_log("Error while saving document: " . $this->conf->dblink->error);
+        }
+        $this->error("<0>Internal error while saving document");
+        return false;
     }
 
     /** @return ?bool */
