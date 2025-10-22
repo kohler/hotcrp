@@ -10,16 +10,6 @@ class Document_CLIBatch implements CLIBatchCommand {
     /** @var ?string */
     public $dt;
 
-    /** @param array<string,mixed> $args
-     * @return string */
-    private function url_with(Hotcrapi_Batch $clib, $args) {
-        $url = "{$clib->site}/assign";
-        if (($x = http_build_query($args)) !== "") {
-            $url .= (strpos($url, "?") === false ? "?" : "&") . $x;
-        }
-        return $url;
-    }
-
     function skip_action(Hotcrapi_Batch $clib) {
         return $clib->status_code >= 200 && $clib->status_code <= 299;
     }
