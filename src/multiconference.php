@@ -1,6 +1,6 @@
 <?php
 // multiconference.php -- HotCRP multiconference installations
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Multiconference {
     /** @var array<string,?Conf> */
@@ -112,7 +112,7 @@ class Multiconference {
         return $newconf;
     }
 
-    /** @param 403|404|array{title?:string,link?:bool}|Qrequest|MessageItem|FailureReason|string|null ...$arg
+    /** @param 403|404|array{title?:string,link?:bool,action_bar?:string}|Qrequest|MessageItem|FailureReason|string|null ...$arg
      * @return never */
     static function fail(...$arg) {
         global $Opt;
@@ -122,6 +122,7 @@ class Multiconference {
         $title = "";
         $status = 404;
         $link = null;
+        $action_bar = "";
         $fr = null;
         foreach ($arg as $x) {
             if ($x === null) {
@@ -147,6 +148,7 @@ class Multiconference {
                 assert(is_array($x));
                 $title = $x["title"] ?? $title;
                 $link = $x["link"] ?? $link;
+                $action_bar = $x["action_bar"] ?? $action_bar;
             }
         }
 
@@ -184,9 +186,11 @@ class Multiconference {
         }
 
         http_response_code($status);
-        $qreq->print_header($title, "", ["action_bar" => "", "body_class" => "body-error"]);
+        $qreq->print_header($title, "", [
+            "action_bar" => $action_bar, "body_class" => "body-error"
+        ]);
         $mis[0] = $mis[0] ?? MessageItem::error("<0>Internal error");
-        if ($link && $mis[0]->status >= 2) {
+        if ($link && $mis[0]->status >= 2 && $qreq->page() !== "index") {
             if (!is_string($link)) {
                 $link = Conf::$main->hoturl_raw("index");
             }
@@ -197,28 +201,22 @@ class Multiconference {
         exit(0);
     }
 
-    /** @return Qrequest */
-    static private function make_qrequest() {
-        if (Qrequest::$main_request) {
-            return Qrequest::$main_request;
-        }
-        $qreq = (new Qrequest("GET"))->set_navigation(Navigation::get());
-        if (Contact::$main_user) {
-            $qreq->set_user(Contact::$main_user);
-        } else {
-            global $Opt;
-            $qreq->set_conf(Conf::$main ?? new Conf($Opt, false));
-        }
-        return $qreq;
+    /** @param Contact $user
+     * @param Qrequest $qreq
+     * @param array $rest
+     * @return never */
+    static function fail_user_disabled($user, $qreq, $rest = []) {
+        $rest["title"] = $rest["title"] ?? "Account disabled";
+        $rest["link"] = $rest["link"] ?? true;
+        Multiconference::fail($qreq, 403, $rest, $user->conf->_i("account_disabled", new FmtArg("email", $user->email, 0)));
     }
 
     /** @return string */
     static private function nonexistence_error() {
         if (PHP_SAPI === "cli") {
             return "Conference ID missing, `-n CONFID` required";
-        } else {
-            return "Conference not found";
         }
+        return "Conference not found";
     }
 
     /** @return never */

@@ -35,7 +35,10 @@ class Profile_Page {
 
     /** @return never */
     private function fail_user_search($text) {
-        Multiconference::fail($this->qreq, 404, ["title" => "Profile"], $text);
+        $action_bar = $this->viewer->privChair ? QuicklinksRenderer::make($this->qreq, "account") : "";
+        Multiconference::fail($this->qreq, 404, [
+            "title" => "Profile", "action_bar" => $action_bar
+        ], $text);
     }
 
     /** @param string $u
@@ -65,7 +68,7 @@ class Profile_Page {
             }
         }
         if (!$user) {
-            $this->fail_user_search("<0>User ‘{$u}’ not found");
+            $this->fail_user_search("<0>User {$u} not found");
         }
 
         if (isset($this->qreq->profile_contactid)
@@ -266,7 +269,7 @@ class Profile_Page {
 
         $ustatus = new UserStatus($this->viewer);
         $ustatus->no_deprivilege_self = true;
-        if (!$this->qreq->bulkoverride) {
+        if (!friendly_boolean($this->qreq->bulkoverride)) {
             $ustatus->set_if_empty(UserStatus::IF_EMPTY_PROFILE);
         }
         $ustatus->set_follow_primary(true);

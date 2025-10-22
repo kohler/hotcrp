@@ -926,6 +926,9 @@ body.paper #p-body {
 	margin-left: 24px;
 	margin-right: 24px;
 }
+body.body-error #h-messages {
+	margin-top: 3rem;
+}
 
 
 /* footer */

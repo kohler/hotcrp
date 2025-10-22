@@ -1,6 +1,6 @@
 <?php
 // pages/p_home.php -- HotCRP home page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Home_Page {
     /** @var Conf
@@ -33,10 +33,7 @@ class Home_Page {
 
     static function disabled_request(Contact $user, Qrequest $qreq) {
         if (!$user->is_empty() && $user->is_disabled()) {
-            $user->conf->warning_msg($user->conf->_i("account_disabled"));
-            $qreq->print_header("Account disabled", "home", ["action_bar" => ""]);
-            $qreq->print_footer();
-            exit(0);
+            Multiconference::fail_user_disabled($user, $qreq);
         }
     }
 

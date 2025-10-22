@@ -295,9 +295,8 @@ class UserStatus extends MessageSet {
             return 1;
         } else if (($this->jval->user_override ?? null) !== null) {
             return $this->jval->user_override ? 0 : 1;
-        } else {
-            return min($this->if_empty, 1);
         }
+        return min($this->if_empty, 1);
     }
 
     /** @param int $cid
@@ -1912,7 +1911,7 @@ topics. We use this information to help match papers to reviewers.</p>',
 
     static function print_bulk_actions(UserStatus $us) {
         echo '<label class="checki mt-5"><span class="checkc">',
-            Ht::checkbox("bulkoverride", 1, isset($us->qreq->bulkoverride), ["class" => "ignore-diff"]),
+            Ht::checkbox("bulkoverride", 1, !!friendly_boolean($us->qreq->bulkoverride), ["class" => "ignore-diff"]),
             '</span>Override existing names, affiliations, and collaborators</label>',
             '<div class="aab aabig mt-3">',
             '<div class="aabut">', Ht::submit("savebulk", "Save accounts", ["class" => "btn-primary"]), '</div>',

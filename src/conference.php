@@ -5143,9 +5143,8 @@ class Conf {
             return ini_get_bytes(null, $x);
         } else if ($round_ini) {
             return ini_get_bytes("upload_max_filesize") / 1.024;
-        } else {
-            return ini_get_bytes("upload_max_filesize");
         }
+        return ini_get_bytes("upload_max_filesize");
     }
 
     /** @param Qrequest $qreq
