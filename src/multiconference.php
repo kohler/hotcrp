@@ -206,9 +206,16 @@ class Multiconference {
      * @param array $rest
      * @return never */
     static function fail_user_disabled($user, $qreq, $rest = []) {
-        $rest["title"] = $rest["title"] ?? "Account disabled";
+        if ($user->is_deleted()) {
+            $e = "account_deleted";
+            $t = "Account deleted";
+        } else {
+            $e = "account_disabled";
+            $t = "Account disabled";
+        }
+        $rest["title"] = $rest["title"] ?? $t;
         $rest["link"] = $rest["link"] ?? true;
-        Multiconference::fail($qreq, 403, $rest, $user->conf->_i("account_disabled", new FmtArg("email", $user->email, 0)));
+        Multiconference::fail($qreq, 403, $rest, $user->conf->_i($e, new FmtArg("email", $user->email, 0)));
     }
 
     /** @return string */

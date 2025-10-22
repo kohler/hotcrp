@@ -220,13 +220,15 @@ class ContactSearch {
                 $where[] = "email like " . Dbl::utf8ci("'" . preg_replace('/[\s*]+/', "%", $x) . "'");
             }
             $q = "select " . $this->conf->user_query_fields() . " from ContactInfo where " . join(" or ", $where);
-            if ($this->type & self::F_ALLOW_DELETED) {
+            $allow_deleted = ($this->type & self::F_ALLOW_DELETED) !== 0;
+            if ($allow_deleted) {
                 $q .= " union select " . $this->conf->deleted_user_query_fields() . " from DeletedContactInfo where " . join(" or ", $where);
             }
             $result = $this->conf->qe_raw($q);
             $cs = [];
             while (($row = Contact::fetch($result, $this->conf))) {
-                $cs[$row->contactId] = $row;
+                if ($allow_deleted || !$row->is_deleted())
+                    $cs[$row->contactId] = $row;
             }
         }
 

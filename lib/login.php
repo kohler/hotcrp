@@ -137,7 +137,8 @@ class LoginHelper {
             && !$user->allow_self_register()) {
             return ["ok" => false, "email" => true, "noaccount" => true];
         } else if ($user->is_disabled()) {
-            return ["ok" => false, "disabled" => true, "email" => true];
+            $key = $user->is_deleted() ? "deleted" : "disabled";
+            return ["ok" => false, $key => true, "email" => true];
         }
         return ["ok" => true, "user" => $user];
     }
@@ -236,7 +237,13 @@ class LoginHelper {
         $user = $info["user"];
 
         $cdbu = $user->cdb_user();
-        if ($cdbu && !$cdbu->password_unset()) {
+        if (($cdbu && $cdbu->is_deleted())
+            || $user->is_deleted()) {
+            return [
+                "ok" => false, "email" => true, "deleted" => true,
+                "create_account" => true
+            ];
+        } else if ($cdbu && !$cdbu->password_unset()) {
             return [
                 "ok" => false, "email" => true, "userexists" => true,
                 "can_reset" => $cdbu->can_reset_password(),
@@ -286,7 +293,14 @@ class LoginHelper {
 
         // check for users that cannot reset their password
         if (!$user->can_reset_password()) {
-            return ["ok" => false, "email" => true, "nologin" => true];
+            if ($user->security_locked()) {
+                $key = "noreset";
+            } else if ($user->is_deleted()) {
+                $key = "deleted";
+            } else {
+                $key = "nologin";
+            }
+            return ["ok" => false, "email" => true, $key => true];
         }
 
         // disabled users get mail saying they're disabled
@@ -358,7 +372,8 @@ class LoginHelper {
             $problem = "no_account";
             if (!$conf->login_type()
                 && $conf->allow_user_self_register()
-                && $email !== "") {
+                && $email !== ""
+                && !($info["deleted"] ?? false)) {
                 $args[] = new FmtArg("newaccount", $conf->hoturl_raw("newaccount", ["email" => $email]));
             }
         } else if ($info["unset"] ?? false) {
@@ -367,6 +382,8 @@ class LoginHelper {
         } else if ($info["userexists"] ?? false) {
             $e = "<0>Account {email} already exists";
             $problem = "account_exists";
+        } else if ($info["deleted"] ?? false) {
+            $e = "account_deleted";
         } else if ($info["disabled"] ?? false) {
             $e = "account_disabled";
         } else if ($info["reset"] ?? false) {
@@ -394,6 +411,9 @@ class LoginHelper {
         }
         if ($info["allow_redirect"] ?? false) {
             $args[] = new FmtArg("allow_redirect", true);
+        }
+        if ($info["create_account"] ?? false) {
+            $args[] = new FmtArg("create_account", true);
         }
         $args[] = new FmtArg("expanded", true);
 

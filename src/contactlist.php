@@ -1138,15 +1138,18 @@ class ContactList {
         } else if ($this->_limit_cids !== null) {
             $mainwhere[] = "contactId" . sql_in_int_list(array_keys($this->_limit_cids));
         }
-        $mainwhere[] = "(cflags&" . Contact::CF_PLACEHOLDER . ")=0";
+        $mainwhere[] = "(cflags&" . Contact::CFM_PLACEHOLDER . ")=0";
 
         // make query
         $result = $this->conf->qe_raw("select * from ContactInfo" . (empty($mainwhere) ? "" : " where " . join(" and ", $mainwhere)));
         $rows = [];
         while (($row = Contact::fetch($result, $this->conf))) {
-            if (!$row->is_anonymous_user() && !$row->is_placeholder()) {
-                $rows[] = $row;
+            if ($row->is_anonymous_user()
+                || $row->is_placeholder()
+                || $row->is_deleted()) {
+                continue;
             }
+            $rows[] = $row;
         }
         Dbl::free($result);
         if (isset($this->qopt["topics"])) {

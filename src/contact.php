@@ -244,7 +244,8 @@ class Contact implements JsonSerializable {
     const CF_PRIMARY = 0x80;
 
     const CFM_DISABLEMENT = 0x1F;
-    const CFM_DB = ~0xC;
+    const CFM_DB = ~0x4;
+    const CFM_PLACEHOLDER = 0xA;
 
     const PROP_LOCAL = 0x01;
     const PROP_CDB = 0x02;
@@ -1147,7 +1148,12 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function is_placeholder() {
-        return ($this->cflags & self::CF_PLACEHOLDER) !== 0;
+        return ($this->cflags & self::CFM_PLACEHOLDER) === self::CF_PLACEHOLDER;
+    }
+
+    /** @return bool */
+    function is_deleted() {
+        return ($this->cflags & self::CF_DELETED) !== 0;
     }
 
     /** @return bool */
@@ -1690,7 +1696,7 @@ class Contact implements JsonSerializable {
     }
 
     /** @param string $key */
-    function set_data($key, $value) {
+    function set_data_prop($key, $value) {
         $d = $this->make_data();
         if (($d->$key ?? null) !== $value) {
             if (!array_key_exists("data", $this->_mod_undo ?? [])) {
@@ -1704,6 +1710,22 @@ class Contact implements JsonSerializable {
         }
     }
 
+    /** @param string $key
+     * @deprecated */
+    function set_data($key, $value) {
+        $this->set_data_prop($key, $value);
+    }
+
+    function clear_data_prop() {
+        $this->_slice !== 0 && $this->unslice();
+        if ($this->_jdata !== null || $this->data !== null) {
+            if (!array_key_exists("data", $this->_mod_undo ?? [])) {
+                $this->_mod_undo["data"] = $this->data;
+            }
+            $this->data = $this->_jdata = null;
+        }
+    }
+
     /** @return ?string */
     private function encode_data() {
         $t = json_encode_db($this->make_data());
@@ -1714,11 +1736,6 @@ class Contact implements JsonSerializable {
      * @param mixed $value */
     function save_data($key, $value) {
         $this->merge_and_save_data((object) [$key => array_to_object_recursive($value)]);
-    }
-
-    /** @param object|array $data */
-    function merge_data($data) {
-        object_replace_recursive($this->make_data(), array_to_object_recursive($data));
     }
 
     /** @param object|array $data */
@@ -2041,7 +2058,7 @@ class Contact implements JsonSerializable {
         }
         // save
         if (($shape & self::PROP_DATA) !== 0) {
-            $this->set_data($prop, $value);
+            $this->set_data_prop($prop, $value);
         } else {
             $this->_mod_undo = $this->_mod_undo ?? [];
             $has_old = array_key_exists($prop, $this->_mod_undo);
@@ -2243,7 +2260,8 @@ class Contact implements JsonSerializable {
     function activate_placeholder($confirm, $actor = null) {
         // see also PaperStatus::_execute_author_changes
         $mask = self::CF_PLACEHOLDER | ($confirm ? self::CF_UNCONFIRMED : 0);
-        if (($this->cflags & $mask) === 0) {
+        if (($this->cflags & $mask) === 0
+            || ($this->cflags & self::CFM_DISABLEMENT & ~self::CF_PLACEHOLDER) !== 0) {
             return false;
         }
         $create = ($this->cflags & self::CF_PLACEHOLDER) !== 0;
@@ -2315,19 +2333,21 @@ class Contact implements JsonSerializable {
         if ($sdflags !== 0
             && $this->cdb_confid !== 0
             && $this->contactDbId === 0) {
-            $this->set_prop("cflags", $this->cflags | self::CF_PLACEHOLDER);
+            $this->set_prop("cflags", ($this->cflags & ~self::CF_DELETED) | self::CF_PLACEHOLDER);
         }
-        // source is non-disabled local user: this is not placeholder
+        // source is non-placeholder local user: this is not placeholder
         if ($src->cdb_confid === 0
             && $sdflags === 0
             && ($this->cflags & self::CF_PLACEHOLDER) !== 0) {
             $this->set_prop("cflags", $this->cflags & ~self::CF_PLACEHOLDER);
         }
-        // source is globally disabled: this local user is disabled
-        if (($sdflags & self::CF_GDISABLED) !== 0
+        // source is globally disabled/deleted cdb user:
+        // this local user is disabled/deleted
+        $sdflags_del = $sdflags & (self::CF_GDISABLED | self::CF_DELETED);
+        if ($sdflags_del !== 0
             && $src->cdb_confid !== 0
             && $this->cdb_confid === 0) {
-            $this->set_prop("cflags", $this->cflags | self::CF_GDISABLED);
+            $this->set_prop("cflags", $this->cflags | $sdflags_del);
         }
 
         // unconfirmed import is special
@@ -2516,7 +2536,9 @@ class Contact implements JsonSerializable {
 
     /** @return bool */
     function can_reset_password() {
-        if ($this->conf->external_login() || $this->security_locked()) {
+        if ($this->conf->external_login()
+            || $this->security_locked()
+            || $this->is_deleted()) {
             return false;
         }
         list($cdbpw, $localpw) = $this->effective_passwords();
@@ -2591,6 +2613,12 @@ class Contact implements JsonSerializable {
         if (str_starts_with($cdbpw, " nologin")
             || (!$cdb_ok && str_starts_with($localpw, " nologin"))) {
             return ["ok" => false, "email" => true, "disabled" => true];
+        }
+
+        // deleted users cannot log in
+        if (($cdbu && $cdbu->is_deleted())
+            || $this->is_deleted()) {
+            return ["ok" => false, "email" => true, "noaccount" => true, "deleted" => true];
         }
 
         // users with unset passwords cannot log in

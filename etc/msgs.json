@@ -255,6 +255,8 @@
 
     ["account_disabled", "<0>Account {email} has been disabled by a site administrator", ["{email}"]],
     ["account_disabled", "<0>That account has been disabled by a site administrator"],
+    ["account_deleted", "<0>Account {email} has been deleted on this site. Only a site administrator can recreate it", ["{expanded}", "{create_account}"]],
+    ["account_deleted", "<0>Account {email} has been deleted"],
 
     ["<0>Account {email} not found", "<5>User {email} does not have an account. Check the email address, or <a href=\"{newaccount}\">create that account</a> if you’d like.", ["{newaccount}"]],
     ["<0>User {email} has not set a password", "<5>User {email} has not set a password. Use this form to get a password reset link.", ["{forgotpassword}", "{allow_redirect}"]],

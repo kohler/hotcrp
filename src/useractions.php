@@ -221,49 +221,67 @@ class UserActions extends MessageSet {
         if (!$this->check_delete($user)) {
             return;
         }
+
         // insert deletion marker
         $this->conf->qe("insert into DeletedContactInfo set contactId=?, firstName=?, lastName=?, unaccentedName=?, email=?, affiliation=?", $user->contactId, $user->firstName, $user->lastName, $user->unaccentedName, $user->email, $user->affiliation);
-        // remove roles (and update contactdb)
-        if (($user->roles & Contact::ROLE_DBMASK) !== 0) {
-            $user->save_roles(0, $this->viewer);
-        }
+
+        // change cflags to mark user as deleted
+        // also change roles (do not log roles change, as we will shortly log deletion)
+        // and delete password
+        $user->set_prop("cflags", $user->cflags | Contact::CF_DELETED);
+        $user->set_prop("roles", 0);
+        $user->set_prop("contactTags", null);
+        $user->set_prop("password", "");
+        $user->set_prop("passwordTime", 0);
+        $user->set_prop("passwordUseTime", 0);
+        $user->set_prop("lastLogin", 0);
+        $user->set_prop("defaultWatch", 2);
+        $user->clear_data_prop();
+        $user->save_prop();
+
         // unlink from primary
         if ($user->primaryContactId > 0) {
             (new ContactPrimary($this->viewer))->link($user, null);
         }
+
         // load paper set for reviews and comments
         $prows = $this->conf->paper_set([
             "where" => "paperId in (select paperId from PaperReview where contactId={$user->contactId} union select paperId from PaperComment where contactId={$user->contactId})"
         ]);
         // delete reviews (needs to be logged, might update other information)
-        $result = $this->conf->qe("select * from PaperReview where contactId=?", $user->contactId);
+        $result = $this->conf->qe("select * from PaperReview where contactId=?",
+            $user->contactId);
         while (($rrow = ReviewInfo::fetch($result, $prows, $this->conf))) {
             $rrow->delete($this->viewer, ["no_autosearch" => true]);
         }
         Dbl::free($result);
-        // delete comments (needs to be logged)
-        $result = $this->conf->qe("select * from PaperComment where contactId=?", $user->contactId);
+        // delete comments (needs to be logged; do not delete responses)
+        $result = $this->conf->qe("select * from PaperComment where contactId=? and (commentType&?)=0",
+            $user->contactId, CommentInfo::CT_RESPONSE);
         while (($crow = CommentInfo::fetch($result, $prows, $this->conf))) {
             $crow->delete($this->viewer, ["no_autosearch" => true]);
         }
         Dbl::free($result);
-        // delete from other tables database
-        foreach (["PaperConflict", "PaperWatch",
-                  "PaperReviewPreference", "PaperReviewRefused", "ReviewRating",
-                  "TopicInterest", "ContactInfo"] as $table) {
+
+        // delete from other database tables
+        foreach (["PaperWatch", "PaperReviewPreference", "PaperReviewRefused", "ReviewRating", "TopicInterest"] as $table) {
             $this->conf->qe_raw("delete from {$table} where contactId={$user->contactId}");
         }
+
         // delete twiddle tags
         $assigner = new AssignmentSet($this->viewer);
         $assigner->set_override_conflicts(true);
         $assigner->parse("paper,tag\nall,{$user->contactId}~all#clear\n");
         $assigner->execute();
+
         // automatic tags may have changed
         $this->conf->update_automatic_tags();
+
         // clear caches
         if ($user->isPC || $user->privChair) {
             $this->conf->invalidate_caches(["pc" => true]);
         }
+
         // done
         $this->viewer->log_activity_for($user, "Account deleted {$user->email}");
         $this->unames["deleted"][] = $user->name(NAME_E);

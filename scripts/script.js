@@ -13376,7 +13376,7 @@ handle_ui.on("js-delete-user", function () {
         ul.append($e("li", null, "Comments on ", plinks(pids)));
     }
     if (ul.firstChild !== null) {
-        $pu.append($e("p", null, "Deleting this account will also delete:"), ul);
+        $pu.append($e("p", null, "Deleting this account will delete or disable:"), ul);
     }
     $pu.append($e("p", null, "Be careful: Account deletion ", $e("strong", null, "cannot be undone"), "."))
         .append_actions($e("button", {type: "submit", name: "delete", value: 1, class: "btn-danger"}, "Delete user"), "Cancel")

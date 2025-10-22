@@ -67,7 +67,7 @@ class Profile_Page {
                 $this->fail_user_search("<0>User matching ‘{$u}’ not found");
             }
         }
-        if (!$user) {
+        if (!$user || $user->is_deleted()) {
             $this->fail_user_search("<0>User {$u} not found");
         }
 
@@ -298,7 +298,7 @@ class Profile_Page {
             } else {
                 $link = null;
             }
-            foreach ($ustatus->problem_list() as $mi) {
+            foreach ($ustatus->message_list() as $mi) {
                 $mi->landmark = $csv->landmark();
                 if ($link !== null
                     && $mi->message !== ""

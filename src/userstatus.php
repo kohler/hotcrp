@@ -1013,11 +1013,24 @@ class UserStatus extends MessageSet {
 
         // - check save mode
         if ($this->save_mode === self::SAVE_EXISTING && !$old_user) {
-            $this->error_at("email", "<0>Account ‘{$cj->email}’ not found");
+            $this->error_at("email", "<0>Account {$cj->email} not found");
             return false;
         }
         if ($this->save_mode === self::SAVE_NEW && $old_user) {
-            $this->error_at("email", "<0>Email address ‘{$email}’ is already in use");
+            $this->error_at("email", "<0>Email address {$email} is already in use");
+            return false;
+        }
+        if ($old_cdb_user
+            && $old_cdb_user->is_deleted()) {
+            $this->error_at("email", "<0>Account {$cj->email} has been deleted and cannot be recreated");
+            return false;
+        } else if ($old_user
+                   && $old_user->is_deleted()
+                   && !($cj->user_override ?? false)) {
+            $this->error_at("email", "<0>Account {$cj->email} has been deleted");
+            if ($this->viewer->privChair) {
+                $this->inform_at("email", "<5>You can recreate the account using <a href=\"{bulkupdate}\">Bulk update</a>. Set the ‘user_override’ column to ‘yes’.", new FmtArg("bulkupdate", $this->conf->hoturl_raw("profile", ["u" => "bulk"]), 0));
+            }
             return false;
         }
         $user = $old_user ?? $old_cdb_user;
@@ -1190,6 +1203,7 @@ class UserStatus extends MessageSet {
 
         // Disabled
         $old_cflags = $cflags = $user->cflags;
+        $cflags &= ~Contact::CF_DELETED;
         if (isset($cj->disabled) && !$user->security_locked_here()) {
             if ($cj->disabled) {
                 $cflags |= Contact::CF_UDISABLED;
