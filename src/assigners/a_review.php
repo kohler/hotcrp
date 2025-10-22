@@ -431,12 +431,11 @@ class Review_Assigner extends Assigner {
             $pids[] = $a->pid;
             $cids[] = $a->cid;
             $aset->conf->invalidate_user_by_id($a->cid);
+            $aset->conf->prefetch_user_by_id($a->cid);
         }
         $prows = $aset->conf->paper_set(["paperId" => $pids]);
-        $result = $aset->conf->qe("select " . $aset->conf->user_query_fields(0) . " from ContactInfo where contactId?a", $cids);
-        $users = ContactSet::make_result($result, $aset->conf);
         foreach ($as as $a) {
-            $user = $users->user_by_id($a->cid);
+            $user = $aset->conf->user_by_id($a->cid);
             $prow = $prows->paper_by_id($a->pid);
             HotCRPMailer::send_to($user, $a->notify, [
                 "prow" => $prow, "rrow" => $prow->fresh_review_by_user($a->cid),
