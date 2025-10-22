@@ -2239,7 +2239,7 @@ class AssignmentSet {
             $assigner->cleanup($this);
         }
         foreach ($this->_cleanup_callbacks as $cb) {
-            call_user_func($cb[0], $cb[1]);
+            call_user_func($cb[0], $this, $cb[1]);
         }
         if (!empty($pids)) {
             $this->conf->update_automatic_tags(array_keys($pids), $this->assigned_types());

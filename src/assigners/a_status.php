@@ -200,17 +200,15 @@ class Status_Assigner extends Assigner {
             $aset->user->log_activity($submitted > 0 ? "Paper submitted" : "Paper unsubmitted", $this->pid);
         }
         if (($submitted > 0) !== ($old_submitted > 0)) {
-            $aset->register_cleanup_function("papersub", function ($vals) use ($aset) {
+            $aset->register_cleanup_function("papersub", function ($aset, $vals) {
                 $aset->conf->update_papersub_setting(min($vals));
             }, $submitted > 0 ? 1 : 0);
-            $aset->register_cleanup_function("paperacc", function ($vals) use ($aset) {
+            $aset->register_cleanup_function("paperacc", function ($aset, $vals) {
                 $aset->conf->update_paperacc_setting(min($vals));
             }, 0);
         }
         if ($withdrawn > 0 && $old_withdrawn <= 0 && ($this->item["_notify"] ?? true)) {
-            $aset->register_cleanup_function("withdraw {$this->pid}", function () use ($aset) {
-                $this->notify_for_withdraw($aset);
-            });
+            $aset->register_cleanup_function("withdraw {$this->pid}", [$this, "notify_for_withdraw"]);
         }
     }
 

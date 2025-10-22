@@ -572,7 +572,7 @@ class Tag_Assigner extends Assigner {
         }
         if ($this->index !== null
             && str_ends_with($this->tag, ':')) {
-            $aset->register_cleanup_function("colontag", function () use ($aset) {
+            $aset->register_cleanup_function("colontag", function ($aset) {
                 $aset->conf->save_refresh_setting("has_colontag", 1);
             });
         }

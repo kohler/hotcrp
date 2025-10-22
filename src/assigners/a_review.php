@@ -402,7 +402,7 @@ class Review_Assigner extends Assigner {
         if ($this->contact->is_anonymous_user()
             && (!$this->item->existed() || !$this->item["_rtype"])) {
             $extra["token"] = true;
-            $aset->register_cleanup_function("rev_token", function ($vals) use ($aset) {
+            $aset->register_cleanup_function("rev_token", function ($aset, $vals) {
                 $aset->conf->update_rev_tokens_setting(min($vals));
             }, $this->item->existed() ? 0 : 1);
         }
@@ -421,16 +421,26 @@ class Review_Assigner extends Assigner {
             $this->token = $aset->conf->fetch_ivalue("select reviewToken from PaperReview where paperId=? and reviewId=?", $this->pid, $reviewId);
         }
         if ($this->notify) {
-            // ensure notification email gets a relatively fresh user
-            $aset->conf->invalidate_user($this->contact);
+            $aset->register_cleanup_function("rev_notify", "Review_Assigner::notify_all", $this);
         }
     }
-    function cleanup(AssignmentSet $aset) {
-        if ($this->notify) {
-            $prow = $aset->conf->paper_by_id($this->pid, $this->contact);
-            HotCRPMailer::send_to($this->contact, $this->notify, [
-                "prow" => $prow, "rrow" => $prow->fresh_review_by_user($this->cid),
-                "requester_contact" => $aset->user, "reason" => $this->item["_reason"]
+    /** @param list<Review_Assigner> $as */
+    static function notify_all(AssignmentSet $aset, $as) {
+        $pids = $cids = [];
+        foreach ($as as $a) {
+            $pids[] = $a->pid;
+            $cids[] = $a->cid;
+            $aset->conf->invalidate_user_by_id($a->cid);
+        }
+        $prows = $aset->conf->paper_set(["paperId" => $pids]);
+        $result = $aset->conf->qe("select " . $aset->conf->user_query_fields(0) . " from ContactInfo where contactId?a", $cids);
+        $users = ContactSet::make_result($result, $aset->conf);
+        foreach ($as as $a) {
+            $user = $users->user_by_id($a->cid);
+            $prow = $prows->paper_by_id($a->pid);
+            HotCRPMailer::send_to($user, $a->notify, [
+                "prow" => $prow, "rrow" => $prow->fresh_review_by_user($a->cid),
+                "requester_contact" => $aset->user, "reason" => $a->item["_reason"]
             ]);
         }
     }

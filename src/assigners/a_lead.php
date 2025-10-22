@@ -197,11 +197,11 @@ class Lead_Assigner extends Assigner {
             $aset->user->log_activity("Clear {$this->description}", $this->pid);
         }
         if ($t === "lead" || $t === "shepherd") {
-            $aset->register_cleanup_function("lead", function ($vals) use ($aset) {
+            $aset->register_cleanup_function("lead", function ($aset, $vals) {
                 $aset->conf->update_paperlead_setting(min($vals));
             }, $new_cid ? 1 : 0);
         } else if ($t === "manager") {
-            $aset->register_cleanup_function("manager", function ($vals) use ($aset) {
+            $aset->register_cleanup_function("manager", function ($aset, $vals) {
                 $aset->conf->update_papermanager_setting(min($vals));
             }, $new_cid ? 1 : 0);
         }
