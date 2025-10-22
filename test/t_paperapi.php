@@ -36,7 +36,7 @@ class PaperAPI_Tester {
     }
 
     function test_save_submit_new_paper() {
-        $qreq = TestQreq::post(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission", "%PDF-2", null, "application/pdf");
+        $qreq = TestQreq::post(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission:file", "%PDF-2", null, "application/pdf");
         $jr = call_api("=paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, true);
         xassert_eqq($jr->paper->object, "paper");
@@ -422,7 +422,7 @@ class PaperAPI_Tester {
         $this->conf->save_setting("sub_sub", Conf::$now - 10);
         $this->conf->refresh_settings();
 
-        $qreq = TestQreq::post(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission", "%PDF-2", null, "application/pdf");
+        $qreq = TestQreq::post(["p" => "new", "status:submit" => 1, "title" => "New paper", "abstract" => "This is an abstract\r\n", "has_authors" => "1", "authors:1:name" => "Bobby Flay", "authors:1:email" => "flay@_.com", "has_submission" => 1])->set_file_content("submission:file", "%PDF-2", null, "application/pdf");
         $jr = call_api("=paper", $this->u_estrin, $qreq);
         xassert_eqq($jr->ok, false);
         xassert_eqq($jr->message_list[0]->field, "status:submitted");
