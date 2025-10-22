@@ -281,7 +281,10 @@ class DocumentInfo implements JsonSerializable {
                                  $documentType, Conf $conf) {
         if (($fu = $qreq["{$name}:upload"])) {
             return self::make_capability($conf, $fu, $paperId, $documentType);
-        } if (($fi = $qreq->file("{$name}:file") ?? $qreq->file($name) /* XXX obsolete */)) {
+        } else if (($fi = $qreq->file("{$name}:file"))) {
+            return self::make_uploaded_file($fi, $paperId, $documentType, $conf);
+        } else if (($fi = $qreq->file($name) /* XXX obsolete */)) {
+            error_log("obsolete use of file attachment {$name}");
             return self::make_uploaded_file($fi, $paperId, $documentType, $conf);
         }
         return null;
