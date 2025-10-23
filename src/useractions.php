@@ -248,6 +248,7 @@ class UserActions extends MessageSet {
         $prows = $this->conf->paper_set([
             "where" => "paperId in (select paperId from PaperReview where contactId={$user->contactId} union select paperId from PaperComment where contactId={$user->contactId})"
         ]);
+
         // delete reviews (needs to be logged, might update other information)
         $result = $this->conf->qe("select * from PaperReview where contactId=?",
             $user->contactId);
@@ -255,6 +256,7 @@ class UserActions extends MessageSet {
             $rrow->delete($this->viewer, ["no_autosearch" => true]);
         }
         Dbl::free($result);
+
         // delete comments (needs to be logged; do not delete responses)
         $result = $this->conf->qe("select * from PaperComment where contactId=? and (commentType&?)=0",
             $user->contactId, CommentInfo::CT_RESPONSE);
@@ -262,6 +264,12 @@ class UserActions extends MessageSet {
             $crow->delete($this->viewer, ["no_autosearch" => true]);
         }
         Dbl::free($result);
+
+        // delete conflicts except for author conflicts
+        $this->conf->qe("delete from PaperConflict where contactId=? and conflictType!=?",
+            $user->contactId, CONFLICT_AUTHOR);
+        $this->conf->qe("update PaperConflict set conflictType=? where contactId=?",
+            CONFLICT_AUTHOR, $user->contactId);
 
         // delete from other database tables
         foreach (["PaperWatch", "PaperReviewPreference", "PaperReviewRefused", "ReviewRating", "TopicInterest"] as $table) {
