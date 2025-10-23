@@ -1,6 +1,6 @@
 <?php
 // test/setup.php -- HotCRP helper file to initialize tests
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 require_once(dirname(__DIR__) . "/src/siteloader.php");
 define("HOTCRP_OPTIONS", SiteLoader::find("test/options.php"));
@@ -164,7 +164,7 @@ class MailChecker {
                 }
                 Xassert::fail_with(...$ml);
             } else {
-                Xassert::fail_with("Mail not found `{$wtext}`");
+                Xassert::fail_with("mail not found `{$wtext}`");
             }
             if ($index !== false) {
                 array_splice($haves, $index, 1);
@@ -173,7 +173,7 @@ class MailChecker {
 
         Xassert::push_failure_group();
         foreach ($haves as $have) {
-            Xassert::fail_with("Unexpected mail: " . $have);
+            Xassert::fail_with("unexpected mail: " . $have);
         }
         Xassert::pop_failure_group();
         self::$preps = [];
@@ -526,7 +526,7 @@ function xassert($x, $description = "") {
     if ($x) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with($description ? : "Assertion failed");
+        Xassert::fail_with($description ? : "assertion failed");
     }
     return !!$x;
 }
@@ -567,7 +567,7 @@ function xassert_neqq($actual, $nonexpected) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected !== " . xassert_var_export($actual));
+        Xassert::fail_with("expected !== " . xassert_var_export($actual));
     }
     return $ok;
 }
@@ -633,7 +633,7 @@ function xassert_neq($actual, $nonexpected) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected != " . var_export($actual, true));
+        Xassert::fail_with("expected != " . var_export($actual, true));
     }
     return $ok;
 }
@@ -698,7 +698,7 @@ function xassert_str_starts_with($haystack, $needle) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected `{$haystack}` to start with `{$needle}`");
+        Xassert::fail_with("expected `{$haystack}` to start with `{$needle}`");
     }
     return $ok;
 }
@@ -711,7 +711,7 @@ function xassert_str_contains($haystack, $needle) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected `{$haystack}` to contain `{$needle}`");
+        Xassert::fail_with("expected `{$haystack}` to contain `{$needle}`");
     }
     return $ok;
 }
@@ -724,7 +724,7 @@ function xassert_not_str_contains($haystack, $needle) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected `{$haystack}` to not contain `{$needle}`");
+        Xassert::fail_with("expected `{$haystack}` to not contain `{$needle}`");
     }
     return $ok;
 }
@@ -785,7 +785,7 @@ function xassert_match($a, $b) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected " . var_export($a, true) . " ~= {$b}");
+        Xassert::fail_with("expected " . var_export($a, true) . " ~= {$b}");
     }
     return $ok;
 }
@@ -803,7 +803,7 @@ function xassert_int_list_eqq($actual, $expected) {
     if ($ok) {
         Xassert::succeed();
     } else {
-        Xassert::fail_with("Expected {$estr}, got {$astr}");
+        Xassert::fail_with("expected {$estr}, got {$astr}");
     }
     return $ok;
 }

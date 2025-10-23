@@ -1624,9 +1624,8 @@ class SettingValues extends MessageSet {
                 && (!is_bool($oldv) || (int) $oldv !== ($vp[$vi] ?? null));
         } else if (($si->storage_type & Si::SI_VALUE) !== 0) {
             return $this->conf->setting($sn) !== ($vp[0] ?? null);
-        } else {
-            return $this->conf->setting_data($sn) !== ($vp[1] ?? null);
         }
+        return $this->conf->setting_data($sn) !== ($vp[1] ?? null);
     }
 
     /** @return list<Si> */
