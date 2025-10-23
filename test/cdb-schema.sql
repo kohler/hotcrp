@@ -4,14 +4,14 @@
 
 DROP TABLE IF EXISTS `Capability`;
 CREATE TABLE `Capability` (
-  `capabilityType` int(11) NOT NULL,
-  `contactId` int(11) NOT NULL,
-  `paperId` int(11) NOT NULL,
-  `timeCreated` bigint(11) NOT NULL,
-  `timeUsed` bigint(11) NOT NULL DEFAULT 0,
-  `useCount` bigint(11) NOT NULL DEFAULT 0,
-  `timeInvalid` bigint(11) NOT NULL DEFAULT 0,
-  `timeExpires` bigint(11) NOT NULL,
+  `capabilityType` int NOT NULL,
+  `contactId` int NOT NULL,
+  `paperId` int NOT NULL,
+  `timeCreated` bigint NOT NULL,
+  `timeUsed` bigint NOT NULL DEFAULT 0,
+  `useCount` bigint NOT NULL DEFAULT 0,
+  `timeInvalid` bigint NOT NULL DEFAULT 0,
+  `timeExpires` bigint NOT NULL,
   `salt` varbinary(255) NOT NULL,
   `data` varbinary(8192) DEFAULT NULL,
   `dataOverflow` longblob DEFAULT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE `Capability` (
 
 DROP TABLE IF EXISTS `Conferences`;
 CREATE TABLE `Conferences` (
-  `confid` int(11) NOT NULL AUTO_INCREMENT,
+  `confid` int NOT NULL AUTO_INCREMENT,
   `confuid` varbinary(64) DEFAULT NULL,
   PRIMARY KEY (`confid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -38,8 +38,8 @@ CREATE TABLE `Conferences` (
 
 DROP TABLE IF EXISTS `ConferenceUpdates`;
 CREATE TABLE `ConferenceUpdates` (
-  `confid` int(11) NOT NULL,
-  `user_update_at` bigint(11) NOT NULL DEFAULT 0,
+  `confid` int NOT NULL,
+  `user_update_at` bigint NOT NULL DEFAULT 0,
   PRIMARY KEY (`confid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -50,22 +50,22 @@ CREATE TABLE `ConferenceUpdates` (
 
 DROP TABLE IF EXISTS `ContactInfo`;
 CREATE TABLE `ContactInfo` (
-  `contactDbId` int(11) NOT NULL AUTO_INCREMENT,
+  `contactDbId` int NOT NULL AUTO_INCREMENT,
   `firstName` varbinary(240) NOT NULL DEFAULT '',
   `lastName` varbinary(240) NOT NULL DEFAULT '',
   `email` varchar(120) NOT NULL,
   `affiliation` varbinary(2048) NOT NULL DEFAULT '',
   `orcid` varbinary(64) DEFAULT NULL,
-  `cflags` int(11) NOT NULL DEFAULT 0,
+  `cflags` int NOT NULL DEFAULT 0,
   `data` varbinary(32767) DEFAULT NULL,
   `password` varbinary(2048) DEFAULT NULL,
-  `passwordTime` int(11) NOT NULL DEFAULT 0,
+  `passwordTime` int NOT NULL DEFAULT 0,
   `country` varbinary(256) DEFAULT NULL,
   `collaborators` varbinary(8192) DEFAULT NULL,
-  `passwordUseTime` bigint(11) NOT NULL DEFAULT 0,
-  `updateTime` bigint(11) NOT NULL DEFAULT 0,
-  `demoBirthday` int(11) DEFAULT NULL,
-  `primaryContactId` int(11) NOT NULL DEFAULT 0,
+  `passwordUseTime` bigint NOT NULL DEFAULT 0,
+  `updateTime` bigint NOT NULL DEFAULT 0,
+  `demoBirthday` int DEFAULT NULL,
+  `primaryContactId` int NOT NULL DEFAULT 0,
   PRIMARY KEY (`contactDbId`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -78,8 +78,8 @@ CREATE TABLE `ContactInfo` (
 
 DROP TABLE IF EXISTS `ContactPrimary`;
 CREATE TABLE `ContactPrimary` (
-  `contactId` int(11) NOT NULL,
-  `primaryContactId` int(11) NOT NULL,
+  `contactId` int NOT NULL,
+  `primaryContactId` int NOT NULL,
   PRIMARY KEY (`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -91,10 +91,10 @@ CREATE TABLE `ContactPrimary` (
 
 DROP TABLE IF EXISTS `Roles`;
 CREATE TABLE `Roles` (
-  `contactDbId` int(11) NOT NULL,
-  `confid` int(11) NOT NULL,
-  `roles` tinyint(1) NOT NULL DEFAULT 0,
-  `activity_at` bigint(20) NOT NULL DEFAULT 0,
+  `contactDbId` int NOT NULL,
+  `confid` int NOT NULL,
+  `roles` tinyint NOT NULL DEFAULT 0,
+  `activity_at` bigint NOT NULL DEFAULT 0,
   PRIMARY KEY (`contactDbId`,`confid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -106,7 +106,7 @@ CREATE TABLE `Roles` (
 DROP TABLE IF EXISTS `Settings`;
 CREATE TABLE `Settings` (
   `name` varbinary(256) DEFAULT NULL,
-  `value` int(11) NOT NULL,
+  `value` int NOT NULL,
   `data` varbinary(32767) DEFAULT NULL,
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

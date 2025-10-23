@@ -600,11 +600,11 @@ class ConfInvariants {
     function check_document_inactive() {
         $tntable = "DocActivity_" . base48_encode(random_bytes(4));
         $this->conf->ql("create temporary table {$tntable} (
-    pid int(11) NOT NULL,
-    did int(11) NOT NULL,
-    dt int(11) NOT NULL,
-    inactive tinyint(1) NOT NULL,
-    want_inactive tinyint(1) NOT NULL,
+    pid int NOT NULL,
+    did int NOT NULL,
+    dt int NOT NULL,
+    inactive tinyint NOT NULL,
+    want_inactive tinyint NOT NULL,
     PRIMARY KEY (`pid`,`did`)
 ) as select paperId pid, paperStorageId did, documentType dt, inactive, 1 want_inactive
     from PaperStorage where paperStorageId>1 and filterType is null");

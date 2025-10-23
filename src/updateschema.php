@@ -789,7 +789,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             return false;
         }
         if (!$this->check_column_exists("ContactInfo", "cdbRoles")
-            && !$this->conf->ql_ok("alter table ContactInfo add `cdbRoles` tinyint(1) NOT NULL DEFAULT 0")) {
+            && !$this->conf->ql_ok("alter table ContactInfo add `cdbRoles` tinyint NOT NULL DEFAULT 0")) {
             return false;
         }
         foreach (["overAllMerit", "reviewerQualification", "novelty", "technicalMerit",
@@ -797,7 +797,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                   "suitableForShort", "potential", "fixability"] as $i => $f) {
             $nfn = sprintf("s%02d", $i + 1);
             $ofn = $this->check_column_exists("PaperReview", $f) ? $f : $nfn;
-            if (!$this->conf->ql_ok("alter table PaperReview change `{$ofn}` `{$nfn}` smallint(1) NOT NULL DEFAULT 0")) {
+            if (!$this->conf->ql_ok("alter table PaperReview change `{$ofn}` `{$nfn}` smallint NOT NULL DEFAULT 0")) {
                 return false;
             }
         }
@@ -808,16 +808,16 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
     private function v266_contact_counter() {
         Dbl::qx($this->conf->dblink, "DROP TABLE IF EXISTS `ContactCounter`");
         return !!$this->conf->ql_ok("CREATE TABLE `ContactCounter` (
-  `contactId` int(11) NOT NULL,
-  `apiCount` bigint(11) NOT NULL DEFAULT '0',
-  `apiLimit` bigint(11) NOT NULL DEFAULT '0',
-  `apiRefreshMtime` bigint(11) NOT NULL DEFAULT '0',
-  `apiRefreshWindow` int(11) NOT NULL DEFAULT '0',
-  `apiRefreshAmount` int(11) NOT NULL DEFAULT '0',
-  `apiLimit2` bigint(11) NOT NULL DEFAULT '0',
-  `apiRefreshMtime2` bigint(11) NOT NULL DEFAULT '0',
-  `apiRefreshWindow2` int(11) NOT NULL DEFAULT '0',
-  `apiRefreshAmount2` int(11) NOT NULL DEFAULT '0',
+  `contactId` int NOT NULL,
+  `apiCount` bigint NOT NULL DEFAULT '0',
+  `apiLimit` bigint NOT NULL DEFAULT '0',
+  `apiRefreshMtime` bigint NOT NULL DEFAULT '0',
+  `apiRefreshWindow` int NOT NULL DEFAULT '0',
+  `apiRefreshAmount` int NOT NULL DEFAULT '0',
+  `apiLimit2` bigint NOT NULL DEFAULT '0',
+  `apiRefreshMtime2` bigint NOT NULL DEFAULT '0',
+  `apiRefreshWindow2` int NOT NULL DEFAULT '0',
+  `apiRefreshAmount2` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
@@ -826,27 +826,27 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
     private function v267_paper_review_history() {
         Dbl::qx($this->conf->dblink, "DROP TABLE IF EXISTS `PaperReviewHistory`");
         return $this->conf->ql_ok("CREATE TABLE `PaperReviewHistory` (
-  `paperId` int(11) NOT NULL,
-  `reviewId` int(11) NOT NULL,
-  `reviewTime` bigint(11) NOT NULL,
-  `contactId` int(11) NOT NULL,
-  `reviewRound` int(1) NOT NULL,
-  `reviewOrdinal` int(1) NOT NULL,
-  `reviewType` tinyint(1) NOT NULL,
-  `reviewBlind` tinyint(1) NOT NULL,
-  `reviewModified` bigint(11) NOT NULL,
-  `reviewSubmitted` bigint(1) NOT NULL,
-  `timeDisplayed` bigint(11) NOT NULL,
-  `reviewAuthorSeen` bigint(1) NOT NULL,
-  `reviewAuthorModified` bigint(1) DEFAULT NULL,
-  `reviewNotified` bigint(1) DEFAULT NULL,
-  `reviewAuthorNotified` bigint(11) NOT NULL DEFAULT 0,
-  `reviewEditVersion` int(1) NOT NULL DEFAULT 0,
+  `paperId` int NOT NULL,
+  `reviewId` int NOT NULL,
+  `reviewTime` bigint NOT NULL,
+  `contactId` int NOT NULL,
+  `reviewRound` int NOT NULL,
+  `reviewOrdinal` int NOT NULL,
+  `reviewType` tinyint NOT NULL,
+  `reviewBlind` tinyint NOT NULL,
+  `reviewModified` bigint NOT NULL,
+  `reviewSubmitted` bigint NOT NULL,
+  `timeDisplayed` bigint NOT NULL,
+  `reviewAuthorSeen` bigint NOT NULL,
+  `reviewAuthorModified` bigint DEFAULT NULL,
+  `reviewNotified` bigint DEFAULT NULL,
+  `reviewAuthorNotified` bigint NOT NULL DEFAULT 0,
+  `reviewEditVersion` int NOT NULL DEFAULT 0,
   `revdelta` longblob DEFAULT NULL,
 
   PRIMARY KEY (`paperId`,`reviewId`,`reviewTime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
-            && $this->conf->ql_ok("alter table PaperReview add `reviewTime` bigint(11) NOT NULL DEFAULT 0");
+            && $this->conf->ql_ok("alter table PaperReview add `reviewTime` bigint NOT NULL DEFAULT 0");
     }
 
     /** @return bool */
@@ -1377,7 +1377,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(8);
         }
         if ($conf->sversion === 8
-            && $conf->ql_ok("alter table ReviewFormField add `levelChar` tinyint(1) NOT NULL default '0'")
+            && $conf->ql_ok("alter table ReviewFormField add `levelChar` tinyint NOT NULL default '0'")
             && $conf->ql_ok("alter table PaperReviewArchive add `textField7` mediumtext NOT NULL")
             && $conf->ql_ok("alter table PaperReviewArchive add `textField8` mediumtext NOT NULL")) {
             $conf->update_schema_version(9);
@@ -1387,8 +1387,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(10);
         }
         if ($conf->sversion === 10
-            && $conf->ql_ok("alter table PaperReview add `reviewRound` tinyint(1) NOT NULL default '0'")
-            && $conf->ql_ok("alter table PaperReviewArchive add `reviewRound` tinyint(1) NOT NULL default '0'")
+            && $conf->ql_ok("alter table PaperReview add `reviewRound` tinyint NOT NULL default '0'")
+            && $conf->ql_ok("alter table PaperReviewArchive add `reviewRound` tinyint NOT NULL default '0'")
             && $conf->ql_ok("alter table PaperReview add key `reviewRound` (`reviewRound`)")
             && $conf->update_schema_version(11)) {
             if (count($conf->round_list()) > 1) {
@@ -1414,9 +1414,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 11) {
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `ReviewRating`");
             if ($conf->ql_ok("create table `ReviewRating` (
-      `reviewId` int(11) NOT NULL,
-      `contactId` int(11) NOT NULL,
-      `rating` tinyint(1) NOT NULL default '0',
+      `reviewId` int NOT NULL,
+      `contactId` int NOT NULL,
+      `rating` tinyint NOT NULL default '0',
       UNIQUE KEY `reviewContact` (`reviewId`,`contactId`),
       UNIQUE KEY `reviewContactRating` (`reviewId`,`contactId`,`rating`)
     ) ENGINE=MyISAM DEFAULT CHARSET=utf8")) {
@@ -1424,7 +1424,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             }
         }
         if ($conf->sversion === 12
-            && $conf->ql_ok("alter table PaperReview add `reviewToken` int(11) NOT NULL default '0'")) {
+            && $conf->ql_ok("alter table PaperReview add `reviewToken` int NOT NULL default '0'")) {
             $conf->update_schema_version(13);
         }
         if ($conf->sversion === 13
@@ -1440,12 +1440,12 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             // PaperReviewArchive (so old databases have the column), but I forgot
             // to upgrade schema.sql (so new databases lack the column).
             $old_nerrors = Dbl::$nerrors;
-            $conf->ql_ok("alter table PaperReviewArchive add `reviewRound` tinyint(1) NOT NULL default '0'");
+            $conf->ql_ok("alter table PaperReviewArchive add `reviewRound` tinyint NOT NULL default '0'");
             Dbl::$nerrors = $old_nerrors;
             $conf->update_schema_version(16);
         }
         if ($conf->sversion === 16
-            && $conf->ql_ok("alter table PaperReview add `reviewEditVersion` int(1) NOT NULL default '0'")) {
+            && $conf->ql_ok("alter table PaperReview add `reviewEditVersion` int NOT NULL default '0'")) {
             $conf->update_schema_version(17);
         }
         if ($conf->sversion === 17
@@ -1453,7 +1453,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(18);
         }
         if ($conf->sversion === 18
-            && $conf->ql_ok("alter table PaperComment add `replyTo` int(11) NOT NULL")) {
+            && $conf->ql_ok("alter table PaperComment add `replyTo` int NOT NULL")) {
             $conf->update_schema_version(19);
         }
         if ($conf->sversion === 19) {
@@ -1461,7 +1461,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(20);
         }
         if ($conf->sversion === 20
-            && $conf->ql_ok("alter table PaperComment add `timeNotified` int(11) NOT NULL default '0'")) {
+            && $conf->ql_ok("alter table PaperComment add `timeNotified` int NOT NULL default '0'")) {
             $conf->update_schema_version(21);
         }
         if ($conf->sversion === 21
@@ -1490,20 +1490,20 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
         if ($conf->sversion === 26
             && $conf->ql_ok("alter table PaperOption add `data` text")
-            && $conf->ql_ok("alter table OptionType add `type` tinyint(1) NOT NULL default '0'")
+            && $conf->ql_ok("alter table OptionType add `type` tinyint NOT NULL default '0'")
             && $conf->ql_ok("update OptionType set type=2 where optionValues='\x7Fi'")
             && $conf->ql_ok("update OptionType set type=1 where type=0 and optionValues!=''")) {
             $conf->update_schema_version(27);
         }
         if ($conf->sversion === 27
             && $conf->ql_ok("alter table PaperStorage add `sha1` varbinary(20) NOT NULL default ''")
-            && $conf->ql_ok("alter table PaperStorage add `documentType` int(3) NOT NULL default '0'")
+            && $conf->ql_ok("alter table PaperStorage add `documentType` int NOT NULL default '0'")
             && $conf->ql_ok("update PaperStorage s, Paper p set s.sha1=p.sha1 where s.paperStorageId=p.paperStorageId and p.finalPaperStorageId=0 and s.paperStorageId>0")
             && $conf->ql_ok("update PaperStorage s, Paper p set s.sha1=p.sha1, s.documentType=" . DTYPE_FINAL . " where s.paperStorageId=p.finalPaperStorageId and s.paperStorageId>0")) {
             $conf->update_schema_version(28);
         }
         if ($conf->sversion === 28
-            && $conf->ql_ok("alter table OptionType add `sortOrder` tinyint(1) NOT NULL default '0'")) {
+            && $conf->ql_ok("alter table OptionType add `sortOrder` tinyint NOT NULL default '0'")) {
             $conf->update_schema_version(29);
         }
         if ($conf->sversion === 29
@@ -1513,12 +1513,12 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 30) {
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `Formula`");
             if ($conf->ql_ok("CREATE TABLE `Formula` (
-      `formulaId` int(11) NOT NULL auto_increment,
+      `formulaId` int NOT NULL auto_increment,
       `name` varchar(200) NOT NULL,
       `heading` varchar(200) NOT NULL default '',
       `headingTitle` text NOT NULL default '',
       `expression` text NOT NULL,
-      `authorView` tinyint(1) NOT NULL default '1',
+      `authorView` tinyint NOT NULL default '1',
       PRIMARY KEY  (`formulaId`),
       UNIQUE KEY `formulaId` (`formulaId`),
       UNIQUE KEY `name` (`name`)
@@ -1527,8 +1527,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             }
         }
         if ($conf->sversion === 31
-            && $conf->ql_ok("alter table Formula add `createdBy` int(11) NOT NULL default '0'")
-            && $conf->ql_ok("alter table Formula add `timeModified` int(11) NOT NULL default '0'")
+            && $conf->ql_ok("alter table Formula add `createdBy` int NOT NULL default '0'")
+            && $conf->ql_ok("alter table Formula add `timeModified` int NOT NULL default '0'")
             && $conf->ql_ok("alter table Formula drop index `name`")) {
             $conf->update_schema_version(32);
         }
@@ -1537,7 +1537,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(33);
         }
         if ($conf->sversion === 33
-            && $conf->ql_ok("alter table PaperComment add `paperStorageId` int(11) NOT NULL default '0'")) {
+            && $conf->ql_ok("alter table PaperComment add `paperStorageId` int NOT NULL default '0'")) {
             $conf->update_schema_version(34);
         }
         if ($conf->sversion === 34
@@ -1545,17 +1545,17 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(35);
         }
         if ($conf->sversion === 35
-            && $conf->ql_ok("alter table ContactInfo modify `defaultWatch` int(11) NOT NULL default '2'")
-            && $conf->ql_ok("alter table PaperWatch modify `watch` int(11) NOT NULL default '0'")) {
+            && $conf->ql_ok("alter table ContactInfo modify `defaultWatch` int NOT NULL default '2'")
+            && $conf->ql_ok("alter table PaperWatch modify `watch` int NOT NULL default '0'")) {
             $conf->update_schema_version(36);
         }
         if ($conf->sversion === 36
-            && $conf->ql_ok("alter table PaperReview add `reviewNotified` int(1) default NULL")
-            && $conf->ql_ok("alter table PaperReviewArchive add `reviewNotified` int(1) default NULL")) {
+            && $conf->ql_ok("alter table PaperReview add `reviewNotified` int default NULL")
+            && $conf->ql_ok("alter table PaperReviewArchive add `reviewNotified` int default NULL")) {
             $conf->update_schema_version(37);
         }
         if ($conf->sversion === 37
-            && $conf->ql_ok("alter table OptionType add `displayType` tinyint(1) NOT NULL default '0'")) {
+            && $conf->ql_ok("alter table OptionType add `displayType` tinyint NOT NULL default '0'")) {
             $conf->update_schema_version(38);
         }
         if ($conf->sversion === 38
@@ -1565,7 +1565,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 39) {
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `MailLog`");
             if ($conf->ql_ok("CREATE TABLE `MailLog` (
-      `mailId` int(11) NOT NULL auto_increment,
+      `mailId` int NOT NULL auto_increment,
       `recipients` varchar(200) NOT NULL,
       `paperIds` text,
       `cc` text,
@@ -1578,7 +1578,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             }
         }
         if ($conf->sversion === 40
-            && $conf->ql_ok("alter table Paper add `capVersion` int(1) NOT NULL default '0'")) {
+            && $conf->ql_ok("alter table Paper add `capVersion` int NOT NULL default '0'")) {
             $conf->update_schema_version(41);
         }
         if ($conf->sversion === 41
@@ -1587,7 +1587,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(42);
         }
         if ($conf->sversion === 42
-            && $conf->ql_ok("alter table PaperComment add `ordinal` int(11) NOT NULL default '0'")) {
+            && $conf->ql_ok("alter table PaperComment add `ordinal` int NOT NULL default '0'")) {
             $conf->update_schema_version(43);
         }
         if ($conf->sversion === 42
@@ -1607,16 +1607,16 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(45);
         }
         if ($conf->sversion === 45
-            && $conf->ql_ok("alter table PaperReview add `timeRequested` int(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperReview add `timeRequestNotified` int(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperReviewArchive add `timeRequested` int(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperReviewArchive add `timeRequestNotified` int(11) NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReview add `timeRequested` int NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReview add `timeRequestNotified` int NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReviewArchive add `timeRequested` int NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReviewArchive add `timeRequestNotified` int NOT NULL DEFAULT '0'")
             && $conf->ql_ok("alter table PaperReview drop column `requestedOn`")
             && $conf->ql_ok("alter table PaperReviewArchive drop column `requestedOn`")) {
             $conf->update_schema_version(46);
         }
         if ($conf->sversion === 46
-            && $conf->ql_ok("alter table ContactInfo add `disabled` tinyint(1) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table ContactInfo add `disabled` tinyint NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(47);
         }
         if ($conf->sversion === 47
@@ -1624,9 +1624,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(48);
         }
         if ($conf->sversion === 48
-            && $conf->ql_ok("alter table PaperReview add `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperReviewArchive add `reviewAuthorNotified` int(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperReviewArchive add `reviewToken` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table PaperReview add `reviewAuthorNotified` int NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReviewArchive add `reviewAuthorNotified` int NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReviewArchive add `reviewToken` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(49);
         }
         if ($conf->sversion === 49
@@ -1635,7 +1635,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(50);
         }
         if ($conf->sversion === 50
-            && $conf->ql_ok("alter table Paper add `managerContactId` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table Paper add `managerContactId` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(51);
         }
         if ($conf->sversion === 51
@@ -1651,7 +1651,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
                  && !Dbl::is_error($result)
                  && $result->num_rows == 0))
             && $conf->ql_ok("lock tables PaperComment write, Settings write")
-            && $conf->ql_ok("alter table PaperComment add `commentType` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table PaperComment add `commentType` int NOT NULL DEFAULT '0'")) {
             $new_sversion = max($conf->sversion, 53);
             $result = $conf->ql_ok("show columns from PaperComment like 'forAuthors'");
             if (Dbl::is_error($result)
@@ -1692,11 +1692,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `Capability`");
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `CapabilityMap`");
             if ($conf->ql_ok("CREATE TABLE `Capability` (
-      `capabilityId` int(11) NOT NULL AUTO_INCREMENT,
-      `capabilityType` int(11) NOT NULL,
-      `contactId` int(11) NOT NULL,
-      `paperId` int(11) NOT NULL,
-      `timeExpires` int(11) NOT NULL,
+      `capabilityId` int NOT NULL AUTO_INCREMENT,
+      `capabilityType` int NOT NULL,
+      `contactId` int NOT NULL,
+      `paperId` int NOT NULL,
+      `timeExpires` int NOT NULL,
       `salt` varbinary(255) NOT NULL,
       `data` blob,
       PRIMARY KEY (`capabilityId`),
@@ -1704,8 +1704,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
     ) ENGINE=MyISAM DEFAULT CHARSET=utf8")
                 && $conf->ql_ok("CREATE TABLE `CapabilityMap` (
       `capabilityValue` varbinary(255) NOT NULL,
-      `capabilityId` int(11) NOT NULL,
-      `timeExpires` int(11) NOT NULL,
+      `capabilityId` int NOT NULL,
+      `timeExpires` int NOT NULL,
       PRIMARY KEY (`capabilityValue`),
       UNIQUE KEY `capabilityValue` (`capabilityValue`)
     ) ENGINE=MyISAM DEFAULT CHARSET=utf8")) {
@@ -1751,8 +1751,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $conf->ql_ok("alter table ContactAddress modify `state` varchar(2048) NOT NULL")
             && $conf->ql_ok("alter table ContactAddress modify `zipCode` varchar(2048) NOT NULL")
             && $conf->ql_ok("alter table ContactAddress modify `country` varchar(2048) NOT NULL")
-            && $conf->ql_ok("alter table PaperTopic modify `topicId` int(11) NOT NULL")
-            && $conf->ql_ok("alter table PaperTopic modify `paperId` int(11) NOT NULL")) {
+            && $conf->ql_ok("alter table PaperTopic modify `topicId` int NOT NULL")
+            && $conf->ql_ok("alter table PaperTopic modify `paperId` int NOT NULL")) {
             Dbl::qx($conf->dblink, "drop table if exists ChairTag");
             $conf->update_schema_version(60);
         }
@@ -1813,7 +1813,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(68);
         }
         if ($conf->sversion === 68
-            && $conf->ql_ok("alter table PaperReviewPreference add `expertise` int(4) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table PaperReviewPreference add `expertise` int DEFAULT NULL")) {
             $conf->update_schema_version(69);
         }
         if ($conf->sversion === 69
@@ -1840,7 +1840,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(73);
         }
         if ($conf->sversion === 73
-            && $conf->ql_ok("alter table PaperStorage add `size` bigint(11) DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperStorage add `size` bigint DEFAULT NULL")
             && $conf->ql_ok("update PaperStorage set `size`=length(paper) where paper is not null")) {
             $conf->update_schema_version(74);
         }
@@ -1870,17 +1870,17 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(79);
         }
         if ($conf->sversion === 79
-            && $conf->ql_ok("alter table ContactInfo add `passwordTime` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table ContactInfo add `passwordTime` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(80);
         }
         if ($conf->sversion === 80
-            && $conf->ql_ok("alter table PaperReview modify `reviewRound` int(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperReviewArchive modify `reviewRound` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table PaperReview modify `reviewRound` int NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReviewArchive modify `reviewRound` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(81);
         }
         if ($conf->sversion === 81
-            && $conf->ql_ok("alter table PaperStorage add `filterType` int(3) DEFAULT NULL")
-            && $conf->ql_ok("alter table PaperStorage add `originalStorageId` int(11) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table PaperStorage add `filterType` int DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperStorage add `originalStorageId` int DEFAULT NULL")) {
             $conf->update_schema_version(82);
         }
         if ($conf->sversion === 82
@@ -1888,7 +1888,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(83);
         }
         if ($conf->sversion === 83
-            && $conf->ql_ok("alter table PaperComment add `commentRound` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table PaperComment add `commentRound` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(84);
         }
         if ($conf->sversion === 84
@@ -1922,11 +1922,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(90);
         }
         if ($conf->sversion === 90
-            && $conf->ql_ok("alter table PaperReview add `reviewAuthorSeen` int(11) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table PaperReview add `reviewAuthorSeen` int DEFAULT NULL")) {
             $conf->update_schema_version(91);
         }
         if ($conf->sversion === 91
-            && $conf->ql_ok("alter table PaperReviewArchive add `reviewAuthorSeen` int(11) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table PaperReviewArchive add `reviewAuthorSeen` int DEFAULT NULL")) {
             $conf->update_schema_version(92);
         }
         if ($conf->sversion === 92
@@ -1958,12 +1958,12 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(96);
         }
         if ($conf->sversion === 96
-            && $conf->ql_ok("alter table ContactInfo add `passwordIsCdb` tinyint(1) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table ContactInfo add `passwordIsCdb` tinyint NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(97);
         }
         if ($conf->sversion === 97
-            && $conf->ql_ok("alter table PaperReview add `reviewWordCount` int(11) DEFAULT NULL")
-            && $conf->ql_ok("alter table PaperReviewArchive add `reviewWordCount` int(11)  DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperReview add `reviewWordCount` int DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperReviewArchive add `reviewWordCount` int  DEFAULT NULL")
             && $conf->ql_ok("alter table PaperReviewArchive drop key `reviewId`")
             && $conf->ql_ok("alter table PaperReviewArchive drop key `contactPaper`")
             && $conf->ql_ok("alter table PaperReviewArchive drop key `reviewSubmitted`")
@@ -2039,16 +2039,16 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(104);
         }
         if ($conf->sversion === 104
-            && $conf->ql_ok("alter table PaperReview add `reviewFormat` tinyint(1) DEFAULT NULL")
-            && $conf->ql_ok("alter table PaperReviewArchive add `reviewFormat` tinyint(1) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table PaperReview add `reviewFormat` tinyint DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperReviewArchive add `reviewFormat` tinyint DEFAULT NULL")) {
             $conf->update_schema_version(105);
         }
         if ($conf->sversion === 105
-            && $conf->ql_ok("alter table PaperComment add `commentFormat` tinyint(1) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table PaperComment add `commentFormat` tinyint DEFAULT NULL")) {
             $conf->update_schema_version(106);
         }
         if ($conf->sversion === 106
-            && $conf->ql_ok("alter table PaperComment add `authorOrdinal` int(11) NOT NULL default '0'")
+            && $conf->ql_ok("alter table PaperComment add `authorOrdinal` int NOT NULL default '0'")
             && $conf->ql_ok("update PaperComment set authorOrdinal=ordinal where commentType>=0x30000" /* CT_AUTHOR */)) {
             $conf->update_schema_version(107);
         }
@@ -2076,8 +2076,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(112);
         }
         if ($conf->sversion === 112
-            && $conf->ql_ok("alter table ContactInfo add `passwordUseTime` int(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table ContactInfo add `updateTime` int(11) NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table ContactInfo add `passwordUseTime` int NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table ContactInfo add `updateTime` int NOT NULL DEFAULT '0'")
             && $conf->ql_ok("update ContactInfo set passwordUseTime=lastLogin where passwordUseTime=0")) {
             $conf->update_schema_version(113);
         }
@@ -2086,8 +2086,8 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(114);
         }
         if ($conf->sversion === 114
-            && $conf->ql_ok("alter table PaperReview add `timeDisplayed` int(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperComment add `timeDisplayed` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table PaperReview add `timeDisplayed` int NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperComment add `timeDisplayed` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(115);
         }
         if ($conf->sversion === 115
@@ -2125,7 +2125,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(120);
         }
         if ($conf->sversion === 120
-            && $conf->ql_ok("alter table Paper add `paperFormat` tinyint(1) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table Paper add `paperFormat` tinyint DEFAULT NULL")) {
             $conf->update_schema_version(121);
         }
         if ($conf->sversion === 121
@@ -2135,7 +2135,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(122);
         }
         if ($conf->sversion === 122
-            && $conf->ql_ok("alter table ReviewRequest add `reviewRound` int(1) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table ReviewRequest add `reviewRound` int DEFAULT NULL")) {
             $conf->update_schema_version(123);
         }
         if ($conf->sversion === 123
@@ -2170,10 +2170,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `PaperTagAnno`");
             if ($conf->ql_ok("CREATE TABLE `PaperTagAnno` (
       `tag` varchar(40) NOT NULL,   # see TAG_MAXLEN in header.php
-      `annoId` int(11) NOT NULL,
+      `annoId` int NOT NULL,
       `tagIndex` float NOT NULL DEFAULT '0',
       `heading` varbinary(8192) DEFAULT NULL,
-      `annoFormat` tinyint(1) DEFAULT NULL,
+      `annoFormat` tinyint DEFAULT NULL,
       `infoJson` varbinary(32768) DEFAULT NULL,
       PRIMARY KEY (`tag`,`annoId`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
@@ -2187,11 +2187,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 132) {
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `Mimetype`");
             if ($conf->ql_ok("CREATE TABLE `Mimetype` (
-      `mimetypeid` int(11) NOT NULL,
+      `mimetypeid` int NOT NULL,
       `mimetype` varbinary(200) NOT NULL,
       `extension` varbinary(10) DEFAULT NULL,
       `description` varbinary(200) DEFAULT NULL,
-      `inline` tinyint(1) NOT NULL DEFAULT '0',
+      `inline` tinyint NOT NULL DEFAULT '0',
       PRIMARY KEY (`mimetypeid`),
       UNIQUE KEY `mimetypeid` (`mimetypeid`),
       UNIQUE KEY `mimetype` (`mimetype`)
@@ -2211,7 +2211,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             }
         }
         if ($conf->sversion === 135
-            && $conf->ql_ok("alter table PaperStorage add `mimetypeid` int(11) NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperStorage add `mimetypeid` int NOT NULL DEFAULT '0'")
             && $conf->ql_ok("update PaperStorage, Mimetype set PaperStorage.mimetypeid=Mimetype.mimetypeid where PaperStorage.mimetype=Mimetype.mimetype")) {
             $conf->update_schema_version(136);
         }
@@ -2227,10 +2227,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 138 || $conf->sversion === 139) {
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `FilteredDocument`");
             if ($conf->ql_ok("CREATE TABLE `FilteredDocument` (
-      `inDocId` int(11) NOT NULL,
-      `filterType` int(11) NOT NULL,
-      `outDocId` int(11) NOT NULL,
-      `createdAt` int(11) NOT NULL,
+      `inDocId` int NOT NULL,
+      `filterType` int NOT NULL,
+      `outDocId` int NOT NULL,
+      `createdAt` int NOT NULL,
       PRIMARY KEY (`inDocId`,`filterType`),
       UNIQUE KEY `inDocFilter` (`inDocId`,`filterType`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
@@ -2247,36 +2247,36 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(142);
         }
         if ($conf->sversion === 142
-            && $conf->ql_ok("alter table PaperReview add `reviewAuthorModified` int(1) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table PaperReview add `reviewAuthorModified` int DEFAULT NULL")) {
             $conf->update_schema_version(143);
         }
         if ($conf->sversion === 143
-            && $conf->ql_ok("alter table PaperReview add `timeApprovalRequested` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table PaperReview add `timeApprovalRequested` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(144);
         }
         if ($conf->sversion === 144
-            && $conf->ql_ok("alter table Paper add `pdfFormatStatus` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table Paper add `pdfFormatStatus` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(145);
         }
         if ($conf->sversion === 145
-            && $conf->ql_ok("alter table MailLog add `fromNonChair` tinyint(1) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table MailLog add `fromNonChair` tinyint NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(146);
         }
         if ($conf->sversion === 146
-            && $conf->ql_ok("alter table Paper add `timeModified` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table Paper add `timeModified` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(147);
         }
         if ($conf->sversion === 147
-            && $conf->ql_ok("alter table Capability change `capabilityId` `capabilityId` int(11) NOT NULL")
+            && $conf->ql_ok("alter table Capability change `capabilityId` `capabilityId` int NOT NULL")
             && $this->drop_keys_if_exist("Capability", ["capabilityId", "PRIMARY"])
             && $conf->ql_ok("alter table Capability add primary key (`salt`)")
             && $conf->ql_ok("alter table Capability drop column `capabilityId`")) {
             $conf->update_schema_version(148);
         }
         if ($conf->sversion === 148
-            && $conf->ql_ok("alter table ReviewRating add `paperId` int(11) NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table ReviewRating add `paperId` int NOT NULL DEFAULT '0'")
             && $conf->ql_ok("update ReviewRating join PaperReview using (reviewId) set ReviewRating.paperId=PaperReview.paperId")
-            && $conf->ql_ok("alter table ReviewRating change `paperId` `paperId` int(11) NOT NULL")
+            && $conf->ql_ok("alter table ReviewRating change `paperId` `paperId` int NOT NULL")
             && $this->drop_keys_if_exist("ReviewRating", ["reviewContact", "reviewContactRating"])
             && $conf->ql_ok("alter table ReviewRating add primary key (`paperId`,`reviewId`,`contactId`)")) {
             $conf->update_schema_version(149);
@@ -2323,7 +2323,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
         if ($conf->sversion === 156
             && $conf->ql_ok("delete from TopicInterest where interest is null")
-            && $conf->ql_ok("alter table TopicInterest change `interest` `interest` int(1) NOT NULL")
+            && $conf->ql_ok("alter table TopicInterest change `interest` `interest` int NOT NULL")
             && $conf->ql_ok("update TopicInterest set interest=1 where interest=2")
             && $conf->ql_ok("update TopicInterest set interest=2 where interest=4")
             && $conf->ql_ok("delete from TopicInterest where interest=0")) {
@@ -2368,36 +2368,36 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(163);
         }
         if ($conf->sversion === 163
-            && $conf->ql_ok("alter table Capability change `timeExpires` `timeExpires` bigint(11) NOT NULL")
-            && $conf->ql_ok("alter table ContactInfo change `passwordTime` `passwordTime` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table ContactInfo change `passwordUseTime` `passwordUseTime` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table ContactInfo change `creationTime` `creationTime` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table ContactInfo change `updateTime` `updateTime` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table ContactInfo change `lastLogin` `lastLogin` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table FilteredDocument change `createdAt` `createdAt` bigint(11) NOT NULL")
-            && $conf->ql_ok("alter table Formula change `timeModified` `timeModified` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table Paper change `timeSubmitted` `timeSubmitted` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table Paper change `timeWithdrawn` `timeWithdrawn` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table Paper change `timeFinalSubmitted` `timeFinalSubmitted` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table Paper change `timeModified` `timeModified` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table Paper change `timestamp` `timestamp` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table Paper change `pdfFormatStatus` `pdfFormatStatus` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperComment change `timeModified` `timeModified` bigint(11) NOT NULL")
-            && $conf->ql_ok("alter table PaperComment change `timeNotified` `timeNotified` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperComment change `timeDisplayed` `timeDisplayed` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperOption change `value` `value` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperReview change `timeRequested` `timeRequested` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperReview change `timeRequestNotified` `timeRequestNotified` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperReview change `reviewModified` `reviewModified` bigint(1) DEFAULT NULL")
-            && $conf->ql_ok("alter table PaperReview change `reviewAuthorModified` `reviewAuthorModified` bigint(1) DEFAULT NULL")
-            && $conf->ql_ok("alter table PaperReview change `reviewSubmitted` `reviewSubmitted` bigint(1) DEFAULT NULL")
-            && $conf->ql_ok("alter table PaperReview change `reviewNotified` `reviewNotified` bigint(1) DEFAULT NULL")
-            && $conf->ql_ok("alter table PaperReview change `reviewAuthorNotified` `reviewAuthorNotified` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperReview change `reviewAuthorSeen` `reviewAuthorSeen` bigint(1) DEFAULT NULL")
-            && $conf->ql_ok("alter table PaperReview change `timeDisplayed` `timeDisplayed` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperReview change `timeApprovalRequested` `timeApprovalRequested` bigint(11) NOT NULL DEFAULT '0'")
-            && $conf->ql_ok("alter table PaperStorage change `timestamp` `timestamp` bigint(11) NOT NULL")
-            && $conf->ql_ok("alter table Settings change `value` `value` bigint(11) NOT NULL")) {
+            && $conf->ql_ok("alter table Capability change `timeExpires` `timeExpires` bigint NOT NULL")
+            && $conf->ql_ok("alter table ContactInfo change `passwordTime` `passwordTime` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table ContactInfo change `passwordUseTime` `passwordUseTime` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table ContactInfo change `creationTime` `creationTime` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table ContactInfo change `updateTime` `updateTime` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table ContactInfo change `lastLogin` `lastLogin` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table FilteredDocument change `createdAt` `createdAt` bigint NOT NULL")
+            && $conf->ql_ok("alter table Formula change `timeModified` `timeModified` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table Paper change `timeSubmitted` `timeSubmitted` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table Paper change `timeWithdrawn` `timeWithdrawn` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table Paper change `timeFinalSubmitted` `timeFinalSubmitted` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table Paper change `timeModified` `timeModified` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table Paper change `timestamp` `timestamp` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table Paper change `pdfFormatStatus` `pdfFormatStatus` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperComment change `timeModified` `timeModified` bigint NOT NULL")
+            && $conf->ql_ok("alter table PaperComment change `timeNotified` `timeNotified` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperComment change `timeDisplayed` `timeDisplayed` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperOption change `value` `value` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReview change `timeRequested` `timeRequested` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReview change `timeRequestNotified` `timeRequestNotified` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReview change `reviewModified` `reviewModified` bigint DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperReview change `reviewAuthorModified` `reviewAuthorModified` bigint DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperReview change `reviewSubmitted` `reviewSubmitted` bigint DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperReview change `reviewNotified` `reviewNotified` bigint DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperReview change `reviewAuthorNotified` `reviewAuthorNotified` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReview change `reviewAuthorSeen` `reviewAuthorSeen` bigint DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperReview change `timeDisplayed` `timeDisplayed` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperReview change `timeApprovalRequested` `timeApprovalRequested` bigint NOT NULL DEFAULT '0'")
+            && $conf->ql_ok("alter table PaperStorage change `timestamp` `timestamp` bigint NOT NULL")
+            && $conf->ql_ok("alter table Settings change `value` `value` bigint NOT NULL")) {
             $conf->update_schema_version(164);
         }
         if ($conf->sversion === 164
@@ -2415,12 +2415,12 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
         if ($conf->sversion === 167
             && $conf->ql_ok("update PaperReview set reviewOrdinal=0 where reviewOrdinal is null")
-            && $conf->ql_ok("alter table PaperReview change `reviewOrdinal` `reviewOrdinal` int(1) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table PaperReview change `reviewOrdinal` `reviewOrdinal` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(168);
         }
         if ($conf->sversion === 168
             && $conf->ql_ok("update PaperReview set reviewModified=0 where reviewModified is null")
-            && $conf->ql_ok("alter table PaperReview change `reviewModified` `reviewModified` bigint(1) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table PaperReview change `reviewModified` `reviewModified` bigint NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(169);
         }
         if ($conf->sversion === 169) {
@@ -2432,13 +2432,13 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 170
             && $conf->ql_ok("alter table ActionLog drop key `contactId`")
             && $conf->ql_ok("alter table ActionLog drop key `paperId`")
-            && $conf->ql_ok("alter table ActionLog add `destContactId` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table ActionLog add `destContactId` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(171);
         }
         if ($conf->sversion === 171) {
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `DeletedContactInfo`");
             if ($conf->ql_ok("CREATE TABLE `DeletedContactInfo` (
-      `contactId` int(11) NOT NULL,
+      `contactId` int NOT NULL,
       `firstName` varchar(60) NOT NULL,
       `lastName` varchar(60) NOT NULL,
       `email` varchar(120) NOT NULL
@@ -2502,7 +2502,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(182);
         }
         if ($conf->sversion === 182
-            && $conf->ql_ok("alter table ContactInfo add `birthday` int(11) DEFAULT NULL")
+            && $conf->ql_ok("alter table ContactInfo add `birthday` int DEFAULT NULL")
             && $conf->ql_ok("alter table ContactInfo add `gender` varbinary(24) DEFAULT NULL")) {
             $conf->update_schema_version(183);
         }
@@ -2576,7 +2576,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
         if ($conf->sversion === 195) {
             set_time_limit(300);
-            if ($conf->ql_ok("alter table PaperStorage add `inactive` tinyint(1) NOT NULL DEFAULT '0'")
+            if ($conf->ql_ok("alter table PaperStorage add `inactive` tinyint NOT NULL DEFAULT '0'")
                 && $conf->ql_ok("update PaperStorage set inactive=1")
                 && $conf->ql_ok("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper.paperStorageId=PaperStorage.paperStorageId) set PaperStorage.inactive=0")
                 && $conf->ql_ok("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and Paper.finalPaperStorageId=PaperStorage.paperStorageId) set PaperStorage.inactive=0")
@@ -2587,10 +2587,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 196) {
             Dbl::qx($conf->dblink, "drop table if exists `DocumentLink`");
             if ($conf->ql_ok("create table `DocumentLink` (
-      `paperId` int(11) NOT NULL,
-      `linkId` int(11) NOT NULL,
-      `linkType` int(11) NOT NULL,
-      `documentId` int(11) NOT NULL,
+      `paperId` int NOT NULL,
+      `linkId` int NOT NULL,
+      `linkType` int NOT NULL,
+      `documentId` int NOT NULL,
       PRIMARY KEY (`paperId`,`linkId`,`linkType`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8")) {
                 $conf->update_schema_version(197);
@@ -2609,22 +2609,22 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(200);
         }
         if ($conf->sversion === 200
-            && $conf->ql_ok("alter table ActionLog change `destContactId` `destContactId` int(11) DEFAULT NULL")
+            && $conf->ql_ok("alter table ActionLog change `destContactId` `destContactId` int DEFAULT NULL")
             && $conf->ql_ok("update ActionLog set destContactId=null where destContactId=0 or destContactId=contactId")
-            && $conf->ql_ok("alter table ActionLog add `trueContactId` int(11) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table ActionLog add `trueContactId` int DEFAULT NULL")) {
             $conf->update_schema_version(201);
         }
         if ($conf->sversion === 201
-            && $conf->ql_ok("alter table PaperReviewRefused add `timeRequested` bigint(11) DEFAULT NULL")
-            && $conf->ql_ok("alter table PaperReviewRefused add `refusedBy` int(11) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table PaperReviewRefused add `timeRequested` bigint DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperReviewRefused add `refusedBy` int DEFAULT NULL")) {
             $conf->update_schema_version(202);
         }
         if ($conf->sversion === 202
-            && $conf->ql_ok("alter table ReviewRequest add `timeRequested` bigint(11) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table ReviewRequest add `timeRequested` bigint DEFAULT NULL")) {
             $conf->update_schema_version(203);
         }
         if ($conf->sversion === 203
-            && $conf->ql_ok("alter table PaperReviewRefused add `timeRefused` bigint(11) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table PaperReviewRefused add `timeRefused` bigint DEFAULT NULL")) {
             $conf->update_schema_version(204);
         }
         if ($conf->sversion === 204
@@ -2637,7 +2637,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(205);
         }
         if ($conf->sversion === 205
-            && $conf->ql_ok("alter table PaperReviewRefused add `reviewRound` int(1) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table PaperReviewRefused add `reviewRound` int DEFAULT NULL")) {
             $conf->update_schema_version(206);
         }
         if ($conf->sversion === 206
@@ -2647,13 +2647,13 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(207);
         }
         if ($conf->sversion === 207
-            && $conf->ql_ok("alter table ActionLog add `timestamp` bigint(11) DEFAULT NULL")
+            && $conf->ql_ok("alter table ActionLog add `timestamp` bigint DEFAULT NULL")
             && $conf->ql_ok("update ActionLog set timestamp=unix_timestamp(time) where timestamp IS NULL")) {
             $conf->update_schema_version(208);
         }
         if ($conf->sversion === 208
             && $conf->ql_ok("update ActionLog set timestamp=unix_timestamp(time) where timestamp IS NULL")
-            && $conf->ql_ok("alter table ActionLog change `timestamp` `timestamp` bigint(11) NOT NULL")
+            && $conf->ql_ok("alter table ActionLog change `timestamp` `timestamp` bigint NOT NULL")
             && $conf->ql_ok("alter table ActionLog drop `time`")
             && $conf->ql_ok("alter table ActionLog add `data` varbinary(8192) DEFAULT NULL")) {
             $conf->update_schema_version(209);
@@ -2687,7 +2687,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(216);
         }
         if ($conf->sversion === 216
-            && $conf->ql_ok("alter table PaperReviewRefused add `reviewType` tinyint(1) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table PaperReviewRefused add `reviewType` tinyint NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(217);
         }
         if ($conf->sversion === 217) {
@@ -2709,7 +2709,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(219);
         }
         if ($conf->sversion === 219
-            && $conf->ql_ok("alter table MailLog add `status` tinyint(1) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table MailLog add `status` tinyint NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(220);
         }
         if ($conf->sversion === 220
@@ -2734,7 +2734,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
         if ($conf->sversion === 225
             && $conf->ql_ok("lock tables PaperReview write")) {
-            if ($conf->ql_ok("alter table PaperReview add `reviewViewScore` tinyint(1) NOT NULL DEFAULT '-3'")) {
+            if ($conf->ql_ok("alter table PaperReview add `reviewViewScore` tinyint NOT NULL DEFAULT '-3'")) {
                 $conf->ql_ok("update PaperReview set reviewViewScore=" . ReviewInfo::VIEWSCORE_RECOMPUTE);
                 $conf->review_form()->compute_view_scores();
                 $ok = true;
@@ -2777,7 +2777,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(233);
         }
         if (($conf->sversion === 233 || $conf->sversion === 234)
-            && $conf->ql_ok("alter table PaperReviewRefused change `reviewType` `refusedReviewType` tinyint(1) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table PaperReviewRefused change `reviewType` `refusedReviewType` tinyint NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(235);
         }
         if ($conf->sversion === 235
@@ -2798,11 +2798,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(239);
         }
         if ($conf->sversion === 239) {
-            Dbl::qx($conf->dblink, "alter table PaperReviewRefused change `reviewType` `refusedReviewType` tinyint(1) NOT NULL DEFAULT '0'");
+            Dbl::qx($conf->dblink, "alter table PaperReviewRefused change `reviewType` `refusedReviewType` tinyint NOT NULL DEFAULT '0'");
             $conf->update_schema_version(240);
         }
         if ($conf->sversion === 240) {
-            Dbl::qx($conf->dblink, "alter table PaperReviewRefused add `refusedReviewId` int(11) DEFAULT NULL");
+            Dbl::qx($conf->dblink, "alter table PaperReviewRefused add `refusedReviewId` int DEFAULT NULL");
             $conf->update_schema_version(241);
         }
         if ($conf->sversion === 241
@@ -2818,7 +2818,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(244);
         }
         if ($conf->sversion === 244
-            && $conf->ql_ok("alter table ContactInfo add `primaryContactId` int(11) NOT NULL DEFAULT '0'")) {
+            && $conf->ql_ok("alter table ContactInfo add `primaryContactId` int NOT NULL DEFAULT '0'")) {
             $conf->update_schema_version(245);
         }
         if (($conf->settings["au_seerev"] ?? 0) === 1) {
@@ -2854,27 +2854,27 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `Invitation`");
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `InvitationLog`");
             if ($conf->ql_ok("CREATE TABLE `Invitation` (
-  `invitationId` int(11) NOT NULL AUTO_INCREMENT,
-  `invitationType` int(11) NOT NULL,
+  `invitationId` int NOT NULL AUTO_INCREMENT,
+  `invitationType` int NOT NULL,
   `email` varchar(120) NOT NULL,
   `firstName` varbinary(120) DEFAULT NULL,
   `lastName` varbinary(120) DEFAULT NULL,
   `affiliation` varbinary(2048) DEFAULT NULL,
-  `requestedBy` int(11) NOT NULL,
-  `timeRequested` bigint(11) NOT NULL DEFAULT '0',
-  `timeRequestNotified` bigint(11) NOT NULL DEFAULT '0',
+  `requestedBy` int NOT NULL,
+  `timeRequested` bigint NOT NULL DEFAULT '0',
+  `timeRequestNotified` bigint NOT NULL DEFAULT '0',
   `salt` varbinary(255) NOT NULL,
   `data` varbinary(4096) DEFAULT NULL,
   PRIMARY KEY (`invitationId`),
   UNIQUE KEY (`salt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")
                 && $conf->ql_ok("CREATE TABLE `InvitationLog` (
-  `logId` int(11) NOT NULL AUTO_INCREMENT,
-  `invitationId` int(11) NOT NULL,
-  `mailId` int(11) DEFAULT NULL,
-  `contactId` int(11) NOT NULL,
-  `action` int(11) NOT NULL,
-  `timestamp` bigint(11) NOT NULL,
+  `logId` int NOT NULL AUTO_INCREMENT,
+  `invitationId` int NOT NULL,
+  `mailId` int DEFAULT NULL,
+  `contactId` int NOT NULL,
+  `action` int NOT NULL,
+  `timestamp` bigint NOT NULL,
   PRIMARY KEY (`logId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")) {
                 $conf->update_schema_version(250);
@@ -2893,15 +2893,15 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(253);
         }
         if ($conf->sversion === 253
-            && $conf->ql_ok("alter table Capability add `timeCreated` bigint(11) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table Capability change `timeCreated` `timeCreated` bigint(11) NOT NULL")
+            && $conf->ql_ok("alter table Capability add `timeCreated` bigint NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table Capability change `timeCreated` `timeCreated` bigint NOT NULL")
             && $conf->ql_ok("alter table Capability change `data` `data` varbinary(8192) DEFAULT NULL")
-            && $conf->ql_ok("alter table Capability add `otherId` int(11) NOT NULL DEFAULT 0")) {
+            && $conf->ql_ok("alter table Capability add `otherId` int NOT NULL DEFAULT 0")) {
             $conf->update_schema_version(254);
         }
         if ($conf->sversion === 254
-            && $conf->ql_ok("alter table Capability add `timeInvalid` bigint(11) NOT NULL")
-            && $conf->ql_ok("alter table Capability add `timeUsed` bigint(11) NOT NULL")) {
+            && $conf->ql_ok("alter table Capability add `timeInvalid` bigint NOT NULL")
+            && $conf->ql_ok("alter table Capability add `timeUsed` bigint NOT NULL")) {
             $conf->update_schema_version(255);
         }
         if ($conf->sversion === 255
@@ -2966,14 +2966,14 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(267);
         }
         if ($conf->sversion === 267
-            && $conf->ql_ok("alter table PaperReviewHistory add `timeApprovalRequested` bigint(11) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReviewHistory change `timeApprovalRequested` `timeApprovalRequested` bigint(11) NOT NULL")
-            && $conf->ql_ok("alter table PaperReviewHistory change `reviewAuthorNotified` `reviewAuthorNotified` bigint(11) NOT NULL")
-            && $conf->ql_ok("alter table PaperReviewHistory change `reviewEditVersion` `reviewEditVersion` int(1) NOT NULL")) {
+            && $conf->ql_ok("alter table PaperReviewHistory add `timeApprovalRequested` bigint NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReviewHistory change `timeApprovalRequested` `timeApprovalRequested` bigint NOT NULL")
+            && $conf->ql_ok("alter table PaperReviewHistory change `reviewAuthorNotified` `reviewAuthorNotified` bigint NOT NULL")
+            && $conf->ql_ok("alter table PaperReviewHistory change `reviewEditVersion` `reviewEditVersion` int NOT NULL")) {
             $conf->update_schema_version(268);
         }
         if ($conf->sversion === 268
-            && $conf->ql_ok("alter table PaperReviewHistory add `reviewNextTime` bigint(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReviewHistory add `reviewNextTime` bigint NOT NULL DEFAULT 0")
             && $conf->ql_ok("delete from PaperReviewHistory")) {
             $conf->update_schema_version(269);
         }
@@ -2992,9 +2992,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(272);
         }
         if ($conf->sversion === 272
-            && $conf->ql_ok("alter table Paper change `size` `size` bigint(11) NOT NULL DEFAULT -1")
+            && $conf->ql_ok("alter table Paper change `size` `size` bigint NOT NULL DEFAULT -1")
             && $conf->ql_ok("update PaperStorage set size=-1 where size is null or (size=0 and sha1!=x'da39a3ee5e6b4b0d3255bfef95601890afd80709' and sha1!=x'736861322de3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')")
-            && $conf->ql_ok("alter table PaperStorage change `size` `size` bigint(11) NOT NULL DEFAULT -1")) {
+            && $conf->ql_ok("alter table PaperStorage change `size` `size` bigint NOT NULL DEFAULT -1")) {
             $conf->update_schema_version(273);
         }
         if ($conf->sversion === 273
@@ -3002,9 +3002,9 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(275);
         }
         if ($conf->sversion === 275
-            && $conf->ql_ok("alter table PaperStorage add `npages` int(3) NOT NULL DEFAULT -1")
-            && $conf->ql_ok("alter table PaperStorage add `width` int(8) NOT NULL DEFAULT -1")
-            && $conf->ql_ok("alter table PaperStorage add `height` int(8) NOT NULL DEFAULT -1")) {
+            && $conf->ql_ok("alter table PaperStorage add `npages` int NOT NULL DEFAULT -1")
+            && $conf->ql_ok("alter table PaperStorage add `width` int NOT NULL DEFAULT -1")
+            && $conf->ql_ok("alter table PaperStorage add `height` int NOT NULL DEFAULT -1")) {
             $conf->update_schema_version(276);
         }
         if ($conf->sversion === 276
@@ -3033,7 +3033,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(284);
         }
         if ($conf->sversion === 284
-            && $conf->ql_ok("alter table ContactInfo add `cflags` int(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table ContactInfo add `cflags` int NOT NULL DEFAULT 0")
             && $conf->ql_ok("update ContactInfo set cflags=disabled")) {
             $conf->update_schema_version(285);
         }
@@ -3042,7 +3042,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(286);
         }
         if ($conf->sversion === 286
-            && $conf->ql_ok("alter table Capability change `otherId` `reviewId` int(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table Capability change `otherId` `reviewId` int NOT NULL DEFAULT 0")
             && $conf->ql_ok("alter table Capability change `data` `data` varbinary(16384) DEFAULT NULL")
             && $conf->ql_oK("alter table Capability add `output` longblob DEFAULT NULL")) {
             $conf->update_schema_version(287);
@@ -3058,7 +3058,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         }
         if ($conf->sversion === 289
             && $conf->ql_ok("update PaperReview set reviewAuthorSeen=0 where reviewAuthorSeen is null")
-            && $conf->ql_ok("alter table PaperReview change `reviewAuthorSeen` `reviewAuthorSeen` bigint(1) NOT NULL DEFAULT 0")) {
+            && $conf->ql_ok("alter table PaperReview change `reviewAuthorSeen` `reviewAuthorSeen` bigint NOT NULL DEFAULT 0")) {
             $conf->update_schema_version(290);
         }
         if ($conf->sversion === 290) {
@@ -3066,16 +3066,16 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(291);
         }
         if ($conf->sversion === 291
-            && $conf->ql_ok("alter table PaperReview add `rflags` int(11) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReview change `rflags` `rflags` int(11) NOT NULL")
-            && $conf->ql_ok("alter table PaperReview change `reviewBlind` `reviewBlind` tinyint(1) NOT NULL")
-            && $conf->ql_ok("alter table PaperReview change `reviewType` `reviewType` tinyint(1) NOT NULL")
-            && $conf->ql_ok("alter table PaperReviewHistory add `rflags` int(11) NOT NULL DEFAULT 0")
-            && $conf->ql_ok("alter table PaperReviewHistory change `rflags` `rflags` int(11) NOT NULL")
+            && $conf->ql_ok("alter table PaperReview add `rflags` int NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReview change `rflags` `rflags` int NOT NULL")
+            && $conf->ql_ok("alter table PaperReview change `reviewBlind` `reviewBlind` tinyint NOT NULL")
+            && $conf->ql_ok("alter table PaperReview change `reviewType` `reviewType` tinyint NOT NULL")
+            && $conf->ql_ok("alter table PaperReviewHistory add `rflags` int NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table PaperReviewHistory change `rflags` `rflags` int NOT NULL")
             && $conf->ql_ok("update PaperReview set rflags=1|(1<<reviewType)|if(reviewModified>0,256,0)|if(reviewModified>1,512,0)|if(timeApprovalRequested!=0,1024,0)|if(timeApprovalRequested<0,2048,0)|if(coalesce(reviewSubmitted,0)>0,4096,0)|if(reviewBlind!=0,65536,0)|if(reviewType=2 and requestedBy=contactId,131072,0)")
             && $conf->ql_ok("update PaperReviewHistory set rflags=1|(1<<reviewType)|if(reviewModified>0,256,0)|if(reviewModified>1,512,0)|if(timeApprovalRequested!=0,1024,0)|if(timeApprovalRequested<0,2048,0)|if(coalesce(reviewSubmitted,0)>0,4096,0)|if(reviewBlind!=0,65536,0)")
             // also clean up reviewNextTime
-            && $conf->ql_ok("alter table PaperReviewHistory change `reviewNextTime` `reviewNextTime` bigint(11) NOT NULL")) {
+            && $conf->ql_ok("alter table PaperReviewHistory change `reviewNextTime` `reviewNextTime` bigint NOT NULL")) {
             $conf->update_schema_version(292);
         }
         if ($conf->sversion === 292
@@ -3133,25 +3133,25 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 304
             && $conf->ql_ok("DROP TABLE IF EXISTS `IDReservation`")
             && $conf->ql_ok("CREATE TABLE `IDReservation` (
-  `type` int(11) NOT NULL,
-  `id` int(11) NOT NULL,
-  `timestamp` bigint(11) NOT NULL,
+  `type` int NOT NULL,
+  `id` int NOT NULL,
+  `timestamp` bigint NOT NULL,
   PRIMARY KEY (`type`,`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")) {
             $conf->update_schema_version(305);
         }
         if ($conf->sversion === 305
             && $conf->ql_ok("delete from IDReservation")
-            && $conf->ql_ok("alter table IDReservation add `uid` int(11) NOT NULL")
+            && $conf->ql_ok("alter table IDReservation add `uid` int NOT NULL")
             && $conf->ql_ok("alter table IDReservation add unique key `uid` (`uid`)")
-            && $conf->ql_ok("alter table IDReservation change `uid` `uid` int(11) NOT NULL AUTO_INCREMENT")) {
+            && $conf->ql_ok("alter table IDReservation change `uid` `uid` int NOT NULL AUTO_INCREMENT")) {
             $conf->update_schema_version(306);
         }
         if ($conf->sversion === 306) {
             Dbl::qx($conf->dblink, "DROP TABLE IF EXISTS `ContactPrimary`");
             if ($conf->ql_ok("CREATE TABLE `ContactPrimary` (
-  `contactId` int(11) NOT NULL,
-  `primaryContactId` int(11) NOT NULL,
+  `contactId` int NOT NULL,
+  `primaryContactId` int NOT NULL,
   PRIMARY KEY (`contactId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4")) {
                 $conf->update_schema_version(307);
@@ -3185,11 +3185,11 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(313);
         }
         if ($conf->sversion === 313
-            && $conf->ql_ok("alter table Capability add `useCount` bigint(11) NOT NULL DEFAULT 0")) {
+            && $conf->ql_ok("alter table Capability add `useCount` bigint NOT NULL DEFAULT 0")) {
             $conf->update_schema_version(314);
         }
         if ($conf->sversion === 314
-            && $conf->ql_ok("alter table DocumentLink add `linkIndex` int(11) NOT NULL DEFAULT 0")
+            && $conf->ql_ok("alter table DocumentLink add `linkIndex` int NOT NULL DEFAULT 0")
             && $conf->ql_ok("update DocumentLink set linkIndex=linkType")
             && $conf->ql_ok("alter table DocumentLink drop primary key")
             && $conf->ql_ok("update DocumentLink set linkType=" . DTYPE_COMMENT)
@@ -3197,7 +3197,7 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             $conf->update_schema_version(315);
         }
         if ($conf->sversion === 315
-            && $conf->ql_ok("alter table PaperStorage add `timeReferenced` bigint(11) DEFAULT NULL")) {
+            && $conf->ql_ok("alter table PaperStorage add `timeReferenced` bigint DEFAULT NULL")) {
             $conf->update_schema_version(316);
         }
         if ($conf->sversion === 316
