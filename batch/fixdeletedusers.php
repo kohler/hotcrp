@@ -111,7 +111,7 @@ class FixDeletedUsers_Batch {
                         Dbl::qe_raw($this->conf->dblink, $q);
                     }
                 }
-            } else {
+            } else if (($pu->cflags & Contact::CF_DELETED) === 0) {
                 fwrite(STDOUT, "{$this->conf->dbname}: {$du->email} [{$du->deltype}]: non-placeholder " . dechex($pu->cflags) . "\n");
             }
         }
