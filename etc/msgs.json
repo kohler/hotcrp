@@ -197,8 +197,8 @@
 
     ["signin_required", "<0>You must sign in to access this page"],
     ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> to access this page", ["{expand}", "{url}"]],
-    ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> in order to start a new {submission}.", ["{expand}", "{url}", "{action}=paper:start"]],
-    ["signin_required", "<5>You must <a href=\"{url}\">sign in to your HotCRP account</a> in order to make changes.", ["{expand}", "{url}", "{action}=paper:edit"]],
+    ["signin_required", "<5>You must <a href=\"{url}\">sign in</a> to start a new {submission}", ["{expand}", "{url}", "{action}=paper:start"]],
+    ["signin_required", "<5>You must <a href=\"{url}\">sign in to your HotCRP account</a> to make changes", ["{expand}", "{url}", "{action}=paper:edit"]],
 
     {
         "context": "deadline_error", "in": "<0>Action not available", "m": [
