@@ -607,7 +607,7 @@ class ConfInvariants {
     want_inactive tinyint NOT NULL,
     PRIMARY KEY (`pid`,`did`)
 ) as select paperId pid, paperStorageId did, documentType dt, inactive, 1 want_inactive
-    from PaperStorage where paperStorageId>1 and filterType is null");
+    from PaperStorage where paperStorageId>1");
 
         $this->conf->ql("insert into {$tntable} (pid,did,dt,inactive,want_inactive)
     select paperId, paperStorageId, 0, -1, 0 from Paper where paperStorageId>1

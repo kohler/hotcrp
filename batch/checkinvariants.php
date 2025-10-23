@@ -203,7 +203,7 @@ class CheckInvariants_Batch {
     private function fix_inactive_documents() {
         $this->conf->qe("lock tables PaperStorage write, Paper read, DocumentLink read, PaperOption read");
 
-        $this->conf->qe("update PaperStorage set inactive=1 where filterType is null");
+        $this->conf->qe("update PaperStorage set inactive=1");
 
         $this->conf->qe("update PaperStorage join Paper on (Paper.paperId=PaperStorage.paperId and (Paper.paperStorageId=PaperStorage.paperStorageId or Paper.finalPaperStorageId=PaperStorage.paperStorageId)) set PaperStorage.inactive=0");
 
