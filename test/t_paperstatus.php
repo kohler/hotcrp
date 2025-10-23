@@ -140,7 +140,8 @@ class PaperStatus_Tester {
 
         // final versions can’t be saved unless final versions are open
         $this->conf->qe("update Paper set outcome=1 where paperId=2");
-        $this->conf->qe("insert into Settings (name,value) values ('final_open',1), ('au_seedec',1)");
+        $this->conf->save_setting("final_open", 1);
+        $this->conf->save_setting("au_seedec", 1);
         $this->conf->load_settings();
 
         $p2 = $this->conf->checked_paper_by_id(2);
