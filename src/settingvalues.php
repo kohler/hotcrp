@@ -24,7 +24,7 @@ class SettingValues extends MessageSet {
     public $req_files = [];
     /** @var bool */
     private $_use_req = true;
-    /** @var 0|1|2|3 */
+    /** @var 0|1|2|3|4 */
     private $_req_parse_state = 0;
     /** @var bool */
     private $_req_sorted = false;
@@ -58,6 +58,8 @@ class SettingValues extends MessageSet {
 
     /** @var list<Si> */
     private $_saveable_si = [];
+    /** @var list<Si> */
+    private $_validate_si = [];
     /** @var list<Si> */
     private $_store_value_si = [];
     /** @var list<Si> */
@@ -516,6 +518,13 @@ class SettingValues extends MessageSet {
 
     function decorated_feedback_text() {
         return self::feedback_text($this->decorated_message_list());
+    }
+
+    /** @template T
+     * @param class-string<T> $name
+     * @return T */
+    function parser($name) {
+        return $this->cs()->callable($name);
     }
 
     /** @return SettingParser */
@@ -1406,7 +1415,27 @@ class SettingValues extends MessageSet {
         }
 
         $this->_req_parse_state = 2;
+        if (!empty($this->_validate_si)) {
+            usort($this->_validate_si, "Si::parse_order_compare");
+            $save = $this->conf->__save_settings();
+            foreach ($this->_savedv as $n => $v) {
+                $this->conf->change_setting($n, $v[0] ?? null, $v[1] ?? null);
+            }
+            $this->conf->refresh_settings(false);
+            foreach ($this->_validate_si as $si) {
+                $this->si_parser($si)->validate($si, $this);
+            }
+            $this->conf->__restore_settings($save);
+            $this->_validate_si = [];
+        }
+
+        $this->_req_parse_state = 3;
         return $this;
+    }
+
+    /** @return bool */
+    function validating() {
+        return $this->_req_parse_state === 2;
     }
 
     /** @param string $pfx
@@ -1437,7 +1466,7 @@ class SettingValues extends MessageSet {
 
     /** @return bool */
     function execute() {
-        assert($this->_req_parse_state !== 1 && $this->_req_parse_state !== 3);
+        assert($this->_req_parse_state !== 1 && $this->_req_parse_state !== 4);
         if ($this->_req_parse_state === 0) {
             $this->parse();
         }
@@ -1452,7 +1481,7 @@ class SettingValues extends MessageSet {
         }
 
         // lock
-        $this->_req_parse_state = 3;
+        $this->_req_parse_state = 4;
         $this->request_read_lock("ContactInfo");
         $tables = "Settings write";
         foreach ($this->_table_lock as $t => $need) {
@@ -1461,7 +1490,7 @@ class SettingValues extends MessageSet {
         $this->conf->qe_raw("lock tables {$tables}");
         $this->conf->delay_logs();
 
-        // load db settings, pre-crosscheck
+        // load db settings
         $dbsettings = [];
         $result = $this->conf->qe("select name, value, data from Settings");
         while (($row = $result->fetch_row())) {
@@ -1577,6 +1606,13 @@ class SettingValues extends MessageSet {
     function mark_invalidate_caches($caches) {
         foreach ($caches as $c => $t) {
             $this->_invalidate_caches[$c] = true;
+        }
+    }
+
+    /** @param Si $si */
+    function request_validate($si) {
+        if (!in_array($si, $this->_validate_si, true)) {
+            $this->_validate_si[] = $si;
         }
     }
 

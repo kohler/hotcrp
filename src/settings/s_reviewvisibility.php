@@ -23,13 +23,13 @@ class ReviewVisibility_SettingParser extends SettingParser {
     }
 
     /** @param SettingValues $sv
-     * @param string $name
-     * @param string $q
-     * @param 1|2 $status */
-    static function validate_condition($sv, $name, $q, $status) {
+     * @param string $name */
+    static function validate_condition($sv, $name) {
+        $q = $sv->validating() ? $sv->newv($name) : $sv->oldv($name);
         if (($q ?? "") === "") {
             return;
         }
+        $status = $sv->validating() ? 2 : 1;
         $parent_setting = str_ends_with($name, "_condition") ? substr($name, 0, -10) : false;
         $srch = new PaperSearch($sv->conf->root_user(), $q);
         foreach ($srch->message_list() as $mi) {
@@ -57,10 +57,9 @@ class ReviewVisibility_SettingParser extends SettingParser {
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "review_visibility_author_condition"
             && $sv->has_req($si->name)) {
-            $q = $sv->reqstr($si->name);
-            self::validate_condition($sv, $si->name, $q, 2);
-            $sv->save($si, $q);
+            $sv->save($si, $sv->reqstr($si->name));
             $sv->save("review_visibility_author_tags", "");
+            $sv->request_validate($si);
             return true;
         }
         if ($si->name === "review_visibility_author_tags"
@@ -69,6 +68,10 @@ class ReviewVisibility_SettingParser extends SettingParser {
             $sv->save("review_visibility_author_condition", "");
         }
         return false;
+    }
+
+    function validate(Si $si, SettingValues $sv) {
+        self::validate_condition($sv, $si->name);
     }
 
     static function print_review_author_visibility(SettingValues $sv) {
@@ -106,7 +109,7 @@ class ReviewVisibility_SettingParser extends SettingParser {
             && $sv->oldv("review_visibility_author") == Conf::AUSEEREV_SEARCH
             && $sv->oldv("review_visibility_author_condition")
             && !$sv->has_error_at("review_visibility_author_condition")) {
-            self::validate_condition($sv, "review_visibility_author_condition", $sv->oldv("review_visibility_author_condition"), 1);
+            self::validate_condition($sv, "review_visibility_author_condition");
         }
     }
 }

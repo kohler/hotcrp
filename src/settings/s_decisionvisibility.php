@@ -27,12 +27,15 @@ class DecisionVisibility_SettingParser extends SettingParser {
         }
         if ($si->name === "decision_visibility_author_condition"
             && $sv->has_req($si->name)) {
-            $q = $sv->reqstr($si->name);
-            ReviewVisibility_SettingParser::validate_condition($sv, $si->name, $q, 2);
-            $sv->save($si, $q);
+            $sv->save($si, $sv->reqstr($si->name));
+            $sv->request_validate($si);
             return true;
         }
         return false;
+    }
+
+    function validate(Si $si, SettingValues $sv) {
+        ReviewVisibility_SettingParser::validate_condition($sv, $si->name);
     }
 
 
@@ -89,7 +92,7 @@ class DecisionVisibility_SettingParser extends SettingParser {
             && $sv->oldv("decision_visibility_author") == 1
             && $sv->oldv("decision_visibility_author_condition")
             && !$sv->has_error_at("decision_visibility_author_condition")) {
-            ReviewVisibility_SettingParser::validate_condition($sv, "decision_visibility_author_condition", $sv->oldv("decision_visibility_author_condition"), 1);
+            ReviewVisibility_SettingParser::validate_condition($sv, "decision_visibility_author_condition");
         }
 
         if ($sv->has_interest("review_visibility_author")

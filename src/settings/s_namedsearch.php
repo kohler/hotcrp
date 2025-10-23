@@ -85,11 +85,6 @@ class NamedSearch_SettingParser extends SettingParser {
             }
             if ($ns->q === "") {
                 $sv->warning_at("named_search/{$ctr}/search", "<0>Empty search");
-            } else {
-                $ps = new PaperSearch($sv->conf->root_user(), $ns->q);
-                foreach ($ps->message_list() as $mi) {
-                    $sv->append_item_at("named_search/{$ctr}/search", $mi);
-                }
             }
             $sjl[] = $ns->export_json();
             $known_names[strtolower($ns->name)] = true;
@@ -103,18 +98,27 @@ class NamedSearch_SettingParser extends SettingParser {
         if ($sv->update("named_searches", empty($sjl) ? "" : json_encode_db($sjl))) {
             $sv->request_store_value($si);
         }
+        if (!empty($sjl)) {
+            $sv->request_validate($si);
+        }
         return true;
     }
 
-    static function crosscheck(SettingValues $sv) {
-        if (!$sv->has_interest("named_search")) {
-            return;
-        }
-        foreach ($sv->oblist_keys("named_search") as $ctr) {
-            $ns = $sv->oldv("named_search/{$ctr}");
-            if ($ns->q !== "") {
-                SearchConfig_API::append_search_messages($sv->conf->root_user(), $ns->name, $ns->q, $ctr, $sv);
+    function validate(Si $si, SettingValues $sv) {
+        foreach ($sv->oblist_nondeleted_keys("named_search") as $ctr) {
+            if (($q = $sv->newv("named_search/{$ctr}/search") ?? "") !== "") {
+                $ps = new PaperSearch($sv->conf->root_user(), $q);
+                foreach ($ps->message_list() as $mi) {
+                    $sv->append_item_at("named_search/{$ctr}/search", $mi);
+                }
             }
+        }
+    }
+
+    static function crosscheck(SettingValues $sv) {
+        if ($sv->has_interest("named_search")) {
+            $si = $sv->si("named_search");
+            $sv->si_parser($si)->validate($si, $sv);
         }
     }
 }

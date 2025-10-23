@@ -42,6 +42,10 @@ class SettingParser {
     }
 
     /** @return void */
+    function validate(Si $si, SettingValues $sv) {
+    }
+
+    /** @return void */
     function store_value(Si $si, SettingValues $sv) {
     }
 

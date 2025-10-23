@@ -978,8 +978,8 @@ class Options_SettingParser extends SettingParser {
 
         // update settings database
         if ($sv->update("options", empty($nsfss) ? "" : json_encode_db($nsfss))) {
-            $this->_validate_consistency($sv);
             $sv->update("options_version", (int) $sv->conf->setting("options") + 1);
+            $sv->request_validate($si);
             $sv->request_store_value($si);
             $sv->mark_invalidate_caches(["options" => true]);
             foreach ($this->_delete_optionids as $oid) {
@@ -999,22 +999,10 @@ class Options_SettingParser extends SettingParser {
         $sv->save("ioptions", empty($insfss) ? "" : json_encode_db($insfss));
     }
 
-    private function _validate_consistency(SettingValues $sv) {
-        $old_oval = $sv->conf->setting("options");
-        $old_options = $sv->conf->setting_data("options");
-        if (($new_options = $sv->newv("options") ?? "") === "") {
-            $sv->conf->change_setting("options", null);
-        } else {
-            $sv->conf->change_setting("options", $old_oval + 1, $new_options);
-        }
-        $sv->conf->refresh_settings();
-
+    function validate(Si $si, SettingValues $sv) {
         foreach ($sv->cs()->members("__validate/submissionfields", "validate_function") as $gj) {
             $sv->cs()->call_function($gj, $gj->validate_function, $gj);
         }
-
-        $sv->conf->change_setting("options", $old_oval, $old_options);
-        $sv->conf->refresh_settings();
     }
 
     function apply_req(Si $si, SettingValues $sv) {

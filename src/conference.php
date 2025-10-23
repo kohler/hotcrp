@@ -27,6 +27,8 @@ class Conf {
     public $lang = "en";
     /** @var ?int */
     private $_opt_timestamp;
+    /** @var bool */
+    private $_setting_lock = false;
 
     /** @var string
      * @readonly */
@@ -802,6 +804,25 @@ class Conf {
     }
 
 
+    /** @return list */
+    function __save_settings() {
+        assert(!$this->_setting_lock);
+        $this->_setting_lock = true;
+        return [$this->settings, $this->settingTexts, $this->opt, $this->opt_override];
+    }
+
+    /** @param list $p */
+    function __restore_settings($p) {
+        assert($this->_setting_lock);
+        $this->_setting_lock = false;
+        $this->settings = $p[0];
+        $this->settingTexts = $p[1];
+        $this->opt = $p[2];
+        $this->opt_override = $p[3];
+        $this->refresh_settings(false);
+    }
+
+
     /** @return bool */
     function has_setting($name) {
         return isset($this->settings[$name]);
@@ -863,6 +884,7 @@ class Conf {
      * @param null|string|array|object $data
      * @return bool */
     function save_setting($name, $value, $data = null) {
+        assert(!$this->_setting_lock);
         if ($value === null && $data === null) {
             $result = $this->qe("delete from Settings where name=?", $name);
             $change = $result->affected_rows !== 0;
@@ -889,6 +911,7 @@ class Conf {
 
     /** @param object $action */
     function append_conference_action($action) {
+        assert(!$this->_setting_lock);
         $this->qe("insert into Settings (name, value, data) values ('confactions', 1, ?) ?U on duplicate key update data=concat(Settings.data,?U(data))",
             "\x1e" /* RS */ . json_encode_db($action) . "\n");
     }
@@ -925,9 +948,8 @@ class Conf {
         if ($this->_site_locks === null
             || ($p = strpos($this->_site_locks, " {$name}#")) === false) {
             return 0;
-        } else {
-            return (int) substr($this->_site_locks, $p + strlen($name) + 2);
         }
+        return (int) substr($this->_site_locks, $p + strlen($name) + 2);
     }
 
 
@@ -1085,9 +1107,8 @@ class Conf {
     function full_name() {
         if ($this->short_name && $this->short_name != $this->long_name) {
             return "{$this->long_name} ({$this->short_name})";
-        } else {
-            return $this->long_name;
         }
+        return $this->long_name;
     }
 
 
@@ -1134,13 +1155,12 @@ class Conf {
         } else if ($this->_s3_client
                    && $this->_s3_client->check_key_secret_bucket($k, $s, $b)) {
             return $this->_s3_client;
-        } else {
-            return S3Client::make([
-                "key" => $k, "secret" => $s, "bucket" => $b,
-                "region" => $this->opt["s3_region"] ?? null,
-                "setting_cache" => $this, "setting_cache_prefix" => "__s3"
-            ]);
         }
+        return S3Client::make([
+            "key" => $k, "secret" => $s, "bucket" => $b,
+            "region" => $this->opt["s3_region"] ?? null,
+            "setting_cache" => $this, "setting_cache_prefix" => "__s3"
+        ]);
     }
 
     /** @return ?S3Client */
@@ -1425,9 +1445,8 @@ class Conf {
     function checked_review_field($fid) {
         if (($f = $this->review_form()->field($fid))) {
             return $f;
-        } else {
-            throw new Exception("Unknown review field ‘{$fid}’");
         }
+        throw new Exception("Unknown review field ‘{$fid}’");
     }
 
 
@@ -1842,9 +1861,8 @@ class Conf {
             && isset($this->_round_settings[$round])
             && isset($this->_round_settings[$round]->$name)) {
             return $this->_round_settings[$round]->$name;
-        } else {
-            return $this->settings[$name] ?? null;
         }
+        return $this->settings[$name] ?? null;
     }
 
 
@@ -3078,9 +3096,8 @@ class Conf {
             return null;
         } else if ($row[1]) {
             return 0;
-        } else {
-            return $row[2] ? -1 : 1;
         }
+        return $row[2] ? -1 : 1;
     }
 
     /** @param int $pid
@@ -3126,7 +3143,8 @@ class Conf {
     /** @param null|int|list<int>|PaperInfo $paper
      * @param null|string|list<string> $types */
     function update_automatic_tags($paper = null, $types = null) {
-        if (($this->_permbits & (self::PB_HAS_AUTOMATIC_TAGS | self::PB_UPDATING_AUTOMATIC_TAGS)) !== self::PB_HAS_AUTOMATIC_TAGS) {
+        if (($this->_permbits & (self::PB_HAS_AUTOMATIC_TAGS | self::PB_UPDATING_AUTOMATIC_TAGS)) !== self::PB_HAS_AUTOMATIC_TAGS
+            || $this->_setting_lock) {
             return;
         }
         $csv = ["paper,tag,tag value"];

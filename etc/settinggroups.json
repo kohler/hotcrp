@@ -180,7 +180,7 @@
     },
     {
         "name": "__validate/submissionfields/conditions", "order": 1,
-        "validate_function": "SubFieldCondition_SettingParser::validate"
+        "validate_function": "SubFieldCondition_SettingParser::crosscheck"
     },
     [   "submissionfield/properties/name", 1, "*Options_SettingParser::print_name"   ],
     [   "submissionfield/properties/type", 10, "*Options_SettingParser::print_type"   ],

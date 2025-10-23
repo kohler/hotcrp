@@ -4,7 +4,7 @@
 
 class SubFieldCondition_SettingParser extends SettingParser {
     function print(SettingValues $sv) {
-        $osp = $sv->cs()->callable("Options_SettingParser");
+        $osp = $sv->parser("Options_SettingParser");
         $sel = [];
         if ($osp->sfs->option_id !== DTYPE_FINAL) {
             $sel["all"] = "Yes";
@@ -35,16 +35,15 @@ class SubFieldCondition_SettingParser extends SettingParser {
 
     /** @param SettingValues $sv
      * @param int $ctr
-     * @param 'exists_if'|'editable_if' $type
-     * @param PaperOption $field
-     * @param 1|2 $status
+     * @param string $type
      * @param PaperInfo $prow */
-    static private function validate1($sv, $ctr, $type, $field, $status, $prow) {
-        $q = $type === "exists_if" ? $field->exists_condition() : $field->editable_condition();
-        if ($q === null || $q === "NONE" || $q === "phase:final") {
+    static private function validate1($sv, $ctr, $type, $prow) {
+        $siname = "sf/{$ctr}/{$type}";
+        $q = $sv->newv($siname);
+        if ($q === null || $q === "" || $q === "NONE" || $q === "phase:final") {
             return;
         }
-        $siname = "sf/{$ctr}/" . ($type === "exists_if" ? "condition" : "edit_condition");
+        $status = $sv->validating() ? 2 : 1;
 
         // save recursion state
         $scr = $sv->conf->setting("__sf_condition_recursion");
@@ -75,9 +74,10 @@ class SubFieldCondition_SettingParser extends SettingParser {
             }
         }
 
+        $myid = $sv->newv("sf/{$ctr}/id");
         if ($sv->conf->setting("__sf_condition_recursion") > 0
-            || isset($oids[$field->id])
-            || ($status === 1 && $scr === $field->id && $scrd === $type)) {
+            || isset($oids[$myid])
+            || ($status === 1 && $scr === $myid && ($scrd === "exists_if") === ($type === "condition"))) {
             $sv->error_at($siname, "<0>Self-referential search in field condition");
         }
         $sv->conf->change_setting("__sf_condition_recursion", $scr, $scrd);
@@ -85,24 +85,10 @@ class SubFieldCondition_SettingParser extends SettingParser {
 
     static function crosscheck(SettingValues $sv) {
         if ($sv->has_interest("sf")) {
-            $opts = Options_SettingParser::configurable_options($sv->conf);
             $prow = PaperInfo::make_placeholder($sv->conf, -1);
-            foreach ($opts as $ctrz => $f) {
-                $ctr = $ctrz + 1;
-                self::validate1($sv, $ctr, "exists_if", $f, 1, $prow);
-                self::validate1($sv, $ctr, "editable_if", $f, 1, $prow);
-            }
-        }
-    }
-
-    static function validate(SettingValues $sv) {
-        $opts = Options_SettingParser::configurable_options($sv->conf);
-        $osp = $sv->cs()->callable("Options_SettingParser");
-        $prow = PaperInfo::make_placeholder($sv->conf, -1);
-        foreach ($opts as $f) {
-            if (($ctr = $osp->option_id_to_ctr[$f->id] ?? null) !== null) {
-                self::validate1($sv, $ctr, "exists_if", $f, 2, $prow);
-                self::validate1($sv, $ctr, "editable_if", $f, 2, $prow);
+            foreach ($sv->oblist_nondeleted_keys("sf") as $ctr) {
+                self::validate1($sv, $ctr, "condition", $prow);
+                self::validate1($sv, $ctr, "edit_condition", $prow);
             }
         }
     }
