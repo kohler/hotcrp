@@ -1999,4 +1999,31 @@ class Settings_Tester {
         $this->conf->save_refresh_setting("options", $this->conf->setting("options") + 1, $old_options);
         $this->conf->save_setting("__sf_condition_recursion", null);
     }
+
+    function test_condition_update() {
+        $sv = SettingValues::make_request($this->u_chair, [
+            "decision_visibility_author" => "yes",
+            "decision_visibility_author_condition" => "dec:\"Newly Added\"",
+            "has_named_search" => 1,
+            "named_search/1/id" => "missing_reviews",
+            "named_search/1/name" => "missing_reviews",
+            "named_search/1/search" => "dec:\"Newly Added\"",
+            "has_rf" => 1,
+            "rf/1/id" => "new",
+            "rf/1/name" => "Mystery field",
+            "rf/1/type" => "text",
+            "rf/1/condition" => "dec:\"Newly Added\"",
+            "has_sf" => 1,
+            "sf/1/id" => "new",
+            "sf/1/name" => "Mystery submission field",
+            "sf/1/type" => "text",
+            "sf/1/condition" => "dec:\"Newly Added\"",
+            "has_decision" => 1,
+            "decision/1/id" => "new",
+            "decision/1/name" => "Newly Added",
+            "decision/1/category" => "accept"
+        ]);
+        xassert($sv->execute());
+        fwrite(STDERR, $sv->decorated_feedback_text());
+    }
 }
