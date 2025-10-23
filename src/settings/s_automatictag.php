@@ -1,6 +1,6 @@
 <?php
 // settings/s_automatictag.php -- HotCRP settings > submission form page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class AutomaticTag_Setting implements JsonSerializable {
     /** @var string */
@@ -74,7 +74,8 @@ class AutomaticTag_SettingParser extends SettingParser {
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "automatic_tag") {
             return $this->_apply_automatic_tag_req($si, $sv);
-        } else if ($si->name0 === "automatic_tag/" && $si->name2 === "/search") {
+        }
+        if ($si->name0 === "automatic_tag/" && $si->name2 === "/search") {
             $q = $sv->reqstr($si->name);
             if (simplify_whitespace($q) === "") {
                 $sv->error_at($si, "<0>Entry required");
@@ -93,7 +94,8 @@ class AutomaticTag_SettingParser extends SettingParser {
                 $sv->save($si, $q);
             }
             return true;
-        } else if ($si->name0 === "automatic_tag/" && $si->name2 === "/value") {
+        }
+        if ($si->name0 === "automatic_tag/" && $si->name2 === "/value") {
             $v = $sv->reqstr($si->name);
             if ($v !== "") {
                 $formula = new Formula($v);
@@ -106,9 +108,8 @@ class AutomaticTag_SettingParser extends SettingParser {
             }
             $sv->save($si, $v);
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     function store_value(Si $si, SettingValues $sv) {

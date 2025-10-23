@@ -897,7 +897,6 @@ class Options_SettingParser extends SettingParser {
     // * If any non-title intrinsic field is reordered relative to the default,
     //   then all of them are
 
-    /** @return bool */
     private function _apply_req_sf(Si $si, SettingValues $sv) {
         if ($sv->has_req("options_version")
             && (int) $sv->reqstr("options_version") !== (int) $sv->conf->setting("options")) {
@@ -998,7 +997,6 @@ class Options_SettingParser extends SettingParser {
             }
         }
         $sv->save("ioptions", empty($insfss) ? "" : json_encode_db($insfss));
-        return true;
     }
 
     private function _validate_consistency(SettingValues $sv) {
@@ -1021,21 +1019,28 @@ class Options_SettingParser extends SettingParser {
 
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "sf") {
-            return $this->_apply_req_sf($si, $sv);
+            $this->_apply_req_sf($si, $sv);
+            return true;
         }
         assert($si->name0 === "sf/");
         $fs = $sv->oldv($si->name0 . $si->name1);
         if ($si->name2 === "/name") {
             $this->_apply_req_name($si, $fs, $sv);
-        } else if ($si->name2 === "/type") {
-            $this->_apply_req_type($si, $fs, $sv);
-        } else if ($si->name2 === "/values_text") {
-            $this->_apply_req_values_text($si, $fs, $sv);
-        } else if ($si->name2 === "/values") {
-            $this->_apply_req_values($si, $fs, $sv);
-        } else {
-            return false;
+            return true;
         }
+        if ($si->name2 === "/type") {
+            $this->_apply_req_type($si, $fs, $sv);
+            return true;
+        }
+        if ($si->name2 === "/values_text") {
+            $this->_apply_req_values_text($si, $fs, $sv);
+            return true;
+        }
+        if ($si->name2 === "/values") {
+            $this->_apply_req_values($si, $fs, $sv);
+            return true;
+        }
+        return false;
     }
 
     function store_value(Si $si, SettingValues $sv) {

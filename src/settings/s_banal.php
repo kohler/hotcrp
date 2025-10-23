@@ -1,6 +1,6 @@
 <?php
 // settings/s_banal.php -- HotCRP settings > submission form page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Banal_Setting {
     public $id;
@@ -85,9 +85,8 @@ class Banal_SettingParser extends SettingParser {
                 self::parse($sv, $ctr, true);
             }
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 
     /** @return string */
@@ -96,9 +95,8 @@ class Banal_SettingParser extends SettingParser {
             return "failed";
         } else if ($cf->has_error()) {
             return "error";
-        } else {
-            return $cf->has_problem() ? "warning" : "ok";
         }
+        return $cf->has_problem() ? "warning" : "ok";
     }
 
     /** @param SettingValues $sv */

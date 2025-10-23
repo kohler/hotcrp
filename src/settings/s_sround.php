@@ -1,6 +1,6 @@
 <?php
 // settings/s_sround.php -- HotCRP settings > submission rounds page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Sround_Setting {
     // used by ReviewForm constructor
@@ -139,8 +139,10 @@ class Sround_SettingParser extends SettingParser {
 
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "submission") {
-            return $this->apply_submission_req($si, $sv);
-        } else if ($si->name2 === "/tag") {
+            $this->apply_submission_req($si, $sv);
+            return true;
+        }
+        if ($si->name2 === "/tag") {
             if (($n = $sv->base_parse_req($si)) !== null
                 && $n !== $sv->oldv($si)) {
                 if (($err = Conf::round_name_error($n))) {
@@ -148,9 +150,8 @@ class Sround_SettingParser extends SettingParser {
                 }
             }
             return false;
-        } else {
-            return false;
         }
+        return false;
     }
 
     private function apply_submission_req(Si $si, SettingValues $sv) {
@@ -177,7 +178,6 @@ class Sround_SettingParser extends SettingParser {
         if ($sv->update("submission_rounds", empty($srj) ? "" : json_encode_db($srj))) {
             $sv->request_store_value($si);
         }
-        return true;
     }
 
     static function crosscheck(SettingValues $sv) {

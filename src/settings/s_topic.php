@@ -1,6 +1,6 @@
 <?php
 // settings/s_topic.php -- HotCRP settings > submission form page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Topic_Setting {
     /** @var ?int */
@@ -87,7 +87,6 @@ class Topic_SettingParser extends SettingParser {
             Ht::textarea("new_topics", $sv->use_req() ? $sv->reqstr("new_topics") : "", ["cols" => 80, "rows" => 2, "class" => ($sv->has_problem_at("new_topics") ? "has-error " : "") . "need-autogrow", "id" => "new_topics"]), "</div>";
     }
 
-    /** @return bool */
     private function _apply_req_newlist(Si $si, SettingValues $sv) {
         $ctr = null;
         foreach (explode("\n", $sv->reqstr($si->name)) as $line) {
@@ -99,10 +98,8 @@ class Topic_SettingParser extends SettingParser {
             }
         }
         $sv->set_req("new_topics", "");
-        return true;
     }
 
-    /** @return bool */
     private function _apply_req_topics(Si $si, SettingValues $sv) {
         $this->topicj = $sv->conf->topic_set()->as_array();
         $this->newtopics = [];
@@ -134,14 +131,16 @@ class Topic_SettingParser extends SettingParser {
             $sv->request_write_lock("TopicArea", "PaperTopic", "TopicInterest", "PaperOption");
             $sv->request_store_value($si);
         }
-        return true;
     }
 
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "new_topics") {
-            return $this->_apply_req_newlist($si, $sv);
-        } else if ($si->name === "topic") {
-            return $this->_apply_req_topics($si, $sv);
+            $this->_apply_req_newlist($si, $sv);
+            return true;
+        }
+        if ($si->name === "topic") {
+            $this->_apply_req_topics($si, $sv);
+            return true;
         }
         return false;
     }

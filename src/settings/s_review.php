@@ -1,6 +1,6 @@
 <?php
 // settings/s_review.php -- HotCRP settings > reviews page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class Review_Setting {
     /** @var int */
@@ -374,31 +374,36 @@ class Review_SettingParser extends SettingParser {
     function apply_req(Si $si, SettingValues $sv) {
         if ($si->name === "review") {
             return $this->apply_review_req($si, $sv);
-        } else if ($si->name === "review_default_round"
-                   || $si->name === "review_default_external_round") {
+        }
+        if ($si->name === "review_default_round"
+            || $si->name === "review_default_external_round") {
             if (($n = $sv->reqstr($si->name)) !== null) {
                 $this->apply_review_default_round($si, $sv, trim($n));
             }
             return true;
-        } else if ($si->name === "review_default_round_index"
-                   || $si->name === "review_default_external_round_index") {
+        }
+        if ($si->name === "review_default_round_index"
+            || $si->name === "review_default_external_round_index") {
             if (($n = $sv->reqstr($si->name)) !== null) {
                 $this->apply_review_default_round_index($si, $sv, trim($n));
             }
             return true;
-        } else if ($si->name === "review_visibility_external") {
+        }
+        if ($si->name === "review_visibility_external") {
             if (($n = $sv->reqstr($si->name)) === "blind") {
                 $sv->save($si, Conf::VIEWREV_AFTERREVIEW);
                 $sv->save("review_identity_visibility_external", Conf::VIEWREV_NEVER);
             }
             return false;
-        } else if ($si->name === "review_identity_visibility_meta") {
+        }
+        if ($si->name === "review_identity_visibility_meta") {
             if ($sv->has_req("review_identity_visibility_meta_special")
                 && !$sv->reqstr("review_identity_visibility_meta_special")) {
                 $sv->set_req($si->name, (string) Conf::VIEWREV_DEFAULT);
             }
             return false;
-        } else if ($si->name2 === "/name") {
+        }
+        if ($si->name2 === "/name") {
             if (($n = $sv->base_parse_req($si)) !== null
                 && $n !== $sv->oldv($si)) {
                 if (self::clean_name($n, false) === "") {

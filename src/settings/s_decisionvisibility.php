@@ -1,6 +1,6 @@
 <?php
 // settings/s_decisionvisibility.php -- HotCRP settings > decisions page
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class DecisionVisibility_SettingParser extends SettingParser {
     function set_oldv(Si $si, SettingValues $sv) {
@@ -24,8 +24,9 @@ class DecisionVisibility_SettingParser extends SettingParser {
                 $sv->save("decision_visibility_reviewer", $v);
             }
             return true;
-        } else if ($si->name === "decision_visibility_author_condition"
-                   && $sv->has_req($si->name)) {
+        }
+        if ($si->name === "decision_visibility_author_condition"
+            && $sv->has_req($si->name)) {
             $q = $sv->reqstr($si->name);
             ReviewVisibility_SettingParser::validate_condition($sv, $si->name, $q, 2);
             $sv->save($si, $q);

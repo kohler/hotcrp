@@ -1,6 +1,6 @@
 <?php
 // settings/s_reviewvisibility.php -- HotCRP settings > decisions page
-// Copyright (c) 2006-2024 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ReviewVisibility_SettingParser extends SettingParser {
     function set_oldv(Si $si, SettingValues $sv) {
@@ -62,9 +62,10 @@ class ReviewVisibility_SettingParser extends SettingParser {
             $sv->save($si, $q);
             $sv->save("review_visibility_author_tags", "");
             return true;
-        } else if ($si->name === "review_visibility_author_tags"
-                   && $sv->has_req($si->name)
-                   && !$sv->has_req("review_visibility_author_condition")) {
+        }
+        if ($si->name === "review_visibility_author_tags"
+            && $sv->has_req($si->name)
+            && !$sv->has_req("review_visibility_author_condition")) {
             $sv->save("review_visibility_author_condition", "");
         }
         return false;
