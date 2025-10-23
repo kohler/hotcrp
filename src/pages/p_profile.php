@@ -173,7 +173,7 @@ class Profile_Page {
                 $ustatus->error_at("email", "<0>Invalid email address");
                 return null;
             }
-        } else if ($uemail && strcasecmp($usemail, $ustatus->user->email) !== 0) {
+        } else if ($uemail && strcasecmp($uemail, $ustatus->user->email) !== 0) {
             $ustatus->error_at("email", "<0>Email change ignored");
             $ustatus->inform_at("email", "<0>Use ‘Manage email’ to manage your accounts’ email addresses.");
         }
