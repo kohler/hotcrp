@@ -5247,7 +5247,7 @@ class Conf {
         if ($this->_save_msgs && !($extra["save_messages"] ?? false)) {
             $this->report_saved_messages();
         }
-        if ($qreq && $qreq->has_annex("upload_errors")) {
+        if ($qreq->has_annex("upload_errors")) {
             $this->feedback_msg($qreq->annex("upload_errors"));
         }
         echo "</div></div>\n";
@@ -5263,7 +5263,7 @@ class Conf {
         // Callback for version warnings
         if ($user
             && $user->privChair
-            && $this->session_key !== null
+            && $qreq->qsession()->is_open()
             && (!$qreq->has_gsession("updatecheck")
                 || $qreq->gsession("updatecheck") + 3600 <= Conf::$now)
             && (!isset($this->opt["updatesSite"]) || $this->opt["updatesSite"])) {
