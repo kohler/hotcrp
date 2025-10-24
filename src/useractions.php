@@ -291,6 +291,7 @@ class UserActions extends MessageSet {
         }
 
         // done
+        $user->update_cdb_roles();
         $this->viewer->log_activity_for($user, "Account deleted {$user->email}");
         $this->unames["deleted"][] = $user->name(NAME_E);
     }
