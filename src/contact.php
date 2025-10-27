@@ -858,24 +858,8 @@ class Contact implements JsonSerializable {
         // maybe auto-create a user
         if (($this->_activated & 2) === 0 && $this->email) {
             $this->activate_placeholder(($this->_activated & 7) === 1, $this);
-            $trueuser_aucheck = $qreq->csession("trueuser_author_check") ?? 0;
-            if (!$this->has_account_here()
-                && $trueuser_aucheck + 600 < Conf::$now) {
-                $qreq->set_csession("trueuser_author_check", Conf::$now);
-                $aupapers = self::email_authored_papers($this->conf, $this->email, $this);
-                if (!empty($aupapers)) {
-                    $this->ensure_account_here();
-                }
-            }
-            if ($this->has_account_here()
-                && $trueuser_aucheck
-                && $this->conf->session_key !== null) {
-                foreach ($_SESSION as $k => $v) {
-                    if (is_array($v)
-                        && isset($v["trueuser_author_check"])
-                        && $v["trueuser_author_check"] + 600 < Conf::$now)
-                        unset($_SESSION[$k]["trueuser_author_check"]);
-                }
+            if ($qreq->csession("trueuser_author_check")) {
+                $qreq->unset_csession("trueuser_author_check");
             }
         }
 
@@ -1928,37 +1912,6 @@ class Contact implements JsonSerializable {
 
     const SAVE_ANY_EMAIL = 1;
     const SAVE_SELF_REGISTER = 2;
-
-    /** @param string $email
-     * @param object $reg
-     * @return list<int> */
-    static function email_authored_papers(Conf $conf, $email, $reg) {
-        $aupapers = [];
-        $result = $conf->q("select paperId, authorInformation from Paper where authorInformation like " . Dbl::utf8ci("'%\t?ls\t%'"), $email);
-        while (($row = $result->fetch_row())) {
-            foreach (PaperInfo::parse_author_list($row[1]) as $au) {
-                if (strcasecmp($au->email, $email) !== 0) {
-                    continue;
-                }
-                $aupapers[] = (int) $row[0];
-                if ($reg
-                    && ($au->firstName !== "" || $au->lastName !== "")
-                    && ($reg->firstName ?? "") === ""
-                    && ($reg->lastName ?? "") === "") {
-                    $reg->firstName = $au->firstName;
-                    $reg->lastName = $au->lastName;
-                }
-                if ($reg
-                    && $au->affiliation !== ""
-                    && ($reg->affiliation ?? "") === "") {
-                    $reg->affiliation = $au->affiliation;
-                }
-            }
-        }
-        Dbl::free($result);
-        return $aupapers;
-    }
-
 
     /** @param string $prop
      * @param int $shape */

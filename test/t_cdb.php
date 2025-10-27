@@ -586,56 +586,6 @@ class Cdb_Tester {
         xassert_eqq($cdb_u->disabled_flags(), 0);
     }
 
-    function xxx_test_updatecontactdb_authors() {
-        // XXX This test requires email_authored_papers.
-        $paper9 = $this->conf->checked_paper_by_id(9);
-        $aulist = $paper9->author_list();
-        $aulist[] = Author::make_keyed([
-            "name" => "Nonsense Person",
-            "email" => "NONSENSE@xx.com"
-        ]);
-        $austr = join("\n", array_map(function ($au) { return $au->unparse_tabbed(); }, $aulist));
-        $this->conf->qe("update Paper set authorInformation=? where paperId=9", $austr);
-
-        $paper10 = $this->conf->checked_paper_by_id(10);
-        $aulist = $paper9->author_list();
-        $aulist[] = Author::make_keyed([
-            "email" => "nonsense@xx.com",
-            "affiliation" => "Nonsense University"
-        ]);
-        $austr = join("\n", array_map(function ($au) { return $au->unparse_tabbed(); }, $aulist));
-        $this->conf->qe("update Paper set authorInformation=? where paperId=10", $austr);
-
-        $u = $this->conf->fresh_user_by_email("nonsense@xx.com");
-        xassert(!$u);
-        $u = $this->conf->fresh_cdb_user_by_email("nonsense@xx.com");
-        xassert(!$u);
-
-        $ucdb = new UpdateContactdb_Batch($this->conf, ["authors" => false]);
-        $ucdb->run_authors();
-
-        $u = $this->conf->fresh_user_by_email("nonsense@xx.com");
-        xassert(!!$u);
-        xassert_eqq($u->disabled_flags(), Contact::CF_PLACEHOLDER);
-        xassert_eqq($u->email, "NONSENSE@xx.com");
-        xassert_eqq($u->firstName, "Nonsense");
-        xassert_eqq($u->lastName, "Person");
-        xassert_eqq($u->affiliation, "Nonsense University");
-        $paper9 = $this->conf->checked_paper_by_id(9);
-        xassert($paper9->has_author($u));
-        $paper10 = $this->conf->checked_paper_by_id(10);
-        xassert($paper10->has_author($u));
-
-        $u = $this->conf->fresh_cdb_user_by_email("nonsense@xx.com");
-        xassert(!!$u);
-        xassert_eqq($u->disabled_flags(), Contact::CF_PLACEHOLDER);
-        xassert_eqq($u->email, "NONSENSE@xx.com");
-        xassert_eqq($u->firstName, "Nonsense");
-        xassert_eqq($u->lastName, "Person");
-        xassert_eqq($u->affiliation, "Nonsense University");
-        xassert_eqq($u->disabled_flags(), Contact::CF_PLACEHOLDER);
-    }
-
     /** @suppress PhanAccessReadOnlyProperty */
     function test_cdb_user_new_paper() {
         $u = $this->conf->fresh_cdb_user_by_email("newuser@fresh.com");

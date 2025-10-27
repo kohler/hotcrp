@@ -365,7 +365,7 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
     }
 
     function commit_auto_add() {
-        if (!empty($this->_auto_add) && $this === $this->conf->topic_set()) {
+        if (!empty($this->_auto_add) && $this->conf->topic_set() === $this) {
             $qv = [];
             foreach ($this->_auto_add as $t) {
                 $qv[] = [$t];
@@ -389,9 +389,8 @@ class TopicSet implements ArrayAccess, IteratorAggregate, Countable {
                    || (strlen($tname) > 20
                        && UnicodeHelper::utf8_glyphlen($tname) > 20)) {
             return "medium";
-        } else {
-            return "short";
         }
+        return "short";
     }
 
     /** @param int $tid
