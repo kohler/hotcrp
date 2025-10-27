@@ -316,12 +316,6 @@ class CheckInvariants_Batch {
     private function fix_author_contacts() {
         $authors = ConfInvariants::author_lcemail_map($this->conf);
 
-        $result = $this->conf->qe("select email from ContactInfo");
-        while (($row = $result->fetch_row())) {
-            unset($authors[strtolower($row[0])]);
-        }
-        $result->close();
-
         $confs = [];
         foreach ($authors as $email => $pids) {
             $u = $this->conf->ensure_user_by_email($email);
@@ -330,7 +324,9 @@ class CheckInvariants_Batch {
             }
         }
 
-        $this->conf->qe("insert into PaperConflict values ?v on duplicate key update conflictType=PaperConflict.conflictType|?", $confs, CONFLICT_AUTHOR);
+        if (!empty($confs)) {
+            $this->conf->qe("insert into PaperConflict values ?v on duplicate key update conflictType=PaperConflict.conflictType|?", $confs, CONFLICT_AUTHOR);
+        }
     }
 
     static function list_fixes() {
