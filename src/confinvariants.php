@@ -644,17 +644,17 @@ class ConfInvariants {
                 continue;
             }
             foreach ($d1 as $p) {
-                $this->invariant_error("author_contacts", "author {$lemail} of #{$p} not stored in paper metadata");
+                $this->invariant_error("author_conflicts", "author {$lemail} of #{$p} not stored in paper metadata");
             }
             foreach (array_diff($ppids, $cpids) as $p) {
-                $this->invariant_error("author_contacts", "author {$lemail} of #{$p} not stored in PaperConflict");
+                $this->invariant_error("author_conflicts", "author {$lemail} of #{$p} not stored in PaperConflict");
             }
         }
         $result->close();
 
         // authors are all accounted for
         foreach ($authors as $lemail => $pids) {
-            $this->invariant_error("author_contacts", "author {$lemail} of #{$pids[0]} lacking from database");
+            $this->invariant_error("author_conflicts", "author {$lemail} of #{$pids[0]} lacking from database");
         }
 
         return $this;

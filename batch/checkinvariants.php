@@ -193,9 +193,9 @@ class CheckInvariants_Batch {
             $this->report_fix("cdbroles");
             $this->fix_cdbroles();
         }
-        if (isset($ic->problems["author_contacts"]) && $this->want_fix("authors")) {
-            $this->report_fix("author_contacts");
-            $this->fix_author_contacts();
+        if (isset($ic->problems["author_conflicts"]) && $this->want_fix("authors")) {
+            $this->report_fix("author_conflicts");
+            $this->fix_author_conflicts();
         }
         return 0;
     }
@@ -313,24 +313,40 @@ class CheckInvariants_Batch {
         }
     }
 
-    private function fix_author_contacts() {
-        $authors = ConfInvariants::author_lcemail_map($this->conf);
+    private function fix_author_conflicts() {
+        $paus = ConfInvariants::author_lcemail_map($this->conf);
 
-        $result = $this->conf->qe("select email from ContactInfo");
+        $caus = [];
+        $result = $this->conf->qe("select email, group_concat(paperId) from ContactInfo join PaperConflict using (contactId) where (conflictType&" . CONFLICT_AUTHOR . ")!=0 group by ContactInfo.contactId");
         while (($row = $result->fetch_row())) {
-            unset($authors[strtolower($row[0])]);
+            $lemail = strtolower($row[0]);
+            $caus[$lemail] = explode(",", $row[1]);
+            if (!isset($paus[$lemail])) {
+                $paus[$lemail] = [];
+            }
         }
         $result->close();
 
-        $confs = [];
-        foreach ($authors as $email => $pids) {
-            $u = $this->conf->ensure_user_by_email($email);
-            foreach ($pids as $pid) {
-                $confs[] = [$pid, $u->contactId, CONFLICT_AUTHOR];
+        $stager = Dbl::make_multi_qe_stager($this->conf->dblink);
+        foreach ($paus as $lemail => $ppids) {
+            $cpids = $caus[$lemail] ?? [];
+            $d1 = array_diff($ppids, $cpids);
+            if (empty($d1) && count($ppids) === count($cpids)) {
+                continue;
+            }
+            $u = $this->conf->ensure_user_by_email($lemail);
+            foreach ($d1 as $pid) {
+                $stager("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=conflictType|?",
+                    $pid, $u->contactId, CONFLICT_AUTHOR, CONFLICT_AUTHOR);
+            }
+            foreach (array_diff($cpids, $ppids) as $pid) {
+                $stager("update PaperConflict set conflictType=conflictType&~? where paperId=? and contactId=?",
+                    CONFLICT_AUTHOR, $pid, $u->contactId);
+                $stager("delete from PaperConflict where paperId=? and contactId=? and conflictType=0",
+                    $pid, $u->contactId);
             }
         }
-
-        $this->conf->qe("insert into PaperConflict values ?v on duplicate key update conflictType=PaperConflict.conflictType|?", $confs, CONFLICT_AUTHOR);
+        $stager(null);
     }
 
     static function list_fixes() {
