@@ -456,18 +456,47 @@ class ConfInvariants {
         return $this;
     }
 
+    static private function prilemail_map(Conf $conf) {
+        $lemails = [];
+        $primap = [];
+        $result = $conf->qe("select contactId, primaryContactId, email from ContactInfo where primaryContactId>0 or (cflags&" . Contact::CF_PRIMARY . ")!=0");
+        while (($row = $result->fetch_row())) {
+            $cid = (int) $row[0];
+            $pcid = (int) $row[1];
+            $lemail = strtolower($row[2]);
+            if ($pcid > 0) {
+                $primap[$lemail] = $pcid;
+            } else {
+                $lemails[$cid] = $lemail;
+            }
+        }
+        $result->close();
+
+        foreach ($primap as $lemail => &$pcid) {
+            $pcid = $lemails[$pcid] ?? null;
+        }
+        return $primap;
+    }
+
     /** @return array<string,list<int>> */
-    static function author_lcemail_map(Conf $conf) {
+    static function author_lcemail_map(Conf $conf, $primap = null) {
+        $primap = $primap ?? self::prilemail_map($conf);
         $authors = [];
         $result = $conf->qe("select paperId, authorInformation from Paper");
         while (($row = $result->fetch_row())) {
             $pid = intval($row[0]);
             foreach (explode("\n", $row[1]) as $auline) {
-                if ($auline !== "") {
-                    $au = Author::make_tabbed($auline);
-                    if ($au->email !== "" && validate_email($au->email)) {
-                        $authors[strtolower($au->email)][] = $pid;
-                    }
+                if ($auline === "") {
+                    continue;
+                }
+                $au = Author::make_tabbed($auline);
+                if (!validate_email($au->email)) {
+                    continue;
+                }
+                $lemail = strtolower($au->email);
+                $authors[$lemail][] = $pid;
+                if (($pri = $primap[$lemail] ?? null) !== null) {
+                    $authors[$pri][] = $pid;
                 }
             }
         }
@@ -477,9 +506,6 @@ class ConfInvariants {
 
     /** @return $this */
     function check_users() {
-        // load paper authors
-        $authors = self::author_lcemail_map($this->conf);
-
         // load primary contact links
         $primap = [];
         $isprimary = [];
@@ -502,13 +528,14 @@ class ConfInvariants {
         Dbl::free($result);
 
         // load users
+        $priemap = [];
+        $lemails = [];
         $result = $this->conf->qe("select " . $this->conf->user_query_fields() . ", unaccentedName from ContactInfo");
         while (($u = $result->fetch_object())) {
             $u->contactId = intval($u->contactId);
             $u->primaryContactId = intval($u->primaryContactId);
             $u->roles = intval($u->roles);
             $u->cflags = intval($u->cflags);
-            unset($authors[strtolower($u->email)]);
 
             // anonymous users are disabled
             if (str_starts_with($u->email, "anonymous")
@@ -571,6 +598,16 @@ class ConfInvariants {
                 $this->invariant_error("contactprimary_user", "user {$u->email}/{$u->contactId} primary disagreement (user {$u->primaryContactId}, ContactPrimary {$cp_primary})");
             }
             unset($isprimary[$u->contactId], $primap[$u->contactId]);
+
+            // remember emails of secondary
+            if ($u->primaryContactId !== 0 || $uprimary) {
+                $lemail = strtolower($u->email);
+                if ($u->primaryContactId !== 0) {
+                    $priemap[$lemail] = $u->primaryContactId;
+                } else {
+                    $lemails[$u->contactId] = $lemail;
+                }
+            }
         }
         Dbl::free($result);
 
@@ -587,6 +624,33 @@ class ConfInvariants {
             }
             $this->invariant_error("contactprimary_surplus", "surplus ContactPrimary {$badcp->contactId}->{$badcp->primaryContactId}");
         }
+
+        // load paper authors
+        foreach ($priemap as $seclemail => &$pcid) {
+            $pcid = $lemails[$pcid] ?? null;
+        }
+        unset($pcid);
+        $authors = self::author_lcemail_map($this->conf, $priemap);
+
+        // load PaperConflict entries
+        $result = $this->conf->qe("select email, group_concat(paperId) from ContactInfo join PaperConflict using (contactId) where (conflictType&" . CONFLICT_AUTHOR . ")!=0 group by ContactInfo.contactId");
+        while (($row = $result->fetch_row())) {
+            $lemail = strtolower($row[0]);
+            $cpids = explode(",", $row[1]);
+            $ppids = $authors[$lemail] ?? [];
+            unset($authors[$lemail]);
+            $d1 = array_diff($cpids, $ppids);
+            if (empty($d1) && count($cpids) === count($ppids)) {
+                continue;
+            }
+            foreach ($d1 as $p) {
+                $this->invariant_error("author_contacts", "author {$lemail} of #{$p} not stored in paper metadata");
+            }
+            foreach (array_diff($ppids, $cpids) as $p) {
+                $this->invariant_error("author_contacts", "author {$lemail} of #{$p} not stored in PaperConflict");
+            }
+        }
+        $result->close();
 
         // authors are all accounted for
         foreach ($authors as $lemail => $pids) {
