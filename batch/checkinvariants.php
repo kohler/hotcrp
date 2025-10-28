@@ -345,10 +345,8 @@ class CheckInvariants_Batch {
                     $pid, $u->contactId, CONFLICT_AUTHOR, CONFLICT_AUTHOR);
             }
             foreach (array_diff($cpids, $ppids) as $pid) {
-                $stager("update PaperConflict set conflictType=conflictType&~? where paperId=? and contactId=?",
-                    CONFLICT_AUTHOR, $pid, $u->contactId);
-                $stager("delete from PaperConflict where paperId=? and contactId=? and conflictType=0",
-                    $pid, $u->contactId);
+                $stager("update PaperConflict set conflictType=(conflictType&~?)|? where paperId=? and contactId=?",
+                    CONFLICT_AUTHOR, CONFLICT_CONTACTAUTHOR, $pid, $u->contactId);
             }
         }
         $stager(null);
@@ -368,7 +366,7 @@ class CheckInvariants_Batch {
                 $ins[] = [(int) $pid, $puid, CONFLICT_CONTACTAUTHOR];
             }
         }
-        $result->close;
+        $result->close();
 
         if (!empty($deluids)) {
             $this->conf->qe("update PaperConflict set conflictType=conflictType&~?
