@@ -164,7 +164,7 @@ class ContactPrimary {
                 $this->conf->prefetch_user_by_email($auth->email);
             }
             foreach ($prow->conflict_type_list() as $pci) {
-                if ($pci->conflictType & CONFLICT_CONTACTAUTHOR)
+                if (($pci->conflictType & CONFLICT_CONTACTAUTHOR) !== 0)
                     $this->conf->prefetch_user_by_id($pci->contactId);
             }
         }
@@ -174,25 +174,25 @@ class ContactPrimary {
         $changes = [];
         foreach ($rowset as $prow) {
             $cfltv = [];
-            // record current conflicts and new contacts
+            // - load current conflicts, resetting authorship temporarily
+            // - transfer contact authorship to primary
+            $newcontacts = [];
             foreach ($prow->conflict_type_list() as $pci) {
-                $ct = $pci->conflictType & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
-                if ($ct === 0) {
-                    continue;
-                }
-                $cfltv[$pci->contactId] = $cfltv[$pci->contactId] ?? [0, 0];
-                $cfltv[$pci->contactId][0] |= $ct;
-                if (($ct & CONFLICT_CONTACTAUTHOR) === 0) {
-                    continue;
-                }
-                $cfltv[$pci->contactId][1] |= CONFLICT_CONTACTAUTHOR;
-                if (($u = $this->conf->user_by_id($pci->contactId, USER_SLICE))
+                $cav = $pci->conflictType & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
+                if (($cav & CONFLICT_CONTACTAUTHOR) !== 0
+                    && ($u = $this->conf->user_by_id($pci->contactId, USER_SLICE))
                     && $u->primaryContactId > 0) {
-                    $cfltv[$u->primaryContactId] = $cfltv[$u->primaryContactId] ?? [0, 0];
-                    $cfltv[$u->primaryContactId][1] |= CONFLICT_AUTHOR;
+                    $newcontacts[] = $u->primaryContactId;
+                    $cfltv[$pci->contactId] = [$cav, 0];
+                } else {
+                    $cfltv[$pci->contactId] = [$cav, $cav & CONFLICT_CONTACTAUTHOR];
                 }
             }
-            // record new authors
+            foreach ($newcontacts as $uid) {
+                $cfltv[$uid] = $cfltv[$uid] ?? [0, 0];
+                $cfltv[$uid][1] |= CONFLICT_CONTACTAUTHOR;
+            }
+            // - record listed authors
             foreach ($prow->author_list() as $auth) {
                 if ($auth->email === ""
                     || !($u = $this->conf->user_by_email($auth->email, USER_SLICE))) {
@@ -205,7 +205,7 @@ class ContactPrimary {
                     $cfltv[$u->primaryContactId][1] |= CONFLICT_AUTHOR;
                 }
             }
-            // save changes
+            // - save changes
             $qv = [];
             $del = false;
             foreach ($cfltv as $uid => $cv) {

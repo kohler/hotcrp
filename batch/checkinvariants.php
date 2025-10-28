@@ -314,10 +314,15 @@ class CheckInvariants_Batch {
     }
 
     private function fix_author_conflicts() {
+        // fix CONFLICT_AUTHOR
         $paus = ConfInvariants::author_lcemail_map($this->conf);
 
         $caus = [];
-        $result = $this->conf->qe("select email, group_concat(paperId) from ContactInfo join PaperConflict using (contactId) where (conflictType&" . CONFLICT_AUTHOR . ")!=0 group by ContactInfo.contactId");
+        $result = $this->conf->qe("select email, group_concat(paperId)
+            from ContactInfo join PaperConflict using (contactId)
+            where (conflictType&?)!=0
+            group by ContactInfo.contactId",
+            CONFLICT_AUTHOR);
         while (($row = $result->fetch_row())) {
             $lemail = strtolower($row[0]);
             $caus[$lemail] = explode(",", $row[1]);
@@ -347,6 +352,36 @@ class CheckInvariants_Batch {
             }
         }
         $stager(null);
+
+        // fix CONFLICT_CONTACTAUTHOR: transfer to primary
+        $deluids = [];
+        $ins = [];
+        $result = $this->conf->qe("select contactId, primaryContactId, group_concat(paperId)
+            from ContactInfo join PaperConflict using (contactId)
+            where primaryContactId>0 and (conflictType&?)!=0
+            group by ContactInfo.contactId",
+            CONFLICT_CONTACTAUTHOR);
+        while (($row = $result->fetch_row())) {
+            $deluids = (int) $row[0];
+            $puid = (int) $row[1];
+            foreach (explode(",", $row[2]) as $pid) {
+                $ins[] = [(int) $pid, $puid, CONFLICT_CONTACTAUTHOR];
+            }
+        }
+        $result->close;
+
+        if (!empty($deluids)) {
+            $this->conf->qe("update PaperConflict set conflictType=conflictType&~?
+                where contactId?a",
+                CONFLICT_CONTACTAUTHOR, $deluids);
+            $this->conf->qe("delete from PaperConflict where conflictType=0");
+        }
+        if (!empty($ins)) {
+            $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
+                values ?v
+                on duplicate key update conflictType=conflictType|?",
+                $ins, CONFLICT_CONTACTAUTHOR);
+        }
     }
 
     static function list_fixes() {

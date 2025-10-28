@@ -526,6 +526,7 @@ class ConfInvariants {
             $isprimary[$cp->primaryContactId][] = $cp;
         }
         Dbl::free($result);
+        $secondarylist = array_keys($primap);
 
         // load users
         $priemap = [];
@@ -655,6 +656,17 @@ class ConfInvariants {
         // authors are all accounted for
         foreach ($authors as $lemail => $pids) {
             $this->invariant_error("author_conflicts", "author {$lemail} of #{$pids[0]} lacking from database");
+        }
+
+        // secondaries cannot be contact authors
+        if (!empty($secondarylist)) {
+            $result = $this->conf->qe("select paperId, PaperConflict.contactId, email from PaperConflict join ContactInfo using (contactId)
+                where PaperConflict.contactId?a and (conflictType&?)!=0",
+                $secondarylist, CONFLICT_CONTACTAUTHOR);
+            while (($row = $result->fetch_row())) {
+                $this->invariant_error("author_conflicts", "author " . strtolower($row[2]) . " of #{$row[0]} is secondary and contact");
+            }
+            $result->close();
         }
 
         return $this;

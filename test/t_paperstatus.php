@@ -1315,18 +1315,30 @@ Phil Porras.");
 
         $ps = new PaperStatus($this->u_estrin);
         $nprow1 = $this->u_estrin->checked_paper_by_id($this->pid2);
+        xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "atten@_.com estrin@usc.edu");
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => "1", "contacts:1:email" => "gestrin@gusc.gedu", "contacts:1:active" => "1"]), $nprow1);
         xassert(!$ps->has_problem());
         xassert_array_eqq($ps->changed_keys(), ["contacts"], true);
 
         $nprow1->invalidate_conflicts();
-        xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "atten@_.com estrin@usc.edu festrin@fusc.fedu gestrin@gusc.gedu");
+        xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "atten@_.com estrin@usc.edu festrin@fusc.fedu");
         xassert_eqq($nprow1->conflict_type($u_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
         xassert_eqq($nprow1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
-        xassert_eqq($nprow1->conflict_type($this->festrin_cid), CONFLICT_AUTHOR);
-        xassert_eqq($nprow1->conflict_type($this->gestrin_cid), CONFLICT_CONTACTAUTHOR);
+        xassert_eqq($nprow1->conflict_type($this->festrin_cid), CONFLICT_CONTACTAUTHOR);
+        xassert_eqq($nprow1->conflict_type($this->gestrin_cid), 0);
 
         $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => "1", "contacts:1:email" => "gestrin@gusc.gedu", "has_contacts:1:active" => 1]), $nprow1);
+        xassert(!$ps->has_problem());
+        xassert_array_eqq($ps->changed_keys(), [], true);
+
+        $nprow1->invalidate_conflicts();
+        xassert_eqq(sorted_conflicts($nprow1, TESTSC_CONTACTS), "atten@_.com estrin@usc.edu festrin@fusc.fedu");
+        xassert_eqq($nprow1->conflict_type($u_atten), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
+        xassert_eqq($nprow1->conflict_type($this->u_estrin), CONFLICT_CONTACTAUTHOR);
+        xassert_eqq($nprow1->conflict_type($this->festrin_cid), CONFLICT_CONTACTAUTHOR);
+        xassert_eqq($nprow1->conflict_type($this->gestrin_cid), 0);
+
+        $ps->save_paper_web(new Qrequest("POST", ["status:submit" => 1, "has_contacts" => "1", "contacts:1:email" => "festrin@fusc.fedu", "has_contacts:1:active" => 1]), $nprow1);
         xassert(!$ps->has_problem());
         xassert_array_eqq($ps->changed_keys(), ["contacts"], true);
 
@@ -1394,7 +1406,7 @@ Phil Porras.");
         (new ContactPrimary)->link($u_shenker, $u_shenker2);
         // shenker -> shenker2
         $p30->invalidate_conflicts();
-        xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
+        xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR);
         xassert_eqq($p30->conflict_type($u_shenker2), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
         xassert_eqq($p30->conflict_type($u_shenker3), 0);
         xassert_eqq($p30->conflict_type($u_bajaj), CONFLICT_AUTHOR);
@@ -1403,27 +1415,27 @@ Phil Porras.");
         (new ContactPrimary)->link($u_shenker2, $u_shenker3);
         // shenker -> shenker3, shenker2 -> shenker3
         $p30->invalidate_conflicts();
-        xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
-        xassert_eqq($p30->conflict_type($u_shenker2), CONFLICT_CONTACTAUTHOR);
-        xassert_eqq($p30->conflict_type($u_shenker3), CONFLICT_AUTHOR);
+        xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR);
+        xassert_eqq($p30->conflict_type($u_shenker2), 0);
+        xassert_eqq($p30->conflict_type($u_shenker3), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj), CONFLICT_AUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj2), 0);
 
         (new ContactPrimary)->link($u_shenker2, null);
         // shenker -> shenker3
         $p30->invalidate_conflicts();
-        xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
-        xassert_eqq($p30->conflict_type($u_shenker2), CONFLICT_CONTACTAUTHOR);
-        xassert_eqq($p30->conflict_type($u_shenker3), CONFLICT_AUTHOR);
+        xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR);
+        xassert_eqq($p30->conflict_type($u_shenker2), 0);
+        xassert_eqq($p30->conflict_type($u_shenker3), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj), CONFLICT_AUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj2), 0);
 
         (new ContactPrimary)->link($u_shenker, null);
         // no primaries
         $p30->invalidate_conflicts();
-        xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
-        xassert_eqq($p30->conflict_type($u_shenker2), CONFLICT_CONTACTAUTHOR);
-        xassert_eqq($p30->conflict_type($u_shenker3), 0);
+        xassert_eqq($p30->conflict_type($u_shenker), CONFLICT_AUTHOR);
+        xassert_eqq($p30->conflict_type($u_shenker2), 0);
+        xassert_eqq($p30->conflict_type($u_shenker3), CONFLICT_CONTACTAUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj), CONFLICT_AUTHOR);
         xassert_eqq($p30->conflict_type($u_bajaj2), 0);
     }

@@ -1077,27 +1077,38 @@ final class PaperStatus extends MessageSet {
             $ov->option->value_save_conflict_values($ov, $this);
         }
 
-        $primaries = [];
+        $pchanges = [];
         foreach ($this->_conflict_values as $uid => &$cv) {
-            $ncv = self::new_conflict_value($cv);
-            if (($ncv & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) === 0) {
+            $ncav = self::new_conflict_value($cv)
+                & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR);
+            if ($ncav === 0) {
                 continue;
             }
-            $uu = $this->conf->user_by_id($uid, USER_SLICE);
-            if (($ncv & (CONFLICT_AUTHOR | CONFLICT_CONTACTAUTHOR)) === CONFLICT_AUTHOR
+            if ($ncav === CONFLICT_AUTHOR
                 && ($cv[0] & CONFLICT_CONTACTAUTHOR) !== 0) {
-                // can’t remove contact author who’s still on the author list
+                // can’t remove as contact if still on author list
                 $cv[2] |= CONFLICT_CONTACTAUTHOR;
+                $ncav |= CONFLICT_CONTACTAUTHOR;
             }
-            if ($uu && $uu->primaryContactId > 0) {
-                $primaries[] = $uu->primaryContactId;
+            $uu = $this->conf->user_by_id($uid, USER_SLICE);
+            if (!$uu || $uu->primaryContactId <= 0) {
+                continue;
+            }
+            // primary becomes author and claims contact authorship
+            $pchanges[] = [$uu->primaryContactId, $ncav];
+            if (($ncav & CONFLICT_CONTACTAUTHOR) !== 0) {
+                $cv[1] |= CONFLICT_CONTACTAUTHOR;
+                $cv[2] &= ~CONFLICT_CONTACTAUTHOR;
             }
         }
-        foreach ($primaries as $puid) {
+        unset($cv);
+
+        foreach ($pchanges as [$puid, $ncav]) {
             $this->_conflict_values[$puid] = $this->_conflict_values[$puid] ?? [0, 0, 0];
-            $this->_conflict_values[$puid][1] |= CONFLICT_AUTHOR;
-            $this->_conflict_values[$puid][2] |= CONFLICT_AUTHOR;
+            $this->_conflict_values[$puid][1] |= $ncav;
+            $this->_conflict_values[$puid][2] |= $ncav;
         }
+
         $this->checkpoint_conflict_values();
     }
 
