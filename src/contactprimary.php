@@ -43,9 +43,12 @@ class ContactPrimary {
 
         // resolve pri
         if (!$this->cdb && $this->pri && !$this->pri->has_account_here()) {
+            // Newly-created primary user is disabled if secondary was disabled
+            $cflags = Contact::CF_UNCONFIRMED
+                | ($sec->disabled_flags() & Contact::CF_UDISABLED);
             // Don't use ensure_account_here: that changes CDBness of
             // `$this->pri`, which caller might be depending on
-            $this->pri = $this->conf->ensure_user_by_email($this->pri->email);
+            $this->pri = $this->conf->ensure_user_by_email($this->pri->email, $cflags);
         }
         assert(!$this->pri || $this->cdb === $this->pri->is_cdb_user());
         if ($this->pri && $this->cdb !== $this->pri->is_cdb_user()) {

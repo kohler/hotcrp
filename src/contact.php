@@ -297,32 +297,30 @@ class Contact implements JsonSerializable {
 
     /** @return Contact */
     static function make(Conf $conf) {
+        return self::make_email_cflags($conf, "", self::CF_UNCONFIRMED);
+    }
+
+    /** @param ?string $email
+     * @param int $cflags
+     * @return Contact */
+    static function make_email_cflags(Conf $conf, $email, $cflags) {
         $u = new Contact($conf);
         $u->contactXid = self::$next_xid--;
-        $u->cflags = self::CF_UNCONFIRMED;
+        $u->email = $email ?? "";
+        $u->cflags = $cflags;
         $u->set_roles_properties();
         return $u;
     }
 
     /** @param ?string $email
-     * @param bool $confirmed
      * @return Contact */
-    static function make_email(Conf $conf, $email, $confirmed = false) {
-        $u = new Contact($conf);
-        $u->contactXid = self::$next_xid--;
-        $u->email = $email ?? "";
-        $u->cflags = $confirmed ? 0 : self::CF_UNCONFIRMED;
-        $u->set_roles_properties();
-        return $u;
+    static function make_email(Conf $conf, $email) {
+        return self::make_email_cflags($conf, $email, self::CF_UNCONFIRMED);
     }
 
     /** @return Contact */
     static function make_placeholder(Conf $conf) {
-        $u = new Contact($conf);
-        $u->contactXid = self::$next_xid--;
-        $u->cflags = self::CF_PLACEHOLDER | self::CF_UNCONFIRMED;
-        $u->set_roles_properties();
-        return $u;
+        return self::make_email_cflags($conf, "", self::CF_PLACEHOLDER | self::CF_UNCONFIRMED);
     }
 
     /** @param int $contactId
@@ -340,12 +338,8 @@ class Contact implements JsonSerializable {
     /** @param ?string $email
      * @return Contact */
     static function make_cdb_email(Conf $conf, $email) {
-        $u = new Contact($conf);
-        $u->contactXid = self::$next_xid--;
-        $u->email = $email ?? "";
+        $u = self::make_email_cflags($conf, $email, self::CF_UNCONFIRMED);
         $u->cdb_confid = $conf->cdb_confid();
-        $u->cflags = self::CF_UNCONFIRMED;
-        $u->set_roles_properties();
         return $u;
     }
 

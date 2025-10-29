@@ -2188,8 +2188,9 @@ class Conf {
     }
 
     /** @param string $email
+     * @param ?int $cflags
      * @return ?Contact */
-    function ensure_user_by_email($email) {
+    function ensure_user_by_email($email, $cflags = null) {
         if (($u = $this->user_by_email($email))) {
             return $u;
         }
@@ -2197,7 +2198,7 @@ class Conf {
         if ($email === "" || !is_valid_utf8($email)) {
             return null;
         }
-        return Contact::make_email($this, $email)->store();
+        return Contact::make_email_cflags($this, $email, $cflags ?? Contact::CF_UNCONFIRMED)->store();
     }
 
 
