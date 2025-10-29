@@ -1,6 +1,6 @@
 <?php
 // contactset.php -- HotCRP class for sets of users
-// Copyright (c) 2006-2023 Eddie Kohler; see LICENSE.
+// Copyright (c) 2006-2025 Eddie Kohler; see LICENSE.
 
 class ContactSet implements IteratorAggregate, Countable {
     /** @var list<Contact> */
@@ -90,6 +90,11 @@ class ContactSet implements IteratorAggregate, Countable {
      * @return bool */
     function contains($uid) {
         return isset($this->by_uid[$uid]);
+    }
+    /** @param int $index
+     * @return ?Contact */
+    function user_by_index($index) {
+        return $this->urows[$index] ?? null;
     }
     #[\ReturnTypeWillChange]
     /** @return Iterator<Contact> */
