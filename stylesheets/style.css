@@ -249,11 +249,8 @@ body.paper {
 body.body-signin {
 	background: #e0d9da;
 }
-body.body-error {
+body.body-error, body.paper-error {
 	background: #dfd0d3;
-}
-body.paper-error {
-	background: var(--submission-bg-dark);
 }
 body.leftmenu {
 	background: linear-gradient(to right, #ecf2f4, #ecf2f4 164px, var(--paper) 164px, var(--paper));
