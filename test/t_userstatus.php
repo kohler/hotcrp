@@ -345,6 +345,23 @@ class UserStatus_Tester {
         (new ConfInvariants($this->conf))->check_users();
     }
 
+    function test_create_disabled_primary() {
+        $u1 = $this->conf->user_by_email("lina1@y.com");
+        xassert(!$u1);
+        $u1 = Contact::make_keyed($this->conf, ["email" => "lina1@y.com", "disablement" => Contact::CF_UDISABLED]);
+        $u1->store();
+
+        $u2 = $this->conf->user_by_email("lina2@y.com");
+        xassert(!$u2);
+        (new ContactPrimary($u1))->link($u1, Contact::make_email($this->conf, "lina2@y.com"));
+
+        $u2 = $this->conf->fresh_user_by_email("lina2@y.com");
+        xassert($u2->is_explicitly_disabled());
+
+        $this->conf->qe("delete from ContactInfo where email='lina1@y.com' or email='lina2@y.com'");
+        $this->conf->qe("delete from ContactPrimary where contactId?a", [$u1->contactId, $u2->contactId]);
+    }
+
     function test_cleanup() {
         $emails = ["van@ee.lbl.gov", "raju@watson.ibm.com", "chris@w3.org"];
         $this->delete_secondary(false, "xvan@usc.edu");
