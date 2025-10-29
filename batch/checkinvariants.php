@@ -193,9 +193,9 @@ class CheckInvariants_Batch {
             $this->report_fix("cdbroles");
             $this->fix_cdbroles();
         }
-        if (isset($ic->problems["author_contacts"]) && $this->want_fix("authors")) {
-            $this->report_fix("author_contacts");
-            $this->fix_author_contacts();
+        if (isset($ic->problems["author_conflicts"]) && $this->want_fix("authors")) {
+            $this->report_fix("author_conflicts");
+            $this->fix_author_conflicts();
         }
         return 0;
     }
@@ -313,19 +313,72 @@ class CheckInvariants_Batch {
         }
     }
 
-    private function fix_author_contacts() {
-        $authors = ConfInvariants::author_lcemail_map($this->conf);
+    private function fix_author_conflicts() {
+        // fix CONFLICT_AUTHOR
+        $paus = ConfInvariants::author_lcemail_map($this->conf);
 
-        $confs = [];
-        foreach ($authors as $email => $pids) {
-            $u = $this->conf->ensure_user_by_email($email);
-            foreach ($pids as $pid) {
-                $confs[] = [$pid, $u->contactId, CONFLICT_AUTHOR];
+        $caus = [];
+        $result = $this->conf->qe("select email, group_concat(paperId)
+            from ContactInfo join PaperConflict using (contactId)
+            where (conflictType&?)!=0
+            group by ContactInfo.contactId",
+            CONFLICT_AUTHOR);
+        while (($row = $result->fetch_row())) {
+            $lemail = strtolower($row[0]);
+            $caus[$lemail] = explode(",", $row[1]);
+            if (!isset($paus[$lemail])) {
+                $paus[$lemail] = [];
             }
         }
+        $result->close();
 
-        if (!empty($confs)) {
-            $this->conf->qe("insert into PaperConflict values ?v on duplicate key update conflictType=PaperConflict.conflictType|?", $confs, CONFLICT_AUTHOR);
+        $stager = Dbl::make_multi_qe_stager($this->conf->dblink);
+        foreach ($paus as $lemail => $ppids) {
+            $cpids = $caus[$lemail] ?? [];
+            $d1 = array_diff($ppids, $cpids);
+            if (empty($d1) && count($ppids) === count($cpids)) {
+                continue;
+            }
+            $u = $this->conf->ensure_user_by_email($lemail);
+            foreach ($d1 as $pid) {
+                $stager("insert into PaperConflict set paperId=?, contactId=?, conflictType=? on duplicate key update conflictType=conflictType|?",
+                    $pid, $u->contactId, CONFLICT_AUTHOR, CONFLICT_AUTHOR);
+            }
+            foreach (array_diff($cpids, $ppids) as $pid) {
+                $stager("update PaperConflict set conflictType=(conflictType&~?)|? where paperId=? and contactId=?",
+                    CONFLICT_AUTHOR, CONFLICT_CONTACTAUTHOR, $pid, $u->contactId);
+            }
+        }
+        $stager(null);
+
+        // fix CONFLICT_CONTACTAUTHOR: transfer to primary
+        $deluids = [];
+        $ins = [];
+        $result = $this->conf->qe("select contactId, primaryContactId, group_concat(paperId)
+            from ContactInfo join PaperConflict using (contactId)
+            where primaryContactId>0 and (conflictType&?)!=0
+            group by ContactInfo.contactId",
+            CONFLICT_CONTACTAUTHOR);
+        while (($row = $result->fetch_row())) {
+            $deluids[] = (int) $row[0];
+            $puid = (int) $row[1];
+            foreach (explode(",", $row[2]) as $pid) {
+                $ins[] = [(int) $pid, $puid, CONFLICT_CONTACTAUTHOR];
+            }
+        }
+        $result->close();
+
+        if (!empty($deluids)) {
+            $this->conf->qe("update PaperConflict set conflictType=conflictType&~?
+                where contactId?a",
+                CONFLICT_CONTACTAUTHOR, $deluids);
+            $this->conf->qe("delete from PaperConflict where conflictType=0");
+        }
+        if (!empty($ins)) {
+            $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
+                values ?v
+                on duplicate key update conflictType=conflictType|?",
+                $ins, CONFLICT_CONTACTAUTHOR);
         }
     }
 

@@ -526,6 +526,7 @@ class ConfInvariants {
             $isprimary[$cp->primaryContactId][] = $cp;
         }
         Dbl::free($result);
+        $secondarylist = array_keys($primap);
 
         // load users
         $priemap = [];
@@ -644,17 +645,28 @@ class ConfInvariants {
                 continue;
             }
             foreach ($d1 as $p) {
-                $this->invariant_error("author_contacts", "author {$lemail} of #{$p} not stored in paper metadata");
+                $this->invariant_error("author_conflicts", "author {$lemail} of #{$p} not stored in paper metadata");
             }
             foreach (array_diff($ppids, $cpids) as $p) {
-                $this->invariant_error("author_contacts", "author {$lemail} of #{$p} not stored in PaperConflict");
+                $this->invariant_error("author_conflicts", "author {$lemail} of #{$p} not stored in PaperConflict");
             }
         }
         $result->close();
 
         // authors are all accounted for
         foreach ($authors as $lemail => $pids) {
-            $this->invariant_error("author_contacts", "author {$lemail} of #{$pids[0]} lacking from database");
+            $this->invariant_error("author_conflicts", "author {$lemail} of #{$pids[0]} lacking from database");
+        }
+
+        // secondaries cannot be contact authors
+        if (!empty($secondarylist)) {
+            $result = $this->conf->qe("select paperId, PaperConflict.contactId, email from PaperConflict join ContactInfo using (contactId)
+                where PaperConflict.contactId?a and (conflictType&?)!=0",
+                $secondarylist, CONFLICT_CONTACTAUTHOR);
+            while (($row = $result->fetch_row())) {
+                $this->invariant_error("author_conflicts", "author " . strtolower($row[2]) . " of #{$row[0]} is secondary and contact");
+            }
+            $result->close();
         }
 
         return $this;
