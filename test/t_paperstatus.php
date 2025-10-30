@@ -1368,6 +1368,42 @@ Phil Porras.");
         xassert_eqq(self::pc_conflict_keys($nprow1), [$this->u_estrin->contactId, $this->u_varghese->contactId, $this->festrin_cid]);
     }
 
+    function test_resolve_secondary_contact() {
+        $ps = new PaperStatus($this->u_estrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", [
+            "status:submit" => 1, "title" => "Fun in the sun with G",
+            "abstract" => "This is an abstract\r\n",
+            "has_authors" => "1", "authors:1:name" => "Ethan Iverson",
+            "authors:1:email" => "estrin@usc.edu",
+            "has_contacts" => "1", "contacts:1:email" => "gestrin@gusc.gedu",
+            "has_submission" => 1
+        ]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf"), null));
+        xassert_paper_status($ps);
+        xassert($ps->execute_save());
+
+        $prow = $this->conf->checked_paper_by_id($ps->paperId);
+        xassert(!!$prow);
+        xassert($prow->conflict_type($this->gestrin_cid) === 0);
+        xassert($prow->conflict_type($this->festrin_cid) >= CONFLICT_CONTACTAUTHOR);
+    }
+
+    function test_preserve_secondary_contact() {
+        $u_gestrin = $this->conf->user_by_id($this->gestrin_cid);
+        $ps = new PaperStatus($u_gestrin);
+        xassert($ps->prepare_save_paper_web((new Qrequest("POST", [
+            "status:submit" => 1, "title" => "Fun in the sun with G",
+            "abstract" => "This is an abstract\r\n",
+            "has_authors" => "1", "authors:1:name" => "Ethan Iverson",
+            "authors:1:email" => "estrin@usc.edu", "has_submission" => 1
+        ]))->set_file_content("submission:file", "%PDF-2", null, "application/pdf"), null));
+        xassert_paper_status($ps);
+        xassert($ps->execute_save());
+
+        $prow = $this->conf->checked_paper_by_id($ps->paperId);
+        xassert(!!$prow);
+        xassert($prow->conflict_type($u_gestrin) >= CONFLICT_CONTACTAUTHOR);
+    }
+
     function test_change_primary_existing_authors() {
         $u_shenker = $this->conf->checked_user_by_email("shenker@parc.xerox.com");
         $u_shenker2 = Contact::make_email($this->conf, "shenker2@parc.xerox.com")->store();
