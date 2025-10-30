@@ -1090,26 +1090,34 @@ final class PaperStatus extends MessageSet {
                 $cv[2] |= CONFLICT_CONTACTAUTHOR;
                 $ncav |= CONFLICT_CONTACTAUTHOR;
             }
+            // record upcoming changes to primary
             $uu = $this->conf->user_by_id($uid, USER_SLICE);
-            if (!$uu || $uu->primaryContactId <= 0) {
-                continue;
-            }
-            // primary becomes author and/or contact
-            $pchanges[] = [$uu->primaryContactId, $ncav];
-            // secondary *is not* contact—unless added by primary
-            if (($ncav & CONFLICT_CONTACTAUTHOR) !== 0
-                && $uu->primaryContactId !== $this->user->contactId
-                && $uu->primaryContactId !== $this->user->primaryContactId) {
-                $cv[1] |= CONFLICT_CONTACTAUTHOR;
-                $cv[2] &= ~CONFLICT_CONTACTAUTHOR;
+            if ($uu && $uu->primaryContactId > 0) {
+                $pchanges[] = [$uid, $uu->primaryContactId, $ncav];
             }
         }
         unset($cv);
 
-        foreach ($pchanges as [$puid, $ncav]) {
-            $this->_conflict_values[$puid] = $this->_conflict_values[$puid] ?? [0, 0, 0];
-            $this->_conflict_values[$puid][1] |= $ncav;
-            $this->_conflict_values[$puid][2] |= $ncav;
+        foreach ($pchanges as [$uid, $puid, $ncav]) {
+            // add authorship to primary
+            $cv = &$this->_conflict_values[$uid];
+            $pcv = &$this->_conflict_values[$puid];
+            $pcv = $pcv ?? [0, 0, 0];
+            $pcv[1] |= $ncav;
+            $pcv[2] |= $ncav;
+            // newly-added secondary contact redirects to primary, unless:
+            // 1. added by user with same primary
+            // 2. added by chair, and primary is already contact
+            if (($cv[0] & CONFLICT_CONTACTAUTHOR) === 0
+                && ($ncav & CONFLICT_CONTACTAUTHOR) !== 0
+                && $puid !== $this->user->contactId
+                && $puid !== $this->user->primaryContactId
+                && (!$this->user->privChair
+                    || ($pcv[0] & CONFLICT_CONTACTAUTHOR) === 0)) {
+                $cv[1] |= CONFLICT_CONTACTAUTHOR;
+                $cv[2] &= ~CONFLICT_CONTACTAUTHOR;
+            }
+            unset($cv, $pcv);
         }
 
         $this->checkpoint_conflict_values();
