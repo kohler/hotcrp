@@ -4167,10 +4167,9 @@ class Contact implements JsonSerializable {
                     && ($rights->allow_pc()
                         || $rights->review_status > 0
                         || $this->can_view_review($prow, $rrow)));
-        } else {
-            // this branch is ReviewRequestInfo or ReviewRefusalInfo
-            return $this->can_view_review_identity($prow, $rrow);
         }
+        // this branch is ReviewRequestInfo or ReviewRefusalInfo
+        return $this->can_view_review_identity($prow, $rrow);
     }
 
     /** @return list<SubmissionRound> */
@@ -4369,19 +4368,27 @@ class Contact implements JsonSerializable {
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
      * @param PaperContactInfo $rights
-     * @return -1|0|1 */
+     * @return bool */
     private function seerevid_setting(PaperInfo $prow, $rbase, $rights) {
         if ((!$rights->allow_pc() && !$rights->is_reviewer())
             || !$this->conf->check_reviewer_tracks($prow, $this, Track::VIEWREVID)) {
-            return -1;
+            return false;
         }
         $round = $rbase ? $rbase->reviewRound : "max";
-        if ($rbase
-            && $rbase->reviewType === REVIEW_META
-            && ($metars = $this->conf->round_setting("viewmetarevid", $round)) !== null) {
-            return $metars;
+        $rs = null;
+        if ($rbase && $rbase->reviewType === REVIEW_META) {
+            $rs = $this->conf->round_setting("viewmetarevid", $round);
         }
-        return $this->conf->round_setting($rights->allow_pc() ? "viewrevid" : "viewrevid_ext", $round) ?? 0;
+        $rs = $rs ?? $this->conf->round_setting($rights->allow_pc() ? "viewrevid" : "viewrevid_ext", $round) ?? 0;
+        if ($rs < 0) {
+            return false;
+        }
+        return $rights->review_status > PaperContactInfo::CIRS_UNSUBMITTED
+            || $rs === Conf::VIEWREV_ALWAYS
+            || ($rs === Conf::VIEWREV_IFASSIGNED
+                && $rights->is_reviewer()
+                && !$rights->self_assigned()
+                && $rights->review_status > 0);
     }
 
     /** @param null|ReviewInfo|ReviewRequestInfo|ReviewRefusalInfo $rbase
@@ -4408,14 +4415,7 @@ class Contact implements JsonSerializable {
                 && !$this->conf->is_review_blind(!$rbase || $rbase->reviewType < 0 || (bool) $rbase->reviewBlind))) {
             return true;
         }
-        $seerevid_setting = $this->seerevid_setting($prow, $rbase, $rights);
-        return $seerevid_setting === Conf::VIEWREV_ALWAYS
-            || ($seerevid_setting >= 0
-                && $rights->review_status > PaperContactInfo::CIRS_UNSUBMITTED)
-            || ($seerevid_setting === Conf::VIEWREV_IFASSIGNED
-                && $rights->is_reviewer()
-                && !$rights->self_assigned()
-                && $rights->review_status > 0);
+        return $this->seerevid_setting($prow, $rbase, $rights);
     }
 
     /** @return bool */
@@ -4858,18 +4858,20 @@ class Contact implements JsonSerializable {
         if ($ctype === 0) {
             return $ctype;
         }
-        if ($prow->has_author($this)) {
-            $ctype |= CommentInfo::CT_BYAUTHOR;
-        } else if ($prow->shepherdContactId > 0) {
-            if ($this->contactId === $prow->shepherdContactId
-                || ($this->contactId === 0
-                    && ($reviewer = $this->reviewer_capability_user($prow->paperId))
-                    && $reviewer->contactId === $prow->shepherdContactId)) {
-                $ctype |= CommentInfo::CT_BYSHEPHERD;
-            }
-        }
         if ($rights->can_administer()) {
             $ctype |= CommentInfo::CT_BYADMINISTRATOR;
+        }
+        if ($prow->has_author($this)) {
+            return $ctype | CommentInfo::CT_BYAUTHOR;
+        }
+        $reviewer = $this->contactId > 0 ? $this : $this->reviewer_capability_user();
+        if ($reviewer) {
+            if ($prow->shepherdContactId > 0
+                && $prow->shepherdContactId === $reviewer->contactId) {
+                $ctype |= CommentInfo::CT_BYSHEPHERD;
+            } else if ($prow->review_type($reviewer) === REVIEW_META) {
+                $ctype |= CommentInfo::CT_BYMETAREVIEWER;
+            }
         }
         return $ctype;
     }
@@ -5080,13 +5082,7 @@ class Contact implements JsonSerializable {
                 && !$this->conf->is_review_blind(($ctype & CommentInfo::CT_BLIND) !== 0))) {
             return true;
         }
-        $seerevid = $this->seerevid_setting($prow, null, $rights);
-        if ($seerevid !== 0) {
-            return $seerevid > 0;
-        } else {
-            return $rights->review_status > PaperContactInfo::CIRS_UNSUBMITTED
-                || $prow->can_view_review_identity_of($crow->contactId, $this);
-        }
+        return $this->seerevid_setting($prow, $prow->review_by_user($crow->contactId), $rights);
     }
 
     /** @return bool */
@@ -5218,9 +5214,8 @@ class Contact implements JsonSerializable {
             return VIEWSCORE_AUTHOR - 1;
         } else if ($rights->allow_pc()) {
             return VIEWSCORE_PC - 1;
-        } else {
-            return VIEWSCORE_REVIEWER - 1;
         }
+        return VIEWSCORE_REVIEWER - 1;
     }
 
     /** @return int */

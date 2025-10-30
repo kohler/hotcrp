@@ -66,6 +66,7 @@ class CommentInfo {
     const CTM_TOPIC_NONREVIEW = 0x240;
     const CT_BYADMINISTRATOR = 0x100;
     const CT_TOPIC_DECISION = 0x200;
+    const CT_BYMETAREVIEWER = 0x400;
     const CT_FROZEN = 0x4000;
     const CT_SUBMIT = 0x8000; // only used internally, not in database
     const CTVIS_ADMINONLY = 0x00000;
@@ -314,9 +315,8 @@ class CommentInfo {
     function mtime(Contact $viewer) {
         if ($viewer->can_view_comment_time($this->prow, $this)) {
             return $this->timeModified;
-        } else {
-            return $this->conf->obscure_time($this->timeModified);
         }
+        return $this->conf->obscure_time($this->timeModified);
     }
 
     /** @return string */
@@ -541,7 +541,7 @@ class CommentInfo {
             }
         }
         if (($this->commentType & self::CT_BYSHEPHERD) !== 0
-                   && $this->contactId === $this->prow->shepherdContactId) {
+            && $this->contactId === $this->prow->shepherdContactId) {
             return "Shepherd";
         } else if (($this->commentType & self::CT_BYADMINISTRATOR) !== 0) {
             return "Administrator";

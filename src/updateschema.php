@@ -1247,6 +1247,14 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         return true;
     }
 
+    private function v318_set_ct_bymetareviewer() {
+        return $this->conf->ql_ok("update PaperComment join PaperReview using (paperId, contactId)
+            set commentType=commentType|?
+            where (commentType&?)=0 and reviewType=?",
+            0x400 /* CT_BYMETAREVIEWER */,
+            0x0C /* CTM_BYAUTHOR */, 5 /* REVIEW_META */);
+    }
+
     /** @return bool */
     function run() {
         $conf = $this->conf;
@@ -3203,6 +3211,10 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
         if ($conf->sversion === 316
             && $conf->ql_ok("update PaperStorage set inactive=1 where paperStorageId=1 or filterType is not null")) {
             $conf->update_schema_version(317);
+        }
+        if ($conf->sversion === 317
+            && $this->v318_set_ct_bymetareviewer()) {
+            $conf->update_schema_version(318);
         }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
