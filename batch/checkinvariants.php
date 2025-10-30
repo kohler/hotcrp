@@ -351,7 +351,7 @@ class CheckInvariants_Batch {
         }
         $stager(null);
 
-        // fix CONFLICT_CONTACTAUTHOR: transfer to primary
+        // fix CONFLICT_CONTACTAUTHOR: add to primary
         $deluids = [];
         $ins = [];
         $result = $this->conf->qe("select contactId, primaryContactId, group_concat(paperId)
@@ -360,7 +360,6 @@ class CheckInvariants_Batch {
             group by ContactInfo.contactId",
             CONFLICT_CONTACTAUTHOR);
         while (($row = $result->fetch_row())) {
-            $deluids[] = (int) $row[0];
             $puid = (int) $row[1];
             foreach (explode(",", $row[2]) as $pid) {
                 $ins[] = [(int) $pid, $puid, CONFLICT_CONTACTAUTHOR];
@@ -368,12 +367,6 @@ class CheckInvariants_Batch {
         }
         $result->close();
 
-        if (!empty($deluids)) {
-            $this->conf->qe("update PaperConflict set conflictType=conflictType&~?
-                where contactId?a",
-                CONFLICT_CONTACTAUTHOR, $deluids);
-            $this->conf->qe("delete from PaperConflict where conflictType=0");
-        }
         if (!empty($ins)) {
             $this->conf->qe("insert into PaperConflict (paperId, contactId, conflictType)
                 values ?v

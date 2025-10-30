@@ -1094,9 +1094,12 @@ final class PaperStatus extends MessageSet {
             if (!$uu || $uu->primaryContactId <= 0) {
                 continue;
             }
-            // primary becomes author and claims contact authorship
+            // primary becomes author and/or contact
             $pchanges[] = [$uu->primaryContactId, $ncav];
-            if (($ncav & CONFLICT_CONTACTAUTHOR) !== 0) {
+            // secondary *is not* contact—unless added by primary
+            if (($ncav & CONFLICT_CONTACTAUTHOR) !== 0
+                && $uu->primaryContactId !== $this->user->contactId
+                && $uu->primaryContactId !== $this->user->primaryContactId) {
                 $cv[1] |= CONFLICT_CONTACTAUTHOR;
                 $cv[2] &= ~CONFLICT_CONTACTAUTHOR;
             }
