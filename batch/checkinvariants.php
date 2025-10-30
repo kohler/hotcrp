@@ -140,64 +140,79 @@ class CheckInvariants_Batch {
             return 0;
         }
 
-        if (isset($ic->problems["no_papersub"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("no_papersub") && $this->want_fix("summary")) {
             $this->report_fix("`no_papersub` summary setting");
             $this->conf->update_papersub_setting(0);
+            $ic->resolve_problem("no_papersub");
         }
-        if (isset($ic->problems["paperacc"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("paperacc") && $this->want_fix("summary")) {
             $this->report_fix("`paperacc` summary setting");
             $this->conf->update_paperacc_setting(0);
+            $ic->resolve_problem("paperacc");
         }
-        if (isset($ic->problems["rev_tokens"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("rev_tokens") && $this->want_fix("summary")) {
             $this->report_fix("`rev_tokens` summary setting");
             $this->conf->update_rev_tokens_setting(0);
+            $ic->resolve_problem("rev_tokens");
         }
-        if (isset($ic->problems["paperlead"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("paperlead") && $this->want_fix("summary")) {
             $this->report_fix("`paperlead` summary setting");
             $this->conf->update_paperlead_setting(0);
+            $ic->resolve_problem("paperlead");
         }
-        if (isset($ic->problems["papermanager"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("papermanager") && $this->want_fix("summary")) {
             $this->report_fix("`papermanager` summary setting");
             $this->conf->update_papermanager_setting(0);
+            $ic->resolve_problem("papermanager");
         }
-        if (isset($ic->problems["metareviews"]) && $this->want_fix("summary")) {
+        if ($ic->has_problem("metareviews") && $this->want_fix("summary")) {
             $this->report_fix("`metareviews` summary setting");
             $this->conf->update_metareviews_setting(0);
+            $ic->resolve_problem("metareviews");
         }
-        if (isset($ic->problems["autosearch"]) && $this->want_fix("autosearch")) {
+        if ($ic->has_problem("autosearch") && $this->want_fix("autosearch")) {
             $this->report_fix("automatic tags");
             $this->conf->update_automatic_tags();
+            $ic->resolve_problem("autosearch");
         }
-        if ((isset($ic->problems["inactive"]) || isset($ic->problems["noninactive"]))
+        if (($ic->has_problem("inactive") || $ic->has_problem("noninactive"))
             && $this->want_fix("inactive")) {
             $this->report_fix("inactive documents");
             $this->fix_inactive_documents();
+            $ic->resolve_problem("inactive");
+            $ic->resolve_problem("noninactive");
         }
-        if (isset($ic->problems["paper_denormalization"]) && $this->want_fix("document-match")) {
+        if ($ic->has_problem("paper_denormalization") && $this->want_fix("document-match")) {
             $this->report_fix("document match");
             $this->fix_document_match();
+            $ic->resolve_problem("paper_denormalization");
         }
-        if (isset($ic->problems["user_whitespace"]) && $this->want_fix("whitespace")) {
+        if ($ic->has_problem("user_whitespace") && $this->want_fix("whitespace")) {
             $this->report_fix("whitespace");
             $this->fix_whitespace();
+            $ic->resolve_problem("user_whitespace");
         }
-        if (isset($ic->problems["reviewNeedsSubmit"]) && $this->want_fix("reviews")) {
+        if ($ic->has_problem("reviewNeedsSubmit") && $this->want_fix("reviews")) {
             $this->report_fix("reviewNeedsSubmit");
             $this->fix_reviewNeedsSubmit();
+            $ic->resolve_problem("reviewNeedsSubmit");
         }
-        if (isset($ic->problems["roles"]) && $this->want_fix("roles")) {
+        if ($ic->has_problem("roles") && $this->want_fix("roles")) {
             $this->report_fix("roles");
             $this->fix_roles();
+            $ic->resolve_problem("roles");
         }
-        if (isset($ic->problems["cdbRoles"]) && $this->want_fix("cdbroles")) {
+        if ($ic->has_problem("cdbRoles") && $this->want_fix("cdbroles")) {
             $this->report_fix("cdbroles");
             $this->fix_cdbroles();
+            $ic->resolve_problem("cdbRoles");
         }
-        if (isset($ic->problems["author_conflicts"]) && $this->want_fix("authors")) {
+        if ($ic->has_problem("author_conflicts") && $this->want_fix("authors")) {
             $this->report_fix("author_conflicts");
             $this->fix_author_conflicts();
+            $ic->resolve_problem("author_conflicts");
         }
-        return 0;
+        return $ic->ok() ? 0 : 1;
     }
 
     private function fix_inactive_documents() {

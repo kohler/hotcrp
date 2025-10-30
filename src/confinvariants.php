@@ -126,6 +126,15 @@ class ConfInvariants {
         return empty($this->problems);
     }
 
+    /** @return bool */
+    function has_problem($p) {
+        return isset($this->problems[$p]);
+    }
+
+    function resolve_problem($p) {
+        unset($this->problems[$p]);
+    }
+
     /** @return $this */
     function check_settings() {
         foreach ($this->conf->decision_set() as $dinfo) {
