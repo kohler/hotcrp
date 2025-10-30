@@ -127,8 +127,9 @@ class Contacts_PaperOption extends PaperOption {
             $name = simplify_whitespace((string) $qreq["contacts:{$n}:name"]);
             $affiliation = simplify_whitespace((string) $qreq["contacts:{$n}:affiliation"]);
             $au = Author::make_keyed(["email" => $email, "name" => $name, "affiliation" => $affiliation]);
-            // XXX has_contacts:{$n}:active
-            $au->conflictType = $qreq["contacts:{$n}:active"] ? CONFLICT_CONTACTAUTHOR : 0;
+            $active = friendly_boolean($qreq["contacts:{$n}:active"])
+                ?? !isset($qreq["has_contacts:{$n}:active"]);
+            $au->conflictType = $active ? CONFLICT_CONTACTAUTHOR : 0;
             $au->author_index = $n;
             $reqau[] = $au;
             if (validate_email($email)) {
