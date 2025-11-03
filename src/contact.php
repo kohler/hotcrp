@@ -4864,7 +4864,7 @@ class Contact implements JsonSerializable {
         if ($prow->has_author($this)) {
             return $ctype | CommentInfo::CT_BYAUTHOR;
         }
-        $reviewer = $this->contactId > 0 ? $this : $this->reviewer_capability_user();
+        $reviewer = $this->contactId > 0 ? $this : $this->reviewer_capability_user($prow->paperId);
         if ($reviewer) {
             if ($prow->shepherdContactId > 0
                 && $prow->shepherdContactId === $reviewer->contactId) {
