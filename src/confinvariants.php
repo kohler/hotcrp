@@ -55,7 +55,7 @@ class ConfInvariants {
     function take_buffered_messages() {
         assert($this->msgbuf !== null);
         $m = $this->msgbuf;
-        $this->msgbuf = null;
+        $this->msgbuf = [];
         return join("", $m);
     }
 
@@ -68,10 +68,9 @@ class ConfInvariants {
             $this->irow = $result->fetch_row();
             $result->close();
             return $this->irow !== null;
-        } else {
-            $this->irow = null;
-            return null;
         }
+        $this->irow = null;
+        return null;
     }
 
     /** @param string $abbrev

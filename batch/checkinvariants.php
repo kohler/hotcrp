@@ -12,6 +12,8 @@ class CheckInvariants_Batch {
     public $conf;
     /** @var bool */
     public $verbose;
+    /** @var bool */
+    public $quiet;
     /** @var list<string> */
     public $fix;
     /** @var ?string */
@@ -30,6 +32,7 @@ class CheckInvariants_Batch {
     function __construct(Conf $conf, $arg) {
         $this->conf = $conf;
         $this->verbose = isset($arg["verbose"]);
+        $this->quiet = !$this->verbose && isset($arg["quiet"]);
         $this->fix = $arg["fix"] ?? [];
         $this->level = $arg["level"] ?? 0;
         $this->list = isset($arg["list"]);
@@ -63,10 +66,12 @@ class CheckInvariants_Batch {
 
     /** @param string $report */
     function report_fix($report) {
-        $fix = $this->color ? " \x1b[01;36mFIX\x1b[m\n" : " FIX\n";
-        fwrite(STDERR,
-            str_pad("{$this->conf->dbname}: {$report} ", $this->width, ".")
-            . $fix);
+        if (!$this->quiet) {
+            $fix = $this->color ? " \x1b[01;36mFIX\x1b[m\n" : " FIX\n";
+            fwrite(STDERR,
+                str_pad("{$this->conf->dbname}: {$report} ", $this->width, ".")
+                . $fix);
+        }
     }
 
     /** @return int */
@@ -86,7 +91,11 @@ class CheckInvariants_Batch {
         $ro = new ReflectionObject($ic);
         $color = $this->color = $this->color ?? posix_isatty(STDERR);
         $ic->set_color($this->color);
+        if ($this->verbose || $this->quiet) {
+            $ic->buffer_messages();
+        }
         $dbname = $this->conf->dbname;
+        $mpfx = "";
         foreach ($ro->getMethods() as $m) {
             if (!str_starts_with($m->name, "check_")
                 || $m->name === "check_all"
@@ -94,6 +103,7 @@ class CheckInvariants_Batch {
                 continue;
             }
             ++$ncheck;
+
             $mlevel = $this->method_level($m);
             if ($this->list) {
                 $lpfx = $lsfx = "";
@@ -107,6 +117,7 @@ class CheckInvariants_Batch {
                 fwrite(STDOUT, $lpfx . substr($m->name, 6) . "{$lsfx}\n");
                 continue;
             }
+
             if ($this->verbose) {
                 $mpfx = str_pad("{$dbname}: {$m->name} ", $this->width, ".") . " ";
                 if ($color) {
@@ -114,8 +125,11 @@ class CheckInvariants_Batch {
                 } else {
                     fwrite(STDERR, $mpfx);
                 }
-                $ic->buffer_messages();
-                $ic->{$m->name}();
+            }
+
+            $ic->{$m->name}();
+
+            if ($this->verbose) {
                 $msgs = $ic->take_buffered_messages();
                 if ($color && $msgs !== "") {
                     $msgs = preg_replace('/^' . preg_quote($this->conf->dbname) . ' invariant violation:/m',
@@ -128,12 +142,14 @@ class CheckInvariants_Batch {
                 } else {
                     fwrite(STDERR, "OK\n");
                 }
-            } else {
-                $ic->{$m->name}();
+            } else if ($this->quiet) {
+                $ic->take_buffered_messages();
             }
         }
         if ($this->regex && $ncheck === 0) {
-            fwrite(STDERR, "No matching invariants\n");
+            if (!$this->quiet) {
+                fwrite(STDERR, "No matching invariants\n");
+            }
             return 1;
         }
         if ($this->list) {
@@ -401,6 +417,7 @@ class CheckInvariants_Batch {
             "config:,c: !",
             "help,h !",
             "verbose,V Be verbose",
+            "quiet,q,silent Do not print error messages",
             "level:,l: {n} Set invariant level [0]",
             "list",
             "fix-autosearch ! Repair any incorrect autosearch tags",
