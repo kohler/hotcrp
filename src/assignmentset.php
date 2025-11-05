@@ -2193,7 +2193,7 @@ class AssignmentSet {
 
         // create new contacts, collect pids
         $locks = ["ContactInfo" => "read", "Paper" => "read", "PaperConflict" => "read"];
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
         $pids = [];
         foreach ($this->assigners as $assigner) {
             if (($u = $assigner->contact) && $u->contactId < 0) {
@@ -2248,7 +2248,7 @@ class AssignmentSet {
             && $this->conf->opt("trackerCometSite")) {
             MeetingTracker::notify_tracker($this->conf, array_keys($this->_cleanup_notify_tracker));
         }
-        $this->conf->release_logs();
+        $this->conf->resume_log();
 
         return true;
     }

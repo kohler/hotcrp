@@ -1488,7 +1488,7 @@ class SettingValues extends MessageSet {
             $tables .= ", {$t} " . ($need < 2 ? "read" : "write");
         }
         $this->conf->qe_raw("lock tables {$tables}");
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
 
         // load db settings
         $dbsettings = [];
@@ -1559,7 +1559,7 @@ class SettingValues extends MessageSet {
         }
 
         $this->conf->qe_raw("unlock tables");
-        $this->conf->release_logs();
+        $this->conf->resume_log();
         if (!empty($this->_diffs)) {
             $this->user->log_activity("Settings edited: " . join(", ", array_keys($this->_diffs)));
         }

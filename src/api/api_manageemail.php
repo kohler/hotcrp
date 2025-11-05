@@ -310,7 +310,7 @@ class ManageEmail_API extends MessageSet {
             return null;
         }
 
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
         $this->import_account();
         $this->conf->log_for($this->viewer, $this->dstuser, "Reviews transferred from {$this->user->email}");
         $this->conf->log_for($this->viewer, $this->user, "Reviews transferred to {$this->dstuser->email}");
@@ -327,7 +327,7 @@ class ManageEmail_API extends MessageSet {
         $this->transfer_review_comments();
         $this->transfer_tags();
         $this->complete();
-        $this->conf->release_logs();
+        $this->conf->resume_log();
         return null;
     }
 
@@ -483,7 +483,7 @@ class ManageEmail_API extends MessageSet {
 
     private function transfer_reviews() {
         $this->conf->qe("lock tables PaperReview write");
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
         $result = $this->conf->qe("select paperId, reviewId from PaperReview where contactId=?",
             $this->user->contactId);
         $rids = [];
@@ -498,7 +498,7 @@ class ManageEmail_API extends MessageSet {
             $this->change_list[] = plural(count($rids), "review");
         }
         $this->conf->qe("unlock tables");
-        $this->conf->release_logs();
+        $this->conf->resume_log();
     }
 
     private function transfer_review_requests() {
@@ -517,7 +517,7 @@ class ManageEmail_API extends MessageSet {
 
     private function transfer_review_comments() {
         $this->conf->qe("lock tables PaperComment write");
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
         $result = $this->conf->qe("select paperId, commentId from PaperComment where contactId=? and (commentType&?)=0",
             $this->user->contactId, CommentInfo::CTM_BYAUTHOR);
         $cids = [];
@@ -532,7 +532,7 @@ class ManageEmail_API extends MessageSet {
             $this->change_list[] = plural(count($cids), "comment");
         }
         $this->conf->qe("unlock tables");
-        $this->conf->release_logs();
+        $this->conf->resume_log();
     }
 
     private function transfer_tags() {

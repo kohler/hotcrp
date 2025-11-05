@@ -60,7 +60,7 @@ class ContactPrimary {
             return;
         }
         // main changes
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
         if ($this->pri && $this->pri->primaryContactId !== 0) {
             $this->_remove_old_primary($this->pri);
         }
@@ -85,7 +85,7 @@ class ContactPrimary {
             $this->conf->log_for($this->actor, $this->sec, "Primary account" . ($this->pri ? " set to {$this->pri->email}" : " removed"));
         }
         $this->sec->save_prop();
-        $this->conf->release_logs();
+        $this->conf->resume_log();
         $this->conf->invalidate_caches(["linked_users" => true]);
         // authorship changes
         if (!$this->cdb) {

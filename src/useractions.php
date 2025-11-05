@@ -52,7 +52,7 @@ class UserActions extends MessageSet {
         }
         $this->conf->qe("update ContactInfo set cflags=cflags|? where contactId?a and (cflags&?)=0",
             Contact::CF_UDISABLED, array_keys($users), Contact::CF_UDISABLED);
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
         foreach ($users as $u) {
             $u->set_prop("cflags", $u->cflags | Contact::CF_UDISABLED);
             $u->commit_prop();
@@ -61,7 +61,7 @@ class UserActions extends MessageSet {
             $this->unames["disabled"][] = $u->name(NAME_E);
             $u->update_cdb_roles();
         }
-        $this->conf->release_logs();
+        $this->conf->resume_log();
     }
 
     /** @param list<int> $ids */
@@ -79,7 +79,7 @@ class UserActions extends MessageSet {
         $this->conf->qe("update ContactInfo set cflags=(cflags&~?) where contactId?a and (cflags&?)=?",
             Contact::CF_UDISABLED, array_keys($users),
             Contact::CF_UDISABLED | Contact::CF_DELETED, Contact::CF_UDISABLED);
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
         foreach ($users as $u) {
             $u->set_prop("cflags", $u->cflags & ~Contact::CF_UDISABLED);
             $u->commit_prop();
@@ -98,7 +98,7 @@ class UserActions extends MessageSet {
             }
             $u->update_cdb_roles();
         }
-        $this->conf->release_logs();
+        $this->conf->resume_log();
     }
 
     /** @param list<int> $ids */
@@ -128,7 +128,7 @@ class UserActions extends MessageSet {
      * @param int $rremove
      * @param string $key */
     private function change_roles($users, $radd, $rremove, $key) {
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
         foreach ($users as $u) {
             $old_roles = $u->roles;
             $u->set_prop("roles", ($u->roles & ~$rremove) | $radd);
@@ -139,7 +139,7 @@ class UserActions extends MessageSet {
             $this->unames[$key][] = $u->name(NAME_E);
             $u->update_cdb_roles();
         }
-        $this->conf->release_logs();
+        $this->conf->resume_log();
     }
 
     /** @param list<int> $ids */

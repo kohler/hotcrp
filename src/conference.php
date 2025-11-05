@@ -5416,11 +5416,11 @@ class Conf {
     const action_log_query = "insert into ActionLog (ipaddr, contactId, destContactId, trueContactId, paperId, timestamp, action)";
     const action_log_query_action_index = 6;
 
-    function delay_logs() {
+    function pause_log() {
         ++$this->_save_logs_depth;
     }
 
-    function release_logs() {
+    function resume_log() {
         if ($this->_save_logs_depth > 0) {
             --$this->_save_logs_depth;
         }
@@ -5453,6 +5453,16 @@ class Conf {
             $this->qe(self::action_log_query . " values ?v", $qv);
         }
         $this->_save_logs = null;
+    }
+
+    /** @deprecated */
+    function delay_logs() {
+        $this->pause_log();
+    }
+
+    /** @deprecated */
+    function release_logs() {
+        $this->resume_log();
     }
 
     private static function log_clean_user($user, &$text) {

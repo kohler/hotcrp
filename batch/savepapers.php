@@ -333,7 +333,7 @@ class SavePapers_Batch {
             }
         }
 
-        $this->conf->delay_logs();
+        $this->conf->pause_log();
         for ($index = 0; $index !== count($jl); ++$index) {
             $j = $jl[$index];
             $jl[$index] = null;
@@ -343,11 +343,11 @@ class SavePapers_Batch {
             }
             gc_collect_cycles();
             if ($index % 10 === 9) {
-                $this->conf->release_logs();
-                $this->conf->delay_logs();
+                $this->conf->resume_log();
+                $this->conf->pause_log();
             }
         }
-        $this->conf->release_logs();
+        $this->conf->resume_log();
     }
 
     /** @param list<object> $jl */
