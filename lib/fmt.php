@@ -163,8 +163,9 @@ class FmtContext {
     public $format;
     /** @var ?int */
     public $pos;
-    /** @var ?string */
-    public $replacement;
+
+    /** @var ?bool */
+    static private $complained;
 
     /** @param Fmt $fmt
      * @param ?string $context
@@ -185,7 +186,10 @@ class FmtContext {
     /** @param string $detail
      * @return array{?int,string} */
     function complain($detail) {
-        error_log("invalid Fmt replacement {$this->replacement}: {$detail}");
+        if (!self::$complained) {
+            self::$complained = true;
+            error_log("invalid Fmt replacement: {$detail}\n" . debug_string_backtrace());
+        }
         return [0, "ERROR"];
     }
 
@@ -234,9 +238,8 @@ class FmtContext {
         } else if (str_starts_with($fspec, ":plural ")) {
             $word = $this->expand(ltrim(substr($fspec, 8)), $expansion);
             return [$vformat, plural_word(count($value), substr($fspec, 8))];
-        } else {
-            return $this->complain("{$fspec} does not expect array");
         }
+        return $this->complain("{$fspec} does not expect array");
     }
 
     /** @param string $fspec
@@ -508,7 +511,6 @@ class FmtContext {
         if ($this->format === null && $pos !== 0) {
             $this->format = Ftext::format($s);
         }
-        $this->replacement = substr($s, $pos, $epos - $pos);
 
         foreach ($fmtspecs as $fmtspec) {
             list($vformat, $value) = $this->apply_fmtspec($fmtspec, $vformat, $value, $expansion);
