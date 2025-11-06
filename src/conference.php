@@ -5533,11 +5533,10 @@ class Conf {
 
         $values = self::format_log_values($text, $user, $dest_user, $true_user, $pids);
         if ($dedup && count($values) === 1) {
-            $result = Dbl::qx_apply($this->dblink,
-                self::action_log_query
-                . " select ?, ?, ?, ?, ?, ?, ? from dual where not exists (select * from ActionLog where logId>=coalesce((select max(logId) from ActionLog),0)-199 and ipaddr<=>? and contactId<=>? and destContactId<=>? and trueContactId<=>? and paperId<=>? and timestamp>=?-3600 and action<=>?)",
-                array_merge($values[0], $values[0]));
-            if (!$result->is_error()) {
+            if ($this->fetch_ivalue("select logId from ActionLog
+                where logId>=coalesce((select max(logId) from ActionLog),0)-199
+                and ipaddr<=>? and contactId<=>? and destContactId<=>? and trueContactId<=>?
+                and paperId<=>? and timestamp>=?-3600 and action<=>?", ...$values[0])) {
                 return;
             }
         }
