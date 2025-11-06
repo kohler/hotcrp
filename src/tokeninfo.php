@@ -560,6 +560,11 @@ class TokenInfo {
     }
 
     /** @return bool */
+    final function need_update() {
+        return ($this->_changes ?? 0) !== 0;
+    }
+
+    /** @return bool */
     final function update() {
         assert($this->capabilityType > 0 && !!$this->salt);
         if (($this->_changes ?? 0) === 0) {
