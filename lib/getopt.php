@@ -388,8 +388,7 @@ class Getopt {
             if (!empty($subarg[$this->helpopt])) {
                 $subcommand = $subarg[$this->helpopt];
             } else if (($subarg["_subcommand"] ?? "") === "{help}") {
-                if (!empty($subarg["_"])
-                    && ($x = $this->find_subcommand($subarg["_"][0])) !== null) {
+                if (($x = $this->find_subcommand($subarg["_"][0] ?? null)) !== null) {
                     $subcommand = $x;
                 }
             } else if (!empty($subarg["_subcommand"])) {
@@ -452,10 +451,10 @@ class Getopt {
         return join("", $s);
     }
 
-    /** @param string $arg
+    /** @param ?string $arg
      * @return ?string */
     function find_subcommand($arg) {
-        if (($sc = $this->subcommand[$arg] ?? null)) {
+        if ($arg !== null && ($sc = $this->subcommand[$arg] ?? null)) {
             return $sc->name;
         } else if ($arg === "help" && $this->helpopt) {
             return "{help}";
