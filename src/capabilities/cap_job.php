@@ -108,7 +108,9 @@ class Job_Capability extends TokenInfo {
         if (!isset($answer["status"])) {
             $answer["status"] = "wait";
         }
-        $answer["update_at"] = $answer["update_at"] ?? $this->timeUsed ?? $this->timeCreated;
+        if (!isset($answer["update_at"])) {
+            $answer["update_at"] = $this->timeUsed ? : $this->timeCreated;
+        }
         if ($output && $this->outputData !== null) {
             if ((str_starts_with($this->outputData, "{")
                  || str_starts_with($this->outputData, "["))
