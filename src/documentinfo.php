@@ -92,6 +92,7 @@ class DocumentInfo implements JsonSerializable {
         $this->originalStorageId = (int) $this->originalStorageId ? : null;
         $this->inactive = (int) $this->inactive;
         $this->content = $this->content ?? $this->paper;
+        $this->compression = (int) $this->compression;
         $this->paper = null;
         if (isset($this->npages)) {
             $this->npages = (int) $this->npages;
@@ -665,16 +666,19 @@ class DocumentInfo implements JsonSerializable {
             || (!$ignore_no_papers && $this->conf->opt("dbNoPapers"))) {
             return false;
         }
-        $row = $this->conf->fetch_first_row("select paper, compression from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId);
-        if ($row === null) {
-            $row = $this->conf->fetch_first_row("select paper, compression from PaperStorage where paperStorageId=?", $this->paperStorageId);
+        $content = Dbl::fetch_blob($this->conf->dblink,
+            "select paper from PaperStorage where paperId=? and paperStorageId=?",
+            [$this->paperId, $this->paperStorageId]);
+        if ($content === null) {
+            $content = Dbl::fetch_blob($this->conf->dblink,
+                "select paper from PaperStorage where paperStorageId=?",
+                [$this->paperStorageId]);
         }
-        if ($row !== null && $row[0] !== null) {
-            $this->content = $row[1] == 1 ? gzinflate($row[0]) : $row[0];
-            return true;
-        } else {
+        if ($content === null) {
             return false;
         }
+        $this->content = $this->compression == 1 ? gzinflate($content) : $content;
+        return true;
     }
 
     /** @return ?string */
@@ -783,13 +787,9 @@ class DocumentInfo implements JsonSerializable {
             return null;
         }
         $content = $this->content();
-        for ($p = 0; $p < strlen($content); $p += 400000) {
-            $result = $this->conf->qe("update PaperStorage set paper=concat(coalesce(paper,''),?) where paperId=? and paperStorageId=?", substr($content, $p, 400000), $this->paperId, $this->paperStorageId);
-            if (Dbl::is_error($result)) {
-                break;
-            }
-            Dbl::free($result);
-        }
+        Dbl::store_blob($this->conf->dblink,
+            "update PaperStorage set paper=?{blob} where paperId=?{pid} and paperStorageId=?{psid}",
+            $content, ["pid" => $this->paperId, "psid" => $this->paperStorageId]);
         $ssize = $this->conf->fetch_ivalue("select length(paper) from PaperStorage where paperId=? and paperStorageId=?", $this->paperId, $this->paperStorageId);
         $ok = $ssize === strlen($content);
         if (!$ok) {

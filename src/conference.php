@@ -4315,7 +4315,7 @@ class Conf {
     function document_query_fields() {
         return "paperId, paperStorageId, timestamp"
             . ($this->sversion >= 316 ? ", timeReferenced" : "")
-            . ", mimetype, sha1, crc32, documentType, filename, infoJson, size, filterType, originalStorageId, inactive, npages, width, height";
+            . ", mimetype, compression, sha1, crc32, documentType, filename, infoJson, size, filterType, originalStorageId, inactive, npages, width, height";
     }
 
     /** @return string */

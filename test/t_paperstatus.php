@@ -125,6 +125,8 @@ class PaperStatus_Tester {
         xassert_paper_status($ps);
         $paper1c = (new PaperExport($this->u_estrin))->paper_json(1);
         xassert_eqq($paper1c->submission->hash, "2f1bccbf1e0e98004c01ef5b26eb9619f363e38e");
+        $paper1 = $this->conf->checked_paper_by_id(1);
+        xassert_eqq(sha1($paper1->primary_document()->content()), "2f1bccbf1e0e98004c01ef5b26eb9619f363e38e");
     }
 
     function test_paper_replace_document() {
