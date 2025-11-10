@@ -52,6 +52,16 @@ class TokenInfo {
     protected $dataOverflow;
     /** @var ?string */
     public $outputData;
+    /** @var ?string */
+    public $outputMimetype;
+    /** @var ?string */
+    public $outputFilename;
+    /** @var ?string */
+    public $outputHash;
+    /** @var ?int */
+    public $outputTimestamp;
+    /** @var ?int */
+    public $outputPaperStorageId;
     /** @var ?string
      * @readonly */
     public $lookupKey;
@@ -68,8 +78,6 @@ class TokenInfo {
     private $_jinputData;
     /** @var ?object */
     private $_jdata;
-    /** @var ?object */
-    private $_joutputData;
     /** @var int */
     private $_changes;
 
@@ -87,6 +95,8 @@ class TokenInfo {
     const CHF_TIMES = 1;
     const CHF_DATA = 2;
     const CHF_OUTPUT_DATA = 4;
+
+    const DOCPID = -3;
 
     /** @param ?int $capabilityType */
     function __construct(Conf $conf, $capabilityType = null) {
@@ -542,19 +552,47 @@ class TokenInfo {
         return $this;
     }
 
-    /** @param ?string $data
+    /** @param DocumentInfo $doc
      * @return $this */
-    final function change_output($data, $value = null) {
-        if (json_encode_object_change($this->outputData, $this->_joutputData, $data, $value, func_num_args())) {
-            $this->_changes |= self::CHF_OUTPUT_DATA;
+    final function set_output_document($doc) {
+        assert($this->outputData === null
+            && $this->outputPaperStorageId === null
+            && ($doc->paperId === self::DOCPID || $doc->paperId === 0));
+        if ($doc->paperStorageId <= 0
+            && $doc->size() > (4 << 20)) {
+            $doc->set_paper_id(self::DOCPID);
+            $doc->set_expires_at($this->timeExpires);
+            $doc->save();
         }
+        if ($doc->paperStorageId > 0) {
+            $this->outputPaperStorageId = $doc->paperStorageId;
+        } else {
+            $this->outputData = $doc->content();
+        }
+        $this->outputMimetype = $doc->mimetype;
+        $this->outputFilename = $doc->filename;
+        $this->outputHash = $doc->binary_hash();
+        $this->outputTimestamp = $doc->timestamp;
+        $this->_changes |= self::CHF_OUTPUT_DATA;
         return $this;
+    }
+
+    /** @return ?DocumentInfo */
+    final function output_document() {
+        if ($this->outputPaperStorageId > 0) {
+
+        } else if ($this->outputData === null) {
+            return null;
+        }
+        return DocumentInfo::make_content($this->conf, $this->outputData, $this->outputMimetype)
+            ->set_hash($this->outputHash)
+            ->set_timestamp($this->outputTimestamp);
     }
 
     /** @return $this
      * @suppress PhanAccessReadOnlyProperty */
     final function unload_output() {
-        $this->outputData = $this->_joutputData = null;
+        $this->outputData = null;
         $this->_changes &= ~self::CHF_OUTPUT_DATA;
         return $this;
     }
@@ -587,8 +625,8 @@ class TokenInfo {
             }
         }
         if (($this->_changes & self::CHF_OUTPUT_DATA) !== 0) {
-            $qf[] = "outputData=?";
-            $qv[] = $this->outputData;
+            array_push($qf, "outputData=?", "outputMimetype=?", "outputFilename=?", "outputTimestamp=?", "outputHash=?", "outputPaperStorageId=?");
+            array_push($qv, $this->outputData, $this->outputMimetype, $this->outputFilename, $this->outputTimestamp, $this->outputHash, $this->outputPaperStorageId);
         }
         $qv[] = $this->salt;
         $result = Dbl::qe_apply($this->dblink(), "update Capability set " . join(", ", $qf) . " where salt=?", $qv);

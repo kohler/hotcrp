@@ -325,12 +325,18 @@ class Autoassign_Batch {
         return join("", $aa->assignments());
     }
 
-    private function set_output($text) {
+    private function complete($ml, $csv) {
         if ($this->_jtok) {
-            $this->_jtok->change_output($text);
+            $doc = DocumentInfo::make_content($this->conf, $csv, "text/csv; charset=utf-8")
+                ->set_filename("{$this->conf->download_prefix}-autoassignment.csv")
+                ->set_timestamp($this->_jtok->timeCreated);
+            $this->_jtok->set_output_document($doc);
         } else {
-            fwrite(STDOUT, $text);
+            $this->report($ml);
+            $ml = [];
+            fwrite(STDOUT, $csv);
         }
+        $this->report($ml, 0);
     }
 
     private function change_data($key, $value) {
@@ -358,8 +364,7 @@ class Autoassign_Batch {
 
         // exit if minimal dry run
         if ($this->minimal_dry_run) {
-            $this->set_output($aatext);
-            $this->report([], 0);
+            $this->complete([], $aatext);
         }
 
         // parse assignment
@@ -390,8 +395,7 @@ class Autoassign_Batch {
         // exit if dry run
         if ($this->dry_run) {
             $this->change_data("dry_run", true);
-            $this->set_output($aset->make_acsv()->unparse());
-            $this->report([], 0);
+            $this->complete([], $aset->make_acsv()->unparse());
         }
 
         // execute assignment
@@ -405,8 +409,7 @@ class Autoassign_Batch {
                 new FmtArg("pids", $aset->assigned_pids())
             ));
         }
-        $this->set_output($aset->make_acsv()->unparse());
-        $this->report($ml, 0);
+        $this->complete([], $aset->make_acsv()->unparse());
     }
 
     /** @return int */

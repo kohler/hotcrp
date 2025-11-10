@@ -3216,6 +3216,15 @@ set ordinal=(t.maxOrdinal+1) where commentId={$row[1]}");
             && $this->v318_set_ct_bymetareviewer()) {
             $conf->update_schema_version(318);
         }
+        if ($conf->sversion === 318
+            && $conf->ql_ok("alter table Capability add `outputMimetype` varbinary(80) DEFAULT NULL")
+            && $conf->ql_ok("alter table Capability add `outputFilename` varbinary(255) DEFAULT NULL")
+            && $conf->ql_ok("alter table Capability add `outputTimestamp` bigint DEFAULT NULL")
+            && $conf->ql_ok("alter table Capability add `outputHash` varbinary(64) DEFAULT NULL")
+            && $conf->ql_ok("alter table Capability add `outputPaperStorageId` int DEFAULT NULL")
+            && $conf->ql_ok("alter table PaperStorage add `timeExpires` bigint NOT NULL DEFAULT 0")) {
+            $conf->update_schema_version(319);
+        }
 
         $conf->ql_ok("delete from Settings where name='__schema_lock'");
         Conf::$main = $old_conf_g;

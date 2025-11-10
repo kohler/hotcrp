@@ -405,9 +405,11 @@ class DocumentInfoSet implements ArrayAccess, IteratorAggregate, Countable {
     private function _hotzip_make() {
         $this->_hotzip_progress();
         if ($this->_ms
-            && ($readme_txt = $this->_ms->full_feedback_text()) !== ""
-            && ($doc = $this->add_string_as($readme_txt, "README-warnings.txt"))) {
-            $doc->set_timestamp($this->_message_timestamp);
+            && ($readme_txt = $this->_ms->full_feedback_text()) !== "") {
+            $doc = DocumentInfo::make_content($this->conf, $readme_txt, "text/plain")
+                ->set_timestamp($this->_message_timestamp)
+                ->set_filename("README-warnings.txt");
+            $this->add($doc);
             $this->_hotzip_progress();
         }
         $this->_hotzip_final();

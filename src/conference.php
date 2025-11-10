@@ -6037,6 +6037,10 @@ class Conf {
             Dbl::free($result);
         }
         $this->ql("delete from Capability where timeExpires>0 and timeExpires<" . Conf::$now);
+        if ($this->dblink->affected_rows
+            && $this->sversion >= 319) {
+            $this->ql("delete from PaperStorage where paperId=" . TokenInfo::DOCPID . " and timeExpires>0 and timeExpires<" . Conf::$now);
+        }
         $this->ql("delete from IDReservation where timestamp<" . (Conf::$now - 60));
         $this->ql("insert into Settings set name='__capability_gc', value=? on duplicate key update value=?", Conf::$now, Conf::$now);
         $this->settings["__capability_gc"] = Conf::$now;

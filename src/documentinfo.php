@@ -17,6 +17,8 @@ class DocumentInfo implements JsonSerializable {
     public $timestamp;
     /** @var ?int */
     public $timeReferenced;
+    /** @var ?int */
+    public $timeExpires;
     /** @var string */
     public $mimetype;
     /** @var ?string */
@@ -86,6 +88,7 @@ class DocumentInfo implements JsonSerializable {
         if (isset($this->timeReferenced)) {
             $this->timeReferenced = (int) $this->timeReferenced;
         }
+        $this->timeExpires = (int) $this->timeExpires;
         $this->documentType = (int) $this->documentType;
         $this->size = (int) $this->size;
         $this->filterType = (int) $this->filterType ? : null;
@@ -402,6 +405,13 @@ class DocumentInfo implements JsonSerializable {
     function set_timestamp($timestamp) {
         assert($this->paperStorageId <= 0);
         $this->timestamp = $timestamp;
+        return $this;
+    }
+
+    /** @param int $t
+     * @return $this */
+    function set_expires_at($t) {
+        $this->timeExpires = $t;
         return $this;
     }
 
@@ -735,6 +745,9 @@ class DocumentInfo implements JsonSerializable {
         if ($this->timeReferenced !== null) {
             $upd["timeReferenced"] = $this->timeReferenced;
         }
+        if ($this->timeExpires > 0) {
+            $upd["timeExpires"] = $this->timeExpires;
+        }
         if (($this->crc32 || ($this->size >= 0 && $this->size <= 10000000))
             && ($crc32 = $this->crc32()) !== false) {
             $upd["crc32"] = $crc32;
@@ -1065,7 +1078,8 @@ class DocumentInfo implements JsonSerializable {
     function save($savef = 0) {
         // look for an existing document with same sha1
         if ($this->binary_hash() !== false && $this->paperId != 0) {
-            $row = $this->conf->fetch_first_row("select paperStorageId, timestamp, timeReferenced, inactive, filename, mimetype, infoJson from PaperStorage where paperId=? and documentType=? and sha1=?", $this->paperId, $this->documentType, $this->binary_hash());
+            $expires = $this->conf->sversion >= 319 ? " and timeExpires=0" : "";
+            $row = $this->conf->fetch_first_row("select paperStorageId, timestamp, timeReferenced, inactive, filename, mimetype, infoJson from PaperStorage where paperId=? and documentType=? and sha1=?{$expires}", $this->paperId, $this->documentType, $this->binary_hash());
             if ($row
                 && (!isset($this->filename) || $row[4] === $this->filename)
                 && (!isset($this->mimetype) || $row[5] === $this->mimetype)) {
